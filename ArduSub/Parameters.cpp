@@ -274,15 +274,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
-    // @Param: ANGLE_MAX
-    // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 1000 8000
-    // @User: Advanced
-    ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
-
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
@@ -882,6 +873,13 @@ void Sub::load_parameters()
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+    // upgrade attitude controller parameters
+    sub.attitude_control.convert_parameters();
+
+#if CIRCLE_NAV_ENABLED
+    circle_nav.convert_parameters();
+#endif
 }
 
 void Sub::convert_old_parameters()

@@ -215,6 +215,7 @@ void _AutoTakeoff::run()
 
     // calculate completion for location in case it is needed for a smooth transition to wp_nav
     if (complete) {
+        no_nav_active = false;
         const Vector3p& _complete_pos_ned_m = copter.pos_control->get_pos_desired_NED_m();
         complete_pos_ned_m = Vector3p{_complete_pos_ned_m.x, _complete_pos_ned_m.y, pos_d_m};
     }

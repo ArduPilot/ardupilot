@@ -93,19 +93,10 @@ public:
 
     bool            use_compass() override;
 
-    // return the quaternion defining the rotation from NED to XYZ (body) axes
-    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
-
     void estimate_wind(void);
 
     // is the AHRS subsystem healthy?
     bool healthy() const override;
-
-    bool get_velocity_NED(Vector3f &vec) const override;
-
-    // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate_D(float &velocity) const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
@@ -125,6 +116,12 @@ public:
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
+
+    // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+    bool get_vert_pos_rate_D(float &velocity) const;
+
+    bool get_velocity_NED(Vector3f &vec) const;
 
     // dead-reckoning support
     bool get_location(Location &loc) const;

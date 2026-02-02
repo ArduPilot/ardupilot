@@ -1812,7 +1812,7 @@ void AC_PosControl::convert_parameters()
         return;
     }
 
-    // PARAMETER_CONVERSION - Added: Nov-2024 for 4.7
+    // PARAMETER_CONVERSION - Added: Nov-2025 for 4.7
     // parameters that are simply moved
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     static const AP_Param::ConversionInfo conversion_info[] = {

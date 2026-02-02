@@ -1100,7 +1100,11 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.p1 = (passby << 8) | (acp & 0x00FF);
 #else
         // delay at waypoint in seconds (this is for copters???)
-        cmd.p1 = packet.param1;
+        // reject invalid param1 values to prevent floating point exception
+        if (packet.param1 < 0 || packet.param1 > UINT16_MAX) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
+        cmd.p1 = (uint16_t)packet.param1;
 #endif
     }
     break;

@@ -38,6 +38,9 @@ void ModeCircle::run()
     position_control->NE_set_max_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
     position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
+    // check for any change in params and update in real time
+    sub.circle_nav.check_param_change();
+
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         // To-Do: add some initialisation of position controllers

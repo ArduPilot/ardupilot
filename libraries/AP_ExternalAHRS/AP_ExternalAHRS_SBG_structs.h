@@ -59,26 +59,26 @@ static inline SbgEComClockUtcStatus sbgEComLogUtcGetClockUtcStatus(uint16_t stat
 }
 
 
-typedef struct PACKED _SbgLogUtcData
+typedef struct PACKED _SbgEComLogUtc
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	uint16_t	status;						/*!< UTC time and clock status information */
 	uint16_t	year;						/*!< Year for example: 2013. */
-	int8_t      month;						/*!< Month in year [1 .. 12]. */
-	int8_t      day;						/*!< Day in month [1 .. 31]. */
-	int8_t      hour;						/*!< Hour in day [0 .. 23]. */
-	int8_t      minute;						/*!< Minute in hour [0 .. 59]. */
-	int8_t      second;						/*!< Second in minute [0 .. 60]. (60 is used only when a leap second is added) */
-	int32_t     nanoSecond;					/*!< Nanosecond of current second in ns. */
-	uint32_t    gpsTimeOfWeek;				/*!< GPS time of week in ms. */
-} SbgLogUtcData;
+	int8_t		month;						/*!< Month in year [1 .. 12]. */
+	int8_t		day;						/*!< Day in month [1 .. 31]. */
+	int8_t		hour;						/*!< Hour in day [0 .. 23]. */
+	int8_t		minute;						/*!< Minute in hour [0 .. 59]. */
+	int8_t		second;						/*!< Second in minute [0 .. 60]. (60 is used only when a leap second is added) */
+	int32_t		nanoSecond;					/*!< Nanosecond of current second in ns. */
+	uint32_t	gpsTimeOfWeek;				/*!< GPS time of week in ms. */
+} SbgEComLogUtc;
 
 
 
 /*!
  * Structure that stores data for the SBG_ECOM_LOG_GPS#_VEL message.
  */
-typedef struct PACKED _SbgLogGpsVel
+typedef struct PACKED _SbgEComLogGnssVel
 {
 	uint32_t		timeStamp;				/*!< Time in us since the sensor power up. */
 	uint32_t		status;					/*!< GPS velocity status, type and bitmask. */
@@ -87,12 +87,12 @@ typedef struct PACKED _SbgLogGpsVel
 	float			velocityAcc[3];			/*!< GPS North, East, Down velocity 1 sigma accuracy in m.s^-1. */
 	float			course;					/*!< Track ground course in degrees. */
 	float			courseAcc;				/*!< Course accuracy in degrees. */
-} SbgLogGpsVel;
+} SbgEComLogGnssVel;
 
 /*!
  * Structure that stores data for the SBG_ECOM_LOG_GPS#_POS message.
  */
-typedef struct PACKED _SbgLogGpsPos
+typedef struct PACKED _SbgEComLogGnssPos
 {
 	uint32_t		timeStamp;				/*!< Time in us since the sensor power up. */
 	uint32_t		status;					/*!< GPS position status, type and bitmask. */
@@ -107,12 +107,12 @@ typedef struct PACKED _SbgLogGpsPos
 	uint8_t			numSvUsed;				/*!< Number of space vehicles used to compute the solution (since version 1.4). */
 	uint16_t		baseStationId;			/*!< Base station id for differential corrections (0-4095). Set to 0xFFFF if differential corrections are not used (since version 1.4). */
 	uint16_t		differentialAge;		/*!< Differential correction age in 0.01 seconds. Set to 0XFFFF if differential corrections are not used (since version 1.4). */
-} SbgLogGpsPos;
+} SbgEComLogGnssPos;
 
 /*!
  * Structure that stores data for the SBG_ECOM_LOG_GPS#_HDT message.
  */
-typedef struct PACKED _SbgLogGpsHdt
+typedef struct PACKED _SbgEComLogGnssHdt
 {
 	uint32_t		timeStamp;				/*!< Time in us since the sensor power up. */
 	uint16_t		status;					/*!< GPS HDT status, type and bitmask. */
@@ -121,14 +121,14 @@ typedef struct PACKED _SbgLogGpsHdt
 	float			headingAccuracy;		/*!< 1 sigma GPS true heading accuracy in degrees. */
 	float			pitch;					/*!< GPS pitch angle measured from the master to the rover in degrees. */
 	float			pitchAccuracy;			/*!< 1 signa GPS pitch angle accuarcy in degrees. */
-} SbgLogGpsHdt;
+} SbgEComLogGnssHdt;
 
 
 
 /*!
  * Structure that stores data for the SBG_ECOM_LOG_IMU_DATA message.
  */
-typedef struct PACKED _SbgLogImuData
+typedef struct PACKED _SbgEComLogImuLegacy
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	uint16_t	status;						/*!< IMU status bitmask. */
@@ -137,18 +137,18 @@ typedef struct PACKED _SbgLogImuData
 	float		temperature;				/*!< Internal temperature in C. */	
 	float		deltaVelocity[3];			/*!< X, Y, Z delta velocity in m.s^-2. */
 	float		deltaAngle[3];				/*!< X, Y, Z delta angle in rad.s^-1. */
-} SbgLogImuData;
+} SbgEComLogImuLegacy;
 
 /*!
  * Structure that stores the data for SBG_ECOM_LOG_FAST_IMU_DATA message
  */
-typedef struct PACKED _SbgLogFastImuData
+typedef struct PACKED _SbgEComLogImuFastLegacy
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	uint16_t	status;						/*!< IMU status bitmask. */
 	float		accelerometers[3];			/*!< X, Y, Z accelerometers in m.s^-2. */
 	float		gyroscopes[3];				/*!< X, Y, Z gyroscopes in rad.s^-1. */
-} SbgLogFastImuData;
+} SbgEComLogImuFastLegacy;
 
 /*!
  * Log inertial data status mask definitions
@@ -233,29 +233,29 @@ typedef enum _SbgEComSolutionMode
 /*!
  * EKF computed orientation using euler angles.
  */
-typedef struct PACKED _SbgLogEkfEulerData
+typedef struct PACKED _SbgEComLogEkfEuler
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	float		euler[3];					/*!< Roll, Pitch and Yaw angles in rad. */
 	float		eulerStdDev[3];				/*!< Roll, Pitch and Yaw angles 1 sigma standard deviation in rad. */
 	uint32_t	status;						/*!< EKF solution status bitmask and enum. */
-} SbgLogEkfEulerData;
+} SbgEComLogEkfEuler;
 
 /*!
  * EFK computed orientation using quaternion.
  */
-typedef struct PACKED _SbgLogEkfQuatData
+typedef struct PACKED _SbgEComLogEkfQuat
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	float		quaternion[4];				/*!< Orientation quaternion stored in W, X, Y, Z form. */
 	float		eulerStdDev[3];				/*!< Roll, Pitch and Yaw angles 1 sigma standard deviation in rad. */
 	uint32_t	status;						/*!< EKF solution status bitmask and enum. */
-} SbgLogEkfQuatData;
+} SbgEComLogEkfQuat;
 
 /*!
  * EFK computed navigation data.
  */
-typedef struct PACKED _SbgLogEkfNavData
+typedef struct PACKED _SbgEComLogEkfNav
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	float		velocity[3];				/*!< North, East, Down velocity in m.s^-1. */
@@ -265,7 +265,7 @@ typedef struct PACKED _SbgLogEkfNavData
 	float		undulation;					/*!< Altitude difference between the geoid and the Ellipsoid in meters (Height above Ellipsoid = altitude + undulation). */
 	float		positionStdDev[3];			/*!< Latitude, longitude and altitude 1 sigma standard deviation in meters. */
 	uint32_t	status;						/*!< EKF solution status bitmask and enum. */
-} SbgLogEkfNavData;
+} SbgEComLogEkfNav;
 
 //----------------------------------------------------------------------//
 //- Log Air Data status definitions                                    -//
@@ -284,7 +284,7 @@ typedef struct PACKED _SbgLogEkfNavData
 /*!
  * Log structure for AirData.
  */
-typedef struct PACKED _SbgLogAirData
+typedef struct PACKED _SbgEComLogAirData
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up OR measurement delay in us. */
 	uint16_t	status;						/*!< Airdata sensor status bitmask. */
@@ -293,7 +293,7 @@ typedef struct PACKED _SbgLogAirData
 	float		pressureDiff;				/*!< Raw differential pressure measured by the pitot tube in Pascal. */
 	float		trueAirspeed;				/*!< True airspeed measured by a pitot tube in m.s^-1 and positive forward. */
 	float		airTemperature;				/*!< Outside air temperature in C that could be used to compute true airspeed from differential pressure. */
-} SbgLogAirData;
+} SbgEComLogAirData;
 
 /*!
  * Log magnetometer data status mask definitions
@@ -314,26 +314,26 @@ typedef struct PACKED _SbgLogAirData
 /*!
  * Structure that stores data for the SBG_ECOM_LOG_MAG message.
  */
-typedef struct PACKED _SbgLogMag
+typedef struct PACKED _SbgEComLogMag
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	uint16_t	status;						/*!< Magnetometer status bitmask. */
 	float		magnetometers[3];			/*!< X, Y, Z magnetometer data in A.U. */
 	float		accelerometers[3];			/*!< X, Y, Z accelerometers in m.s^-2. */
-} SbgLogMag;
+} SbgEComLogMag;
 
 /*!
  * Structure that stores data for the SBG_ECOM_LOG_MAG_CALIB message.
  */
-typedef struct PACKED _SbgLogMagCalib
+typedef struct PACKED _SbgEComLogMagCalib
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	uint16_t	reserved;					/*!< Reserved for future use. */
 	uint8_t		magData[16];				/*!< Magnetometers calibration data. */
-} SbgLogMagCalib;
+} SbgEComLogMagCalib;
 
 
-typedef struct PACKED _SbgLogStatusData
+typedef struct PACKED _SbgEComLogStatus
 {
 	uint32_t	timeStamp;					/*!< Time in us since the sensor power up. */
 	uint16_t	generalStatus;				/*!< General status bitmask and enums. */
@@ -343,7 +343,7 @@ typedef struct PACKED _SbgLogStatusData
 	uint32_t	reserved2;					/*!< Reserved status field for future use. */
 	uint16_t	reserved3;					/*!< Reserved status field for future use. */
 	uint32_t	uptime;						/*!< System uptime in seconds. */
-} SbgLogStatusData;
+} SbgEComLogStatus;
 
 /*!
  * Helper structure to retrieve device info.

@@ -192,7 +192,7 @@ public:
 
         // Misc Sub settings
         k_param_log_bitmask = 165,
-        k_param_angle_max = 167,
+        k_param_angle_max = 167,    // remove
         k_param_rangefinder_gain, // deprecated
         k_param_wp_yaw_behavior = 170,
         k_param_xtrack_angle_limit, // Angle limit for crosstrack correction in Auto modes (degrees)

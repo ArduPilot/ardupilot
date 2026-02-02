@@ -22,13 +22,16 @@ bool AP_AHRS_External::healthy() const {
 
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
-    Quaternion quat;
     auto &extahrs = AP::externalAHRS();
     const AP_InertialSensor &_ins = AP::ins();
-    if (!extahrs.get_quaternion(quat)) {
+    if (!extahrs.get_quaternion(results.quaternion)) {
+        results.attitude_valid = false;
         return;
     }
-    quat.rotation_matrix(results.dcm_matrix);
+    results.attitude_valid = true;
+    results.quaternion.rotation_matrix(results.dcm_matrix);
+    // note that this is suspect; we are rotating the matrix and
+    // eulers away from alignment with the quaternion:
     results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
@@ -45,12 +48,13 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
     results.accel_ef = accel_ef;
 
-    results.location_valid = AP::externalAHRS().get_location(results.location);
-}
+    results.velocity_NED_valid = AP::externalAHRS().get_velocity_NED(results.velocity_NED);
+    // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+    results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
 
-bool AP_AHRS_External::get_quaternion(Quaternion &quat) const
-{
-    return AP::externalAHRS().get_quaternion(quat);
+
+    results.location_valid = AP::externalAHRS().get_location(results.location);
 }
 
 Vector2f AP_AHRS_External::groundspeed_vector()
@@ -97,16 +101,6 @@ bool AP_AHRS_External::get_relative_position_D_origin(postype_t &posD) const
     }
     posD = -(loc.alt - orgn.alt)*0.01;
     return true;
-}
-
-bool AP_AHRS_External::get_velocity_NED(Vector3f &vec) const
-{
-    return AP::externalAHRS().get_velocity_NED(vec);
-}
-
-bool AP_AHRS_External::get_vert_pos_rate_D(float &velocity) const
-{
-    return AP::externalAHRS().get_speed_down(velocity);
 }
 
 bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

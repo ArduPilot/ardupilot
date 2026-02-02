@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>
 
-#ifndef HAL_PICCOLO_CAN_ENABLE
-#define HAL_PICCOLO_CAN_ENABLE HAL_NUM_CAN_IFACES
-#endif
+#ifndef AP_PICCOLOCAN_ENABLED
+#define AP_PICCOLOCAN_ENABLED HAL_NUM_CAN_IFACES
+#endif  // AP_PICCOLOCAN_ENABLED

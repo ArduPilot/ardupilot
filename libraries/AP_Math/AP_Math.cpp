@@ -248,23 +248,36 @@ long wrap_360_cd(const long angle)
     return res;
 }
 
-ftype wrap_PI(const ftype radian)
+float wrap_2PI(const float radian)
 {
-    ftype res = wrap_2PI(radian);
-    if (res > M_PI) {
-        res -= M_2PI;
+    float res = fmodf(radian, float(M_2PI));
+    if (res < 0) {
+        res += float(M_2PI);
     }
     return res;
 }
 
-ftype wrap_2PI(const ftype radian)
+double wrap_2PI(const double radian)
 {
-    ftype res = fmodF(radian, M_2PI);
+    double res = fmod(radian, M_2PI);
     if (res < 0) {
         res += M_2PI;
     }
     return res;
 }
+
+template <typename T>
+T wrap_PI(const T radian)
+{
+    T res = wrap_2PI(radian);
+    if (res > T(M_PI)) {
+        res -= T(M_2PI);
+    }
+    return res;
+}
+
+template float wrap_PI<float>(const float radian);
+template double wrap_PI<double>(const double radian);
 
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
@@ -328,6 +341,8 @@ template unsigned short constrain_value<unsigned short>(const unsigned short amt
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
 
+template int8_t constrain_value<int8_t>(const int8_t amt, const int8_t low, const int8_t high);
+template uint8_t constrain_value<uint8_t>(const uint8_t amt, const uint8_t low, const uint8_t high);
 
 /*
   simple 16 bit random number generator

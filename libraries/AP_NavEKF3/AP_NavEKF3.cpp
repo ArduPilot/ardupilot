@@ -1245,12 +1245,25 @@ bool NavEKF3::getAirSpdVec(Vector3f &vel) const
     return false;
 }
 
-// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-bool NavEKF3::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
+// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
+bool NavEKF3::getAirSpdHealthData(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const
 {
-    if (core) {
+    if (core == nullptr) {
+        return false;
+    }
+
+    // Return primary if it is configured to use the given instance
+    if (core[primary].getActiveAirspeed() == instance) {
         return core[primary].getAirSpdHealthData(innovation, innovationVariance, age_ms);
     }
+
+    // See if another core is using the given instance
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (core[i].getActiveAirspeed() == instance) {
+            return core[i].getAirSpdHealthData(innovation, innovationVariance, age_ms);
+        }
+    }
+
     return false;
 }
 

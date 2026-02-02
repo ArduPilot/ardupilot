@@ -218,12 +218,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             check_failed(Check::PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
         }
 
-        // lean angle parameter check
-        if (copter.aparm.angle_max < 1000 || copter.aparm.angle_max > 8000) {
-            check_failed(Check::PARAMETERS, display_failure, "Check ANGLE_MAX");
-            return false;
-        }
-
         // acro balance parameter check
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
         if (is_negative(copter.g.acro_balance_roll) || is_negative(copter.g.acro_balance_pitch) ||
@@ -283,9 +277,9 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                     check_failed(Check::PARAMETERS, display_failure, failure_template, "no rangefinder");
                     return false;
                 }
-                // check if RTL_ALT is higher than rangefinder's max range
-                if (copter.g.rtl_altitude_cm > copter.rangefinder.max_distance_orient(ROTATION_PITCH_270) * 100) {
-                    check_failed(Check::PARAMETERS, display_failure, failure_template, "RTL_ALT (in cm) above RNGFND_MAX (in metres)");
+                // check if RTL_ALT_M is higher than rangefinder's max range
+                if (copter.mode_rtl.get_altitude_m() > copter.rangefinder.max_distance_orient(ROTATION_PITCH_270)) {
+                    check_failed(Check::PARAMETERS, display_failure, failure_template, "RTL_ALT_M above RNGFND_MAX");
                     return false;
                 }
 #else
@@ -601,7 +595,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // check lean angle
     if (check_enabled(Check::INS)) {
-        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
+        if (acosf(ahrs.cos_roll()*ahrs.cos_pitch()) > copter.attitude_control->lean_angle_max_rad()) {
             check_failed(Check::INS, true, "Leaning");
             return false;
         }

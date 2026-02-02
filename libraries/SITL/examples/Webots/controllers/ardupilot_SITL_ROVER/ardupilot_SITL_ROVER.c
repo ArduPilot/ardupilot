@@ -139,7 +139,7 @@ bool parse_controls(const char *json)
         switch (key->type) 
         {
           case DATA_FLOAT:
-              *((float *)key->ptr) = atof(p);
+              *((float *)key->ptr) = strtof(p, NULL);
               #ifdef DEBUG_INPUT_DATA
               printf("GOT  %s/%s\n", key->section, key->key);
               #endif

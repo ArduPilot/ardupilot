@@ -728,7 +728,7 @@ def generate_tasklist(ctx, do_print=True):
             elif 'iofirmware' in board:
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
-                if boards.is_board_based(board, boards.sitl):
+                if boards.is_board_based(board, boards.SITLBoard):
                     task['targets'] = vehicles + ['replay']
                 elif boards.is_board_based(board, boards.LinuxBoard):
                     task['targets'] = vehicles

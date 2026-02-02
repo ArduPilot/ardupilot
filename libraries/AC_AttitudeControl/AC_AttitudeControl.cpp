@@ -1,7 +1,8 @@
 #include "AC_AttitudeControl.h"
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -15,6 +16,14 @@ extern const AP_HAL::HAL& hal;
  # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.15f   // Medium
  #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN     10.0   // Min lean angle so that vehicle can maintain limited control
  #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 1
+#endif
+
+// lean angle max (in degrees) for all vehicles
+#define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MAX 80.0        // lean angle max in degrees
+
+// default angle max for all vehicles
+#ifndef AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT
+ # define AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT 30.0f   // default max lean angle in degrees
 #endif
 
 AC_AttitudeControl *AC_AttitudeControl::_singleton;
@@ -175,6 +184,15 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Range: 0.25 1.0
     // @User: Advanced
     AP_GROUPINFO("LAND_Y_MULT", 23, AC_AttitudeControl, _land_yaw_mult, 1.0),
+
+    // @Param: ANGLE_MAX
+    // @DisplayName: Angle Max
+    // @Description: Maximum lean angle in all flight modes
+    // @Units: deg
+    // @Increment: 0.1
+    // @Range: 10.0 80.0
+    // @User: Standard
+    AP_GROUPINFO("ANGLE_MAX", 24, AC_AttitudeControl, _angle_max_deg, AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT),
 
     AP_GROUPEND
 };
@@ -1095,6 +1113,32 @@ void AC_AttitudeControl::scale_I_to_angle_P()
     set_I_scale_mult(i_scale);
 }
 
+// perform any required parameter conversions
+void AC_AttitudeControl::convert_parameters()
+{
+    // PARAMETER_CONVERSION - Added: Jan-2026 for 4.7
+
+    // return immediately if no conversion is needed
+    if (_angle_max_deg.configured()) {
+        return;
+    }
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    static const AP_Param::ConversionInfo conversion_info_001[] = {
+        { 205, 10, AP_PARAM_INT16, "Q_A_ANGLE_MAX" },  // ANGLE_MAX moved to Q_A_ANGLE_MAX
+    };
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    static const AP_Param::ConversionInfo conversion_info_001[] = {
+        { 167, 0, AP_PARAM_INT16, "ATC_ANGLE_MAX" },  // ANGLE_MAX moved to ATC_ANGLE_MAX
+    };
+#else
+    static const AP_Param::ConversionInfo conversion_info_001[] = {
+        { 34, 0, AP_PARAM_INT16, "ATC_ANGLE_MAX" },   // ANGLE_MAX moved to ATC_ANGLE_MAX
+    };
+#endif
+    AP_Param::convert_old_parameters_scaled(conversion_info_001, ARRAY_SIZE(conversion_info_001), 0.01, 0);
+}
+
 // limits angular velocity
 void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max_rads, float ang_vel_pitch_max_rads, float ang_vel_yaw_max_rads) const
 {
@@ -1294,6 +1338,18 @@ float AC_AttitudeControl::get_althold_lean_angle_max_rad() const
     return MAX(_althold_lean_angle_max_rad, radians(AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN));
 }
 
+// Return configured tilt angle limit in centidegrees
+float AC_AttitudeControl::lean_angle_max_cd() const
+{
+    return constrain_float(_angle_max_deg.get(), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN, AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MAX) * 100;
+}
+
+// Return configured tilt angle limit in radians
+float AC_AttitudeControl::lean_angle_max_rad() const
+{
+    return radians(constrain_float(_angle_max_deg.get(), AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN, AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MAX));
+}
+
 // Return roll rate step size in centidegrees/s that results in maximum output after 4 time steps
 float AC_AttitudeControl::max_rate_step_bf_roll()
 {
@@ -1401,6 +1457,13 @@ bool AC_AttitudeControl::pre_arm_checks(const char *param_prefix,
             return false;
         }
     }
+
+    // validate ANGLE_MAX
+    if (_angle_max_deg.get() < 10 || _angle_max_deg.get() > 80) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "%s_ANGLE_MAX must be >= 10 and <= 80", param_prefix);
+        return false;
+    }
+
     return true;
 }
 

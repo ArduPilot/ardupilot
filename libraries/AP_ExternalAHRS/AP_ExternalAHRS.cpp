@@ -86,7 +86,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
 
     // @Param: _LOG_RATE
     // @DisplayName: AHRS logging rate
-    // @Description: Logging rate for EARHS devices
+    // @Description: Logging rate for EAHRS devices
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),

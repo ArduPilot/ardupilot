@@ -668,6 +668,42 @@ bool AP_Mount::get_poi(uint8_t instance, Quaternion &quat, Location &loc, Locati
 }
 #endif
 
+#if AP_MOUNT_POI_LOCK_ENABLED
+// lock currently viewed GPS point and switch to GPS Targeting mode
+void AP_Mount::set_poi_lock(uint8_t instance)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call backend's set_poi_lock
+    backend->set_poi_lock();
+}
+
+void AP_Mount::clear_poi_lock(uint8_t instance)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call backend's clear_poi_lock
+    backend->clear_poi_lock();
+}
+
+void AP_Mount::suspend_poi_lock(uint8_t instance)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+
+    // call backend's suspend_poi_lock
+    backend->suspend_poi_lock();
+}
+#endif // AP_MOUNT_POI_LOCK_ENABLED
+
 // get attitude as a quaternion.  returns true on success.
 // att_quat will be an earth-frame quaternion rotated such that
 // yaw is in body-frame.
@@ -797,7 +833,7 @@ void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
     if (backend == nullptr) {
         return;
     }
-    // call instance's set_roi_cmd
+    // call instance's set target SYSID cmd
     backend->set_target_sysid(sysid);
 }
 

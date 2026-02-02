@@ -176,12 +176,6 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         ret = false;
     }
 
-    // lean angle parameter check
-    if (plane.quadplane.aparm.angle_max < 1000 || plane.quadplane.aparm.angle_max > 8000) {
-        check_failed(Check::PARAMETERS, display_failure, "Check Q_ANGLE_MAX");
-        ret = false;
-    }
-
     if ((plane.quadplane.tailsitter.enable > 0) && (plane.quadplane.tiltrotor.enable > 0)) {
         check_failed(Check::PARAMETERS, display_failure, "set TAILSIT_ENABLE 0 or TILT_ENABLE 0");
         ret = false;
@@ -200,11 +194,11 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
     }
 
     // ensure controllers are OK with us arming:
-    if (!plane.quadplane.pos_control->pre_arm_checks("PSC", failure_msg, ARRAY_SIZE(failure_msg))) {
+    if (!plane.quadplane.pos_control->pre_arm_checks("Q_P", failure_msg, ARRAY_SIZE(failure_msg))) {
         check_failed(Check::PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
         ret = false;
     }
-    if (!plane.quadplane.attitude_control->pre_arm_checks("ATC", failure_msg, ARRAY_SIZE(failure_msg))) {
+    if (!plane.quadplane.attitude_control->pre_arm_checks("Q_A", failure_msg, ARRAY_SIZE(failure_msg))) {
         check_failed(Check::PARAMETERS, display_failure, "Bad parameter: %s", failure_msg);
         ret = false;
     }

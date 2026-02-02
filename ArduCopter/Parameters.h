@@ -6,6 +6,8 @@
 #include "RC_Channel_Copter.h"
 #include <AP_Proximity/AP_Proximity.h>
 
+class ModeRTL;
+
 #if MODE_FOLLOW_ENABLED
  # include <AP_Follow/AP_Follow.h>
 #endif
@@ -108,7 +110,7 @@ public:
         k_param_ch8_option_old,         // deprecated
         k_param_arming_check_old,       // deprecated - remove
         k_param_sprayer,
-        k_param_angle_max,
+        k_param_angle_max,              // remove
         k_param_gps_hdop_good,
         k_param_battery,
         k_param_fs_batt_mah,            // unused - moved to AP_BattMonitor
@@ -229,7 +231,7 @@ public:
         //
         // 135 : reserved for Solo until features merged with master
         //
-        k_param_rtl_speed_cms = 135,
+        k_param_rtl_speed_cms = 135,    // remove
         k_param_fs_batt_curr_rtl,
         k_param_rtl_cone_slope, // 137
 
@@ -259,10 +261,10 @@ public:
         //
         // 160: Navigation parameters
         //
-        k_param_rtl_altitude_cm = 160,
+        k_param_rtl_altitude_cm = 160,  // remove
         k_param_crosstrack_gain,    // deprecated - remove with next eeprom number change
         k_param_rtl_loiter_time,
-        k_param_rtl_alt_final_cm,
+        k_param_rtl_alt_final_cm,   // remove
         k_param_tilt_comp, // 164 deprecated - remove with next eeprom number change
 
 
@@ -334,10 +336,10 @@ public:
         k_param_waypoint_radius,     // remove
         k_param_circle_radius,       // remove
         k_param_waypoint_speed_max,  // remove
-        k_param_land_speed_cms,
+        k_param_land_speed_cms,      // remove
         k_param_auto_velocity_z_min, // remove
         k_param_auto_velocity_z_max, // remove - 219
-        k_param_land_speed_high_cms,
+        k_param_land_speed_high_cms, // remove
 
         //
         // 220: PI/D Controllers
@@ -370,7 +372,7 @@ public:
         k_param_autotune_aggressiveness, // remove
         k_param_pi_vel_xy,              // remove
         k_param_fs_ekf_action,
-        k_param_rtl_climb_min_cm,
+        k_param_rtl_climb_min_cm,   // remove
         k_param_rpm_sensor_old, // remove
         k_param_autotune_min_d, // remove
         k_param_arming, // 252  - AP_Arming
@@ -396,11 +398,7 @@ public:
     AP_Float        pilot_takeoff_alt_cm;
 
 #if MODE_RTL_ENABLED
-    AP_Int32        rtl_altitude_cm;
-    AP_Int16        rtl_speed_cms;
     AP_Float        rtl_cone_slope;
-    AP_Int16        rtl_alt_final_cm;
-    AP_Int16        rtl_climb_min_cm;              // rtl minimum climb in cm
     AP_Int32        rtl_loiter_time;
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
@@ -419,8 +417,6 @@ public:
 
     // Waypoints
     //
-    AP_Int16        land_speed_cms;
-    AP_Int16        land_speed_high_cms;
     AP_Int16        pilot_speed_up_cms;         // maximum vertical ascending velocity the pilot may request
     AP_Int16        pilot_accel_d_cmss;         // vertical acceleration the pilot may request
 
@@ -569,9 +565,6 @@ public:
     // Additional pilot velocity items
     AP_Int16    pilot_speed_dn_cms;
 
-    // Land alt final stage
-    AP_Int16 land_alt_low_cm;
-
 #if TOY_MODE_ENABLED
     ToyMode toy_mode;
 #endif
@@ -686,11 +679,13 @@ public:
     AC_WeatherVane weathervane;
 #endif
 
+#if AC_PAYLOAD_PLACE_ENABLED
     // payload place parameters
     AP_Float pldp_thrust_placed_fraction;
     AP_Float pldp_range_finder_maximum_m;
     AP_Float pldp_delay_s;
     AP_Float pldp_descent_speed_ms;
+#endif  // AC_PAYLOAD_PLACE_ENABLED
 
     AP_Int8 att_enable;
     AP_Int8 att_decimation;
@@ -701,6 +696,12 @@ public:
     AP_Float rc_tuning2_min;
     AP_Float rc_tuning2_max;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+
+#if MODE_RTL_ENABLED
+    void *mode_rtl_ptr;
+#endif
+
+    void *mode_land_ptr;
 };
 
 extern const AP_Param::Info        var_info[];

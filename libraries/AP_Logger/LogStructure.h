@@ -153,6 +153,8 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Mission/LogStructure.h>
 #include <AP_Servo_Telem/LogStructure.h>
 
+#include <AP_RTC/AP_RTC_config.h>
+
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
 // when building the SITL on an Apple M1 CPU (and is also slower) so we do not
@@ -454,6 +456,25 @@ struct PACKED log_Mode {
     uint8_t mode_reason;
 };
 
+#if AP_RTC_LOGGING_ENABLED
+// @LoggerMessage: RTC
+// @Description: RTC (Unix time) information
+// @Field: TimeUS: Time since system startup
+// @Field: Epoch: current unix epoch time*1000000 (ie. microseconds since Jan 1 1970)
+// @Field: SourceType: source of RTC data
+// @FieldValueEnum: SourceType: AP_RTC::source_type
+struct PACKED log_RTC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint64_t epoch_us;
+    uint8_t  source_type;
+};
+#define LOG_RTC_MESSAGE \
+    { LOG_RTC_MSG, sizeof(log_RTC), "RTC", "QQB", "TimeUS,Epoch,SourceType", "ss-", "FF-" },
+#else
+#define LOG_RTC_MESSAGE
+#endif  // AP_RTC_LOGGING_ENABLED
+
 /*
   rangefinder - support for 4 sensors
  */
@@ -690,7 +711,7 @@ struct PACKED log_VER {
 // @Field: H: True if sensor is healthy
 // @Field: Hp: Probability sensor is healthy
 // @Field: TR: innovation test ratio
-// @Field: Pri: True if sensor is the primary sensor
+// @Field: Pri: Primary instance number. If equal to I then this sensor is primary sensor
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -1192,6 +1213,7 @@ LOG_STRUCTURE_FROM_MOUNT \
       "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F", true }, \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
+LOG_RTC_MESSAGE \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBfBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-0---", true }, \
     { LOG_DMS_MSG, sizeof(log_DMS), \
@@ -1317,6 +1339,9 @@ enum LogMessages : uint8_t {
     LOG_UNIT_MSG,
     LOG_MULT_MSG,
     LOG_RALLY_MSG,
+#if AP_RTC_LOGGING_ENABLED
+    LOG_RTC_MSG,
+#endif  // AP_RTC_LOGGING_ENABLED
 
     // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
     LOG_MODE_MSG,

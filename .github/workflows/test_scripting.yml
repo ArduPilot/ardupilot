@@ -85,7 +85,7 @@ jobs:
           python ./libraries/AP_Scripting/tests/docs_check.py "./libraries/AP_Scripting/docs/docs.lua" "./libraries/AP_Scripting/docs/current_docs.lua"
 
       - name: Upload docs
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: Docs
           path: ScriptingDocs.md

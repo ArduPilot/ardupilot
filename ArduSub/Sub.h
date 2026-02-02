@@ -130,9 +130,6 @@ protected:
 
 private:
 
-    // key aircraft parameters passed to multiple libraries
-    AP_MultiCopter aparm;
-
     // Global parameters are all contained within the 'g' class.
     Parameters g;
     ParametersG2 g2;
@@ -391,7 +388,7 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
-    uint32_t last_pilot_heading;
+    float last_pilot_heading_rad;
     uint32_t last_pilot_yaw_input_ms;
     uint32_t fs_terrain_recover_start_ms;
 
@@ -445,7 +442,6 @@ private:
     void userhook_SlowLoop();
     void userhook_SuperSlowLoop();
     void update_home_from_EKF();
-    void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     float get_alt_rel() const WARN_IF_UNUSED;

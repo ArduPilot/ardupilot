@@ -17,6 +17,7 @@
 #define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_ExternalAHRS_config.h"
+#include <AP_GPS/AP_GPS.h>
 
 #if AP_MICROSTRAIN_ENABLED
 
@@ -216,29 +217,29 @@ void AP_MicroStrain::handle_gnss(const MicroStrain_Packet &packet)
         case GNSSPacketField::FIX_INFO: {
             switch ((GNSSFixType) packet.payload[i+2]) {
             case (GNSSFixType::FIX_RTK_FLOAT): {
-                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_RTK_FLOAT;
+                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::RTK_FLOAT;
                 break;
             }
             case (GNSSFixType::FIX_RTK_FIXED): {
-                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_RTK_FIXED;
+                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::RTK_FIXED;
                 break;
             }
             case (GNSSFixType::FIX_3D): {
-                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_3D_FIX;
+                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::FIX_3D;
                 break;
             }
             case (GNSSFixType::FIX_2D): {
-                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_2D_FIX;
+                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::FIX_2D;
                 break;
             }
             case (GNSSFixType::TIME_ONLY):
             case (GNSSFixType::NONE): {
-                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_NO_FIX;
+                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::NONE;
                 break;
             }
             default:
             case (GNSSFixType::INVALID): {
-                gnss_data[gnss_instance].fix_type = GPS_FIX_TYPE_NO_GPS;
+                gnss_data[gnss_instance].fix_type = AP_GPS_FixType::NO_GPS;
                 break;
             }
             }

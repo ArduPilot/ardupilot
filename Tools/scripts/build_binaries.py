@@ -29,11 +29,6 @@ import build_binaries_history
 import board_list
 from board_list import AP_PERIPH_BOARDS
 
-if sys.version_info[0] < 3:
-    running_python3 = False
-else:
-    running_python3 = True
-
 
 def topdir():
     '''return path to ardupilot checkout directory.  This is to cope with
@@ -137,10 +132,9 @@ class build_binaries(object):
                     # select not available on Windows... probably...
                 time.sleep(0.1)
                 continue
-            if running_python3:
-                x = bytearray(x)
-                x = filter(lambda x : chr(x) in string.printable, x)
-                x = "".join([chr(c) for c in x])
+            x = bytearray(x)
+            x = filter(lambda x : chr(x) in string.printable, x)
+            x = "".join([chr(c) for c in x])
             output += x
             x = x.rstrip()
             if show_output:
@@ -364,10 +358,7 @@ is bob we will attempt to checkout bob-AVR'''
         with open(filepath, 'rb') as fh:
             content = fh.read()
 
-        if running_python3:
-            return content.decode('ascii')
-
-        return content
+        return content.decode('ascii')
 
     def string_in_filepath(self, string, filepath):
         '''returns true if string exists in the contents of filepath'''

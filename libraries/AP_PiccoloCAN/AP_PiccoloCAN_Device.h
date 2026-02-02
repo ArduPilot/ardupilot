@@ -17,14 +17,13 @@
 
 #pragma once
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
-
-#include "AP_PiccoloCAN_config.h"
-
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 //! Piccolo message groups form part of the CAN ID of each frame
 enum class PiccoloCAN_MessageGroup : uint8_t {
@@ -76,4 +75,4 @@ public:
     uint64_t last_msg_timestamp = 0;
 };
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

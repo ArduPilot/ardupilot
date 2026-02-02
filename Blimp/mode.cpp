@@ -5,8 +5,6 @@
  * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
  */
 
-#include <AP_Vehicle/AP_MultiCopter.h>
-
 /*
   constructor for Mode object
  */

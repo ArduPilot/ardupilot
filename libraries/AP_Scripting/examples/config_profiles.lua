@@ -287,9 +287,9 @@ local parameters_which_can_be_set = {
     ["LOG_DISARMED"] = true,
     ["LOG_FILE_DSRMROT"] = true,
 
-    ["RTL_ALT"] = true,
+    ["RTL_ALT_M"] = true,
     ["RTL_LOIT_TIME"] = true,
-    ["RTL_SPEED"] = true,
+    ["RTL_SPEED_MS"] = true,
 }
 
 local msg_pfx = "CFG: "

@@ -39,6 +39,10 @@ protected:
     };
 
 private:
+    // allow removing lean angles for pitch and roll locks
+    bool apply_bf_roll_pitch_adjustments_in_rc_targeting() const override {
+        return true;
+    }
 
     // get_angles -
     void get_angles();

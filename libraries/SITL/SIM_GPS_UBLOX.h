@@ -53,6 +53,8 @@ private:
         uint32_t flags;
     };
 
+    uint32_t _next_timegps_send_ms;
+
     void update_relposned(ubx_nav_relposned &relposned, uint32_t tow_ms, float yaw_deg);
     void send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size);
 };

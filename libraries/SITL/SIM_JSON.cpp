@@ -161,7 +161,7 @@ bool parse_array(const char *str, T &arr, int count) {
             return false;
         }
 
-        arr[i] = atof(p);
+        arr[i] = strtod(p, nullptr);
 
         // Move past the number
         while (*p && *p != ',' && *p != ']')
@@ -233,7 +233,7 @@ uint64_t JSON::parse_sensors(const char *json)
                 break;
 
             case DATA_FLOAT:
-                *((float *)key.ptr) = atof(p);
+                *((float *)key.ptr) = strtof(p, nullptr);
                 //printf("%s/%s = %f\n", key.section, key.key, *((float *)key.ptr));
                 break;
 

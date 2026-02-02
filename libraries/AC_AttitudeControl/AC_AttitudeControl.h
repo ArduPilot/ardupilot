@@ -10,7 +10,6 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
-#include <AP_Vehicle/AP_MultiCopter.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
@@ -47,9 +46,8 @@
 
 class AC_AttitudeControl {
 public:
-    AC_AttitudeControl( AP_AHRS_View &ahrs,
-                        const AP_MultiCopter &aparm,
-                        AP_Motors& motors) :
+    AC_AttitudeControl(AP_AHRS_View &ahrs,
+                       AP_Motors& motors) :
         _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
         _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
         _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
@@ -58,7 +56,6 @@ public:
         _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
-        _aparm(aparm),
         _motors(motors)
         {
             _singleton = this;
@@ -407,10 +404,10 @@ public:
     float get_althold_lean_angle_max_cd() const;
 
     // Return configured tilt angle limit in centidegrees
-    float lean_angle_max_cd() const { return _aparm.angle_max; }
+    float lean_angle_max_cd() const;
 
     // Return configured tilt angle limit in radians
-    float lean_angle_max_rad() const { return cd_to_rad(_aparm.angle_max); }
+    float lean_angle_max_rad() const;
 
     // Return tilt angle in degrees
     float lean_angle_deg() const { return degrees(_thrust_angle_rad); }
@@ -536,6 +533,9 @@ public:
     // write ANG message
     void Write_ANG() const;
 
+    // perform any required parameter conversions
+    void convert_parameters();
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -589,6 +589,9 @@ protected:
     AP_Float            _land_roll_mult;
     AP_Float            _land_pitch_mult;
     AP_Float            _land_yaw_mult;
+
+    // Angle limit
+    AP_Float            _angle_max_deg;
 
     // Latest body-frame gyro measurement (rad/s) used by rate controller
     Vector3f            _rate_gyro_rads;
@@ -691,7 +694,6 @@ protected:
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
-    const AP_MultiCopter &_aparm;
     AP_Motors&          _motors;
 
     static AC_AttitudeControl *_singleton;

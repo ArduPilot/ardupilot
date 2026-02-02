@@ -54,7 +54,7 @@ define AP_CAMERA_RUNCAM_ENABLED AP_CAMERA_ENABLED
 define AP_CAN_SLCAN_ENABLED 0
 
 # no PiccoloCAN:
-define HAL_PICCOLO_CAN_ENABLE 0
+define AP_PICCOLOCAN_ENABLED 0
 
 # no beacon support on minimized boards:
 define AP_BEACON_ENABLED 0
