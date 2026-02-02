@@ -38,6 +38,15 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f),
 
+    // @Param: LACC_K_TC
+    // @DisplayName: Lateral acceleration gain estimate time constant
+    // @Description: Time constant for estimating effective lateral acceleration gain (coordination effectiveness), in seconds. Smaller values adapt faster but can chase turbulence/noise; larger values adapt slower but are smoother. Set to 0 to disable.
+    // @Units: s
+    // @Range: 0 20
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("LACC_K_TC",  4, AP_L1_Control, _lat_acc_k_tc, 4.0f),
+
     AP_GROUPEND
 };
 
@@ -86,10 +95,13 @@ int32_t AP_L1_Control::nav_roll_cd(void) const
 		see issue 24319 [https://github.com/ArduPilot/ardupilot/issues/24319]
 		Multiplier 100.0f is for converting degrees to centidegrees
 		Made changes to avoid zero division as proposed by Andrew Tridgell: https://github.com/ArduPilot/ardupilot/pull/24331#discussion_r1267798397		 
+        Because this formula assumes a coordinated turn, the adaptive scale factor _lat_acc_k allows
+        this mapping to remain accurate when coordination is imperfect by learning the actual
+        roll-to-lateral-acceleration effectiveness in flight.
 	*/
 	float pitchLimL1 = radians(60); // Suggestion: constraint may be modified to pitch limits if their absolute values are less than 90 degree and more than 60 degrees.
 	float pitchL1 = constrain_float(_ahrs.get_pitch_rad(),-pitchLimL1,pitchLimL1);
-    ret = degrees(atanf(_latAccDem * (1.0f/(GRAVITY_MSS * cosf(pitchL1))))) * 100.0f;
+    ret = degrees(atanf(_latAccDem * (1.0f/(GRAVITY_MSS * cosf(pitchL1) * _lat_acc_k)))) * 100.0f;
     ret = constrain_float(ret, -9000, 9000);
     return ret;
 }
@@ -200,6 +212,105 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
         // oscillating in our decision about which way to go
         Nu = _last_Nu;
     }
+}
+
+/*
+  Update effectiveness scaling for the coordinated-turn model. Learns an
+  effective roll-to-lateral-acceleration gain from measured lateral
+  acceleration.
+ */
+void AP_L1_Control::_update_lat_acc_gain(const Vector2f &groundspeed)
+{
+    const float lat_acc_k_tc = _lat_acc_k_tc.get();
+
+    // Reset state if time constant parameter changes, for easier tuning.
+    if (!is_equal(lat_acc_k_tc, _lat_acc_k_tc_prev)) {
+        _lat_acc_k = 1.0f;
+        _last_lat_acc_update_us = 0;
+        _lat_acc_k_tc_prev = lat_acc_k_tc;
+    }
+
+    if (!is_positive(lat_acc_k_tc)) {
+        return;
+    }
+
+    const uint32_t now_us = AP_HAL::micros();
+    if (_last_lat_acc_update_us == 0) {
+        _last_lat_acc_update_us = now_us;
+        return;
+    }
+
+    const float dt = (now_us - _last_lat_acc_update_us) * 1.0e-6f;
+    _last_lat_acc_update_us = now_us;
+
+    // Require calling at a minimum of 5 Hz to operate.
+    if (!is_positive(dt) || dt > 0.2f) {
+        _lat_acc_k = 1.0f;
+        return;
+    }
+
+    const float ground_speed_m_s = groundspeed.length();
+
+    // Navigation lateral accel. projection uses ground-speed direction; at very
+    // low speeds this gets noisy. Enforce a conservative minimum of 5 m/s.
+    const float min_groundspeed_m_s = MAX(_aparm.min_groundspeed.get(), 5.0f);
+    if (ground_speed_m_s < min_groundspeed_m_s) {
+        return;
+    }
+
+    // Only learn when guidance is commanding a meaningful turn. Use an
+    // equivalent 5° bank lateral-acceleration threshold as a noise floor.
+    if (fabsf(_latAccDem) < GRAVITY_MSS * tanf(radians(5.0f))) {
+        return;
+    }
+
+    const float roll_rad = _ahrs.get_roll_rad();
+    const float pitch_rad = _ahrs.get_pitch_rad();
+
+    // Keep pitch clamp consistent with nav_roll_cd.
+    const float pitch_rad_limited =
+        constrain_float(pitch_rad, -radians(60.0f), radians(60.0f));
+
+    const float model_abs_lat_accel_mss = GRAVITY_MSS *
+                                          cosf(pitch_rad_limited) *
+                                          fabsf(tanf(roll_rad));
+
+    // Smallest model denominator considered reliable to avoid amplifying noise.
+    if (model_abs_lat_accel_mss <= 0.1f) {
+        return;
+    }
+
+    const Vector3f accel_ef = _ahrs.get_accel_ef();
+    const Vector2f track_lat_dir =
+        Vector2f(-groundspeed.y, groundspeed.x) * (1.0f / ground_speed_m_s);
+
+    const float measured_lat_accel_mss =
+        accel_ef.x * track_lat_dir.x + accel_ef.y * track_lat_dir.y;
+
+    // Don't learn during roll reversals/overshoot.
+    if ((roll_rad * _latAccDem) <= 0.0f) {
+        return;
+    }
+
+    // Only learn when response is in the same direction as the commanded turn.
+    if ((measured_lat_accel_mss * _latAccDem) <= 0.0f) {
+        return;
+    }
+
+    float lat_acc_k_sample =
+        fabsf(measured_lat_accel_mss) / model_abs_lat_accel_mss;
+
+    // Limit corrections to +/-50% gain. If the modeling error of the
+    // nav_roll_cd formula is greater than this, there's a bigger problem than
+    // this is designed to solve.
+    lat_acc_k_sample = constrain_float(lat_acc_k_sample, 0.5f, 1.5f);
+
+    // Low-pass filter blend from time constant.
+    const float k_blend =
+        constrain_float(dt / (lat_acc_k_tc + dt), 0.0f, 1.0f);
+
+    _lat_acc_k += k_blend * (lat_acc_k_sample - _lat_acc_k);
+    _lat_acc_k = constrain_float(_lat_acc_k, 0.5f, 1.5f);
 }
 
 // update L1 control for waypoint navigation
@@ -343,6 +454,8 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 
     _bearing_error = Nu; // bearing error angle (radians), +ve to left of track
 
+    _update_lat_acc_gain(_groundspeed_vector);
+
     _data_is_stale = false; // status are correctly updated with current waypoint data
 }
 
@@ -482,6 +595,8 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     _last_loiter.direction = loiter_direction;
     _last_loiter.center_WP = center_WP;
 
+    _update_lat_acc_gain(_groundspeed_vector);
+
     _data_is_stale = false; // status are correctly updated with current waypoint data
 }
 
@@ -524,6 +639,8 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
     // Limit Nu to +-pi
     Nu = constrain_float(Nu, -M_PI_2, M_PI_2);
     _latAccDem = 2.0f*sinf(Nu)*VomegaA;
+
+    _update_lat_acc_gain(_groundspeed_vector);
 
     _data_is_stale = false; // status are correctly updated with current waypoint data
 }
