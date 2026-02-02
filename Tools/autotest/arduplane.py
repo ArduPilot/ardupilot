@@ -1164,11 +1164,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_circling_point_with_radius(loc, expected_radius)
 
         self.context_collect('CAMERA_FEEDBACK')
+        expected_roll = math.degrees(self.assert_receive_message('ATTITUDE').roll)
         self.set_rc(12, 2000)
         self.delay_sim_time(1)
         self.set_rc(12, 1000)
         self.assert_received_message_field_values('CAMERA_FEEDBACK', {
-            "roll": math.degrees(self.assert_receive_message('ATTITUDE').roll),
+            "roll": expected_roll,
         }, check_context=True, epsilon=5.0)
 
         self.fly_home_land_and_disarm()
