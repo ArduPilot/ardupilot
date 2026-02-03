@@ -315,7 +315,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     }
 
-    float throttle = 0.0f;
+    float throttle = 0.0f; // 0 is 'no throttle', 1.0 is 'full' throttle
     if (_vehicle == ArduPlane) {
         float forward_throttle = constrain_float((input.servos[2] - 1000) / 1000.0f, 0.0f, 1.0f);
         // do a little quadplane dance
