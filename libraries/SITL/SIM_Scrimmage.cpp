@@ -117,6 +117,7 @@ void Scrimmage::recv_fdm(const struct sitl_input &input)
 
     battery_voltage = 0;
     battery_current = 0;
+    battery_temperature = 273.0f;
     rpm[0] = 0;
     rpm[1] = 0;
 

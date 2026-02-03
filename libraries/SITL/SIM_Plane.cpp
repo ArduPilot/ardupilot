@@ -520,6 +520,8 @@ void Plane::update(const struct sitl_input &input)
     float throttle = reverse_thrust ? filtered_servo_angle(input, 2) : filtered_servo_range(input, 2);
     battery_voltage = sitl->batt_voltage - 0.7*throttle;
     battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(throttle);
+    // this aircraft has a constant battery temperature
+    battery_temperature = 273.0f; // kelvin
 
     update_dynamics(rot_accel);
 

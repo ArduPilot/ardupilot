@@ -495,6 +495,8 @@ void JSON::recv_fdm(const struct sitl_input &input)
     if ((received_bitmask & BAT_AMP) != 0) {
         battery_current = state.bat_amp; 
     }
+    // this aircraft has a constant battery temperature
+    battery_temperature = 273.0f; // kelvin
 
     double deltat;
     if (state.timestamp_s < last_timestamp_s) {
