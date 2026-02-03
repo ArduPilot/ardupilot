@@ -415,7 +415,7 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
         float terrain_d_m;
         if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
-            init(true);
+            hold_position();
             return false;
         }
         // convert origin to alt-above-terrain if necessary
@@ -528,7 +528,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         float terrain_d_m;
         if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
-            init(true);
+            hold_position();
             return false;
         }
         // convert origin to alt-above-terrain if necessary
