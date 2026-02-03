@@ -333,13 +333,20 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
             }
 #endif
 #ifdef HAL_RANGEFINDER_LIGHTWARE_I2C_BUS
-            _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                                                             hal.i2c_mgr->get_device_ptr(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address)),
+            auto *device_ptr = hal.i2c_mgr->get_device_ptr(HAL_RANGEFINDER_LIGHTWARE_I2C_BUS, params[instance].address);
+            if (device_ptr) {
+                _add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
+                                                                 *device_ptr),
                                                              instance);
+            }
 #else
             FOREACH_I2C(i) {
+                auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, params[instance].address);
+                if (device_ptr == nullptr) {
+                    continue;
+                }
                 if (_add_backend(AP_RangeFinder_LightWareI2C::detect(state[instance], params[instance],
-                                                                     hal.i2c_mgr->get_device_ptr(i, params[instance].address)),
+                                                                     *device_ptr),
                                  instance)) {
                     break;
                 }
