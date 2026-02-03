@@ -321,10 +321,9 @@ private:
 
     // SPI control pins (use int16_t for GPIO pin numbers, -1 = invalid)
     int16_t drdy_gpio_pin;
-    int16_t reset_gpio_pin;
     
-    // Hardware reset method
-    void hardware_reset();
+    // Software reset method
+    void software_reset();
 
     // Communication methods
     void update_thread();

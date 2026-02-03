@@ -38,8 +38,7 @@ extern const AP_HAL::HAL &hal;
 
 AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
         AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state),
-        drdy_gpio_pin(-1),
-        reset_gpio_pin(-1)
+        drdy_gpio_pin(-1)
 {
     // Check if SPI mode is requested
     if (option_is_set(AP_ExternalAHRS::OPTIONS::XSENS_USE_SPI)) {
@@ -1396,19 +1395,8 @@ bool AP_ExternalAHRS_Xsens::init_spi()
     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: DRDY pin not defined");
 #endif
     
-    // Setup RESET pin (GPIO 95 = PH15 on CUAV V6X)
-#ifdef HAL_GPIO_XSENS_RESET
-    reset_gpio_pin = HAL_GPIO_XSENS_RESET;
-    hal.gpio->pinMode(reset_gpio_pin, HAL_GPIO_OUTPUT);
-    hal.gpio->write(reset_gpio_pin, 1); // Keep high initially
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: RESET pin %d configured", reset_gpio_pin);
-#else
-    reset_gpio_pin = -1;
-    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: RESET pin not defined");
-#endif
-    
-    // Perform hardware reset
-    // hardware_reset();
+    // Perform software reset
+    //software_reset();
     
     return true;
 }
@@ -1520,26 +1508,22 @@ bool AP_ExternalAHRS_Xsens::check_drdy()
     return hal.gpio->read(drdy_gpio_pin) == 1;
 }
 
-void AP_ExternalAHRS_Xsens::hardware_reset()
+void AP_ExternalAHRS_Xsens::software_reset()
 {
-    if (reset_gpio_pin < 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Xsens: Hardware reset skipped, pin not configured");
-        return;
-    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Performing software reset");
     
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Performing hardware reset on pin %d", reset_gpio_pin);
+    // Create reset message (XMID_Reset = 0x40)
+    uint8_t reset_msg[5];
+    create_message(reset_msg, XBUS_MASTERDEVICE, XsMessageId::Reset, 0);
+    insert_checksum(reset_msg);
     
-    // Pull reset low for at least 1ms
-    hal.gpio->write(reset_gpio_pin, 0);
-    hal.scheduler->delay(10); // 10ms to be safe
+    // Send reset command
+    write_message(reset_msg, 5);
     
-    // Release reset (pull high)
-    hal.gpio->write(reset_gpio_pin, 1);
-    
-    // Wait for device to boot (typically ~100ms)
+    // Wait for device to reset and boot (typically ~100ms)
     hal.scheduler->delay(150);
     
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Hardware reset complete");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Software reset complete");
 }
 
 
