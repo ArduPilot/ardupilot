@@ -177,7 +177,7 @@ public:
 
     struct sitl_fdm state;
 
-    // throttle when motors are active
+    // throttle when motors are active. 0 = 'no throttle', 1 = 'full throttle'
     float throttle;
 
     static const struct AP_Param::GroupInfo var_info[];
