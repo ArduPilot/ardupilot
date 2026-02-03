@@ -139,6 +139,7 @@ void QuadPlane::update(const struct sitl_input &input)
     frame->current_and_voltage(battery_voltage, battery_current);
 
     battery.set_current(battery_current);
+    battery_temperature = battery.get_temperature();
 
     float throttle;
     if (reverse_thrust) {

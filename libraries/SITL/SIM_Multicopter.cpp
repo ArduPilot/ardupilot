@@ -74,6 +74,7 @@ void MultiCopter::update(const struct sitl_input &input)
     frame->current_and_voltage(battery_voltage, battery_current);
 
     battery.set_current(battery_current);
+    battery_temperature = battery.get_temperature();
 
     update_dynamics(rot_accel);
     update_external_payload(input);
