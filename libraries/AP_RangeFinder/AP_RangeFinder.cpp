@@ -353,8 +353,11 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         if (params[instance].address) {
             FOREACH_I2C(i) {
                 auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, params[instance].address);
+                if (device_ptr == nullptr) {
+                    continue;
+                }
                 if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
-                                                                      device_ptr),
+                                                                      *device_ptr),
                                  instance)) {
                     break;
                 }
