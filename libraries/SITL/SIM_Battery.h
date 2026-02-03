@@ -35,6 +35,8 @@ public:
 
     // return battery temperature in Kelvin:
     float get_temperature(void) const { return temperature.kelvin; }
+    // useful for detecting if param-controlled batt voltage has been changed
+    float get_init_voltage(void) const { return voltage_set; }
 
 private:
     float capacity_Ah;

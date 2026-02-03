@@ -119,6 +119,8 @@ void Battery::setup(float _capacity_Ah, float _resistance, float _max_voltage)
     capacity_Ah = _capacity_Ah;
     resistance = _resistance;
     max_voltage = _max_voltage;
+    // Arbitrarily setup battery initially as depleted
+    init_voltage(0.0f);
 }
 
 void Battery::init_voltage(float voltage)
