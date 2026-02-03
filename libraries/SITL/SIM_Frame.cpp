@@ -731,10 +731,10 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 // reset battery if its governing params have changed
 void Frame::reset_battery_if_requested(void)
 {
-    float param_voltage = AP::sitl()->batt_voltage;
-    if (!is_equal(last_param_voltage,param_voltage)) {
+    // Treat a param-change as a forced re-init of battery
+    const float param_voltage = AP::sitl()->batt_voltage;
+    if (!is_equal(battery->get_init_voltage(), param_voltage)) {
         battery->init_voltage(param_voltage);
-        last_param_voltage = param_voltage;
     }
     const float param_capacity = AP::sitl()->batt_capacity_ah;
     if (!is_equal(battery->get_capacity(), param_capacity)) {
