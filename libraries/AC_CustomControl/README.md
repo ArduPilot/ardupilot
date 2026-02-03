@@ -2,7 +2,7 @@
 
 Custom controller library allows you to implement and easily run your own controller inside ArduPilot in a systematic way. Original-primary-mains means existing controller and custom-secondary means new controller. This library aimed to not interfere with other parts of the main controller or vehicle level code. The controller output is sent to the control allocation library, known as the mixer, the same way the main controller does.
 
-## Features 
+## Features
 
 - In-flight switching between main and custom controller with RC switch, option 109.
 - Bitmask to choose which axis to use the custom controller output
@@ -19,10 +19,9 @@ Custom controller library allows you to implement and easily run your own contro
 The frontend library has the following parameters
 
 - `CC_TYPE`: choose which custom controller backend to use, reboot required.
-  - Setting it to 0 will turn this feature off, GCS will not display parameters related to the custom controller 
+  - Setting it to 0 will turn this feature off, GCS will not display parameters related to the custom controller
 - `CC_AXIS_MASK`: choose which axis to use custom controller output
   - This is a bitmask type parameter. Set 7 to use all output
-
 
 ## Interaction With Main Controller
 
@@ -37,9 +36,10 @@ By default, the input shaping algorithm is turned on. This produces kinematicall
 After running the custom controller, mixer input is sent to the motor library via `set_roll`, `set_pitch`, `set_yaw` functions.
 
 ### Bumpless Transfer
+
 When switching from the custom controller to the main controller it is important to reset the main controller target, error, d-term filters and set each axis integrator properly. Otherwise, a sudden jump in the controller error signal or motor output will be observed, which could result in a jerky motion. To allow a smooth transition between controllers, the main controller reset function is called when switching out of the custom controller which reset all three axis of the main controller.
 
-The attitude target and rate target are also made equal to the current attitude and gyro rate to make the error signal grow from zero. In order to avoid impulse input to the controller, the target resetting is not performed when the feedforward is disabled by setting `ATC_RATE_FF_ENAB` parameter to 0. 
+The attitude target and rate target are also made equal to the current attitude and gyro rate to make the error signal grow from zero. In order to avoid impulse input to the controller, the target resetting is not performed when the feedforward is disabled by setting `ATC_RATE_FF_ENAB` parameter to 0.
 
 The reset is performed inside `reset_main_atti_controller` function. An example of reset per axis is given here.
 
@@ -49,20 +49,26 @@ _atti_control->get_rate_roll_pid().set_integrator(_atti_control->rate_bf_targets
 ```
 
 ## Backend Type
-Currently, there 4 custom controller backend available. These are 
+
+Currently, there 4 custom controller backend available. These are
+
 - Empty backend `CC_TYPE` = 1
 - PID backend `CC_TYPE` = 2
 
 ### Empty Controller - `CC_TYPE` = 1
+
 The empty controller does not do any calculations. It is created to make it easier to copy and implement your new controller. The main controller is not reset when switching from an empty controller.
 
 ### PID Controller - `CC_TYPE` = 2
+
 PID controller backend has the same controller architecture as the main controller. It doesn't have any safeguarding mechanism such as acceleration limiting or rate limiting. The default gains are scaled 0.9 times to differentiate the custom controller response from the main one. Since this controller does not have acceleration limiting, specifically a square root controller, it would be safer to give a gentle command while flying with it. Although it has the same architecture as the main one, a proper reset functionality is not implemented intentionally to make it easier to detect the effect of improper resetting.
 
-## How To Use It 
+## How To Use It
+
 The custom controller is enabled by default in SITL. You can test it using PID backend.
 
 1. Compile and run the default SITL model. In the GCS, choose the custom controller type, assign axis mask and set which RC switch to activate the custom controller. Reboot autopilot. For example in mavproxy,
+
 ```
 param set CC_TYPE 2
 param set CC_AXIS_MASK 7
@@ -71,35 +77,41 @@ reboot
 ```
 
 2. Run the following command to display backend parameters. These would be under `CC2_` for PID backend.
+
 ```
 param set CC2*
 ```
 
 3. Arm and take-off. While at the hover flight, switch RC6 to high. In mavproxy, you can do this with
+
 ```
 rc 6 2000
 ```
 
 4. You should be prompted with `Custom controller is ON` message on GCS to indicate that the custom controller is running.
 
-5. Set RC6 to low to switch back to the main controller. You should be prompted with `Custom controller is OFF` message on GCS. 
-
+5. Set RC6 to low to switch back to the main controller. You should be prompted with `Custom controller is OFF` message on GCS.
 
 ### Real Flight Testing
+
 It is recommended that you always arm, take-off, land, and disarm while the main controller is running. You should switch to the custom controller while the vehicle is hovering steadily. This will reduce the effect of improper filter resetting. You should arm and take off with the custom controller only if proper ground idling is implemented.
 
 To test it on hardware compile with "--enable-custom-controller" flag.
+
 ```C++
 ./waf configure --board CubeOrange copter --enable-custom-controller
 ```
 
 ### Post Flight Logs
-Switching in and out of custom controller logged under the "CC" in log tree. You can see the time and duration the custom controller is active under "CC.Act" 
+
+Switching in and out of custom controller logged under the "CC" in log tree. You can see the time and duration the custom controller is active under "CC.Act"
 
 ## How To Add New Custom Controller
+
 You can add your own custom controller backend with the following steps. Let's assume we are adding the 5th custom controller.
 
 1. Generate a copy of `AC_CustomControl_Empty.cpp` and `AC_CustomControl_Empty.h` within `AC_CustomControl` folder. The folder tree would look like this,
+
 ```
 AC_CustomControl.cpp
 AC_CustomControl.h
@@ -113,9 +125,10 @@ AC_CustomControl_Empty - Copy.h
 .
 ```
 
-PID and README files are omitted to keep it simple. 
+PID and README files are omitted to keep it simple.
 
-2. Change `Empty - Copy` suffix with your own choice, let's called it `XYZ`, which would look like 
+2. Change `Empty - Copy` suffix with your own choice, let's called it `XYZ`, which would look like
+
 ```
 AC_CustomControl.cpp
 AC_CustomControl.h
@@ -130,6 +143,7 @@ AC_CustomControl_XYZ.h
 ```
 
 3. Change every class name, function definition etc. from `AC_CustomControl_Empty` to `AC_CustomControl_XYZ` inside `AC_CustomControl_XYZ.cpp` and `AC_CustomControl_XYZ.h` files. This would look like this for the header file
+
 ```C++
 #pragma once
 
@@ -156,33 +170,38 @@ protected:
 
 4. Increase the maximum number of custom control variables by one and update the custom control type enum
 
-from 
+from
+
 ```C++
 #define CUSTOMCONTROL_MAX_TYPES 2
 ```
+
 to
+
 ```C++
 #define CUSTOMCONTROL_MAX_TYPES 3
 ```
 
 ```C++
 enum class CustomControlType : uint8_t {
-	CONT_NONE            = 0,
-	CONT_EMPTY           = 1,             
-	CONT_PID             = 2,
-	CONT_XYZ             = 3,
-};            // controller that should be used     
+    CONT_NONE            = 0,
+    CONT_EMPTY           = 1,
+    CONT_PID             = 2,
+    CONT_XYZ             = 3,
+};            // controller that should be used
 ```
 
 5. Add a new backend header in `AC_CustomControl.cpp` file. Place it under other backend includes.
+
 ```C++
 #include "AC_CustomControl_Backend.h"
 #include "AC_CustomControl_Empty.h"
 #include "AC_CustomControl_PID.h"
 #include "AC_CustomControl_XYZ.h"
-``` 
+```
 
 6. Add new backend parameter in `AC_CustomControl.cpp` file. Increment `_backend`, `_backend_var_info` array index by one and also increment backend parameter prefix and parameter table index by one. Place it under the other backend's parameters.
+
 ```C++
 .
 .
@@ -201,6 +220,7 @@ enum class CustomControlType : uint8_t {
 ```
 
 7. Allow creating new backend class in `AC_CustomControl.cpp` file inside `init` function.
+
 ```C++
 .
 .
@@ -217,6 +237,7 @@ default:
             return;
 }
 ```
+
 Add the following lines in the `AC_CustomControl_config.h` file.
 
 ```
@@ -225,11 +246,12 @@ Add the following lines in the `AC_CustomControl_config.h` file.
 #endif
 ```
 
-8. This is the bare minimum to compile and run your custom controller. You can add controller related code to `AC_CustomControl_XYZ` file without changing  anything else. 
+8. This is the bare minimum to compile and run your custom controller. You can add controller related code to `AC_CustomControl_XYZ` file without changing  anything else.
 
 9. You can add new parameters by following the directions in this [Adding a parameter to a library](https://ardupilot.org/dev/docs/code-overview-adding-a-new-parameter.html#adding-a-parameter-to-a-library) wiki page.
 
-10. Initialize the class object in the backend's constructor. For example in PID backend 
+10. Initialize the class object in the backend's constructor. For example in PID backend
+
 ```C++
     // put controller related variable here
 
@@ -238,12 +260,14 @@ Add the following lines in the `AC_CustomControl_config.h` file.
     AC_P                _p_angle_pitch2;
     AC_P                _p_angle_yaw2;
 
-	// rate PID controller  objects
+    // rate PID controller  objects
     AC_PID _pid_atti_rate_roll;
     AC_PID _pid_atti_rate_pitch;
     AC_PID _pid_atti_rate_yaw;
 ```
+
 above P or PID classes are initialized in the backend's constructors,
+
 ```C++
 AC_CustomControl_PID::AC_CustomControl_PID(AC_CustomControl &frontend, AP_AHRS_View*& ahrs, AC_AttitudeControl_Multi*& atti_control, AP_MotorsMulticopter*& motors, float dt) :
     AC_CustomControl_Backend(frontend, ahrs, atti_control, motors, dt),

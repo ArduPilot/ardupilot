@@ -1,13 +1,12 @@
 
 =========
+
 F4BY_H743
 =========
 
 The F4BY_H743 autopilot is manufactured by `F4BY Team <https://f4by.com>`__
 
 ![F4BY_H743](F4BY_H743_board_image.jpg)
-
-
 
 Where to Buy
 ============
@@ -17,6 +16,7 @@ The instructions, schematic, 3D model  are available `here https://f4by.com/en/?
 
 Specifications
 ==============
+
     - Processor
 
         - STM32H743 32-bit processor, 480Mhz
@@ -24,11 +24,11 @@ Specifications
         - 1MB RAM
 
     Sensors
-        - ICM-42688-P IMU (F4BY_H743 v3.0.3)  
+        - ICM-42688-P IMU (F4BY_H743 v3.0.3)
         - IIM-42652   IMU (F4BY_H743 v3.0.2)
-        - MPU6000     IMU (F4BY_H743 v3.0.1)   
-        - MS5611 Barometer 
-        - QMC5883P Compass   
+        - MPU6000     IMU (F4BY_H743 v3.0.1)
+        - MS5611 Barometer
+        - QMC5883P Compass
     Power
         - Power from external power module (range +5.0 ... +6.0V)
         - Anslog current and voltage analog inputs (range 0 ... +6,6V)
@@ -44,7 +44,6 @@ Specifications
         - USB GHS type port for external connector.
         - DFU bootloader button
 
-
 Analog sensors
 ==============
 
@@ -57,18 +56,20 @@ Analog sensors
 
 Analog Airspeed
 ===============
-If the ARSPD pin is used for analog airspeed  input. 
-Set :ref:`ARSPD_PIN<ARSPD_PIN>` to 10. 
+
+If the ARSPD pin is used for analog airspeed  input.
+Set :ref:`ARSPD_PIN<ARSPD_PIN>` to 10.
 Set :ref:`ARSPD_TYPE<ARSPD_TYPE>` to "1".
 
 Analog RSSI
 ===========
-If the RSSI pin is used for analog RSSI input. Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 11. 
-Set :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" .
 
+If the RSSI pin is used for analog RSSI input. Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 11.
+Set :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" .
 
 UART Mapping
 ============
+
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn
 
 |Port  | UART    |Protocol        |RX DMA |TX DMA |
@@ -80,11 +81,10 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 |4     |  UART4  |  None          |  ✘    |   ✔   |
 |5     |  UART5  |  None          |  ✘    |   ✔   |
 
-
 RC Input
 ========
 
-- RCin  PB0  
+- RCin  PB0
 Using the RCin pin will support all unidirectional RC protocols. (PPM, SBUS, iBus, PPM-Sum, DSM,DSM2,DSM-X,SRXL and SUM-D)
 
 - USART2 for Bi-directional protocols (CRSF/ELRS,SRXL2,IRC Ghost, and FPort) see `here <https://ardupilot.org/sub/docs/common-rc-systems.html#common-rc-systems>`
@@ -112,7 +112,6 @@ Group #2
 |7     | PE13    | 56     | ✔     |
 |8     | PE14    | 57     | ✔     |
 
-
 Group #3
 
 |Out   | Port    |GPIOPIN |BDSHOT |
@@ -122,9 +121,7 @@ Group #3
 |11    | PD15    | 60     |       |
 |12    | PD14    | 61     |       |
 
-
 Group #4
-
 
 |Out   | Port    |GPIOPIN |BDSHOT |
 |------|---------|--------|-------|
@@ -133,8 +130,7 @@ Group #4
 |15    | PC8     | 64     |       |
 |16    | PC9     | 65     |       |
 
-
-**Note:** All outputs of a group must be of the same type (PWM or DSHOT). 
+**Note:** All outputs of a group must be of the same type (PWM or DSHOT).
 
 GPIOs
 =====
@@ -147,11 +143,11 @@ GPIOs
 
 **Note:**  0 ... +3.3V range. This pins can be used for relay control, camera shutter, camera feedback e.t.c.
 
-Dimensions 
+Dimensions
 ==========
 
-- Size: 50 x 50 mm  
-- Mounting holes: 45 x 45 mm (M3)  
+- Size: 50 x 50 mm
+- Mounting holes: 45 x 45 mm (M3)
 - Weight: 15.5 g
 
 Pinout
@@ -161,7 +157,6 @@ Pinout
 
 RCIN solder pad location for board version 3.0.3
 ![RCIN solder pad location](rcin_303.jpg "RCIN solder pad location ")
-
 
 Battery Monitor
 ===============
@@ -181,7 +176,7 @@ Compass
 
 The F4BY_H743 has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.
 
-Firmware 
+Firmware
 ========
 
 for F4BY_H743 can be found `here <https://firmware.ardupilot.org>`  in sub-folders labeled “F4BY_H743”.
@@ -192,4 +187,3 @@ Loading Firmware
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of xxxxxx.apj firmware files with any ArduPilot compatible ground station.
 
 Initial firmware load can be done via DFU mode by plugging in USB while holding the bootloader button. Load the "with_bl.hex" firmware using your preferred DFU tool.
-

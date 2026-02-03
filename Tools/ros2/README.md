@@ -3,7 +3,7 @@
 This directory contains ROS 2 packages and configuration files for running
 ROS 2 processes and nodes that communicate with the ArduPilot DDS client
 library using the microROS agent. It contains the following packages:
- 
+
 #### `ardupilot_sitl`
 
 This is a `colcon` package for building and running ArduPilot SITL using the ROS 2 CLI.
@@ -17,14 +17,16 @@ Other launch files are included with many arguments.
 Some common arguments are exposed and forwarded to the underlying process.
 
 For example, MAVProxy can be launched, and you can enable the `console` and `map`.
+
 ```bash
-ros2 launch ardupilot_sitl sitl_mavproxy.launch.py map:=True console:=True 
+ros2 launch ardupilot_sitl sitl_mavproxy.launch.py map:=True console:=True
 ```
 
 ArduPilot SITL does not yet expose all arguments from the underlying binary.
 See [#27714](https://github.com/ArduPilot/ardupilot/issues/27714) for context.
 
 To see all current options, use the `-s` argument:
+
 ```bash
 ros2 launch ardupilot_sitl sitl.launch.py -s
 ```
@@ -39,7 +41,6 @@ ArduPilot `AP_DDS` client library.
 The packages depend on:
 
 - [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html)
-
 
 ## Install Ubuntu
 
@@ -93,6 +94,7 @@ colcon test-result --all --verbose
 ```
 
 To debug a specific test, you can do the following:
+
 ```
 colcon --log-level DEBUG test --packages-select ardupilot_dds_tests --event-handlers=console_direct+ --pytest-args -k test_dds_udp_geopose_msg_recv -s
 ```
@@ -189,11 +191,9 @@ docker container exec -it ardupilot-dds /bin/bash
 The remaining steps 1 - 5 are the same as for Ubuntu. You may need to
 install MAVProxy if it is not available on the container.
 
-
 ```bash
 python3 -m pip install -U MAVProxy
 ```
-
 
 ## Test details
 

@@ -9,20 +9,19 @@ The MFE_POS3_CAN is sold by a range of resellers listed on the makeflyeasy(http:
 
 • RM3100 compass
 
-• NEO-M9N 
+• NEO-M9N
 
 • one CAN port
 
 • Blue led
-
 
 ## Picture
 
 ![MFE_POS3_CAN](MFE_POS3_CAN-1.png "MFE_POS3_CAN-1")
 
 ## Pinout
- 
- Connector pin assignments
+
+Connector pin assignments
 =========================
 
 CAN1 ports
@@ -58,9 +57,7 @@ CAN1 ports
    </tbody>
    </table>
 
-
 Where to Buy
 ============
 
 `makeflyeasy <http://www.makeflyeasy.com>`
-

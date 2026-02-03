@@ -5,6 +5,7 @@ The AEROFOX-H7 is a flight controller produced by AEROFOX(http://aerofox.cn)
 <img src="AEROFOX-H7_IMG.png" alt="" width="400">
 
 ## Features
+
     Processor
         STM32H743
 
@@ -33,11 +34,13 @@ The AEROFOX-H7 is a flight controller produced by AEROFOX(http://aerofox.cn)
         The connector includes an SPI, an I2C, an PWM IMU heating control pin.
 
 ## Pinout
+
 <img src="AEROFOX-H7_pinout.png" alt="" width="800">
 
 ## UART Mapping
 
 All UARTs, except UART1, are DMA enabled. UART corresponding to each SERIAL port, and its default protocol, are shown below:
+
 - SERIAL0 -> USB (MAVLink2)
 - SERIAL1 -> UART7 (ESC Telemetry)
 - SERIAL2 -> UART4 (User configured)
@@ -75,7 +78,9 @@ The board has a built-in voltage and current sensor. The voltage sensor can hand
 to 12S LiPo batteries.
 
 ### The power A is onboard voltage sensor
+
 It is enabled by default and has the following parameters set by default:s
+
 - BATT_MONITOR 4
 - BATT_VOLT_PIN 19
 - BATT_CURR_PIN 9
@@ -83,7 +88,9 @@ It is enabled by default and has the following parameters set by default:s
 - BATT_AMP_PERVL 40
 
 ### The power B is external PMU input
+
 An additional power monitor input is provided and can be enabled by setting:
+
 - BATT_MONITOR 4, then reboot and set the following:
 - BATT_VOLT_PIN 10
 - BATT_CURR_PIN 11
@@ -95,7 +102,7 @@ An additional power monitor input is provided and can be enabled by setting:
 A 5883L compass is installed inside the H7 flight control. When high current devices such as ESC and BEC are installed under the flight control board, the on-board compass is usually disabled and an external compass used mounted to minimize motor current effects.
 
 ## Loading Firmware
+
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the
 loading of *.apj firmware files with any ArduPilot compatible ground station. The
 hardware also supports the PX4 Betaflight INAV firmware, which needs to be changed with STlink.
-

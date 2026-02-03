@@ -26,7 +26,7 @@ motors produce more lift that the rear, increase higher than 1.
 
 Reasonable extreme values are 2 (front works twice as hard as the rear) and 0.5
 (the inverse case). Given an out-of-bounds parameter value, the script will
-revert to the default 1.0. 
+revert to the default 1.0.
 
 # Operation
 
@@ -52,7 +52,7 @@ matrix, which consumes no resources from the scripting engine:
   static scriptable mixer.
   2. Ensure Lua scripting is enabled via the `SCR_ENABLE` parameter.
   3. Reboot.
-  
+
 The aircraft is ready to fly.
 Keep in mind that any further changes to `CGA_RATIO` will now require a reboot.
 

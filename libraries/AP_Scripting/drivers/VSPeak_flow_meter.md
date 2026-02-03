@@ -54,6 +54,7 @@ Once this is done, perform the following steps.
 4. Set the baud rate to 19200 with `SERIAL*_BAUD = 19`.
 5. Set port protocol to scripting with `SERIAL*_PROTOCOL = 28`.
 6. Point the script to that serial port by configuring `VSPF_PORT`. Set it to
+
 0 to select the first **scripting** serial port, etc...
 
 Then, decide which battery monitor will be assigned to the sensor (for now
@@ -61,7 +62,8 @@ referred to as `BATT*`).
 
 7. Set `BATT*_MONITOR` = 29 (Scripting)
 
-8. Set `BATT*_CAPACITY` to the amount of ml your tank is filled with. This can 
+8. Set `BATT*_CAPACITY` to the amount of ml your tank is filled with. This can
+
 vary from flight to flight.
 If operating under Mode A (Save consumed), you do not need to update this
 value with what is remaining in the tank after every reboot.
@@ -71,6 +73,7 @@ this value after every reboot, if fuel was consumed in the meantime.
 9. Tell the script which battery monitor is employed via `VSPF_BAT_IDX`.
 
 10. Set the selected operation mode:
+
 For mode A (save consumed), set `VSPF_MODE=0`.
 For mode B (reset consumed), set `VSPF_MODE=1`.
 
@@ -80,8 +83,9 @@ For mode B (reset consumed), set `VSPF_MODE=1`.
 
 Once everything is configured correctly, the corresponding battery monitor
 will display in the corresponding `BATTERY_STATUS` MAVLink message:
- - The current fuel flow in cl/hr (centiliters per hour) in the `current_battery` field.
- - The current fuel already consumed in ml (milliliters) in the `current_consumed` field.
+
+- The current fuel flow in cl/hr (centiliters per hour) in the `current_battery` field.
+- The current fuel already consumed in ml (milliliters) in the `current_consumed` field.
 
 You can use the parameter `VSPF_CFACT` to compensate for scaling errors in the
 sensor setup. 1 is the default value. Set to <1 if the measurements are too high.

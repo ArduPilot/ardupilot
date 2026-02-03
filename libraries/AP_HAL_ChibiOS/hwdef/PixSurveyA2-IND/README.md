@@ -83,7 +83,7 @@ The PixSurveyA2-IND flight controller is sold by a range of resellers listed on 
    </tr>
    </tbody>
    </table>
-   
+
 ### TELEM1, TELEM2 ports
 
    <table border="1" class="docutils">
@@ -280,7 +280,7 @@ The PixSurveyA2-IND flight controller is sold by a range of resellers listed on 
    </tr>
    </tbody>
    </table>
-   
+
 ### Power2 ADC ports
 
    <table border="1" class="docutils">
@@ -368,15 +368,14 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
      <tr><td> M8 </td><td> 108 </td> <td> Out8 </td><td>  </td><td> </td><td>  </td><td>  </td></td></tr>
    </table>
 
-
-
 ## Battery Monitor Settings
 
 These should already be set by default. However, if lost or changed:
 
 Enable Battery monitor with these parameter settings :
- - :ref:`BATT1_MONITOR<BATT_MONITOR>` 8
- - :ref:`BATT2_MONITOR<BATT_MONITOR>` 4
+
+- :ref:`BATT1_MONITOR<BATT_MONITOR>` 8
+- :ref:`BATT2_MONITOR<BATT_MONITOR>` 4
 
 Then reboot.
 
@@ -386,7 +385,6 @@ Then reboot.
 - :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT__AP_BattMonitor>` 24.0
 
 .. note:: OSDs will by default display the first battery monitor unless the second battery monitor panel is setup in OSD parameters.
-
 
 ## DroneCAN capability
 
@@ -399,4 +397,3 @@ allowing the loading of xxxxxx.apj firmware files with any ArduPilot
 compatible ground station.
 
 Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ in  sub-folders labeled "PixSurveyA2-IND".
-

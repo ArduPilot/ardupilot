@@ -8,20 +8,24 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 ## Specifications
 
 ### **Processor**
+
 - STM32H743VIH6 (480MHz)
 - 256MB Flash for data logging
 
 ### **Sensors**
+
 - InvenSense 2x ICM42688 IMU (accel, gyro)
 - DPS368 barometer
 - Voltage & Current sensor
 
 ### **Power**
+
 - 2–6S LiPo input power
 - 5V 3A BEC for peripherals
 - 10V 3A BEC for video, GPIO controlled
 
 ### **Interfaces**
+
 - USB Type-C port
 - 8x UARTs
 - 13x PWM outputs(one for serial LED by default) via two 8-pin ESC connectors and/or solder pads
@@ -34,10 +38,12 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 - Built-in OSD
 
 ### **Size and Dimensions**
+
 - 38.3 mm x 39.8 mm
 - 8.4 g
 
 ### **Mounting Hole**
+
 - 30.5 mm x 30.5 mm
 
 ## Default UART Order
@@ -86,6 +92,7 @@ An **SH1.0 6P** connector supports a standard DJI HD VTX. ``SERIAL3`` is configu
 ## DShot Capability
 
 All motor outputs (M1–M8) support:
+
 - DShot
 - Bi-directional DShot (for BIDIR motors)
 - PWM
@@ -130,7 +137,6 @@ Example (using Channel 10 to toggle VTX BEC using Relay 2, as an example):
 * :ref:`RELAY2_PIN<RELAY2_PIN>` = 81  (already set as default)
 * :ref:`RC10_OPTION<RC10_OPTION>` = 34  ; Relay2 Control
 
-
 > ⚠️ **Warning:** GPIO81 controls the 10V DC-DC converter (HIGH = on, LOW = off). Default: ON. Always install an antenna on the VTX when battery-powered.
 
 ## Camera Switch Control
@@ -143,7 +149,6 @@ Example (using Channel 11 to control camera switch via Relay 3):
 * :ref:`RELAY3_PIN<RELAY3_PIN>` = 82  (already set as default)
 * :ref:`RC11_OPTION<RC10_OPTION>` = 35  ; Relay3 Control
 
-
 > ⚠️ **Warning:** GPIO82 toggles camera input (HIGH/LOW). Ensure wiring matches desired switching behavior.
 
 ## Connecting a GPS/Compass Module
@@ -151,7 +156,7 @@ Example (using Channel 11 to control camera switch via Relay 3):
 This board does **not** include GPS or compass modules. An [external GPS/compass](https://ardupilot.org) must be connected for autonomous features.
 
 > **Note:** If GPS is powered via 5V , a battery is required for power.
-
+<!-- -->
 > **Tip:** The 4V5 pin can power both RC and GPS for bench setup (without battery), as long as the total current does not exceed USB limits (typically 1A).
 
 ## Battery Monitor Settings
@@ -159,7 +164,6 @@ This board does **not** include GPS or compass modules. An [external GPS/compass
 These are set by default. If reset:
 
 Enable battery monitor with:
-
 
 * :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
 

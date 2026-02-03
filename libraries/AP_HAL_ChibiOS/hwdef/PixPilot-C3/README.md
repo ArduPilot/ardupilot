@@ -4,37 +4,37 @@ The PixPilot-C3 flight controller is sold by a range of resellers listed on the 
 
 ## Features
 
-•	STM32F427VIT6 and STM32F103C8T6 microcontroller
+•    STM32F427VIT6 and STM32F103C8T6 microcontroller
 
-•	two IMUs, two ICM42688-P(SPI)
+•    two IMUs, two ICM42688-P(SPI)
 
-•	Two barometers, BMP388(SPI)
+•    Two barometers, BMP388(SPI)
 
-•	builtin RAMTRON(SPI)
+•    builtin RAMTRON(SPI)
 
-•	microSD card slot
+•    microSD card slot
 
-•	5 UARTs
+•    5 UARTs
 
-•	USB(Type-C)
+•    USB(Type-C)
 
-•	PPM, S.Bus & DSM input 
+•    PPM, S.Bus & DSM input
 
-•	14 PWM outputs
+•    14 PWM outputs
 
-•	tow I2C ports and two FDCAN ports
+•    tow I2C ports and two FDCAN ports
 
-•	one S.Bus output
+•    one S.Bus output
 
-•	builtin Buzzer
+•    builtin Buzzer
 
-•	builtin LED
+•    builtin LED
 
-•	two voltage & current monitoring
+•    two voltage & current monitoring
 
-•	servo rail BEC independent power input for servos
+•    servo rail BEC independent power input for servos
 
-•	external safety Switch
+•    external safety Switch
 
 ## Pinout
 
@@ -44,13 +44,13 @@ The PixPilot-C3 flight controller is sold by a range of resellers listed on the 
 UART Mapping
 ============
 
- - SERIAL0 -> console (primary mavlink, usually USB)
- - SERIAL1 -> USART2  (telem1, DMA-enabled)
- - SERIAL2 -> USART3  (Telem2, DMA-enabled)
- - SERIAL3 -> UART4   (GPS1)
- - SERIAL4 -> UART8   (GPS2, DMA-enabled)
- - SERIAL5 -> UART7   (USER)
- 
+- SERIAL0 -> console (primary mavlink, usually USB)
+- SERIAL1 -> USART2  (telem1, DMA-enabled)
+- SERIAL2 -> USART3  (Telem2, DMA-enabled)
+- SERIAL3 -> UART4   (GPS1)
+- SERIAL4 -> UART8   (GPS2, DMA-enabled)
+- SERIAL5 -> UART7   (USER)
+
 Connector pin assignments
 =========================
 
@@ -326,12 +326,12 @@ DSM port
    <td>GND</td>
    </tr>
    </tbody>
-   </table>   
+   </table>
 
 RC Input
 --------
 
-All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin. 
+All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
 
 PWM Output
 ----------
@@ -348,14 +348,14 @@ signal on the bottom row.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 6 auxiliary PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5 and 6 in group2
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -390,12 +390,12 @@ Then reboot.
 
 DroneCAN capability
 ===================
-There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected. 
+
+There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected.
 
 Where to Buy
 ============
 
 `makeflyeasy <http://www.makeflyeasy.com>`_
-
 
 [copywiki destination="plane,copter,rover,blimp"]

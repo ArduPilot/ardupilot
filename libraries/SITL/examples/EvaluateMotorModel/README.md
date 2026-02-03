@@ -18,6 +18,7 @@ The command:
 ```
 
 Gives the output:
+
 ```
 Loading model Tools/autotest/models/Callisto.json
 Loaded model params from Tools/autotest/models/Callisto.json
@@ -40,6 +41,7 @@ time, PWM, thrust, torque, current
 ```
 
 This can be output re-directed to a file with:
+
 ```
 ./build/linux/examples/EvaluateMotorModel Tools/autotest/models/Callisto.json 0 50 >> motor_test.csv
 ```
@@ -47,4 +49,3 @@ This can be output re-directed to a file with:
 The data can then be compared to real thrust data and the model definition changed to better represent the vehicle being modelled.
 
 ![Motor example plot](Motor_example_plots.png)
-

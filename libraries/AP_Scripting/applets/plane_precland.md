@@ -56,4 +56,3 @@ To enable precision position hold in QLOITER you will need to use
 auxiliary function 39 (PRECISION_LOITER) on an R/C switch or via GCS
 auxiliary switch buttons. When enabled the vehicle will position
 itself above the landing target. Height control is under user control.
-

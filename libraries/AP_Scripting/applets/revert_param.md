@@ -41,38 +41,38 @@ parameters" in the messages tab when this happens.
 
 The script covers the following parameters on quadplanes:
 
- - Q_A_RAT_RLL_*
- - Q_A_RAT_PIT_*
- - Q_A_RAT_YAW_*
- - Q_A_ANG_RLL_P
- - Q_A_ANG_PIT_P
- - Q_A_ANG_YAW_P
- - Q_A_RATE_*_MAX
- - Q_P_D_ACC_*
- - Q_P_D_VEL_*
- - Q_P_D_POS_*
- - Q_P_NE_VEL_*
- - Q_P_NE_POS_*
+- Q_A_RAT_RLL_*
+- Q_A_RAT_PIT_*
+- Q_A_RAT_YAW_*
+- Q_A_ANG_RLL_P
+- Q_A_ANG_PIT_P
+- Q_A_ANG_YAW_P
+- Q_A_RATE_*_MAX
+- Q_P_D_ACC_*
+- Q_P_D_VEL_*
+- Q_P_D_POS_*
+- Q_P_NE_VEL_*
+- Q_P_NE_POS_*
 
 The script covers the following parameters on copters:
 
- - ATC_RAT_RLL_*
- - ATC_RAT_PIT_*
- - ATC_RAT_YAW_*
- - ATC_ANG_RLL_P
- - ATC_ANG_PIT_P
- - ATC_ANG_YAW_P
- - ATC_RATE_*_MAX
- - PSC_D_ACC_*
- - PSC_D_VEL_*
- - PSC_D_POS_*
- - PSC_NE_VEL_*
- - PSC_NE_POS_*
+- ATC_RAT_RLL_*
+- ATC_RAT_PIT_*
+- ATC_RAT_YAW_*
+- ATC_ANG_RLL_P
+- ATC_ANG_PIT_P
+- ATC_ANG_YAW_P
+- ATC_RATE_*_MAX
+- PSC_D_ACC_*
+- PSC_D_VEL_*
+- PSC_D_POS_*
+- PSC_NE_VEL_*
+- PSC_NE_POS_*
 
 For fixed wing the following parameters are covered:
 
- - RLL_RATE_*
- - PTCH_RATE_*
- - RLL2SRV_TCONST
- - PTCH2SRV_TCONST
- - all TECS parameters
+- RLL_RATE_*
+- PTCH_RATE_*
+- RLL2SRV_TCONST
+- PTCH2SRV_TCONST
+- all TECS parameters

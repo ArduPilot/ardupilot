@@ -9,26 +9,32 @@ Morakot Flight Controller — **NDAA-Compliant. Made in Taiwan.** Built for Perf
 Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller meets full NDAA compliance, ensuring trusted quality and security for professional applications. With an integrated Ethernet interface, it delivers high-speed, reliable connectivity for next-generation FPV and unmanned aerial systems.
 
 ## Pinout
+
 ![top_wired](Morakot_top_Wired.png)
 ![bottom_wired](Morakot_bottom_Wired.png)
 
 ## Features
+
 #### Sensors
+
 - [ICM-45686 High-Performance IMU](https://invensense.tdk.com/products/motion-tracking/6-axis/icm-45686/)
 - [Bosch BMP390 Barometer](https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp390/)
 - [ST IIS2MDC Magnetometer](https://www.st.com/en/mems-and-sensors/iis2mdc.html)
 
 #### Microprocessor
+
 - [STM32H743VIT MCU](https://www.st.com/en/microcontrollers-microprocessors/stm32h743vi.html)
-  - 480Mhz / 1MB RAM / 2MB Flash
+- 480Mhz / 1MB RAM / 2MB Flash
 
 #### Power
+
 - 3S–8S DC Input power
-- 5V 2A BEC peripherals power 
-- 9V 2A BEC servos power 
+- 5V 2A BEC peripherals power
+- 9V 2A BEC servos power
 - 12V 2A BEC video power
 
 #### Other
+
 - LED Indicators
 - Battery voltage indicator LED
 - MicroSD Slot
@@ -39,6 +45,7 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 - 1x Ethernet
 
 ### UART Mapping
+
 UART Mapping
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 Port      UART      Protocol        TX DMA  RX DMA
@@ -55,20 +62,25 @@ Port      UART      Protocol        TX DMA  RX DMA
 RTS/CTS flow control is available on UART7.
 
 ### VTX Support
+
 The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 12v so be careful not to connect this to a peripheral that can not tolerate this voltage.
 
 ## Additional Information
+
 - Dimensions: 38.5 x 30.5 mm
 - Height: up to 8.5 mm
 - Mounting: 30.5 x 30.5 mm (M3/M4 with dampers)
 - Weight: 7 g
 
 ## More Information
+
 - [Morakot Flight Controller](https://taiphoon.com.tw/morakot-flight-controllor)
 - [Morakot documentation](https://taiphoon-com.gitbook.io/taiphoon.com-docs/flight-stack/morakot-flight-controller)
 
 ## Connetions
+
 #### ESC1 - 8 Pin JST-GH
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | VBAT IN         | 12V-33.6V    |
@@ -81,6 +93,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 8   | MOTOR/SERVO 4   | 3.3V         |
 
 #### ESC2 - 8 Pin JST-GH
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | VBAT IN         | 12V-33.6V    |
@@ -92,8 +105,8 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 7   | MOTOR/SERVO 8   | 3.3V         |
 | 8   | MOTOR/SERVO 9   | 3.3V         |
 
-
 #### CAN - 4 Pin JST-GH
+
 | Pin | Signal Name | Voltage |
 |-----|-------------|---------|
 | 1   | 5.0V        | 5.0V    |
@@ -102,6 +115,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 4   | GND         | GND     |
 
 #### GPS - 6 Pin JST-GH
+
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
 | 1   | 5.0V                | 5.0V    |
@@ -112,6 +126,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 6   | GND                 | GND     |
 
 #### UART(TELEM) - 6 Pin JST-GH
+
 | Pin | Signal Name           | Voltage |
 |-----|-----------------------|---------|
 | 1   | 5.0V                  | 5.0V    |
@@ -122,6 +137,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 6   | GND                   | GND     |
 
 #### VTX - 7 Pin JST-GH
+
 Note: connector pinout not in same order as standard HD VTX cabling
 | Pin | Signal Name           | Voltage |
 |-----|-----------------------|---------|
@@ -134,6 +150,7 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 7   | USART3_RX             | GND     |
 
 #### SPI (external OSD or IMU) - 6 Pin JST-SH
+
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
 | 1   | 5.0V                | 5.0V    |
@@ -143,8 +160,8 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 5   | SPI4_CS             | 3.3V    |
 | 6   | GND                 | GND     |
 
-
 #### RC - 4 Pin JST-GH
+
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
 | 1   | 5.0V                | 5.0V    |
@@ -153,6 +170,7 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 4   | GND                 | GND     |
 
 #### ETH - 4 Pin JST-GH
+
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
 | 1   | RXN                 | 3.3V    |
@@ -163,10 +181,12 @@ Note: connector pinout not in same order as standard HD VTX cabling
 ## RC Input
 
 RC input is via SERIAL7(UART8) on the RC connector. Unidirectional protocols can be connected to R8. Bi-Directional Protocols will use the T8 pin also.
-- PPM is not supported.  
-- SBUS/DSM/SRXL connects to the RX8 pin.  
-- FPort requires connection to TX8. Set :ref:`SERIAL7_OPTIONS<SERIAL7_OPTIONS>` = 7  
+
+- PPM is not supported.
+- SBUS/DSM/SRXL connects to the RX8 pin.
+- FPort requires connection to TX8. Set :ref:`SERIAL7_OPTIONS<SERIAL7_OPTIONS>` = 7
 - CRSF/ELRS also requires both TX8 and RX8 connections and provides telemetry automatically.
+
 In order to use the SBUS pin on the HD VTX connector, you must change SERIAL7_PROTOCOL to something other than "23" and set :ref:`SERIAL3_PROTOCOL<SERIAL3_PROTOCOL> to "23".
 
 ## PWM Outputs
@@ -175,23 +195,25 @@ The Morakot supports up to 9 PWM outputs. All are DSHot and Bi-Directional DShot
 
 The PWM is in 3 groups:
 
- - PWM 1-4  in group1
- - PWM 4-8  in group2
- - PWM 9  in group3
- 
+- PWM 1-4  in group1
+- PWM 4-8  in group2
+- PWM 9  in group3
+
  Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in that group need to use DShot.
- 
+
 ## Compass
+
 The Morakot has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination and the internal compass disabled.
 
 ## OSD
+
 DisplayPort OSD is enabled by default on the HD VTX connector. Simutaneous DisplayPort operation on HD VTX connector is enabled by default also.
 
 ## Firmware
+
 Firmware for this board can be found here in sub-folders labeled “Morakot”
 
 ## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the “Morakotxx_bl.bin” firmware, using your favorite DFU loading tool.
 Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the “*.apj” firmware files.
-

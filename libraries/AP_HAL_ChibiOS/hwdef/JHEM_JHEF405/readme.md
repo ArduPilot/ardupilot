@@ -2,14 +2,15 @@
 
 JHEMCU GF16-BMI stack F405 Flight control 13A ESC
 produced by  [JHEMCU](https://www.jhemcu.com/)
- 
-There are 5 serial ports (UART1, UART2, UART3, UART4, UART6), 8 motor ports, 1 I2C port, and 1 SBUS interface (the serial port used by SBUS is RX1), with WS2812 interface reserved. Built in black box 16MB and barometer, with buzzer interface and camera interface.
 
+There are 5 serial ports (UART1, UART2, UART3, UART4, UART6), 8 motor ports, 1 I2C port, and 1 SBUS interface (the serial port used by SBUS is RX1), with WS2812 interface reserved. Built in black box 16MB and barometer, with buzzer interface and camera interface.
 
 ![JHEMCU GF16-BMI stack](jhemcu-gf16-bmi.jpg "JHEMCU GF16-BMI stack")
 
 ### Specs:
+
 **Flight control parameters:**
+
 * MCU: STM32F405
 * Gyroscope/Accelerometer: BMI270
 * OSD: AT7456E
@@ -26,7 +27,7 @@ There are 5 serial ports (UART1, UART2, UART3, UART4, UART6), 8 motor ports, 1 I
 * Built-in voltage and current sensors
 
 **Electrical adjustment parameters:**
- 
+
 * Input voltage: 2-4S LiPo/2-4S HV LiPo
 * BEC output: None
 * Continuous working current of single electric regulator: 13A * 4
@@ -34,9 +35,8 @@ There are 5 serial ports (UART1, UART2, UART3, UART4, UART6), 8 motor ports, 1 I
 * Screw hole pitch 16 * 16MM, hole diameter 3MM
 * Firmware: BLHELI_ S G_ H_ 30_ 16_ 7. HEX
 * Supports Dshot600, Dshot300, Dshot150, Oneshot125, Multispot, PWM control signals
- 
-Weight: flight control+electric adjustment=5.8g
 
+Weight: flight control+electric adjustment=5.8g
 
 ## Pinout
 
@@ -57,9 +57,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL6|TX6/RX6|USART6 -  User |
 
 ## RC Input
- 
+
 SBUS input must be on SBUS pin, all others can use RX1, CRSF/ELRS/SRXL2 must also use TX pin
-  
+
 ## OSD Support
 
 The GSF405A supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -80,15 +80,15 @@ Channels within the same group need to use the same output rate. If any channel 
 
 ## Battery Monitoring
 
-The board has a built-in voltage and current sensors. 
+The board has a built-in voltage and current sensors.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 13
- - BATT_VOLT_SCALE 11.0
- - BATT_CURR_PIN 12
- - BATT_CURR_SCALE 58.8
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 13
+- BATT_VOLT_SCALE 11.0
+- BATT_CURR_PIN 12
+- BATT_CURR_SCALE 58.8
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

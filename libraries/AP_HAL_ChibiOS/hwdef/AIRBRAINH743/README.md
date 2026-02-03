@@ -5,19 +5,19 @@ The AIRBRAINH743 is a flight controller designed and produced by [Gear Up](https
 
 ## Features
 
- - MCU - STM32H743xx 32-bit processor running at 480 MHz
- - IMU - Invensense ICM-42688-P
- - Barometer - DPS368
- - Magnetometer - LIS2MDL
- - 128 Mbytes flash-based logging
- - Battery input voltage: 3S-10S
- - BEC 5V 2A
- - BEC 10V 2.5A
- - 7x UARTs
- - 9x PWM Outputs (8 Motor Output, 1 LED)
+- MCU - STM32H743xx 32-bit processor running at 480 MHz
+- IMU - Invensense ICM-42688-P
+- Barometer - DPS368
+- Magnetometer - LIS2MDL
+- 128 Mbytes flash-based logging
+- Battery input voltage: 3S-10S
+- BEC 5V 2A
+- BEC 10V 2.5A
+- 7x UARTs
+- 9x PWM Outputs (8 Motor Output, 1 LED)
 
- ## Pinout
- 
+## Pinout
+
  ![AIRBRAINH743 Board Top](pinoutTop.png "AIRBRAINH743 Top")
  ![AIRBRAINH743 Board Bottom](pinoutBottom.png "AIRBRAINH743 Bottom")
 
@@ -26,14 +26,14 @@ The AIRBRAINH743 is a flight controller designed and produced by [Gear Up](https
 The UARTs are marked RX and TX in the above pinouts. The RX pin is the
 receive pin. The TX pin is the transmit pin .
 
- - SERIAL0 -> USB (MAVLink2)
- - SERIAL1 -> USART1 (None)
- - SERIAL2 -> USART2 (RCIN, DMA-enabled)
- - SERIAL3 -> USART3 (MSP DisplayPort, DMA-enabled)
- - SERIAL4 -> UART4 (GPS, DMA-enabled)
- - SERIAL5 -> UART5 (None, DMA-enabled)
- - SERIAL7 -> UART7 (ESCTelemetry)
- - SERIAL8 -> UART8 (GPS2, DMA-enabled)
+- SERIAL0 -> USB (MAVLink2)
+- SERIAL1 -> USART1 (None)
+- SERIAL2 -> USART2 (RCIN, DMA-enabled)
+- SERIAL3 -> USART3 (MSP DisplayPort, DMA-enabled)
+- SERIAL4 -> UART4 (GPS, DMA-enabled)
+- SERIAL5 -> UART5 (None, DMA-enabled)
+- SERIAL7 -> UART7 (ESCTelemetry)
+- SERIAL8 -> UART8 (GPS2, DMA-enabled)
 
 ## RC Input
 
@@ -41,9 +41,9 @@ The default RC input is configured on USART2. RC could  be applied instead to a 
 the protocol to receive RC data ``SERIALn_PROTOCOL`` = 23 and change :ref:`SERIAL2 _PROTOCOL <SERIAL2 _PROTOCOL>`
 to something other than '23'. For rc protocols other than unidirectional, the USART2_TX pin will need to be used:
 
- - FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".
- - CRSF would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "0".
- - SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "4" and connects only the TX pin.
+- FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".
+- CRSF would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "0".
+- SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "4" and connects only the TX pin.
 
 The HD VTX connector contains UART5 RX for SBUS. To use this connector for SBUS set :ref:`SERIAL2 _PROTOCOL <SERIAL2 _PROTOCOL>`
 to something other than '23' and set :ref:`SERIAL5 _PROTOCOL <SERIAL5 _PROTOCOL>` to '23'
@@ -56,10 +56,10 @@ separate pads for LED strip and other PWM outputs.
 
 The PWM is in 4 groups:
 
- - PWM 1-4   in group1
- - PWM 5-6   in group2
- - PWM 7-8   in group3
- - PWM 9   in group4 (defaulted to Serial LED protocol)
+- PWM 1-4   in group1
+- PWM 5-6   in group2
+- PWM 7-8   in group3
+- PWM 9   in group4 (defaulted to Serial LED protocol)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -72,11 +72,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
- - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 4
- - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 8 (CURRENT pin)
- - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 15.0
- - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 101.0
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 4
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 8 (CURRENT pin)
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 15.0
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 101.0
 
 ## Compass
 

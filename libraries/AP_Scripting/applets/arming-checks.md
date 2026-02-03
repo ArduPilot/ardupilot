@@ -18,33 +18,33 @@ These checks apply to all firmware types
 
 # ARM_SYSID
 
-If the SYSID_THISMAV parameter has not been changed from it's default value of 1, this arming check will prevent arming. This is intended to be used in large fleets, were SYSID_THISMAV should always be set. 
+If the SYSID_THISMAV parameter has not been changed from it's default value of 1, this arming check will prevent arming. This is intended to be used in large fleets, were SYSID_THISMAV should always be set.
 
 # ARM_FOLL_SYSID_X
 
-If the FOLL_SYSID parameter has not been changed from it's default value of 0, this arming check will prevent arming. This is intended to be used in large fleets flying in swarms, were FOLL_SYSID should almost always be set. 
+If the FOLL_SYSID parameter has not been changed from it's default value of 0, this arming check will prevent arming. This is intended to be used in large fleets flying in swarms, were FOLL_SYSID should almost always be set.
+
 # ARM_FOLL_OFS_DEF
 
-Follow offsets should not be left as the default (0). If using the Follow library, leaving the follow offsets at zero will 
-mean the follow vehicle will attempt to fly to where the target is, which would likely cause a crash. 
+Follow offsets should not be left as the default (0). If using the Follow library, leaving the follow offsets at zero will
+mean the follow vehicle will attempt to fly to where the target is, which would likely cause a crash.
 
 # ARM_MNTX_SYSID
 
-If the MNTX_SYSID parameter does not match the FOLL_SYSID, this arming check will prevent arming. This is intended to be used in large fleets flying in swarms, were the camera mount should always be pointing to the vehicle being followed. 
-
+If the MNTX_SYSID parameter does not match the FOLL_SYSID, this arming check will prevent arming. This is intended to be used in large fleets flying in swarms, were the camera mount should always be pointing to the vehicle being followed.
 
 # ARM_RTL_CLIMB
 
-This check is to by default warn if the vehicle RTL_CLIMB has not been set. This is intended to be an example of how specific configuration checks could be added for specific requirements without having to change the firmware. 
+This check is to by default warn if the vehicle RTL_CLIMB has not been set. This is intended to be an example of how specific configuration checks could be added for specific requirements without having to change the firmware.
 
 # ARM_ESTOP
 
 This check will fail if the motors are emergency stopped. The standard pre-arm will not prevent arming if the emergency stop
-has been set by a switch (set using RCx_OPTION = 165). This check will prevent arming regardless of the reason for the EStop. 
+has been set by a switch (set using RCx_OPTION = 165). This check will prevent arming regardless of the reason for the EStop.
 
 # ARM_FENCE
 
-If fences are loaded but no fence is enabled this will prevent arming. 
+If fences are loaded but no fence is enabled this will prevent arming.
 
 # ARM_RALLY
 
@@ -81,9 +81,9 @@ which should be less than AIRSPEED_MAX. This validates that this rule has not be
 
 # ARM_P_STALL
 
-AIRSPEED_STALL is a newly added and optional value, but if set, AIRSPEED_MIN should not be more than 25% higher 
+AIRSPEED_STALL is a newly added and optional value, but if set, AIRSPEED_MIN should not be more than 25% higher
 than AIRSPEED_STALL. When looked at the other way round, AIRSPEED_STALL should not be more than 20% lower than
-AIRSPEED_MIN. 
+AIRSPEED_MIN.
 
 # ARM_P_SCALING
 
@@ -92,7 +92,7 @@ when setting up an aircraft, but not to reset SCALING_SPEED. The aircraft should
 
 # Operation
 
-Copy this file to the APM/scripts folder on your SD card and make sure 
+Copy this file to the APM/scripts folder on your SD card and make sure
 
 SCR_ENABLE = 1
 

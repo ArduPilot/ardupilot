@@ -9,8 +9,8 @@ which is useful for measuing the expected lifetime of CAN servos.
 To capture all CAN traffic on a CAN bus while flying set bit zero of
 CAN_Pn_OPTIONS, so if no other bits are set then set:
 
- - CAN_P1_OPTIONS=1
- - CAN_P2_OPTIONS=1
+- CAN_P1_OPTIONS=1
+- CAN_P2_OPTIONS=1
 
 This assumes you want to capture all CAN bus traffic on both CAN
 buses.
@@ -39,15 +39,15 @@ playback ArrayCommand servo actuator commands for servo testing.
 
 Then set the following parameters for the first CAN bus:
 
- - CAN_P1_PROTOCOL2 = 10
- - CAN_D1_UC_SRV_BM = 0
- - CAN_D1_UC_OPTION = 1024
+- CAN_P1_PROTOCOL2 = 10
+- CAN_D1_UC_SRV_BM = 0
+- CAN_D1_UC_OPTION = 1024
 
 and the following parameters for the second CAN bus:
 
- - CAN_P2_PROTOCOL2 = 12
- - CAN_D2_UC_SRV_BM = 0
- - CAN_D2_UC_OPTION = 1024
+- CAN_P2_PROTOCOL2 = 12
+- CAN_D2_UC_SRV_BM = 0
+- CAN_D2_UC_OPTION = 1024
 
 You may also wish to set CAN_Dn_UC_ESC_BM to 0 to stop ESC control
 traffic on the CAN bus to make the bus less busy.
@@ -55,13 +55,14 @@ traffic on the CAN bus to make the bus less busy.
 Then load CAN_playback.lua into the APM/SCRIPTS/ directory on the
 microSD card and set:
 
- - SCR_ENABLE = 1
- - SCR_VM_I_COUNT = 200000
+- SCR_ENABLE = 1
+- SCR_VM_I_COUNT = 200000
 
 After you reboot you should see a message:
 
 ``
  CAN_playback: starting
+
 ```
 
 and if you monitor the CAN bus you should see the ArrayCommand
@@ -75,4 +76,3 @@ When the end of the CANF.bin file is reached you will see a message:
 ```
 
 and the playback will automatically restart from the start of the log.
-

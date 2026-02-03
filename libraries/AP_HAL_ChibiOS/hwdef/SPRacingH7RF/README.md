@@ -6,19 +6,19 @@ The SPRacingH7 RF Extreme is a flight controller produced by [Seriously Pro Raci
 
 ## Features
 
- - MCU - STM32H730 32-bit processor running at 520 MHz
- - 2MByte Serial NOR flash via QuadSPI for firmware
- - IMUs - ICM42688
- - Barometer - BMP388
- - OSD - Pixel, not supported currently by ArduPilot
- - I2C port
- - Onboard Flash: 128Mbits
- - Integrated ELRS receiver, not supported currently by ArduPilot 
- - microSD card socket
- - 5x UARTs (2,3,4,5,8)
- - 9x PWM Outputs (8 Motor Output, 1 LED)
- - Battery input voltage: 2S-8S
- - BEC 5V ?A
+- MCU - STM32H730 32-bit processor running at 520 MHz
+- 2MByte Serial NOR flash via QuadSPI for firmware
+- IMUs - ICM42688
+- Barometer - BMP388
+- OSD - Pixel, not supported currently by ArduPilot
+- I2C port
+- Onboard Flash: 128Mbits
+- Integrated ELRS receiver, not supported currently by ArduPilot
+- microSD card socket
+- 5x UARTs (2,3,4,5,8)
+- 9x PWM Outputs (8 Motor Output, 1 LED)
+- Battery input voltage: 2S-8S
+- BEC 5V ?A
 
 ## Pinout
 
@@ -31,13 +31,13 @@ The SPRacingH7 RF Extreme is a flight controller produced by [Seriously Pro Raci
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL2 -> UART2 (RC input)
- - SERIAL3 -> UART3 (DJI)
- - SERIAL4 -> UART4 (GPS)
- - SERIAL5 -> UART5 (ESC Telemetry, RX only)
- - SERIAL8 -> UART8 (USER)
- 
+- SERIAL0 -> USB
+- SERIAL2 -> UART2 (RC input)
+- SERIAL3 -> UART3 (DJI)
+- SERIAL4 -> UART4 (GPS)
+- SERIAL5 -> UART5 (ESC Telemetry, RX only)
+- SERIAL8 -> UART8 (USER)
+
  All UARTS are DMA capable
 
 ## RC Input
@@ -48,8 +48,7 @@ RC input is configured on the R2 pin. It supports all serial RC
 protocols. PPM is not supported. For protocols requiring half-duplex serial to transmit
 telemetry (such as FPort) you should setup SERIAL2 as an RC input serial port,
 with half-duplex, pin-swap and inversion enabled. For duplex protocols, like CRSF/ELRS, T2 must also be connected to the receiver.
- 
-  
+
 ## Pixel OSD Support
 
 Ardupilot does not currently support the integrated OSD chip. UART3 is setup fir use with DisplayPort goggles with OSD.
@@ -62,10 +61,9 @@ M9 for LED strip or another PWM output.
 
 The PWM is in 5 groups:
 
- - PWM 1-4   in group1
- - PWM 5-8  in group2
- - PWM 9 (LED)  in group3
-
+- PWM 1-4   in group1
+- PWM 5-8  in group2
+- PWM 9 (LED)  in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -78,11 +76,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 13
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 10.9
- - BATT_AMP_PERVLT 28.5 (will need adjustment for the current sensor range of the ESC)
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 13
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 10.9
+- BATT_AMP_PERVLT 28.5 (will need adjustment for the current sensor range of the ESC)
 
 ## Compass
 

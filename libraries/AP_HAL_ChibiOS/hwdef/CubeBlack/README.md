@@ -6,23 +6,23 @@ listed on the
 
 ## Features
 
- - STM32F427 microcontroller
- - Two MPU9250 and one LSM303D/L3GD20 IMUs
- - internal heater for IMU temperature control
- - internal vibration isolation for first two IMUs
- - MS5611 SPI barometer
- - builtin SPI LSM303D magnetometer
- - microSD card slot
- - 5 UARTs plus USB
- - 14 PWM outputs
- - I2C and CAN ports
- - Spektrum satellite connector
- - External Buzzer
- - builtin RGB LED
- - external safety Switch
- - voltage monitoring for servo rail and Vcc
- - two dedicated power input ports for external power bricks
- - external USB connectors (micro USB and JST GH)
+- STM32F427 microcontroller
+- Two MPU9250 and one LSM303D/L3GD20 IMUs
+- internal heater for IMU temperature control
+- internal vibration isolation for first two IMUs
+- MS5611 SPI barometer
+- builtin SPI LSM303D magnetometer
+- microSD card slot
+- 5 UARTs plus USB
+- 14 PWM outputs
+- I2C and CAN ports
+- Spektrum satellite connector
+- External Buzzer
+- builtin RGB LED
+- external safety Switch
+- voltage monitoring for servo rail and Vcc
+- two dedicated power input ports for external power bricks
+- external USB connectors (micro USB and JST GH)
 
 ## Pinout
 
@@ -32,12 +32,12 @@ On each connector the red dot indicates pin 1.
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> UART3 (Telem2)
- - SERIAL3 -> UART4 (GPS)
- - SERIAL4 -> UART8 (GPS2)
- - SERIAL5 -> UART7 (spare, CONS)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> UART3 (Telem2)
+- SERIAL3 -> UART4 (GPS)
+- SERIAL4 -> UART8 (GPS2)
+- SERIAL5 -> UART7 (spare, CONS)
 
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
@@ -91,7 +91,6 @@ Unless noted otherwise all connectors are JST GH
    </tbody>
    </table>
 
-
 ### GPS1 port
 
    <table border="1" class="docutils">
@@ -143,8 +142,6 @@ Unless noted otherwise all connectors are JST GH
    </tr>
    </tbody>
    </table>
-
-
 
 ### GPS2 port
 
@@ -233,9 +230,9 @@ When SBUS output is disabled (by setting BRD_SBUS_OUT to 0) you can
 use the port for analog RSSI input from receivers. To enable for RSSI
 input you need to set:
 
- - BRD_SBUS_OUT 0
- - RSSI_TYPE 1
- - RSSI_PIN 103
+- BRD_SBUS_OUT 0
+- RSSI_TYPE 1
+- RSSI_PIN 103
 
 You cannot have both SBUS output and analog RSSI input at the same time.
 
@@ -298,7 +295,6 @@ pin closest to the cube (pin 3).
    </tbody>
    </table>
 
-
 ### ADC
 
    <table border="1" class="docutils">
@@ -325,7 +321,6 @@ pin closest to the cube (pin 3).
    </tr>
    </tbody>
    </table>
-
 
 ### I2C2
 
@@ -406,7 +401,6 @@ the servo rail.
    </tbody>
    </table>
 
-
 ### CAN1&2
 
    <table border="1" class="docutils">
@@ -438,7 +432,6 @@ the servo rail.
    </tr>
    </tbody>
    </table>
-
 
 ### POWER1&2
 
@@ -479,7 +472,6 @@ the servo rail.
    </tr>
    </tbody>
    </table>
-
 
 ### USB
 
@@ -524,7 +516,7 @@ the servo rail.
    </table>
 
 ## RC Input
- 
+
 RC input is configured on the RCIN pin, at one end of the servo rail,
 marked RCIN in the above diagram. This pin supports all RC
 protocols. In addition there is a dedicated Spektrum satellite port
@@ -546,14 +538,14 @@ signal on the bottom row.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 6 auxiliary PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5 and 6 in group2
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -582,24 +574,24 @@ use as GPIOs.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - PWM1 50
- - PWM2 51
- - PWM3 52
- - PWM4 53
- - PWM5 54
- - PWM6 55
+- PWM1 50
+- PWM2 51
+- PWM3 52
+- PWM4 53
+- PWM5 54
+- PWM6 55
 
 ## Analog inputs
 
 The CubeBlack has 7 analog inputs
 
- - ADC Pin2 -> Battery Voltage
- - ADC Pin3 -> Battery Current Sensor
- - ADC Pin13 -> Battery2 Voltage
- - ADC Pin14 -> Battery2 Current Sensor
- - ADC Pin4 -> Vdd 5V supply sense
- - ADC Pin15 -> ADC 6.6V port
- - ADC Pin103 -> RSSI voltage monitoring
+- ADC Pin2 -> Battery Voltage
+- ADC Pin3 -> Battery Current Sensor
+- ADC Pin13 -> Battery2 Voltage
+- ADC Pin14 -> Battery2 Current Sensor
+- ADC Pin4 -> Vdd 5V supply sense
+- ADC Pin15 -> ADC 6.6V port
+- ADC Pin103 -> RSSI voltage monitoring
 
 ## IMU Heater
 

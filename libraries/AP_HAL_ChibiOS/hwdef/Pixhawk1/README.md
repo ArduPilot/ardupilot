@@ -6,22 +6,22 @@ board.
 
 ## Features
 
- - STM32F427 microcontroller
- - MPU6000 and LSM303D/L3GD20 IMUs
- - MS5611 SPI barometer
- - builtin SPI LSM303D magnetometer
- - microSD card slot
- - 5 UARTs plus USB
- - 14 PWM outputs
- - I2C and CAN ports
- - Spektrum satellite connector
- - External Buzzer
- - builtin RGB LED
- - external safety Switch
- - external SPI port
- - voltage monitoring for servo rail and Vcc
- - dedicated power input port for external power brick
- - external USB connectors (micro USB and DF13)
+- STM32F427 microcontroller
+- MPU6000 and LSM303D/L3GD20 IMUs
+- MS5611 SPI barometer
+- builtin SPI LSM303D magnetometer
+- microSD card slot
+- 5 UARTs plus USB
+- 14 PWM outputs
+- I2C and CAN ports
+- Spektrum satellite connector
+- External Buzzer
+- builtin RGB LED
+- external safety Switch
+- external SPI port
+- voltage monitoring for servo rail and Vcc
+- dedicated power input port for external power brick
+- external USB connectors (micro USB and DF13)
 
 ## Pinout
 
@@ -29,12 +29,12 @@ board.
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> UART3 (Telem2)
- - SERIAL3 -> UART4 (GPS)
- - SERIAL4 -> UART8 (GPS2)
- - SERIAL5 -> UART7 (spare)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> UART3 (Telem2)
+- SERIAL3 -> UART4 (GPS)
+- SERIAL4 -> UART8 (GPS2)
+- SERIAL5 -> UART7 (spare)
 
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
@@ -131,8 +131,6 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
    </tbody>
    </table>
 
-
-
 ### SERIAL 4/5 port
 
    <table border="1" class="docutils">
@@ -175,7 +173,6 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
    </tbody>
    </table>
 
-
 ### ADC 6.6V
 
    <table border="1" class="docutils">
@@ -202,8 +199,6 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
    </tr>
    </tbody>
    </table>
-
-
 
 ### ADC 3.3V
 
@@ -242,8 +237,6 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
    </tbody>
    </table>
 
-
-
 ### I2C
 
    <table border="1" class="docutils">
@@ -275,8 +268,6 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
    </tr>
    </tbody>
    </table>
-
-
 
 ### CAN
 
@@ -425,13 +416,13 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
    </table>
 
 ## RC Input
- 
+
 RC input is configured on the RCIN pin, at one end of the servo rail,
 marked PPM in the above diagram. This pin supports all RC
 protocols. In addition there is a dedicated Spektrum satellite port
 which supports software power control, allowing for binding of
 Spektrum satellite receivers.
- 
+
 ## PWM Output
 
 The Pixhawk1 supports up to 14 PWM outputs. First first 8 outputs (labelled
@@ -444,14 +435,14 @@ PWM protocols as well as DShot.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 6 auxiliary PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5 and 6 in group2
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -479,25 +470,25 @@ available for use as GPIOs.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - AUX1 50
- - AUX2 51
- - AUX3 52
- - AUX4 53
- - AUX5 54
- - AUX6 55
+- AUX1 50
+- AUX2 51
+- AUX3 52
+- AUX4 53
+- AUX5 54
+- AUX6 55
 
 ## Analog inputs
 
 The Pixhawk1 has 6 analog inputs on the FMU, plus servo rail voltage
 and RSSI monitoring on the IO controller.
 
- - ADC Pin2 -> Battery Voltage
- - ADC Pin3 -> Battery Current Sensor
- - ADC Pin4 -> Vdd 5V supply sense
- - ADC Pin13 -> ADC 3.3V Port pin1
- - ADC Pin14 -> ADC 3.3V Port pin2
- - ADC Pin15 -> ADC 6.6V port
- - ADC Pin103 -> RSSI voltage monitoring
+- ADC Pin2 -> Battery Voltage
+- ADC Pin3 -> Battery Current Sensor
+- ADC Pin4 -> Vdd 5V supply sense
+- ADC Pin13 -> ADC 3.3V Port pin1
+- ADC Pin14 -> ADC 3.3V Port pin2
+- ADC Pin15 -> ADC 6.6V port
+- ADC Pin103 -> RSSI voltage monitoring
 
 ## Loading Firmware
 

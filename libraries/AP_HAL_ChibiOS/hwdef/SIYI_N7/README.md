@@ -5,33 +5,33 @@ resellers, linked from https://siyi.biz
 
 ## Features
 
- - STM32H743 microcontroller
- - ICM20689 and BMI088 IMUs
- - internal heater for IMU temperature control
- - internal vibration isolation for IMUs
- - MS5611 SPI barometer
- - builtin IST8310 compass
- - microSD card slot
- - 4 UARTs plus USB
- - 13 PWM outputs
- - I2C and CAN ports
- - RCIN port
- - external safety Switch
- - voltage monitoring for servo rail and Vcc
- - power input port for external power bricks
+- STM32H743 microcontroller
+- ICM20689 and BMI088 IMUs
+- internal heater for IMU temperature control
+- internal vibration isolation for IMUs
+- MS5611 SPI barometer
+- builtin IST8310 compass
+- microSD card slot
+- 4 UARTs plus USB
+- 13 PWM outputs
+- I2C and CAN ports
+- RCIN port
+- external safety Switch
+- voltage monitoring for servo rail and Vcc
+- power input port for external power bricks
 
 ## Pinout
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> unused
- - SERIAL3 -> UART1 (GPS)
- - SERIAL4 -> UART4 (GPS2, Telem4/I2C)
- - SERIAL5 -> unused
- - SERIAL6 -> UART7 (debug port)
- - SERIAL7 -> USB2 (virtual port on same connector)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> unused
+- SERIAL3 -> UART1 (GPS)
+- SERIAL4 -> UART4 (GPS2, Telem4/I2C)
+- SERIAL5 -> unused
+- SERIAL6 -> UART7 (debug port)
+- SERIAL7 -> USB2 (virtual port on same connector)
 
 The Telem1 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
@@ -80,7 +80,6 @@ Unless noted otherwise all connectors are JST GH
    </tr>
    </tbody>
    </table>
-
 
 ### GPS1 port
 
@@ -143,8 +142,6 @@ Unless noted otherwise all connectors are JST GH
    </tr>
    </tbody>
    </table>
-
-
 
 ### GPS2, Telem4/I2C port
 
@@ -220,7 +217,6 @@ Unless noted otherwise all connectors are JST GH
    </tbody>
    </table>
 
-
 ### CAN1
 
    <table border="1" class="docutils">
@@ -252,7 +248,6 @@ Unless noted otherwise all connectors are JST GH
    </tr>
    </tbody>
    </table>
-
 
 ### POWER1
 
@@ -294,7 +289,6 @@ Unless noted otherwise all connectors are JST GH
    </tbody>
    </table>
 
-
 ### USB
 
    <table border="1" class="docutils">
@@ -328,7 +322,7 @@ Unless noted otherwise all connectors are JST GH
    </table>
 
 ## RC Input
- 
+
 RC input is configured on the RCIN pin, at one end of the servo rail,
 marked RCIN in the above diagram. This pin supports all RC
 protocols.
@@ -349,14 +343,14 @@ signal on the bottom row.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 4 auxiliary PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group4
- - PWM 5 in group5
+- PWM 1, 2, 3 and 4 in group4
+- PWM 5 in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -378,18 +372,18 @@ The 5 AUX PWM ports can be used as GPIOs (relays, buttons, RPM etc).
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - PWM1 50
- - PWM2 51
- - PWM3 52
- - PWM4 53
- - PWM5 54
+- PWM1 50
+- PWM2 51
+- PWM3 52
+- PWM4 53
+- PWM5 54
 
 ## Analog inputs
 
 The SIYI N7 has 7 analog inputs
 
- - ADC Pin16 -> Battery Voltage
- - ADC Pin17 -> Battery Current Sensor
+- ADC Pin16 -> Battery Voltage
+- ADC Pin17 -> Battery Current Sensor
 
 ## IMU Heater
 

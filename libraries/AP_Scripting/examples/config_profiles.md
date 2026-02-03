@@ -13,14 +13,16 @@ Parameters are divided into domains; a parameter can only exist in a single doma
 Each domain specifies what parameters are relevant in an all_param_defaults attribute.
 
 ### Profiles
+
 Each domain has a number of profiles which can be switched between via setting a parameter.  The profiles specify parameter values which override the defaults specified in the domain's all_param_defaults attribute.
 
 ### Modes
 
 Each domain can be in one of three modes:
- - do nothing
- - use the default parameter values only
- - use parameters from the selected profile, taking the parameter value from the defaults stored in the domain if the profile does not specify a value
+
+- do nothing
+- use the default parameter values only
+- use parameters from the selected profile, taking the parameter value from the defaults stored in the domain if the profile does not specify a value
 
 ### Use
 

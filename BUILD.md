@@ -3,6 +3,7 @@
 ## Get the Source
 
 Clone the project from GitHub:
+
 ```sh
 git clone --recursive https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
@@ -46,12 +47,11 @@ list some basic and more used commands as example.
     ```sh
     ./waf configure --board bebop --static
     ./waf copter
-    ```    
+    ```
 
     The "arducopter" binary should appear in the `build/<board-name>/bin` directory.
 
 * **List available boards**
-
 
     It's possible to get a list of supported boards on ArduPilot with the command
     below
@@ -89,7 +89,7 @@ list some basic and more used commands as example.
     ./waf sub                               # ROV and other submarines
     ./waf antennatracker                    # Antenna trackers
     ./waf AP_Periph                         # AP Peripheral
-    
+
     ```
 
 * **Clean the build**
@@ -259,13 +259,13 @@ programs logically, they also define where they are built.
 
 The main groups are:
 
- - bin: *the main binaries, that is, ardupilot's main products - the vehicles and
+- bin: *the main binaries, that is, ardupilot's main products - the vehicles and
    Antenna Tracker*
- - tools
- - examples: *programs that show how certain libraries are used or to simply
+- tools
+- examples: *programs that show how certain libraries are used or to simply
    test their operation*
- - benchmarks: *requires `--enable-benchmarks` during configurarion*
- - tests: *basically unit tests to ensure changes don't break the system's
+- benchmarks: *requires `--enable-benchmarks` during configurarion*
+- tests: *basically unit tests to ensure changes don't break the system's
    logic*
 
 All build files are placed under `build/<board>/`, where `<board>` represents
@@ -284,10 +284,10 @@ program - one for each frame type.
 
 The main product groups are:
 
- - antennatracker
- - copter
- - plane
- - rover
+- antennatracker
+- copter
+- plane
+- rover
 
 #### Building a program group ####
 
@@ -308,6 +308,7 @@ Examples:
 # Build all benchmarks and tests
 ./waf --program-group benchmarks --program-group tests
 ```
+
 #### Shortcut for program groups ####
 
 For less typing, you can use the group name as the command to waf. Examples:
@@ -342,11 +343,11 @@ The command `check` builds all programs and then executes the relevant tests.
 In that context, a relevant test is a program from the group "tests" that makes
 one of the following statements true:
 
- - it's the first time the test is built since the last cleanup or when the
+- it's the first time the test is built since the last cleanup or when the
    project was cloned.
- - the program had to be rebuilt (due to modifications in the code or
+- the program had to be rebuilt (due to modifications in the code or
    dependencies, for example)
- - the test program failed in the previous check.
+- the test program failed in the previous check.
 
 That is, the tests are run only if necessary. If you want waf to run all tests,
 then you can use either option `--alltests` or the shortcut command
