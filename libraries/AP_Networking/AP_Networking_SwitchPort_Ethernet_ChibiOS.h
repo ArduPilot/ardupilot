@@ -36,6 +36,12 @@ public:
     uint32_t get_rx_errors() const { return rx_errors; }
     uint32_t get_tx_errors() const { return tx_errors; }
 
+#if AP_NETWORKING_CAPTURE_ENABLED
+    // Packet capture to pcap file
+    void start_capture();
+    void stop_capture();
+#endif
+
 private:
     AP_Networking_Switch *hub;
     uint8_t macaddr[6];
@@ -73,6 +79,14 @@ private:
     uint32_t tx_count;
     uint32_t rx_errors;
     uint32_t tx_errors;
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+    void capture_frame(const uint8_t *frame, size_t len);
+    struct {
+        HAL_Semaphore sem;
+        int fd = -1;
+    } capture;
+#endif
 };
 
 #endif // AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET

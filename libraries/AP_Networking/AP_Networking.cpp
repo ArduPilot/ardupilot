@@ -422,6 +422,15 @@ void AP_Networking::update()
         return;
     }
     backend->update();
+#if AP_NETWORKING_CAPTURE_ENABLED && AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+    if (port_eth != nullptr) {
+        if (option_is_set(OPTION::CAPTURE_PACKETS)) {
+            port_eth->start_capture();
+        } else {
+            port_eth->stop_capture();
+        }
+    }
+#endif
     announce_address_changes();
 }
 

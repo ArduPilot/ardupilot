@@ -9,6 +9,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include <hal.h>
+#if AP_NETWORKING_CAPTURE_ENABLED
+#include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_RTC/AP_RTC.h>
+#endif
 
 #ifdef NEEDS_KSZ9896C_ERRATA
 #include <hal_mii.h>
@@ -149,6 +153,9 @@ bool AP_Networking_SwitchPort_Ethernet_ChibiOS::process_one_rx_descriptor(uint32
     }
     macReadReceiveDescriptor(&rd, rx_framebuf, len);
     macReleaseReceiveDescriptorX(&rd);
+#if AP_NETWORKING_CAPTURE_ENABLED
+    capture_frame(rx_framebuf, len);
+#endif
     hub->route_frame(this, rx_framebuf, len);
     rx_count++;
     return true;
@@ -211,6 +218,9 @@ void AP_Networking_SwitchPort_Ethernet_ChibiOS::tx_thread()
                 tx_errors++;
                 continue;
             }
+#if AP_NETWORKING_CAPTURE_ENABLED
+            capture_frame(tx_framebuf, l);
+#endif
             macWriteTransmitDescriptor(&td, tx_framebuf, (size_t)l);
             macReleaseTransmitDescriptorX(&td);
             tx_count++;
@@ -324,5 +334,83 @@ void AP_Networking_SwitchPort_Ethernet_ChibiOS::apply_errata_for_mac_KSZ9896C()
     ETHD1.phyaddr = BOARD_PHY_ADDRESS;
 }
 #endif // NEEDS_KSZ9896C_ERRATA
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+/*
+  start a pcap network capture
+ */
+void AP_Networking_SwitchPort_Ethernet_ChibiOS::start_capture()
+{
+    if (capture.fd != -1) {
+        // called at 1Hz, flush the file
+        AP::FS().fsync(capture.fd);
+        return;
+    }
+    const struct pcap_hdr {
+        uint32_t magic_number;   // 0xa1b2c3d4
+        uint16_t version_major;  // 2
+        uint16_t version_minor;  // 4
+        int32_t  thiszone;       // GMT to local correction
+        uint32_t sigfigs;        // accuracy of timestamps
+        uint32_t snaplen;        // max length of captured packets, in octets
+        uint32_t network;        // data link type (1 for Ethernet)
+    } hdr = {
+        0xa1b2c3d4, 2, 4, 0, 0, 1500, 1
+    };
+    const char *fname = "eth0.cap";
+    WITH_SEMAPHORE(capture.sem);
+    auto &fs = AP::FS();
+    capture.fd = fs.open(fname, O_WRONLY|O_CREAT|O_TRUNC);
+    if (capture.fd != -1) {
+        fs.write(capture.fd, (const void *)&hdr, sizeof(hdr));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Capturing to %s", fname);
+    }
+}
+
+/*
+  stop a pcap network capture
+ */
+void AP_Networking_SwitchPort_Ethernet_ChibiOS::stop_capture()
+{
+    WITH_SEMAPHORE(capture.sem);
+    if (capture.fd != -1) {
+        int fd = capture.fd;
+        capture.fd = -1;
+        AP::FS().close(fd);
+    }
+}
+
+/*
+  capture a frame to pcap file
+ */
+void AP_Networking_SwitchPort_Ethernet_ChibiOS::capture_frame(const uint8_t *frame, size_t len)
+{
+    WITH_SEMAPHORE(capture.sem);
+    if (capture.fd == -1) {
+        return;
+    }
+    uint64_t utc_usec = 0;
+#if AP_RTC_ENABLED
+    AP::rtc().get_utc_usec(utc_usec);
+#endif
+    if (utc_usec == 0) {
+        utc_usec = AP_HAL::micros64();
+    }
+    const struct pcaprec_hdr {
+        uint32_t ts_sec;
+        uint32_t ts_usec;
+        uint32_t incl_len;
+        uint32_t orig_len;
+    } rec {
+        .ts_sec = uint32_t(utc_usec / 1000000ULL),
+        .ts_usec = uint32_t(utc_usec % 1000000ULL),
+        .incl_len = uint32_t(len),
+        .orig_len = uint32_t(len)
+    };
+    auto &fs = AP::FS();
+    fs.write(capture.fd, (const void *)&rec, sizeof(rec));
+    fs.write(capture.fd, frame, len);
+}
+#endif // AP_NETWORKING_CAPTURE_ENABLED
 
 #endif // AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
