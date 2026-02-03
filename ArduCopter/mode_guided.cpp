@@ -53,8 +53,9 @@ bool ModeGuided::init(bool ignore_checks)
     return true;
 }
 
-// init - initialise guided controller
-void ModeGuided::set_hold_position()
+// hold_position - bring vehicle to a stop and hold current position
+// using velocity/acceleration control with zero velocity and acceleration targets
+void ModeGuided::hold_position()
 {
     // check we are in velocity and acceleration control mode
     if (guided_mode != SubMode::VelAccel) {
