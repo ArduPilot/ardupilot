@@ -928,8 +928,7 @@ void Tailsitter_Transition::update()
             const int32_t  ALIGN_TOLERANCE_CD   = 500;   // 5.0 degrees
             const float    MAX_SPIN_RATE_DEG    = 5.0f;  // Max yaw rate allowed
             const uint32_t ALIGN_PHASE_LIMIT_MS = 10000; // 10s Total Timeout
-            const uint32_t WAIT_DELAY_MS        = 3000;  // 3s Wait
-            const float    ALIGN_YAW_GAIN       = 2.0f;
+            const uint32_t WAIT_DELAY_MS        = 2000;  // 2s Wait
 
             // Static Variables (State Tracking)
             static uint32_t align_phase_start_ms = 0;
@@ -996,15 +995,11 @@ void Tailsitter_Transition::update()
                     // Control
                     quadplane.pos_control->update_z_controller();
                     quadplane.pos_control->update_xy_controller();
-                    
-                    float target_yaw_rate_cds = error_cd * ALIGN_YAW_GAIN;
-                    float max_rate = quadplane.command_model_pilot.get_rate() * 100.0f;
-                    target_yaw_rate_cds = constrain_float(target_yaw_rate_cds, -max_rate, max_rate);
-
-                    quadplane.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(
+                    quadplane.attitude_control->input_euler_angle_roll_pitch_yaw(
                         quadplane.pos_control->get_roll_cd(),
                         quadplane.pos_control->get_pitch_cd(),
-                        target_yaw_rate_cds
+                        (float)target_bearing_cd,
+                        true
                     );
 
                     quadplane.motors_output();
@@ -1019,7 +1014,7 @@ void Tailsitter_Transition::update()
                 } else {
                      gcs().send_text(MAV_SEVERITY_INFO, "Alignment Complete: Transitioning");
                 }
-
+                
                 // 1. Mark as complete so we NEVER enter this 'if' block again for this flight
                 alignment_completed_for_this_flight = true;
 
