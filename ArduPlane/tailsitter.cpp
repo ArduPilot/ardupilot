@@ -905,15 +905,6 @@ void Tailsitter_Transition::update()
     case TRANSITION_ANGLE_WAIT_FW: {
         
         const uint32_t now_ = AP_HAL::millis();
-        
-        // --- NEW: DISABLE WEATHERVANE ---
-        // This prevents the weathervane library from fighting your custom 
-        // yaw alignment logic or drifting the nose into the wind.
-
-        if (quadplane.weathervane != nullptr) {
-        quadplane.weathervane->allow_weathervaning(false);
-    }
-
         // -----------------------------------------------------------
         // 1. INITIALIZATION
         // -----------------------------------------------------------
@@ -925,8 +916,8 @@ void Tailsitter_Transition::update()
         if (quadplane.tailsitter.enabled()) {
 
             // Constants
-            const int32_t  ALIGN_TOLERANCE_CD   = 500;   // 5.0 degrees
-            const float    MAX_SPIN_RATE_DEG    = 5.0f;  // Max yaw rate allowed
+            const int32_t  ALIGN_TOLERANCE_CD   = 1000;   // 10.0 degrees
+            const float    MAX_SPIN_RATE_DEG    = 3.0f;  // Max yaw rate allowed
             const uint32_t ALIGN_PHASE_LIMIT_MS = 10000; // 10s Total Timeout
             const uint32_t WAIT_DELAY_MS        = 2000;  // 2s Wait
 
@@ -954,6 +945,10 @@ void Tailsitter_Transition::update()
                                         (plane.nav_controller != nullptr);
 
             if (should_run_alignment) {
+                // Disable weathervane during alignment
+                if (quadplane.weathervane != nullptr) {
+                    quadplane.weathervane->allow_weathervaning(false);
+                }
                 
                 int32_t target_bearing_cd = plane.nav_controller->target_bearing_cd();
                 int32_t current_yaw_cd = quadplane.ahrs.yaw_sensor;
@@ -1026,6 +1021,16 @@ void Tailsitter_Transition::update()
                 plane.nav_pitch_cd = constrain_float(quadplane.ahrs.pitch_sensor, -8500, 8500);
                 plane.nav_roll_cd = 0;
                 set_last_fw_pitch();
+                // --- RE-ENABLE WEATHERVANE AFTER ALIGNMENT ---
+                if (quadplane.weathervane != nullptr) {
+                    quadplane.weathervane->allow_weathervaning(true);
+                }
+            }
+             else {
+                // --- ENSURE WEATHERVANE IS ENABLED WHEN NOT ALIGNING ---
+                if (quadplane.weathervane != nullptr) {
+                    quadplane.weathervane->allow_weathervaning(true);
+                }    
             }
         }
         
