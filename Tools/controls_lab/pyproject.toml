@@ -16,7 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 plot = ["matplotlib>=3.5.0"]
 gym = ["gymnasium>=0.29.0"]
-dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "ruff>=0.1.0"]
+dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "flake8>=7.0.0"]
 
 [tool.setuptools.dynamic]
 version = {attr = "controls_lab._version.__version__"}

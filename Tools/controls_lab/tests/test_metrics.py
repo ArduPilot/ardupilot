@@ -1,4 +1,8 @@
-"""Unit tests for the metrics module."""
+"""
+Unit tests for the metrics module.
+
+AP_FLAKE8_CLEAN
+"""
 
 import pytest
 import numpy as np

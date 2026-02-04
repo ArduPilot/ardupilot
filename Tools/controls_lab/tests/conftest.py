@@ -1,4 +1,8 @@
-"""Pytest fixtures for controls_lab tests."""
+"""
+Pytest fixtures for controls_lab tests.
+
+AP_FLAKE8_CLEAN
+"""
 
 import pytest
 import numpy as np

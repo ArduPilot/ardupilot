@@ -1,3 +1,8 @@
+"""
+Main ControlsLab interface for running experiments.
+
+AP_FLAKE8_CLEAN
+"""
 from __future__ import annotations
 import time
 import logging

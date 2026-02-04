@@ -1,3 +1,8 @@
+"""
+MAVLink connection management for SITL instances.
+
+AP_FLAKE8_CLEAN
+"""
 from __future__ import annotations
 
 import logging
@@ -67,6 +72,42 @@ class SITLConnection:
     @connection.setter
     def connection(self, connection: mavudp):
         self._connection = connection
+
+    def mode_mapping(self) -> dict[str, int]:
+        """
+        Get available flight modes for the connected vehicle.
+
+        Returns:
+            Dictionary mapping mode names to mode numbers.
+
+        Raises:
+            MAVLinkConnectionError: If no mode mapping is available.
+        """
+        mapping = self.connection.mode_mapping()
+        if mapping is None:
+            raise MAVLinkConnectionError("No mode mapping available")
+        return mapping
+
+    def get_mode_number(self, mode: str | int) -> int:
+        """
+        Convert mode name to number, or validate mode number.
+
+        Args:
+            mode: Mode name (e.g., 'GUIDED') or mode number.
+
+        Returns:
+            The mode number.
+
+        Raises:
+            ValueError: If mode name is not recognized.
+        """
+        if isinstance(mode, int):
+            return mode
+        mapping = self.mode_mapping()
+        if mode not in mapping:
+            available = ', '.join(sorted(mapping.keys()))
+            raise ValueError(f"Unknown mode '{mode}'. Available: {available}")
+        return mapping[mode]
 
     def set_stream_rate(
         self, stream_rate: int = 50, message_ids: list[int] | None = None

@@ -1,3 +1,8 @@
+"""
+High-level vehicle control interface for ArduPilot.
+
+AP_FLAKE8_CLEAN
+"""
 from __future__ import annotations
 import time
 import logging
@@ -6,7 +11,6 @@ from dataclasses import dataclass
 from pymavlink import mavutil
 
 from .connection import SITLConnection
-from .enums import CopterMode
 from .exceptions import MAVLinkConnectionError
 
 logger = logging.getLogger(__name__)
@@ -57,18 +61,23 @@ class Vehicle:
     def _target_component(self):
         return self.sitl.connection.target_component
 
-    def set_mode(self, mode: CopterMode, timeout: int = 5):
+    def set_mode(self, mode: str, timeout: int = 5):
         """
         Set the flight mode of the vehicle.
 
+        Available modes depend on vehicle type and are queried dynamically.
+        Examples: 'GUIDED', 'LOITER', 'ALT_HOLD', 'STABILIZE'.
+
         Args:
-            mode: Flight mode from CopterMode enum.
+            mode: Flight mode name (e.g., 'GUIDED', 'LOITER').
             timeout: Maximum seconds to wait for mode confirmation.
 
         Raises:
+            ValueError: If mode name is not recognized.
             MAVLinkConnectionError: If mode change is not confirmed in timeout.
         """
-        logger.info(f"Switching to mode: {mode.name}")
+        mode_num = self.sitl.get_mode_number(mode)
+        logger.info(f"Switching to mode: {mode}")
 
         self._mav.command_long_send(
             self._target_system,
@@ -76,7 +85,7 @@ class Vehicle:
             mavutil.mavlink.MAV_CMD_DO_SET_MODE,
             0,
             mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-            mode.value,
+            mode_num,
             0, 0, 0, 0, 0
         )
 
@@ -85,12 +94,12 @@ class Vehicle:
             msg = self.sitl.connection.recv_match(
                 type='HEARTBEAT', blocking=True, timeout=1
             )
-            if msg and msg.custom_mode == mode.value:
-                logger.info(f"Mode switched to {mode.name}")
+            if msg and msg.custom_mode == mode_num:
+                logger.info(f"Mode switched to {mode}")
                 return
 
         raise MAVLinkConnectionError(
-            f"Failed to switch to mode {mode.name} within {timeout}s"
+            f"Failed to switch to mode {mode} within {timeout}s"
         )
 
     def arm(self, wait: bool = True):
@@ -337,15 +346,13 @@ class Vehicle:
             vd=msg.vz / 100.0
         )
 
-    def arm_and_takeoff(
-        self, altitude: float = 10.0, mode: CopterMode = CopterMode.GUIDED
-    ):
+    def arm_and_takeoff(self, altitude: float = 10.0, mode: str = "GUIDED"):
         """
         Switch mode, arm, and take off in sequence.
 
         Args:
             altitude: Target altitude in meters.
-            mode: Flight mode for takeoff. Defaults to GUIDED.
+            mode: Flight mode name for takeoff. Defaults to "GUIDED".
         """
         self.set_mode(mode)
         self.arm()

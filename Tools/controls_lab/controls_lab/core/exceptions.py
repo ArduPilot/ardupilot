@@ -1,4 +1,8 @@
-"""Custom exceptions for the controls_lab package."""
+"""
+Custom exceptions for the controls_lab package.
+
+AP_FLAKE8_CLEAN
+"""
 
 
 class ControlsLabError(Exception):

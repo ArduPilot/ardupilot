@@ -10,6 +10,8 @@ Prerequisites:
 Usage:
     cd Tools
     python -m controls_lab.examples.basic_step_response
+
+AP_FLAKE8_CLEAN
 """
 import logging
 

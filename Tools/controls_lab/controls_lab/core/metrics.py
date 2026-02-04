@@ -1,3 +1,8 @@
+"""
+Step response metrics calculation functions.
+
+AP_FLAKE8_CLEAN
+"""
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
