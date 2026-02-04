@@ -24,15 +24,13 @@
 
 The UARTs are marked Rx and Tx in the above pinouts.
 
-========== ========== ======== ====================
- Name      Pad        Port       Default Protocol
-========== ========== =======  ====================
- SERIAL 0  DM/DP      USB       Mavlink
- SERIAL 1  RX1/TX1    USART 1   RCin (DMA)
- SERIAL 2  RX3/TX3    USART 3   ESC
- SERIAL 3  RX6/TX6    USART 6   GPS1 (DMA)
- SERIAL 4  RX4/TX4    USART 4   MSP DisplayPort
-========== ========== =======  ====================
+| Name | Pad | Port | Default Protocol |
+| --- | --- | --- | --- |
+| SERIAL 0 | DM/DP | USB | Mavlink |
+| SERIAL 1 | RX1/TX1 | USART 1 | RCin (DMA) |
+| SERIAL 2 | RX3/TX3 | USART 3 | ESC |
+| SERIAL 3 | RX6/TX6 | USART 6 | GPS1 (DMA) |
+| SERIAL 4 | RX4/TX4 | USART 4 | MSP DisplayPort |
 
 * USART1 and USART6 supports RX and TX DMA.
 * UART2 and UART4 do not support DMA.

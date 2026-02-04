@@ -35,66 +35,61 @@ above image and some content courtesy of SDMODEL
 
 PADS
 
-========= ===================
-Pin       Function
-========= ===================
-VTX 9v    9V for HD System or other VTX, by default ON/OFF is controlled by RELAY2. See Relay Switch Can be controlled by RELAY2
-SDA, SCL  I2C connection (for peripherals)
-5V       5v output (1.5A max)
-3v3       3.3v output (0.25A max)
-Vi       Video input from FPV camera
-Vo       Video output to video transmitter
-CAM       To camera OSD control
-G or GND  Ground
-RSI       Analog RSSI (0-3.3v) input from receiver
-R3, T3    UART3 RX and TX
-R4, T4    UART4 RX and TX
-R6, T6    UART6 RX and TX (UART6 RX is also located in the SH plug)
-LED       WS2182 addressable LED signal wire
-Z-       Piezo buzzer negative leg
-========= ===================
+| Pin | Function |
+| --- | --- |
+| VTX 9v | 9V for HD System or other VTX, by default ON/OFF is controlled by RELAY2 |
+| SDA, SCL | I2C connection (for peripherals) |
+| 5V | 5v output (1.5A max) |
+| 3v3 | 3.3v output (0.25A max) |
+| Vi | Video input from FPV camera |
+| Vo | Video output to video transmitter |
+| CAM | To camera OSD control |
+| G or GND | Ground |
+| RSI | Analog RSSI (0-3.3v) input from receiver |
+| R3, T3 | UART3 RX and TX |
+| R4, T4 | UART4 RX and TX |
+| R6, T6 | UART6 RX and TX (UART6 RX is also located in the SH plug) |
+| LED | WS2182 addressable LED signal wire |
+| Z- | Piezo buzzer negative leg |
 
 Connectors
 
 ESC PORT1 (JST-SH-8P-1)
-========= ===================
-Pin       Function
-========= ===================
-B+       Battery positive voltage (2S-8S)
-R7       UART7 RX
-GND       Ground
-CURRENT   CURRENT
-M1       Motor signal output 1
-M2       Motor signal output 2
-M3       Motor signal output 3
-M4       Motor signal output 4
-========= ===================
+
+| Pin | Function |
+| --- | --- |
+| B+ | Battery positive voltage (2S-8S) |
+| R7 | UART7 RX |
+| GND | Ground |
+| CURRENT | CURRENT |
+| M1 | Motor signal output 1 |
+| M2 | Motor signal output 2 |
+| M3 | Motor signal output 3 |
+| M4 | Motor signal output 4 |
 
 ESC PORT2 (JST-SH-8P-2)
-========= ===================
-Pin       Function
-========= ===================
-B+        Battery positive voltage (2S-8S)
-R7        UART7 RX
-GND        Ground
-CURRENT    CURRENT
-M5        Motor signal output 5
-M6        Motor signal output 6
-M7        Motor signal output 7
-M8        Motor signal output 8
-========= ===================
+
+| Pin | Function |
+| --- | --- |
+| B+ | Battery positive voltage (2S-8S) |
+| R7 | UART7 RX |
+| GND | Ground |
+| CURRENT | CURRENT |
+| M5 | Motor signal output 5 |
+| M6 | Motor signal output 6 |
+| M7 | Motor signal output 7 |
+| M8 | Motor signal output 8 |
 
 DJI Connector JST-SH-6P-3
-========= ===================
-Pin       Function
-========= ===================
-Vtx+       9V for HD System or other VTX, by default ON/OFF is controlled by RELAY2. See Relay Switch
-G       Ground
-T1       UART1 TX
-R1       UART1 RX
-G       Ground
-R6       UART6 RX
-========= ===================
+
+| Pin | Function |
+| --- | --- |
+| Vtx+ | 9V for HD System or other VTX, by default ON/OFF is controlled by RELAY2 |
+| G | Ground |
+| T1 | UART1 TX |
+| R1 | UART1 RX |
+| G | Ground |
+| R6 | UART6 RX |
 
 ## UART Mapping¶
 
