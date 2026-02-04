@@ -41,9 +41,9 @@ This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either
 directly or via MAVFTP. The following key parameters should be set:
 
- - SCR_ENABLE should be set to 1
- - ESC_HW_ENABLE should be set to 1
- - SERIALn_PROTOCOL should be set to 28 for the connected serial port
+- SCR_ENABLE should be set to 1
+- ESC_HW_ENABLE should be set to 1
+- SERIALn_PROTOCOL should be set to 28 for the connected serial port
 
 then the flight controller should rebooted and parameters should be
 refreshed.
@@ -54,4 +54,3 @@ configured as per the above documentation.
 Note that the DataLink does not provide any data unless the motor is
 running, so you cannot see any valid data at all until you arm the
 motors and they start spinning.
-

@@ -14,7 +14,7 @@ If you are reading this page, you are possibly interested in contributing to our
 * Search for your bug, make sure it is not already reported. If it is already reported, make a comment on that issue.
 * Only report one bug per issue report.
 * Write a clear and concise summary. Be specific about what component of the software you are writing about, and follow the convention: "Copter: blah blah blah"
-* Write a clear and concise description, with **particularly clear steps** to reproduce the problem. Include logs that display the bug. **Try to report only facts in your issue report, keeping your assumptions out of it.** 
+* Write a clear and concise description, with **particularly clear steps** to reproduce the problem. Include logs that display the bug. **Try to report only facts in your issue report, keeping your assumptions out of it.**
 * The majority of issues open now are good or acceptable by these guidelines. Please refer to them for examples.
 
 # Submitting patches

@@ -4,18 +4,18 @@ The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/produ
 
 ## Features
 
- - STM32F765 microcontroller
- - Two IMUs: ICM20689 and BMI055
- - MS5611 SPI barometer
- - builtin I2C IST8310 magnetometer
- - microSD card slot
- - 6 UARTs plus USB
- - 16 PWM outputs
- - Four I2C and two CAN ports
- - External Buzzer
- - external safety Switch
- - voltage monitoring for servo rail and Vcc
- - two dedicated power input ports for external power bricks
+- STM32F765 microcontroller
+- Two IMUs: ICM20689 and BMI055
+- MS5611 SPI barometer
+- builtin I2C IST8310 magnetometer
+- microSD card slot
+- 6 UARTs plus USB
+- 16 PWM outputs
+- Four I2C and two CAN ports
+- External Buzzer
+- external safety Switch
+- voltage monitoring for servo rail and Vcc
+- two dedicated power input ports for external power bricks
 
 ## Pinout
 
@@ -23,13 +23,13 @@ The Pixhawk4 flight controller is sold by [Holybro](http://www.holybro.com/produ
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> UART3 (Telem2)
- - SERIAL3 -> UART1 (GPS)
- - SERIAL4 -> UART4 (GPS2, marked UART/I2CB)
- - SERIAL5 -> UART6 (spare)
- - SERIAL6 -> UART7 (spare, debug)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> UART3 (Telem2)
+- SERIAL3 -> UART1 (GPS)
+- SERIAL4 -> UART4 (GPS2, marked UART/I2CB)
+- SERIAL5 -> UART6 (spare)
+- SERIAL6 -> UART7 (spare, debug)
 
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
@@ -78,7 +78,6 @@ purpose UART with ArduPilot.
    </tr>
    </tbody>
    </table>
-
 
 ### GPS port
 
@@ -143,7 +142,7 @@ purpose UART with ArduPilot.
    </table>
 
 ## RC Input
- 
+
 RC input is configured on the port marked DSM/SBUS RC. This connector
 supports all RC protocols. Two cables are available for this port. To
 use software binding of Spektrum satellite receivers you need to use
@@ -161,15 +160,15 @@ PWM protocols. The first 4 of the auxiliary PWM outputs support DShot.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 8 auxiliary PWM outputs are in 3 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5 and 6 in group2
- - PWM 7 and 8 in group3
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
+- PWM 7 and 8 in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -197,33 +196,33 @@ use as GPIOs.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - AUX1 50
- - AUX2 51
- - AUX3 52
- - AUX4 53
- - AUX5 54
- - AUX6 55
+- AUX1 50
+- AUX2 51
+- AUX3 52
+- AUX4 53
+- AUX5 54
+- AUX6 55
 
 ## Analog inputs
 
 The Pixhawk4 has 7 analog inputs
 
- - ADC Pin0 -> Battery Voltage
- - ADC Pin1 -> Battery Current Sensor
- - ADC Pin2 -> Battery Voltage 2
- - ADC Pin3 -> Battery Current Sensor 2
- - ADC Pin4 -> ADC port pin 2
- - ADC Pin14 -> ADC port pin 3
- - ADC Pin10 -> ADC 5V Sense
- - ADC Pin11 -> ADC 3.3V Sense
- - ADC Pin103 -> RSSI voltage monitoring
+- ADC Pin0 -> Battery Voltage
+- ADC Pin1 -> Battery Current Sensor
+- ADC Pin2 -> Battery Voltage 2
+- ADC Pin3 -> Battery Current Sensor 2
+- ADC Pin4 -> ADC port pin 2
+- ADC Pin14 -> ADC port pin 3
+- ADC Pin10 -> ADC 5V Sense
+- ADC Pin11 -> ADC 3.3V Sense
+- ADC Pin103 -> RSSI voltage monitoring
 
 ## I2C Buses
 
- - the internal I2C port is bus 0 in ArduPilot (I2C3 in hardware)
- - the port labelled I2CA is bus 3 in ArduPilot (I2C4 in hardware)
- - the port labelled I2CB is bus 2 in ArduPilot (I2c2 in hardware)
- - the port labelled GPS is bus 1 in ArduPilot (I2c1 in hardware)
+- the internal I2C port is bus 0 in ArduPilot (I2C3 in hardware)
+- the port labelled I2CA is bus 3 in ArduPilot (I2C4 in hardware)
+- the port labelled I2CB is bus 2 in ArduPilot (I2c2 in hardware)
+- the port labelled GPS is bus 1 in ArduPilot (I2c1 in hardware)
 
 ### Pinout for I2CA
 
@@ -378,7 +377,6 @@ The Pixhawk4 supports SWD debugging on the debug port
    </tr>
    </tbody>
    </table>
-
 
 ## Loading Firmware
 

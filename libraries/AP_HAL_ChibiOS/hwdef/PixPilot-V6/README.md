@@ -4,44 +4,43 @@ The PixPilot-V6 flight controller is sold by a range of resellers listed on the 
 
 ## Features
 
-•	STM32H743VIT6 and STM32F103C8T6 microcontroller
+•    STM32H743VIT6 and STM32F103C8T6 microcontroller
 
-•	Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
+•    Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
 
-•	internal heater for IMUs temperature control
+•    internal heater for IMUs temperature control
 
-•	internal Soft Rubber Damping Ball isolation for All interna IMUs
+•    internal Soft Rubber Damping Ball isolation for All interna IMUs
 
-•	Two barometers, MS5611(SPI)
+•    Two barometers, MS5611(SPI)
 
-•	builtin IST8310 magnetometer(internal I2C)
+•    builtin IST8310 magnetometer(internal I2C)
 
-•	builtin RAMTRON(SPI)
+•    builtin RAMTRON(SPI)
 
-•	microSD card slot
+•    microSD card slot
 
-•	5 UARTs
+•    5 UARTs
 
-•	USB(Type-C)
+•    USB(Type-C)
 
-•	PPM & S.Bus input
+•    PPM & S.Bus input
 
-•	14 PWM outputs
+•    14 PWM outputs
 
-•	tow I2C ports and two FDCAN ports
+•    tow I2C ports and two FDCAN ports
 
-•	one S.Bus output
+•    one S.Bus output
 
-•	External Buzzer
+•    External Buzzer
 
-•	builtin RGB LED
+•    builtin RGB LED
 
-•	two voltage & current monitoring
+•    two voltage & current monitoring
 
-•	servo rail BEC independent power input for servos
- 
-•	external safety Switch
+•    servo rail BEC independent power input for servos
 
+•    external safety Switch
 
 ## Pinout
 
@@ -51,14 +50,14 @@ The PixPilot-V6 flight controller is sold by a range of resellers listed on the 
 UART Mapping
 ============
 
- - SERIAL0 -> console (primary mavlink, usually USB)
- - SERIAL1 -> USART2  (telem1)
- - SERIAL2 -> USART3  (Telem2)
- - SERIAL3 -> UART4   (GPS1)
- - SERIAL4 -> UART8   (GPS2)
- - SERIAL5 -> UART7   (USER)
- 
- Connector pin assignments
+- SERIAL0 -> console (primary mavlink, usually USB)
+- SERIAL1 -> USART2  (telem1)
+- SERIAL2 -> USART3  (Telem2)
+- SERIAL3 -> UART4   (GPS1)
+- SERIAL4 -> UART8   (GPS2)
+- SERIAL5 -> UART7   (USER)
+
+Connector pin assignments
 =========================
 
 TELEM1, TELEM2 ports
@@ -206,7 +205,6 @@ Safety and buzzer port
 GPS1/I2C1, GPS2/I2C2 ports
 --------------------------
 
-
    <table border="1" class="docutils">
    <tbody>
    <tr>
@@ -279,6 +277,7 @@ Serial5 port
    </tr>
    </tbody>
    </table>
+
 Power1, Power2 ports
 --------------------
 
@@ -356,12 +355,12 @@ Then reboot.
 
 DroneCAN capability
 ===================
-There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected. 
+
+There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected.
 
 Where to Buy
 ============
 
 `makeflyeasy <http://www.makeflyeasy.com>`_
-
 
 [copywiki destination="plane,copter,rover,blimp"]

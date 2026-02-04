@@ -2,8 +2,8 @@
 
 https://stingbee.com.ua/flight_controllers/stellarf4v2
 
-
 ## Features
+
     Processor
         STM32F405
     Sensors
@@ -28,35 +28,32 @@ https://stingbee.com.ua/flight_controllers/stellarf4v2
     Size
         41 x 41mm PCB with 30.5mm M3 mounting
 
-
 ## Overview
 
 ![StellarF4 V2](StellarF4V2-top.png)
 
 ![StellarF4 V2](StellarF4V2-bot.png)
 
-
 ## UART Mapping
 
 The UARTs are marked Rx* and Tx* in the above pinouts. The Rx* pin is the
 receive pin for UART*. The Tx* pin is the transmit pin for UART*.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Serial RC input, DMA capable)
- - SERIAL2 -> UART3 (User) (NO DMA)
- - SERIAL3 -> UART4 (DisplayPort) (NO DMA)
- - SERIAL4 -> UART5 (ESC Telemetry) (NO DMA)
-
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Serial RC input, DMA capable)
+- SERIAL2 -> UART3 (User) (NO DMA)
+- SERIAL3 -> UART4 (DisplayPort) (NO DMA)
+- SERIAL4 -> UART5 (ESC Telemetry) (NO DMA)
 
 ## CAN and I2C
 
 StellarF4V2 supports 1x I2C bus
 multiple I2C peripherals can be connected to one I2C bus in parallel.
 
-
 ## RC Input
 
 The default RC input is configured on the UART2(SERIAL1) RX2 input and can be used for all ArduPilot supported unidirectional receiver protocols.
+
 * SBUS/DSM/SRXL/PPM connects to the SBUS pad or pin on the HD VTX connector. SBUS pad connected to RX2 via inverter.
 * CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 * FPort requires connection to TX2 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
@@ -72,16 +69,16 @@ External OSD support such as DJI or DisplayPort is preconfigured on SERIAL3 but 
 StellarF4V2 supports up to 11 PWM outputs. PWM1-4 outputs support DShot.
 
 Channels 1-4 support bi-directional DShot. Channels 5-8 marked as S1M5-S4M8 on the board. Channels 9-11 marked as S5-S7 on the board. PWM outputs are grouped and every group must use the same output protocol:
+
 * 1, 2, 3, 4  are Group 1;
 * 5, 6, 7, 8  are Group 2;
 * 9, 10, 11   are Group 3;
-
 
 ## Battery Monitoring
 
 The board has 1 built-in voltage dividers and 1x current ADC. support external 3.3V based current sensor
 The voltage input is compatible with 2~8S LiPo batteries.
-	
+
 The default battery parameters are:
 
 * :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
@@ -90,17 +87,14 @@ The default battery parameters are:
 * :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11
 * :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 10
 
-
 ## Compass
 
 StellarF4V2 does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
-
 
 ## Camera Switch
 
 GPIO 81 controls which camera input (CAM1 or CAM2) is applied to the internal OSD.
 The camera switch is controlled by the RELAY1 parameter. The default is to use CAM1.
-
 
 ## Loading Firmware
 

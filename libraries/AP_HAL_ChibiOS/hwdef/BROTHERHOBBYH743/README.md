@@ -4,14 +4,14 @@ The BROTHERHOBBYH743 is a flight controller produced by [BROTHERHOBBY](https://w
 
 ## Features
 
- - STM32H743 microcontroller
- - ICM42688P IMU
- - SPL06 barometer
- - AT7456E OSD
- - 12V 3A BEC; 5V 3A BEC
- - SDCard
- - 7 UARTs
- - 13 PWM outputs
+- STM32H743 microcontroller
+- ICM42688P IMU
+- SPL06 barometer
+- AT7456E OSD
+- 12V 3A BEC; 5V 3A BEC
+- SDCard
+- 7 UARTs
+- 13 PWM outputs
 
 ## Pinout
 
@@ -20,31 +20,30 @@ The BROTHERHOBBYH743 is a flight controller produced by [BROTHERHOBBY](https://w
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (ESC Telemetry)
- - SERIAL2 -> UART2 (RX/SBUS, DMA-enabled)
- - SERIAL3 -> UART3 (Spare, DMA-enabled)
- - SERIAL4 -> UART4 (Spare)
- - SERIAL6 -> UART6 (DJI, DMA-enabled)
- - SERIAL7 -> UART7 (GPS, DMA-enabled)
- - SERIAL8 -> UART8 (Spare)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (ESC Telemetry)
+- SERIAL2 -> UART2 (RX/SBUS, DMA-enabled)
+- SERIAL3 -> UART3 (Spare, DMA-enabled)
+- SERIAL4 -> UART4 (Spare)
+- SERIAL6 -> UART6 (DJI, DMA-enabled)
+- SERIAL7 -> UART7 (GPS, DMA-enabled)
+- SERIAL8 -> UART8 (Spare)
 
 ## RC Input
 
 The default RC input is configured on the UART2_RX inverted from the SBUS pin.  All unidirectional ArduPilot compatible protocols, except PPM, are supported. Receivers using bi-directional protocols such as CRSF/ELRS should be tied to the TX2 and RX2 pins.
 
- 
 * FPort requires connection to TX2 . See :ref:`FPort Receivers<common-Fport-receivers>`.
 * CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-* SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to “4”. 
+* SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to “4”.
 
 ## FrSky Telemetry
- 
+
 FrSky Telemetry can be supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
- 
-  - SERIAL1_PROTOCOL 10
-  - SERIAL1_OPTIONS 7
-  
+
+- SERIAL1_PROTOCOL 10
+- SERIAL1_OPTIONS 7
+
 ## OSD Support
 
 The BROTHERHOBBYH743 supports using its internal OSD (MAX7456 driver). Simultaneous DisplayPort OSD operation  is also pre-configured on SERIAL 6. See :ref:`common-msp-osd-overview-4.2` for more info.
@@ -61,12 +60,13 @@ Channels 1-8 support bi-directional DShot.
 All outputs except 11/12 support DShot.
 
 PWM outputs are grouped and every group must use the same output protocol:
- - PWM 1-2   in group1
- - PWM 3-4   in group2
- - PWM 5-6   in group3
- - PWM 7-10  in group4
- - PWM 11-12 in group5 - servo 1/2
- - PWM 13    in group6 - LED strip
+
+- PWM 1-2   in group1
+- PWM 3-4   in group2
+- PWM 5-6   in group3
+- PWM 7-10  in group4
+- PWM 11-12 in group5 - servo 1/2
+- PWM 13    in group6 - LED strip
 
 ## Battery Monitoring
 
@@ -75,15 +75,15 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - :ref:BATT_MONITOR<BATT_MONITOR> = 4
- - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
- - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11
- - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11
- - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 40.2
+- :ref:BATT_MONITOR<BATT_MONITOR> = 4
+- :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
+- :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11
+- :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11
+- :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 40.2
 
 ## RSSI
 
- - ADC Pin 8 -> RSSI voltage monitoring
+- ADC Pin 8 -> RSSI voltage monitoring
 
 ## Compass
 

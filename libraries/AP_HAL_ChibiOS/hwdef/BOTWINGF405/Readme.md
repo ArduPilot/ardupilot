@@ -3,7 +3,6 @@
 
 The BOTWINGF405 is a compact, high-performance flight controller developed for fixed-wing and FPV applications. Designed for reliability and flexibility, it integrates essential sensors and features for smooth flight and rich telemetry, produced by [BOTLAB DYNAMICS](https://www.botlabdynamics.store/).
 
-
 ![BOTWINGF405 Board](Layout_top_1.png "BOTWINGF405-TOP-1")
 
 ![BOTWINGF405 Board](Layout_top_2.png "BOTWINGF405-TOP-2")
@@ -19,27 +18,23 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 * STM32F405RGT6, 168 MHz, 1MB flash
 * 24MHz external crystal
 
-
 ### Sensors
 
 * ICM42688P Accelerometer/Gyroscope
 * DPS310 Barometer
 * Optional External Compass (AK8963 supported)
 
-
 ### Power
 
 * 2S–6S LiPo input with onboard voltage and current monitoring
 * BEC Outputs:
   * 5V @ 2.0A
-  * 9V @ 2.0A, GPIO controlled 
-
+  * 9V @ 2.0A, GPIO controlled
 
 ### Storage
 
 * 32MB onboard dataflash for logging
 * JEDEC-compatible SPI Flash (W25Q256)
-
 
 ### Interfaces
 
@@ -48,7 +43,6 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 * USB OTG port (USB connector)
 * 5 configured PWM outputs (4 for motors, 1 for RGB LED)
 * 1x RC input (SBUS, PPM or CRSF/ELRS selectable)
-
 
 ### External Connections
 
@@ -60,24 +54,21 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 * 5-pin JST-GH for Camera Input
 * 4 x 4-pin JST-GH for LED Strip-NEOPIXEL
 
-
 ## Wiring Diagram
 
 ![BOTWINGF405 Wiring](wiring_diagram.png)
-
 
 ## UART Mapping
 
 The UARTs default protocol and serial port assigments are:
 
 * SERIAL0 -> USB
-* SERIAL1 -> USART1 (DMA capable,RX tied to SBUS RC input and pin used as an interrupt input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG =1` ) 
+* SERIAL1 -> USART1 (DMA capable,RX tied to SBUS RC input and pin used as an interrupt input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG =1` )
 * SERIAL2 -> USART2 (ESC Telemetry)
 * SERIAL3 -> USART3 (DisplayPort, TX DMA Capable)
 * SERIAL4 -> UART4  (USER, TX DMA Capable)
 * SERIAL5 -> UART5  (USER, TX DMA Capable)
-* SERIAL6 -> USART6 (GPS) 
-
+* SERIAL6 -> USART6 (GPS)
 
 ## RC Input
 
@@ -86,6 +77,7 @@ The RX1 input by default is mapped to a timer input instead of UART`1, and can b
 To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, the RX1 pin must be configured to be used as true UART RX pin for use with bi-directional systems by setting the :ref:`BRD_ALT_CONFIG<BRD_ALT_CONFIG>` to “1” so it becomes the SERIAL1 port’s RX input pin.ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` is alreaddy set by deault to “23” to allow RC reciever connection to UART1.
 
 With this option:
+
 * PPM is not supported.
 * FPort requires connection to TX1 via an external bi-directional and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to “7”.
 * CRSF also requires a TX1 connection, in addition to R6, and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “0”.
@@ -93,11 +85,9 @@ With this option:
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See :ref:`common-rc-systems` for more details.
 
-
 ## OSD Support
 
 The BOTWINGF405 includes an internal AT7456E OSD enabled for analog video. Simultaneous DisplayPort operation is enabled by default on UART3
-
 
 ## PWM Outputs
 
@@ -109,14 +99,14 @@ PWM 3,4 in group2
 
 PWM 5 (LED) group3
 
-
 ## Battery Monitoring
+
 The board has a built-in voltage sensor and external current sensor input. The current
 sensor can read up to 120 Amps. The voltage sensor can handle up to 6S LiPo batteries.
 The default battery monitor parameters are:
 
 * :ref:`BATT_MONITOR<BATT_MONITOR>` 4
-* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 11 
+* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 11
 * :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 13
 * :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11.0
 * :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 37 (may need adjustment depending on external current sensor used)
@@ -124,7 +114,6 @@ The default battery monitor parameters are:
 ## Compass
 
 There is no onboard compass. External compass modules can be connected via I2C (SCL/SDA pads).
-
 
 ## VTX Power Control
 
@@ -134,7 +123,8 @@ GPIO81 controls 9V video BEC output. Set GPIO high to enable 9V for connected de
 
 The PIO pad is setup as a user GPIO (GPIO82) by default, controlled by RELAY2.
 
-## RSSI 
+## RSSI
+
 Analog RSSI input is via pin 12.  Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to "12" and :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" to enable its use.
 
 ## LEDs and Buzzer
@@ -148,7 +138,6 @@ Analog RSSI input is via pin 12.  Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to "12" 
 * 32MB onboard SPI flash for data logging
 * Uses JEDEC-compatible `AP_Logger_Flash_JEDEC` driver
 
-
 ## Loading Firmware
 
 Firmware for the autopilot can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "BOTWINGF405".
@@ -160,6 +149,5 @@ firmware, using your favourite DFU loading tool.
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 \*.apj firmware files.
-
 
 **Note:** SWD access for development/debugging available on PA13/PA14.

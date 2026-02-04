@@ -18,5 +18,3 @@ Be sure to have unique parameter names for different parameter sets. This script
 Parameter names are only visible and used by Ground Control Stations. While indentically named params in different scripts will operate fine, you will not be able to distinguish them in the GCS displays!
 
 Any .lua script in the scripts directory will be ERASED! when this script is run. In order to keep another .lua script running when using this script, place it in every subdirectory so that it will be copied into the main scripts directory whenever changing directories.
-
-

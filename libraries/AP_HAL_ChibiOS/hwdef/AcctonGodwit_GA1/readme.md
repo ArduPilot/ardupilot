@@ -79,9 +79,10 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 ## PWM Output
 
 PWM M1-M8 (IO Main PWM), A1-A8(FMU PWM). All these 16 support normal PWM output formats. FMU PWM A1-A6 can support DShot and B-Directional DShot. A1-A8(FMU PWM) are grouped as:
- - Group 1: A1, A2, A3, A4
- - Group 2: A5, A6
- - Group 3: A7, A8
+
+- Group 1: A1, A2, A3, A4
+- Group 2: A5, A6
+- Group 3: A7, A8
 
 The motor and servo system should be connected to these ports according to the order outlined in the fuselage reference for your carrier.
 

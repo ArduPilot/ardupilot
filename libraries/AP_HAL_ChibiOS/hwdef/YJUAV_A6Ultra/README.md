@@ -4,25 +4,25 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 
 ## Features
 
- - STM32H743 microcontroller
- - Onboard Flash: 2048Mbits
- - Three IMUs: ICM42688,ICM42688,IIM42652
- - Internal ITS8310 I2C magnetometer
- - Internal two DPS310 SPI barometer
- - Internal RGB LED
- - MicroSD card slot port
- - 2 Analog power ports
- - 5 UARTs and 1 USB ports
- - 3 I2C and 2 CAN ports
- - 13 PWM output ports
- - Safety switch port
- - External SPI port
- - Buzzer port
- - RC IN port
+- STM32H743 microcontroller
+- Onboard Flash: 2048Mbits
+- Three IMUs: ICM42688,ICM42688,IIM42652
+- Internal ITS8310 I2C magnetometer
+- Internal two DPS310 SPI barometer
+- Internal RGB LED
+- MicroSD card slot port
+- 2 Analog power ports
+- 5 UARTs and 1 USB ports
+- 3 I2C and 2 CAN ports
+- 13 PWM output ports
+- Safety switch port
+- External SPI port
+- Buzzer port
+- RC IN port
 
 ## Pinout
-![YJUAV_A6Ultra Board](YJUAV_A6Ultra-pinout.jpg "YJUAV_A6Ultra")
 
+![YJUAV_A6Ultra Board](YJUAV_A6Ultra-pinout.jpg "YJUAV_A6Ultra")
 
 ## Connectors
 
@@ -176,14 +176,14 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 
 ## UART Mapping
 
- - SERIAL0 -> USB (OTG1)
- - SERIAL1 -> USART2 (Telem1)
- - SERIAL2 -> USART6 (Telem2)
- - SERIAL3 -> USART3 (GPS1)
- - SERIAL4 -> USART1 (GPS2)
- - SERIAL5 -> UART8 (USER) TX only, normally used for SBUS_OUT with protocol change
- - SERIAL6 -> UART7 (USER/Debug), NODMA
- - SERIAL7 -> USB2 (OTG2)
+- SERIAL0 -> USB (OTG1)
+- SERIAL1 -> USART2 (Telem1)
+- SERIAL2 -> USART6 (Telem2)
+- SERIAL3 -> USART3 (GPS1)
+- SERIAL4 -> USART1 (GPS2)
+- SERIAL5 -> UART8 (USER) TX only, normally used for SBUS_OUT with protocol change
+- SERIAL6 -> UART7 (USER/Debug), NODMA
+- SERIAL7 -> USB2 (OTG2)
 
 ## RC Input
 
@@ -211,10 +211,10 @@ The A6Ultra supports up to 13 PWM outputs,support all PWM protocols as well as D
 
 The 13 PWM outputs are in 4 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5, 6, 7 and 8 in group2
- - PWM 9, 10, 11 in group3
- - PWM 12, 13 in group4
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 in group3
+- PWM 12, 13 in group4
 
 Channels 1-8 support bi-directional Dshot.
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
@@ -239,15 +239,15 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 
 The A6Ultra flight controller has 7 Analog inputs
 
- - ADC Pin4   -> Battery Current 
- - ADC Pin2 -> Battery Voltage 
- - ADC Pin16   -> Battery2 Current 
- - ADC Pin12 -> Battery2 Voltage 
- - ADC Pin8   -> ADC 3V3 Sense
- - ADC Pin10 -> ADC 6V6 Sense
- - ADC Pin11 -> RSSI voltage monitoring
+- ADC Pin4   -> Battery Current
+- ADC Pin2 -> Battery Voltage
+- ADC Pin16   -> Battery2 Current
+- ADC Pin12 -> Battery2 Voltage
+- ADC Pin8   -> ADC 3V3 Sense
+- ADC Pin10 -> ADC 6V6 Sense
+- ADC Pin11 -> RSSI voltage monitoring
 
- ## Battery Monitor Configuration
+## Battery Monitor Configuration
 
 The board has voltage and current sensor inputs on the POWER1_ADC and POWER2_ADC connector.
 
@@ -282,7 +282,6 @@ BATT2_AMP_PERVLT 34.6 (may need adjustment if supplied monitor is not used)
 ./waf copter
 
 The compiled firmware is located in folder **"build/YJUAV_A6Ultra/bin/arducopter.apj"**.
-
 
 ## Loading Firmware
 

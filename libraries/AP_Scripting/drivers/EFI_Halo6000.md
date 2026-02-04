@@ -47,8 +47,8 @@ This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either
 directly or via MAVFTP. The following key parameters should be set:
 
- - SCR_ENABLE should be set to 1
- - EFI_TYPE should be set to 7
+- SCR_ENABLE should be set to 1
+- EFI_TYPE should be set to 7
 
 then the flight controller should rebooted and parameters should be
 refreshed.

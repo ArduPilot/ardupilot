@@ -9,40 +9,39 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed on t
 
 •STM32F103C8T6 IOMCU microcontroller
 
-•	Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
+•    Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
 
-•	internal heater for IMUs temperature control
+•    internal heater for IMUs temperature control
 
-•	internal Soft Rubber Damping Ball isolation for All interna IMUs
+•    internal Soft Rubber Damping Ball isolation for All interna IMUs
 
-•	Two barometers, BMP388(SPI)
+•    Two barometers, BMP388(SPI)
 
-•	builtin RAMTRON(SPI)
+•    builtin RAMTRON(SPI)
 
-•	microSD card slot
+•    microSD card slot
 
-•	5 UARTs, two with RTS/CTS flow control
+•    5 UARTs, two with RTS/CTS flow control
 
-•	USB(Type-C)
+•    USB(Type-C)
 
-•	PPM & S.Bus input
+•    PPM & S.Bus input
 
-•	16 PWM outputs
+•    16 PWM outputs
 
-•	twoI2C ports and two FDCAN ports
+•    twoI2C ports and two FDCAN ports
 
-•	one S.Bus output
+•    one S.Bus output
 
-•	internal Buzzer
+•    internal Buzzer
 
-•	builtin RGB LED
+•    builtin RGB LED
 
 • Four voltage & current monitoring, Two analog and Two CAN
 
-•	servo rail BEC independent power input for servos
- 
-•	external safety Switch
+•    servo rail BEC independent power input for servos
 
+•    external safety Switch
 
 ## Picture
 
@@ -54,17 +53,19 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed on t
 UART Mapping
 ============
 
- - SERIAL0 -> console (primary mavlink, usually USB)
+- SERIAL0 -> console (primary mavlink, usually USB)
 - SERIAL1 -> USART2 (Telem1,MAVLINK2) (DMA capable)
 - SERIAL2 -> USART3 (Telem2, MAVLink2) (DMA capable)
- - SERIAL3 -> UART4 (GPS1) (TX is DMA capable)
-  - SERIAL4 -> UART8 (GPS2) (RX is DMA capable)
- - SERIAL5 -> UART7   (USER)
- 
- Connector pin assignments
+- SERIAL3 -> UART4 (GPS1) (TX is DMA capable)
+- SERIAL4 -> UART8 (GPS2) (RX is DMA capable)
+- SERIAL5 -> UART7   (USER)
+
+Connector pin assignments
 =========================
+
 POWER_CAN1 port, POWER_CAN2 ports
 --------------------
+
 <table border="1" class="docutils">
    <tbody>
    <tr>
@@ -105,7 +106,6 @@ POWER_CAN1 port, POWER_CAN2 ports
    </tbody>
    </table>
 
-   
 TELEM1, TELEM2 ports
 --------------------
 
@@ -232,7 +232,7 @@ Safety and buzzer port
    </tr>
    </tbody>
    </table>
-   
+
 DSM port
 -----------
 
@@ -263,7 +263,6 @@ DSM port
 
 GPS1/I2C1, GPS2/I2C2 ports
 --------------------------
-
 
    <table border="1" class="docutils">
    <tbody>
@@ -337,7 +336,7 @@ Serial5 port
    </tr>
    </tbody>
    </table>
-   
+
 Power1, Power2 ports
 --------------------
 
@@ -381,7 +380,6 @@ Power1, Power2 ports
    </tbody>
    </table>
 
-
 RC Input
 --------
 
@@ -416,12 +414,12 @@ Then reboot.
 
 DroneCAN capability
 ===================
+
 There are 4 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected. There are also two separate CAN POWER ports for easy access to CAN-PMU.
 
 Where to Buy
 ============
 
 `makeflyeasy <http://www.makeflyeasy.com>`_
-
 
 [copywiki destination="plane,copter,rover,blimp"]

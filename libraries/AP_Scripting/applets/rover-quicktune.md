@@ -17,6 +17,7 @@ CRUISE_SPEED
 CRUISE_THROTTLE
 
 # How To Use
+
 Install this script in the autopilot's SD card's APM/scripts directory
 Set SCR_ENABLE to 1 and reboot the autopilot
 Set RTUN_ENABLE to 1 (default)
@@ -49,7 +50,7 @@ By default the gains will be tuned in this order:
 
 The script will also adjust filter settings:
 
- - ATC_STR_RAT_FLTD and FLTT will be set to half of the INS_GYRO_FILTER value
+- ATC_STR_RAT_FLTD and FLTT will be set to half of the INS_GYRO_FILTER value
 
 Once tuning is complete "RTUN: tuning done" will be displayed
 Save the tune by raising the RC switch to the high position

@@ -4,17 +4,17 @@ The TBS LUCID PRO/Freestyle is a flight controller produced by [Team Black Sheep
 
 ## Features
 
- - MCU - STM32F405 32-bit processor running at 168 MHz
- - IMU - ICM42688 (Freestyle) or MPU6000 (Pro)
- - Barometer - SPL06
- - OSD - AT7456E
- - Onboard Flash: 4MByte
- - 6x UARTs
- - 6x PWM Outputs (4 Motor Output, 1 Camera PWM and 1 LED)
- - Battery input voltage: 2S-6S
- - BEC 3.3V 0.5A
- - BEC 5V 3A
- - BEC 9V 3A for video
+- MCU - STM32F405 32-bit processor running at 168 MHz
+- IMU - ICM42688 (Freestyle) or MPU6000 (Pro)
+- Barometer - SPL06
+- OSD - AT7456E
+- Onboard Flash: 4MByte
+- 6x UARTs
+- 6x PWM Outputs (4 Motor Output, 1 Camera PWM and 1 LED)
+- Battery input voltage: 2S-6S
+- BEC 3.3V 0.5A
+- BEC 5V 3A
+- BEC 9V 3A for video
 
 ## Pinout
 
@@ -25,13 +25,13 @@ The TBS LUCID PRO/Freestyle is a flight controller produced by [Team Black Sheep
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (RX, DMA-enabled)
- - SERIAL2 -> UART2 (User, RX5 is SBUS input and is inverted from pin)
- - SERIAL3 -> UART3 (HD RX, DMA-Enabled)
- - SERIAL4 -> UART4 (SmartAudio)
- - SERIAL5 -> UART5 (ESC Telem)
- - SERIAL6 -> UART6 (GPS, DMA-Enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (RX, DMA-enabled)
+- SERIAL2 -> UART2 (User, RX5 is SBUS input and is inverted from pin)
+- SERIAL3 -> UART3 (HD RX, DMA-Enabled)
+- SERIAL4 -> UART4 (SmartAudio)
+- SERIAL5 -> UART5 (ESC Telem)
+- SERIAL6 -> UART6 (GPS, DMA-Enabled)
 
 ## RC Input
 
@@ -41,15 +41,15 @@ use SERIAL2, set its protocol to RCIN ("23") and change SERIAL1_PROTOCOL to some
 Note: If the receiver is FPort the receiver must be tied to the SERIAL1 TX pin , RSSI_TYPE set to 3,
 and SERIAL1_OPTIONS must be set to 7 (invert TX/RX, half duplex). For full duplex like CRSF/ELRS use both
 RX1 and TX1 and set RSSI_TYPE also to 3.
- 
+
 ## FrSky Telemetry
- 
+
 FrSky Telemetry is supported using an unused UART, such as the T4 pin (UART4 transmit).
 You need to set the following parameters to enable support for FrSky S.PORT:
- 
-  - SERIAL4_PROTOCOL 10
-  - SERIAL4_OPTIONS 7
-  
+
+- SERIAL4_PROTOCOL 10
+- SERIAL4_OPTIONS 7
+
 ## OSD Support
 
 The TBS LUCID PRO supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
@@ -62,9 +62,9 @@ M5-6 on a separate pads for LED strip and camera control.
 
 The PWM is in 3 groups:
 
- - PWM 1-2   in group1
- - PWM 3-4   in group2
- - PWM 5-6   in group3 (No DShot). PWM5 marked as "CAMC", PWM6 as "LED"
+- PWM 1-2   in group1
+- PWM 3-4   in group2
+- PWM 5-6   in group3 (No DShot). PWM5 marked as "CAMC", PWM6 as "LED"
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -78,11 +78,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 20
- - BATT_AMP_PERVLT 40
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 20
+- BATT_AMP_PERVLT 40
 
 ## Compass
 

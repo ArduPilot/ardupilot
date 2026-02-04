@@ -5,11 +5,11 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define LOITER_SPEED_DEFAULT_CM             1250.0  // Default horizontal loiter speed in cm/s.
-#define LOITER_SPEED_MIN_CMS                20.0    // Minimum allowed horizontal loiter speed in cm/s.
-#define LOITER_ACCEL_MAX_DEFAULT_CMSS       500.0   // Default maximum horizontal acceleration in loiter mode (cm/s²).
-#define LOITER_BRAKE_ACCEL_DEFAULT_CMSS     250.0   // Default maximum braking acceleration when sticks are released (cm/s²).
-#define LOITER_BRAKE_JERK_DEFAULT_CMSSS     500.0   // Default maximum jerk applied during braking transitions (cm/s³).
+#define LOITER_SPEED_DEFAULT_MS             12.5    // Default horizontal loiter speed in m/s.
+#define LOITER_SPEED_MIN_MS                 0.2     // Minimum allowed horizontal loiter speed in m/s.
+#define LOITER_ACCEL_MAX_DEFAULT_MSS        5.0     // Default maximum horizontal acceleration in loiter mode (m/s²).
+#define LOITER_BRAKE_ACCEL_DEFAULT_MSS      2.5     // Default maximum braking acceleration when sticks are released (m/s²).
+#define LOITER_BRAKE_JERK_DEFAULT_MSSS      5.0     // Default maximum jerk applied during braking transitions (m/s³).
 #define LOITER_BRAKE_START_DELAY_DEFAULT_S  1.0     // Delay (in seconds) before braking begins after sticks are released.
 #define LOITER_VEL_CORRECTION_MAX_MS        2.0     // Maximum speed (in m/s) used for correcting position errors in loiter.
 #define LOITER_POS_CORRECTION_MAX_M         2.0     // Maximum horizontal position error allowed before correction (m).
@@ -28,41 +28,10 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ANG_MAX",  1, AC_Loiter, _angle_max_deg, 0.0f),
 
-    // @Param: SPEED
-    // @DisplayName: Loiter Horizontal Maximum Speed
-    // @Description: Defines the maximum speed in cm/s which the aircraft will travel horizontally while in loiter mode
-    // @Units: cm/s
-    // @Range: 20 3500
-    // @Increment: 50
-    // @User: Standard
-    AP_GROUPINFO("SPEED", 2, AC_Loiter, _speed_max_ne_cms, LOITER_SPEED_DEFAULT_CM),
-
-    // @Param: ACC_MAX
-    // @DisplayName: Loiter maximum correction acceleration
-    // @Description: Loiter maximum correction acceleration in cm/s/s.  Higher values cause the copter to correct position errors more aggressively.
-    // @Units: cm/s/s
-    // @Range: 100 981
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("ACC_MAX", 3, AC_Loiter, _accel_max_ne_cmss, LOITER_ACCEL_MAX_DEFAULT_CMSS),
-
-    // @Param: BRK_ACCEL
-    // @DisplayName: Loiter braking acceleration
-    // @Description: Loiter braking acceleration in cm/s/s. Higher values stop the copter more quickly when the stick is centered.
-    // @Units: cm/s/s
-    // @Range: 25 250
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("BRK_ACCEL", 4, AC_Loiter, _brake_accel_max_cmss, LOITER_BRAKE_ACCEL_DEFAULT_CMSS),
-
-    // @Param: BRK_JERK
-    // @DisplayName: Loiter braking jerk
-    // @Description: Loiter braking jerk in cm/s/s/s. Higher values will remove braking faster if the pilot moves the sticks during a braking maneuver.
-    // @Units: cm/s/s/s
-    // @Range: 500 5000
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("BRK_JERK", 5, AC_Loiter, _brake_jerk_max_cmsss, LOITER_BRAKE_JERK_DEFAULT_CMSSS),
+    // 2 was SPEED
+    // 3 was ACC_MAX
+    // 4 was BRK_ACCEL
+    // 5 was BRK_JERK
 
     // @Param: BRK_DELAY
     // @DisplayName: Loiter brake start delay (in seconds)
@@ -79,6 +48,42 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @Bitmask: 0: Enable Coordinated turns
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 7, AC_Loiter, _options, LOITER_DEFAULT_OPTIONS),
+
+    // @Param: SPEED_MS
+    // @DisplayName: Loiter Horizontal Maximum Speed
+    // @Description: Defines the maximum speed in m/s which the aircraft will travel horizontally while in loiter mode
+    // @Units: m/s
+    // @Range: 0.20 35
+    // @Increment: 0.05
+    // @User: Standard
+    AP_GROUPINFO("SPEED_MS", 8, AC_Loiter, _speed_max_ne_ms, LOITER_SPEED_DEFAULT_MS),
+
+    // @Param: ACC_MAX_M
+    // @DisplayName: Loiter maximum correction acceleration
+    // @Description: Loiter maximum correction acceleration in m/s/s.  Higher values cause the copter to correct position errors more aggressively.
+    // @Units: m/s/s
+    // @Range: 1 9.81
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("ACC_MAX_M", 9, AC_Loiter, _accel_max_ne_mss, LOITER_ACCEL_MAX_DEFAULT_MSS),
+
+    // @Param: BRK_ACC_M
+    // @DisplayName: Loiter braking acceleration
+    // @Description: Loiter braking acceleration in m/s/s. Higher values stop the copter more quickly when the stick is centered.
+    // @Units: m/s/s
+    // @Range: 0.25 2.5
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("BRK_ACC_M", 10, AC_Loiter, _brake_accel_max_mss, LOITER_BRAKE_ACCEL_DEFAULT_MSS),
+
+    // @Param: BRK_JRK_M
+    // @DisplayName: Loiter braking jerk
+    // @Description: Loiter braking jerk in m/s/s/s. Higher values will remove braking faster if the pilot moves the sticks during a braking maneuver.
+    // @Units: m/s/s/s
+    // @Range: 5 50
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("BRK_JRK_M", 11, AC_Loiter, _brake_jerk_max_msss, LOITER_BRAKE_JERK_DEFAULT_MSSS),
 
     AP_GROUPEND
 };
@@ -101,8 +106,8 @@ void AC_Loiter::init_target_m(const Vector2p& position_ne_m)
 {
     sanity_check_params();
 
-    // Configure speed/accel limits in meters using internal parameter (_accel_max_ne_cmss)
-    _pos_control.NE_set_correction_speed_accel_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_cmss * 0.01);
+    // Configure speed/accel limits in meters using internal parameter (_accel_max_ne_mss)
+    _pos_control.NE_set_correction_speed_accel_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_mss);
     _pos_control.NE_set_pos_error_max_m(LOITER_POS_CORRECTION_MAX_M);
 
     // Reset controller state for stationary loiter
@@ -125,7 +130,7 @@ void AC_Loiter::init_target()
     sanity_check_params();
 
     // Configure correction speed and acceleration limits (in m/s and m/s²)
-    _pos_control.NE_set_correction_speed_accel_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_cmss * 0.01);
+    _pos_control.NE_set_correction_speed_accel_m(LOITER_VEL_CORRECTION_MAX_MS, _accel_max_ne_mss);
     _pos_control.NE_set_pos_error_max_m(LOITER_POS_CORRECTION_MAX_M);
 
     // Apply velocity smoothing: softly transitions target acceleration to zero
@@ -135,6 +140,8 @@ void AC_Loiter::init_target()
     _predicted_accel_ne_mss = _pos_control.get_accel_target_NED_mss().xy();
     _predicted_euler_angle_rad.x = _pos_control.get_roll_rad();
     _predicted_euler_angle_rad.y = _pos_control.get_pitch_rad();
+    _predicted_euler_rate.zero();
+    _predicted_euler_accel.zero();
     _brake_accel_mss = 0.0f;
 }
 
@@ -171,7 +178,7 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
     Vector2f angle_error_euler_rad(wrap_PI(euler_roll_angle_rad - _predicted_euler_angle_rad.x), wrap_PI(euler_pitch_angle_rad - _predicted_euler_angle_rad.y));
 
     // Predict roll/pitch rate required to achieve target attitude
-    _attitude_control.input_shaping_rate_predictor(angle_error_euler_rad, _predicted_euler_rate, dt_s);
+    _attitude_control.command_model_rate_predictor(angle_error_euler_rad, _predicted_euler_rate, _predicted_euler_accel, dt_s);
 
     // Update internal attitude estimate for next iteration
     _predicted_euler_angle_rad += _predicted_euler_rate * dt_s;
@@ -237,11 +244,48 @@ void AC_Loiter::update(bool avoidance_on)
 }
 
 // Sets the maximum allowed horizontal loiter speed in m/s.
-// Internally converts to cm/s and clamps to a minimum of LOITER_SPEED_MIN_CMS.
 void AC_Loiter::set_speed_max_NE_ms(float speed_max_ne_ms)
 {
-    // Convert to cm/s and apply minimum clamp
-    _speed_max_ne_cms.set(MAX(speed_max_ne_ms * 100.0, LOITER_SPEED_MIN_CMS));
+    _speed_max_ne_ms.set(MAX(speed_max_ne_ms, LOITER_SPEED_MIN_MS));
+}
+
+// perform any required parameter conversions
+void AC_Loiter::convert_parameters()
+{
+    // PARAMETER_CONVERSION - Added: Jan-2026 for 4.7
+
+    // return immediately if no conversion is needed
+    if (_speed_max_ne_ms.configured() || _accel_max_ne_mss.configured() || _brake_accel_max_mss.configured() || _brake_jerk_max_msss.configured()) {
+        return;
+    }
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+    // convert QuadPlane parameters
+    static const AP_Param::ConversionInfo conversion_info[] = {
+        { 205, 8379, AP_PARAM_FLOAT, "Q_LOIT_SPEED_MS" },   // Q_LOIT_SPEED moved to Q_LOIT_SPEED_MS
+        { 205, 12475, AP_PARAM_FLOAT, "Q_LOIT_ACC_MAX_M" }, // Q_LOIT_ACC_MAX moved to Q_LOIT_ACC_MAX_M
+        { 205, 16571, AP_PARAM_FLOAT, "Q_LOIT_BRK_ACC_M" }, // Q_LOIT_BRK_ACCEL moved to Q_LOIT_BRK_ACC_M
+        { 205, 20667, AP_PARAM_FLOAT, "Q_LOIT_BRK_JRK_M" }, // Q_LOIT_BRK_JERK moved to Q_LOIT_BRK_JRK_M
+    };
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // convert Sub parameters
+    static const AP_Param::ConversionInfo conversion_info[] = {
+        { 63, 2, AP_PARAM_FLOAT, "LOIT_SPEED_MS" },     // LOIT_SPEED moved to LOIT_SPEED_MS
+        { 63, 3, AP_PARAM_FLOAT, "LOIT_ACC_MAX_M" },    // LOIT_ACC_MAX moved to LOIT_ACC_MAX_M
+        { 63, 4, AP_PARAM_FLOAT, "LOIT_BRK_ACC_M" },    // LOIT_BRK_ACCEL moved to LOIT_BRK_ACC_M
+        { 63, 5, AP_PARAM_FLOAT, "LOIT_BRK_JRK_M" },    // LOIT_BRK_JERK moved to LOIT_BRK_JRK_M
+    };
+#else
+    // convert Copter parameters
+    static const AP_Param::ConversionInfo conversion_info[] = {
+        { 105, 2, AP_PARAM_FLOAT, "LOIT_SPEED_MS" },    // LOIT_SPEED moved to LOIT_SPEED_MS
+        { 105, 3, AP_PARAM_FLOAT, "LOIT_ACC_MAX_M" },   // LOIT_ACC_MAX moved to LOIT_ACC_MAX_M
+        { 105, 4, AP_PARAM_FLOAT, "LOIT_BRK_ACC_M" },   // LOIT_BRK_ACCEL moved to LOIT_BRK_ACC_M
+        { 105, 5, AP_PARAM_FLOAT, "LOIT_BRK_JRK_M" },   // LOIT_BRK_JERK moved to LOIT_BRK_JRK_M
+    };
+#endif
+
+    AP_Param::convert_old_parameters_scaled(conversion_info, ARRAY_SIZE(conversion_info), 0.01, 0);
 }
 
 // Ensures internal parameters are within valid safety limits.
@@ -249,10 +293,10 @@ void AC_Loiter::set_speed_max_NE_ms(float speed_max_ne_ms)
 void AC_Loiter::sanity_check_params()
 {
     // Enforce minimum loiter speed
-    _speed_max_ne_cms.set(MAX(_speed_max_ne_cms, LOITER_SPEED_MIN_CMS));
+    _speed_max_ne_ms.set(MAX(_speed_max_ne_ms, LOITER_SPEED_MIN_MS));
 
-    // Clamp horizontal accel to lean-angle-limited max (converted to cm/s²)
-    _accel_max_ne_cmss.set(MIN(_accel_max_ne_cmss, GRAVITY_MSS * 100.0f * tanf(_attitude_control.lean_angle_max_rad())));
+    // Clamp horizontal accel to lean-angle-limited max
+    _accel_max_ne_mss.set(MIN(_accel_max_ne_mss, GRAVITY_MSS * tanf(_attitude_control.lean_angle_max_rad())));
 }
 
 bool AC_Loiter::loiter_option_is_set(LoiterOption option) const {
@@ -272,8 +316,8 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     const float dt_s = _pos_control.get_dt_s();
 
     // Apply speed limit from LOITER_SPEED and EKF constraint
-    float gnd_speed_limit_ms = MIN(_speed_max_ne_cms * 0.01, ekfGndSpdLimit_ms);
-    gnd_speed_limit_ms = MAX(gnd_speed_limit_ms, LOITER_SPEED_MIN_CMS * 0.01);
+    float gnd_speed_limit_ms = MIN(_speed_max_ne_ms, ekfGndSpdLimit_ms);
+    gnd_speed_limit_ms = MAX(gnd_speed_limit_ms, LOITER_SPEED_MIN_MS);
 
     // Determine acceleration limit based on maximum allowed lean angle
     float pilot_acceleration_max_mss = angle_rad_to_accel_mss(get_angle_max_rad());
@@ -302,7 +346,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         if (_desired_accel_ne_mss.is_zero()) {
             if ((AP_HAL::millis() - _brake_timer_ms) > _brake_delay_s * 1000.0) {
                 float brake_gain = _pos_control.NE_get_vel_pid().kP() * 0.5f;
-                loiter_brake_accel_mss = constrain_float(sqrt_controller(desired_speed_ms, brake_gain, _brake_jerk_max_cmsss * 0.01, dt_s), 0.0f, _brake_accel_max_cmss * 0.01);
+                loiter_brake_accel_mss = constrain_float(sqrt_controller(desired_speed_ms, brake_gain, _brake_jerk_max_msss, dt_s), 0.0f, _brake_accel_max_mss);
             }
         } else {
             loiter_brake_accel_mss = 0.0f;
@@ -310,7 +354,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         }
 
         // Integrate jerk-limited brake acceleration
-        _brake_accel_mss += constrain_float(loiter_brake_accel_mss - _brake_accel_mss, -_brake_jerk_max_cmsss * 0.01 * dt_s, _brake_jerk_max_cmsss * 0.01 * dt_s);
+        _brake_accel_mss += constrain_float(loiter_brake_accel_mss - _brake_accel_mss, -_brake_jerk_max_msss * dt_s, _brake_jerk_max_msss * dt_s);
         loiter_accel_brake_mss = desired_vel_norm * _brake_accel_mss;
 
         // Update desired speed based on braking and drag
@@ -334,7 +378,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         AC_Avoid *_avoid = AP::ac_avoid();
         if (_avoid != nullptr) {
             Vector3f avoidance_vel_ned_cms{desired_vel_ne_ms.x * 100.0, desired_vel_ne_ms.y * 100.0, 0.0f};
-            _avoid->adjust_velocity(avoidance_vel_ned_cms, _pos_control.NE_get_pos_p().kP(), _accel_max_ne_cmss, _pos_control.D_get_pos_p().kP(), _pos_control.D_get_max_accel_mss() * 100.0, dt_s);
+            _avoid->adjust_velocity(avoidance_vel_ned_cms, _pos_control.NE_get_pos_p().kP(), _accel_max_ne_mss * 100.0, _pos_control.D_get_pos_p().kP(), _pos_control.D_get_max_accel_mss() * 100.0, dt_s);
             desired_vel_ne_ms = avoidance_vel_ned_cms.xy() * 0.01;
         }
     }

@@ -2,54 +2,49 @@
 
 ![ATOMRCF405NAVI-Deluxe](atomrcf405-navi-deluxe.jpg)
 
-
 the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
 
 .. note::
 
-	Due to flash memory limitations, this board does not include all ArduPilot features.
+    Due to flash memory limitations, this board does not include all ArduPilot features.
         See :ref:`Firmware Limitations <common-limited_firmware>` for details.
 
 # Specifications
 
--  **Processor**
+- **Processor**
 
-   -  STM32F405RGT6 ARM (168MHz)
-   -  AT7456E OSD
-   -  ESP32 Bluetooth RF module
+  - STM32F405RGT6 ARM (168MHz)
+  - AT7456E OSD
+  - ESP32 Bluetooth RF module
 
+- **Sensors**
 
--  **Sensors**
+  - ICM-42688 IMU (accel, gyro)
+  - SPL-06 barometer
+  - Voltage & 120A current sensor
 
-   -  ICM-42688 IMU (accel, gyro)
-   -  SPL-06 barometer
-   -  Voltage & 120A current sensor
+- **Power**
 
+  - 6V ~ 30V DC input power
+  - 5.15/6/7.15V seelctable, 5A BEC for servos
+  - 9V/12V, 2A BEC for video
 
--  **Power**
+- **Interfaces**
 
-   -  6V ~ 30V DC input power
-   -  5.15/6/7.15V seelctable, 5A BEC for servos
-   -  9V/12V, 2A BEC for video
+  - 6x UARTS
+  - 12x PWM outputs (PWM12 defaults to serial LED)
+  - 1x RC input with inverter for SBUS/PPM
+  - I2C port for external compass and airspeed sensor
+  - Type-C USB port
+  - SD Card Slot
+  - 6 pin JST-GH for GPS/Compass
+  - 6 pin JST-GH for DJI air units
+  - 6 pin JST-GH for remote USB/Buzzer included with autopilot
 
+- **Size and Dimensions**
 
--  **Interfaces**
-
-   -  6x UARTS
-   -  12x PWM outputs (PWM12 defaults to serial LED)
-   -  1x RC input with inverter for SBUS/PPM
-   -  I2C port for external compass and airspeed sensor
-   -  Type-C USB port
-   -  SD Card Slot
-   -  6 pin JST-GH for GPS/Compass
-   -  6 pin JST-GH for DJI air units
-   -  6 pin JST-GH for remote USB/Buzzer included with autopilot
-
-
--  **Size and Dimensions**
-
-   - 50mm x 30mm x 12mm
-   - 21g
+  - 50mm x 30mm x 12mm
+  - 21g
 
 # Where to Buy
 
@@ -57,9 +52,7 @@ the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
 
 # Pinout
 
-
 tbd
-
 
 # Default UART order
 
@@ -70,7 +63,6 @@ tbd
 - SERIAL4 = GPS2 = UART4
 - SERIAL5 = DisplayPort = UART5
 - SERIAL6 = USER = USART6 (DMA capable)
-
 
 Serial protocols shown are defaults, but can be adjusted to personal preferences.
 
@@ -96,7 +88,6 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 - SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to "4".
 
-
 .. note:: the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
 
 # Battery Monitor Configuration
@@ -115,7 +106,7 @@ Then reboot.
 
 :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11
 
-:ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 30 
+:ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 30
 
 # Connecting a GPS/Compass module
 
@@ -126,6 +117,7 @@ This board does not include a GPS or compass. But a connector is provided to att
 The internal analog OSD is enabled by default. Simultaneous use of HD VTX with OSD (DisplayPort) is also enabled by default via the 6 pin connector labeled "DJI". Either 9V (default) or 12V VTX power can be selected by solder jumper.
 
 # BLE RF Module
+
 An integrated BLE RF module is attached to UART1 and its power controlled by a pin (81) which is preset to be controlled by RELAY1 (high is power on to module). By default, the module is powered down on boot since ArduPilot GCS currently do not support BLE.
 
 # Loading Firmware
@@ -139,6 +131,3 @@ firmware, using your favourite DFU loading tool.
 Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the \*.apj firmware files.
 
 .
-
-
-

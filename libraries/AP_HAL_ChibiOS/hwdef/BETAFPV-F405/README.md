@@ -8,15 +8,15 @@ The BETAFPV F405 AIO is a series of flight controllers produced by [BETAFPV](htt
 
 ## Features
 
- - MCU: STM32F405RGT6, 168MHz
- - Gyro: ICM42688-P
- - 16Mb Onboard Flash
- - BEC output: 5V, 2A@4V
- - Barometer: BMP280
- - OSD: AT7456E
- - Up to 5 UARTS: (UART1, UART3, UART4, UART5, UART6)
- - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
- - Integrated 4-in-1 BlueJay ESC
+- MCU: STM32F405RGT6, 168MHz
+- Gyro: ICM42688-P
+- 16Mb Onboard Flash
+- BEC output: 5V, 2A@4V
+- Barometer: BMP280
+- OSD: AT7456E
+- Up to 5 UARTS: (UART1, UART3, UART4, UART5, UART6)
+- 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
+- Integrated 4-in-1 BlueJay ESC
 
 ## Pinout
 
@@ -38,12 +38,14 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL6|TX6/RX6|UART6 (Spare, DMA-enabled)|
 
 ### F405 4S 20A Toothpick
+
 |Name|Pin|Function|
 |:-|:-|:-|
 |SERIAL3|RX3|UART3 (SBUS)
 |SERIAL5|RX5|UART5 (Missing)|
 
 ### F404 1S 12A AIO v3
+
 |Name|Pin|Function|
 |:-|:-|:-|
 |SERIAL5|RX5|UART5 (Missing)|
@@ -63,9 +65,9 @@ The BETAFPV F405 AIO has 4 PWM outputs internally connected to its 4-in-1 ESC. T
 
 The PWM are in in two groups:
 
- - PWM 1-2 in group1
- - PWM 3-4 in group2
- - PWM 5 in group3
+- PWM 1-2 in group1
+- PWM 3-4 in group2
+- PWM 5 in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -78,11 +80,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT 10.9
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT 50
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT 10.9
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

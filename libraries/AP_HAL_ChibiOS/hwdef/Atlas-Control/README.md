@@ -1,27 +1,25 @@
 # Atlas Control Flight Controller
 
-The Atlas Control flight controller 
+The Atlas Control flight controller
 https://altasflight.github.io/atlas-docs/
 
 ## Features
 
- - STM32H743 microcontroller
- - Three IMUs, ICM-42688-P, ICM-20689 and ICM-20689
- - internal heater for IMU temperature control
- - two MS5611 SPI barometers
- - internal RM3100 compass
- - microSD card slot
- - 4 UARTs plus USB
- - ADSB receiver connected to SERIAL5
- - 14 PWM outputs
- - I2C and CAN ports
- - External Buzzer
- - builtin RGB LED
- - voltage monitoring for servo rail and Vcc
- - two dedicated power input ports for external power bricks
- - external USB connectors (micro USB and JST GH)
-
-
+- STM32H743 microcontroller
+- Three IMUs, ICM-42688-P, ICM-20689 and ICM-20689
+- internal heater for IMU temperature control
+- two MS5611 SPI barometers
+- internal RM3100 compass
+- microSD card slot
+- 4 UARTs plus USB
+- ADSB receiver connected to SERIAL5
+- 14 PWM outputs
+- I2C and CAN ports
+- External Buzzer
+- builtin RGB LED
+- voltage monitoring for servo rail and Vcc
+- two dedicated power input ports for external power bricks
+- external USB connectors (micro USB and JST GH)
 
 ## Pinout
 
@@ -42,6 +40,7 @@ https://altasflight.github.io/atlas-docs/
 - 2 ADC inputs
 
 - 1 USB-C port
+
 ## UART Mapping
 
 | Port | UART | Protocol | TX DMA | RX DMA |
@@ -117,7 +116,6 @@ Unless noted otherwise all connectors are JST GH 1.25mm pitch
    </tbody>
    </table>
 
-
 ### FMU and IO SWD
 
 When the case is removed there are two SWD connectors, one for FMU and
@@ -165,7 +163,6 @@ the servo rail.
    </tbody>
    </table>
 
-
 ### CAN1&2
 
    <table border="1" class="docutils">
@@ -197,7 +194,6 @@ the servo rail.
    </tr>
    </tbody>
    </table>
-
 
 ### POWER_A
 
@@ -279,7 +275,6 @@ the servo rail.
    </tbody>
    </table>
 
-
 ### USB
 
    <table border="1" class="docutils">
@@ -330,7 +325,6 @@ RC protocols can be input here including PPM. For bi-directional or half-duplex
 protocols, such as CRSF/ELRS a full UART will have to be used.
 See https://ardupilot.org/plane/docs/common-rc-systems.html
 
-
 ## PWM Output
 
 The 14 PWM outputs are in 4 groups: Each group must be the same protocol (ie PWM or DShot or Serial LED, etc.):
@@ -341,7 +335,6 @@ The 14 PWM outputs are in 4 groups: Each group must be the same protocol (ie PWM
 * Outputs 13 and 14 in group4 (PWM only, no DMA)
 
 ## Battery Monitoring
-
 
 The board has two dedicated power monitor ports on 6 pin connectors.
 
@@ -396,6 +389,3 @@ boot button pressed. Then you should load the "xxx_bl.hex"
 firmware, using your favorite DFU loading tool.
 
 Subsequently, you can update the firmware with Mission Planner.
-
-
-

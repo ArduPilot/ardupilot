@@ -1,6 +1,6 @@
 # Font styles
 
-There are various font styles available to choose from. Credits to [inavosd](https://github.com/iNavFlight/inav-configurator/tree/master/resources/osd) for providing the basis to develop on. 
+There are various font styles available to choose from. Credits to [inavosd](https://github.com/iNavFlight/inav-configurator/tree/master/resources/osd) for providing the basis to develop on.
 
 Font styles can be switched on-the-fly font style by setting parameter OSD_FONT to the desired number. This works for hardware backends as well as for SITL OSD.
 
@@ -14,7 +14,7 @@ Available styles and respective OSD_FONT numbers are:
 
 ![](clarity_medium.png)
 
-**bfstyle (OSD_FONT 2)** bf- / inav-osd default style: 
+**bfstyle (OSD_FONT 2)** bf- / inav-osd default style:
 
 ![](bfstyle.png)
 
@@ -26,21 +26,23 @@ Available styles and respective OSD_FONT numbers are:
 
 ![](digital.png)
 
-
 ## Adding font styles ##
 
 Charsets can be edited or built form scratch using MAX7456Charwizard.jar included in this directory. Added charsets need to be converted to a binary file named fontN.bin prior to building the code. Files within this namespace will be automatically included in the build, so you can modify and replace existing .bin files or add your individual styles.
 
 To do that, navigate to:
+
 ```
 /ardupilot/libraries/AP_OSD/fonts
 ```
+
 in your cloned repository and call:
+
 ```
 ./mcm2bin.py yourfont.mcm fontN.bin
 ```
-to convert existent or added charsets into a binary. Now navigate back to the directory root, configure and build for your desired board.
 
+to convert existent or added charsets into a binary. Now navigate back to the directory root, configure and build for your desired board.
 
 ## SD-card based font handling ##
 

@@ -877,6 +877,9 @@ void Sub::load_parameters()
     // upgrade attitude controller parameters
     sub.attitude_control.convert_parameters();
 
+    // upgrade loiter navigation parameters
+    loiter_nav.convert_parameters();
+
 #if CIRCLE_NAV_ENABLED
     circle_nav.convert_parameters();
 #endif

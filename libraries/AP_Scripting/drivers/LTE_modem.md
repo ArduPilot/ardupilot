@@ -17,14 +17,15 @@ install your own using https://github.com/ArduPilot/UDPProxy
 
 The driver currently supports:
 
- - all SimCom SIM7600 variants
- - SimCom A7670
- - Quectel EC200
- - Air780
+- all SimCom SIM7600 variants
+- SimCom A7670
+- Quectel EC200
+- Air780
 
 There are some limitations:
- - the Air780 does not support signal level monitoring
- - the SimCom A7670 only supports TCP connections, not PPP
+
+- the Air780 does not support signal level monitoring
+- the SimCom A7670 only supports TCP connections, not PPP
 
 # Parameters
 
@@ -116,9 +117,9 @@ This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either
 directly or via MAVFTP. The following key parameters should be set:
 
- - SCR_ENABLE should be set to 1
- - A SERIALn_PROTOCOL should be set to 28 (Scripting) where n matches LTE_SERPORT
- - SCR_SDEV should be set to 48 (PPP) or 2 (MAVLink2) for the port matching LTE_SCRPORT
+- SCR_ENABLE should be set to 1
+- A SERIALn_PROTOCOL should be set to 28 (Scripting) where n matches LTE_SERPORT
+- SCR_SDEV should be set to 48 (PPP) or 2 (MAVLink2) for the port matching LTE_SCRPORT
 
 If using PPP then you also need to ensure PPP support is compiled into
 your firmware (you can use https://custom.ardupilot.org to do that)
@@ -136,32 +137,32 @@ Here is a full set of required parameter settings assuming you want to
 use PPP and make a TCP connection to the ArduPilot support server on
 port 20001. It assumes you have the modem on Telem1 (SERIAL1)
 
- - SCR_ENABLE 1
- - SCR_SDEV_EN 1
- - SCR_SDEV1_PROTO 48
- - SERIAL1_PROTOCOL 28
- - LTE_PROTOCOL 48
- - NET_ENABLE 1
- - NET_P1_TYPE 3
- - NET_P1_IP0 157
- - NET_P1_IP1 245
- - NET_P1_IP2 83
- - NET_P1_IP3 174
- - NET_P1_PORT 20001
+- SCR_ENABLE 1
+- SCR_SDEV_EN 1
+- SCR_SDEV1_PROTO 48
+- SERIAL1_PROTOCOL 28
+- LTE_PROTOCOL 48
+- NET_ENABLE 1
+- NET_P1_TYPE 3
+- NET_P1_IP0 157
+- NET_P1_IP1 245
+- NET_P1_IP2 83
+- NET_P1_IP3 174
+- NET_P1_PORT 20001
 
 here is an alternative configuration where a direct TCP connection to
 the support server is used and modem is attached on SERAL1 (no PPP used)
 
- - SCR_ENABLE 1
- - SCR_SDEV_EN 1
- - SCR_SDEV1_PROTO 2
- - SERIAL1_PROTOCOL 28
- - LTE_PROTOCOL 2
- - LTE_SERVER_IP0 157
- - LTE_SERVER_IP1 245
- - LTE_SERVER_IP2 83
- - LTE_SERVER_IP3 174
- - LTE_SERVER_PORT 20001
+- SCR_ENABLE 1
+- SCR_SDEV_EN 1
+- SCR_SDEV1_PROTO 2
+- SERIAL1_PROTOCOL 28
+- LTE_PROTOCOL 2
+- LTE_SERVER_IP0 157
+- LTE_SERVER_IP1 245
+- LTE_SERVER_IP2 83
+- LTE_SERVER_IP3 174
+- LTE_SERVER_PORT 20001
 
 # Status Messages
 
@@ -194,6 +195,7 @@ all communication with the modem. This log can be useful for debugging
 connection issues.
 
 Common issues:
+
 - Ensure the SIM card is properly inserted and activated
 - Check that the cellular antenna is properly connected
 - Verify network coverage at the operating location
@@ -228,8 +230,8 @@ change the LTE_BAUD or LTE_IBAUD parameters then you can get stuck
 where you can't connect as the script won't be trying the right
 baudrate. You should connect on USB with a terminal program and use:
 
- - AT+IPR?
- - AT+IPR=115200
+- AT+IPR?
+- AT+IPR=115200
 
 that will reset the baud rate. Note that the USB port on the SIM7070G
 does not care what baud rate you connect on, so you can always use it

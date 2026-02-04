@@ -15,14 +15,11 @@ The MFE_PDB_CAN is sold by a range of resellers listed on the makeflyeasy(http:/
 
 • Battery monitoring (power1 can, power2 adc)
 
-
-
 ## Picture
 
 ![MFE_PDB_CAN](MFE_PDB_CAN-1.png "MFE_PDB_CAN-1")
 
- 
- Connector pin assignments
+Connector pin assignments
 =========================
 
 power1 ports
@@ -67,7 +64,7 @@ power1 ports
    </tr>
    </tbody>
    </table>
-   
+
 power2 ports
 ---------------
 
@@ -158,17 +155,15 @@ power4 pad
 
    </tbody>
    </table>
-   
- Connector pin assignments
+
+Connector pin assignments
 =========================
 
 BATT_VOLT_MULT  17.93387
 
 BATT_AMP_PERVLT 22.0
 
-
 Where to Buy
 ============
 
 [www.makeflyeasy.com](www.makeflyeasy.com)
-

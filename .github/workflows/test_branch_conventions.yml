@@ -80,3 +80,29 @@ jobs:
             fi
           done <<< $COMMITS
           echo "✅ Commit messages have subsystem tags."
+
+      - name: Lint changed markdown files
+        shell: bash
+        run: |
+          # Get list of added or modified markdown files in the PR
+          CHANGED_MD=$(git diff --name-only --diff-filter=AM upstream/${{ github.event.pull_request.base.ref }}...HEAD -- '*.md')
+
+          if [[ -z "$CHANGED_MD" ]]; then
+            echo "✅ No markdown files changed."
+            exit 0
+          fi
+
+          echo "Changed markdown files:"
+          echo "$CHANGED_MD"
+
+          # Install markdownlint-cli2 (older version compatible with container's Node.js)
+          apt-get update && apt-get install -y npm
+          npm install -g markdownlint-cli2@0.4.0
+
+          # Lint the changed files
+          if markdownlint-cli2 $CHANGED_MD; then
+            echo "✅ Markdown files pass linting."
+          else
+            echo "❌ Markdown linting errors found."
+            exit 1
+          fi

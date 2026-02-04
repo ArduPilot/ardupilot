@@ -4,43 +4,44 @@ The VUAV-V7pro  flight controller is manufactured and sold by [V-UAV](http://www
 
 ## Features
 
- - STM32H743 microcontroller
- - Three IMUs: ADIS16470,ICM42688,ICM42688
- - Internal vibration isolation for IMUs
- - Internal RM3100 SPI magnetometer
- - Internal two MS5611 SPI barometer
- - Internal RGB LED
- - MicroSD card slot port
- - 1 Analog power port
- - 1 CAN power port
- - 5 UARTs and 1 USB ports
- - 1 RS232 port
- - 14 PWM output ports
- - 4 I2C and 2 CAN ports
- - Safety switch port
- - Buzzer port
- - RC IN port
+- STM32H743 microcontroller
+- Three IMUs: ADIS16470,ICM42688,ICM42688
+- Internal vibration isolation for IMUs
+- Internal RM3100 SPI magnetometer
+- Internal two MS5611 SPI barometer
+- Internal RGB LED
+- MicroSD card slot port
+- 1 Analog power port
+- 1 CAN power port
+- 5 UARTs and 1 USB ports
+- 1 RS232 port
+- 14 PWM output ports
+- 4 I2C and 2 CAN ports
+- Safety switch port
+- Buzzer port
+- RC IN port
 
-##  Pinout
+## Pinout
 
 ![VUAV-V7pro-interface.png](VUAV-V7pro-interface.png)
 
 ![VUAV-V7pro-pinout.png](VUAV-V7pro-pinout.png)
 
 ## UART Mapping
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1) (DMA enabled)
- - SERIAL2 -> UART6 (Telem2) (DMA enabled)
- - SERIAL3 -> UART1 (GPS1)
- - SERIAL4 -> UART3 (GPS2)
- - SERIAL5 -> UART8 (USER) TX only on pin, RX is tied to RCIN
- - SERIAL6 -> UART4 (RS232)
- - SERIAL7 -> USB2 (virtual port on same connector)
- - SERIAL8 -> UART7 (DEBUG)
+
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1) (DMA enabled)
+- SERIAL2 -> UART6 (Telem2) (DMA enabled)
+- SERIAL3 -> UART1 (GPS1)
+- SERIAL4 -> UART3 (GPS2)
+- SERIAL5 -> UART8 (USER) TX only on pin, RX is tied to RCIN
+- SERIAL6 -> UART4 (RS232)
+- SERIAL7 -> USB2 (virtual port on same connector)
+- SERIAL8 -> UART7 (DEBUG)
 
 The Telem1,Telem2 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
-##  Connectors
+## Connectors
 
 ### TELEM1 ,TELEM2 port
 
@@ -198,7 +199,7 @@ The Telem1,Telem2 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
    <th>Volt</th>
    </tr>
    <tr>
-   <td>1</td>  
+   <td>1</td>
    <td>VCC</td>
    <td>+5V</td>
    </tr>
@@ -512,10 +513,10 @@ The VUAV-V7pro supports up to 14 PWM outputs,support all PWM protocols. Outputs 
 
 The 14 PWM outputs are in 4 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5, 6, 7 and 8 in group2
- - PWM 9, 10, 11 and 12 in group3
- - PWM 13, 14 in group4
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 and 12 in group3
+- PWM 13, 14 in group4
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
 
@@ -581,11 +582,11 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 
 The VUAV-V7pro flight controller has 5 Analog inputs
 
- - ADC Pin2-> Battery Current
- - ADC Pin16 -> Battery Voltage 
- - ADC Pin19 -> ADC 3V3 Sense
- - ADC Pin3 -> ADC 6V6 Sense
- - ADC Pin9 -> RSSI voltage monitoring
+- ADC Pin2-> Battery Current
+- ADC Pin16 -> Battery Voltage
+- ADC Pin19 -> ADC 3V3 Sense
+- ADC Pin3 -> ADC 6V6 Sense
+- ADC Pin9 -> RSSI voltage monitoring
 
 ## Battery Monitor Configuration
 
@@ -594,14 +595,16 @@ The board has voltage and current inputs sensor on the POWER1 ADC and POWER2 CAN
 The correct battery setting parameters are:
 
 Enable Battery1 monitor:
- - BATT_MONITOR   4
- - BATT_VOLT_PIN 16
- - BATT_CUR_PIN 2
- - BATT_VOLT_MULT 15.7 (may need adjustment if supplied monitor is not used)
- - BATT_AMP_PERVLT 60.61 (may need adjustment if supplied monitor is not used)
+
+- BATT_MONITOR   4
+- BATT_VOLT_PIN 16
+- BATT_CUR_PIN 2
+- BATT_VOLT_MULT 15.7 (may need adjustment if supplied monitor is not used)
+- BATT_AMP_PERVLT 60.61 (may need adjustment if supplied monitor is not used)
 
 Enable Battery2 monitor (if used):
- - BATT2_MONITOR  8
+
+- BATT2_MONITOR  8
 
 ## Loading Firmware
 

@@ -297,12 +297,18 @@ public:
     // Run the angular velocity controller with a specified timestep. Must be implemented by derived class.
     virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
 
-    // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-    void euler_rate_to_ang_vel(const Quaternion& att, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
+    // euler_derivative_to_body - transform euler angle derivative to body-frame
+    // Converts euler derivatives (rate, acceleration, etc.) to body-frame equivalents.
+    // The same transformation applies regardless of derivative order.
+    // Uses the kinematic relationship for 321 (yaw-pitch-roll) euler sequence.
+    void euler_derivative_to_body(const Quaternion& att, const Vector3f& euler_derivative_rads, Vector3f& body_derivative_rads);
 
-    // Convert an angular velocity vector to a 321-intrinsic euler angle derivative
-    // Returns false if the vehicle is pitched 90 degrees up or down
-    bool ang_vel_to_euler_rate(const Quaternion& att, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads);
+    // body_to_euler_derivative - transform body-frame derivative to euler angle derivative
+    // Converts body-frame derivatives (rate, acceleration, etc.) to euler equivalents.
+    // The same transformation applies regardless of derivative order.
+    // Uses the kinematic relationship for 321 (yaw-pitch-roll) euler sequence.
+    // Returns false if the vehicle is pitched 90 degrees up or down (gimbal lock)
+    bool body_to_euler_derivative(const Quaternion& att, const Vector3f& body_derivative_rads, Vector3f& euler_derivative_rads);
 
     // Specifies whether the attitude controller should use the square root controller in the attitude correction.
     // This is used during Autotune to ensure the P term is tuned without being influenced by the acceleration limit of the square root controller.
@@ -414,15 +420,11 @@ public:
     float lean_angle_rad() const { return _thrust_angle_rad; }
 
     // Calculates the velocity correction from an angle error, applying acceleration/deceleration limits and a simple jerk-limiting mechanism via the smoothing gain.
-    static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float desired_ang_vel, float max_ang_vel, float dt);
-    static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float dt){ return input_shaping_angle(error_angle,  input_tc,  accel_max,  target_ang_vel,  0.0f,  0.0f,  dt); }
-
-    // Shapes the velocity request based on a rate time constant. The angular acceleration and deceleration is limited.
-    static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt, float input_tc);
+    void attitude_command_model(float error_angle, float desired_ang_vel, float& target_ang_vel, float& target_ang_accel, float max_ang_vel, float accel_max, float input_tc, float dt) const;
 
     // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
     // This function can be used to predict the delay associated with angle requests.
-    void input_shaping_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, float dt) const;
+    void command_model_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, Vector2f& target_ang_accel_rads, float dt) const;
 
     // translates body frame acceleration limits to the euler axis
     void ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max_rads, float ang_vel_pitch_max_rads, float ang_vel_yaw_max_rads) const;
@@ -618,6 +620,7 @@ protected:
     // the attitude controller as an angular velocity vector, in radians per second in
     // the target attitude frame.
     Vector3f            _ang_vel_target_rads;
+    Vector3f            _ang_accel_target_rads;
 
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller and most importantly the rate controller.

@@ -6,21 +6,21 @@ The SkyRukh Surge H7 is a flight controller produced by SkyRukh.
 
 ## Features
 
- - MCU - STM32H743 32-bit processor running at 480 MHz
- - IMU - BMI088, ICM20602
- - Barometer - DPS310
- - OSD - MAX7456
- - microSD card slot
- - 7x UARTs
- - CAN port with JST-GH connector
- - External I2C port with JST-GH connector
- - 8x PWM Outputs (4 Motor Output with JST-GH connector)
- - Battery input voltage: 2S-6S
- - builtin RGB LED
- - BEC 3.3V 0.5A
- - BEC 5V 3A
- - BEC 9V 3A for VTX
- - Camera input with JST-GH connector
+- MCU - STM32H743 32-bit processor running at 480 MHz
+- IMU - BMI088, ICM20602
+- Barometer - DPS310
+- OSD - MAX7456
+- microSD card slot
+- 7x UARTs
+- CAN port with JST-GH connector
+- External I2C port with JST-GH connector
+- 8x PWM Outputs (4 Motor Output with JST-GH connector)
+- Battery input voltage: 2S-6S
+- builtin RGB LED
+- BEC 3.3V 0.5A
+- BEC 5V 3A
+- BEC 9V 3A for VTX
+- Camera input with JST-GH connector
 
 ## Pinout
 
@@ -71,11 +71,11 @@ The board has a internal voltage sensor and connections on the ESC connector for
 
 The default battery parameters are:
 
-    - BATT_MONITOR = 4
-    - BATT_VOLT_PIN = 16
-    - BATT_CUR_PIN = 17 (C pin on ESC connector)
-    - BATT_VOLT_MULT = 7.39
-    - BATT_AMP_PERVLT = 40 (should be set according to ESC block used)
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 16
+- BATT_CUR_PIN = 17 (C pin on ESC connector)
+- BATT_VOLT_MULT = 7.39
+- BATT_AMP_PERVLT = 40 (should be set according to ESC block used)
 
 ## Compass
 

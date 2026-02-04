@@ -4,15 +4,15 @@ The CORVON405V2.1 is a flight controller produced by CORVON.
 
 ## Features
 
- - STM32F405 microcontroller
- - BMI088 IMU
- - SPL06 barometer
- - AT7456E OSD
- - 9V 3A BEC; 5V 3A BEC
- - SDCard
- - 6 UARTs
- - 10 PWM outputs
- - 1 SWD
+- STM32F405 microcontroller
+- BMI088 IMU
+- SPL06 barometer
+- AT7456E OSD
+- 9V 3A BEC; 5V 3A BEC
+- SDCard
+- 6 UARTs
+- 10 PWM outputs
+- 1 SWD
 
 ## Physical
 
@@ -20,17 +20,15 @@ The CORVON405V2.1 is a flight controller produced by CORVON.
 
 ![CORVON F405 V2.1 Back View](CORVON405V2.1_BackView.jpg)
 
-
-
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (MAVLink 2,DMA-enabled)
- - SERIAL2 -> UART2 (DJI - VTX, TX only is DMA Enabled)
- - SERIAL3 -> UART3 (GPS)
- - SERIAL4 -> UART4 (MAVLink2,TX only is DMA Enabled)
- - SERIAL5 -> UART5 (ESC Telemetry,RX 5 only pinned out)
- - SERIAL6 -> UART6 (RCin, RX6 is inverted from SBUS pin, RX only is DMA Enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MAVLink 2,DMA-enabled)
+- SERIAL2 -> UART2 (DJI - VTX, TX only is DMA Enabled)
+- SERIAL3 -> UART3 (GPS)
+- SERIAL4 -> UART4 (MAVLink2,TX only is DMA Enabled)
+- SERIAL5 -> UART5 (ESC Telemetry,RX 5 only pinned out)
+- SERIAL6 -> UART6 (RCin, RX6 is inverted from SBUS pin, RX only is DMA Enabled)
 
 ## RC Input
 
@@ -46,7 +44,7 @@ The CORVON405V2.1 supports  internal analog OSD MAX7456. Simultaneous external H
 
 ## VTX Support
 
-Both Analog and HD VTX connectors are provided. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v. 
+Both Analog and HD VTX connectors are provided. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -82,6 +80,7 @@ The CORVON405V2.1 does not have a built-in compass, but you can attach an extern
 ![CORVON405V2.1 Ports Connection](CORVON405V2.1_PortsConnection.jpg)
 
 ## Loading Firmware
+
 Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled CORVON405V2.1.
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool.

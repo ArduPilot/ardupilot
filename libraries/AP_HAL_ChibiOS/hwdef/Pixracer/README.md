@@ -9,20 +9,20 @@ The full schematics of the board are available here:
 
 ## Features
 
- - STM32F427 microcontroller
- - MPU9250 and ICM20608 IMUs
- - MS5611 SPI barometer
- - builtin HMC5843 and MPU9250 magnetometers
- - microSD card slot
- - 6 UARTs plus USB
- - 6 PWM outputs
- - I2C and CAN ports
- - Spektrum satellite cable
- - External Buzzer
- - builtin RGB LEDs
- - external safety Switch
- - voltage monitoring for Vcc
- - dedicated power input port for external power brick
+- STM32F427 microcontroller
+- MPU9250 and ICM20608 IMUs
+- MS5611 SPI barometer
+- builtin HMC5843 and MPU9250 magnetometers
+- microSD card slot
+- 6 UARTs plus USB
+- 6 PWM outputs
+- I2C and CAN ports
+- Spektrum satellite cable
+- External Buzzer
+- builtin RGB LEDs
+- external safety Switch
+- voltage monitoring for Vcc
+- dedicated power input port for external power brick
 
 ## Pinout
 
@@ -31,13 +31,13 @@ The full schematics of the board are available here:
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> UART3 (Telem2)
- - SERIAL3 -> UART4 (GPS)
- - SERIAL4 -> UART8 (GPS2, FrSky Telem)
- - SERIAL5 -> UART1 (spare)
- - SERIAL6 -> UART7 (spare, debug port)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> UART3 (Telem2)
+- SERIAL3 -> UART4 (GPS)
+- SERIAL4 -> UART8 (GPS2, FrSky Telem)
+- SERIAL5 -> UART1 (spare)
+- SERIAL6 -> UART7 (spare, debug port)
 
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
@@ -360,7 +360,7 @@ purpose UART.
    </table>
 
 ## RC Input
- 
+
 RC input is via a RC input cable. That cable comes in two forms, one
 for Spektrum satellite receivers and another for all other receiver
 types.
@@ -372,15 +372,15 @@ ArduPilot the ability to control the power on the Spektrum satellite
 receiver.
 
 ## FrSky Telemetry
- 
+
 FrSky Telemetry is supported using SERIAL4, on the port marked as
 FrSky. You need to set the following parameters to enable support for
 FrSky S.PORT. You also need to cross-connect the TX and RX pins by
 creating a cable that connects both the TX and RX pins of the FrSky
 port to the FrSky S.Port pin on your receiver.
- 
-  - SERIAL4_PROTOCOL 10
-  - SERIAL4_OPTIONS 0
+
+- SERIAL4_PROTOCOL 10
+- SERIAL4_OPTIONS 0
 
 ## PWM Output
 
@@ -389,8 +389,8 @@ DShot as well as all PWM protocols.
 
 The 6 PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5 and 6 in group2
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -419,21 +419,21 @@ use as GPIOs.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - PWM1 50
- - PWM2 51
- - PWM3 52
- - PWM4 53
- - PWM5 54
- - PWM6 55
+- PWM1 50
+- PWM2 51
+- PWM3 52
+- PWM4 53
+- PWM5 54
+- PWM6 55
 
 ## Analog inputs
 
 The Pixracer has 4 analog inputs
 
- - ADC Pin2 -> Battery Voltage
- - ADC Pin3 -> Battery Current Sensor
- - ADC Pin4 -> Vdd 5V supply sense
- - ADC Pin11 -> Analog RSSI Input
+- ADC Pin2 -> Battery Voltage
+- ADC Pin3 -> Battery Current Sensor
+- ADC Pin4 -> Vdd 5V supply sense
+- ADC Pin11 -> Analog RSSI Input
 
 ## Loading Firmware
 

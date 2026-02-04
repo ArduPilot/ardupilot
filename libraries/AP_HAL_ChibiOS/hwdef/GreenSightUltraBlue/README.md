@@ -4,13 +4,13 @@ The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com
 
 ## Features
 
- - STM32H743 microcontroller
- - Incorporates an NVIDIA Jetson SOM
- - Three IMUs: two BMI088 units and one ICM20649
- - Internal heater for IMU temperature control
- - DPS310 SPI barometer
- - microSD card slot
- - DF9-41S-1V(32) Hirose Mezzanine Connector
+- STM32H743 microcontroller
+- Incorporates an NVIDIA Jetson SOM
+- Three IMUs: two BMI088 units and one ICM20649
+- Internal heater for IMU temperature control
+- DPS310 SPI barometer
+- microSD card slot
+- DF9-41S-1V(32) Hirose Mezzanine Connector
 
 ## Connector Overview
 
@@ -20,15 +20,15 @@ The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com
 
 ## UART Mapping
 
- - SERIAL0 -> USB (console)
- - SERIAL1 -> USART2 (Jetson telem, no DMA)
- - SERIAL2 -> USART6 (telem2)
- - SERIAL3 -> USART1 (primary GPS)
- - SERIAL4 -> UART4 (GPS2, no DMA)
- - SERIAL5 -> UART8 (USER/[RCin: DSM/PPM/SBus])
- - SERIAL6 -> USART3 (ESC telemetry)
- - SERIAL7 -> UART7 (USER/[debug tx/rx], no DMA)
- - SERIAL8 -> USB2
+- SERIAL0 -> USB (console)
+- SERIAL1 -> USART2 (Jetson telem, no DMA)
+- SERIAL2 -> USART6 (telem2)
+- SERIAL3 -> USART1 (primary GPS)
+- SERIAL4 -> UART4 (GPS2, no DMA)
+- SERIAL5 -> UART8 (USER/[RCin: DSM/PPM/SBus])
+- SERIAL6 -> USART3 (ESC telemetry)
+- SERIAL7 -> UART7 (USER/[debug tx/rx], no DMA)
+- SERIAL8 -> USB2
 
 ## Connectors
 
@@ -710,6 +710,7 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
    </table>
 
 ### JP12 - AP GPIO (Autopilot GPIOs)
+
    <table border="1" class="docutils">
    <tbody>
    <tr>
@@ -909,24 +910,25 @@ External Pin Information:
 
 The RCIN pin, which is physically mapped to UART8 and configured by default as SERIAL5, can be used for most ArduPilot supported unidirectional receiver protocols. For this reason SERIAL5_PROTOCOL defaults to “23” (RCIN).
 
-* PPM: Connect to the JP1 connector. PPM input is only supported on JP1 as it requires a special interrupt.  
-* SBUS: Connect to the JP1 connector.  
-* Spektrum/DSM radios: Connect to the JP4 connector.  
+* PPM: Connect to the JP1 connector. PPM input is only supported on JP1 as it requires a special interrupt.
+* SBUS: Connect to the JP1 connector.
+* Spektrum/DSM radios: Connect to the JP4 connector.
 
 Bi-directional protocols such as CRSF/ELRS and SRXL2 require a full UART connection. FPort, when connected to RCIN, will only provide RC without telemetry.
 
 To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL2 (telem2) or SERIAL4 (GPS2) would need to be used for receiver connections. Below are setups using Serial2.
+
 * SERIAL2_PROTOCOL should be set to “23”.
-* FPort would require SERIAL2_OPTIONS be set to “15” 
+* FPort would require SERIAL2_OPTIONS be set to “15”
 * CRSF would require SERIAL2_OPTIONS be set to “0”
 * SRXL2 would require SERIAL2_OPTIONS be set to “4” and connects only the TX pin.
-
 
 ## PWM Output
 
 The UltraBlue flight controller supports up to 16 PWM outputs.
 
 The 16 PWM outputs are in 5 groups:
+
 * PWM 1 - 4 are in group1 (TIM5)
 * PWM 5 - 8 are in group2 (TIM4)
 * PWM 9 - 12 are in group3 (TIM1)
@@ -940,6 +942,7 @@ Channels within the same group need to use the same output rate and protocol. Ou
 All PWM outputs can be used as GPIO (relays, buttons, RPM, etc.). To use them you need to set the output's SERVOx_FUNCTION to -1. See GPIOs page for more information.
 
 The numbering of the GPIOs for PIN parameters in ArduPilot is:
+
 * PWM1 50
 * PWM2 51
 * PWM3 52
@@ -965,7 +968,7 @@ The J1 - Mezzanine Connector has inputs for battery voltage and current. It also
 
 ## Camera Control
 
-GPIO 64 (camera trigger) is controlled by RELAY1 (default).  
+GPIO 64 (camera trigger) is controlled by RELAY1 (default).
 GPIO 65 (camera trigger return) is controlled by RELAY2 (default).
 Both of these pins are routed to the J2 connector - Jetson Payload 1.
 

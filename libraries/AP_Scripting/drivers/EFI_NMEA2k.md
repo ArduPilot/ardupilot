@@ -26,12 +26,12 @@ AP_Scripting/modules/ also needs to be put in the APM/SCRIPTS/MODULES directory.
 
 The following key parameters should be set:
 
- - SCR_ENABLE should be set to 1
- - EFI_TYPE should be set to 7
- - EFI_2K_ENABLE should be set to 1
- - EFI_2K_CANDRV needs to be set to the CAN driver number
- - CAN_Pn_BITRATE needs to be set to 250000
- - CAN_Dn_PROTOOCOL needs to be set to 10 for scripting
+- SCR_ENABLE should be set to 1
+- EFI_TYPE should be set to 7
+- EFI_2K_ENABLE should be set to 1
+- EFI_2K_CANDRV needs to be set to the CAN driver number
+- CAN_Pn_BITRATE needs to be set to 250000
+- CAN_Dn_PROTOOCOL needs to be set to 10 for scripting
 
 then the flight controller should rebooted and parameters should be
 refreshed.

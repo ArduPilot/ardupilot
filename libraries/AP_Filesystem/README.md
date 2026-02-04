@@ -50,11 +50,13 @@ The file format of the @PARAM/param.pck file is as follows
 ### File header
 
 There is a 6 byte header, consisting of 3 uint16_t values
+
 ```
   uint16_t magic # 0x671b
   uint16_t num_params
   uint16_t total_params
 ```
+
 The magic value is used to give the version of the packing format. It
 should have a value of 0x671b. The num_params is how many parameters
 will be sent (may be less than total if client requests a subset, see
@@ -101,12 +103,12 @@ bit 0 will not be set, and default will be of zero length.
 The file name @PARAM/param.pck can optionally be extended with query
 string elements to change the result. For example:
 
- - @PARAM/param.pck?start=50&count=10
+- @PARAM/param.pck?start=50&count=10
 
 that means to download 10 parameters starting with parameter number
 50.
 
- - @PARAM/param.pck?withdefaults=1
+- @PARAM/param.pck?withdefaults=1
 
 that means to include the default values in the returned data, where
 it is different from the parameter's set value.

@@ -4,12 +4,12 @@ The Skystars H7HDv2 is a flight controller produced by [Skystars](http://www.sky
 
 ## Features
 
- - STM32H743 microcontroller
- - ICM42688 IMU x2
- - BMP280 barometer
- - AT7456E OSD
- - 8 UARTs
- - 9 PWM outputs
+- STM32H743 microcontroller
+- ICM42688 IMU x2
+- BMP280 barometer
+- AT7456E OSD
+- 8 UARTs
+- 9 PWM outputs
 
 ## Pinout
 
@@ -21,15 +21,15 @@ The Skystars H7HDv2 is a flight controller produced by [Skystars](http://www.sky
 The UARTs are marked RX and TX in the above pinouts. The RX pin is the
 receive pin for UARTn. The TX pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (RCin, DMA-enabled)
- - SERIAL2 -> UART2 (MAVLink2 DMA-enabled)
- - SERIAL3 -> UART3 (ESC Telem)
- - SERIAL4 -> UART4 (GPS, DMA-enabled)
- - SERIAL5 -> UART5 (SmartAudio)
- - SERIAL6 -> UART6 (DisplayPort, DMA-enabled)
- - SERIAL7 -> UART7 (USER DMA-enabled)
- - SERIAL8 -> UART8 (USER)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (RCin, DMA-enabled)
+- SERIAL2 -> UART2 (MAVLink2 DMA-enabled)
+- SERIAL3 -> UART3 (ESC Telem)
+- SERIAL4 -> UART4 (GPS, DMA-enabled)
+- SERIAL5 -> UART5 (SmartAudio)
+- SERIAL6 -> UART6 (DisplayPort, DMA-enabled)
+- SERIAL7 -> UART7 (USER DMA-enabled)
+- SERIAL8 -> UART8 (USER)
 
 ## RC Input
 
@@ -51,10 +51,10 @@ PWM output.
 
 The PWM is in 5 groups:
 
- - PWM 1, 2 in group1
- - PWM 3, 4 in group2
- - PWM 5-8  in group3
- - PWM 9    in group4
+- PWM 1, 2 in group1
+- PWM 3, 4 in group2
+- PWM 5-8  in group3
+- PWM 9    in group4
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -68,11 +68,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - :ref:BATT_MONITOR<BATT_MONITOR> = 4
- - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
- - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
- - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 10.1
- - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 17.0
+- :ref:BATT_MONITOR<BATT_MONITOR> = 4
+- :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
+- :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
+- :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 10.1
+- :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 17.0
 
 ## Compass
 

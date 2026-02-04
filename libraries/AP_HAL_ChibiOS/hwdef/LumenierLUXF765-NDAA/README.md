@@ -1,33 +1,33 @@
 # Lumenier LUX F765 Flight Controller - NDAA
 
-The Lumenier LUX F765 NDAA flight controller is sold by 
+The Lumenier LUX F765 NDAA flight controller is sold by
 [GetFPV](https://www.getfpv.com/lumenier-lux-f765-flight-controller-ndaa.html).
 
 ![LUX F765 NDAA Slim](LUXF765_NDAA_Slim_Graphic.png "LUX F765 NDAA Slim")
 
 ## Features
 
- - Processor: MCU STM32F765, 216MHz, 512KB RAM, 2MB Flash
- - ICM42688 IMU
- - BMP280 Barometer
- - microSD Card Slot
- - 12 PWM Outputs
- - I2C Ports for External Sensors
- - CANbus Support
- - 8 UART Ports
- - Buzzer Control
- - LED Strip Control
- - Analog Current Sensor Input
- - Analog Battery Sensor Input
- - USB Type-C (2.0)
- - Blackbox Storage - SD Card and Flash (128Mbit/16Mbyte)
- - Camera Control Output
- - AT7456E OSD
- - 10V Regulator for VTX Power
- - 5V Regulator for Accessories
- - Supported Firmware - Betaflight, Ardupilot, and PX4
- - NDAA compliant
- - Power Supply: 3S to 6S Battery Voltage
+- Processor: MCU STM32F765, 216MHz, 512KB RAM, 2MB Flash
+- ICM42688 IMU
+- BMP280 Barometer
+- microSD Card Slot
+- 12 PWM Outputs
+- I2C Ports for External Sensors
+- CANbus Support
+- 8 UART Ports
+- Buzzer Control
+- LED Strip Control
+- Analog Current Sensor Input
+- Analog Battery Sensor Input
+- USB Type-C (2.0)
+- Blackbox Storage - SD Card and Flash (128Mbit/16Mbyte)
+- Camera Control Output
+- AT7456E OSD
+- 10V Regulator for VTX Power
+- 5V Regulator for Accessories
+- Supported Firmware - Betaflight, Ardupilot, and PX4
+- NDAA compliant
+- Power Supply: 3S to 6S Battery Voltage
 
 ## Pinout
 
@@ -36,15 +36,15 @@ The Lumenier LUX F765 NDAA flight controller is sold by
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> USART1 (Telem1, DMA enabled)
- - SERIAL2 -> UART5  (Telem2, DMA enabled)
- - SERIAL3 -> USART3 (GPS1, TX DMA enabled)
- - SERIAL4 -> UART8  (GPS2)
- - SERIAL5 -> USART2 (ESC Telemetry)
- - SERIAL6 -> UART4  (DisplayPort)
- - SERIAL7 -> UART7  (RCinput, DMA enabled)
- - SERIAL8 -> USART6 (Spare)
+- SERIAL0 -> USB
+- SERIAL1 -> USART1 (Telem1, DMA enabled)
+- SERIAL2 -> UART5  (Telem2, DMA enabled)
+- SERIAL3 -> USART3 (GPS1, TX DMA enabled)
+- SERIAL4 -> UART8  (GPS2)
+- SERIAL5 -> USART2 (ESC Telemetry)
+- SERIAL6 -> UART4  (DisplayPort)
+- SERIAL7 -> UART7  (RCinput, DMA enabled)
+- SERIAL8 -> USART6 (Spare)
 
 ## SPI Mapping
 
@@ -129,7 +129,7 @@ All connectors are JST SH 1.0mm pitch EXCEPT for the CANbus port, which is JST G
    </tr>
    </tbody>
    </table>
-   
+
 ### ESC #2 Port
 
    <table border="1" class="docutils">
@@ -181,7 +181,6 @@ All connectors are JST SH 1.0mm pitch EXCEPT for the CANbus port, which is JST G
    </tr>
    </tbody>
    </table>
-
 
 ### GPS port
 
@@ -266,7 +265,7 @@ All connectors are JST SH 1.0mm pitch EXCEPT for the CANbus port, which is JST G
    </tr>
    </tbody>
    </table>
-   
+
 ### Receiver Port
 
    <table border="1" class="docutils">
@@ -298,7 +297,7 @@ All connectors are JST SH 1.0mm pitch EXCEPT for the CANbus port, which is JST G
    </tr>
    </tbody>
    </table>
-   
+
 ### CANbus Port
 
    <table border="1" class="docutils">
@@ -333,30 +332,30 @@ All connectors are JST SH 1.0mm pitch EXCEPT for the CANbus port, which is JST G
 
 ## PWM Output
 
-The Lumenier LUX F765 NDAA supports 12 PWM outputs and a serial LED PWM output. 
+The Lumenier LUX F765 NDAA supports 12 PWM outputs and a serial LED PWM output.
 All outputs are DShot capable. Outputs 1-4 are bi-directional DShot capable.
 The 8 main PWM outputs are labeled M1 through M8.
-The 4 auxiliary outputs are labeled S1 through S4. 
+The 4 auxiliary outputs are labeled S1 through S4.
 
 The 8 main PWM outputs are in 2 groups:
 
- - PWM 1 through 4 (M1 - M4) are in TIM2
- - PWM 5 through 8 (M5 - M8) are in TIM4
+- PWM 1 through 4 (M1 - M4) are in TIM2
+- PWM 5 through 8 (M5 - M8) are in TIM4
 
 The auxiliary PWM outputs are grouped as follows:
 
- - PWM 9/10 (S1/S2) are in a group
- - PWM 11/12 (S3/S4) are in a group
- - PWM 13 (LED) is in a group
+- PWM 9/10 (S1/S2) are in a group
+- PWM 11/12 (S3/S4) are in a group
+- PWM 13 (LED) is in a group
 
 ## RC Input
 
 Bi-directional RC inputs like CRSF/ELRS are supported on UART7 (Serial7).
-UART7 (Serial7) will also support all unidirectional RC protocols. 
+UART7 (Serial7) will also support all unidirectional RC protocols.
 
 ## OSD Support
 
-The LUX F765 - NDAA is equipped with an onboard AT7456E OSD. 
+The LUX F765 - NDAA is equipped with an onboard AT7456E OSD.
 The AT7456E communicates with the flight controller on SPI3.
 
 ## Camera Control
@@ -367,8 +366,8 @@ The LUX F765 - NDAA has a camera control output on PE10, which corresponds to GP
 
 The LUX F765 NDAA has 2 analog inputs:
 
- - PC2 -> Battery Current
- - PC3 -> Battery Voltage
+- PC2 -> Battery Current
+- PC3 -> Battery Voltage
 
 # Battery Monitor
 
@@ -376,6 +375,7 @@ The LUX F765 - NDAA has an internal voltage sensor and connections on the ESC co
 for an external current sensor input. The voltage sensor can handle up to an 8S battery.
 
 The default parameters are as follows:
+
 * :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
 * :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 12
 * :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 13

@@ -55,16 +55,15 @@ is accurate for their specific case.
 
 You will need to tell the script the following:
 
- - the number of cells
- - the final percentage charge your log stops at
- - the battery index you want to fit to (1 is the first battery)
+- the number of cells
+- the final percentage charge your log stops at
+- the battery index you want to fit to (1 is the first battery)
 
 That will produce a graph and a set of coefficients like this:
- - Coefficients C1=111.5629 C2=3.6577 C3=0.2048 C4=80.0000
+
+- Coefficients C1=111.5629 C2=3.6577 C3=0.2048 C4=80.0000
 
 Use the C1, C2, C3 and C4 parameters in the parameters for this script.
 
 The remaining battery percentage is only set when disarmed, and won't
 be set till 10 seconds after you disarm from a flight.
-
-

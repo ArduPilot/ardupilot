@@ -9,21 +9,21 @@ The full schematics of the board are available here:
 
 ## Features
 
- - STM32H743 microcontroller
- - ICM20689 and BMI088 IMUs
- - internal heater for IMU temperature control
- - internal vibration isolation for IMUs
- - MS5611 SPI barometer
- - builtin IST8310 compass
- - microSD card slot
- - 6 UARTs plus dual USB
- - 16 PWM outputs
- - I2C and dual CAN ports
- - DSM and RCIN ports
- - external safety Switch
- - voltage monitoring for servo rail and Vcc
- - dual power input ports for external power bricks
- - external USB connectors (micro USB and JST GH)
+- STM32H743 microcontroller
+- ICM20689 and BMI088 IMUs
+- internal heater for IMU temperature control
+- internal vibration isolation for IMUs
+- MS5611 SPI barometer
+- builtin IST8310 compass
+- microSD card slot
+- 6 UARTs plus dual USB
+- 16 PWM outputs
+- I2C and dual CAN ports
+- DSM and RCIN ports
+- external safety Switch
+- voltage monitoring for servo rail and Vcc
+- dual power input ports for external power bricks
+- external USB connectors (micro USB and JST GH)
 
 ## Pinout
 
@@ -35,14 +35,14 @@ The full schematics of the board are available here:
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> UART3 (Telem2)
- - SERIAL3 -> UART1 (GPS)
- - SERIAL4 -> UART4 (GPS2, Telem4/I2C)
- - SERIAL5 -> UART6 (Telem3)
- - SERIAL6 -> UART7 (debug port)
- - SERIAL7 -> USB2
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> UART3 (Telem2)
+- SERIAL3 -> UART1 (GPS)
+- SERIAL4 -> UART4 (GPS2, Telem4/I2C)
+- SERIAL5 -> UART6 (Telem3)
+- SERIAL6 -> UART7 (debug port)
+- SERIAL7 -> USB2
 
 The Telem1, Telem2 and Telem3 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
@@ -92,7 +92,6 @@ Unless noted otherwise all connectors are JST GH
    </tr>
    </tbody>
    </table>
-
 
 ### GPS1 port
 
@@ -156,8 +155,6 @@ Unless noted otherwise all connectors are JST GH
    </tbody>
    </table>
 
-
-
 ### GPS2, Telem4/I2C port
 
    <table border="1" class="docutils">
@@ -210,9 +207,9 @@ When SBUS output is disabled (by setting BRD_SBUS_OUT to 0) you can
 use the port for analog RSSI input from receivers. To enable for RSSI
 input you need to set:
 
- - BRD_SBUS_OUT 0
- - RSSI_TYPE 1
- - RSSI_PIN 103
+- BRD_SBUS_OUT 0
+- RSSI_TYPE 1
+- RSSI_PIN 103
 
 You cannot have both SBUS output and analog RSSI input at the same time.
 
@@ -271,7 +268,6 @@ satellite receivers.
    </tr>
    </tbody>
    </table>
-
 
 ### ADC / CAPTURE
 
@@ -346,7 +342,6 @@ satellite receivers.
    </tbody>
    </table>
 
-
 ### I2C
 
    <table border="1" class="docutils">
@@ -379,7 +374,6 @@ satellite receivers.
    </tbody>
    </table>
 
-
 ### CAN1&2
 
    <table border="1" class="docutils">
@@ -411,7 +405,6 @@ satellite receivers.
    </tr>
    </tbody>
    </table>
-
 
 ### POWER1&2
 
@@ -453,7 +446,6 @@ satellite receivers.
    </tbody>
    </table>
 
-
 ### USB
 
    <table border="1" class="docutils">
@@ -487,7 +479,7 @@ satellite receivers.
    </table>
 
 ## RC Input
- 
+
 RC input is configured on the RCIN pin, at one end of the servo rail,
 marked RCIN in the above diagram. This pin supports all RC
 protocols. In addition there is a dedicated Spektrum satellite port
@@ -509,15 +501,15 @@ signal on the bottom row.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 8 auxiliary PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group4
- - PWM 5 and 6 in group5
- - PWM 7 and 8 in group6 (no DMA, no DShot)
+- PWM 1, 2, 3 and 4 in group4
+- PWM 5 and 6 in group5
+- PWM 7 and 8 in group6 (no DMA, no DShot)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -543,28 +535,28 @@ use as GPIOs.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - PWM1 50
- - PWM2 51
- - PWM3 52
- - PWM4 53
- - PWM5 54
- - PWM6 55
- - PWM7 56
- - PWM8 57
+- PWM1 50
+- PWM2 51
+- PWM3 52
+- PWM4 53
+- PWM5 54
+- PWM6 55
+- PWM7 56
+- PWM8 57
 
 ## Analog inputs
 
 The Durandal has 7 analog inputs
 
- - ADC Pin16 -> Battery Voltage
- - ADC Pin17 -> Battery Current Sensor
- - ADC Pin14 -> Battery2 Voltage
- - ADC Pin15 -> Battery2 Current Sensor
- - ADC Pin4 -> ADC port pin 8 (3.3V limit)
- - ADC Pin18 -> ADC port pin 9 (6.6V limit)
- - ADC Pin9 -> RSSI in
- - ADC Pin10 -> 5V Sense
- - ADC Pin11 -> 3.3V Sense
+- ADC Pin16 -> Battery Voltage
+- ADC Pin17 -> Battery Current Sensor
+- ADC Pin14 -> Battery2 Voltage
+- ADC Pin15 -> Battery2 Current Sensor
+- ADC Pin4 -> ADC port pin 8 (3.3V limit)
+- ADC Pin18 -> ADC port pin 9 (6.6V limit)
+- ADC Pin9 -> RSSI in
+- ADC Pin10 -> 5V Sense
+- ADC Pin11 -> 3.3V Sense
 
 ## IMU Heater
 

@@ -8,4 +8,3 @@ https://github.com/ArduPilot/Schematics/tree/master/esp32/ESP32_IMU_Module_v1.1/
 
 chip erase is sometime necessary before flashing new firmware
 `esptool.py --chip esp32 --port /dev/ttyUSB0 --baud 921600 erase_flash`
-
