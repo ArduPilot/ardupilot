@@ -49,371 +49,103 @@ The original Pixhawk1 uses DF13 connectors, and has 14 ports
 
 ### TELEM1, TELEM2 ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>CTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>RTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | CTS | +3.3V |
+| 5 (blk) | RTS | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### GPS port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>CAN2 TX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>CAN2 RX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | CAN2 TX | +3.3V |
+| 5 (blk) | CAN2 RX | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### SERIAL 4/5 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (#4)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (#4)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>TX (#5)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>RX (#5)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (#4) | +3.3V |
+| 3 (blk) | RX (#4) | +3.3V |
+| 4 (blk) | TX (#5) | +3.3V |
+| 5 (blk) | RX (#5) | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### ADC 6.6V
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>ADC IN</td>
-   <td>up to +6.6V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | ADC IN | up to +6.6V |
+| 3 (blk) | GND | GND |
 
 ### ADC 3.3V
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>ADC IN</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>ADC IN</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | ADC IN | up to +3.3V |
+| 3 (blk) | GND | GND |
+| 4 (blk) | ADC IN | up to +3.3V |
+| 5 (blk) | GND | GND |
 
 ### I2C
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SCL | +3.3 (pullups) |
+| 3 (blk) | SDA | +3.3 (pullups) |
+| 4 (blk) | GND | GND |
 
 ### CAN
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | CAN_H | +12V |
+| 3 (blk) | CAN_L | +12V |
+| 4 (blk) | GND | GND |
 
 ### SPI
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SPI_SCK</td>
-   <td>3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SPI_MISO</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SPI_MOSI</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>!SPI_NSS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>!GPIO</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SPI_SCK | 3.3V |
+| 3 (blk) | SPI_MISO | +3.3V |
+| 4 (blk) | SPI_MOSI | +3.3V |
+| 5 (blk) | !SPI_NSS | +3.3V |
+| 6 (blk) | !GPIO | +3.3V |
+| 7 (blk) | GND | GND |
 
 ### POWER
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CURRENT</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>VOLTAGE</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <td>5 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | VCC | +5V |
+| 3 (blk) | CURRENT | up to +3.3V |
+| 4 (blk) | VOLTAGE | up to +3.3V |
+| 5 (blk) | GND | GND |
+| 6 (blk) | GND | GND |
 
 ### SWITCH
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>!IO_LED_SAFETY</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SAFETY</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +3.3V |
+| 2 (blk) | !IO_LED_SAFETY | GND |
+| 3 (blk) | SAFETY | GND |
 
 ## RC Input
 

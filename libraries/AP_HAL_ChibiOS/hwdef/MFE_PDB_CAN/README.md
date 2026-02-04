@@ -25,136 +25,42 @@ Connector pin assignments
 power1 ports
 ---------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5.5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5.5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_H</td>
-   <td>SINGAL</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>CAN_L</td>
-   <td>SINGAL</td>
-   </tr>
-      <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-      <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5.5V |
+| 2 | VCC | +5.5V |
+| 3 | CAN_H | SINGAL |
+| 4 | CAN_L | SINGAL |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 power2 ports
 ---------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5.5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5.5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CURRENT</td>
-   <td>SINGAL</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>VALTAGE</td>
-   <td>SINGAL</td>
-   </tr>
-      <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-      <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5.5V |
+| 2 | VCC | +5.5V |
+| 3 | CURRENT | SINGAL |
+| 4 | VALTAGE | SINGAL |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 power3 pad
 ---------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>+GND</td>
-   </tr>
-
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5.3V |
+| 2 | GND | +GND |
 
 power4 pad
 ---------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>+GND</td>
-   </tr>
-
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +12V |
+| 2 | GND | +GND |
 
 Connector pin assignments
 =========================

@@ -48,31 +48,12 @@ The Lumenier LUX F765 NDAA flight controller is sold by
 
 ## SPI Mapping
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>SPI</th>
-   <th>Device</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>ICM42688</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>W25Q128JV Flash</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>AT7456E</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SD Card</td>
-
-   </tr>
-   </tbody>
-   </table>
+   | SPI | Device |
+| --- | --- |
+| 1 | ICM42688 |
+| 2 | W25Q128JV Flash |
+| 3 | AT7456E |
+| 4 | SD Card |
 
 ## Connectors
 
@@ -80,255 +61,69 @@ All connectors are JST SH 1.0mm pitch EXCEPT for the CANbus port, which is JST G
 
 ### ESC #1 Port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>VBAT</td>
-   </tr>
-   <tr>
-   <td>2 </td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CURRENT</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>TELEMETRY</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>MOTOR 1 (TIM2_CH1)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>MOTOR 2 (TIM2_CH2)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>MOTOR 3 (TIM2_CH3)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>MOTOR 4 (TIM2_CH4)</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | VBAT |
+| 2 | GND | GND |
+| 3 | CURRENT | +3.3V |
+| 4 | TELEMETRY | +3.3V |
+| 5 | MOTOR 1 (TIM2_CH1) | +3.3V |
+| 6 | MOTOR 2 (TIM2_CH2) | +3.3V |
+| 7 | MOTOR 3 (TIM2_CH3) | +3.3V |
+| 8 | MOTOR 4 (TIM2_CH4) | +3.3V |
 
 ### ESC #2 Port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>NOT CONNECTED</td>
-   <td>NOT CONNECTED</td>
-   </tr>
-   <tr>
-   <td>2 </td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>NOT CONNECTED</td>
-   <td>NOT CONNECTED</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>TELEMETRY</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>MOTOR 5 (TIM4_CH1)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>MOTOR 6 (TIM4_CH2)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>MOTOR 7 (TIM4_CH3)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>MOTOR 8 (TIM4_CH4)</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | NOT CONNECTED | NOT CONNECTED |
+| 2 | GND | GND |
+| 3 | NOT CONNECTED | NOT CONNECTED |
+| 4 | TELEMETRY | +3.3V |
+| 5 | MOTOR 5 (TIM4_CH1) | +3.3V |
+| 6 | MOTOR 6 (TIM4_CH2) | +3.3V |
+| 7 | MOTOR 7 (TIM4_CH3) | +3.3V |
+| 8 | MOTOR 8 (TIM4_CH4) | +3.3V |
 
 ### GPS port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>+5V</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX3</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX3</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>I2C3 SCL</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>I2C3 SDA</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | +5V | +5V |
+| 2 | TX3 | +3.3V |
+| 3 | RX3 | +3.3V |
+| 4 | I2C3 SCL | +3.3V |
+| 5 | I2C3 SDA | +3.3V |
+| 6 | GND | GND |
 
 ### HD VTX port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>+10V</td>
-   <td>+10V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>TX4</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>RX4</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>RX7</td>
-   <td>+3V3</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | +10V | +10V |
+| 2 | GND | GND |
+| 3 | TX4 | +3.3V |
+| 4 | RX4 | +3.3V |
+| 5 | GND | GND |
+| 6 | RX7 | +3V3 |
 
 ### Receiver Port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>+5V</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX7</td>
-   <td>+3.3</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>TX7</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | +5V | +5V |
+| 2 | GND | GND |
+| 3 | RX7 | +3.3 |
+| 4 | TX7 | +3.3V |
 
 ### CANbus Port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>+5V</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_H</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>CAN_L</td>
-   <td>+5V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | +5V | +5V |
+| 2 | GND | GND |
+| 3 | CAN_H | +5V |
+| 4 | CAN_L | +5V |
 
 ## PWM Output
 

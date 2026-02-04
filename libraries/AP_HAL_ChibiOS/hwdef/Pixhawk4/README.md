@@ -39,107 +39,29 @@ purpose UART with ArduPilot.
 
 ### TELEM1, TELEM2 ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>CTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>RTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | CTS | +3.3V |
+| 5 (blk) | RTS | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### GPS port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SERIAL3 TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SERIAL3 RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>SafetyButton</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7 (blk)</td>
-   <td>SafetyLED</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8 (blk)</td>
-   <td>VDD 3.3 (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>9 (blk)</td>
-   <td>Buzzer</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>10 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SERIAL3 TX (OUT) | +3.3V |
+| 3 (blk) | SERIAL3 RX (IN) | +3.3V |
+| 4 (blk) | SCL | +3.3 (pullups) |
+| 5 (blk) | SDA | +3.3 (pullups) |
+| 6 (blk) | SafetyButton | +3.3V |
+| 7 (blk) | SafetyLED | +3.3V |
+| 8 (blk) | VDD 3.3 (OUT) | +3.3V |
+| 9 (blk) | Buzzer | +3.3V |
+| 10 (blk) | GND | GND |
 
 ## RC Input
 
@@ -226,77 +148,23 @@ The Pixhawk4 has 7 analog inputs
 
 ### Pinout for I2CA
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SCL | +3.3 (pullups) |
+| 3 (blk) | SDA | +3.3 (pullups) |
+| 4 (blk) | GND | GND |
 
 ### Pinout for I2CB+UART
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SERIAL4 TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SERIAL4 RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SERIAL4 TX (OUT) | +3.3V |
+| 3 (blk) | SERIAL4 RX (IN) | +3.3V |
+| 4 (blk) | SCL | +3.3 (pullups) |
+| 5 (blk) | SDA | +3.3 (pullups) |
+| 6 (blk) | GND | GND |
 
 ## CAN
 
@@ -304,79 +172,25 @@ The Pixhawk4 has two independent CAN buses, with the following pinouts.
 
 ### CAN1&2
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | CAN_H | +12V |
+| 3 (blk) | CAN_L | +12V |
+| 4 (blk) | GND | GND |
 
 ## Debug
 
 The Pixhawk4 supports SWD debugging on the debug port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>FMU VDD 3.3</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>UART TX Debug (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>UART RX Debug (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SWDIO</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SWCLK</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | FMU VDD 3.3 | +3.3V |
+| 2 (blk) | UART TX Debug (OUT) | +3.3V |
+| 3 (blk) | UART RX Debug (IN) | +3.3V |
+| 4 (blk) | SWDIO | +3.3V |
+| 5 (blk) | SWCLK | +3.3V |
+| 6 (blk) | GND | GND |
 
 ## Loading Firmware
 

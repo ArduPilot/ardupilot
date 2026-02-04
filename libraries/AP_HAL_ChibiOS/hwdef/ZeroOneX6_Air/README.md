@@ -110,22 +110,29 @@ Channels within the same group need to use the same output rate. If any channel 
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
-<table>
-  <tr>
-    <th colspan="3">IO Pins</th>
-    <th colspan="1"> </th>
-    <th colspan="3">FMU Pins</th>
-  </tr>
-  <tr><td> Name </td><td> Value </td><td> Option </td><td>  </td><td> Name </td><td> Value </td><td> Option </td></tr>
-  <tr><td> M1 </td><td> 101 </td> <td> MainOut1 </td><td>  </td><td> A9 </td><td> 50 </td><td> AuxOut1 </td></tr>
-  <tr><td> M2 </td><td> 102 </td> <td> MainOut2 </td><td>  </td><td> A10 </td><td> 51 </td><td> AuxOut2 </td></tr>
-  <tr><td> M3 </td><td> 103 </td> <td> MainOut3 </td><td>  </td><td> A11 </td><td> 52 </td><td> AuxOut3 </td></tr>
-  <tr><td> M4 </td><td> 104 </td> <td> MainOut4 </td><td>  </td><td> A12 </td><td> 53 </td><td> AuxOut4 </td></tr>
-  <tr><td> M5 </td><td> 105 </td> <td> MainOut5 </td><td>  </td><td> A13 </td><td> 54 </td><td> AuxOut5 </td></tr>
-  <tr><td> M6 </td><td> 106 </td> <td> MainOut6 </td><td>  </td><td> A14 </td><td> 55 </td><td> AuxOut6 </td></tr>
-  <tr><td> M7 </td><td> 107 </td> <td> MainOut7 </td><td>  </td><td> A15 </td><td> 56 </td><td>  </td></tr>
-  <tr><td> M8 </td><td> 108 </td> <td> MainOut8 </td><td>  </td><td>  </td><td>  </td><td>  </td></tr>
-</table>
+| IO Pins |  | FMU Pins |
+| --- | --- | --- |
+| Name | Value | Option |
+|  | Name | Value |
+| Option | M1 | 101 |
+| MainOut1 |  | A9 |
+| 50 | AuxOut1 | M2 |
+| 102 | MainOut2 |  |
+| A10 | 51 | AuxOut2 |
+| M3 | 103 | MainOut3 |
+|  | A11 | 52 |
+| AuxOut3 | M4 | 104 |
+| MainOut4 |  | A12 |
+| 53 | AuxOut4 | M5 |
+| 105 | MainOut5 |  |
+| A13 | 54 | AuxOut5 |
+| M6 | 106 | MainOut6 |
+|  | A14 | 55 |
+| AuxOut6 | M7 | 107 |
+| MainOut7 |  | A15 |
+| 56 |  | M8 |
+| 108 | MainOut8 |  |
+|  |  |  |
 
 ## Battery Monitoring
 

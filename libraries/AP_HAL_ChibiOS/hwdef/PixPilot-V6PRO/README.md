@@ -66,319 +66,96 @@ Connector pin assignments
 POWER_CAN1 port, POWER_CAN2 ports
 --------------------
 
-<table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+| PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | VCC | +5V |
+| 3 | CAN_H | +12V |
+| 4 | CAN_L | +12V |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 TELEM1, TELEM2 ports
 --------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | GND | GND |
 
 I2C1, I2C2 ports
 ---------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>SCL</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>SDA</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | SCL | +3.3V |
+| 3 | SDA | +3.3V |
+| 4 | GND | GND |
 
 CAN1, CAN2 ports
 ---------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | CAN_H | +12V |
+| 3 | CAN_L | +12V |
+| 4 | GND | GND |
 
 Safety and buzzer port
 -----------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>LED</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Safety Switch</td>
-   <td>+5V</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | LED | +5V |
+| 3 | Safety Switch | +5V |
 
 DSM port
 -----------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>DSM_IN</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | DSM_IN | +5V |
+| 3 | GND | GND |
 
 GPS1/I2C1, GPS2/I2C2 ports
 --------------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SCL</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>SDA</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX | +3.3V |
+| 3 | RX | +3.3V |
+| 4 | SCL | +3.3V |
+| 5 | SDA | +3.3V |
+| 6 | GND | GND |
 
 Serial5 port
 --------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | GND | GND |
 
 Power1, Power2 ports
 --------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CURRENT</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>VOLTAGE</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | VCC | +5V |
+| 3 | CURRENT | +3.3V |
+| 4 | VOLTAGE | +3.3V |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 RC Input
 --------

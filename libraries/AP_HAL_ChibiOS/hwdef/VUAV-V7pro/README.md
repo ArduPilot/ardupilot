@@ -45,463 +45,127 @@ The Telem1,Telem2 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
 ### TELEM1 ,TELEM2 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>CTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>RTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | CTS | +3.3V |
+| 5 | RTS | +3.3V |
+| 6 | GND | GND |
 
 ### GPS1/I2C4 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SCL I2C4</td>
-   <td>+3.3V (pullups)</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>SDA I2C4</td>
-   <td>+3.3V (pullups)</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>SafetyButton</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>SafetyLED</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>-</td>
-   <td>-</td>
-   </tr>
-   <tr>
-   <td>9</td>
-   <td>Buzzer</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>10</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | SCL I2C4 | +3.3V (pullups) |
+| 5 | SDA I2C4 | +3.3V (pullups) |
+| 6 | SafetyButton | +3.3V |
+| 7 | SafetyLED | +3.3V |
+| 8 | - | - |
+| 9 | Buzzer | +3.3V |
+| 10 | GND | GND |
 
 ### GPS2/I2C3 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SCL I2C3</td>
-   <td>+3.3V (pullups)</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>SDA I2C3</td>
-   <td>+3.3V (pullups)</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | SCL I2C3 | +3.3V (pullups) |
+| 5 | SDA I2C3 | +3.3V (pullups) |
+| 6 | GND | GND |
 
 ### CAN1,CAN2 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>CAN_H</td>
-   <td>+24V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_L</td>
-   <td>+24V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | CAN_H | +24V |
+| 3 | CAN_L | +24V |
+| 4 | GND | GND |
 
 ### I2C1,I2C2 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | SCL | +3.3 (pullups) |
+| 3 | SDA | +3.3 (pullups) |
+| 4 | GND | GND |
 
 ### USB Ex
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC IN</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>D_minus</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>D_plus</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC IN | +5V |
+| 2 | D_minus | +3.3V |
+| 3 | D_plus | +3.3V |
+| 4 | GND | GND |
 
 ### RSSI
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>RSSI</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>UART8_TX (OUT)</td>
-   <td>+3.3</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | RSSI | up to +3.3V |
+| 3 | UART8_TX (OUT) | +3.3 |
+| 4 | GND | GND |
 
 ### RS232
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | GND | GND |
 
 ### DEBUG
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SWDIO</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>SWCLK</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | SWDIO | +3.3V |
+| 5 | SWCLK | +3.3V |
+| 6 | GND | GND |
 
 ### ADC
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>ADC_3V3</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>ADC_6V6</td>
-   <td>up to +6.6V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | ADC_3V3 | up to +3.3V |
+| 3 | ADC_6V6 | up to +6.6V |
+| 4 | GND | GND |
 
 ### POWER1
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC IN</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC IN</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CURRENT</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>VOLTAGE</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC IN | +5V |
+| 2 | VCC IN | +5V |
+| 3 | CURRENT | up to +3.3V |
+| 4 | VOLTAGE | up to +3.3V |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 ### POWER2(CAN1)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC IN</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC IN</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN1_H</td>
-   <td>+24V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>CAN1_L</td>
-   <td>+24V</td>
-   </tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC IN | +5V |
+| 2 | VCC IN | +5V |
+| 3 | CAN1_H | +24V |
+| 4 | CAN1_L | +24V |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 ## RC Input
 
@@ -525,58 +189,15 @@ Channels within the same group need to use the same output rate. If any channel 
 All 14 PWM channels can be used for GPIO functions (relays, buttons, RPM etc).
 The pin numbers for these PWM channels in ArduPilot are shown below:
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PWM Channels</th>
-   <th>Pin</th>
-   <th>PWM Channels</th>
-   <th>Pin</th>
-   </tr>
-   <tr>
-   <td>PWM1</td>
-   <td>50</td>
-   <td>PWM8</td>
-   <td>57</td>
-   </tr>
-   <tr>
-   <td>PWM2</td>
-   <td>51</td>
-   <td>PWM9</td>
-   <td>58</td>
-   </tr>
-   <tr>
-   <td>PWM3</td>
-   <td>52</td>
-   <td>PWM10</td>
-   <td>59</td>
-   </tr>
-   <tr>
-   <td>PWM4</td>
-   <td>53</td>
-   <td>PWM11</td>
-   <td>60</td>
-   </tr>
-   <tr>
-   <td>PWM5</td>
-   <td>54</td>
-   <td>PWM12</td>
-   <td>61</td>
-   </tr>
-   <tr>
-   <td>PWM6</td>
-   <td>55</td>
-   <td>PWM13</td>
-   <td>62</td>
-   </tr>
-   <tr>
-   <td>PWM7</td>
-   <td>56</td>
-   <td>PWM14</td>
-   <td>63</td>
-   </tr>
-   </tbody>
-   </table>
+   | PWM Channels | Pin | PWM Channels | Pin |
+| --- | --- | --- | --- |
+| PWM1 | 50 | PWM8 | 57 |
+| PWM2 | 51 | PWM9 | 58 |
+| PWM3 | 52 | PWM10 | 59 |
+| PWM4 | 53 | PWM11 | 60 |
+| PWM5 | 54 | PWM12 | 61 |
+| PWM6 | 55 | PWM13 | 62 |
+| PWM7 | 56 | PWM14 | 63 |
 
 ## Analog inputs
 

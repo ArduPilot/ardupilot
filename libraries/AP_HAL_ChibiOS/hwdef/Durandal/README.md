@@ -53,149 +53,40 @@ Unless noted otherwise all connectors are JST GH
 
 ### TELEM1, TELEM2, TELEM3 ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>CTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>RTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | CTS | +3.3V |
+| 5 (blk) | RTS | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### GPS1 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL I2C1</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA I2C1</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>Button</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>7 (blk)</td>
-   <td>button LED</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>8 (blk)</td>
-   <td>3.3V</td>
-   <td>3.3</td>
-   </tr>
-   <tr>
-   <td>9 (blk)</td>
-   <td>buzzer</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td> (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | SCL I2C1 | +3.3V |
+| 5 (blk) | SDA I2C1 | +3.3V |
+| 6 (blk) | Button | GND |
+| 7 (blk) | button LED | GND |
+| 8 (blk) | 3.3V | 3.3 |
+| 9 (blk) | buzzer | GND |
+| (blk) | GND | GND |
 
 ### GPS2, Telem4/I2C port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL I2C2</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA I2C2</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | SCL I2C2 | +3.3V |
+| 5 (blk) | SDA I2C2 | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### SBUS Out port
 
@@ -213,30 +104,11 @@ input you need to set:
 
 You cannot have both SBUS output and analog RSSI input at the same time.
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>5v(Vservo)</td>
-   <td>+5.0V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | GND | GND |
+| 2 | 5v(Vservo) | +5.0V |
+| 3 | TX (OUT) | +3.3V |
 
 ### DSM/SPKT port
 
@@ -244,239 +116,64 @@ The SPKT port provides a connector for Spektrum satellite
 receivers. It is needed to allow for software controlled binding of
 satellite receivers.
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>3.3v</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | RX (IN) | +3.3V |
+| 2 | GND | GND |
+| 3 | 3.3v | +3.3V |
 
 ### ADC / CAPTURE
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-
-   <tr>
-   <td>2 (blk)</td>
-   <td>FMU_CAP6, AUX6, GPIO 55</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>3 (blk)</td>
-   <td>FMU_CAP5, AUX7, GPIO 56</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>4 (blk)</td>
-   <td>FMU_CAP4, AUX8, GPIO 57</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>5 (blk)</td>
-   <td>FMU_CAP3, GPIO 60</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>6 (blk)</td>
-   <td>FMU_CAP2, GPIO 59</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>7 (blk)</td>
-   <td>FMU_CAP1, GPIO 58</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>8 (blk)</td>
-   <td>ADC1_3V3 (ADC pin 4)</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>9 (blk)</td>
-   <td>ADC1_6V6 (ADC pin 18)</td>
-   <td></td>
-   </tr>
-
-   <tr>
-   <td>10 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | FMU_CAP6, AUX6, GPIO 55 |  |
+| 3 (blk) | FMU_CAP5, AUX7, GPIO 56 |  |
+| 4 (blk) | FMU_CAP4, AUX8, GPIO 57 |  |
+| 5 (blk) | FMU_CAP3, GPIO 60 |  |
+| 6 (blk) | FMU_CAP2, GPIO 59 |  |
+| 7 (blk) | FMU_CAP1, GPIO 58 |  |
+| 8 (blk) | ADC1_3V3 (ADC pin 4) |  |
+| 9 (blk) | ADC1_6V6 (ADC pin 18) |  |
+| 10 (blk) | GND | GND |
 
 ### I2C
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SCL | +3.3 (pullups) |
+| 3 (blk) | SDA | +3.3 (pullups) |
+| 4 (blk) | GND | GND |
 
 ### CAN1&2
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | CAN_H | +12V |
+| 3 (blk) | CAN_L | +12V |
+| 4 (blk) | GND | GND |
 
 ### POWER1&2
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CURRENT</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>VOLTAGE</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <td>5 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (red) | VCC | +5V |
+| 3 (blk) | CURRENT | up to +3.3V |
+| 4 (blk) | VOLTAGE | up to +3.3V |
+| 5 (blk) | GND | GND |
+| 6 (blk) | GND | GND |
 
 ### USB
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>D_minus</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>D_plus</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | D_minus | +3.3V |
+| 3 (blk) | D_plus | +3.3V |
+| 4 (blk) | GND | GND |
 
 ## RC Input
 

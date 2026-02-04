@@ -44,284 +44,80 @@ The PixSurveyA2-IND flight controller is sold by a range of resellers listed on 
 
 ### POWER_CAN1 port
 
-<table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+| PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | VCC | +5V |
+| 3 | CAN_H | +12V |
+| 4 | CAN_L | +12V |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 ### TELEM1, TELEM2 ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | GND | GND |
 
 ### I2C1, I2C2 ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>SCL</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>SDA</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | SCL | +3.3V |
+| 3 | SDA | +3.3V |
+| 4 | GND | GND |
 
 ### CAN1, CAN2 ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | CAN_H | +12V |
+| 3 | CAN_L | +12V |
+| 4 | GND | GND |
 
 ### Safety and buzzer port(labeled SWITCH)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>LED</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Safety Switch</td>
-   <td>+5V</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | LED | +5V |
+| 3 | Safety Switch | +5V |
 
 ### GPS1/I2C1, GPS2/I2C2 ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SCL</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>SDA</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX | +3.3V |
+| 3 | RX | +3.3V |
+| 4 | SCL | +3.3V |
+| 5 | SDA | +3.3V |
+| 6 | GND | GND |
 
 ### Serial5 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | GND | GND |
 
 ### Power2 ADC ports
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CURRENT</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>VOLTAGE</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | VCC | +5V |
+| 3 | CURRENT | +3.3V |
+| 4 | VOLTAGE | +3.3V |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 ## RC Input
 
@@ -351,22 +147,29 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 
 .. raw:: html
 
-   <table>
-     <tr>
-       <th colspan="3">IO Pins</th>
-       <th colspan="1"> </th>
-       <th colspan="3">FMU Pins</th>
-     </tr>
-     <tr><td> Name </td><td> Value </td><td> Option </td><td>  </td><td> Name </td><td> Value </td><td> Option </td></tr>
-     <tr><td> M1 </td><td> 101 </td> <td> Out1 </td><td>  </td><td> M9  </td><td> 50 </td><td> AuxOut1 </td></tr>
-     <tr><td> M2 </td><td> 102 </td> <td> Out2 </td><td>  </td><td> M10 </td><td> 51 </td><td> AuxOut2 </td></tr>
-     <tr><td> M3 </td><td> 103 </td> <td> Out3 </td><td>  </td><td> M11 </td><td> 52 </td><td> AuxOut3 </td></tr>
-     <tr><td> M4 </td><td> 104 </td> <td> Out4 </td><td>  </td><td> M12 </td><td> 53 </td><td> AuxOut4 </td></tr>
-     <tr><td> M5 </td><td> 105 </td> <td> Out5 </td><td>  </td><td> M13 </td><td> 54 </td><td> AuxOut5 </td></tr>
-     <tr><td> M6 </td><td> 106 </td> <td> Out6 </td><td>  </td><td> M14 </td><td> 55 </td><td> AuxOut6 </td></tr>
-     <tr><td> M7 </td><td> 107 </td> <td> Out7 </td><td>  </td><td> </td><td>  </td><td>  </td></td></tr>
-     <tr><td> M8 </td><td> 108 </td> <td> Out8 </td><td>  </td><td> </td><td>  </td><td>  </td></td></tr>
-   </table>
+   | IO Pins |  | FMU Pins |
+| --- | --- | --- |
+| Name | Value | Option |
+|  | Name | Value |
+| Option | M1 | 101 |
+| Out1 |  | M9 |
+| 50 | AuxOut1 | M2 |
+| 102 | Out2 |  |
+| M10 | 51 | AuxOut2 |
+| M3 | 103 | Out3 |
+|  | M11 | 52 |
+| AuxOut3 | M4 | 104 |
+| Out4 |  | M12 |
+| 53 | AuxOut4 | M5 |
+| 105 | Out5 |  |
+| M13 | 54 | AuxOut5 |
+| M6 | 106 | Out6 |
+|  | M14 | 55 |
+| AuxOut6 | M7 | 107 |
+| Out7 |  |  |
+|  |  | M8 |
+| 108 | Out8 |  |
+|  |  |  |
 
 ## Battery Monitor Settings
 

@@ -36,773 +36,212 @@ All connectors are JST GH type unless otherwise specified.
 
 ### JP1 - PPM/SBUS In (Autopilot RC input)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>PPM/SBUS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | PPM/SBUS | +3.3V |
+| 2 | VCC | +5V |
+| 3 | GND | GND |
 
 ### JP9 - Analog (Autopilot ADC input)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot Analog Input</td>
-   <td>Analog 0 to +6.6V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot Analog Input | Analog 0 to +6.6V |
+| 3 | GND | GND |
 
 ### JP16 - API2C4 (Autopilot I2C)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot I2C Bus 4 Clock</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Autopilot I2C Bus 4 Data</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot I2C Bus 4 Clock | +3.3V |
+| 3 | Autopilot I2C Bus 4 Data | +3.3V |
+| 4 | GND | GND |
 
 ### JP14 - AP Debug (Autopilot debug UART)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot Debug UART Transmit</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Autopilot Debug UART Receive</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot Debug UART Transmit | +3.3V |
+| 3 | Autopilot Debug UART Receive | +3.3V |
+| 4 | GND | GND |
 
 ### JP4 - Spektrum/DSM (Autopilot RC input)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Spektrum/DSM</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +3.3V |
+| 2 | GND | GND |
+| 3 | Spektrum/DSM | +3.3V |
 
 ### JP18 - Autopilot SPI
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>SPI5 Clock</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>SPI5 Master In Slave Out</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SPI5 Master Out Slave In</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>SPI5 External Chip</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>SPI5 External Chip Select 2</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>SPI5 External Chip Select 3</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | SPI5 Clock | +3.3V |
+| 3 | SPI5 Master In Slave Out | +3.3V |
+| 4 | SPI5 Master Out Slave In | +3.3V |
+| 5 | SPI5 External Chip | +3.3V |
+| 6 | SPI5 External Chip Select 2 | +3.3V |
+| 7 | SPI5 External Chip Select 3 | +3.3V |
+| 8 | GND | GND |
 
 ### JP17 - Jetson Cooling Fan (Companion Computer)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Jetson PWM Tach Input</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>Jetson PWM Fan Output</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | GND | GND |
+| 2 | VCC | +5V |
+| 3 | Jetson PWM Tach Input | +3.3V |
+| 4 | Jetson PWM Fan Output | +3.3V |
 
 ### JP3 - CAN 1 (Autopilot and Jetson Companion Computer)
 
 NOTE: CAN 1 is connected to Jetson, Payloads and AP.
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot and Jetson CAN High</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Autopilot and Jetson CAN Low</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot and Jetson CAN High | +3.3V |
+| 3 | Autopilot and Jetson CAN Low | +3.3V |
+| 4 | GND | GND |
 
 ### JP11 - CAN 2 (Autopilot)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot only CAN High</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Autopilot only CAN Low</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot only CAN High | +3.3V |
+| 3 | Autopilot only CAN Low | +3.3V |
+| 4 | GND | GND |
 
 ### JP10 - Ethernet (Companion Computer)
 
 NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It officially supports 10/100 communication over 4x of the pins, MDI pairs 0 and 1, which would correspond to pins 1, 2, 3, and 6 on a standard RJ-45 end (Orange and Green ethernet cable/RJ-45 pairs). Even though these pairs are capacitively coupled, full Gigabit capability has been tested and verified in the lab with all 8x pins in use; the caveat is that this test was done with a cable ~1m long. Speeds above 10/100 may be unstable with longer cable lengths and are not guaranteed. Dual 10/100 connections may also be possible, though this is entirely dependent on the capabilities of the Jetson module itself.
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>Jetson Ethernet (Cap Coupled)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Jetson Ethernet (Cap Coupled)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Jetson Ethernet (Cap Coupled)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>Jetson Ethernet (Cap Coupled)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>Jetson Ethernet (Cap Coupled) 10/100</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>Jetson Ethernet (Cap Coupled) 10/100</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>Jetson Ethernet (Cap Coupled) 10/100</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>Jetson Ethernet (Cap Coupled) 10/100</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | Jetson Ethernet (Cap Coupled) | +3.3V |
+| 2 | Jetson Ethernet (Cap Coupled) | +3.3V |
+| 3 | Jetson Ethernet (Cap Coupled) | +3.3V |
+| 4 | Jetson Ethernet (Cap Coupled) | +3.3V |
+| 5 | Jetson Ethernet (Cap Coupled) 10/100 | +3.3V |
+| 6 | Jetson Ethernet (Cap Coupled) 10/100 | +3.3V |
+| 7 | Jetson Ethernet (Cap Coupled) 10/100 | +3.3V |
+| 8 | Jetson Ethernet (Cap Coupled) 10/100 | +3.3V |
 
 ### JP13 - Jetson Debug (Companion Computer UART)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>Jetson UART Debug Transmit</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Jetson UART Debug Receive</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | Jetson UART Debug Transmit | +3.3V |
+| 2 | Jetson UART Debug Receive | +3.3V |
+| 3 | GND | GND |
 
 ### JP2 - AP Telem 2 (Autopilot UART)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot Telem 2 UART Transmit</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Autopilot Telem 2 UART Receive</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>Autopilot Telem 2 UART Clear to Send</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>Autopilot Telem 2 UART Request to Send</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot Telem 2 UART Transmit | +3.3V |
+| 3 | Autopilot Telem 2 UART Receive | +3.3V |
+| 4 | Autopilot Telem 2 UART Clear to Send | +3.3V |
+| 5 | Autopilot Telem 2 UART Request to Send | +3.3V |
+| 6 | GND | GND |
 
 ### JP19 - JET_SER_1 (Companion Computer UART)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Jetson UART 1 Transmit</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Jetson UART 1 Receive</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>Jetson UART 1 Clear to Send</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>Jetson UART 1 Request to Send</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Jetson UART 1 Transmit | +3.3V |
+| 3 | Jetson UART 1 Receive | +3.3V |
+| 4 | Jetson UART 1 Clear to Send | +3.3V |
+| 5 | Jetson UART 1 Request to Send | +3.3V |
+| 6 | GND | GND |
 
 ### JP8 - RGB LED & Power Button (Autopilot and Companion Computer UI connector)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>RGB LED Driver Red channel (low side)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RGB LED Driver Green channel (low side)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>RGB LED Driver Blue channel (low side)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>Power Button pass-thru to power board</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>Dell 1W input to Jetson</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>Safety Indicator LED pulse</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>Safety switch input to Autopilot</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>9</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | RGB LED Driver Red channel (low side) | +3.3V |
+| 3 | RGB LED Driver Green channel (low side) | +3.3V |
+| 4 | RGB LED Driver Blue channel (low side) | +3.3V |
+| 5 | Power Button pass-thru to power board | +3.3V |
+| 6 | Dell 1W input to Jetson | +3.3V |
+| 7 | Safety Indicator LED pulse | +3.3V |
+| 8 | Safety switch input to Autopilot | +3.3V |
+| 9 | GND | GND |
 
 ### JP7 - GPS 2 (Autopilot UART/I2C)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot GPS2 UART Transmit</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Autopilot GPS2 UART Receive</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>Autopilot I2C Bus 2 Clock (GPS2 SCL)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>Autopilot I2C Bus 2 Data (GPS2 SDA)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot GPS2 UART Transmit | +3.3V |
+| 3 | Autopilot GPS2 UART Receive | +3.3V |
+| 4 | Autopilot I2C Bus 2 Clock (GPS2 SCL) | +3.3V |
+| 5 | Autopilot I2C Bus 2 Data (GPS2 SDA) | +3.3V |
+| 6 | GND | GND |
 
 ### JP5 - Jetson I2C (Companion Computer)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Jetson I2C Bus 1 Clock</td>
-   <td>3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Jetson I2C Bus 1 Data</td>
-   <td>3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | GND | GND |
+| 2 | Jetson I2C Bus 1 Clock | 3.3V |
+| 3 | Jetson I2C Bus 1 Data | 3.3V |
+| 4 | VCC | +5V |
 
 ### JP6 - GPS 1 (Autopilot UART/I2C)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Autopilot GPS1 UART Transmit</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Autopilot GPS1 UART Receive</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>Autopilot I2C Bus 1 Clock (GPS1 SCL)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>Autopilot I2C Bus 1 Data (GPS1 SDA)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Autopilot GPS1 UART Transmit | +3.3V |
+| 3 | Autopilot GPS1 UART Receive | +3.3V |
+| 4 | Autopilot I2C Bus 1 Clock (GPS1 SCL) | +3.3V |
+| 5 | Autopilot I2C Bus 1 Data (GPS1 SDA) | +3.3V |
+| 6 | GND | GND |
 
 ### JP20 - JET_SPI (Companion Computer SPI)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>Jetson SPI 0 Clock</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>Jetson SPI 0 Master-In / Servant-Out</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>Jetson SPI 0 Master-Out / Servant-In</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>Jetson SPI 0 Chip Select 0</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>Ground</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | Jetson SPI 0 Clock | +3.3V |
+| 3 | Jetson SPI 0 Master-In / Servant-Out | +3.3V |
+| 4 | Jetson SPI 0 Master-Out / Servant-In | +3.3V |
+| 5 | Jetson SPI 0 Chip Select 0 | +3.3V |
+| 6 | Ground | GND |
 
 ### JP12 - AP GPIO (Autopilot GPIOs)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>WS2812B LED</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>GPIO 59</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GPIO 60</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   </td>
-   <td>GPIO 61</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GPIO 62</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7</td>
-   <td>GPIO 63</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | WS2812B LED | +3.3V |
+| 3 | GPIO 59 | +3.3V |
+| 4 | GPIO 60 | +3.3V |
+| 5 | GPIO 61 | +3.3V |
+| 6 | GPIO 62 | +3.3V |
+| 7 | GPIO 63 | +3.3V |
+| 8 | GND | GND |
 
 ### JP21 - I2S1 (I2C Slave/Connection)
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>I2S1 Clock</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>I2S1 Data In</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>I2S1 Data Out</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>I2S1 Frame Select</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | I2S1 Clock | +3.3V |
+| 3 | I2S1 Data In | +3.3V |
+| 4 | I2S1 Data Out | +3.3V |
+| 5 | I2S1 Frame Select | +3.3V |
+| 6 | GND | GND |
 
 ### J2 - Jetson Payload 1
 
@@ -817,94 +256,28 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
 NOTE: Odd pins from 1-19 are VDD_5V_IN. Odd pins from 21 to 41 are GND.
 
 External Pin Information:
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Purpose</th>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>ESC/Servo 1 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>ESC/Servo 2 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>ESC/Servo 3 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>8</td>
-   <td>ESC/Servo 4 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>10</td>
-   <td>ESC/Servo 5 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>12</td>
-   <td>ESC/Servo 6 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>14</td>
-   <td>ESC/Servo 7 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>16</td>
-   <td>ESC/Servo 8 Output, 3.3V, Protected</td>
-   </tr>
-   <tr>
-   <td>18</td>
-   <td>ESC Telemetry Serial Port Input</td>
-   </tr>
-   <tr>
-   <td>20</td>
-   <td>Power Button Signal GPIO, Passed through to button panel JP8</td>
-   </tr>
-   <tr>
-   <td>22</td>
-   <td>Jetson Shutdown Request Signal (GPIO19), 3.3v PU, 3.3v Logic</td>
-   </tr>
-   <tr>
-   <td>24</td>
-   <td>N/C</td>
-   </tr>
-   <tr>
-   <td>26</td>
-   <td>BMS I2C SDA, Switchable between Jetson and AP, 3.3v logic</td>
-   </tr>
-   <tr>
-   <td>28</td>
-   <td>BMS I2C SCL, Switchable between Jetson and AP, 3.3v logic</td>
-   </tr>
-   <tr>
-   <td>30</td>
-   <td>Batt Voltage Input - Autopilot ADC 0-3.3v, 1k series no divider</td>
-   </tr>
-   <tr>
-   <td>32</td>
-   <td>Batt Current Input - Autopilot ADC 0-3.3v, 1k series no divider</td>
-   </tr>
-   <tr>
-   <td>34</td>
-   <td>Jetson GPIO Output (Enable Aux Bus 1), (3.3v), Active High to Enable Power</td>
-   </tr>
-   <tr>
-   <td>36</td>
-   <td>Jetson GPIO Output (Enable Aux Bus 2), (3.3v)</td>
-   </tr>
-   <tr>
-   <td>38</td>
-   <td>Serial LED Controller Output, AP FMU CAP1 Port (3.3v)</td>
-   </tr>
-   <tr>
-   <td>40</td>
-   <td>One Wire Bus to Jetson (3.3v PU)</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Purpose |
+| --- | --- |
+| 2 | ESC/Servo 1 Output, 3.3V, Protected |
+| 4 | ESC/Servo 2 Output, 3.3V, Protected |
+| 6 | ESC/Servo 3 Output, 3.3V, Protected |
+| 8 | ESC/Servo 4 Output, 3.3V, Protected |
+| 10 | ESC/Servo 5 Output, 3.3V, Protected |
+| 12 | ESC/Servo 6 Output, 3.3V, Protected |
+| 14 | ESC/Servo 7 Output, 3.3V, Protected |
+| 16 | ESC/Servo 8 Output, 3.3V, Protected |
+| 18 | ESC Telemetry Serial Port Input |
+| 20 | Power Button Signal GPIO, Passed through to button panel JP8 |
+| 22 | Jetson Shutdown Request Signal (GPIO19), 3.3v PU, 3.3v Logic |
+| 24 | N/C |
+| 26 | BMS I2C SDA, Switchable between Jetson and AP, 3.3v logic |
+| 28 | BMS I2C SCL, Switchable between Jetson and AP, 3.3v logic |
+| 30 | Batt Voltage Input - Autopilot ADC 0-3.3v, 1k series no divider |
+| 32 | Batt Current Input - Autopilot ADC 0-3.3v, 1k series no divider |
+| 34 | Jetson GPIO Output (Enable Aux Bus 1), (3.3v), Active High to Enable Power |
+| 36 | Jetson GPIO Output (Enable Aux Bus 2), (3.3v) |
+| 38 | Serial LED Controller Output, AP FMU CAP1 Port (3.3v) |
+| 40 | One Wire Bus to Jetson (3.3v PU) |
 
 ## RC Input
 
