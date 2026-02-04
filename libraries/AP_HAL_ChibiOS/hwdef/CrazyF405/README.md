@@ -32,10 +32,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the on-board ELRS on UART2 or through (UART2_RX/UART2_TX) pins. It supports all serial RC protocols.
-To disable the onboard ELRS module and use an external RC on TX2/RX2, desolder the RX/TX pads of the onboard ELRS receiver as shown in the image.<br>
-<center>
-<img src="CrazyF405_external_elrs.jpg" alt="CrazyF405HD ELRS Pinout" title="CrazyF405HD ELRS 1-2S AIO" style="width:50%;">
-</center>
+To disable the onboard ELRS module and use an external RC on TX2/RX2, desolder the RX/TX pads of the onboard ELRS receiver as shown in the image.
+
+![CrazyF405HD ELRS Pinout](CrazyF405_external_elrs.jpg)
 
 ## OSD Support
 

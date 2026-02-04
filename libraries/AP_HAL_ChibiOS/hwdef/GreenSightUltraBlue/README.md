@@ -14,9 +14,9 @@ The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com
 
 ## Connector Overview
 
-<img src="UltraBlue_connector_overview_top.png" alt="UltraBlue Board Connector Overview" title="Top View of UltraBlue Board" style="width: 30%;" >
+![UltraBlue Board Connector Overview - Top View](UltraBlue_connector_overview_top.png)
 
-<img src="UltraBlue_connector_overview_bottom.png" alt="UltraBlue Board Connector Overview" title="Bottom View of UltraBlue Board" style="width: 30%;" >
+![UltraBlue Board Connector Overview - Bottom View](UltraBlue_connector_overview_bottom.png)
 
 ## UART Mapping
 
@@ -245,11 +245,11 @@ NOTE: JP10 is a capacitively coupled ethernet port due to space constraints. It 
 
 ### J2 - Jetson Payload 1
 
-   <img src="UltraBlue_J2_primary_payload_connector.png" alt="UltraBlue Board" title="UltraBlue Board" style="width: 40%;" >
+![UltraBlue J2 Primary Payload Connector](UltraBlue_J2_primary_payload_connector.png)
 
 ### J3 - Jetson Payload 2
 
-   <img src="UltraBlue_J3_secondary_payload_connector.png" alt="UltraBlue Board" title="UltraBlue Board" style="width: 40%;" >
+![UltraBlue J3 Secondary Payload Connector](UltraBlue_J3_secondary_payload_connector.png)
 
 ### J1 - Mezzanine Connector
 

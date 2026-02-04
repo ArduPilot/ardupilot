@@ -25,15 +25,15 @@ info@airvolute.com
 
 ## DCS2.Pilot peripherals diagram
 
-<img width="957" alt="DC2 Pilot peripherals" src="https://github.com/vrsanskytom/ardupilot/blob/hwdef_for_airvolute_dcs2/libraries/AP_HAL_ChibiOS/hwdef/Airvolute-DCS2/DC2.Pilot%20peripherals.png">
+![DC2 Pilot peripherals](https://github.com/vrsanskytom/ardupilot/blob/hwdef_for_airvolute_dcs2/libraries/AP_HAL_ChibiOS/hwdef/Airvolute-DCS2/DC2.Pilot%20peripherals.png)
 
 ## DCS2.Pilot onboard FMU related connectors pinout
 
 ### Top side
 
-<img width="818" alt="DCS2 Pilot_bottom" src="https://github.com/vrsanskytom/ardupilot/blob/hwdef_for_airvolute_dcs2/libraries/AP_HAL_ChibiOS/hwdef/Airvolute-DCS2/DCS2.Pilot_TopSide.png">
+![DCS2 Pilot Top Side](https://github.com/vrsanskytom/ardupilot/blob/hwdef_for_airvolute_dcs2/libraries/AP_HAL_ChibiOS/hwdef/Airvolute-DCS2/DCS2.Pilot_TopSide.png)
 
-#### <ins>PPM connector (RC input)</ins>
+#### PPM connector (RC input)
 
 JST GH 1.25mm pitch, 3-Pin
 
@@ -50,9 +50,9 @@ RC input is configured on the PPM_SBUS_PROT pin as part of the PPM connector. Pi
 
 ### Bottom side
 
-<img width="811" alt="DCS2 Pilot_top" src="https://github.com/vrsanskytom/ardupilot/blob/hwdef_for_airvolute_dcs2/libraries/AP_HAL_ChibiOS/hwdef/Airvolute-DCS2/DCS2.Pilot_BottomSide.png">
+![DCS2 Pilot Bottom Side](https://github.com/vrsanskytom/ardupilot/blob/hwdef_for_airvolute_dcs2/libraries/AP_HAL_ChibiOS/hwdef/Airvolute-DCS2/DCS2.Pilot_BottomSide.png)
 
-#### <ins>FMU SEC. connector</ins>
+#### FMU SEC. connector
 
 JST GH 1.25mm pitch, 12-Pin
 
@@ -80,7 +80,7 @@ Channels within the same group need to use the same output rate. If any channel 
 | 11 | 5V |
 | 12 | 5V |
 
-#### <ins>EXT. SENS. connector</ins>
+#### EXT. SENS. connector
 
    BM23PF0.8-10DS-0.35V connector
 
@@ -106,7 +106,7 @@ Channels within the same group need to use the same output rate. If any channel 
 | MP3 | GND |
 | MP4 | GND |
 
-#### <ins>ETH EXP. connector</ins>
+#### ETH EXP. connector
 
    505110-1692 connector
 
@@ -114,7 +114,7 @@ Channels within the same group need to use the same output rate. If any channel 
 
    The onboard FMU is connected via the RMII bus with a speed of 100 Mbits.
 
-#### <ins>SD card connector</ins>
+#### SD card connector
 
    MEM2085-00-115-00-A connector
 

@@ -1,6 +1,6 @@
 # AP-H743-R1
 
-The AP-H743-R1 is an advanced autopilot manufactured by X-MAV<sup>&reg;</sup>.
+The AP-H743-R1 is an advanced autopilot manufactured by X-MAV®.
 
 The autopilot is recommended for commercial system integration, but is also suitable for academic research and any other applications.
 It brings you ultimate performance, stability, and reliability in every aspect.

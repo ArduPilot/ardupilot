@@ -77,8 +77,8 @@ firmware, using your favorite DFU loading tool.
 
 Subsequently, you can update the firmware with Mission Planner.
 
-## Pinout<div align=center>
+## Pinout
 
-<img width="500" src=F405AIO_top.jpg/>
+![F405AIO Top](F405AIO_top.jpg)
 
-<img width="500" src=F405AIO_bottom.jpg/>
+![F405AIO Bottom](F405AIO_bottom.jpg)

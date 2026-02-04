@@ -4,7 +4,7 @@
 
 This is the open-source hardware I have released, and you can find more details at the following link: https://oshwhub.com/shuyedeye/p1-flight-control.
 
-<img src="P1.jpg" alt="" width="400">
+![SULILGH7-P1](P1.jpg)
 
 ## Features:
 

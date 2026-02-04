@@ -12,7 +12,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![NarinFC-X3](./images/NarinFC_X3_Introduction.png "NarinFC")
 
-<br>
 
 ## Features/Specifications
 
@@ -43,19 +42,16 @@ Compared with previous autopilots, it has better performance and higher reliabil
   - 38mm x 38mm (mount hole 30.5mm x 30.5mm)
   - 8g
 
-<br>
 
 ## Where to Buy
 
 [VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")
 
-<br>
 
 ## Outline Dimensions
 
 ![Outline Dimensions](./images/NarinFC_X3_Dimensions.png "Outline Dimensions")
 
-<br>
 
 ## UART Mapping (Port Diagram & Pin outs)
 
@@ -74,7 +70,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![Port Diagram-TOP_BOTTOM](./images/NarinFC_X3_TOP_BOTTOM.png "Port Diagram-TOP_BOTTOM")
 
-<br>
 
 #### 1. I2C, UART2 Port
 
@@ -83,7 +78,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - I2C1
 - UART 2: Ardupilot port Serial2 GPS1
 
-<br>
 
 #### 2. UART 7, UART 4 Port
 
@@ -92,7 +86,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - UART 7: Ardupilot port Serial7 Telem_2
 - UART 4: Ardupilot port Serial4 Telem_1
 
-<br>
 
 #### 3. UART 6, RSSI Port
 
@@ -100,7 +93,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 - UART 6: Ardupilot port Serial6 Receiver
 
-<br>
 
 #### 4. CAN Port
 
@@ -108,7 +100,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 - JST GH 6P connector
 
-<br>
 
 #### 5. PWM Port-1
 
@@ -119,7 +110,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - ADC1
 - BATT Input
 
-<br>
 
 #### 6. PWM Port-2
 
@@ -130,7 +120,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - ADC2
 - BATT Input
 
-<br>
 
 #### 7. UART 3 Port
 
@@ -141,11 +130,9 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - 2.54mm pitch DuPont connector
 - RC_IN : Remote control receiver
 
-<br>
 
 #### 8. MicroSD Card Slot
 
-<br>
 
 #### 9. PWM Port-3
 
@@ -153,7 +140,6 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![PWM Port-3](./images/9.PWM_PORT3.png "PWM Port-3")
 
-<br>
 
 #### 10. DEBUG/UART7 Port
 
@@ -164,7 +150,6 @@ UART7(SERIAL6) is labeled DEBUG RX/TX below
 - JST GH 6P connector
 - DEBUG NODMA
 
-<br>
 
 ## RC Input
 
@@ -172,7 +157,6 @@ RC input is configured by default via the USART6 RX input. It supports all seria
 Note: If the receiver is FPort the receiver must be tied to the USART6 TX pin , RSSI_TYPE set to 3, and SERIAL6_OPTIONS must be set to 7 (invert TX/RX, half duplex). For full duplex like CRSF/ELRS use both RX6 and TX6 and set RSSI_TYPE also to 3.
 If SBUS is used on HD VTX connector (DJI TX), then SERIAL1_PROTOCOl should be set to “23” and SERIAL6_PROTOCOL changed to something else.
 
-<br>
 
 ## FrSky Telemetry
 
@@ -180,13 +164,11 @@ FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 tra
 SERIAL1_PROTOCOL = 10
 SERIAL1_OPTIONS = 7
 
-<br>
 
 ## OSD Support
 
 The NarinFC-X3 supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
 
-<br>
 
 ## PWM Output
 
@@ -204,7 +186,6 @@ The pads for motor output M1 to M4 are provided on both the motor connectors and
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot. Channels 1-10 support bi-directional dshot.
 ALL outputs within the same group need to use the same output rate and protocol.
 
-<br>
 
 ## Battery Monitoring
 
@@ -226,26 +207,22 @@ Pads for a second analog battery monitor are provided. To use:
 - BATT2_VOLT_MULT = 11.0
 - BATT2_AMP_PERVLT as required
 
-<br>
 
 ## Analog RSSI and AIRSPEED inputs
 
-Analog RSSI uses RSSI_ANA_PIN = 8 <br>
-Analog Airspeed sensor would use ARSPD_PIN = 4
+- Analog RSSI uses RSSI_ANA_PIN = 8
+- Analog Airspeed sensor would use ARSPD_PIN = 4
 
-<br>
 
 ## Compass
 
 The NarinFC-X3 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-<br>
 
 ## Firmware
 
 Firmware for this board can be found here in sub-folders labeled “NarinFC-X3”
 
-<br>
 
 ## Loading Firmware
 
@@ -253,6 +230,5 @@ This board comes with ArduPilot firmware pre-installed and other vehicle/revisio
 Firmware for these boards can be found [https://firmware.ardupilot.org](https://firmware.ardupilot.org "https://fireware.ardupilot.org") in sub-folders labeled “NarinFC-X3”.
 The board comes pre-installed with an ArduPilot bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station, such as Mission Planner.
 
-<br>
 
 # [VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")

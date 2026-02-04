@@ -2,7 +2,7 @@
 
 The AEROFOX-H7 is a flight controller produced by AEROFOX(http://aerofox.cn)
 
-<img src="AEROFOX-H7_IMG.png" alt="" width="400">
+![AEROFOX-H7](AEROFOX-H7_IMG.png)
 
 ## Features
 
@@ -35,7 +35,7 @@ The AEROFOX-H7 is a flight controller produced by AEROFOX(http://aerofox.cn)
 
 ## Pinout
 
-<img src="AEROFOX-H7_pinout.png" alt="" width="800">
+![AEROFOX-H7 Pinout](AEROFOX-H7_pinout.png)
 
 ## UART Mapping
 

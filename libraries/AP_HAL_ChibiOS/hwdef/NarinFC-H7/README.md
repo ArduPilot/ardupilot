@@ -234,6 +234,5 @@ Firmware for these boards can be found `here  <https://firmware.ardupilot.org>`_
 
 The board comes pre-installed with an ArduPilot bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station, such as Mission Planner.
 
-<br>
 
 # [VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
