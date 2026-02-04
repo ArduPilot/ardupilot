@@ -136,7 +136,7 @@ build/<board>/esp-idf_build/ardupilot.bin
 build/<board>/esp-idf_build/partition_table/partition-table.bin
 ```
 
-see build/<board>/esp-idf_build/flash_project_args (after building) for hints on what arguments to use
+see `build/<board>/esp-idf_build/flash_project_args` (after building) for hints on what arguments to use
 
 ---
 OLD
@@ -364,7 +364,7 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 
 Save the log where coredump appears to a file, i'll call it core.txt
 ================= CORE DUMP START =================
-<body of base64-encoded core dump, save it to file on disk>
+(body of base64-encoded core dump, save it to file on disk)
 ================= CORE DUMP END ===================
 cat > core.txt
 ...
