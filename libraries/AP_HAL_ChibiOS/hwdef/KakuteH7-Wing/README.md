@@ -4,27 +4,27 @@ The KakuteH7-Wing is a flight controller produced by [Holybro](http://www.holybr
 
 ## Features
 
-    Processor
-        STM32H743 32-bit processor
-        AT7456E OSD
-    Sensors
-        ICM42688 Acc/Gyro
-        BMP280 barometer
-    Power
-        2S - 8S Lipo input voltage with voltage monitoring
-        9V/12V, 1.5A BEC for powering Video Transmitter
-        6V/7.2V, ?A BEC for servos
-        3.3V, 1A BEC
-    Interfaces
-        14x PWM outputs DShot capable, 4 outputs BiDirDShot capable
-        1x RC input
-        6x UARTs/serial for GPS and other peripherals
-        2x I2C ports for external compass, airspeed, etc.
-        USB-C port
-        Switchable 9V/12V VTX power
-        2 Switchable Camera inputs
-        All UARTS support hardware inversion. SBUS, SmartPort, and other inverted protocols work on any UART without “uninvert hack”
-        Input for second battery monitor
+- Processor
+    - STM32H743 32-bit processor
+    - AT7456E OSD
+- Sensors
+    - ICM42688 Acc/Gyro
+    - BMP280 barometer
+- Power
+    - 2S - 8S Lipo input voltage with voltage monitoring
+    - 9V/12V, 1.5A BEC for powering Video Transmitter
+    - 6V/7.2V, ?A BEC for servos
+    - 3.3V, 1A BEC
+- Interfaces
+    - 14x PWM outputs DShot capable, 4 outputs BiDirDShot capable
+    - 1x RC input
+    - 6x UARTs/serial for GPS and other peripherals
+    - 2x I2C ports for external compass, airspeed, etc.
+    - USB-C port
+    - Switchable 9V/12V VTX power
+    - 2 Switchable Camera inputs
+    - All UARTS support hardware inversion. SBUS, SmartPort, and other inverted protocols work on any UART without “uninvert hack”
+    - Input for second battery monitor
 
 ## Pinout
 

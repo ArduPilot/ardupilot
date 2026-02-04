@@ -4,29 +4,29 @@ https://stingbee.com.ua/flight_controllers/stellarf4v2
 
 ## Features
 
-    Processor
-        STM32F405
-    Sensors
-        ICM-42688p Acc/Gyro with external clock feature
-        DPS310/BMP280 barometer
-        AT7456E OSD
-        W25Q128 dataflash
-    Power
-        2S-8S Lipo input voltage with voltage monitoring
-        12V, 3A BEC for powering Video Transmitter
-        5V, 2A BEC for internal and peripherals
-    Interfaces
-        11x PWM outputs DShot capable, PWM1-4 DShot capable
-        4x UARTs
-        1x I2C
-        2x ADC
-        SPI flash for logging
-        USB-C port
-    LED
-        Red, 3.3V power indicator
-        Green, FC status
-    Size
-        41 x 41mm PCB with 30.5mm M3 mounting
+- Processor
+    - STM32F405
+- Sensors
+    - ICM-42688p Acc/Gyro with external clock feature
+    - DPS310/BMP280 barometer
+    - AT7456E OSD
+    - W25Q128 dataflash
+- Power
+    - 2S-8S Lipo input voltage with voltage monitoring
+    - 12V, 3A BEC for powering Video Transmitter
+    - 5V, 2A BEC for internal and peripherals
+- Interfaces
+    - 11x PWM outputs DShot capable, PWM1-4 DShot capable
+    - 4x UARTs
+    - 1x I2C
+    - 2x ADC
+    - SPI flash for logging
+    - USB-C port
+- LED
+    - Red, 3.3V power indicator
+    - Green, FC status
+- Size
+    - 41 x 41mm PCB with 30.5mm M3 mounting
 
 ## Overview
 

@@ -4,30 +4,30 @@ https://stingbee.com.ua/flight_controllers/stellarh7v2
 
 ## Features
 
-    Processor
-        STM32H743VIH6 480 MHz, 2MB flash
-    Sensors
-        ICM-42688p Acc/Gyro with external clock feature
-        DPS310/BMP280 barometer
-        AT7456E OSD
-        SD Card
-    Power
-        2S-8S Lipo input voltage with voltage monitoring
-        12V, 3A BEC for powering Video Transmitter
-        5V, 2A BEC for internal and peripherals
-    Interfaces
-        10x PWM outputs DShot capable, 4 outputs BDShot capable
-        7x UARTs
-        1x CAN
-        1x I2C
-        3x ADC
-        SD card for logging
-        USB-C port
-    LED
-        Red, 3.3V power indicator
-        Blue and Green, FC status
-    Size
-        41 x 41mm PCB with 30.5mm M3 mounting
+- Processor
+    - STM32H743VIH6 480 MHz, 2MB flash
+- Sensors
+    - ICM-42688p Acc/Gyro with external clock feature
+    - DPS310/BMP280 barometer
+    - AT7456E OSD
+    - SD Card
+- Power
+    - 2S-8S Lipo input voltage with voltage monitoring
+    - 12V, 3A BEC for powering Video Transmitter
+    - 5V, 2A BEC for internal and peripherals
+- Interfaces
+    - 10x PWM outputs DShot capable, 4 outputs BDShot capable
+    - 7x UARTs
+    - 1x CAN
+    - 1x I2C
+    - 3x ADC
+    - SD card for logging
+    - USB-C port
+- LED
+    - Red, 3.3V power indicator
+    - Blue and Green, FC status
+- Size
+    - 41 x 41mm PCB with 30.5mm M3 mounting
 
 ## Overview
 

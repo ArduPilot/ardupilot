@@ -26,8 +26,8 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 - **Air's Sensors**
   - IMU:
 
-        With Synced IMU, BalancedGyro technology, low noise and more shock-resistant:
-        IMU- ICM45686 (No vibration isolation)
+    - With Synced IMU, BalancedGyro technology, low noise and more shock-resistant:
+    - IMU- ICM45686 (No vibration isolation)
 
   - Baro:
 

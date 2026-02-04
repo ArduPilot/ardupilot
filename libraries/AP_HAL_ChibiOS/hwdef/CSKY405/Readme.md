@@ -4,24 +4,24 @@ The CSKY405 is a flight controller produced by [ClearSky](http://csky.space/prod
 
 ## Features
 
-    Processor
-        STM32F405 168Mhz, 1MB 32-bit processor
-        AT7456E OSD
-    Sensors
-        BMI088 Acc/Gyro
-        BMP390 barometer
-    Power
-        2S - 6S Lipo input voltage with voltage monitoring
-        90A Cont., 215A peak current monitor
-        12V, 2A BEC for powering Video Transmitter controlled by GPIO
-        5V, 2.5A BEC for internal and peripherals
-    Interfaces
-        10x PWM outputs DShot capable
-        1x RC input
-        6x UARTs/serial for GPS and other peripherals
-        I2C port for external compass, airspeed, etc.
-        microSDCard for logging, etc.
-        USB-C port
+- Processor
+    - STM32F405 168Mhz, 1MB 32-bit processor
+    - AT7456E OSD
+- Sensors
+    - BMI088 Acc/Gyro
+    - BMP390 barometer
+- Power
+    - 2S - 6S Lipo input voltage with voltage monitoring
+    - 90A Cont., 215A peak current monitor
+    - 12V, 2A BEC for powering Video Transmitter controlled by GPIO
+    - 5V, 2.5A BEC for internal and peripherals
+- Interfaces
+    - 10x PWM outputs DShot capable
+    - 1x RC input
+    - 6x UARTs/serial for GPS and other peripherals
+    - I2C port for external compass, airspeed, etc.
+    - microSDCard for logging, etc.
+    - USB-C port
 
 ## Overview
 

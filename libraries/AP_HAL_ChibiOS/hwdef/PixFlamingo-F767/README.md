@@ -5,25 +5,25 @@ Contact dheeranlabs@gmail.com for sales
 
 ## Features
 
-    Processor
-        STM32F767 32-bit processor
+- Processor
+    - STM32F767 32-bit processor
     Onboard Flash: 2048Mbits
-    Sensors
-        Two IMU : ICM42670, MPU6500/ICM20602 Acc/Gyro
-        One Baro : Internal MS5611/BMP280/DPS310 SPI barometer
+- Sensors
+    - Two IMU : ICM42670, MPU6500/ICM20602 Acc/Gyro
+    - One Baro : Internal MS5611/BMP280/DPS310 SPI barometer
     Internal LIS3MDL Compass
-    Power
-        5v input voltage with voltage monitoring
-    Interfaces
-        10x PWM outputs
-        1x RC input
-        5x UARTs/serial for GPS and other peripherals
-        2x I2C ports for external compass, airspeed, etc.
+- Power
+    - 5v input voltage with voltage monitoring
+- Interfaces
+    - 10x PWM outputs
+    - 1x RC input
+    - 5x UARTs/serial for GPS and other peripherals
+    - 2x I2C ports for external compass, airspeed, etc.
     microSD card slot port
     Internal RGB LED
     Safety switch port
     Buzzer port
-        USB-C port
+    - USB-C port
 
 ## Connectors
 

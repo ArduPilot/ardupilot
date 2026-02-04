@@ -4,25 +4,25 @@ The LongBowF405WING is a flight controller produced by [lefei rc](http://www.lef
 
 ## Features
 
-    Processor
-        STM32F405 168Mhz, 1MB 32-bit processor
-        AT7456E OSD
-    Sensors
-        ICM42688P Acc/Gyro
-        SPL006 barometer
-    Power
-        2S - 6S Lipo input voltage with voltage monitoring
-        120A Cont., 215A peak current monitor
-        9V/12/5V, 1.8A BEC for powering Video Transmitter controlled by GPIO
-        4.9V/6V/7.2V, 6A BEC for servos
-        5V, 2.4A BEC for internal and peripherals
-    Interfaces
-        12x PWM outputs DShot capable (Serail LED output is PWM12)
-        1x RC input
-        5x UARTs/serial for GPS and other peripherals, 6th UART internally tied to Wireless board)
-        I2C port for external compass, airspeed, etc.
-        microSDCard for logging, etc.
-        USB-C port
+- Processor
+    - STM32F405 168Mhz, 1MB 32-bit processor
+    - AT7456E OSD
+- Sensors
+    - ICM42688P Acc/Gyro
+    - SPL006 barometer
+- Power
+    - 2S - 6S Lipo input voltage with voltage monitoring
+    - 120A Cont., 215A peak current monitor
+    - 9V/12/5V, 1.8A BEC for powering Video Transmitter controlled by GPIO
+    - 4.9V/6V/7.2V, 6A BEC for servos
+    - 5V, 2.4A BEC for internal and peripherals
+- Interfaces
+    - 12x PWM outputs DShot capable (Serail LED output is PWM12)
+    - 1x RC input
+    - 5x UARTs/serial for GPS and other peripherals, 6th UART internally tied to Wireless board)
+    - I2C port for external compass, airspeed, etc.
+    - microSDCard for logging, etc.
+    - USB-C port
 
 ## Pinout
 
