@@ -46,14 +46,9 @@ files for files with a filename of *.shtml. Here is an example:
   </head>
   <body>
     <h1>Server Side Scripting Test</h1>
-    <table>
-      <tr><th>Roll</th><th>Pitch</th><th>Yaw</th></tr>
-      <tr>
-      <td><?lua return tostring(math.deg(ahrs:get_roll_rad()))?></td>
-      <td><?lstr math.deg(ahrs:get_pitch_rad())?></td>
-      <td><?lstr math.deg(ahrs:get_yaw_rad())?></td>
-      </tr>
-    </table>
+    | Roll | Pitch | Yaw |
+| --- | --- | --- |
+|  |  |  |
   </body>
 </html>
 ```
