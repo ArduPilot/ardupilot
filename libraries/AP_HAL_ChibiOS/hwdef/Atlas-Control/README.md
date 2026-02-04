@@ -70,20 +70,13 @@ Unless noted otherwise all connectors are JST GH 1.25mm pitch
 | 5 (blk) | RTS | +3.3V |
 | 6 (blk) | GND | GND |
 
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>3.3v</td>
-   <td>+3.3V</td>
-   </tr>
-   </tbody>
-   </table>
+### ADC
+
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | ADC IN | up to +3.3V |
+| 2 | GND | GND |
+| 3 | 3.3V | +3.3V |
 
 ### FMU and IO SWD
 
