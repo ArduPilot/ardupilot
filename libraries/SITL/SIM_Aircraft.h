@@ -53,7 +53,7 @@ namespace SITL {
  */
 class Aircraft {
 public:
-    Aircraft(const char *frame_str);
+    Aircraft(const char *unused_frame_str);
 
     // called directly after constructor:
     virtual void set_start_location(const Location &start_loc, const float start_yaw);
@@ -274,7 +274,6 @@ protected:
     uint32_t last_frame_count;
     uint8_t instance;
     const char *autotest_dir;
-    const char *frame;
     bool use_time_sync = true;
     float last_speedup = -1.0f;
     const char *config_ = "";
