@@ -22,40 +22,45 @@
 
 namespace SITL {
 
+constexpr float ambient_temperature = 0.0f;  // degC
+
 class Battery {
 public:
-    void setup(float _capacity_Ah, float _resistance, float _max_voltage);
+    // Note: capacity<=0 means **unlimited** capacity.
+    void setup(float _capacity_Ah, float _resistance_ohm, float _max_voltage);
 
     // Implements the (re)setting behavior described by SIM_BATT_* parameters
     // (reminder: if the desired values are different than previous choices, reset)
     void maybe_reset(float desired_voltage, float desired_capacity_Ah);
 
-    void init_voltage(float voltage);
-    void init_capacity(float capacity);
+    // Call this periodically to "step" the battery forward in time
+    void consume_energy(float current_amps);
 
-    void set_current(float current_amps);
-    float get_voltage(void) const;
+    float get_voltage(void) const { return voltage_filter.get(); }
 
     // return battery temperature in Kelvin:
     float get_temperature(void) const { return temperature.kelvin; }
 
 private:
-    float capacity_Ah;
-    float resistance;
+    float capacity_Ah; // set <= 0 for unlmited capacity
+    float resistance_ohm;
     float max_voltage;
     float voltage_set;
-    float remaining_Ah;
+    float remaining_Ah; // if capacity is unlimited, set this to FLT_MAX
     uint64_t last_us;
 
     struct {
-        float kelvin = 273;
+        float kelvin = ambient_temperature + 273.15f;
         uint64_t last_update_micros;
     } temperature;
+    void update_temperature(float current_amps, uint64_t now);
 
     // 10Hz filter for battery voltage
     LowPassFilterFloat voltage_filter{10};
 
-    float get_resting_voltage(float charge_pct) const;
-    void set_initial_SoC(float voltage);
+    float get_resting_voltage(void) const;
+    float compute_remaining_ah(float voltage) const; // const shows this has no side effects
+    void set_remaining_ah(void);
+    bool capacity_is_unlimited(void) const { return !(is_positive(capacity_Ah)); } // for readability
 };
 }
