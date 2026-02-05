@@ -310,12 +310,29 @@ void AP_MotorsHeli::output_disarmed()
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
 }
 
-void AP_MotorsHeli::set_desired_spool_state(DesiredSpoolState spool)
+// set_desired_spool_state - set desired spool state with safety constraints
+void AP_MotorsHeli::set_desired_spool_state(DesiredSpoolState desired)
 {
-    if (armed() || (spool == DesiredSpoolState::SHUT_DOWN)) {
-        _spool_desired = spool;
+    // Safety constraint: disarmed vehicles must be shut down
+    if (!armed()) {
+        _spool_desired = DesiredSpoolState::SHUT_DOWN;
+        return;
     }
-};
+
+    // Safety constraint: without interlock, limit to GROUND_IDLE
+    // (allows swash movement for autorotation, but rotor cannot spin up)
+    if (!get_interlock()) {
+        if (desired > DesiredSpoolState::GROUND_IDLE) {
+            _spool_desired = DesiredSpoolState::GROUND_IDLE;
+        } else {
+            _spool_desired = desired;  // Accept SHUT_DOWN or GROUND_IDLE requests
+        }
+        return;
+    }
+
+    // No safety constraints active - accept requested state
+    _spool_desired = desired;
+}
 
 // run spool logic
 void AP_MotorsHeli::output_logic()

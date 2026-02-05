@@ -552,12 +552,19 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
     }
 }
 
-void AP_MotorsMulticopter::set_desired_spool_state(DesiredSpoolState spool)
+// set_desired_spool_state - set desired spool state with safety constraints
+void AP_MotorsMulticopter::set_desired_spool_state(DesiredSpoolState desired)
 {
-    if (armed() || (spool == DesiredSpoolState::SHUT_DOWN)) {
-        _spool_desired = spool;
+    // Safety constraint: disarmed or no interlock means motors must shut down
+    // (multicopters don't use GROUND_IDLE like helis - props must not spin without interlock)
+    if (!armed() || !get_interlock()) {
+        _spool_desired = DesiredSpoolState::SHUT_DOWN;
+        return;
     }
-};
+
+    // No safety constraints active - accept requested state
+    _spool_desired = desired;
+}
 
 // run spool logic
 // advance the motor spool state machine once per cycle
