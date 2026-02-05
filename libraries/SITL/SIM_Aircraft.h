@@ -361,6 +361,8 @@ protected:
     // update EAS speeds
     void update_eas_airspeed();
 
+    void reinitialize_battery_if_param_has_changed(void);
+
     // clamp support
     class Clamp {
     public:

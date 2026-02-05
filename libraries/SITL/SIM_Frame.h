@@ -62,7 +62,6 @@ public:
     float terminal_rotation_rate;
     uint8_t motor_offset;
 
-    void reset_battery_if_requested(void);
     float get_current_amp(void);
 
     // get mass in kg

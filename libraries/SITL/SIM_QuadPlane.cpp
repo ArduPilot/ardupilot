@@ -135,8 +135,7 @@ void QuadPlane::update(const struct sitl_input &input)
         quad_accel_body.rotate(ROTATION_PITCH_270);
     }
 
-    // estimate voltage and current
-    frame->reset_battery_if_requested();
+    reinitialize_battery_if_param_has_changed();
     battery_voltage = battery.get_voltage();
     battery_current = frame->get_current_amp();
 
