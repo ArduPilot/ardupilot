@@ -3,7 +3,7 @@
 This driver implements support for the INF Inject EFI engine
 control units.
 
- https://innoflighttechnology.com/efi/
+ [InnoFlight](https://innoflighttechnology.com/efi/)
 
 # Parameters
 

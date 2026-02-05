@@ -3,7 +3,7 @@
 This Lua script reads and logs wind sensor data from the **Trisonica LI-550 Mini** ultrasonic wind sensor connected via serial. It decodes ASCII-formatted key-value pairs and logs the data using dynamic field tags on the `W3D` logging stream.
 
 For sensor details, visit:
-🔗 https://www.licor.com/products/trisonica/LI-550-mini
+🔗 [LI-COR](https://www.licor.com/products/trisonica/LI-550-mini)
 
 ## Features
 

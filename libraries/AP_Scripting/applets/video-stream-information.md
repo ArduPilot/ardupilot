@@ -25,7 +25,7 @@ mavlink message allow the GCS to find and display live video to the user
 
 1. Setup the camera gimbal as described on the ArduPilot wiki including ethernet setup
 2. Check the IP address of the camera gimbal
-3. Setup scripting per https://ardupilot.org/plane/docs/common-lua-scripts.html and reboot the autopilot
+3. Setup scripting per [ArduPilot Lua documentation](https://ardupilot.org/plane/docs/common-lua-scripts.html) and reboot the autopilot
 4. Copy this script to the vehicle autopilot's "scripts" directory
 5. Set the VID1_CAMMODEL parameter to the camera gimbal model and adjust the new VID1 params as required
 6. If necessary using the GCS's mavlink inspector to confirm the VIDEO_STREAM_INFORMATION URI field is correct

@@ -3,7 +3,7 @@
 This driver implements support for the DLA EFI serial protocol for
 this system:
 
-https://www.austars-model.com/dla-232cc-uavuas-engine-optional-one-key-startauto-startergenerator_g17937.html
+[Austars Model](https://www.austars-model.com/dla-232cc-uavuas-engine-optional-one-key-startauto-startergenerator_g17937.html)
 
 # Parameters
 

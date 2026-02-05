@@ -7,11 +7,11 @@ network communication over LTE networks without using a companion
 computer.
 
 The driver best paired with with the ArduPilot remote support server
-https://support.ardupilot.org, but can also be used for any other
+[ArduPilot support](https://support.ardupilot.org), but can also be used for any other
 network service.
 
 If you don't have access to the ArduPilot support server you can
-install your own using https://github.com/ArduPilot/UDPProxy
+install your own using [UDPProxy](https://github.com/ArduPilot/UDPProxy)
 
 # Supported Hardware
 
@@ -122,7 +122,7 @@ directly or via MAVFTP. The following key parameters should be set:
 - SCR_SDEV should be set to 48 (PPP) or 2 (MAVLink2) for the port matching LTE_SCRPORT
 
 If using PPP then you also need to ensure PPP support is compiled into
-your firmware (you can use https://custom.ardupilot.org to do that)
+your firmware (you can use [ArduPilot custom firmware builder](https://custom.ardupilot.org) to do that)
 and set NET_ENABLE=1. You will likely also want to setup some outgoing
 UDP or TCP ports with the NET_Pn parameters.
 
@@ -222,7 +222,7 @@ are listed below.
 
 The SIM7070G is a CAT-M modem, meaning you must have a special CAT-M
 capable SIM. A normal data SIM won't work at all. I recommend the SIMs
-from https://hologram.io
+from [Hologram](https://hologram.io)
 
 The baud rate of the SIM7070G as set by the AP+IPR AT
 command is "sticky", it persists over a power cycle. This means if you
@@ -255,7 +255,7 @@ connect the flight controller TX to the SIM7070G TX and RX to RX.
 ## SIM7600
 
 The SIM7600 is a CAT-1 modem, so it can use any data SIM. I recommend
-using a multi-carrier SIM (eg. the SIMs from https://hologram.io ) to
+using a multi-carrier SIM (eg. the SIMs from [Hologram](https://hologram.io) ) to
 maximimise the number of cell towers you can use.
 
 Depending on your SIM and carrier you may need to enable roaming

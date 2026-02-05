@@ -2,7 +2,7 @@
 
 This driver implements support for the VSPeak Modell flow meter sensor.
 
-https://www.vspeak-modell.de/en/flow-meter
+[V-Speak](https://www.vspeak-modell.de/en/flow-meter)
 
 # Setup
 

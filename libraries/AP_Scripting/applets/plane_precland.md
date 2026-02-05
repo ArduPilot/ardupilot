@@ -29,9 +29,7 @@ position will be used.
 
 # Operation
 
-You should first install and configure a precision landing sensor as described here:
-
-  https://ardupilot.org/copter/docs/precision-landing-with-irlock.html
+You should first install and configure a precision landing sensor as described in the [ArduPilot Precision Landing documentation](https://ardupilot.org/copter/docs/precision-landing-with-irlock.html).
 
 then you should enable the precision subsystem and install the lua
 script in the APM/scripts folder of your flight controller.

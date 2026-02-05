@@ -17,7 +17,7 @@ This must be set to 1 to enable the script.
 This is the terrain altitude threshold for engaging BRAKE mode. The
 onboard terrain system must be enabled with TERRAIN_ENABLE=1 and
 terrain must have either been preloaded to the vehicle (see
-https://terrain.ardupilot.org ) or be available from the ground
+[ArduPilot terrain server](https://terrain.ardupilot.org) ) or be available from the ground
 station over MAVLink.
 
 Make sure you set sufficient margin to cope with obstacles such as
@@ -54,7 +54,7 @@ controllers microSD card. Review the above parameter descriptions and
 decide on the right parameter values for your vehicle and operations.
 
 Make sure TERRAIN_ENABLE is 1 and you should preload terrain data for
-the flight area from https://terrain.ardupilot.org
+the flight area from [ArduPilot terrain server](https://terrain.ardupilot.org)
 
 It is strongly recommended that you set TERRAIN_SPACING=30 and preload
 the SRTM1 terrain data for 30m horizontal resolution of terrain data.

@@ -3,7 +3,7 @@
 A Lua script for ArduPilot that enables satellite communication
 using the RockBlock 9704 SBD modem to send and receive basic MAVLink telemetry.
 
-Requires https://github.com/stephendade/rockblock2mav (MQTT client) at the GCS end
+Requires [rockblock2mav](https://github.com/stephendade/rockblock2mav) (MQTT client) at the GCS end
 
 Messages will be send or received if High Latency Mode is enabled, or as configured
 by ``RK9_FORCEHL``.

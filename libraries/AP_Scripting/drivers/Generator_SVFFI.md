@@ -1,7 +1,7 @@
 # SVFFI Generator Driver
 
 This driver implements support for the SVFFI generator serial protocol for
-this system http://www.svffi.com/en/
+this system [SVFFI](http://www.svffi.com/en/)
 
 # Parameters
 
