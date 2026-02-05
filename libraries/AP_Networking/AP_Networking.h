@@ -18,7 +18,6 @@ class AP_Networking_SwitchPort_lwIP;
 class AP_Networking_SwitchPort_Ethernet_ChibiOS;
 class AP_Networking_COBS_Link;
 class AP_Networking_SwitchPort_COBS;
-class AP_Networking_SwitchPort_MAVLink_COBS;
 
 /*
   Note! all uint32_t IPv4 addresses are in host byte order
@@ -450,9 +449,9 @@ private:
     AP_Networking_SwitchPort_COBS *cobs_bonds[MAX_COBS_BONDS] {};
     uint8_t num_cobs_bonds = 0;
 
-#if AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
-    AP_Networking_SwitchPort_MAVLink_COBS *port_mavlink_cobs = nullptr;
-#endif
+    // MAVLink COBS tunnel ports are managed via static registry in
+    // AP_Networking_SwitchPort_MAVLink_COBS, created dynamically when
+    // TUNNEL messages arrive from new (channel, sysid, compid) endpoints
 #endif // AP_NETWORKING_BACKEND_SWITCH
 };
 

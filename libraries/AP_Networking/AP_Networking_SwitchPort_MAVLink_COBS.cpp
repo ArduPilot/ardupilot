@@ -23,25 +23,111 @@
 
 using namespace AP_Networking_COBS_Protocol;
 
-AP_Networking_SwitchPort_MAVLink_COBS *AP_Networking_SwitchPort_MAVLink_COBS::_singleton;
+// Static registry members
+AP_Networking_Switch *AP_Networking_SwitchPort_MAVLink_COBS::_hub;
+uint8_t AP_Networking_SwitchPort_MAVLink_COBS::_local_device_id[6];
+HAL_Semaphore AP_Networking_SwitchPort_MAVLink_COBS::_registry_sem;
+AP_Networking_SwitchPort_MAVLink_COBS *AP_Networking_SwitchPort_MAVLink_COBS::_ports[MAX_TUNNELS];
+uint8_t AP_Networking_SwitchPort_MAVLink_COBS::_num_ports;
+
+/*
+  Initialize the registry with hub and local device ID
+*/
+void AP_Networking_SwitchPort_MAVLink_COBS::init_registry(AP_Networking_Switch *hub, 
+                                                          const uint8_t local_device_id[6])
+{
+    WITH_SEMAPHORE(_registry_sem);
+    _hub = hub;
+    memcpy(_local_device_id, local_device_id, 6);
+}
+
+/*
+  Get or create a port for the given (chan, sysid, compid) key
+*/
+AP_Networking_SwitchPort_MAVLink_COBS *AP_Networking_SwitchPort_MAVLink_COBS::get_or_create_port(
+    mavlink_channel_t chan, uint8_t sysid, uint8_t compid)
+{
+    WITH_SEMAPHORE(_registry_sem);
+    
+    if (_hub == nullptr) {
+        // Registry not initialized
+        return nullptr;
+    }
+    
+    // Search for existing port with matching key
+    for (uint8_t i = 0; i < _num_ports; i++) {
+        if (_ports[i] != nullptr &&
+            _ports[i]->tx_chan == chan &&
+            _ports[i]->target_sysid == sysid &&
+            _ports[i]->target_compid == compid) {
+            return _ports[i];
+        }
+    }
+    
+    // Not found - create new port if space available
+    if (_num_ports >= MAX_TUNNELS) {
+        return nullptr;
+    }
+    
+    auto *port = NEW_NOTHROW AP_Networking_SwitchPort_MAVLink_COBS(chan, sysid, compid);
+    if (port == nullptr) {
+        return nullptr;
+    }
+    
+    if (!port->init()) {
+        delete port;
+        return nullptr;
+    }
+    
+    if (_hub->register_port(port) < 0) {
+        delete port;
+        return nullptr;
+    }
+    
+    _ports[_num_ports++] = port;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: MAVLink COBS tunnel created (chan=%u sys=%u comp=%u)",
+                  (unsigned)chan, (unsigned)sysid, (unsigned)compid);
+    
+    return port;
+}
+
+/*
+  Update all registered ports
+*/
+void AP_Networking_SwitchPort_MAVLink_COBS::update_all()
+{
+    WITH_SEMAPHORE(_registry_sem);
+    for (uint8_t i = 0; i < _num_ports; i++) {
+        if (_ports[i] != nullptr) {
+            _ports[i]->update();
+        }
+    }
+}
 
 AP_Networking_SwitchPort_MAVLink_COBS::AP_Networking_SwitchPort_MAVLink_COBS(
-    AP_Networking_Switch *_hub,
-    const uint8_t _local_device_id[6],
+    mavlink_channel_t chan,
     uint8_t _target_sysid,
     uint8_t _target_compid)
-    : hub(_hub)
+    : tx_chan(chan)
     , target_sysid(_target_sysid)
     , target_compid(_target_compid)
 {
-    memcpy(local_device_id, _local_device_id, 6);
-    _singleton = this;
 }
 
 AP_Networking_SwitchPort_MAVLink_COBS::~AP_Networking_SwitchPort_MAVLink_COBS()
 {
-    if (_singleton == this) {
-        _singleton = nullptr;
+    // Remove from registry
+    WITH_SEMAPHORE(_registry_sem);
+    for (uint8_t i = 0; i < _num_ports; i++) {
+        if (_ports[i] == this) {
+            // Shift remaining ports down
+            for (uint8_t j = i; j < _num_ports - 1; j++) {
+                _ports[j] = _ports[j + 1];
+            }
+            _ports[_num_ports - 1] = nullptr;
+            _num_ports--;
+            break;
+        }
     }
 }
 
@@ -124,7 +210,7 @@ void AP_Networking_SwitchPort_MAVLink_COBS::send_keepalive()
     
     // Build keepalive: "KA" + device_id[6] + rx_good[2] + CRC32
     uint8_t ka_buf[KA_TOTAL_LEN];
-    size_t ka_len = build_keepalive(ka_buf, sizeof(ka_buf), local_device_id, rx_good);
+    size_t ka_len = build_keepalive(ka_buf, sizeof(ka_buf), _local_device_id, rx_good);
     if (ka_len == 0) {
         return;
     }
@@ -155,37 +241,25 @@ void AP_Networking_SwitchPort_MAVLink_COBS::deliver_frame(const uint8_t *frame, 
 }
 
 /*
-  Send a single TUNNEL message
+  Send a single TUNNEL message on our designated channel
 */
 bool AP_Networking_SwitchPort_MAVLink_COBS::send_tunnel(uint16_t payload_type, 
                                                    const uint8_t *data, uint8_t len)
 {
-    // Find an active MAVLink channel
-    for (uint8_t i = 0; i < gcs().num_gcs(); i++) {
-        GCS_MAVLINK *link = gcs().chan(i);
-        if (link == nullptr || !link->is_active()) {
-            continue;
-        }
-        
-        mavlink_channel_t chan = link->get_chan();
-        
-        if (!HAVE_PAYLOAD_SPACE(chan, TUNNEL)) {
-            continue;
-        }
-        
-        mavlink_msg_tunnel_send(
-            chan,
-            target_sysid,
-            target_compid,
-            payload_type,
-            len,
-            data
-        );
-        
-        return true;
+    if (!HAVE_PAYLOAD_SPACE(tx_chan, TUNNEL)) {
+        return false;
     }
     
-    return false;
+    mavlink_msg_tunnel_send(
+        tx_chan,
+        target_sysid,
+        target_compid,
+        payload_type,
+        len,
+        data
+    );
+    
+    return true;
 }
 
 /*
@@ -218,7 +292,7 @@ bool AP_Networking_SwitchPort_MAVLink_COBS::handle_decoded_frame(const uint8_t *
     case FrameType::DATA_SINGLE:
         // Deliver ethernet frame to hub
         rx_good++;
-        hub->route_frame(this, payload, payload_len);
+        _hub->route_frame(this, payload, payload_len);
         rx_count++;
         return true;
     
@@ -226,7 +300,7 @@ bool AP_Networking_SwitchPort_MAVLink_COBS::handle_decoded_frame(const uint8_t *
         // MAVLink doesn't support bonded mode (no multi-link striping)
         // But we can still receive bonded frames - just ignore the sequence
         rx_good++;
-        hub->route_frame(this, payload, payload_len);
+        _hub->route_frame(this, payload, payload_len);
         rx_count++;
         return true;
     
@@ -241,17 +315,10 @@ bool AP_Networking_SwitchPort_MAVLink_COBS::handle_decoded_frame(const uint8_t *
   Handle incoming TUNNEL message - feed data into COBS decoder
 */
 void AP_Networking_SwitchPort_MAVLink_COBS::handle_tunnel(uint16_t payload_type,
-                                                     const uint8_t *payload, uint8_t payload_len,
-                                                     uint8_t src_sysid, uint8_t src_compid)
+                                                          const uint8_t *payload, uint8_t payload_len)
 {
     if (payload_len == 0) {
         return;
-    }
-    
-    // Learn target from first received message
-    if (target_sysid == 0) {
-        target_sysid = src_sysid;
-        target_compid = src_compid;
     }
     
     WITH_SEMAPHORE(rx_sem);

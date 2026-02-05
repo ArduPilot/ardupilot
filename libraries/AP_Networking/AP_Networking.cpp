@@ -287,26 +287,13 @@ void AP_Networking::init()
 #endif // AP_NETWORKING_BACKEND_SWITCHPORT_COBS
 
 #if AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
-        // Create MAVLink COBS tunnel port for remote COBS over MAVLink
+        // Initialize MAVLink COBS tunnel registry
+        // Tunnel ports are created dynamically when TUNNEL messages arrive from new endpoints
         uint8_t mav_cobs_device_id[6];
         get_macaddr(mav_cobs_device_id);
-        if (port_mavlink_cobs == nullptr) {
-            port_mavlink_cobs = NEW_NOTHROW AP_Networking_SwitchPort_MAVLink_COBS(hub, mav_cobs_device_id, 0, 0);
-            if (port_mavlink_cobs != nullptr) {
-                if (port_mavlink_cobs->init()) {
-                    if (hub->register_port(port_mavlink_cobs) >= 0) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: MAVLink COBS port created");
-                    } else {
-                        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: hub full, MAVLink COBS skipped");
-                        delete port_mavlink_cobs;
-                        port_mavlink_cobs = nullptr;
-                    }
-                } else {
-                    delete port_mavlink_cobs;
-                    port_mavlink_cobs = nullptr;
-                }
-            }
-        }
+        AP_Networking_SwitchPort_MAVLink_COBS::init_registry(hub, mav_cobs_device_id);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "NET: MAVLink COBS tunnels enabled (max %u)",
+                      (unsigned)AP_Networking_SwitchPort_MAVLink_COBS::MAX_TUNNELS);
 #endif // AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
     }
 #endif // AP_NETWORKING_BACKEND_SWITCH

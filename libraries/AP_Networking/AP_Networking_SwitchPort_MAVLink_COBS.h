@@ -9,6 +9,7 @@
 #include "AP_Networking_COBS_Protocol.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 /*
   Hub port that tunnels COBS ethernet frames over MAVLink TUNNEL messages.
@@ -22,6 +23,10 @@
   
   - COBS_START: First chunk (resets RX decoder)
   - COBS_CONT:  Continuation chunks
+  
+  Multiple instances are supported, keyed by (channel, sysid, compid).
+  Instances are created dynamically when TUNNEL messages arrive from
+  new endpoints.
 */
 class AP_Networking_SwitchPort_MAVLink_COBS : public AP_Networking_SwitchPort
 {
@@ -30,15 +35,13 @@ public:
     static constexpr uint16_t MAV_TUNNEL_PAYLOAD_TYPE_COBS_START = 32769;
     static constexpr uint16_t MAV_TUNNEL_PAYLOAD_TYPE_COBS_CONT  = 32770;
     
-    AP_Networking_SwitchPort_MAVLink_COBS(AP_Networking_Switch *hub,
-                                    const uint8_t local_device_id[6],
-                                    uint8_t target_sysid,
-                                    uint8_t target_compid);
+    // Maximum number of concurrent tunnel connections
+    static constexpr uint8_t MAX_TUNNELS = 4;
+    
     ~AP_Networking_SwitchPort_MAVLink_COBS();
     
     CLASS_NO_COPY(AP_Networking_SwitchPort_MAVLink_COBS);
     
-    bool init();
     void update() override;
     
     // AP_Networking_SwitchPort interface
@@ -48,8 +51,7 @@ public:
     bool is_link_up() const override;
     
     // Handle incoming TUNNEL message (called from GCS)
-    void handle_tunnel(uint16_t payload_type, const uint8_t *payload, uint8_t payload_len,
-                       uint8_t src_sysid, uint8_t src_compid);
+    void handle_tunnel(uint16_t payload_type, const uint8_t *payload, uint8_t payload_len);
     
     // Check if payload type is one of ours
     static bool is_cobs_payload_type(uint16_t type) {
@@ -58,6 +60,7 @@ public:
     }
     
     // Target identification
+    mavlink_channel_t get_tx_chan() const { return tx_chan; }
     uint8_t get_target_sysid() const { return target_sysid; }
     uint8_t get_target_compid() const { return target_compid; }
     
@@ -72,12 +75,32 @@ public:
     uint32_t get_ka_tx_count() const { return ka_tx_count; }
     uint32_t get_ka_rx_count() const { return ka_rx_count; }
     
-    // Singleton accessor for GCS to route TUNNEL messages
-    static AP_Networking_SwitchPort_MAVLink_COBS *get_singleton() { return _singleton; }
+    // --- Static interface for registry management ---
+    
+    // Initialize the registry with hub and local device ID (call once from AP_Networking)
+    static void init_registry(AP_Networking_Switch *hub, const uint8_t local_device_id[6]);
+    
+    // Get or create a port for the given (chan, sysid, compid) key
+    // Returns nullptr if registry not initialized or max tunnels reached
+    static AP_Networking_SwitchPort_MAVLink_COBS *get_or_create_port(
+        mavlink_channel_t chan, uint8_t sysid, uint8_t compid);
+    
+    // Update all registered ports (call from AP_Networking at 10Hz)
+    static void update_all();
+    
+    // Check if registry is initialized
+    static bool is_registry_initialized() { return _hub != nullptr; }
 
 private:
-    AP_Networking_Switch *hub;
-    uint8_t local_device_id[6];
+    // Private constructor - use get_or_create_port()
+    AP_Networking_SwitchPort_MAVLink_COBS(mavlink_channel_t chan,
+                                          uint8_t target_sysid,
+                                          uint8_t target_compid);
+    
+    bool init();
+    
+    // Instance data
+    mavlink_channel_t tx_chan;  // Channel to send responses on
     uint8_t target_sysid;
     uint8_t target_compid;
     
@@ -116,7 +139,12 @@ private:
     void send_keepalive();
     bool handle_decoded_frame(const uint8_t *data, size_t len);
     
-    static AP_Networking_SwitchPort_MAVLink_COBS *_singleton;
+    // --- Static registry data ---
+    static AP_Networking_Switch *_hub;
+    static uint8_t _local_device_id[6];
+    static HAL_Semaphore _registry_sem;
+    static AP_Networking_SwitchPort_MAVLink_COBS *_ports[MAX_TUNNELS];
+    static uint8_t _num_ports;
 };
 
 #endif // AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
