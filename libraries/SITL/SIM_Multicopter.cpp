@@ -32,7 +32,10 @@ MultiCopter::MultiCopter(const char *frame_str) :
         exit(1);
     }
 
-    frame->init(frame_str, &battery);
+    frame->init(frame_str);
+    battery.setup(frame->get_model_batt_capacity_ah(),
+                  frame->get_model_batt_resistance_ohm(),
+                  frame->get_model_batt_max_voltage());
 
     mass = frame->get_mass();
     frame_height = 0.1;

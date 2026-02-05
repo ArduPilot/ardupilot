@@ -101,7 +101,10 @@ QuadPlane::QuadPlane(const char *frame_str) :
     frame->motor_offset = motor_offset;
 
     // we use zero terminal velocity to let the plane model handle the drag
-    frame->init(frame_str, &battery);
+    frame->init(frame_str);
+    battery.setup(frame->get_model_batt_capacity_ah(),
+                  frame->get_model_batt_resistance_ohm(),
+                  frame->get_model_batt_max_voltage());
 
     // increase mass for plane components
     mass = frame->get_mass() * 1.5;
