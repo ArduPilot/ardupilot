@@ -1,6 +1,6 @@
 # KakuteF7 Mini Flight Controller
 
-http://www.holybro.com/product/kakute-f7-mini/
+[Holybro](http://www.holybro.com/product/kakute-f7-mini/)
 
 The KakuteF7 Mini is a flight controller produced by [Holybro](http://www.holybro.com/product/59).
 

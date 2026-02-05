@@ -1,6 +1,6 @@
 # GOKU F405 1-2S 12A AIO w/ built-in ELRS 2.4g RX
 
-https://flywoo.net/collections/aio-evo-stacks-combo/products/goku-versatile-f405-2s-12a-aio-w-build-in-elrs-2-4g-rx-mpu6000
+[Flywoo store](https://flywoo.net/collections/aio-evo-stacks-combo/products/goku-versatile-f405-2s-12a-aio-w-build-in-elrs-2-4g-rx-mpu6000)
 
 The Flywoo GOKU F405 AIO is a flight controller produced by [Flywoo](https://flywoo.net/).
 

@@ -48,7 +48,7 @@ the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
 
 # Where to Buy
 
-[ATOMRC](<https://atomrc.com)
+[ATOMRC](https://atomrc.com)
 
 # Pinout
 

@@ -1,6 +1,6 @@
 # Matek H7A3-slim Flight Controller
 
-https://www.mateksys.com/?portfolio=h7a3-slim.
+[Matek Systems](https://www.mateksys.com/?portfolio=h7a3-slim.)
 
 ## Features
 
@@ -106,7 +106,7 @@ GPIO 81 controls the 9V BEC output to pins marked "9V". Setting this GPIO high r
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled MatekH7A3.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled MatekH7A3.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "ardu*_with_bl.hex" firmware, using your favourite DFU loading tool. eg STM32CubeProgrammer

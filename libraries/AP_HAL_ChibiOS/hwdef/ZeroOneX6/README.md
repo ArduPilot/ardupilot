@@ -156,4 +156,4 @@ Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ 
 
 ## Where to Buy
 
-https://www.01aero.cn
+[ZeroOne](https://www.01aero.cn)

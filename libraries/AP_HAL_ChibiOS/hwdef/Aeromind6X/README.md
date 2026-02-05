@@ -113,7 +113,7 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 
 ## RC Input
 
-RC input supports SBUS, PPM, and DSM protocols with dedicated ports available for each. For bi-directional protocols, UART4 or other telemetry ports can be configured to handle the connection. For more details, refer to: https://ardupilot.org/plane/docs/common-rc-systems.html
+RC input supports SBUS, PPM, and DSM protocols with dedicated ports available for each. For bi-directional protocols, UART4 or other telemetry ports can be configured to handle the connection. For more details, refer to the [ArduPilot documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
 
 ---
 

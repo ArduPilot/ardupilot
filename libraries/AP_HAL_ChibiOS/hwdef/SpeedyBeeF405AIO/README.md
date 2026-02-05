@@ -1,6 +1,6 @@
 # SpeedyBee F405 AIO 40A Bluejay
 
-https://www.speedybee.com/speedybee-f405-aio-40a-bluejay-25-5x25-5-3-6s-flight-controller
+[SpeedyBee](https://www.speedybee.com/speedybee-f405-aio-40a-bluejay-25-5x25-5-3-6s-flight-controller)
 
 The SpeedyBee F405 AIO is a flight controller produced by [SpeedyBee](https://www.speedybee.com/).
 

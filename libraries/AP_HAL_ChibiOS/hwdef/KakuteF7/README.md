@@ -1,6 +1,6 @@
 # KakuteF7 AIO Flight Controller
 
-http://www.holybro.com/product/59
+[Holybro](http://www.holybro.com/product/59)
 
 The KakuteF7 AIO is a flight controller produced by [Holybro](http://www.holybro.com/product/59).
 

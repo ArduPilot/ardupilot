@@ -1,7 +1,7 @@
 
 ## MFE_POS3_CAN
 
-The MFE_POS3_CAN is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The MFE_POS3_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 

@@ -95,7 +95,7 @@ GPIO 81 controls the VTX BEC output to pins marked "9V". Setting this GPIO high 
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “SpeedyBeeF405Wing”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “SpeedyBeeF405Wing”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "SpeedyBeeF405Wing_bl.hex"

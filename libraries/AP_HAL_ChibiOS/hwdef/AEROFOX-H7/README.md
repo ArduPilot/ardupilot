@@ -1,6 +1,6 @@
 # AEROFOX-H7 Flight Controller
 
-The AEROFOX-H7 is a flight controller produced by AEROFOX(http://aerofox.cn)
+The AEROFOX-H7 is a flight controller produced by [AEROFOX](http://aerofox.cn)
 
 ![AEROFOX-H7](AEROFOX-H7_IMG.png)
 

@@ -32,7 +32,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
-For Fport, a bi-directional inverter will be required. See https://ardupilot.org/plane/docs/common-connecting-sport-fport.html
+For Fport, a bi-directional inverter will be required. See [ArduPilot FPort documentation](https://ardupilot.org/plane/docs/common-connecting-sport-fport.html)
 For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required.
 
 ## FrSky Telemetry

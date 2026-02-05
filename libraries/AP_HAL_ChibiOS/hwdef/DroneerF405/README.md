@@ -41,7 +41,7 @@ The SBUS pin (SBU), is passed by an inverter to RX2 (UART2 RX), which can be use
 Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM (SBUS requires external inversion on other UARTs). See Radio Control Systems for details.
 
 RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
-For Fport, a bi-directional inverter will be required. See https://ardupilot.org/plane/docs/common-connecting-sport-fport.html
+For Fport, a bi-directional inverter will be required. See the [ArduPilot FPort documentation](https://ardupilot.org/plane/docs/common-connecting-sport-fport.html)
 For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required.
 
 ## FrSky Telemetry

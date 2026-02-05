@@ -1,6 +1,6 @@
 ## QioTekZealotF427 Flight Controller
 
-The QioTek Zealot F427 flight controller is sold by a range of resellers listed on the QIOTEK(http://www.Qio-Tek.com)
+The QioTek Zealot F427 flight controller is sold by a range of resellers listed at [QioTek](http://www.Qio-Tek.com)
 
 ## Features
 

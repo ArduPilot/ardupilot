@@ -1,6 +1,6 @@
 # StellarF4 Flight Controller
 
-https://stingbee.com.ua/flight_controllers/stellarf4
+[Stingbee](https://stingbee.com.ua/flight_controllers/stellarf4)
 
 ## Features
 
@@ -99,7 +99,7 @@ The camera switch is controlled by the RELAY1 parameter. The default is to use C
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled StellarH7V2.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled StellarH7V2.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "ardu*_with_bl.hex" firmware, using your favourite DFU loading tool. eg STM32CubeProgrammer

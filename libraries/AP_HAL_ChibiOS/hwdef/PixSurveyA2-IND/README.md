@@ -1,6 +1,6 @@
 # PixSurveyA2-IND Flight Controller
 
-The PixSurveyA2-IND flight controller is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The PixSurveyA2-IND flight controller is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 

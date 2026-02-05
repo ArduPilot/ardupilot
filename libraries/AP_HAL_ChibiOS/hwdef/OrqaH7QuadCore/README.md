@@ -35,11 +35,11 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 ## RC Input
 
-RC input is configured for half duplex protocls (GHST/SRXL2) by default on the T3 (UART3_TX) pin using half-duplex. To support other RC protocols set SERIAL1_OPTIONS to 0 and connect to R3/T3 as required (see https://ardupilot.org/plane/docs/common-rc-systems.html). This will support all serial RC protocols but not PPM.
+RC input is configured for half duplex protocls (GHST/SRXL2) by default on the T3 (UART3_TX) pin using half-duplex. To support other RC protocols set SERIAL1_OPTIONS to 0 and connect to R3/T3 as required (see [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)). This will support all serial RC protocols but not PPM.
   
 ## OSD Support
 
-The Orqa FC 3030 H7 QuadCore supports OSD using OSD_TYPE 1 (MAX7456 driver). HD OSD and other ODSDs can be supported using a UART (see https://ardupilot.org/plane/docs/common-osd-boards-on-screen-display.html)
+The Orqa FC 3030 H7 QuadCore supports OSD using OSD_TYPE 1 (MAX7456 driver). HD OSD and other ODSDs can be supported using a UART (see [ArduPilot Plane documentation](https://ardupilot.org/plane/docs/common-osd-boards-on-screen-display.html))
 
 ## PWM Output
 
@@ -86,7 +86,7 @@ The Orqa FC 3030 H7 QuadCore does not have a builtin compass, but you can attach
 
 ## Loading Firmware
 
-Firmware is found under the "OrqaH7QuadCore" folders on the firmware server: https://firmware.ardupilot.org/
+Firmware is found under the "OrqaH7QuadCore" folders on the firmware server: [ArduPilot firmware server](https://firmware.ardupilot.org/)
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

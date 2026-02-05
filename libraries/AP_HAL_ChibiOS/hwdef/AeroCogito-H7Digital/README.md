@@ -1,6 +1,6 @@
 # AeroCogito H7-Digital Flight Controller
 
-https://www.aerocogito.com/store/p/h7-digital
+[AeroCogito](https://www.aerocogito.com/store/p/h7-digital)
 
 The AeroCogito H7-Digital is a **NDAA-compliant**, high-performance flight controller featuring the STM32H743 processor and designed from the ground up for use with companion flight computers like the Raspberry Pi and Nvidia Jetson.
 

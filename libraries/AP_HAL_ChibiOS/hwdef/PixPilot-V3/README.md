@@ -1,6 +1,6 @@
 ## PixPilot-V3 Flight Controller
 
-The PixPilot-V3 flight controller is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The PixPilot-V3 flight controller is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 

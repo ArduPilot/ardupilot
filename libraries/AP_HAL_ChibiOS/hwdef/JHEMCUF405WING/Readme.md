@@ -126,7 +126,7 @@ GPIO 82 switches the C1 and C2 camera inputs. ``Relay 3`` controls this GPIO by 
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “JHEMCUF405Wing”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “JHEMCUF405Wing”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "JHEMCUF405Wing_bl.hex"

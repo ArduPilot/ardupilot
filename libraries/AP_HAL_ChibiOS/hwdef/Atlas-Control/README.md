@@ -1,7 +1,7 @@
 # Atlas Control Flight Controller
 
 The Atlas Control flight controller
-https://altasflight.github.io/atlas-docs/
+[AtlasFlight documentation](https://altasflight.github.io/atlas-docs/)
 
 ## Features
 
@@ -142,7 +142,7 @@ RC input is configured on the RCIN pin, at one end of the servo rail,
 marked RCIN in the above diagram. All ArduPilot supported unidirectional
 RC protocols can be input here including PPM. For bi-directional or half-duplex
 protocols, such as CRSF/ELRS a full UART will have to be used.
-See https://ardupilot.org/plane/docs/common-rc-systems.html
+See [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
 
 ## PWM Output
 
@@ -201,7 +201,7 @@ BRD_HEAT_TARG parameter, which is in degrees C.
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “Atlas-Control”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “Atlas-Control”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "xxx_bl.hex"

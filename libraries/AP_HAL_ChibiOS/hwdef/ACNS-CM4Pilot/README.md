@@ -83,7 +83,7 @@ The CM4PILOT has one built-in compass LIS3MDLTR, you can also attach an external
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “ACNS-CM4PILOT”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “ACNS-CM4PILOT”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "xxx_bl.hex"

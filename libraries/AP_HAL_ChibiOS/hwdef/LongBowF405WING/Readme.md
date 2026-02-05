@@ -108,7 +108,7 @@ An active buzzer output is provided and is controlled as GPIO 80
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled LongBowF405WING.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled LongBowF405WING.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "LongBowF405WING_bl.hex"

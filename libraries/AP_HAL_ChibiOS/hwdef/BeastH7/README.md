@@ -1,6 +1,6 @@
 # iFlight Beast H7 55A AIO Flight Controller
 
-https://shop.iflight-rc.com/index.php?route=product/product&product_id=1376
+[iFlight store](https://shop.iflight-rc.com/index.php?route=product/product&product_id=1376)
 
 The Beast H7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 

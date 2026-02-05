@@ -81,7 +81,7 @@ The CORVON405V2.1 does not have a built-in compass, but you can attach an extern
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled CORVON405V2.1.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled CORVON405V2.1.
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool.
 

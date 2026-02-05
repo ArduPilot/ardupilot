@@ -1,6 +1,6 @@
 ## PixSurveyA1-IND Flight Controller
 
-The PixSurveyA1-IND flight controller is an upgrade to PixSurveyA1, with better sensors and a better power solution; added a custom serial port. It is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The PixSurveyA1-IND flight controller is an upgrade to PixSurveyA1, with better sensors and a better power solution; added a custom serial port. It is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 

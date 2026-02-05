@@ -1,7 +1,7 @@
 # Flywoo GOKU GN 745 40A/45A AIO
 
-https://flywoo.net/products/goku-gn745-45a-aio-bl_32-mpu6000-v3
-https://flywoo.net/products/goku-gn745-40a-aio-bl_32-mpu6000-25-5-x-25-5
+[Flywoo store](https://flywoo.net/products/goku-gn745-45a-aio-bl_32-mpu6000-v3)
+[Flywoo store](https://flywoo.net/products/goku-gn745-40a-aio-bl_32-mpu6000-25-5-x-25-5)
 
 The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://flywoo.net/).
 
@@ -131,7 +131,7 @@ The board includes a NeoPixel LED pad.
 
 ## Loading Firmware
 
-Firmware for this board can be found on the ArduPilot firmware server, https://firmware.ardupilot.org, in folders labeled "FlywooF745".
+Firmware for this board can be found on the [ArduPilot firmware server](https://firmware.ardupilot.org), in folders labeled "FlywooF745".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

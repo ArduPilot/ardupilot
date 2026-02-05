@@ -1,6 +1,6 @@
 # ARK FPV Flight Controller
 
-https://arkelectron.com/product/ark-fpv-flight-controller/
+[ARK Electronics](https://arkelectron.com/product/ark-fpv-flight-controller/)
 
 ## Features
 
@@ -233,7 +233,7 @@ All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectiona
 
 Initial firmware load can be done with DFU by plugging in USB with the
 BOOT button pressed. You can then load the bootloader using your favorite DFU tool.
-The bootloader can be found at https://firmware.ardupilot.org/Tools/Bootloaders/
+The bootloader can be found at [ArduPilot firmware server](https://firmware.ardupilot.org/Tools/Bootloaders/)
 
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the

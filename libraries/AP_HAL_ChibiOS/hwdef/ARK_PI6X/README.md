@@ -1,6 +1,6 @@
 # ARK Pi6X Flight Controller
 
-https://arkelectron.com/product/ark-pi6x/
+[ARK Electronics](https://arkelectron.com/product/ark-pi6x/)
 
 ## Features
 

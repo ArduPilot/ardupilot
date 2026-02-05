@@ -1,7 +1,7 @@
 
 ## MFE_PDB_CAN
 
-The MFE_PDB_CAN is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The MFE_PDB_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 

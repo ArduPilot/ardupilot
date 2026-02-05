@@ -69,7 +69,7 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 
 ## RC Input
 
-RC input is provided for SBUS on the SBUS pads, or RX2/TX2 for other protocols, see https://ardupilot.org/plane/docs/common-rc-systems.html for more information. Note FPort will work on SBUS inputs but not provide telemetry. To obtain FPort telem a bi-directional inveter will need to be used.
+RC input is provided for SBUS on the SBUS pads, or RX2/TX2 for other protocols, see the [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html) for more information. Note FPort will work on SBUS inputs but not provide telemetry. To obtain FPort telem a bi-directional inverter will need to be used.
 SBUS pins are inverted and connected directly to to RX2.
 
 ---
@@ -138,7 +138,7 @@ Connect your receiver’s analog RSSI output to this pad to enable RSSI display 
 
 ## Loading Firmware
 
-Firmware can be downloaded from: https://firmware.ardupilot.org/, by going into the right vehicle directory/version and looking for "FlysparkF4".
+Firmware can be downloaded from the [ArduPilot firmware server](https://firmware.ardupilot.org/), by going into the right vehicle directory/version and looking for "FlysparkF4".
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool.
 

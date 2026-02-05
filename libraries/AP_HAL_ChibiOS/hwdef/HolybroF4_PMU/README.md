@@ -1,6 +1,6 @@
 # Holybro DroneCAN PMU
 
-https://holybro.com/products/dronecan-pm08-power-module-14s-200a
+[Holybro](https://holybro.com/products/dronecan-pm08-power-module-14s-200a)
 
 ## Features
 

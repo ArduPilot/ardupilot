@@ -99,7 +99,7 @@ The KakuteH7-Wing does not have a built-in compass, but you can attach an extern
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “KakuteH7-Wing”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “KakuteH7-Wing”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "KakuteH7-Wing_bl.hex"

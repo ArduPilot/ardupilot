@@ -104,4 +104,4 @@ Initial firmware load can be done with DFU by plugging in USB with the bootloade
 
 Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the "\*.apj" firmware files.
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "BROTHEHOBBYH743".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "BROTHEHOBBYH743".

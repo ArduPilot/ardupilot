@@ -1,7 +1,7 @@
 
 ## PixPilot-V6PRO Flight Controller
 
-The PixPilot-V6PRO flight controller is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The PixPilot-V6PRO flight controller is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 

@@ -250,7 +250,7 @@ part of a GPS/Compass combination.
 ## GPIOs
 
 The 6 auxiliary outputs can be used as GPIOs (relays, buttons, RPM etc). To
-use them see https://ardupilot.org/rover/docs/common-gpios.html
+use them see [ArduPilot Rover documentation](https://ardupilot.org/rover/docs/common-gpios.html)
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 

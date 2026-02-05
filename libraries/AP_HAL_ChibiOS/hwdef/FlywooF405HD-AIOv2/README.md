@@ -1,6 +1,6 @@
 # GOKU F405 HD 1-2S AIO v2 w/ built-in ELRS 2.4g RX
 
-https://flywoo.net/products/goku-f405-hd-1-2s-elrs-aio-v2
+[Flywoo store](https://flywoo.net/products/goku-f405-hd-1-2s-elrs-aio-v2)
 
 The Flywoo GOKU F405 HD AIO v2 is a flight controller produced by [Flywoo](https://flywoo.net/).
 

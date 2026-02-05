@@ -1,7 +1,7 @@
 # SIYI N7 Flight Controller
 
 The SIYI N7 flight controller is sold by a range of
-resellers, linked from https://siyi.biz
+resellers, linked from [SIYI](https://siyi.biz)
 
 ## Features
 

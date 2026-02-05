@@ -2,9 +2,7 @@
 
 The A6 flight controller is manufactured and sold by [YJUAV](http://www.yjuav.net).
 
-The full schematics of the board are available here:
-
-https://github.com/yunjiuav/Hardware/tree/main/A6
+The [full schematics](https://github.com/yunjiuav/Hardware/tree/main/A6) of the board are available.
 
 ## Features
 
