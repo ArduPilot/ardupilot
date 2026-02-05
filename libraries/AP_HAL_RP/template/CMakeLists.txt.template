@@ -13,9 +13,10 @@ set(PICO_PLATFORM rp2350-arm-s)
 set(PICO_FLOAT_SUPPORT_ROM vfp CACHE STRING "" FORCE)
 set(PICO_DOUBLE_SUPPORT_ROM vfp CACHE STRING "" FORCE)
 
-set(ARCH_FLAGS "-mcpu=cortex-m33 -mthumb -mfloat-abi=hard -mfpu=fpv5-sp-d16")
+set(ARCH_FLAGS "-mcpu=cortex-m33 -mthumb -mfloat-abi=hard -mfpu=fpv5-sp-d16 -g3 -Og")
 set(CMAKE_C_FLAGS "${ARCH_FLAGS}" CACHE STRING "" FORCE)
 set(CMAKE_CXX_FLAGS "${ARCH_FLAGS}" CACHE STRING "" FORCE)
+set(CMAKE_BUILD_TYPE "Debug")
 
 project({project_name} C CXX ASM)
 
