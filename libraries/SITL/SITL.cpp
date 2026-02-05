@@ -117,13 +117,13 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     // @Param: BATT_VOLTAGE
     // @DisplayName: Simulated battery voltage
-    // @Description: Simulated battery voltage. Constant voltage when SIM_BATT_CAP_AH is 0, otherwise changing this parameter will re-initialize the state of charge of the battery based on this voltage versus the battery's maximum voltage (default is max voltage).
+    // @Description: Simulated battery resting voltage. This value (re)sets the battery's resting voltage (before load sag). Simultaneously, it (re)sets the remaining charge: a value less than the max voltage (re)sets to a partially-charged battery. The maximum voltage of the internal battery model is the default value of this parameter. (Do not confuse the default value with the actual value. A few uncommon ways exist to set or modify the default.) A value greater than the max voltage is treated as equal to the max voltage. (This makes it easy to reset to fully charged.) For the special case of unlimited capacity, see `SIM_BATT_CAP_AH`. For the special case where an external source provides battery state, this parameter has no effect.
     // @Units: V
     // @User: Advanced
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     // @Param: BATT_CAP_AH
     // @DisplayName: Simulated battery capacity
-    // @Description: Simulated battery capacity. Set to 0 for unlimited capacity. Changing this parameter will re-initialize the state of charge of the battery.
+    // @Description: Simulated battery capacity. Changing this value (re)sets the battery's charge percentage, like `SIM_BATT_VOLTAGE` does. Set to 0 for unlimited capacity. An unlimited-capacity battery's instantaneous voltage may sag under load, but charge percentage (and thus resting voltage) remain constant. For the special case where an external source provides battery state, this parameter has no effect.
     // @Units: Ah
     // @User: Advanced
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
