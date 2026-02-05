@@ -137,7 +137,7 @@ void ModeQLoiter::run()
 
 #if AP_PLANE_SYSTEMID_ENABLED
     auto &systemid = plane.g2.systemid;
-    systemid.update();
+    systemid.vtol_update();
     target += systemid.get_attitude_offset_deg();
 #endif
 
