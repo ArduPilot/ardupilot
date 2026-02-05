@@ -50,8 +50,7 @@ Aircraft *Aircraft::instances[MAX_SIM_INSTANCES];
   parent class for all simulator types
  */
 
-Aircraft::Aircraft(const char *frame_str) :
-    frame(frame_str)
+Aircraft::Aircraft(const char *frame_str)
 {
     // make the SIM_* variables available to simulator backends
     sitl = AP::sitl();
