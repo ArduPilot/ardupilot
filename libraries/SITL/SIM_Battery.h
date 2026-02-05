@@ -26,6 +26,9 @@ class Battery {
 public:
     void setup(float _capacity_Ah, float _resistance, float _max_voltage);
 
+    // Resets the battery state if the configuration (e.g. from SIM_BATT_* parameters) has changed.
+    void maybe_reset(float desired_voltage, float desired_capacity_Ah);
+
     void init_voltage(float voltage);
     void init_capacity(float capacity);
 
