@@ -682,7 +682,8 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage(), use_drag);
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf,
+                                   gyro, air_density, aircraft.get_battery_voltage(), use_drag);
         torque += mtorque;
         thrust += mthrust;
         // simulate motor rpm
