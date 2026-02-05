@@ -40,11 +40,12 @@ void GCS_MAVLINK::handle_tunnel(const mavlink_message_t &msg)
 #if AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
     // Check if this is a COBS tunnel message
     if (AP_Networking_SwitchPort_MAVLink_COBS::is_cobs_payload_type(packet.payload_type)) {
-        auto *cobs_port = AP_Networking_SwitchPort_MAVLink_COBS::get_singleton();
+        // Get or create a port for this (channel, sysid, compid) combination
+        auto *cobs_port = AP_Networking_SwitchPort_MAVLink_COBS::get_or_create_port(
+            chan, msg.sysid, msg.compid);
         if (cobs_port != nullptr) {
             cobs_port->handle_tunnel(packet.payload_type,
-                                     packet.payload, packet.payload_length,
-                                     msg.sysid, msg.compid);
+                                     packet.payload, packet.payload_length);
         }
         return;
     }
