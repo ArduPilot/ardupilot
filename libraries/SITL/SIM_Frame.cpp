@@ -728,8 +728,8 @@ void Frame::calculate_forces(const Aircraft &aircraft,
 }
 
 
-// calculate current and voltage
-void Frame::current_and_voltage(float &voltage, float &current)
+// reset battery if its governing params have changed
+void Frame::reset_battery_if_requested(void)
 {
     float param_voltage = AP::sitl()->batt_voltage;
     if (!is_equal(last_param_voltage,param_voltage)) {
@@ -740,10 +740,23 @@ void Frame::current_and_voltage(float &voltage, float &current)
     if (!is_equal(battery->get_capacity(), param_capacity)) {
         battery->init_capacity(param_capacity);
     }
+}
+
+// calculate current and voltage
+void Frame::current_and_voltage(float &voltage, float &current)
+{
+    reset_battery_if_requested();
     voltage = battery->get_voltage();
-    current = 0;
+    current = get_current_amp();
+}
+
+// computes (total) instantaneous current
+float Frame::get_current_amp(void)
+{
+    float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         current += motors[i].get_current();
     }
+    return current;
 }
 #endif // AP_SIM_ENABLED
