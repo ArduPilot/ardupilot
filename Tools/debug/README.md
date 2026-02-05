@@ -8,7 +8,7 @@ This assumes you are debugging a ChibiOS based firmware on a STM32 board.
 
 ## Debugging with a Black Magic Probe
 
-If you have a [black magic probe ](https://1bitsquared.com/products/black-magic-probe)) then first make
+If you have a [black magic probe](https://1bitsquared.com/products/black-magic-probe)) then first make
 sure it has the latest firmware. See the [blacksphere wiki](https://github.com/blacksphere/blackmagic/wiki) for details.
 
 Next, copy the file gdb-black-magic.init to the ArduPilot source
