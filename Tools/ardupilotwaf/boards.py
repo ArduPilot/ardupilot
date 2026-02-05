@@ -1638,14 +1638,18 @@ class rp2350(Board):
             "-mcpu=cortex-m33",
             "-mthumb",
             "-mfpu=fpv5-sp-d16",
-            "-mfloat-abi=hard"
+            "-mfloat-abi=hard",
+            "-g3",
+            "-Og"
         ]
         env.CXXFLAGS += [
             "-Wno-error=type-limits",
             "-mcpu=cortex-m33",
             "-mthumb",
             "-mfpu=fpv5-sp-d16",
-            "-mfloat-abi=hard"
+            "-mfloat-abi=hard",
+            "-g3",
+            "-Og"
         ]
 
         # wrap malloc to ensure memory is zeroed
