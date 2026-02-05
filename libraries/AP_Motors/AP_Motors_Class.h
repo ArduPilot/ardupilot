@@ -174,7 +174,9 @@ public:
         THROTTLE_UNLIMITED = 2,     // motors should move to being a state where throttle is unconstrained (e.g. by start up procedure)
     };
 
-    void set_desired_spool_state(enum DesiredSpoolState spool);
+    // set_desired_spool_state - apply safety constraints and set desired spool state
+    // Pure virtual - each vehicle type must implement appropriate safety logic
+    virtual void set_desired_spool_state(enum DesiredSpoolState spool) = 0;
 
     enum DesiredSpoolState get_desired_spool_state(void) const { return _spool_desired; }
 

@@ -37,6 +37,9 @@ public:
     // output_min - sends minimum values out to the motors
     void                output_min() override;
 
+    // set_desired_spool_state - set desired spool state with safety constraints
+    void                set_desired_spool_state(DesiredSpoolState spool) override;
+
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom.set(pwm); }
 

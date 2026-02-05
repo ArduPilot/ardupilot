@@ -310,6 +310,13 @@ void AP_MotorsHeli::output_disarmed()
     move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
 }
 
+void AP_MotorsHeli::set_desired_spool_state(DesiredSpoolState spool)
+{
+    if (armed() || (spool == DesiredSpoolState::SHUT_DOWN)) {
+        _spool_desired = spool;
+    }
+};
+
 // run spool logic
 void AP_MotorsHeli::output_logic()
 {
