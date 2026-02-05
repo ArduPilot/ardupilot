@@ -1332,7 +1332,7 @@ void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
         gripper.release();
         break;
     case AuxSwitchPos::MIDDLE:
-        // nothing
+        gripper.hold();
         break;
     case AuxSwitchPos::HIGH:
         gripper.grab();
