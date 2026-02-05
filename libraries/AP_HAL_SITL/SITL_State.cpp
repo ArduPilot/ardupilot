@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -31,36 +32,92 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-void SITL_State::_set_param_default(const char *parm)
+void SITL_State::_parse_param_init_vals(const char *to_be_set, Param_Init_Values &init_val_info)
 {
-    char *pdup = strdup(parm);
-    char *p = strchr(pdup, '=');
-    if (p == nullptr) {
-        printf("Please specify parameter as NAME=VALUE");
+    // Despite the recommended format below, this implementation also permits providing
+    // multiple params via distinct -P flags like:
+    //   -P NAME1=VALUE1 -P NAME2=VALUE2 -P NAME3=VALUE3
+    if (to_be_set == nullptr || to_be_set[0] == '\0') {
+        printf("Specify param(s)+val(s) via: -P NAME1=VALUE1[,NAME2=VALUE2][...]\n");
         exit(1);
     }
-    float value = strtof(p+1, nullptr);
-    *p = 0;
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(pdup, &var_type);
-    if (vp == nullptr) {
-        printf("Unknown parameter %s\n", pdup);
-        exit(1);
+
+    char *for_parsing = strdup(to_be_set);
+    if (for_parsing == nullptr) {
+        AP_HAL::panic("strdup failed (insufficient memory)");
     }
-    if (var_type == AP_PARAM_FLOAT) {
-        ((AP_Float *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT32) {
-        ((AP_Int32 *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT16) {
-        ((AP_Int16 *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT8) {
-        ((AP_Int8 *)vp)->set_and_save(value);
-    } else {
-        printf("Unable to set parameter %s\n", pdup);
-        exit(1);
+
+    char *saveptr = nullptr;
+    for (char *name_and_val = strtok_r(for_parsing, ",", &saveptr);
+         name_and_val != nullptr;
+         name_and_val = strtok_r(nullptr, ",", &saveptr)) {
+
+        if (init_val_info.count >= MAX_CLI_PARAM_VALUE_PAIRS) {
+            printf("-P only supports %u values. To proceed, recompile with increased maximum.\n",
+                   static_cast<unsigned>(MAX_CLI_PARAM_VALUE_PAIRS));
+            exit(1);
+        }
+
+        char *equals = strchr(name_and_val, '=');
+        if (equals == nullptr) {
+            printf("Specify param+val via: NAME=VALUE (No '=' found in %s)\n", name_and_val);
+            exit(1);
+        }
+
+        *equals = '\0'; // split name_and_val on equal without extra allocation
+        const char *name = name_and_val; // done for readability, compiler should optimize away
+        const char *value_str = equals + 1;
+        char *non_float_part = nullptr;
+        float value = strtof(value_str, &non_float_part);
+
+        enum ap_var_type var_type;
+        AP_Param *ptr = AP_Param::find(name, &var_type);
+        if (ptr == nullptr) {
+            printf("Unknown parameter: %s\n", name);
+            exit(1);
+        }
+        if (non_float_part==value_str) {
+            printf("Unable to convert to float: %s\n", value_str);
+            exit(1);
+        }
+        if (*non_float_part != '\0') {
+            printf("Warning: extra chars in value '%s', ignoring '%s'\n",
+                   value_str, non_float_part);
+        }
+
+        auto &info = init_val_info.param_and_val[init_val_info.count];
+        strncpy(info.name, name, sizeof(info.name));
+        info.name[sizeof(info.name) - 1] = '\0';
+        info.value = value;
+        info.var_type = var_type;
+        info.ptr = ptr;
+        init_val_info.count++;
     }
-    printf("Set parameter %s to %f\n", pdup, value);
-    free(pdup);
+
+    free(for_parsing);
+}
+
+void SITL_State::_set_param_init_vals(const Param_Init_Values &init_val_info)
+{
+    for (uint8_t i = 0; i < init_val_info.count; i++) {
+        AP_Param *ptr = init_val_info.param_and_val[i].ptr;
+        const float value = init_val_info.param_and_val[i].value;
+        const enum ap_var_type var_type = init_val_info.param_and_val[i].var_type;
+
+        if (var_type == AP_PARAM_FLOAT) {
+            ((AP_Float *)ptr)->set_and_save(value);
+        } else if (var_type == AP_PARAM_INT32) {
+            ((AP_Int32 *)ptr)->set_and_save(value);
+        } else if (var_type == AP_PARAM_INT16) {
+            ((AP_Int16 *)ptr)->set_and_save(value);
+        } else if (var_type == AP_PARAM_INT8) {
+            ((AP_Int8 *)ptr)->set_and_save(value);
+        } else {
+            printf("Unable to set parameter %s\n", init_val_info.param_and_val[i].name);
+            exit(1);
+        }
+        printf("Set parameter %s to %f\n", init_val_info.param_and_val[i].name, value);
+    }
 }
 
 

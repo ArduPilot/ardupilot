@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#include <AP_Param/AP_Param.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
@@ -56,8 +57,23 @@ public:
     uint8_t get_instance() const { return _instance; }
 
 private:
+    static const uint8_t MAX_CLI_PARAM_VALUE_PAIRS = 4;
+
+    struct Param_Init_Value {
+        char name[AP_MAX_NAME_SIZE + 1];
+        float value;
+        enum ap_var_type var_type;
+        AP_Param *ptr;
+    };
+
+    struct Param_Init_Values {
+        Param_Init_Value param_and_val[MAX_CLI_PARAM_VALUE_PAIRS];
+        uint8_t count = 0;
+    };
+
     void _parse_command_line(int argc, char * const argv[]);
-    void _set_param_default(const char *parm);
+    void _parse_param_init_vals(const char *to_be_set, Param_Init_Values &init_val_info);
+    void _set_param_init_vals(const Param_Init_Values &init_val_info);
     void _usage(void);
     void _sitl_setup();
     void _setup_timer(void);

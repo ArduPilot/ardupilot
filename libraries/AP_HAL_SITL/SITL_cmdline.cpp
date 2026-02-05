@@ -86,7 +86,7 @@ void SITL_State::_usage(void)
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
-           // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
+           "\t--param|-P NAME=VALUE    set param (format: NAME1=VAL1[,NAME2=VAL2][...])\n"
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set start location (lat,lng,alt,yaw) or location name\n"
            "\t--model|-M MODEL         set simulation model\n"
@@ -236,6 +236,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     float speedup = 1.0f;
     float sim_rate_hz = 0;
     _instance = 0;
+    Param_Init_Values param_values_from_cli{};
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
@@ -445,7 +446,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         break;
         case 'P':
-            _set_param_default(gopt.optarg);
+            _parse_param_init_vals(gopt.optarg, param_values_from_cli);
             break;
         case 'S':
             printf("Ignoring stale command-line parameter '-S'");
@@ -591,6 +592,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     if (AP::sitl() != nullptr) {  // some examples don't instantiate this object
         AP::sitl()->init();
+        _set_param_init_vals(param_values_from_cli);
     }
 
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
@@ -751,5 +753,5 @@ bool SITL_State::lookup_location(const char *home_str, Location &loc, float &yaw
     ::printf("Failed to find location '%s'\n", home_str);
     return false;
 }
-    
+
 #endif
