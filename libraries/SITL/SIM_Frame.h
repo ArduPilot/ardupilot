@@ -63,9 +63,7 @@ public:
     uint8_t motor_offset;
 
     void reset_battery_if_requested(void);
-    // calculate current and voltage
     float get_current_amp(void);
-    void current_and_voltage(float &voltage, float &current);
 
     // get mass in kg
     float get_mass(void) const {
