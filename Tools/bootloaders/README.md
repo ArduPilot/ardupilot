@@ -3,10 +3,7 @@
 The main ArduPilot for STM32 boards is based on ChibiOS, and the
 source code is in Tools/AP_Bootloader
 
-The old (now unusued) bootloader was based on libopencm3, and a copy
-of that is here:
-
-  https://github.com/ArduPilot/Bootloader
+The [old bootloader](https://github.com/ArduPilot/Bootloader) (now unused) was based on libopencm3.
 
 ## Bootloader images
 

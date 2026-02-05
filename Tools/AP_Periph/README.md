@@ -121,5 +121,5 @@ For a quadcopter use: sim_vehicle.py with the option -f quad-can
 
 Please join the discussions at these locations:
 
-- https://discuss.ardupilot.org/
-- https://ardupilot.org/discord
+- [ArduPilot forum](https://discuss.ardupilot.org/)
+- [ArduPilot Discord](https://ardupilot.org/discord)

@@ -19,7 +19,7 @@ chmod +x install-me.sh
 
 NOTE: For Ubuntu different scripts shall be used. E.g., for precise:
 
-- http://rcn-ee.net/deb/precise-armhf/v3.8.13-bone57/install-me.sh
+- [RCN-EE install scripts](http://rcn-ee.net/deb/precise-armhf/v3.8.13-bone57/install-me.sh)
 
 ----
 

@@ -8,10 +8,8 @@ This assumes you are debugging a ChibiOS based firmware on a STM32 board.
 
 ## Debugging with a Black Magic Probe
 
-If you have a black magic probe (see
-https://1bitsquared.com/products/black-magic-probe) then first make
-sure it has the latest firmware. See the wiki here for details:
-https://github.com/blacksphere/blackmagic/wiki
+If you have a [black magic probe ](https://1bitsquared.com/products/black-magic-probe)) then first make
+sure it has the latest firmware. See the [blacksphere wiki](https://github.com/blacksphere/blackmagic/wiki) for details.
 
 Next, copy the file gdb-black-magic.init to the ArduPilot source
 directory, in the same directory where you will be starting the
@@ -23,7 +21,7 @@ that the probe will be loaded as /dev/ttyBmpGdb
 
 Now make sure you have the right version of arm-none-eabi-gdb
 installed. We recommend version 10-2020-q4-major, which is available
-here: https://firmware.ardupilot.org/Tools/STM32-tools/
+on the [ArduPilot firmware server](https://firmware.ardupilot.org/Tools/STM32-tools/) .
 
 Now build ArduPilot with the --debug configure option. You may also
 like to include the --enable-asserts. Enabling asserts will slow down
@@ -138,8 +136,8 @@ and then `set $sp = $psp` and do `backtrace`
 
 ### References:
 
-https://interrupt.memfault.com/blog/cortex-m-fault-debug
+[Memfault Interrupt](https://interrupt.memfault.com/blog/cortex-m-fault-debug)
 
-https://github.com/adamgreen/CrashCatcher/tree/c8e801225bfa12da70c01ea25b58090b2b7a2e0a
+[CrashCatcher](https://github.com/adamgreen/CrashCatcher/tree/c8e801225bfa12da70c01ea25b58090b2b7a2e0a)
 
-http://www.cyrilfougeray.com/2020/07/27/firmware-logs-with-stack-trace.html
+[Blog](http://www.cyrilfougeray.com/2020/07/27/firmware-logs-with-stack-trace.html)
