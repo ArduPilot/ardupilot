@@ -62,6 +62,9 @@ public:
     // output_min - sets servos to neutral point with motors stopped
     void output_min() override;
 
+    // set_desired_spool_state - set desired spool state with safety constraints
+    void set_desired_spool_state(DesiredSpoolState spool) override;
+
     //
     // heli specific methods
     //

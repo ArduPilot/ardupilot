@@ -552,6 +552,13 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
     }
 }
 
+void AP_MotorsMulticopter::set_desired_spool_state(DesiredSpoolState spool)
+{
+    if (armed() || (spool == DesiredSpoolState::SHUT_DOWN)) {
+        _spool_desired = spool;
+    }
+};
+
 // run spool logic
 // advance the motor spool state machine once per cycle
 // enforce arming/interlock and disarm-pwm safe-time guards
