@@ -4,7 +4,7 @@
 ## Building instructions
 
 0. Build currently tested on linux
-1. Checkout this branch https://github.com/ardupilot/ardupilot/tree/master
+1. Checkout this branch [ardupilot](https://github.com/ardupilot/ardupilot/tree/master)
 2. Use this to install ardupilot requirements:
 
 ```
@@ -65,8 +65,8 @@ TIPS:
 
 - we use toolchain and esp-idf from espressif , as a 'git submodule', so no need to preinstall etc.
 
-https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -
- (note we currently use https://github.com/espressif/esp-idf/tree/release/v5.3 )
+[Espressif documentation](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/) -
+ (note we currently use [esp-idf v5.3](https://github.com/espressif/esp-idf/tree/release/v5.3) )
 
 - if you get compile error/s to do with CONFIG... such as
 
@@ -290,7 +290,7 @@ This is how buzz has the GY91 wired ATM, but its probable that connecting extern
 
 ## debugger connection
 
-Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a red PCB with a bunch of jtag headers on it and doesn't cost too much. https://www.amazon.com/TIAO-Multi-Protocol-Adapter-JTAG-Serial/dp/B0156ML5LY
+Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a red PCB with a bunch of jtag headers on it and doesn't cost too much. [Amazon](https://www.amazon.com/TIAO-Multi-Protocol-Adapter-JTAG-Serial/dp/B0156ML5LY)
 
 |ESP32| 20PINJTAG|
 | --- | --- |
