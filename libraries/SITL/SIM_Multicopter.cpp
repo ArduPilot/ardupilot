@@ -71,7 +71,9 @@ void MultiCopter::update(const struct sitl_input &input)
     }
 
     // estimate voltage and current
-    frame->current_and_voltage(battery_voltage, battery_current);
+    frame->reset_battery_if_requested();
+    battery_voltage = battery.get_voltage();
+    battery_current = frame->get_current_amp();
 
     battery.set_current(battery_current);
 

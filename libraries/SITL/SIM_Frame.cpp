@@ -742,14 +742,6 @@ void Frame::reset_battery_if_requested(void)
     }
 }
 
-// calculate current and voltage
-void Frame::current_and_voltage(float &voltage, float &current)
-{
-    reset_battery_if_requested();
-    voltage = battery->get_voltage();
-    current = get_current_amp();
-}
-
 // computes (total) instantaneous current
 float Frame::get_current_amp(void)
 {
