@@ -49,7 +49,7 @@ public:
     static Frame *create_frame(const char *name);
     
     // initialise frame
-    void init(const char *frame_str, Battery *_battery);
+    void init(const char *frame_str);
 
     // calculate rotational and linear accelerations
     void calculate_forces(const Aircraft &aircraft,
@@ -73,6 +73,10 @@ public:
     void set_mass(float new_mass) {
         mass = new_mass;
     }
+
+    float get_model_batt_max_voltage(void) const { return model.maxVoltage; }
+    float get_model_batt_capacity_ah(void) const { return model.battCapacityAh; }
+    float get_model_batt_resistance_ohm(void) const { return model.refBatRes; }
     
 private:
     /*
@@ -95,13 +99,15 @@ private:
         float refCurrent = 29.3; // Amps
         float refAlt = 593; // altitude AMSL
         float refTempC = 25; // temperature C
-        float refBatRes = 0.01; // BAT.Res
 
         // full pack voltage
         float maxVoltage = 4.2*3;
 
         // battery capacity in Ah. Use zero for unlimited
         float battCapacityAh = 0.0;
+
+        // battery resistance reference value in Ohms
+        float refBatRes = 0.01;
 
         // CTUN.ThO at hover at refAlt
         float hoverThrOut = 0.39;
@@ -157,9 +163,6 @@ private:
     // exposed area times coefficient of drag
     float areaCd;
     float mass;
-#if AP_SIM_ENABLED
-    Battery *battery;
-#endif
 
     // json parsing helpers
     void parse_float(AP_JSON::value val, const char* label, float &param);

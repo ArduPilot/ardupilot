@@ -577,10 +577,9 @@ void Frame::parse_vector3(AP_JSON::value val, const char* label, Vector3f &param
 /*
   initialise the frame
  */
-void Frame::init(const char *frame_str, Battery *_battery)
+void Frame::init(const char *frame_str)
 {
     model = default_model;
-    battery = _battery;
 
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
@@ -619,8 +618,6 @@ void Frame::init(const char *frame_str, Battery *_battery)
 
     // power_factor is ratio of power consumed per newton of thrust
     float power_factor = hover_power / hover_thrust;
-
-    battery->setup(model.battCapacityAh, model.refBatRes, model.maxVoltage);
 
     if (uint8_t(model.num_motors) != num_motors) {
         ::printf("Warning model expected %u motors and got %u\n", uint8_t(model.num_motors), num_motors);
@@ -682,7 +679,8 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage(), use_drag);
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf,
+                                   gyro, air_density, aircraft.get_battery_voltage(), use_drag);
         torque += mtorque;
         thrust += mthrust;
         // simulate motor rpm
