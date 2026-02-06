@@ -52,7 +52,7 @@ We'll be using the 4 windows for the following tasks:
     mavproxy.py --setup --master /dev/ttyACM0
     ```
 
-# Debugging Details for Each Window
+## Debugging Details for Each Window
 
 ## Window A - Recompiling/Flashing/Uploading the Firmware
 
