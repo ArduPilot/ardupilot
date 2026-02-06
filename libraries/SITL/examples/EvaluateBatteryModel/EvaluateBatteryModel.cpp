@@ -62,7 +62,6 @@ void setup(void)
 
     // setup battery model
     battery.setup(amp_hour_capacity, resistance, max_voltage);
-    battery.init_voltage(max_voltage);
 
     uint64_t time = 0;
     hal.scheduler->stop_clock(time);
@@ -70,7 +69,7 @@ void setup(void)
 
     ::printf("time, voltage\n");
     while (battery.get_voltage() >= min_voltage) {
-        battery.set_current(current);
+        battery.consume_energy(current);
 
         ::printf("%0.2f, %0.2f\n", time * 1.0e-6, battery.get_voltage());
 
