@@ -412,7 +412,8 @@ bool AP_ExternalAHRS_InertialLabs::check_uart()
         case MessageType::TEMPERATURE: {
             CHECK_SIZE(u.temperature);
             // assume same temperature for baro and airspeed
-            baro_data.temperature = u.temperature*0.1; // degC
+            // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by InertialLabs
+            baro_data.temperature = 25;
             airspeed_data.temperature = u.temperature*0.1; // degC
             ins_data.temperature = u.temperature*0.1;
             break;

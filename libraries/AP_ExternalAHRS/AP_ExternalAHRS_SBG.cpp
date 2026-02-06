@@ -551,7 +551,8 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 
                 if ((cached.sbg.airData.status & SBG_ECOM_AIR_DATA_TEMPERATURE_VALID) && (updated_baro || updated_airspeed)) {
                     cached.sensors.airspeed_data.temperature = cached.sbg.airData.airTemperature;
-                    cached.sensors.baro_data.temperature = cached.sbg.airData.airTemperature;
+                    // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by SBG
+                    cached.sensors.baro_data.temperature = 25;
                 }
                 break;
 

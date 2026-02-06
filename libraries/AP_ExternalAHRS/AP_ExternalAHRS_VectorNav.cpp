@@ -546,7 +546,8 @@ void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
         baro.pressure_pa = pkt.pressure * 1e3;
-        baro.temperature = pkt.temp;
+        // setting temp to 25 effectively disables barometer temperature calibrations - these are already performed by VectorNav
+        baro.temperature = 25;
 
         AP::baro().handle_external(baro);
     }
