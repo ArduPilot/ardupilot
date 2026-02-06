@@ -3,8 +3,7 @@
 bool ModeSmartRTL::_enter()
 {
     // SmartRTL requires EKF (not DCM)
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
+    if (!ahrs.has_origin()) {
         return false;
     }
 
