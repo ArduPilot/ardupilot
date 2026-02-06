@@ -712,11 +712,11 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
             return true;
         }
 #if AP_TERRAIN_AVAILABLE
-        if (terrain != nullptr && !terrain->rangefinder_fallback_enabled()) {
-            return false;
-        }
         // If the rangefinder isn't healthy then use terrain data if available
-        FALLTHROUGH;
+        if (AP::terrain() != nullptr && !_pos_control.rangefinder_fallback()) {
+           return false;    // preserve existing pre 4.7 behavior if the PSC_RFND_FBK parameter is not set.
+        }
+        FALLTHROUGH;        
 #else
         return false;
 #endif
@@ -725,9 +725,9 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
 #if AP_TERRAIN_AVAILABLE
         float terrain_alt_m = 0.0f;
         if (terrain != nullptr &&
-            terrain->height_above_terrain(height_above_terrain_m, true)) {
+            terrain->height_above_terrain(terrain_alt_m, true)) {
             // compute offset as difference between current altitude and terrain height
-            terrain_u_m = _pos_control.get_pos_estimate_U_m() - height_above_terrain_m;
+            terrain_u_m = _pos_control.get_pos_estimate_U_m() - terrain_alt_m;
             return true;
         }
 #endif

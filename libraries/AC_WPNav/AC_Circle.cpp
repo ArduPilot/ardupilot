@@ -441,10 +441,10 @@ bool AC_Circle::get_terrain_U_m(float& terrain_u_m)
             return true;
         }
 #if AP_TERRAIN_AVAILABLE
-        if (terrain != nullptr && !terrain->rangefinder_fallback_enabled()) {
-            return false;
-        }
         // If the rangefinder isn't healthy then use terrain data if available
+        if (AP::terrain() != nullptr && !_pos_control.rangefinder_fallback()) {
+           return false;    // preserve existing pre 4.7 behavior if the PSC_RFND_FBK parameter is not set.
+        }
         FALLTHROUGH;        
 #else
         return false;
