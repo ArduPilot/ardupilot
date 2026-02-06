@@ -24,6 +24,8 @@
 #include <AP_Networking/AP_Networking_Switch.h>
 #endif
 
+extern bool periph_debug_switch_pkt_enabled();
+
 const AP_Param::GroupInfo Networking_Periph::var_info[] {
     // @Group:
     // @Path: ../../libraries/AP_Networking/AP_Networking.cpp

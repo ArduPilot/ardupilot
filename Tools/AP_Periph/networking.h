@@ -72,7 +72,6 @@ private:
     AP_Int8 ppp_port;
     AP_Int32 ppp_baud;
 #endif
-
 };
 
 #endif // AP_PERIPH_NETWORKING_ENABLED
