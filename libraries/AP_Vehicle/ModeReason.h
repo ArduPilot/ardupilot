@@ -42,7 +42,8 @@ enum class ModeReason : uint8_t {
   SOARING_THERMAL_ESTIMATE_DETERIORATED = 22,
   VTOL_FAILED_TRANSITION = 23,
   VTOL_FAILED_TAKEOFF = 24,
-  FAILSAFE = 25, // general failsafes, prefer specific failsafes over this as much as possible
+  FAILSAFE = 25, // general failsafes, prefer specific failsafes over this as
+                 // much as possible
   INITIALISED = 26,
   SURFACE_COMPLETE = 27,
   BAD_DEPTH = 28,
@@ -73,4 +74,5 @@ enum class ModeReason : uint8_t {
   AUX_FUNCTION = 53,
   FIXED_WING_AUTOLAND = 54,
   FENCE_REENABLE = 55,
+  EXTERNAL_PRESSURE_FAILSAFE = 56,
 };
