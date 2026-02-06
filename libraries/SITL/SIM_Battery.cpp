@@ -17,6 +17,7 @@
 */
 
 #include "SIM_Battery.h"
+#include <AP_Math/AP_Math.h>
 
 using namespace SITL;
 
@@ -119,8 +120,25 @@ void Battery::setup(float _capacity_Ah, float _resistance, float _max_voltage)
     capacity_Ah = _capacity_Ah;
     resistance = _resistance;
     max_voltage = _max_voltage;
-    // Arbitrarily setup battery initially as depleted
-    init_voltage(0.0f);
+
+    voltage_set = max_voltage;
+    voltage_filter.reset(voltage_set);
+    set_initial_SoC(voltage_set);
+}
+
+void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
+{
+    const bool reset_not_needed = (is_equal(voltage_set, desired_voltage)
+                                   && is_equal(capacity_Ah, desired_capacity_Ah));
+    if (reset_not_needed) {
+        return;
+    }
+
+    capacity_Ah = desired_capacity_Ah;
+    // a negative desired voltage is unexpected, but not problematic
+    voltage_set = MIN(desired_voltage, max_voltage);
+    voltage_filter.reset(voltage_set);
+    set_initial_SoC(voltage_set);
 }
 
 void Battery::init_voltage(float voltage)
