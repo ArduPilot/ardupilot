@@ -164,7 +164,7 @@ The LUX F765 NDAA has 2 analog inputs:
 - PC2 -> Battery Current
 - PC3 -> Battery Voltage
 
-# Battery Monitor
+## Battery Monitor
 
 The LUX F765 - NDAA has an internal voltage sensor and connections on the ESC connector
 for an external current sensor input. The voltage sensor can handle up to an 8S battery.

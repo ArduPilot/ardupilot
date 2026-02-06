@@ -2,8 +2,7 @@
 
 The JHEMCUF405WING is a flight controller produced by [JHEMCU](http://www.JHEMCU.com/).
 
-Specifications
-==============
+## Specifications
 
 - **Processor**
 

@@ -23,7 +23,7 @@ The S-Vehicle E2-Plus Flight Controller produced by [S-Vehicle](http://svehicle.
 - 100Mbps Ethernet port
 - 3 power monitor inputs
 
-# IOMCU
+## IOMCU
 
 This board has an IOMCU implemented on a STM32F103 microcontroller which, manages
 

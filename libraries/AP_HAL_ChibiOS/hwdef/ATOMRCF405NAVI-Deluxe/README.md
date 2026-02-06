@@ -9,7 +9,7 @@ the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
     Due to flash memory limitations, this board does not include all ArduPilot features.
         See :ref:`Firmware Limitations <common-limited_firmware>` for details.
 
-# Specifications
+## Specifications
 
 - **Processor**
 
@@ -46,15 +46,15 @@ the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
   - 50mm x 30mm x 12mm
   - 21g
 
-# Where to Buy
+## Where to Buy
 
 [ATOMRC](<https://atomrc.com)
 
-# Pinout
+## Pinout
 
 tbd
 
-# Default UART order
+## Default UART order
 
 - SERIAL0 = console = USB
 - SERIAL1 = RF Module = USART1(MAVLink2), not usable by AP GCS
@@ -66,7 +66,7 @@ tbd
 
 Serial protocols shown are defaults, but can be adjusted to personal preferences.
 
-# Dshot capability
+## Dshot capability
 
 All motor/servo outputs are Dshot and PWM capable. Outputs 1/2 and 6/7 are Bi-Directional DSHot capable.
 
@@ -74,7 +74,7 @@ Mixing Dshot and normal PWM operation for outputs is restricted into groups, ie.
 
 .. note:: PWM12 is marked as "LED" and defaulted to serial led protocol, so output 11 must also be used for serial LED unless output 12 function is changed.
 
-# RC Input
+## RC Input
 
 The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to RCIN protocol and can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection.
 
@@ -90,7 +90,7 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 .. note:: the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
 
-# Battery Monitor Configuration
+## Battery Monitor Configuration
 
 These settings are set as defaults when the firmware is loaded (except :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
 
@@ -108,19 +108,19 @@ Then reboot.
 
 :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 30
 
-# Connecting a GPS/Compass module
+## Connecting a GPS/Compass module
 
 This board does not include a GPS or compass. But a connector is provided to attach an external module.
 
-# OSD
+## OSD
 
 The internal analog OSD is enabled by default. Simultaneous use of HD VTX with OSD (DisplayPort) is also enabled by default via the 6 pin connector labeled "DJI". Either 9V (default) or 12V VTX power can be selected by solder jumper.
 
-# BLE RF Module
+## BLE RF Module
 
 An integrated BLE RF module is attached to UART1 and its power controlled by a pin (81) which is preset to be controlled by RELAY1 (high is power on to module). By default, the module is powered down on boot since ArduPilot GCS currently do not support BLE.
 
-# Loading Firmware
+## Loading Firmware
 
 Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “ATOMRCF405NAVI-Deluxe”.
 

@@ -1,6 +1,6 @@
 # SULILGH7P1/P2 Flight Controller
 
-# This firmware is compatible with SULILGH7-P1 and SULILGH7-P2.
+## This firmware is compatible with SULILGH7-P1 and SULILGH7-P2.
 
 This is the open-source hardware I have released, and you can find more details at the following link: https://oshwhub.com/shuyedeye/p1-flight-control.
 
