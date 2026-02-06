@@ -115,14 +115,13 @@ private:
 
 #if AP_NETWORKING_BACKEND_SWITCHPORT_COBS
     // COBS bond tracking for thread processing
-    static constexpr uint8_t MAX_COBS_BONDS = 3;  // Bonds 1, 2, 3
-    AP_Networking_SwitchPort_COBS *cobs_bonds[MAX_COBS_BONDS];
-    uint8_t num_cobs_bonds = 0;
+    AP_Networking_SwitchPort_COBS *cobs_bonds[AP_NETWORKING_BACKEND_SWITCHPORT_COBS_BOND_INSTANCE_MAX];
+    uint8_t num_cobs_bonds;
     HAL_Semaphore cobs_sem;  // Protects cobs_bonds[] and num_cobs_bonds
     
     // Shared COBS thread (services all COBS bonds)
     void cobs_thread_run();
-    bool cobs_thread_started = false;
+    bool cobs_thread_started;
 #endif
 
 #if AP_NETWORKING_SWITCH_SWITCHING_ENABLED
@@ -133,7 +132,7 @@ private:
     };
     // MAC table - only allocated when needed (more than 2 ports)
     // With exactly 2 ports, we use bridge mode: forward to the other port
-    MACEntry *mac_table = nullptr;
+    MACEntry *mac_table;
 
     // Learn source MAC on ingress
     void learn_mac(const uint8_t *mac, int8_t port_idx);

@@ -76,13 +76,13 @@ private:
     friend class AP_Networking_SwitchPort_COBS;
     
     AP_Networking_Switch *hub;
-    AP_Networking_SwitchPort_COBS *bond = nullptr;  // Set by bond when added
+    AP_Networking_SwitchPort_COBS *bond;  // Set by bond when added
     uint8_t local_device_id[6];
     
     // UART state
     AP_HAL::UARTDriver *uart;
     uint32_t baud;
-    bool uart_initialized = false;  // Set true after begin(0) called from thread
+    bool uart_initialized;  // Set true after begin(0) called from thread
     AP_Networking_COBS::Decoder decoder;
     
     // Per-port decoder buffer (can't be shared - partial frames would corrupt)
@@ -90,24 +90,24 @@ private:
     
     // Link status
     uint8_t seen_device_id[6];
-    bool device_id_valid = false;
-    uint32_t last_rx_ms = 0;
-    uint32_t last_keepalive_tx_ms = 0;
+    bool device_id_valid;
+    uint32_t last_rx_ms;
+    uint32_t last_keepalive_tx_ms;
     
     // Stats for keepalive response
-    uint16_t rx_good = 0;  // Data frames received (reported in keepalive)
+    uint16_t rx_good;  // Data frames received (reported in keepalive)
     
     // Remote device (learned from keepalives)
     uint8_t remote_device_id[6];
-    bool remote_id_known = false;
+    bool remote_id_known;
     
     // Statistics
-    uint32_t rx_count = 0;
-    uint32_t tx_count = 0;
-    uint32_t rx_errors = 0;
-    uint32_t crc_errors = 0;
-    uint32_t ka_tx_count = 0;
-    uint32_t ka_rx_count = 0;
+    uint32_t rx_count;
+    uint32_t tx_count;
+    uint32_t rx_errors;
+    uint32_t crc_errors;
+    uint32_t ka_tx_count;
+    uint32_t ka_rx_count;
     
     // Last received data frame type (hint for CRC checking - avoids computing both CRCs)
     AP_Networking_COBS_Protocol::FrameType last_data_type = AP_Networking_COBS_Protocol::FrameType::DATA_SINGLE;
@@ -150,7 +150,7 @@ private:
 class AP_Networking_SwitchPort_COBS : public AP_Networking_SwitchPort
 {
 public:
-    static constexpr uint8_t MAX_BOND_MEMBERS = 4;
+    static constexpr uint8_t MAX_BOND_MEMBERS = AP_NETWORKING_COBS_MAX_BOND_MEMBERS;
     
     AP_Networking_SwitchPort_COBS(AP_Networking_Switch *hub, uint8_t bond_id);
     ~AP_Networking_SwitchPort_COBS();
@@ -190,22 +190,22 @@ private:
     AP_Networking_Switch *hub;
     uint8_t bond_id;
     AP_Networking_COBS_Link *members[MAX_BOND_MEMBERS];
-    uint8_t num_members = 0;
-    uint16_t tx_seq = 0;   // Sequence number for multi-UART bonds (only used when num_members > 1)
+    uint8_t num_members;
+    uint16_t tx_seq;   // Sequence number for multi-UART bonds (only used when num_members > 1)
     
     // RX reorder buffer (only allocated when num_members > 1)
     static constexpr uint8_t REORDER_BUFFER_SIZE = 8;
     static constexpr size_t MAX_FRAME = AP_Networking_COBS_Link::MAX_FRAME;
     static constexpr uint32_t REORDER_TIMEOUT_MS = 5;   // Max time to wait for missing sequence
-    uint16_t rx_seq_expected = 0;
-    uint32_t reorder_stall_start_us = 0;  // When we first noticed a gap (0 = not stalled)
+    uint16_t rx_seq_expected;
+    uint32_t reorder_stall_start_us;  // When we first noticed a gap (0 = not stalled)
     struct ReorderEntry {
         uint8_t frame[MAX_FRAME];
         size_t len;
         uint16_t seq;
         bool valid;
     };
-    ReorderEntry *reorder_buffer = nullptr;  // Heap-allocated when num_members > 1
+    ReorderEntry *reorder_buffer;  // Heap-allocated when num_members > 1
     
     void deliver_reordered();       // Deliver buffered frames in sequence
     void check_reorder_timeout();   // Skip missing frames if stalled too long

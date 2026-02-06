@@ -54,14 +54,14 @@ private:
     AP_Networking &frontend;
 
     // Network interface
-    struct netif *thisif = nullptr;
+    struct netif *thisif;
 
     // Inject queue for frames from hub (variable-size ring buffer)
     // Each frame stored as: [len:2 bytes][frame data:len bytes]
     // 12KB pool matches old 8-slot fixed capacity for max-size frames
     static constexpr size_t INJECT_FRAME_MAX = 1522;
     static constexpr size_t INJECT_QUEUE_SIZE = 12 * 1024;  // 12KB pool
-    ByteBuffer *inject_queue = nullptr;
+    ByteBuffer *inject_queue;
     HAL_BinarySemaphore inject_sem;
 
     // TX buffer for flattening pbuf chain (used by low_level_output)
@@ -82,10 +82,10 @@ private:
 
     static AP_Networking_SwitchPort_lwIP *singleton;
 
-    uint32_t rx_count = 0;
-    uint32_t tx_count = 0;
-    uint32_t rx_errors = 0;
-    uint32_t tx_errors = 0;
+    uint32_t rx_count;
+    uint32_t tx_count;
+    uint32_t rx_errors;
+    uint32_t tx_errors;
 
     // Active settings tracking
     struct {

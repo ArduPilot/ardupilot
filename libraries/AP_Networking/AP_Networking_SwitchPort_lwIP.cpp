@@ -70,6 +70,9 @@ bool AP_Networking_SwitchPort_lwIP::init()
 void AP_Networking_SwitchPort_lwIP::link_up_cb(void *p)
 {
 #if LWIP_DHCP
+    if (p == nullptr) {
+        return;
+    }
     auto *port = (AP_Networking_SwitchPort_lwIP *)p;
     if (port->frontend.get_dhcp_enabled()) {
         dhcp_start(port->thisif);
@@ -80,6 +83,9 @@ void AP_Networking_SwitchPort_lwIP::link_up_cb(void *p)
 void AP_Networking_SwitchPort_lwIP::link_down_cb(void *p)
 {
 #if LWIP_DHCP
+    if (p == nullptr) {
+        return;
+    }
     auto *port = (AP_Networking_SwitchPort_lwIP *)p;
     if (port->frontend.get_dhcp_enabled()) {
         dhcp_stop(port->thisif);
@@ -96,9 +102,9 @@ int8_t AP_Networking_SwitchPort_lwIP::low_level_output(struct netif *netif, stru
 
     if (singleton == nullptr || singleton->hub == nullptr) {
         static uint32_t last_warn_ms;
-        uint32_t now = AP_HAL::millis();
-        if (now - last_warn_ms > 1000) {
-            last_warn_ms = now;
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_warn_ms > 1000) {
+            last_warn_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: lwIP TX blocked: singleton=%p hub=%p", 
                           (void*)singleton, singleton ? (void*)singleton->hub : nullptr);
         }
@@ -207,7 +213,9 @@ bool AP_Networking_SwitchPort_lwIP::can_receive() const
 
 void AP_Networking_SwitchPort_lwIP::process_inject_queue()
 {
-    while (inject_queue->available() >= 2) {
+    // Read available once to bound iterations and prevent livelock
+    uint32_t avail = inject_queue->available();
+    while (avail >= 2) {
         // Read length prefix (2 bytes, little-endian)
         uint16_t len;
         if (inject_queue->peekbytes((uint8_t *)&len, 2) != 2) {
@@ -215,7 +223,7 @@ void AP_Networking_SwitchPort_lwIP::process_inject_queue()
         }
         
         // Validate length
-        if (len == 0 || (size_t)len > INJECT_FRAME_MAX || inject_queue->available() < (size_t)len + 2) {
+        if (len == 0 || (size_t)len > INJECT_FRAME_MAX || avail < (size_t)len + 2) {
             // Corrupted or incomplete - shouldn't happen, clear queue
             inject_queue->clear();
             break;
@@ -224,6 +232,7 @@ void AP_Networking_SwitchPort_lwIP::process_inject_queue()
         // Advance past length prefix and read frame into rx buffer
         inject_queue->advance(2);
         inject_queue->read(rx_buf, len);
+        avail -= (2 + len);
 
         struct pbuf *p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
         if (p != nullptr) {
@@ -236,9 +245,9 @@ void AP_Networking_SwitchPort_lwIP::process_inject_queue()
                 err_t err = thisif->input(p, thisif);
                 if (err != ERR_OK) {
                     static uint32_t last_err_ms;
-                    uint32_t now = AP_HAL::millis();
-                    if (now - last_err_ms > 1000) {
-                        last_err_ms = now;
+                    const uint32_t now_ms = AP_HAL::millis();
+                    if (now_ms - last_err_ms > 1000) {
+                        last_err_ms = now_ms;
                         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "NET: lwIP input err=%d type=0x%04x link=%u up=%u",
                                       (int)err, type, 
                                       (unsigned)netif_is_link_up(thisif),
@@ -259,7 +268,7 @@ void AP_Networking_SwitchPort_lwIP::process_inject_queue()
 void AP_Networking_SwitchPort_lwIP::thread()
 {
     while (!hal.scheduler->is_system_initialized()) {
-        hal.scheduler->delay_microseconds(1000);
+        hal.scheduler->delay_microseconds(1000);  // 1ms spin-wait
     }
 
     /* Start tcpip thread */
@@ -299,7 +308,7 @@ void AP_Networking_SwitchPort_lwIP::thread()
         process_inject_queue();
 
         // Periodic link status check
-        uint32_t now_ms = AP_HAL::millis();
+        const uint32_t now_ms = AP_HAL::millis();
         if (now_ms - last_link_check_ms >= LWIP_LINK_POLL_INTERVAL_MS) {
             last_link_check_ms = now_ms;
 
@@ -324,8 +333,8 @@ void AP_Networking_SwitchPort_lwIP::thread()
 
 void AP_Networking_SwitchPort_lwIP::update()
 {
-    if (thisif == nullptr) {
-        return;
+    if (thisif == nullptr || inject_queue == nullptr) {
+        return;  // not yet initialized
     }
 
     const uint32_t ip = ntohl(thisif->ip_addr.addr);

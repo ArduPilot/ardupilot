@@ -162,12 +162,12 @@ bool AP_Networking_SwitchPort_MAVLink_COBS::get_remote_device_id(uint8_t id_out[
 */
 void AP_Networking_SwitchPort_MAVLink_COBS::update()
 {
-    uint32_t now = AP_HAL::millis();
+    const uint32_t now_ms = AP_HAL::millis();
     
     // Send keepalive periodically
-    if ((now - last_keepalive_tx_ms) >= KEEPALIVE_INTERVAL_MS) {
+    if ((now_ms - last_keepalive_tx_ms) >= KEEPALIVE_INTERVAL_MS) {
         send_keepalive();
-        last_keepalive_tx_ms = now;
+        last_keepalive_tx_ms = now_ms;
     }
 }
 

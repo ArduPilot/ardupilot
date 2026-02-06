@@ -472,7 +472,7 @@ void AP_Networking_Switch::cobs_thread_run()
     
     while (true) {
         // Snapshot bonds to process (avoids holding lock during thread_update)
-        AP_Networking_SwitchPort_COBS *bonds_to_process[MAX_COBS_BONDS];
+        AP_Networking_SwitchPort_COBS *bonds_to_process[AP_NETWORKING_BACKEND_SWITCHPORT_COBS_BOND_INSTANCE_MAX];
         uint8_t num_to_process;
         
         {
@@ -501,7 +501,7 @@ void AP_Networking_Switch::register_cobs_bond(AP_Networking_SwitchPort_COBS *bon
     
     WITH_SEMAPHORE(cobs_sem);
     
-    if (num_cobs_bonds >= MAX_COBS_BONDS) {
+    if (num_cobs_bonds >= AP_NETWORKING_BACKEND_SWITCHPORT_COBS_BOND_INSTANCE_MAX) {
         return;
     }
     cobs_bonds[num_cobs_bonds++] = bond;

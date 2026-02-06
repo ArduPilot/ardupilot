@@ -41,14 +41,14 @@ public:
     // Encode: input buffer -> COBS encoded output buffer
     // Returns: encoded length, or 0 on error
     // Errors: NULL pointers, output buffer too small
-    static size_t encode(const uint8_t *input, size_t input_len,
-                         uint8_t *output, size_t output_max);
+    static size_t encode(const uint8_t *input, const size_t input_len,
+                         uint8_t *output, const size_t output_max);
 
     // Decode: COBS encoded buffer -> decoded output buffer
     // Returns: decoded length, or 0 on error
     // Errors: NULL pointers, output buffer too small, invalid COBS encoding
-    static size_t decode(const uint8_t *input, size_t input_len,
-                         uint8_t *output, size_t output_max);
+    static size_t decode(const uint8_t *input, const size_t input_len,
+                         uint8_t *output, const size_t output_max);
 
     // Streaming decoder for byte-by-byte processing
     // Useful for UART RX where bytes arrive one at a time
@@ -65,14 +65,14 @@ public:
             frame_len(0), frame_buffer(nullptr), frame_max_len(0) {}
 
         // Set buffer for decoded frames (MUST be called before process_byte)
-        void set_buffer(uint8_t *buf, size_t buf_len) {
+        void set_buffer(uint8_t *buf, const size_t buf_len) {
             frame_buffer = buf;
             frame_max_len = buf_len;
         }
 
         // Process one byte, returns true if frame complete
         // After returning true, call get_frame() to retrieve the decoded frame
-        bool process_byte(uint8_t byte);
+        bool process_byte(const uint8_t byte);
 
         // Signal end of input - completes frame if we've finished the last code block
         // Returns true if frame is now complete
@@ -81,7 +81,7 @@ public:
         // Get decoded frame (only valid after process_byte returns true)
         // Returns true on success, false on error
         // On success, *len contains the decoded frame length
-        bool get_frame(uint8_t *output, size_t *len, size_t max_len);
+        bool get_frame(uint8_t *output, size_t *len, const size_t max_len);
 
         // Reset decoder to IDLE state
         void reset();

@@ -44,8 +44,8 @@ namespace AP_Networking_COBS_Protocol
     
     // Build a keepalive frame (without COBS encoding)
     // Returns total length including CRC
-    inline size_t build_keepalive(uint8_t *buf, size_t buf_len,
-                                   const uint8_t device_id[6], uint16_t rx_good)
+    inline size_t build_keepalive(uint8_t *buf, const size_t buf_len,
+                                   const uint8_t device_id[6], const uint16_t rx_good)
     {
         if (buf_len < KA_TOTAL_LEN) {
             return 0;
@@ -57,7 +57,7 @@ namespace AP_Networking_COBS_Protocol
         memcpy(&buf[KA_MARKER_LEN + KA_DEVICE_ID_LEN], &rx_good, KA_RX_GOOD_LEN);
         
         // CRC32
-        uint32_t crc = crc_crc32(0, buf, KA_DATA_LEN);
+        const uint32_t crc = crc_crc32(0, buf, KA_DATA_LEN);
         memcpy(&buf[KA_DATA_LEN], &crc, 4);
         
         return KA_TOTAL_LEN;
@@ -65,8 +65,8 @@ namespace AP_Networking_COBS_Protocol
     
     // Build a data frame (without COBS encoding)
     // Returns total length including CRC
-    inline size_t build_data_frame(uint8_t *buf, size_t buf_len,
-                                    const uint8_t *frame, size_t frame_len)
+    inline size_t build_data_frame(uint8_t *buf, const size_t buf_len,
+                                    const uint8_t *frame, const size_t frame_len)
     {
         if (buf_len < frame_len + 4) {
             return 0;
@@ -90,7 +90,7 @@ namespace AP_Networking_COBS_Protocol
     // Identify frame type from decoded COBS data (includes CRC)
     // Returns frame type and populates payload/payload_len with data portion
     // hint: expected frame type (try this CRC first to avoid computing the other)
-    inline FrameType identify_frame(const uint8_t *data, size_t len,
+    inline FrameType identify_frame(const uint8_t *data, const size_t len,
                                      const uint8_t **payload_out, size_t *payload_len_out,
                                      FrameType hint = FrameType::DATA_SINGLE)
     {
@@ -105,7 +105,7 @@ namespace AP_Networking_COBS_Protocol
         // Check for keepalive: exactly 10 bytes data, starts with "KA"
         if (data_len == KA_DATA_LEN && 
             data[0] == KA_MARKER[0] && data[1] == KA_MARKER[1]) {
-            uint32_t calc_crc = crc_crc32(0, data, data_len);
+            const uint32_t calc_crc = crc_crc32(0, data, data_len);
             if (rx_crc == calc_crc) {
                 *payload_out = data;
                 *payload_len_out = data_len;
@@ -117,7 +117,7 @@ namespace AP_Networking_COBS_Protocol
         // Check for data frame (need minimum ethernet frame size)
         if (data_len >= MIN_ETH_FRAME) {
             // Calculate single CRC first (needed for both modes)
-            uint32_t single_crc = crc_crc32(0, data, data_len);
+            const uint32_t single_crc = crc_crc32(0, data, data_len);
             
             // Try expected type first to potentially skip computing the other CRC
             if (hint == FrameType::DATA_SINGLE) {

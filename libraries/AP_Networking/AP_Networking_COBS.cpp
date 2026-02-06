@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Networking_Config.h"
+
+#if AP_NETWORKING_ENABLED
+
 #include "AP_Networking_COBS.h"
 #include <AP_Common/AP_Common.h>
 
@@ -20,8 +24,8 @@
   COBS encode: input buffer -> COBS encoded output buffer
   Returns: encoded length, or 0 on error
  */
-size_t AP_Networking_COBS::encode(const uint8_t *input, size_t input_len,
-                                  uint8_t *output, size_t output_max)
+size_t AP_Networking_COBS::encode(const uint8_t *input, const size_t input_len,
+                                  uint8_t *output, const size_t output_max)
 {
     if (input == nullptr || output == nullptr) {
         return 0;
@@ -47,7 +51,7 @@ size_t AP_Networking_COBS::encode(const uint8_t *input, size_t input_len,
             return 0; // Output buffer overflow
         }
 
-        uint8_t src_byte = *src_read_ptr++;
+        const uint8_t src_byte = *src_read_ptr++;
 
         if (src_byte == 0) {
             // We found a zero byte
@@ -84,8 +88,8 @@ size_t AP_Networking_COBS::encode(const uint8_t *input, size_t input_len,
   COBS decode: COBS encoded buffer -> decoded output buffer
   Returns: decoded length, or 0 on error
  */
-size_t AP_Networking_COBS::decode(const uint8_t *input, size_t input_len,
-                                  uint8_t *output, size_t output_max)
+size_t AP_Networking_COBS::decode(const uint8_t *input, const size_t input_len,
+                                  uint8_t *output, const size_t output_max)
 {
     if (input == nullptr || output == nullptr) {
         return 0;
@@ -126,7 +130,7 @@ size_t AP_Networking_COBS::decode(const uint8_t *input, size_t input_len,
 
         // Copy len_code non-zero bytes
         for (uint8_t i = 0; i < len_code; i++) {
-            uint8_t src_byte = *src_read_ptr++;
+            const uint8_t src_byte = *src_read_ptr++;
             if (src_byte == 0) {
                 // Zero byte in non-zero section is invalid
                 return 0;
@@ -156,7 +160,7 @@ size_t AP_Networking_COBS::decode(const uint8_t *input, size_t input_len,
   Returns true when frame is complete
   NOTE: set_buffer() MUST be called before using this decoder
  */
-bool AP_Networking_COBS::Decoder::process_byte(uint8_t byte)
+bool AP_Networking_COBS::Decoder::process_byte(const uint8_t byte)
 {
     // Buffer must be set before use
     if (frame_buffer == nullptr) {
@@ -259,7 +263,7 @@ bool AP_Networking_COBS::Decoder::process_end_of_input()
 /*
   Get decoded frame after process_byte returns true
  */
-bool AP_Networking_COBS::Decoder::get_frame(uint8_t *output, size_t *len, size_t max_len)
+bool AP_Networking_COBS::Decoder::get_frame(uint8_t *output, size_t *len, const size_t max_len)
 {
     if (state != State::IDLE || frame_buffer == nullptr || frame_len == 0) {
         return false;
@@ -305,4 +309,6 @@ void AP_Networking_COBS::Decoder::resync()
     code_remaining = 0;
     frame_len = 0;
 }
+
+#endif // AP_NETWORKING_ENABLED
 

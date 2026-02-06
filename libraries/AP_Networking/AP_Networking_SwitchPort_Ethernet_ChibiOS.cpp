@@ -176,14 +176,18 @@ void AP_Networking_SwitchPort_Ethernet_ChibiOS::rx_thread()
 
 void AP_Networking_SwitchPort_Ethernet_ChibiOS::tx_thread()
 {
+    if (tx_queue == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "NET: SwitchPort.Eth tx_queue is null");
+        return;
+    }
+
     while (true) {
-        if (tx_queue == nullptr) {
-            hal.scheduler->delay_microseconds(1000);
-            continue;
-        }
         // Block until signaled
         tx_not_empty.wait_blocking();
-        // Drain all available frames
+        // Drain all available frames.
+        // Manual take/give instead of WITH_SEMAPHORE because the mutex
+        // is acquired and released within each loop iteration, not at
+        // function scope.
         while (true) {
             tx_mutex.take_blocking();
             if (tx_queue->available() < 2) {

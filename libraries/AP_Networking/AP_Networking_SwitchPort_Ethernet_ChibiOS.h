@@ -60,7 +60,7 @@ private:
     void apply_errata_for_mac_KSZ9896C();
 
     // Promiscuous mode state tracking
-    bool promiscuous_enabled = false;
+    bool promiscuous_enabled;
 
     // TX queue
     static constexpr size_t MAX_FRAME = 1522;

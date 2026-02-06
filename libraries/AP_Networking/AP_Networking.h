@@ -71,9 +71,9 @@ public:
     }
 
     // returns true if lwIP stack is enabled by parameter
-    bool get_ip_enabled() const {
+    bool get_ipstack_enabled() const {
 #if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
-        return param.ip_enabled;
+        return param.ipstack_enabled;
 #else
         return true; // always enabled if not switch architecture
 #endif
@@ -266,7 +266,7 @@ private:
 
         AP_Int8 enabled;
 #if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
-        AP_Int8 ip_enabled; // enable/disable IP stack (lwIP)
+        AP_Int8 ipstack_enabled; // enable/disable IP stack (lwIP)
 #endif
         AP_Int32 options;
 
@@ -436,18 +436,17 @@ public:
 
 private:
     // Networking switch and ports
-    AP_Networking_Switch *hub = nullptr;
+    AP_Networking_Switch *hub;
 #if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
-    AP_Networking_SwitchPort_lwIP *port_lwip = nullptr;
+    AP_Networking_SwitchPort_lwIP *port_lwip;
 #endif
 #if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
-    AP_Networking_SwitchPort_Ethernet_ChibiOS *port_eth = nullptr;
+    AP_Networking_SwitchPort_Ethernet_ChibiOS *port_eth;
 #endif
 
-    // COBS bonds (protocol 51/52/53 = bond 1/2/3)
-    static constexpr uint8_t MAX_COBS_BONDS = 3;
-    AP_Networking_SwitchPort_COBS *cobs_bonds[MAX_COBS_BONDS] {};
-    uint8_t num_cobs_bonds = 0;
+    // COBS bonds
+    AP_Networking_SwitchPort_COBS *cobs_bonds[AP_NETWORKING_BACKEND_SWITCHPORT_COBS_BOND_INSTANCE_MAX];
+    uint8_t num_cobs_bonds;
 
     // MAVLink COBS tunnel ports are managed via static registry in
     // AP_Networking_SwitchPort_MAVLink_COBS, created dynamically when

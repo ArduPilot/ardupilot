@@ -61,13 +61,13 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     AP_GROUPINFO_FLAGS("ENABLE",  1, AP_Networking, param.enabled, 0, AP_PARAM_FLAG_ENABLE),
 
 #if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
-    // @Param: IP_ENABLE
+    // @Param: IPSTACK_EN
     // @DisplayName: Enable IP stack
     // @Description: Enable/Disable the TCP/IP (lwIP) stack. When disabled, the system still bridges Ethernet and UART at Layer 2.
     // @Values: 0:Disable,1:Enable
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO("IP_ENABLE",  13, AP_Networking, param.ip_enabled, AP_NETWORKING_DEFAULT_IP_ENABLE),
+    AP_GROUPINFO("IPSTACK_EN",  13, AP_Networking, param.ipstack_enabled, AP_NETWORKING_DEFAULT_IP_ENABLE),
 #endif
 
 #if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
@@ -199,7 +199,7 @@ void AP_Networking::init()
 
 #if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
         // lwIP port - owns lwIP when hub is enabled
-        if (get_ip_enabled() && port_lwip == nullptr) {
+        if (get_ipstack_enabled() && port_lwip == nullptr) {
             port_lwip = NEW_NOTHROW AP_Networking_SwitchPort_lwIP(hub, *this);
             if (port_lwip != nullptr) {
                 if (port_lwip->init()) {

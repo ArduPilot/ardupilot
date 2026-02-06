@@ -106,7 +106,7 @@ private:
     
     // Remote device (learned from keepalives)
     uint8_t remote_device_id[6];
-    bool remote_id_known = false;
+    bool remote_id_known;
     
     // TX state
     HAL_Semaphore tx_sem;
@@ -114,24 +114,24 @@ private:
     static constexpr size_t MAX_FRAME = AP_Networking_COBS_Protocol::MAX_FRAME;
     uint8_t tx_input_buffer[MAX_FRAME + 4];  // frame + CRC
     uint8_t tx_encode_buffer[MAX_FRAME + MAX_FRAME/254 + 2];  // COBS overhead
-    uint32_t last_keepalive_tx_ms = 0;
+    uint32_t last_keepalive_tx_ms;
     
     // RX state - streaming COBS decoder
     AP_Networking_COBS::Decoder decoder;
     HAL_Semaphore rx_sem;
     uint8_t rx_frame_buffer[MAX_FRAME + 6];  // for decoded frame + CRC
-    uint16_t rx_good = 0;  // frames received (for keepalive stats)
+    uint16_t rx_good;  // frames received (for keepalive stats)
     
     // Link status tracking
-    uint32_t last_rx_ms = 0;
+    uint32_t last_rx_ms;
     
     // Statistics
-    uint32_t rx_count = 0;
-    uint32_t tx_count = 0;
-    uint32_t rx_errors = 0;
-    uint32_t crc_errors = 0;
-    uint32_t ka_tx_count = 0;
-    uint32_t ka_rx_count = 0;
+    uint32_t rx_count;
+    uint32_t tx_count;
+    uint32_t rx_errors;
+    uint32_t crc_errors;
+    uint32_t ka_tx_count;
+    uint32_t ka_rx_count;
     
     // Methods
     bool send_tunnel(uint16_t payload_type, const uint8_t *data, uint8_t len);
