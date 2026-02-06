@@ -138,7 +138,7 @@ void QuadPlane::update(const struct sitl_input &input)
         quad_accel_body.rotate(ROTATION_PITCH_270);
     }
 
-    reinitialize_battery_if_param_has_changed();
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
     battery_voltage = battery.get_voltage();
     battery_current = frame->get_current_amp();
 

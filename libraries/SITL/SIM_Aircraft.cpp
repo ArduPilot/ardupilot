@@ -1416,22 +1416,6 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
 }
 
 /*
-  Detect if the sim params controlling the battery have changed (e.g. by user) & respond
-*/
-void Aircraft::reinitialize_battery_if_param_has_changed(void)
-{
-    // Treat a param-change as a forced re-init of battery
-    const float param_voltage = sitl->batt_voltage;
-    if (!is_equal(battery.get_init_voltage(), param_voltage)) {
-        battery.init_voltage(param_voltage);
-    }
-    const float param_capacity = sitl->batt_capacity_ah;
-    if (!is_equal(battery.get_capacity(), param_capacity)) {
-        battery.init_capacity(param_capacity);
-    }
-}
-
-/*
   wrapper for scripting access
  */
 bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)

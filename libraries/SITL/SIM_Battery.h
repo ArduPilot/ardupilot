@@ -26,17 +26,18 @@ class Battery {
 public:
     void setup(float _capacity_Ah, float _resistance, float _max_voltage);
 
+    // Implements the (re)setting behavior described by SIM_BATT_* parameters
+    // (reminder: if the desired values are different than previous choices, reset)
+    void maybe_reset(float desired_voltage, float desired_capacity_Ah);
+
     void init_voltage(float voltage);
     void init_capacity(float capacity);
 
     void set_current(float current_amps);
     float get_voltage(void) const;
-    float get_capacity(void) const { return capacity_Ah; }
 
     // return battery temperature in Kelvin:
     float get_temperature(void) const { return temperature.kelvin; }
-    // useful for detecting if param-controlled batt voltage has been changed
-    float get_init_voltage(void) const { return voltage_set; }
 
 private:
     float capacity_Ah;
