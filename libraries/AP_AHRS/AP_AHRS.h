@@ -272,6 +272,9 @@ public:
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const WARN_IF_UNUSED;
 
+    // Returns true if the EKF origin has been set
+    bool has_origin() const;
+
     bool have_inertial_nav() const;
 
     // return a ground velocity in meters/second, North/East/Down
