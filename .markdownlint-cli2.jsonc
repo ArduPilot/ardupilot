@@ -18,7 +18,6 @@
     "MD014": false,  // Dollar signs used before commands without showing output
     "MD022": false,  // Headings should be surrounded by blank lines
     "MD024": false,  // Multiple headings with the same content
-    "MD025": false,  // Multiple top-level headings in the same document
     "MD026": false,  // Trailing punctuation in heading
     "MD029": false,  // Ordered list item prefix
     "MD032": false,  // Lists should be surrounded by blank lines
