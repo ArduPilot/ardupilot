@@ -23,7 +23,7 @@ ArduPilot supported MCUs can be used, including:
 
 More can be added using the hwdef.dat system
 
-# Features
+## Features
 
 The AP_Periph firmware can be configured to enable a wide range of
 DroneCAN sensor types. Support is included for:
@@ -56,7 +56,7 @@ An AP_Periph DroneCAN firmware supports these DroneCAN features:
 - firmware update via USB if USB port is provided
 - parameter update using SLCAN and DroneCAN GUI on standalone peripheral via USB, if provided
 
-# Building
+## Building
 
 Using f103-GPS as an example, build the main firmware like this:
 
@@ -67,7 +67,7 @@ that will build a file build/f103-GPS/bin/AP_Periph.bin. You can
 now load that using the CAN bootloader and either dronecan_gui_tool or
 MissionPlanner DroneCAN support.
 
-# Flashing
+## Flashing
 
 To load directly with a stlink-v2, do this:
 
@@ -77,13 +77,13 @@ for the CUAV_GPS which loads at offset 0x10000 use this:
 
 - st-flash write build/CUAV_GPS/bin/AP_Periph.bin 0x8010000
 
-# Flashing bootloader
+## Flashing bootloader
 
 To flash the bootloader use this:
 
 - st-flash write Tools/bootloaders/f103-GPS_bl.bin 0x8000000
 
-# Building bootloader
+## Building bootloader
 
 To build the bootloader use this:
 
@@ -91,7 +91,7 @@ To build the bootloader use this:
 
 the resulting bootloader will be in Tools/bootloaders
 
-# Firmware Builds
+## Firmware Builds
 
 Firmware targets are automatically built and distributed on the
 ArduPilot firmware server on firmware.ardupilot.org. These firmwares
@@ -99,7 +99,7 @@ can be loaded using Mission Planner or the DroneCAN GUI Tool. Parameters
 for peripherals can be changed using the Mission Planner DroneCAN support
 or using DroneCAN GUI Tools.
 
-# User Bootloader Update
+## User Bootloader Update
 
 The bootloader is automatically stored in ROMFS in the main
 firmware. End users can update the bootloader by setting the DroneCAN
@@ -107,7 +107,7 @@ parameter "FLASH_BOOTLOADER" to 1. After setting it to 1 the node will
 respond with a debug text message which can be seen in the DroneCAN GUI
 tool to show the result of the flash.
 
-# SITL Testing
+## SITL Testing
 
 A wide range of DroneCAN peripherals are supported in the SITL
 simulation system. The simplest way of starting a DroneCAN enabled
@@ -117,7 +117,7 @@ For a quadplane use: sim_vehicle.py with the option -f quadplane-can
 
 For a quadcopter use: sim_vehicle.py with the option -f quad-can
 
-# Discussion and Feedback
+## Discussion and Feedback
 
 Please join the discussions at these locations:
 

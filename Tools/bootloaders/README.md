@@ -39,7 +39,7 @@ skyviperf412_bl.bin:
    Setup for code start at 0x0800C000
    2 sectors reserved for storage, plus bootloader
 
-# Bootloader in ROMFS
+## Bootloader in ROMFS
 
 When building a ChibiOS based build, if there is a corresponding
 bootloader in Tools/bootloaders for the board then that bootloader

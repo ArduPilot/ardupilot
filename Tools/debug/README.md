@@ -97,7 +97,7 @@ arm-none-eabi-gdb in the same manner.
 To see ChibiOS threads use the "info threads" command. See the gdb
 documentation for more information.
 
-# Debugging Hardfaults
+## Debugging Hardfaults
 
 ## Getting fault dump via Serial
 
