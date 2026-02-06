@@ -49,6 +49,8 @@ void GCS_MAVLINK::handle_tunnel(const mavlink_message_t &msg)
         }
         return;
     }
+#else
+    (void)packet;
 #endif
 
     // Other tunnel payload types can be handled here in the future
