@@ -72,14 +72,23 @@ jobs:
             echo "✅ No fixup commits found in the PR branch."
           fi
 
-          # require a ":" to appear somewhere in each commit message:
+          # require a well-formed subsystem tag before ":" in each commit message:
           while IFS= read x; do
-            if ! [[ "$x" == *":"* ]] ; then
+            # strip leading hash from oneline format
+            subject="${x#* }"
+            # extract everything before the first colon
+            prefix="${subject%%:*}"
+            if [[ "$prefix" == "$subject" ]]; then
               echo "❌ Commit message ($x) missing subsystem tag on front.  Re-word your commit to reflect what subsystem it changes. E.g. 'AP_Compass: Added driver for XYZZY' (https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html)"
               exit 1
             fi
+            # spaces and quotes are allowed to support Revert commits e.g. 'Revert "AP_Periph: ...'
+            if ! [[ "$prefix" =~ ^[A-Za-z0-9._/\ \"-]+$ ]]; then
+              echo "❌ Commit message ($x) has malformed subsystem tag '$prefix'.  The subsystem prefix must contain only letters, digits, dots, underscores, slashes, hyphens, spaces, and quotes. E.g. 'AP_Compass: Added driver for XYZZY' (https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html)"
+              exit 1
+            fi
           done <<< $COMMITS
-          echo "✅ Commit messages have subsystem tags."
+          echo "✅ Commit messages have well-formed subsystem tags."
 
       - name: Lint changed markdown files
         shell: bash
