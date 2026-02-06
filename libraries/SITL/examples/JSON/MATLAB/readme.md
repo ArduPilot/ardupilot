@@ -42,7 +42,7 @@ Using the connection it should be possible to achieve > 1500 fps, at this speed 
 
 [![Matlab Connector demo](https://img.youtube.com/vi/sYCU2ch7oFE/0.jpg)](https://www.youtube.com/watch?v=sYCU2ch7oFE)
 
-# Simulink
+## Simulink
 
 Simulink input and output blocks are provided in AP_Conector.slx. There is a receive block that receives the PWM inputs from SITL. These are output in a 16 element array. The output block takes the vehicle state as outlighned above. The input block also has a reset signal, this will go high if SITL is restarted. This could be used to reset the Simulink model to its initial conditions. Unlike the Matlab connector the time step used by Simulink cannot be adjusted by ArduPilot, it must eb set in Simulink. Variable size time steps are supported.
 
