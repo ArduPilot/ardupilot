@@ -3,7 +3,7 @@
 This driver implements support for the SVFFI generator serial protocol for
 this system http://www.svffi.com/en/
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -11,7 +11,7 @@ The script used the following parameters:
 
 this must be set to 1 to enable the driver
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

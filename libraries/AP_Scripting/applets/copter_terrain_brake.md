@@ -4,7 +4,7 @@ This script implements an emergency change to BRAKE mode in copter if
 you are in LOITER mode and break a terrain altitude limit. The script
 is useful when flying in LOITER mode in steep terrain.
 
-# Parameters
+## Parameters
 
 The script adds the following parameters to control it's behaviour.
 
@@ -47,7 +47,7 @@ If you set this value then to recover in LOITER mode you should raise
 the throttle stick to demand climb before you switch back to LOITER
 mode. The positive climb rate means BRAKE will not re-engage.
 
-# Operation
+## Operation
 
 Install the lua script in the APM/SCRIPTS directory on the flight
 controllers microSD card. Review the above parameter descriptions and

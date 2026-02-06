@@ -6,7 +6,7 @@ This driver implements support the HobbyWing DataLink for HobbyWing
 ESCs connected via a UART to an ArduPilot serial port. It supports up
 to 8 ESCs.
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -25,7 +25,7 @@ this parameter sets an offset for the first ESC number. It is useful
 on vehicles where the first ESC is not the first SERVOn output, for
 example on quadplanes. Set to zero for no offset.
 
-# Hardware Setup
+## Hardware Setup
 
 Connect the TX1 pin on the DataLink V2 to a RX pin on an ArduPilot
 serial port and the GND pin on the DataLink V2 to the GND pin on the
@@ -35,7 +35,7 @@ Connect your ESCs into the 8 ESC connectors marked D1 to D8.
 
 Power the DataLink V2 with a battery as indicated in the DataLink V2 manual.
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

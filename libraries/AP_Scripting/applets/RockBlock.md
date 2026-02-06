@@ -24,7 +24,7 @@ Caveats:
 - Any incoming packets on the first mailbox check will be ignored (as these may be from a long time in the past)
 - Only 1 command can be sent per mailbox check from the GCS. Any additional commands will overwrite the previous command
 
-# Parameters
+## Parameters
 
 The script adds the following parameters:
 

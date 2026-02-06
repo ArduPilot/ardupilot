@@ -2,7 +2,7 @@
 
 This driver implements support for the UltraMotion CAN servos
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -29,7 +29,7 @@ enables telemetry parsing. Bit 3 for sending the position of all
 servos as NAMED_VALUE_FLOAT MAVLink packets of name UMPOS_n where n is
 the unit ID.
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either
@@ -44,7 +44,7 @@ to ensure the script gets sufficient priority.
 then the flight controller should rebooted and parameters should be
 refreshed.
 
-# UltraMotion Settings
+## UltraMotion Settings
 
 The following settings need to be changed using the CLI or CONFIG.TXT
 

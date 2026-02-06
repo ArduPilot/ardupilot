@@ -6,7 +6,7 @@ tuning while flying and if you get in trouble (eg. an oscillation)
 then you can use a switch to instantly revert all the parameter
 changes to the values from startup.
 
-# Parameters
+## Parameters
 
 The script adds 2 parameters to control it's behaviour. The parameters
 are:
@@ -20,7 +20,7 @@ this must be set to 1 to enable the script
 The RCz_OPTIONS scripting function binding to be used for this script.
 Default RCz_OPTIONS binding is 300 (scripting1).
 
-# Operation
+## Operation
 
 Install the script in the APM/SCRIPTS folder on your microSD (you can
 use mavFTP for that). Then reboot and re-fetch parameters. You will
@@ -37,7 +37,7 @@ reversion with your R/C switch. Then fetch your parameters and you
 will see it has been reverted. You will see a message "Reverted N
 parameters" in the messages tab when this happens.
 
-# Covered Parameters
+## Covered Parameters
 
 The script covers the following parameters on quadplanes:
 

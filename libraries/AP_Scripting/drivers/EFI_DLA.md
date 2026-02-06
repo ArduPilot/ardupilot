@@ -5,7 +5,7 @@ this system:
 
 https://www.austars-model.com/dla-232cc-uavuas-engine-optional-one-key-startauto-startergenerator_g17937.html
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -19,7 +19,7 @@ This sets the fuel consumption rate in litres per second of injector
 time. This will need to be tuned per engine to give the right value
 for fuel usage and total fuel
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

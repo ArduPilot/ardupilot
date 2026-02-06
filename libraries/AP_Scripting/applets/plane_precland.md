@@ -6,7 +6,7 @@ aircraft (quadplanes).
 Precision positioning over a landing sensor is supported in QLOITER,
 QLAND, QRTL and AUTO landing.
 
-# Parameters
+## Parameters
 
 Beyond the normal PLND parameters the script adds 2 additional parameters to
 control it's behaviour. The parameters are:
@@ -27,7 +27,7 @@ the precision landing subsystem gives a distance beyond this distance
 then precision landing correction will stop and the last landing
 position will be used.
 
-# Operation
+## Operation
 
 You should first install and configure a precision landing sensor as described here:
 

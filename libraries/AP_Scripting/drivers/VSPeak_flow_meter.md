@@ -4,7 +4,7 @@ This driver implements support for the VSPeak Modell flow meter sensor.
 
 https://www.vspeak-modell.de/en/flow-meter
 
-# Setup
+## Setup
 
 ## Mode selection
 
@@ -79,7 +79,7 @@ For mode B (reset consumed), set `VSPF_MODE=1`.
 
 11. Enable the script itself with `VSPF_ENABLE=1`.
 
-# Operation
+## Operation
 
 Once everything is configured correctly, the corresponding battery monitor
 will display in the corresponding `BATTERY_STATUS` MAVLink message:
@@ -98,7 +98,7 @@ the fuel volume that is in the tank.
 If operating under mode A (Save consumed), reset the sensor by triggering the
 PWM pulse.
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 

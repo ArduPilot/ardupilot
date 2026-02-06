@@ -2,7 +2,7 @@
 
 This implements a web server for boards that have networking support.
 
-# Parameters
+## Parameters
 
 The web server has a small number of parameters
 
@@ -28,7 +28,7 @@ cost of more memory
 
 This sets the timeout in seconds for inactive client connections.
 
-# Operation
+## Operation
 
 By default the web server serves the root of your microSD card. You
 can include html, javascript (*.js), image files etc on your microSD

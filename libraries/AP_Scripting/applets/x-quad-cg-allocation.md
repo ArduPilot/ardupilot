@@ -15,7 +15,7 @@ allocation matrix to request asymmeterical front and back thrust.
 WARNING: This script is applicable only to X-type quadrotors and quadplanes. Do
 not use in any other frame configuration!
 
-# Parameters
+## Parameters
 
 The script adds 1 parameter to control its behaviour.
 
@@ -28,7 +28,7 @@ Reasonable extreme values are 2 (front works twice as hard as the rear) and 0.5
 (the inverse case). Given an out-of-bounds parameter value, the script will
 revert to the default 1.0.
 
-# Operation
+## Operation
 
 ## How To Use
 

@@ -13,7 +13,7 @@ network service.
 If you don't have access to the ArduPilot support server you can
 install your own using https://github.com/ArduPilot/UDPProxy
 
-# Supported Hardware
+## Supported Hardware
 
 The driver currently supports:
 
@@ -27,7 +27,7 @@ There are some limitations:
 - the Air780 does not support signal level monitoring
 - the SimCom A7670 only supports TCP connections, not PPP
 
-# Parameters
+## Parameters
 
 The script uses the following parameters:
 
@@ -111,7 +111,7 @@ will attempt to reconnect. Range: 1-60 seconds. Default: 10 seconds.
 
 This sets options for debugging and data display
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either
@@ -164,7 +164,7 @@ the support server is used and modem is attached on SERAL1 (no PPP used)
 - LTE_SERVER_IP3 174
 - LTE_SERVER_PORT 20001
 
-# Status Messages
+## Status Messages
 
 The driver provides status messages through the GCS indicating the current
 connection state:
@@ -179,7 +179,7 @@ connection state:
 - "LTE_modem: timeout" - No data received within timeout period
 - "LTE_modem: error response from modem" - Modem returned an error
 
-# Physical Connections
+## Physical Connections
 
 The modem should be connected to a flight controller serial
 port. You may also want to use a serial port with hardware flow
@@ -188,7 +188,7 @@ control support and set BRD_SERn_RTSCRS to 1 for that port.
 Note that the modems can be quite sensitive to power supply
 issues. The power from the serial port will likely not be sufficient.
 
-# Troubleshooting
+## Troubleshooting
 
 The driver creates a log file "LTE_modem.log" on the SD card that contains
 all communication with the modem. This log can be useful for debugging
@@ -205,7 +205,7 @@ Common issues:
 If the connection fails or is lost, the driver will automatically attempt
 to reconnect by restarting the connection sequence.
 
-# Logging
+## Logging
 
 A LTE log message is saved in the onboard log. That has signal
 strength information and data transfer statistics.
@@ -213,7 +213,7 @@ strength information and data transfer statistics.
 A NAMED_VALUE_FLOAT MAVLink message "LTE_RSSI" is sent with the RSSI
 signal strength.
 
-# Notes on specific modems
+## Notes on specific modems
 
 Each modem has it's own unique behaviour. Some of the key differences
 are listed below.

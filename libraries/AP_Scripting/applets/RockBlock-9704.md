@@ -23,7 +23,7 @@ Caveats:
 - This will *only* send HIGH_LATENCY2 packets via the SBD modem. No heartbeats, no command acknowledgements, no statustexts, no parameters, etc
 - A single HIGH_LATENCY2 packet will be sent every RK9_PERIOD sec
 
-# Parameters
+## Parameters
 
 The script has the following parameters:
 
