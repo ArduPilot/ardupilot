@@ -5377,6 +5377,10 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     mavlink_command_long_t packet;
     mavlink_msg_command_long_decode(&msg, &packet);
 
+    if (!command_intended_for_us(packet.target_system, packet.target_component)) {
+        return;
+    }
+
 #if AP_SCRIPTING_ENABLED
     AP_Scripting *scripting = AP_Scripting::get_singleton();
     if (scripting != nullptr && scripting->is_handling_command(packet.command)) {
@@ -5411,6 +5415,10 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     // decode packet
     mavlink_command_long_t packet;
     mavlink_msg_command_long_decode(&msg, &packet);
+
+    if (!command_intended_for_us(packet.target_system, packet.target_component)) {
+        return;
+    }
 
     // send ACK or NAK
     mavlink_msg_command_ack_send(
@@ -5863,11 +5871,28 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
     return MAV_RESULT_UNSUPPORTED;
 }
 
+bool GCS_MAVLINK::command_intended_for_us(const uint8_t target_system, const uint8_t target_component) const
+{
+    if (target_system != mavlink_system.sysid && target_system != 0) {
+        return false;
+    }
+    if (target_component != mavlink_system.compid &&
+        target_component != MAV_COMP_ID_ALL &&
+        target_component != 0) {
+        return false;
+    }
+    return true;
+}
+
 void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
 {
     // decode packet
     mavlink_command_int_t packet;
     mavlink_msg_command_int_decode(&msg, &packet);
+
+    if (!command_intended_for_us(packet.target_system, packet.target_component)) {
+        return;
+    }
 
 #if AP_SCRIPTING_ENABLED
     AP_Scripting *scripting = AP_Scripting::get_singleton();

@@ -803,6 +803,7 @@ protected:
     bool location_from_command_t(const mavlink_command_int_t &in, Location &out);
 
 private:
+    bool command_intended_for_us(uint8_t target_system, uint8_t target_component) const;
 
     // define the two objects used for parsing incoming messages:
     mavlink_message_t _channel_buffer;
