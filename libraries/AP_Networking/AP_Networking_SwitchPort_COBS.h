@@ -10,6 +10,9 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/UARTDriver.h>
+#if AP_NETWORKING_CAPTURE_ENABLED
+#include "AP_Networking_Capture.h"
+#endif
 
 // Forward declaration
 class AP_Networking_SwitchPort_COBS;
@@ -185,7 +188,11 @@ public:
     // route_rx_frame_sequenced: for bonded-mode frames (with reordering)
     void route_rx_frame(const uint8_t *frame, size_t len);
     void route_rx_frame_sequenced(uint16_t seq, const uint8_t *frame, size_t len);
-    
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+    AP_Networking_Capture capture;
+#endif
+
 private:
     AP_Networking_Switch *hub;
     uint8_t bond_id;

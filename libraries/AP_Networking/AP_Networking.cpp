@@ -119,7 +119,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Networking options
     // @Description: Networking options
-    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged, 5:DisablePPPTimeout, 6:DisablePPPEchoLimit, 7:Capture to file, 8:Debug messages, 9:Debug switch packets (ARP/ICMP)
+    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged, 5:DisablePPPTimeout, 6:DisablePPPEchoLimit, 8:Debug messages, 9:Debug switch packets (ARP/ICMP)
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,  AP_Networking,    param.options, 0),
@@ -128,6 +128,15 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Group: REMPPP_IP
     // @Path: AP_Networking_address.cpp
     AP_SUBGROUPINFO(param.remote_ppp_ip, "REMPPP_IP", 10,  AP_Networking, AP_Networking_IPV4),
+#endif
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+    // @Param: CAPMASK
+    // @DisplayName: Packet capture bitmask
+    // @Description: Enable packet capture to pcap files by port type. Each enabled port type writes to a separate file.
+    // @Bitmask: 0:lwIP (lwip0.cap), 1:Ethernet (eth0.cap), 2:COBS bonds (cobsN.cap), 3:MAVLink COBS (mavcobsN.cap), 4:PPP (pppN.cap)
+    // @User: Advanced
+    AP_GROUPINFO("CAPMASK", 11, AP_Networking, param.capture_mask, 0),
 #endif
     
     AP_GROUPEND
@@ -409,15 +418,54 @@ void AP_Networking::update()
         return;
     }
     backend->update();
-#if AP_NETWORKING_CAPTURE_ENABLED && AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
-    if (port_eth != nullptr) {
-        if (option_is_set(OPTION::CAPTURE_PACKETS)) {
-            port_eth->start_capture();
+#if AP_NETWORKING_CAPTURE_ENABLED
+    // Manage per-port-type packet captures based on NET_CAPMASK
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+    if (port_lwip != nullptr) {
+        if (capture_is_set(CAPTURE_LWIP)) {
+            port_lwip->capture.start("lwip0.cap");
         } else {
-            port_eth->stop_capture();
+            port_lwip->capture.stop();
         }
     }
 #endif
+#if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+    if (port_eth != nullptr) {
+        if (capture_is_set(CAPTURE_ETHERNET)) {
+            port_eth->capture.start("eth0.cap");
+        } else {
+            port_eth->capture.stop();
+        }
+    }
+#endif
+#if AP_NETWORKING_BACKEND_SWITCHPORT_COBS
+    for (uint8_t i = 0; i < num_cobs_bonds; i++) {
+        if (cobs_bonds[i] != nullptr) {
+            if (capture_is_set(CAPTURE_COBS)) {
+                char fname[16];
+                hal.util->snprintf(fname, sizeof(fname), "cobs%u.cap", i);
+                cobs_bonds[i]->capture.start(fname);
+            } else {
+                cobs_bonds[i]->capture.stop();
+            }
+        }
+    }
+#endif
+#if AP_NETWORKING_BACKEND_SWITCHPORT_MAVLINK_COBS
+    for (uint8_t i = 0; i < AP_Networking_SwitchPort_MAVLink_COBS::MAX_TUNNELS; i++) {
+        auto *port = AP_Networking_SwitchPort_MAVLink_COBS::get_port(i);
+        if (port != nullptr) {
+            if (capture_is_set(CAPTURE_MAV_COBS)) {
+                char fname[20];
+                hal.util->snprintf(fname, sizeof(fname), "mavcobs%u.cap", i);
+                port->capture.start(fname);
+            } else {
+                port->capture.stop();
+            }
+        }
+    }
+#endif
+#endif // AP_NETWORKING_CAPTURE_ENABLED
     announce_address_changes();
 }
 

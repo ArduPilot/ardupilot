@@ -10,6 +10,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#if AP_NETWORKING_CAPTURE_ENABLED
+#include "AP_Networking_Capture.h"
+#endif
 
 /*
   Hub port that tunnels COBS ethernet frames over MAVLink TUNNEL messages.
@@ -90,6 +93,11 @@ public:
     
     // Check if registry is initialized
     static bool is_registry_initialized() { return _hub != nullptr; }
+    
+    // Access port by index (for capture management)
+    static AP_Networking_SwitchPort_MAVLink_COBS *get_port(uint8_t i) {
+        return (i < _num_ports) ? _ports[i] : nullptr;
+    }
 
 private:
     // Private constructor - use get_or_create_port()
@@ -99,6 +107,12 @@ private:
     
     bool init();
     
+#if AP_NETWORKING_CAPTURE_ENABLED
+public:
+    AP_Networking_Capture capture;
+private:
+#endif
+
     // Instance data
     mavlink_channel_t tx_chan;  // Channel to send responses on
     uint8_t target_sysid;

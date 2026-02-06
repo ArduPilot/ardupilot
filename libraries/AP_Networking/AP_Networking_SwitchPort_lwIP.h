@@ -7,6 +7,9 @@
 #include "AP_Networking_Switch.h"
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/utility/RingBuffer.h>
+#if AP_NETWORKING_CAPTURE_ENABLED
+#include "AP_Networking_Capture.h"
+#endif
 
 struct netif;
 class AP_Networking;
@@ -81,6 +84,12 @@ private:
     void process_inject_queue();
 
     static AP_Networking_SwitchPort_lwIP *singleton;
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+public:
+    AP_Networking_Capture capture;
+private:
+#endif
 
     uint32_t rx_count;
     uint32_t tx_count;

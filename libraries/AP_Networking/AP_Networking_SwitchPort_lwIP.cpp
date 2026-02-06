@@ -148,6 +148,9 @@ int8_t AP_Networking_SwitchPort_lwIP::low_level_output(struct netif *netif, stru
 #endif
 
     // Route through hub to other ports (Ethernet, COBS, etc.)
+#if AP_NETWORKING_CAPTURE_ENABLED
+    singleton->capture.capture_frame(singleton->tx_buf, ofs);
+#endif
     singleton->hub->route_frame(singleton, singleton->tx_buf, ofs);
     singleton->tx_count++;
 
@@ -234,6 +237,9 @@ void AP_Networking_SwitchPort_lwIP::process_inject_queue()
         inject_queue->read(rx_buf, len);
         avail -= (2 + len);
 
+#if AP_NETWORKING_CAPTURE_ENABLED
+        capture.capture_frame(rx_buf, len);
+#endif
         struct pbuf *p = pbuf_alloc(PBUF_RAW, len, PBUF_POOL);
         if (p != nullptr) {
             // Use pbuf_take to properly handle chained pbufs

@@ -76,7 +76,7 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
     /*
       capture outgoing data
      */
-    if (driver.backend->frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+    if (driver.backend->frontend.capture_is_set(AP_Networking::CAPTURE_PPP)) {
         driver.capture_data(ptr, len);
     }
 #endif
@@ -358,7 +358,7 @@ void AP_Networking_PPP::ppp_loop(void)
             hal.scheduler->delay_microseconds(200);
 
 #if AP_NETWORKING_CAPTURE_ENABLED
-            if (frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+            if (frontend.capture_is_set(AP_Networking::CAPTURE_PPP)) {
                 start_capture();
             } else {
                 stop_capture();
@@ -482,7 +482,7 @@ void AP_Networking_PPP::PPP_Instance::capture_hook(const struct pbuf *pb)
 void AP_Networking_PPP::capture_hook(const ppp_pcb *pcb, const struct pbuf *pb)
 {
     auto &frontend = AP::network();
-    if (!frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+    if (!frontend.capture_is_set(AP_Networking::CAPTURE_PPP)) {
         return;
     }
     AP_Networking_Backend *driver = frontend.backend;

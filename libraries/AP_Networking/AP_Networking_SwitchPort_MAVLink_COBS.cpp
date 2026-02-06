@@ -227,6 +227,9 @@ void AP_Networking_SwitchPort_MAVLink_COBS::deliver_frame(const uint8_t *frame, 
     if (frame == nullptr || len == 0 || len > MAX_FRAME) {
         return;
     }
+#if AP_NETWORKING_CAPTURE_ENABLED
+    capture.capture_frame(frame, len);
+#endif
     
     WITH_SEMAPHORE(tx_sem);
     
@@ -292,6 +295,9 @@ bool AP_Networking_SwitchPort_MAVLink_COBS::handle_decoded_frame(const uint8_t *
     case FrameType::DATA_SINGLE:
         // Deliver ethernet frame to hub
         rx_good++;
+#if AP_NETWORKING_CAPTURE_ENABLED
+        capture.capture_frame(payload, payload_len);
+#endif
         _hub->route_frame(this, payload, payload_len);
         rx_count++;
         return true;
@@ -300,6 +306,9 @@ bool AP_Networking_SwitchPort_MAVLink_COBS::handle_decoded_frame(const uint8_t *
         // MAVLink doesn't support bonded mode (no multi-link striping)
         // But we can still receive bonded frames - just ignore the sequence
         rx_good++;
+#if AP_NETWORKING_CAPTURE_ENABLED
+        capture.capture_frame(payload, payload_len);
+#endif
         _hub->route_frame(this, payload, payload_len);
         rx_count++;
         return true;

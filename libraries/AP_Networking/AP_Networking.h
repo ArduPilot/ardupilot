@@ -229,14 +229,24 @@ public:
 #endif
         PPP_TIMEOUT_DISABLE=(1U<<5),
         PPP_ECHO_LIMIT_DISABLE=(1U<<6),
-#if AP_NETWORKING_CAPTURE_ENABLED
-        CAPTURE_PACKETS=(1U<<7),
-#endif
 #if AP_NETWORKING_BACKEND_SWITCH
         DEBUG_MSGS=(1U<<8),
         DEBUG_SWITCH_PKT=(1U<<9),
 #endif
     };
+#if AP_NETWORKING_CAPTURE_ENABLED
+    enum CAPTURE_MASK {
+        CAPTURE_LWIP      = (1U<<0),
+        CAPTURE_ETHERNET  = (1U<<1),
+        CAPTURE_COBS      = (1U<<2),
+        CAPTURE_MAV_COBS  = (1U<<3),
+        CAPTURE_PPP       = (1U<<4),
+    };
+    bool capture_is_set(CAPTURE_MASK mask) const {
+        return (param.capture_mask.get() & int8_t(mask)) != 0;
+    }
+#endif
+
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
     }
@@ -269,6 +279,9 @@ private:
         AP_Int8 ipstack_enabled; // enable/disable IP stack (lwIP)
 #endif
         AP_Int32 options;
+#if AP_NETWORKING_CAPTURE_ENABLED
+        AP_Int8 capture_mask;
+#endif
 
 #if AP_NETWORKING_TESTS_ENABLED
         AP_Int32 tests;

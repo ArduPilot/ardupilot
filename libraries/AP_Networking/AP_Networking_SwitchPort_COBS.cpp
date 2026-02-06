@@ -481,6 +481,9 @@ void AP_Networking_SwitchPort_COBS::deliver_frame(const uint8_t *frame, size_t l
     if (num_members == 0) {
         return;
     }
+#if AP_NETWORKING_CAPTURE_ENABLED
+    capture.capture_frame(frame, len);
+#endif
     
     // Single member: use simple mode without sequence numbers (no overhead)
     // Multiple members: use sequenced mode for proper reordering at receiver
@@ -605,6 +608,9 @@ uint32_t AP_Networking_SwitchPort_COBS::get_keepalive_tx() const
 void AP_Networking_SwitchPort_COBS::route_rx_frame(const uint8_t *frame, size_t len)
 {
     // Single mode: route directly to hub
+#if AP_NETWORKING_CAPTURE_ENABLED
+    capture.capture_frame(frame, len);
+#endif
     hub->route_frame(this, frame, len);
 }
 
@@ -692,6 +698,9 @@ void AP_Networking_SwitchPort_COBS::deliver_reordered()
             break;
         }
         
+#if AP_NETWORKING_CAPTURE_ENABLED
+        capture.capture_frame(reorder_buffer[slot].frame, reorder_buffer[slot].len);
+#endif
         hub->route_frame(this, reorder_buffer[slot].frame, reorder_buffer[slot].len);
         reorder_buffer[slot].valid = false;
         rx_seq_expected++;

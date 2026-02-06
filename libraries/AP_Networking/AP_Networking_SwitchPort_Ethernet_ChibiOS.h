@@ -8,6 +8,9 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Common/AP_Common.h>
+#if AP_NETWORKING_CAPTURE_ENABLED
+#include "AP_Networking_Capture.h"
+#endif
 
 /*
   ChibiOS Ethernet MAC port for hub.
@@ -37,9 +40,7 @@ public:
     uint32_t get_tx_errors() const { return tx_errors; }
 
 #if AP_NETWORKING_CAPTURE_ENABLED
-    // Packet capture to pcap file
-    void start_capture();
-    void stop_capture();
+    AP_Networking_Capture capture;
 #endif
 
 private:
@@ -80,13 +81,6 @@ private:
     uint32_t rx_errors;
     uint32_t tx_errors;
 
-#if AP_NETWORKING_CAPTURE_ENABLED
-    void capture_frame(const uint8_t *frame, size_t len);
-    struct {
-        HAL_Semaphore sem;
-        int fd = -1;
-    } capture;
-#endif
 };
 
 #endif // AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
