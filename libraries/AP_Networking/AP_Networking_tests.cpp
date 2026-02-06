@@ -33,6 +33,16 @@ void AP_Networking::start_tests(void)
                                      "TCP_discard",
                                      8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
     }
+    if (param.tests & TEST_TCP_REFLECT) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_TCP_reflect, void),
+                                     "TCP_reflect",
+                                     8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
+    }
+    if (param.tests & TEST_CONNECTOR_LOOPBACK) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_connector_loopback, void),
+                                     "connector_loopback",
+                                     8192, AP_HAL::Scheduler::PRIORITY_IO, -1);
+    }
 }
 
 /*
@@ -43,7 +53,7 @@ void AP_Networking::test_UDP_client(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP_client: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(true);
+    auto *sock = NEW_NOTHROW SocketAPM(true);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP_client: failed to create socket");
         return;
@@ -75,7 +85,7 @@ void AP_Networking::test_TCP_client(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_client: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(false);
+    auto *sock = NEW_NOTHROW SocketAPM(false);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_client: failed to create socket");
         return;
@@ -107,7 +117,7 @@ void AP_Networking::test_TCP_discard(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(false);
+    auto *sock = NEW_NOTHROW SocketAPM(false);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_discard: failed to create socket");
         return;
@@ -148,7 +158,7 @@ void AP_Networking::test_TCP_reflect(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_reflect: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(false);
+    auto *sock = NEW_NOTHROW SocketAPM(false);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_reflect: failed to create socket");
         return;
@@ -201,7 +211,7 @@ void AP_Networking::test_connector_loopback(void)
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Connector Loopback: starting");
 
     // start tcp discard server
-    auto *listen_sock = new SocketAPM(false);
+    auto *listen_sock = NEW_NOTHROW SocketAPM(false);
     if (listen_sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "connector_loopback: failed to create socket");
         return;
@@ -223,7 +233,7 @@ void AP_Networking::test_connector_loopback(void)
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "connector_loopback: listening");
     // create discard client
-    auto *client = new SocketAPM(false);
+    auto *client = NEW_NOTHROW SocketAPM(false);
     if (client == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "connector_loopback: failed to create client");
         return;
