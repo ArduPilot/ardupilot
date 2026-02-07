@@ -1,4 +1,4 @@
-## PixPilot-V3 Flight Controller
+# PixPilot-V3 Flight Controller
 
 The PixPilot-V3 flight controller is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
@@ -47,8 +47,7 @@ The PixPilot-V3 flight controller is sold by a range of resellers listed at [Mak
 ![PixPilot-V3](PixPilot-V3.png "PixPilot-V3")
 ![PixPilot-V3](PixPilot-V3_Pinout.png "PixPilot-V3_Pinout")
 
-UART Mapping
-============
+## UART Mapping
 
 - SERIAL0 -> console (primary mavlink, usually USB)
 - SERIAL1 -> USART2  (telem1, DMA-enabled)
@@ -57,11 +56,9 @@ UART Mapping
 - SERIAL4 -> UART8   (GPS2, DMA-enabled)
 - SERIAL5 -> UART7   (USER)
 
-Connector pin assignments
-=========================
+## Connector pin assignments
 
-TELEM1, TELEM2 ports
---------------------
+### TELEM1, TELEM2 ports
 
    | Pin | Signal | Volt |
 | --- | --- | --- |
@@ -70,8 +67,7 @@ TELEM1, TELEM2 ports
 | 3 | RX (IN) | +3.3V |
 | 4 | GND | GND |
 
-I2C1, I2C2 ports
-----------------
+### I2C1, I2C2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -80,8 +76,7 @@ I2C1, I2C2 ports
 | 3 | SDA | +3.3V |
 | 4 | GND | GND |
 
-CAN1, CAN2 ports
-----------------
+### CAN1, CAN2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -90,8 +85,7 @@ CAN1, CAN2 ports
 | 3 | CAN_L | +12V |
 | 4 | GND | GND |
 
-Safety and buzzer port
-----------------------
+### Safety and buzzer port
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -102,8 +96,7 @@ Safety and buzzer port
 | 5 | 3V+ | +3.3V |
 | 6 | GND | GND |
 
-GPS1/I2C1, GPS2/I2C2 ports
---------------------------
+### GPS1/I2C1, GPS2/I2C2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -114,8 +107,7 @@ GPS1/I2C1, GPS2/I2C2 ports
 | 5 | SDA | +3.3V |
 | 6 | GND | GND |
 
-Serial5 port
-------------
+### Serial5 port
 
    | Pin | Signal | Volt |
 | --- | --- | --- |
@@ -124,8 +116,7 @@ Serial5 port
 | 3 | RX (IN) | +3.3V |
 | 4 | GND | GND |
 
-Power1, Power2 ports
---------------------
+### Power1, Power2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -136,13 +127,11 @@ Power1, Power2 ports
 | 5 | GND | GND |
 | 6 | GND | GND |
 
-RC Input
---------
+## RC Input
 
 All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
 
-PWM Output
-----------
+## PWM Output
 
 The PixPilot-V3 supports up to 14 PWM outputs. First first 8 outputs (labelled S1 to S8) are controlled by a dedicated STM32F103 IO controller. These 8
 outputs support all PWM output formats, but not DShot.
@@ -169,8 +158,7 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot.
 
-Battery Monitor Settings
-========================
+## Battery Monitor Settings
 
 These should already be set by default. However, if lost or changed:
 
@@ -196,13 +184,11 @@ Then reboot.
 
 :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` 24.0
 
-DroneCAN capability
-===================
+## DroneCAN capability
 
 There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected.
 
-Where to Buy
-============
+## Where to Buy
 
 `makeflyeasy <http://www.makeflyeasy.com>`_
 

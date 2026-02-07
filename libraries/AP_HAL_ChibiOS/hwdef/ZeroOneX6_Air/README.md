@@ -1,4 +1,4 @@
-## ZeroOneX6 Air/Air+ Flight Controller
+# ZeroOneX6 Air/Air+ Flight Controller
 
 The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, which is based on the open-source FMU v6C architecture and Pixhawk Autopilot Bus open source specifications.
 
@@ -158,8 +158,7 @@ The X6_Air flight controller has 2 analog inputs.
 - ADC Pin12 -> ADC 6.6V Sense
 - ADC Pin13 -> ADC 3.3V Sense
 
-Loading Firmware
-================
+## Loading Firmware
 
 The board comes pre-installed with an ArduPilot compatible bootloader,
 allowing the loading of xxxxxx.apj firmware files with any ArduPilot

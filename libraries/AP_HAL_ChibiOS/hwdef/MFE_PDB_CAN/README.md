@@ -1,5 +1,4 @@
-
-## MFE_PDB_CAN
+# MFE_PDB_CAN
 
 The MFE_PDB_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
@@ -19,11 +18,9 @@ The MFE_PDB_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://w
 
 ![MFE_PDB_CAN](MFE_PDB_CAN-1.png "MFE_PDB_CAN-1")
 
-Connector pin assignments
-=========================
+## Connector pin assignments
 
-power1 ports
----------------
+### power1 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -34,8 +31,7 @@ power1 ports
 | 5 | GND | GND |
 | 6 | GND | GND |
 
-power2 ports
----------------
+### power2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -46,30 +42,24 @@ power2 ports
 | 5 | GND | GND |
 | 6 | GND | GND |
 
-power3 pad
----------------
+### power3 pad
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
 | 1 | VCC | +5.3V |
 | 2 | GND | +GND |
 
-power4 pad
----------------
+### power4 pad
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
 | 1 | VCC | +12V |
 | 2 | GND | +GND |
 
-Connector pin assignments
-=========================
-
 BATT_VOLT_MULT  17.93387
 
 BATT_AMP_PERVLT 22.0
 
-Where to Buy
-============
+## Where to Buy
 
 [www.makeflyeasy.com](www.makeflyeasy.com)
