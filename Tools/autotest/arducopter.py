@@ -166,7 +166,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode("LAND")
         self.wait_landed_and_disarmed(timeout=timeout)
 
-    def wait_landed_and_disarmed(self, min_alt=6, timeout=60):
+    def wait_landed_and_disarmed(self, min_alt=0, timeout=60):
         """Wait to be landed and disarmed"""
         m = self.assert_receive_message('GLOBAL_POSITION_INT')
         alt = m.relative_alt / 1000.0 # mm -> m
