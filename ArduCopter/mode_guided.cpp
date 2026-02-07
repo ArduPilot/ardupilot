@@ -534,7 +534,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_D_m(-terrain_d_m);
+            pos_control->init_pos_terrain_D_m(terrain_d_m);
         }
     } else {
         pos_control->init_pos_terrain_D_m(0.0);
