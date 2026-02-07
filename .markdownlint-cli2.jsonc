@@ -10,7 +10,6 @@
     // Disable rules that are currently violated in the codebase
     // These can be re-enabled incrementally as files are fixed
     "MD001": false,  // Heading levels should only increment by one level at a time
-    "MD003": false,  // Heading style
     "MD012": false,  // Multiple consecutive blank lines
     "MD013": false,  // Line length
     "MD014": false,  // Dollar signs used before commands without showing output
