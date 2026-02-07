@@ -295,33 +295,39 @@ void Sub::failsafe_external_pressure_check() {
 
   uint32_t tnow = AP_HAL::millis();
   static uint32_t last_pressure_good_ms;
+  static uint32_t last_warn_pressure_good_ms;
+  const float current_pressure = baro.get_pressure(baro_idx);
 
-  // Check pressure (assuming higher pressure = deeper = bad)
-  if (baro.get_pressure(baro_idx) <= g.failsafe_pressure_ext_max) {
+  // Level 1: Warning
+  if (current_pressure <= g.failsafe_pressure_ext_wrn) {
+    last_warn_pressure_good_ms = tnow;
+  } else if (tnow > last_warn_pressure_good_ms + 2000) {
+    // Warn every 30 seconds
+    if (tnow > failsafe.last_ext_pressure_warn_ms + 30000) {
+      failsafe.last_ext_pressure_warn_ms = tnow;
+      gcs().send_text(MAV_SEVERITY_WARNING, "External pressure warning!");
+    }
+  }
+
+  // Level 2: Critical
+  if (current_pressure <= g.failsafe_pressure_ext_max) {
     last_pressure_good_ms = tnow;
-    failsafe.last_ext_pressure_warn_ms = tnow; // Reset warning timer
     failsafe.external_pressure = false;
-    return;
-  }
-
-  // 2 seconds with no readings below threshold triggers failsafe
-  if (tnow > last_pressure_good_ms + 2000) {
+  } else if (tnow > last_pressure_good_ms + 2000) {
     failsafe.external_pressure = true;
-  }
-
-  // Warn every 30 seconds
-  if (failsafe.external_pressure &&
-      tnow > failsafe.last_ext_pressure_warn_ms + 30000) {
-    failsafe.last_ext_pressure_warn_ms = tnow;
-    gcs().send_text(MAV_SEVERITY_WARNING, "External pressure critical!");
   }
 
   if (!failsafe.external_pressure) {
     return;
   }
 
-  // Do nothing if we are disarmed (unless we want to warn, which we already
-  // did)
+  // Log Level 2 every 30 seconds
+  if (tnow > failsafe.last_ext_pressure_critical_ms + 30000) {
+    failsafe.last_ext_pressure_critical_ms = tnow;
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "External pressure critical!");
+  }
+
+  // Do nothing if we are disarmed
   if (!motors.armed()) {
     return;
   }

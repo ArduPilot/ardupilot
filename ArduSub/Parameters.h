@@ -179,7 +179,8 @@ public:
     k_param_failsafe_pressure_ext, // external pressure failsafe behavior
     k_param_failsafe_pressure_ext_max, // maximum external pressure in pascal
                                        // before failsafe is triggered
-    k_param_failsafe_temperature,      // internal temperature failsafe behavior
+    k_param_failsafe_pressure_ext_wrn,
+    k_param_failsafe_temperature,     // internal temperature failsafe behavior
     k_param_failsafe_temperature_max, // maximum internal temperature in degrees
                                       // C before failsafe is triggered
     k_param_failsafe_terrain,         // terrain failsafe behavior
@@ -278,6 +279,7 @@ public:
   AP_Int32 failsafe_pressure_max;
   AP_Int8 failsafe_pressure_ext;
   AP_Int32 failsafe_pressure_ext_max;
+  AP_Int32 failsafe_pressure_ext_wrn;
   AP_Int8 failsafe_temperature_max;
   AP_Int8 failsafe_terrain;
   AP_Int8 failsafe_pilot_input; // pilot input failsafe behavior

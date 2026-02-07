@@ -139,6 +139,8 @@ enum LoggingParameters {
 #define FS_PRESS_EXT_SURFACE 2
 #define FS_PRESS_EXT_DEPTH_HOLD 3
 
+#define FS_PRESS_EXT_WARN_DEFAULT 250000 // Default warning threshold in Pa
+
 // Internal temperature failsafe threshold (FS_TEMP_MAX parameter)
 #define FS_TEMP_MAX_DEFAULT                                                    \
   62 // Maximum internal pressure in degrees C before failsafe is triggered

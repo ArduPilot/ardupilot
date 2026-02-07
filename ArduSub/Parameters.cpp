@@ -219,6 +219,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_pressure_ext_max, "FS_PRESS_EXT_MAX", 300000),
 
+    // @Param: FS_PRESS_EXT_WRN
+    // @DisplayName: External Pressure Failsafe Warning Threshold
+    // @Description: The external pressure allowed before triggering a warning.
+    // @Units: Pa
+    // @User: Standard
+    GSCALAR(failsafe_pressure_ext_wrn, "FS_PRESS_EXT_WRN",
+            FS_PRESS_EXT_WARN_DEFAULT),
+
     // @Param: SURFACE_MAX_THR
     // @DisplayName: Surface Maximum Throttle
     // @Description: Maximum throttle value when the vehicle is at the surface.

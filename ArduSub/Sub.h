@@ -225,8 +225,10 @@ private:
   // Failsafe
   struct {
     uint32_t last_leak_warn_ms; // last time a leak warning was sent to gcs
-    uint32_t last_ext_pressure_warn_ms; // last time an external pressure
-                                        // warning was sent to gcs
+    uint32_t last_ext_pressure_warn_ms;     // last time an external pressure
+                                            // warning was sent to gcs
+    uint32_t last_ext_pressure_critical_ms; // last time a critical pressure
+                                            // warning was sent to gcs
     uint32_t last_gcs_warn_ms;
     uint32_t
         last_pilot_input_ms; // last time we received pilot input in the form of
