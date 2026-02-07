@@ -1,5 +1,4 @@
-PRU PWM
-=======
+# PRU PWM
 
 ### Updating kernel
 
