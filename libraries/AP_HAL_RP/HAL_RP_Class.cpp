@@ -4,13 +4,14 @@
 #include <assert.h>
 
 #include "HAL_RP_Class.h"
+#include "LED.h"
 #include "AP_HAL_RP_Private.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 //#include <AP_Filesystem/AP_Filesystem_RP2350.h>
 
 using namespace RP;
 
-static UARTDriver serial0Driver(uart0, UART0_TX, UART0_RX, 0);
+static UARTDriver serial0Driver(uart0, UART0_TX, UART0_RX, 0, true);
 static UARTDriver serial1Driver(uart1, UART1_TX, UART1_RX, 1);
 
 #if defined(HAL_SERIAL2_DRIVER_ENABLED) && HAL_SERIAL2_DRIVER_ENABLED == 1
@@ -65,6 +66,10 @@ static NAND_PIO_Driver nandPioDriver;
 static WSPIDeviceManager wspiDeviceManager;
 #endif
 
+#if defined(AP_NOTIFY_GPIO_LED_1_ENABLED) && AP_NOTIFY_GPIO_LED_1_ENABLED == 1
+static LED greenLed;
+#endif
+
 HAL_RP::HAL_RP() :
     AP_HAL::HAL(
         &serial0Driver,
@@ -110,7 +115,8 @@ HAL_RP::HAL_RP() :
 #else
         nullptr,
 #endif
-        &serial1Driver, // console
+        //&serial1Driver, // console
+        &serial0Driver, // console
         &gpioDriver,
 #if defined(HAL_RCIN_DRIVER_ENABLED) && HAL_RCIN_DRIVER_ENABLED == 1
         &rcinDriver,
@@ -139,23 +145,22 @@ HAL_RP::HAL_RP() :
         nullptr)
 {}
 
+extern const AP_HAL::HAL& hal;
+
 void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
-    /* initialize all drivers and private members here.
-     * up to the programmer to do this in the correct order.
-     * Scheduler should likely come first. */
-    scheduler->init();
-    serial(1)->begin(115200);
+    //serial(1)->begin(115200);
+    serial(0)->begin(115200);
 #if defined(HAL_NAND_FLASH_ENABLED) && HAL_NAND_FLASH_ENABLED == 1
     this->get_nand_pio()->init(NAND_FLASH_IO_BASE, NAND_FLASH_SCLK, NAND_FLASH_CS);
 #endif
-
-    callbacks->setup();
-    scheduler->set_system_initialized();
-
-    for (;;) {
-        callbacks->loop();
-    }
+#if defined(AP_NOTIFY_GPIO_LED_1_ENABLED) && AP_NOTIFY_GPIO_LED_1_ENABLED == 1
+    this->get_led_driver()->init();
+#endif
+    RP::Scheduler * s = ((RP::Scheduler *)hal.scheduler);
+    s->set_callbacks(callbacks);
+    s->init();
+    s->start();
 }
 
 NAND_PIO_Driver* HAL_RP::get_nand_pio() const {
@@ -166,14 +171,21 @@ NAND_PIO_Driver* HAL_RP::get_nand_pio() const {
 #endif
 }
 
-static HAL_RP hal_rp;
+LED* HAL_RP::get_led_driver() const {
+#if defined(AP_NOTIFY_GPIO_LED_1_ENABLED) && AP_NOTIFY_GPIO_LED_1_ENABLED == 1
+    return &greenLed;
+#else
+    return nullptr;
+#endif
+}
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
+    static HAL_RP hal_rp;
     return hal_rp;
 }
 
 AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
-    return hal_rp;
+    return const_cast<AP_HAL::HAL&>(get_HAL());
 }
 
 void AP_HAL::init()

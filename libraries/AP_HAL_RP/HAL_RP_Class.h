@@ -10,4 +10,5 @@ public:
     void run(int argc, char* const* argv, Callbacks* callbacks) const override;
 
     RP::NAND_PIO_Driver* get_nand_pio() const;
+    RP::LED* get_led_driver() const;
 };

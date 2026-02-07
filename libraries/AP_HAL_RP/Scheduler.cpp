@@ -14,6 +14,8 @@ Scheduler::Scheduler() :
     _main_task_handle(nullptr),
     _timer_task_handle(nullptr),
     _io_task_handle(nullptr),
+    _uart_task_handle(nullptr),
+    _callbacks(nullptr),
     _initialized(false) 
 {
     // Initialize MemberProc arrays with zeros (nullptr)
@@ -51,6 +53,15 @@ void Scheduler::init() {
     }
     vTaskCoreAffinitySet(_timer_task_handle, CORE_0);
 
+    // Create the uart task on Core 0
+    if (xTaskCreate(_uart_task, "Ardu_UART", UART_SS, this, UART_PRIO, &_uart_task_handle) == pdPASS) {
+        DEV_PRINTF("OK created task _uart_task\n");
+    }
+    else {
+        DEV_PRINTF("FAILED to create task _uart_task\n");
+    }
+    vTaskCoreAffinitySet(_uart_task_handle, CORE_0);
+
     // Create an IO task on Core 1
     if (xTaskCreate(_io_task, "Ardu_IO", IO_SS, this, IO_PRIO, &_io_task_handle) == pdPASS) {
         DEV_PRINTF("OK created task _io_task\n");
@@ -68,15 +79,26 @@ void Scheduler::init() {
 }
 
 void Scheduler::_main_task(void *pvParameters) {
-    //Scheduler *sched = (Scheduler *)pvParameters;
+    Scheduler *sched = (Scheduler *)pvParameters;
+
+#ifdef SCHEDDEBUG
+    DEV_PRINTF("Free RAM: %u\n", (unsigned int)xPortGetFreeHeapSize());
+#endif
+
+#if defined(HAL_RCOUT_DRIVER_ENABLED) && HAL_RCOUT_DRIVER_ENABLED == 1
+    hal.rcout->init();
+#endif
     
     // Call the setup() method of your firmware/test
-    //extern void setup();
-    //setup();
+    sched->_callbacks->setup();
+    sched->set_system_initialized();
+
+#ifdef SCHEDDEBUG
+    DEV_PRINTF("%s:%d initialised\n", __PRETTY_FUNCTION__, __LINE__);
+#endif
 
     for (;;) {
-        //extern void loop();
-        //loop();
+        sched->_callbacks->loop();
         // Yield the processor if the loop completed too quickly
         taskYIELD();
     }
@@ -99,7 +121,7 @@ void Scheduler::_timer_task(void *pvParameters) {
         }
 
         // Typically 1kHz or as configured in ArduPilot
-        vTaskDelay(pdMS_TO_TICKS(1));
+        sched->delay(1);
     }
 }
 
@@ -111,9 +133,28 @@ void Scheduler::_io_task(void *pvParameters) {
                 sched->_io_proc[i]();
             }
         }
-        
         // IO processes can run less frequently, e.g. 100 Hz
-        vTaskDelay(pdMS_TO_TICKS(10));
+        sched->delay(10);
+    }
+}
+
+void Scheduler::_uart_task(void *pvParameters) {
+    Scheduler *sched = (Scheduler *)pvParameters;
+
+    while (!sched->_initialized) {
+        sched->delay(10);
+    }
+
+    while (true) {
+        for (uint8_t i = 0; i < hal.num_serial; i++) {
+            if (hal.serial(i)) {
+                hal.serial(i)->_timer_tick();
+            }
+        }
+        if (hal.console) {
+            hal.console->_timer_tick();
+        }
+        sched->delay(1);
     }
 }
 
@@ -166,4 +207,9 @@ void Scheduler::register_io_process(AP_HAL::MemberProc proc) {
 void Scheduler::register_timer_failsafe(AP_HAL::Proc proc, uint32_t period_us) {
     // period_us is usually ignored because failsafe is called together with timers
     _failsafe_proc = proc;
+}
+
+void Scheduler::start() {
+    vTaskStartScheduler();
+    while(1);
 }

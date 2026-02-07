@@ -25,4 +25,5 @@ namespace RP {
     class Semaphore;
     class BinarySemaphore;
     class NAND_PIO_Driver;
+    class LED;
 }

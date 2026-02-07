@@ -27,11 +27,15 @@ public:
 
     bool     in_main_thread() const override;
 
+    void     set_callbacks(AP_HAL::HAL::Callbacks *cb) { _callbacks = cb; }
+
+    void     start();
+
     // Priorities (the higher the number, the higher the priority)
     static const int MAX_PRIO     = configMAX_PRIORITIES - 1;
-    static const int MAIN_PRIO    = MAX_PRIO - 1;   // Main loop (Core 0)
+    static const int MAIN_PRIO    = MAX_PRIO - 2;   // Main loop (Core 0)
     static const int TIMER_PRIO   = MAX_PRIO;       // Timers (must be higher than MAIN for accuracy)
-    static const int UART_PRIO    = MAX_PRIO - 2;   // UART (fast output, but below the timer)
+    static const int UART_PRIO    = MAX_PRIO - 1;   // UART (fast output, but below the timer)
     static const int SPI_PRIORITY = MAX_PRIO - 3;   // Fast sensors (IMU)
     static const int RCOUT_PRIO   = MAX_PRIO - 15;  // PWM output
     static const int RCIN_PRIO    = MAX_PRIO - 15;  // Signal input
@@ -54,6 +58,7 @@ private:
     static void _main_task(void *pvParameters);
     static void _timer_task(void *pvParameters);
     static void _io_task(void *pvParameters);
+    static void _uart_task(void *pvParameters);
 
     AP_HAL::MemberProc _timer_proc[RP2350_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;
@@ -66,6 +71,9 @@ private:
     TaskHandle_t _main_task_handle;
     TaskHandle_t _timer_task_handle;
     TaskHandle_t _io_task_handle;
+    TaskHandle_t _uart_task_handle;
+
+    AP_HAL::HAL::Callbacks *_callbacks;
 
     std::atomic<bool> _initialized;
 };

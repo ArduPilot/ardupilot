@@ -75,6 +75,7 @@ add_library(AP_HAL_RP STATIC
     ${HAL_SRC}/system.cpp
     ${HAL_SRC}/Util.cpp
     ${HAL_SRC}/HAL_RP_Class.cpp
+    ${HAL_SRC}/LED.cpp
 )
 
 target_include_directories(AP_HAL_RP PUBLIC
