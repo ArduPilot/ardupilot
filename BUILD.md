@@ -22,7 +22,7 @@ Do not run `waf` with `sudo`!  This leads to permission and environment problems
 There are several commands in the build system for advanced usage, but here we
 list some basic and more used commands as example.
 
-* **Build ArduCopter**
+- **Build ArduCopter**
 
     Below shows how to build ArduCopter for the Pixhawk2/Cube. Many other boards are
     supported and the next section shows how to get a full list of them.
@@ -51,7 +51,7 @@ list some basic and more used commands as example.
 
     The "arducopter" binary should appear in the `build/<board-name>/bin` directory.
 
-* **List available boards**
+- **List available boards**
 
     It's possible to get a list of supported boards on ArduPilot with the command
     below
@@ -77,7 +77,7 @@ list some basic and more used commands as example.
 
     ```
 
-* **List of available vehicle types**
+- **List of available vehicle types**
 
     Here is a list of the most common vehicle build targets:
 
@@ -92,7 +92,7 @@ list some basic and more used commands as example.
 
     ```
 
-* **Clean the build**
+- **Clean the build**
 
     Commands `clean` and `distclean` can be used to clean the objects produced by
     the build. The first keeps the `configure` information, cleaning only the
@@ -108,7 +108,7 @@ list some basic and more used commands as example.
 
     In some some cases `submodule_force_clean` may be necessary. This removes all submodules and then performs a `submodulesync`. (Note whitelisted modules like esp_idf is not removed.)
 
-* **Upload or install**
+- **Upload or install**
 
     Build commands have a `--upload` option in order to upload the binary built
     to a connected board. This option is supported by Pixhawk and Linux-based boards.
@@ -146,7 +146,7 @@ list some basic and more used commands as example.
     DESTDIR=/my/temporary/location ./waf install
     ```
 
-* **Use different targets**
+- **Use different targets**
 
     The build commands in the items above use `copter` as argument. This
     builds all binaries that fall under the "copter" group. See the
@@ -169,7 +169,7 @@ list some basic and more used commands as example.
     ./waf --targets tests/test_math
     ```
 
-* **Use clang instead of gcc**
+- **Use clang instead of gcc**
 
     Currently, gcc is the default on linux, and clang is used for MacOS.
     Building with clang on linux can be accomplished by setting the CXX
@@ -181,7 +181,7 @@ list some basic and more used commands as example.
 
     Note: Your clang binary names may differ.
 
-* **Other options**
+- **Other options**
 
     It's possible to see all available commands and options:
 
