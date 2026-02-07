@@ -9,27 +9,27 @@ above image and some content courtesy of SDMODEL
 ## Specifications¶
 
 - Processor
-    - STM32H743 32-bit processor
-    - AT7456E OSD
-    - 128 MByte flash for logging
+  - STM32H743 32-bit processor
+  - AT7456E OSD
+  - 128 MByte flash for logging
 
 - Sensors
-    - BMI270 IMU (accel and gyro only, no compass)
-    - BMP280 barometer
+  - BMI270 IMU (accel and gyro only, no compass)
+  - BMP280 barometer
 
 - Power
-    - 2S - 8S Lipo input voltage with voltage monitoring
-    - 9V, 1.5A BEC for powering Video Transmitter
+  - 2S - 8S Lipo input voltage with voltage monitoring
+  - 9V, 1.5A BEC for powering Video Transmitter
 
 - Interfaces
-    - 9x PWM outputs (9th pwm output is for NeoPixel LED string via the LED pad)
-    - 1x RC input
-    - 6x UARTs/serial for GPS and other peripherals
-    - 1x I2C port for external compass
-    - USB-C port
-    - Switchable VTX power
-    - All UARTS support hardware inversion. SBUS, SmartPort, and other inverted protocols work on any UART without "uninvert hack"
-    - External current monitor input
+  - 9x PWM outputs (9th pwm output is for NeoPixel LED string via the LED pad)
+  - 1x RC input
+  - 6x UARTs/serial for GPS and other peripherals
+  - 1x I2C port for external compass
+  - USB-C port
+  - Switchable VTX power
+  - All UARTS support hardware inversion. SBUS, SmartPort, and other inverted protocols work on any UART without "uninvert hack"
+  - External current monitor input
 
 ## Pinout
 

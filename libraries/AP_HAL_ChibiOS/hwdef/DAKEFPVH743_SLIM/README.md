@@ -4,17 +4,17 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 
 ## Features
 
- - MCU - STM32H743 32-bit processor running at 480 MHz
- - IMU - Dual ICM42688
- - Barometer - SPL06
- - OSD - AT7456E
- - 8x UARTs
- - 1x CAN port
- - 13x PWM Outputs (12 Motor Output, 1 LED)
- - Battery input voltage: 4S-12S
- - BEC 3.3V 0.5A
- - BEC 5V 3A
- - Dual switchable camera inputs
+- MCU - STM32H743 32-bit processor running at 480 MHz
+- IMU - Dual ICM42688
+- Barometer - SPL06
+- OSD - AT7456E
+- 8x UARTs
+- 1x CAN port
+- 13x PWM Outputs (12 Motor Output, 1 LED)
+- Battery input voltage: 4S-12S
+- BEC 3.3V 0.5A
+- BEC 5V 3A
+- Dual switchable camera inputs
 
 ## Pinout
 
@@ -34,15 +34,15 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 The UARTs are marked Rxn and Txn in the above pinouts. The Rxn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (GPS) DMA capable
- - SERIAL2 -> UART2 (MAVLink2)
- - SERIAL3 -> UART3 (ESC Telemetry)
- - SERIAL4 -> UART4 (DisplayPort) DMA capable
- - SERIAL5 -> UART5 (RCin) RX DMA capable
- - SERIAL6 -> UART6 (User) DMA capable
- - SERIAL7 -> UART7 (User) DMA Capable
- - SERIAL8 -> UART8 (USER)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (GPS) DMA capable
+- SERIAL2 -> UART2 (MAVLink2)
+- SERIAL3 -> UART3 (ESC Telemetry)
+- SERIAL4 -> UART4 (DisplayPort) DMA capable
+- SERIAL5 -> UART5 (RCin) RX DMA capable
+- SERIAL6 -> UART6 (User) DMA capable
+- SERIAL7 -> UART7 (User) DMA Capable
+- SERIAL8 -> UART8 (USER)
 
 ## RC Input
 
@@ -59,8 +59,8 @@ If the user wishes to use the SBUS from a DJI air unit for RC control, it is sug
 FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART2 transmit).
 You need to set the following parameters to enable support for FrSky S.PORT:
 
-  - :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` 10
-  - :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` 7
+- :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` 10
+- :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` 7
 
 ## PWM Output
 
@@ -68,11 +68,11 @@ The DAKEFPV H743 SLIM supports up to 14 outputs. Motor outputs M1 to M8 are avai
 
 The PWM is in 5 groups:
 
- - PWM 1-4     in group1
- - PWM 5-8     in group2
- - PWM 9-12    in group3 (marked as S1-4)
- - PWM 13      in group4 (Marked OSD)
- - PWM 14(LED) in group5 (set as Serial LED output function by default)
+- PWM 1-4     in group1
+- PWM 5-8     in group2
+- PWM 9-12    in group3 (marked as S1-4)
+- PWM 13      in group4 (Marked OSD)
+- PWM 14(LED) in group5 (set as Serial LED output function by default)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -85,15 +85,15 @@ sensor can read up to 130 Amps. The voltage sensor can handle up to 12S LiPo bat
 
 The correct battery setting parameters are:
 
- - :ref:`BATT_MONITOR<BATT_MONITOR>` 4
- - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 11
- - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 10
- - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 16.0
- - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 83.3
+- :ref:`BATT_MONITOR<BATT_MONITOR>` 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 11
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 10
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 16.0
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 83.3
 
 ## RSSI
 
- - ADC Pin 8 -> Analog RSSI voltage monitoring. Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` = 8. For RSSI embedded in digital RC protocols like CRSF, set :ref:`RSSI_TYPE<RSSI_TYPE>` = 3
+- ADC Pin 8 -> Analog RSSI voltage monitoring. Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` = 8. For RSSI embedded in digital RC protocols like CRSF, set :ref:`RSSI_TYPE<RSSI_TYPE>` = 3
 
 ## Compass
 

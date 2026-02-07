@@ -7,31 +7,31 @@ The AEROFOX-H7 is a flight controller produced by [AEROFOX](http://aerofox.cn)
 ## Features
 
 - Processor
-    - STM32H743
+  - STM32H743
 
 - Sensors
-    - ADIS16470 (appears in the advanced version)
-    - ICM45686 (appears in the advanced version)
-    - ICM42688
-    - QMC5883L
-    - SPL06-001
+  - ADIS16470 (appears in the advanced version)
+  - ICM45686 (appears in the advanced version)
+  - ICM42688
+  - QMC5883L
+  - SPL06-001
 
 - Power
-    - 2S-12S (MAX60V) Lipo input voltage
-    - 5V BEC for system power supply( 5V peripheral current limit 1.2A)
-    - 5V/12V BEC for VTX( Current limit 2.5A, need strong heat dissipation)
-    - Dual power automatic switching and condition monitoring
+  - 2S-12S (MAX60V) Lipo input voltage
+  - 5V BEC for system power supply( 5V peripheral current limit 1.2A)
+  - 5V/12V BEC for VTX( Current limit 2.5A, need strong heat dissipation)
+  - Dual power automatic switching and condition monitoring
 
 - Interfaces
-    - 16x PWM output
-    - 7x UARTs for RC, TELEM, GPS and other peripherals
-    - 2x I2C ports for external compass, airspeed, baro
-    - 2x CAN port
-    - 4x Relay output
-    - 4x ADC input
+  - 16x PWM output
+  - 7x UARTs for RC, TELEM, GPS and other peripherals
+  - 2x I2C ports for external compass, airspeed, baro
+  - 2x CAN port
+  - 4x Relay output
+  - 4x ADC input
 
-    FPC connector
-    - The connector includes an SPI, an I2C, an PWM IMU heating control pin.
+  FPC connector
+  - The connector includes an SPI, an I2C, an PWM IMU heating control pin.
 
 ## Pinout
 

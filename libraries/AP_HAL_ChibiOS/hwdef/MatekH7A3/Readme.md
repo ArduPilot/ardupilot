@@ -5,29 +5,29 @@
 ## Features
 
 - Processor
-    - STM32H7A3RIT6 Cortex-M7 280 MHz, 2MB flash
+  - STM32H7A3RIT6 Cortex-M7 280 MHz, 2MB flash
 - Sensors
-    - ICM-42688p Acc/Gyro
-    - SPL06-001 barometer
-    - AT7456E OSD
-    - W25N01GV dataflash
+  - ICM-42688p Acc/Gyro
+  - SPL06-001 barometer
+  - AT7456E OSD
+  - W25N01GV dataflash
 - Power
-    - 2S - 6S Lipo input voltage with voltage monitoring
-    - 9V, 2A BEC for powering Video Transmitter and camera controlled by GPIO
-    - 5V, 2A BEC for internal and peripherals
+  - 2S - 6S Lipo input voltage with voltage monitoring
+  - 9V, 2A BEC for powering Video Transmitter and camera controlled by GPIO
+  - 5V, 2A BEC for internal and peripherals
 - Interfaces
-    - 11x PWM outputs DShot capable
-    - 6x UARTs
-    - 1x CAN
-    - 1x I2C
-    - 4x ADC
-    - 128MB NAND for logging
-    - USB-C port
+  - 11x PWM outputs DShot capable
+  - 6x UARTs
+  - 1x CAN
+  - 1x I2C
+  - 4x ADC
+  - 128MB NAND for logging
+  - USB-C port
 - LED
-    - Red, 3.3V power indicator
-    - Blue and Green, FC status
+  - Red, 3.3V power indicator
+  - Blue and Green, FC status
 - Size
-    - 36 x 36mm PCB with 30.5mm M3 mounting
+  - 36 x 36mm PCB with 30.5mm M3 mounting
 
 ## Overview
 

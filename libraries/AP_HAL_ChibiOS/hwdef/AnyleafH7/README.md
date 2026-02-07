@@ -5,27 +5,27 @@ The Mercury H7 is a flight controller produced by [AnyLeaf](http://www.anyleaf.o
 ## Features
 
 - Processor
-    - STM32H743 32-bit processor
+  - STM32H743 32-bit processor
 - Sensors
-    - ICM42688 Acc/Gyro with dedicated 32.768kHz crystal
-    - DPS310 barometer
+  - ICM42688 Acc/Gyro with dedicated 32.768kHz crystal
+  - DPS310 barometer
 - Power
-    - 2S - 6S Lipo input voltage with voltage monitoring
-    - 9V, 3A supply for powering video transmitters
-    - 5V, 2A supply for powering servos and electronics
-    - 3.3V, 500mA supply for powering electronics
+  - 2S - 6S Lipo input voltage with voltage monitoring
+  - 9V, 3A supply for powering video transmitters
+  - 5V, 2A supply for powering servos and electronics
+  - 3.3V, 500mA supply for powering electronics
 - Interfaces
-    - 8x Bidirectional-DSHOT, or PWM-capable motor outputs
-    - 1x CAN-FD port for external peripherals
-    - 1x DJI-format Vtx connector
-    - 4x UARTs/serial for external peripherals, 3 of which are available by default
-    - 1x I2C bus for external peripherals
-    - USB-C port
-    - All UARTs support hardware inversion
-    - Onboard ExpressLRS radio transceiver for control and/or telemetry data.
+  - 8x Bidirectional-DSHOT, or PWM-capable motor outputs
+  - 1x CAN-FD port for external peripherals
+  - 1x DJI-format Vtx connector
+  - 4x UARTs/serial for external peripherals, 3 of which are available by default
+  - 1x I2C bus for external peripherals
+  - USB-C port
+  - All UARTs support hardware inversion
+  - Onboard ExpressLRS radio transceiver for control and/or telemetry data.
 - Dimensions
-    - Size: 37.5 x 37.5mm
-    - Weight: 8g
+  - Size: 37.5 x 37.5mm
+  - Weight: 8g
 
 ## Pinout
 

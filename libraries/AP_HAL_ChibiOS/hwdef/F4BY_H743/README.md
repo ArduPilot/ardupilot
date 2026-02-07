@@ -17,32 +17,30 @@ The instructions, schematic, 3D model  are available `here https://f4by.com/en/?
 Specifications
 ==============
 
-    - Processor
-
-    - - STM32H743 32-bit processor, 480Mhz
-    - - 2MB Flash
-    - - 1MB RAM
-
+- Processor
+  - STM32H743 32-bit processor, 480Mhz
+  - 2MB Flash
+  - 1MB RAM
 - Sensors
-    - - ICM-42688-P IMU (F4BY_H743 v3.0.3)
-    - - IIM-42652   IMU (F4BY_H743 v3.0.2)
-    - - MPU6000     IMU (F4BY_H743 v3.0.1)
-    - - MS5611 Barometer
-    - - QMC5883P Compass
+  - ICM-42688-P IMU (F4BY_H743 v3.0.3)
+  - IIM-42652   IMU (F4BY_H743 v3.0.2)
+  - MPU6000     IMU (F4BY_H743 v3.0.1)
+  - MS5611 Barometer
+  - QMC5883P Compass
 - Power
-    - - Power from external power module (range +5.0 ... +6.0V)
-    - - Anslog current and voltage analog inputs (range 0 ... +6,6V)
+  - Power from external power module (range +5.0 ... +6.0V)
+  - Anslog current and voltage analog inputs (range 0 ... +6,6V)
 - Interfaces
-    - - 16x PWM outputs DShot capable (include 4x BDShot)
-    - - 1x RC input
-    - - 5x UARTs/serial for GPS, bi-directional RC and other peripherals)
-    - - 1x I2C port for external compass, airspeed, etc.
-    - - 1x CAN bus
-    - - Buzzer output
-    - - micro SD Card for logging, Lua scripts etc.
-    - - USB type-C port
-    - - USB GHS type port for external connector.
-    - - DFU bootloader button
+  - 16x PWM outputs DShot capable (include 4x BDShot)
+  - 1x RC input
+  - 5x UARTs/serial for GPS, bi-directional RC and other peripherals)
+  - 1x I2C port for external compass, airspeed, etc.
+  - 1x CAN bus
+  - Buzzer output
+  - micro SD Card for logging, Lua scripts etc.
+  - USB type-C port
+  - USB GHS type port for external connector.
+  - DFU bootloader button
 
 Analog sensors
 ==============

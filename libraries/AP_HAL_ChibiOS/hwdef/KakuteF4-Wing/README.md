@@ -5,22 +5,22 @@ The KakuteF4-Wing is a flight controller produced by [Holybro](http://www.holybr
 ## Features
 
 - Processor
-    - STM32F405 32-bit processor
-    - AT7456E OSD
+  - STM32F405 32-bit processor
+  - AT7456E OSD
 - Sensors
-    - ICM42688 Acc/Gyro
-    - SLP06 barometer
+  - ICM42688 Acc/Gyro
+  - SLP06 barometer
 - Power
-    - 2S - 8S Lipo input voltage with voltage monitoring
-    - 9V/12V, 1.5A BEC for powering Video Transmitter
-    - 6V/7.2V, ?A BEC for servos
-    - 3.3V, 1A BEC
+  - 2S - 8S Lipo input voltage with voltage monitoring
+  - 9V/12V, 1.5A BEC for powering Video Transmitter
+  - 6V/7.2V, ?A BEC for servos
+  - 3.3V, 1A BEC
 - Interfaces
-    - 7x PWM outputs DShot capable, 4 outputs BiDirDShot capable
-    - 1x RC input
-    - 5x UARTs/serial for GPS and other peripherals
-    - 1x I2C ports for external compass, airspeed, etc.
-    - USB-C port
+  - 7x PWM outputs DShot capable, 4 outputs BiDirDShot capable
+  - 1x RC input
+  - 5x UARTs/serial for GPS and other peripherals
+  - 1x I2C ports for external compass, airspeed, etc.
+  - USB-C port
 
 ## Pinout
 
