@@ -656,6 +656,10 @@ void NavEKF3_core::FuseDragForces()
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
+
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
     }
 
     // record time of successful fusion
