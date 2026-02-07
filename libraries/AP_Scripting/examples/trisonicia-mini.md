@@ -129,5 +129,5 @@ graph W3D.U W3D.W W3D.V ARSP.Airspeed
 
 ## Future Improvements
 
-* Use the wind data as input to the EKF for wind speed
-* Use the Trisonica API to have ArduPilot configure the correct data outputs and rates
+- Use the wind data as input to the EKF for wind speed
+- Use the Trisonica API to have ArduPilot configure the correct data outputs and rates
