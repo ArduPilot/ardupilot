@@ -15,12 +15,14 @@ extern "C" {
     void uart1_irq_handler() { if (uart_drivers[1]) uart_drivers[1]->handle_irq(); }
 }
 
-UARTDriver::UARTDriver(uart_inst_t *uart_hw, uint8_t tx_pin, uint8_t rx_pin, uint8_t instance) :
+UARTDriver::UARTDriver(uart_inst_t *uart_hw, uint8_t tx_pin, uint8_t rx_pin, uint8_t instance, bool console) :
     _uart(uart_hw),
     _tx_pin(tx_pin),
     _rx_pin(rx_pin),
     _instance(instance),
-    _initialized(false), 
+    _initialized(false),
+    _console(console),
+    _receive_errors(0),
     _readbuf{UART_RX_BUFFER_SIZE},
     _writebuf{UART_TX_BUFFER_SIZE},
     _write_mutex{}
@@ -61,19 +63,50 @@ void UARTDriver::_end() {
 }
 
 void UARTDriver::handle_irq() {
+    uint32_t dropped = 0;
     // Read everything in the hardware FIFO into the ArduPilot buffer
     while (uart_is_readable(_uart)) {
         uint8_t ch = uart_getc(_uart);
         if (!_readbuf.write(&ch, 1)) {
             // overflow: dropped bytes
+            dropped++;
         }
+    }
+    if (dropped > 0) {
+        _receive_errors += dropped;
     }
 }
 
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size) {
-    if (!_initialized) return 0;
-    WITH_SEMAPHORE(_write_mutex);
-    return _writebuf.write(buffer, size);
+    if (!_initialized || size == 0) return 0;
+
+    _write_mutex.take_blocking();
+
+    for (size_t i = 0; i < size; i++) {
+        uint8_t required_space = (is_console() && buffer[i] == '\n') ? 2 : 1;
+
+        while (_writebuf.space() < required_space) {
+            if (!hal.scheduler->is_system_initialized()) {
+                _flush_tx_to_hardware();
+            } else {
+                _write_mutex.give();
+                hal.scheduler->delay(1);
+                _write_mutex.take_blocking();
+            }
+        }
+        if (is_console() && buffer[i] == '\n') {
+            uint8_t cr = '\r';
+            _writebuf.write(&cr, 1);
+        }
+        _writebuf.write(&buffer[i], 1);
+    }
+
+    if (!hal.scheduler->is_system_initialized()) {
+        _flush_tx_to_hardware();
+    }
+
+    _write_mutex.give();
+    return size;
 }
 
 ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count) {
@@ -89,17 +122,22 @@ bool UARTDriver::tx_pending() {
     return (_writebuf.available() > 0) || (uart_get_hw(_uart)->fr & UART_UARTFR_BUSY_BITS);
 }
 
+void UARTDriver::_flush_tx_to_hardware() {
+    uint16_t n = _writebuf.available();
+    while (n > 0 && uart_is_writable(_uart)) {
+        uint8_t c;
+        if (_writebuf.read(&c, 1)) {
+            uart_putc_raw(_uart, c);
+        }
+        n--;
+    }
+}
+
 void UARTDriver::_timer_tick() {
     if (!_initialized) return;
-
-    // Push data from the software buffer into the hardware FIFO
-    WITH_SEMAPHORE(_write_mutex);
-    while (uart_is_writable(_uart) && _writebuf.available() > 0) {
-        uint8_t ch;
-        if (_writebuf.read(&ch, 1)) {
-            uart_putc(_uart, ch);
-        }
-    }
+    _write_mutex.take_blocking();
+    _flush_tx_to_hardware();
+    _write_mutex.give();
 }
 
 void UARTDriver::_flush() {
@@ -199,4 +237,13 @@ void UARTDriver::vprintf(const char *fmt, va_list ap) {
         // Call your internal write method
         _write((const uint8_t *)buffer, len);
     }
+}
+
+size_t UARTDriver::write(uint8_t c) {
+    if (!_initialized) return 0;
+    return _writebuf.write(&c, 1);
+}
+
+size_t UARTDriver::write(const uint8_t *buffer, size_t size) {
+    return _write(buffer, size);
 }

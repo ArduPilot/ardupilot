@@ -5,7 +5,7 @@
 
 class RP::RCOutput : public AP_HAL::RCOutput {
 public:
-    RCOutput() : _periods{0}, _bit_buffer{0}, _dma_chan{-1}, _pio{PIO_PWM_MULTI}, _sm{0}, _pio_offset{0},
+    RCOutput() : _periods{0}, _bit_buffer{0}, _dma_chan{-1}, _dma_timer{-1}, _pio{PIO_PWM_MULTI}, _sm{0}, _pio_offset{0},
     _current_freq{50}, _pwm_steps{PWM_RESOLUTION}, _enabled_mask{0}, _need_update{false}
     {}
     void     init() override;
@@ -27,6 +27,7 @@ private:
     uint32_t _bit_buffer[PWM_RESOLUTION];
     
     int _dma_chan;
+    int _dma_timer;
     PIO _pio;
     uint _sm;
     uint _pio_offset;

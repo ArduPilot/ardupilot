@@ -43,33 +43,22 @@ void RCOutput::init() {
     pio_sm_init(_pio, _sm, _pio_offset, &c);
     pio_sm_set_enabled(_pio, _sm, true);
 
-    // DMA settings (Double Buffering is not needed if the update is fast)
     _dma_chan = dma_claim_unused_channel(true);
-    dma_channel_config dma_cfg = dma_channel_get_default_config(_dma_chan);
-    
-    channel_config_set_transfer_data_size(&dma_cfg, DMA_SIZE_32);
-    channel_config_set_read_increment(&dma_cfg, true);
-    channel_config_set_write_increment(&dma_cfg, false);
-    
-    // DMA synchronization with PIO rate (DREQ)
-    channel_config_set_dreq(&dma_cfg, pio_get_dreq(_pio, _sm, true));
+    _dma_timer = dma_claim_unused_channel(true);
 
-    // Setting up a ring buffer or restart
-    // For ArduPilot simplicity: DMA just chains the _bit_buffer
-    int dma_timer = dma_claim_unused_channel(true);
-    dma_channel_config timer_cfg = dma_channel_get_default_config(dma_timer);
-    channel_config_set_chain_to(&timer_cfg, _dma_chan); // Restarts the main channel
+    dma_channel_config dma_cfg = dma_channel_get_default_config(_dma_chan);
+    channel_config_set_chain_to(&dma_cfg, _dma_timer);
+
+    update_bit_buffer();
 
     dma_channel_configure(
         _dma_chan, &dma_cfg,
-        &_pio->txf[_sm], // Where: in FIFO PIO
-        _bit_buffer,     // From: our buffer
-        _pwm_steps,      // How much: the entire period
-        true             // Launch immediately
+        &_pio->txf[_sm],
+        _bit_buffer,
+        _pwm_steps,
+        false
     );
-
-    // Initial buffer formation
-    update_bit_buffer();
+    dma_channel_start(_dma_chan);
 }
 
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) {
@@ -141,6 +130,9 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 
 void RCOutput::update_bit_buffer() {
     if (!_need_update) return;
+    if (_dma_chan == (int)0xFFFFFFFF || _dma_chan > 15) {
+        return;
+    }
     // We go through each time step (tick) of our period
     for (uint16_t t = 0; t < _pwm_steps; t++) {
         uint32_t mask = 0;

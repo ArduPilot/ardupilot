@@ -9,7 +9,7 @@
 
 class RP::UARTDriver : public AP_HAL::UARTDriver {
 public:
-    UARTDriver(uart_inst_t *uart_hw, uint8_t tx_pin, uint8_t rx_pin, uint8_t instance);
+    UARTDriver(uart_inst_t *uart_hw, uint8_t tx_pin, uint8_t rx_pin, uint8_t instance, bool console = false);
 
     bool is_initialized() override { return _initialized; }
     bool tx_pending() override;
@@ -28,16 +28,32 @@ public:
 
     uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
+    size_t write(uint8_t c) override;
+
+    size_t write(const uint8_t *buffer, size_t size) override;
+
+    bool is_console() const { return _console; }
+
+    void _timer_tick() override;
+
+    uint32_t receive_errors() const {
+        return _receive_errors;
+    }
+
 private:
     uart_inst_t *_uart;
     uint8_t _tx_pin, _rx_pin, _instance;
     uint32_t _baudrate;
     bool _initialized;
+    bool _console;
+    uint32_t _receive_errors;
     
     ByteBuffer _readbuf;
     ByteBuffer _writebuf;
 
-    HAL_Semaphore _write_mutex;    
+    HAL_Semaphore _write_mutex;
+
+    void _flush_tx_to_hardware();
 
 protected:
     void _begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace) override;
@@ -49,6 +65,4 @@ protected:
 
     uint32_t _available() override;
     bool _discard_input(void) override;
-
-    void _timer_tick() override;
 };
