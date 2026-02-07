@@ -133,9 +133,9 @@ Setting GPIO 81 **low** disables voltage to the pins.
 
 Example (using Channel 10 to toggle VTX BEC using Relay 2, as an example):
 
-* :ref:`RELAY2_FUNCTION<RELAY2_FUNCTION>` = 1 (already set as default)
-* :ref:`RELAY2_PIN<RELAY2_PIN>` = 81  (already set as default)
-* :ref:`RC10_OPTION<RC10_OPTION>` = 34  ; Relay2 Control
+- :ref:`RELAY2_FUNCTION<RELAY2_FUNCTION>` = 1 (already set as default)
+- :ref:`RELAY2_PIN<RELAY2_PIN>` = 81  (already set as default)
+- :ref:`RC10_OPTION<RC10_OPTION>` = 34  ; Relay2 Control
 
 > ⚠️ **Warning:** GPIO81 controls the 10V DC-DC converter (HIGH = on, LOW = off). Default: ON. Always install an antenna on the VTX when battery-powered.
 
@@ -145,9 +145,9 @@ GPIO 82 controls camera switching via PINIO2. Set high or low to toggle between 
 
 Example (using Channel 11 to control camera switch via Relay 3):
 
-* :ref:`RELAY3_FUNCTION<RELAY3_FUNCTION>` = 1 (already set as default)
-* :ref:`RELAY3_PIN<RELAY3_PIN>` = 82  (already set as default)
-* :ref:`RC11_OPTION<RC10_OPTION>` = 35  ; Relay3 Control
+- :ref:`RELAY3_FUNCTION<RELAY3_FUNCTION>` = 1 (already set as default)
+- :ref:`RELAY3_PIN<RELAY3_PIN>` = 82  (already set as default)
+- :ref:`RC11_OPTION<RC10_OPTION>` = 35  ; Relay3 Control
 
 > ⚠️ **Warning:** GPIO82 toggles camera input (HIGH/LOW). Ensure wiring matches desired switching behavior.
 
@@ -165,27 +165,27 @@ These are set by default. If reset:
 
 Enable battery monitor with:
 
-* :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
 
 Then reboot.
 
 **First battery monitor is enabled by default:**
 
-* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN>` = 10
-* :ref:`BATT_CURR_PIN<BATT_CURR_PIN>` = 11
-* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT>` = 10.1
-* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor.)*
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN>` = 10
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN>` = 11
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT>` = 10.1
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor.)*
 
 **The second battery monitor is not enabled by default, but its parameter defaults have been set:**
 
-* :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN>` = 4
-* :ref:`BATT2_CURR_PIN<BATT2_CURR_PIN>` = 18
-* :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT>` = 10.1
-* :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor)*
+- :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN>` = 4
+- :ref:`BATT2_CURR_PIN<BATT2_CURR_PIN>` = 18
+- :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT>` = 10.1
+- :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor)*
 
 ## Where to Buy
 
-* [orbitteknoloji.com.tr](https://orbitteknoloji.com.tr)
+- [orbitteknoloji.com.tr](https://orbitteknoloji.com.tr)
 
 ## Firmware
 

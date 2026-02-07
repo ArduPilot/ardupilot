@@ -49,11 +49,11 @@ USART6 supports RX and TX DMA.
 
 RC input is configured on UART6. It supports all RC protocols except PPM, FPort, and SBUS. See:ref:`[Radio Control Systems<common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
 
-* FPort requires an external bi-directional inverter and connects to TX 6 with :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "7".
-* CRSF requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
-* SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "4".
+- FPort requires an external bi-directional inverter and connects to TX 6 with :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "7".
+- CRSF requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "4".
 
-* SBUS can be directly connected to the SBUS pin which ties through an inverter to the RX2 pin.  :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` must be set to "23" and :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>`  must be changed to something else than "23"
+- SBUS can be directly connected to the SBUS pin which ties through an inverter to the RX2 pin.  :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` must be set to "23" and :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>`  must be changed to something else than "23"
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/plane/docs/common-rc-systems.html#common-rc-systems) for details.
 

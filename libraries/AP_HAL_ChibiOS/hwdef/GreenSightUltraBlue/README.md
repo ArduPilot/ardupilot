@@ -283,18 +283,18 @@ External Pin Information:
 
 The RCIN pin, which is physically mapped to UART8 and configured by default as SERIAL5, can be used for most ArduPilot supported unidirectional receiver protocols. For this reason SERIAL5_PROTOCOL defaults to “23” (RCIN).
 
-* PPM: Connect to the JP1 connector. PPM input is only supported on JP1 as it requires a special interrupt.
-* SBUS: Connect to the JP1 connector.
-* Spektrum/DSM radios: Connect to the JP4 connector.
+- PPM: Connect to the JP1 connector. PPM input is only supported on JP1 as it requires a special interrupt.
+- SBUS: Connect to the JP1 connector.
+- Spektrum/DSM radios: Connect to the JP4 connector.
 
 Bi-directional protocols such as CRSF/ELRS and SRXL2 require a full UART connection. FPort, when connected to RCIN, will only provide RC without telemetry.
 
 To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL2 (telem2) or SERIAL4 (GPS2) would need to be used for receiver connections. Below are setups using Serial2.
 
-* SERIAL2_PROTOCOL should be set to “23”.
-* FPort would require SERIAL2_OPTIONS be set to “15”
-* CRSF would require SERIAL2_OPTIONS be set to “0”
-* SRXL2 would require SERIAL2_OPTIONS be set to “4” and connects only the TX pin.
+- SERIAL2_PROTOCOL should be set to "23".
+- FPort would require SERIAL2_OPTIONS be set to "15"
+- CRSF would require SERIAL2_OPTIONS be set to "0"
+- SRXL2 would require SERIAL2_OPTIONS be set to "4" and connects only the TX pin.
 
 ## PWM Output
 
@@ -302,11 +302,11 @@ The UltraBlue flight controller supports up to 16 PWM outputs.
 
 The 16 PWM outputs are in 5 groups:
 
-* PWM 1 - 4 are in group1 (TIM5)
-* PWM 5 - 8 are in group2 (TIM4)
-* PWM 9 - 12 are in group3 (TIM1)
-* PWM 13 and 14 are in group4 (TIM12) (no DMA, no DShot)
-* PWM 15 and 16 are in group5 (TIM8)
+- PWM 1 - 4 are in group1 (TIM5)
+- PWM 5 - 8 are in group2 (TIM4)
+- PWM 9 - 12 are in group3 (TIM1)
+- PWM 13 and 14 are in group4 (TIM12) (no DMA, no DShot)
+- PWM 15 and 16 are in group5 (TIM8)
 
 Channels within the same group need to use the same output rate and protocol. Outputs 1 - 8 support bi-directional DShot.
 
@@ -316,20 +316,20 @@ All PWM outputs can be used as GPIO (relays, buttons, RPM, etc.). To use them yo
 
 The numbering of the GPIOs for PIN parameters in ArduPilot is:
 
-* PWM1 50
-* PWM2 51
-* PWM3 52
-* PWM4 53
-* PWM5 54
-* PWM6 55
-* PWM7 56
-* PWM8 57
-* PWM9 58
-* PWM10 59
-* PWM11 60
-* PWM12 61
-* PWM13 62
-* PWM14 63
+- PWM1 50
+- PWM2 51
+- PWM3 52
+- PWM4 53
+- PWM5 54
+- PWM6 55
+- PWM7 56
+- PWM8 57
+- PWM9 58
+- PWM10 59
+- PWM11 60
+- PWM12 61
+- PWM13 62
+- PWM14 63
 
 ## Firmware
 

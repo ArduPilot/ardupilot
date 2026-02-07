@@ -11,29 +11,29 @@ The JHEMCU GSF405A is a 1-2S Whoop-style (25.5mm x 25.5mm) flight controller fea
 
 **Flight control parameters**
 
-* MCU: STM32F405OG6
-* Gyroscope/Accelerometer: MPU6000
-* OSD: AT7456E
-* Barometer: BMP280
-* Black box: 8MB
-* I2C: Support
-* BEC: 5V
-* UART: UART1 (ELRS), UART2 (external RC), UART3, UART4, UART6
-* USB: micro usb
-* Size: 25.5*25.5MM M2
-* Receiver: ELRS (CRSF), TBS (CRSF), SBUS, IBUS, DSM2, DSMX
-* Support programmable LED such as WS2812
-* Support buzzer
-* Built-in voltage and current sensors
-* Weight: 3.3 grams
+- MCU: STM32F405OG6
+- Gyroscope/Accelerometer: MPU6000
+- OSD: AT7456E
+- Barometer: BMP280
+- Black box: 8MB
+- I2C: Support
+- BEC: 5V
+- UART: UART1 (ELRS), UART2 (external RC), UART3, UART4, UART6
+- USB: micro usb
+- Size: 25.5*25.5MM M2
+- Receiver: ELRS (CRSF), TBS (CRSF), SBUS, IBUS, DSM2, DSMX
+- Support programmable LED such as WS2812
+- Support buzzer
+- Built-in voltage and current sensors
+- Weight: 3.3 grams
 
 **ESC parameters**
 
-* Support PWM, Oneshot125, Oneshot42, Multishot, Dshot150, Dshot300, Dshot600
-* Input voltage: 1S-2S Lipo
-* Continuous current: 5A
-* Firmware: BLHELI_S S_H_50_REV16_7.HEX
-* *Note* Bidirectional DShot requires [flashing](https://esc-configurator.com/) a compatible ESC firmware (eg [Bluejay](https://github.com/mathiasvr/bluejay))).
+- Support PWM, Oneshot125, Oneshot42, Multishot, Dshot150, Dshot300, Dshot600
+- Input voltage: 1S-2S Lipo
+- Continuous current: 5A
+- Firmware: BLHELI_S S_H_50_REV16_7.HEX
+- *Note* Bidirectional DShot requires [flashing](https://esc-configurator.com/) a compatible ESC firmware (eg [Bluejay](https://github.com/mathiasvr/bluejay))).
 
 ## Pinout
 

@@ -56,9 +56,9 @@ M9 on a separate pad for LED strip (default configuration) or another PWM output
 
 The PWM is in 4 groups:
 
-* PWM 1-4 in group1
-* PWM 5-8 in group2
-* PWM 9 (LED) in group3
+- PWM 1-4 in group1
+- PWM 5-8 in group2
+- PWM 9 (LED) in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need

@@ -11,30 +11,30 @@ There are 5 serial ports (UART1, UART2, UART3, UART4, UART6), 8 motor ports, 1 I
 
 **Flight control parameters:**
 
-* MCU: STM32F405
-* Gyroscope/Accelerometer: BMI270
-* OSD: AT7456E
-* Barometer: BMP280
-* Black box: 16MB
-* I2C: Support
-* BEC: 5V/3A
-* UART: UART1 (RC), UART2, UART3, UART4, UART6
-* USB: micro USB
-* Size: 16 * 16MM M3
-* Receiver: ELRS (CRSF), TBS (CRSF), SBUS, IBUS, DSM2, DSMX
-* Support programmable LED such as WS2812
-* Support buzzer
-* Built-in voltage and current sensors
+- MCU: STM32F405
+- Gyroscope/Accelerometer: BMI270
+- OSD: AT7456E
+- Barometer: BMP280
+- Black box: 16MB
+- I2C: Support
+- BEC: 5V/3A
+- UART: UART1 (RC), UART2, UART3, UART4, UART6
+- USB: micro USB
+- Size: 16 * 16MM M3
+- Receiver: ELRS (CRSF), TBS (CRSF), SBUS, IBUS, DSM2, DSMX
+- Support programmable LED such as WS2812
+- Support buzzer
+- Built-in voltage and current sensors
 
 **Electrical adjustment parameters:**
 
-* Input voltage: 2-4S LiPo/2-4S HV LiPo
-* BEC output: None
-* Continuous working current of single electric regulator: 13A * 4
-* External electrical adjustment size: 24 * 25mm (including the maximum size of solder pads and protruding points)
-* Screw hole pitch 16 * 16MM, hole diameter 3MM
-* Firmware: BLHELI_ S G_ H_ 30_ 16_ 7. HEX
-* Supports Dshot600, Dshot300, Dshot150, Oneshot125, Multispot, PWM control signals
+- Input voltage: 2-4S LiPo/2-4S HV LiPo
+- BEC output: None
+- Continuous working current of single electric regulator: 13A * 4
+- External electrical adjustment size: 24 * 25mm (including the maximum size of solder pads and protruding points)
+- Screw hole pitch 16 * 16MM, hole diameter 3MM
+- Firmware: BLHELI_ S G_ H_ 30_ 16_ 7. HEX
+- Supports Dshot600, Dshot300, Dshot150, Oneshot125, Multispot, PWM control signals
 
 Weight: flight control+electric adjustment=5.8g
 
@@ -70,11 +70,11 @@ The JHEM_JHEF405 supports up to 9 PWM outputs (PWM9 is the serial LED output, by
 
 The PWM is in 5 groups:
 
-* PWM 1,2,5 in group1
-* PWM 3,4 in group2
-* PWM 6 in group3
-* PWM 7,8 in group4
-* PWM 9 in group5
+- PWM 1,2,5 in group1
+- PWM 3,4 in group2
+- PWM 6 in group3
+- PWM 7,8 in group4
+- PWM 9 in group5
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in that group would need to use DShot.
 

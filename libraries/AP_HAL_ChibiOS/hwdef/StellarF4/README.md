@@ -58,9 +58,9 @@ multiple I2C peripherals can be connected to one I2C bus in parallel.
 
 The default RC input is configured on the UART2 RX2 input and can be used for all ArduPilot supported unidirectional receiver protocols.
 
-* SBUS/DSM/SRXL connects to the PPM pad or RX2 pin on the HD VTX connector. PPM pin connected to RX2 via inverter.
-* CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-* FPort requires connection to TX2 and :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
+- SBUS/DSM/SRXL connects to the PPM pad or RX2 pin on the HD VTX connector. PPM pin connected to RX2 via inverter.
+- CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
+- FPort requires connection to TX2 and :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
 
 ## OSD Support
 
@@ -70,10 +70,10 @@ StellarF4 supports using its internal OSD, and/or DisplayPort on Serial1, by def
 
 StellarF4 supports up to 10 PWM outputs. All outputs support DShot. First 4 outputs support BDShot. Channels 1-8 marked as M1-M8 on the board. Channels 9 and 10 are marked as S1 and S2 on the board. PWM outputs are grouped and every group must use the same output protocol:
 
-* 1, 2, 3, 4 are Group 1;
-* 5, 6, 7, 8 are Group 2;
-* 9          are Group 3;
-* 10         are Group 4;
+- 1, 2, 3, 4 are Group 1;
+- 5, 6, 7, 8 are Group 2;
+- 9          are Group 3;
+- 10         are Group 4;
 
 ## Battery Monitoring
 
@@ -82,11 +82,11 @@ The voltage input is compatible with 2~6S LiPo batteries.
 
 The default battery parameters are:
 
-* :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
-* :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
-* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.2
-* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 52.7
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.2
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 52.7
 
 ## Compass
 
