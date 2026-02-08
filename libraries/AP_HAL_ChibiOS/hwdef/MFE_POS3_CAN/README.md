@@ -1,5 +1,4 @@
-
-## MFE_POS3_CAN
+# MFE_POS3_CAN
 
 The MFE_POS3_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
@@ -19,13 +18,9 @@ The MFE_POS3_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://
 
 ![MFE_POS3_CAN](MFE_POS3_CAN-1.png "MFE_POS3_CAN-1")
 
-## Pinout
+## Connector pin assignments
 
-Connector pin assignments
-=========================
-
-CAN1 ports
----------------
+### CAN1 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -34,7 +29,6 @@ CAN1 ports
 | 3 | CAN_L | +12V |
 | 4 | GND | GND |
 
-Where to Buy
-============
+## Where to Buy
 
 `makeflyeasy <http://www.makeflyeasy.com>`

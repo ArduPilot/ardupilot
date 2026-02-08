@@ -1,4 +1,4 @@
-# Building ArduPilot #
+# Building ArduPilot
 
 ## Get the Source
 
@@ -17,7 +17,7 @@ waf should always be called from the locally cloned ardupilot root directory for
 **Note**
 Do not run `waf` with `sudo`!  This leads to permission and environment problems.
 
-## Basic usage ##
+## Basic usage
 
 There are several commands in the build system for advanced usage, but here we
 list some basic and more used commands as example.
@@ -191,7 +191,7 @@ list some basic and more used commands as example.
 
     Also, take a look on the [Advanced section](#advanced-usage) below.
 
-### Using Docker ###
+### Using Docker
 
 A docker environment is provided which may be helpful for building in a clean
 environment and avoiding modification of the host environment.
@@ -212,7 +212,7 @@ docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf copter
 Alternatively, simply run `docker run --rm -it -v $PWD:/ardupilot ardupilot-dev` to
 start a `bash` shell in which you can run other commands from this document.
 
-## Advanced usage ##
+## Advanced usage
 
 This section contains some explanations on how the Waf build system works
 and how you can use more advanced features.
@@ -242,7 +242,7 @@ so the `-j` option is usually not needed, unless you are using icecc (thus
 you want a bigger value) or you don't want to stress your machine with
 the build.
 
-### Program groups ###
+### Program groups
 
 Program groups are used to represent a class of programs. They can be used to
 build all programs of a certain class without having to specify each program.
@@ -252,7 +252,7 @@ to one main group.
 
 There's a special group, called "all", that comprises all programs.
 
-#### Main groups ####
+#### Main groups
 
 The main groups form a partition of all programs. Besides separating the
 programs logically, they also define where they are built.
@@ -276,7 +276,7 @@ main group the program belongs to. For example, for a linux build, arduplane,
 which belongs to the main group "bin", will be located at
 `build/linux/bin/arduplane`.
 
-#### Main product groups ####
+#### Main product groups
 
 Those are groups for ardupilot's main products. They contain programs for the
 product they represent. Currently only the "copter" group has more than one
@@ -289,7 +289,7 @@ The main product groups are:
 - plane
 - rover
 
-#### Building a program group ####
+#### Building a program group
 
 Ardupilot adds to waf an option called `--program-group`, which receives as
 argument the group you want it to build. For a build command, if you don't pass
@@ -309,7 +309,7 @@ Examples:
 ./waf --program-group benchmarks --program-group tests
 ```
 
-#### Shortcut for program groups ####
+#### Shortcut for program groups
 
 For less typing, you can use the group name as the command to waf. Examples:
 
@@ -324,7 +324,7 @@ For less typing, you can use the group name as the command to waf. Examples:
 ./waf copter
 ```
 
-### Building a specific program ###
+### Building a specific program
 
 In order to build a specific program, you just need to pass its path relative
 to `build/<board>/` to the option `--targets`. Example:
@@ -337,7 +337,7 @@ to `build/<board>/` to the option `--targets`. Example:
 ./waf --targets tests/test_vectors
 ```
 
-### Checking ###
+### Checking
 
 The command `check` builds all programs and then executes the relevant tests.
 In that context, a relevant test is a program from the group "tests" that makes
@@ -366,13 +366,13 @@ Examples:
 ./waf check-all
 ```
 
-### Debugging ###
+### Debugging
 
 It's possible to pass the option `--debug` to the `configure` command. That
 will set compiler flags to store debugging information in the binaries so that
 you can use them with `gdb`, for example. That option might come handy when using SITL.
 
-### Build-system wrappers ###
+### Build-system wrappers
 
 The `waf` binary on root tree is actually a wrapper to the real `waf` that's
 maintained in its own submodule.  It's possible to call the latter directly via
@@ -387,7 +387,7 @@ alias waf="<ardupilot-directory>/modules/waf/waf-light"
 There's also a make wrapper called `Makefile.waf`. You can use
 `make -f Makefile.waf help` for instructions on how to use it.
 
-### Command line help ###
+### Command line help
 
 You can use `waf --help` to see information about commands and options built-in
 to waf as well as some quick help on those added by ardupilot.

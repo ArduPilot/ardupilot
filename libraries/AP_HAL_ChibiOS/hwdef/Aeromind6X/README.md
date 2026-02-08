@@ -8,6 +8,7 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
   alt="FC Image"
   style="width: 100%; height: auto; position: relative; margin-left: 10px;"
 />
+
 ---
 
 ## Specifications
