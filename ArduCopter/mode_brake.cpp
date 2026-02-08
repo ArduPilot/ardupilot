@@ -50,9 +50,9 @@ void ModeBrake::run()
     }
 
     // use position controller to stop
-    Vector2f vel;
-    Vector2f accel;
-    pos_control->input_vel_accel_NE_m(vel, accel);
+    Vector2f vel_ne_zero;
+    Vector2f accel_ne_zero;
+    pos_control->input_vel_accel_NE_m(vel_ne_zero, accel_ne_zero);
     pos_control->NE_update_controller();
 
     // call attitude controller

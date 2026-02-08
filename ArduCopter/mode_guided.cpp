@@ -898,12 +898,12 @@ void ModeGuided::pause_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set the horizontal velocity and acceleration targets to zero
-    Vector2f vel_xy, accel_xy;
-    pos_control->input_vel_accel_NE_m(vel_xy, accel_xy, false);
+    Vector2f vel_xy_zero, accel_xy_zero;
+    pos_control->input_vel_accel_NE_m(vel_xy_zero, accel_xy_zero, false);
 
     // set the vertical velocity and acceleration targets to zero
-    float vel_z = 0.0;
-    pos_control->input_vel_accel_D_m(vel_z, 0.0, false);
+    float vel_d_zero = 0.0;
+    pos_control->input_vel_accel_D_m(vel_d_zero, 0.0, false);
 
     // call velocity controller which includes z axis controller
     pos_control->NE_update_controller();
