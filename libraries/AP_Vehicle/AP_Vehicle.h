@@ -189,11 +189,11 @@ public:
     /*
       methods to control vehicle for use by scripting
     */
-    virtual bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt) { return false; }
-    virtual bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) { return false; }
-    virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
-    virtual bool set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_target = false) { return false; }
-    virtual bool set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
+    virtual bool set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt) { return false; }
+    virtual bool set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms) { return false; }
+    virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
+    virtual bool set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target = false) { return false; }
+    virtual bool set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
     virtual bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) { return false; }
     virtual bool set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle) { return false; }
     virtual bool set_target_angle_and_rate_and_throttle(float roll_deg, float pitch_deg, float yaw_deg, float roll_rate_degs, float pitch_rate_degs, float yaw_rate_degs, float throttle) { return false; }
@@ -215,23 +215,23 @@ public:
     virtual bool get_steering_and_throttle(float& steering, float& throttle) { return false; }
 
     // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
-    virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
+    virtual bool set_desired_turn_rate_and_speed(float turn_rate_degs, float speed_ms) { return false; }
 
    // set auto mode speed in meters/sec (for use by scripting with Copter/Rover)
-    virtual bool set_desired_speed(float speed) { return false; }
+    virtual bool set_desired_speed(float speed_ms) { return false; }
 
     // support for NAV_SCRIPT_TIME mission command
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) { return false; }
     virtual void nav_script_time_done(uint16_t id) {}
 
     // allow for VTOL velocity matching of a target
-    virtual bool set_velocity_match(const Vector2f &velocity) { return false; }
+    virtual bool set_velocity_match(const Vector2f &velocity_ne_ms) { return false; }
 
     // returns true if the EKF failsafe has triggered
     virtual bool has_ekf_failsafed() const { return false; }
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
-    virtual bool set_land_descent_rate(float descent_rate) { return false; }
+    virtual bool set_land_descent_rate(float descent_rate_ms) { return false; }
 
     // Allow for scripting to have control over the crosstracking when exiting and resuming missions or guided flight
     // It's up to the Lua script to ensure the provided location makes sense
@@ -308,7 +308,7 @@ public:
     /*
      get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
      */
-    virtual bool get_rate_ef_targets(Vector3f& rate_ef_targets) const { return false; }
+    virtual bool get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const { return false; }
 
 #if AP_AHRS_ENABLED
     virtual bool set_home_to_current_location(bool lock) WARN_IF_UNUSED { return false; }
