@@ -288,6 +288,13 @@ ftype norm(const T first, const U second, const Params... parameters)
     return sqrtF(sq(first, second, parameters...));
 }
 
+inline float norm(const float first, const float second) {
+    return sqrtf(sq(first) + sq(second));
+}
+inline float norm(const float first, const float second, const float third) {
+    return sqrtf(sq(first) + sq(second) + sq(third));
+}
+
 #undef MIN
 template<typename A, typename B>
 static inline auto MIN(const A &one, const B &two) -> decltype(one < two ? one : two)
