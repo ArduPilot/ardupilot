@@ -871,12 +871,12 @@ void Sub::load_parameters()
 
     // PARAMETER_CONVERSION - Added: Jan-2026
     // move ORIGIN_LAT, ORIGIN_LON, ORIGIN_ALT to AHRS
-    static const AP_Param::ConversionInfo gcs_conversion_info[] {
+    static const AP_Param::ConversionInfo origin_conversion_info[] {
         { 2, 19, AP_PARAM_FLOAT, "AHRS_ORIGIN_LAT" },   // ORIGIN_LAT moved to AHRS_ORIGIN_LAT
         { 2, 20, AP_PARAM_FLOAT, "AHRS_ORIGIN_LON" },   // ORIGIN_LON moved to AHRS_ORIGIN_LON
         { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
     };
-    AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    AP_Param::convert_old_parameters(&origin_conversion_info[0], ARRAY_SIZE(origin_conversion_info));
 }
 
 void Sub::convert_old_parameters()
