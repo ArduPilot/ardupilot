@@ -13,10 +13,9 @@ and ==must be different== from the MAVLINK_SYSID of the following plane.
 | SYSID_THIS_MAV | 1 | 2 |
 | FOLL_SYSID | n/a | 1 |
 
+## Parameters
 
-# Parameters
-
-The script adds the following parameters to control it's behaviour. It uses 
+The script adds the following parameters to control it's behaviour. It uses
 the existing FOLL parameters that are used for the Copter FOLLOW mode. In addition
 the following "FOLLP" parameters are added.
 
@@ -28,7 +27,7 @@ FOLL_DIST_MAX.
 
 ## FOLLP_EXIT_MODE
 
-The flight mode the plane will switch to if it exits following. 
+The flight mode the plane will switch to if it exits following.
 
 ## FOLLP_ACT_FN
 
@@ -38,7 +37,7 @@ commands to steer the plane towards the target.
 
 ## FOLLP_TIMEOUT
 
-If the target is lost, this is the timeout to wait to re-aquire the target before 
+If the target is lost, this is the timeout to wait to re-aquire the target before
 triggering FOLLP_FAIL_MODE
 
 ## FOLLP_OVRSHT_DEG
@@ -57,51 +56,51 @@ and the follow vehicle heading to determine if the target vehicle is executing a
 
 One of the most important heuristics the follow logic uses to match the heading and speed
 of the target plane is to trigger different behavior when the target location is "close".
-How close is determined by this value, likely a larger number makes more sense for larger 
+How close is determined by this value, likely a larger number makes more sense for larger
 and faster vehicles and lower values for smaller and slower vehicles. Tune for your circumstances.
 
 ## FOLLP_ALT_OVR
 
 The follow logic can have the follow vehicle track the altitude of the target, but setting a value
 in FOLLP_ALT_OVR allows the follow vehicle to follow at a fixed altitude regardless of the altitude
-of the target. The FOLLP_ALT_OVR is in meters in FOLL_ALT_TYPE frame. 
+of the target. The FOLLP_ALT_OVR is in meters in FOLL_ALT_TYPE frame.
 
 ## FOLLP_D_P
 
-The follow logic uses two PID controllers for controlling speed, the first uses distance (D) 
+The follow logic uses two PID controllers for controlling speed, the first uses distance (D)
 as the error. This is the P gain for the "D" PID controller.
 
 ## FOLLP_D_I
 
-The follow logic uses two PID controllers for controlling speed, the first uses distance (D) 
+The follow logic uses two PID controllers for controlling speed, the first uses distance (D)
 as the error. This is the I gain for the "D" PID controller.
 
 ## FOLLP_D_D
 
-The follow logic uses two PID controllers for controlling speed, the first uses distance (D) 
+The follow logic uses two PID controllers for controlling speed, the first uses distance (D)
 as the error. This is the D gain for the "D" PID controller.
 
 ## FOLLP_V_P
 
-The follow logic uses two PID controllers for controlling speed, the first uses velocity (V) 
+The follow logic uses two PID controllers for controlling speed, the first uses velocity (V)
 as the error. This is the P gain for the "V" PID controller.
 
 ## FOLLP_V_I
 
-The follow logic uses two PID controllers for controlling speed, the first uses distance (V) 
+The follow logic uses two PID controllers for controlling speed, the first uses distance (V)
 as the error. This is the I gain for the "V" PID controller.
 
 ## FOLLP_V_D
 
-The follow logic uses two PID controllers for controlling speed, the first uses distance (V) 
+The follow logic uses two PID controllers for controlling speed, the first uses distance (V)
 as the error. This is the D gain for the "V" PID controller.
 
 ## FOLLP_LKAHD
 
 Time to "lookahead" when calculating distance errors.
 
+## Operation
 
-# Operation
 Enable Lua scripting by setting `SCR_ENABLE = 1` on the FOLLOW plane.
 
 Install the plane_follow.lua script in the `APM/scripts` directory on the flight
@@ -124,7 +123,7 @@ to the target, which should ideally be another fixed wing plane, or VTOL in
 fixed wing mode.
 
 The target location the plane will attempt to achieve will be offset from the target
-vehicle location by FOLL_OFS_X and FOLL_OFS_Y. FOLL_OFS_Z will be offset against the 
+vehicle location by FOLL_OFS_X and FOLL_OFS_Y. FOLL_OFS_Z will be offset against the
 target vehicle, but also FOLL_ALT_TYPE will determine the altitude frame that the vehicle
 will use when calculating the target altitude. See the definitions of these
 parameters to understand how they work. FOLLP_ALT_OVR will override the operation of FOLL_OFS_Z
@@ -134,11 +133,11 @@ The existing FOLL_YAW_BEHAVE and FOLL_POS_P parameters are ignored by Plane Foll
 
 To ensure the follow plane gets timely updates from the target, the SRx_POSITION and SRx_EXTRA1
 telemetry stream rate parameters should be increased to increase the rate that the POSITION_TARGET_GLOBAL_INT
-and ATTITUDE mavlink messages are sent. The default value is 4Hz, a good value is probably 8Hz or 10Hz but 
+and ATTITUDE mavlink messages are sent. The default value is 4Hz, a good value is probably 8Hz or 10Hz but
 some testing should be done to confirm the best rate for your telemetry radios and vehicles.
 
 To prevent Mission Planner, QGC, MAVproxy or any other ground control station connected to your plane
-from requesting a different stream rate, also set MAVx_OPTIONS bit 2 for the matching mavlink port. 
+from requesting a different stream rate, also set MAVx_OPTIONS bit 2 for the matching mavlink port.
 
 For example if your telemetry radio is connected to Telem1 = SERIAL1 then set
 MAV1_OPTIONS = 4

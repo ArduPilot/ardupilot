@@ -1,8 +1,7 @@
 # ThePeach FCC-R1
 
-
 :::warning
-Ardupilot does not manufacture this (or any) autopilot. 
+Ardupilot does not manufacture this (or any) autopilot.
 Contact the [manufacturer](https://thepeach.kr/) for hardware support or compliance issues.
 :::
 
@@ -86,7 +85,6 @@ Under these conditions, all power sources cause permanent damage to the flight c
 1. POWER input (5.5V Over)
 
 2. USB input (5.5V Over)
-
 
 ## Where to buy
 

@@ -1,7 +1,7 @@
 # Flywoo GOKU GN 745 40A/45A AIO
 
-https://flywoo.net/products/goku-gn745-45a-aio-bl_32-mpu6000-v3
-https://flywoo.net/products/goku-gn745-40a-aio-bl_32-mpu6000-25-5-x-25-5
+[Flywoo store](https://flywoo.net/products/goku-gn745-45a-aio-bl_32-mpu6000-v3)
+[Flywoo store](https://flywoo.net/products/goku-gn745-40a-aio-bl_32-mpu6000-25-5-x-25-5)
 
 The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://flywoo.net/).
 
@@ -20,7 +20,7 @@ The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://f
 - 5V Power Out: 2.0A max
 - 3.3V Power Out: 0.5A max
 - Dimensions: 33.5x33.5mm
-- Mounting Holes: Standard 25.5/26.5mm square to center of holes 
+- Mounting Holes: Standard 25.5/26.5mm square to center of holes
 - Weight: 8.5g
 
 - Built-in 40A BL_32 4in1 ESC (45A in v3)
@@ -62,10 +62,10 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 UART3 supports RX and TX DMA. UART1, UART2, UART4, and UART6 supports TX DMA. UART5 and UART7 do not support DMA.
 
 ## RC Input
- 
+
 In versions 1.0 and 1.2, RC input is usually configured on the UART3, which supports serial RC protocols. This board does not support PPM.
 In version 3, the connector intended for RC input is on the UART2, so the default protocol will need to be changed for SERIAL 2 to "23" and SERIAL 33 protocol changed to something else.
- 
+
 ## OSD Support
 
 The GOKU GN 745 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -76,20 +76,20 @@ The GOKU GN 745 AIO supports up to 8 PWM outputs. The pads for motor output ESC1
 
 The PWM are in 5 groups:
 
- - PWM 6: Group 1
- - PWM 1-2 and 7-8: Group 2
- - LED: Group 3
- - PWM: Group 4
- - PWM 3-4: Group 5
+- PWM 6: Group 1
+- PWM 1-2 and 7-8: Group 2
+- LED: Group 3
+- PWM: Group 4
+- PWM 3-4: Group 5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot. PWM 1-4 support bidirectional dshot.
 
 ESC outputs are in the Betaflight order, which would work out of the box with the following settings (set by default):
- - FRAME_CLASS = 1 (Quad)
- - FRAME_TYPE = 12 (BetaFlightX)
 
+- FRAME_CLASS = 1 (Quad)
+- FRAME_TYPE = 12 (BetaFlightX)
 
 ## Battery Monitoring
 
@@ -98,25 +98,28 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_CURR_PIN 13
- - BATT_VOLT_MULT 10.9
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_CURR_PIN 13
+- BATT_VOLT_MULT 10.9
 
 These are set by default in the firmware and shouldn't need to be adjusted. Current calibration, on the other hand, is required for best results. Here are some parameters found experimentally with some of the boards:
 
-for version 1.2: 
- - BATT_AMP_PERVLT around 21.0
- - BATT_AMP_OFFSET around -0.018
+for version 1.2:
+
+- BATT_AMP_PERVLT around 21.0
+- BATT_AMP_OFFSET around -0.018
 
 for version 3.0:
- - BATT_AMP_PERVLT around 14.0
- - BATT_AMP_OFFSET around 0.0055
+
+- BATT_AMP_PERVLT around 14.0
+- BATT_AMP_OFFSET around 0.0055
 
 ## Sensor Orientation
 
 For version 3, the orientation needs to be changed:
- - AHRS_ORIENTATION = 5 (Yaw225)
+
+- AHRS_ORIENTATION = 5 (Yaw225)
 
 ## Compass
 
@@ -128,7 +131,7 @@ The board includes a NeoPixel LED pad.
 
 ## Loading Firmware
 
-Firmware for this board can be found on the ArduPilot firmware server, https://firmware.ardupilot.org, in folders labeled "FlywooF745".
+Firmware for this board can be found on the [ArduPilot firmware server](https://firmware.ardupilot.org), in folders labeled "FlywooF745".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

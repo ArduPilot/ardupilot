@@ -4,12 +4,12 @@ The SpeedyBee F405 V5 is a flight controller produced by [SpeedyBee](http://www.
 
 ## Features
 
--   MCU: STM32F405 32-bit processor. 1024Kbytes Flash
--   IMU: ICM-42688P (SPI)
--   Barometer: SPA06-003
--   USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
--   6 UARTS (UART1 tied internally to BT module which is not currently supported by ArduPilot)
--   16MBytes for logging
+- MCU: STM32F405 32-bit processor. 1024Kbytes Flash
+- IMU: ICM-42688P (SPI)
+- Barometer: SPA06-003
+- USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
+- 6 UARTS (UART1 tied internally to BT module which is not currently supported by ArduPilot)
+- 16MBytes for logging
 
 ## Pinout
 
@@ -20,18 +20,18 @@ The SpeedyBee F405 V5 is a flight controller produced by [SpeedyBee](http://www.
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
--   SERIAL0 -> USB
--   SERIAL1 -> UART1 (connected to internal BT module, not currently usable by ArduPilot)
--   SERIAL2 -> UART2
--   SERIAL3 -> UART3 (DJI-VTX)
--   SERIAL4 -> UART4 (GPS)
--   SERIAL5 -> UART5 (ESC Telemetry)
--   SERIAL6 -> UART6 (RCIN)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (connected to internal BT module, not currently usable by ArduPilot)
+- SERIAL2 -> UART2
+- SERIAL3 -> UART3 (DJI-VTX)
+- SERIAL4 -> UART4 (GPS)
+- SERIAL5 -> UART5 (ESC Telemetry)
+- SERIAL6 -> UART6 (RCIN)
 
 ## RC Input
 
 RC input is configured on the R6 (UART6_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
-For Fport, a bi-directional inverter will be required. See https://ardupilot.org/plane/docs/common-connecting-sport-fport.html
+For Fport, a bi-directional inverter will be required. See [ArduPilot FPort documentation](https://ardupilot.org/plane/docs/common-connecting-sport-fport.html)
 
 SBUS is supported. When using an SBUS receiver, the SBUS jumper pad on the flight controller must be soldered. The signal uses hardware inversion and is connected to USART6_RX. SBUS is available on both a dedicated solder pad and the DJI HD connector.
 
@@ -39,8 +39,8 @@ SBUS is supported. When using an SBUS receiver, the SBUS jumper pad on the fligh
 
 FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL3).
 
--   SERIAL3_PROTOCOL 10
--   SERIAL3_OPTIONS 7
+- SERIAL3_PROTOCOL 10
+- SERIAL3_OPTIONS 7
 
 ## OSD Support
 
@@ -59,10 +59,10 @@ PWM output.
 
 The PWM is in 5 groups:
 
--   PWM 1-2 in group1
--   PWM 3-4 in group2
--   PWM 5-6 in group3 (SERVO pads S5,S6)
--   PWM 7 in group4 (LED pad)
+- PWM 1-2 in group1
+- PWM 3-4 in group2
+- PWM 5-6 in group3 (SERVO pads S5,S6)
+- PWM 7 in group4 (LED pad)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -76,15 +76,15 @@ LiPo batteries.
 
 The default battery parameters are:
 
--   :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
--   :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 11
--   :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 15 (CURR pin)
--   :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.2
--   :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 1 (will need to be adjusted for whichever current sensor is attached)
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 11
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 15 (CURR pin)
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.2
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 1 (will need to be adjusted for whichever current sensor is attached)
 
 ## RSSI
 
--   ADC Pin 10 -> RSSI voltage monitoring
+- ADC Pin 10 -> RSSI voltage monitoring
 
 ## Compass
 

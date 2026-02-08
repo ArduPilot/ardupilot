@@ -422,12 +422,12 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_desired, const Vector2f& vel_des
 // This is the angular (wrapped) form of shape_pos_vel_accel().
 void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float angle_accel_desired,
                            float angle, float angle_vel, float& angle_accel,
-                           float angle_vel_max, float angle_accel_max,
+                           float angle_vel_min, float angle_vel_max, float angle_accel_max,
                            float angle_jerk_max, float dt, bool limit_total)
 {
     // Wrap desired angle to the nearest equivalent setpoint relative to the current angle.
     const float angle_desired_wrapped = angle + wrap_PI(angle_desired - angle);
-    shape_pos_vel_accel( angle_desired_wrapped, angle_vel_desired, angle_accel_desired, angle, angle_vel, angle_accel, -angle_vel_max, angle_vel_max, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total); 
+    shape_pos_vel_accel( angle_desired_wrapped, angle_vel_desired, angle_accel_desired, angle, angle_vel, angle_accel, angle_vel_min, angle_vel_max, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total); 
 }
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.

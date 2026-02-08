@@ -2,6 +2,7 @@
 
 #include "AP_Logger_Backend.h"
 #include <AP_Rally/AP_Rally.h>
+#include <AP_RTC/AP_RTC_config.h>
 
 class LoggerMessageWriter {
 public:
@@ -37,7 +38,9 @@ private:
         PARAM_SPACE_USED,
         RC_PROTOCOL,
         RC_OUTPUT,
+#if AP_RTC_LOGGING_ENABLED
         LOG_RTC_MSG,
+#endif  // AP_RTC_LOGGING_ENABLED
     };
     Stage stage;
 };

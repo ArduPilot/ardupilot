@@ -42,8 +42,7 @@ public:
 
     void get_filter_status(nav_filter_status &status) const override;
 
-    // TODO: implement this
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override { return false; };
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
 
     // check for new data
     void update() override { }
@@ -62,7 +61,7 @@ private:
     static constexpr uint8_t SBG_PACKET_SYNC1 = 0xFF;
     static constexpr uint8_t SBG_PACKET_SYNC2 = 0x5A;
     static constexpr uint8_t SBG_PACKET_ETX = 0x33;
-    static constexpr uint16_t SBG_PACKET_PAYLOAD_SIZE_MAX = 100; // real sbgCom limit is 4086 but the largest packet we parse is SbgLogEkfNavData=72 bytes
+    static constexpr uint16_t SBG_PACKET_PAYLOAD_SIZE_MAX = 100; // real sbgCom limit is 4086 but the largest packet we parse is SbgEComLogEkfNav=72 bytes
     static constexpr uint16_t SBG_PACKET_OVERHEAD = 9; // sync1, sync2, id, class, lenLSB, lenMSB, crcLSB, crcMSB, etx
 
     struct Cached {
@@ -83,18 +82,18 @@ private:
         } sensors;
     
         struct {
-            SbgLogUtcData sbgLogUtcData;
-            SbgLogGpsVel sbgLogGpsVel;
-            SbgLogGpsPos sbgLogGpsPos;
-            SbgLogImuData sbgLogImuData;
-            SbgLogFastImuData sbgLogFastImuData;
-            SbgEComLogImuShort sbgEComLogImuShort;
-            SbgLogEkfEulerData sbgLogEkfEulerData;
-            SbgLogEkfQuatData sbgLogEkfQuatData;
-            SbgLogEkfNavData sbgLogEkfNavData;      // biggest msg we care about, 72 bytes
-            SbgLogAirData sbgLogAirData;
-            SbgLogMag sbgLogMag;
-            SbgEComDeviceInfo sbgEComDeviceInfo;
+            SbgEComLogUtc utc;
+            SbgEComLogGnssVel gnssVel;
+            SbgEComLogGnssPos gnssPos;
+            SbgEComLogImuLegacy imuLegacy;
+            SbgEComLogImuFastLegacy imuFastLegacy;
+            SbgEComLogImuShort imuShort;
+            SbgEComLogEkfEuler ekfEuler;
+            SbgEComLogEkfQuat ekfQuat;
+            SbgEComLogEkfNav ekfNav;      // biggest msg we care about, 72 bytes
+            SbgEComLogAirData airData;
+            SbgEComLogMag mag;
+            SbgEComDeviceInfo deviceInfo;
        } sbg;
     } cached;
 
@@ -153,6 +152,9 @@ private:
     static uint16_t calcCRC(const void *pBuffer, uint16_t bufferSize);
     static bool send_sbgMessage(AP_HAL::UARTDriver *_uart, const sbgMessage &msg);
     static void safe_copy_msg_to_object(uint8_t* dest, const uint16_t dest_len, const uint8_t* src, const uint16_t src_len);
+    static uint16_t make_gps_week(const SbgEComLogUtc *utc_data);
+
+    bool ekf_is_full_nav;
     static bool SbgEkfStatus_is_fullNav(const uint32_t ekfStatus);
 
     static AP_GPS_FixType SbgGpsPosStatus_to_GpsFixType(const uint32_t gpsPosStatus);

@@ -5,6 +5,7 @@ This is a script that converts AntennaTracker into a Drone Tracking Camera using
 User just needs to edit the script to set string username, password and IP address:port of the camera. Currently we only support running as part of SITL/Linux instance. Which can simply be done by adding `--enable-onvif` the rest including adding this script will be taken care of by build system. Also you will need to set `PITCH_MAX` `PITCH_MIN` and `YAW_RANGE` parameters per camera specifications.
 
 Following steps are required before doing ONVIF build:
+
 ```
 cd modules/gsoap
 autoreconf -f -i

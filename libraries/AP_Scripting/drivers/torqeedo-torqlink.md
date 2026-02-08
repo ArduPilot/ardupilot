@@ -2,7 +2,7 @@
 
 Torqeedo TorqLink driver lua script
 
-# How To Use
+## How To Use
 
 Connect the Torqeedo motor(s) to the autopilot's CAN ports.  If only one motor is used it should be connected to CAN1.
 If two motors are used, connect the left motor to CAN1 and the right motor to CAN2

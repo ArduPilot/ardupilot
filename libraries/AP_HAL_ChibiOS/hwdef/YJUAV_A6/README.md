@@ -2,31 +2,29 @@
 
 The A6 flight controller is manufactured and sold by [YJUAV](http://www.yjuav.net).
 
-The full schematics of the board are available here:
-
-https://github.com/yunjiuav/Hardware/tree/main/A6
+The [full schematics](https://github.com/yunjiuav/Hardware/tree/main/A6) of the board are available.
 
 ## Features
 
- - STM32H743 microcontroller
- - Three IMUs: ICM42688, ICM42688 and IIM42652
- - Internal RM3100 SPI magnetometer
- - Internal DPS310 SPI barometer
- - Internal vibration isolation for IMUs
- - Internal RGB LED
- - microSD card slot port
- - 2 power ports(CAN and Analog)
- - 6 UARTs and USB ports
- - 3 I2C and 3 CAN ports
- - 14 PWM output ports
- - Safety switch port
- - External SPI port
- - Buzzer port
- - RC IN port
+- STM32H743 microcontroller
+- Three IMUs: ICM42688, ICM42688 and IIM42652
+- Internal RM3100 SPI magnetometer
+- Internal DPS310 SPI barometer
+- Internal vibration isolation for IMUs
+- Internal RGB LED
+- microSD card slot port
+- 2 power ports(CAN and Analog)
+- 6 UARTs and USB ports
+- 3 I2C and 3 CAN ports
+- 14 PWM output ports
+- Safety switch port
+- External SPI port
+- Buzzer port
+- RC IN port
 
 ## Pinout
-![YJUAV_A6 Board](YJUAV_A6-pinout.jpg "YJUAV_A6")
 
+![YJUAV_A6 Board](YJUAV_A6-pinout.jpg "YJUAV_A6")
 
 ## Connectors
 
@@ -167,14 +165,14 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 
 ## UART Mapping
 
- - SERIAL0 -> USB(OTG1)
- - SERIAL1 -> USART1(Telem1)
- - SERIAL2 -> USART2 (Telem2)
- - SERIAL3 -> USART3 (GPS1), NODMA
- - SERIAL4 -> UART5 (GPS2), NODMA
- - SERIAL5 -> UART6 (SBUS)
- - SERIAL6 -> UART7 (Debug), NODMA
- - SERIAL7 -> USB2(OTG2)
+- SERIAL0 -> USB(OTG1)
+- SERIAL1 -> USART1(Telem1)
+- SERIAL2 -> USART2 (Telem2)
+- SERIAL3 -> USART3 (GPS1), NODMA
+- SERIAL4 -> UART5 (GPS2), NODMA
+- SERIAL5 -> UART6 (SBUS)
+- SERIAL6 -> UART7 (Debug), NODMA
+- SERIAL7 -> USB2(OTG2)
 
 ## RC Input
 
@@ -188,10 +186,10 @@ The A6 supports up to 14 PWM outputs,support all PWM protocols as well as DShot.
 
 The 14 PWM outputs are in 4 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5, 6, 7 and 8 in group2
- - PWM 9, 10, 11 and 12 in group3
- - PWM 13 and 14 group4
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 and 12 in group3
+- PWM 13 and 14 group4
 
 Channels 1-8 support bi-directional Dshot, channels 9-12 support Dshot, channels 13-14 support regular PWM.
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
@@ -224,11 +222,11 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 
 The A6 flight controller has 5 analog inputs
 
- - ADC Pin10 -> Battery Current 
- - ADC Pin11 -> Battery Voltage 
- - ADC Pin4   -> ADC 3V3 Sense
- - ADC Pin8   -> ADC 5V Sense
- - ADC Pin18 -> RSSI voltage monitoring
+- ADC Pin10 -> Battery Current
+- ADC Pin11 -> Battery Voltage
+- ADC Pin4   -> ADC 3V3 Sense
+- ADC Pin8   -> ADC 5V Sense
+- ADC Pin18 -> RSSI voltage monitoring
 
 ## Build the FC
 
@@ -237,9 +235,6 @@ The A6 flight controller has 5 analog inputs
 
 The compiled firmware is located in folder **"build/YJUAV_A6/bin/arducopter.apj"**.
 
-
-
 ## Loading Firmware
 
 The A6 flight controller comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.
-

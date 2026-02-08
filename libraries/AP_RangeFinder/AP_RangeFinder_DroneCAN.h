@@ -29,7 +29,7 @@ protected:
 private:
     uint8_t _instance;
     RangeFinder::Status _status;
-    uint16_t _distance_cm;
+    float _distance_m;
     uint32_t _last_reading_ms;
     AP_DroneCAN* _ap_dronecan;
     uint8_t _node_id;

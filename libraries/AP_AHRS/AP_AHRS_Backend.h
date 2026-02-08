@@ -132,12 +132,6 @@ public:
     // see if EKF lane switching is possible to avoid EKF failsafe
     virtual void check_lane_switch(void) {}
 
-    // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
-    virtual bool using_noncompass_for_yaw(void) const { return false; }
-
-    // check if external nav is providing yaw
-    virtual bool using_extnav_for_yaw(void) const { return false; }
-
     // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
     virtual void request_yaw_reset(void) {}
 
@@ -266,11 +260,7 @@ public:
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
-    virtual bool resetHeightDatum(void) WARN_IF_UNUSED {
-        return false;
-    }
+    virtual void resetHeightDatum(void) { }
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
@@ -290,18 +280,7 @@ public:
         return false;
     }
 
-    // get a source's velocity innovations.  source should be from 0 to 7 (see AP_NavEKF_Source::SourceXY)
-    // returns true on success and results are placed in innovations and variances arguments
-    virtual bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED {
-        return false;
-    }
-
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
-
-    // get_hgt_ctrl_limit - get maximum height to be observed by the
-    // control loops in meters and a validity flag.  It will return
-    // false when no limiting is required
-    virtual bool get_hgt_ctrl_limit(float &limit) const WARN_IF_UNUSED { return false; };
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // this is not related to terrain following

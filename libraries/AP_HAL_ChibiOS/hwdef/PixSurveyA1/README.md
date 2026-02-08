@@ -1,37 +1,39 @@
 ## PixSurveyA1 Flight Controller
+
 The flight controller is based on FMUv3, with added MPU9250 or ICM20948 internal compass support
 
 ## Features
-•	STM32F427VIT6 and STM32F103C8T6 microcontroller
 
-•	Three IMUs, one MPU6000(SPI), one ICM20602(SPI), one ICM20948 or MPU9250(SPI)
+•    STM32F427VIT6 and STM32F103C8T6 microcontroller
 
-•	internal heater for IMUs temperature control
+•    Three IMUs, one MPU6000(SPI), one ICM20602(SPI), one ICM20948 or MPU9250(SPI)
 
-•	internal Soft Rubber Damping Ball isolation for  interna IMUs
+•    internal heater for IMUs temperature control
 
-•	Two barometers, MS5611(SPI)
+•    internal Soft Rubber Damping Ball isolation for  interna IMUs
 
-•	Internal compass use MPU9250 or ICM20948
+•    Two barometers, MS5611(SPI)
 
-•	builtin RAMTRON(SPI)
+•    Internal compass use MPU9250 or ICM20948
 
-•	microSD card slot
+•    builtin RAMTRON(SPI)
 
-•	5 UARTs plus USB(Type-C)
+•    microSD card slot
 
-•	PPM & S.Bus input
+•    5 UARTs plus USB(Type-C)
 
-•	14 PWM outputs
+•    PPM & S.Bus input
 
-•	two I2C and two CAN ports
+•    14 PWM outputs
 
-•	one S.Bus output
+•    two I2C and two CAN ports
 
-•	External Buzzer
+•    one S.Bus output
 
-•	two voltage & current monitoring and servo rail voltage monitoring
+•    External Buzzer
 
-•	servo rail BEC independent power input for servos
- 
-•	external safety Switch
+•    two voltage & current monitoring and servo rail voltage monitoring
+
+•    servo rail BEC independent power input for servos
+
+•    external safety Switch

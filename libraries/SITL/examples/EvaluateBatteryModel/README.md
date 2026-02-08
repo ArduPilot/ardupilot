@@ -18,6 +18,7 @@ The command:
 ```
 
 Gives the output:
+
 ```
 Loading model Tools/autotest/models/Callisto.json
 Loaded model params from Tools/autotest/models/Callisto.json
@@ -36,6 +37,7 @@ time, voltage
 ```
 
 This can be output re-directed to a file with:
+
 ```
 ./build/linux/examples/EvaluateBatteryModel Tools/autotest/models/Callisto.json 50 >> battery_test.csv
 ```
@@ -43,4 +45,3 @@ This can be output re-directed to a file with:
 The data can then be compared to real battery data and the model definition changed to better represent the vehicle being modelled.
 
 ![Battery example plot](Battery_example_plots.png)
-

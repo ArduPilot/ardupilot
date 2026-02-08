@@ -37,6 +37,8 @@ void ModeAcro_Heli::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+    } else if (!motors->get_interlock()) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
         // heli will not let the spool state progress to THROTTLE_UNLIMITED until motor interlock is enabled
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -144,7 +146,7 @@ void ModeAcro_Heli::virtual_flybar( float &roll_out_rads, float &pitch_out_rads,
     rate_ef_level_rads.z = 0;
 
     // convert earth-frame leak rates to body-frame leak rates
-    attitude_control->euler_rate_to_ang_vel(attitude_control->get_attitude_target_quat(), rate_ef_level_rads, rate_bf_level_rads);
+    attitude_control->euler_derivative_to_body(attitude_control->get_attitude_target_quat(), rate_ef_level_rads, rate_bf_level_rads);
 
     // combine earth frame rate corrections with rate requests
     roll_out_rads += rate_bf_level_rads.x;

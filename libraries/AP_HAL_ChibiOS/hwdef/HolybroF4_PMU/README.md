@@ -1,19 +1,19 @@
 # Holybro DroneCAN PMU
 
-https://holybro.com/products/dronecan-pm08-power-module-14s-200a
+[Holybro](https://holybro.com/products/dronecan-pm08-power-module-14s-200a)
 
 ## Features
 
 - Processor£ºSTM32F405RG 168MHz 1024KB Flash  196KB RAM
-- Voltage input: 7~60.9V (2S~14S) 
+- Voltage input: 7~60.9V (2S~14S)
 - Continuous current:200A
 - Burst current 400A @ 25¡æ 1 sec£¬1000A @ 25¡æ < 1 sec
 - Max current sensing: 376A
-- Voltage accuracy: ¡À0.1V 
+- Voltage accuracy: ¡À0.1V
 - Current accuracy: ¡À5%
 - Temperature accuracy:¡À1¡æ
 - Power port output: 5.3V/3A each port
-- Protocol: DroneCAN 
+- Protocol: DroneCAN
 - Operating temperature :-25¡æ~105¡æ
 - Firmware upgrade: Support
 - Calibration:  Support

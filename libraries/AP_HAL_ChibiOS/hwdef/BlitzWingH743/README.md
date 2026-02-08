@@ -4,24 +4,25 @@ The BLITZ Wing H743 is a flight controller produced by [iFlight](https://shop.if
 
 ## Features
 
- - MCU - STM32H743 32-bit processor running at 480 MHz
- - Gyro: ICM42688
- - SDCard for logging
- - 5V 3A BEC for Flight Controller
- - 9V 3A BEC for VTX
- - 5-8.4V 6A BEC for Servo
- - Barometer: DPS310
- - OSD: AT7456E
- - 7x UARTs
- - 13x PWM Outputs (12 Motor Output, 1 LED)
- - Battery input voltage: 2S-8S
- - 2x I2C for external compass, airspeed, etc.
- - CAN port
+- MCU - STM32H743 32-bit processor running at 480 MHz
+- Gyro: ICM42688
+- SDCard for logging
+- 5V 3A BEC for Flight Controller
+- 9V 3A BEC for VTX
+- 5-8.4V 6A BEC for Servo
+- Barometer: DPS310
+- OSD: AT7456E
+- 7x UARTs
+- 13x PWM Outputs (12 Motor Output, 1 LED)
+- Battery input voltage: 2S-8S
+- 2x I2C for external compass, airspeed, etc.
+- CAN port
 
 ## Physical
- - Mount pattern: 30.5*30.5mm/?4
- - Dimensions: 36.9*52mm
- - Weight: 35g
+
+- Mount pattern: 30.5*30.5mm/?4
+- Dimensions: 36.9*52mm
+- Weight: 35g
 
 ## Pinout
 
@@ -58,11 +59,11 @@ The BLITZ Wing H743 has 13 PWM outputs. The first 8 outputs support bi-direction
 
 The PWM are in in five groups:
 
- - PWM 1-2 in group1
- - PWM 3-6 in group2
- - PWM 7-10 in group3
- - PWM 11-12 in group4
- - PWM 13 in group5
+- PWM 1-2 in group1
+- PWM 3-6 in group2
+- PWM 7-10 in group3
+- PWM 11-12 in group4
+- PWM 13 in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -87,11 +88,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_VOLT_MULT 11
- - BATT_CURR_PIN 11
- - BATT_CURR_MULT 50
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_VOLT_MULT 11
+- BATT_CURR_PIN 11
+- BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

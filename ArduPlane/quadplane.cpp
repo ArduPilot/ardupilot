@@ -593,10 +593,10 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_A_RATE_Y_MAX",   75.0 },
     { "Q_M_SPOOL_TIME",   0.25 },
     { "Q_LOIT_ANG_MAX",   15.0 },
-    { "Q_LOIT_ACC_MAX",   250.0 },
-    { "Q_LOIT_BRK_ACCEL", 50.0 },
-    { "Q_LOIT_BRK_JERK",  250 },
-    { "Q_LOIT_SPEED",     500 },
+    { "Q_LOIT_ACC_MAX_M", 2.50 },
+    { "Q_LOIT_BRK_ACC_M", 0.5 },
+    { "Q_LOIT_BRK_JRK_M", 2.5 },
+    { "Q_LOIT_SPEED_MS",  5.0 },
     { "Q_WP_SPEED",       500 },
     { "Q_WP_ACCEL",       100 },
     { "Q_P_JERK_NE",      2   },
@@ -830,6 +830,9 @@ bool QuadPlane::setup(void)
 
     // upgrade position controller parameters added Dec 2025
     pos_control->convert_parameters();
+
+    // upgrade loiter navigation parameters
+    loiter_nav->convert_parameters();
 
     // Provisionally assign the SLT thrust type.
     // It will be overwritten by tailsitter or tiltorotor setups.

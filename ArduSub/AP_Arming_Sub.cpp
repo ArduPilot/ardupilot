@@ -169,10 +169,11 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
     in_arm_motors = false;
 
     // if we do not have an ekf origin then we can't use the WMM tables
-    if (!sub.ensure_ekf_origin()) {
+    Location origin_loc;
+    if (!ahrs.get_origin(origin_loc)) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Compass performance degraded");
         if (check_enabled(Check::PARAMETERS)) {
-            check_failed(Check::PARAMETERS, true, "No world position, check ORIGIN_* parameters");
+            check_failed(Check::PARAMETERS, true, "No world position, check AHRS_ORIGIN_* parameters");
             return false;
         }
     }

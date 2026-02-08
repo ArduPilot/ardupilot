@@ -1,80 +1,91 @@
 # Aeromind6X Flight Controller
 
-The **Aeromind6X** flight controller is a cutting-edge, indigenous solution developed by [Arkin Labs Private Limited](https://www.arkinlabs.in/). 
+The **Aeromind6X** flight controller is a cutting-edge, indigenous solution developed by [Arkin Labs Private Limited](https://www.arkinlabs.in/).
 Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it offers high reliability and fast data handling for advanced UAV applications. It also integrates with an **M3 Coprocessor**, allowing sensor expansion and future upgrades.
 
-<img 
-  src="fc.png" 
-  alt="FC Image" 
-  style="width: 100%; height: auto; position: relative; margin-left: 10px;" 
+<img
+  src="fc.png"
+  alt="FC Image"
+  style="width: 100%; height: auto; position: relative; margin-left: 10px;"
 />
 ---
 
 ## Specifications
 
 ### Main Processors
-- **FMU Processor**: STM32H753  
-  - 32-bit Arm® Cortex®-M7 @ 480 MHz  
-  - 2 MB Flash / 1 MB RAM  
-- **Co-Processor**: STM32F10x  
-- **IO Processor**: STM32F103  
-  - 32-bit Arm® Cortex®-M3 @ 24 MHz  
-  - 8 KB SRAM  
+
+- **FMU Processor**: STM32H753
+  - 32-bit Arm® Cortex®-M7 @ 480 MHz
+  - 2 MB Flash / 1 MB RAM
+- **Co-Processor**: STM32F10x
+- **IO Processor**: STM32F103
+  - 32-bit Arm® Cortex®-M3 @ 24 MHz
+  - 8 KB SRAM
 
 ### Security
-- NXP EdgeLock SE051  
-  - IEC62443-4-2 certified  
-  - CC EAL6+ certified secure element  
-  - 46 KB user memory (up to 104 KB customizable)  
+
+- NXP EdgeLock SE051
+  - IEC62443-4-2 certified
+  - CC EAL6+ certified secure element
+  - 46 KB user memory (up to 104 KB customizable)
   - AES / 3DES encryption
 
 ### Onboard Sensors
-- Accelerometer / Gyroscope: 3x ICM-4568 (Rev. 8)  
-- Magnetometer: PNI RM3100  
-- Barometer: 2x ICP20100  
+
+- Accelerometer / Gyroscope: 3x ICM-4568 (Rev. 8)
+- Magnetometer: PNI RM3100
+- Barometer: 2x ICP20100
 
 ### Electrical
-- Input Voltage: up to 6 V  
-- USB Input: 4.75 V – 5.25 V  
+
+- Input Voltage: up to 6 V
+- USB Input: 4.75 V – 5.25 V
 
 ### Mechanical
-- Weight: 150 g  
-- Dimensions: 94 × 46 × 38 mm  
+
+- Weight: 150 g
+- Dimensions: 94 × 46 × 38 mm
 
 ---
 
 ## Interfaces
 
 ### Debug Ports
-- FMU-Debug  
-- IO-Debug  
+
+- FMU-Debug
+- IO-Debug
 
 ### Communication Interfaces
-- Ethernet  
-- 3x Telemetry Ports (TELEM1, TELEM2, TELEM3)  
-- 2x CAN (UAVCAN)  
+
+- Ethernet
+- 3x Telemetry Ports (TELEM1, TELEM2, TELEM3)
+- 2x CAN (UAVCAN)
 
 ### Actuator Outputs
-- 8x Main Outputs (via IO Processor)  
-- 8x Auxiliary Outputs (direct from FMU)  
+
+- 8x Main Outputs (via IO Processor)
+- 8x Auxiliary Outputs (direct from FMU)
 
 ### RC Input
-- SBUS  
-- PPM  
-- DSM  
-- RSSI  
+
+- SBUS
+- PPM
+- DSM
+- RSSI
 
 ### Power Inputs
-- 2x SMBUS (I2C)  
-- 2x UAVCAN  
-- SBUS In  
-- PPM In  
+
+- 2x SMBUS (I2C)
+- 2x UAVCAN
+- SBUS In
+- PPM In
 
 ### Other Ports
-- 2x USB Ports  
-  - 1x USB Type-C  
-  - 1x JST-GH  
-- 1x TF Card Slot (MicroSD, for flight logs)  
+
+- 2x USB Ports
+  - 1x USB Type-C
+  - 1x JST-GH
+- 1x TF Card Slot (MicroSD, for flight logs)
 
 ---
 
@@ -96,14 +107,13 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 | SERIAL6     | UART4          | UART4 (General Use)  | No            |
 | SERIAL7     | USART3         | FMU_DEBUG            | No            |
 
-
 > **Note**: All UARTS are DMA capable. UART7, USART2, and UART5 support hardware flow control.
 
 ---
 
 ## RC Input
 
-RC input supports SBUS, PPM, and DSM protocols with dedicated ports available for each. For bi-directional protocols, UART4 or other telemetry ports can be configured to handle the connection. For more details, refer to: https://ardupilot.org/plane/docs/common-rc-systems.html
+RC input supports SBUS, PPM, and DSM protocols with dedicated ports available for each. For bi-directional protocols, UART4 or other telemetry ports can be configured to handle the connection. For more details, refer to the [ArduPilot documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
 
 ---
 
@@ -111,11 +121,12 @@ RC input supports SBUS, PPM, and DSM protocols with dedicated ports available fo
 
 Supports up to **16 PWM outputs**:
 
-- **Main Outputs (M1–M8)**: via STM32F103 IO Processor  
-- **Auxiliary Outputs (A1–A8)**: via STM32H753 FMU 
+- **Main Outputs (M1–M8)**: via STM32F103 IO Processor
+- **Auxiliary Outputs (A1–A8)**: via STM32H753 FMU
 
 > **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1–M8** are bi-directional DShot capable.
 ---
+
 ## Battery Monitoring
 
 Includes **two I2C power monitor ports** using 6-pin connectors. Configuration is defaulted for the first monitor to be INA2XX I2C type power monitor.
@@ -134,6 +145,7 @@ Includes two native ADC inputs:
 
 - ADC3V3  ArduPilot pin designation is "13"
 - ADC6V6  ArduPilot pin designation is "12"
+
 Refer to the **Pinout Diagram** above for details.
 
 ---
@@ -181,12 +193,12 @@ The board ships with an ArduPilot-compatible bootloader, allowing you to load `.
 
 ## Where to Buy
 
-- Official Product Page: [Aeromind6X](https://www.arkinlabs.in/aeromind-6x)  
+- Official Product Page: [Aeromind6X](https://www.arkinlabs.in/aeromind-6x)
 - Order from [here](https://www.arkinlabs.in/shop/aeromind-6x-160)
 
 ---
 
 ## More Information
 
-- [Aeromind6X Documentation](http://docs.arkinlabs.in/)  
+- [Aeromind6X Documentation](http://docs.arkinlabs.in/)
 - [Aeromind6X Datasheet](https://drive.google.com/file/d/1MtB74p9gjB4ahHdhjlCy_APepJ_ad_wq/view)

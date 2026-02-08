@@ -19,6 +19,7 @@
 #if HAL_CRSF_TELEM_ENABLED
 
 #include <AP_OSD/AP_OSD.h>
+#include <AP_CRSF/AP_CRSF_Protocol.h>
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include "AP_RCTelemetry.h"
 #include <AP_HAL/utility/sparse-endian.h>
@@ -43,6 +44,12 @@ public:
     static const uint8_t PASSTHROUGH_MULTI_PACKET_FRAME_MAX_SIZE = 9U;
     static const uint8_t CRSF_RX_DEVICE_PING_MAX_RETRY = 50U;
 
+    // Import shared types from AP_CRSF namespace
+    using HeartbeatFrame = AP_CRSF_Protocol::HeartbeatFrame;
+    using CommandFrame = AP_CRSF_Protocol::CommandFrame;
+    using ParameterPingFrame = AP_CRSF_Protocol::ParameterPingFrame;
+    using ParameterDeviceInfoFrame = AP_CRSF_Protocol::ParameterDeviceInfoFrame;
+
     // Broadcast frame definitions courtesy of TBS
     struct PACKED GPSFrame {   // curious fact, calling this GPS makes sizeof(GPS) return 1!
         int32_t latitude; // ( degree / 10`000`000 )
@@ -51,10 +58,6 @@ public:
         uint16_t gps_heading; // ( degree / 100 )
         uint16_t altitude; // ( meter - 1000m offset )
         uint8_t satellites; // in use ( counter )
-    };
-
-    struct HeartbeatFrame {
-        uint8_t origin; // Device address
     };
 
     struct PACKED BatteryFrame {
@@ -107,27 +110,6 @@ public:
 
     struct PACKED FlightModeFrame {
         char flight_mode[16]; // ( Null-terminated string )
-    };
-
-    // CRSF_FRAMETYPE_COMMAND
-    struct PACKED CommandFrame {
-        uint8_t destination;
-        uint8_t origin;
-        uint8_t command_id;
-        uint8_t payload[9]; // 8 maximum for LED command + crc8
-    };
-
-    // CRSF_FRAMETYPE_PARAM_DEVICE_PING
-    struct PACKED ParameterPingFrame {
-        uint8_t destination;
-        uint8_t origin;
-    };
-
-    // CRSF_FRAMETYPE_PARAM_DEVICE_INFO
-    struct PACKED ParameterDeviceInfoFrame {
-        uint8_t destination;
-        uint8_t origin;
-        uint8_t payload[58];   // largest possible frame is 60
     };
 
     enum ParameterType : uint8_t
@@ -458,7 +440,7 @@ private:
     bool _is_tx_active;
 
     struct {
-        uint8_t destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_BROADCAST;
+        uint8_t destination = AP_CRSF_Protocol::CRSF_ADDRESS_BROADCAST;
         uint8_t frame_type;
     } _pending_request;
 

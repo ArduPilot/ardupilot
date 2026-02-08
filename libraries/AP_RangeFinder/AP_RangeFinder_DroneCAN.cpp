@@ -86,7 +86,7 @@ void AP_RangeFinder_DroneCAN::update()
         set_status(RangeFinder::Status::NoData);
     } else if (_status == RangeFinder::Status::Good && new_data) {
         //copy over states
-        state.distance_m = _distance_cm * 0.01f;
+        state.distance_m = _distance_m;
         state.last_reading_ms = _last_reading_ms;
         update_status();
         new_data = false;
@@ -109,7 +109,7 @@ void AP_RangeFinder_DroneCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const
         case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_VALID_RANGE:
         {
             //update the states in backend instance
-            driver->_distance_cm = msg.range*100.0f;
+            driver->_distance_m = msg.range;
             driver->_last_reading_ms = AP_HAL::millis();
             driver->_status = RangeFinder::Status::Good;
             driver->new_data = true;

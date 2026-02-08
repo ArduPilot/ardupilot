@@ -18,14 +18,14 @@ The S-Vehicle E2-Plus Flight Controller produced by [S-Vehicle](http://svehicle.
 - 14 PWM outputs
 - PPM/SBus input, DSM/SBus input
 - 3 I2C ports
-- 2 CAN ports 
+- 2 CAN ports
 - Analog RSSI input
 - 100Mbps Ethernet port
 - 3 power monitor inputs
 
-# IOMCU
+## IOMCU
 
-This board has an IOMCU implemented on a STM32F103 microcontroller which, manages 
+This board has an IOMCU implemented on a STM32F103 microcontroller which, manages
 
 ## Pinout
 
@@ -54,8 +54,8 @@ RC input is configured on the RCIN pin, at one end of the servo rail, marked PPM
 
 ## PWM Output
 
-The E2-Plus flight controller supports up to 14 PWM outputs. 
-First 8 outputs (labelled M1 to M8) are controlled by a dedicated STM32F103 IOMCU controller. 
+The E2-Plus flight controller supports up to 14 PWM outputs.
+First 8 outputs (labelled M1 to M8) are controlled by a dedicated STM32F103 IOMCU controller.
 The remaining 6 outputs (labelled 9 to 16) are the "auxiliary" outputs. These are directly attached to the STM32H753 FMU controller .
 
 The 14 PWM outputs are:
@@ -71,7 +71,7 @@ M1 - M8 support DShot and are in 3 groups:
 
 The 6 FMU PWM outputs are in 2 groups:
 
-A1 - A4 are in one group. 
+A1 - A4 are in one group.
 A5, A6 are in a 2nd group.
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
@@ -118,7 +118,7 @@ The complete list of GPIOS is:
 
 ## Battery Monitoring
 
-The board has connectors for 3 power monitors. The board is configure by default for a DroneCAN power monitor, and also has analog power monitor defaults configured which is enabled. The default PDB included with the E2+ is DroneCAN and must be connected to Power 2. If using a analog power monitor, battery voltage is on pin 6 and current on pin 9 and this should be connected to Power 1.  
+The board has connectors for 3 power monitors. The board is configure by default for a DroneCAN power monitor, and also has analog power monitor defaults configured which is enabled. The default PDB included with the E2+ is DroneCAN and must be connected to Power 2. If using a analog power monitor, battery voltage is on pin 6 and current on pin 9 and this should be connected to Power 1.
 
 ## Compass
 
@@ -137,6 +137,6 @@ The E2-Plus has 6 analog inputs.
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "SVehicle-E2".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "SVehicle-E2".
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.

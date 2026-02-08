@@ -1,50 +1,51 @@
 ## QioTekZealotF427 Flight Controller
 
-The QioTek Zealot F427 flight controller is sold by a range of resellers listed on the QIOTEK(http://www.Qio-Tek.com)
+The QioTek Zealot F427 flight controller is sold by a range of resellers listed at [QioTek](http://www.Qio-Tek.com)
 
 ## Features
-•	STM32F427VIT6 microcontroller
 
-•	Three IMUs, one ICM20689(SPI), one ICM20602(SPI), one BMI088(SPI)
+•    STM32F427VIT6 microcontroller
 
-•	internal heater for IMUs temperature control
+•    Three IMUs, one ICM20689(SPI), one ICM20602(SPI), one BMI088(SPI)
 
-•	internal Soft Rubber Damping Ball isolation for All interna IMUs
+•    internal heater for IMUs temperature control
 
-•	Two barometers, one DPS310(SPI), one MS5611(interna I2C)
+•    internal Soft Rubber Damping Ball isolation for All interna IMUs
 
-•	builtin IST8310 or QMC5883L magnetometer(interna I2C)
+•    Two barometers, one DPS310(SPI), one MS5611(interna I2C)
 
-•	builtin analog OSD(SPI)
+•    builtin IST8310 or QMC5883L magnetometer(interna I2C)
 
-•	builtin RAMTRON(SPI)
+•    builtin analog OSD(SPI)
 
-•	microSD card slot
+•    builtin RAMTRON(SPI)
 
-•	5 UARTs plus USB(Type-C)
+•    microSD card slot
 
-•	PPM & S.Bus input
+•    5 UARTs plus USB(Type-C)
 
-•	14 PWM outputs
+•    PPM & S.Bus input
 
-•	4 Relay outputs
+•    14 PWM outputs
 
-•	one I2C and one CAN ports
+•    4 Relay outputs
 
-•	one S.Bus output(inverter Share Serial5)
+•    one I2C and one CAN ports
 
-•	External Buzzer
+•    one S.Bus output(inverter Share Serial5)
 
-•	builtin RGB LED
+•    External Buzzer
 
-•	two voltage & current monitoring and servo rail voltage monitoring（support to 36V)）
+•    builtin RGB LED
 
-•	two ADC inputs(default one for RSSI, one for Airspeed sensor, both support to 6.6V)
+•    two voltage & current monitoring and servo rail voltage monitoring（support to 36V)）
 
-•	servo rail BEC independent power input for servos
+•    two ADC inputs(default one for RSSI, one for Airspeed sensor, both support to 6.6V)
 
-•	builtin BEC（6S 1.5A）power input（share power2 module voltage monitoring）
- 
-•	external safety Switch
+•    servo rail BEC independent power input for servos
 
-•	external USB connectors (Type-C USB and JST GH1.25)
+•    builtin BEC（6S 1.5A）power input（share power2 module voltage monitoring）
+
+•    external safety Switch
+
+•    external USB connectors (Type-C USB and JST GH1.25)

@@ -63,7 +63,6 @@ Example output:
 [param-set] param set received
 [param-set] param set denied (LOG_BACKEND_TYPE)
 
-
 ## Limitations
 
 - Only handles `PARAM_SET` messages (not `PARAM_REQUEST_*`).

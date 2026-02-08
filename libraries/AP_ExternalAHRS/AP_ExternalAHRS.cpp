@@ -74,6 +74,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @DisplayName: External AHRS options
     // @Description: External AHRS options bitmask
     // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.
+    // @Bitmask: 1:SBG uses EKF as GNSS.
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
 

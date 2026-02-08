@@ -1,40 +1,40 @@
 ## PixPilot-C3 Flight Controller
 
-The PixPilot-C3 flight controller is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The PixPilot-C3 flight controller is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 
-•	STM32F427VIT6 and STM32F103C8T6 microcontroller
+•    STM32F427VIT6 and STM32F103C8T6 microcontroller
 
-•	two IMUs, two ICM42688-P(SPI)
+•    two IMUs, two ICM42688-P(SPI)
 
-•	Two barometers, BMP388(SPI)
+•    Two barometers, BMP388(SPI)
 
-•	builtin RAMTRON(SPI)
+•    builtin RAMTRON(SPI)
 
-•	microSD card slot
+•    microSD card slot
 
-•	5 UARTs
+•    5 UARTs
 
-•	USB(Type-C)
+•    USB(Type-C)
 
-•	PPM, S.Bus & DSM input 
+•    PPM, S.Bus & DSM input
 
-•	14 PWM outputs
+•    14 PWM outputs
 
-•	tow I2C ports and two FDCAN ports
+•    tow I2C ports and two FDCAN ports
 
-•	one S.Bus output
+•    one S.Bus output
 
-•	builtin Buzzer
+•    builtin Buzzer
 
-•	builtin LED
+•    builtin LED
 
-•	two voltage & current monitoring
+•    two voltage & current monitoring
 
-•	servo rail BEC independent power input for servos
+•    servo rail BEC independent power input for servos
 
-•	external safety Switch
+•    external safety Switch
 
 ## Pinout
 
@@ -44,294 +44,102 @@ The PixPilot-C3 flight controller is sold by a range of resellers listed on the 
 UART Mapping
 ============
 
- - SERIAL0 -> console (primary mavlink, usually USB)
- - SERIAL1 -> USART2  (telem1, DMA-enabled)
- - SERIAL2 -> USART3  (Telem2, DMA-enabled)
- - SERIAL3 -> UART4   (GPS1)
- - SERIAL4 -> UART8   (GPS2, DMA-enabled)
- - SERIAL5 -> UART7   (USER)
- 
+- SERIAL0 -> console (primary mavlink, usually USB)
+- SERIAL1 -> USART2  (telem1, DMA-enabled)
+- SERIAL2 -> USART3  (Telem2, DMA-enabled)
+- SERIAL3 -> UART4   (GPS1)
+- SERIAL4 -> UART8   (GPS2, DMA-enabled)
+- SERIAL5 -> UART7   (USER)
+
 Connector pin assignments
 =========================
 
 TELEM1, TELEM2 ports
 --------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | GND | GND |
 
 I2C1, I2C2 ports
 ----------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>SCL</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>SDA</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | SCL | +3.3V |
+| 3 | SDA | +3.3V |
+| 4 | GND | GND |
 
 CAN1, CAN2 ports
 ----------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | CAN_H | +12V |
+| 3 | CAN_L | +12V |
+| 4 | GND | GND |
 
 Safety port
 ----------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>LED</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>SAFKEY</td>
-   <td>+5V</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | LED | +5V |
+| 3 | SAFKEY | +5V |
 
 GPS1/I2C1, GPS2/I2C2 ports
 --------------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>SCL</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>SDA</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX | +3.3V |
+| 3 | RX | +3.3V |
+| 4 | SCL | +3.3V |
+| 5 | SDA | +3.3V |
+| 6 | GND | GND |
 
 Serial5 port
 ------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX (OUT) | +3.3V |
+| 3 | RX (IN) | +3.3V |
+| 4 | GND | GND |
 
 Power1, Power2 ports
 --------------------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>PIN</th>
-   <th>SIGNAL</th>
-   <th>VOLT</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>CURRENT</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4</td>
-   <td>VOLTAGE</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>6</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | PIN | SIGNAL | VOLT |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | VCC | +5V |
+| 3 | CURRENT | +3.3V |
+| 4 | VOLTAGE | +3.3V |
+| 5 | GND | GND |
+| 6 | GND | GND |
 
 DSM port
 --------
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1</td>
-   <td>VCC</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2</td>
-   <td>RX</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>   
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +3.3V |
+| 2 | RX | +3.3V |
+| 3 | GND | GND |
 
 RC Input
 --------
 
-All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin. 
+All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
 
 PWM Output
 ----------
@@ -348,14 +156,14 @@ signal on the bottom row.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 6 auxiliary PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5 and 6 in group2
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -390,12 +198,12 @@ Then reboot.
 
 DroneCAN capability
 ===================
-There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected. 
+
+There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected.
 
 Where to Buy
 ============
 
 `makeflyeasy <http://www.makeflyeasy.com>`_
-
 
 [copywiki destination="plane,copter,rover,blimp"]

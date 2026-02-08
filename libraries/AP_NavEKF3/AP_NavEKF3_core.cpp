@@ -1753,6 +1753,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         for (uint8_t index=0; index<3; index++) {
             const uint8_t stateIndex = index + 13;
             if (dvelBiasAxisInhibit[index]) {
+                zeroRows(nextP,stateIndex,stateIndex);
                 zeroCols(nextP,stateIndex,stateIndex);
                 nextP[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
             }

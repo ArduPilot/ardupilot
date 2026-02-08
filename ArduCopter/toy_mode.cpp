@@ -601,7 +601,7 @@ void ToyMode::update()
             } else {
                 new_mode = Mode::Number::ALT_HOLD;
             }
-        } else if (copter.flightmode->requires_GPS()) {
+        } else if (copter.flightmode->requires_position()) {
             // if we're in a GPS mode, then RTL
             new_mode = Mode::Number::RTL;
         } else {
@@ -650,7 +650,7 @@ void ToyMode::update()
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: mode %s", copter.flightmode->name4());
             // force fence on in all GPS flight modes
 #if AP_FENCE_ENABLED
-            if (copter.flightmode->requires_GPS()) {
+            if (copter.flightmode->requires_position()) {
                 copter.fence.enable(true, AC_FENCE_ALL_FENCES);
             }
 #endif
@@ -782,7 +782,7 @@ void ToyMode::trim_update(void)
  */
 void ToyMode::action_arm(void)
 {
-    bool needs_gps = copter.flightmode->requires_GPS();
+    bool needs_gps = copter.flightmode->requires_position();
 
     // don't arm if sticks aren't in deadzone, to prevent pot problems
     // on TX causing flight control issues

@@ -5,28 +5,28 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 
 ## Features
 
- - STM32F405 Microcontroller (168 MHz, 1 MB Flash)
- - ICM-42688-P 6-axis IMU (Gyro + Accel)
- - DPS310 Barometer
- - MAX7456 OSD chip
- - MicroSD card slot
- - USB-C port for firmware flashing and telemetry
- - 6 UART ports (UART1–UART6), UART4 is blocked is only for bluetooth which does not work with ArduPilot
- - 8 PWM motor outputs (M1–M8)
- - I2C port
- - 5 V (3 A) and 9 V (3 A) regulated power outputs
- - 3.3 V (500 mA) and 4.5 V (1 A) aux rails
- - Buzzer pads (BZ+ / BZ−)
- - RSSI input pad
- - BOOT button for DFU mode
- - 3 S – 6 S LiPo input voltage range
- - 30.5 × 30.5 mm mounting pattern (⌀4 mm holes)
+- STM32F405 Microcontroller (168 MHz, 1 MB Flash)
+- ICM-42688-P 6-axis IMU (Gyro + Accel)
+- DPS310 Barometer
+- MAX7456 OSD chip
+- MicroSD card slot
+- USB-C port for firmware flashing and telemetry
+- 6 UART ports (UART1–UART6), UART4 is blocked is only for bluetooth which does not work with ArduPilot
+- 8 PWM motor outputs (M1–M8)
+- I2C port
+- 5 V (3 A) and 9 V (3 A) regulated power outputs
+- 3.3 V (500 mA) and 4.5 V (1 A) aux rails
+- Buzzer pads (BZ+ / BZ−)
+- RSSI input pad
+- BOOT button for DFU mode
+- 3 S – 6 S LiPo input voltage range
+- 30.5 × 30.5 mm mounting pattern (⌀4 mm holes)
 
 ## Mechanical
 
- - 41.6mm x 39.4mm x 7.8mm
- - 10.5g
- - Mounting: 30.5mmx30.5mm (4 mm holes)
+- 41.6mm x 39.4mm x 7.8mm
+- 10.5g
+- Mounting: 30.5mmx30.5mm (4 mm holes)
 
 ## Wiring / Pinout
 
@@ -69,7 +69,7 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 
 ## RC Input
 
-RC input is provided for SBUS on the SBUS pads, or RX2/TX2 for other protocols, see https://ardupilot.org/plane/docs/common-rc-systems.html for more information. Note FPort will work on SBUS inputs but not provide telemetry. To obtain FPort telem a bi-directional inveter will need to be used.
+RC input is provided for SBUS on the SBUS pads, or RX2/TX2 for other protocols, see the [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html) for more information. Note FPort will work on SBUS inputs but not provide telemetry. To obtain FPort telem a bi-directional inverter will need to be used.
 SBUS pins are inverted and connected directly to to RX2.
 
 ---
@@ -88,7 +88,6 @@ PWM groups:
 | 4 | PWM7, PWM8 |
 | 5 | PWM9 |
 
-
 All channels within a group must share the same output rate.
 If any channel in a group uses DShot, all channels in that group must also use DShot.
 
@@ -99,12 +98,11 @@ If any channel in a group uses DShot, all channels in that group must also use D
 The board includes a built-in voltage and current sensor connected to ADC pins.
 Default configuration:
 
- - :ref:`BATT_MONITOR<BATT_MONITOR>` 4
- - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 10
- - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 11
- - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11.0
- - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 25.0
-
+- :ref:`BATT_MONITOR<BATT_MONITOR>` 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 10
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 11
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11.0
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 25.0
 
 Supports direct 3 S–6 S LiPo voltage measurement.
 
@@ -140,9 +138,9 @@ Connect your receiver’s analog RSSI output to this pad to enable RSSI display 
 
 ## Loading Firmware
 
-Firmware can be downloaded from: https://firmware.ardupilot.org/, by going into the right vehicle directory/version and looking for "FlysparkF4".
+Firmware can be downloaded from the [ArduPilot firmware server](https://firmware.ardupilot.org/), by going into the right vehicle directory/version and looking for "FlysparkF4".
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool.
 
-	Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the *.apj firmware files.
+    Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the *.apj firmware files.
 ---

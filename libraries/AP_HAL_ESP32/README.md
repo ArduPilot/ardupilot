@@ -1,15 +1,18 @@
 
 # Ardupilot port to the esp32 series mcu
 
-
 ## Building instructions
+
 0. Build currently tested on linux
-1. Checkout this branch https://github.com/ardupilot/ardupilot/tree/master
+1. Checkout this branch [ardupilot](https://github.com/ardupilot/ardupilot/tree/master)
 2. Use this to install ardupilot requirements:
+
 ```
 Tools/environment_install/install-prereqs-ubuntu.sh
 ```
+
 or
+
 ```
 Tools/environment_install/install-prereqs-arch.sh
 ```
@@ -39,6 +42,7 @@ cd ../../..
 ```
 
 4. Configure and run build:
+
 ```bash
 cd ardupilot
 ./waf configure
@@ -55,15 +59,17 @@ Do NOT use "./waf build", it's broken right now.
 
 TIPS:
 
- - ninja: error: loading 'build.ninja': No such file or directory
+- ninja: error: loading 'build.ninja': No such file or directory
+
    You need to run a plain './waf configure' FIRST, THEN run it with the --board type you want.
 
- -  we use toolchain and esp-idf from espressif , as a 'git submodule', so no need to preinstall etc.
-https://docs.espressif.com/projects/esp-idf/en/latest/get-started/ -
- (note we currently use https://github.com/espressif/esp-idf/tree/release/v5.3 )
+- we use toolchain and esp-idf from espressif , as a 'git submodule', so no need to preinstall etc.
 
+[Espressif documentation](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/) -
+ (note we currently use [esp-idf v5.3](https://github.com/espressif/esp-idf/tree/release/v5.3) )
 
- -   if you get compile error/s to do with CONFIG... such as
+- if you get compile error/s to do with CONFIG... such as
+
 in expansion of macro 'configSUPPORT_STATIC_ALLOCATION'
 warning: "CONFIG_SUPPORT_STATIC_ALLOCATION" is not defined
 
@@ -71,13 +77,15 @@ this means your 'sdkconfig' file that the IDF relies on is perhaps a bit out of 
 
 Changing the sdkconfig.defaults file will cause the sdkconfig to be deleted and regenerated. The sdkconfig will also be regenerated if it is manually deleted.
 
-If you need to change sdkconfig (which will not cause it to be deleted), you can edit sdkconfig manually or to use ninja menuconfig: 
+If you need to change sdkconfig (which will not cause it to be deleted), you can edit sdkconfig manually or to use ninja menuconfig:
 
 So double check you are using the correct IDF version:
+
 ```
 cd build/esp32{BOARD}/esp-idf_build
 ninja menuconfig
 ```
+
 navigate to [save]  (tab,tab,tab,enter)
 press [tab] then [ok] to update the sdkconfig file
 'config written' press [enter] to exit this dialog
@@ -88,6 +96,7 @@ cd ../../../..
 If you want to make changes to sdkconfig (sdkconfig is in the build dir) permanent and to commit them back in git, you should edit sdkconfig.defaults manually or use ninja save-defconfig tool after menuconfig and replace sdkconfig.defaults with defconfig.
 
 5. Recommended way to flash the firmware :
+
 ```
 ESPBAUD=921600 ./waf plane --upload
 ```
@@ -95,6 +104,7 @@ ESPBAUD=921600 ./waf plane --upload
 If the port isn't autodetected, it can be manually specified, e.g. `ESPPORT=/dev/tty<port> ESPBAUD=921600 ./waf plane --upload`.
 
 6. The espressif esp-idf original project is built at `cd build/esp32{BOARD}/esp-idf_build/`.
+
 You can use your default build system (make or ninja) to build other esp-idf target.
 
 For example :
@@ -104,11 +114,13 @@ For example :
   ninja monitor
 
 If you want to specify the port, specify before any command:
+
 ```
 ESPTOOL_PORT=/dev/ttyUSB1
 ```
 
 If you want to specify a wanted baudrate :
+
 ```
 ESPTOOL_BAUD=57600
 ESPTOOL_BAUD=921600
@@ -117,12 +129,14 @@ ESPTOOL_BAUD=921600
 You can find more info here : [ESPTOOL](https://github.com/espressif/esptool)
 
 For flashing from another machine you need the following files:
+
 ```
-build/<board>/esp-idf_build/bootloader/bootloader.bin 
+build/<board>/esp-idf_build/bootloader/bootloader.bin
 build/<board>/esp-idf_build/ardupilot.bin
-build/<board>/esp-idf_build/partition_table/partition-table.bin 
+build/<board>/esp-idf_build/partition_table/partition-table.bin
 ```
-see build/<board>/esp-idf_build/flash_project_args (after building) for hints on what arguments to use
+
+see `build/<board>/esp-idf_build/flash_project_args` (after building) for hints on what arguments to use
 
 ---
 OLD
@@ -145,11 +159,12 @@ And the cmake link the final ardupilot.elf against previous built libraries.
 
 The ardupilot.elf contains all symbol. The cmake provide a stripped version as ardupilot.bin.
 
-
 ## Test hardware
+
 Currently esp32 dev board with connected gy-91 10dof sensor board is supported. Pinout (consult UARTDriver.cpp and SPIDevice.cpp for reference):
 
 ### Uart connection/s
+
 Internally connected on most devboards, just for reference.
 
 After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages.
@@ -178,8 +193,7 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GND |       GND   |
 | 5v  |       Pwr   |
 
-
-###  I2C connection ( for gps with leds/compass-es/etc onboard, or digital airspeed sensorrs, etc):
+### I2C connection ( for gps with leds/compass-es/etc onboard, or digital airspeed sensorrs, etc):
 
 | ESP32   | I2C       |
 | ---     | ---       |
@@ -188,9 +202,10 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GND     | GND       |
 | 5v      | Pwr       |
 
-
 ### Compass (using i2c)
- - u need to set the ardupilot params, and connected a GPS that has at least one i2c compass on it.. tested this with a HMC5883 and/or LIS3MDL
+
+- u need to set the ardupilot params, and connected a GPS that has at least one i2c compass on it.. tested this with a HMC5883 and/or LIS3MDL
+
 COMPASS_ENABLE=1
 COMPASS_EXTERNAL=1
 COMPASS_EXTERN2=1
@@ -215,7 +230,6 @@ BATT_CURR_PIN = 2  - and it will attempt to read the adc value on GPIO34 for bat
 BATT_VOLT_PIN = 1  - and it will attempt to read the adc value on GPIO35 for  battery voltage
 ARSPD_PIN =     4  - and it will attempt to read the adc value on GPIO36 for analog airspeed data
 
-
 if HAL_ESP32_ADC_PINS == HAL_ESP32_ADC_PINS_OPTION2:
 | ESP32   | AnalogIn   |
 | ---     | ---        |
@@ -230,8 +244,6 @@ RSSI_ANA_PIN =  39  - and it will attempt to read the adc value on GPIO39 for rs
 BATT_CURR_PIN = 34  - and it will attempt to read the adc value on GPIO34 for battery current
 BATT_VOLT_PIN = 35  - and it will attempt to read the adc value on GPIO35 for  battery voltage
 ARSPD_PIN =     36  - and it will attempt to read the adc value on GPIO36 for analog airspeed data
-
-
 
 ### RC Servo connection/s
 
@@ -259,11 +271,10 @@ SERVO5_FUNCTION = 4
 SERVO6_FUNCTION = 4
 // right now, we only have 6 channels of output due to pin limitations..
 
-
 (If the RTC source is not required, then Pin12 32K_XP and Pin13 32K_XN can be used as digital GPIOs, so we do, and it works)
 
-
 ### GY-91 connection
+
 This is how buzz has the GY91 wired ATM, but its probable that connecting external 3.3V supply to the VIN is better than connecting a 5V supply, and then the 3V3 pin on the sensor board can be left disconnected, as it's actually 3.3v out from the LDO onboard.
 
 |ESP32|GY-91|
@@ -278,7 +289,8 @@ This is how buzz has the GY91 wired ATM, but its probable that connecting extern
 |IO26|CSB|
 
 ## debugger connection
-Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a red PCB with a bunch of jtag headers on it and doesn't cost too much. https://www.amazon.com/TIAO-Multi-Protocol-Adapter-JTAG-Serial/dp/B0156ML5LY
+
+Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a red PCB with a bunch of jtag headers on it and doesn't cost too much. [Amazon](https://www.amazon.com/TIAO-Multi-Protocol-Adapter-JTAG-Serial/dp/B0156ML5LY)
 
 |ESP32| 20PINJTAG|
 | --- | --- |
@@ -301,7 +313,9 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 |3.3v | Vcc/PIN4 |
 
 ## Current progress
+
 ### Main tasks
+
 - [x] Build system
 - [x] Scheduler and semaphores
 - [x] SPI driver
@@ -329,9 +343,10 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 
 ### Known Bugs
 
-- [ ] slow but functional wifi implementation for tcp & udp. 
+- [ ] slow but functional wifi implementation for tcp & udp.
 
 ### Future development
+
 - [ ] Automatic board header listing
 - [ ] UDP mavlink over wifi does not automatically stream to client/s when they connect to wifi AP.
 - [ ] Fix parameters loading in wifi both udp and tcp (slow and not reliable)
@@ -345,12 +360,11 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [ ] GSD
 - [ ] Buzzer
 
-
 ### analysing a 'coredump' from the uart...
 
 Save the log where coredump appears to a file, i'll call it core.txt
 ================= CORE DUMP START =================
-<body of base64-encoded core dump, save it to file on disk>
+(body of base64-encoded core dump, save it to file on disk)
 ================= CORE DUMP END ===================
 cat > core.txt
 ...
@@ -381,17 +395,18 @@ ctrl-c to exit gdb
 
 # storage tips - not generally needed, as u can update params with missionplanenner over mavlink etc.
 
-
 # determine offset and size of 'storage' partition in flash
+
 parttool.py --partition-table-file partitions.csv get_partition_info --partition-name storage
 >0x3e0000 0x20000
 
 # then backup ardupilot 'storage' area (its a partition, see partitions.csv) to a file on disk:
+
 esptool.py read_flash 0x3e0000 0x20000 storage.bin
 
 # restore the storage.bin to your device... basically the same flash command as used in esp32.py but different offset and file:
-esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0x3e0000 storage.bin
 
+esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0x3e0000 storage.bin
 
 ### example log of boot messages:
 
@@ -470,5 +485,3 @@ esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset 
 [22:51:22:044] spi device constructed SPI:MPU9250:0:1
 [22:51:23:878] Sensor failure: INS: unable to initialise driver
 [22:51:26:878] Sensor failure: INS: unable to initialise driver
-
-
