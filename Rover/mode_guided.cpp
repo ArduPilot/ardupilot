@@ -257,17 +257,17 @@ bool ModeGuided::reached_destination() const
 }
 
 // set desired speed in m/s
-bool ModeGuided::set_desired_speed(float speed)
+bool ModeGuided::set_desired_speed(float speed_ms)
 {
     switch (_guided_mode) {
     case SubMode::WP:
-        return g2.wp_nav.set_speed_max(speed);
+        return g2.wp_nav.set_speed_max(speed_ms);
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         // speed is set from mavlink message
         return false;
     case SubMode::Loiter:
-        return rover.mode_loiter.set_desired_speed(speed);
+        return rover.mode_loiter.set_desired_speed(speed_ms);
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         // no speed control
