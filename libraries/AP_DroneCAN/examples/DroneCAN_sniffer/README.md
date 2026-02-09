@@ -1,3 +1,5 @@
+# DroneCAN Sniffer
+
 This is a UAVCAN sniffer designed to run on an ArduPilot board. It can
 be used to watch traffic on a UAVCAN bus, showing exactly what would
 be received by another node.
