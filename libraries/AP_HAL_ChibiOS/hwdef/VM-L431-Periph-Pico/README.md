@@ -1,4 +1,4 @@
-### VM-L431-Periph-Pico
+# VM-L431-Periph-Pico
 
 Vimdrones AP_Periph Pico board to convert serial(GPS) and I2C(COMPASS/Air Speed) device in to Dronecan device.
 

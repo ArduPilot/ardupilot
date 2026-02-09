@@ -1,4 +1,4 @@
-## PixSurveyA1 Flight Controller
+# PixSurveyA1 Flight Controller
 
 The flight controller is based on FMUv3, with added MPU9250 or ICM20948 internal compass support
 

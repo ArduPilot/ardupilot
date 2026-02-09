@@ -1,4 +1,4 @@
-### VM-L431-SRV-Hub-4CHP
+# VM-L431-SRV-Hub-4CHP
 
 Vimdrones CAN Servo Hub peripheral with 4 channels PWM output and 4 channel Servo VCC current measure (4CHP).
 

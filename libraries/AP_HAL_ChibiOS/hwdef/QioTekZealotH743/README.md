@@ -1,4 +1,4 @@
-## QioTekZealotH743 Flight Controller
+# QioTekZealotH743 Flight Controller
 
 The QioTek Zealot H743 flight controller is sold by a range of resellers listed at [QioTek](http://www.Qio-Tek.com)
 

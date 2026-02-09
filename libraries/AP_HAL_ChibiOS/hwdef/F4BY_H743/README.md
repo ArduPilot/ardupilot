@@ -1,8 +1,4 @@
-
-=========
-
-F4BY_H743
-=========
+# F4BY_H743
 
 The F4BY_H743 autopilot is manufactured by `F4BY Team <https://f4by.com>`__
 
