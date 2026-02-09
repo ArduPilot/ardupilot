@@ -322,10 +322,14 @@ void AP_MotorsHeli::set_desired_spool_state(DesiredSpoolState desired)
     // Safety constraint: without interlock, limit to GROUND_IDLE
     // (allows swash movement for autorotation, but rotor cannot spin up)
     if (!get_interlock()) {
-        if (desired > DesiredSpoolState::GROUND_IDLE) {
-            _spool_desired = DesiredSpoolState::GROUND_IDLE;
-        } else {
-            _spool_desired = desired;  // Accept SHUT_DOWN or GROUND_IDLE requests
+        switch (desired) {
+            case DesiredSpoolState::SHUT_DOWN:
+                _spool_desired = DesiredSpoolState::SHUT_DOWN;
+                break;
+            case DesiredSpoolState::GROUND_IDLE:
+            case DesiredSpoolState::THROTTLE_UNLIMITED:
+                _spool_desired = DesiredSpoolState::GROUND_IDLE;
+                break;
         }
         return;
     }
