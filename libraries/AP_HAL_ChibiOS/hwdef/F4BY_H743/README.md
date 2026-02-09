@@ -4,14 +4,12 @@ The F4BY_H743 autopilot is manufactured by `F4BY Team <https://f4by.com>`__
 
 ![F4BY_H743](F4BY_H743_board_image.jpg)
 
-Where to Buy
-============
+## Where to Buy
 
 Shop `here https://f4by.com/en/?order/our_product`__
 The instructions, schematic, 3D model  are available `here https://f4by.com/en/?doc/fc_f4by_v3.0.1_h743`__
 
-Specifications
-==============
+## Specifications
 
 - Processor
   - STM32H743 32-bit processor, 480Mhz
@@ -38,8 +36,7 @@ Specifications
   - USB GHS type port for external connector.
   - DFU bootloader button
 
-Analog sensors
-==============
+## Analog sensors
 
 - Analog airspeed PC0 (0...+3.3v range) pin 10
 - Analog rssi PC1     (0...+3.3v range) pin 11
@@ -48,21 +45,18 @@ Analog sensors
 - Board power sensing PC4 (0...+6.6v range)
 - Servo power sensing PC5 (0...+9.9v range)
 
-Analog Airspeed
-===============
+## Analog Airspeed
 
 If the ARSPD pin is used for analog airspeed  input.
 Set :ref:`ARSPD_PIN<ARSPD_PIN>` to 10.
 Set :ref:`ARSPD_TYPE<ARSPD_TYPE>` to "1".
 
-Analog RSSI
-===========
+## Analog RSSI
 
 If the RSSI pin is used for analog RSSI input. Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 11.
 Set :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" .
 
-UART Mapping
-============
+## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn
 
@@ -75,16 +69,14 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 |4     |  UART4  |  None          |  ✘    |   ✔   |
 |5     |  UART5  |  None          |  ✘    |   ✔   |
 
-RC Input
-========
+## RC Input
 
 - RCin  PB0
 Using the RCin pin will support all unidirectional RC protocols. (PPM, SBUS, iBus, PPM-Sum, DSM,DSM2,DSM-X,SRXL and SUM-D)
 
 - USART2 for Bi-directional protocols (CRSF/ELRS,SRXL2,IRC Ghost, and FPort) see `here <https://ardupilot.org/sub/docs/common-rc-systems.html#common-rc-systems>`
 
-PWM Output
-==========
+## PWM Output
 
 PWM/DShot capable motor outputs:
 
@@ -126,8 +118,7 @@ Group #4
 
 **Note:** All outputs of a group must be of the same type (PWM or DSHOT).
 
-GPIOs
-=====
+## GPIOs
 
 -D1 pin 1
 -D2 pin 2
@@ -137,23 +128,20 @@ GPIOs
 
 **Note:**  0 ... +3.3V range. This pins can be used for relay control, camera shutter, camera feedback e.t.c.
 
-Dimensions
-==========
+## Dimensions
 
 - Size: 50 x 50 mm
 - Mounting holes: 45 x 45 mm (M3)
 - Weight: 15.5 g
 
-Pinout
-======
+## Pinout
 
 ![F4BY_H743 V3.0.3 Board](f4BY_H743_v303_diagramm.jpg "F4BY_H743 V3.0.3")
 
 RCIN solder pad location for board version 3.0.3
 ![RCIN solder pad location](rcin_303.jpg "RCIN solder pad location ")
 
-Battery Monitor
-===============
+## Battery Monitor
 
 The board has a external current and voltage sensor input. The sensors range from 0v to +6.6V.
 
@@ -165,18 +153,15 @@ The default battery parameters are:
 - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 16.04981
 - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 100 (will need to be adjusted for whichever current sensor is attached)
 
-Compass
-=======
+## Compass
 
 The F4BY_H743 has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.
 
-Firmware
-========
+## Firmware
 
 for F4BY_H743 can be found `here <https://firmware.ardupilot.org>`  in sub-folders labeled “F4BY_H743”.
 
-Loading Firmware
-================
+## Loading Firmware
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of xxxxxx.apj firmware files with any ArduPilot compatible ground station.
 
