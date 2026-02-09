@@ -409,7 +409,7 @@ esptool.py read_flash 0x3e0000 0x20000 storage.bin
 
 esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0x3e0000 storage.bin
 
-### example log of boot messages:
+## example log of boot messages:
 
 [22:51:20:226] ets Jun  8 2016 00:22:57
 [22:51:20:228]
