@@ -1,3 +1,5 @@
+# Shell Completion
+
 ## on Bash
 
 To install the completion, you should either, source the main script on your current terminal or source the main script on your bash configuration.

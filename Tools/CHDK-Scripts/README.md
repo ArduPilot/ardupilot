@@ -1,4 +1,4 @@
-## 3DR EAI
+# 3DR EAI
 
 Based on: KAP UAV Exposure Control Script v3.1
   -- Released under GPL by waterwingz and wayback/peabody
