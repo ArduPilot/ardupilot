@@ -68,8 +68,9 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
   Serial protocols can be adjusted to personal preferences.
 
-![Port Diagram-TOP_BOTTOM](./images/NarinFC_X3_TOP_BOTTOM.png "Port Diagram-TOP_BOTTOM")
+## Pinout
 
+![Port Diagram-TOP_BOTTOM](./images/NarinFC_X3_TOP_BOTTOM.png "Port Diagram-TOP_BOTTOM")
 
 ### 1. I2C, UART2 Port
 

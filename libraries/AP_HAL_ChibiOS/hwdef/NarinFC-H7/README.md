@@ -70,6 +70,8 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
   Serial protocols can be adjusted to personal preferences.
 
+## Pinout
+
 ![Port Diagram & Pin outs](./images/4.Port_Diagram_Pin_outs_Diagram-A.png "Port Diagram-A")
 
 ### 1. TELEM1, TELEM2 Port
