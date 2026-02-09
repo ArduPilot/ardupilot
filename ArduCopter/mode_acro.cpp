@@ -15,11 +15,7 @@ void ModeAcro::run()
 
     // Determine desired spool state based on pilot throttle input.
     // The setter enforces that disarmed aircraft are held at SHUT_DOWN until armed.
-    if (copter.ap.throttle_zero
-        || (copter.air_mode == AirMode::AIRMODE_ENABLED && motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN)) {
-        // throttle_zero is never true in air mode, but the motors should be allowed to go through ground idle
-        // in order to facilitate the spoolup block
-        // if airmode is enabled only an actual landing will spool down the motors
+    if (copter.ap.throttle_zero) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
