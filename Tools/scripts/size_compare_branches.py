@@ -258,13 +258,16 @@ class SizeCompareBranches(BuildScriptBase):
         if jobs is not None:
             waf_configure_args.extend(["-j", str(jobs)])
 
-        self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
+        non_bootloader_configure_done : bool = False
         for v in vehicle:
             if v == 'bootloader':
                 # need special configuration directive
                 continue
+            if not non_bootloader_configure_done:
+                self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
+                non_bootloader_configure_done = True
             self.run_waf([v], show_output=False, source_dir=source_dir)
         for v in vehicle:
             if v != 'bootloader':
