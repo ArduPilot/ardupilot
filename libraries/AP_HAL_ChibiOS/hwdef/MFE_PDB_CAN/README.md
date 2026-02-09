@@ -56,8 +56,9 @@ The MFE_PDB_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://w
 | 1 | VCC | +12V |
 | 2 | GND | +GND |
 
-BATT_VOLT_MULT  17.93387
+## ArduPilot Parameters
 
+BATT_VOLT_MULT  17.93387
 BATT_AMP_PERVLT 22.0
 
 ## Where to Buy
