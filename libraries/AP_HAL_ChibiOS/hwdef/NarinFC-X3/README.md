@@ -71,7 +71,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 ![Port Diagram-TOP_BOTTOM](./images/NarinFC_X3_TOP_BOTTOM.png "Port Diagram-TOP_BOTTOM")
 
 
-#### 1. I2C, UART2 Port
+### 1. I2C, UART2 Port
 
 ![I2C, UART2 Port](./images/1.2C1_UART2_PORT.png "I2C, UART2 Port")
 
@@ -79,7 +79,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - UART 2: Ardupilot port Serial2 GPS1
 
 
-#### 2. UART 7, UART 4 Port
+### 2. UART 7, UART 4 Port
 
 ![UART 7, UART 4 Port](./images/2.UART7_UART4_PORT.png "UART 7, UART 4 Port")
 
@@ -87,21 +87,21 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - UART 4: Ardupilot port Serial4 Telem_1
 
 
-#### 3. UART 6, RSSI Port
+### 3. UART 6, RSSI Port
 
 ![UART 6, RSSI Port](./images/3.UART6_RSSI_PORT.png "UART 6, RSSI Port")
 
 - UART 6: Ardupilot port Serial6 Receiver
 
 
-#### 4. CAN Port
+### 4. CAN Port
 
 ![CAN Port](./images/4.CAN_PORT.png "CAN Port")
 
 - JST GH 6P connector
 
 
-#### 5. PWM Port-1
+### 5. PWM Port-1
 
 ![PWM Port-1](./images/5.PWM_PORT1.png "PWM Port-1")
 
@@ -111,7 +111,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - BATT Input
 
 
-#### 6. PWM Port-2
+### 6. PWM Port-2
 
 ![PWM Port-2](./images/6.PWM_PORT2.png "PWM Port-2")
 
@@ -121,7 +121,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - BATT Input
 
 
-#### 7. UART 3 Port
+### 7. UART 3 Port
 
 - UART 3: Ardupilot port Serial3 MSP Display Port
 
@@ -131,17 +131,17 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - RC_IN : Remote control receiver
 
 
-#### 8. MicroSD Card Slot
+### 8. MicroSD Card Slot
 
 
-#### 9. PWM Port-3
+### 9. PWM Port-3
 
 - PWM 9 ~ PWM 12
 
 ![PWM Port-3](./images/9.PWM_PORT3.png "PWM Port-3")
 
 
-#### 10. DEBUG/UART7 Port
+### 10. DEBUG/UART7 Port
 
 UART7(SERIAL6) is labeled DEBUG RX/TX below
 

@@ -72,14 +72,14 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![Port Diagram & Pin outs](./images/4.Port_Diagram_Pin_outs_Diagram-A.png "Port Diagram-A")
 
-#### 1. TELEM1, TELEM2 Port
+### 1. TELEM1, TELEM2 Port
 
 ![TELEM Pinout](./images/4.1.TELEM1,TELEM2_Port_JST_GH_6P_Connector.png "TELEM Pinout")
 
 - JST GH 6P connector
 - TELEMETRY Port
 
-#### 2. CAN1, CAN2 Port
+### 2. CAN1, CAN2 Port
 
 ![CAN Port](./images/4.2.CAN1,CAN2_Port_JST_HG_4P_Connector.png "CAN Port")
 
@@ -88,25 +88,25 @@ Compared with previous autopilots, it has better performance and higher reliabil
 - Power Supply: Typically provides 5V or 12V output
 - Pin Configuration: Usually includes CAN_H, CAN_L, VCC, and GND
 
-#### 3. I2C, I2C2, I2C3, I2C4 Port
+### 3. I2C, I2C2, I2C3, I2C4 Port
 
 ![I2C Port](./images/4.3.I2C1,I2C2,I2C3,I2C4_Port_JST_GH_4P_Connector.png "I2C Port")
 
 - JST GH 4P connector
 
-#### 4. UART4 Port
+### 4. UART4 Port
 
 ![UART Port](./images/4.4.UART4_Port_JST_GH_6P_Connector.png "UART Port")
 
 - JST GH 6P connector
 
-#### 5. RSSI Port
+### 5. RSSI Port
 
 - RSSI input
 
 ![SPI Port](./images/13.RSSI.png "RSSI input")
 
-#### 6. GPS & Safety Port
+### 6. GPS & Safety Port
 
 ![GPS & Safety Port](./images/4.5.GPS_Safety_Port_JST_GH_10P_Connector.png "GPS & Safety Port")
 
@@ -115,7 +115,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![Port Diagram & Pin outs](./images/4.Port_Diagram_Pin_outs_Diagram-B.png "Port Diagram-B")
 
-#### 7. PWM & RC_IN
+### 7. PWM & RC_IN
 
 The NarinFC-H7 supports up to 14 PWM outputs. Outputs are grouped and all outputs within their group must be the same protocol.
 
@@ -124,19 +124,19 @@ The NarinFC-H7 supports up to 14 PWM outputs. Outputs are grouped and all output
 - 2.54mm pitch DuPont connector
 - RC_IN : Remote control receiver
 
-#### 8. Power Input
+### 8. Power Input
 
 ![Power Input](./images/4.7.Power_Input.png "Power Input")
 
 - 2mm pitch DuPont connector
 
-#### 9. ADC Port
+### 9. ADC Port
 
 - ADC input
 
 ![SPI Port](./images/12.ADC.png "ADC input")
 
-#### 10. DEBUG/UART7 Port
+### 10. DEBUG/UART7 Port
 
 UART7(SERIAL6) is labeled DEBUG RX/TX below
 
@@ -145,18 +145,18 @@ UART7(SERIAL6) is labeled DEBUG RX/TX below
 - JST GH 6P connector
 - DEBUG NODMA
 
-#### 11. USB Port
+### 11. USB Port
 
 - USB C Type
 
-#### 12. SPI Port
+### 12. SPI Port
 
 ![SPI Port](./images/4.10.SPI_Port_JST_GH_7P_Connector.png "SPI Port")
 
 - JST GH 7P connector
 - SPI Port
 
-#### 13. SD CARD
+### 13. SD CARD
 
 - SD CARD
 

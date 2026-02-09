@@ -4,26 +4,26 @@
 
 ## Features
 
-#### Processor
+### Processor
 
 - STM32H743 32-bit processor
 - 480MHz
 - 2MB Flash
 - 1MB RAM
 
-#### Sensors
+### Sensors
 
 - Invensense IIM-42653 Industrial IMU with heater resistor
 - Bosch BMP390 Barometer
 - ST IIS2MDC Magnetometer
 
-#### Power
+### Power
 
 - 5.5V - 54V (2S - 12S) input
 - 12V, 2A output
 - 5V, 2A output. 300ma for main system, 200ma for heater
 
-#### Interfaces
+### Interfaces
 
 - **Micro SD**
 - **USB-C**
@@ -59,7 +59,7 @@
   - 3.3V Out, UART, SWD
   - JST-SH 6 Pin
 
-##### Dimensions
+### Dimensions
 
 - Size: 3.6 × 3.6 × 0.8 cm
 - Weight: 7.5g with MicroSD card
@@ -69,7 +69,7 @@
 ![top](ark_fpv_top.png)
 ![bottom](ark_fpv_bottom.png)
 
-#### PWM UART4 - 8 Pin JST-GH
+### PWM UART4 - 8 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -82,7 +82,7 @@
 | 7   | FMU_CH4_EXT     | 3.3V         |
 | 8   | GND             | GND          |
 
-#### RC - 4 Pin JST-GH
+### RC - 4 Pin JST-GH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
@@ -91,7 +91,7 @@
 | 3   | USART6_TX_OUTPUT_EXT| 3.3V    |
 | 4   | GND                | GND     |
 
-#### PWM AUX - 6 Pin JST-SH
+### PWM AUX - 6 Pin JST-SH
 
 | Pin | Signal Name     | Voltage |
 |-----|-----------------|---------|
@@ -102,7 +102,7 @@
 | 5   | FMU_CH9_EXT     | 3.3V    |
 | 6   | GND             | GND     |
 
-#### POWER AUX - 3 Pin JST-GH
+### POWER AUX - 3 Pin JST-GH
 
 | Pin | Signal Name | Voltage      |
 |-----|-------------|--------------|
@@ -110,7 +110,7 @@
 | 2   | GND         | GND          |
 | 3   | VBAT IN/OUT | 5.5V-54V     |
 
-#### CAN - 4 Pin JST-GH
+### CAN - 4 Pin JST-GH
 
 | Pin | Signal Name | Voltage |
 |-----|-------------|---------|
@@ -119,7 +119,7 @@
 | 3   | CAN1_N      | 5.0V    |
 | 4   | GND         | GND     |
 
-#### GPS - 6 Pin JST-GH
+### GPS - 6 Pin JST-GH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
@@ -130,7 +130,7 @@
 | 5   | I2C1_SDA_GPS1_EXT   | 3.3V    |
 | 6   | GND                 | GND     |
 
-#### TELEM - 6 Pin JST-GH
+### TELEM - 6 Pin JST-GH
 
 | Pin | Signal Name           | Voltage |
 |-----|-----------------------|---------|
@@ -141,7 +141,7 @@
 | 5   | UART7_RTS_TELEM1_EXT | 3.3V    |
 | 6   | GND                  | GND     |
 
-#### VTX - 6 Pin JST-GH
+### VTX - 6 Pin JST-GH
 
 Note: connector pinout not in same order as standard HD VTX cabling
 | Pin | Signal Name           | Voltage |
@@ -153,7 +153,7 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 5   | USART2_RX_TELEM3_EXT | 3.3V    |
 | 6   | GND                  | GND     |
 
-#### SPI (OSD or IMU) - 8 Pin JST-SH
+### SPI (OSD or IMU) - 8 Pin JST-SH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
@@ -166,7 +166,7 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 7   | SPI6_nRESET_EXT     | 3.3V    |
 | 8   | GND                 | GND     |
 
-#### Flight Controller Debug - 6 Pin JST-SH
+### Flight Controller Debug - 6 Pin JST-SH
 
 | Pin | Signal Name     | Voltage |
 |-----|-----------------|---------|

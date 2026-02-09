@@ -7,7 +7,7 @@ It brings you ultimate performance, stability, and reliability in every aspect.
 
 ![AP-H743-R1](ap-h743r1-main.png)
 
-### Processors & Sensors
+## Processors & Sensors
 
 - FMU Processor: STM32H743VIT6
 - 32 Bit Arm® Cortex®-M7, 480MHz, 2MB flash memory, 1MB RAM
@@ -18,7 +18,7 @@ It brings you ultimate performance, stability, and reliability in every aspect.
 - Mag: QMC5883P
 - Barometer: DPS310(Version1),SPL06(Version2)
 
-### Interfaces
+## Interfaces
 
 - 15x PWM Servo Outputs
 - 1x Dedicated S.Bus Input

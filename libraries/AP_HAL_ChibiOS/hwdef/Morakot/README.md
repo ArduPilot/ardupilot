@@ -15,24 +15,24 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 
 ## Features
 
-#### Sensors
+### Sensors
 
 - [ICM-45686 High-Performance IMU](https://invensense.tdk.com/products/motion-tracking/6-axis/icm-45686/)
 - [Bosch BMP390 Barometer](https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp390/)
 - [ST IIS2MDC Magnetometer](https://www.st.com/en/mems-and-sensors/iis2mdc.html)
 
-#### Microprocessor
+### Microprocessor
 
 - [STM32H743VIT MCU](https://www.st.com/en/microcontrollers-microprocessors/stm32h743vi.html)
 - 480Mhz / 1MB RAM / 2MB Flash
 
-#### Power
+### Power
 
 - 3S–8S DC Input power
 - 5V 2A BEC peripherals power
 - 12V 2A BEC video power
 
-#### Other
+### Other
 
 - LED Indicators
 - Battery voltage indicator LED
@@ -80,7 +80,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 
 ## Connetions
 
-#### ESC1 - 8 Pin JST-GH
+### ESC1 - 8 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -93,7 +93,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 7   | MOTOR/SERVO 3   | 3.3V         |
 | 8   | MOTOR/SERVO 4   | 3.3V         |
 
-#### ESC2 - 8 Pin JST-GH
+### ESC2 - 8 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -107,7 +107,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 8   | MOTOR/SERVO 8   | 3.3V         |
 
 
-#### CAN - 4 Pin JST-GH
+### CAN - 4 Pin JST-GH
 
 | Pin | Signal Name | Voltage |
 |-----|-------------|---------|
@@ -116,7 +116,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 3   | CAN1_L      | 5.0V    |
 | 4   | GND         | GND     |
 
-#### GPS - 6 Pin JST-GH
+### GPS - 6 Pin JST-GH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
@@ -127,7 +127,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 5   | I2C1_SDA            | 3.3V    |
 | 6   | GND                 | GND     |
 
-#### UART(TELEM) - 6 Pin JST-GH
+### UART(TELEM) - 6 Pin JST-GH
 
 | Pin | Signal Name           | Voltage |
 |-----|-----------------------|---------|
@@ -138,7 +138,7 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 5   | UART7_RTS             | 3.3V    |
 | 6   | GND                   | GND     |
 
-#### VTX - 7 Pin JST-GH
+### VTX - 7 Pin JST-GH
 
 Note: connector pinout not in same order as standard HD VTX cabling
 | Pin | Signal Name           | Voltage |
@@ -151,7 +151,7 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 6   | GND                   | 3.3V    |
 | 7   | USART3_RX             | GND     |
 
-#### SPI (external OSD or IMU) - 6 Pin JST-SH
+### SPI (external OSD or IMU) - 6 Pin JST-SH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
@@ -162,7 +162,7 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 5   | SPI4_CS             | 3.3V    |
 | 6   | GND                 | GND     |
 
-#### RC - 4 Pin JST-GH
+### RC - 4 Pin JST-GH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
@@ -171,7 +171,7 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 3   | UART8_TX            | 3.3V    |
 | 4   | GND                 | GND     |
 
-#### ETH - 4 Pin JST-GH
+### ETH - 4 Pin JST-GH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
