@@ -6,7 +6,7 @@ Connection to SITL is made via a UDP link. The physics backend should listen for
 
 After a connection has been made, the optional values should be set. Then the vehicle state can be sent with `SendState`. This call includes all of the required values. The `servo_out` array supports 16 servo outputs from ArduPilot.
 
-### Running the `simpleRover` example
+## Running the `simpleRover` example
 
 The examples can be built using `cmake`:
 
