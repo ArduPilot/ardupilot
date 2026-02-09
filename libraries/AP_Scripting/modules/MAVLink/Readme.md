@@ -1,3 +1,5 @@
+# MAVLink Lua Modules
+
 These .lua definition for messages can be generated using pymavlink with the following command:
 (change the last path accordingly to place the files where you need them)
 
