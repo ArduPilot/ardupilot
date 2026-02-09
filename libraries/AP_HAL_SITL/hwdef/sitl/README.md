@@ -1,4 +1,4 @@
-### sitl
+# sitl
 
 This is the base hwdef.dat for ArduPilot simulations.
 
