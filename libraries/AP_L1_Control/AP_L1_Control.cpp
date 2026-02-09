@@ -1,4 +1,5 @@
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Logger/AP_Logger.h>
 #include "AP_L1_Control.h"
 
 extern const AP_HAL::HAL& hal;
@@ -230,23 +231,29 @@ void AP_L1_Control::_update_lat_acc_gain(const Vector2f &groundspeed)
         _lat_acc_k_tc_prev = lat_acc_k_tc;
     }
 
-    if (!is_positive(lat_acc_k_tc)) {
-        return;
+    uint16_t status = RLAG_OK;
+
+    const bool rlag_enabled = is_positive(lat_acc_k_tc);
+    if (!rlag_enabled) {
+        status |= RLAG_DISABLED;
     }
 
     const uint32_t now_us = AP_HAL::micros();
     if (_last_lat_acc_update_us == 0) {
+        status |= RLAG_FIRST_CALL;
         _last_lat_acc_update_us = now_us;
-        return;
     }
 
-    const float dt = (now_us - _last_lat_acc_update_us) * 1.0e-6f;
-    _last_lat_acc_update_us = now_us;
+    float dt = NaNf;
+    if (rlag_enabled && (_last_lat_acc_update_us != 0)) {
+        dt = (now_us - _last_lat_acc_update_us) * 1.0e-6f;
+        _last_lat_acc_update_us = now_us;
 
-    // Require calling at a minimum of 5 Hz to operate.
-    if (!is_positive(dt) || dt > 0.2f) {
-        _lat_acc_k = 1.0f;
-        return;
+        // Require calling at a minimum of 5 Hz to operate.
+        if (!is_positive(dt) || dt > 0.2f) {
+            _lat_acc_k = 1.0f;
+            status |= RLAG_BAD_DT;
+        }
     }
 
     const float ground_speed_m_s = groundspeed.length();
@@ -255,13 +262,13 @@ void AP_L1_Control::_update_lat_acc_gain(const Vector2f &groundspeed)
     // low speeds this gets noisy. Enforce a conservative minimum of 5 m/s.
     const float min_groundspeed_m_s = MAX(_aparm.min_groundspeed.get(), 5.0f);
     if (ground_speed_m_s < min_groundspeed_m_s) {
-        return;
+        status |= RLAG_LOW_GS;
     }
 
     // Only learn when guidance is commanding a meaningful turn. Use an
     // equivalent 5° bank lateral-acceleration threshold as a noise floor.
     if (fabsf(_latAccDem) < GRAVITY_MSS * tanf(radians(5.0f))) {
-        return;
+        status |= RLAG_LOW_DEMAND;
     }
 
     const float roll_rad = _ahrs.get_roll_rad();
@@ -277,40 +284,80 @@ void AP_L1_Control::_update_lat_acc_gain(const Vector2f &groundspeed)
 
     // Smallest model denominator considered reliable to avoid amplifying noise.
     if (model_abs_lat_accel_mss <= 0.1f) {
-        return;
+        status |= RLAG_MODEL_TOO_SMALL;
     }
 
-    const Vector3f accel_ef = _ahrs.get_accel_ef();
-    const Vector2f track_lat_dir =
-        Vector2f(-groundspeed.y, groundspeed.x) * (1.0f / ground_speed_m_s);
+    float measured_lat_accel_mss = NaNf;
+    if (is_positive(ground_speed_m_s)) {
+        const Vector3f accel_ef = _ahrs.get_accel_ef();
+        const Vector2f track_lat_dir =
+            Vector2f(-groundspeed.y, groundspeed.x) * (1.0f / ground_speed_m_s);
 
-    const float measured_lat_accel_mss =
-        accel_ef.x * track_lat_dir.x + accel_ef.y * track_lat_dir.y;
+        measured_lat_accel_mss =
+            accel_ef.x * track_lat_dir.x + accel_ef.y * track_lat_dir.y;
+    }
 
     // Don't learn during roll reversals/overshoot.
     if ((roll_rad * _latAccDem) <= 0.0f) {
-        return;
+        status |= RLAG_ROLL_REVERSAL;
     }
 
     // Only learn when response is in the same direction as the commanded turn.
-    if ((measured_lat_accel_mss * _latAccDem) <= 0.0f) {
-        return;
+    if (isnan(measured_lat_accel_mss) ||
+        (measured_lat_accel_mss * _latAccDem) <= 0.0f) {
+        status |= RLAG_DIR_MISMATCH;
     }
 
-    float lat_acc_k_sample =
-        fabsf(measured_lat_accel_mss) / model_abs_lat_accel_mss;
+    float lat_acc_k_sample_raw = NaNf;
+    float lat_acc_k_sample = NaNf;
+    float k_blend = NaNf;
+    if (status == RLAG_OK) {
+        lat_acc_k_sample_raw =
+            fabsf(measured_lat_accel_mss) / model_abs_lat_accel_mss;
 
-    // Limit corrections to +/-50% gain. If the modeling error of the
-    // nav_roll_cd formula is greater than this, there's a bigger problem than
-    // this is designed to solve.
-    lat_acc_k_sample = constrain_float(lat_acc_k_sample, 0.5f, 1.5f);
+        // Limit corrections to +/-50% gain. If the modeling error of the
+        // nav_roll_cd formula is greater than this, there's a bigger problem
+        // than this is designed to solve.
+        lat_acc_k_sample = constrain_float(lat_acc_k_sample_raw, 0.5f, 1.5f);
 
-    // Low-pass filter blend from time constant.
-    const float k_blend =
-        constrain_float(dt / (lat_acc_k_tc + dt), 0.0f, 1.0f);
+        // Low-pass filter blend from time constant.
+        k_blend = constrain_float(dt / (lat_acc_k_tc + dt), 0.0f, 1.0f);
 
-    _lat_acc_k += k_blend * (lat_acc_k_sample - _lat_acc_k);
-    _lat_acc_k = constrain_float(_lat_acc_k, 0.5f, 1.5f);
+        _lat_acc_k += k_blend * (lat_acc_k_sample - _lat_acc_k);
+        _lat_acc_k = constrain_float(_lat_acc_k, 0.5f, 1.5f);
+    }
+
+#if HAL_LOGGING_ENABLED
+    if (AP::logger().should_log(_log_bitmask)) {
+        // @LoggerMessage: RLAG
+        // @Description: Roll-to-lateral-acceleration gain
+        // @Field: TimeUS: Time since system startup
+        // @Field: K: roll-to-lateral-acceleration effectiveness scale factor
+        // @Field: KRaw: instantaneous gain sample (raw)
+        // @Field: KClamp: instantaneous gain sample (clamped)
+        // @Field: KBlend: low-pass blend factor
+        // @Field: LAccDem: demanded lateral acceleration
+        // @Field: LAccModel: modeled lateral acceleration
+        // @Field: LAccMeas: measured lateral acceleration
+        // @Field: Status: update status bitmask
+        // @FieldBitmaskEnum: Status: AP_L1_Control::log_RLAG_Flags
+        AP::logger().WriteStreaming(
+            "RLAG",
+            "TimeUS,K,KRaw,KClamp,KBlend,LAccDem,LAccModel,LAccMeas,Status",
+            "s----ooo-",
+            "F00000000",
+            "QfffffffH",
+            AP_HAL::micros64(),
+            _lat_acc_k,
+            lat_acc_k_sample_raw,
+            lat_acc_k_sample,
+            k_blend,
+            _latAccDem,
+            model_abs_lat_accel_mss,
+            measured_lat_accel_mss,
+            status);
+    }
+#endif
 }
 
 // update L1 control for waypoint navigation
