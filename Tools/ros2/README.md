@@ -4,7 +4,7 @@ This directory contains ROS 2 packages and configuration files for running
 ROS 2 processes and nodes that communicate with the ArduPilot DDS client
 library using the microROS agent. It contains the following packages:
 
-#### `ardupilot_sitl`
+## `ardupilot_sitl`
 
 This is a `colcon` package for building and running ArduPilot SITL using the ROS 2 CLI.
 For example `ardurover` SITL may be launched with:
@@ -31,7 +31,7 @@ To see all current options, use the `-s` argument:
 ros2 launch ardupilot_sitl sitl.launch.py -s
 ```
 
-#### `ardupilot_dds_tests`
+## `ardupilot_dds_tests`
 
 A `colcon` package for testing communication between `micro_ros_agent` and the
 ArduPilot `AP_DDS` client library.
@@ -44,7 +44,7 @@ The packages depend on:
 
 ## Install Ubuntu
 
-#### 1. Create a workspace folder
+### 1. Create a workspace folder
 
 ```bash
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
@@ -52,7 +52,7 @@ mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 
 The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/humble/Tutorials/Workspace/Creating-A-Workspace.html).
 
-#### 2. Get the `ros2.repos` file
+### 2. Get the `ros2.repos` file
 
 ```bash
 cd ~/ros2_ws/src
@@ -60,7 +60,7 @@ wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros
 vcs import --recursive < ros2.repos
 ```
 
-#### 3. Update dependencies
+### 3. Update dependencies
 
 ```bash
 cd ~/ros2_ws
@@ -70,7 +70,7 @@ rosdep update
 rosdep install --rosdistro ${ROS_DISTRO} --from-paths src
 ```
 
-#### 4. Build
+### 4. Build
 
 Check that the [ROS environment](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.html#check-environment-variables) is configured correctly:
 
@@ -85,7 +85,7 @@ cd ~/ros2_ws
 colcon build --cmake-args -DBUILD_TESTING=ON
 ```
 
-#### 5. Test
+### 5. Test
 
 ```bash
 source ./install/setup.bash
@@ -104,13 +104,13 @@ colcon --log-level DEBUG test --packages-select ardupilot_dds_tests --event-hand
 The install procedure on macOS is similar, except that all dependencies
 must be built from source and additional compiler flags are needed.
 
-#### 1. Create a workspace folder
+### 1. Create a workspace folder
 
 ```bash
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
-#### 2. Get the `ros2_macos.repos` file
+### 2. Get the `ros2_macos.repos` file
 
 The `ros2_macos.repos` includes additional dependencies to build:
 
@@ -120,14 +120,14 @@ wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros
 vcs import --recursive < ros2_macos.repos
 ```
 
-#### 3. Update dependencies
+### 3. Update dependencies
 
 ```bash
 cd ~/ros2_ws
 source /{path_to_your_ros_distro_workspace}/install/setup.zsh
 ```
 
-#### 4.1. Build microxrcedds_gen:
+### 4.1. Build microxrcedds_gen:
 
 ```bash
 cd ~/ros2_ws/src/microxrcedds_gen
@@ -135,7 +135,7 @@ cd ~/ros2_ws/src/microxrcedds_gen
 export PATH=$PATH:$(pwd)/scripts
 ```
 
-#### 4.2. Build colcon projects
+### 4.2. Build colcon projects
 
 ```bash
 colcon build --symlink-install --cmake-args \
@@ -150,7 +150,7 @@ colcon build --symlink-install --cmake-args \
 --event-handlers=desktop_notification-
 ```
 
-#### 5. Test
+### 5. Test
 
 ```bash
 colcon test \
@@ -161,7 +161,7 @@ colcon test \
 
 ## Install Docker
 
-#### 0. Build the image and run the container
+### 0. Build the image and run the container
 
 Clone the ArduPilot docker project:
 
