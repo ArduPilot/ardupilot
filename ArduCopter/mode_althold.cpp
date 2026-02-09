@@ -77,7 +77,6 @@ void ModeAltHold::run()
         break;
 
     case AltHoldModeState::Flying:
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
 #if AP_AVOIDANCE_ALTHOLD_ENABLED
         // apply avoidance
