@@ -44,6 +44,8 @@ void ModeStabilize_Heli::run()
     if (!motors->armed()) {
         // Motors should be Stopped
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
+    } else if (!motors->get_interlock()) {
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
     } else {
         // heli will not let the spool state progress to THROTTLE_UNLIMITED until motor interlock is enabled
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);

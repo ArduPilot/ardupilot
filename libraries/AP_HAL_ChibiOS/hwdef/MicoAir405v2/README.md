@@ -4,15 +4,15 @@ The MicoAir405v2 is a flight controller produced by [MicoAir](http://micoair.com
 
 ## Features
 
- - STM32F405 microcontroller
- - BMI088 IMU
- - SPL06 barometer
- - AT7456E OSD
- - 9V 3A BEC; 5V 3A BEC
- - SDCard
- - 6 UARTs
- - 10 PWM outputs
- - 1 SWD
+- STM32F405 microcontroller
+- BMI088 IMU
+- SPL06 barometer
+- AT7456E OSD
+- 9V 3A BEC; 5V 3A BEC
+- SDCard
+- 6 UARTs
+- 10 PWM outputs
+- 1 SWD
 
 ## Physical
 
@@ -20,17 +20,15 @@ The MicoAir405v2 is a flight controller produced by [MicoAir](http://micoair.com
 
 ![MicoAir F405 V2.1 Back View](MicoAir405v2_BackView.jpg)
 
-
-
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (DMA-enabled)
- - SERIAL2 -> UART2 (DJI - VTX, TX only is DMA Enabled)
- - SERIAL3 -> UART3 (GPS)
- - SERIAL4 -> UART4 (TX only is DMA Enabled)
- - SERIAL5 -> UART5 (ESC Telemetry)
- - SERIAL6 -> UART6 (RX6 is inverted from SBUS pin, RX only is DMA Enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (DMA-enabled)
+- SERIAL2 -> UART2 (DJI - VTX, TX only is DMA Enabled)
+- SERIAL3 -> UART3 (GPS)
+- SERIAL4 -> UART4 (TX only is DMA Enabled)
+- SERIAL5 -> UART5 (ESC Telemetry)
+- SERIAL6 -> UART6 (RX6 is inverted from SBUS pin, RX only is DMA Enabled)
 
 ## RC Input
 
@@ -65,11 +63,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 21.2
- - BATT_AMP_PERVLT 40.2
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 21.2
+- BATT_AMP_PERVLT 40.2
 
 ## Compass
 

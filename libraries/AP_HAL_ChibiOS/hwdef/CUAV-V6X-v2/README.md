@@ -62,9 +62,9 @@ The remaining 8 outputs (labelled A1 to A8) are the "auxiliary" outputs. These a
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1 (TIM2)
- - PWM 3 and 4 in group2 (TIM4)
- - PWM 5, 6, 7 and 8 in group3 (TIM3)
+- PWM 1 and 2 in group1 (TIM2)
+- PWM 3 and 4 in group2 (TIM4)
+- PWM 5, 6, 7 and 8 in group3 (TIM3)
 
 The 8 auxiliary PWM outputs are in 3 groups:
 
@@ -88,7 +88,7 @@ The CUAV-V6X-v2 has a RM3100 builtin compass, you can also attach external compa
 
 ## GPIOs
 
-The auxiliary PWM ports and some pin can be used as GPIOs (relays, buttons, RPM etc). 
+The auxiliary PWM ports and some pin can be used as GPIOs (relays, buttons, RPM etc).
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
@@ -125,7 +125,7 @@ The CUAV-V6X-v2 has two independent CAN buses.
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "CUAV-V6X-v2".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "CUAV-V6X-v2".
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station.
 

@@ -4,25 +4,26 @@ The PixFlamingo-F767 is a flight controller produced by Dheeran Labs.
 Contact dheeranlabs@gmail.com for sales
 
 ## Features
-    Processor
-        STM32F767 32-bit processor
-	Onboard Flash: 2048Mbits
-    Sensors
-        Two IMU : ICM42670, MPU6500/ICM20602 Acc/Gyro
-        One Baro : Internal MS5611/BMP280/DPS310 SPI barometer
-	Internal LIS3MDL Compass
-    Power
-        5v input voltage with voltage monitoring
-    Interfaces
-        10x PWM outputs 
-        1x RC input
-        5x UARTs/serial for GPS and other peripherals
-        2x I2C ports for external compass, airspeed, etc.
-	microSD card slot port
-	Internal RGB LED
-	Safety switch port
-	Buzzer port
-        USB-C port
+
+- Processor
+  - STM32F767 32-bit processor
+  Onboard Flash: 2048Mbits
+- Sensors
+  - Two IMU : ICM42670, MPU6500/ICM20602 Acc/Gyro
+  - One Baro : Internal MS5611/BMP280/DPS310 SPI barometer
+  - Internal LIS3MDL Compass
+- Power
+  - 5v input voltage with voltage monitoring
+- Interfaces
+  - 10x PWM outputs
+  - 1x RC input
+  - 5x UARTs/serial for GPS and other peripherals
+  - 2x I2C ports for external compass, airspeed, etc.
+  - microSD card slot port
+  - Internal RGB LED
+  - Safety switch port
+  - Buzzer port
+  - USB-C port
 
 ## Connectors
 
@@ -90,30 +91,28 @@ Contact dheeranlabs@gmail.com for sales
 |  4   |   GPIO   | +3.3V |
 |  5   |    GND   |  GND  |
 
-
 **SAFETY**
 
 | Pin  |      Signal      | Volt  |
 | :--: | :-----------:    | :---: |
 |  1   |     SAFETY_SW    | +3.3V |
 |  2   |   SAFETY_SW_LED  | +3.3V |
-|  3   |      3V3_OUT	  | +3.3V |
+|  3   |      3V3_OUT      | +3.3V |
 |  4   |      BUZZER+     | +3.3V |
 |  5   |      BUZZER-     | GND   |
-
 
 ## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB (OTG1)
- - SERIAL1 -> UART3 (TELEM1) with CTS/RTS DMA Enabled
- - SERIAL2 -> UART6 (TELEM2) with DMA Enabled
- - SERIAL3 -> UART1 (GPS1) Tx(NODMA), Rx(DMA Enabled)
- - SERIAL4 -> EMPTY
- - SERIAL5 -> UART7 (User) NODMA
- - SERIAL6 -> USART2 (User) NODMA
+- SERIAL0 -> USB (OTG1)
+- SERIAL1 -> UART3 (TELEM1) with CTS/RTS DMA Enabled
+- SERIAL2 -> UART6 (TELEM2) with DMA Enabled
+- SERIAL3 -> UART1 (GPS1) Tx(NODMA), Rx(DMA Enabled)
+- SERIAL4 -> EMPTY
+- SERIAL5 -> UART7 (User) NODMA
+- SERIAL6 -> USART2 (User) NODMA
 
 ## RC Input
 
@@ -123,14 +122,14 @@ Any UART can be used for RC system connections in ArduPilot also, and is compati
 
 ## PWM Output
 
-The PixFlaminog-F767 supports up to 10 PWM outputs. 
+The PixFlaminog-F767 supports up to 10 PWM outputs.
 
 The PWM is in 5 groups:
 
- - PWM 1-4 in group1
- - PWM 5-8 in group2
- - PWM 9 in group3
- - PWM 10 in group4
+- PWM 1-4 in group1
+- PWM 5-8 in group2
+- PWM 9 in group3
+- PWM 10 in group4
 
 ## GPIOs
 
@@ -152,10 +151,10 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 
 The PixFlamingo-F767 flight controller has 4 analog inputs
 
- - ADC Pin10   -> Battery Current 
- - ADC Pin11   -> Battery Voltage 
- - ADC Pin14   -> ADC 3V3 Sense
- - ADC Pin15 -> ADC 6V6 Sense
+- ADC Pin10   -> Battery Current
+- ADC Pin11   -> Battery Voltage
+- ADC Pin14   -> ADC 3V3 Sense
+- ADC Pin15 -> ADC 6V6 Sense
 
 ## Battery Monitor Configuration
 

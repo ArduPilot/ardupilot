@@ -42,7 +42,7 @@
 #endif
 
 #ifndef AP_CAMERA_SEND_FOV_STATUS_ENABLED
-#define AP_CAMERA_SEND_FOV_STATUS_ENABLED AP_MOUNT_POI_TO_LATLONALT_ENABLED
+#define AP_CAMERA_SEND_FOV_STATUS_ENABLED AP_MOUNT_POI_TO_LATLONALT_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024 
 #endif
 
 // set camera source is supported on cameras that may have more than one lens which is curently only cameras within gimbals/mounts

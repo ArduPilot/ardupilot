@@ -1,6 +1,6 @@
 # AeroCogito H7-Digital Flight Controller
 
-https://www.aerocogito.com/store/p/h7-digital
+[AeroCogito](https://www.aerocogito.com/store/p/h7-digital)
 
 The AeroCogito H7-Digital is a **NDAA-compliant**, high-performance flight controller featuring the STM32H743 processor and designed from the ground up for use with companion flight computers like the Raspberry Pi and Nvidia Jetson.
 
@@ -45,12 +45,15 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 Note: in order to use SERIAL6 for SBUS input on HD VTX connector, SERIAL 4 must not be used for RC, its protocol changed from "23", and SERIAL6_PROTOCOL changed to "23".
 
 ## Connectors
+
 The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Standard](https://betaflight.com/docs/development/manufacturer/connector-standard#jst-sh-series-as-standard-for-connectors)
+
 - 8-pin JST-SH (ESC)
 - 6-pin JST-SH (Motors 5-8, GPS/Compass, VTX)
 - 4-pin JST-SH (Servos, RC Input, Companion Computer/Telemetry)
 
 ### ESC Connector (PWM Output 1-4)
+
 | Pin | Label | Signal    | Voltage               |
 |-----|-------|-----------|-----------------------|
 | 1   | BAT   | VBAT      | 11.1V - 25.2V (3S-6S) |
@@ -63,6 +66,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 | 8   | M4    | M4        | 3.3V                  |
 
 ### Motors 5-8 Connector (PWM Output 5-8)
+
 | Pin | Label | Signal             | Voltage  |
 |-----|-------|--------------------|----------|
 | 1   | NC    | Not Connected (NC) | None     |
@@ -73,6 +77,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 | 6   | M8    | M8                 | 3.3V     |
 
 ### Servos Connector (PWM Output 9-10)
+
 | Pin | Label | Signal | Voltage |
 |-----|-------|--------|---------|
 | 1   | 5V    | PWR    | 5V      |
@@ -81,6 +86,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 | 4   | S2    | S2     | 3.3V    |
 
 ### GPS/Compass Connector (UART8 + I2C4)
+
 | Pin | Label | Signal | Voltage |
 |-----|-------|--------|---------|
 | 1   | 4V5   | PWR    | 4.5V    |
@@ -93,6 +99,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 *4.5V pads will receive power from either USB or battery*
 
 ### Companion Computer/Telemetry Connector (UART5)
+
 | Pin | Label | Signal             | Voltage       |
 |-----|-------|--------------------|---------------|
 | 1   | NC    | Not Connected (NC) | None          |
@@ -101,6 +108,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 | 4   | T5    | TX                 | 3.3V          |
 
 ### RC Input Connector (UART4)
+
 | Pin | Label | Signal | Voltage |
 |-----|-------|--------|---------|
 | 1   | 4V5   | PWR    | 4.5V    |
@@ -111,6 +119,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 *4.5V pads will receive power from either USB or battery*
 
 ### VTX/DisplayPort Connector (UART2)
+
 | Pin | Label | Signal | Voltage |
 |-----|-------|--------|---------|
 | 1   | 10V   | PWR    | 10V     |
@@ -121,11 +130,13 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 | 6   | R7    | RX     | 3.3V    |
 
 ## Companion Computer Setup
+
 The H7-Digital is designed for companion computer integration via UART5 (SERIAL1). See [ArduPilot - Companion Computers](https://ardupilot.org/dev/docs/companion-computers.html)
 
 ### Hardware Connection
 
 Connect your companion computer (e.g. Raspberry Pi, Nvidia Jetson) to the Companion Computer/Telemetry Connector labeled `COMPUTER` on the board:
+
 - Pin 2 (GND) → Companion GND
 - Pin 3 (RX) → Companion TX
 - Pin 4 (TX) → Companion RX
@@ -146,12 +157,14 @@ RC input is configured by default on UART4 (SERIAL4). It supports all standard p
 The H7-Digital supports **digital HD VTX only** via MSP DisplayPort on UART2 (SERIAL2). There is no analog OSD chip on this board.
 
 Compatible digital systems:
+
 - OpenIPC
 - DJI
 - Walksnail
 - HDZero
 
 Defaults set to:
+
 - `OSD_TYPE = 5` (MSP DisplayPort)
 - `SERIAL2_PROTOCOL = 42` (DisplayPort)
 
@@ -162,11 +175,13 @@ The H7-Digital supports up to 10 PWM outputs. All motor outputs support DShot (1
 Bidirectional DShot supported on motors 1-8.
 
 **Note**: All outputs in the same group must use the same protocol:
+
 - Group 1 (M1-M4): Must all be the same (e.g., all DShot300)
 - Group 2 (M5-M8): Must all be the same
 - Group 3 (S1-S2): Must all be the same
 
 ### Motor Outputs (Outputs 1-8)
+
 | Output | Pin  | Group |
 |--------|------|-------|
 | M1     | PE9  | 1     |
@@ -179,6 +194,7 @@ Bidirectional DShot supported on motors 1-8.
 | M8     | PD15 | 2     |
 
 ### Servo Outputs (Outputs 9-10)
+
 | Output | Pin | Group |
 |--------|-----|-------|
 | S1     | PC6 | 3     |
@@ -192,6 +208,7 @@ The board has built-in voltage and current monitoring:
 - **Current Sensing**: default scale - 18.0
 
 Default battery monitoring parameters:
+
 - `BATT_MONITOR = 4` (Voltage and Current)
 - `BATT_VOLT_PIN = 16`
 - `BATT_CURR_PIN = 17`
@@ -219,11 +236,13 @@ Barometer is a DPS368 connected via I2C1 (address 0x76).
 ## IMU Sensor
 
 The H7-Digital uses an ICM-42688-P 6-axis IMU connected via SPI1 with an isolated power rail for improved performance.
+
 - Default Rotation: `ROLL_180_YAW_90` (adjust if mounting the flight controller in a nonstandard orientation)
 
 ## SD Card
 
 The board includes a microSD card slot connected via SDMMC1 for:
+
 - Blackbox logging
 - Parameter storage backup
 - Flashing firmware
@@ -232,7 +251,8 @@ Recommended: Class 10 or UHS-1 cards for reliable performance.
 
 ## Relay Outputs
 
-**RELAY2**: 10V VTX Power Control (PE2) (GPIO: 80) 
+**RELAY2**: 10V VTX Power Control (PE2) (GPIO: 80)
+
 - Can be toggled via RC switch or mission commands
 - Default: ON (HIGH)
 - Assign `RELAY2 ON/OFF` function to RC channel for manual control
@@ -240,6 +260,7 @@ Recommended: Class 10 or UHS-1 cards for reliable performance.
 ## ESC Telemetry
 
 ESC telemetry is supported on UART3 (T on the ESC connector) (RX only):
+
 - Default protocol: AM32/BLHeli32/BLHeli_S telemetry
 - Set `SERIAL5_PROTOCOL = 16` (ESC Telemetry)
 - Provides RPM, voltage, current, and temperature data
@@ -251,6 +272,7 @@ ESC telemetry is supported on UART3 (T on the ESC connector) (RX only):
 Firmware can be downloaded from the [ArduPilot firmware server](https://firmware.ardupilot.org) under the `AeroCogito-H7Digital` target.
 
 Board Identification:
+
 - **ArduPilot Board ID**: AP_HW_AeroCogito-H7Digital (*4300*)
 - **Manufacturer ID**: AeroCogito
 
@@ -282,10 +304,12 @@ Note: The 10V BEC (VTX power) is disabled in bootloader mode.
 ## Troubleshooting
 
 ### Board Not Recognized via USB
+
 - Ensure USB Type-C cable supports data (not charge-only)
 - Windows users: Install drivers using [ImpulseRC Driver Fixer](https://impulserc.com/pages/downloads)
 
 ### No OSD Display
+
 - Verify `OSD_TYPE = 5` (MSP DisplayPort)
 - Check `SERIAL2_PROTOCOL = 42`
 - Ensure TX/RX connections to VTX are correct
@@ -293,16 +317,19 @@ Note: The 10V BEC (VTX power) is disabled in bootloader mode.
 - Note: This board has no analog OSD
 
 ### GPS Not Working
+
 - Check `SERIAL3_PROTOCOL = 5` (GPS)
 - Verify 4.5V-5V power to GPS module
 - Ensure TX/RX are not swapped
 
 ### ESC Telemetry Not Working
+
 - Verify `SERIAL5_PROTOCOL = 16`
 - ESC telemetry wire must connect to T
 - Check if ESC hardware & ESC firmware supports telemetry
 
 ### Motor Outputs Not Working
+
 - Verify `MOT_PWM_TYPE` for DShot configuration
 - Check `SERVO_BLH_AUTO = 1` for BLHeli passthrough
 - Ensure motor protocol matches ESC capabilities
@@ -311,6 +338,7 @@ Note: The 10V BEC (VTX power) is disabled in bootloader mode.
 ## Support
 
 For technical support and product updates:
+
 - **Manufacturer**: AeroCogito
 - **Email**: support@aerocogito.com
 - **Website**: [aerocogito.com](https://aerocogito.com)

@@ -479,7 +479,7 @@ void ModePosHold::run()
     }
 
     // constrain target pitch/roll angles
-    const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+    const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
     roll_rad  = constrain_float(roll_rad,  -angle_max_rad, angle_max_rad);
     pitch_rad = constrain_float(pitch_rad, -angle_max_rad, angle_max_rad);
 
@@ -582,7 +582,7 @@ void ModePosHold::update_wind_comp_estimate()
     }
 
     // limit acceleration
-    const float accel_lim_mss = tanf(cd_to_rad(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.aparm.angle_max)) * GRAVITY_MSS;
+    const float accel_lim_mss = tanf(POSHOLD_WIND_COMP_LEAN_PCT_MAX * copter.attitude_control->lean_angle_max_rad()) * GRAVITY_MSS;
     const float wind_comp_ef_len = wind_comp_ne_mss.length();
     if (!is_zero(accel_lim_mss) && (wind_comp_ef_len > accel_lim_mss)) {
         wind_comp_ne_mss *= accel_lim_mss / wind_comp_ef_len;

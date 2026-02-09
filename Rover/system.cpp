@@ -216,7 +216,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled((Mode::Number)new_mode.mode_number())) {
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name4());
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name());
         return false;
     }
 

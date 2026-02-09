@@ -367,7 +367,7 @@ void Copter::failsafe_deadreckon_check()
         failsafe.deadreckon = ekf_dead_reckoning;
 
         // only take action in modes requiring position estimate
-        if (failsafe.deadreckon && copter.flightmode->requires_GPS()) {
+        if (failsafe.deadreckon && copter.flightmode->requires_position()) {
 
             // log error
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);

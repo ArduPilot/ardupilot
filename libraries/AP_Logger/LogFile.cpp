@@ -482,6 +482,24 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
+
+// emit an RTC message to the onboard logs
+#if AP_RTC_LOGGING_ENABLED
+bool AP_Logger_Backend::Write_RTC()
+{
+    uint64_t time_unix = 0;
+    AP::rtc().get_utc_usec(time_unix); // may fail, leaving time_unix at 0
+
+    const struct log_RTC pkt{
+        LOG_PACKET_HEADER_INIT(LOG_RTC_MSG),
+        time_us  : AP_HAL::micros64(),
+        epoch_us : time_unix,
+        source_type: uint8_t(AP::rtc().get_source_type()),
+    };
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+#endif  // AP_RTC_LOGGING_ENABLED
+
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)
 {

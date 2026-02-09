@@ -4,43 +4,43 @@ The MicoAir743-Lite is a flight controller designed and produced by [MicoAir Tec
 
 ## Features
 
- - STM32H743 microcontroller
- - ICM45686 IMU
- - Integrated BlueTooth module for telemetry
- - SPA06 barometer
- - 9V 2A BEC; 5V 2A BEC
- - MicroSD Card Slot
- - 8 UARTs
- - 15 PWM outputs
- - DJI O3/O4 VTX connector
- - 1 I2C
- - 1 SWD
+- STM32H743 microcontroller
+- ICM45686 IMU
+- Integrated BlueTooth module for telemetry
+- SPA06 barometer
+- 9V 2A BEC; 5V 2A BEC
+- MicroSD Card Slot
+- 8 UARTs
+- 15 PWM outputs
+- DJI O3/O4 VTX connector
+- 1 I2C
+- 1 SWD
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
- - SERIAL2 -> UART2 (DisplayPort, DMA-enabled)
- - SERIAL3 -> UART3 (GPS, DMA-enabled)
- - SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
- - SERIAL5 -> UART5 (User, DMA-enabled)
- - SERIAL6 -> UART6 (RCIN, DMA-enabled)
- - SERIAL7 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
- - SERIAL8 -> UART8 (MAVLink2, connected to on board BlueTooth module)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
+- SERIAL2 -> UART2 (DisplayPort, DMA-enabled)
+- SERIAL3 -> UART3 (GPS, DMA-enabled)
+- SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
+- SERIAL5 -> UART5 (User, DMA-enabled)
+- SERIAL6 -> UART6 (RCIN, DMA-enabled)
+- SERIAL7 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
+- SERIAL8 -> UART8 (MAVLink2, connected to on board BlueTooth module)
 
 ## RC Input
 
-The UART6  is compatible with all ArduPilot supported receiver protocols, 
+The UART6  is compatible with all ArduPilot supported receiver protocols,
 
-  * PPM is not supported.
+- PPM is not supported.
 
-  * SBUS/DSM/SRXL connects to the RX6 pin.
+- SBUS/DSM/SRXL connects to the RX6 pin.
 
-  * FPort requires connection to TX6. See FPort Receivers.
+- FPort requires connection to TX6. See FPort Receivers.
 
-  *  CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
+- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
 
-  *  SRXL2 requires a connection to TX6 and automatically provides telemetry. Set SERIAL6_OPTIONS to “4”.
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set SERIAL6_OPTIONS to "4".
 
 Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM. See Radio Control Systems for details.
 
@@ -55,7 +55,6 @@ The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol def
 ## PWM Output
 
 The MicoAir743-Lite supports up to 15 PWM/DShot outputs.
-
 
 Channels 1-8 support bi-directional DShot.
 
@@ -81,12 +80,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 21.12
- - BATT_AMP_PERVLT 40.2 (may need adjustment according to ESC used)
-
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 21.12
+- BATT_AMP_PERVLT 40.2 (may need adjustment according to ESC used)
 
 ## Compass
 
@@ -98,19 +96,19 @@ The MicoAir743-Lite has an on board BlueTooth module connected to UART8(SERIAL8)
 
 ## Mechanical
 
- - Mounting: 30.5 x 30.5mm, Φ4mm
- 
- - Dimensions: 36 x 36 x 8 mm
- 
- - Weight: 10g
+- Mounting: 30.5 x 30.5mm, Φ4mm
+
+- Dimensions: 36 x 36 x 8 mm
+
+- Weight: 10g
 
 ## Ports Connector
 
 ![MicoAir H743 Lite Ports Connection](MicoAir743-Lite_Ports_Connection.jpg)
 
 ## Loading Firmware
-Firmware can be found on the `firmware server <https://firmare.ardupilot.org>`__ in folders marked "MicoAir743-Lite"
 
+Firmware can be found on the `firmware server <https://firmare.ardupilot.org>`__ in folders marked "MicoAir743-Lite"
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "XXXX_with_bl.hex" firmware, using your favorite DFU loading tool.
 

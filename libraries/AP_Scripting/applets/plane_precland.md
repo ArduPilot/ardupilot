@@ -6,7 +6,7 @@ aircraft (quadplanes).
 Precision positioning over a landing sensor is supported in QLOITER,
 QLAND, QRTL and AUTO landing.
 
-# Parameters
+## Parameters
 
 Beyond the normal PLND parameters the script adds 2 additional parameters to
 control it's behaviour. The parameters are:
@@ -27,11 +27,9 @@ the precision landing subsystem gives a distance beyond this distance
 then precision landing correction will stop and the last landing
 position will be used.
 
-# Operation
+## Operation
 
-You should first install and configure a precision landing sensor as described here:
-
-  https://ardupilot.org/copter/docs/precision-landing-with-irlock.html
+You should first install and configure a precision landing sensor as described in the [ArduPilot Precision Landing documentation](https://ardupilot.org/copter/docs/precision-landing-with-irlock.html).
 
 then you should enable the precision subsystem and install the lua
 script in the APM/scripts folder of your flight controller.
@@ -56,4 +54,3 @@ To enable precision position hold in QLOITER you will need to use
 auxiliary function 39 (PRECISION_LOITER) on an R/C switch or via GCS
 auxiliary switch buttons. When enabled the vehicle will position
 itself above the landing target. Height control is under user control.
-

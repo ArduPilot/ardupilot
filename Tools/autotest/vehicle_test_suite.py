@@ -728,6 +728,66 @@ class WaitAndMaintainServoChannelValue(WaitAndMaintain):
         return m_value
 
 
+class WaitAndMaintainAttitude(WaitAndMaintain):
+    def __init__(self, test_suite, desroll=None, despitch=None, **kwargs):
+        super().__init__(test_suite, **kwargs)
+        self.desroll = desroll
+        self.despitch = despitch
+
+        if self.desroll is None and self.despitch is None:
+            raise ValueError("despitch or desroll must be supplied")
+
+    def announce_start_text(self):
+        conditions = []
+        if self.desroll is not None:
+            conditions.append(f"roll={self.desroll}")
+        if self.despitch is not None:
+            conditions.append(f"pitch={self.despitch}")
+
+        return f"Waiting for {' and '.join(conditions)}"
+
+    def get_target_value(self):
+        return (self.desroll, self.despitch)
+
+    def get_current_value(self):
+        m = self.test_suite.assert_receive_message('ATTITUDE', timeout=10)
+        self.last_ATTITUDE = m
+        return (math.degrees(m.roll), math.degrees(m.pitch))
+
+    def validate_value(self, value):
+        (candidate_roll, candidate_pitch) = value
+
+        if self.desroll is not None:
+            roll_error = abs(self.desroll - candidate_roll)
+            if roll_error > self.epsilon:
+                return False
+
+        if self.despitch is not None:
+            pitch_error = abs(self.despitch - candidate_pitch)
+            if pitch_error > self.epsilon:
+                return False
+
+        return True
+
+    def success_text(self):
+        return "Attained attitude"
+
+    def timeoutexception(self):
+        return AutoTestTimeoutException("Failed to attain attitude")
+
+    def progress_text(self, current_value):
+        (achieved_roll, achieved_pitch) = current_value
+        axis_progress = []
+
+        if self.desroll is not None:
+            axis_progress.append(f"r={achieved_roll: >8.3f} des-r={self.desroll}")
+
+        if self.despitch is not None:
+            axis_progress.append(f"p={achieved_pitch: >8.3f} des-p={self.despitch}")
+
+        return " ".join(axis_progress)
+
+
 class MSP_Generic(Telem):
     def __init__(self, destination_address):
         super(MSP_Generic, self).__init__(destination_address)
@@ -2657,14 +2717,18 @@ class TestSuite(abc.ABC):
                     continue
                 if state == state_outside:
                     if ("#define LOG_COMMON_STRUCTURES" in line or
-                            re.match("#define LOG_STRUCTURE_FROM_.*", line)):
+                            re.match("#define LOG_STRUCTURE_FROM_.*", line) or
+                            re.match("#define LOG_RTC_MESSAGE.*", line)):
                         if debug:
                             self.progress("Moving inside")
                         state = state_inside
                     continue
                 if state == state_inside:
                     if linestate == linestate_none:
-                        allowed_list = ['LOG_STRUCTURE_FROM_']
+                        allowed_list = [
+                            'LOG_STRUCTURE_FROM_',
+                            'LOG_RTC_MESSAGE',
+                        ]
 
                         allowed = False
                         for a in allowed_list:
@@ -3750,12 +3814,7 @@ class TestSuite(abc.ABC):
                 break
 
         # ensure we don't get any extras:
-        m = self.mav.recv_match(type='LOG_ENTRY',
-                                blocking=True,
-                                timeout=2)
-        if m is not None:
-            raise NotAchievedException("Received extra LOG_ENTRY?!")
-        # should be: m = self.assert_not_receive_message('LOG_ENTRY', timeout=2)
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
 
         return logs
 
@@ -4106,6 +4165,8 @@ class TestSuite(abc.ABC):
 
             m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
             if m is None:
+                continue
+            if m.get_srcSystem() != self.sysid_thismav():
                 continue
 
             return m.time_boot_ms * 1.0e-3
@@ -5967,8 +6028,8 @@ class TestSuite(abc.ABC):
             m = self.assert_receive_message(message_type, timeout=60)
             roll_deg = math.degrees(m.roll)
             pitch_deg = math.degrees(m.pitch)
-            self.progress("wait_att: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (roll_deg, desroll, pitch_deg, despitch))
+            self.progress("wait_att[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
+                          (message_type, roll_deg, desroll, pitch_deg, despitch))
             if desroll is not None and abs(roll_deg - desroll) > tolerance:
                 continue
             if despitch is not None and abs(pitch_deg - despitch) > tolerance:
@@ -5987,16 +6048,16 @@ class TestSuite(abc.ABC):
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
-                raise AutoTestTimeoutException("Failed to achieve attitude")
-            m = self.poll_message(message_type)
+                raise AutoTestTimeoutException("Failed to achieve (quaternion) attitude")
+            m = self.poll_message(message_type, quiet=True)
             q = quaternion.Quaternion([m.q1, m.q2, m.q3, m.q4])
             euler = q.euler
             roll = euler[0]
             pitch = euler[1]
             roll_deg = math.degrees(roll)
             pitch_deg = math.degrees(pitch)
-            self.progress("wait_att_quat: roll=%f desroll=%s pitch=%f despitch=%s" %
-                          (roll_deg, desroll, pitch_deg, despitch))
+            self.progress("wait_att_quat[%s]: roll=%f desroll=%s pitch=%f despitch=%s" %
+                          (message_type, roll_deg, desroll, pitch_deg, despitch))
             if desroll is not None and abs(roll_deg - desroll) > tolerance:
                 continue
             if despitch is not None and abs(pitch_deg - despitch) > tolerance:
@@ -7100,7 +7161,7 @@ class TestSuite(abc.ABC):
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT)
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION)
 
-    def get_mode_from_mode_mapping(self, mode):
+    def get_mode_from_mode_mapping(self, mode) -> int:
         """Validate and return the mode number from a string or int."""
         if isinstance(mode, int):
             return mode
@@ -8353,12 +8414,7 @@ class TestSuite(abc.ABC):
     def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
         if not cached:
             self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
-        try:
-            return self.get_mode_from_mode_mapping(self.mav.flightmode) == self.get_mode_from_mode_mapping(mode)
-        except Exception:
-            pass
-        # assume this is a number....
-        return self.mav.messages['HEARTBEAT'].custom_mode == mode
+        return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
@@ -12797,6 +12853,7 @@ switch value'''
             self.set_parameters({
                 "AFS_ENABLE": 1,
                 "MAV_GCS_SYSID": self.mav.source_system,
+                "RTL_AUTOLAND": 2,
             })
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
@@ -12835,6 +12892,7 @@ switch value'''
                 self.do_fence_disable()
 
             self.start_subtest("GPS Failure")
+            self.wait_ready_to_arm()
             self.context_push()
             self.context_collect("STATUSTEXT")
             self.set_parameters({
@@ -13090,12 +13148,100 @@ switch value'''
             self.customise_SITL_commandline([
                 "--home", "%s,%s,%s,%s" % (HOME.lat, HOME.lng, HOME.alt, heading)
             ])
-            for ahrs_type in [0, 2, 3]:
+            for ahrs_type in [0, 2, 3, 11]:
                 self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
                 self.context_push()
-                self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
-                self.reboot_sitl()
-                self.wait_prearm_sys_status_healthy()
+
+                # Special setup for ExternalAHRS (type 11)
+                if ahrs_type == 11:
+                    # Test all simulated ExternalAHRS backends
+                    external_ahrs_configs = [
+                        {
+                            "name": "VectorNav",
+                            "device": "VectorNav",
+                            "eahrs_type": 1,
+                        },
+                        {
+                            "name": "MicroStrain5",
+                            "device": "MicroStrain5",
+                            "eahrs_type": 2,
+                        },
+                        {
+                            "name": "InertialLabs",
+                            "device": "ILabs",
+                            "eahrs_type": 5,
+                        },
+                        {
+                            "name": "MicroStrain7",
+                            "device": "MicroStrain7",
+                            "eahrs_type": 7,
+                        },
+                    ]
+
+                    for config in external_ahrs_configs:
+                        self.start_subsubtest("Testing ExternalAHRS backend: %s" % config["name"])
+                        self.context_push()
+
+                        self.customise_SITL_commandline([
+                            "--serial4=sim:%s" % config["device"],
+                        ])
+                        self.set_parameters({
+                            "EAHRS_TYPE": config["eahrs_type"],
+                            "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
+                            "SERIAL4_BAUD": 230400,
+                            "GPS1_TYPE": 21,  # External AHRS
+                            "AHRS_EKF_TYPE": ahrs_type,
+                            "INS_GYR_CAL": 1,
+                            "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
+                        })
+                        self.reboot_sitl()
+                        self.delay_sim_time(5)
+                        self.progress("Running accelcal")
+                        self.run_cmd(
+                            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                            p5=4,
+                            timeout=5,
+                        )
+                        self.wait_prearm_sys_status_healthy(timeout=120)
+
+                        for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
+                            self.set_parameters({
+                                'AHRS_TRIM_X': math.radians(r),
+                                'AHRS_TRIM_Y': math.radians(p),
+                                "SIM_ACC_TRIM_X": math.radians(r),
+                                "SIM_ACC_TRIM_Y": math.radians(p),
+                            })
+                            self.reboot_sitl()
+                            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
+                            att_desroll = 0
+                            att_despitch = 0
+                            if ahrs_type == 11:
+                                # this is very nasty compatibility
+                                # code for the fact our rotations are
+                                # incorrect for ExternalAHRS eulers
+                                # and rotation matrix!  It is here to
+                                # ensure behaviour is preserved until
+                                # we can fix the bug!  Search for
+                                # "note that this is suspect" to find
+                                # the problem code.
+                                att_desroll = -r
+                                att_despitch = -p
+                            self.wait_attitude(desroll=att_desroll, despitch=att_despitch, timeout=120, tolerance=1.5)
+                            if ahrs_type != 0:
+                                self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
+                            self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+                            self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
+
+                        self.context_pop()
+                        self.reboot_sitl()
+
+                    # Skip the normal test loop for ahrs_type 11 since we already tested it above
+                    self.context_pop()
+                    continue
+                else:
+                    self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+                    self.reboot_sitl()
+                self.wait_prearm_sys_status_healthy(timeout=120)
                 for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
                     self.set_parameters({
                         'AHRS_TRIM_X': math.radians(r),
@@ -13103,10 +13249,14 @@ switch value'''
                         "SIM_ACC_TRIM_X": math.radians(r),
                         "SIM_ACC_TRIM_Y": math.radians(p),
                     })
+                    self.reboot_sitl()
+                    self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
                     self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
+                    self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5, message_type='SIM_STATE')
                     if ahrs_type != 0:  # we don't get secondary msgs while DCM is primary
                         self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
                     self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+                    self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
 
                 self.context_pop()
                 self.reboot_sitl()

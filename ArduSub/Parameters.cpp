@@ -274,15 +274,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(log_bitmask,    "LOG_BITMASK",          DEFAULT_LOG_BITMASK),
 
-    // @Param: ANGLE_MAX
-    // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 1000 8000
-    // @User: Advanced
-    ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
-
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
     // @Description: Controls the action that will be taken when an EKF failsafe is invoked
@@ -761,27 +752,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(rc_channels, "RC", 17, ParametersG2, RC_Channels),
 
     // 18 was scripting
-
-    // @Param: ORIGIN_LAT
-    // @DisplayName: Backup latitude for EKF origin
-    // @Description:  Backup EKF origin latitude used when not using a positioning system.
-    // @Units: deg
-    // @User: Standard
-    AP_GROUPINFO("ORIGIN_LAT", 19, ParametersG2, backup_origin_lat, 0),
-
-    // @Param: ORIGIN_LON
-    // @DisplayName: Backup longitude for EKF origin
-    // @Description:  Backup EKF origin longitude used when not using a positioning system.
-    // @Units: deg
-    // @User: Standard
-    AP_GROUPINFO("ORIGIN_LON", 20, ParametersG2, backup_origin_lon, 0),
-
-    // @Param: ORIGIN_ALT
-    // @DisplayName: Backup altitude (MSL) for EKF origin
-    // @Description:  Backup EKF origin altitude (MSL) used when not using a positioning system.
-    // @Units: m
-    // @User: Standard
-    AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
+    // 19 was ORIGIN_LAT
+    // 20 was ORIGIN_LON
+    // 21 was ORIGIN_ALT
 
     // @Param: SFC_NOBARO_THST
     // @DisplayName: Surface mode throttle output when no barometer is available
@@ -882,6 +855,25 @@ void Sub::load_parameters()
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+    // upgrade attitude controller parameters
+    sub.attitude_control.convert_parameters();
+
+    // upgrade loiter navigation parameters
+    loiter_nav.convert_parameters();
+
+#if CIRCLE_NAV_ENABLED
+    circle_nav.convert_parameters();
+#endif
+
+    // PARAMETER_CONVERSION - Added: Jan-2026
+    // move ORIGIN_LAT, ORIGIN_LON, ORIGIN_ALT to AHRS
+    static const AP_Param::ConversionInfo gcs_conversion_info[] {
+        { 2, 19, AP_PARAM_FLOAT, "AHRS_ORIGIN_LAT" },   // ORIGIN_LAT moved to AHRS_ORIGIN_LAT
+        { 2, 20, AP_PARAM_FLOAT, "AHRS_ORIGIN_LON" },   // ORIGIN_LON moved to AHRS_ORIGIN_LON
+        { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
+    };
+    AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
 }
 
 void Sub::convert_old_parameters()

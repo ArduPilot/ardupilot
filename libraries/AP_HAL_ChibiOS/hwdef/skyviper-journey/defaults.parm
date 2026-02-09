@@ -119,7 +119,6 @@ INS_HNTC2_ATT   50
 INS_HNTC2_BW    80
 INS_HNTC2_FREQ  80
 
-ANGLE_MAX 3500
 ATC_ACCEL_P_MAX     108000
 ATC_ACCEL_R_MAX     108000
 ATC_ACCEL_Y_MAX     54000
@@ -168,7 +167,7 @@ FS_GCS_ENABLE          0
 TCAL_ENABLED           2
 
 # landing
-LAND_SPEED_HIGH      150
+LAND_SPD_HIGH_MS     1.5
 
 # logging
 LOG_BACKEND_TYPE       2
@@ -198,8 +197,7 @@ RC3_MAX             2000
 RC4_MIN             1000
 RC4_MAX             2000
 RC3_TRIM            1500
-RTL_ALT              400
-GND_EFFECT_COMP     1
+RTL_ALT_M              4
 
 # deadzones, with auto-trim
 RC1_DZ              15
@@ -212,9 +210,9 @@ PSC_NE_POS_P           0.7
 PSC_NE_VEL_I           0.3
 PSC_NE_VEL_P           0.6
 PSC_NE_VEL_FLTE        1.0
-LOIT_ACC_MAX         800
-LOIT_SPEED           800
-RTL_SPEED            600
+LOIT_ACC_MAX_M       8.0
+LOIT_SPEED_MS        8.0
+RTL_SPEED_MS         6
 
 # GPS
 GPS_NAVFILTER        6

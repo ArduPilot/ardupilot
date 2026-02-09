@@ -4,17 +4,17 @@ The Blitz H7 Pro is a flight controller produced by [iFlight](https://shop.iflig
 
 ## Features
 
- - MCU - STM32H743 32-bit processor running at 480 MHz
- - Gyro: ICM42688
- - 32Gb SDCard for logging
- - BEC output: 5V 2.5A,  switch controlled 12v 2A
- - Barometer: DPS310 (SPA06 on v2)
- - OSD: AT7456E
- - 7x UARTs
- - 13x PWM Outputs (12 Motor Output, 1 LED)
- - Battery input voltage: 2S-8S
- - 2x I2C for external compass, airspeed, etc.
- - CAN port
+- MCU - STM32H743 32-bit processor running at 480 MHz
+- Gyro: ICM42688
+- 32Gb SDCard for logging
+- BEC output: 5V 2.5A,  switch controlled 12v 2A
+- Barometer: DPS310 (SPA06 on v2)
+- OSD: AT7456E
+- 7x UARTs
+- 13x PWM Outputs (12 Motor Output, 1 LED)
+- Battery input voltage: 2S-8S
+- 2x I2C for external compass, airspeed, etc.
+- CAN port
 
 ## Pinout
 
@@ -23,12 +23,13 @@ The Blitz H7 Pro is a flight controller produced by [iFlight](https://shop.iflig
 back side pinout image pending from iFlight
 
 The expansion connector provides access to the following pins:
- - CAN+/CAN-
- - M9 through M12
- - TX7/RX7
- - SCL2/SDA2
- - RSSI
- - 5V/12V/GND
+
+- CAN+/CAN-
+- M9 through M12
+- TX7/RX7
+- SCL2/SDA2
+- RSSI
+- 5V/12V/GND
 
 ## UART Mapping
 
@@ -59,16 +60,16 @@ The BLITZ H7 Pro has 13 PWM outputs. The pads for motor output M1-M4 are in one 
 
 The PWM are in in five groups:
 
- - PWM 1-2 in group1
- - PWM 3-6 in group2
- - PWM 7-10 in group3
- - PWM 11-12 in group4
- - PWM 13 in group5
+- PWM 1-2 in group1
+- PWM 3-6 in group2
+- PWM 7-10 in group3
+- PWM 11-12 in group4
+- PWM 13 in group5
+
 .. note:: for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
 - :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
 - :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
-
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -93,11 +94,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_VOLT_MULT 11
- - BATT_CURR_PIN 11
- - BATT_CURR_MULT 50
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_VOLT_MULT 11
+- BATT_CURR_PIN 11
+- BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

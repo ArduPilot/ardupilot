@@ -76,15 +76,6 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(gcs_pid_mask,           "GCS_PID_MASK",     0),
 
 #if MODE_RTL_ENABLED
-    // @Param: RTL_ALT
-    // @DisplayName: RTL Altitude
-    // @Description: The minimum alt above home the vehicle will climb to before returning.  If the vehicle is flying higher than this value it will return at its current altitude.
-    // @Units: cm
-    // @Range: 30 300000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rtl_altitude_cm,   "RTL_ALT",     RTL_ALT),
-
     // @Param: RTL_CONE_SLOPE
     // @DisplayName: RTL cone slope
     // @Description: Defines a cone above home which determines maximum climb
@@ -93,33 +84,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Disabled,1:Shallow,3:Steep
     // @User: Standard
     GSCALAR(rtl_cone_slope,   "RTL_CONE_SLOPE",     RTL_CONE_SLOPE_DEFAULT),
-
-    // @Param: RTL_SPEED
-    // @DisplayName: RTL speed
-    // @Description: Defines the speed in cm/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WPNAV_SPEED will be used instead.
-    // @Units: cm/s
-    // @Range: 0 2000
-    // @Increment: 50
-    // @User: Standard
-    GSCALAR(rtl_speed_cms,   "RTL_SPEED",     0),
-
-    // @Param: RTL_ALT_FINAL
-    // @DisplayName: RTL Final Altitude
-    // @Description: This is the altitude the vehicle will move to as the final stage of Returning to Launch or after completing a mission.  Set to zero to land.
-    // @Units: cm
-    // @Range: 0 1000
-    // @Increment: 1
-    // @User: Standard
-    GSCALAR(rtl_alt_final_cm,  "RTL_ALT_FINAL", RTL_ALT_FINAL),
-
-    // @Param: RTL_CLIMB_MIN
-    // @DisplayName: RTL minimum climb
-    // @Description: The vehicle will climb this many cm during the initial climb portion of the RTL
-    // @Units: cm
-    // @Range: 0 3000
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(rtl_climb_min_cm,  "RTL_CLIMB_MIN",    RTL_CLIMB_MIN_DEFAULT),
 
     // @Param: RTL_LOIT_TIME
     // @DisplayName: RTL loiter time
@@ -165,24 +129,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
     // @User: Standard
     GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
-
-    // @Param: LAND_SPEED
-    // @DisplayName: Land speed
-    // @Description: The descent speed for the final stage of landing in cm/s
-    // @Units: cm/s
-    // @Range: 30 200
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed_cms,             "LAND_SPEED",   LAND_SPEED),
-
-    // @Param: LAND_SPEED_HIGH
-    // @DisplayName: Land speed high
-    // @Description: The descent speed for the first stage of landing in cm/s. If this is zero then WPNAV_SPEED_DN is used
-    // @Units: cm/s
-    // @Range: 0 500
-    // @Increment: 10
-    // @User: Standard
-    GSCALAR(land_speed_high_cms,        "LAND_SPEED_HIGH",   0),
     
     // @Param: PILOT_SPEED_UP
     // @DisplayName: Pilot maximum vertical speed ascending
@@ -327,15 +273,6 @@ const AP_Param::Info Copter::var_info[] = {
     // @Range: 0 127
     // @User: Advanced
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
-    
-    // @Param: ANGLE_MAX
-    // @DisplayName: Angle Max
-    // @Description: Maximum lean angle in all flight modes
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 1000 8000
-    // @User: Advanced
-    ASCALAR(angle_max, "ANGLE_MAX",                 DEFAULT_ANGLE_MAX),
 
 #if MODE_POSHOLD_ENABLED
     // @Param: PHLD_BRAKE_RATE
@@ -829,14 +766,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PILOT_SPEED_DN", 24, ParametersG2, pilot_speed_dn_cms, 0),
 
-    // @Param: LAND_ALT_LOW
-    // @DisplayName: Land alt low
-    // @Description: Altitude during Landing at which vehicle slows to LAND_SPEED
-    // @Units: cm
-    // @Range: 100 10000
-    // @Increment: 10
-    // @User: Advanced
-    AP_GROUPINFO("LAND_ALT_LOW", 25, ParametersG2, land_alt_low_cm, 1000),
+    // 25 was LAND_ALT_LOW
 
 #if MODE_FLOWHOLD_ENABLED
     // @Group: FHLD
@@ -1129,6 +1059,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
  */
 const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
+#if AC_PAYLOAD_PLACE_ENABLED
     // @Param: PLDP_THRESH
     // @DisplayName: Payload Place thrust ratio threshold
     // @Description: Ratio of vertical thrust during decent below which payload touchdown will trigger.
@@ -1154,11 +1085,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: PLDP_SPEED_DN
     // @DisplayName: Payload Place decent speed
-    // @Description: The maximum vertical decent velocity in m/s. If 0 LAND_SPEED value is used.
+    // @Description: The maximum vertical decent velocity in m/s. If 0 LAND_SPD_MS value is used.
     // @Units: m/s
     // @Range: 0 5
     // @User: Standard
     AP_GROUPINFO("PLDP_SPEED_DN", 4, ParametersG2, pldp_descent_speed_ms, 0.0),
+#endif  // AC_PAYLOAD_PLACE_ENABLED
 
     // @Param: SURFTRAK_TC
     // @DisplayName: Surface Tracking Filter Time Constant
@@ -1228,6 +1160,16 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TUNE2", 13, ParametersG2, rc_tuning2_param, 0),
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
+#if MODE_RTL_ENABLED
+    // @Group: RTL_
+    // @Path: mode_rtl.cpp
+    AP_SUBGROUPPTR(mode_rtl_ptr, "RTL_", 14, ParametersG2, ModeRTL),
+#endif
+
+    // @Group: LAND_
+    // @Path: mode_land.cpp
+    AP_SUBGROUPPTR(mode_land_ptr, "LAND_", 15, ParametersG2, ModeLand),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1290,6 +1232,10 @@ ParametersG2::ParametersG2(void) :
 #if WEATHERVANE_ENABLED
     ,weathervane()
 #endif
+#if MODE_RTL_ENABLED
+    ,mode_rtl_ptr(&copter.mode_rtl)
+#endif
+    ,mode_land_ptr(&copter.mode_land)
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
@@ -1298,11 +1244,6 @@ ParametersG2::ParametersG2(void) :
 void Copter::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
-
-#if MODE_RTL_ENABLED
-    // PARAMETER_CONVERSION - Added: Sep-2021
-    g.rtl_altitude_cm.convert_parameter_width(AP_PARAM_INT16);
-#endif
 
     // PARAMETER_CONVERSION - Added: Mar-2022
 #if AP_FENCE_ENABLED
@@ -1359,6 +1300,14 @@ void Copter::load_parameters(void)
     }
 #endif  // HAL_GCS_ENABLED
 
+#if MODE_RTL_ENABLED
+    // convert RTL parameters
+    copter.mode_rtl.convert_params();
+#endif
+
+    // convert LAND parameters
+    copter.mode_land.convert_params();
+
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
 }
@@ -1379,11 +1328,11 @@ void Copter::convert_pid_parameters(void)
     // TradHeli default parameters
 #if FRAME_CONFIG == HELI_FRAME
     static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
-        { "LOIT_ACC_MAX", 500.0f },
-        { "LOIT_BRK_ACCEL", 125.0f },
+        { "LOIT_ACC_MAX_M", 5.0f },
+        { "LOIT_BRK_ACC_M", 1.25f },
         { "LOIT_BRK_DELAY", 1.0f },
-        { "LOIT_BRK_JERK", 250.0f },
-        { "LOIT_SPEED", 3000.0f },
+        { "LOIT_BRK_JRK_M", 2.5f },
+        { "LOIT_SPEED_MS", 30.0f },
         { "PHLD_BRAKE_ANGLE", 800.0f },
         { "PHLD_BRAKE_RATE", 4.0f },
         { "PSC_D_ACC_P", 0.028f },

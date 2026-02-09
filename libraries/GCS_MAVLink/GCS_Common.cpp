@@ -53,6 +53,7 @@
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
+#include <AP_Terrain/AP_Terrain.h>
 #include <AP_Winch/AP_Winch.h>
 #include <AP_Mission/AP_Mission.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
@@ -64,7 +65,6 @@
 #include <AP_Frsky_Telem/AP_Frsky_Telem.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
-#include <AP_KDECAN/AP_KDECAN.h>
 #include <AP_LandingGear/AP_LandingGear.h>
 #include <AP_Landing/AP_Landing_config.h>
 #include <AP_Generator/AP_Generator_Loweheiser.h>
@@ -4061,8 +4061,8 @@ void GCS_MAVLINK::handle_odometry(const mavlink_message_t &msg)
     float posErr = 0;
     float angErr = 0;
     if (!isnan(m.pose_covariance[0])) {
-        posErr = cbrtf(sq(m.pose_covariance[0])+sq(m.pose_covariance[6])+sq(m.pose_covariance[11]));
-        angErr = cbrtf(sq(m.pose_covariance[15])+sq(m.pose_covariance[18])+sq(m.pose_covariance[20]));
+        posErr = sqrtf(m.pose_covariance[0]+m.pose_covariance[6]+m.pose_covariance[11]);
+        angErr = sqrtf(m.pose_covariance[15]+m.pose_covariance[18]+m.pose_covariance[20]);
     }
 
     const uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, ODOMETRY));
@@ -4099,8 +4099,8 @@ void GCS_MAVLINK::handle_common_vision_position_estimate_data(const uint64_t use
     }
 
     if (!isnan(covariance[0])) {
-        posErr = cbrtf(sq(covariance[0])+sq(covariance[6])+sq(covariance[11]));
-        angErr = cbrtf(sq(covariance[15])+sq(covariance[18])+sq(covariance[20]));
+        posErr = sqrtf(covariance[0]+covariance[6]+covariance[11]);
+        angErr = sqrtf(covariance[15]+covariance[18]+covariance[20]);
     }
 
     visual_odom->handle_pose_estimate(usec, timestamp_ms, x, y, z, roll, pitch, yaw, posErr, angErr, reset_counter, 0);
@@ -4118,8 +4118,16 @@ void GCS_MAVLINK::handle_att_pos_mocap(const mavlink_message_t &msg)
     if (visual_odom == nullptr) {
         return;
     }
+
+    float posErr = 0;
+    float angErr = 0;
+    if (!isnan(m.covariance[0])) {
+        posErr = sqrtf(m.covariance[0]+m.covariance[6]+m.covariance[11]);
+        angErr = sqrtf(m.covariance[15]+m.covariance[18]+m.covariance[20]);
+    }
+
     // note: att_pos_mocap does not include reset counter
-    visual_odom->handle_pose_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q, 0, 0, 0, 0);
+    visual_odom->handle_pose_estimate(m.time_usec, timestamp_ms, m.x, m.y, m.z, m.q, posErr, angErr, 0, 0);
 }
 
 void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
@@ -4439,6 +4447,17 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         send_received_message_deprecation_warning("FENCE_FETCH_POINT");
         handle_fence_message(msg);
         break;
+#endif
+
+#if AP_TERRAIN_AVAILABLE
+    case MAVLINK_MSG_ID_TERRAIN_DATA:
+    case MAVLINK_MSG_ID_TERRAIN_CHECK: {
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr) {
+            terrain->handle_message(*this, msg);
+        }
+        break;
+    }
 #endif
 
 #if HAL_MOUNT_ENABLED
@@ -6808,12 +6827,25 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         break;
 #endif
 
-        // terrain request and report shouldn't be here; the vehicles
-        // should be doing better in terms of factoring behaviour up
 #if AP_TERRAIN_AVAILABLE
-    case MSG_TERRAIN_REQUEST:
-    case MSG_TERRAIN_REPORT:
+    case MSG_TERRAIN_REQUEST: {
+        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr) {
+            terrain->send_request(*this);
+        }
+        break;
+    }
+    case MSG_TERRAIN_REPORT: {
+        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
+        AP_Terrain *terrain = AP::terrain();
+        if (terrain != nullptr) {
+            terrain->send_report(*this);
+        }
+        break;
+    }
 #endif  // AP_TERRAIN_AVAILABLE
+
 #if AP_AIRSPEED_HYGROMETER_ENABLE
         // hygrometer should be in its down library, not called via
         // Plane's functions

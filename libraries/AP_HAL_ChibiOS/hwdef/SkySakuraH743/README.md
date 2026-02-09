@@ -4,19 +4,19 @@ The SkySakura H743 is a flight controller produced by [SkySakuraRC]
 
 ## Features
 
- - MCU: STM32H743VIT6, 480MHz
- - Gyro1: ICM42688
- - Gyro2: IIM42652
- - SD Card support
- - BEC output: 5V 5A & 12V 5A (MAX 60W total) (switchable 12V)
- - Barometer1: DPS310
- - Barometer2: ICP20100
- - Magnometer: IST8310
- - CAN bus support
- - 7 UARTS: (USART1, USART2, USART3, UART4, USART6, UART7 with flow control, UART8)
- - 2 I2C, I2C1 is used internally.
- - 13 PWM outputs (12 motor outputs, 1 led)
- - 4-12s wide voltage support
+- MCU: STM32H743VIT6, 480MHz
+- Gyro1: ICM42688
+- Gyro2: IIM42652
+- SD Card support
+- BEC output: 5V 5A & 12V 5A (MAX 60W total) (switchable 12V)
+- Barometer1: DPS310
+- Barometer2: ICP20100
+- Magnometer: IST8310
+- CAN bus support
+- 7 UARTS: (USART1, USART2, USART3, UART4, USART6, UART7 with flow control, UART8)
+- 2 I2C, I2C1 is used internally.
+- 13 PWM outputs (12 motor outputs, 1 led)
+- 4-12s wide voltage support
 
 ## Pinout
 
@@ -42,7 +42,8 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 SkySakura H743 supports safety button, with connection to sh1.0 6 pin connector, with buzzer and safety led on the same connector.
 Safety button is defaulted to be disabled but can be enabled by setting the following parameter:
- - BRD_SAFETY_DEFLT 1
+
+- BRD_SAFETY_DEFLT 1
 
 ## RC Input
 
@@ -62,12 +63,12 @@ The SkySakura H743 has 13 PWM outputs. M1-M8 are linked to sh1.0 8 pin connector
 
 The PWM are in in two groups:
 
- - PWM 1-2 in group1
- - PWM 3-4 in group2
- - PWM 5-6 in group3
- - PWM 7-8 in group4
- - PWM 9-12 in group5
- - PWM 13 in group6
+- PWM 1-2 in group1
+- PWM 3-4 in group2
+- PWM 5-6 in group3
+- PWM 7-8 in group4
+- PWM 9-12 in group5
+- PWM 13 in group6
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -80,15 +81,15 @@ A second battery monitor can be also used. Its voltage sensor is capable of read
 
 The default battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_VOLT_MULT 34
- - BATT_CURR_PIN 11
- - set BATT2_MONITOR 4
- - BATT2_VOLT_PIN 12
- - BATT2_CURR_PIN 13
- - BATT2_VOLT_MULT 10
- - set BATT2_AMP_PERVLT to appropriate value for second current sensor
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_VOLT_MULT 34
+- BATT_CURR_PIN 11
+- set BATT2_MONITOR 4
+- BATT2_VOLT_PIN 12
+- BATT2_CURR_PIN 13
+- BATT2_VOLT_MULT 10
+- set BATT2_AMP_PERVLT to appropriate value for second current sensor
 
 ## Compass
 
@@ -98,11 +99,9 @@ The SkySakura H743 have a builtin IST8310 compass. Due to motor interference, us
 
 PWM13 provides external NeoPixel LED support.
 
-
 ## Firmware
 
 Firmware can bee found on the `firmware server < https://firmware.ardupilot.org`__ in the "SkySakuraH743"  folders
-
 
 ## Loading Firmware
 

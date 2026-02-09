@@ -6,8 +6,8 @@ Vimdrones AP_Periph Pico board to convert serial(GPS) and I2C(COMPASS/Air Speed)
 
 - STM32L431 microcontroller
 - CAN bus interface
-- 1 Telem with I2C 
-- 1 Telem with Flow Control 
+- 1 Telem with I2C
+- 1 Telem with Flow Control
 
 #### Wiring Diagram
 

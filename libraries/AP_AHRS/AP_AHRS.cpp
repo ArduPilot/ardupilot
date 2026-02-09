@@ -61,6 +61,9 @@
   #if APM_BUILD_TYPE(APM_BUILD_Rover)
     // DISABLE_DCM_FALLBACK_FW | DISABLE_DCM_FALLBACK_VTOL
     #define HAL_AHRS_OPTIONS_DEFAULT 3
+  #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    // ENABLE_USE_RECORDED_ORIGIN
+    #define HAL_AHRS_OPTIONS_DEFAULT 16
   #else
     #define HAL_AHRS_OPTIONS_DEFAULT 0
   #endif
@@ -204,11 +207,33 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional AHRS behaviour
-    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency
-    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF
+    // @Description: This controls optional AHRS behaviour. Setting DisableDCMFallbackFW will change the AHRS behaviour for fixed wing aircraft in fly-forward flight to not fall back to DCM when the EKF stops navigating. Setting DisableDCMFallbackVTOL will change the AHRS behaviour for fixed wing aircraft in non fly-forward (VTOL) flight to not fall back to DCM when the EKF stops navigating. Setting DontDisableAirspeedUsingEKF disables the EKF based innovation check for airspeed consistency. Setting AutoRecordOrigin will auto-save the EKF origin to parameters when it becomes valid.
+    // @Bitmask: 0:DisableDCMFallbackFW, 1:DisableDCMFallbackVTOL, 2:DontDisableAirspeedUsingEKF, 3:RecordOrigin, 4:UseRecordedOriginForNonGPS
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, AP_AHRS, _options, HAL_AHRS_OPTIONS_DEFAULT),
+
+    // @Param: ORIGIN_LAT
+    // @DisplayName: AHRS last origin latitude
+    // @Description: AHRS last origin latitude in degrees
+    // @Range: -180 180
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_LAT", 19, AP_AHRS, _origin_lat, 0),
+
+    // @Param: ORIGIN_LON
+    // @DisplayName: AHRS last origin longitude
+    // @Description: AHRS last origin longitude in degrees
+    // @Range: -180 180
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_LON", 20, AP_AHRS, _origin_lon, 0),
     
+    // @Param: ORIGIN_ALT
+    // @DisplayName: AHRS last origin altitude
+    // @Description: AHRS last origin altitude in meters
+    // @Range: -200 5000
+    // @User: Advanced
+    AP_GROUPINFO("ORIGIN_ALT", 21, AP_AHRS, _origin_alt, 0),
+
     AP_GROUPEND
 };
 
@@ -398,7 +423,30 @@ void AP_AHRS::update_state(void)
     state.ground_speed_vec = _groundspeed_vector();
     state.ground_speed = _groundspeed();
     _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
-    state.origin_ok = _get_origin(state.origin);
+
+    // check if origin has been set
+    bool origin_ok = _get_origin(state.origin);
+    if (origin_ok && !state.origin_ok) {
+        // record origin from backend to AHRS state
+        state.origin_ok = origin_ok;
+
+#if HAL_LOGGING_ENABLED
+        // log origin
+        Log_Write_Home_And_Origin();
+#endif
+
+        // report origin via MAVLink
+        GCS_SEND_MESSAGE(MSG_ORIGIN);
+
+        // save origin to parameters
+        record_origin();
+    }
+
+    // if no origin, attempt to use recorded origin
+    if (!state.origin_ok) {
+        use_recorded_origin_maybe();
+    }
+
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
 }
 
@@ -485,8 +533,8 @@ void AP_AHRS::update(bool skip_ins_update)
     // update AOA and SSA
     update_AOA_SSA();
 
-#if HAL_GCS_ENABLED
     state.active_EKF = _active_EKF_type();
+#if HAL_GCS_ENABLED
     if (state.active_EKF != last_active_ekf_type) {
         last_active_ekf_type = state.active_EKF;
         const char *shortname = "???";
@@ -1215,9 +1263,10 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
     switch (type) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        if (!dcm.get_quaternion(quat)) {
+        if (!dcm_estimates.attitude_valid) {
             return false;
         }
+        quat = dcm_estimates.quaternion;
         break;
 #endif
 #if HAL_NAVEKF2_AVAILABLE
@@ -1238,15 +1287,20 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
 #endif
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        if (!sim.get_quaternion(quat)) {
+        if (!sim_estimates.attitude_valid) {
             return false;
         }
+        quat = sim_estimates.quaternion;
         break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
         // we assume the external AHRS isn't trimmed with the autopilot!
-        return external.get_quaternion(quat);
+        if (!external_estimates.attitude_valid) {
+            return false;
+        }
+        quat = external_estimates.quaternion;
+        return true;
 #endif
     }
 
@@ -1271,7 +1325,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = dcm_estimates.roll_rad;
         eulers[1] = dcm_estimates.pitch_rad;
         eulers[2] = dcm_estimates.yaw_rad;
-        return true;
+        return dcm_estimates.attitude_valid;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1291,7 +1345,10 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         // SITL is secondary (should never happen)
-        return false;
+        eulers[0] = sim_estimates.roll_rad;
+        eulers[1] = sim_estimates.pitch_rad;
+        eulers[2] = sim_estimates.yaw_rad;
+        return sim_estimates.attitude_valid;
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
@@ -1300,7 +1357,7 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
         eulers[0] = external_estimates.roll_rad;
         eulers[1] = external_estimates.pitch_rad;
         eulers[2] = external_estimates.yaw_rad;
-        return true;
+        return external_estimates.attitude_valid;
     }
 #endif
     }
@@ -1411,28 +1468,6 @@ Vector2f AP_AHRS::_groundspeed_vector(void)
 
 float AP_AHRS::_groundspeed(void)
 {
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.groundspeed();
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-        break;
-    }
     return groundspeed_vector().length();
 }
 
@@ -1484,14 +1519,52 @@ bool AP_AHRS::set_origin(const Location &loc)
         break;
 #endif
     }
-
-    if (success) {
-        state.origin_ok = _get_origin(state.origin);
-#if HAL_LOGGING_ENABLED
-        Log_Write_Home_And_Origin();
-#endif
-    }
     return success;
+}
+
+// Record the current valid origin to parameters
+// This may save the user from having to set the origin manually when using position controlled modes without GPS
+void AP_AHRS::record_origin()
+{
+    // Only record origin if user has enabled using the record origin option
+    if (!option_set(Options::RECORD_ORIGIN)) {
+        return;
+    }
+    _origin_lat.set_and_save_ifchanged(state.origin.lat * 1.0e-7);
+    _origin_lon.set_and_save_ifchanged(state.origin.lng * 1.0e-7);
+    _origin_alt.set_and_save_ifchanged(state.origin.alt * 1.0e-2);
+}
+
+// Set the origin to the last recorded location if option bit set and not using GPS
+// This is useful for position controlled modes without GPS
+void AP_AHRS::use_recorded_origin_maybe()
+{
+    // exit immediately if origin is already set or option disabled
+    if (state.origin_ok || !option_set(Options::USE_RECORDED_ORIGIN_FOR_NONGPS)) {
+        return;
+    }
+
+    // never use all zero origin
+    if (is_zero(_origin_lat.get()) && is_zero(_origin_lon.get()) && is_zero(_origin_alt.get())) {
+        return;
+    }
+
+    // only set if not using GPS
+    if (using_gps()) {
+        return;
+    }
+
+    // try to set origin
+    const Location loc {
+        int32_t(_origin_lat.get() * 1e7),
+        int32_t(_origin_lon.get() * 1e7),
+        int32_t(_origin_alt.get() * 100),
+        Location::AltFrame::ABSOLUTE
+    };
+    if (set_origin(loc)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: using recorded origin:%.7f,%.7f,%.1f",
+                      (double)_origin_lat.get(), (double)_origin_lon.get(), (double)_origin_alt.get());
+    }
 }
 
 #if AP_AHRS_POSITION_RESET_ENABLED
@@ -1536,15 +1609,15 @@ bool AP_AHRS::_get_velocity_NED(Vector3f &vec) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_velocity_NED(vec);
+        return sim_estimates.get_velocity_NED(vec);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.get_velocity_NED(vec);
+        return external_estimates.get_velocity_NED(vec);
 #endif
     }
 #if AP_AHRS_DCM_ENABLED
-    return dcm.get_velocity_NED(vec);
+    return dcm_estimates.get_velocity_NED(vec);
 #endif
     return false;
 }
@@ -1633,7 +1706,7 @@ bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.get_vert_pos_rate_D(velocity);
+        return dcm_estimates.get_vert_pos_rate_D(velocity);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
@@ -1650,11 +1723,11 @@ bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_vert_pos_rate_D(velocity);
+        return sim_estimates.get_vert_pos_rate_D(velocity);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
-        return external.get_vert_pos_rate_D(velocity);
+        return external_estimates.get_vert_pos_rate_D(velocity);
 #endif
     }
     // since there is no default case above, this is unreachable
@@ -2857,52 +2930,20 @@ uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-// Returns true if the height datum reset has been performed
-// If using a range finder for height no reset is performed and it returns false
-bool AP_AHRS::resetHeightDatum(void)
+void AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
-    switch (configured_ekf_type()) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
 #if HAL_NAVEKF3_AVAILABLE
-        EKF3.resetHeightDatum();
+    EKF3.resetHeightDatum();
 #endif
 #if HAL_NAVEKF2_AVAILABLE
-        EKF2.resetHeightDatum();
+    EKF2.resetHeightDatum();
 #endif
-        return false;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#if HAL_NAVEKF3_AVAILABLE
-        EKF3.resetHeightDatum();
-#endif
-        return EKF2.resetHeightDatum();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-#if HAL_NAVEKF2_AVAILABLE
-        EKF2.resetHeightDatum();
-#endif
-        return EKF3.resetHeightDatum();
-#endif
-
 #if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.resetHeightDatum();
+    sim.resetHeightDatum();
 #endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-    return false;
 }
 
 // send a EKF_STATUS_REPORT for configured EKF
@@ -3081,7 +3122,7 @@ bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        return sim.get_hgt_ctrl_limit(limit);
+        return false;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
@@ -3528,6 +3569,36 @@ bool AP_AHRS::using_extnav_for_yaw(void) const
     }
     // since there is no default case above, this is unreachable
     return false;
+}
+
+// check if GPS is being used to estimate position or velocity
+// always returns true for External and SIM EKF types
+bool AP_AHRS::using_gps(void) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.using_gps();
+#endif
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return _gps_use != GPSUse::Disable;
+#endif
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.using_gps();
+#endif
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+#endif
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+#endif
+        // assume a GPS is being used
+        return true;
+    }
+    // since there is no default case above, this is unreachable
+    return true;
 }
 
 // set and save the alt noise parameter value

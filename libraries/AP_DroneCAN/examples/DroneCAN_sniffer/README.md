@@ -5,10 +5,10 @@ be received by another node.
 To build and upload for a Pixhawk style board run this:
 
 ```
- ./waf configure --board fmuv3 
+ ./waf configure --board fmuv3
  ./waf --target examples/UAVCAN_sniffer --upload
 ```
- 
+
 then connect on the USB console. You will see 1Hz packet stats like
 this:
 

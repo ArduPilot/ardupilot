@@ -5,26 +5,28 @@ The Qiotek AdeptF407 an autopilot produced by [QioTek](https://www.qiotek.io).
 It is an autopilot used CKS MCU.
 
 ## Features
- - MCU: CKS32F407VGT6
- - Accelerometer/Gyro: ICM4 series/ICM2 series or ICM4 series/ICM4 series
- - BEC output: 5V 3A for autopilot and peripheral hardware
- - BEC output: 9V/12V 3A for camera and analog video transmission
- - Barometer: DPS310
- - OSD: AT7456E
- - builtin IST8310 magnetometer(internal I2C)
- - builtin RAMTRON(SPI)
- - 12 dedicated PWM/Capture inputs on FMU
- - 5 UARTS: (USART1, USART2, USART3, UART4, USART7)
- - 2 I2C ports
- - 1 CAN port
- - 2 Analog inputs of voltage / current for battery monitoring
- - 2 analog video input channels
- - 1 analog video output source switcher switching by relay5
- - 4 relays output control
- - 1 Status LED
- - 1 nARMED
+
+- MCU: CKS32F407VGT6
+- Accelerometer/Gyro: ICM4 series/ICM2 series or ICM4 series/ICM4 series
+- BEC output: 5V 3A for autopilot and peripheral hardware
+- BEC output: 9V/12V 3A for camera and analog video transmission
+- Barometer: DPS310
+- OSD: AT7456E
+- builtin IST8310 magnetometer(internal I2C)
+- builtin RAMTRON(SPI)
+- 12 dedicated PWM/Capture inputs on FMU
+- 5 UARTS: (USART1, USART2, USART3, UART4, USART7)
+- 2 I2C ports
+- 1 CAN port
+- 2 Analog inputs of voltage / current for battery monitoring
+- 2 analog video input channels
+- 1 analog video output source switcher switching by relay5
+- 4 relays output control
+- 1 Status LED
+- 1 nARMED
 
 ## Pinout
+
 ![QioTek AdpetF407 Board](../QioTekAdeptF407/adept_f407.jpg "QioTek AdpetF407")
 
 ## Connectors
@@ -168,6 +170,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL5|TX2/RX2|UART5 (Debug)|
 
 ## RC Input
+
 RC input is configured on the RCIN pin by PA15 TIM2_CH1 TIM2 , at one end of the servo rail, marked RC in the above diagram. This pin supports PPM and S.Bus. protocols.
 
 ## OSD Support
@@ -222,5 +225,5 @@ Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"
 firmware, using your favourite DFU loading tool.
 
-The AdeptF407 auto pilot pre-installed with an ArduPilot compatible bootloader. 
+The AdeptF407 auto pilot pre-installed with an ArduPilot compatible bootloader.
 Updates should be done with the *.apj firmware files.

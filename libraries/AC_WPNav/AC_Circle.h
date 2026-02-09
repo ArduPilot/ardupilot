@@ -5,12 +5,6 @@
 #include <AP_Math/AP_Math.h>
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
 
-// Circle mode default and limit constants
-#define AC_CIRCLE_RADIUS_DEFAULT     1000.0f   // Default circle radius in cm (10 meters).
-#define AC_CIRCLE_RATE_DEFAULT       20.0f     // Default circle turn rate in degrees per second. Positive = clockwise, negative = counter-clockwise.
-#define AC_CIRCLE_ANGULAR_ACCEL_MIN  2.0f      // Minimum angular acceleration in deg/s² (used to avoid sluggish yaw transitions).
-#define AC_CIRCLE_RADIUS_MAX_M       2000.0    // Maximum allowed circle radius in meters (2000 m = 2 km).
-
 class AC_Circle
 {
 public:
@@ -61,7 +55,7 @@ public:
 
     // Returns the circle radius in meters.
     // If `_radius_m` is non-positive, falls back to the RADIUS parameter.
-    float get_radius_m() const { return is_positive(_radius_m)?_radius_m:_radius_parm_cm * 0.01; }
+    float get_radius_m() const { return is_positive(_radius_m) ? _radius_m : _radius_parm_m; }
 
     // Sets the circle radius in centimeters.
     // See set_radius_m() for full details.
@@ -157,6 +151,9 @@ public:
     // If so, updates internal `_radius_m` and stores the new parameter value.
     void check_param_change();
 
+    // perform any required parameter conversions
+    void convert_parameters();
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -197,7 +194,7 @@ private:
     };
 
     // parameters
-    AP_Float _radius_parm_cm;     // Circle radius in centimeters, loaded from parameters.
+    AP_Float _radius_parm_m;      // Circle radius in meters, loaded from parameters.
     AP_Float _rate_parm_degs;     // Circle rotation rate in degrees per second, loaded from parameters.
     AP_Int16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
 
@@ -212,7 +209,7 @@ private:
     float    _angular_vel_max_rads;     // Maximum allowed angular velocity in rad/s.
     float    _angular_accel_radss;      // Angular acceleration limit in rad/s².
     uint32_t _last_update_ms;           // Timestamp (in milliseconds) of the last update() call.
-    float    _last_radius_param_cm;     // Cached copy of radius parameter (cm) to detect parameter changes.
+    float    _last_radius_param_m;      // Cached copy of radius parameter (m) to detect parameter changes.
 
     // terrain following variables
     bool  _is_terrain_alt;               // True if _center_ned_m.z is relative to terrain height; false if relative to EKF origin.

@@ -53,6 +53,18 @@ bool ModeGuided::init(bool ignore_checks)
     return true;
 }
 
+// hold_position - bring vehicle to a stop and hold current position
+// using velocity/acceleration control with zero velocity and acceleration targets
+void ModeGuided::hold_position()
+{
+    // check we are in velocity and acceleration control mode
+    if (guided_mode != SubMode::VelAccel) {
+        velaccel_control_start();
+    }
+    guided_vel_target_ned_ms.zero();
+    guided_accel_target_ned_mss.zero();
+}
+
 // run - runs the guided controller
 // should be called at 100hz or more
 void ModeGuided::run()
@@ -403,7 +415,7 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
         float terrain_d_m;
         if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
-            init(true);
+            hold_position();
             return false;
         }
         // convert origin to alt-above-terrain if necessary
@@ -516,7 +528,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         float terrain_d_m;
         if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
-            init(true);
+            hold_position();
             return false;
         }
         // convert origin to alt-above-terrain if necessary

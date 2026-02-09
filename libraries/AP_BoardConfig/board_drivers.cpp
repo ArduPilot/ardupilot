@@ -92,7 +92,6 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
     case PX4_BOARD_AEROFC:
-    case PX4_BOARD_MINDPXV2:
     case FMUV6_BOARD_HOLYBRO_6X:
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
     case FMUV6_BOARD_HOLYBRO_6X_45686:
@@ -334,10 +333,6 @@ void AP_BoardConfig::board_autodetect(void)
     } else {
         config_error("Unable to detect board type");
     }
-#elif defined(HAL_CHIBIOS_ARCH_MINDPXV2)
-    // only one choice
-    state.board_type.set_and_notify(PX4_BOARD_MINDPXV2);
-    DEV_PRINTF("Detected MindPX-V2\n");
 #elif defined(HAL_CHIBIOS_ARCH_FMUV6)
     detect_fmuv6_variant();
 #endif
