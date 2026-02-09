@@ -9,7 +9,6 @@
   "config": {
     // Disable rules that are currently violated in the codebase
     // These can be re-enabled incrementally as files are fixed
-    "MD001": false,  // Heading levels should only increment by one level at a time
     "MD012": false,  // Multiple consecutive blank lines
     "MD013": false,  // Line length
     "MD014": false,  // Dollar signs used before commands without showing output
@@ -22,7 +21,6 @@
     "MD036": false,  // Emphasis used instead of a heading
     "MD037": false,  // Spaces inside emphasis markers
     "MD040": false,  // Fenced code blocks should have a language specified
-    "MD041": false,  // First line in a file should be a top-level heading
     "MD045": false   // Images should have alternate text
   }
 }
