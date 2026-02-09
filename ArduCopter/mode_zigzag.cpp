@@ -355,9 +355,6 @@ void ModeZigZag::manual_control()
         break;
 
     case AltHoldModeState::Flying:
-        // set motors to full range
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
         // run loiter controller
         loiter_nav->update();
 

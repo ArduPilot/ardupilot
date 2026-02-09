@@ -155,8 +155,6 @@ void ModePosHold::run()
         break;
 
     case AltHoldModeState::Flying:
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
         // avoidance-adjusted climb
         target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 
