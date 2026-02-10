@@ -655,6 +655,9 @@ public:
     float get_rangefinder_target_cm() const WARN_IF_UNUSED { return flightmode->get_rangefinder_target() * 100.0f; }
     bool set_rangefinder_target_cm(float new_target_cm) { return mode_surftrak.set_rangefinder_target_cm(new_target_cm); }
 #endif // AP_RANGEFINDER_ENABLED
+
+    // set target position and velocity
+    bool set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, Location::AltFrame alt_frame) override;
 #endif // AP_SCRIPTING_ENABLED
 };
 
