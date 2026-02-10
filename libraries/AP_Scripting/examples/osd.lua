@@ -131,9 +131,17 @@ end
 ------------------------------------------------------------
 -- Check OSD availability
 ------------------------------------------------------------
--- The osd binding returns nil if no OSD backend is available
+-- The osd binding exists but may have no backend available at runtime
 -- (e.g., when SITL is not built with --enable-sfml --sitl-osd)
+-- We test availability by attempting a method call with pcall
 if not osd then
+    gcs:send_text(6, "OSD example: osd not available")
+    return
+end
+
+-- Test if the OSD backend is actually available by calling a method
+local osd_available = pcall(function() return osd:get_screen() end)
+if not osd_available then
     gcs:send_text(6, "OSD example: osd not available")
     return
 end
