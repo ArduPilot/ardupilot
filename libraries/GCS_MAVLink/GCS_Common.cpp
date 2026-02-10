@@ -1941,6 +1941,9 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     status.packet_rx_drop_count = 0;
 
     const uint16_t nbytes = _port->available();
+    uint16_t malformed_packet_count = 0;
+    const uint16_t max_malformed_packets = 100; // Limit malformed packets to prevent tight loops
+    
     for (uint16_t i=0; i<nbytes; i++)
     {
         const uint8_t c = (uint8_t)_port->read();
@@ -1978,6 +1981,11 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
                 parsed_packet = true;
                 gcs_alternative_active[chan] = false;
                 alternative.last_mavlink_ms = now_ms;
+                // Reset malformed packet count on successful parse
+                malformed_packet_count = 0;
+            } else if (framing == MAVLINK_FRAMING_BAD_CRC || framing == MAVLINK_FRAMING_BAD_SIGNATURE) {
+                // Count malformed packets to prevent tight loops
+                malformed_packet_count++;
             }
             hal.util->persistent_data.last_mavlink_msgid = 0;
 
@@ -1991,6 +1999,21 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             }
         }
 #endif // AP_SCRIPTING_ENABLED
+
+        // Check for excessive malformed packets and reset parser state if needed
+        if (malformed_packet_count > max_malformed_packets) {
+            // Reset the parser state to recover from malformed data
+            mavlink_status_t *status_ptr = channel_status();
+            if (status_ptr != nullptr) {
+                // Reset parser state
+                status_ptr->parse_state = MAVLINK_PARSE_STATE_IDLE;
+                status_ptr->packet_idx = 0;
+                status_ptr->current_rx_seq = 0;
+                status_ptr->packet_rx_success_count = 0;
+                status_ptr->packet_rx_drop_count += malformed_packet_count;
+            }
+            malformed_packet_count = 0;
+        }
 
         if (parsed_packet || i % 100 == 0) {
             // make sure we don't spend too much time parsing mavlink messages
