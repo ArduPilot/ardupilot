@@ -1255,6 +1255,39 @@ int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
     lua_pushboolean(L, data);
     return 1;
 }
+
+int lua_AP_Vehicle_set_target_posvel_NED(lua_State *L) {
+    const int args = lua_gettop(L);
+
+    if (args > 4) {
+        return luaL_argerror(L, args, "too many arguments");
+    } else if (args < 3) {
+        return luaL_argerror(L, args, "too few arguments");
+    }
+
+    AP_Vehicle *ud = check_AP_Vehicle(L);
+    Vector3f &pos = *check_Vector3f(L, 2);
+    Vector3f &vel = *check_Vector3f(L, 3);
+
+    Location::AltFrame alt_frame = Location::AltFrame::ABOVE_ORIGIN;
+
+    if (args == 4) {
+        alt_frame = static_cast<Location::AltFrame>(get_integer(L, 4, 0, UINT8_MAX));
+    }
+
+#if AP_SCHEDULER_ENABLED
+    AP::scheduler().get_semaphore().take_blocking();
+#endif
+
+    bool success = ud->set_target_posvel_NED(pos, vel, alt_frame);
+
+#if AP_SCHEDULER_ENABLED
+    AP::scheduler().get_semaphore().give();
+#endif
+
+    lua_pushboolean(L, success);
+    return 1;
+}
 #endif // AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 
 #endif  // AP_SCRIPTING_ENABLED
