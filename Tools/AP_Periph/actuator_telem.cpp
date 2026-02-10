@@ -75,21 +75,21 @@ const AP_Param::GroupInfo ActuatorTelem::var_info[] = {
     // @Description: Voltage offset at zero current on the current sensor.
     // @Units: V
     // @User: Standard
-    AP_GROUPINFO("AMP_OFFSET", 4, ActuatorTelem, curr_amp_offset, AP_PERIPH_ACTUATOR_TELEM_CURR_AMP_OFFSET_DEFAULT),
+    AP_GROUPINFO("_AMP_OFFSET", 4, ActuatorTelem, curr_amp_offset, AP_PERIPH_ACTUATOR_TELEM_CURR_AMP_OFFSET_DEFAULT),
 
     // @Param: _AMP_PERVLT
     // @DisplayName: Amps per volt
     // @Description: Current sensor scale factor.
     // @Units: A/V
     // @User: Standard
-    AP_GROUPINFO("AMP_PERVLT", 5, ActuatorTelem, curr_amp_per_volt, AP_PERIPH_ACTUATOR_TELEM_CURR_AMP_PERVLT_DEFAULT),
+    AP_GROUPINFO("_AMP_PERVLT", 5, ActuatorTelem, curr_amp_per_volt, AP_PERIPH_ACTUATOR_TELEM_CURR_AMP_PERVLT_DEFAULT),
 
     // @Param: _CURR_MAX
     // @DisplayName: Maximum current
     // @Description: Maximum expected current for this channel.
     // @Units: A
     // @User: Standard
-    AP_GROUPINFO("CURR_MAX", 6, ActuatorTelem, curr_max, AP_PERIPH_ACTUATOR_TELEM_CURR_MAX_DEFAULT),
+    AP_GROUPINFO("_CURR_MAX", 6, ActuatorTelem, curr_max, AP_PERIPH_ACTUATOR_TELEM_CURR_MAX_DEFAULT),
 
     AP_GROUPEND
 };
