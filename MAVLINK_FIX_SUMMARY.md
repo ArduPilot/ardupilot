@@ -10,7 +10,7 @@ The `GCS_MAVLINK::update_receive` function in `libraries/GCS_MAVLink/GCS_Common.
 5. This can cause the function to loop indefinitely, consuming CPU and potentially causing system hangs
 
 ## Root Cause Analysis
-The issue was in the `update_receive ` function where:
+The issue was in the `update_receive` function where:
 - No protection against excessive malformed packets
 - No parser state reset mechanism when encountering bad data
 - No limits on malformed packet processing
@@ -18,14 +18,18 @@ The issue was in the `update_receive ` function where:
 ## Solution Implemented
 
 ### 1. Malformed Packet Counting
+
 Added a counter to track malformed packets:
+
 ```cpp
 uint16_t malformed_packet_count = 0;
 const uint16_t max_malformed_packets = 100; // Limit malformed packets to prevent tight loops
 ```
 
 ### 2. Malformed Packet Detection
+
 Enhanced the packet processing logic to count malformed packets:
+
 ```cpp
 if (framing == MAVLINK_FRAMING_BAD_CRC || framing == MAVLINK_FRAMING_BAD_SIGNATURE) {
     // Count malformed packets to prevent tight loops
@@ -34,7 +38,9 @@ if (framing == MAVLINK_FRAMING_BAD_CRC || framing == MAVLINK_FRAMING_BAD_SIGNATU
 ```
 
 ### 3. Parser State Reset
+
 Added logic to reset parser state when excessive malformed packets are detected:
+
 ```cpp
 // Check for excessive malformed packets and reset parser state if needed
 if (malformed_packet_count > max_malformed_packets) {
@@ -53,7 +59,9 @@ if (malformed_packet_count > max_malformed_packets) {
 ```
 
 ### 4. Successful Parse Reset
+
 Reset the malformed packet counter when a valid packet is successfully parsed:
+
 ```cpp
 if (framing == MAVLINK_FRAMING_OK) {
     parsed_packet = true;
