@@ -76,13 +76,9 @@ void SITL_State::_parse_param_init_vals(const char *to_be_set, Param_Init_Values
             printf("Unknown parameter: %s\n", name);
             exit(1);
         }
-        if (non_float_part==value_str) {
-            printf("Unable to convert to float: %s\n", value_str);
-            exit(1);
-        }
         if (*non_float_part != '\0') {
-            printf("Warning: extra chars in value '%s', ignoring '%s'\n",
-                   value_str, non_float_part);
+            printf("Does not convert cleanly to float: %s\n", value_str);
+            exit(1);
         }
 
         auto &info = init_val_info.param_and_val[init_val_info.count];
