@@ -14704,13 +14704,13 @@ RTL_ALT_M 111
 
         # Set all parameters and restart SITL with OSD enabled
         # Note: OSD_TYPE=2 is SITL OSD which requires --enable-sfml --sitl-osd
-        # Using customise_SITL_commandline ensures only ONE window is created
         self.set_parameters({
             "SCR_ENABLE": 1,
             "OSD_TYPE": 2,  # SITL OSD (requires SFML)
             "SIM_SPEEDUP": 5,  # Slow enough to see the OSD
         })
-        self.reboot_sitl(mark_context=False)
+        # Restart SITL with --osd flag to enable the OSD window
+        self.customise_SITL_commandline(["--osd"])
 
         # Wait for script to start
         self.delay_sim_time(3)
