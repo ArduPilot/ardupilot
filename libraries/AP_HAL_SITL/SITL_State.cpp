@@ -34,12 +34,8 @@ using namespace HALSITL;
 
 void SITL_State::_parse_param_init_vals(const char *to_be_set, Param_Init_Values &init_val_info)
 {
-    // Despite the recommended format below, this implementation also permits providing
-    // multiple params via distinct -P flags like:
-    //   -P NAME1=VALUE1 -P NAME2=VALUE2 -P NAME3=VALUE3
     if (to_be_set == nullptr || to_be_set[0] == '\0') {
-        printf("Specify param(s)+val(s) via: -P NAME1=VALUE1[,NAME2=VALUE2][...]\n");
-        exit(1);
+        return;
     }
 
     char *for_parsing = strdup(to_be_set);
