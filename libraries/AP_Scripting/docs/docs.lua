@@ -2799,8 +2799,9 @@ function vehicle:set_target_posvelaccel_NED(target_pos, target_vel, target_accel
 -- desc
 ---@param target_pos Vector3f_ud
 ---@param target_vel Vector3f_ud
+---@param alt_frame? number -- optional frame, defaults to 2 (ABOVE_ORIGIN), Sub supports 3 (ABOVE_TERRAIN)
 ---@return boolean
-function vehicle:set_target_posvel_NED(target_pos, target_vel) end
+function vehicle:set_target_posvel_NED(target_pos, target_vel, alt_frame) end
 
 -- desc
 ---@param target_pos Vector3f_ud
