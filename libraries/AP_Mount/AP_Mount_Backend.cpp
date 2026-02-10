@@ -235,6 +235,10 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
 
+    if (natively_supports(MountTargetType::LOCATION)) {
+        send_target_location(_roi_target);
+    }
+
     // optionally set RC_TARGETING yaw lock state
     if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
         set_yaw_lock(true);
@@ -326,6 +330,10 @@ void AP_Mount_Backend::clear_roi_target()
     if (get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
         MAV_MOUNT_MODE default_mode = (MAV_MOUNT_MODE)_params.default_mode.get();
         set_mode(default_mode);
+    }
+
+    if (natively_supports(MountTargetType::LOCATION)) {
+        send_target_location(_roi_target);
     }
 }
 
@@ -942,6 +950,9 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         case MountTargetType::NEUTRAL:
             yaw_lock_state = false;  // not locked onto the scenery
             break;
+        case MountTargetType::LOCATION:
+            yaw_lock_state = true;
+            break;        
         }
         break;
     case MAV_MOUNT_MODE_RC_TARGETING:
@@ -1045,8 +1056,8 @@ void AP_Mount_Backend::_update_mnt_target()
 
     case MAV_MOUNT_MODE_GPS_POINT:
         // point mount to a GPS point given by the mission planner
-        if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-            mnt_target.target_type = MountTargetType::ANGLE;
+        if (AP::ahrs().get_location(_roi_target)) {
+            mnt_target.target_type = MountTargetType::LOCATION;
         }
         return;
 
@@ -1087,6 +1098,8 @@ void AP_Mount_Backend::send_target_to_gimbal()
         case MountTargetType::NEUTRAL:
             send_target_neutral();
             return;
+        case MountTargetType::LOCATION:
+            return;
         }
         return;  // should not reach this as all cases return
     }
@@ -1124,6 +1137,14 @@ void AP_Mount_Backend::send_target_to_gimbal()
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             send_target_angles(mnt_target.angle_rad);
+            return;
+        }
+        break;
+    case MountTargetType::LOCATION:
+        if (natively_supports(MountTargetType::ANGLE)) {
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                send_target_angles(mnt_target.angle_rad);
+            }
             return;
         }
         break;

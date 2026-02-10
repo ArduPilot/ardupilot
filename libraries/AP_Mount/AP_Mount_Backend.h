@@ -243,6 +243,7 @@ protected:
         RATE      = 1,
         RETRACTED = 2,
         NEUTRAL   = 3,
+        LOCATION  = 4,
     };
 
     // class for a single angle or rate target
@@ -306,6 +307,7 @@ protected:
     virtual void send_target_rates(const MountRateTarget &rate_rads) { }
     virtual void send_target_retracted() { }
     virtual void send_target_neutral() { }
+    virtual void send_target_location(const Location &roi_loc) { }
 
     // options parameter bitmask handling
     enum class Options : uint8_t {

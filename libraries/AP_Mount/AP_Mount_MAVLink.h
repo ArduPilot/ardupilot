@@ -40,11 +40,15 @@ protected:
     // MVAVLink can send either rates or angles, and can also be
     // directly commanded to move to a retracted state
     uint8_t natively_supported_mount_target_types() const override {
-        return (
-            (1U<<unsigned(MountTargetType::ANGLE)) |
-            (1U<<unsigned(MountTargetType::RATE)) |
-            (1U<<unsigned(MountTargetType::RETRACTED))
-            );
+
+        uint8_t supported_target =  (1U<<unsigned(MountTargetType::ANGLE)) |
+                                    (1U<<unsigned(MountTargetType::RATE)) |
+                                    (1U<<unsigned(MountTargetType::RETRACTED));
+
+        if (strncmp(_vendor_name, "AVTA", 4) == 0)
+            supported_target |= (1U<<unsigned(MountTargetType::LOCATION));
+        
+        return supported_target;
     };
 
     // get attitude as a quaternion.  returns true on success
@@ -71,6 +75,8 @@ private:
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
     void send_target_angles(const MountAngleTarget &angle_rad) override;
 
+    void send_target_location(const Location &roi_loc) override;
+
     // internal variables
     bool _got_device_info;          // true once gimbal has provided device info
     bool _initialised;              // true once the gimbal has provided a GIMBAL_DEVICE_INFORMATION
@@ -80,5 +86,6 @@ private:
     uint8_t _compid;                // component id of gimbal
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
+    char _vendor_name[32];           // vendor name
 };
 #endif // HAL_MOUNT_MAVLINK_ENABLED
