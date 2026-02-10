@@ -1394,8 +1394,8 @@ private:
 class ModePosHold : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // need a constructor for parameters
+    ModePosHold(void);
     Number mode_number() const override { return Number::POSHOLD; }
 
     bool init(bool ignore_checks) override;
@@ -1409,12 +1409,21 @@ public:
     bool allows_autotune() const override { return true; }
     bool allows_auto_trim() const override { return true; }
 
+    // convert parameters
+    void convert_params();
+
+    // mode specific parameter variable table
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     const char *name() const override { return "Position Hold"; }
     const char *name4() const override { return "PHLD"; }
 
 private:
+
+    // parameters
+    AP_Float brake_angle_max_deg;   // max lean angle (in degrees) during braking
 
     void update_pilot_lean_angle_rad(float &lean_angle_filtered_rad, float &lean_angle_raw_rad);
     float mix_controls(float mix_ratio, float first_control, float second_control);
