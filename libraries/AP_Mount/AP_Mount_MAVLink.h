@@ -41,11 +41,14 @@ protected:
     // directly commanded to move to a retracted state
     uint8_t natively_supported_mount_target_types() const override {
 
-        uint8_t supported_target =  (1U<<unsigned(MountTargetType::ANGLE)) |
-                                    (1U<<unsigned(MountTargetType::RATE)) |
-                                    (1U<<unsigned(MountTargetType::RETRACTED));
+        uint8_t supported_target = (
+            (1U<<unsigned(MountTargetType::ANGLE)) |
+            (1U<<unsigned(MountTargetType::RATE)) |
+            (1U<<unsigned(MountTargetType::RETRACTED))
+        );
 
-        if (strncmp(_vendor_name, "AVTA", 4) == 0)
+        // temporary hack until we get GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL
+        if (strncmp(vendor_name, "AVTA", 4) == 0)
             supported_target |= (1U<<unsigned(MountTargetType::LOCATION));
         
         return supported_target;
@@ -86,6 +89,6 @@ private:
     uint8_t _compid;                // component id of gimbal
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
-    char _vendor_name[32];           // vendor name
+    char vendor_name[32];           // vendor name
 };
 #endif // HAL_MOUNT_MAVLINK_ENABLED

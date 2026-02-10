@@ -136,7 +136,7 @@ void AP_Mount_MAVLink::handle_gimbal_device_information(const mavlink_message_t 
     const uint8_t fw_ver_revision = (info.firmware_version & 0x00FF0000) >> 16;
     const uint8_t fw_ver_build = (info.firmware_version & 0xFF000000) >> 24;
 
-    strcpy(_vendor_name, info.vendor_name);
+    strncpy(vendor_name, info.vendor_name, ARRAY_SIZE(vendor_name));
 
     // display gimbal info to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",
@@ -286,20 +286,17 @@ void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
         return;
     }
 
-    mavlink_command_int_t pkt;
+    mavlink_command_int_t pkt {};
     pkt.target_system = _sysid;
     pkt.target_component = _compid;
 
-    if (roi_loc.initialised())
-    {
+    if (roi_loc.initialised()) {
         pkt.command = MAV_CMD_DO_SET_ROI_LOCATION;
         pkt.x = roi_loc.lat,  // param5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7
         pkt.y = roi_loc.lng,  // param6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7
         pkt.z = roi_loc.alt  * 0.01f;  // param7 / z position: global: altitude in meters (relative or absolute, depending on frame).
         pkt.frame = (uint8_t)roi_loc.get_alt_frame();
-    }
-    else
-    {
+    } else {
         pkt.command = MAV_CMD_DO_SET_ROI_NONE;
     }
 

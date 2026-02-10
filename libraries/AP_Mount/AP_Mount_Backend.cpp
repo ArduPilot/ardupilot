@@ -235,10 +235,6 @@ void AP_Mount_Backend::set_roi_target(const Location &target_loc)
     // set the mode to GPS tracking mode
     set_mode(MAV_MOUNT_MODE_GPS_POINT);
 
-    if (natively_supports(MountTargetType::LOCATION)) {
-        send_target_location(_roi_target);
-    }
-
     // optionally set RC_TARGETING yaw lock state
     if (option_set(Options::RCTARGETING_LOCK_FROM_PREVMODE)) {
         set_yaw_lock(true);
@@ -1056,9 +1052,7 @@ void AP_Mount_Backend::_update_mnt_target()
 
     case MAV_MOUNT_MODE_GPS_POINT:
         // point mount to a GPS point given by the mission planner
-        if (AP::ahrs().get_location(_roi_target)) {
-            mnt_target.target_type = MountTargetType::LOCATION;
-        }
+        mnt_target.target_type = MountTargetType::LOCATION;
         return;
 
     case MAV_MOUNT_MODE_HOME_LOCATION:
@@ -1099,6 +1093,7 @@ void AP_Mount_Backend::send_target_to_gimbal()
             send_target_neutral();
             return;
         case MountTargetType::LOCATION:
+            send_target_location(_roi_target);
             return;
         }
         return;  // should not reach this as all cases return
