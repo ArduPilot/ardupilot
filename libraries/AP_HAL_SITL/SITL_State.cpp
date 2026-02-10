@@ -40,7 +40,8 @@ void SITL_State::_parse_param_init_vals(const char *to_be_set, Param_Init_Values
 
     char *for_parsing = strdup(to_be_set);
     if (for_parsing == nullptr) {
-        AP_HAL::panic("strdup failed (insufficient memory)");
+        printf("strdup failed (insufficient memory)");
+        exit(1);
     }
 
     char *saveptr = nullptr;
