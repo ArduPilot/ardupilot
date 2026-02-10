@@ -57,7 +57,7 @@ public:
     uint8_t get_instance() const { return _instance; }
 
 private:
-    static const uint8_t MAX_CLI_PARAM_VALUE_PAIRS = 4;
+    static const uint8_t MAX_CLI_PARAM_VALUE_PAIRS = 20;
 
     struct Param_Init_Value {
         char name[AP_MAX_NAME_SIZE + 1];
