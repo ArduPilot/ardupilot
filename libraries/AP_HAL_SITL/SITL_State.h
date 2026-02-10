@@ -29,7 +29,7 @@ public:
     bool use_rtscts(void) const {
         return _use_rtscts;
     }
-    
+
     // paths for UART devices
     const char *_serial_path[9] {
         "tcp:0:wait",
@@ -53,7 +53,7 @@ public:
     static bool lookup_location(const char *home_str,
                                 Location &loc,
                                 float &yaw_degrees);
-    
+
     uint8_t get_instance() const { return _instance; }
 
 private:
@@ -105,7 +105,7 @@ private:
 
     bool _use_rtscts;
     bool _use_fg_view;
-    
+
     const char *_fg_address;
 
     // delay buffer variables
