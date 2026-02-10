@@ -10,7 +10,7 @@ The `GCS_MAVLINK::update_receive` function in `libraries/GCS_MAVLink/GCS_Common.
 5. This can cause the function to loop indefinitely, consuming CPU and potentially causing system hangs
 
 ## Root Cause Analysis
-The issue was in the `update_receive` function where:
+The issue was in the `update_receive ` function where:
 - No protection against excessive malformed packets
 - No parser state reset mechanism when encountering bad data
 - No limits on malformed packet processing
