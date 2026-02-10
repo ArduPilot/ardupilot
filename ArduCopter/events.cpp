@@ -14,6 +14,13 @@ void Copter::failsafe_radio_on_event()
 {
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
+    // CUSTOM MODIFICATION FOR COMPETITION:
+    // Immediate Disarm on Radio Failsafe to ensure motors stop instantly.
+    // This will cause the copter to crash if it is flying.
+    announce_failsafe("Radio", "Immediate Disarm");
+    arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
+    return;
+
     // set desired action based on FS_THR_ENABLE parameter
     FailsafeAction desired_action;
     switch (g.failsafe_throttle) {
