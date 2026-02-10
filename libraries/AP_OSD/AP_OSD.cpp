@@ -320,12 +320,8 @@ void AP_OSD::init()
 
 bool AP_OSD::init_backend(const AP_OSD::osd_types type, const uint8_t instance)
 {
-    // don't re-initialize if backend already exists with same type
+    // don't re-initialize if backend already exists
     if (_backends[instance] != nullptr) {
-        if (_backends[instance]->get_backend_type() == type) {
-            return false;  // already initialized
-        }
-        // type changed - would need to delete old backend, not supported
         return false;
     }
 
