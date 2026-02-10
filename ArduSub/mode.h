@@ -68,6 +68,7 @@ public:
     virtual bool allows_arming(bool from_gcs) const = 0;
     virtual bool is_autopilot() const { return false; }
     virtual bool in_guided_mode() const { return false; }
+    virtual float get_rangefinder_target() const { return 0; }
 
     // return a string for this flightmode
     virtual const char *name() const = 0;
@@ -226,7 +227,7 @@ public:
 
     bool init(bool ignore_checks) override;
 
-    float get_rangefinder_target_cm() const WARN_IF_UNUSED { return rangefinder_target_cm; }
+    float get_rangefinder_target() const override WARN_IF_UNUSED { return rangefinder_target_cm * 0.01f; }
     bool set_rangefinder_target_cm(float target_cm);
 
 protected:
@@ -262,12 +263,13 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
     bool in_guided_mode() const override { return true; }
+    float get_rangefinder_target() const override WARN_IF_UNUSED;
     bool guided_limit_check();
     void guided_limit_init_time_and_pos();
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_set_angle(const Quaternion&, float);
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
+    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, Location::AltFrame alt_frame=Location::AltFrame::ABOVE_ORIGIN);
     bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     bool guided_set_destination(const Vector3f& destination);
     bool guided_set_destination(const Location&);
@@ -295,7 +297,7 @@ private:
     void guided_takeoff_run();
     void guided_pos_control_start();
     void guided_vel_control_start();
-    void guided_posvel_control_start();
+    void guided_posvel_control_start(Location::AltFrame alt_frame);
     void guided_angle_control_start();
 };
 
