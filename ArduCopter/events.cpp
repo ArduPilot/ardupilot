@@ -14,6 +14,13 @@ void Copter::failsafe_radio_on_event()
 {
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
+    // CUSTOM MODIFICATION FOR COMPETITION:
+    // Immediate Disarm on Radio Failsafe to ensure motors stop instantly.
+    // This will cause the copter to crash if it is flying.
+    announce_failsafe("Radio", "Immediate Disarm");
+    arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
+    return;
+
     // set desired action based on FS_THR_ENABLE parameter
     FailsafeAction desired_action;
     switch (g.failsafe_throttle) {
@@ -39,22 +46,12 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
-        case FS_THR_ENABLED_ALWAYS_DISARM:
-            desired_action = FailsafeAction::NONE;
-            // This will be handled by disarming in the conditions below
-            break;
         default:
             desired_action = FailsafeAction::LAND;
     }
 
     // Conditions to deviate from FS_THR_ENABLE selection and send specific GCS warning
-    if (g.failsafe_throttle == FS_THR_ENABLED_ALWAYS_DISARM) {
-        // immediately disarm on RC failsafe, regardless of flight state
-        announce_failsafe("Radio", "Immediate Disarm");
-        arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
-        desired_action = FailsafeAction::NONE;
-
-    } else if (should_disarm_on_failsafe()) {
+    if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
         announce_failsafe("Radio", "Disarming");
         arming.disarm(AP_Arming::Method::RADIOFAILSAFE);
