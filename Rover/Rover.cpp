@@ -172,7 +172,7 @@ bool Rover::set_target_location(const Location& target_loc)
 
 #if AP_SCRIPTING_ENABLED
 // set target velocity (for use by scripting)
-bool Rover::set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_target)
+bool Rover::set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!control_mode->in_guided_mode()) {
@@ -180,13 +180,13 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_t
     }
 
     // convert vector length into speed
-    const float target_speed_m = safe_sqrt(sq(vel_ned.x) + sq(vel_ned.y));
+    const float target_speed_ms = safe_sqrt(sq(vel_ned_ms.x) + sq(vel_ned_ms.y));
 
     // convert vector direction to target yaw
-    const float target_yaw_cd = degrees(atan2f(vel_ned.y, vel_ned.x)) * 100.0f;
+    const float target_yaw_cd = degrees(atan2f(vel_ned_ms.y, vel_ned_ms.x)) * 100.0f;
 
     // send target heading and speed
-    mode_guided.set_desired_heading_and_speed(target_yaw_cd, target_speed_m);
+    mode_guided.set_desired_heading_and_speed(target_yaw_cd, target_speed_ms);
 
     return true;
 }
@@ -213,7 +213,7 @@ bool Rover::get_steering_and_throttle(float& steering, float& throttle)
 }
 
 // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
-bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
+bool Rover::set_desired_turn_rate_and_speed(float turn_rate_degs, float speed_ms)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!control_mode->in_guided_mode()) {
@@ -221,14 +221,14 @@ bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
     }
 
     // set turn rate and speed. Turn rate is expected in centidegrees/s and speed in meters/s
-    mode_guided.set_desired_turn_rate_and_speed(turn_rate * 100.0f, speed);
+    mode_guided.set_desired_turn_rate_and_speed(turn_rate_degs * 100.0f, speed_ms);
     return true;
 }
 
 // set desired nav speed (m/s). Used for scripting.
-bool Rover::set_desired_speed(float speed)
+bool Rover::set_desired_speed(float speed_ms)
 {
-    return control_mode->set_desired_speed(speed);
+    return control_mode->set_desired_speed(speed_ms);
 }
 
 // get control output (for use in scripting)

@@ -94,12 +94,12 @@ float ModeFollow::get_distance_to_destination() const
 }
 
 // set desired speed in m/s
-bool ModeFollow::set_desired_speed(float speed)
+bool ModeFollow::set_desired_speed(float speed_ms)
 {
-    if (is_negative(speed)) {
+    if (is_negative(speed_ms)) {
         return false;
     }
-    _desired_speed = speed;
+    _desired_speed = speed_ms;
     return true;
 }
 

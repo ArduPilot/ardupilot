@@ -123,7 +123,7 @@ public:
     float get_speed_default(bool rtl = false) const;
 
     // set desired speed in m/s
-    virtual bool set_desired_speed(float speed) { return false; }
+    virtual bool set_desired_speed(float speed_ms) { return false; }
 
     // execute the mission in reverse (i.e. backing up)
     void set_reversed(bool value);
@@ -277,7 +277,7 @@ public:
     bool reached_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
     // start RTL (within auto)
     void start_RTL();
@@ -545,7 +545,7 @@ public:
     bool reached_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
     // get or set desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
@@ -722,7 +722,7 @@ public:
     bool reached_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
 protected:
 
@@ -758,7 +758,7 @@ public:
     bool reached_destination() const override { return smart_rtl_state == SmartRTLState::StopAtHome; }
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
     // save current position for use by the smart_rtl flight mode
     void save_position();
@@ -854,7 +854,7 @@ public:
     float get_distance_to_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
 protected:
 

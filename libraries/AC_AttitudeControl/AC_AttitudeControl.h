@@ -385,7 +385,7 @@ public:
     Vector3f rate_bf_targets() const { return _ang_vel_body_rads + _sysid_ang_vel_body_rads; }
 
     // return the angular velocity of the target (setpoint) attitude rad/s
-    const Vector3f& get_rate_ef_targets() const { return _euler_rate_target_rads; }
+    const Vector3f& get_rate_ef_target_rads() const { return _euler_rate_target_rads; }
 
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled.set(enable_or_disable); }

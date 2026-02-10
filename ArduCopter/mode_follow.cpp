@@ -152,8 +152,8 @@ float ModeFollow::wp_bearing_deg() const
 // Returns target location with offset applied, for MAVLink reporting
 bool ModeFollow::get_wp(Location &loc) const
 {
-    Vector3f vel;
-    return g2.follow.get_target_location_and_velocity_ofs(loc, vel);
+    Vector3f vel_ned_ms;
+    return g2.follow.get_target_location_and_velocity_ofs(loc, vel_ned_ms);
 }
 
 #endif // MODE_FOLLOW_ENABLED

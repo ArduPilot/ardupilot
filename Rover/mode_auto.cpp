@@ -349,24 +349,24 @@ bool ModeAuto::reached_destination() const
 }
 
 // set desired speed in m/s
-bool ModeAuto::set_desired_speed(float speed)
+bool ModeAuto::set_desired_speed(float speed_ms)
 {
     switch (_submode) {
     case SubMode::WP:
     case SubMode::Stop:
-        return g2.wp_nav.set_speed_max(speed);
+        return g2.wp_nav.set_speed_max(speed_ms);
     case SubMode::HeadingAndSpeed:
-        _desired_speed = speed;
+        _desired_speed = speed_ms;
         return true;
     case SubMode::RTL:
-        return rover.mode_rtl.set_desired_speed(speed);
+        return rover.mode_rtl.set_desired_speed(speed_ms);
     case SubMode::Loiter:
-        return rover.mode_loiter.set_desired_speed(speed);
+        return rover.mode_loiter.set_desired_speed(speed_ms);
     case SubMode::Guided:
     case SubMode::NavScriptTime:
-        return rover.mode_guided.set_desired_speed(speed);
+        return rover.mode_guided.set_desired_speed(speed_ms);
     case SubMode::Circle:
-        return g2.mode_circle.set_desired_speed(speed);
+        return g2.mode_circle.set_desired_speed(speed_ms);
     }
     return false;
 }

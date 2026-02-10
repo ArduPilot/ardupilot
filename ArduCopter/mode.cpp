@@ -484,28 +484,28 @@ void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_o
 // transform pilot's roll or pitch input into a desired velocity
 Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {
-    Vector2f vel;
+    Vector2f vel_ne_ms;
 
     if (!rc().has_valid_input()) {
-        return vel;
+        return vel_ne_ms;
     }
     // fetch roll and pitch inputs
-    float roll_out = channel_roll->norm_input_dz();
-    float pitch_out = channel_pitch->norm_input_dz();
+    float roll_out_norm = channel_roll->norm_input_dz();
+    float pitch_out_norm = channel_pitch->norm_input_dz();
 
     // convert roll and pitch inputs into velocity in NE frame
-    vel = Vector2f(-pitch_out, roll_out);
-    if (vel.is_zero()) {
-        return vel;
+    vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
+    if (vel_ne_ms.is_zero()) {
+        return vel_ne_ms;
     }
-    vel = copter.ahrs.body_to_earth2D(vel);
+    vel_ne_ms = copter.ahrs.body_to_earth2D(vel_ne_ms);
 
     // Transform square input range to circular output
     // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
-    Vector2f vel_scalar = vel / MAX(fabsf(vel.x), fabsf(vel.y));
+    Vector2f vel_scalar = vel_ne_ms / MAX(fabsf(vel_ne_ms.x), fabsf(vel_ne_ms.y));
     // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
-    vel *= vel_max / vel_scalar.length();
-    return vel;
+    vel_ne_ms *= vel_max / vel_scalar.length();
+    return vel_ne_ms;
 }
 
 bool Mode::_TakeOff::triggered_ms(const float target_climb_rate_ms) const
@@ -741,15 +741,15 @@ void Mode::land_run_horizontal_control()
          // get the velocity of the target
         copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NED_ms().xy(), target_vel_ne_ms);
 
-        Vector2f accel_zero;
+        Vector2f accel_ne_zero;
         // target vel will remain zero if landing target is stationary
-        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, accel_zero);
+        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, accel_ne_zero);
     }
 #endif
 
     if (!copter.ap.prec_land_active) {
-        Vector2f accel;
-        pos_control->input_vel_accel_NE_m(vel_correction_ms, accel);
+        Vector2f accel_ne_zero;
+        pos_control->input_vel_accel_NE_m(vel_correction_ms, accel_ne_zero);
     }
 
     // run pos controller
@@ -984,10 +984,10 @@ float Mode::get_pilot_desired_yaw_rate_rads() const
     }
 
     // Get yaw input
-    const float yaw_in = channel_yaw->norm_input_dz();
+    const float yaw_in_norm = channel_yaw->norm_input_dz();
 
     // convert pilot input to the desired yaw rate
-    return radians(g2.command_model_pilot_y.get_rate()) * input_expo(yaw_in, g2.command_model_pilot_y.get_expo());
+    return radians(g2.command_model_pilot_y.get_rate()) * input_expo(yaw_in_norm, g2.command_model_pilot_y.get_expo());
 }
 
 // pass-through functions to reduce code churn on conversion;
