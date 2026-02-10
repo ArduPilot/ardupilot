@@ -14702,15 +14702,15 @@ RTL_ALT_M 111
         # Install the OSD example script
         self.install_example_script_context('osd.lua')
 
-        # Set all parameters and restart SITL with OSD enabled
-        # Note: OSD_TYPE=2 is SITL OSD which requires --enable-sfml --sitl-osd
+        # Set all parameters and restart SITL
+        # Note: OSD_TYPE=2 is SITL OSD which requires the binary to be built with
+        # --sitl-osd configure flag. The OSD window appears automatically when
+        # OSD_TYPE=2 is set and the binary has SITL OSD compiled in.
         self.set_parameters({
             "SCR_ENABLE": 1,
-            "OSD_TYPE": 2,  # SITL OSD (requires SFML)
-            "SIM_SPEEDUP": 5,  # Slow enough to see the OSD
+            "OSD_TYPE": 2,  # SITL OSD (requires --sitl-osd at configure time)
         })
-        # Restart SITL with --osd flag to enable the OSD window
-        self.customise_SITL_commandline(["--osd"])
+        self.reboot_sitl()
 
         # Wait for script to start
         self.delay_sim_time(3)
@@ -15958,7 +15958,6 @@ return update, 1000
             "SMART_RTL_EnterLeave": "Causes a panic",
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
             "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
-            "ScriptingOSD": "Requires SFML which is not available in CI",
         }
 
 
