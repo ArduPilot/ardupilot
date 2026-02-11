@@ -1944,8 +1944,8 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     uint16_t malformed_packet_count = 0;
     const uint16_t max_malformed_packets = 100; // Limit malformed packets to prevent tight loops
     uint16_t processed_bytes = 0;
-    const uint16_t max_bytes_per_update = 1024; // Limit processing to prevent blocking
-    const uint16_t max_bytes_per_iteration = 64; // Limit bytes processed per iteration to prevent blocking
+    const uint16_t max_bytes_per_update = 4096; // Allow more bytes per update for high-rate scenarios
+    const uint16_t max_bytes_per_iteration = 256; // Allow more bytes per iteration
     
     for (uint16_t i=0; i<nbytes; i++)
     {
