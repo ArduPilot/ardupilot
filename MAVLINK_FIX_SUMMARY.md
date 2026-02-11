@@ -1,43 +1,43 @@
-# MAVLink Tight Loop Fix Summary
+# MAVLink Message ID Fix Summary
+
+## Overview
+This document summarizes the changes made to fix the issue where `MAVLINK_MSG_ID_MISSION_ITEM` was incorrectly used instead of `MAVLINK_MSG_ID_MISSION_ITEM_INT` in the `handle_mission_item` function.
 
 ## Problem Description
-The `GCS_MAVLINK::update_receive` function in `libraries/GCS_MAVLink/GCS_Common.cpp` was susceptible to tight loops when processing malformed MAVLink packets. This occurred because:
+The `handle_mission_item` function in `libraries/GCS_MAVLink/GCS_Common.cpp` was using `MAVLINK_MSG_ID_MISSION_ITEM` for message ID comparison, which caused issues with mission item handling. The function should use `MAVLINK_MSG_ID_MISSION_ITEM_INT` instead.
 
-1. The function reads all available bytes from the UART
-2. For each byte, it calls `mavlink_frame_char_buffer` to parse the packet
-3. When malformed packets are received, the parsing may not properly handle error conditions
-4. The function continues processing bytes without proper bounds checking or error recovery
-5. This can cause the function to loop indefinitely, consuming CPU and potentially causing system hangs
+## Changes Made
 
-## Root Cause Analysis
-The issue was in the `update_receive` function where:
-- No protection against excessive malformed packets
-- No parser state reset mechanism when encountering bad data
-- No limits on malformed packet processing
+### File: `libraries/GCS_MAVLink/GCS_Common.cpp`
 
-## Solution Implemented
+#### Function: `handle_mission_item`
 
-### 1. Malformed Packet Counting
-
-Added a counter to track malformed packets:
-
+**Before:**
 ```cpp
-uint16_t malformed_packet_count = 0;
-const uint16_t max_malformed_packets = 100; // Limit malformed packets to prevent tight loops
+void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
+{
+    mavlink_mission_item_int_t mission_item_int;
+    bool send_mission_item_warning = false;
+    if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
+        mavlink_mission_item_t mission_item;
+        mavlink_msg_mission_item_decode(&msg, &mission_item);
 ```
 
-### 2. Malformed Packet Detection
-
-Enhanced the packet processing logic to count malformed packets:
-
+**After:**
 ```cpp
-if (framing == MAVLINK_FRAMING_BAD_CRC || framing == MAVLINK_FRAMING_BAD_SIGNATURE) {
-    // Count malformed packets to prevent tight loops
-    malformed_packet_count++;
-}
+void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
+{
+    mavlink_mission_item_int_t mission_item_int;
+    bool send_mission_item_warning = false;
+    if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM_INT) {
+        mavlink_mission_item_t mission_item;
+        mavlink_msg_mission_item_decode(&msg, &mission_item);
 ```
 
-### 3. Parser State Reset
+## Impact
+This fix ensures that the correct message ID is used for mission item handling, which should resolve any issues related to mission item processing in the MAVLink communication protocol.
+
+## Testing
 
 Added logic to reset parser state when excessive malformed packets are detected:
 
