@@ -325,7 +325,7 @@ def write_compilation_database(bld):
     database_file = bld.bldnode.find_or_declare('compile_commands.json')
     # don't remove the file at clean
 
-    Logs.info('Build commands will be stored in %s', database_file.path_from(bld.path))
+    # Logs.info('Build commands will be stored in %s', database_file.path_from(bld.path))
     try:
         root = database_file.read_json()
     except IOError:
@@ -388,9 +388,9 @@ def dry_run_compilation_database(self):
     # if targets have not changed and neither has configuration, 
     # we can skip compilation database generation
     if not target_list_changed(bld, targets + use):
-        Logs.info('Targets have not changed, skipping compilation database compile_commands.json generation')
+        # Logs.info('Targets have not changed, skipping compilation database compile_commands.json generation')
         return
-    Logs.info('Generating compile_commands.json')
+    # Logs.info('Generating compile_commands.json')
     # we need only to generate last_cmd, so override
     # exec_command temporarily
     def exec_command(bld, *k, **kw):
