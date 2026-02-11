@@ -1945,6 +1945,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
     const uint16_t max_malformed_packets = 100; // Limit malformed packets to prevent tight loops
     uint16_t processed_bytes = 0;
     const uint16_t max_bytes_per_update = 1024; // Limit processing to prevent blocking
+    const uint16_t max_bytes_per_iteration = 64; // Limit bytes processed per iteration to prevent blocking
     
     for (uint16_t i=0; i<nbytes; i++)
     {
@@ -1956,6 +1957,12 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
         
         const uint8_t c = (uint8_t)_port->read();
         processed_bytes++;
+        
+        // Check time limit more frequently to prevent blocking other tasks
+        if (AP_HAL::micros() - tstart_us > max_time_us) {
+            break;
+        }
+        
         const uint32_t protocol_timeout = 4000;
         
         if (alternative.handler &&
@@ -2024,9 +2031,15 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             malformed_packet_count = 0;
         }
 
-        // Check time limit more frequently to prevent blocking other tasks
-        if (AP_HAL::micros() - tstart_us > max_time_us) {
-            break;
+        // Yield to other tasks periodically to prevent CPU starvation
+        if (processed_bytes % max_bytes_per_iteration == 0) {
+            // Small delay to allow other tasks to run
+            hal.scheduler->delay_microseconds(10);
+            
+            // Check if we've exceeded our time budget
+            if (AP_HAL::micros() - tstart_us > max_time_us) {
+                break;
+            }
         }
     }
 
