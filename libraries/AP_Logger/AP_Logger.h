@@ -13,7 +13,6 @@
 #include <AP_Mission/AP_Mission.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Vehicle/ModeReason.h>
-#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #include <stdint.h>
 
@@ -246,6 +245,8 @@ public:
     bool WritesEnabled() const { return _writes_enabled; }
 
     void StopLogging();
+
+    void Write_RTC();
 
     void Write_Parameter(const char *name, float value);
     void Write_Event(LogEvent id);

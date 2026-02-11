@@ -90,23 +90,28 @@ void shape_vel_accel_xy(const Vector2f& vel_desired, const Vector2f& accel_desir
                         const Vector2f& vel, Vector2f& accel,
                         float accel_max, float jerk_max, float dt, bool limit_total_accel);
 
-// Shapes position, velocity, and acceleration using a jerk-limited profile.
-// - Computes velocity to close position error using a square-root controller.
-// - That velocity is then shaped via `shape_vel_accel` to enforce acceleration and jerk limits.
-// - Limits can be applied separately to correction and total values.
-// Used for smooth point-to-point motion with constrained dynamics.
+// Shapes position, velocity, and acceleration using a jerk-limited square-root command model.
+// - Computes a velocity correction from position error using a square-root controller.
+// - Uses sqrt_controller_accel() to bias the velocity correction based on the actual closing rate.
+// - Forms a velocity target by adding the correction to the feedforward velocity.
+// - Computes an acceleration demand from velocity error using k_v and adds external acceleration feedforward.
+// - Optionally constrains total velocity and total acceleration when limit_total is true.
+// - Applies jerk limiting via shape_accel() to ensure smooth acceleration transitions.
+// This is the single-axis (1D) form of shape_pos_vel_accel_xy().
 void shape_pos_vel_accel(const postype_t pos_desired, float vel_desired, float accel_desired,
                          const postype_t pos, float vel, float& accel,
                          float vel_min, float vel_max,
                          float accel_min, float accel_max,
                          float jerk_max, float dt, bool limit_total);
 
-// Computes a jerk-limited acceleration profile to move toward a position and velocity target in 2D.
-// - Computes a velocity correction based on position error using a square-root controller.
-// - That velocity is passed to `shape_vel_accel_xy` to generate a constrained acceleration.
-// - Limits include: maximum velocity (`vel_max`), maximum acceleration (`accel_max`), and maximum jerk (`jerk_max`).
-// - If `limit_total` is true, constraints are applied to the total command (not just the correction).
-// Provides smooth trajectory shaping for lateral motion with bounded dynamics.
+// Shapes lateral position, velocity, and acceleration using a jerk-limited square-root command model.
+// - Computes a velocity correction from position error using a square-root controller.
+// - Uses the sqrt_controller_accel() term to adjust the velocity correction based on the current closing rate.
+// - Forms a velocity target by adding the correction to the feedforward velocity.
+// - Computes an acceleration demand from velocity error using k_v and adds external acceleration feedforward.
+// - Limits acceleration magnitude with a braking-priority limiter based on the current velocity direction.
+// - Optionally limits the total velocity and total acceleration when limit_total is true.
+// - Applies jerk limiting via shape_accel_xy() to ensure smooth acceleration transitions.
 void shape_pos_vel_accel_xy(const Vector2p& pos_desired, const Vector2f& vel_desired, const Vector2f& accel_desired,
                             const Vector2p& pos, const Vector2f& vel, Vector2f& accel,
                             float vel_max, float accel_max,
@@ -122,7 +127,7 @@ void shape_pos_vel_accel_xy(const Vector2p& pos_desired, const Vector2f& vel_des
 // Used for attitude control with limited angular velocity and angular acceleration (e.g., roll/pitch shaping).
 void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float angle_accel_desired,
                          float angle, float angle_vel, float& angle_accel,
-                         float angle_vel_max, float angle_accel_max,
+                         float angle_vel_min, float angle_vel_max, float angle_accel_max,
                          float angle_jerk_max, float dt, bool limit_total);
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
@@ -133,12 +138,15 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
 // Returns true if the acceleration vector was modified.
 bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
 
-// Limits acceleration magnitude while preserving cross-track authority during turns.
-// - Splits acceleration into components parallel and perpendicular to velocity.
-// - Ensures sufficient lateral acceleration is reserved for path curvature.
-// - If forward acceleration dominates, lateral acceleration is limited to
-//   CORNER_ACCELERATION_RATIO * accel_max.
-// Returns true if limiting was applied.
+// Limits a 2D acceleration vector with direction-dependent prioritisation.
+// - Acceleration is decomposed into along-track (parallel to velocity) and cross-track components.
+// - If braking is requested (negative along-track component), braking is prioritised and the
+//   remaining acceleration budget is allocated to cross-track.
+// - If no braking is requested (along-track acceleration or zero), cross-track acceleration
+//   is prioritised and the remaining budget is allocated to along-track.
+// - Ensures the final acceleration magnitude does not exceed accel_max.
+// - If velocity is zero (no defined direction), a simple magnitude limit is applied.
+// Returns true if the limiting logic was applied.
 bool limit_accel_corner_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
 
 // Piecewise square-root + linear controller that limits second-order response (acceleration).
@@ -158,6 +166,20 @@ Vector2f sqrt_controller(const Vector2f& error, float p, float second_ord_lim, f
 // - Useful for calculating required error to produce a desired rate.
 // - Handles both linear and square-root regions of the controller response.
 float inv_sqrt_controller(float output, float p, float D_max);
+
+// Computes the rate-of-change implied by sqrt_controller() for the commanded correction rate.
+// - Uses the chain rule to estimate rate_cmd_dot = d(rate_cmd)/dt based on the actual closing rate.
+// - For a fixed target: error = target - state, and error_dot = -rate_state (since state_dot = rate_state).
+// - In the linear region of sqrt_controller(): d(rate_cmd)/d(error) = p
+// - In the sqrt region of sqrt_controller():   d(rate_cmd)/d(error) = second_ord_lim / |rate_cmd|
+// - Therefore:
+//     linear region: rate_cmd_dot = -p * rate_state
+//     sqrt region:   rate_cmd_dot = -(second_ord_lim / |rate_cmd|) * rate_state
+// Notes:
+// - If second_ord_lim <= 0, the controller is linear everywhere.
+// - If p == 0, the controller is pure sqrt everywhere.
+// - rate_cmd must be the output of sqrt_controller() for the same error.
+float sqrt_controller_accel(float error, float rate_cmd, float rate_state, float p, float second_ord_lim);
 
 // Calculates stopping distance required to reduce a velocity to zero using a square-root controller.
 // - Uses the inverse of the `sqrt_controller()` response curve.

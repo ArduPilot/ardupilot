@@ -155,14 +155,16 @@ double wrap_360_cd(const double angle);
 
 
 /*
-  wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
+  wrap an angle in radians to 0..2PI
  */
-ftype wrap_PI(const ftype radian);
+float wrap_2PI(const float radian);
+double wrap_2PI(const double radian);
 
 /*
- * wrap an angle in radians to 0..2PI
+  wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
-ftype wrap_2PI(const ftype radian);
+template <typename T>
+T wrap_PI(const T radian);
 
 /*
  * Constrain a value to be within the range: low and high
@@ -175,6 +177,16 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line);
 
 #define constrain_float(amt, low, high) constrain_value_line(float(amt), float(low), float(high), uint32_t(__AP_LINE__))
 #define constrain_ftype(amt, low, high) constrain_value_line(ftype(amt), ftype(low), ftype(high), uint32_t(__AP_LINE__))
+
+inline int8_t constrain_int8(const int8_t amt, const int8_t low, const int8_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
+inline uint8_t constrain_uint8(const uint8_t amt, const uint8_t low, const uint8_t high)
+{
+    return constrain_value(amt, low, high);
+}
 
 inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
 {
@@ -274,6 +286,13 @@ template<typename T, typename U, typename... Params>
 ftype norm(const T first, const U second, const Params... parameters)
 {
     return sqrtF(sq(first, second, parameters...));
+}
+
+inline float norm(const float first, const float second) {
+    return sqrtf(sq(first) + sq(second));
+}
+inline float norm(const float first, const float second, const float third) {
+    return sqrtf(sq(first) + sq(second) + sq(third));
 }
 
 #undef MIN

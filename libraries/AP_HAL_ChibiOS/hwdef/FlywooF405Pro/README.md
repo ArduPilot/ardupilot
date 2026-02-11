@@ -1,6 +1,6 @@
 # GOKU F405 Pro
 
-https://flywoo.net/products/goku-versatile-f405-pro-fc-20x20-30-5x30-5
+[Flywoo store](https://flywoo.net/products/goku-versatile-f405-pro-fc-20x20-30-5x30-5)
 
 The Flywoo GOKU F405 Pro is a flight controller produced by [Flywoo](https://flywoo.net/).
 
@@ -14,7 +14,7 @@ The Flywoo GOKU F405 Pro is a flight controller produced by [Flywoo](https://fly
 - 5V Power Out: 2.0A max
 - 10V Power Out: 2.0A max
 - 9 PWM outputs
-- Mounting Holes: Standard 20x20 or 30.5/30.5mm square to center of holes 
+- Mounting Holes: Standard 20x20 or 30.5/30.5mm square to center of holes
 - Weight: 5.5g
 - Input Voltage: 2-6S Lipo
 
@@ -39,9 +39,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 USART3 and USART6 supports RX and TX DMA. UART4 supports TX DMA. UART1, UART2 and UART5 do not support DMA.
 
 ## RC Input
- 
+
 RC input is configured on UART3, UART4 or UART6 which support serial RC protocols. SBUS *must* be used on UART4 which has hardware inversion, UART5 also has hardware inversion but no DMA so use for SBUS is not recommended.
-  
+
 ## OSD Support
 
 The GOKU F405 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -69,11 +69,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT around 11
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT around 59
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT around 11
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT around 59
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

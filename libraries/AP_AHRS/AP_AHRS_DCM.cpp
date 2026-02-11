@@ -148,9 +148,18 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.yaw_rad = yaw;
 
     results.dcm_matrix = _body_dcm_matrix;
+
+    // quaternion is derived from transformation matrix:
+    results.quaternion.from_rotation_matrix(_dcm_matrix);
+
+    results.attitude_valid = true;
+
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
     results.accel_ef = _accel_ef;
+
+    results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);
+    results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
 
     results.location_valid = get_location(results.location);
 }
@@ -490,13 +499,6 @@ bool AP_AHRS_DCM::use_compass(void)
     }
 
     // use the compass
-    return true;
-}
-
-// return the quaternion defining the rotation from NED to XYZ (body) axes
-bool AP_AHRS_DCM::get_quaternion(Quaternion &quat) const
-{
-    quat.from_rotation_matrix(_dcm_matrix);
     return true;
 }
 

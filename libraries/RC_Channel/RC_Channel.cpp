@@ -251,6 +251,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Plane}: 183: AUTOLAND mode
     // @Values{Plane}: 184: System ID Chirp
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  185:Mount Roll/Pitch Lock
+    // @Values{Copter, Rover, Plane, Blimp, Sub}:  186:Mount POI Lock
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -793,7 +794,10 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::RETRACT_MOUNT2:
     case AUX_FUNC::MOUNT_YAW_LOCK:
     case AUX_FUNC::MOUNT_RP_LOCK:
-#endif
+#if AP_MOUNT_POI_LOCK_ENABLED
+    case AUX_FUNC::MOUNT_POI_LOCK:
+#endif //AP_MOUNT_POI_LOCK_ENABLED
+#endif //HAL_MOUNT_ENABLED
 #if HAL_LOGGING_ENABLED
     case AUX_FUNC::LOG_PAUSE:
 #endif
@@ -915,7 +919,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #if HAL_MOUNT_ENABLED
     { AUX_FUNC::MOUNT_YAW_LOCK, "Mount Yaw Lock"},
     { AUX_FUNC::MOUNT_RP_LOCK, "Mount Roll/Pitch Lock"},
-#endif
+#endif //HAL_MOUNT_ENABLED
 #if HAL_LOGGING_ENABLED
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
 #endif
@@ -943,7 +947,7 @@ const char *RC_Channel::string_for_aux_function(AUX_FUNC function) const
     return nullptr;
 }
 
-/* find string for postion */
+/* find string for position */
 const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
 {
     switch (pos) {
@@ -1815,6 +1819,26 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
         }
         break;
     }
+#if AP_MOUNT_POI_LOCK_ENABLED    
+   case AUX_FUNC::MOUNT_POI_LOCK: {
+        AP_Mount *mount = AP::mount();
+        if (mount == nullptr) {
+            break;
+        }
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            mount->set_poi_lock();
+            break;
+        case AuxSwitchPos::MIDDLE:
+            mount->suspend_poi_lock();
+            break;
+        case AuxSwitchPos::LOW:
+            mount->clear_poi_lock();
+            break;
+        }
+        break;
+    }
+#endif // AP_MOUNT_POI_LOCK_ENABLED
 
     case AUX_FUNC::MOUNT_LRF_ENABLE: {
         AP_Mount *mount = AP::mount();

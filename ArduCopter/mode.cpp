@@ -302,7 +302,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #endif
 
     if (!ignore_checks &&
-        new_flightmode->requires_GPS() &&
+        new_flightmode->requires_position() &&
         !copter.position_ok()) {
         mode_change_failed(new_flightmode, "requires position");
         return false;
@@ -484,28 +484,28 @@ void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_o
 // transform pilot's roll or pitch input into a desired velocity
 Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {
-    Vector2f vel;
+    Vector2f vel_ne_ms;
 
     if (!rc().has_valid_input()) {
-        return vel;
+        return vel_ne_ms;
     }
     // fetch roll and pitch inputs
-    float roll_out = channel_roll->norm_input_dz();
-    float pitch_out = channel_pitch->norm_input_dz();
+    float roll_out_norm = channel_roll->norm_input_dz();
+    float pitch_out_norm = channel_pitch->norm_input_dz();
 
     // convert roll and pitch inputs into velocity in NE frame
-    vel = Vector2f(-pitch_out, roll_out);
-    if (vel.is_zero()) {
-        return vel;
+    vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
+    if (vel_ne_ms.is_zero()) {
+        return vel_ne_ms;
     }
-    vel = copter.ahrs.body_to_earth2D(vel);
+    vel_ne_ms = copter.ahrs.body_to_earth2D(vel_ne_ms);
 
     // Transform square input range to circular output
     // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
-    Vector2f vel_scalar = vel / MAX(fabsf(vel.x), fabsf(vel.y));
+    Vector2f vel_scalar = vel_ne_ms / MAX(fabsf(vel_ne_ms.x), fabsf(vel_ne_ms.y));
     // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
-    vel *= vel_max / vel_scalar.length();
-    return vel;
+    vel_ne_ms *= vel_max / vel_scalar.length();
+    return vel_ne_ms;
 }
 
 bool Mode::_TakeOff::triggered_ms(const float target_climb_rate_ms) const
@@ -621,23 +621,26 @@ void Mode::land_run_vertical_control(bool pause_descent)
     if (!pause_descent) {
 
         // do not ignore limits until we have slowed down for landing
-        ignore_descent_limit = (MAX(g2.land_alt_low_cm, 100) * 0.01 > get_alt_above_ground_m()) || copter.ap.land_complete_maybe;
+        const float land_alt_low_m = copter.mode_land.get_land_alt_low_m();
+        ignore_descent_limit = (MAX(land_alt_low_m, 1) > get_alt_above_ground_m()) || copter.ap.land_complete_maybe;
 
         float max_land_descent_speed_ms;
-        if (g.land_speed_high_cms > 0) {
-            max_land_descent_speed_ms = g.land_speed_high_cms * 0.01;
+        const float land_speed_high_ms = copter.mode_land.get_land_speed_high_ms();
+        if (land_speed_high_ms > 0) {
+            max_land_descent_speed_ms = land_speed_high_ms;
         } else {
             max_land_descent_speed_ms = pos_control->get_max_speed_down_ms();
         }
 
         // Don't speed up for landing.
-        max_land_descent_speed_ms = MAX(max_land_descent_speed_ms, abs(g.land_speed_cms) * 0.01);
+        const float land_speed_ms = copter.mode_land.get_land_speed_ms();
+        max_land_descent_speed_ms = MAX(max_land_descent_speed_ms, fabsf(land_speed_ms));
 
-        // Compute a vertical velocity demand such that the vehicle approaches g2.land_alt_low_cm. Without the below constraint, this would cause the vehicle to hover at g2.land_alt_low_cm.
-        climb_rate_ms = sqrt_controller(MAX(g2.land_alt_low_cm, 100) * 0.01 - get_alt_above_ground_m(), pos_control->D_get_pos_p().kP(), pos_control->D_get_max_accel_mss(), G_Dt);
+        // Compute a vertical velocity demand such that the vehicle approaches land_alt_low. Without the below constraint, this would cause the vehicle to hover at land_alt_low.
+        climb_rate_ms = sqrt_controller(MAX(land_alt_low_m, 1) - get_alt_above_ground_m(), pos_control->D_get_pos_p().kP(), pos_control->D_get_max_accel_mss(), G_Dt);
 
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
-        climb_rate_ms = constrain_float(climb_rate_ms, -max_land_descent_speed_ms, -abs(g.land_speed_cms) * 0.01);
+        climb_rate_ms = constrain_float(climb_rate_ms, -max_land_descent_speed_ms, -fabsf(land_speed_ms));
 
 #if AC_PRECLAND_ENABLED
         const bool navigating = pos_control->NE_is_active();
@@ -665,7 +668,7 @@ void Mode::land_run_vertical_control(bool pause_descent)
                 // compute desired descent velocity
                 const float precland_acceptable_error_m = 0.15;
                 const float precland_min_descent_speed_ms = 0.1;
-                const float max_descent_speed_ms = abs(g.land_speed_cms) * 0.005;
+                const float max_descent_speed_ms = fabsf(land_speed_ms) * 0.5;
                 const float land_slowdown_ms = MAX(0.0f, target_error_m * (max_descent_speed_ms / precland_acceptable_error_m));
                 climb_rate_ms = MIN(-precland_min_descent_speed_ms, -max_descent_speed_ms + land_slowdown_ms);
             }
@@ -738,15 +741,15 @@ void Mode::land_run_horizontal_control()
          // get the velocity of the target
         copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NED_ms().xy(), target_vel_ne_ms);
 
-        Vector2f accel_zero;
+        Vector2f accel_ne_zero;
         // target vel will remain zero if landing target is stationary
-        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, accel_zero);
+        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, accel_ne_zero);
     }
 #endif
 
     if (!copter.ap.prec_land_active) {
-        Vector2f accel;
-        pos_control->input_vel_accel_NE_m(vel_correction_ms, accel);
+        Vector2f accel_ne_zero;
+        pos_control->input_vel_accel_NE_m(vel_correction_ms, accel_ne_zero);
     }
 
     // run pos controller
@@ -949,7 +952,8 @@ Mode::AltHoldModeState Mode::get_alt_hold_state_D_ms(float target_climb_rate_ms)
         if (target_climb_rate_ms < 0.0f && !copter.ap.using_interlock) {
             // the aircraft should move to a ground idle state
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-
+        } else if (copter.ap.using_interlock && !motors->get_interlock()) {
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             // the aircraft should prepare for imminent take off
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -980,10 +984,10 @@ float Mode::get_pilot_desired_yaw_rate_rads() const
     }
 
     // Get yaw input
-    const float yaw_in = channel_yaw->norm_input_dz();
+    const float yaw_in_norm = channel_yaw->norm_input_dz();
 
     // convert pilot input to the desired yaw rate
-    return radians(g2.command_model_pilot_y.get_rate()) * input_expo(yaw_in, g2.command_model_pilot_y.get_expo());
+    return radians(g2.command_model_pilot_y.get_rate()) * input_expo(yaw_in_norm, g2.command_model_pilot_y.get_expo());
 }
 
 // pass-through functions to reduce code churn on conversion;

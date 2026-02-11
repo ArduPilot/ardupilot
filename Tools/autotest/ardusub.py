@@ -901,7 +901,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # This should set the EKF origin, write an ORGN msg to df and a GPS_GLOBAL_ORIGIN msg to MAVLink
         self.mav.mav.set_gps_global_origin_send(1, int(47.607584 * 1e7), int(-122.343911 * 1e7), 0)
-        self.delay_sim_time(1)
+        self.delay_sim_time(2)
 
         if not self.current_onboard_log_contains_message('ORGN'):
             raise NotAchievedException("Did not find expected ORGN message")
@@ -916,15 +916,15 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def BackupOrigin(self):
-        """Test ORIGIN_LAT and ORIGIN_LON parameters"""
+        """Test AHRS_ORIGIN_LAT and AHRS_ORIGIN_LON parameters"""
 
         self.context_push()
         self.set_parameters({
-            'GPS1_TYPE': 0,              # Disable GPS
+            'GPS1_TYPE': 0,             # Disable GPS
             'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
             'EK3_SRC1_VELXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
-            'ORIGIN_LAT': 47.607584,
-            'ORIGIN_LON': -122.343911,
+            'AHRS_ORIGIN_LAT': 47.607584,
+            'AHRS_ORIGIN_LON': -122.343911,
         })
         self.reboot_sitl()
         self.context_collect('STATUSTEXT')
@@ -932,18 +932,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # Wait for the EKF to be happy in constant position mode
         self.wait_ready_to_arm_const_pos()
 
-        if self.current_onboard_log_contains_message('ORGN'):
-            raise NotAchievedException("Found unexpected ORGN message")
+        self.wait_statustext('AHRS: using recorded origin', check_context=True)
 
-        # This should set the origin and write a record to ORGN
-        self.arm_vehicle()
-
-        self.wait_statustext('Using backup location', check_context=True)
-
+        # check that origin has been logged
         if not self.current_onboard_log_contains_message('ORGN'):
             raise NotAchievedException("Did not find expected ORGN message")
 
-        self.disarm_vehicle()
         self.context_pop()
 
     def assert_mag_fusion_selection(self, expect_sel):

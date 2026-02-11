@@ -136,7 +136,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "MANUAL"; }
+    const char *name() const override { return "Manual"; }
     const char *name4() const override { return "MANU"; }
     Mode::Number number() const override { return Mode::Number::MANUAL; }
 };
@@ -159,7 +159,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "ACRO"; }
+    const char *name() const override { return "Acro"; }
     const char *name4() const override { return "ACRO"; }
     Mode::Number number() const override { return Mode::Number::ACRO; }
 };
@@ -182,7 +182,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "STABILIZE"; }
+    const char *name() const override { return "Stabilize"; }
     const char *name4() const override { return "STAB"; }
     Mode::Number number() const override { return Mode::Number::STABILIZE; }
 };
@@ -209,7 +209,7 @@ protected:
     void run_pre();
     void run_post();
 
-    const char *name() const override { return "ALT_HOLD"; }
+    const char *name() const override { return "Depth Hold"; }
     const char *name4() const override { return "ALTH"; }
     Mode::Number number() const override { return Mode::Number::ALT_HOLD; }
 };
@@ -231,7 +231,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "SURFTRAK"; }
+    const char *name() const override { return "Surftrak"; }
     const char *name4() const override { return "STRK"; }
     Mode::Number number() const override { return Mode::Number::SURFTRAK; }
 
@@ -281,7 +281,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "GUIDED"; }
+    const char *name() const override { return "Guided"; }
     const char *name4() const override { return "GUID"; }
     Mode::Number number() const override { return Mode::Number::GUIDED; }
 
@@ -328,7 +328,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "AUTO"; }
+    const char *name() const override { return "Auto"; }
     const char *name4() const override { return "AUTO"; }
     Mode::Number number() const override { return Mode::Number::AUTO; }
 
@@ -359,7 +359,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "POSHOLD"; }
+    const char *name() const override { return "Position Hold"; }
     const char *name4() const override { return "POSH"; }
     Mode::Number number() const override { return Mode::Number::POSHOLD; }
 
@@ -386,7 +386,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "CIRCLE"; }
+    const char *name() const override { return "Circle"; }
     const char *name4() const override { return "CIRC"; }
     Mode::Number number() const override { return Mode::Number::CIRCLE; }
 };
@@ -407,7 +407,7 @@ public:
     bool is_autopilot() const override { return true; }
 
 protected:
-    const char *name() const override { return "SURFACE"; }
+    const char *name() const override { return "Surface"; }
     const char *name4() const override { return "SURF"; }
     Mode::Number number() const override { return Mode::Number::SURFACE; }
     bool nobaro_mode;
@@ -431,7 +431,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "MOTORDETECT"; }
+    const char *name() const override { return "Motor Detection"; }
     const char *name4() const override { return "DETE"; }
     Mode::Number number() const override { return Mode::Number::MOTOR_DETECT; }
 };

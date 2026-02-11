@@ -1,6 +1,6 @@
 # GOKU F405 HD 1-2S AIO v2 w/ built-in ELRS 2.4g RX
 
-https://flywoo.net/products/goku-f405-hd-1-2s-elrs-aio-v2
+[Flywoo store](https://flywoo.net/products/goku-f405-hd-1-2s-elrs-aio-v2)
 
 The Flywoo GOKU F405 HD AIO v2 is a flight controller produced by [Flywoo](https://flywoo.net/).
 
@@ -18,7 +18,7 @@ The Flywoo GOKU F405 HD AIO v2 is a flight controller produced by [Flywoo](https
 - 5V Power Out: 2.0A max
 - 9V Power Out: 2.0A max (on/off software controllable via PINIO)
 - Dimensions: 30x30mm
-- Mounting Holes: Standard 25.5/25.5mm square to center of holes 
+- Mounting Holes: Standard 25.5/25.5mm square to center of holes
 - Weight: 4.9g
 
 - Built-in 12A BLHeli_S 4in1 ESC
@@ -49,9 +49,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 USART1 and USART3 supports RX and TX DMA. UART4 supports TX DMA. USART2 supports RX DMA. UART5 and UART6 do not support DMA.
 
 ## RC Input
- 
+
 RC input is configured  as ELRS by default using UART1. Alternatively, UART3 could be used for RC inputs other than ELRS but its protocol would need to be changed to 23 and UART1 disabled by setting its protocol as -1. This board does not support PPM.
-  
+
 ## OSD Support
 
 The GOKU F405 HD AIO v2 supports OSD using OSD_TYPE 5 (MSP DisplayPort).
@@ -72,7 +72,8 @@ to use DShot. PWM 1-4 support bidirectional dshot.
 .. note:: for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
 - :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
-- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX) 
+- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
+
 ## Battery Monitoring
 
 The board has a builtin voltage sensor. The voltage sensor can handle 2S to 6S
@@ -80,11 +81,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 13
- - BATT_VOLT_MULT around 11
- - BATT_CURR_PIN 12
- - BATT_AMP_PERVLT around 60.2
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 13
+- BATT_VOLT_MULT around 11
+- BATT_CURR_PIN 12
+- BATT_AMP_PERVLT around 60.2
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

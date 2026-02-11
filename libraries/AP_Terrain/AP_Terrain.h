@@ -105,16 +105,15 @@ public:
 
 #if HAL_GCS_ENABLED
     // send any pending terrain request message
-    bool send_cache_request(mavlink_channel_t chan);
-    void send_request(mavlink_channel_t chan);
+    bool send_cache_request(class GCS_MAVLINK &link);
+    void send_request(GCS_MAVLINK &link);
 
     // handle terrain data and reports from GCS
     // send a terrain report for the current location, extrapolating height as we do for navigation:
-    void send_report(mavlink_channel_t chan);
+    void send_report(GCS_MAVLINK &link);
     // send a terrain report or Location loc
-    void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
-    void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
-    void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void send_terrain_report(GCS_MAVLINK &link, const Location &loc, bool extrapolate);
+    void handle_terrain_check(GCS_MAVLINK &link, const mavlink_message_t &msg);
     void handle_terrain_data(const mavlink_message_t &msg);
 #endif
 
@@ -202,6 +201,10 @@ public:
       be called when the vehicle is definately on the ground
      */
     void set_reference_location(void);
+
+#if HAL_GCS_ENABLED
+    void handle_message(GCS_MAVLINK &link, const mavlink_message_t &msg);
+#endif  // HAL_GCS_ENABLED
 
 private:
     // allocate the terrain subsystem data
@@ -322,9 +325,9 @@ private:
     /*
       request any missing 4x4 grids from a block
     */
-    bool request_missing(mavlink_channel_t chan, struct grid_cache &gcache);
-    bool request_missing(mavlink_channel_t chan, const struct grid_info &info);
-#endif
+    bool request_missing(class GCS_MAVLINK &link, struct grid_cache &gcache);
+    bool request_missing(GCS_MAVLINK &link, const struct grid_info &info);
+#endif  // HAL_GCS_ENABLED
 
     /*
       look for blocks that need to be read/written to disk

@@ -691,7 +691,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
-    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS() || !flightmode->has_manual_throttle())) {
+    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_position() || landing_with_GPS() || !flightmode->has_manual_throttle())) {
         pos_control->write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
@@ -963,13 +963,13 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
 }
 
 // get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
-bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
+bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const
 {
     // always returns zero vector if landed or disarmed
     if (copter.ap.land_complete) {
-        rate_ef_targets.zero();
+        rate_ef_targets_rads.zero();
     } else {
-        rate_ef_targets = attitude_control->get_rate_ef_targets();
+        rate_ef_targets_rads = attitude_control->get_rate_ef_target_rads();
     }
     return true;
 }

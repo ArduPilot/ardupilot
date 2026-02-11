@@ -186,7 +186,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -246,7 +246,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-base-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -264,7 +264,7 @@ jobs:
           Tools/scripts/build_ci.sh
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: failure()
         with:
            name: fail-${{matrix.config}}
@@ -278,7 +278,7 @@ jobs:
            retention-days: 14
 
       - name: Archive .bin artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
            name: BIN-${{matrix.config}}
            path: /__w/ardupilot/ardupilot/logs

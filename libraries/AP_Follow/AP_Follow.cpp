@@ -283,13 +283,13 @@ void AP_Follow::update_estimates()
         // apply angular shaping for heading estimate
         shape_angle_vel_accel(radians(_target_heading_deg) + delta_heading_rad, radians(_target_heading_rate_degs), 0.0,
                               _estimate_heading_rad, _estimate_heading_rate_rads, _estimate_heading_accel_radss,
-                              0.0, radians(_accel_max_h_degss),
+                              0.0, 0.0, radians(_accel_max_h_degss),
                               radians(_jerk_max_h_degsss), e_dt, false);
 
         // update heading angle separately to maintain proper wrapping [-PI, PI]
         postype_t estimate_heading_rad = _estimate_heading_rad;
         update_pos_vel_accel(estimate_heading_rad, _estimate_heading_rate_rads, _estimate_heading_accel_radss, e_dt, 0.0, 0.0, 0.0);
-        _estimate_heading_rad = wrap_PI(estimate_heading_rad);
+        _estimate_heading_rad = wrap_PI(float(estimate_heading_rad));
     } else {
         // no valid estimate yet: initialise from latest target position
         _estimate_pos_ned_m = _target_pos_ned_m + delta_pos_m.topostype();

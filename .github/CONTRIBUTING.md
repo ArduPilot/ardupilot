@@ -8,26 +8,26 @@ If you are reading this page, you are possibly interested in contributing to our
 * Adding new features
 * Reviewing existing pull requests, and notifying the maintainer if it passes your code review.
 
-# How to make a good bug report...
+## How to make a good bug report...
 
 * Make sure your bug is not a support issue. Support issues should go to [the support forums](http://discuss.ardupilot.org) and include a .bin log file if possible. If you're not sure you have a bug, you should seek support first.
 * Search for your bug, make sure it is not already reported. If it is already reported, make a comment on that issue.
 * Only report one bug per issue report.
 * Write a clear and concise summary. Be specific about what component of the software you are writing about, and follow the convention: "Copter: blah blah blah"
-* Write a clear and concise description, with **particularly clear steps** to reproduce the problem. Include logs that display the bug. **Try to report only facts in your issue report, keeping your assumptions out of it.** 
+* Write a clear and concise description, with **particularly clear steps** to reproduce the problem. Include logs that display the bug. **Try to report only facts in your issue report, keeping your assumptions out of it.**
 * The majority of issues open now are good or acceptable by these guidelines. Please refer to them for examples.
 
-# Submitting patches
+## Submitting patches
 
 Please see our [wiki article](https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html).
 
-# Addressing ArduPilot github Issues
+## Addressing ArduPilot github Issues
 
 We use github's Issue tracking feature to keep a list of outstanding Bugs and Feature Requests.  We specifically label some issues as [good first issues](https://github.com/ArduPilot/ardupilot/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) because they are straight forward tasks that someone new to the codebase may be able to deal with.
 
 We typically do not assign issues - *particularly* "Good First Issue"s to specific contributors - if you feel you can contribute towards resolving an issue, simply work on it and create a PR which addresses it.
 
-# Development Team
+## Development Team
 
 The ArduPilot project is open source and [maintained](https://github.com/ArduPilot/ardupilot#maintainers) by a team of volunteers.
 

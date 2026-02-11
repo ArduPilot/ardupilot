@@ -193,9 +193,9 @@ public:
     // returns false if estimate is unavailable
     bool airspeed_vector_TAS(Vector3f &vec) const;
 
-    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
     // returns false if the data is unavailable
-    bool airspeed_health_data(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+    bool airspeed_health_data(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
     // return true if a airspeed sensor is enabled
     bool airspeed_sensor_enabled(void) const {
@@ -254,10 +254,14 @@ public:
     // from which to decide the origin on its own
     bool set_origin(const Location &loc) WARN_IF_UNUSED;
 
+    // Set the origin to the last recorded location if option bit set and not using GPS
+    // This is useful for position controlled modes without GPS
+    void use_recorded_origin_maybe();
+
 #if AP_AHRS_POSITION_RESET_ENABLED
     // Set the EKF's NE horizontal position states and their corresponding variances from the supplied WGS-84 location
     // and 1-sigma horizontal position uncertainty. This can be used when the EKF is dead reckoning to periodically
-    // correct the position. If the EKF is is still using data from a postion sensor such as GPS, the position set
+    // correct the position. If the EKF is is still using data from a position sensor such as GPS, the position set
     // will not be performed.
     // pos_accuracy is the standard deviation of the horizontal position uncertainty in metres.
     // The altitude element of the location is not used.
@@ -373,9 +377,7 @@ public:
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum();
+    void resetHeightDatum();
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;
@@ -447,6 +449,10 @@ public:
 
     // check if external nav is providing yaw
     bool using_extnav_for_yaw(void) const;
+
+    // check if GPS is being used to estimate position or velocity
+    // always returns true for External and SIM EKF types
+    bool using_gps(void) const;
 
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
@@ -757,6 +763,9 @@ private:
 
     AP_Enum<GPSUse> _gps_use;
     AP_Int8 _gps_minsats;
+    AP_Float _origin_lat;
+    AP_Float _origin_lon;
+    AP_Float _origin_alt;
 
     EKFType active_EKF_type(void) const { return state.active_EKF; }
 
@@ -931,6 +940,10 @@ private:
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool _get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
 
+    // return the quaternion defining the rotation from NED to XYZ
+    // (body) axes for the passed-in type
+    bool _get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const;
+
     // return secondary position solution if available
     bool _get_secondary_position(Location &loc) const;
 
@@ -979,6 +992,10 @@ private:
     // returns an EKF type to be used as active if we decide the
     // primary is not good enough.
     EKFType fallback_active_EKF_type(void) const;
+
+    // Record the current valid origin to parameters
+    // This may save the user from having to set the origin manually when using position controlled modes without GPS
+    void record_origin();
 
     /*
       state updated at the end of each update() call
@@ -1049,6 +1066,8 @@ private:
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
         DISABLE_AIRSPEED_EKF_CHECK=(1U<<2),
+        RECORD_ORIGIN=(1U<<3),
+        USE_RECORDED_ORIGIN_FOR_NONGPS=(1U<<4),
     };
     AP_Int16 _options;
     

@@ -17,8 +17,9 @@ To generate a public/private key pair, run the following command:
 ```
 
 That will create two files:
- - NAME_private_key.dat
- - NAME_public_key.dat
+
+- NAME_private_key.dat
+- NAME_public_key.dat
 
 NAME can be any string, but would usually be your vendor name. It is
 only used for the local filenames.
@@ -125,6 +126,7 @@ public keys from the signed bootloader:
   securecommand set private_keyfile my_private_key.dat
   securecommand getsessionkey
 ```
+
 This opens a secure command session using your private_key.dat file to allow the removal of all public keys from the bootloader using these commands:
 
 ```
@@ -172,10 +174,10 @@ allow the use of unsigned firmwares.
 MAVProxy version 1.8.55 and later has a "securecommand" module which
 gives you commands for:
 
- - generating a session key for remote update
- - fetching the current public keys
- - setting new public keys as additional or replacement keys
- - removing all public keys
+- generating a session key for remote update
+- fetching the current public keys
+- setting new public keys as additional or replacement keys
+- removing all public keys
 
 It is expected that future versions of MissionPlanner will include a
 plugin with the same functionality.

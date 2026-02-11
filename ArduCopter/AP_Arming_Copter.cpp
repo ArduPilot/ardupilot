@@ -218,12 +218,6 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
             check_failed(Check::PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
         }
 
-        // lean angle parameter check
-        if (copter.aparm.angle_max < 1000 || copter.aparm.angle_max > 8000) {
-            check_failed(Check::PARAMETERS, display_failure, "Check ANGLE_MAX");
-            return false;
-        }
-
         // acro balance parameter check
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
         if (is_negative(copter.g.acro_balance_roll) || is_negative(copter.g.acro_balance_pitch) ||
@@ -283,9 +277,9 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                     check_failed(Check::PARAMETERS, display_failure, failure_template, "no rangefinder");
                     return false;
                 }
-                // check if RTL_ALT is higher than rangefinder's max range
-                if (copter.g.rtl_altitude_cm > copter.rangefinder.max_distance_orient(ROTATION_PITCH_270) * 100) {
-                    check_failed(Check::PARAMETERS, display_failure, failure_template, "RTL_ALT (in cm) above RNGFND_MAX (in metres)");
+                // check if RTL_ALT_M is higher than rangefinder's max range
+                if (copter.mode_rtl.get_altitude_m() > copter.rangefinder.max_distance_orient(ROTATION_PITCH_270)) {
+                    check_failed(Check::PARAMETERS, display_failure, failure_template, "RTL_ALT_M above RNGFND_MAX");
                     return false;
                 }
 #else
@@ -360,15 +354,16 @@ bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
 // performs pre_arm gps related checks and returns true if passed
 bool AP_Arming_Copter::gps_checks(bool display_failure)
 {
-    // check if fence requires GPS
-    bool fence_requires_gps = false;
+    // check if fence requires position
+    bool fence_requires_position = false;
 #if AP_FENCE_ENABLED
-    // if circular or polygon fence is enabled we need GPS
-    fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
+    // if circular or polygon fence is enabled we need position
+    fence_requires_position = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
 #endif
 
     // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS() || fence_requires_gps || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
+    const bool mode_requires_position = copter.flightmode->requires_position() || fence_requires_position || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
+    const bool mode_requires_gps = AP::ahrs().using_gps() && mode_requires_position;
 
     // call parent gps checks
     if (mode_requires_gps) {
@@ -378,8 +373,8 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
         }
     }
 
-    // run mandatory gps checks first
-    if (!mandatory_gps_checks(display_failure)) {
+    // run mandatory position checks first
+    if (!mandatory_position_checks(display_failure)) {
         AP_Notify::flags.pre_arm_gps_check = false;
         return false;
     }
@@ -445,34 +440,34 @@ bool AP_Arming_Copter::proximity_checks(bool display_failure) const
 }
 #endif  // HAL_PROXIMITY_ENABLED
 
-// performs mandatory gps checks.  returns true if passed
-bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
+// performs mandatory position checks.  returns true if passed
+bool AP_Arming_Copter::mandatory_position_checks(bool display_failure)
 {
-    // check if flight mode requires GPS
-    bool mode_requires_gps = copter.flightmode->requires_GPS();
+    // check if flight mode requires position
+    bool mode_requires_position = copter.flightmode->requires_position();
 
     // always check if inertial nav has started and is ready
     const auto &ahrs = AP::ahrs();
     char failure_msg[100] = {};
-    if (!ahrs.pre_arm_check(mode_requires_gps, failure_msg, sizeof(failure_msg))) {
+    if (!ahrs.pre_arm_check(mode_requires_position, failure_msg, sizeof(failure_msg))) {
         check_failed(display_failure, "AHRS: %s", failure_msg);
         return false;
     }
 
-    // check if fence requires GPS
-    bool fence_requires_gps = false;
+    // check if fence requires position estimate
+    bool fence_requires_position = false;
 #if AP_FENCE_ENABLED
-    // if circular or polygon fence is enabled we need GPS
-    fence_requires_gps = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
+    // if circular or polygon fence is enabled we need position estimate
+    fence_requires_position = (copter.fence.get_enabled_fences() & (AC_FENCE_TYPE_CIRCLE | AC_FENCE_TYPE_POLYGON)) > 0;
 #endif
 
-    if (mode_requires_gps || require_location == RequireLocation::YES) {
+    if (mode_requires_position || require_location == RequireLocation::YES) {
         if (!copter.position_ok()) {
             // vehicle level position estimate checks
             check_failed(display_failure, "Need Position Estimate");
             return false;
         }
-    } else if (fence_requires_gps) {
+    } else if (fence_requires_position) {
         if (!copter.position_ok()) {
             // clarify to user why they need GPS in non-GPS flight mode
             check_failed(display_failure, "Fence enabled, need position estimate");
@@ -484,6 +479,7 @@ bool AP_Arming_Copter::mandatory_gps_checks(bool display_failure)
     }
 
     // check for GPS glitch (as reported by EKF)
+    // this can only be true if the EKF is using the GPS
     nav_filter_status filt_status;
     if (ahrs.get_filter_status(filt_status)) {
         if (filt_status.flags.gps_glitching) {
@@ -601,7 +597,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 
     // check lean angle
     if (check_enabled(Check::INS)) {
-        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
+        if (acosf(ahrs.cos_roll()*ahrs.cos_pitch()) > copter.attitude_control->lean_angle_max_rad()) {
             check_failed(Check::INS, true, "Leaning");
             return false;
         }
@@ -656,8 +652,8 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 // mandatory checks that will be run if ARMING_SKIPCHK skips all or arming forced
 bool AP_Arming_Copter::mandatory_checks(bool display_failure)
 {
-    // call mandatory gps checks and update notify status because regular gps checks will not run
-    bool result = mandatory_gps_checks(display_failure);
+    // call mandatory position checks and update notify status because regular position checks will not run
+    bool result = mandatory_position_checks(display_failure);
     AP_Notify::flags.pre_arm_gps_check = result;
 
     // call mandatory alt check

@@ -170,7 +170,7 @@ void ModeAcro::get_pilot_desired_rates_rads(float &roll_out_rads, float &pitch_o
         }
 
         // convert earth-frame level rates to body-frame level rates
-        attitude_control->euler_rate_to_ang_vel(attitude_control->get_attitude_target_quat(), rate_ef_level_rads, rate_bf_level_rads);
+        attitude_control->euler_derivative_to_body(attitude_control->get_attitude_target_quat(), rate_ef_level_rads, rate_bf_level_rads);
 
         // combine earth frame rate corrections with rate requests
         if (g.acro_trainer == (uint8_t)Trainer::LIMITED) {

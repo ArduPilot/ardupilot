@@ -160,7 +160,7 @@ void Replay::_parse_command_line(uint8_t argc, char * const argv[])
             }
             struct user_parameter *u = NEW_NOTHROW user_parameter;
             strncpy(u->name, gopt.optarg, eq-gopt.optarg);
-            u->value = atof(eq+1);
+            u->value = strtof(eq+1, nullptr);
             u->next = user_parameters;
             user_parameters = u;
             break;
@@ -368,7 +368,7 @@ bool Replay::parse_param_line(char *line, char **vname, float &value)
     if (value_s == NULL) {
         return false;
     }
-    value = atof(value_s);
+    value = strtof(value_s, nullptr);
     *vname = pname;
     return true;
 }

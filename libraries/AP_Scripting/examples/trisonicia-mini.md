@@ -2,12 +2,12 @@
 
 This Lua script reads and logs wind sensor data from the **Trisonica LI-550 Mini** ultrasonic wind sensor connected via serial. It decodes ASCII-formatted key-value pairs and logs the data using dynamic field tags on the `W3D` logging stream.
 
-For sensor details, visit:  
-🔗 https://www.licor.com/products/trisonica/LI-550-mini
+For sensor details, visit:
+🔗 [LI-COR](https://www.licor.com/products/trisonica/LI-550-mini)
 
 ## Features
 
-- Parses and logs ASCII data strings from the Trisonica LI-550 Mini in BIN logs 
+- Parses and logs ASCII data strings from the Trisonica LI-550 Mini in BIN logs
 - Logs fields using a dynamically generated tag list from the **first packet**
 - Ignores extraneous fields in subsequent messages not present in the first
 - Compatible with **ArduPilot scripting serial port** interface
@@ -23,19 +23,21 @@ Set the following parameters:
 | `SCR_ENABLE`   | `1`      | Enable Lua scripting           |
 | `SERIALx_PROTOCOL` | `28` | Scripting protocol for SERIALx |
 
-
 > Replace `SERIALx` with the appropriate serial port used on your hardware.
 
 ## Sensor configuration
 
 Use Trisonica's [CLI](logger:write) to configure the unit. On Linux, you can use `screen` to interract with the device:
+
 ```bash
 screen /dev/ttyUSB0 230400
 ```
+
 You should see data displayed. Enter configuration mode with `Ctrl+C`.
 You should now see data streaming stop and a terminal prompt `>`.
 
 Set the Trisonica sensor baudrate to **230400** in its configuration software using the `baudrate` command like so:
+
 ```bash
 baudrate 230400
 ```
@@ -82,11 +84,13 @@ display
 ```
 
 You can enable tags like so:
+
 ```bash
 show T
 ```
 
 Or disable them from the data stream like so:
+
 ```bash
 hide T
 ```
@@ -94,11 +98,13 @@ hide T
 You must not enable more than 12 outputs due to limitations in this script and ArduPilot's dataflash logger.
 
 Finally, increase the output rate to the maximum of **10 Hz**.
+
 ```bash
 outputrate 10
 ```
 
 Once configuration is complete, exit screen with
+
 ```bash
 ctr+A k y
 ```
@@ -123,5 +129,5 @@ graph W3D.U W3D.W W3D.V ARSP.Airspeed
 
 ## Future Improvements
 
-* Use the wind data as input to the EKF for wind speed
-* Use the Trisonica API to have ArduPilot configure the correct data outputs and rates
+- Use the wind data as input to the EKF for wind speed
+- Use the Trisonica API to have ArduPilot configure the correct data outputs and rates

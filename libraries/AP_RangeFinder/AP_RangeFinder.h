@@ -340,6 +340,10 @@ private:
 
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance, uint8_t serial_instance=0);
 
+    // search all i2c buses for a device at addr
+    using i2c_probe_fn_t = AP_RangeFinder_Backend* (*)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&, AP_HAL::I2CDevice&);
+    void probe_i2c_buses(uint8_t instance, uint8_t addr, i2c_probe_fn_t detect_fn);
+
     uint32_t _log_rfnd_bit = -1;
     void Log_RFND() const;
 };

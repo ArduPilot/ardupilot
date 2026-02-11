@@ -331,14 +331,15 @@ AP_HW_Morakot                        1210
 AP_HW_CORVON_V5                      1211
 
 AP_HW_CSKY_PMU                       1212
+AP_HW_PilotGaeaSH7V1                 1213
 
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
 
 AP_HW_ATLAS_CONTROL                  1227
 AP_HW_MatekH7A3_Wing                 1228
-
-
+AP_HW_CORVON743V2                    1229
+AP_HW_CORVON_V6                      1230
 
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6X                        1234
@@ -481,6 +482,7 @@ AP_HW_TBS_LUCID_H7_WING_AIO          5254
 # IDs 5270-5279 reserved for SpeedyBee
 AP_HW_SpeedyBeeF405WINGV2            5270
 AP_HW_SpeedyBeeF405AIO               5271
+AP_HW_SpeedyBeeF4V5                  5272
 
 # IDs 5280-5289 reserved for LightDynamix
 AP_HW_Dynamix_PIXEL                  5280

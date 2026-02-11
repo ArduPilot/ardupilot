@@ -2,7 +2,7 @@
 
 FETtec OneWire is an [ESC](https://en.wikipedia.org/wiki/Electronic_speed_control) communication protocol created by Felix Niessen (former Flyduino KISS developer) from [FETtec](https://fettec.net).
 It is a (bidirectional) [digital full-duplex asynchronous serial communication protocol](https://en.wikipedia.org/wiki/Asynchronous_serial_communication) running at 500Kbit/s Baudrate. It requires three wire (RX, TX and GND) connection (albeit the name OneWire) regardless of the number of ESCs connected.
-Unlike bidirectional-Dshot, the FETtec OneWire protocol does not need one DMA channel per ESC for bidirectional communication. 
+Unlike bidirectional-Dshot, the FETtec OneWire protocol does not need one DMA channel per ESC for bidirectional communication.
 
 For purchase, connection and configuration information please see the [ArduPilot FETtec OneWire wiki page](https://ardupilot.org/copter/docs/common-fettec-onewire.html).
 
@@ -38,7 +38,6 @@ For purchase, connection and configuration information please see the [ArduPilot
   - test `SERVO_FWT_MASK` parameter validation
   - fly a copter over a simulated serial link connection
 
-
 ## ArduPilot to ESC protocol
 
 The FETtec OneWire protocol supports up to 24 ESCs without telemetry and up to 15 ESCs with telemetry.
@@ -46,6 +45,7 @@ The FETtec OneWire protocol supports up to 24 ESCs without telemetry and up to 1
 There are two types of messages sent to the ESCs configuration and fast-throttle messages:
 
 ### Configuration message frame
+
 Consists of six frame bytes + payload bytes.
 
 ```
@@ -59,20 +59,24 @@ Consists of six frame bytes + payload bytes.
 ```
 
 #### Check if bootloader or ESC firmware is running
+
 To check which firmware is running on the FETtec an ESCs `PackedMessage<OK>` is sent to each ESC.
 If the answer frame `frame_source` is FrameSource::BOOTLOADER we are in bootloader and need to send an `PackedMessage<START_FW>` to start the ESC firmware.
 If the answer frame `frame_source` is FrameSource::ESC we are already running the correct firmware and can directly configure the telemetry.
 
 #### Start the ESC firmware
+
 If the ESC is running on bootloader firmware we need to send an `PackedMessage<START_FW>` to start the ESC firmware.
 The answer must be a `PackedMessage<OK>` with `frame_source` equal to FrameSource::ESC. If not, we need to repeat the command.
 
 #### Configure Full/Alternative Telemetry
+
 The telemetry can be switched to "per ESC" Mode, where one ESC answers with it's full telemetry as oneWire package including CRC and additionally the CRC Errors counted by the ESC.
 To use this mode, `PackedMessage<SET_TLM_TYPE>` is send to each ESC while initializing.
 If this was successful the ESC responds with `PackedMessage<OK>`.
 
 #### Configure Fast throttle messages
+
 To configure the fast-throttle frame structure a `PackedMessage<SET_FAST_COM_LENGTH>` is send to each ESC while initializing.
 If this was successful the ESC responds with `PackedMessage<OK>`.
 
@@ -83,6 +87,7 @@ If this was successful the ESC responds with `PackedMessage<OK>`.
     Byte 1 is the telemetry request and part of fast throttle signal
     Byte N is CRC (last Byte after the Payload). It uses the same CRC algorithm as Dshot.
 ```
+
 The first two bytes are frame header and telemetry request as well as the first parts of the throttle signal.
 The following bytes are transmitting the throttle signals for the ESCs (11bit per ESC) followed by the CRC.
 The signal is used to transfer the eleven bit throttle signals with as few bytes as possible:
@@ -92,11 +97,11 @@ The signal is used to transfer the eleven bit throttle signals with as few bytes
     [991  .. 1009] - no rotation, dead-band
     [1010 .. 2000] - positive throttle, rotation in the other direction. 1020 minimum throttle, 2000 maximum throttle
 ```
+
 All motors wait for the complete message with all throttle signals before changing their output.
 
 If telemetry is requested the ESCs will answer them in the ESC-ID order.
 See *ESC to ArduPilot Protocol* section below and comments in `AP_FETtecOneWire.cpp` for details.
-
 
 ### Timing
 
@@ -127,11 +132,10 @@ This information is used by ArduPilot to:
 - Optionally dynamically change the center frequency of the notch filters used to reduce frame vibration noise in the gyros
 - Optionally measure battery voltage and power consumption
 
-
 ### Full/Alternative Telemetry
+
 The answer to a fast-throttle command frame is a `PackedMessage<TLM>` message frame, received and decoded in the `FETtecOneWire::handle_message_telem()` function.
 The data is forwarded to the `AP_ESC_Telem` class that distributes it to other parts of the ArduPilot code.
-
 
 ## Function structure
 
@@ -160,7 +164,6 @@ update()
 pre_arm_check()
 ```
 
-
 ## Device driver parameters
 
 The `SERVO_FTW_MASK` parameter selects which servo outputs, if any, will be routed to FETtec ESCs.
@@ -182,18 +185,23 @@ This parameter is only visible if the `SERVO_FTW_MASK` parameter has at least on
 ## Extra features
 
 ### Read type, firmware version and serial number
+
 To control this you must activate the code in the header file:
+
 ```C++
 // Get static info from the ESCs (optional feature)
 #ifndef HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
 #define HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO 1
 #endif
 ```
+
 Or just set the `HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO` macro in the compiler toolchain.
 After that you will be able to access this information in the `_escs[]` datastructure.
 
 ### Beep
+
 To control this you must activate the code in the header file:
+
 ```C++
 // provide beep support (optional feature)
 #ifndef HAL_AP_FETTEC_ESC_BEEP
@@ -213,7 +221,9 @@ After that you will be able to call the public function:
 ```
 
 ### Multicolor RGB Led light
+
 To control this you must activate the code in the header file:
+
 ```C++
 // provide light support (optional feature)
 #ifndef HAL_AP_FETTEC_ESC_LIGHT

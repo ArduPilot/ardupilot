@@ -4,7 +4,7 @@
 -- 0-based index of Scripting protocol port to use, or nil to use MAVLink
 local PORT_IDX = 0
 local MAX_HISTORY = 50 -- number of lines of history to keep (must be >= 1)
-local VERSION = "v1.0" -- version is convenience for the user
+local VERSION = "v1.1" -- version is convenience for the user
 
 local port
 if PORT_IDX == nil then
@@ -93,9 +93,9 @@ end
 
 -- write the character c to the port, buffering if failed
 local function writechar(c)
-  -- buffer character if stuff already in buffer or write fails
+  -- let writestring buffer character if stuff already in buffer or write fails
   if tx_buf or port:write(c) == 0 then
-    tx_buf[#tx_buf+1] = string.char(c) -- massive overhead...
+    writestring(string.char(c)) -- massive overhead...
   end
 end
 

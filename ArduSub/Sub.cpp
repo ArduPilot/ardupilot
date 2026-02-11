@@ -36,7 +36,7 @@ Sub::Sub()
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
           inertial_nav(ahrs),
           ahrs_view(ahrs, ROTATION_NONE),
-          attitude_control(ahrs_view, aparm, motors),
+          attitude_control(ahrs_view, motors),
           pos_control(ahrs_view, motors, attitude_control),
           wp_nav(ahrs_view, pos_control, attitude_control),
           loiter_nav(ahrs_view, pos_control, attitude_control),
@@ -428,18 +428,7 @@ float Sub::get_alt_rel() const
 
     // get relative position
     float posD;
-    if (ahrs.get_relative_position_D_origin_float(posD)) {
-        if (ahrs.home_is_set()) {
-            // adjust to the home position
-            auto home = ahrs.get_home();
-            posD -= static_cast<float>(home.alt) * 0.01f;
-        }
-    } else {
-        // fall back to the barometer reading
-        posD = -AP::baro().get_altitude();
-    }
-
-    // convert down to up
+    ahrs.get_relative_position_D_home(posD);
     return -posD;
 }
 
@@ -467,53 +456,6 @@ float Sub::get_alt_msl() const
 
     // convert down to up
     return -posD;
-}
-
-bool Sub::ensure_ekf_origin()
-{
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        // ekf origin is set
-        return true;
-    }
-
-    if (gps.num_sensors() > 0) {
-        // wait for the gps sensor to set the origin
-        // alert the pilot to poor compass performance
-        return false;
-    }
-
-    auto backup_origin = Location(static_cast<int32_t>(sub.g2.backup_origin_lat * 1e7),
-                                  static_cast<int32_t>(sub.g2.backup_origin_lon * 1e7),
-                                  static_cast<int32_t>(sub.g2.backup_origin_alt * 100),
-                                  Location::AltFrame::ABSOLUTE);
-
-    if (backup_origin.lat == 0 || backup_origin.lng == 0) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Backup location parameters are missing or zero");
-        return false;
-    }
-
-    if (!check_latlng(backup_origin.lat, backup_origin.lng)) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "Backup location parameters are not valid");
-        return false;
-    }
-
-    if (!ahrs.set_origin(backup_origin)) {
-        // a possible problem is that ek3_srcn_posxy is set to 3 (gps)
-        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to set origin, check EK3_SRC parameters");
-        return false;
-    }
-
-    gcs().send_text(MAV_SEVERITY_INFO, "Using backup location");
-
-#if HAL_LOGGING_ENABLED
-    ahrs.Log_Write_Home_And_Origin();
-#endif
-
-    // send ekf origin to GCS
-    gcs().send_message(MSG_ORIGIN);
-
-    return true;
 }
 
 #if AP_SUB_RC_ENABLED

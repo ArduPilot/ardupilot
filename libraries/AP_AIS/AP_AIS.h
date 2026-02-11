@@ -94,7 +94,7 @@ private:
 
     uint16_t _send_index; // index of the last vessel send over mavlink
 
-    // Send a AIS vessel to the object avoidance data base if its postion is valid
+    // Send a AIS vessel to the object avoidance data base if its position is valid
     void send_to_object_avoidance_database(const struct ais_vehicle_t &vessel);
 
     // Return true if location is valid

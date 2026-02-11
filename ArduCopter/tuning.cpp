@@ -219,7 +219,7 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
         break;
 
     case TUNING_LOITER_MAX_XY_SPEED:
-        loiter_nav->set_speed_max_NE_ms(tuning_value * 0.01);
+        loiter_nav->set_speed_max_NE_ms(tuning_value);
         break;
     }
 }

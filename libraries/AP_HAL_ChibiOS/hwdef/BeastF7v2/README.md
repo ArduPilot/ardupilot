@@ -1,19 +1,19 @@
 # iFlight Beast F7 v2 55A AIO Flight Controller
 
-https://shop.iflight-rc.com/quad-parts-cat20/electronics-cat27/beast-series-cat330/Beast-F7-45A-V2-AIO-MPU6000-25.5-25.5-Pro1625
+[iFlight store](https://shop.iflight-rc.com/quad-parts-cat20/electronics-cat27/beast-series-cat330/Beast-F7-45A-V2-AIO-MPU6000-25.5-25.5-Pro1625)
 
 The Beast F7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 
 ## Features
 
- - MCU: BGA-STM32F745
- - Gyro: BMI270
- - 16Mb Onboard Flash
- - BEC output: 5V 2.5A 
- - No Barometer
- - OSD: AT7456E
- - 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
- - 5 PWM outputs (4 motors and 1 LED)
+- MCU: BGA-STM32F745
+- Gyro: BMI270
+- 16Mb Onboard Flash
+- BEC output: 5V 2.5A
+- No Barometer
+- OSD: AT7456E
+- 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
+- 5 PWM outputs (4 motors and 1 LED)
 
 ## Pinout
 
@@ -31,14 +31,13 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL4|TX4/RX4|UART4 (GPS)|
 |SERIAL7|TX7/RX7|UART7|
 
-
 UART1 supports RX and TX DMA. UART2, UART3 and UART4 support RX DMA. UART7 supports TX DMA
 
 ## RC Input
- 
+
 RC input is configured on the (UART3_RX) pin which forms part of the DJI connector. It supports all RC protocols.
 For RC input/output use UART1 with SERIAL1_PROTOCOL as 23 and set SERIAL3_PROTOCOL set to -1
-  
+
 ## OSD Support
 
 The Beast F7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -60,11 +59,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT around 10.9
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT around 28.5
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT around 10.9
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT around 28.5
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

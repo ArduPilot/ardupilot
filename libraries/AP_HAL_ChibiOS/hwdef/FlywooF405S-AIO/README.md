@@ -1,6 +1,6 @@
 # GOKU F405 1-2S 12A AIO w/ built-in ELRS 2.4g RX
 
-https://flywoo.net/collections/aio-evo-stacks-combo/products/goku-versatile-f405-2s-12a-aio-w-build-in-elrs-2-4g-rx-mpu6000
+[Flywoo store](https://flywoo.net/collections/aio-evo-stacks-combo/products/goku-versatile-f405-2s-12a-aio-w-build-in-elrs-2-4g-rx-mpu6000)
 
 The Flywoo GOKU F405 AIO is a flight controller produced by [Flywoo](https://flywoo.net/).
 
@@ -17,7 +17,7 @@ The Flywoo GOKU F405 AIO is a flight controller produced by [Flywoo](https://fly
 - Onbord 8Mbytes for Blackbox logging
 - 5V Power Out: 2.0A max
 - Dimensions: 30x30mm
-- Mounting Holes: Standard 25.5/26.5mm square to center of holes 
+- Mounting Holes: Standard 25.5/26.5mm square to center of holes
 - Weight: 8.5g
 
 - Built-in 12A BLHeli_S 4in1 ESC
@@ -48,9 +48,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 USART1 and USART3 supports RX and TX DMA. UART4 supports TX DMA. USART2 supports RX DMA. UART5 and UART6 do not support DMA.
 
 ## RC Input
- 
+
 RC input is configured on UART1 or UART3, which supports serial RC protocols. This board does not support PPM.
-  
+
 ## OSD Support
 
 The GOKU F405 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -76,11 +76,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT around 11
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT around 60.2
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT around 11
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT around 60.2
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

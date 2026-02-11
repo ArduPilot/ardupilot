@@ -1074,13 +1074,6 @@ if __name__ == "__main__":
     if opts.move_logs_on_test_failure is None:
         opts.move_logs_on_test_failure = opts.autotest_server
 
-        # temporarily default it to the old behaviour, but allow a
-        # user to test it by setting an environment variable:
-        if os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") is not None:
-            opts.move_logs_on_test_failure = os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") == "1"
-        else:
-            opts.move_logs_on_test_failure = True
-
     steps = [
         'prerequisites',
         'build.Binaries',

@@ -10,7 +10,6 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
-#include <AP_Vehicle/AP_MultiCopter.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
@@ -47,9 +46,8 @@
 
 class AC_AttitudeControl {
 public:
-    AC_AttitudeControl( AP_AHRS_View &ahrs,
-                        const AP_MultiCopter &aparm,
-                        AP_Motors& motors) :
+    AC_AttitudeControl(AP_AHRS_View &ahrs,
+                       AP_Motors& motors) :
         _p_angle_roll(AC_ATTITUDE_CONTROL_ANGLE_P),
         _p_angle_pitch(AC_ATTITUDE_CONTROL_ANGLE_P),
         _p_angle_yaw(AC_ATTITUDE_CONTROL_ANGLE_P),
@@ -58,7 +56,6 @@ public:
         _throttle_rpy_mix_desired(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _throttle_rpy_mix(AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT),
         _ahrs(ahrs),
-        _aparm(aparm),
         _motors(motors)
         {
             _singleton = this;
@@ -195,93 +192,103 @@ public:
     // This is used by most of the subsequent functions
     void attitude_controller_run_quat();
 
-    // Sets a desired attitude using a quaternion and body-frame angular velocity (rad/s).
-    // The desired quaternion is incrementally updated each timestep. Angular velocity is shaped by acceleration limits and feedforward.
+    // Sets an attitude target using a quaternion and a body-frame angular velocity input (rad/s).
+    // The desired quaternion is incrementally advanced each timestep using the (limited) angular velocity input.
+    // If body-frame rate feedforward shaping is enabled, rate/accel targets are generated with acceleration limits
+    // and input time constants; otherwise the targets are set directly.
     virtual void input_quaternion(Quaternion& attitude_desired_quat, Vector3f ang_vel_body_rads);
 
-    // Sets desired roll and pitch angles (in centidegrees) and yaw rate (in centidegrees/s).
+    // Sets the desired roll and pitch angles (in centidegrees) and yaw rate (in centidegrees/s).
     // See input_euler_angle_roll_pitch_euler_rate_yaw_rad() for full details.
     void input_euler_angle_roll_pitch_euler_rate_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_rate_cds);
 
-    // Sets desired roll and pitch angles (in radians) and yaw rate (in radians/s).
-    // Used when roll/pitch stabilization is needed with manual or autonomous yaw rate control.
-    // Applies acceleration-limited input shaping for smooth transitions and computes body-frame angular velocity targets.
+    // Sets the desired roll and pitch angle inputs (radians) and a yaw rate input (radians/s).
+    // Used when roll/pitch stabilization is required while yaw is controlled as a rate.
+    // If body-frame rate feedforward shaping is enabled, shapes Euler rate/acceleration targets
+    // with configured limits and time constants and converts them back to body-frame targets.
+    // Otherwise, updates the attitude target directly and zeros rate/accel feedforward targets.
     virtual void input_euler_angle_roll_pitch_euler_rate_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_rate_rads);
 
-    // Sets desired roll, pitch, and yaw angles (in centidegrees).
+    // Sets the desired roll, pitch, and yaw angles (in centidegrees).
     // See input_euler_angle_roll_pitch_yaw_rad() for full details.
     void input_euler_angle_roll_pitch_yaw_cd(float euler_roll_angle_cd, float euler_pitch_angle_cd, float euler_yaw_angle_cd, bool slew_yaw);
 
-    // Sets desired roll, pitch, and yaw angles (in radians).
-    // Used to follow an absolute attitude setpoint. Input shaping and yaw slew limits are applied.
-    // Outputs are passed to the rate controller via shaped angular velocity targets.
+    // Sets the desired roll, pitch, and yaw angle inputs (radians) to follow an absolute attitude setpoint.
+    // Optional yaw slew limiting constrains the rate of change of the yaw target.
+    // If body-frame rate feedforward shaping is enabled, shapes Euler rate/acceleration targets
+    // with configured limits and time constants and converts them back to body-frame targets.
+    // Otherwise, updates the attitude target directly (with optional yaw slew) and zeros rate/accel feedforward targets.
     virtual void input_euler_angle_roll_pitch_yaw_rad(float euler_roll_angle_rad, float euler_pitch_angle_rad, float euler_yaw_angle_rad, bool slew_yaw);
 
-    // Sets desired roll, pitch, and yaw angular rates (in radians/s).
-    // This command is used to apply angular rate targets in the earth frame.
-    // The inputs are shaped using acceleration limits and time constants.
-    // Resulting targets are converted into body-frame angular velocities
-    // and passed to the rate controller.
+    // Sets the desired roll, pitch, and yaw Euler angle rate inputs (radians/s).
+    // If body-frame rate feedforward shaping is enabled, the inputs are shaped using acceleration limits
+    // and time constants to generate Euler rate/acceleration targets, which are then converted into
+    // body-frame angular velocity/acceleration targets for the rate controller.
+    // Otherwise, Euler angle targets are integrated directly from the rate inputs and feedforward targets are zeroed.
     virtual void input_euler_rate_roll_pitch_yaw_rads(float euler_roll_rate_rads, float euler_pitch_rate_rads, float euler_yaw_rate_rads);
 
-    // Sets desired roll, pitch, and yaw angular rates (in centidegrees/s).
+    // Sets the desired roll, pitch, and yaw angular rates (in centidegrees/s).
     // See input_rate_bf_roll_pitch_yaw_rads() for full details.
     void input_rate_bf_roll_pitch_yaw_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
-    // Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
-    // This command is used by fully stabilized acro modes.
-    // It applies angular velocity targets in the body frame,
-    // shaped using acceleration limits and passed to the rate controller.
+    // Sets the desired roll, pitch, and yaw body-frame angular rate inputs (radians/s).
+    // Used by fully stabilized acro modes.
+    // If body-frame rate feedforward shaping is enabled, the inputs are shaped using acceleration limits
+    // and time constants to generate body-frame angular velocity/acceleration targets for the rate controller.
+    // Otherwise, the attitude target is incrementally rotated using the rate inputs and feedforward targets are zeroed.
     virtual void input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads);
 
-    // Sets desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
+    // Sets the desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
     // See input_rate_bf_roll_pitch_yaw_2_rads() for full details.
     void input_rate_bf_roll_pitch_yaw_2_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
-    // Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+    // Sets the desired roll, pitch, and yaw body-frame angular rate inputs (radians/s).
     // Used by Copter's rate-only acro mode.
-    // Applies raw angular velocity targets directly to the rate controller with smoothing
-    // and no attitude feedback or stabilization.
+    // Shapes the body-frame rate inputs using acceleration limits and time constants to produce
+    // body-frame angular velocity/acceleration targets for the rate controller.
+    // Attitude targets are updated from the current AHRS attitude to keep target state coherent for mode transitions.
     virtual void input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads);
 
-    // Sets desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
+    // Sets the desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
     // See input_rate_bf_roll_pitch_yaw_3_rads() for full details.
     void input_rate_bf_roll_pitch_yaw_3_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
-    // Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
+    // Sets the desired roll, pitch, and yaw body-frame angular rate inputs (radians/s).
     // Used by Plane's acro mode with rate error integration.
-    // Integrates attitude error over time to generate target angular rates.
+    // Maintains an integrated attitude error quaternion using (target_rate - gyro) and combines it
+    // with shaped rate inputs to form the final body-frame angular velocity target for the rate controller.
     virtual void input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads);
 
     // Directly sets the body-frame angular rates without smoothing (in centidegrees/s).
     // See input_rate_bf_roll_pitch_yaw_no_shaping_rads() for full details.
     void input_rate_bf_roll_pitch_yaw_no_shaping_cds(float roll_rate_bf_cds, float pitch_rate_bf_cds, float yaw_rate_bf_cds);
 
-    // Directly sets the body-frame angular rates without smoothing (in radians/s).
-    // This command is used when external control logic (e.g. fixed-wing controller)
-    // dictates VTOL rates. No smoothing or shaping is applied.
+    // Directly sets body-frame angular rate targets (radians/s) without shaping.
+    // Used when an external controller (e.g. fixed-wing controller) provides VTOL body rates.
+    // No smoothing, acceleration limiting, or input shaping is applied.
     void input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads);
 
     // Applies a one-time angular offset in body-frame roll/pitch/yaw angles (in radians).
     // Used for initiating step responses during autotuning or manual test inputs.
     virtual void input_angle_step_bf_roll_pitch_yaw_rad(float roll_angle_step_bf_rad, float pitch_angle_step_bf_rad, float yaw_angle_step_bf_rad);
     
-    // Applies a one-time angular velocity offset in body-frame roll/pitch/yaw (in radians/s).
-    // Used to apply discrete disturbances or step inputs for system identification.
+    // Applies a one-time body-frame angular rate step (radians/s) in roll, pitch, and yaw.
+    // Used to inject discrete disturbances or step inputs for system identification.
+    // This sets the body-frame rate command directly for this update; no shaping is applied.
     virtual void input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_step_bf_rads, float pitch_rate_step_bf_rads, float yaw_rate_step_bf_rads);
 
-    // Sets desired thrust vector and heading rate (in radians/s).
+    // Sets the desired thrust vector and a yaw/heading rate input (radians/s).
     // Used for tilt-based navigation with independent yaw control.
-    // The thrust vector defines the desired orientation (e.g., pointing direction for vertical thrust),
-    // while the heading rate adjusts yaw. The input is shaped by acceleration and slew limits.
+    // The thrust vector determines the desired tilt (attitude) while the heading rate commands yaw.
+    // Optional yaw slew limiting constrains the heading rate input.
     virtual void input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw = true);
 
-    // Sets desired thrust vector and heading (in radians) with heading rate (in radians/s).
-    // Used for advanced attitude control where thrust direction is separated from yaw orientation.
-    // Heading slew is constrained based on configured limits.
+    // Sets the desired thrust vector, heading angle (radians), and heading rate input (radians/s).
+    // Used when thrust direction (tilt) is commanded independently from yaw/heading.
+    // Heading rate is constrained using the configured yaw slew rate limit (0 disables limiting).
     virtual void input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads);
 
-    // Sets desired thrust vector and heading (in centidegrees), with zero heading rate.
+    // Sets the desired thrust vector and heading (in centidegrees), with zero heading rate.
     // See input_thrust_vector_heading_rad() for full details.
     void input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_rad) {input_thrust_vector_heading_rad(thrust_vector, heading_rad, 0.0f);}
 
@@ -300,12 +307,18 @@ public:
     // Run the angular velocity controller with a specified timestep. Must be implemented by derived class.
     virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
 
-    // Convert a 321-intrinsic euler angle derivative to an angular velocity vector
-    void euler_rate_to_ang_vel(const Quaternion& att, const Vector3f& euler_rate_rads, Vector3f& ang_vel_rads);
+    // euler_derivative_to_body - transform euler angle derivative to body-frame
+    // Converts euler derivatives (rate, acceleration, etc.) to body-frame equivalents.
+    // The same transformation applies regardless of derivative order.
+    // Uses the kinematic relationship for 321 (yaw-pitch-roll) euler sequence.
+    void euler_derivative_to_body(const Quaternion& att, const Vector3f& euler_derivative_rads, Vector3f& body_derivative_rads);
 
-    // Convert an angular velocity vector to a 321-intrinsic euler angle derivative
-    // Returns false if the vehicle is pitched 90 degrees up or down
-    bool ang_vel_to_euler_rate(const Quaternion& att, const Vector3f& ang_vel_rads, Vector3f& euler_rate_rads);
+    // body_to_euler_derivative - transform body-frame derivative to euler angle derivative
+    // Converts body-frame derivatives (rate, acceleration, etc.) to euler equivalents.
+    // The same transformation applies regardless of derivative order.
+    // Uses the kinematic relationship for 321 (yaw-pitch-roll) euler sequence.
+    // Returns false if the vehicle is pitched 90 degrees up or down (gimbal lock)
+    bool body_to_euler_derivative(const Quaternion& att, const Vector3f& body_derivative_rads, Vector3f& euler_derivative_rads);
 
     // Specifies whether the attitude controller should use the square root controller in the attitude correction.
     // This is used during Autotune to ensure the P term is tuned without being influenced by the acceleration limit of the square root controller.
@@ -372,7 +385,7 @@ public:
     Vector3f rate_bf_targets() const { return _ang_vel_body_rads + _sysid_ang_vel_body_rads; }
 
     // return the angular velocity of the target (setpoint) attitude rad/s
-    const Vector3f& get_rate_ef_targets() const { return _euler_rate_target_rads; }
+    const Vector3f& get_rate_ef_target_rads() const { return _euler_rate_target_rads; }
 
     // Enable or disable body-frame feed forward
     void bf_feedforward(bool enable_or_disable) { _rate_bf_ff_enabled.set(enable_or_disable); }
@@ -407,25 +420,21 @@ public:
     float get_althold_lean_angle_max_cd() const;
 
     // Return configured tilt angle limit in centidegrees
-    float lean_angle_max_cd() const { return _aparm.angle_max; }
+    float lean_angle_max_cd() const;
 
     // Return configured tilt angle limit in radians
-    float lean_angle_max_rad() const { return cd_to_rad(_aparm.angle_max); }
+    float lean_angle_max_rad() const;
 
     // Return tilt angle in degrees
     float lean_angle_deg() const { return degrees(_thrust_angle_rad); }
     float lean_angle_rad() const { return _thrust_angle_rad; }
 
     // Calculates the velocity correction from an angle error, applying acceleration/deceleration limits and a simple jerk-limiting mechanism via the smoothing gain.
-    static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float desired_ang_vel, float max_ang_vel, float dt);
-    static float input_shaping_angle(float error_angle, float input_tc, float accel_max, float target_ang_vel, float dt){ return input_shaping_angle(error_angle,  input_tc,  accel_max,  target_ang_vel,  0.0f,  0.0f,  dt); }
-
-    // Shapes the velocity request based on a rate time constant. The angular acceleration and deceleration is limited.
-    static float input_shaping_ang_vel(float target_ang_vel, float desired_ang_vel, float accel_max, float dt, float input_tc);
+    void attitude_command_model(float error_angle, float desired_ang_vel, float& target_ang_vel, float& target_ang_accel, float max_ang_vel, float accel_max, float input_tc, float dt) const;
 
     // calculates the expected angular velocity correction from an angle error based on the AC_AttitudeControl settings.
     // This function can be used to predict the delay associated with angle requests.
-    void input_shaping_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, float dt) const;
+    void command_model_rate_predictor(const Vector2f &error_angle_rad, Vector2f& target_ang_vel_rads, Vector2f& target_ang_accel_rads, float dt) const;
 
     // translates body frame acceleration limits to the euler axis
     void ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max_rads, float ang_vel_pitch_max_rads, float ang_vel_yaw_max_rads) const;
@@ -536,6 +545,9 @@ public:
     // write ANG message
     void Write_ANG() const;
 
+    // perform any required parameter conversions
+    void convert_parameters();
+
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -590,6 +602,9 @@ protected:
     AP_Float            _land_pitch_mult;
     AP_Float            _land_yaw_mult;
 
+    // Angle limit
+    AP_Float            _angle_max_deg;
+
     // Latest body-frame gyro measurement (rad/s) used by rate controller
     Vector3f            _rate_gyro_rads;
     // timestamp of the latest gyro measurement (in microseconds) value used by the rate controller
@@ -615,6 +630,7 @@ protected:
     // the attitude controller as an angular velocity vector, in radians per second in
     // the target attitude frame.
     Vector3f            _ang_vel_target_rads;
+    Vector3f            _ang_accel_target_rads;
 
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller and most importantly the rate controller.
@@ -691,7 +707,6 @@ protected:
 
     // References to external libraries
     const AP_AHRS_View&  _ahrs;
-    const AP_MultiCopter &_aparm;
     AP_Motors&          _motors;
 
     static AC_AttitudeControl *_singleton;

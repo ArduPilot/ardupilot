@@ -9,35 +9,34 @@ The Control Zero H7 OEM revision G is a flight controller produced by [3DR (mRo)
 
 ## Features
 
-	Processor
-		STM32H743IIK6 32-bit Processor
-	Sensors
-		BMI088 6DOF
-		ICM20602 6DOF
-		ICM20948 9DOF
-		DPS368 Baro
-	Power
-		External Power Supply
-		Logic level at 3.3V
-	Interfaces
-		Bottom Connectors: 36pin front and 40pin back Samtec FTM-118-02-x and FTM-120-02-x
-		8x PWM / IO - DMA capable
-		1x RC Input 
-		5x UARTs (2x with hardware flow control)
-		2x CAN
-		1x SPI
-		3x I2C
-		SWD via TC2030 header
-		SDCARD Socket
-	Memory
-		FRAM (256KB)
-	Miscellaneous
-		Onboard 3 color LED
-		Buzzer
-		Safety Button
+- Processor
+  - STM32H743IIK6 32-bit Processor
+- Sensors
+  - BMI088 6DOF
+  - ICM20602 6DOF
+  - ICM20948 9DOF
+  - DPS368 Baro
+- Power
+  - External Power Supply
+  - Logic level at 3.3V
+- Interfaces
+  - Bottom Connectors: 36pin front and 40pin back Samtec FTM-118-02-x and FTM-120-02-x
+  - 8x PWM / IO - DMA capable
+  - 1x RC Input
+  - 5x UARTs (2x with hardware flow control)
+  - 2x CAN
+  - 1x SPI
+  - 3x I2C
+  - SWD via TC2030 header
+  - SDCARD Socket
+- Memory
+  - FRAM (256KB)
+- Miscellaneous
+  - Onboard 3 color LED
+  - Buzzer
+  - Safety Button
 
-
-###  Uncased Weight and Dimensions
+### Uncased Weight and Dimensions
 
  Weight: 3.66g (13.oz)
  Width:  20mm (.79in)
@@ -74,10 +73,10 @@ The Control Zero H7 OEM revision G is a flight controller produced by [3DR (mRo)
 
 ## RC Input
 
-RC input is configured on the RC_IN pin. These are the supported RC input protocols: 
+RC input is configured on the RC_IN pin. These are the supported RC input protocols:
 
-Spektrum DSM / DSM2 / DSM-X® Satellite compatible input and binding. 
-Futaba S.BUS® & S.BUS2® compatible input. 
+Spektrum DSM / DSM2 / DSM-X® Satellite compatible input and binding.
+Futaba S.BUS® & S.BUS2® compatible input.
 Graupner SUMD. Yuneec ST24.
 
 ## Analog Inputs
@@ -127,4 +126,4 @@ The compiled binary will be located in `build/3DRControlZeroG/bin/arducopter.apj
 
 ## Uploading Firmware
 
-Any Control Zero H7 OEM revision G has a preloaded Ardupilot bootloader, which allows the user to use a compatible Ground Station software to upload the `.apj` file.  
+Any Control Zero H7 OEM revision G has a preloaded Ardupilot bootloader, which allows the user to use a compatible Ground Station software to upload the `.apj` file.

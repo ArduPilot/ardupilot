@@ -2,14 +2,14 @@
 
 ## Features
 
- - STM32H743 microcontroller
- - MPU6000 IMU
- - BMP280 barometer
- - IST8310 Compass
- - microSD card slot
- - AT7456E OSD
- - 6 UARTs
- - 9 PWM outputs
+- STM32H743 microcontroller
+- MPU6000 IMU
+- BMP280 barometer
+- IST8310 Compass
+- microSD card slot
+- AT7456E OSD
+- 6 UARTs
+- 9 PWM outputs
 
 ## Pinout
 
@@ -22,29 +22,29 @@
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (Telem1) (MSP DisplayPort)(DMA Capable)
- - SERIAL2 -> UART2 (Telem2) (connected to internal BT module, not usable by ArduPilot)
- - SERIAL3 -> UART3 (RCin)(DMA Capable)
- - SERIAL4 -> UART4 (GPS)
- - SERIAL5 -> not available
- - SERIAL6 -> UART6 (TELEM)
- - SERIAL7 -> UART7 (RX pin only, ESC telem)(DMA Capable)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (Telem1) (MSP DisplayPort)(DMA Capable)
+- SERIAL2 -> UART2 (Telem2) (connected to internal BT module, not usable by ArduPilot)
+- SERIAL3 -> UART3 (RCin)(DMA Capable)
+- SERIAL4 -> UART4 (GPS)
+- SERIAL5 -> not available
+- SERIAL6 -> UART6 (TELEM)
+- SERIAL7 -> UART7 (RX pin only, ESC telem)(DMA Capable)
 
 ## RC Input
 
-RC input is configured on the R6 (UART6_RX) pin. It supports all single wire unidirectional RC 
+RC input is configured on the R6 (UART6_RX) pin. It supports all single wire unidirectional RC
 protocols. For protocols requiring half-duplex  or full duplex serial for operation
 select another UART with DMA and set its protocol to "23". To use this UART for other uses, set
 :ref:`BRD_ALT_CONFIG<BRD_ALT_CONFIG>` to "1"
- 
+
 ## FrSky Telemetry
- 
+
 FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6 . You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL6). Note this assumes the RC input is using default (ALT_BRD_CONFIG =0). Obviously, if using ALT_BRD_CONFIG = 1 for full duplex RC prtocols, you must a different UART for FrSky Telemetry.
- 
-  - SERIAL6_PROTOCOL 10
-  - SERIAL6_OPTIONS 7
-  
+
+- SERIAL6_PROTOCOL 10
+- SERIAL6_OPTIONS 7
+
 ## OSD Support
 
 The SDMODEL SDH7 V2 supports OSD using OSD_TYPE 1 (MAX7456 driver).The defaults are also setup to allow DJI Goggle OSD support on UART1. Both OSDs can operate simultaneously.
@@ -66,11 +66,11 @@ PWM output.
 
 The PWM is in 5 groups:
 
- - PWM 1, 2 in group1
- - PWM 3, 4 in group2
- - PWM 5, 6 in group3
- - PWM 7, 8 in group4
- - PWM 9 in group5
+- PWM 1, 2 in group1
+- PWM 3, 4 in group2
+- PWM 5, 6 in group3
+- PWM 7, 8 in group4
+- PWM 9 in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -79,7 +79,7 @@ to use DShot.
 .. note:: for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
 - :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
-- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX) 
+- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
 
 ## Battery Monitoring
 
@@ -89,11 +89,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 11
- - BATT_AMP_PERVLT 59.5
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 11
+- BATT_AMP_PERVLT 59.5
 
 ## Compass
 
@@ -102,7 +102,6 @@ SDMODEL SDH7 V2 has a built-in compass IST8310, but you can add an external comp
 ## Firmware
 
 Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ in  sub-folders labeled "SDMODELH7V2".
-
 
 ## Loading Firmware
 
@@ -113,4 +112,3 @@ firmware, using your favourite DFU loading tool.
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 *.apj firmware files.
-

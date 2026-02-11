@@ -83,9 +83,9 @@ public:
     // returns false if estimate is unavailable
     bool getAirSpdVec(Vector3f &vel) const;
 
-    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-    // returns false if the data is unavilable
-    bool getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
+    // returns false if the data is unavailable
+    bool getAirSpdHealthData(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
@@ -354,6 +354,9 @@ public:
 
     // are we using (aka fusing) external nav for yaw?
     bool using_extnav_for_yaw() const;
+
+    // are we using a gps
+    bool using_gps() const;
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;

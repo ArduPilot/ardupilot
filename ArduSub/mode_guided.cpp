@@ -464,7 +464,7 @@ void ModeGuided::guided_pos_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         sub.wp_nav.wp_and_spline_init_m();
         return;
@@ -529,7 +529,7 @@ void ModeGuided::guided_vel_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
         position_control->D_init_controller();
@@ -602,7 +602,7 @@ void ModeGuided::guided_posvel_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
         position_control->D_init_controller();
@@ -682,7 +682,7 @@ void ModeGuided::guided_angle_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0.0f,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
         position_control->D_init_controller();
@@ -693,7 +693,7 @@ void ModeGuided::guided_angle_control_run()
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
     float total_in = norm(roll_in, pitch_in);
-    float angle_max = MIN(attitude_control->get_althold_lean_angle_max_cd(), sub.aparm.angle_max);
+    float angle_max = MIN(attitude_control->get_althold_lean_angle_max_cd(), attitude_control->lean_angle_max_cd());
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;

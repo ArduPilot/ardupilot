@@ -1,7 +1,7 @@
 #pragma once
 
 /*
-* This class implements a simple 1-D Extended Kalman Filter to estimate the Relative body frame postion of the lading target and its relative velocity
+* This class implements a simple 1-D Extended Kalman Filter to estimate the Relative body frame position of the lading target and its relative velocity
 * position and velocity of the target is predicted using delta velocity
 * The predictions are corrected periodically using the landing target sensor(or camera)
 */

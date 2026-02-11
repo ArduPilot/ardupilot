@@ -208,8 +208,8 @@ void ModeThrow::run()
         last_log_ms = now;
         const float velocity_ms = pos_control->get_vel_estimate_NED_ms().length();
         const float velocity_z_ms = pos_control->get_vel_estimate_U_ms();
-        const float accel = copter.ins.get_accel().length();
-        const float ef_accel_z = ahrs.get_accel_ef().z;
+        const float accel_mss = copter.ins.get_accel().length();
+        const float ef_accel_z_mss = ahrs.get_accel_ef().z;
         const bool throw_detect = (stage > Throw_Detecting) || throw_detected();
         const bool attitude_ok = (stage > Throw_Uprighting) || throw_attitude_good();
         const bool height_ok = (stage > Throw_HgtStabilise) || throw_height_good();
@@ -239,8 +239,8 @@ void ModeThrow::run()
             (uint8_t)stage,
             (double)velocity_ms,
             (double)velocity_z_ms,
-            (double)accel,
-            (double)ef_accel_z,
+            (double)accel_mss,
+            (double)ef_accel_z_mss,
             throw_detect,
             attitude_ok,
             height_ok,

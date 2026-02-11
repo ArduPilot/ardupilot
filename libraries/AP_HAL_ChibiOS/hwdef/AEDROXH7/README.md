@@ -34,9 +34,9 @@
 
 The default RC input is configured on the UART3 (RX3/SBUS). Non SBUS,  single wire serial inputs can be directly tied to RX3 if SBUS pin is left unconnected. RC could  be applied instead at a different UART port such as UART4 or UART8, and set the protocol to receive RC data: ``SERIALn_PROTOCOL = 23`` and change SERIAL3 _Protocol to something other than '23'.
 
-- PPM is supported.  
-- SBUS/DSM/SRXL connects to the RX3 pin.  
-- FPort requires connection to TX3. Set :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 7  
+- PPM is supported.
+- SBUS/DSM/SRXL connects to the RX3 pin.
+- FPort requires connection to TX3. Set :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 7
 - CRSF/ELRS also requires both TX3 and RX3 connections and provides telemetry automatically.
 
 ## OSD Support
@@ -67,9 +67,9 @@ M9 on a separate pad for LED strip (default configuration) or another PWM output
 
 The PWM is in 4 groups:
 
-* PWM 1-4 in group1
-* PWM 5-8 in group2
-* PWM 9 (LED) in group3
+- PWM 1-4 in group1
+- PWM 5-8 in group2
+- PWM 9 (LED) in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -82,11 +82,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - :ref:BATT_MONITOR<BATT_MONITOR> = 4
- - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
- - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
- - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11.0
- - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 40
+- :ref:BATT_MONITOR<BATT_MONITOR> = 4
+- :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
+- :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
+- :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11.0
+- :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 40
 
 ## Compass
 
@@ -96,8 +96,8 @@ The AEDROXH7 does not have a built-in compass, but you can attach an external co
 
 The numbering of the GPIOs for PIN variables in ardupilot is:
 
- - GPIO1 pin is ArduPilot GPIO 81
- - GPIO2 pin is ArduPilot GPIO 82
+- GPIO1 pin is ArduPilot GPIO 81
+- GPIO2 pin is ArduPilot GPIO 82
 
 ## Physical
 

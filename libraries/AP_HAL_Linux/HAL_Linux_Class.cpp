@@ -37,6 +37,7 @@
 #include "RCOutput_PRU.h"
 #include "RCOutput_Sysfs.h"
 #include "RCOutput_ZYNQ.h"
+#include "RCOutput_RPI.h"
 #include "SPIDevice.h"
 #include "SPIUARTDriver.h"
 #include "Scheduler.h"
@@ -230,6 +231,8 @@ RCOutput_Multi::RCOutputGroup rcoutSysfsDriver = {2, NEW_NOTHROW RCOutput_Sysfs(
 static RCOutput_Multi rcoutDriver{2, &rcoutPcaDriver, &rcoutSysfsDriver};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_T3_GEM_O1
 static RCOutput_Sysfs rcoutDriver(0, 0, 7);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RPI
+static RCOutput_RPI rcoutDriver;
 #else
 static Empty::RCOutput rcoutDriver;
 #endif

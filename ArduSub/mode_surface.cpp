@@ -25,7 +25,7 @@ void ModeSurface::run()
     if (!motors.armed()) {
         motors.output_min();
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         position_control->D_init_controller();
         return;
@@ -43,7 +43,7 @@ void ModeSurface::run()
 
         // convert pilot input to lean angles
         // To-Do: convert sub.get_pilot_desired_lean_angles to return angles as floats
-        sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+        sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
         // get pilot's desired yaw rate
         float target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());

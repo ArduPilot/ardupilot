@@ -111,7 +111,7 @@ void ModeAuto::auto_wp_run()
         // call attitude controller
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         sub.wp_nav.wp_and_spline_init_m();                                                // Reset xy target
         return;
@@ -155,7 +155,7 @@ void ModeAuto::auto_wp_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
@@ -302,7 +302,7 @@ void ModeAuto::auto_loiter_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
 
         sub.wp_nav.wp_and_spline_init_m();                                                // Reset xy target
@@ -336,7 +336,7 @@ void ModeAuto::auto_loiter_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // roll & pitch & yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
@@ -479,7 +479,7 @@ void ModeAuto::auto_terrain_recover_run()
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
 
         sub.loiter_nav.init_target();                                       // Reset xy target
@@ -571,7 +571,7 @@ void ModeAuto::auto_terrain_recover_run()
 
     // convert pilot input to lean angles
     // To-Do: convert sub.get_pilot_desired_lean_angles to return angles as floats
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     float target_yaw_rate = 0;
 

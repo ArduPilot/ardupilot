@@ -7,15 +7,8 @@ AP_FLAKE8_CLEAN
 """
 import argparse
 import re
-import sys
 import build_options
 from build_script_base import BuildScriptBase
-
-
-if sys.version_info[0] < 3:
-    running_python3 = False
-else:
-    running_python3 = True
 
 
 class ExtractFeatures(BuildScriptBase):
@@ -86,6 +79,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RANGEFINDER_JRE_SERIAL_ENABLED', r'AP_RangeFinder_JRE_Serial::get_reading\b',),
             ('AP_RANGEFINDER_RDS02UF_ENABLED', r'AP_RangeFinder_RDS02UF::get_reading\b',),
             ('AP_RANGEFINDER_HEXSOONRADAR_ENABLED', r'AP_RangeFinder_NRA24_CAN::handle_frame'),
+            ('AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED', 'AP_RangeFinder_LightWareGRF::get_reading'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
@@ -114,6 +108,7 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_SOLO_GIMBAL_ENABLED', 'AP_Mount_SoloGimbal::init',),
             ('HAL_MOUNT_STORM32SERIAL_ENABLED', 'AP_Mount_SToRM32_serial::update',),
             ('HAL_MOUNT_STORM32MAVLINK_ENABLED', 'AP_Mount_SToRM32::update',),
+            ('AP_MOUNT_POI_LOCK_ENABLED', 'AP_Mount::set_poi_lock'),
 
             ('HAL_SPEKTRUM_TELEM_ENABLED', r'AP::spektrum_telem',),
             ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
@@ -210,6 +205,7 @@ class ExtractFeatures(BuildScriptBase):
             ('GPS_MOVING_BASELINE', r'MovingBase::var_info',),
             ('AP_DRONECAN_SEND_GPS', r'AP_GPS_DroneCAN::instance_exists\b',),
             ('AP_GPS_BLENDED_ENABLED', r'AP_GPS::calc_blend_weights\b',),
+            ('AP_GPS_DEBUG_LOGGING_ENABLED', 'AP_GPS_Backend::log_data',),
 
             ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
             ('AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED', r'AP_InertialSensor::HarmonicNotch::update_params\b',),
@@ -222,7 +218,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_BARO_THST_COMP_ENABLED', r'AP_Baro::thrust_pressure_correction\b',),
             ('AP_TEMPCALIBRATION_ENABLED', r'AP_TempCalibration::apply_calibration',),
 
-            ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
+            ('AP_PICCOLOCAN_ENABLED', r'AP_PiccoloCAN::update',),
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3_core::CorrectExtNavVelForSensorOffset'),
             ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
