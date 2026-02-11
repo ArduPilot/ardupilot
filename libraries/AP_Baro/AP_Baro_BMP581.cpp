@@ -146,8 +146,18 @@ bool AP_Baro_BMP581::init()
 void AP_Baro_BMP581::timer(void)
 {
     uint8_t buf[6];
+    uint8_t buf2[6];
 
+    // read twice, make sure results are consistent; corruption has
+    // been seen from data on this sensor
     if (!_dev->read_registers(BMP581_REG_TEMP_DATA_XLSB, buf, sizeof(buf))) {
+        return;
+    }
+    if (!_dev->read_registers(BMP581_REG_TEMP_DATA_XLSB, buf2, sizeof(buf2))) {
+        return;
+    }
+    if (memcmp(buf, buf2, ARRAY_SIZE(buf)) != 0) {
+        // we didn't get the same data twice.  Reject.
         return;
     }
 
