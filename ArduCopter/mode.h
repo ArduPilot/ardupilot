@@ -484,7 +484,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
-    void virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak);
+    void virtual_flybar( float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads, float pitch_leak, float roll_leak);
 
 protected:
 private:

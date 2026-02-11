@@ -2024,11 +2024,9 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             malformed_packet_count = 0;
         }
 
-        if (parsed_packet || i % 100 == 0) {
-            // make sure we don't spend too much time parsing mavlink messages
-            if (AP_HAL::micros() - tstart_us > max_time_us) {
-                break;
-            }
+        // Check time limit more frequently to prevent blocking other tasks
+        if (AP_HAL::micros() - tstart_us > max_time_us) {
+            break;
         }
     }
 
