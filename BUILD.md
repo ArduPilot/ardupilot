@@ -155,13 +155,13 @@ list some basic and more used commands as example.
 
     This shows a list of all possible targets:
 
-    ```
+    ```bash
     ./waf list
     ```
 
     For example, to build only a single binary:
 
-    ```
+    ```bash
     # Quad frame of ArduCopter
     ./waf --targets bin/arducopter
 
@@ -175,7 +175,7 @@ list some basic and more used commands as example.
     Building with clang on linux can be accomplished by setting the CXX
     environment variables during the configure step, e.g.:
 
-    ```
+    ```bash
     CXX=clang++ CC=clang ./waf configure --board=sitl
     ```
 
@@ -185,7 +185,7 @@ list some basic and more used commands as example.
 
     It's possible to see all available commands and options:
 
-    ```
+    ```bash
     ./waf -h
     ```
 
