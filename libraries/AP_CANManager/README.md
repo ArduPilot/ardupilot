@@ -1,6 +1,6 @@
 # Testing And Debugging
 
-**Testing under SITL**
+## Testing under SITL
 
 A wide range of DroneCAN peripherals are supported in the SITL
 simulation system. The simplest way of starting a DroneCAN enabled
