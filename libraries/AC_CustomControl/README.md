@@ -69,7 +69,7 @@ The custom controller is enabled by default in SITL. You can test it using PID b
 
 1. Compile and run the default SITL model. In the GCS, choose the custom controller type, assign axis mask and set which RC switch to activate the custom controller. Reboot autopilot. For example in mavproxy,
 
-```
+```text
 param set CC_TYPE 2
 param set CC_AXIS_MASK 7
 param set RC6_OPTION 109
@@ -78,13 +78,13 @@ reboot
 
 2. Run the following command to display backend parameters. These would be under `CC2_` for PID backend.
 
-```
+```text
 param set CC2*
 ```
 
 3. Arm and take-off. While at the hover flight, switch RC6 to high. In mavproxy, you can do this with
 
-```
+```text
 rc 6 2000
 ```
 
@@ -112,7 +112,7 @@ You can add your own custom controller backend with the following steps. Let's a
 
 1. Generate a copy of `AC_CustomControl_Empty.cpp` and `AC_CustomControl_Empty.h` within `AC_CustomControl` folder. The folder tree would look like this,
 
-```
+```text
 AC_CustomControl.cpp
 AC_CustomControl.h
 AC_CustomControl_Backend.h
@@ -129,7 +129,7 @@ PID and README files are omitted to keep it simple.
 
 2. Change `Empty - Copy` suffix with your own choice, let's called it `XYZ`, which would look like
 
-```
+```text
 AC_CustomControl.cpp
 AC_CustomControl.h
 AC_CustomControl_Backend.h
@@ -240,7 +240,7 @@ default:
 
 Add the following lines in the `AC_CustomControl_config.h` file.
 
-```
+```cpp
 #ifndef AP_CUSTOMCONTROL_XYZ_ENABLED
 #define AP_CUSTOMCONTROL_XYZ_ENABLED AP_CUSTOMCONTROL_BACKEND_DEFAULT_ENABLED
 #endif
