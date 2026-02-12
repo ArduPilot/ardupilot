@@ -4,7 +4,7 @@ This example allows the built in battery model to be evaluated. The battery is d
 
 The example only works with the linux target. Configure and build with:
 
-```
+```bash
 ./waf configure --board linux
 ./waf build --targets examples/EvaluateBatteryModel
 ```
@@ -13,13 +13,13 @@ The example can then be run, the first argument is the path to the json model de
 
 The command:
 
-```
+```bash
 ./build/linux/examples/EvaluateBatteryModel Tools/autotest/models/Callisto.json 50
 ```
 
 Gives the output:
 
-```
+```text
 Loading model Tools/autotest/models/Callisto.json
 Loaded model params from Tools/autotest/models/Callisto.json
 Simulating 50.40v, 44.00 ah battery with resistance of 0.024000
@@ -38,7 +38,7 @@ time, voltage
 
 This can be output re-directed to a file with:
 
-```
+```bash
 ./build/linux/examples/EvaluateBatteryModel Tools/autotest/models/Callisto.json 50 >> battery_test.csv
 ```
 

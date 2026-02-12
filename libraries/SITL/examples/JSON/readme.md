@@ -11,7 +11,7 @@ IP and port for SITL in the physics backend. SITL will send a output message eve
 
 Data is output from SITL in a binary format:
 
-```
+```text
     uint16 magic = 18458
     uint16 frame_rate
     uint32 frame_count
@@ -23,7 +23,7 @@ The magic value is a constant of 18458, this is used to confirm the packet is fr
 The number of output channels may be increased to 32 by setting the parameter
 SERVO_32_ENABLE = 1. The SITL output packet is then
 
-```
+```text
     uint16 magic = 29569
     uint16 frame_rate
     uint32 frame_count
@@ -42,7 +42,7 @@ PWM is a array of 16 (or 32) servo values in micro seconds, typically in the 100
 
 Data is received from the physics backend in a plain text JSON format. The data must contain the following fields:
 
-```
+```text
     timestamp (s) physics time
     imu:
         gyro(roll, pitch, yaw) (radians/sec) body frame
@@ -53,14 +53,14 @@ Data is received from the physics backend in a plain text JSON format. The data 
 
 It is possible to send the attitude in a euler format using ```attitude``` or as a quaternion with ```quaternion```, one of these fields must be received. If both are received the quaternion attitude will be used.
 
-```
+```text
     attitude(roll, pitch yaw) (radians)
     quaternion(q1, q2, q3, q4)
 ```
 
 This is a example input frame, it should be preceded by and terminated with a carriage return ("\n") :
 
-```
+```json
 {"timestamp":2500,"imu":{"gyro":[0,0,0],"accel_body":[0,0,0]},"position":[0,0,0],"attitude":[0,0,0],"velocity":[0,0,0]}
 ```
 
@@ -71,7 +71,7 @@ It is possible to send optional fields to provide data for additional sensors, i
 
 rangefinder distances corresponding to driver instances:
 
-```
+```text
     rng_1 (m)
     rng_2 (m)
     rng_3 (m)
@@ -82,7 +82,7 @@ rangefinder distances corresponding to driver instances:
 
 ## Apparent wind:
 
-```
+```text
     windvane:
         direction (radians) clockwise relative to the front, i.e. 0 = head to wind
         speed (m/s)
@@ -90,7 +90,7 @@ rangefinder distances corresponding to driver instances:
 
 for example:
 
-```
+```json
  "windvane":{"direction":0,"speed":0}
 ```
 
@@ -98,13 +98,13 @@ for example:
 
 3D wind can be provided in m/s NED frame, for example:
 
-```
+```json
 "velocity_wind":[3.2,0.0,-0.7]
 ```
 
 ## Airspeed:
 
-```
+```text
     airspeed (m/s)
 ```
 
@@ -113,7 +113,7 @@ for example:
 The controller can optionally provide R/C input data, up to 12
 channels.
 
-```
+```json
 "rc":{"rc_1":1500,"rc_2":1500,"rc_3":1000,"rc_4":1500,"rc_5":1000,"rc_6":1000,"rc_7":1000,"rc_8":1500,rc_9":1500,"rc_10":1500}
 ```
 
@@ -122,7 +122,7 @@ channels.
 The controller can provide battery voltage and current. Voltage in
 Volts, current in Amps:
 
-```
+```json
 "battery":{"voltage":50.39,"current":64.01}
 ```
 
@@ -132,7 +132,7 @@ When first connecting you will see a message reporting what fields were successf
 
 For example:
 
-```
+```text
 JSON received:
         timestamp
         gyro
