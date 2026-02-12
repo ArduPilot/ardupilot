@@ -32,13 +32,13 @@ Charsets can be edited or built form scratch using MAX7456Charwizard.jar include
 
 To do that, navigate to:
 
-```
+```text
 /ardupilot/libraries/AP_OSD/fonts
 ```
 
 in your cloned repository and call:
 
-```
+```bash
 ./mcm2bin.py yourfont.mcm fontN.bin
 ```
 
