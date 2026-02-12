@@ -41,7 +41,7 @@ echo export PRU_C_DIR="/path/to/pru/compiler/include;/path/to/pru/compiler/lib" 
 source ~/.bashrc
 ```
 
-*note: semicolons in second command were intended*
+*Note:* Semicolons in second command were intended.
 
 ## Compiling and loading the code
 
