@@ -26,7 +26,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 
 ## Connectors
 
-**POWER1 ADC**
+### POWER1 ADC
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -37,7 +37,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**POWER2 ADC**
+### POWER2 ADC
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -48,7 +48,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**TELEM1**
+### TELEM1
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -59,7 +59,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**TELEM2**
+### TELEM2
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -70,7 +70,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**ADC**
+### ADC
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -79,7 +79,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  3   | ADC_6V6 | +6.6V |
 |  4   |   GND   |  GND  |
 
-**SPI**
+### SPI
 
 | Pin  |  Signal  | Volt  |
 | :--: | :------: | :---: |
@@ -90,7 +90,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   |  SPI_CS  | +3.3V |
 |  6   |   GND    |  GND  |
 
-**I2C**
+### I2C
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -99,7 +99,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  3   | I2C4_SDA | +3.3V |
 |  4   |   GND   |  GND  |
 
-**CAN1**
+### CAN1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -108,7 +108,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  3   | CAN1_N  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**CAN2**
+### CAN2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -117,7 +117,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  3   | CAN2_N  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -128,7 +128,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   | I2C2_SDA | +3.3V |
 |  6   |   GND   |  GND  |
 
-**GPS2&SAFETY**
+### GPS2&SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -143,7 +143,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  9   |    BUZZER     | +3.3V |
 |  10  |      GND      |  GND  |
 
-**DEBUG**
+### DEBUG
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -154,7 +154,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   | SWCLK  | +3.3V |
 |  6   |  GND   |  GND  |
 
-**SAFETY**
+### SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -165,7 +165,7 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  5   |     RSSI      | +3.3V |
 |  6   |      GND      |  GND  |
 
-**USB EX**
+### USB EX
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |

@@ -31,7 +31,7 @@ It is an autopilot used CKS MCU.
 
 ## Connectors
 
-**External USB**
+### External USB
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -40,7 +40,7 @@ It is an autopilot used CKS MCU.
 |  3   |   D-    |  D_N  |
 |  4   |   GND   |  GND  |
 
-**Telme1**
+### Telem1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -49,7 +49,7 @@ It is an autopilot used CKS MCU.
 |  3   |  RX    | +3.3V |
 |  4   |  GND   |  GND  |
 
-**Telme2**
+### Telem2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -60,7 +60,7 @@ It is an autopilot used CKS MCU.
 |  5   |  NC    |  - -  |
 |  6   |  GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -71,7 +71,7 @@ It is an autopilot used CKS MCU.
 |  5   |  sda2  | +3.3V |
 |  6   |  GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -82,7 +82,7 @@ It is an autopilot used CKS MCU.
 |  5   |  sda2  | +3.3V |
 |  6   |  GND   |  GND  |
 
-**UART4 and UART5**
+### UART4 and UART5
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -91,7 +91,7 @@ It is an autopilot used CKS MCU.
 |  3   |  RX    | +3.3V |
 |  4   |  GND   |  GND  |
 
-**CAN1**
+### CAN1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -100,7 +100,7 @@ It is an autopilot used CKS MCU.
 |  3   | CAN1_L | CAN_N |
 |  4   |  GND   |  GND  |
 
-**IIC1**
+### IIC1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -109,7 +109,7 @@ It is an autopilot used CKS MCU.
 |  3   |  SCL1  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**Safety and buzzer**
+### Safety and buzzer
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -120,7 +120,7 @@ It is an autopilot used CKS MCU.
 |  5   | Buzzer | +3.3V |
 |  6   |  GND   |  GND  |
 
-**VT Port**
+### VT Port
 
 | Pin  |   Signal   | Volt  |
 | :--: |   :----:   | :---: |
@@ -129,7 +129,7 @@ It is an autopilot used CKS MCU.
 |  3   |   9V/12V   | 9V/12V|
 |  4   |    GND     |  GND  |
 
-**PWM11 and PWM12**
+### PWM11 and PWM12
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -138,7 +138,7 @@ It is an autopilot used CKS MCU.
 |  3   | PWM12  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**POWER1 and Power2**
+### POWER1 and Power2
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -149,7 +149,7 @@ It is an autopilot used CKS MCU.
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**Battery Input**
+### Battery Input
 
 | Pin  |     Signal      |   Volt  |
 | :--: | :-------------: |  :---:  |

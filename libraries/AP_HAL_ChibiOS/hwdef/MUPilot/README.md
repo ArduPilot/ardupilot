@@ -30,7 +30,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 ## Connectors
 
 ![MUPilot Pinout1](MUPilot-pinout1.png "Pinout1")
-**CAN1/2**
+### CAN1/2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -39,7 +39,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  3   | CAN_L  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**GPS&SAFETY**
+### GPS&SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -54,7 +54,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  9   |    BUZZER     | +3.3V |
 |  10  |      GND      |  GND  |
 
-**I2C1/2/3/4**
+### I2C1/2/3/4
 
 | Pin  | Signal   | Volt  |
 | :--: | :------: | :---: |
@@ -63,7 +63,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  3   | I2Cx _SDA| +3.3V |
 |  4   |   GND    |  GND  |
 
-**TELEM1**
+### TELEM1
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -74,7 +74,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**TELEM2**
+### TELEM2
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -85,7 +85,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**UART4(GPS2)**
+### UART4(GPS2)
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -96,7 +96,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |I2C2_SDA | +3.3V |
 |  6   |   GND   |  GND  |
 
-**DEBUG**
+### DEBUG
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -109,7 +109,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 
 ![MUPilot Pinout2](MUPilot-pinout2.png "Pinout2")
 
-**POWER1**
+### POWER1
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -120,7 +120,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**POWER2**
+### POWER2
 
 | Pin  |     Signal         | Volt  |
 | :--: | :----------------: | :---: |
@@ -133,7 +133,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 
 ![MUPilot Pinout3](MUPilot-pinout3.png "Pinout3")
 
-**SBUS  OUT**
+### SBUS  OUT
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -143,7 +143,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 
 ![MUPilot Pinout4](MUPilot-pinout4.png "Pinout4")
 
-**ADC**
+### ADC
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -152,7 +152,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  3   | ADC_6V6 | +6.6V |
 |  4   |   GND   |  GND  |
 
-**SPI5**
+### SPI5
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -164,7 +164,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  7   |  CS2   | +3.3V |
 |  8   |  GND   |  GND  |
 
-**DSM/SBUS/RSSI**
+### DSM/SBUS/RSSI
 
 | Pin  |    Signal   | Volt  |
 | :--: | :---------: | :---: |

@@ -97,7 +97,7 @@ Please calibrate before use amp parameters.
 - BATT_AMP_PERVLT 17.0
 - BATT2_AMP_PERVLT 17.0
 
-*Note: Please check carefully before use BATT_AMP_PERVLT/BATT2_AMP_PERVLT, as voltage divider circuit for data collection is at ESC/BEC side*
+*Note:* Please check carefully before use BATT_AMP_PERVLT/BATT2_AMP_PERVLT, as voltage divider circuit for data collection is at ESC/BEC side.
 
 ## Compass
 

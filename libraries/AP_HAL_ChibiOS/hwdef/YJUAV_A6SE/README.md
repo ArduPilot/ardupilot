@@ -26,7 +26,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 
 ## Connectors
 
-**POWER ADC**
+### POWER ADC
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -37,7 +37,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**TELEM1&TELEM2**
+### TELEM1&TELEM2
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -48,7 +48,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**ADC**
+### ADC
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -57,7 +57,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  3   | ADC_6V6 | +6.6V |
 |  4   |   GND   |  GND  |
 
-**SPI**
+### SPI
 
 | Pin  |  Signal  | Volt  |
 | :--: | :------: | :---: |
@@ -68,7 +68,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |  SPI_CS  | +3.3V |
 |  6   |   GND    |  GND  |
 
-**I2C**
+### I2C
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -77,7 +77,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  3   | I2C_SDA | +3.3V |
 |  4   |   GND   |  GND  |
 
-**CAN1&CAN2**
+### CAN1&CAN2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -86,7 +86,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  3   | CAN_N  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -97,7 +97,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   | I2C_SDA | +3.3V |
 |  6   |   GND   |  GND  |
 
-**GPS2&SAFETY**
+### GPS2&SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -112,7 +112,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  9   |    BUZZER     | +3.3V |
 |  10  |      GND      |  GND  |
 
-**DEBUG**
+### DEBUG
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -123,7 +123,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   | SWCLK  | +3.3V |
 |  6   |  GND   |  GND  |
 
-**SAFETY**
+### SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -134,7 +134,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |     RSSI      | +3.3V |
 |  6   |      GND      |  GND  |
 
-**USB EX**
+### USB EX
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
