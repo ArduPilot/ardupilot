@@ -7,19 +7,19 @@
 1. Checkout this branch [ardupilot](https://github.com/ardupilot/ardupilot/tree/master)
 2. Use this to install ardupilot requirements:
 
-```
+```bash
 Tools/environment_install/install-prereqs-ubuntu.sh
 ```
 
 or
 
-```
+```bash
 Tools/environment_install/install-prereqs-arch.sh
 ```
 
 2. install esp-idf python deps:
 
-```
+```bash
 # from: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-setup.html
 sudo apt-get install git wget flex bison gperf cmake ninja-build ccache libffi-dev libssl-dev dfu-util
 sudo apt-get install python3 python3-pip python3-setuptools
@@ -53,7 +53,7 @@ or
 ./waf copter
 ```
 
-```
+```text
 Do NOT use "./waf build", it's broken right now.
 ```
 
@@ -81,7 +81,7 @@ If you need to change sdkconfig (which will not cause it to be deleted), you can
 
 So double check you are using the correct IDF version:
 
-```
+```bash
 cd build/esp32{BOARD}/esp-idf_build
 ninja menuconfig
 ```
@@ -97,7 +97,7 @@ If you want to make changes to sdkconfig (sdkconfig is in the build dir) permane
 
 5. Recommended way to flash the firmware :
 
-```
+```bash
 ESPBAUD=921600 ./waf plane --upload
 ```
 
@@ -115,13 +115,13 @@ For example :
 
 If you want to specify the port, specify before any command:
 
-```
+```bash
 ESPTOOL_PORT=/dev/ttyUSB1
 ```
 
 If you want to specify a wanted baudrate :
 
-```
+```bash
 ESPTOOL_BAUD=57600
 ESPTOOL_BAUD=921600
 ```
@@ -130,7 +130,7 @@ You can find more info here : [ESPTOOL](https://github.com/espressif/esptool)
 
 For flashing from another machine you need the following files:
 
-```
+```text
 build/<board>/esp-idf_build/bootloader/bootloader.bin
 build/<board>/esp-idf_build/ardupilot.bin
 build/<board>/esp-idf_build/partition_table/partition-table.bin
