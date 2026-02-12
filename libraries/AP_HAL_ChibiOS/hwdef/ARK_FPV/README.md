@@ -241,7 +241,7 @@ any ArduPilot ground station software. Updates should be done with the
 
 Alternatively you can build the firmware from source
 
-```
+```bash
 ./waf configure --board ARK_FPV --bootloader
 ./waf bootloader
 ```
@@ -249,7 +249,7 @@ Alternatively you can build the firmware from source
 And flash the bootloader with your st-link to 0x08000000.
 Then build the firmware and upload it via USB-C
 
-```
+```bash
 ./waf configure --board ARK_FPV
 ./waf copter --upload
 ```
