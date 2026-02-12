@@ -13,12 +13,11 @@ If there was a previous discussion in the forum, link to it
 
 ## Bug report
 
-**Issue details**
-
-_Please describe the problem_
+### Issue details
+Please describe the problem
 
 **Version**
-_What version was the issue encountered with_
+What version was the issue encountered with
 
 **Platform**
 [  ] All
