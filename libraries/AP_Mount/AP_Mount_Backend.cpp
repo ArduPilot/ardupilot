@@ -328,9 +328,7 @@ void AP_Mount_Backend::clear_roi_target()
         set_mode(default_mode);
     }
 
-    if (natively_supports(MountTargetType::LOCATION)) {
-        send_target_location(_roi_target);
-    }
+    clear_roi_pending = true;
 }
 
 // set_sys_target - sets system that mount should attempt to point towards
@@ -1077,6 +1075,13 @@ void AP_Mount_Backend::_update_mnt_target()
 
 void AP_Mount_Backend::send_target_to_gimbal()
 {
+    // process any pending clear-roi-target 
+    // it is assumed that we have already zeroed _roi_target
+    if (clear_roi_pending && natively_supports(MountTargetType::LOCATION)) {
+        clear_roi_pending = false;
+        send_target_location(_roi_target);
+    }
+
     // the easy case, where the gimbal natively supports the MntTargetType:
     if (natively_supports(mnt_target.target_type)) {
         switch (mnt_target.target_type) {
