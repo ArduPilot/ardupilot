@@ -187,16 +187,16 @@ void GCS_MAVLINK_Plane::send_attitude_target()
 #endif // HAL_QUADPLANE_ENABLED 
 }
 
-void GCS_MAVLINK_Plane::send_aoa_ssa()
-{
-    AP_AHRS &ahrs = AP::ahrs();
+// void GCS_MAVLINK_Plane::send_aoa_ssa()
+// {
+//     AP_AHRS &ahrs = AP::ahrs();
 
-    mavlink_msg_aoa_ssa_send(
-        chan,
-        micros(),
-        ahrs.getAOA(),
-        ahrs.getSSA());
-}
+//     mavlink_msg_aoa_ssa_send(
+//         chan,
+//         micros(),
+//         ahrs.getAOA(),
+//         ahrs.getSSA());
+// }
 
 void GCS_MAVLINK_Plane::send_nav_controller_output() const
 {
@@ -311,16 +311,16 @@ float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
     return GCS_MAVLINK::vfr_hud_climbrate();
 }
 
-void GCS_MAVLINK_Plane::send_wind() const
-{
-    const Vector3f wind = AP::ahrs().wind_estimate();
-    mavlink_msg_wind_send(
-        chan,
-        degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
-                                          // direction wind is coming from
-        wind.length(),
-        wind.z);
-}
+// void GCS_MAVLINK_Plane::send_wind() const
+// {
+//     const Vector3f wind = AP::ahrs().wind_estimate();
+//     mavlink_msg_wind_send(
+//         chan,
+//         degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
+//                                           // direction wind is coming from
+//         wind.length(),
+//         wind.z)
+// }
 
 // sends a single pid info over the provided channel
 void GCS_MAVLINK_Plane::send_pid_info(const AP_PIDInfo *pid_info,
@@ -432,12 +432,12 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
         plane.terrain.send_report(chan);
         break;
-#endif
+#endif 
+    // case MSG_WIND:
+    //     CHECK_PAYLOAD_SIZE(WIND);
+    //     send_wind();
+    //     break;
 
-    case MSG_WIND:
-        CHECK_PAYLOAD_SIZE(WIND);
-        send_wind();
-        break;
 
     case MSG_ADSB_VEHICLE:
 #if HAL_ADSB_ENABLED
@@ -445,16 +445,20 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         plane.adsb.send_adsb_vehicle(chan);
 #endif
         break;
+        
 
-    case MSG_AOA_SSA:
-        CHECK_PAYLOAD_SIZE(AOA_SSA);
-        send_aoa_ssa();
-        break;
+    // case MSG_AOA_SSA:
+    //     CHECK_PAYLOAD_SIZE(AOA_SSA);
+    //     send_aoa_ssa();
+    //     break;
+
+
     case MSG_LANDING:
         plane.landing.send_landing_message(chan);
         break;
 
     case MSG_HYGROMETER:
+    
 #if AP_AIRSPEED_HYGROMETER_ENABLE
         CHECK_PAYLOAD_SIZE(HYGROMETER_SENSOR);
         send_hygrometer();
@@ -614,7 +618,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
 static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_RAW_IMU,
     MSG_SCALED_IMU2,
-    MSG_SCALED_IMU3,
+    // MSG_SCALED_IMU3,
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
@@ -665,7 +669,9 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
 #if AP_RPM_ENABLED
     MSG_RPM,
 #endif
-    MSG_AOA_SSA,
+// #if ENABLE_AOA_SSA_ENABLE 
+//     MSG_AOA_SSA,
+// #endif
     MSG_PID_TUNING,
     MSG_LANDING,
 #if HAL_WITH_ESC_TELEM
@@ -683,7 +689,9 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 };
 static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_AHRS,
-    MSG_WIND,
+
+    // MSG_WIND,
+
 #if AP_RANGEFINDER_ENABLED
     MSG_RANGEFINDER,
 #endif
@@ -693,9 +701,9 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_TERRAIN_REPORT,
     MSG_TERRAIN_REQUEST,
 #endif
-#if AP_BATTERY_ENABLED
-    MSG_BATTERY_STATUS,
-#endif
+// #if ENABLE_BATTERY_STATUS_MESSAGE  
+//     MSG_BATTERY_STATUS,
+// #endif
 #if HAL_MOUNT_ENABLED
     MSG_GIMBAL_DEVICE_ATTITUDE_STATUS,
 #endif

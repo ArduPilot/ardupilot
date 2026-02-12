@@ -395,7 +395,7 @@ bool GCS_MAVLINK::send_battery_status()
         if (configured_type != AP_BattMonitor::Type::NONE &&
             configured_type == battery.allocated_type(battery_id) &&
             !battery.option_is_set(battery_id, AP_BattMonitor_Params::Options::InternalUseOnly)) {
-            CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
+            //// CHECK_PAYLOAD_SIZE(BATTERY_STATUS);
             send_battery_status(battery_id);
             last_battery_status_idx = battery_id;
             return true;
@@ -1023,7 +1023,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_RAW_IMU,               MSG_RAW_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU,            MSG_SCALED_IMU},
         { MAVLINK_MSG_ID_SCALED_IMU2,           MSG_SCALED_IMU2},
-        { MAVLINK_MSG_ID_SCALED_IMU3,           MSG_SCALED_IMU3},
+        // { MAVLINK_MSG_ID_SCALED_IMU3,           MSG_SCALED_IMU3},
 #if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
         { MAVLINK_MSG_ID_HIGHRES_IMU,           MSG_HIGHRES_IMU},
 #endif
@@ -1058,7 +1058,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
 #endif
         { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
-        { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
+        // { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
 #if AP_RANGEFINDER_ENABLED
         { MAVLINK_MSG_ID_RANGEFINDER,           MSG_RANGEFINDER},
 #endif
@@ -1114,7 +1114,7 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_BATTERY_ENABLED
         { MAVLINK_MSG_ID_BATTERY_STATUS,        MSG_BATTERY_STATUS},
 #endif
-        { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
+        // { MAVLINK_MSG_ID_AOA_SSA,               MSG_AOA_SSA},
 #if HAL_LANDING_DEEPSTALL_ENABLED
         { MAVLINK_MSG_ID_DEEPSTALL,             MSG_LANDING},
 #endif
@@ -5679,7 +5679,7 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
 #if AP_MISSION_ENABLED
     case MSG_CURRENT_WAYPOINT:
     {
-        CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
+       // CHECK_PAYLOAD_SIZE(MISSION_CURRENT);
         AP_Mission *mission = AP::mission();
         if (mission != nullptr) {
             send_mission_current(*mission, mission->get_current_nav_index());
@@ -5687,23 +5687,23 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
         break;
     }
     case MSG_MISSION_ITEM_REACHED:
-        CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
+       // CHECK_PAYLOAD_SIZE(MISSION_ITEM_REACHED);
         mavlink_msg_mission_item_reached_send(chan, mission_item_reached_index);
         break;
     case MSG_NEXT_MISSION_REQUEST_WAYPOINTS:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+       // CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_MISSION);
         break;
 #endif
 #if HAL_RALLY_ENABLED
     case MSG_NEXT_MISSION_REQUEST_RALLY:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+       // CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_RALLY);
         break;
 #endif
 #if AP_FENCE_ENABLED
     case MSG_NEXT_MISSION_REQUEST_FENCE:
-        CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
+       // CHECK_PAYLOAD_SIZE(MISSION_REQUEST);
         gcs().try_send_queued_message_for_type(MAV_MISSION_TYPE_FENCE);
         break;
 #endif
@@ -6057,52 +6057,52 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if AP_AHRS_ENABLED
     case MSG_ATTITUDE:
-        CHECK_PAYLOAD_SIZE(ATTITUDE);
+       // CHECK_PAYLOAD_SIZE(ATTITUDE);
         send_attitude();
         break;
 
     case MSG_ATTITUDE_QUATERNION:
-        CHECK_PAYLOAD_SIZE(ATTITUDE_QUATERNION);
+       // CHECK_PAYLOAD_SIZE(ATTITUDE_QUATERNION);
         send_attitude_quaternion();
         break;
 #endif
 
     case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
+       // CHECK_PAYLOAD_SIZE(PARAM_VALUE);
         queued_param_send();
         break;
 
     case MSG_HEARTBEAT:
-        CHECK_PAYLOAD_SIZE(HEARTBEAT);
+       // CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
         send_heartbeat();
         break;
 
     case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
+       // CHECK_PAYLOAD_SIZE(HWSTATUS);
         send_hwstatus();
         break;
 
 #if AP_AHRS_ENABLED
     case MSG_LOCATION:
-        CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
+       // CHECK_PAYLOAD_SIZE(GLOBAL_POSITION_INT);
         send_global_position_int();
         break;
 
     case MSG_HOME:
-        CHECK_PAYLOAD_SIZE(HOME_POSITION);
+       // CHECK_PAYLOAD_SIZE(HOME_POSITION);
         send_home_position();
         break;
 
     case MSG_ORIGIN:
-        CHECK_PAYLOAD_SIZE(GPS_GLOBAL_ORIGIN);
+       // CHECK_PAYLOAD_SIZE(GPS_GLOBAL_ORIGIN);
         send_gps_global_origin();
         break;
 #endif  // AP_AHRS_ENABLED
 
 #if AP_RPM_ENABLED
     case MSG_RPM:
-        CHECK_PAYLOAD_SIZE(RPM);
+       // CHECK_PAYLOAD_SIZE(RPM);
         send_rpm();
         break;
 #endif
@@ -6131,7 +6131,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if AP_MAVLINK_BATTERY2_ENABLED
     case MSG_BATTERY2:
-        CHECK_PAYLOAD_SIZE(BATTERY2);
+       // CHECK_PAYLOAD_SIZE(BATTERY2);
         send_battery2();
         break;
 #endif
@@ -6139,26 +6139,26 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if AP_AHRS_ENABLED
     case MSG_EKF_STATUS_REPORT:
-        CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
+       // CHECK_PAYLOAD_SIZE(EKF_STATUS_REPORT);
         AP::ahrs().send_ekf_status_report(*this);
         break;
 #endif
 
     case MSG_MEMINFO:
-        CHECK_PAYLOAD_SIZE(MEMINFO);
+       // CHECK_PAYLOAD_SIZE(MEMINFO);
         send_meminfo();
         break;
 
 #if AP_FENCE_ENABLED
     case MSG_FENCE_STATUS:
-        CHECK_PAYLOAD_SIZE(FENCE_STATUS);
+       // CHECK_PAYLOAD_SIZE(FENCE_STATUS);
         send_fence_status();
         break;
 #endif
 
 #if AP_RANGEFINDER_ENABLED
     case MSG_RANGEFINDER:
-        CHECK_PAYLOAD_SIZE(RANGEFINDER);
+       // CHECK_PAYLOAD_SIZE(RANGEFINDER);
         send_rangefinder();
         break;
 #endif
@@ -6191,100 +6191,100 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif  // AP_CAMERA_ENABLED
 
     case MSG_SYSTEM_TIME:
-        CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
+       // CHECK_PAYLOAD_SIZE(SYSTEM_TIME);
         send_system_time();
         break;
 #if AP_GPS_ENABLED
     case MSG_GPS_RAW:
-        CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
+       // CHECK_PAYLOAD_SIZE(GPS_RAW_INT);
         AP::gps().send_mavlink_gps_raw(chan);
         break;
     case MSG_GPS_RTK:
-        CHECK_PAYLOAD_SIZE(GPS_RTK);
+       // CHECK_PAYLOAD_SIZE(GPS_RTK);
         AP::gps().send_mavlink_gps_rtk(chan, 0);
         break;
 #if GPS_MAX_RECEIVERS > 1
     case MSG_GPS2_RAW:
-        CHECK_PAYLOAD_SIZE(GPS2_RAW);
+       // CHECK_PAYLOAD_SIZE(GPS2_RAW);
         AP::gps().send_mavlink_gps2_raw(chan);
         break;
 #endif
 #if GPS_MAX_RECEIVERS > 1
     case MSG_GPS2_RTK:
-        CHECK_PAYLOAD_SIZE(GPS2_RTK);
+       // CHECK_PAYLOAD_SIZE(GPS2_RTK);
         AP::gps().send_mavlink_gps_rtk(chan, 1);
         break;
 #endif
 #endif  // AP_GPS_ENABLED
 #if AP_AHRS_ENABLED
     case MSG_LOCAL_POSITION:
-        CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
+       // CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);
         send_local_position();
         break;
 #endif
 
 #if HAL_MOUNT_ENABLED
     case MSG_GIMBAL_DEVICE_ATTITUDE_STATUS:
-        CHECK_PAYLOAD_SIZE(GIMBAL_DEVICE_ATTITUDE_STATUS);
+       // CHECK_PAYLOAD_SIZE(GIMBAL_DEVICE_ATTITUDE_STATUS);
         send_gimbal_device_attitude_status();
         break;
     case MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE:
-        CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
+       // CHECK_PAYLOAD_SIZE(AUTOPILOT_STATE_FOR_GIMBAL_DEVICE);
         send_autopilot_state_for_gimbal_device();
         break;
     case MSG_GIMBAL_MANAGER_INFORMATION:
-        CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_INFORMATION);
+       // CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_INFORMATION);
         send_gimbal_manager_information();
         break;
     case MSG_GIMBAL_MANAGER_STATUS:
-        CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_STATUS);
+       // CHECK_PAYLOAD_SIZE(GIMBAL_MANAGER_STATUS);
         send_gimbal_manager_status();
         break;
 #endif  // HAL_MOUNT_ENABLED
 
 #if AP_OPTICALFLOW_ENABLED
     case MSG_OPTICAL_FLOW:
-        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
+       // CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
         break;
 #endif
 
     case MSG_ATTITUDE_TARGET:
-        CHECK_PAYLOAD_SIZE(ATTITUDE_TARGET);
+       // CHECK_PAYLOAD_SIZE(ATTITUDE_TARGET);
         send_attitude_target();
         break;
 
     case MSG_POSITION_TARGET_GLOBAL_INT:
-        CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
+       // CHECK_PAYLOAD_SIZE(POSITION_TARGET_GLOBAL_INT);
         send_position_target_global_int();
         break;
 
     case MSG_POSITION_TARGET_LOCAL_NED:
-        CHECK_PAYLOAD_SIZE(POSITION_TARGET_LOCAL_NED);
+       // CHECK_PAYLOAD_SIZE(POSITION_TARGET_LOCAL_NED);
         send_position_target_local_ned();
         break;
 
     case MSG_POWER_STATUS:
-        CHECK_PAYLOAD_SIZE(POWER_STATUS);
+       // CHECK_PAYLOAD_SIZE(POWER_STATUS);
         send_power_status();
         break;
 
 #if HAL_WITH_MCU_MONITORING
     case MSG_MCU_STATUS:
-        CHECK_PAYLOAD_SIZE(MCU_STATUS);
+       // CHECK_PAYLOAD_SIZE(MCU_STATUS);
         send_mcu_status();
         break;
 #endif
 
 #if AP_RC_CHANNEL_ENABLED
     case MSG_RC_CHANNELS:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS);
+       // CHECK_PAYLOAD_SIZE(RC_CHANNELS);
         send_rc_channels();
         break;
 
 #if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
     case MSG_RC_CHANNELS_RAW:
-        CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
+       // CHECK_PAYLOAD_SIZE(RC_CHANNELS_RAW);
         send_rc_channels_raw();
         break;
 #endif  // AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
@@ -6292,125 +6292,125 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif
 
     case MSG_RAW_IMU:
-        CHECK_PAYLOAD_SIZE(RAW_IMU);
+       // CHECK_PAYLOAD_SIZE(RAW_IMU);
         send_raw_imu();
         break;
 
     case MSG_SCALED_IMU:
-        CHECK_PAYLOAD_SIZE(SCALED_IMU);
+       // CHECK_PAYLOAD_SIZE(SCALED_IMU);
         send_scaled_imu(0, mavlink_msg_scaled_imu_send);
         break;
 
     case MSG_SCALED_IMU2:
-        CHECK_PAYLOAD_SIZE(SCALED_IMU2);
+       // CHECK_PAYLOAD_SIZE(SCALED_IMU2);
         send_scaled_imu(1, mavlink_msg_scaled_imu2_send);
         break;
 
-    case MSG_SCALED_IMU3:
-        CHECK_PAYLOAD_SIZE(SCALED_IMU3);
-        send_scaled_imu(2, mavlink_msg_scaled_imu3_send);
-        break;
+    // case MSG_SCALED_IMU3:
+    //    // CHECK_PAYLOAD_SIZE(SCALED_IMU3);
+    //     send_scaled_imu(2, mavlink_msg_scaled_imu3_send);
+    //     break;
 #if AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
     case MSG_HIGHRES_IMU:
-        CHECK_PAYLOAD_SIZE(HIGHRES_IMU);
+       // CHECK_PAYLOAD_SIZE(HIGHRES_IMU);
         send_highres_imu();
         break;
 #endif
 
     case MSG_SCALED_PRESSURE:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
+       // CHECK_PAYLOAD_SIZE(SCALED_PRESSURE);
         send_scaled_pressure();
         break;
 
     case MSG_SCALED_PRESSURE2:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE2);
+       // CHECK_PAYLOAD_SIZE(SCALED_PRESSURE2);
         send_scaled_pressure2();
         break;
 
     case MSG_SCALED_PRESSURE3:
-        CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
+       // CHECK_PAYLOAD_SIZE(SCALED_PRESSURE3);
         send_scaled_pressure3();
         break;
 
 #if AP_AIRSPEED_ENABLED
     case MSG_AIRSPEED:
-        CHECK_PAYLOAD_SIZE(AIRSPEED);
+       // CHECK_PAYLOAD_SIZE(AIRSPEED);
         send_airspeed();
         break;
 #endif
 
     case MSG_SERVO_OUTPUT_RAW:
-        CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
+       // CHECK_PAYLOAD_SIZE(SERVO_OUTPUT_RAW);
         send_servo_output_raw();
         break;
 
 #if AP_SIM_ENABLED
     case MSG_SIMSTATE:
-        CHECK_PAYLOAD_SIZE(SIMSTATE);
+       // CHECK_PAYLOAD_SIZE(SIMSTATE);
         send_simstate();
         break;
 
     case MSG_SIM_STATE:
-        CHECK_PAYLOAD_SIZE(SIM_STATE);
+       // CHECK_PAYLOAD_SIZE(SIM_STATE);
         send_sim_state();
         break;
 #endif
 
     case MSG_SYS_STATUS:
-        CHECK_PAYLOAD_SIZE(SYS_STATUS);
+       // CHECK_PAYLOAD_SIZE(SYS_STATUS);
         send_sys_status();
         break;
 
 #if AP_AHRS_ENABLED
     case MSG_AHRS2:
-        CHECK_PAYLOAD_SIZE(AHRS2);
+       // CHECK_PAYLOAD_SIZE(AHRS2);
         send_ahrs2();
         break;
 #endif
 
     case MSG_PID_TUNING:
-        CHECK_PAYLOAD_SIZE(PID_TUNING);
+       // CHECK_PAYLOAD_SIZE(PID_TUNING);
         send_pid_tuning();
         break;
 
     case MSG_NAV_CONTROLLER_OUTPUT:
-        CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
+       // CHECK_PAYLOAD_SIZE(NAV_CONTROLLER_OUTPUT);
         send_nav_controller_output();
         break;
 
 #if AP_AHRS_ENABLED
     case MSG_AHRS:
-        CHECK_PAYLOAD_SIZE(AHRS);
+       // CHECK_PAYLOAD_SIZE(AHRS);
         send_ahrs();
         break;
 #endif
 
     case MSG_EXTENDED_SYS_STATE:
-        CHECK_PAYLOAD_SIZE(EXTENDED_SYS_STATE);
+       // CHECK_PAYLOAD_SIZE(EXTENDED_SYS_STATE);
         send_extended_sys_state();
         break;
 
 #if AP_AHRS_ENABLED
     case MSG_VFR_HUD:
-        CHECK_PAYLOAD_SIZE(VFR_HUD);
+       // CHECK_PAYLOAD_SIZE(VFR_HUD);
         send_vfr_hud();
         break;
 #endif
 
     case MSG_VIBRATION:
-        CHECK_PAYLOAD_SIZE(VIBRATION);
+       // CHECK_PAYLOAD_SIZE(VIBRATION);
         send_vibration();
         break;
 
-#if HAL_GENERATOR_ENABLED
-    case MSG_GENERATOR_STATUS:
-    	CHECK_PAYLOAD_SIZE(GENERATOR_STATUS);
-    	send_generator_status();
-    	break;
-#endif
+// #if HAL_GENERATOR_ENABLED
+//     case MSG_GENERATOR_STATUS:
+//     	CHECK_PAYLOAD_SIZE(GENERATOR_STATUS);
+//     	send_generator_status();
+//     	break;
+// #endif
 
     case MSG_AUTOPILOT_VERSION:
-        CHECK_PAYLOAD_SIZE(AUTOPILOT_VERSION);
+       // CHECK_PAYLOAD_SIZE(AUTOPILOT_VERSION);
         send_autopilot_version();
         break;
 
@@ -6422,7 +6422,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if HAL_EFI_ENABLED
     case MSG_EFI_STATUS: {
-        CHECK_PAYLOAD_SIZE(EFI_STATUS);
+       // CHECK_PAYLOAD_SIZE(EFI_STATUS);
         AP_EFI *efi = AP::EFI();
         if (efi) {
             efi->send_mavlink_status(chan);
@@ -6433,14 +6433,14 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if AP_WINCH_ENABLED
     case MSG_WINCH_STATUS:
-        CHECK_PAYLOAD_SIZE(WINCH_STATUS);
+       // CHECK_PAYLOAD_SIZE(WINCH_STATUS);
         send_winch_status();
         break;
 #endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
     case MSG_HIGH_LATENCY2:
-        CHECK_PAYLOAD_SIZE(HIGH_LATENCY2);
+       // CHECK_PAYLOAD_SIZE(HIGH_LATENCY2);
         send_high_latency2();
         break;
 #endif // HAL_HIGH_LATENCY2_ENABLED
@@ -6457,7 +6457,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
     case MSG_UAVIONIX_ADSB_OUT_STATUS:
-        CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
+       // CHECK_PAYLOAD_SIZE(UAVIONIX_ADSB_OUT_STATUS);
         send_uavionix_adsb_out_status();
         break;
 #endif
