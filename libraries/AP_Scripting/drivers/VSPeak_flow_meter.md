@@ -10,7 +10,7 @@ This driver implements support for the VSPeak Modell flow meter sensor.
 
 There are two ways to operate this sensor.
 
-**A: Save consumed volume**
+### A: Save consumed volume
 
 Under this mode, the sensor will remember how much fuel volume was consumed
 across power cycles. This allows you to have an accurate fuel tank level
@@ -23,7 +23,7 @@ To set that mode, you need to set the `Auto Reset` setting to `OFF` in
 the `FLOW.txt` sensor settings file.
 For more information, read the sensor manual.
 
-**B: Forget consumed volume**
+### B: Forget consumed volume
 
 Under this mode, the consumed fuel volume will reset after each power cycle.
 This is especially important for fuel-powered vehicles, as there is no
