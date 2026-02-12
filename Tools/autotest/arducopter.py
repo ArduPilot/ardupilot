@@ -14702,13 +14702,15 @@ RTL_ALT_M 111
         # Install the OSD example script
         self.install_example_script_context('osd.lua')
 
-        # Set all parameters and restart SITL
-        # Note: OSD_TYPE=2 is SITL OSD which requires the binary to be built with
-        # --sitl-osd configure flag. The OSD window appears automatically when
-        # OSD_TYPE=2 is set and the binary has SITL OSD compiled in.
+        # When built with --sitl-osd, OSD_TYPE defaults to 2 and the OSD backend
+        # is initialized at process start. The OSD backend cannot be created
+        # after boot (OSD_TYPE requires process restart), so if not built with
+        # --sitl-osd, the test will detect this and skip gracefully.
+        # SIM_SPEEDUP=5 makes the OSD window visible longer for visual testing.
         self.set_parameters({
             "SCR_ENABLE": 1,
             "OSD_TYPE": 2,  # SITL OSD (requires --sitl-osd at configure time)
+            "SIM_SPEEDUP": 5,  # Slow enough to see the OSD
         })
         self.reboot_sitl()
 
