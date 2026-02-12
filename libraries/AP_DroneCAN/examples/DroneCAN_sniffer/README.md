@@ -6,7 +6,7 @@ be received by another node.
 
 To build and upload for a Pixhawk style board run this:
 
-```
+```bash
  ./waf configure --board fmuv3
  ./waf --target examples/UAVCAN_sniffer --upload
 ```
@@ -14,7 +14,7 @@ To build and upload for a Pixhawk style board run this:
 then connect on the USB console. You will see 1Hz packet stats like
 this:
 
-```
+```text
 uavcan.equipment.air_data.StaticPressure: 29
 uavcan.equipment.air_data.StaticTemperature: 29
 uavcan.equipment.ahrs.MagneticFieldStrength: 20
