@@ -10,7 +10,7 @@ be updated automatically with any new changes. The latest files can be found [he
 
 To run the script manually for local testing, use the following command:
 
-```
+```bash
 python3 parse.py --vehicle <vehicle>
 ```
 
@@ -33,7 +33,7 @@ additional information such as field descriptions.
 The data to populate the message details should be placed into the relevant .cpp
 or .h file, alongside the use of the message. The basic format is as follows:
 
-```
+```cpp
 // @LoggerMessage: <message name>
 // @Description: <message description>
 // @Field: <field name>: <field description>
@@ -45,7 +45,7 @@ then the `@LoggerMessage` and `@Description` lines may be repeated multiple time
 before the start of the fields, to provide the name and description for each. For
 example:
 
-```
+```cpp
 // @LoggerMessage: PIDR
 // @Description: Proportional/Integral/Derivative gain values for Roll rate
 // @LoggerMessage: PIDN
@@ -60,7 +60,7 @@ example:
 A `@Field` definition may be followed by one of the following, to link it to an
 enumeration or bitmask as follows:
 
-```
+```cpp
 // @FieldBits: <field name>: <bit 0 name>,<bit 1 name>,...
 // @FieldBitmaskEnum: <field name>: <enum name>
 // @FieldValueEnum: <field name>: <enum name>
@@ -75,7 +75,7 @@ need to be specified with their fully qualified names. If comments are provided
 for each enum entry, these are are also extracted to form the description. For
 example:
 
-```
+```cpp
 class <class name> {
   enum class <enum name>: <data type> {
     <enum entry name> = <enum entry value>, // <enum entry description>
@@ -86,7 +86,7 @@ class <class name> {
 
 Or for a more simple case:
 
-```
+```cpp
 enum <enum name> {
     <enum entry name>,
     ...
@@ -96,7 +96,7 @@ enum <enum name> {
 Additionally, groups of `#define` statements can be extracted as an enumeration
 if surrounded by `@LoggerEnum` and `@LoggerEnumEnd` tags, as follows:
 
-```
+```cpp
 // @LoggerEnum: <enum name>
 #define <enum entry name> <enum entry value>
 ...
@@ -105,7 +105,7 @@ if surrounded by `@LoggerEnum` and `@LoggerEnumEnd` tags, as follows:
 
 To print out a list of all discovered enums, the following command can be used:
 
-```
+```bash
 python3 enum_parse.py --verbose --vehicle <vehicle>
 ```
 
