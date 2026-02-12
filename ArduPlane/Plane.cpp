@@ -1092,6 +1092,12 @@ AP_HAL_MAIN_CALLBACKS(&plane);
 // Formation controller update - called at 400 Hz via FAST_TASK
 void Plane::update_formation_controller(void)
 {
+    // Gate: FORM_ENABLE must be 1 for C++ to inject waypoints/speed.
+    // When FORM_ENABLE=0 (default), Python owns GUIDED mode entirely.
+    if (!formation.pd_enabled()) {
+        return;
+    }
+
     if (!formation_controller.is_active()) {
         return;
     }

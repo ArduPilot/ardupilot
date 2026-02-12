@@ -1028,10 +1028,24 @@ Location FormationController::calculate_formation_waypoint() {
     float predicted_north = _lead.vn * FC::Geometry::PREDICT_TIME_S;
     float predicted_east = _lead.ve * FC::Geometry::PREDICT_TIME_S;
 
+    // Tranche C3-A B2: Apply below-offset so waypoint altitude targets
+    // leader_alt - offset instead of leader_alt (prevents climb-to-leader)
+    float target_alt_m = _lead.alt;
+    if (FC::AltitudeControl::FORM_BELOW_OFFSET_ENABLE) {
+        float offset_m = FC::AltitudeControl::FORM_BELOW_OFFSET_M;
+        if (offset_m < 0.0f) {
+            offset_m = 0.0f;
+        }
+        if (offset_m > FC::AltitudeControl::FORM_BELOW_OFFSET_MAX_M) {
+            offset_m = FC::AltitudeControl::FORM_BELOW_OFFSET_MAX_M;
+        }
+        target_alt_m -= offset_m;
+    }
+
     Location lead_current(
         static_cast<int32_t>(_lead.lat * 1e7),
         static_cast<int32_t>(_lead.lon * 1e7),
-        static_cast<int32_t>(_lead.alt * 100),
+        static_cast<int32_t>(target_alt_m * 100),
         Location::AltFrame::ABSOLUTE
     );
 

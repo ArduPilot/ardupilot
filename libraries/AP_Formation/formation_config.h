@@ -229,6 +229,13 @@ namespace AltitudeControl {
     constexpr float MAX_ALT_ERROR_M = 10.0f;          // +/-10m altitude error clamp
     constexpr float KP_ALT = 0.5f;                    // Conservative P gain
     constexpr float MAX_PITCH_DEG = 15.0f;            // +/-15 deg pitch limit
+
+    // Tranche C3-A B2: Formation waypoint below-offset
+    // Positive = follower below leader (subtracted from leader alt in NED)
+    // Prevents formation waypoint from commanding climb to leader altitude
+    constexpr bool  FORM_BELOW_OFFSET_ENABLE = true;
+    constexpr float FORM_BELOW_OFFSET_M = 6.0f;       // Default below offset (meters)
+    constexpr float FORM_BELOW_OFFSET_MAX_M = 25.0f;  // Safety clamp upper bound
 }
 
 // =========================================================================

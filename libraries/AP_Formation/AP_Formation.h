@@ -54,6 +54,11 @@ public:
     bool is_active() const { return _active; }
     void set_active(bool active) { _active = active; }
 
+    // PD controller enable gate (FORM_ENABLE parameter)
+    // When false, update_formation_controller() returns early —
+    // no waypoint injection, no speed override, Python owns GUIDED mode.
+    bool pd_enabled() const { return _pd_enable; }
+
     // Reset controller state
     void reset();
 
@@ -70,6 +75,7 @@ private:
     AP_Float _approach_speed;       // Speed when far from formation (m/s)
     AP_Float _maintain_speed;       // Speed when in formation (m/s)
     AP_Float _speed_threshold;      // Distance threshold for speed switch (m)
+    AP_Int8  _pd_enable;            // FORM_ENABLE: C++ PD controller enable (0=Python owns GUIDED)
 
     // State variables - updated each cycle
     Vector3f _target_pos;           // Lead aircraft position NED (m)

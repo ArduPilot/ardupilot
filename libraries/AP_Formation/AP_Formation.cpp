@@ -80,6 +80,13 @@ const AP_Param::GroupInfo AP_Formation::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("SPD_THRESH", 8, AP_Formation, _speed_threshold, 55.0f),
 
+    // @Param: ENABLE
+    // @DisplayName: Formation PD controller enable
+    // @Description: Enable C++ 400Hz formation controller. When 0, Python owns GUIDED mode — no waypoint or speed injection from C++.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("ENABLE", 9, AP_Formation, _pd_enable, 0),
+
     AP_GROUPEND
 };
 
