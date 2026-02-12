@@ -20,7 +20,6 @@
     "MD033": true,   // Inline HTML - no inline HTML allowed
     "MD036": false,  // Emphasis used instead of a heading
     "MD037": false,  // Spaces inside emphasis markers
-    "MD040": false,  // Fenced code blocks should have a language specified
     "MD045": false   // Images should have alternate text
   }
 }
