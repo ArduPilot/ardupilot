@@ -39,7 +39,7 @@ to create a full web server with any structure you want.
 The web server supports embedding lua script elements inside html
 files for files with a filename of *.shtml. Here is an example:
 
-```
+```html
 <html>
   <head>
        <meta http-equiv="refresh" content="1">
@@ -73,7 +73,7 @@ a file extension of ".lua".
 
 Here is an example of a simple cgi script:
 
-```
+```lua
 --[[
 example lua cgi file for cgi-bin/ folder
 --]]

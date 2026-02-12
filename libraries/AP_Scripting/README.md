@@ -5,7 +5,7 @@
 Scripting is automatically enabled on all boards with more than 1MB of flash space.
 The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
 
-```
+```bash
 $ waf configure --board=CubeBlack
 
 $ waf plane
@@ -16,7 +16,7 @@ $ waf plane --upload
 To run SITL you can simply use the `sim_vehicle.py` script which will wrap the configuration, compilation,
 and launching of the simulation into one command for you.
 
-```
+```bash
 $ Tools/autotest/sim_vehicle.py -v ArduPlane
 ```
 

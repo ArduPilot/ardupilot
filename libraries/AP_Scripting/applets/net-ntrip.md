@@ -18,7 +18,7 @@ For example, RTK2Go is available at 3.143.243.81 port 2101. If the username is a
 
 The caster IP address can be found by using ping on the command line, for example:
 
-```
+```bash
 ping rtk2go.com
 ```
 
