@@ -8,9 +8,9 @@ To install the completion, you should either, source the main script on your cur
 
 From ArduPilot root directory, simply use :
 
-```` bash
+```bash
 source ./Tools/completion/completion.bash
-````
+```
 
 And now completion works from your terminal instance. If you close the terminal, the completion feature is removed.
 
@@ -18,9 +18,9 @@ And now completion works from your terminal instance. If you close the terminal,
 
 Edit you `.bashrc` file, it is on your Home directory but it is a hidden file (CTRL+H on Ubuntu to reveal them). Then put at the end of the file :
 
-```` bash
+```bash
 source PATH_TO_ARDUPILOT_DIRECTORY/Tools/completion/completion.bash
-````
+```
 
 where PATH_TO_ARDUPILOT_DIRECTORY is the path to ArduPilot directory.
 
@@ -33,8 +33,8 @@ You can now abuse of your TAB key on `waf` and `sim_vehicle.py` call ! See the v
 Zsh don't allow live loading of completion. So you have to source the completion script in your `.zshrc` file. Like for Bash, you will find it hiding on your home !
 Put at the end of the file :
 
-```` bash
+```bash
 source PATH_TO_ARDUPILOT_DIRECTORY/Tools/completion/completion.zsh
-````
+```
 
 where PATH_TO_ARDUPILOT_DIRECTORY is the path to ArduPilot directory. Notice the difference, the extension is `.zsh` !

@@ -62,7 +62,7 @@ or STM32H7 then edit the file in the obvious way.
 
 Now start openocd in a terminal. You should get output like this:
 
-```
+```text
 Open On-Chip Debugger 0.10.0+dev-00272-gedb6796 (2018-01-19-17:26)
 Licensed under GNU GPL v2
 For bug reports, read
