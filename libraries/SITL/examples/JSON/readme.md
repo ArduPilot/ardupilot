@@ -80,7 +80,7 @@ rangefinder distances corresponding to driver instances:
     rng_6 (m)
 ```
 
-## Apparent wind:
+## Apparent wind
 
 ```text
     windvane:
@@ -102,7 +102,7 @@ for example:
 "velocity_wind":[3.2,0.0,-0.7]
 ```
 
-## Airspeed:
+## Airspeed
 
 ```text
     airspeed (m/s)
