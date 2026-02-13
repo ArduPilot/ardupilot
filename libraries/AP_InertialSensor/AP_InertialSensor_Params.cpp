@@ -142,6 +142,16 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
     // @Path: AP_InertialSensor_tempcal.cpp
     AP_SUBGROUPINFO(tcal, "TCAL_", 10, AP_InertialSensor_Params, AP_InertialSensor_TCal),
 #endif
+
+    // @Param: ACC_VRFB_Z
+    // @DisplayName: Accelerometer vibration rectification Z bias
+    // @Description: Z-axis accelerometer bias learned during hover to compensate for vibration rectification. This is a DC offset in AccZ caused by motor vibration that only exists when motors are running.
+    // @Units: m/s/s
+    // @Range: -0.5 0.5
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("ACC_VRFB_Z", 11, AP_InertialSensor_Params, _accel_vrf_bias_z, 0),
+
     AP_GROUPEND
 
 };
