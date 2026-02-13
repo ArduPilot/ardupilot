@@ -47,14 +47,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO_FLAGS("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
-    // @Param{Copter}: ANGLE_MAX
-    // @DisplayName: Avoidance max lean angle in non-GPS flight modes
-    // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 0 4500
-    // @User: Standard
-    AP_GROUPINFO_FRAME("ANGLE_MAX", 2,  AC_Avoid, _angle_max_cd, 1000, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    // 2 was ANGLE_MAX (in centi-degrees)
 
     // @Param{Copter}: DIST_MAX
     // @DisplayName: Avoidance distance maximum in non-GPS flight modes
@@ -119,6 +112,15 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("BACKZ_SPD", 10, AC_Avoid, _backup_speed_max_u_ms, 0.75),
 
+    // @Param{Copter}: ANG_MAX
+    // @DisplayName: Avoidance max lean angle in non-GPS flight modes
+    // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
+    // @Units: deg
+    // @Increment: 0.1
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO_FRAME("ANG_MAX", 11,  AC_Avoid, _angle_max_deg, 10.0, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+
     AP_GROUPEND
 };
 
@@ -128,6 +130,23 @@ AC_Avoid::AC_Avoid()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// convert parameters
+void AC_Avoid::convert_params()
+{
+    // PARAMETER_CONVERSION - Added: Feb 2026 ahead of ardupilot-4.7
+
+    // exit immediately if ANG_MAX has already been configured
+    if (_angle_max_deg.configured()) {
+        return;
+    }
+
+    // convert ANGLE_MAX (centi-degrees) to ANG_MAX (degrees)
+    const AP_Param::ConversionInfo conversion_info[] = {
+        { 95, 2, AP_PARAM_INT16, "AVOID_ANG_MAX" },   // AVOID_ANGLE_MAX moved to AVOID_ANG_MAX
+    };
+    AP_Param::convert_old_parameters_scaled(conversion_info, ARRAY_SIZE(conversion_info), 0.01, 0);
 }
 
 /*
@@ -504,7 +523,7 @@ void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float ve
     }
 
     // exit immediately if angle max is zero
-    if (_angle_max_cd <= 0.0f || veh_angle_max_rad <= 0.0f) {
+    if (_angle_max_deg <= 0.0f || veh_angle_max_rad <= 0.0f) {
         return;
     }
 
@@ -521,7 +540,7 @@ void AC_Avoid::adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float ve
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
-    const float angle_limit_rad = constrain_float(cd_to_rad(_angle_max_cd), 0.0f, veh_angle_max_rad * AC_AVOID_ANGLE_MAX_PERCENT);
+    const float angle_limit_rad = constrain_float(radians(_angle_max_deg), 0.0f, veh_angle_max_rad * AC_AVOID_ANGLE_MAX_PERCENT);
     float vec_length_rad = rp_out_rad.length();
     if (vec_length_rad > angle_limit_rad) {
         rp_out_rad *= (angle_limit_rad / vec_length_rad);

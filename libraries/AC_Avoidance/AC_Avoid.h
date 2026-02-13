@@ -44,6 +44,9 @@ public:
     // return true if any avoidance feature is enabled
     bool enabled() const { return _enabled != AC_AVOID_DISABLED; }
 
+    // parameter conversion
+    void convert_params();
+
     // Adjusts the desired velocity so that the vehicle can stop
     // before the fence/object.
     // kP, accel_cmss are for the horizontal axis
@@ -207,7 +210,7 @@ private:
 
     // parameters
     AP_Int8 _enabled;
-    AP_Int16 _angle_max_cd;             // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Float _angle_max_deg;            // maximum lean angle in degrees to avoid obstacles (only used in non-GPS flight modes)
     AP_Float _dist_max_m;               // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _margin_m;                 // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;                  // avoidance behaviour (slide or stop)
