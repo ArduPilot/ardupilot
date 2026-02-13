@@ -757,6 +757,10 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // finally actually arm the motors
     copter.motors->armed(true);
 
+    // Clear accel bias learning inhibit that may have been set while disarmed
+    // (ACC_ZBIAS_LEARN bit 2). Mode-specific code (e.g., acro) may set it again.
+    ahrs.set_inhibit_accel_bias_learning(false);
+
 #if HAL_LOGGING_ENABLED
     // log flight mode in case it was changed while vehicle was disarmed
     AP::logger().Write_Mode((uint8_t)copter.flightmode->mode_number(), copter.control_mode_reason);
@@ -825,6 +829,9 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
             }
         }
     }
+
+    // save hover accel bias learned by Copter if enabled
+    copter.save_hover_bias_learning();
 
     // we are not in the air
     copter.set_land_complete(true);
