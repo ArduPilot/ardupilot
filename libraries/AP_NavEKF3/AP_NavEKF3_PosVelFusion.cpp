@@ -644,6 +644,8 @@ void NavEKF3_core::SelectVelPosFusion()
     // If we are operating without any aiding, fuse in constant position of constant
     // velocity measurements to constrain tilt drift. This assumes a non-manoeuvring
     // vehicle. Do this to coincide with the height fusion.
+    fusingStationaryZeroVel = false;
+
     if (fuseHgtData && PV_AidingMode == AID_NONE) {
         if (assume_zero_sideslip() && tiltAlignComplete && motorsArmed) {
             // handle special case where we are launching a FW aircraft without magnetometer
@@ -672,10 +674,56 @@ void NavEKF3_core::SelectVelPosFusion()
             }
         } else {
             fusePosData = true;
-            fuseVelData = false;
-            fuseVelVertData = false;
+            // When stationary on ground or armed before takeoff, fuse zero velocity
+            // to make accel bias observable and prevent velocity drift from motor-induced
+            // accelerometer offsets. Use onGroundNotMoving to avoid fusing zero velocity
+            // when the vehicle is being moved (e.g. on a boat or carried by hand).
+            // takeoff_expected covers the armed-on-ground case before liftoff.
+            // Z-bias learning is separately inhibited during ground effect to prevent
+            // learning the motor-induced offset as bias.
+            const bool onGroundNotFlying = onGroundNotMoving || dal.get_takeoff_expected();
+            if (onGroundNotFlying && tiltAlignComplete) {
+                fuseVelData = true;
+                fusingStationaryZeroVel = true;
+                velPosObs[0] = 0.0f;
+                velPosObs[1] = 0.0f;
+                velPosObs[2] = 0.0f;
+            } else {
+                fuseVelData = false;
+            }
             velPosObs[3] = lastKnownPositionNE.x;
             velPosObs[4] = lastKnownPositionNE.y;
+        }
+    }
+
+    // When in AID_RELATIVE or AID_ABSOLUTE mode but stationary on ground without velocity
+    // aiding, fuse synthetic zero velocity to make accel bias observable and prevent
+    // velocity drift. This handles the case where optical flow or GPS is configured but
+    // provides no data when stationary. Use onGroundNotMoving to avoid injecting zero
+    // velocity when the vehicle is being moved, and takeoff_expected for armed-on-ground.
+    // Gate behind fuseHgtData to limit fusion rate to baro rate (~10Hz) and avoid
+    // overconstraining the filter by fusing at IMU rate.
+    const bool onGroundNotFlying2 = onGroundNotMoving || dal.get_takeoff_expected();
+
+    if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying2) {
+        // Check if we have recent velocity aiding from any source
+        const uint32_t velAidTimeout_ms = 1000;
+        const bool haveRecentGpsVel = (imuSampleTime_ms - lastVelPassTime_ms < velAidTimeout_ms);
+#if EK3_FEATURE_OPTFLOW_FUSION
+        const bool haveRecentFlowVel = (imuSampleTime_ms - prevFlowFuseTime_ms < velAidTimeout_ms);
+#else
+        const bool haveRecentFlowVel = false;
+#endif
+        const bool haveRecentBodyVel = (imuSampleTime_ms - prevBodyVelFuseTime_ms < velAidTimeout_ms);
+
+        if (!haveRecentGpsVel && !haveRecentFlowVel && !haveRecentBodyVel) {
+            // No velocity aiding available while stationary - fuse synthetic zero velocity
+            // to make accelerometer bias observable
+            fuseVelData = true;
+            fusingStationaryZeroVel = true;
+            velPosObs[0] = 0.0f;
+            velPosObs[1] = 0.0f;
+            velPosObs[2] = 0.0f;
         }
     }
 
@@ -713,7 +761,11 @@ void NavEKF3_core::FuseVelPosNED()
         // estimate the velocity, horiz position and height measurement variances.
         // Use different errors if operating without external aiding using an assumed position or velocity of zero
         if (PV_AidingMode == AID_NONE) {
-            if (tiltAlignComplete && motorsArmed) {
+            if (fusingStationaryZeroVel) {
+                // Fusing synthetic zero velocity while stationary on ground in AID_NONE mode
+                // Use moderate noise since this is a synthetic measurement, not a real sensor
+                R_OBS[0] = sq(1.0f);
+            } else if (tiltAlignComplete && motorsArmed) {
                 // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
                 R_OBS[0] = sq(constrain_ftype(frontend->_noaidHorizNoise, 0.5f, 50.0f));
             } else {
@@ -725,6 +777,25 @@ void NavEKF3_core::FuseVelPosNED()
             R_OBS[3] = R_OBS[0];
             R_OBS[4] = R_OBS[0];
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+        } else if (fusingStationaryZeroVel) {
+            // Fusing synthetic zero velocity while stationary on ground - use moderate
+            // noise since this is a synthetic measurement, not a real sensor
+            R_OBS[0] = sq(1.0f);
+            R_OBS[1] = R_OBS[0];
+            R_OBS[2] = R_OBS[0];
+            for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+            // Position noise from actual sensor source
+#if EK3_FEATURE_EXTERNAL_NAV
+            if (extNavUsedForPos) {
+                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 10.0f));
+            } else
+#endif
+            if (gpsPosAccuracy > 0.0f) {
+                R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
+            } else {
+                R_OBS[3] = sq(constrain_ftype(frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
+            }
+            R_OBS[4] = R_OBS[3];
         } else {
 #if EK3_FEATURE_EXTERNAL_NAV
             const bool extNavUsedForVel = extNavVelToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV, core_index);
@@ -769,6 +840,18 @@ void NavEKF3_core::FuseVelPosNED()
                 obs_data_chk = sq(constrain_ftype(frontend->_gpsHorizVelNoise, 0.05f, 5.0f)) + sq(frontend->gpsNEVelVarAccScale * accNavMag);
             }
             R_OBS_DATA_CHECKS[0] = R_OBS_DATA_CHECKS[1] = R_OBS_DATA_CHECKS[2] = obs_data_chk;
+            // Position noise from actual sensor source
+            if (gpsPosAccuracy > 0.0f) {
+                R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
+#if EK3_FEATURE_EXTERNAL_NAV
+            } else if (extNavUsedForPos) {
+                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 10.0f));
+#endif
+            } else {
+                const ftype posErr = frontend->gpsPosVarAccScale * accNavMag;
+                R_OBS[3] = sq(constrain_ftype(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
+            }
+            R_OBS[4] = R_OBS[3];
         }
         R_OBS[5] = posDownObsNoise;
         for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
@@ -988,8 +1071,7 @@ void NavEKF3_core::FuseVelPosNED()
         if (fuseVelData) {
             fuseData[0] = true;
             fuseData[1] = true;
-            // currently we do not support independant vertical velocity measurement fuision
-            if (fuseVelVertData) {
+            if (fuseVelVertData || fusingStationaryZeroVel) {
                 fuseData[2] = true;
             }
         }
