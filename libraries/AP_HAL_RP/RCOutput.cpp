@@ -1,79 +1,114 @@
 #include "RCOutput.h"
 #include <AP_Math/AP_Math.h>
+
+#if defined(HAL_RCOUT_DRIVER_ENABLED) && HAL_RCOUT_DRIVER_ENABLED == 1
+
 #include "pwm_multi.pio.h"
-//#include <pico-sdk_build/pwm_multi.pio.h>
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
 #include "hardware/pio.h"
+#include "hardware/sync.h"
+#include "pico/multicore.h"
+#include "pico/platform.h"
+#include <cstring>
 
 using namespace RP;
 
 extern const AP_HAL::HAL& hal;
 
-void RCOutput::init() {
-    // Initializing internal arrays
-    for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
-        _periods[i] = 1000; // Safe default value (1ms)
-    }
-    _enabled_mask = 0;
-    _need_update = true;
+uint32_t RCOutput::_bit_buffer[2][RCOUT_PWM_RESOLUTION] __attribute__((aligned(16)));
+uint8_t RCOutput::_write_idx = 0;
+struct RCOutput::DMA_ControlBlock RCOutput::_dma_blocks[2] __attribute__((aligned(8)));
 
-    // PIO settings
+RCOutput* RCOutput::_instance = nullptr;
+volatile uint8_t RCOutput::_dma_busy_idx = 0;
+
+void RCOutput::init() {
+    _instance = this;
+
     _pio_offset = pio_add_program(_pio, &pwm_multi_program);
     _sm = pio_claim_unused_sm(_pio, true);
 
-    // Pin configuration
     for (uint i = 0; i < MAX_CHANNELS; i++) {
         pio_gpio_init(_pio, RCOUT_GPIO_BASE + i);
     }
-    pio_sm_set_consecutive_pindirs(_pio, _sm, 0, MAX_CHANNELS, true);
+    pio_sm_set_consecutive_pindirs(_pio, _sm, RCOUT_GPIO_BASE, MAX_CHANNELS, true);
 
-    // State Machine Configuration
     pio_sm_config c = pwm_multi_program_get_default_config(_pio_offset);
-    sm_config_set_out_pins(&c, 0, MAX_CHANNELS);
-
-    // FIFO settings: autopull every 32 bits
-    sm_config_set_out_shift(&c, true, true, 32);
-
-    // Set the PIO frequency. For 1µs resolution at 150MHz sys_clk:
-    // divider = 150.0
-    float div = (float)clock_get_hz(clk_sys) / 1000000.0f;
+    sm_config_set_out_pins(&c, RCOUT_GPIO_BASE, MAX_CHANNELS);
+    sm_config_set_out_shift(&c, true, false, 32);
+    
+    float div = (float)clock_get_hz(clk_sys) / (400.0f * (3.0f * RCOUT_PWM_RESOLUTION + 1.0f));
     sm_config_set_clkdiv(&c, div);
-
     pio_sm_init(_pio, _sm, _pio_offset, &c);
-    pio_sm_set_enabled(_pio, _sm, true);
 
     _dma_chan = dma_claim_unused_channel(true);
     _dma_timer = dma_claim_unused_channel(true);
 
-    dma_channel_config dma_cfg = dma_channel_get_default_config(_dma_chan);
-    channel_config_set_chain_to(&dma_cfg, _dma_timer);
+    dma_channel_config cfg_a = dma_channel_get_default_config(_dma_chan);
+    channel_config_set_transfer_data_size(&cfg_a, DMA_SIZE_32);
+    channel_config_set_read_increment(&cfg_a, true);
+    channel_config_set_dreq(&cfg_a, pio_get_dreq(_pio, _sm, true));
+    channel_config_set_chain_to(&cfg_a, _dma_timer);
 
-    update_bit_buffer();
+    dma_channel_configure(_dma_chan, &cfg_a, &_pio->txf[_sm], _bit_buffer[0], RCOUT_PWM_RESOLUTION, false);
 
-    dma_channel_configure(
-        _dma_chan, &dma_cfg,
-        &_pio->txf[_sm],
-        _bit_buffer,
-        _pwm_steps,
-        false
-    );
+    dma_channel_config cfg_b = dma_channel_get_default_config(_dma_timer);
+    channel_config_set_transfer_data_size(&cfg_b, DMA_SIZE_32);
+    channel_config_set_read_increment(&cfg_b, true);
+    channel_config_set_dreq(&cfg_b, pio_get_dreq(_pio, _sm, true));
+    channel_config_set_chain_to(&cfg_b, _dma_chan);
+
+    dma_channel_configure(_dma_timer, &cfg_b, &_pio->txf[_sm], _bit_buffer[1], RCOUT_PWM_RESOLUTION, false);
+
+    dma_channel_set_irq0_enabled(_dma_chan, true);
+    dma_channel_set_irq0_enabled(_dma_timer, true);
+    irq_set_exclusive_handler(DMA_IRQ_0, dma_handler);
+    irq_set_enabled(DMA_IRQ_0, true);
+
+    pio_sm_set_enabled(_pio, _sm, false);
+    pio_sm_put_blocking(_pio, _sm, RCOUT_PWM_RESOLUTION - 1);
+    pio_sm_exec(_pio, _sm, pio_encode_pull(false, false));
+    pio_sm_exec(_pio, _sm, pio_encode_mov(pio_isr, pio_osr));
+    
+    pio_sm_set_enabled(_pio, _sm, true);
+
     dma_channel_start(_dma_chan);
+
+    DEV_PRINTF("init: 2-channel ping-pong started, res=%u\n", RCOUT_PWM_RESOLUTION);
+}
+
+void RCOutput::handle_dma_irq() {
+    uint32_t ints = dma_hw->ints0;
+    dma_hw->ints0 = ints;
+
+    if (ints & (1u << _dma_chan)) {
+        _dma_busy_idx = 1;
+        dma_channel_set_read_addr(_dma_chan, _bit_buffer[0], false);
+    }
+
+    if (ints & (1u << _dma_timer)) {
+        _dma_busy_idx = 0;
+        dma_channel_set_read_addr(_dma_timer, _bit_buffer[1], false);
+    }
+}
+
+void RCOutput::handle_dma_irq(void *obj) {
+    if (obj) {
+        ((RCOutput *)obj)->handle_dma_irq();
+    }
+}
+
+void RCOutput::dma_handler() {
+    handle_dma_irq(_instance);
 }
 
 void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz) {
     if (freq_hz == 0) return;
-    // Since we are using one DMA buffer for all 32 channels,
-    // the frequency freq_hz will be global for the entire PIO module.
     _current_freq = freq_hz;
-    // Calculate the number of PIO ticks per PWM period
-    // For example, at 150MHz system frequency and a divider of 150, 1 tick = 1 µs.
-    // For 50Hz, the period will be 20,000 ticks (20ms).
-    uint32_t clock_hz = clock_get_hz(clk_sys);
-    float div = 150.0f; // Fixed divider for 1μs resolution
-    uint32_t ticks_per_period = (clock_hz / div) / freq_hz;
-    _pwm_steps = (ticks_per_period < PWM_RESOLUTION) ? ticks_per_period : PWM_RESOLUTION;
-    _need_update = true;
+
+    float div = (float)clock_get_hz(clk_sys) / ((float)freq_hz * 3.0f * (float)RCOUT_PWM_RESOLUTION);
+    pio_sm_set_clkdiv(_pio, _sm, div);
 }
 
 uint16_t RCOutput::get_freq(uint8_t chan) {
@@ -100,7 +135,18 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     if (_periods[chan] == period_us) return;
 
     _periods[chan] = period_us;
-    update_bit_buffer();
+    _need_update = true;
+    if (!_corked) push();
+}
+
+void RCOutput::push() {
+    if (!_need_update || _corked) return;
+
+    _write_idx = 1 - _dma_busy_idx;
+
+    update_bit_buffer(); 
+    
+    _need_update = false;
 }
 
 uint16_t RCOutput::read(uint8_t chan)
@@ -129,26 +175,26 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
 }
 
 void RCOutput::update_bit_buffer() {
-    if (!_need_update) return;
-    if (_dma_chan == (int)0xFFFFFFFF || _dma_chan > 15) {
-        return;
-    }
-    // We go through each time step (tick) of our period
-    for (uint16_t t = 0; t < _pwm_steps; t++) {
-        uint32_t mask = 0;
-        // We check the state of each of the MAX_CHANNELS channels for a given time t
-        for (uint8_t ch = 0; ch < MAX_CHANNELS; ch++) {
-            if ((_enabled_mask & (1u << ch)) && (t < _periods[ch])) {
-                mask |= (1u << ch);
-            }
+    uint32_t* target = _bit_buffer[_write_idx];
+    memset(target, 0, RCOUT_PWM_RESOLUTION * sizeof(uint32_t));
+
+    const uint32_t frame_us = 1000000u / _current_freq;
+
+    for (uint8_t ch = 0; ch < MAX_CHANNELS; ch++) {
+        if (!(_enabled_mask & (1u << ch))) continue;
+
+        uint32_t pulse_us = _periods[ch];
+        if (pulse_us > frame_us) pulse_us = frame_us;
+
+        uint32_t steps = pulse_us * RCOUT_PWM_RESOLUTION / frame_us;
+        if (steps > RCOUT_PWM_RESOLUTION) steps = RCOUT_PWM_RESOLUTION;
+
+        for (uint32_t t = 0; t < steps; t++) {
+            target[t] |= (1u << ch);
         }
-        _bit_buffer[t] = mask;
     }
-    // Fill the rest of the buffer with zeros if the period has decreased
-    if (_pwm_steps < PWM_RESOLUTION) {
-        memset(&_bit_buffer[_pwm_steps], 0, (PWM_RESOLUTION - _pwm_steps) * sizeof(uint32_t));
-    }
-    _need_update = false;
-    // Update the number of transfers for the DMA channel
-    dma_channel_set_trans_count(_dma_chan, _pwm_steps, false);
+
+    __dmb();
 }
+
+#endif // HAL_RCOUT_DRIVER_ENABLED
