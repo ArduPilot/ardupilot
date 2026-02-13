@@ -8,7 +8,7 @@ If you are reading this page, you are possibly interested in contributing to our
 * Adding new features
 * Reviewing existing pull requests, and notifying the maintainer if it passes your code review.
 
-## How to make a good bug report...
+## How to make a good bug report
 
 * Make sure your bug is not a support issue. Support issues should go to [the support forums](http://discuss.ardupilot.org) and include a .bin log file if possible. If you're not sure you have a bug, you should seek support first.
 * Search for your bug, make sure it is not already reported. If it is already reported, make a comment on that issue.
