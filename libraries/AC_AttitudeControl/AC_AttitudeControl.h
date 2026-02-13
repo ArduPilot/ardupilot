@@ -18,9 +18,9 @@
 #define AC_ATTITUDE_ACCEL_RP_CONTROLLER_MAX_RADSS       radians(720.0f)  // maximum body-frame acceleration limit for the stability controller (for roll and pitch axis)
 #define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MIN_RADSS        radians(10.0f)   // minimum body-frame acceleration limit for the stability controller (for yaw axis)
 #define AC_ATTITUDE_ACCEL_Y_CONTROLLER_MAX_RADSS        radians(120.0f)  // maximum body-frame acceleration limit for the stability controller (for yaw axis)
-#define AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS        6000      // constraint on yaw angle error in degrees.  This should lead to maximum turn rate of 10deg/sec * Stab Rate P so by default will be 45deg/sec.
-#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS   110000.0f // default maximum acceleration for roll/pitch axis in centidegrees/sec/sec
-#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS    27000.0f  // default maximum acceleration for yaw axis in centidegrees/sec/sec
+#define AC_ATTITUDE_CONTROL_RATE_WPY_MAX_DEFAULT        60.0f     // default yaw slew rate in deg/s
+#define AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_DEGSS  1100.0f   // default maximum acceleration for roll/pitch axis in deg/s/s
+#define AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_DEGSS   270.0f    // default maximum acceleration for yaw axis in deg/s/s
 
 #define AC_ATTITUDE_RATE_RP_CONTROLLER_OUT_MAX          1.0f    // body-frame rate controller maximum output (for roll-pitch axis)
 #define AC_ATTITUDE_RATE_YAW_CONTROLLER_OUT_MAX         1.0f    // body-frame rate controller maximum output (for yaw axis)
@@ -88,31 +88,31 @@ public:
     virtual const AC_PID& get_rate_yaw_pid() const = 0;
 
     // get the roll acceleration limit in radians/s/s
-    float get_accel_roll_max_radss() const { return cd_to_rad(_accel_roll_max_cdss); }
+    float get_accel_roll_max_radss() const { return radians(_accel_roll_max_degss); }
 
     // Sets the roll acceleration limit in radians/s/s
-    void set_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_cdss.set(rad_to_cd(accel_roll_max_radss)); }
+    void set_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_degss.set(degrees(accel_roll_max_radss)); }
 
     // Sets and saves the roll acceleration limit in radians/s/s
-    void save_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_cdss.set_and_save(rad_to_cd(accel_roll_max_radss)); }
+    void save_accel_roll_max_radss(float accel_roll_max_radss) { _accel_roll_max_degss.set_and_save(degrees(accel_roll_max_radss)); }
 
     // get the pitch acceleration limit in radians/s/s
-    float get_accel_pitch_max_radss() const { return cd_to_rad(_accel_pitch_max_cdss); }
+    float get_accel_pitch_max_radss() const { return radians(_accel_pitch_max_degss); }
 
     // Sets the pitch acceleration limit in radians/s/s
-    void set_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_cdss.set(rad_to_cd(accel_pitch_max_radss)); }
+    void set_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_degss.set(degrees(accel_pitch_max_radss)); }
 
     // Sets and saves the pitch acceleration limit in radians/s/s
-    void save_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_cdss.set_and_save(rad_to_cd(accel_pitch_max_radss)); }
+    void save_accel_pitch_max_radss(float accel_pitch_max_radss) { _accel_pitch_max_degss.set_and_save(degrees(accel_pitch_max_radss)); }
 
     // get the yaw acceleration limit in radians/s/s
-    float get_accel_yaw_max_radss() const { return cd_to_rad(_accel_yaw_max_cdss); }
+    float get_accel_yaw_max_radss() const { return radians(_accel_yaw_max_degss); }
 
     // Sets the yaw acceleration limit in radians/s/s
-    void set_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_cdss.set(rad_to_cd(accel_yaw_max_radss)); }
+    void set_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_degss.set(degrees(accel_yaw_max_radss)); }
 
     // Sets and saves the yaw acceleration limit in radians/s/s
-    void save_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_cdss.set_and_save(rad_to_cd(accel_yaw_max_radss)); }
+    void save_accel_yaw_max_radss(float accel_yaw_max_radss) { _accel_yaw_max_degss.set_and_save(degrees(accel_yaw_max_radss)); }
 
     // get the roll angular velocity limit in radians/s
     float get_ang_vel_roll_max_rads() const { return radians(_ang_vel_roll_max_degs); }
@@ -563,7 +563,7 @@ protected:
     const Vector3f get_latest_gyro() const;
 
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
-    AP_Float            _slew_yaw_cds;
+    AP_Float            _rate_wp_yaw_max_degs;
 
     // Maximum angular velocity (in degrees/second) for earth-frame roll, pitch and yaw axis
     AP_Float            _ang_vel_roll_max_degs;
@@ -571,13 +571,13 @@ protected:
     AP_Float            _ang_vel_yaw_max_degs;
 
     // Maximum rotation acceleration for earth-frame roll axis
-    AP_Float            _accel_roll_max_cdss;
+    AP_Float            _accel_roll_max_degss;
 
     // Maximum rotation acceleration for earth-frame pitch axis
-    AP_Float            _accel_pitch_max_cdss;
+    AP_Float            _accel_pitch_max_degss;
 
     // Maximum rotation acceleration for earth-frame yaw axis
-    AP_Float            _accel_yaw_max_cdss;
+    AP_Float            _accel_yaw_max_degss;
 
     // Enable/Disable body frame rate feed forward
     AP_Int8             _rate_bf_ff_enabled;
