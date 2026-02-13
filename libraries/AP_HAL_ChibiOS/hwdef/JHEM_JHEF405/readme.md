@@ -7,7 +7,7 @@ There are 5 serial ports (UART1, UART2, UART3, UART4, UART6), 8 motor ports, 1 I
 
 ![JHEMCU GF16-BMI stack](jhemcu-gf16-bmi.jpg "JHEMCU GF16-BMI stack")
 
-## Specs:
+## Specs
 
 **Flight control parameters:**
 
