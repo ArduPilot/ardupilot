@@ -42,8 +42,17 @@ void Copter::update_ground_effect_detector(void)
     }
 
     // if we are in takeoff_expected and we meet the conditions for having taken off
-    // end the takeoff_expected state
-    if (gndeffect_state.takeoff_expected && (tnow_ms - gndeffect_state.takeoff_time_ms > 5000 || (-pos_d_m - gndeffect_state.takeoff_alt_m) > 0.50)) {
+    // end the takeoff_expected state. TKOFF_GNDEFF_TMO is a minimum hold time
+    // before the altitude check is allowed to release; the 5s hard timeout
+    // still applies unconditionally.
+    const float gndeff_alt_m = g2.tkoff_gndeff_alt;
+    const float height_above_takeoff_m = -pos_d_m - gndeffect_state.takeoff_alt_m;
+    const uint32_t min_hold_ms = MIN(uint32_t(g2.tkoff_gndeff_tmo * 1000.0f), 5000U);
+    const bool above_gndeff_alt = height_above_takeoff_m > gndeff_alt_m;
+    const bool min_hold_elapsed = AP_HAL::timeout_expired(gndeffect_state.takeoff_time_ms, tnow_ms, min_hold_ms);
+    const bool max_timeout = AP_HAL::timeout_expired(gndeffect_state.takeoff_time_ms, tnow_ms, 5000U);
+
+    if (gndeffect_state.takeoff_expected && (max_timeout || (min_hold_elapsed && above_gndeff_alt))) {
         gndeffect_state.takeoff_expected = false;
     }
 
@@ -60,7 +69,11 @@ void Copter::update_ground_effect_detector(void)
     bool speed_low_d_ms = AP::ahrs().get_velocity_D(vel_ned_ms.z, vibration_check.high_vibes) && fabsf(vel_ned_ms.z) <= 0.6f;
     bool slow_descent = (slow_descent_demanded || (speed_low_d_ms && descent_demanded));
 
-    gndeffect_state.touchdown_expected = slow_horizontal && slow_descent;
+    // Only expect touchdown when near ground (below TKOFF_GNDEFF_ALT threshold)
+    // This allows EKF bias learning when hovering at altitude
+    const bool near_ground_for_touchdown = is_positive(g2.tkoff_gndeff_alt) ?
+                                           (height_above_takeoff_m < gndeff_alt_m) : true;
+    gndeffect_state.touchdown_expected = slow_horizontal && slow_descent && near_ground_for_touchdown;
 
     // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
     ahrs.set_takeoff_expected(gndeffect_state.takeoff_expected);
