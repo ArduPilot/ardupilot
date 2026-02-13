@@ -20,7 +20,7 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 
 ### **Power**
 
-- 2–6S LiPo input power
+- 2-6S LiPo input power
 - 5V 3A BEC for peripherals
 - 10V 3A BEC for video, GPIO controlled
 
@@ -87,11 +87,11 @@ The ORBITH743 has an onboard OSD using a MAX7456 chip and is enabled by default.
 
 ## DJI Video and OSD
 
-An **SH1.0 6P** connector supports a standard DJI HD VTX. ``SERIAL3`` is configured by default for DisplayPort. Pin 1 provides 10V which is controlled by GPIO81 —**do not** connect peripherals that require 5V to this pin.
+An **SH1.0 6P** connector supports a standard DJI HD VTX. ``SERIAL3`` is configured by default for DisplayPort. Pin 1 provides 10V which is controlled by GPIO81 -**do not** connect peripherals that require 5V to this pin.
 
 ## DShot Capability
 
-All motor outputs (M1–M8) support:
+All motor outputs (M1-M8) support:
 
 - DShot
 - Bi-directional DShot (for BIDIR motors)
@@ -100,7 +100,7 @@ All motor outputs (M1–M8) support:
 > **Important:** Mixing DShot and PWM within the same timer group is **not allowed**. Groups must be uniformly configured. Output timer groups are:  
 1/2, 3/4, 5/6, 7/8.
 
-Servo outputs (Outputs 9-12, marked S1–S4) on PA15, PB3, PD12, and PD13 (TIM2 and TIM4 timers) are PWM only. Output 13 (marked LED) is in a separate group and supports PWM/DShot or serial LED operation.
+Servo outputs (Outputs 9-12, marked S1-S4) on PA15, PB3, PD12, and PD13 (TIM2 and TIM4 timers) are PWM only. Output 13 (marked LED) is in a separate group and supports PWM/DShot or serial LED operation.
 
 ## GPIOs
 

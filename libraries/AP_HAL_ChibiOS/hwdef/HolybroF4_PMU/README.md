@@ -4,17 +4,17 @@
 
 ## Features
 
-- Processor£ºSTM32F405RG 168MHz 1024KB Flash  196KB RAM
+- Processor: STM32F405RG 168MHz 1024KB Flash  196KB RAM
 - Voltage input: 7~60.9V (2S~14S)
 - Continuous current:200A
-- Burst current 400A @ 25¡æ 1 sec£¬1000A @ 25¡æ < 1 sec
+- Burst current 400A @ 25Â°C 1 sec, 1000A @ 25Â°C < 1 sec
 - Max current sensing: 376A
-- Voltage accuracy: ¡À0.1V
-- Current accuracy: ¡À5%
-- Temperature accuracy:¡À1¡æ
+- Voltage accuracy: Â±0.1V
+- Current accuracy: Â±5%
+- Temperature accuracy: Â±1Â°C
 - Power port output: 5.3V/3A each port
 - Protocol: DroneCAN
-- Operating temperature :-25¡æ~105¡æ
+- Operating temperature :-25Â°C~105Â°C
 - Firmware upgrade: Support
 - Calibration:  Support
 
@@ -34,7 +34,7 @@
 
 ## Mechanical Spec
 
-- Size: 45mm¡Á41mm¡Á26mm (not include cable)
+- Size: 45mmx41mmx26mm (not include cable)
 - Weight: 185g (include cable)
 
 ## Loading Firmware

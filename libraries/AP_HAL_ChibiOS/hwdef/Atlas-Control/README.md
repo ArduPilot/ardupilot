@@ -25,7 +25,7 @@ The Atlas Control flight controller
 
 ![AtlasControl Board](img.png "Atlas Control")
 
-- 14 PWM servo outputs（12 support DShot）
+- 14 PWM servo outputs (12 support DShot)
 
 - Analog/ PWM RSSI input
 

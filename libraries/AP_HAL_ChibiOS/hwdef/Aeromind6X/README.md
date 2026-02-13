@@ -40,12 +40,12 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 ### Electrical
 
 - Input Voltage: up to 6 V
-- USB Input: 4.75 V – 5.25 V
+- USB Input: 4.75 V - 5.25 V
 
 ### Mechanical
 
 - Weight: 150 g
-- Dimensions: 94 × 46 × 38 mm
+- Dimensions: 94 x 46 x 38 mm
 
 ---
 
@@ -122,10 +122,10 @@ RC input supports SBUS, PPM, and DSM protocols with dedicated ports available fo
 
 Supports up to **16 PWM outputs**:
 
-- **Main Outputs (M1–M8)**: via STM32F103 IO Processor
-- **Auxiliary Outputs (A1–A8)**: via STM32H753 FMU
+- **Main Outputs (M1-M8)**: via STM32F103 IO Processor
+- **Auxiliary Outputs (A1-A8)**: via STM32H753 FMU
 
-> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1–M8** are bi-directional DShot capable.
+> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1-M8** are bi-directional DShot capable.
 ---
 
 ## Battery Monitoring

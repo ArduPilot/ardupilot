@@ -31,7 +31,7 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 
   - Baro:
 
-      one barometer ：ICP20100
+      one barometer: ICP20100
 
   - Magnetometer:
 
@@ -48,7 +48,7 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 
   - Baro:
 
-      Two barometers ：2 x ICP20100
+      Two barometers: 2 x ICP20100
 
   - Magnetometer:
 

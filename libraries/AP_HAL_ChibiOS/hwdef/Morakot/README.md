@@ -5,7 +5,7 @@ The Morakot is a flight controller designed and produced by [Taiphoon](https://t
 ![top](Morakot_top.jpg)
 ![bottom](Morakot_bottom.jpg)
 
-Morakot Flight Controller — **NDAA-Compliant. Made in Taiwan.** Built for Performance.
+Morakot Flight Controller - **NDAA-Compliant. Made in Taiwan.** Built for Performance.
 Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller meets full NDAA compliance, ensuring trusted quality and security for professional applications. With an integrated Ethernet interface, it delivers high-speed, reliable connectivity for next-generation FPV and unmanned aerial systems.
 
 ## Pinout
@@ -28,7 +28,7 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 
 ### Power
 
-- 3S–8S DC Input power
+- 3S-8S DC Input power
 - 5V 2A BEC peripherals power
 - 12V 2A BEC video power
 

@@ -29,7 +29,7 @@ The ZeroOne X6 is a series of flight controllers manufactured by ZeroOne, which 
        IMU2-BMI088(With vibration isolation)
        IMU3-ICM45686(No vibration isolation)
 
-    - **X6 Pro**：
+    - **X6 Pro**:
 
        IMU1-IIM42653(With vibration isolation)
        IMU2-BMI088(With vibration isolation)

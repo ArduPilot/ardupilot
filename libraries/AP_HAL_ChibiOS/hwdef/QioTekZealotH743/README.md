@@ -38,13 +38,13 @@ The QioTek Zealot H743 flight controller is sold by a range of resellers listed 
 
 •    builtin RGB LED
 
-•    two voltage & current monitoring and servo rail voltage monitoring（support to 36V)）
+•    two voltage & current monitoring and servo rail voltage monitoring (support to 36V)
 
 •    two ADC inputs(default one for RSSI, one for Airspeed sensor, both support to 6.6V)
 
 •    servo rail BEC independent power input for servos
 
-•    builtin BEC（6S 1.5A）power input（share power2 module voltage monitoring）
+•    builtin BEC (6S 1.5A) power input (share power2 module voltage monitoring)
 
 •    external safety Switch
 

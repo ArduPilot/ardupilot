@@ -61,7 +61,7 @@
 
 ### Dimensions
 
-- Size: 3.6 × 3.6 × 0.8 cm
+- Size: 3.6 x 3.6 x 0.8 cm
 - Weight: 7.5g with MicroSD card
 
 ## Pinout

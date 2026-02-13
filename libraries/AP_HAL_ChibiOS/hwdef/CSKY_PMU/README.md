@@ -5,16 +5,16 @@
 - Processor: STM32F412 100MHz 1024KB Flash 256KB RAM
 - Voltage input: 4S-14S (HV)
 - Continuous current: 200A
-- Burst current: 300A @ 25℃ 1 sec
+- Burst current: 300A @ 25°C 1 sec
 - Max current sensing: 200A
 - Voltage accuracy: ±0.05V
 - Current accuracy: ±0.7%
-- Temperature accuracy: ±1℃
+- Temperature accuracy: ±1°C
 - Power port 1 output (Molex): 5V/3A
 - Power port 2 output (XT30): 12V/10A
 - Efficiency: 97% @10A
 - Protocol: DroneCAN
-- Operating temperature: -25℃~105℃
+- Operating temperature: -25°C~105°C
 - CAN Firmware updade: Support
 - Calibration: No need
 
@@ -32,7 +32,7 @@
 
 ## Mechanical Spec
 
-- Size: 57.5mm×57.5mm×17.1mm (not include cable)
+- Size: 57.5mmx57.5mmx17.1mm (not include cable)
 - Weight: 140g (include cable)
 
 ## Loading Firmware
