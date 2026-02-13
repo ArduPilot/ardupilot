@@ -668,6 +668,12 @@ public:
     AP_Int16 takeoff_rpm_max;
 #endif
 
+    // ground effect compensation altitude threshold
+    AP_Float tkoff_gndeff_alt;
+
+    // ground effect compensation timeout (requires both timeout AND altitude)
+    AP_Float tkoff_gndeff_tmo;
+
     // EKF variance filter cutoff
     AP_Float fs_ekf_filt_hz;
 
