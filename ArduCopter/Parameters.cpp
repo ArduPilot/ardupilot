@@ -1315,6 +1315,11 @@ void Copter::load_parameters(void)
     copter.mode_poshold.convert_params();
 #endif
 
+#if AP_AVOIDANCE_ENABLED
+    // convert AC_Avoid parameters
+    copter.avoid.convert_params();
+#endif
+
     // convert PILOT vertical speed and acceleration parameters
     // PARAMETER_CONVERSION - Added: Feb 2026 for ardupilot-4.7
     {
