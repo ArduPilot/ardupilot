@@ -7,7 +7,7 @@ Custom controller library allows you to implement and easily run your own contro
 - In-flight switching between main and custom controller with RC switch, option 109.
 - Bitmask to choose which axis to use the custom controller output
 - Filter, integrator reset mechanism when switching between controller
-  - Bumpless transfer when switching from custom to the main controller
+  - Bumpless transfer when switching from custom to the main controller
 - Ground and in-flight spool state separation to avoid build-up during arming and take-off with the custom controller
 - Frontend-backend separation that allows adding a new controller with very little overhead
 - Flag to compile out custom controller related code on hardware, --enable-custom-controller
@@ -19,9 +19,9 @@ Custom controller library allows you to implement and easily run your own contro
 The frontend library has the following parameters
 
 - `CC_TYPE`: choose which custom controller backend to use, reboot required.
-  - Setting it to 0 will turn this feature off, GCS will not display parameters related to the custom controller
+  - Setting it to 0 will turn this feature off, GCS will not display parameters related to the custom controller
 - `CC_AXIS_MASK`: choose which axis to use custom controller output
-  - This is a bitmask type parameter. Set 7 to use all output
+  - This is a bitmask type parameter. Set 7 to use all output
 
 ## Interaction With Main Controller
 
