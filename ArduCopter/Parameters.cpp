@@ -1081,6 +1081,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("TKOFF_GNDEFF_ALT", 16, ParametersG2, tkoff_gndeff_alt, 0.5),
 
+    // @Param: ACC_ZBIAS_LEARN
+    // @DisplayName: Accel Z-axis Bias Learning
+    // @Description: Bitmask controlling accelerometer Z-axis bias learning during hover to compensate for vibration rectification. Only active when using EKF3 (AHRS_EKF_TYPE=3). Bit 0: Learn bias during hover and save to EEPROM on disarm. Bit 1: Use saved bias values (apply correction to EKF). Bit 2: Disable EKF bias learning while disarmed (don't use zero velocity assumption on ground).
+    // @Bitmask: 0:Learn and Save,1:Use Saved Values,2:Disable Ground Learning
+    // @User: Advanced
+    AP_GROUPINFO("ACC_ZBIAS_LEARN", 17, ParametersG2, accel_zbias_learn, 0),
+
     // @Param: TKOFF_GNDEFF_TMO
     // @DisplayName: Ground Effect Timeout
     // @Description: Time after throttle up before ground effect compensation can be disabled. When set, ground effect will only be disabled after BOTH this timeout has elapsed AND altitude exceeds TKOFF_GNDEFF_ALT. This prevents premature ground effect disabling when baro noise causes false altitude readings. Set to zero to disable (uses altitude threshold only). Maximum timeout is always 5 seconds regardless of this setting.
