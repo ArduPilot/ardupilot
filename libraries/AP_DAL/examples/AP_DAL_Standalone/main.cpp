@@ -7,6 +7,7 @@
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 void AP_Param::setup_object_defaults(void const*, AP_Param::GroupInfo const*) {}
 
@@ -20,6 +21,11 @@ int AP_HAL::Util::vsnprintf(char*, size_t, char const*, va_list) { return -1; }
 void *nologger = nullptr;
 AP_Logger &AP::logger() {
     return *((AP_Logger*)nologger);  // this is not usually a good idea...
+}
+
+void *noins = nullptr;
+AP_InertialSensor &AP::ins() {
+    return *((AP_InertialSensor*)noins);  // link stub only
 }
 void AP_Logger::WriteBlock(void const*, unsigned short) {}
 
