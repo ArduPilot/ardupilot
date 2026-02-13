@@ -1155,9 +1155,17 @@ void NavEKF3_core::FuseVelPosNED()
                 // Don't use 'fake' horizontal measurements used to constrain attitude drift during
                 // periods of non-aiding to learn bias as these can give incorrect esitmates.
                 const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
-                if (!horizInhibit && !inhibitDelVelBiasStates && !badIMUdata) {
+                // Inhibit Z-axis accel bias learning during ground effect because motor thrust
+                // causes a DC offset in AccZ that is not present in normal flight.
+                // When out of ground effect (controlled by TKOFF_GNDEFF_ALT on Copter side),
+                // allow bias learning from baro position corrections - this allows the EKF to
+                // adapt to in-flight AccZ offsets (vibration rectification) that differ from
+                // ground conditions.
+                const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+                if (!horizInhibit && !accelBiasLearningInhibited() && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
-                        if (!dvelBiasAxisInhibit[i-13]) {
+                        const bool zAxisInhibit = (i == 15) && gndEffectActive;
+                        if (!dvelBiasAxisInhibit[i-13] && !zAxisInhibit) {
                             Kfusion[i] = P[i][stateIndex]*SK;
                         } else {
                             Kfusion[i] = 0.0f;
@@ -1674,7 +1682,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -1851,7 +1859,7 @@ void NavEKF3_core::FuseBodyVel()
                 zero_range(&Kfusion[0], 10, 12);
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -2029,7 +2037,7 @@ void NavEKF3_core::FuseBodyVel()
 
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
