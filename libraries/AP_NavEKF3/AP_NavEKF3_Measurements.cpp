@@ -1388,13 +1388,11 @@ ftype NavEKF3_core::MagDeclination(void) const
 /*
   Update the on ground and not moving check.
   Should be called once per IMU update.
-  Only updates when on ground and when operating without a magnetometer
+  Used for yaw fusion strategy selection and zero velocity fusion gating.
 */
 void NavEKF3_core::updateMovementCheck(void)
 {
-    const bool runCheck = onGround && (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
-                                       yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
-    if (!runCheck)
+    if (!onGround)
     {
         onGroundNotMoving = false;
         return;
