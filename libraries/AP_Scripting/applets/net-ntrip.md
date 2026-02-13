@@ -8,7 +8,7 @@ Autopilot must be [Ethernet enabled](https://ardupilot.org/copter/docs/common-ne
 
 NTRIP caster must accept insecure http connections (not https).
 
-## Configuration:
+## Configuration
 
 Configure the autopilot with [DHCP or a static IP, proper gateway, and netmask](https://ardupilot.org/copter/docs/common-network.html).
 
