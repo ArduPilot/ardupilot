@@ -99,10 +99,10 @@ float Copter::get_pilot_desired_climb_rate_ms()
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate_ms = get_pilot_speed_dn() * 0.01 * (throttle_control - deadband_bottom) / deadband_bottom;
+        desired_rate_ms = get_pilot_speed_dn_ms() * (throttle_control - deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate_ms = g.pilot_speed_up_cms * 0.01 * (throttle_control - deadband_top) / (1000.0 - deadband_top);
+        desired_rate_ms = g2.pilot_speed_up_ms * (throttle_control - deadband_top) / (1000.0 - deadband_top);
     } else {
         // must be in the deadband
         desired_rate_ms = 0.0f;
@@ -126,12 +126,12 @@ void Copter::set_accel_throttle_I_from_pilot_throttle()
     pos_control->D_get_accel_pid().set_integrator(-(pilot_throttle - motors->get_throttle_hover()));
 }
 
-// It will return the PILOT_SPEED_DN value if non zero, otherwise if zero it returns the PILOT_SPEED_UP value.
-uint16_t Copter::get_pilot_speed_dn() const
+// It will return the PILOT_SPD_DN value if non zero, otherwise if zero it returns the PILOT_SPD_UP value.
+float Copter::get_pilot_speed_dn_ms() const
 {
-    if (g2.pilot_speed_dn_cms == 0) {
-        return abs(g.pilot_speed_up_cms);
+    if (is_zero(g2.pilot_speed_dn_ms)) {
+        return fabsf(g2.pilot_speed_up_ms);
     } else {
-        return abs(g2.pilot_speed_dn_cms);
+        return fabsf(g2.pilot_speed_dn_ms);
     }
 }

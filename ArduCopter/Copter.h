@@ -729,7 +729,7 @@ private:
     float get_pilot_desired_climb_rate_ms();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
-    uint16_t get_pilot_speed_dn() const;
+    float get_pilot_speed_dn_ms() const;
     void run_rate_controller_main();
 
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED

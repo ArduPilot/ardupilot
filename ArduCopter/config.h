@@ -310,8 +310,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Takeoff
 //
-#ifndef PILOT_TKOFF_ALT_DEFAULT
- # define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
+#ifndef PILOT_TKO_ALT_M_DEFAULT
+ # define PILOT_TKO_ALT_M_DEFAULT 0     // default final alt above home for pilot initiated takeoff
 #endif
 
 
@@ -510,11 +510,11 @@
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
-#ifndef PILOT_SPEED_UP_DEFAULT
- # define PILOT_SPEED_UP_DEFAULT    250     // maximum vertical velocity in cm/s
+#ifndef PILOT_SPD_UP_DEFAULT
+ # define PILOT_SPD_UP_DEFAULT  2.5f    // maximum vertical velocity in m/s
 #endif
-#ifndef PILOT_ACCEL_Z_DEFAULT
- # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+#ifndef PILOT_ACC_Z_DEFAULT
+ # define PILOT_ACC_Z_DEFAULT   2.5f    // vertical acceleration in m/s/s while altitude is under pilot control
 #endif
 
 #ifndef PILOT_Y_RATE_DEFAULT
