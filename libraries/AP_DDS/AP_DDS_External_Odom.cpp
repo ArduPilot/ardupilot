@@ -73,4 +73,56 @@ void AP_DDS_External_Odom::convert_transform(const geometry_msgs_msg_Transform& 
     rotation.q4 = -ros_transform.rotation.z;
 }
 
+#if AP_DDS_ODOM_SUB_ENABLED
+void AP_DDS_External_Odom::handle_external_odom(const nav_msgs_msg_Odometry& msg)
+{
+    auto *visual_odom = AP::visualodom();
+    if (visual_odom == nullptr) {
+        return;
+    }
+
+    const uint64_t remote_time_us {AP_DDS_Type_Conversions::time_u64_micros(msg.header.stamp)};
+    const uint32_t time_ms {static_cast<uint32_t>(remote_time_us * 1E-3)};
+
+    // Extract position from pose (ENU to NED)
+    const Vector3f ap_position {
+        static_cast<float>(msg.pose.pose.position.x),
+        static_cast<float>(-msg.pose.pose.position.y),
+        static_cast<float>(-msg.pose.pose.position.z)
+    };
+
+    // Extract orientation from pose (ENU to NED)
+    Quaternion ap_rotation;
+    ap_rotation.q1 = msg.pose.pose.orientation.w;
+    ap_rotation.q2 = msg.pose.pose.orientation.x;
+    ap_rotation.q3 = -msg.pose.pose.orientation.y;
+    ap_rotation.q4 = -msg.pose.pose.orientation.z;
+    ap_rotation.normalize();
+
+    // Extract velocity from twist (ENU to NED)
+    // twist.twist.linear is in the child_frame_id (body frame, ENU convention)
+    const Vector3f ap_velocity {
+        static_cast<float>(msg.twist.twist.linear.x),
+        static_cast<float>(-msg.twist.twist.linear.y),
+        static_cast<float>(-msg.twist.twist.linear.z)
+    };
+
+    // Use pose covariance diagonal as error estimates if available
+    // covariance is row-major 6x6: [0]=xx, [7]=yy, [14]=zz
+    float posErr {0.0};
+    if (msg.pose.covariance[0] > 0) {
+        posErr = sqrtf(static_cast<float>(msg.pose.covariance[0]));
+    }
+    const float angErr {0.0};
+
+    const uint8_t reset_counter {0};
+
+    // Send pose estimate to EKF
+    visual_odom->handle_pose_estimate(remote_time_us, time_ms, ap_position.x, ap_position.y, ap_position.z, ap_rotation, posErr, angErr, reset_counter, 0);
+
+    // Send velocity estimate to EKF
+    visual_odom->handle_vision_speed_estimate(remote_time_us, time_ms, ap_velocity, reset_counter, 0);
+}
+#endif // AP_DDS_ODOM_SUB_ENABLED
+
 #endif // AP_DDS_VISUALODOM_ENABLED
