@@ -122,7 +122,7 @@ or to open in gdb for further postmortem do the following:
 
 `arm-none-eabi-gdb -nx path/to/elf/file -ex "set target-charset ASCII" -ex "target remote | modules/CrashDebug/bins/lin64/CrashDebug --elf path/to/elf/file --dump crash_dump.bin"`
 
-## Debugging faults using GDB:
+## Debugging faults using GDB
 
 * Connect hardware over SWD
 * Place breakpoint at hardfault using `b *&HardFault_Handler`
@@ -134,7 +134,7 @@ and then `set $sp = $psp` and do `backtrace`
 
 * One can also log the RAM, refer crash_debugger app and Tools/debug/crash_dump.scr for the same.
 
-### References:
+### References
 
 [Memfault Interrupt](https://interrupt.memfault.com/blog/cortex-m-fault-debug)
 

@@ -127,7 +127,7 @@ cd ~/ros2_ws
 source /{path_to_your_ros_distro_workspace}/install/setup.zsh
 ```
 
-### 4.1. Build microxrcedds_gen:
+### 4.1. Build microxrcedds_gen
 
 ```bash
 cd ~/ros2_ws/src/microxrcedds_gen
