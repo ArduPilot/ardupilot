@@ -345,7 +345,7 @@ AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, AP_MotorsMult
     _p_angle_pitch.kP().set_default(AC_ATC_SUB_ANGLE_P);
     _p_angle_yaw.kP().set_default(AC_ATC_SUB_ANGLE_P);
 
-    _accel_yaw_max_cdss.set_default(AC_ATC_SUB_ACCEL_Y_MAX);
+    _accel_yaw_max_degss.set_default(AC_ATC_SUB_ACCEL_Y_MAX_DEGSS);
 }
 
 // Update Alt_Hold angle maximum

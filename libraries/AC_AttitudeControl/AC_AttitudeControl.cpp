@@ -33,26 +33,11 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
 
     // 0, 1 were RATE_RP_MAX, RATE_Y_MAX
 
-    // @Param: SLEW_YAW
-    // @DisplayName: Yaw target slew rate
-    // @Description: Maximum rate the yaw target can be updated in RTL and Auto flight modes
-    // @Units: cdeg/s
-    // @Range: 500 18000
-    // @Increment: 100
-    // @User: Advanced
-    AP_GROUPINFO("SLEW_YAW", 2, AC_AttitudeControl, _slew_yaw_cds, AC_ATTITUDE_CONTROL_SLEW_YAW_DEFAULT_CDS),
+    // 2 was SLEW_YAW (in cdeg/s) - moved to RATE_WPY_MAX in deg/s
 
     // 3 was for ACCEL_RP_MAX
 
-    // @Param: ACCEL_Y_MAX
-    // @DisplayName: Acceleration Max for Yaw
-    // @Description: Maximum acceleration in yaw axis
-    // @Units: cdeg/s/s
-    // @Range: 0 72000
-    // @Values: 0:Disabled, 9000:VerySlow, 18000:Slow, 36000:Medium, 54000:Fast
-    // @Increment: 1000
-    // @User: Advanced
-    AP_GROUPINFO("ACCEL_Y_MAX", 4, AC_AttitudeControl, _accel_yaw_max_cdss, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_CDSS),
+    // 4 was ACCEL_Y_MAX (in cdeg/s/s) - moved to ACC_Y_MAX in deg/s/s
 
     // @Param: RATE_FF_ENAB
     // @DisplayName: Rate Feedforward Enable
@@ -61,25 +46,9 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("RATE_FF_ENAB", 5, AC_AttitudeControl, _rate_bf_ff_enabled, AC_ATTITUDE_CONTROL_RATE_BF_FF_DEFAULT),
 
-    // @Param: ACCEL_R_MAX
-    // @DisplayName: Acceleration Max for Roll
-    // @Description: Maximum acceleration in roll axis
-    // @Units: cdeg/s/s
-    // @Range: 0 180000
-    // @Increment: 1000
-    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast
-    // @User: Advanced
-    AP_GROUPINFO("ACCEL_R_MAX", 6, AC_AttitudeControl, _accel_roll_max_cdss, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS),
+    // 6 was ACCEL_R_MAX (in cdeg/s/s) - moved to ACC_R_MAX in deg/s/s
 
-    // @Param: ACCEL_P_MAX
-    // @DisplayName: Acceleration Max for Pitch
-    // @Description: Maximum acceleration in pitch axis
-    // @Units: cdeg/s/s
-    // @Range: 0 180000
-    // @Increment: 1000
-    // @Values: 0:Disabled, 30000:VerySlow, 72000:Slow, 108000:Medium, 162000:Fast
-    // @User: Advanced
-    AP_GROUPINFO("ACCEL_P_MAX", 7, AC_AttitudeControl, _accel_pitch_max_cdss, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_CDSS),
+    // 7 was ACCEL_P_MAX (in cdeg/s/s) - moved to ACC_P_MAX in deg/s/s
 
     // IDs 8,9,10,11 RESERVED (in use on Solo)
 
@@ -194,6 +163,45 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ANGLE_MAX", 24, AC_AttitudeControl, _angle_max_deg, AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT),
 
+    // @Param: RATE_WPY_MAX
+    // @DisplayName: Yaw target slew rate
+    // @Description: Maximum rate the yaw target can be updated in Auto, Guided, Circle, Follow, RTL, SmartRTL, Throw and ZigZag flight modes
+    // @Units: deg/s
+    // @Range: 5 180
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("RATE_WPY_MAX", 25, AC_AttitudeControl, _rate_wp_yaw_max_degs, AC_ATTITUDE_CONTROL_RATE_WPY_MAX_DEFAULT),
+
+    // @Param: ACC_Y_MAX
+    // @DisplayName: Acceleration Max for Yaw
+    // @Description: Maximum acceleration in yaw axis
+    // @Units: deg/s/s
+    // @Range: 0 720
+    // @Values: 0:Disabled, 90:VerySlow, 180:Slow, 360:Medium, 540:Fast
+    // @Increment: 10
+    // @User: Advanced
+    AP_GROUPINFO("ACC_Y_MAX", 26, AC_AttitudeControl, _accel_yaw_max_degss, AC_ATTITUDE_CONTROL_ACCEL_Y_MAX_DEFAULT_DEGSS),
+
+    // @Param: ACC_R_MAX
+    // @DisplayName: Acceleration Max for Roll
+    // @Description: Maximum acceleration in roll axis
+    // @Units: deg/s/s
+    // @Range: 0 1800
+    // @Increment: 10
+    // @Values: 0:Disabled, 300:VerySlow, 720:Slow, 1080:Medium, 1620:Fast
+    // @User: Advanced
+    AP_GROUPINFO("ACC_R_MAX", 27, AC_AttitudeControl, _accel_roll_max_degss, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_DEGSS),
+
+    // @Param: ACC_P_MAX
+    // @DisplayName: Acceleration Max for Pitch
+    // @Description: Maximum acceleration in pitch axis
+    // @Units: deg/s/s
+    // @Range: 0 1800
+    // @Increment: 10
+    // @Values: 0:Disabled, 300:VerySlow, 720:Slow, 1080:Medium, 1620:Fast
+    // @User: Advanced
+    AP_GROUPINFO("ACC_P_MAX", 28, AC_AttitudeControl, _accel_pitch_max_degss, AC_ATTITUDE_CONTROL_ACCEL_RP_MAX_DEFAULT_DEGSS),
+
     AP_GROUPEND
 };
 
@@ -203,9 +211,9 @@ constexpr Vector3f AC_AttitudeControl::VECTORF_111;
 float AC_AttitudeControl::get_slew_yaw_max_rads() const
 {
     if (!is_positive(_ang_vel_yaw_max_degs)) {
-        return cd_to_rad(_slew_yaw_cds);
+        return radians(_rate_wp_yaw_max_degs);
     }
-    return MIN(radians(_ang_vel_yaw_max_degs), cd_to_rad(_slew_yaw_cds));
+    return MIN(radians(_ang_vel_yaw_max_degs), radians(_rate_wp_yaw_max_degs));
 }
 
 // get the latest gyro for the purposes of attitude control
@@ -1158,15 +1166,27 @@ void AC_AttitudeControl::convert_parameters()
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     static const AP_Param::ConversionInfo conversion_info_001[] = {
-        { 205, 10, AP_PARAM_INT16, "Q_A_ANGLE_MAX" },  // ANGLE_MAX moved to Q_A_ANGLE_MAX
+        { 205, 10, AP_PARAM_INT16, "Q_A_ANGLE_MAX" },       // ANGLE_MAX moved to Q_A_ANGLE_MAX
+        { 108, 128, AP_PARAM_FLOAT, "Q_A_RATE_WPY_MAX" },   // SLEW_YAW moved to RATE_WPY_MAX in deg/s
+        { 108, 256, AP_PARAM_FLOAT, "Q_A_ACC_Y_MAX" },      // ACCEL_Y_MAX moved to ACC_Y_MAX in deg/s/s
+        { 108, 384, AP_PARAM_FLOAT, "Q_A_ACC_R_MAX" },      // ACCEL_R_MAX moved to ACC_R_MAX in deg/s/s
+        { 108, 448, AP_PARAM_FLOAT, "Q_A_ACC_P_MAX" },      // ACCEL_P_MAX moved to ACC_P_MAX in deg/s/s
     };
 #elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
     static const AP_Param::ConversionInfo conversion_info_001[] = {
-        { 167, 0, AP_PARAM_INT16, "ATC_ANGLE_MAX" },  // ANGLE_MAX moved to ATC_ANGLE_MAX
+        { 167, 0, AP_PARAM_INT16, "ATC_ANGLE_MAX" },      // ANGLE_MAX moved to ATC_ANGLE_MAX
+        { 53, 128, AP_PARAM_FLOAT, "ATC_RATE_WPY_MAX" },  // SLEW_YAW moved to RATE_WPY_MAX in deg/s
+        { 53, 256, AP_PARAM_FLOAT, "ATC_ACC_Y_MAX" },     // ACCEL_Y_MAX moved to ACC_Y_MAX in deg/s/s
+        { 53, 384, AP_PARAM_FLOAT, "ATC_ACC_R_MAX" },     // ACCEL_R_MAX moved to ACC_R_MAX in deg/s/s
+        { 53, 448, AP_PARAM_FLOAT, "ATC_ACC_P_MAX" },     // ACCEL_P_MAX moved to ACC_P_MAX in deg/s/s
     };
 #else
     static const AP_Param::ConversionInfo conversion_info_001[] = {
-        { 34, 0, AP_PARAM_INT16, "ATC_ANGLE_MAX" },   // ANGLE_MAX moved to ATC_ANGLE_MAX
+        { 34, 0, AP_PARAM_INT16, "ATC_ANGLE_MAX" },       // ANGLE_MAX moved to ATC_ANGLE_MAX
+        { 102, 128, AP_PARAM_FLOAT, "ATC_RATE_WPY_MAX" }, // SLEW_YAW moved to RATE_WPY_MAX in deg/s
+        { 102, 256, AP_PARAM_FLOAT, "ATC_ACC_Y_MAX" },    // ACCEL_Y_MAX moved to ACC_Y_MAX in deg/s/s
+        { 102, 384, AP_PARAM_FLOAT, "ATC_ACC_R_MAX" },    // ACCEL_R_MAX moved to ACC_R_MAX in deg/s/s
+        { 102, 448, AP_PARAM_FLOAT, "ATC_ACC_P_MAX" },    // ACCEL_P_MAX moved to ACC_P_MAX in deg/s/s
     };
 #endif
     AP_Param::convert_old_parameters_scaled(conversion_info_001, ARRAY_SIZE(conversion_info_001), 0.01, 0);
@@ -1348,19 +1368,19 @@ void AC_AttitudeControl::accel_limiting(bool enable_limits)
 {
     if (enable_limits) {
         // If enabling limits, reload from eeprom or set to defaults
-        if (is_zero(_accel_roll_max_cdss)) {
-            _accel_roll_max_cdss.load();
+        if (is_zero(_accel_roll_max_degss)) {
+            _accel_roll_max_degss.load();
         }
-        if (is_zero(_accel_pitch_max_cdss)) {
-            _accel_pitch_max_cdss.load();
+        if (is_zero(_accel_pitch_max_degss)) {
+            _accel_pitch_max_degss.load();
         }
-        if (is_zero(_accel_yaw_max_cdss)) {
-            _accel_yaw_max_cdss.load();
+        if (is_zero(_accel_yaw_max_degss)) {
+            _accel_yaw_max_degss.load();
         }
     } else {
-        _accel_roll_max_cdss.set(0.0f);
-        _accel_pitch_max_cdss.set(0.0f);
-        _accel_yaw_max_cdss.set(0.0f);
+        _accel_roll_max_degss.set(0.0f);
+        _accel_pitch_max_degss.set(0.0f);
+        _accel_yaw_max_degss.set(0.0f);
     }
 }
 
