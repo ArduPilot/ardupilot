@@ -170,14 +170,14 @@ Internally connected on most devboards, just for reference.
 
 After flashing the esp32 , u can connect with a terminal app of your preference to the same COM port  ( eg /dev/ttyUSB0) at a baud rate of 115200, software flow control, 8N1 common uart settings, and get to see the output from hal.console->printf("...") and other console messages.
 
-### Console/usb/boot-messages/mavlink telem aka serial0/uart0:
+### Console/usb/boot-messages/mavlink telem aka serial0/uart0
 
 | ESP32 | CP2102 |
 | ---   | ---    |
 | GPIO3 | UART_TX |  AKA UART0_RX |
 | GPIO1 | UART_RX |  AKA UART0_TX |
 
-### GPS aka serial1/uart1:
+### GPS aka serial1/uart1
 
 | ESP32       | GPS       |
 | ---         | ---       |
@@ -186,7 +186,7 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GND         |      GND  |
 | 5v          |      Pwr  |
 
-### RC receiver connection:
+### RC receiver connection
 
 |ESP32| RC Receiver |
 | --- |    ---      |
@@ -194,7 +194,7 @@ After flashing the esp32 , u can connect with a terminal app of your preference 
 | GND |       GND   |
 | 5v  |       Pwr   |
 
-### I2C connection ( for gps with leds/compass-es/etc onboard, or digital airspeed sensorrs, etc):
+### I2C connection (for gps with leds/compass-es/etc onboard, or digital airspeed sensors, etc)
 
 | ESP32   | I2C       |
 | ---     | ---       |
@@ -361,7 +361,7 @@ Currently used debugger is called a 'TIAO USB Multi Protocol Adapter' which is a
 - [ ] GSD
 - [ ] Buzzer
 
-### analysing a 'coredump' from the uart...
+### Analysing a coredump from the uart
 
 Save the log where coredump appears to a file, i'll call it core.txt
 ================= CORE DUMP START =================
@@ -394,22 +394,22 @@ select-frame 5
 
 ctrl-c to exit gdb
 
-# storage tips - not generally needed, as u can update params with missionplanenner over mavlink etc.
+# Storage tips - not generally needed, as u can update params with missionplanner over mavlink etc
 
 # determine offset and size of 'storage' partition in flash
 
 parttool.py --partition-table-file partitions.csv get_partition_info --partition-name storage
 >0x3e0000 0x20000
 
-# then backup ardupilot 'storage' area (its a partition, see partitions.csv) to a file on disk:
+# Then backup ardupilot storage area (its a partition, see partitions.csv) to a file on disk
 
 esptool.py read_flash 0x3e0000 0x20000 storage.bin
 
-# restore the storage.bin to your device... basically the same flash command as used in esp32.py but different offset and file:
+# Restore the storage.bin to your device - basically the same flash command as used in esp32.py but different offset and file
 
 esptool.py --chip esp32 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect 0x3e0000 storage.bin
 
-## example log of boot messages:
+## Example log of boot messages
 
 [22:51:20:226] ets Jun  8 2016 00:22:57
 [22:51:20:228]
