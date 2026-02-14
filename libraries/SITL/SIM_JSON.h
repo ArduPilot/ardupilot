@@ -203,7 +203,9 @@ private:
     };
     uint64_t last_received_bitmask;
 
+#if SITL_JSON_DEBUG && AP_FILESYSTEM_FILE_WRITING_ENABLED
     uint32_t last_debug_ms;
+#endif
 
     bool last_no_lockstep;
 };

@@ -76,9 +76,6 @@ private:
         } byname;
     } registers;
 
-    // 256 2-byte registers:
-    assert_storage_size<Registers::ByName, 512> assert_storage_size_registers_reg;
-
     Bitmask<256> writable_registers;
 
     void reset();
