@@ -33,6 +33,11 @@
 #define HAL_INS_HIGHRES_SAMPLE 0
 #endif
 
+// define to control EKF low-noise bias learning
+#ifndef HAL_INS_LOW_NOISE
+#define HAL_INS_LOW_NOISE 0
+#endif
+
 class AuxiliaryBus;
 class AP_Logger;
 
