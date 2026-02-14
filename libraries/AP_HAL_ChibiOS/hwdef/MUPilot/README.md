@@ -30,6 +30,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 ## Connectors
 
 ![MUPilot Pinout1](MUPilot-pinout1.png "Pinout1")
+
 ### CAN1/2
 
 | Pin  | Signal | Volt  |

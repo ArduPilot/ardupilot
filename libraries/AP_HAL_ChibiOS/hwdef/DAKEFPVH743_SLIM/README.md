@@ -22,11 +22,14 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 ![DAKEFPV H743 SLIM Board Bottom](DAKEFPVH743_SLIM_Bottom.jpg "DAKEFPV H743 SLIM Bottom")
 
 ## DAKEFPV H743 SLIM Wiring Diagram
+
 ### DAKEFPV H743 SLIM Wiring Diagram Top
+
 ![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop.png "DAKEFPV H743 SLIM Wiring Diagram Top")
 ![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop2.png "DAKEFPV H743 SLIM Wiring Diagram Top1")
 
 ### DAKEFPV H743 SLIM Wiring Diagram Bottom
+
 ![DAKEFPV H743 SLIM Wiring Diagram Bottom](DAKEFPVH743_SLIM_WiringDiagramBottom.png "DAKEFPV H743 SLIM Wiring Diagram Bottom")
 
 ## UART Mapping
@@ -120,10 +123,12 @@ GPIO_CAN1_SILENT on Betaflight is PINIO4.
 When using DJI HD video transmission, the flight controller needs to connect to DJI TX and RX via Serial 4. In the settings, set `SERIAL4_PROTOCOL` to `42` (default). If you are also using a DJI remote controller, you can connect Rx8 to the DJI SBUS interface, set `SERIAL8_PROTOCOL` to 15, and set `SERIAL5_PROTOCOL` to something else.
 
 ## OSD Support
+
 The DAKEFPVH743_SLIM has an onboard OSD using a MAX7456 chip and is enabled by default. The CAM1/2 and VTX pins provide connections for using the internal OSD. Simultaneous DisplayPort OSD is also possible and is configured by default.
 The HD VTX connector can have RX4 replaced by the analog VTX signal if that connector is used for analog VTX connection by using the DJI/VTX jumper pads.
 
 ## Loading Firmware
+
 Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "DAKEFPVH743_SLIM".
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

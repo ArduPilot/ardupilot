@@ -59,7 +59,6 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | 6    | UART7  | MAVLink2          |   ✔    |   ✔    |
 | 7    | UART8  | RCIN              |   ✔    |   ✔    |
 
-
 RTS/CTS flow control is available on UART7.
 
 ### VTX Support
@@ -105,7 +104,6 @@ The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol de
 | 6   | MOTOR/SERVO 6   | 3.3V         |
 | 7   | MOTOR/SERVO 7   | 3.3V         |
 | 8   | MOTOR/SERVO 8   | 3.3V         |
-
 
 ### CAN - 4 Pin JST-GH
 
