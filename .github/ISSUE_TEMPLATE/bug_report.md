@@ -14,6 +14,7 @@ If there was a previous discussion in the forum, link to it
 ## Bug report
 
 ### Issue details
+
 Please describe the problem
 
 **Version**
