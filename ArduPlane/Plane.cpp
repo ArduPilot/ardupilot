@@ -1112,17 +1112,49 @@ void Plane::update_formation_controller(void)
     // Get current heading in degrees
     float current_heading = ahrs.yaw_sensor * 0.01f;  // Convert centidegrees to degrees
 
+    // Pass docking params from AP_Formation to FormationController (Tranche H)
+    formation_controller.set_dock_mode(formation.dock_mode());
+    formation_controller.set_dock_trail(formation.dock_trail());
+
     // Update formation controller (calculates waypoint + speed commands)
     // Note: current_loc is a member variable updated by update_current_loc()
     formation_controller.update(current_loc, current_vel, current_heading);
 
     // Inject formation waypoint into GUIDED mode
+    // IMPORTANT: Do NOT call set_guided_WP() here — it invokes
+    // set_target_altitude_current() which resets the TECS altitude
+    // target to the aircraft's CURRENT altitude.  At 400 Hz this
+    // creates a positive-feedback descent loop (Tranche F5 root cause).
+    // Instead we update next_WP_loc and target_altitude directly from
+    // the waypoint so TECS tracks the COMMANDED altitude.
     if (control_mode == &mode_guided) {
         Location formation_wp = formation_controller.get_formation_waypoint();
-        set_guided_WP(formation_wp);
+        prev_WP_loc = current_loc;    // Tranche H: AB segment from here -> target
+        next_WP_loc = formation_wp;
+        set_target_altitude_location(formation_wp);
+        // Clear stale altitude slope from last DO_REPOSITION.
+        // Without this, Mode::update_target_altitude() may take the
+        // proportion path (offset_cm != 0) and interpolate altitude
+        // between stale prev_WP_loc and next_WP_loc, overriding the
+        // formation waypoint altitude we just set.
+        reset_offset_altitude();
+
+        // VTOL suppression belts (Phase 1 — VTOL transition fix).
+        // Replicate the two clears that set_guided_WP() performs
+        // (commands.cpp:97,100) without the poison
+        // set_target_altitude_current() call.  Prevents L1 "arrived
+        // at waypoint" → loiter.start_time_ms set → VTOL transition
+        // when Q_GUIDED_MODE was historically 1.
+        auto_state.vtol_loiter = false;
+        loiter.start_time_ms = 0;
     }
 
-    // Inject formation airspeed command
-    float desired_speed_ms = formation_controller.get_desired_airspeed();
-    target_airspeed_cm = desired_speed_ms * 100.0f;  // Convert m/s to cm/s
+    // Inject formation airspeed command (gated by FORM_SPD_EN)
+    // When FORM_SPD_EN=0, Python owns airspeed via DO_CHANGE_SPEED.
+    if (formation.spd_enabled()) {
+        float desired_speed_ms = formation_controller.get_desired_airspeed();
+        // Defensive clamp to airspeed envelope (m/s)
+        desired_speed_ms = constrain_float(desired_speed_ms, aparm.airspeed_min, aparm.airspeed_max);
+        target_airspeed_cm = desired_speed_ms * 100.0f;  // Convert m/s to cm/s
+    }
 }
