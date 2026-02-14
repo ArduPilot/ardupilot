@@ -2162,3 +2162,24 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
     }
     return nullptr;
 }
+
+// Do a reset and bootstrap alignment of all EKF cores
+// return true if successful for all cores
+bool NavEKF3::InitialiseFilterBootstrap()
+{
+    // ignore any data if the EKF is not started
+    if (!core) {
+        return false;
+    }
+
+    // initialise the cores. We return success only if all cores
+    // initialise successfully
+    bool ret = true;
+    for (uint8_t i=0; i<num_cores; i++) {
+        // clear the statesInitialised status to allow a bootstrap alignment
+        core[i].clearStatesInitialised();
+        // perform a bootstrap alignment
+        ret &= core[i].InitialiseFilterBootstrap();
+    }
+    return ret;
+}
