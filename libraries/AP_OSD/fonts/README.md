@@ -8,23 +8,23 @@ Available styles and respective OSD_FONT numbers are:
 
 **clarity (OSD_FONT 0, default)** a clearly visible large font:
 
-  ![](clarity.png)
+  ![clarity font](clarity.png)
 
 **clarity_medium (OSD_FONT 1)** good visibility, less dominant than clarity default:
 
-![](clarity_medium.png)
+![clarity_medium font](clarity_medium.png)
 
 **bfstyle (OSD_FONT 2)** bf- / inav-osd default style:
 
-![](bfstyle.png)
+![bfstyle font](bfstyle.png)
 
 **bold (OSD_FONT 3)** a bolder version of bfstyle:
 
-![](bold.png)
+![bold font](bold.png)
 
 **digital (OSD_FONT 4)** 80's clock radio style:
 
-![](digital.png)
+![digital font](digital.png)
 
 ## Adding font styles
 
