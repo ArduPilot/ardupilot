@@ -11036,6 +11036,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if dist_m > dist_m_max:
             raise NotAchievedException("GSF reset failed, vehicle flew too far (%f > %f)" % (dist_m, dist_m_max))
 
+    def EKFBootstrapReset(self):
+        '''test EKF bootstrap reset via aux switch'''
+        self.set_parameters({
+            "RC8_OPTION": 187,  # EKF_RESET
+            "FS_EKF_THRESH": 0,  # disable EKF failsafe
+        })
+        self.reboot_sitl()
+
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=10)
+
+        # collect STATUSTEXT after takeoff so boot messages aren't matched
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        # trigger EKF bootstrap reset
+        self.set_rc(8, 2000)
+        self.wait_text("EKF3 IMU. initialised", timeout=5, regex=True,
+                       check_context=True)
+        self.set_rc(8, 1000)
+
+        self.context_pop()
+
+        # verify vehicle is still stable - hover for a few seconds
+        self.delay_sim_time(5)
+
+        # check altitude didn't diverge wildly (should stay within ~5m of 10m)
+        gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
+        if gpi is None:
+            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        alt_m = gpi.relative_alt / 1000.0
+        if abs(alt_m - 10.0) > 5.0:
+            raise NotAchievedException(
+                "Altitude diverged after EKF reset: %.1f (expected ~10m)" % alt_m
+            )
+
+        self.do_RTL()
+
     def FlyRangeFinderMAVlink(self):
         '''fly mavlink-connected rangefinder'''
         self.fly_rangefinder_mavlink_distance_sensor()
@@ -16667,6 +16707,7 @@ return update, 1000
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
+            self.EKFBootstrapReset,
             self.AP_Avoidance,
             self.RTL_ALT_FINAL_M,
             self.SMART_RTL,
