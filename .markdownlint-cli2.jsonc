@@ -9,10 +9,8 @@
   "config": {
     // Disable rules that are currently violated in the codebase
     // These can be re-enabled incrementally as files are fixed
-    "MD012": false,  // Multiple consecutive blank lines
     "MD013": false,  // Line length
     "MD014": false,  // Dollar signs used before commands without showing output
-    "MD022": false,  // Headings should be surrounded by blank lines
     "MD024": false,  // Multiple headings with the same content
     "MD029": false,  // Ordered list item prefix
     "MD037": false,  // Spaces inside emphasis markers
