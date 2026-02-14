@@ -420,7 +420,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
                                 uint32_t(AP_Arming::Check::BATTERY))
                                ) & ((1U<<24)-1)}, // keep within float range but disable future checks
     { "CIRCLE_RATE",         2.0f},
-    { "ATC_ACCEL_Y_MAX",     110000.0f},
+    { "ATC_ACC_Y_MAX",       1100.0f},
     { "ATC_RATE_Y_MAX",      180.0f},
     { "RC3_TRIM",            1500},
     { "COMPASS_OFFS_MAX",    1000},
