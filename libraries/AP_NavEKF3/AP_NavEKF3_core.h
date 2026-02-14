@@ -49,7 +49,11 @@
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
 // maximum allowed gyro bias (rad/sec)
+#if AP_INERTIALSENSOR_LOW_NOISE
+#define GYRO_BIAS_LIMIT radians(2.0f)
+#else
 #define GYRO_BIAS_LIMIT 0.5f
+#endif
 
 // initial accel bias uncertainty as a fraction of the state limit
 #define ACCEL_BIAS_LIM_SCALER 0.2f
