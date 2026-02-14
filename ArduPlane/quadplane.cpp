@@ -601,9 +601,9 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_WP_ACC",         1.0 },
     { "Q_P_JERK_NE",      2   },
     // lower rotational accel limits
-    { "Q_A_ACCEL_R_MAX", 40000 },
-    { "Q_A_ACCEL_P_MAX", 40000 },
-    { "Q_A_ACCEL_Y_MAX", 10000 },
+    { "Q_A_ACC_R_MAX", 400 },
+    { "Q_A_ACC_P_MAX", 400 },
+    { "Q_A_ACC_Y_MAX", 100 },
 };
 
 /*
