@@ -332,6 +332,7 @@ class Board:
                 '-cl-single-precision-constant',
                 '-Wno-vla-extension',
                 '-ftrapping-math',  # prevent re-ordering of sanity checks
+                '-Wunused-private-field'
             ]
         else:
             env.CFLAGS += [
