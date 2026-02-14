@@ -19,6 +19,10 @@ void NavEKF3_core::resetGyroBias(void)
  */
 ftype NavEKF3_core::InitialGyroBiasUncertainty(void) const
 {
+#if AP_INERTIALSENSOR_LOW_NOISE
+    return 1.0f;
+#else
     return 2.5f;
+#endif
 }
 
