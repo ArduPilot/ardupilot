@@ -10,10 +10,8 @@
     // Disable rules that are currently violated in the codebase
     // These can be re-enabled incrementally as files are fixed
     "MD013": false,  // Line length
-    "MD014": false,  // Dollar signs used before commands without showing output
     "MD024": false,  // Multiple headings with the same content
     "MD029": false,  // Ordered list item prefix
-    "MD037": false,  // Spaces inside emphasis markers
-    "MD045": false   // Images should have alternate text
+    "MD037": false   // Spaces inside emphasis markers
   }
 }
