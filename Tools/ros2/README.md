@@ -104,7 +104,7 @@ colcon --log-level DEBUG test --packages-select ardupilot_dds_tests --event-hand
 The install procedure on macOS is similar, except that all dependencies
 must be built from source and additional compiler flags are needed.
 
-### 1. Create a workspace folder
+### 1. Create a workspace folder (macOS)
 
 ```bash
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
@@ -120,7 +120,7 @@ wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros
 vcs import --recursive < ros2_macos.repos
 ```
 
-### 3. Update dependencies
+### 3. Update dependencies (macOS)
 
 ```bash
 cd ~/ros2_ws
@@ -150,7 +150,7 @@ colcon build --symlink-install --cmake-args \
 --event-handlers=desktop_notification-
 ```
 
-### 5. Test
+### 5. Test (macOS)
 
 ```bash
 colcon test \
