@@ -29,6 +29,7 @@
 #include <AP_Arming/AP_Arming_config.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include <AP_Follow/AP_Follow.h>
+#include <AP_RCTelemetry/AP_RCTelemetry_config.h>
 
 #include "ap_message.h"
 
@@ -192,6 +193,9 @@ public:
     void        update_receive(uint32_t max_time_us=1000);
     void        update_send();
     bool        init(uint8_t instance);
+#if AP_CRSF_MAVLINK_ENABLED
+    bool        init_virtual(uint8_t instance);
+#endif
     void        send_message(enum ap_message id);
     void        send_text(MAV_SEVERITY severity, const char *fmt, ...) const FMT_PRINTF(3, 4);
     void        queued_param_send();
@@ -1263,6 +1267,11 @@ public:
 #if AP_DEVO_TELEM_ENABLED
     // Devo backend
     AP_DEVO_Telem devo_telemetry;
+#endif
+
+    // create a virtual GCS backend on a non-serial UART (e.g. CRSF MAVLink)
+#if AP_CRSF_MAVLINK_ENABLED
+    void create_virtual_backend(AP_HAL::UARTDriver &uart);
 #endif
 
     // install an alternative protocol handler
