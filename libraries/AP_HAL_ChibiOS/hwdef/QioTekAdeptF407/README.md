@@ -71,17 +71,6 @@ It is an autopilot used CKS MCU.
 |  5   |  sda2  | +3.3V |
 |  6   |  GND   |  GND  |
 
-### GPS1
-
-| Pin  | Signal | Volt  |
-| :--: | :----: | :---: |
-|  1   |  VCC   |  +5V  |
-|  2   |  TX    | +3.3V |
-|  3   |  RX    | +3.3V |
-|  4   |  scl2  | +3.3V |
-|  5   |  sda2  | +3.3V |
-|  6   |  GND   |  GND  |
-
 ### UART4 and UART5
 
 | Pin  | Signal | Volt  |
