@@ -11,15 +11,15 @@ After a connection has been made, the optional values should be set. Then the ve
 The examples can be built using `cmake`:
 
 ```bash
-$ mkdir build && cd build
-$ cmake ..
-$ make
+mkdir build && cd build
+cmake ..
+make
 ```
 
 Run the `simpleRover` physics engine:
 
 ```bash
-$ ./simpleRover
+./simpleRover
 ```
 
 Run SITL with the JSON backend:
