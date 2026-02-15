@@ -48,8 +48,9 @@ protected:
         );
 
         // temporary hack until we get GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL
-        if (strncmp(vendor_name, "AVTA", 4) == 0)
+        if ((strncmp(vendor_name, "AVTA", 4) == 0) && (strncmp(model_name, "CM41", 4) != 0)){
             supported_target |= (1U<<unsigned(MountTargetType::LOCATION));
+        }
         
         return supported_target;
     };
@@ -90,5 +91,6 @@ private:
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
     char vendor_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_VENDOR_NAME_LEN];  // vendor name
+    char model_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_MODEL_NAME_LEN];  // model name
 };
 #endif // HAL_MOUNT_MAVLINK_ENABLED

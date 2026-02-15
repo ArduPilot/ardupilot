@@ -137,6 +137,7 @@ void AP_Mount_MAVLink::handle_gimbal_device_information(const mavlink_message_t 
     const uint8_t fw_ver_build = (info.firmware_version & 0xFF000000) >> 24;
 
     strncpy(vendor_name, info.vendor_name, ARRAY_SIZE(vendor_name));
+    strncpy(model_name, info.model_name, ARRAY_SIZE(model_name));
 
     // display gimbal info to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",

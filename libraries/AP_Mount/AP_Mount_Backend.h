@@ -401,7 +401,7 @@ protected:
     bool _pitch_lock = true;              // pitch_lock used in RC_TARGETING mode. True if the gimbal's tilt target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
     bool _roll_lock = true;               // roll_lock used in RC_TARGETING mode. True if the gimbal's roll target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
 
-    bool clear_roi_pending = false;     // True if there is a pending clear ROI request
+    bool clear_roi_pending;     // True if there is a pending clear ROI request
 
 private:
 
