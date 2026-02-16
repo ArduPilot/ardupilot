@@ -756,7 +756,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
         target_yaw_rad += radians(90);
     }
     // go to the nearest 180 degree mark, with 5 degree slop to prevent oscillation
-    if (fabsf(yaw_out_rad - target_yaw_rad) > radians(95.0)) {
+    if (fabsf(wrap_PI(yaw_out_rad - target_yaw_rad)) > radians(95.0)) {
         target_yaw_rad += radians(180.0);
     }
 
