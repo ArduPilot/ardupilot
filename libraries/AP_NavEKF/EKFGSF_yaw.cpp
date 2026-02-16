@@ -75,7 +75,7 @@ void EKFGSF_yaw::update(const Vector3F &delAng,
         if (is_positive(true_airspeed)) {
             // When flying in fixed wing mode we need to allow for more positive g due to coordinated turns
             // Gain varies from unity at 1g to zero at 2g
-            accel_gain = EKFGSF_tiltGain * sq(2.0f - EKFGSF_ahrs_ng);
+            accel_gain = EKFGSF_tiltGain * sq(MAX(2.0f - EKFGSF_ahrs_ng, 0.0f));
         } else if (EKFGSF_ahrs_ng <= 1.5f) {
             // Gain varies from unity at 1g to zero at 1.5g
             accel_gain = EKFGSF_tiltGain * sq(3.0f - 2.0f * EKFGSF_ahrs_ng);
