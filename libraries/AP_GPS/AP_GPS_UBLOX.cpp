@@ -836,9 +836,9 @@ void AP_GPS_UBLOX::log_mon_hw2(void)
 #endif
 }
 
+#if HAL_LOGGING_ENABLED
 void AP_GPS_UBLOX::log_mon_rf(void)
 {
-#if HAL_LOGGING_ENABLED
     if (!should_log()) {
         return;
     }
@@ -875,8 +875,8 @@ void AP_GPS_UBLOX::log_mon_rf(void)
         magQ      : blk0.magQ,
     };
     AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
-#endif
 }
+#endif  // HAL_LOGGING_ENABLED
 
 #if UBLOX_TIM_TM2_LOGGING
 void AP_GPS_UBLOX::log_tim_tm2(void)
@@ -1435,10 +1435,12 @@ AP_GPS_UBLOX::_parse_gps(void)
                 log_mon_hw2();  
             }
             break;
+#if HAL_LOGGING_ENABLED
         case MSG_MON_RF:
             // forward to logger when present
             log_mon_rf();
             break;
+#endif // HAL_LOGGING_ENABLED
         case MSG_MON_VER: {
             bool check_L1L5 = false;
             _have_version = true;
