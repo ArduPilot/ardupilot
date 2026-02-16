@@ -91,3 +91,8 @@
 #ifndef AP_INERTIALSENSOR_RST_ENABLED
 #define AP_INERTIALSENSOR_RST_ENABLED 0
 #endif // AP_INERTIALSENSOR_RST_ENABLED
+
+// define to control EKF low-noise bias learning
+#ifndef HAL_INS_LOW_NOISE
+#define HAL_INS_LOW_NOISE 0
+#endif
