@@ -219,7 +219,7 @@ public:
         k_actuator4             = 187,
         k_actuator5             = 188,
         k_actuator6             = 189,
-        k_trifin1               = 190,   // Trifin control surfaces
+        k_trifin1               = 190,   ///< trifin 1
         k_trifin2               = 191,
         k_trifin3               = 192,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)

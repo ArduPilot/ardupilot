@@ -90,10 +90,10 @@ function control_lockout()
         local current_pitch = ahrs:get_pitch_rad()
         local minimum_pitch = math.rad(-30)
 
-        local minimum_speed = 150
+        local minimum_speed = 20
         local current_speed = ahrs:airspeed_estimate()
 
-        --gcs:send_text(6, "Pitch: "..tostring(math.deg(current_pitch)).." Speed: "..tostring(current_speed))
+        gcs:send_text(6, "Pitch: "..tostring(math.deg(current_pitch)).." Speed: "..tostring(current_speed))
 
         if current_pitch < minimum_pitch or current_speed < minimum_speed then
             return true
