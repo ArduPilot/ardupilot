@@ -167,6 +167,7 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Sub}: 181:Lights1,182:Lights2
     // @Values{Sub}: 183:VideoSwitch
     // @Values{Sub}: 184:Actuator1,185:Actuator2,186:Actuator3,187:Actuator4,188:Actuator5,189:Actuator6
+    // @Values{Plane, Copter}: 190:Trifin1,191:Trifin2,192:Trifin3
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
@@ -373,6 +374,9 @@ bool SRV_Channel::is_control_surface(SRV_Channel::Function function)
     case Function::k_vtail_left:
     case Function::k_vtail_right:
     case Function::k_airbrake:
+    case Function::k_trifin1:
+    case Function::k_trifin2:
+    case Function::k_trifin3:
         return true;
 
     default:
