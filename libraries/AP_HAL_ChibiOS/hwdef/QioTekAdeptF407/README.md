@@ -199,7 +199,7 @@ BATT2_AMP_PERVLT 60.000
 
 In addition, the builtin voltage divider circuit can be used by Solder pad to switching to share the battery voltage monitoring by power2 support to 6S.
 
-If you want to use the built-in voltage monitor on power 1, you can manually invert the BATT_ VOLT_ PIN to 14, BATT_ CURR_ PIN to 15, BATT2_ VOLT_ PIN to 2, BATT2_ CURR_ PIN to 3.
+If you want to use the built-in voltage monitor on power 1, you can manually invert the `BATT_VOLT_PIN` to 14, `BATT_CURR_PIN` to 15, `BATT2_VOLT_PIN` to 2, `BATT2_CURR_PIN` to 3.
 
 **Built-in BEC**
 The built-in BEC 5V output has a starting voltage of 2S, and 9V/12V has a starting voltage of 3S/4S respectively.

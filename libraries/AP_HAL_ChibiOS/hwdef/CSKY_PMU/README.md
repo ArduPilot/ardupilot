@@ -37,4 +37,4 @@
 
 ## Loading Firmware
 
-You can upgrade the *.bin firmware files using the DroneCan GUI tool. *.apj files can also be upgraded using Mission Planner ground station.
+You can upgrade the \*.bin firmware files using the DroneCan GUI tool. \*.apj files can also be upgraded using Mission Planner ground station.

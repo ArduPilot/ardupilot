@@ -33,7 +33,7 @@ There are 5 serial ports (UART1, UART2, UART3, UART4, UART6), 8 motor ports, 1 I
 - Continuous working current of single electric regulator: 13A * 4
 - External electrical adjustment size: 24 * 25mm (including the maximum size of solder pads and protruding points)
 - Screw hole pitch 16 * 16MM, hole diameter 3MM
-- Firmware: BLHELI_ S G_ H_ 30_ 16_ 7. HEX
+- Firmware: `BLHELI_S_G_H_30_16_7.HEX`
 - Supports Dshot600, Dshot300, Dshot150, Oneshot125, Multispot, PWM control signals
 
 Weight: flight control+electric adjustment=5.8g
