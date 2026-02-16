@@ -10,7 +10,6 @@
     // Disable rules that are currently violated in the codebase
     // These can be re-enabled incrementally as files are fixed
     "MD013": false,  // Line length
-    "MD029": false,  // Ordered list item prefix
-    "MD037": false   // Spaces inside emphasis markers
+    "MD029": false   // Ordered list item prefix
   }
 }
