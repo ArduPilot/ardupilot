@@ -873,7 +873,9 @@ private:
     void unexpected_message(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
+#if HAL_LOGGING_ENABLED
     void log_mon_rf(void);
+#endif
     void log_tim_tm2(void);
     void log_rxm_raw(const struct ubx_rxm_raw &raw);
     void log_rxm_rawx(const struct ubx_rxm_rawx &raw);
