@@ -53,6 +53,10 @@
 // format of grid on disk
 #define TERRAIN_GRID_FORMAT_VERSION 1
 
+// min minor version for data read from microSD
+// raise this to force a refresh of data from the terrain servers
+#define TERRAIN_VERSION_MINOR_MIN 1
+
 // we allow for a 2cm discrepancy in the grid corners. This is to
 // account for different rounding in terrain DAT file generators using
 // different programming languages
@@ -242,6 +246,10 @@ private:
         // rounded latitude/longitude in degrees. 
         int16_t lon_degrees;
         int8_t lat_degrees;
+
+        // minor version. Note! this and any bytes after this are
+        // excluded from the CRC for backwards compatibility
+        uint8_t version_minor;
     };
 
     /*
@@ -383,10 +391,15 @@ private:
     enum class Options {
         DisableDownload = (1U<<0),
         DisableDisk = (1U<<1),
+        AcceptOldData = (1U<<2),
     };
 
+    inline bool option_set(enum Options option) const {
+        return (options.get() & uint16_t(option)) != 0;
+    }
+
     inline bool diskless() const {
-        return (options.get() & uint16_t(Options::DisableDisk)) != 0;
+        return option_set(Options::DisableDisk);
     }
 
     // cache of grids in memory, LRU
@@ -482,6 +495,9 @@ private:
     bool memory_alloc_failed;
 
     static AP_Terrain *singleton;
+
+    // true if we have found old disk blocks when loading
+    bool found_old_data;
 };
 
 namespace AP {
