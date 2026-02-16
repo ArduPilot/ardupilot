@@ -1483,7 +1483,7 @@ bool AP_GPS::first_unconfigured_gps(uint8_t &instance) const
 
 bool AP_GPS::is_configured(uint8_t instance) const
 {
-    if (instance >= GPS_MAX_INSTANCES || drivers[instance] == nullptr) {
+    if (instance >= ARRAY_SIZE(drivers) || drivers[instance] == nullptr) {
         return false;
     }
     return drivers[instance]->is_configured();
