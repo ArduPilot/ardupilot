@@ -1,0 +1,106 @@
+# hw definition file for processing by rp_hwdef.py
+# for Pico2Pilot hardware.
+
+# MCU type
+MCU RP2350A
+
+define HAL_MCU_RP2350A_ENABLED 1
+define HAL_MCU_RP2350B_ENABLED 0
+
+define HAL_RP_BOARD_NAME "Pico2Pilot"
+define AP_SCRIPTING_ENABLED 0
+
+# Enabled drivers
+define HAL_NAND_FLASH_ENABLED 0
+define HAL_RCIN_DRIVER_ENABLED 0
+define HAL_RCOUT_DRIVER_ENABLED 0
+define HAL_FLASH_DRIVER_ENABLED 0
+define HAL_STORAGE_DRIVER_ENABLED 0
+define HAL_ANALOGIN_DRIVER_ENABLED 0
+define HAL_SERIAL2_DRIVER_ENABLED 0
+define HAL_SERIAL3_DRIVER_ENABLED 0
+define HAL_SPI_DEVICE_DRIVER_ENABLED 0
+define HAL_I2C_DEVICE_DRIVER_ENABLED 0
+
+# Debug options
+define SCHEDDEBUG 1
+
+# LED
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+define AP_NOTIFY_GPIO_LED_1_PIN 25
+define HAL_GPIO_LED_ON 1
+
+define HAL_HAVE_FILESYSTEM 0
+define AP_FILESYSTEM_ENABLED 0
+define AP_FILESYSTEM_RP2350_ENABLED 0
+define AP_FILESYSTEM_ROMFS_ENABLED 0
+
+# NOR SPI Flash
+define HAL_FLASH_TOTAL_SIZE 0x200000
+define HAL_FLASH_STORAGE_OFFSET 0x1E0000
+define HAL_FLASH_STORAGE_NUM_PAGES 32
+
+# PIO
+#define PIO_EXT_SPI pio0
+#define PIO_PWM_MULTI pio1
+
+# SPI Buses
+#             Host      DMA TX Channel  DMA RX Channel  MOSI   MISO   SCLK
+RP2350_SPIBUS spi0      0               1               GPIO_3 GPIO_4 GPIO_2
+
+# i2c Buses
+#             Port SDA     SCL     SPEED    INTERNAL SOFT
+RP2350_I2CBUS I2C0 GPIO_24 GPIO_25 400*KHZ  true     false
+
+# SPI Devices
+#             Name     Bus   Device  ChipSel      Mode LoSpeed HiSpeed
+RP2350_SPIDEV icm42688  0     0      GPIO_5       0    2*MHZ   8*MHZ
+
+# RP2350_SPIDEV flash_ext 0     0      GPIO_1       3    2*MHZ   20*MHZ
+
+# RCOutput
+#
+define RCOUT_MAX_CHANNELS 16
+define RCOUT_PWM_RESOLUTION 2600
+define RCOUT_GPIO_BASE GPIO_0
+
+
+# RCInput
+#
+define AP_RCPROTOCOL_ENABLED 1
+
+
+#-----INS/IMU-----
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+# IMU Invensense SPI:mpu9250 ROTATION_ROLL_180
+define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
+
+#-----COMPASS-----
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define AP_COMPASS_AK8963_ENABLED TRUE
+define AP_COMPASS_PROBING_ENABLED 1
+
+# -----BARO-----
+BARO BMP280 I2C:0:0x77
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# rcin on what pin?
+define HAL_RP_RCIN GPIO_14
+
+#-----UARTS-----
+#            port        RX           TX
+RP_SERIAL  UART_NUM_0  GPIO_17  GPIO_16
+RP_SERIAL  UART_NUM_1  GPIO_9  	GPIO_8
+define UART0_RX GPIO_17
+define UART0_TX GPIO_16
+define UART1_RX GPIO_9
+define UART1_TX GPIO_8
+
+define UART_TX_BUFFER_SIZE 4096
+define UART_RX_BUFFER_SIZE 4096
+
+#-----ERLS------
+define ERLS_BUILT_IN_MODULE_ENABLED 1
+define ELRS_UART hal.serial(0)
+define DEFAULT_SERIAL0_PROTOCOL SerialProtocol_RCIN
