@@ -1,0 +1,12 @@
+# AMD VCK190 Evaluation Kit Linux target
+#
+# The VCK190's XCVC1902 device has a dual-core Arm Cortex-A72 application
+# processing unit. This profile applies board-specific CPU tuning and runtime
+# filesystem defaults.
+
+env TOOLCHAIN aarch64-linux-gnu
+env TOOLCHAIN_CPU_FLAGS -mcpu=cortex-a72 -mtune=cortex-a72
+
+define HAL_BOARD_LOG_DIRECTORY "/var/lib/ardupilot/logs"
+define HAL_BOARD_TERRAIN_DIRECTORY "/var/lib/ardupilot/terrain"
+define HAL_BOARD_STORAGE_DIRECTORY "/var/lib/ardupilot/storage"
