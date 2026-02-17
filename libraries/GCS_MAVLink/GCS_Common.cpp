@@ -5560,18 +5560,23 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
 {
-    // param1 : /* Region of interest mode (not used)*/
-    // param2 : /* MISSION index/ target ID (not used)*/
-    // param3 : /* ROI index (not used)*/
-    // param4 : /* empty */
-    // x : lat
-    // y : lon
-    // z : alt
-    Location roi_loc;
-    if (!location_from_command_t(packet, roi_loc)) {
-        return MAV_RESULT_DENIED;
+    // For parameter definitions, see https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_ROI
+    // Param1 _should_ always be an integer value, the choice to round is merely defensive programming.
+    const uint8_t roi_mode = static_cast<uint8_t>(std::round(packet.param1));
+    if (roi_mode != MAV_ROI::MAV_ROI_TARGET) {
+        return MAV_RESULT_UNSUPPORTED;
     }
-    return handle_command_do_set_roi_location(roi_loc);
+
+    // MAVLink leaves it to the vehicle to decide behavior based on this ROI.
+    // That behavior is made clear here: "Command all gimbals" (gimbal_device_id == 0)
+    mavlink_command_int_t corresponding_packet{};
+    // ref https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_ROI_LOCATION
+    corresponding_packet.param1 = 0;
+    corresponding_packet.x = packet.x;
+    corresponding_packet.y = packet.y;
+    corresponding_packet.z = packet.z;
+
+    return handle_command_do_set_roi_location(corresponding_packet);
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command_int_t &packet)
