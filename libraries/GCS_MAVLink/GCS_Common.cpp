@@ -5434,7 +5434,7 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 }
 #endif  // AP_MAVLINK_COMMAND_LONG_ENABLED
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const Location &roi_loc)
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const uint8_t instance, const Location &roi_loc)
 {
 #if HAL_MOUNT_ENABLED
     AP_Mount *mount = AP::mount();
@@ -5448,9 +5448,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const Location &roi_l
     }
 
     if (!roi_loc.initialised()) {
-        mount->clear_roi_target();
+        mount->clear_roi_target(instance);
     } else {
-        mount->set_roi_target(roi_loc);
+        mount->set_roi_target(instance, roi_loc);
     }
     return MAV_RESULT_ACCEPTED;
 #else
@@ -5581,19 +5581,43 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command_int_t &packet)
 {
-    // TODO: In next commit, utilize packet.param1 which is gimbal device id
     Location roi_loc;
     if (!location_from_command_t(packet, roi_loc)) {
         return MAV_RESULT_DENIED;
     }
-    return handle_command_do_set_roi_location(roi_loc);
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return MAV_RESULT_DENIED;
+    }
+    // For parameter definitions, see https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_ROI_LOCATION
+    // Param1 _should_ always be an integer value, the choice to round is merely defensive programming.
+    const uint8_t mavlink_gimbal_device_id = static_cast<uint8_t>(std::round(packet.param1));
+    const uint8_t mount_instance = mount->get_specified_instance(mavlink_gimbal_device_id);
+
+    return handle_command_do_set_roi_location(mount_instance, roi_loc);
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif // HAL_MOUNT_ENABLED
 }
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none(const mavlink_command_int_t &packet)
 {
-    // TODO: In next commit, utilize packet.param1 which is gimbal device id
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return MAV_RESULT_DENIED;
+    }
+    // For parameter definitions, see https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_ROI_NONE
+    // Param1 _should_ always be an integer value, the choice to round is merely defensive programming.
+    const uint8_t mavlink_gimbal_device_id = static_cast<uint8_t>(std::round(packet.param1));
+    const uint8_t mount_instance = mount->get_specified_instance(mavlink_gimbal_device_id);
+
     const Location uninitialized_loc;
-    return handle_command_do_set_roi_location(uninitialized_loc);
+    return handle_command_do_set_roi_location(mount_instance, uninitialized_loc);
+#else
+    return MAV_RESULT_UNSUPPORTED;
+#endif // HAL_MOUNT_ENABLED
 }
 
 #if AP_FILESYSTEM_FORMAT_ENABLED

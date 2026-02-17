@@ -715,7 +715,7 @@ protected:
     // For MAV_CMD_DO_SET_ROI (201)
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet);
     // For MAV_CMD_DO_SET_ROI_LOCATION (195)
-    virtual MAV_RESULT handle_command_do_set_roi_location(const Location &roi_loc);
+    virtual MAV_RESULT handle_command_do_set_roi_location(const uint8_t instance, const Location &roi_loc);
     MAV_RESULT handle_command_do_set_roi_location(const mavlink_command_int_t &packet);
     // For MAV_CMD_DO_SET_ROI_NONE (197)
     MAV_RESULT handle_command_do_set_roi_none(const mavlink_command_int_t &packet);
