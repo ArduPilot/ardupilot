@@ -1,0 +1,9 @@
+# Versal Linux target with AP_SIM enabled
+#
+# This is an experimental profile for bringing SITL-model sensor data into
+# a Linux/Versal binary for telemetry and software-loop bring-up.
+
+include ../versal/hwdef.dat
+
+env SIM_ENABLED 1
+
