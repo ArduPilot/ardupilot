@@ -5589,6 +5589,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command
     return handle_command_do_set_roi_location(roi_loc);
 }
 
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_none(const mavlink_command_int_t &packet)
+{
+    // TODO: In next commit, utilize packet.param1 which is gimbal device id
+    const Location uninitialized_loc;
+    return handle_command_do_set_roi_location(uninitialized_loc);
+}
+
 #if AP_FILESYSTEM_FORMAT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
@@ -5739,10 +5746,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_camera(packet);
 #endif
 
-    case MAV_CMD_DO_SET_ROI_NONE: {
-        const Location zero_loc;
-        return handle_command_do_set_roi_location(zero_loc);
-    }
+    case MAV_CMD_DO_SET_ROI_NONE:
+        return handle_command_do_set_roi_none(packet);
 
     case MAV_CMD_DO_SET_ROI:
         return handle_command_do_set_roi(packet);
