@@ -140,8 +140,10 @@ public:
     // used for gimbals that need to read INS data at full rate
     void update_fast();
 
-    // return primary instance ID
+    // return primary instance index
     uint8_t get_primary_instance() const { return _primary; }
+    // return specified instance index
+    uint8_t get_specified_instance(uint8_t mavlink_gimbal_device_id) const { return mavlink_gimbal_device_id - 1; };
 
     // get_mount_type - returns the type of mount
     Type get_mount_type() const { return get_mount_type(_primary); }
