@@ -54,7 +54,7 @@ ModePosHold::ModePosHold() : Mode()
 // convert parameters
 void ModePosHold::convert_params()
 {
-    // PARAMETER_CONVERSION - Added: Feb 2026
+    // PARAMETER_CONVERSION - Added: Feb 2026 ahead of ardupilot-4.7
 
     // return immediately if parameter conversion has already been performed
     if (brake_angle_max_deg.configured()) {
