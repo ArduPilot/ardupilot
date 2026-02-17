@@ -1,0 +1,9 @@
+# Generic Cortex-A72 Linux target
+#
+# This board is intended as a baseline for SBCs with Cortex-A72 cores.
+# It inherits the generic Linux hwdef and applies AArch64 toolchain + CPU tuning.
+
+include ../linux/hwdef.dat
+
+env TOOLCHAIN aarch64-linux-gnu
+env TOOLCHAIN_CPU_FLAGS -mcpu=cortex-a72 -mtune=cortex-a72
