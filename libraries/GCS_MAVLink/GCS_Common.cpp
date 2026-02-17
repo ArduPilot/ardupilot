@@ -5434,7 +5434,7 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
 }
 #endif  // AP_MAVLINK_COMMAND_LONG_ENABLED
 
-MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const Location &roi_loc)
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const Location &roi_loc)
 {
 #if HAL_MOUNT_ENABLED
     AP_Mount *mount = AP::mount();
@@ -5560,12 +5560,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
 {
-    // be aware that this method is called for both MAV_CMD_DO_SET_ROI
-    // and MAV_CMD_DO_SET_ROI_LOCATION.  If you intend to support any
-    // of the extra fields in the former then you will need to split
-    // off support for MAV_CMD_DO_SET_ROI_LOCATION (which doesn't
-    // support the extra fields).
-
     // param1 : /* Region of interest mode (not used)*/
     // param2 : /* MISSION index/ target ID (not used)*/
     // param3 : /* ROI index (not used)*/
@@ -5577,7 +5571,17 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
     if (!location_from_command_t(packet, roi_loc)) {
         return MAV_RESULT_DENIED;
     }
-    return handle_command_do_set_roi(roi_loc);
+    return handle_command_do_set_roi_location(roi_loc);
+}
+
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi_location(const mavlink_command_int_t &packet)
+{
+    // TODO: In next commit, utilize packet.param1 which is gimbal device id
+    Location roi_loc;
+    if (!location_from_command_t(packet, roi_loc)) {
+        return MAV_RESULT_DENIED;
+    }
+    return handle_command_do_set_roi_location(roi_loc);
 }
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
@@ -5732,12 +5736,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_DO_SET_ROI_NONE: {
         const Location zero_loc;
-        return handle_command_do_set_roi(zero_loc);
+        return handle_command_do_set_roi_location(zero_loc);
     }
 
     case MAV_CMD_DO_SET_ROI:
-    case MAV_CMD_DO_SET_ROI_LOCATION:
         return handle_command_do_set_roi(packet);
+
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+        return handle_command_do_set_roi_location(packet);
 
 #if HAL_MOUNT_ENABLED
     case MAV_CMD_DO_SET_ROI_SYSID:
