@@ -33,10 +33,16 @@ jobs:
         run: |
           git submodule update --init --recursive
 
+      - name: Install aarch64 cross toolchain for Linux board checks
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y g++-aarch64-linux-gnu
+
       - name: Test new boards compile
         shell: bash
         run: |
-          Tools/scripts/test_new_boards.py --master "upstream/${{ github.event.pull_request.base.ref }}"
+          Tools/scripts/test_new_boards.py --master-branch "upstream/${{ github.event.pull_request.base.ref }}"
 
       - name: Check for merge commits in PR branch
         shell: bash
