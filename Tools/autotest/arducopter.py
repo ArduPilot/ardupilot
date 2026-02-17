@@ -11328,6 +11328,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         return current_log_filepath
 
+    def test_replay_body_odom_bit(self):
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+
+            "EK3_SRC1_POSXY": 6,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 6,
+            "EK3_SRC1_VELZ": 6,
+
+            "SIM_VICON_TMASK": 8, # send VISION_POSITION_DELTA for FuseBodyOdom
+
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "ARMING_SKIPCHK": (1 << 18), # suppress yaw misalignment complaint
+        })
+
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"]) # implicit reboot
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm(require_absolute=False)
+        self.arm_vehicle()
+        self.takeoffAndMoveAway()
+        self.do_RTL()
+
+        self.customise_SITL_commandline([]) # implicit reboot
+
+        return current_log_filepath
+
     def GPSBlendingLog(self):
         '''Test GPS Blending'''
         '''ensure we get dataflash log messages for blended instance'''
@@ -11690,6 +11724,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ('GPS', self.test_replay_gps_bit),
             ('GPSForYaw', self.test_replay_gps_yaw_bit),
             ('WindAndAirspeed', self.test_replay_wind_and_airspeed_bit),
+            ('BodyOdom', self.test_replay_body_odom_bit),
             ('Beacon', self.test_replay_beacon_bit),
             ('OpticalFlow', self.test_replay_optical_flow_bit),
         ]
