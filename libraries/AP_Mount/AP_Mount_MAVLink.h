@@ -79,6 +79,7 @@ private:
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
     void send_target_angles(const MountAngleTarget &angle_rad) override;
 
+    // Send MAV_CMD_DO_SET_ROI to gimbal to point at a location
     void send_target_location(const Location &roi_loc) override;
 
     // internal variables
