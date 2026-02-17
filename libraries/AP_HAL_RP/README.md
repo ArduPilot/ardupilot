@@ -43,6 +43,39 @@ Tools/scripts/get_pico_sdk.sh
 configuration option. One configuration often used is the `--board` option to
 switch from one board to another one.
 
+*Note*: Build was tested on MacOs 15.0.1 (24A348)
+
+### Building on macOS
+
+1. Run the following script from the cloned ardupilot directory to install required packages:
+```
+Tools/environment_install/install-prereqs-mac.sh -y
+```
+2. Reload the path (restart your terminal or source the appropriate shell configuration file):
+```
+source ~/.zshrc
+```
+or if using bash:
+```
+source ~/.bash_profile
+```
+3. Install Raspberry Pi Pico C/C++ SDK and FreeRTOS kernel:
+```
+Tools/scripts/get_pico_sdk.sh -d <path_to_install>
+```
+You can install Pico SDK and FreeRTOS kernel into modules/pico, just run the installation script without any parameters:
+```
+Tools/scripts/get_pico_sdk.sh
+```
+4. Configure and build the firmware:
+```
+./waf configure --board Kolibri
+./waf copter
+```
+*Note*: The first configure command should be called only once or when you want to change a
+configuration option. One configuration often used is the `--board` option to
+switch from one board to another one.
+
 ## Building the Examples
 
 This is the easiest way to create firmware that focuses only on testing a specific HAL module or library on a real flight controller.
