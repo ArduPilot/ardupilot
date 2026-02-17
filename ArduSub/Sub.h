@@ -544,7 +544,10 @@ private:
     void do_yaw(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
-    void do_roi(const AP_Mission::Mission_Command& cmd);
+#if HAL_MOUNT_ENABLED
+    void do_set_roi(const AP_Mission::Mission_Command& cmd);
+    void do_set_roi_location(const AP_Mission::Mission_Command& cmd);
+#endif // HAL_MOUNT_ENABLED
     void do_mount_control(const AP_Mission::Mission_Command& cmd);
 
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
