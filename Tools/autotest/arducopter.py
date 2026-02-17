@@ -4631,15 +4631,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.set_rc(3, 1600)
         self.wait_altitude(19, 25, relative=True)
-        self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
-        self.monitor_groundspeed(wpnav_speed_ms, timeout=20)
+        self.wait_groundspeed(
+            wpnav_speed_ms-tolerance,
+            wpnav_speed_ms+tolerance,
+            minimum_duration=20,
+            timeout=30,
+        )
         self.change_mode('RTL')
-        self.wait_groundspeed(rtl_speed_ms-tolerance, rtl_speed_ms+tolerance)
-        self.monitor_groundspeed(rtl_speed_ms, timeout=5)
+        self.wait_groundspeed(
+            rtl_speed_ms-tolerance,
+            rtl_speed_ms+tolerance,
+            minimum_duration=5,
+        )
         self.change_mode('AUTO')
-        self.wait_groundspeed(0-tolerance, 0+tolerance)
-        self.wait_groundspeed(wpnav_speed_ms-tolerance, wpnav_speed_ms+tolerance)
-        self.monitor_groundspeed(wpnav_speed_ms, tolerance=0.6, timeout=5)
+        # we are returning on the same path, so should see a zero velocity:
+        self.wait_groundspeed(
+            0-tolerance,
+            0+tolerance,
+        )
+        self.wait_groundspeed(
+            wpnav_speed_ms-tolerance,
+            wpnav_speed_ms+tolerance,
+            minimum_duration=5,
+        )
         self.do_RTL()
 
     def NavDelay(self):

@@ -9716,21 +9716,6 @@ Also, ignores heartbeats not from our target system'''
             location.heading
         )
 
-    def monitor_groundspeed(self, want, tolerance=0.5, timeout=5):
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                break
-            m = self.assert_receive_message('VFR_HUD', timeout=timeout)
-            if m.groundspeed > want+tolerance:
-                raise NotAchievedException("Too fast (%f > %f)" %
-                                           (m.groundspeed, want))
-            if m.groundspeed < want-tolerance:
-                raise NotAchievedException("Too slow (%f < %f)" %
-                                           (m.groundspeed, want))
-            self.progress("GroundSpeed OK (got=%f) (want=%f)" %
-                          (m.groundspeed, want))
-
     def set_home(self, loc):
         '''set home to supplied loc'''
         self.run_cmd_int(
