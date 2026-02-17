@@ -328,6 +328,10 @@ bool AC_AutoTune::currently_level()
 {
     // abort AutoTune if we pass 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
     const uint32_t now_ms = AP_HAL::millis();
+    if (fabsf(attitude_control->get_rate_ef_target_rads().z) > 0.5 * attitude_control->get_slew_yaw_max_rads()) {
+        // reset if the target yaw rate is above half the slew rate
+        level_start_time_ms = now_ms;
+    }
     if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
         mode = TuneMode::FAILED;
