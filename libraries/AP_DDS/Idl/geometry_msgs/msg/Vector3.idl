@@ -2,6 +2,8 @@
 // with input from geometry_msgs/msg/Vector3.msg
 // generated code does not contain a copyright notice
 
+#ifndef GEOMETRY_MSGS__MSG__VECTOR3_IDL
+#define GEOMETRY_MSGS__MSG__VECTOR3_IDL
 
 module geometry_msgs {
   module msg {
@@ -21,3 +23,4 @@ module geometry_msgs {
   };
 };
 
+#endif
