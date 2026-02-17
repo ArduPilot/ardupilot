@@ -1,4 +1,7 @@
 #include "NAND_PIO_Driver.h"
+
+#if defined(HAL_NAND_FLASH_ENABLED) && HAL_NAND_FLASH_ENABLED == 1
+
 #include "extended_spi.pio.h"
 #include "hardware/dma.h"
 #include "pico/stdlib.h"
@@ -353,3 +356,4 @@ bool NAND_PIO_Driver::write_page(uint32_t block, uint32_t page, const uint8_t *d
     program_execute(block, page);
     return true;
 }
+#endif // HAL_NAND_FLASH_ENABLED

@@ -3,6 +3,8 @@
 #include "AP_HAL_RP.h"
 #include <string.h>
 
+#if defined(HAL_NAND_FLASH_ENABLED) && HAL_NAND_FLASH_ENABLED == 1
+
 namespace RP {
 
 #define CACHED_SECTORS 3
@@ -199,3 +201,5 @@ inline double DECODE_R8(const uint8_t *buf) {
 
 #define DECODE_U2(buf) ((*(buf) & 0xFF) + ((uint16_t)(*((uint8_t *)(buf) + 1)) << 8)) // Decode 2 bytes from a buffer into a 16-bit unsigned integer
 #define DECODE_I2(buf) ((*(buf) & 0xFF) + ((int16_t)(*((uint8_t *)(buf) + 1)) << 8)) // Decode 2 bytes from a buffer into a 16-bit signed integer
+
+#endif // HAL_NAND_FLASH_ENABLED
