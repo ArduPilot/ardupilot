@@ -51,8 +51,10 @@ void NavEKF3_core::readRangeFinder(void)
             if (sensor->status() == AP_DAL_RangeFinder::Status::Good) {
                 // get the current range measurement
                 range_distance = sensor->distance();
-            } else if (onGround && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
-                // use ground clearance range if on ground
+            } else if (!takeOffDetected && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
+                // use ground clearance range until takeoff is detected.
+                // once the rangefinder comes into range on climb, the Good
+                // status branch above takes over automatically.
                 range_distance = rngOnGnd;
             } else {
                 // ignore out-of-range data
@@ -198,8 +200,8 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         delTimeOF = 0.0f;
     }
     // by definition if this function is called, then flow measurements have been provided so we
-    // need to run the optical flow takeoff detection
-    detectOptFlowTakeoff();
+    // need to run the takeoff detection
+    detectTakeoff();
 
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {

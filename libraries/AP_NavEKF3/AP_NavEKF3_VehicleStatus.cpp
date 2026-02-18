@@ -461,9 +461,8 @@ void NavEKF3_core::setTerrainHgtStable(bool val)
     terrainHgtStable = val;
 }
 
-#if EK3_FEATURE_OPTFLOW_FUSION
-// Detect takeoff for optical flow navigation
-void NavEKF3_core::detectOptFlowTakeoff(void)
+// Detect takeoff by looking at inertial and range finder data
+void NavEKF3_core::detectTakeoff(void)
 {
     if (!onGround && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
         // we are no longer confidently on the ground so check the range finder and gyro for signs of takeoff
@@ -479,4 +478,3 @@ void NavEKF3_core::detectOptFlowTakeoff(void)
         takeOffDetected = false;
     }
 }
-#endif  // EK3_FEATURE_OPTFLOW_FUSION
