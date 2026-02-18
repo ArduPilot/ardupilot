@@ -2363,7 +2363,7 @@ class TestSuite(abc.ABC):
             p1=p1, # enable/disable
         )
 
-    def reboot_sitl_mav(self, required_bootcount=None, force=False):
+    def reboot_sitl_mav(self, required_bootcount=None, force=False, invalid_heartbeat_sys_status=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
         # we must make sure that stats have been reset - otherwise
         # when we reboot we'll reset statistics again and lose our
@@ -2418,7 +2418,11 @@ class TestSuite(abc.ABC):
                     raise NotAchievedException("Bad reboot ACK detected")
             self.install_message_hook_context(hook)
 
-        self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
+        self.detect_and_handle_reboot(
+            old_bootcount,
+            required_bootcount=required_bootcount,
+            invalid_heartbeat_sys_status=invalid_heartbeat_sys_status,
+        )
 
         if do_context:
             self.context_pop()
@@ -2443,12 +2447,17 @@ class TestSuite(abc.ABC):
                     check_position=True,
                     mark_context=True,
                     startup_location_dist_max=1,
+                    invalid_heartbeat_sys_status=None,
                     ):
         """Reboot SITL instance and wait for it to reconnect."""
         if self.armed() and not force:
             raise NotAchievedException("Reboot attempted while armed")
         self.progress("Rebooting SITL")
-        self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
+        self.reboot_sitl_mav(
+            required_bootcount=required_bootcount,
+            force=force,
+            invalid_heartbeat_sys_status=invalid_heartbeat_sys_status,
+        )
         self.do_heartbeats(force=True)
         if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
@@ -2465,7 +2474,7 @@ class TestSuite(abc.ABC):
         self.mavproxy.send("reboot\n")
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
-    def detect_and_handle_reboot(self, old_bootcount, required_bootcount=None, timeout=10):
+    def detect_and_handle_reboot(self, old_bootcount, required_bootcount=None, timeout=10, invalid_heartbeat_sys_status=None):
         tstart = time.time()
         if required_bootcount is None:
             required_bootcount = old_bootcount + 1
@@ -2498,7 +2507,7 @@ class TestSuite(abc.ABC):
         self.do_timesync_roundtrip(timeout_in_wallclock=True)
 
         self.progress("Calling initialise-after-reboot")
-        self.initialise_after_reboot_sitl()
+        self.initialise_after_reboot_sitl(invalid_heartbeat_sys_status=invalid_heartbeat_sys_status)
 
     def scripting_restart(self):
         '''restart scripting subsystem'''
@@ -3120,17 +3129,18 @@ class TestSuite(abc.ABC):
         if len(missing) > 0:
             raise NotAchievedException("Documented messages (%s) not in code" % missing)
 
-    def initialise_after_reboot_sitl(self):
+    def initialise_after_reboot_sitl(self, invalid_heartbeat_sys_status=None):
 
-        # after reboot stream-rates may be zero.  Request streams.
-        self.drain_mav()
-        self.wait_heartbeat(
-            invalid_sys_status=(
+        if invalid_heartbeat_sys_status is None:
+            invalid_heartbeat_sys_status = (
                 mavutil.mavlink.MAV_STATE_UNINIT,
                 mavutil.mavlink.MAV_STATE_BOOT,
                 mavutil.mavlink.MAV_STATE_CALIBRATING,
-            ),
-        )
+            )
+
+        # after reboot stream-rates may be zero.  Request streams.
+        self.drain_mav()
+        self.wait_heartbeat(invalid_sys_status=invalid_heartbeat_sys_status)
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
@@ -11550,13 +11560,14 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Disarming tracker")
                 self.disarm_vehicle(force=True)
 
-            self.reboot_sitl(required_bootcount=1)
+            self.reboot_sitl(required_bootcount=1, invalid_heartbeat_sys_status=())
             self.progress("Waiting for 'Config error'")
             # SYSTEM_TIME not sent in config error loop:
             self.wait_statustext("Config error", wallclock_timeout=True)
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
         except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
             ex = e
 
         self.progress("Resetting SIM_BARO_COUNT")
