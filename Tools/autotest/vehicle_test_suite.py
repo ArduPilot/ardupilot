@@ -3118,7 +3118,13 @@ class TestSuite(abc.ABC):
 
         # after reboot stream-rates may be zero.  Request streams.
         self.drain_mav()
-        self.wait_heartbeat()
+        self.wait_heartbeat(
+            invalid_sys_status=(
+                mavutil.mavlink.MAV_STATE_UNINIT,
+                mavutil.mavlink.MAV_STATE_BOOT,
+                mavutil.mavlink.MAV_STATE_CALIBRATING,
+            ),
+        )
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
@@ -3144,7 +3150,11 @@ class TestSuite(abc.ABC):
             if time.time() - tstart > 30:
                 raise NotAchievedException("Failed to customise")
             try:
-                m = self.wait_heartbeat(drain_mav=True)
+                m = self.wait_heartbeat(drain_mav=True, invalid_sys_status=(
+                    mavutil.mavlink.MAV_STATE_UNINIT,
+                    mavutil.mavlink.MAV_STATE_BOOT,
+                    mavutil.mavlink.MAV_STATE_CALIBRATING,
+                ))
                 if m.type == 0:
                     self.progress("Bad heartbeat: %s" % str(m))
                     continue
@@ -8677,7 +8687,7 @@ class TestSuite(abc.ABC):
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, invalid_sys_status=None, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:
@@ -8693,6 +8703,9 @@ Also, ignores heartbeats not from our target system'''
             m = self.mav.wait_heartbeat(*args, **x)
             if m is None:
                 continue
+            if invalid_sys_status is not None:
+                if m.system_status in invalid_sys_status:
+                    continue
             if m.get_srcSystem() == self.sysid_thismav():
                 return m
 
