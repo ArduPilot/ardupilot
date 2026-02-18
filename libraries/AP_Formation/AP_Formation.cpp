@@ -87,6 +87,28 @@ const AP_Param::GroupInfo AP_Formation::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ENABLE", 9, AP_Formation, _pd_enable, 0),
 
+    // @Param: SPD_EN
+    // @DisplayName: Formation speed injection enable
+    // @Description: Enable C++ 400Hz speed injection into TECS. When 0, Python owns airspeed via DO_CHANGE_SPEED.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("SPD_EN", 10, AP_Formation, _spd_enable, 0),
+
+    // @Param: DOCK_MODE
+    // @DisplayName: Docking waypoint mode
+    // @Description: 0=intercept (velocity prediction). 1=docking (trail offset behind leader, no prediction).
+    // @Values: 0:Intercept,1:Docking
+    // @User: Standard
+    AP_GROUPINFO("DOCK_MODE", 11, AP_Formation, _dock_mode, 0),
+
+    // @Param: DOCK_TRAIL
+    // @DisplayName: Docking trail offset
+    // @Description: Distance to trail behind leader in docking mode. Python sets this dynamically.
+    // @Units: m
+    // @Range: 0 50
+    // @User: Standard
+    AP_GROUPINFO("DOCK_TRAIL", 12, AP_Formation, _dock_trail, 8.0f),
+
     AP_GROUPEND
 };
 

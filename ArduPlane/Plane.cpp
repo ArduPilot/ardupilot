@@ -1129,7 +1129,17 @@ void Plane::update_formation_controller(void)
     // the waypoint so TECS tracks the COMMANDED altitude.
     if (control_mode == &mode_guided) {
         Location formation_wp = formation_controller.get_formation_waypoint();
-        prev_WP_loc = current_loc;    // Tranche H: AB segment from here -> target
+        // Tranche S: Bearing-offset prev_WP_loc for L1 cross-track authority.
+        // Tranche H set prev_WP = current_loc, collapsing the AB segment to
+        // ~6cm at 400Hz.  L1 cross-track error (A_air % AB) computes near-zero
+        // regardless of actual lateral offset.  Placing prev_WP 12m behind
+        // along heading gives L1 a stable AB segment for cross-track correction.
+        {
+            Location prev_offset = current_loc;
+            const float yaw_rad = ahrs.get_yaw();
+            prev_offset.offset(-12.0f * cosf(yaw_rad), -12.0f * sinf(yaw_rad));
+            prev_WP_loc = prev_offset;
+        }
         next_WP_loc = formation_wp;
         set_target_altitude_location(formation_wp);
         // Clear stale altitude slope from last DO_REPOSITION.

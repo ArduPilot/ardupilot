@@ -59,6 +59,19 @@ public:
     // no waypoint injection, no speed override, Python owns GUIDED mode.
     bool pd_enabled() const { return _pd_enable; }
 
+    // Speed injection enable gate (FORM_SPD_EN parameter)
+    // When false, C++ does NOT write target_airspeed_cm —
+    // Python owns airspeed via DO_CHANGE_SPEED.
+    bool spd_enabled() const { return _spd_enable; }
+
+    // Docking waypoint mode (FORM_DOCK_MODE parameter)
+    // 0=intercept (velocity prediction), 1=docking (trail offset behind leader)
+    bool dock_mode() const { return _dock_mode; }
+
+    // Docking trail offset (FORM_DOCK_TRAIL parameter)
+    // Distance to trail behind leader in docking mode (m)
+    float dock_trail() const { return _dock_trail; }
+
     // Reset controller state
     void reset();
 
@@ -76,6 +89,9 @@ private:
     AP_Float _maintain_speed;       // Speed when in formation (m/s)
     AP_Float _speed_threshold;      // Distance threshold for speed switch (m)
     AP_Int8  _pd_enable;            // FORM_ENABLE: C++ PD controller enable (0=Python owns GUIDED)
+    AP_Int8  _spd_enable;           // FORM_SPD_EN: C++ speed injection enable (0=Python owns airspeed)
+    AP_Int8  _dock_mode;            // FORM_DOCK_MODE: 0=intercept (prediction), 1=docking (trail offset)
+    AP_Float _dock_trail;           // FORM_DOCK_TRAIL: trail offset behind leader (m) in docking mode
 
     // State variables - updated each cycle
     Vector3f _target_pos;           // Lead aircraft position NED (m)

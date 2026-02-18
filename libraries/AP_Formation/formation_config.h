@@ -234,7 +234,7 @@ namespace AltitudeControl {
     // Positive = follower below leader (subtracted from leader alt in NED)
     // Prevents formation waypoint from commanding climb to leader altitude
     constexpr bool  FORM_BELOW_OFFSET_ENABLE = true;
-    constexpr float FORM_BELOW_OFFSET_M = 6.0f;       // Default below offset (meters)
+    constexpr float FORM_BELOW_OFFSET_M = 4.31f;      // Boom tip: 6.1*sin(45deg) = 4.31m
     constexpr float FORM_BELOW_OFFSET_MAX_M = 25.0f;  // Safety clamp upper bound
 }
 

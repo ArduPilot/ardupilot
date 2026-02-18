@@ -205,6 +205,10 @@ public:
     // Activate/deactivate formation mode
     void set_active(bool active) { _active = active; }
 
+    // Docking parameter bridging (Tranche H - from AP_Formation)
+    void set_dock_mode(int mode) { _dock_mode = mode; }
+    void set_dock_trail(float trail_m) { _dock_trail = trail_m; }
+
     // Get diagnostic info
     float get_range_to_lead() { return _range_to_lead; }
     float get_closure_rate() { return _closure_rate; }
@@ -276,6 +280,10 @@ private:
 
     // Cross-track error for debug logging
     float _last_cross_track_error = 0.0f;
+
+    // Docking parameter storage (bridged from AP_Formation)
+    int _dock_mode = 0;
+    float _dock_trail = 10.0f;
 
     // Station-keeping PD controller - desired offset in leader body frame (m)
     // (x, y, z) = (behind, right, below) in leader body frame
