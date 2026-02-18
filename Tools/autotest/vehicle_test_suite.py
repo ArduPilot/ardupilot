@@ -8365,11 +8365,21 @@ class TestSuite(abc.ABC):
         #                  (wpnum_start, start_wp))
 
         last_wp_msg = 0
+        vfr_hud_alt = None
         while self.get_sim_time_cached() < tstart + timeout:
+            m = self.assert_receive_message([
+                'NAV_CONTROLLER_OUTPUT',
+                'VFR_HUD',
+            ])
+            if m.get_type() == 'VFR_HUD':
+                vfr_hud_alt = m.alt
+                continue
+            if vfr_hud_alt is None:
+                continue
+
             seq = self.mav.waypoint_current()
-            m = self.assert_receive_message('NAV_CONTROLLER_OUTPUT')
+
             wp_dist = m.wp_dist
-            m = self.assert_receive_message('VFR_HUD')
 
             # if we changed mode, fail
             if not self.mode_is('AUTO'):
@@ -8385,7 +8395,7 @@ class TestSuite(abc.ABC):
             if self.get_sim_time_cached() - last_wp_msg > 1:
                 self.progress("WP %u (wp_dist=%u Alt=%.02f), current_wp: %u,"
                               "wpnum_end: %u" %
-                              (seq, wp_dist, m.alt, current_wp, wpnum_end))
+                              (seq, wp_dist, vfr_hud_alt, current_wp, wpnum_end))
                 last_wp_msg = self.get_sim_time_cached()
             if seq == current_wp+1 or (seq > current_wp+1 and allow_skip):
                 self.progress("WW: Starting new waypoint %u" % seq)
