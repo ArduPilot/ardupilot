@@ -54,6 +54,14 @@ void NavEKF3_core::readRangeFinder(void)
             } else if (onGround && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
                 // use ground clearance range if on ground
                 range_distance = rngOnGnd;
+            } else if (!inFlight && frontend->option_is_enabled(NavEKF3::Option::FuseRngOnGndUntilFlying) &&
+                       sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
+                // continue fusing the on-ground rangefinder clearance value after arming
+                // until flight is detected. This keeps the rangefinder as the active height
+                // source and prevents fallback to baro which may be noisy due to ground
+                // effect or indoor pressure changes. Once the rangefinder comes into range
+                // on climb, the Good status branch above takes over automatically.
+                range_distance = rngOnGnd;
             } else {
                 // ignore out-of-range data
                 continue;
