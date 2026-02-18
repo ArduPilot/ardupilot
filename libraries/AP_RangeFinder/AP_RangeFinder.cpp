@@ -855,15 +855,18 @@ MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotati
     return backend->get_mav_distance_sensor_type();
 }
 
-// get temperature reading in C.  returns true on success and populates temp argument
-bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
+#if AP_TEMPERATURE_SENSOR_ENABLED
+// set temperature from an external source
+bool RangeFinder::set_temperature(uint8_t instance, float temperature)
 {
-    AP_RangeFinder_Backend *backend = find_instance(orientation);
-    if (backend == nullptr) {
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
         return false;
     }
-    return backend->get_temp(temp);
+
+    state[instance].temperature_external = temperature;
+    return true;
 }
+#endif  // AP_TEMPERATURE_SENSOR_ENABLED
 
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
