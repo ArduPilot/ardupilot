@@ -5223,7 +5223,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("TAKEOFF")
 
         # waiting for the EKF to be happy won't work
-        self.delay_sim_time(20)
+        self.wait_prearm_sys_status_healthy()
         self.arm_vehicle()
 
         target_alt = self.get_parameter("TKOFF_ALT")
