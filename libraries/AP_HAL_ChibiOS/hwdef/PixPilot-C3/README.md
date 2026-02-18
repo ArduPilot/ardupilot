@@ -4,37 +4,22 @@ The PixPilot-C3 flight controller is sold by a range of resellers listed at [Mak
 
 ## Features
 
-•    STM32F427VIT6 and STM32F103C8T6 microcontroller
-
-•    two IMUs, two ICM42688-P(SPI)
-
-•    Two barometers, BMP388(SPI)
-
-•    builtin RAMTRON(SPI)
-
-•    microSD card slot
-
-•    5 UARTs
-
-•    USB(Type-C)
-
-•    PPM, S.Bus & DSM input
-
-•    14 PWM outputs
-
-•    tow I2C ports and two FDCAN ports
-
-•    one S.Bus output
-
-•    builtin Buzzer
-
-•    builtin LED
-
-•    two voltage & current monitoring
-
-•    servo rail BEC independent power input for servos
-
-•    external safety Switch
+- STM32F427VIT6 and STM32F103C8T6 microcontroller
+- two IMUs, two ICM42688-P(SPI)
+- Two barometers, BMP388(SPI)
+- builtin RAMTRON(SPI)
+- microSD card slot
+- 5 UARTs
+- USB(Type-C)
+- PPM, S.Bus & DSM input
+- 14 PWM outputs
+- tow I2C ports and two FDCAN ports
+- one S.Bus output
+- builtin Buzzer
+- builtin LED
+- two voltage & current monitoring
+- servo rail BEC independent power input for servos
+- external safety Switch
 
 ## Pinout
 

@@ -4,24 +4,24 @@ The PixSurveyA2-IND flight controller is sold by a range of resellers listed at 
 
 ## Features
 
-• STM32H743VIT6 microcontroller
-• STM32F103C8T6 IOMCU microcontroller
-• 3x IMUs, 2- ICM-42652(SPI), one ICM42688-P(SPI)
-   • internal heater for IMUs temperature control
-   • internal Soft Rubber Damping Ball isolation for All interna IMUs
-• 2x barometers, BMP388(SPI)
-• Built-in RAMTRON(SPI)
-• microSD card slot
-• 5 UARTs
-• USB(Type-C)
-• PPM & S.Bus input
-• 14 PWM outputs
-• Two I2C ports and Two FDCAN ports, with multiple connectors
-• S.Bus output
-• internal Buzzer
-• Two power module inputs, one analog and one CAN
-• Independent power input for servo rail BEC
-• External safety Switch
+- STM32H743VIT6 microcontroller
+- STM32F103C8T6 IOMCU microcontroller
+- 3x IMUs, 2- ICM-42652(SPI), one ICM42688-P(SPI)
+  - internal heater for IMUs temperature control
+  - internal Soft Rubber Damping Ball isolation for All interna IMUs
+- 2x barometers, BMP388(SPI)
+- Built-in RAMTRON(SPI)
+- microSD card slot
+- 5 UARTs
+- USB(Type-C)
+- PPM & S.Bus input
+- 14 PWM outputs
+- Two I2C ports and Two FDCAN ports, with multiple connectors
+- S.Bus output
+- internal Buzzer
+- Two power module inputs, one analog and one CAN
+- Independent power input for servo rail BEC
+- External safety Switch
 
 ## Where to Buy
 

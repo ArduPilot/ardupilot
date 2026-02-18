@@ -4,43 +4,25 @@ The PixSurveyA1-IND flight controller is an upgrade to PixSurveyA1, with better 
 
 ## Features
 
-•    STM32F427VIT6 and STM32F103C8T6 microcontroller
-
-•    Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
-
-•    internal heater for IMUs temperature control
-
-•    internal Soft Rubber Damping Column isolation for All internal IMUs
-
-•    Two barometers, MS5611(SPI) x2
-
-•    builtin IST8310 magnetometer(internal I2C)
-
-•    builtin RAMTRON(SPI)
-
-•    microSD card slot(SPI)
-
-•    5 UARTs
-
-•    USB(Type-C)
-
-•    PPM & S.Bus input
-
-•    14 PWM outputs
-
-•    tow I2C ports and two FDCAN ports
-
-•    one S.Bus output
-
-•    External Buzzer
-
-•    two voltage & current monitoring
-
-•    servo rail BEC independent power input for servos
-
-•    external safety Switch
-
-•    12V Power Output
+- STM32F427VIT6 and STM32F103C8T6 microcontroller
+- Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
+- internal heater for IMUs temperature control
+- internal Soft Rubber Damping Column isolation for All internal IMUs
+- Two barometers, MS5611(SPI) x2
+- builtin IST8310 magnetometer(internal I2C)
+- builtin RAMTRON(SPI)
+- microSD card slot(SPI)
+- 5 UARTs
+- USB(Type-C)
+- PPM & S.Bus input
+- 14 PWM outputs
+- tow I2C ports and two FDCAN ports
+- one S.Bus output
+- External Buzzer
+- two voltage & current monitoring
+- servo rail BEC independent power input for servos
+- external safety Switch
+- 12V Power Output
 
 ## Pinout
 
