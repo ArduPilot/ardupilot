@@ -23,6 +23,11 @@ public:
     bool disarm(AP_Arming::Method method, bool do_disarm_checks=true) override;
     bool arm(AP_Arming::Method method, bool do_arming_checks=true) override;
 
+    // pending arm - waits for EKF readiness after switch toggle
+    void set_pending_arm(bool with_airmode);
+    void clear_pending_arm();
+    void update_pending_arm();
+
 protected:
 
     bool pre_arm_checks(bool display_failure) override;
@@ -62,4 +67,8 @@ private:
     // we can store away success/failure of the checks.
     bool run_pre_arm_checks(bool display_failure);
 
+    // pending arm state - waits for EKF readiness after switch toggle
+    bool _pending_arm;
+    bool _pending_arm_airmode;
+    uint32_t _pending_arm_start_ms;
 };

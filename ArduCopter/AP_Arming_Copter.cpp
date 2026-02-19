@@ -784,6 +784,54 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     return true;
 }
 
+// set_pending_arm - enter pending arm state, will retry until EKF ready
+void AP_Arming_Copter::set_pending_arm(bool with_airmode)
+{
+    _pending_arm = true;
+    _pending_arm_airmode = with_airmode;
+    _pending_arm_start_ms = millis();
+    gcs().send_text(MAV_SEVERITY_INFO, "Arm pending - waiting for EKF");
+}
+
+// clear_pending_arm - cancel pending arm state
+void AP_Arming_Copter::clear_pending_arm()
+{
+    if (_pending_arm) {
+        _pending_arm = false;
+        gcs().send_text(MAV_SEVERITY_INFO, "Arm pending cancelled");
+    }
+}
+
+// update_pending_arm - retry arming periodically while pending
+// called at 10Hz from arm_motors_check
+void AP_Arming_Copter::update_pending_arm()
+{
+    if (!_pending_arm) {
+        return;
+    }
+
+    // check if pre-arm checks pass (maintained at 1Hz by AP_Arming::update)
+    if (copter.ap.pre_arm_check) {
+        if (arm(AP_Arming::Method::AUXSWITCH)) {
+            if (_pending_arm_airmode) {
+                copter.ap.armed_with_airmode_switch = true;
+            }
+            _pending_arm = false;
+            gcs().send_text(MAV_SEVERITY_INFO, "Arm pending complete");
+            return;
+        }
+    }
+
+    // after 5s without success, reset EKF bootstrap to force convergence
+    const uint32_t now_ms = millis();
+    if (now_ms - _pending_arm_start_ms >= 5000) {
+        if (AP::ahrs().reset_ekf_bootstrap()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Arm pending: EKF bootstrap reset");
+        }
+        _pending_arm_start_ms = now_ms;
+    }
+}
+
 // arming.disarm - disarm motors
 bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_checks)
 {
@@ -791,6 +839,9 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
     if (!copter.motors->armed()) {
         return true;
     }
+
+    // cancel any pending arm request when actually disarming
+    clear_pending_arm();
 
     // do not allow disarm via mavlink if we think we are flying:
     if (do_disarm_checks &&
