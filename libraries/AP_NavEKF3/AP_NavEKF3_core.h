@@ -950,11 +950,6 @@ private:
     // Control reset of yaw and magnetic field states
     void controlMagYawReset();
 
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calculated by the filter will be relative to this location
-    // returns false if the origin has already been set
-    bool setOrigin(const Location &loc);
-
     // Assess GPS data quality and set gpsGoodToAlign
     void calcGpsGoodToAlign(void);
 

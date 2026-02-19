@@ -691,7 +691,7 @@ void NavEKF3_core::readGpsData()
             gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
         }
 
-        if (!setOrigin(gpsloc_fieldelevation)) {
+        if (!setOriginLLH(gpsloc_fieldelevation)) {
             // set an error as an attempt was made to set the origin more than once
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return;
