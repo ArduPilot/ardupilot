@@ -162,6 +162,7 @@ public:
         DISABLE_PREARM_DISPLAY             = (1U << 0),
         DISABLE_STATUSTEXT_ON_STATE_CHANGE = (1U << 1),
         SKIP_IMU_CONSISTENCY_ICE_RUNNING   = (1U << 2),
+        PENDING_ARM_ON_SWITCH              = (1U << 3),
     };
     bool option_enabled(Option option) const {
         return (_arming_options & uint32_t(option)) != 0;
