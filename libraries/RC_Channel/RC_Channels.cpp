@@ -419,12 +419,19 @@ void RC_Channels::rudder_arm_disarm_check()
     // time to try to arm or disarm:
     rudder_arm_timer = 0;
     if (control_in > 4000) {
-        AP::arming().arm(AP_Arming::Method::RUDDER);
+        if (!AP::arming().arm(AP_Arming::Method::RUDDER)) {
+            // arming failed, set pending arm if option is enabled
+            if (AP::arming().option_enabled(AP_Arming::Option::PENDING_ARM_ON_SWITCH)) {
+                AP::arming().set_pending_arm(false);
+            }
+        }
         have_seen_neutral_rudder = false;
     } else {
         if (AP::arming().get_rudder_arming_type() == AP_Arming::RudderArming::ARMDISARM) {
             AP::arming().disarm(AP_Arming::Method::RUDDER);
         }
+        // cancel pending arm on left rudder even if already disarmed
+        AP::arming().clear_pending_arm();
     }
 }
 
