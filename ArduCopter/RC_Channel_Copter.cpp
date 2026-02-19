@@ -650,10 +650,29 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             }
             break;
 
+        case AUX_FUNC::ARMDISARM:
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                if (!copter.arming.arm(AP_Arming::Method::AUXSWITCH)) {
+                    if (copter.arming.option_enabled(AP_Arming::Option::PENDING_ARM_ON_SWITCH)) {
+                        copter.arming.set_pending_arm(false);
+                    }
+                }
+            } else if (ch_flag == AuxSwitchPos::LOW) {
+                copter.arming.clear_pending_arm();
+                copter.arming.disarm(AP_Arming::Method::AUXSWITCH);
+            }
+            break;
+
         case AUX_FUNC::ARMDISARM_AIRMODE:
-            RC_Channel::do_aux_function_armdisarm(ch_flag);
-            if (copter.arming.is_armed()) {
-                copter.ap.armed_with_airmode_switch = true;
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                if (copter.arming.arm(AP_Arming::Method::AUXSWITCH)) {
+                    copter.ap.armed_with_airmode_switch = true;
+                } else if (copter.arming.option_enabled(AP_Arming::Option::PENDING_ARM_ON_SWITCH)) {
+                    copter.arming.set_pending_arm(true);
+                }
+            } else if (ch_flag == AuxSwitchPos::LOW) {
+                copter.arming.clear_pending_arm();
+                copter.arming.disarm(AP_Arming::Method::AUXSWITCH);
             }
             break;
 
