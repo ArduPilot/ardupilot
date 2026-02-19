@@ -50,7 +50,7 @@ void Compass::cal_update()
         _cal_has_run = true;
         return;
     } 
-    if (!_cal_has_run || !_auto_reboot() || num_compass != num_compass_successful) {
+    if (!_cal_has_run || !_compass_cal_autoreboot || num_compass != num_compass_successful) {
         return;
     }
     hal.scheduler->delay(1000);
