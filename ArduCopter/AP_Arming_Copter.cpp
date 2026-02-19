@@ -822,9 +822,10 @@ void AP_Arming_Copter::update_pending_arm()
         }
     }
 
-    // after 5s without success, reset EKF bootstrap to force convergence
+    // after timeout, reset EKF bootstrap to force convergence
+    const float timeout_s = _pending_arm_timeout_s;
     const uint32_t now_ms = millis();
-    if (now_ms - _pending_arm_start_ms >= 5000) {
+    if (timeout_s > 0 && (now_ms - _pending_arm_start_ms >= uint32_t(timeout_s * 1000))) {
         if (AP::ahrs().reset_ekf_bootstrap()) {
             gcs().send_text(MAV_SEVERITY_INFO, "Arm pending: EKF bootstrap reset");
         }
