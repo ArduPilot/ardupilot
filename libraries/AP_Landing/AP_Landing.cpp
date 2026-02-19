@@ -513,7 +513,7 @@ void AP_Landing::reset(void)
     slope = 0;
     type_slope_flags.post_stats = false;
     type_slope_flags.has_aborted_due_to_slope_recalc = false;
-    type_slope_stage = SlopeStage::NORMAL;
+    type_slope_stage = SlopeStage::NOT_STARTED;
 }
 
 /*
