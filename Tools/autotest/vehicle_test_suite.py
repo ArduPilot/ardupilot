@@ -7295,26 +7295,19 @@ class TestSuite(abc.ABC):
             self.wait_distance(distance, accuracy=2)
             self.set_rc(3, 1500)
 
-    def guided_achieve_heading(self, heading, accuracy=None):
-        tstart = self.get_sim_time()
+    # emit a guided-mode command to come to a specific heading.
+    # **kwargs are passed into WaitAndMaintain, so
+    # e.g. minimum_duration works
+    # direction is -1 for ccw, 0 for "just choose" and 1 for cw
+    def guided_achieve_heading(self, heading, direction=0, **kwargs):
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             p1=heading,  # target angle
             p2=10,  # degrees/second
-            p3=1,  # -1 is counter-clockwise, 1 clockwise
+            p3=direction,  # -1 is counter-clockwise, 1 clockwise
             p4=0,  # 1 for relative, 0 for absolute
         )
-        while True:
-            if self.get_sim_time_cached() - tstart > 200:
-                raise NotAchievedException("Did not achieve heading")
-            m = self.assert_receive_message('VFR_HUD')
-            self.progress("heading=%d want=%d" % (m.heading, int(heading)))
-            if accuracy is not None:
-                delta = abs(m.heading - int(heading))
-                if delta <= accuracy:
-                    return
-            if m.heading == int(heading):
-                return
+        self.wait_heading(heading, **kwargs)
 
     def assert_heading(self, expected_heading, accuracy=1, heading_source='GLOBAL_POSITION_INT'):
         '''assert vehicle yaw is to heading (0-360)'''

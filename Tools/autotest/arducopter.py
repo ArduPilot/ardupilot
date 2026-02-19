@@ -4896,7 +4896,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             bearing = self.get_bearing(here, lower_surface_pos)
 
             self.change_mode("GUIDED")
-            self.guided_achieve_heading(bearing)
+            self.guided_achieve_heading(bearing, direction=1, accuracy=1)
             self.change_mode("LOITER")
             self.delay_sim_time(2)
             m = self.assert_receive_message('GLOBAL_POSITION_INT')
@@ -6076,8 +6076,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.user_takeoff(alt_min=10)
 
         self.start_subtest("yaw through absolute angles using MAV_CMD_CONDITION_YAW")
-        self.guided_achieve_heading(45)
-        self.guided_achieve_heading(135)
+        self.guided_achieve_heading(45, timeout=60)
+        self.guided_achieve_heading(135, timeout=60)
 
         self.start_subtest("move the vehicle using set_position_target_global_int")
         # the following numbers are 5-degree-latitude and 5-degrees
@@ -6614,7 +6614,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
 
         for heading in 30, 45, 150:
-            self.guided_achieve_heading(heading)
+            self.guided_achieve_heading(heading, direction=1, accuracy=1)
 
             r, p , y, yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
 
@@ -6727,7 +6727,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         takeoff_loc = self.mav.location()
 
         self.takeoff(20, mode='GUIDED')
-        self.guided_achieve_heading(315)
+        self.guided_achieve_heading(315, direction=1, accuracy=1)
 
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
@@ -6840,7 +6840,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         for mount_yaw in [-45, 0, 45]:
             heading = 330
-            self.guided_achieve_heading(heading)
+            self.guided_achieve_heading(heading, minimum_duration=1, direction=1)
             self.assert_heading(heading)
 
             self.neutralise_gimbal()
@@ -6946,7 +6946,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Waiting for check_servo_map to do its job")
         self.delay_sim_time(5)
         self.progress("Pointing North")
-        self.guided_achieve_heading(0)
+        self.guided_achieve_heading(0, direction=1, accuracy=1)
         self.delay_sim_time(5)
         start = self.mav.location()
         (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
@@ -14283,7 +14283,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'WVANE_ENABLE': 1,
         })
         self.takeoff(20, mode='GUIDED')
-        self.guided_achieve_heading(0)
+        self.guided_achieve_heading(0, direction=1, accuracy=1)
 
         self.set_parameter("GUID_OPTIONS", 128)
         self.wait_heading(90, timeout=60, minimum_duration=10)
@@ -14799,7 +14799,7 @@ RTL_ALT_M 111
             if original_heading - target_heading < 90:
                 raise NotAchievedException("Bad initial heading")
             self.takeoff(10, mode='GUIDED')
-            self.guided_achieve_heading(target_heading)
+            self.guided_achieve_heading(target_heading, direction=1, accuracy=1)
             self.change_mode('RTL')
             self.wait_heading(original_heading)
             self.wait_disarmed()
@@ -14938,7 +14938,7 @@ RTL_ALT_M 111
         '''calibrate AHRS trim using RC input'''
         self.progress("Making earth frame same as body frame")  # because I'm lazy
         self.takeoff(5, mode='GUIDED')
-        self.guided_achieve_heading(0)
+        self.guided_achieve_heading(0, direction=1, accuracy=1)
         self.do_land()
 
         self.set_parameters({
