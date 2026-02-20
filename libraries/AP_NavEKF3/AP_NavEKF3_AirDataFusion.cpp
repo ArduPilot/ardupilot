@@ -203,8 +203,8 @@ void NavEKF3_core::SelectTasFusion()
 
 
 // select fusion of synthetic sideslip measurements or body frame drag
-// synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
-// body frame drag only works for bluff body multi rotor vehices with thrust forces aligned with the Z axis
+// synthetic sideslip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
+// body frame drag only works for bluff body multi rotor vehicles with thrust forces aligned with the Z axis
 // it requires a stable wind for best results and should not be used for aerobatic flight
 void NavEKF3_core::SelectBetaDragFusion()
 {
@@ -254,7 +254,7 @@ void NavEKF3_core::SelectBetaDragFusion()
 }
 
 /*
- * Fuse sythetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * Fuse synthetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 */
