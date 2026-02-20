@@ -13,6 +13,7 @@
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_EFI_Hirth.h>
+#include <SITL/SIM_EFI_Edge.h>
 #include <SITL/SIM_Vicon.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
@@ -180,8 +181,11 @@ public:
     // simulated EFI MegaSquirt device:
     SITL::EFI_MegaSquirt *efi_ms;
 
-    // simulated EFI MegaSquirt device:
+    // simulated EFI Hirth device:
     SITL::EFI_Hirth *efi_hirth;
+
+    // simulated EFI Edge Autonomy device:
+    SITL::EFI_Edge *efi_edge;
 
     // output socket for flightgear viewing
     SocketAPM_native fg_socket{true};

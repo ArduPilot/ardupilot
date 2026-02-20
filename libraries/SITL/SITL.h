@@ -400,6 +400,7 @@ public:
         EFI_TYPE_MS = 1,
         EFI_TYPE_LOWEHEISER = 2,
         EFI_TYPE_HIRTH = 8,
+        EFI_TYPE_EDGE = 9,
     };
     
     AP_Int8  efi_type;
