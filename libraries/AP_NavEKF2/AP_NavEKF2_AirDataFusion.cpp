@@ -252,7 +252,7 @@ void NavEKF2_core::FuseSideslip()
     ftype vd;
     ftype vwn;
     ftype vwe;
-    const ftype R_BETA = 0.03f; // assume a sideslip angle RMS of ~10 deg
+    ftype R_BETA;
     Vector10 SH_BETA;
     Vector5 SK_BETA;
     Vector3F vel_rel_wind;
@@ -281,6 +281,20 @@ void NavEKF2_core::FuseSideslip()
     // perform fusion of assumed sideslip  = 0
     if (vel_rel_wind.x > 5.0f)
     {
+        // calculate predicted sideslip innovation using small angle approximation
+        innovBeta = vel_rel_wind.y / vel_rel_wind.x;
+
+        // base synthetic sideslip measurement variance (~10 deg 1-sigma)
+        const ftype betaVarRad2 = 0.03f;
+
+        // start down-weighting synthetic sideslip fusion beyond this many sigma
+        const ftype innovBetaThreshSigma = 2.0f;
+
+        // inflate synthetic measurement variance for large innovations
+        const ftype innovBetaThreshRad = innovBetaThreshSigma * sqrtF(betaVarRad2);
+        const ftype innovBetaNorm = MAX(1.0f, fabsF(innovBeta) / innovBetaThreshRad);
+        R_BETA = betaVarRad2 * sq(innovBetaNorm);
+
         // Calculate observation jacobians
         SH_BETA[0] = (vn - vwn)*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + (ve - vwe)*(2*q0*q3 + 2*q1*q2);
         if (fabsF(SH_BETA[0]) <= 1e-9f) {
@@ -359,12 +373,14 @@ void NavEKF2_core::FuseSideslip()
             }
         }
 
-        // calculate predicted sideslip angle and innovation using small angle approximation
-        innovBeta = vel_rel_wind.y / vel_rel_wind.x;
+        // constrain innovation to a sane range to keep sideslip approximation well behaved
+        innovBeta = constrain_ftype(innovBeta, -0.5f, 0.5f);
 
-        // reject measurement if greater than 3-sigma inconsistency
-        if (innovBeta > 0.5f) {
-            return;
+        // limit update to just wind states if zero-sideslip assumption is likely violated
+        if (innovBetaNorm > 1.0f) {
+            for (uint8_t i=0; i<=21; i++) {
+                Kfusion[i] = 0.0f;
+            }
         }
 
         // zero the attitude error state - by definition it is assumed to be zero before each observation fusion
