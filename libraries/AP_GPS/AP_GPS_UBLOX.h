@@ -74,17 +74,6 @@
 #define UBLOX_MODULE_LEN 9
 #define UBLOX_PROTVER_LEN 8
 
-#define RATE_POSLLH 1
-#define RATE_STATUS 1
-#define RATE_SOL 1
-#define RATE_TIMEGPS 5
-#define RATE_PVT 1
-#define RATE_VELNED 1
-#define RATE_DOP 1
-#define RATE_HW 5
-#define RATE_HW2 5
-#define RATE_TIM_TM2 1
-
 #define CONFIG_RATE_NAV      (1<<0)
 #define CONFIG_RATE_POSLLH   (1<<1)
 #define CONFIG_RATE_STATUS   (1<<2)
@@ -137,7 +126,6 @@ class AP_GPS_UBLOX : public AP_GPS_Backend
     using CFGv2 = AP_GPS_UBLOX_CFGv2;
 #endif
     friend class AP_GPS_UBLOX_CFGv2;
-    friend class UBXCfgKVBlob;
 public:
     AP_GPS_UBLOX(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port, AP_GPS::GPS_Role role);
     ~AP_GPS_UBLOX() override;
@@ -847,13 +835,7 @@ private:
     
     bool havePvtMsg;
 
-    // structure for list of config key/value pairs for
-    // specific configurations
-    struct PACKED config_list {
-        ConfigKey key;
-        // support up to 4 byte values, assumes little-endian
-        uint32_t value;
-    };
+    using config_list = ubx_config_list;
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     bool        _configure_valset(ConfigKey key, const void *value, uint8_t layers=UBX_VALSET_LAYER_ALL);
@@ -926,22 +908,11 @@ private:
     bool use_single_valget;
 
 #if GPS_MOVING_BASELINE
-    // config for moving baseline base
-    static const config_list config_MB_Base_uart1[];
-    static const config_list config_MB_Base_uart2[];
-
-    // config for moving baseline rover
-    static const config_list config_MB_Rover_uart1[];
-    static const config_list config_MB_Rover_uart2[];
-
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
 #endif // GPS_MOVING_BASELINE
 
     bool supports_l5;
-    static const config_list config_M10[];
-    static const config_list config_L5_ovrd_ena[];
-    static const config_list config_L5_ovrd_dis[];
     // scratch space for GNSS config
     config_list* config_GNSS;
 #if AP_GPS_UBLOX_CFGV2_ENABLED

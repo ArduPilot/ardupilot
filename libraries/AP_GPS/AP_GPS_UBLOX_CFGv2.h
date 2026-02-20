@@ -24,15 +24,6 @@
 
 #if AP_GPS_UBLOX_CFGV2_ENABLED
 
-// this is number of epochs per output. A higher value will reduce
-// the uart bandwidth needed and allow for higher latency
-#define RTK_MB_RTCM_RATE 1
-
-#define UBX_NAVSPG_DYNMODEL_AIR4G 8
-
-#define RATE_PVT 1
-
-
 class AP_GPS_UBLOX;
 
 // -----------------------------------------------------------------------------
@@ -43,23 +34,11 @@ class AP_GPS_UBLOX;
 // 0x04: four bytes
 // 0x05: eight bytes
 // -----------------------------------------------------------------------------
-#define UBX_CFG_KEY_SIZE_SHIFT            (28U)
-#define UBX_CFG_KEY_SIZE_MASK             (0x7LU << UBX_CFG_KEY_SIZE_SHIFT)
 #define UBX_CFG_KEY_SIZE_CODE_BIT         (0x1U)
 #define UBX_CFG_KEY_SIZE_CODE_1B          (0x2U)
 #define UBX_CFG_KEY_SIZE_CODE_2B          (0x3U)
 #define UBX_CFG_KEY_SIZE_CODE_4B          (0x4U)
 #define UBX_CFG_KEY_SIZE_CODE_8B          (0x5U)
-#define UBX_CFG_KEY_SIZE_CODE(KEY_)       (((uint32_t)(KEY_) >> UBX_CFG_KEY_SIZE_SHIFT) & 0x7U)
-
-// Convenience macro to declare a key/value pair without using STL
-// Enforces the correct value type per key via UBXCfgKV<>, usable with blob.push(...)
-#define UBX_CFG_KV(KEY_, VAL_) \
-    AP_GPS_UBLOX_CFGv2::UBXCfgKV<KEY_>( (typename AP_GPS_UBLOX_CFGv2::UBXCfgKV<KEY_>::ValueType)(VAL_) )
-
-
-#define UBX_CFG_BLOB_SIZE_FROM_KV(...) \
-    (UBXCfgBlobSizeFromKVExpr(__VA_ARGS__))
 
 //---------------------------------------------------------------------------------
 // AP_GPS_UBLOX_CFGv2 class used to configure modern ublox units with configuration
@@ -202,12 +181,6 @@ public:
         _override_common_cfg[instance]->set_size(size);
     }
 private:
-    struct PACKED config_list {
-        AP_GPS_UBLOX_CFGv2::ConfigKey key;
-        // support up to 4 byte values, assumes little-endian
-        uint32_t value;
-    };
-
     bool using_legacy_config() const;
     bool skip_cfgv2() const;
 
@@ -231,25 +204,11 @@ private:
     bool _identify_module();
     Module module;
 
-    struct {
-        // bit masks of supported and enabled constellations and signals
-        uint8_t supported_gnss;
-        uint8_t enabled_gnss;
-        uint32_t supported_signals;
-        uint32_t enabled_signals;
-
-        // common constant config values
-        #define COMMON_CFG(KEY_CLASS, KEY, TYPE, VAL) TYPE KEY##_val;
-        UBX_CFG_COMMON_UART1(COMMON_CFG)
-        #undef COMMON_CFG
-
-        // variable config values
-        uint16_t meas_rate;
-        uint8_t dynmodel;
-        int8_t min_elevation;
-        bool gps_l5_health_ovrd;
-        bool gps_l5_health_ovrd_exists;
-    } _cfg;
+    // bit masks of supported and enabled constellations and signals
+    uint8_t supported_gnss;
+    uint8_t enabled_gnss;
+    uint32_t supported_signals;
+    uint32_t enabled_signals;
 
     void _handle_valget_kv(ConfigKey key, uint64_t value, uint8_t value_len);
     void _parse_signal_kv(ConfigKey key, uint64_t value, uint8_t value_len);
@@ -266,6 +225,10 @@ private:
 
     // Common config packed buffer management
     bool _init_common_cfg_list(bool check_only = false, uint32_t key_to_check = 0);
+    // push entries from a static const config_list array into _common_cfg
+    bool _push_cfg_array(const ubx_config_list *entries, uint16_t count, uint16_t &item_index);
+    // check if a key exists in a static const config_list array
+    static bool _key_in_array(const ubx_config_list *entries, uint16_t count, uint32_t key);
     bool fetch_all_config();
 
     bool _valget_in_progress;
