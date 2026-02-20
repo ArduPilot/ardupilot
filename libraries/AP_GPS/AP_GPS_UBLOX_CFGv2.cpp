@@ -660,20 +660,20 @@ void AP_GPS_UBLOX_CFGv2::_parse_signal_kv(ConfigKey key, uint64_t value, uint8_t
     const bool ena = (value & 0x1U) != 0;
 
     auto set_gnss = [&](uint8_t idx, bool enabled){
-        _cfg.supported_gnss |= (1U << idx);
+        supported_gnss |= (1U << idx);
         if (enabled) {
-            _cfg.enabled_gnss |= (1U << idx);
+            enabled_gnss |= (1U << idx);
         } else {
-            _cfg.enabled_gnss &= ~(1U << idx);
+            enabled_gnss &= ~(1U << idx);
         }
     };
 
     auto set_signal = [&](uint32_t idx, bool enabled){
-        _cfg.supported_signals |= (1U << idx);
+        supported_signals |= (1U << idx);
         if (enabled) {
-            _cfg.enabled_signals |= (1U << idx);
+            enabled_signals |= (1U << idx);
         } else {
-            _cfg.enabled_signals &= ~(1U << idx);
+            enabled_signals &= ~(1U << idx);
         }
     };
 
@@ -703,10 +703,10 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
     snprintf(buf, sizeof(buf), "GPS %d: GNSS: ", ubx_backend.state.instance + 1);
     // UBLOX_GNSS indexes are 0..7 (with 4 unused for IMES), and we track GNSS in 8-bit masks
     for (uint8_t i = 0; i < 8; i++) {
-        if (!(_cfg.supported_gnss & (1U << i))) { continue; }
+        if (!(supported_gnss & (1U << i))) { continue; }
         const char *name = CONSTELLATION_NAMES[i];
         if (name[0] == '\0') { continue; }
-        const bool enabled = (_cfg.enabled_gnss & (1U << i)) != 0;
+        const bool enabled = (enabled_gnss & (1U << i)) != 0;
         if (strlen(buf) + strlen(name) + 5 < sizeof(buf)) {
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%s[%d] ", name, enabled ? 1 : 0);
         }
@@ -719,7 +719,7 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
     const size_t prefix_len = strlen(buf);
     for (uint8_t i = 0; i < ARRAY_SIZE(SIGNAL_NAMES); i++) {
         if (SIGNAL_NAMES[i][0] == '\0') { continue; }
-        if (!(_cfg.enabled_signals & (1U << i))) { continue; }
+        if (!(enabled_signals & (1U << i))) { continue; }
         size_t needed = strlen(SIGNAL_NAMES[i]) + 1; // +1 for space
         if (strlen(buf) + needed >= sizeof(buf)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", buf);
@@ -738,14 +738,14 @@ void AP_GPS_UBLOX_CFGv2::_publish_supported_constellations()
 bool AP_GPS_UBLOX_CFGv2::_send_gnss_cfg()
 {
     const uint8_t desired_gnss = (uint8_t)ubx_backend.params.gnss_mode;
-    if (desired_gnss == 0 || desired_gnss == _cfg.enabled_gnss) {
+    if (desired_gnss == 0 || desired_gnss == enabled_gnss) {
         return false;
     }
 
     // mask off unsupported constellations
-    const uint8_t effective_gnss = desired_gnss & _cfg.supported_gnss;
+    const uint8_t effective_gnss = desired_gnss & supported_gnss;
 
-    if (effective_gnss == _cfg.enabled_gnss) {
+    if (effective_gnss == enabled_gnss) {
         return false;
     }
 
@@ -756,7 +756,7 @@ bool AP_GPS_UBLOX_CFGv2::_send_gnss_cfg()
 
     #define PUSH_GNSS(NAME, INDEX) \
         { \
-            const uint8_t curr_val = (_cfg.enabled_gnss & (1U << AP_GPS_UBLOX::GNSS_##NAME)) ? 1U : 0U; \
+            const uint8_t curr_val = (enabled_gnss & (1U << AP_GPS_UBLOX::GNSS_##NAME)) ? 1U : 0U; \
             const uint8_t desired_val = (effective_gnss & (1U << AP_GPS_UBLOX::GNSS_##NAME)) ? 1U : 0U; \
             packed_cfg.push<ConfigKey::CFG_SIGNAL_##NAME##_ENA>(curr_val, desired_val); \
         }
@@ -788,6 +788,34 @@ bool AP_GPS_UBLOX_CFGv2::_send_gnss_cfg()
         _send_valset_bytes(packed_cfg.get(), (uint16_t)packed_cfg.get_size(), (ConfigLayer)CFG_LAYER_ALL);
     }
     return true;
+}
+
+// push entries from a config_list array into _common_cfg, tracking position via item_index
+// returns false if buffer fills (item_index updated to resume point)
+bool AP_GPS_UBLOX_CFGv2::_push_cfg_array(const ubx_config_list *entries, uint16_t count, uint16_t &item_index)
+{
+    for (uint16_t i = 0; i < count; i++) {
+        if (item_index >= _common_cfg_fetch_index) {
+            if (!_common_cfg.push(entries[i].key, entries[i].value)) {
+                Debug("Buffer full at item %u, will continue next call", item_index);
+                _common_cfg_fetch_index = item_index;
+                return false;
+            }
+        }
+        item_index++;
+    }
+    return true;
+}
+
+// check if a key exists in a config_list array
+bool AP_GPS_UBLOX_CFGv2::_key_in_array(const ubx_config_list *entries, uint16_t count, uint32_t key)
+{
+    for (uint16_t i = 0; i < count; i++) {
+        if ((uint32_t)entries[i].key == key) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Initialize common config incrementally based on module type
@@ -844,21 +872,17 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
         return false; // done with override
     }
 
-    uint16_t item_index = 0;
+    // Helper macro for check_only path across arrays
+    #define CHECK_ARRAY(arr) \
+        if (_key_in_array(arr, ARRAY_SIZE(arr), key_to_check)) { return true; }
 
-    // Helper macro to conditionally push config based on current index
-    #define INIT_CFG_PUSH_INDEXED(KEY_CLASS, KEY, TYPE, VAL) \
+    // Helper macro for pushing a single runtime-value entry
+    #define PUSH_RUNTIME(KEY, VAL) \
         if (check_only) { \
-            if (item_index == _common_cfg_fetch_index) { \
-                if ((uint32_t)ConfigKey::KEY_CLASS##_##KEY == key_to_check) { \
-                    Debug("Found config key 0x%08x at index %u", (unsigned)key_to_check, item_index); \
-                    return true; \
-                } \
-            } \
+            if ((uint32_t)ConfigKey::KEY == key_to_check) { return true; } \
         } else { \
             if (item_index >= _common_cfg_fetch_index) { \
-                if (!_common_cfg.push<ConfigKey::KEY_CLASS##_##KEY>((TYPE)VAL)) { \
-                    Debug("Buffer full at item %u, will continue next call", item_index); \
+                if (!_common_cfg.push(ConfigKey::KEY, (uint32_t)(VAL))) { \
                     _common_cfg_fetch_index = item_index; \
                     return false; \
                 } \
@@ -866,40 +890,110 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
             item_index++; \
         }
 
-    // Fill with expected configuration based on module type
-    if (module < Module::SINGLE_UART_LAST) {
-        UBX_CFG_COMMON_UART(INIT_CFG_PUSH_INDEXED)
+    uint16_t item_index = 0;
+
+    if (check_only) {
+        // check_only path: scan arrays for key existence
+        if (module < Module::SINGLE_UART_LAST) {
+            CHECK_ARRAY(config_common_uart)
 #if GPS_MOVING_BASELINE
-        // check if rover or base
+            if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
+                CHECK_ARRAY(config_MB_Base_uart1)
+            } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
+                CHECK_ARRAY(config_MB_Rover_uart1)
+            }
+#endif
+        } else {
+            switch (portId) {
+            case 2:
+                CHECK_ARRAY(config_common_uart1)
+#if GPS_MOVING_BASELINE
+                if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
+                    CHECK_ARRAY(config_MB_Base_uart1)
+                } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && ubx_backend.mb_use_uart2()) {
+                    CHECK_ARRAY(config_MB_Base_uart2)
+                } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
+                    CHECK_ARRAY(config_MB_Rover_uart1)
+                }
+#endif
+                break;
+            case 3:
+                CHECK_ARRAY(config_common_uart2)
+#if GPS_MOVING_BASELINE
+                if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
+                    CHECK_ARRAY(config_MB_Base_uart2)
+                } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
+                    CHECK_ARRAY(config_MB_Rover_uart2)
+                }
+#endif
+                break;
+            default:
+                break;
+            }
+        }
+        // check runtime keys
+        if (key_to_check == (uint32_t)ConfigKey::CFG_RATE_MEAS ||
+            key_to_check == (uint32_t)ConfigKey::CFG_NAVSPG_DYNMODEL ||
+            key_to_check == (uint32_t)ConfigKey::CFG_NAVSPG_INFIL_MINELEV ||
+            key_to_check == (uint32_t)ConfigKey::CFG_SIGNAL_L5_HEALTH_OVRD ||
+            key_to_check == (uint32_t)ConfigKey::CFG_MSGOUT_UBX_RXM_RAWX_UART1 ||
+            key_to_check == (uint32_t)ConfigKey::CFG_MSGOUT_UBX_RXM_RAWX_UART2) {
+            return true;
+        }
+        return false;
+    }
+
+    // Normal push path: push static arrays then runtime values
+    if (module < Module::SINGLE_UART_LAST) {
+        if (!_push_cfg_array(config_common_uart, ARRAY_SIZE(config_common_uart), item_index)) {
+            return false;
+        }
+#if GPS_MOVING_BASELINE
         if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
-            UBX_CFG_MB_BASE_UART1(INIT_CFG_PUSH_INDEXED)
+            if (!_push_cfg_array(config_MB_Base_uart1, ARRAY_SIZE(config_MB_Base_uart1), item_index)) {
+                return false;
+            }
         } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
-            UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
+            if (!_push_cfg_array(config_MB_Rover_uart1, ARRAY_SIZE(config_MB_Rover_uart1), item_index)) {
+                return false;
+            }
         }
 #endif
     } else {
-        // Dual-UART modules configuration depends on detected port
         switch (portId) {
         case 2: // UART1
-            UBX_CFG_COMMON_UART1(INIT_CFG_PUSH_INDEXED)
+            if (!_push_cfg_array(config_common_uart1, ARRAY_SIZE(config_common_uart1), item_index)) {
+                return false;
+            }
 #if GPS_MOVING_BASELINE
             if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && !ubx_backend.mb_use_uart2()) {
-                UBX_CFG_MB_BASE_UART1(INIT_CFG_PUSH_INDEXED)
+                if (!_push_cfg_array(config_MB_Base_uart1, ARRAY_SIZE(config_MB_Base_uart1), item_index)) {
+                    return false;
+                }
             } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE && ubx_backend.mb_use_uart2()) {
-                // this allows rover to connect to UART2 to directly
-                UBX_CFG_MB_BASE_UART2(INIT_CFG_PUSH_INDEXED)
+                if (!_push_cfg_array(config_MB_Base_uart2, ARRAY_SIZE(config_MB_Base_uart2), item_index)) {
+                    return false;
+                }
             } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
-                UBX_CFG_MB_ROVER_UART1(INIT_CFG_PUSH_INDEXED)
+                if (!_push_cfg_array(config_MB_Rover_uart1, ARRAY_SIZE(config_MB_Rover_uart1), item_index)) {
+                    return false;
+                }
             }
 #endif
             break;
         case 3: // UART2
-            UBX_CFG_COMMON_UART2(INIT_CFG_PUSH_INDEXED)
+            if (!_push_cfg_array(config_common_uart2, ARRAY_SIZE(config_common_uart2), item_index)) {
+                return false;
+            }
 #if GPS_MOVING_BASELINE
             if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_BASE) {
-                UBX_CFG_MB_BASE_UART2(INIT_CFG_PUSH_INDEXED)
+                if (!_push_cfg_array(config_MB_Base_uart2, ARRAY_SIZE(config_MB_Base_uart2), item_index)) {
+                    return false;
+                }
             } else if (ubx_backend.role == AP_GPS::GPS_ROLE_MB_ROVER) {
-                UBX_CFG_MB_ROVER_UART2(INIT_CFG_PUSH_INDEXED)
+                if (!_push_cfg_array(config_MB_Rover_uart2, ARRAY_SIZE(config_MB_Rover_uart2), item_index)) {
+                    return false;
+                }
             }
 #endif
             break;
@@ -908,57 +1002,32 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
         }
     }
 
-    // Add variable settings using the same macro for consistency
-    INIT_CFG_PUSH_INDEXED(CFG_RATE, MEAS, uint16_t, ubx_backend.params.rate_ms)
-    INIT_CFG_PUSH_INDEXED(CFG_NAVSPG, DYNMODEL, uint8_t, ubx_backend.gps._navfilter)
+    // Runtime-value entries
+    PUSH_RUNTIME(CFG_RATE_MEAS, ubx_backend.params.rate_ms)
+    PUSH_RUNTIME(CFG_NAVSPG_DYNMODEL, ubx_backend.gps._navfilter)
 
     if (ubx_backend.gps._min_elevation != -100) {
-        INIT_CFG_PUSH_INDEXED(CFG_NAVSPG, INFIL_MINELEV, uint8_t, ubx_backend.gps._min_elevation)
+        PUSH_RUNTIME(CFG_NAVSPG_INFIL_MINELEV, ubx_backend.gps._min_elevation)
     }
 
     if (ubx_backend.gps.option_set(AP_GPS::GPSL5HealthOverride)) {
-        INIT_CFG_PUSH_INDEXED(CFG_SIGNAL, L5_HEALTH_OVRD, uint8_t, 1)
+        PUSH_RUNTIME(CFG_SIGNAL_L5_HEALTH_OVRD, 1)
     }
 
-    // Add raw logging message configuration if enabled
-    // gps._raw_data values: 0=disabled, 1=always log, 5=log every 5 samples
-    if (ubx_backend.gps._raw_data != 0) {
-        uint8_t raw_rate = ubx_backend.gps._raw_data;
-
-        // Configure based on module type and detected port
+    // Raw logging message configuration
+    {
+        const uint8_t raw_rate = ubx_backend.gps._raw_data;
         if (module < Module::SINGLE_UART_LAST) {
-            // Single UART modules - configure UART1
-            INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, raw_rate)
-        } else {
-            // Dual-UART modules - configure appropriate port
-            switch (portId) {
-            case 2: // UART1
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, raw_rate)
-                // Disable on UART2
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, 0)
-                break;
-            case 3: // UART2
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, raw_rate)
-                // Disable on UART1
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
-                break;
-            default:
-                break;
-            }
-        }
-    } else {
-        // Raw logging disabled - explicitly disable these messages
-        if (module < Module::SINGLE_UART_LAST) {
-            INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
+            PUSH_RUNTIME(CFG_MSGOUT_UBX_RXM_RAWX_UART1, raw_rate)
         } else {
             switch (portId) {
             case 2: // UART1
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, 0)
+                PUSH_RUNTIME(CFG_MSGOUT_UBX_RXM_RAWX_UART1, raw_rate)
+                PUSH_RUNTIME(CFG_MSGOUT_UBX_RXM_RAWX_UART2, 0)
                 break;
             case 3: // UART2
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART2, uint8_t, 0)
-                INIT_CFG_PUSH_INDEXED(CFG_MSGOUT, UBX_RXM_RAWX_UART1, uint8_t, 0)
+                PUSH_RUNTIME(CFG_MSGOUT_UBX_RXM_RAWX_UART2, raw_rate)
+                PUSH_RUNTIME(CFG_MSGOUT_UBX_RXM_RAWX_UART1, 0)
                 break;
             default:
                 break;
@@ -966,14 +1035,13 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
         }
     }
 
-    if (!check_only) {
-        // Mark complete if we reached the end by setting the last item index
-        _common_cfg_fetch_index = item_index;
+    // Mark complete
+    _common_cfg_fetch_index = item_index;
+    Debug("Common config list initialization complete: %u items, %u bytes",
+        item_index, (unsigned)_common_cfg.get_size());
 
-        Debug("Common config list initialization complete: %u items, %u bytes",
-            item_index, (unsigned)_common_cfg.get_size());
-    }
-    #undef INIT_CFG_PUSH_INDEXED
+    #undef CHECK_ARRAY
+    #undef PUSH_RUNTIME
     return false;
 }
 

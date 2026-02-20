@@ -154,57 +154,6 @@ AP_GPS_UBLOX::~AP_GPS_UBLOX()
     free(config_GNSS);
 }
 
-#if GPS_MOVING_BASELINE
-#define UBX_CFG_ENTRY(KEY_CLASS, KEY, TYPE, VALUE) \
-    { ConfigKey::KEY_CLASS##_##KEY, VALUE },
-/*
-  config for F9 GPS in moving baseline base role
-  See ZED-F9P integration manual section 3.1.5.6.1
- */
-const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart1[] {
-    UBX_CFG_MB_BASE_UART1(UBX_CFG_ENTRY)
-};
-
-const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Base_uart2[] {
-    UBX_CFG_MB_BASE_UART2(UBX_CFG_ENTRY)
-};
-
-
-/*
-  config for F9 GPS in moving baseline rover role
-  See ZED-F9P integration manual section 3.1.5.6.1.
-  Note that we list the RTCM msg types as 0 to prevent getting RTCM
-  data from a GPS previously configured as a base
- */
-const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart1[] {
-    UBX_CFG_MB_ROVER_UART1(UBX_CFG_ENTRY)
-};
-
-const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_MB_Rover_uart2[] {
-    UBX_CFG_MB_ROVER_UART2(UBX_CFG_ENTRY)
-};
-#endif // GPS_MOVING_BASELINE
-
-/*
-  config changes for M10
-  we need to use B1C not B1 signal for Beidou on M10 to allow solid 5Hz,
-  and also disable Glonass and enable QZSS
- */
-const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_M10[] {
-    UBX_CFG_M10
-};
-
-/*
-  config changes for L5 modules
-*/
-const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_ena[] {
-    UBX_CFG_L5_OVRD_ENA
-};
-
-const AP_GPS_UBLOX::config_list AP_GPS_UBLOX::config_L5_ovrd_dis[] {
-    UBX_CFG_L5_OVRD_DIS
-};
-
 void
 AP_GPS_UBLOX::_request_next_config(void)
 {
