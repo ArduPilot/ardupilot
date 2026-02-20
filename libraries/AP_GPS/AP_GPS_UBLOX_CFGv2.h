@@ -20,6 +20,7 @@
 #include "AP_GPS_UBLOX_CFG_List.h"
 #include <AP_Common/AP_Common.h>
 #include "AP_GPS_config.h"
+#include <endian.h>
 
 #if AP_GPS_UBLOX_CFGV2_ENABLED
 
@@ -108,10 +109,17 @@ public:
             return true;
         }
 
-        // common constexpr helper with compile time type size inference
-        template <typename T>
-        static void append_value_le_bytes(uint8_t *dest, size_t &index, T value) {
-            append_value_le_bytes(dest, index, (uint64_t)value, sizeof(T));
+        // copy value to dest at index in little-endian byte order
+        static void append_value_le(uint8_t *dest, size_t &index, uint64_t value, size_t size) {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+            memcpy(dest + index, &value, size);
+#else
+            for (size_t i = 0; i < size; i++) {
+                dest[index + i] = (uint8_t)(value & 0xFF);
+                value >>= 8;
+            }
+#endif
+            index += size;
         }
 
         // get value by key
@@ -132,9 +140,6 @@ public:
             }
         }
     private:
-
-        static void append_value_le_bytes(uint8_t *dest, size_t &index, uint64_t value, size_t size);
-
         // return size of a config key, or 0 if unknown
         static constexpr uint8_t config_key_size(ConfigKey key) {
             // step over the value

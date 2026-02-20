@@ -348,24 +348,12 @@ bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::set(ConfigKey Key, uint64_t value) {
     for (uint16_t i = 0; i < _size; i += sizeof(uint32_t) + config_key_size((ConfigKey)key)) {
         memcpy(&key, _buf + i, sizeof(key));
         if (key == Key) {
-            // write value bytes in little-endian at the correct value offset
-            size_t index = i + sizeof(uint32_t);
-            switch (config_key_size(Key)) {
-                case 1:
-                    append_value_le_bytes<uint8_t>(_buf, index, (uint8_t)value);
-                    break;
-                case 2:
-                    append_value_le_bytes<uint16_t>(_buf, index, (uint16_t)value);
-                    break;
-                case 4:
-                    append_value_le_bytes<uint32_t>(_buf, index, (uint32_t)value);
-                    break;
-                case 8:
-                    append_value_le_bytes<uint64_t>(_buf, index, (uint64_t)value);
-                    break;
-                default:
-                    return false;
+            const uint8_t len = config_key_size(Key);
+            if (len == 0) {
+                return false;
             }
+            size_t index = i + sizeof(uint32_t);
+            append_value_le(_buf, index, value, len);
             return true;
         }
     }
@@ -1238,26 +1226,6 @@ bool AP_GPS_UBLOX_CFGv2::skip_cfgv2() const
            (ubx_backend.gps._auto_config == AP_GPS::GPS_AUTO_CONFIG_DISABLE);
 }
 
-// Append value bytes in little-endian order to dest at index, incrementing index
-void AP_GPS_UBLOX_CFGv2::UBXPackedCfg::append_value_le_bytes(uint8_t *dest, size_t &index, uint64_t value, size_t size) {
-    if (size >= 1) {
-        dest[index++] = (uint8_t)(((uint64_t)value) & 0xFF);
-    }
-    if (size >= 2) {
-        dest[index++] = (uint8_t)((((uint64_t)value) >> 8) & 0xFF);
-    }
-    if (size >= 4) {
-        dest[index++] = (uint8_t)((((uint64_t)value) >> 16) & 0xFF);
-        dest[index++] = (uint8_t)((((uint64_t)value) >> 24) & 0xFF);
-    }
-    if (size >= 8) {
-        dest[index++] = (uint8_t)((((uint64_t)value) >> 32) & 0xFF);
-        dest[index++] = (uint8_t)((((uint64_t)value) >> 40) & 0xFF);
-        dest[index++] = (uint8_t)((((uint64_t)value) >> 48) & 0xFF);
-        dest[index++] = (uint8_t)((((uint64_t)value) >> 56) & 0xFF);
-    }
-}
-
 // Push raw value for a key (length is inferred from key's size bits)
 bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::push(ConfigKey key, uint64_t value)
 {
@@ -1269,24 +1237,8 @@ bool AP_GPS_UBLOX_CFGv2::UBXPackedCfg::push(ConfigKey key, uint64_t value)
     }
     size_t index = _size;
 
-    append_value_le_bytes<uint32_t>(_buf, index, (uint32_t)key);
-
-    switch (len) {
-        case 1:
-            append_value_le_bytes<uint8_t>(_buf, index, (uint8_t)value);
-            break;
-        case 2:
-            append_value_le_bytes<uint16_t>(_buf, index, (uint16_t)value);
-            break;
-        case 4:
-            append_value_le_bytes<uint32_t>(_buf, index, (uint32_t)value);
-            break;
-        case 8:
-            append_value_le_bytes<uint64_t>(_buf, index, (uint64_t)value);
-            break;
-        default:
-            return false;
-    }
+    append_value_le(_buf, index, (uint32_t)key, sizeof(uint32_t));
+    append_value_le(_buf, index, value, len);
     Debug("GPS: packed push succeeded, new size %u", (unsigned)index);
     _size = index;
     return true;
