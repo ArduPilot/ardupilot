@@ -8824,6 +8824,9 @@ Also, ignores heartbeats not from our target system'''
     def script_applet_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "applets", scriptname)
 
+    def script_driver_source_path(self, scriptname):
+        return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "drivers", scriptname)
+
     def script_modules_source_path(self, scriptname):
         return os.path.join(self.rootdir(), "libraries", "AP_Scripting", "modules", scriptname)
 
@@ -8888,6 +8891,16 @@ Also, ignores heartbeats not from our target system'''
     def install_applet_script(self, scriptname, install_name=None):
         source = self.script_applet_source_path(scriptname)
         self.install_script(source, scriptname, install_name=install_name)
+
+    def install_driver_script(self, scriptname):
+        source = self.script_driver_source_path(scriptname)
+        self.install_script(source, scriptname)
+
+    def install_driver_script_context(self, scriptname):
+        '''installs a driver script which will be removed when the context goes
+        away'''
+        self.install_driver_script(scriptname)
+        self.context_get().installed_scripts.append(scriptname)
 
     def remove_installed_script(self, scriptname):
         dest = self.installed_script_path(os.path.basename(scriptname))
