@@ -784,13 +784,19 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     return true;
 }
 
-// set_pending_arm - enter pending arm state, will retry until EKF ready
+// set_pending_arm - enter pending arm state, will retry until checks pass
 void AP_Arming_Copter::set_pending_arm(bool with_airmode)
 {
     _pending_arm = true;
     _pending_arm_airmode = with_airmode;
-    _pending_arm_start_ms = millis();
-    gcs().send_text(MAV_SEVERITY_INFO, "Arm pending - waiting for EKF");
+    const uint32_t now_ms = millis();
+    _pending_arm_start_ms = now_ms;
+    _pending_arm_last_check_ms = 0;
+    _pending_arm_last_display_ms = now_ms;
+
+    // run checks with display to show actual failure reason immediately
+    gcs().send_text(MAV_SEVERITY_INFO, "Arm pending");
+    pre_arm_checks(true);
 }
 
 // clear_pending_arm - cancel pending arm state
@@ -810,22 +816,34 @@ void AP_Arming_Copter::update_pending_arm()
         return;
     }
 
-    // check if pre-arm checks pass (maintained at 1Hz by AP_Arming::update)
-    if (copter.ap.pre_arm_check) {
-        if (arm(AP_Arming::Method::AUXSWITCH)) {
-            if (_pending_arm_airmode) {
-                copter.ap.armed_with_airmode_switch = true;
+    const uint32_t now_ms = millis();
+
+    // run pre-arm checks at 4Hz (every 250ms) for faster response
+    const bool run_checks = (now_ms - _pending_arm_last_check_ms >= 250);
+    if (run_checks) {
+        _pending_arm_last_check_ms = now_ms;
+
+        // display failure reason every 3 seconds
+        const bool display = (now_ms - _pending_arm_last_display_ms >= 3000);
+        if (pre_arm_checks(display)) {
+            // checks pass — attempt to arm
+            if (arm(AP_Arming::Method::AUXSWITCH)) {
+                if (_pending_arm_airmode) {
+                    copter.ap.armed_with_airmode_switch = true;
+                }
+                _pending_arm = false;
+                gcs().send_text(MAV_SEVERITY_INFO, "Arm pending complete");
+                return;
             }
-            _pending_arm = false;
-            gcs().send_text(MAV_SEVERITY_INFO, "Arm pending complete");
-            return;
+        }
+        if (display) {
+            _pending_arm_last_display_ms = now_ms;
         }
     }
 
     // after timeout, reset EKF bootstrap once to force convergence.
     // only fire once — repeated resets prevent the EKF from converging.
     const float timeout_s = _pending_arm_timeout_s;
-    const uint32_t now_ms = millis();
     if (timeout_s > 0 && _pending_arm_start_ms != 0 &&
         (now_ms - _pending_arm_start_ms >= uint32_t(timeout_s * 1000))) {
         if (AP::ahrs().reset_ekf_bootstrap()) {
