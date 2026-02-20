@@ -244,7 +244,7 @@ private:
         int8_t min_elevation;
         bool gps_l5_health_ovrd;
         bool gps_l5_health_ovrd_exists;
-    } _processing_cfg, _cfg;
+    } _cfg;
 
     void _handle_valget_kv(ConfigKey key, uint64_t value, uint8_t value_len);
     void _parse_signal_kv(ConfigKey key, uint64_t value, uint8_t value_len);

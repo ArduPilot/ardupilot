@@ -519,10 +519,6 @@ void AP_GPS_UBLOX_CFGv2::process_valget_complete(bool success)
     }
 
     if (success) {
-        // processing complete
-        // move processing config to active config
-        _cfg = _processing_cfg;
-
         switch (curr_state) {
             case States::RESET_MODULE:
                 if (_is_reset_required) {
@@ -676,20 +672,20 @@ void AP_GPS_UBLOX_CFGv2::_parse_signal_kv(ConfigKey key, uint64_t value, uint8_t
     const bool ena = (value & 0x1U) != 0;
 
     auto set_gnss = [&](uint8_t idx, bool enabled){
-        _processing_cfg.supported_gnss |= (1U << idx);
+        _cfg.supported_gnss |= (1U << idx);
         if (enabled) {
-            _processing_cfg.enabled_gnss |= (1U << idx);
+            _cfg.enabled_gnss |= (1U << idx);
         } else {
-            _processing_cfg.enabled_gnss &= ~(1U << idx);
+            _cfg.enabled_gnss &= ~(1U << idx);
         }
     };
 
     auto set_signal = [&](uint32_t idx, bool enabled){
-        _processing_cfg.supported_signals |= (1U << idx);
+        _cfg.supported_signals |= (1U << idx);
         if (enabled) {
-            _processing_cfg.enabled_signals |= (1U << idx);
+            _cfg.enabled_signals |= (1U << idx);
         } else {
-            _processing_cfg.enabled_signals &= ~(1U << idx);
+            _cfg.enabled_signals &= ~(1U << idx);
         }
     };
 
