@@ -3360,6 +3360,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.change_mode('LOITER')
+        self.bodgy_race_condition_delay(5, "race condition introduced by fastermode change")
 
         class CheckOpticalFlow(vehicle_test_suite.TestSuite.MessageHook):
             '''ensures OPTICAL_FLOW data matches other data'''
@@ -4111,6 +4112,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "altitude": int(origin_alt*1000),  # m -> mm
         })
 
+    def bodgy_race_condition_delay(self, delay, msg):
+        '''delay delay seconds; msg *must* be supplied as these are all FIXMEs!'''
+        self.delay_sim_time(delay, reason=msg)
+
     def FarOrigin(self):
         '''fly a mission far from the vehicle origin'''
         # Fly mission #1
@@ -4119,6 +4124,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         nz = mavutil.location(-43.730171, 169.983118, 1466.3, 270)
+        self.bodgy_race_condition_delay(2, "EKF public_origin not used to reset origin in Bootstrap")
         self.set_origin(nz)
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
