@@ -1,0 +1,25 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/ServoControl.msg
+// generated code does not contain a copyright notice
+
+#include "builtin_interfaces/msg/Time.idl"
+
+module ardupilot_msgs {
+  module msg {
+    typedef int16 int16__16[16];
+    module ServoControl_Constants {
+      @verbatim (language="comment", text=
+        "PWM mode if bit enabled else angle mode (degrees)")
+      const uint16 PWM_INPUT = 1;
+    };
+    struct ServoControl {
+      @verbatim (language="comment", text=
+        "ms")
+      builtin_interfaces::msg::Time timestamp;
+
+      uint16 options;
+
+      int16__16 cmd;
+    };
+  };
+};
