@@ -33,6 +33,15 @@ protected:
     }
     bool clear_all_items() override WARN_IF_UNUSED;
 
+#if AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+    uint32_t last_items_change_time_ms() const override {
+        return AP::fence()->polyfence().get_exclusion_polygon_update_ms();
+    }
+    HAL_Semaphore &get_items_semaphore() override {
+        return AP::fence()->polyfence().get_loaded_fence_semaphore();
+    }
+#endif  // AP_MAVLINK_MISSION_OPAQUE_ID_ENABLED
+
 private:
     class AC_Fence &_fence;
 
