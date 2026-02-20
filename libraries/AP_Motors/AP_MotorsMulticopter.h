@@ -94,6 +94,11 @@ public:
 
     bool                get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const override;
 
+    // convert normalised actuator output (0..1) to pwm
+    // in SHUT_DOWN: output 0 pwm when _disarm_disable_pwm && !armed(), else pwm_min
+    // in all other states: map [0..1] linearly between pwm_min and pwm_max
+    int16_t             output_to_pwm(float _actuator_output);
+
 #if HAL_LOGGING_ENABLED
     // 10hz logging of voltage scaling and max trust
     void                Log_Write() override;
@@ -136,11 +141,6 @@ protected:
     // return current-limit as a normalised throttle [0..1] within the min..max range
     // returns 1.0 when current limiting is disabled, disarmed, or telemetry is unavailable
     virtual float       get_current_limit_max_throttle();
-
-    // convert normalised actuator output (0..1) to pwm
-    // in SHUT_DOWN: output 0 pwm when _disarm_disable_pwm && !armed(), else pwm_min
-    // in all other states: map [0..1] linearly between pwm_min and pwm_max
-    int16_t             output_to_pwm(float _actuator_output);
 
     // slew limiting on motor outputs:
     // - MOT_SLEW_UP_TIME = time to go 0 -> 1 (s); 0 disables up-slew limiting
