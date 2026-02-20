@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define ALLOW_DOUBLE_TRIG_FUNCTIONS
+
 //
 //  Trimble GPS driver for ArduPilot.
 //  Code by Michael Oborne
@@ -37,8 +39,6 @@
 //    param set SIM_GPS1_TYPE 11 // GSOF
 //    param set GPS1_TYPE 11 // GSOF
 //    param set SERIAL3_PROTOCOL 5 // GPS
-
-#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_GPS.h"
 #include "AP_GPS_GSOF.h"

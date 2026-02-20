@@ -1,4 +1,4 @@
-#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
+#define ALLOW_DOUBLE_TRIG_FUNCTIONS
 
 #include "AP_GSOF_config.h"
 #include "AP_GSOF.h"

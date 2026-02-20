@@ -37,7 +37,7 @@
 // The precision here does matter when using the wsg* functions for converting
 // between LLH and ECEF coordinates.
 #if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
-static const double DEG_TO_RAD_DOUBLE = asin(1) / 90;
+static const double DEG_TO_RAD_DOUBLE = (std::asin)(1) / 90;
 static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 #endif
 
@@ -67,7 +67,7 @@ static const double WGS84_B = (WGS84_A * (1 - WGS84_F));
 
 // Eccentricity of the Earth
 #if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
-static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
+static const double WGS84_E = ((std::sqrt)(2 * WGS84_F - WGS84_F * WGS84_F));
 #endif
 
 #define C_TO_KELVIN(temp) (temp + 273.15f)

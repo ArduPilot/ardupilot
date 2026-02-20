@@ -18,7 +18,7 @@
   support for serial connected SBG INS
  */
 
-#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
+#define ALLOW_DOUBLE_TRIG_FUNCTIONS
 
 #include "AP_ExternalAHRS_config.h"
 

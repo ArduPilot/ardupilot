@@ -6,6 +6,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <float.h>
+#include <cmath>
 
 /*
   capital F is used to denote the chosen float type (float or double)
@@ -69,7 +70,7 @@ inline bool is_zero(const float x) {
  */
 inline bool is_zero(const double x) {
 #if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
-  return fabs(x) < FLT_EPSILON;
+  return (std::abs)(x) < FLT_EPSILON;
 #else
   return fabsf(static_cast<float>(x)) < FLT_EPSILON;
 #endif

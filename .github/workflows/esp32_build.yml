@@ -180,6 +180,9 @@ jobs:
           python3 -m pip install gevent
 
           git submodule update --init --recursive --depth=1
+          if [ -d modules/esp_idf ]; then
+            cd modules/esp_idf && git clean -fdx && cd ../..
+          fi
           ./Tools/scripts/esp32_get_idf.sh
 
           sudo ln -s /usr/bin/ninja /usr/bin/ninja-build
