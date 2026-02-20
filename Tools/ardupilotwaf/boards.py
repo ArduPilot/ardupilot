@@ -157,6 +157,25 @@ class Board:
         if cfg.options.enable_networking_tests:
             env.CXXFLAGS += ['-DAP_NETWORKING_TESTS_ENABLED=1']
             
+        if cfg.options.enable_custom_storage:
+            # Set environment variable to make the flag globally available
+            env.ENABLE_CUSTOM_STORAGE = True
+            
+            # Add necessary libraries to compile when the flag is present
+            env.AP_LIBRARIES += [
+                'AP_CustomStorage',
+                'AP_CustomMavlinkHandler'
+            ]
+            
+            # Define a preprocessor macro that can be checked in C/C++ code
+            env.DEFINES.update(AP_ENABLE_CUSTOM_STORAGE = 1)
+        else:
+            # Ensure the environment variable is set to False when the flag is not present
+            env.ENABLE_CUSTOM_STORAGE = False
+            
+            # Set the preprocessor macro to 0 when disabled
+            env.DEFINES.update(AP_ENABLE_CUSTOM_STORAGE = 0)
+            
         d = env.get_merged_dict()
         # Always prepend so that arguments passed in the command line get
         # the priority.

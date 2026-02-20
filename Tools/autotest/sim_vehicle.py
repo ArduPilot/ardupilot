@@ -420,6 +420,9 @@ def do_build(opts, frame_options):
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
 
+    if opts.enable_custom_storage:
+        cmd_configure.append("--enable-custom-storage")
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -1340,6 +1343,8 @@ group_sim.add_option("--enable-ppp", action='store_true',
                      help="Enable PPP networking")
 group_sim.add_option("--enable-networking-tests", action='store_true',
                      help="Enable networking tests")
+group_sim.add_option("--enable-custom-storage", action='store_true',
+                     help="Enable custom storage for uuid and password along with custom mavlink message handler.")
 
 parser.add_option_group(group_sim)
 

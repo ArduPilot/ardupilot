@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<mavlink>
+  <dialect>2</dialect>
+  <enums>
+    <!-- custom messages enums START -->
+    <enum name="AIRBOUND_PARAMETER_ACTION_TYPE">
+      <entry value="0" name="AIRBOUND_PARAMETER_ACTION_GET"/>
+      <entry value="1" name="AIRBOUND_PARAMETER_ACTION_SET"/>
+    </enum>
+    <enum name="AIRBOUND_PARAMETER_PARAM_ID">
+      <entry value="1" name="AIRBOUND_PARAMETER_PARAM_ID_UUID"/>
+      <entry value="2" name="AIRBOUND_PARAMETER_PARAM_ID_PASS"/>
+    </enum>
+    <enum name="AIRBOUND_PARAMETER_RESULT">
+      <entry value="0" name="AIRBOUND_PARAMETER_RESULT_OK"/>
+      <entry value="1" name="AIRBOUND_PARAMETER_RESULT_FAILED"/>
+      <entry value="2" name="AIRBOUND_PARAMETER_RESULT_UNSUPPORTED"/>
+    </enum>
+    <!-- custom messages enums END -->
+  </enums>
+  <messages>
+    <!-- custom messages START -->
+    <message id="15222" name="AIRBOUND_PARAMETER_GETSET">
+      <description>Custom Airbound Parameter GET SET API for setting or getting a simple parameter.</description>
+      <field type="uint8_t" name="target_system">system id of the target</field>
+      <field type="uint8_t" name="target_component">component ID of the target</field>
+      <field type="uint8_t" name="param_id" enum="AIRBOUND_PARAMETER_PARAM_ID">Identifier for the custom parameter.</field>
+      <field type="uint8_t" name="action_type" enum="AIRBOUND_PARAMETER_ACTION_TYPE">Action to perform (GET or SET).</field>
+      <field type="char[37]" name="data_value">Value to set (ignored for GET action).</field>
+    </message>
+    <message id="15223" name="AIRBOUND_PARAMETER_STATUS">
+      <description>Status and value feedback for a custom Airbound parameter.</description>
+      <field name="param_id" type="uint8_t">Identifier for the custom parameter from the request.</field>
+      <field name="current_value" type="char[37]">The current value of the parameter.</field>
+      <field name="result" type="uint8_t" enum="AIRBOUND_PARAMETER_RESULT">Result of the operation.</field>
+    </message>
+    <!-- custom messages END -->
+  </messages>
+</mavlink>
