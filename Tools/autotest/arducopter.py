@@ -3764,6 +3764,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def set_origin(self, loc, timeout=60):
         '''set the GPS global origin to loc'''
+        self.progress("Setting origin")
+        if isinstance(loc, mavutil.mavlink.MAVLink_global_position_int_message):
+            lat_1e7 = loc.lat
+            lng_1e7 = loc.lon
+            alt_mm = loc.alt
+        else:
+            # assume a mavutil.Location
+            lat_1e7 = int(loc.lat * 1e7)
+            lng_1e7 = int(loc.lng * 1e7)
+            alt_mm = int(loc.alt * 1e3)
+
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
@@ -3771,9 +3782,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             target_system = 1
             self.mav.mav.set_gps_global_origin_send(
                 target_system,
-                int(loc.lat * 1e7),
-                int(loc.lng * 1e7),
-                int(loc.alt * 1e3)
+                lat_1e7,
+                lng_1e7,
+                alt_mm
             )
             self.delay_sim_time(2)
             gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
@@ -4376,20 +4387,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # without a GPS or some sort of external prompting, AP
         # doesn't send system_time messages.  So prompt it:
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
-        self.progress("Waiting for non-zero-lat")
-        tstart = self.get_sim_time()
-        while True:
-            if self.get_sim_time_cached() - tstart > 60:
-                raise AutoTestTimeoutException("Did not get non-zero lat")
-            self.mav.mav.set_gps_global_origin_send(1,
-                                                    old_pos.lat,
-                                                    old_pos.lon,
-                                                    old_pos.alt)
-            self.delay_sim_time(2)
-            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
-            self.progress("gpi=%s" % str(gpi))
-            if gpi.lat != 0:
-                break
+        self.set_origin(old_pos)
 
         self.takeoff()
         self.set_rc(1, 1600)
@@ -4449,21 +4447,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # without a GPS or some sort of external prompting, AP
         # doesn't send system_time messages.  So prompt it:
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
-        self.progress("Waiting for non-zero-lat")
-        tstart = self.get_sim_time()
-        while True:
-            self.mav.mav.set_gps_global_origin_send(1,
-                                                    old_pos.lat,
-                                                    old_pos.lon,
-                                                    old_pos.alt)
-            self.delay_sim_time(2)
-            gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
-            self.progress("gpi=%s" % str(gpi))
-            if gpi.lat != 0:
-                break
-
-            if self.get_sim_time_cached() - tstart > 60:
-                raise AutoTestTimeoutException("Did not get non-zero lat")
+        self.set_origin(old_pos)
 
         self.takeoff(alt_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
         self.change_mode('LAND')
