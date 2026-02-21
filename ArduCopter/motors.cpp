@@ -1,6 +1,8 @@
 #include "Copter.h"
 
+#ifndef ARM_DELAY
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
+#endif
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
