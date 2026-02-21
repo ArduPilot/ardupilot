@@ -3777,6 +3777,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # min alt fence should now be re-enabled
         self.assert_fence_enabled()
 
+        # re-center pitch stick
+        self.set_rc(2, 1500)
+
         self.change_mode("AUTO")
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
         self.fly_home_land_and_disarm(timeout=150)
