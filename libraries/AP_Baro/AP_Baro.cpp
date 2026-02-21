@@ -369,10 +369,12 @@ void AP_Baro::calibrate(bool save)
     // panic if all sensors are not calibrated
     uint8_t num_calibrated = 0;
     for (uint8_t i=0; i<_num_sensors; i++) {
+        const char *state = "complete";
         if (sensors[i].calibrated) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
             num_calibrated++;
+            state = "failed";
         }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration %s", i+1, state);
     }
     if (num_calibrated) {
         return;
