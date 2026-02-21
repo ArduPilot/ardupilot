@@ -374,7 +374,6 @@ AP_HW_RadiolinkF405                  1417
 
 AP_HW_LongbowF405                    1422
 
-AP_HW_MountainEagleH743              1444
 AP_HW_ResoluteH7                     1445
 
 AP_HW_StellarF4                      1500
