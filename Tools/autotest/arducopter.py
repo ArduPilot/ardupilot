@@ -3770,6 +3770,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def set_origin(self, loc, timeout=60):
         '''set the GPS global origin to loc'''
+        delta_t = self.get_sim_time() - 2
+        if delta_t > 0:
+            # there's a 1 second delay before we init EKF3.  Setting
+            # origin too early exposes a bug where that init kills the
+            # origin in each of the backends.  FIXME!
+            self.progress("Delaying set origin until EKF3 will have initialised")
+            self.delay_sim_time(delta_t)
+
         self.progress("Setting origin")
         if isinstance(loc, mavutil.mavlink.MAVLink_global_position_int_message):
             lat_1e7 = loc.lat
