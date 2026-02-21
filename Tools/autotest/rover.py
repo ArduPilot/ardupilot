@@ -2622,7 +2622,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def check_rally_items_same(self, want, got, epsilon=None):
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got, epsilon=epsilon)
+        return self.check_mission_items_same('rally', check_atts, want, got, epsilon=epsilon)
 
     def click_three_in(self, mavproxy, target_system=1, target_component=1):
         mavproxy.send('rally clear\n')
