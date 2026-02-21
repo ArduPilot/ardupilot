@@ -290,6 +290,13 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(rpm_sensor, "RPM", 32, AP_Vehicle, AP_RPM),
 #endif
 
+    // @Param: FW_VER_LAST
+    // @DisplayName: Last firmware version
+    // @Description: Firmware version that last ran on this board, encoded as major*65536+minor*256+patch. Automatically updated on boot.
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("FW_VER_LAST", 33, AP_Vehicle, _last_firmware_version, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
     AP_GROUPEND
 };
 
@@ -326,6 +333,8 @@ void AP_Vehicle::setup()
     // values from storage:
     AP_Param::check_var_info();
     load_parameters();
+
+    check_firmware_version();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
