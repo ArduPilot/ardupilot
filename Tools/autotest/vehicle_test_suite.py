@@ -2499,9 +2499,6 @@ class TestSuite(abc.ABC):
                 self.progress("Got unexpected exception (%s)" % str(type(e)))
                 pass
 
-        # empty mav to avoid getting old timestamps:
-        self.do_timesync_roundtrip(timeout_in_wallclock=True)
-
         self.progress("Calling initialise-after-reboot")
         self.initialise_after_reboot_sitl(invalid_heartbeat_sys_status=invalid_heartbeat_sys_status)
 
@@ -3133,7 +3130,8 @@ class TestSuite(abc.ABC):
             )
 
         # after reboot stream-rates may be zero.  Request streams.
-        self.drain_mav()
+        self.do_timesync_roundtrip(timeout_in_wallclock=True)
+
         self.wait_heartbeat(invalid_sys_status=invalid_heartbeat_sys_status)
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
@@ -8710,6 +8708,8 @@ Also, ignores heartbeats not from our target system'''
                 if not self.sitl_is_running():
                     self.progress("SITL is not running")
                 raise AutoTestTimeoutException("Did not receive heartbeat")
+            # request the heartbeat:
+            self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 0, quiet=True)
             m = self.mav.wait_heartbeat(*args, **x)
             if m is None:
                 continue
