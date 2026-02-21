@@ -775,7 +775,9 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     copter.arm_time_ms = millis();
 
     // Start the arming delay
-    copter.ap.in_arming_delay = true;
+    if (ARMING_DELAY_SEC > 0) {
+        copter.ap.in_arming_delay = true;
+    }
 
     // assumed armed without a arming, switch. Overridden in switches.cpp
     copter.ap.armed_with_airmode_switch = false;
