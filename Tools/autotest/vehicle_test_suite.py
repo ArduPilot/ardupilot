@@ -5474,13 +5474,14 @@ class TestSuite(abc.ABC):
         return f1 == f2
 
     def check_mission_items_same(self,
+                                 mission_type_name,
                                  check_atts,
                                  want,
                                  got,
                                  epsilon=None,
                                  skip_first_item=False,
                                  strict=True):
-        self.progress("Checking mission items same")
+        self.progress(f"Checking {mission_type_name} items same")
         if epsilon is None:
             epsilon = 1
         if len(want) != len(got):
@@ -5529,11 +5530,11 @@ class TestSuite(abc.ABC):
 
     def check_fence_items_same(self, want, got, strict=True):
         check_atts = ['mission_type', 'command', 'x', 'y', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got, strict=strict)
+        return self.check_mission_items_same('fence', check_atts, want, got, strict=strict)
 
     def check_mission_waypoint_items_same(self, want, got, strict=True):
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got, skip_first_item=True, strict=strict)
+        return self.check_mission_items_same('waypoint', check_atts, want, got, skip_first_item=True, strict=strict)
 
     def check_mission_item_upload_download(self, items, itype, mission_type, strict=True):
         self.progress("check %s upload/download: upload %u items" %
