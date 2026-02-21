@@ -6911,6 +6911,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 mavutil.mavlink.MAV_CMD_DO_LAND_START,
             ),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 800, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 400, 400, 0),
         ])
 
         self.upload_fences_from_locations([
