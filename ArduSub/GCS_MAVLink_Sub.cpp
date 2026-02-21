@@ -742,11 +742,14 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
         mavlink_msg_sys_status_decode(&msg, &packet);
-        if ((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)) {
+        if ((msg.sysid == gcs().sysid_this_mav()) &&
+            (packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) &&
+            !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)
+        ) {
             sub.leak_detector.set_detect();
         }
-    }
         break;
+    }
 
     default:
         GCS_MAVLINK::handle_message(msg);
