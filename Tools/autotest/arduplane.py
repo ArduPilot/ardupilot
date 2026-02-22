@@ -5180,6 +5180,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
         self.set_parameters({
             "ARSPD_USE": 0.0,
+            "TKOFF_LVL_ALT": 30,
         })
         self.change_mode("TAKEOFF")
 
