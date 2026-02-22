@@ -6,13 +6,13 @@ see Copter/SIM_multicopter.m for example usage.
 
 The function is defined as:
 
-```
+```matlab
     SITL_connector(state,init_function,physics_function,max_timestep)
 ```
 
 - state: this is the persistent physics state of the vehicle its is a structure and must contain the following felids:
 
-```
+```matlab
     state.gyro(roll, pitch, yaw) (radians/sec) body frame
     state.attitude(roll, pitch yaw) (radians)
     state.accel(x, y, z) (m/s^2) body frame
@@ -29,7 +29,7 @@ the structure can have also any other felids required for the physics model
 
 - physics_function: function handle that will be called to update the physics model by a single time step. It should take in the state and array of 16 PWM inputs and return the state.
 
-```
+```matlab
     function state = physics_step(pwm_in,state)
     physics_function = @physics_step;
 ```

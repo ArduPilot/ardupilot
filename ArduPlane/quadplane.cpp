@@ -124,7 +124,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: LAND_FINAL_ALT
     // @DisplayName: Land final altitude
-    // @Description: The altitude at which we should switch to Q_LAND_SPEED descent rate
+    // @Description: The altitude at which we should switch to Q_LAND_FINAL_SPD descent rate
     // @Units: m
     // @Range: 0.5 50
     // @Increment: 0.1

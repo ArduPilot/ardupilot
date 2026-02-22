@@ -48,7 +48,7 @@ You must also **enable all fields you want to log**. A recommended set is as fol
 display
 ```
 
-```
+```text
 -----------------------------------------------------------------------------------------
 |     Name |            Description |  Tagged |      Tag | Decimals | Enabled |  Units  |
 -----------------------------------------------------------------------------------------

@@ -37,8 +37,8 @@
 
 ## UART Mapping
 
-The UARTs are marked Rx* and Tx* in the above pinouts. The Rx* pin is the
-receive pin for UART*. The Tx* pin is the transmit pin for UART*. All UARTS except UART6 and UART8 are DMA capable.
+The UARTs are marked Rx and Tx in the above pinouts. The Rx pin is the
+receive pin for UARTx. The Tx pin is the transmit pin for UARTx. All UARTS except UART6 and UART8 are DMA capable.
 
 - SERIAL0 -> USB
 - SERIAL1 -> UART1 (MAVLink2)

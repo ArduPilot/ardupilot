@@ -187,16 +187,16 @@ void _AutoTakeoff::run()
         }
         pos_control->NE_relax_velocity_controller();
     } else {
-        Vector2f vel_zero;
-        Vector2f accel_zero;
-        pos_control->input_vel_accel_NE_m(vel_zero, accel_zero);
+        Vector2f vel_ne_zero;
+        Vector2f accel_ne_zero;
+        pos_control->input_vel_accel_NE_m(vel_ne_zero, accel_ne_zero);
     }
     pos_control->NE_update_controller();
 
     // command the aircraft to the take off altitude
     float pos_d_m = -(complete_alt_m + terrain_u_m);
-    float vel_zero = 0.0;
-    copter.pos_control->input_pos_vel_accel_D_m(pos_d_m, vel_zero, 0.0);
+    float vel_d_zero = 0.0;
+    copter.pos_control->input_pos_vel_accel_D_m(pos_d_m, vel_d_zero, 0.0);
     
     // run the vertical position controller and set output throttle
     pos_control->D_update_controller();

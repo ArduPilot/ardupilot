@@ -4,7 +4,7 @@
 
 ## Features
 
-#### Processor
+### Processor
 
 - STM32H743 32-bit processor
 - 480MHz
@@ -12,7 +12,7 @@
 - 1MB RAM
 - DF40HC connector for RPI external co=processor (required) which is compatible with the Pi CM4 and CM5
 
-#### Sensors
+### Sensors
 
 - 2x Invensense ICM-42688p IMU with heater resistor
 - Bosch BMP390 Barometer
@@ -20,12 +20,12 @@
 - INA226 Voltage/Current Monitor
 - Buzzer
 
-#### Power
+### Power
 
 - 5.5V - 25.2V (2S - 6S) input
 - 5V, 2A output. 300ma for main system, 200ma for heater
 
-#### Interfaces
+### Interfaces
 
 - **Micro SD**
 - **PWM + UART4**
@@ -47,7 +47,7 @@
   - 3.3V Out, USART3, SWD
   - JST-SH 6 Pin
 
-##### Dimensions
+### Dimensions
 
 - Size: 91.5mm x 56mm
 - Weight: 41g
@@ -56,7 +56,7 @@
 
 ![pinout](pi6x_pinout.png)
 
-#### PWM + UART4 - 11 Pin JST-GH
+### PWM + UART4 - 11 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -72,7 +72,7 @@
 | 10  | UART4_RX_EXT    | 3.3V         |
 | 11  | GND             | GND          |
 
-#### RC - 4 Pin JST-GH
+### RC - 4 Pin JST-GH
 
 | Pin | Signal Name          | Voltage |
 |-----|----------------------|---------|
@@ -81,7 +81,7 @@
 | 3   | USART6_TX_OUTPUT_EXT | 3.3V    |
 | 4   | GND                  | GND     |
 
-#### CAN - 4 Pin JST-GH
+### CAN - 4 Pin JST-GH
 
 | Pin | Signal Name | Voltage |
 |-----|-------------|---------|
@@ -90,7 +90,7 @@
 | 3   | CAN1_N      | 5.0V    |
 | 4   | GND         | GND     |
 
-#### GPS - 6 Pin JST-GH
+### GPS - 6 Pin JST-GH
 
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
@@ -101,7 +101,7 @@
 | 5   | I2C1_SDA_GPS1_EXT   | 3.3V    |
 | 6   | GND                 | GND     |
 
-#### TELEM1 - 6 Pin JST-GH
+### TELEM1 - 6 Pin JST-GH
 
 | Pin | Signal Name           | Voltage |
 |-----|-----------------------|---------|
@@ -112,7 +112,7 @@
 | 5   | UART7_RTS_TELEM1_EXT | 3.3V    |
 | 6   | GND                  | GND     |
 
-#### Flight Controller Debug - 10 Pin JST-SH
+### Flight Controller Debug - 10 Pin JST-SH
 
 | Pin | Signal Name        | Voltage |
 |-----|--------------------|---------|

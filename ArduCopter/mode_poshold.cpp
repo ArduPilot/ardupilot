@@ -21,6 +21,52 @@
 #define POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX_MS 0.10            // wind compensation estimates will only run when velocity is at or below this speed in cm/s
 #define POSHOLD_WIND_COMP_LEAN_PCT_MAX          0.6666f         // wind compensation no more than 2/3rds of angle max to ensure pilot can always override
 
+#ifndef POSHOLD_BRAKE_ANGLE_DEG_DEFAULT
+ #if FRAME_CONFIG == HELI_FRAME
+  # define POSHOLD_BRAKE_ANGLE_DEG_DEFAULT      8       // default PHLD_BRK_ANGLE param value.  Max lean angle during braking in degrees
+ #else
+  # define POSHOLD_BRAKE_ANGLE_DEG_DEFAULT      30      // default PHLD_BRK_ANGLE param value.  Max lean angle during braking in degrees
+ #endif
+#endif
+
+// table of user settable parameters
+const AP_Param::GroupInfo ModePosHold::var_info[] = {
+
+    // @Param: BRK_ANGLE
+    // @DisplayName: PosHold braking angle max
+    // @Description: PosHold flight mode's max lean angle during braking in degrees
+    // @Units: deg
+    // @Increment: 1
+    // @Range: 20 45
+    // @User: Advanced
+    AP_GROUPINFO("BRK_ANGLE", 1, ModePosHold, brake_angle_max_deg,  POSHOLD_BRAKE_ANGLE_DEG_DEFAULT),
+
+    AP_GROUPEND
+};
+
+// constructor
+ModePosHold::ModePosHold() : Mode()
+{
+    // load parameter defaults
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+// convert parameters
+void ModePosHold::convert_params()
+{
+    // PARAMETER_CONVERSION - Added: Feb 2026
+
+    // return immediately if parameter conversion has already been performed
+    if (brake_angle_max_deg.configured()) {
+        return;
+    }
+
+    static const AP_Param::ConversionInfo conversion_info[] = {
+        { Parameters::k_param_poshold_brake_angle_max, 0, AP_PARAM_INT16, "PHLD_BRK_ANGLE" },   // PHLD_BRAKE_ANGLE moved to PHLD_BRK_ANGLE
+    };
+    AP_Param::convert_old_parameters_scaled(conversion_info, ARRAY_SIZE(conversion_info), 0.01, 0);
+}
+
 // poshold_init - initialise PosHold controller
 bool ModePosHold::init(bool ignore_checks)
 {
@@ -198,7 +244,7 @@ void ModePosHold::run()
                 // initialise BRAKE mode
                 roll_mode = RPMode::BRAKE;              // Set brake roll mode
                 brake.roll_rad = 0.0f;                  // initialise braking angle to zero
-                brake.angle_max_roll_rad = 0.0f;        // reset so we can detect when vehicle begins to flatten during braking
+                brake.angle_max_roll_rad = 0.0f;        // reset tracked max brake angle (radians) so we can detect when vehicle begins to flatten out during braking
                 brake.start_time_roll_ms = now_ms;      // timestamp (ms) marking start of roll-axis braking; updated during braking phase
                 brake.time_updated_roll = false;        // flag the braking time can be re-estimated
             }
@@ -293,7 +339,7 @@ void ModePosHold::run()
                 // initialise BRAKE mode
                 pitch_mode = RPMode::BRAKE;         // set brake pitch mode
                 brake.pitch_rad = 0.0f;             // initialise braking angle to zero
-                brake.angle_max_pitch_rad = 0.0f;   // reset brake_angle_max so we can detect when vehicle begins to flatten out during braking
+                brake.angle_max_pitch_rad = 0.0f;   // reset tracked max brake angle (radians) so we can detect when vehicle begins to flatten out during braking
                 brake.start_time_pitch_ms = now_ms; // timestamp (ms) marking the start of pitch-axis 
                 brake.time_updated_pitch = false;   // flag the braking time can be re-estimated
             }
@@ -535,7 +581,7 @@ void ModePosHold::update_brake_angle_from_velocity(float &brake_angle_rad, float
     brake_angle_rad = constrain_float(lean_angle_rad, brake_angle_rad - brake_delta_rad, brake_angle_rad + brake_delta_rad);
 
     // constrain final brake_angle
-    const float brake_angle_max_rad = cd_to_rad(g.poshold_brake_angle_max);
+    const float brake_angle_max_rad = radians(brake_angle_max_deg);
     brake_angle_rad = constrain_float(brake_angle_rad, -brake_angle_max_rad, brake_angle_max_rad);
 }
 

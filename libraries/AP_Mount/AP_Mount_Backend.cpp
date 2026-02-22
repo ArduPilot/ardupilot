@@ -351,6 +351,8 @@ void AP_Mount_Backend::clear_roi_target()
         MAV_MOUNT_MODE default_mode = (MAV_MOUNT_MODE)_params.default_mode.get();
         set_mode(default_mode);
     }
+
+    clear_roi_pending = true;
 }
 
 // set_sys_target - sets system that mount should attempt to point towards
@@ -1063,6 +1065,9 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         case MountTargetType::NEUTRAL:
             yaw_lock_state = false;  // not locked onto the scenery
             break;
+        case MountTargetType::LOCATION:
+            yaw_lock_state = true;
+            break;        
         }
         break;
     case MAV_MOUNT_MODE_RC_TARGETING:
@@ -1166,9 +1171,7 @@ void AP_Mount_Backend::_update_mnt_target()
 
     case MAV_MOUNT_MODE_GPS_POINT:
         // point mount to a GPS point given by the mission planner
-        if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-            mnt_target.target_type = MountTargetType::ANGLE;
-        }
+        mnt_target.target_type = MountTargetType::LOCATION;
         return;
 
     case MAV_MOUNT_MODE_HOME_LOCATION:
@@ -1193,6 +1196,13 @@ void AP_Mount_Backend::_update_mnt_target()
 
 void AP_Mount_Backend::send_target_to_gimbal()
 {
+    // process any pending clear-roi-target 
+    // it is assumed that we have already zeroed _roi_target
+    if (clear_roi_pending && natively_supports(MountTargetType::LOCATION)) {
+        clear_roi_pending = false;
+        send_target_location(_roi_target);
+    }
+
     // the easy case, where the gimbal natively supports the MntTargetType:
     if (natively_supports(mnt_target.target_type)) {
         switch (mnt_target.target_type) {
@@ -1207,6 +1217,9 @@ void AP_Mount_Backend::send_target_to_gimbal()
             return;
         case MountTargetType::NEUTRAL:
             send_target_neutral();
+            return;
+        case MountTargetType::LOCATION:
+            send_target_location(_roi_target);
             return;
         }
         return;  // should not reach this as all cases return
@@ -1245,6 +1258,14 @@ void AP_Mount_Backend::send_target_to_gimbal()
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
             send_target_angles(mnt_target.angle_rad);
+            return;
+        }
+        break;
+    case MountTargetType::LOCATION:
+        if (natively_supports(MountTargetType::ANGLE)) {
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                send_target_angles(mnt_target.angle_rad);
+            }
             return;
         }
         break;

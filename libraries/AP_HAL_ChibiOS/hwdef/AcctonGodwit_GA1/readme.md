@@ -129,7 +129,7 @@ This universal controller features a CAN PMU module that supports 3 to 14s lithi
 
 When running Ardupilot, the universal controller operates as a plug-and-play device, requiring no further configuration.
 
-This universal controller does not provide power to the servos. To power them, an external BEC must be connected to the positive and negative terminals of any A1–A8 or M1–M8 port.
+This universal controller does not provide power to the servos. To power them, an external BEC must be connected to the positive and negative terminals of any A1-A8 or M1-M8 port.
 
 ![G-A1 Power](power.png "G-A1 Power")
 

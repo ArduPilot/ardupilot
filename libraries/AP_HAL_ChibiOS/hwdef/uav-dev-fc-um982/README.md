@@ -4,30 +4,30 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 
 ## Features
 
-#### Processor
+### Processor
 
 - STM32H743
 - 480MHz
 - 2MB Flash
 - 1MB RAM
 
-#### Sensors
+### Sensors
 
 - IMU TDK Invensense ICM-45686
 - Barometer Infineon DPS310
 - Magnetometer Bosch BMM150
 - GNSS Unicore UM982 L1/L2/L5 RTK GNSS with GNSS Heading
 
-#### Dimensions
+### Dimensions
 
 - Size: 50mm x 50mm (without SMA connector) x 15mm
 - Weight: 22g with microSD card
 
-#### Power
+### Power
 
 - 5.2V input via JST-GH
 
-#### Interfaces
+### Interfaces
 
 - **USB-C**
 - **Ethernet**
@@ -48,7 +48,7 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 
 ![top](uav-dev-fc-um982.png)
 
-#### S1 - SERIAL4 & SERIAL5 - 6 Pin JST-GH
+### S1 - SERIAL4 & SERIAL5 - 6 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -59,7 +59,7 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 5   | UART7_RX        | 3.3V         |
 | 6   | GND             | GND          |
 
-#### PWM - PWM / DShot / Telemetry - 8 Pin JST-GH
+### PWM - PWM / DShot / Telemetry - 8 Pin JST-GH
 
 | Pin | Signal Name           | Voltage      |
 |-----|-----------------------|--------------|
@@ -72,7 +72,7 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 7   | USART3_RX / TELEM     | 3.3V         |
 | 8   | GND                   | GND          |
 
-#### C1 - CAN FD 1 - 4 Pin JST-GH
+### C1 - CAN FD 1 - 4 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -81,7 +81,7 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 3   | CAN_L           |              |
 | 4   | GND             | GND          |
 
-#### C2 - CAN FD 2 - 4 Pin JST-GH
+### C2 - CAN FD 2 - 4 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -90,7 +90,7 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 3   | CAN_L           |              |
 | 4   | GND             | GND          |
 
-#### Debug - 6 Pin Tag-Connect
+### Debug - 6 Pin Tag-Connect
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -101,7 +101,7 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 5   | GND             | GND          |
 | 6   | not connected   |              |
 
-#### S2 - SERIAL1 & GNSS - 6 Pin JST-GH
+### S2 - SERIAL1 & GNSS - 6 Pin JST-GH
 
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
@@ -112,7 +112,7 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 5   | GNSS_EVENT      | 3.3V         |
 | 6   | GND             | GND          |
 
-#### ETH - Ethernet - 4 Pin JST-GH
+### ETH - Ethernet - 4 Pin JST-GH
 
 | Pin | Signal Name       |
 |-----|-------------------|

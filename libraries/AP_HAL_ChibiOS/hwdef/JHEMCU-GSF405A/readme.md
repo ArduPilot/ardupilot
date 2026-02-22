@@ -7,9 +7,9 @@ The JHEMCU GSF405A is a 1-2S Whoop-style (25.5mm x 25.5mm) flight controller fea
 [Pyrodrone](https://pyrodrone.com/collections/new-products/products/jhemcu-gsf405a-1s-2s-aio-f4-flight-control-w-5a-esc-elrs-2-4g-rx-25-5-25-5mm)
 [RaceDayQuads](https://www.racedayquads.com/collections/new-products/products/jhemcu-gsf405a-1-2s-toothpick-whoop-aio-flight-controller-w-8bit-5a-esc-and-elrs-2-4ghz-rx)
 
-### Specs:
+## Specs
 
-**Flight control parameters**
+### Flight control parameters
 
 - MCU: STM32F405OG6
 - Gyroscope/Accelerometer: MPU6000
@@ -27,7 +27,7 @@ The JHEMCU GSF405A is a 1-2S Whoop-style (25.5mm x 25.5mm) flight controller fea
 - Built-in voltage and current sensors
 - Weight: 3.3 grams
 
-**ESC parameters**
+### ESC parameters
 
 - Support PWM, Oneshot125, Oneshot42, Multishot, Dshot150, Dshot300, Dshot600
 - Input voltage: 1S-2S Lipo

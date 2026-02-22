@@ -4,43 +4,25 @@ The PixPilot-V3 flight controller is sold by a range of resellers listed at [Mak
 
 ## Features
 
-•    STM32F427VIT6 and STM32F103C8T6 microcontroller
-
-•    Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
-
-•    internal heater for IMUs temperature control
-
-•    internal Soft Rubber Damping Column isolation for All interna IMUs
-
-•    Two barometers, MS5611(SPI)
-
-•    builtin IST8310 magnetometer(internal I2C)
-
-•    builtin RAMTRON(SPI)
-
-•    microSD card slot
-
-•    5 UARTs
-
-•    USB(Type-C)
-
-•    PPM & S.Bus input
-
-•    14 PWM outputs
-
-•    tow I2C ports and two FDCAN ports
-
-•    one S.Bus output
-
-•    External Buzzer
-
-•    builtin RGB LED
-
-•    two voltage & current monitoring
-
-•    servo rail BEC independent power input for servos
-
-•    external safety Switch
+- STM32F427VIT6 and STM32F103C8T6 microcontroller
+- Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
+- internal heater for IMUs temperature control
+- internal Soft Rubber Damping Column isolation for All interna IMUs
+- Two barometers, MS5611(SPI)
+- builtin IST8310 magnetometer(internal I2C)
+- builtin RAMTRON(SPI)
+- microSD card slot
+- 5 UARTs
+- USB(Type-C)
+- PPM & S.Bus input
+- 14 PWM outputs
+- tow I2C ports and two FDCAN ports
+- one S.Bus output
+- External Buzzer
+- builtin RGB LED
+- two voltage & current monitoring
+- servo rail BEC independent power input for servos
+- external safety Switch
 
 ## Pinout
 

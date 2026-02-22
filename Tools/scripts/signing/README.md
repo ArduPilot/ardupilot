@@ -11,7 +11,7 @@ firmware doesn't match any of the public keys in the bootloader.
 
 To generate a public/private key pair, run the following command:
 
-```
+```bash
   python3 -m pip install pymonocypher==3.1.3.2
   Tools/scripts/signing/generate_keys.py NAME
 ```
@@ -32,7 +32,7 @@ accept firmwares signed with one of the public keys in the bootloader.
 
 To build a secure bootloader run this command:
 
-```
+```bash
  Tools/scripts/build_bootloaders.py BOARDNAME --signing-key=NAME_public_key.dat
 ```
 
@@ -53,7 +53,7 @@ make_secure_bl.py script.
 
 To build a signed firmware run this command (example is for a copter build):
 
-```
+```bash
  ./waf configure --board BOARDNAME --signed-fw
  ./waf copter
  ./Tools/scripts/signing/make_secure_fw.py build/BOARDNAME/bin/arducopter.apj NAME_private_key.dat
@@ -67,7 +67,7 @@ Tools/scripts/uploader.py on Linux.
 Alternatively you can set the private key in the configure step, which
 allows for build and upload in one step for faster development:
 
-```
+```bash
  ./waf configure --board BOARDNAME --signed-fw --private-key NAME_private_key.dat
  ./waf copter --upload
 ```
@@ -97,7 +97,7 @@ When using a secure bootloader the USB ID presented by the bootloader
 will have a "Secure" string added. For example, you would see this in
 "dmesg" in Linux:
 
-```
+```text
   Product: BOARDNAME-Secure-BL-v10
 ```
 
@@ -121,7 +121,7 @@ board .
 Then using MAVproxy connect to the autopilot and execute the following commands to remove all
 public keys from the signed bootloader:
 
-```
+```text
   module load SecureCommand
   securecommand set private_keyfile my_private_key.dat
   securecommand getsessionkey
@@ -129,7 +129,7 @@ public keys from the signed bootloader:
 
 This opens a secure command session using your private_key.dat file to allow the removal of all public keys from the bootloader using these commands:
 
-```
+```text
   securecommand getpublickeys        will return the number of public keys...you will need this next
   securecommand removepublickeys 0 X   where X is the number of public keys...this removes them
 ```
@@ -143,14 +143,14 @@ been removed.
 
 Now exit MAVProxy and build a firmware using the normal bootloader but still using the --signed-fw option:
 
-```
+```bash
    ./waf configure --board BOARDNAME --signed-fw
    ./waf copter --upload   (or whatever vehicle you desire)
 ```
 
 After loading the new firmware, connect to MAVProxy and run the command to flash, the new, non signing checking bootloader:
 
-```
+```text
   flashbootloader
 ```
 

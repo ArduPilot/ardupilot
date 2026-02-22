@@ -275,22 +275,13 @@ const AP_Param::Info Copter::var_info[] = {
     GSCALAR(disarm_delay, "DISARM_DELAY",           AUTO_DISARMING_DELAY),
 
 #if MODE_POSHOLD_ENABLED
-    // @Param: PHLD_BRAKE_RATE
+    // @Param: PHLD_BRK_RATE
     // @DisplayName: PosHold braking rate
     // @Description: PosHold flight mode's rotation rate during braking in deg/sec
     // @Units: deg/s
     // @Range: 4 12
     // @User: Advanced
-    GSCALAR(poshold_brake_rate_degs, "PHLD_BRAKE_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
-
-    // @Param: PHLD_BRAKE_ANGLE
-    // @DisplayName: PosHold braking angle max
-    // @Description: PosHold flight mode's max lean angle during braking in centi-degrees
-    // @Units: cdeg
-    // @Increment: 10
-    // @Range: 2000 4500
-    // @User: Advanced
-    GSCALAR(poshold_brake_angle_max, "PHLD_BRAKE_ANGLE",  POSHOLD_BRAKE_ANGLE_DEFAULT),
+    GSCALAR(poshold_brake_rate_degs, "PHLD_BRK_RATE",  POSHOLD_BRAKE_RATE_DEFAULT),
 #endif
 
     // @Param: LAND_REPOSITION
@@ -1170,6 +1161,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Path: mode_land.cpp
     AP_SUBGROUPPTR(mode_land_ptr, "LAND_", 15, ParametersG2, ModeLand),
 
+#if MODE_POSHOLD_ENABLED
+    // @Group: PHLD_
+    // @Path: mode_poshold.cpp
+    AP_SUBGROUPPTR(mode_poshold_ptr, "PHLD_", 16, ParametersG2, ModePosHold),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1236,6 +1233,9 @@ ParametersG2::ParametersG2(void) :
     ,mode_rtl_ptr(&copter.mode_rtl)
 #endif
     ,mode_land_ptr(&copter.mode_land)
+#if MODE_POSHOLD_ENABLED
+    ,mode_poshold_ptr(&copter.mode_poshold)
+#endif
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
@@ -1308,6 +1308,11 @@ void Copter::load_parameters(void)
     // convert LAND parameters
     copter.mode_land.convert_params();
 
+#if MODE_POSHOLD_ENABLED
+    // convert PosHold parameters
+    copter.mode_poshold.convert_params();
+#endif
+
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
 }
@@ -1324,28 +1329,6 @@ void Copter::convert_pid_parameters(void)
     for (const auto &info : angle_and_filt_conversion_info) {
         AP_Param::convert_old_parameter(&info, 1.0f);
     }
-
-    // TradHeli default parameters
-#if FRAME_CONFIG == HELI_FRAME
-    static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
-        { "LOIT_ACC_MAX_M", 5.0f },
-        { "LOIT_BRK_ACC_M", 1.25f },
-        { "LOIT_BRK_DELAY", 1.0f },
-        { "LOIT_BRK_JRK_M", 2.5f },
-        { "LOIT_SPEED_MS", 30.0f },
-        { "PHLD_BRAKE_ANGLE", 800.0f },
-        { "PHLD_BRAKE_RATE", 4.0f },
-        { "PSC_D_ACC_P", 0.028f },
-        { "PSC_NE_VEL_D", 0.0f },
-        { "PSC_NE_VEL_I", 0.5f },
-        { "PSC_NE_VEL_P", 1.0f },
-        { "RC8_OPTION", 32 },
-        { "RC_OPTIONS", 0 },
-        { "ATC_RAT_RLL_ILMI", 0.05},
-        { "ATC_RAT_PIT_ILMI", 0.05},
-    };
-    AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
-#endif  // FRAME_CONFIG == HELI_FRAME
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 #if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1

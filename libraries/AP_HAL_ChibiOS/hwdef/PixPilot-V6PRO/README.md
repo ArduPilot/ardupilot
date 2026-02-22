@@ -4,43 +4,25 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed at [
 
 ## Features
 
-• STM32H743VIT6 microcontroller
-
-•STM32F103C8T6 IOMCU microcontroller
-
-•    Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
-
-•    internal heater for IMUs temperature control
-
-•    internal Soft Rubber Damping Ball isolation for All interna IMUs
-
-•    Two barometers, BMP388(SPI)
-
-•    builtin RAMTRON(SPI)
-
-•    microSD card slot
-
-•    5 UARTs, two with RTS/CTS flow control
-
-•    USB(Type-C)
-
-•    PPM & S.Bus input
-
-•    16 PWM outputs
-
-•    twoI2C ports and two FDCAN ports
-
-•    one S.Bus output
-
-•    internal Buzzer
-
-•    builtin RGB LED
-
-• Four voltage & current monitoring, Two analog and Two CAN
-
-•    servo rail BEC independent power input for servos
-
-•    external safety Switch
+- STM32H743VIT6 microcontroller
+- STM32F103C8T6 IOMCU microcontroller
+- Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
+- internal heater for IMUs temperature control
+- internal Soft Rubber Damping Ball isolation for All interna IMUs
+- Two barometers, BMP388(SPI)
+- builtin RAMTRON(SPI)
+- microSD card slot
+- 5 UARTs, two with RTS/CTS flow control
+- USB(Type-C)
+- PPM & S.Bus input
+- 16 PWM outputs
+- twoI2C ports and two FDCAN ports
+- one S.Bus output
+- internal Buzzer
+- builtin RGB LED
+- Four voltage & current monitoring, Two analog and Two CAN
+- servo rail BEC independent power input for servos
+- external safety Switch
 
 ## Picture
 

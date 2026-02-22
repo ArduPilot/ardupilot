@@ -2002,6 +2002,9 @@ void AP_Periph_FW::can_update()
 #if AP_PERIPH_RPM_STREAM_ENABLED
         rpm_sensor_send();
 #endif
+#if AP_SERVO_TELEM_ENABLED
+        servo_telem_update();
+#endif
     }
     const uint32_t now_us = AP_HAL::micros();
     while ((AP_HAL::micros() - now_us) < 1000) {

@@ -745,3 +745,7 @@
 #ifndef HAL_USE_LOAD_MEASURE
 #define HAL_USE_LOAD_MEASURE 0
 #endif
+
+#ifndef AP_SERVO_TELEM_ENABLED
+#define AP_SERVO_TELEM_ENABLED 0
+#endif

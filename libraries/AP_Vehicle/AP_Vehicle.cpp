@@ -1103,6 +1103,18 @@ void AP_Vehicle::one_Hz_update(void)
 #endif
 #endif
 
+#if HAL_GCS_ENABLED
+    // Check if available modes have changed
+    const uint32_t available_mode_enabled_mask = get_available_mode_enabled_mask();
+    if (available_mode_enabled_mask != last_available_mode_enabled_mask) {
+        if (last_available_mode_enabled_mask != 0) {
+            // Last value is only zero at init, track changes after that
+            gcs().available_modes_changed();
+        }
+        last_available_mode_enabled_mask = available_mode_enabled_mask;
+    }
+#endif
+
 }
 
 void AP_Vehicle::check_motor_noise()

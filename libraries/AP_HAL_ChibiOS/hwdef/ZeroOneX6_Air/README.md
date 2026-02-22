@@ -4,7 +4,7 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 
 ![Uploading ZeroOneX6_Air.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Air_Series-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6_Air/ZeroOneX6_Air.png?raw=true)
 
-## Features:
+## Features
 
 - Separate flight control Inertial Measurement Unit design.
 - MCU
@@ -31,7 +31,7 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 
   - Baro:
 
-      one barometer ：ICP20100
+      one barometer: ICP20100
 
   - Magnetometer:
 
@@ -48,7 +48,7 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 
   - Baro:
 
-      Two barometers ：2 x ICP20100
+      Two barometers: 2 x ICP20100
 
   - Magnetometer:
 

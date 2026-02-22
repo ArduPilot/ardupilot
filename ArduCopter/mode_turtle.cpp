@@ -6,12 +6,18 @@
 #define CRASH_FLIP_STICK_MINF 0.15f
 #define power3(x) ((x) * (x) * (x))
 
+// Return true if this mode is enabled, use by MAVLink available modes
+bool ModeTurtle::enabled() const
+{
+    return SRV_Channels::get_dshot_esc_type() != AP_HAL::RCOutput::DshotEscType::DSHOT_ESC_NONE;
+}
+
 bool ModeTurtle::init(bool ignore_checks)
 {
     WITH_SEMAPHORE(msem);
 
     // do not enter the mode when already armed or when flying
-    if (motors->armed() || SRV_Channels::get_dshot_esc_type() == 0) {
+    if (motors->armed() || !enabled()) {
         return false;
     }
 

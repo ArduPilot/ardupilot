@@ -123,7 +123,7 @@ public:
         k_param_rc_14_old,
         k_param_rally,
         k_param_poshold_brake_rate_degs,
-        k_param_poshold_brake_angle_max,
+        k_param_poshold_brake_angle_max,    // deprecated - remove
         k_param_pilot_accel_d_cmss,
         k_param_serial0_baud,           // deprecated - remove
         k_param_serial1_baud,           // deprecated - remove
@@ -412,7 +412,6 @@ public:
 
 #if MODE_POSHOLD_ENABLED
     AP_Int16        poshold_brake_rate_degs;    // PosHold flight mode's rotation rate during braking in deg/sec
-    AP_Int16        poshold_brake_angle_max;    // PosHold flight mode's max lean angle during braking in centi-degrees
 #endif
 
     // Waypoints
@@ -702,6 +701,11 @@ public:
 #endif
 
     void *mode_land_ptr;
+
+#if MODE_POSHOLD_ENABLED
+    void *mode_poshold_ptr;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];

@@ -1408,7 +1408,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
                          AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
     };
 
-    servo_telem->update_telem_data(msg.actuator_id, telem_data);
+    servo_telem->update_telem_data(msg.actuator_id - 1, telem_data);
 }
 #endif
 
@@ -1440,7 +1440,7 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
                          AP_Servo_Telem::TelemetryData::Types::STATUS
     };
 
-    servo_telem->update_telem_data(msg.servo_id, telem_data);
+    servo_telem->update_telem_data(msg.servo_id - 1, telem_data);
 }
 #endif // AP_DRONECAN_HIMARK_SERVO_SUPPORT
 
@@ -1465,7 +1465,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
                          AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
     };
 
-    servo_telem->update_telem_data(msg.actuator_id, telem_data);
+    servo_telem->update_telem_data(msg.actuator_id - 1, telem_data);
 }
 #endif
 

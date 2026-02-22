@@ -1,3 +1,5 @@
+# ESP32 IMU Module v1.1
+
 makerfabs imu module v1.1 - available on tindie
 [Tindie](https://www.tindie.com/products/makerfabs/esp32-6-axis-imu-module/) (I'm not affiliated, and I purchased myself)
 

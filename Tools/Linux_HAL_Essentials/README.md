@@ -1,12 +1,12 @@
 # PRU PWM
 
-### Updating kernel
+## Updating kernel
 
 - Check your kernel version using `uname -r`
 - If you get 3.8.13bone56+ as output then you may skip Updating kernel.
 - For other kernel versions write following cmds in your BBB:
 
-```
+```bash
 wget https://rcn-ee.net/deb/wheezy-armhf/v3.8.13-bone57/install-me.sh
 chmod +x install-me.sh
 ./install-me.sh
@@ -22,7 +22,7 @@ NOTE: For Ubuntu different scripts shall be used. E.g., for precise:
 
 ----
 
-### Setting Up PRU Compiler
+## Setting Up PRU Compiler
 
 You should first check if there is the PRU Compiler available in your Linux-Distribution.
 
@@ -35,15 +35,15 @@ If it is not available in your Linux-Distribution you have to download it from t
 - Please check the path where you install PRU compiler.
 - Setting environment variable
 
-```
+```bash
 echo export PATH=/path/to/pru/compiler/bin:$PATH >> ~/.bashrc
 echo export PRU_C_DIR="/path/to/pru/compiler/include;/path/to/pru/compiler/lib" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-*note: semicolons in second command were intended*
+*Note:* Semicolons in second command were intended.
 
-### Compiling and loading the code
+## Compiling and loading the code
 
 - just `make`
 - copy generated executable `pwmpru1` to `ardupilot/Tools/Linux_HAL_Essentials/`.

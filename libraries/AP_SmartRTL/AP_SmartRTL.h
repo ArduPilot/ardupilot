@@ -29,6 +29,9 @@ public:
     // constructor, destructor
     AP_SmartRTL(bool example_mode = false);
 
+    // Return true if SmartRTL is enabled
+    bool enabled() const;
+
     // initialise safe rtl including setting up background processes
     void init();
 

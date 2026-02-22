@@ -81,10 +81,17 @@ ModeFlowHold::ModeFlowHold(void) : Mode()
 
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
+// Return true if this mode is enabled, used by MAVLink available modes
+bool ModeFlowHold::enabled() const
+{
+    return copter.optflow.enabled();
+}
+
+
 // flowhold_init - initialise flowhold controller
 bool ModeFlowHold::init(bool ignore_checks)
 {
-    if (!copter.optflow.enabled() || !copter.optflow.healthy()) {
+    if (!enabled() || !copter.optflow.healthy()) {
         return false;
     }
 

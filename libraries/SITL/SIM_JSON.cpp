@@ -34,8 +34,6 @@
 
 #define UDP_TIMEOUT_MS 100
 
-#define SITL_JSON_DEBUG 0
-
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;

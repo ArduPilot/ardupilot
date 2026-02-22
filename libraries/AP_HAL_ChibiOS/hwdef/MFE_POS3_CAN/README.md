@@ -4,15 +4,11 @@ The MFE_POS3_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://
 
 ## Features
 
-• STM32F427VIT6 microcontroller
-
-• RM3100 compass
-
-• NEO-M9N
-
-• one CAN port
-
-• Blue led
+- STM32F427VIT6 microcontroller
+- RM3100 compass
+- NEO-M9N
+- one CAN port
+- Blue led
 
 ## Picture
 

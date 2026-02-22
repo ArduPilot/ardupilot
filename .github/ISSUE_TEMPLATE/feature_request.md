@@ -4,6 +4,8 @@ about: If you have an idea for a new feature, choose this option
 
 ---
 
+# Feature Request
+
 **IF YOU DON'T REMOVE THESE FOUR LINES, THEN YOUR REQUEST WILL BE CLOSED AUTOMATICALLY**
 Questions and user problems should be directed at the [ArduPilot forum](http://discuss.ardupilot.org)
 _**Please do a careful search before opening this, there are already a lot of feature requests**_

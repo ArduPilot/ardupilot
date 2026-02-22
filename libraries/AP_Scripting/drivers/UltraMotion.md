@@ -64,7 +64,7 @@ should also be set:
 Commands, assuming you are setting up servo 7, and a telemetry rate of
 10Hz
 
-```
+```text
 id 7
 pn 1000
 px 2000

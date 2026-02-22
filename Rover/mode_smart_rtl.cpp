@@ -124,9 +124,9 @@ bool ModeSmartRTL::get_desired_location(Location& destination) const
 }
 
 // set desired speed in m/s
-bool ModeSmartRTL::set_desired_speed(float speed)
+bool ModeSmartRTL::set_desired_speed(float speed_ms)
 {
-    return g2.wp_nav.set_speed_max(speed);
+    return g2.wp_nav.set_speed_max(speed_ms);
 }
 
 // save current position for use by the smart_rtl flight mode

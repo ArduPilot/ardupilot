@@ -2,6 +2,8 @@
 
 #include "GCS_MAVLink_Sub.h"
 #include <AP_RPM/AP_RPM_config.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
 MAV_TYPE GCS_Sub::frame_type() const
 {
@@ -163,6 +165,68 @@ bool GCS_MAVLINK_Sub::send_info()
     return true;
 }
 
+#if AP_RANGEFINDER_ENABLED
+void GCS_MAVLINK_Sub::send_water_depth()
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
+        return;
+    }
+
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr) {
+        return;
+    }
+
+    // depth can only be measured by a downward-facing rangefinder:
+    if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
+        return;
+    }
+
+    // get position
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    IGNORE_RETURN(ahrs.get_location(loc));
+
+    const auto num_sensors = rangefinder->num_sensors();
+    for (uint8_t i=0; i<num_sensors; i++) {
+        last_WATER_DEPTH_index += 1;
+        if (last_WATER_DEPTH_index >= num_sensors) {
+            last_WATER_DEPTH_index = 0;
+        }
+
+        const AP_RangeFinder_Backend *s = rangefinder->get_backend(last_WATER_DEPTH_index);
+        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
+            continue;
+        }
+
+        // get temperature
+        float temp_C;
+        if (!s->get_temp(temp_C)) {
+            // TODO: check known water temperature sources (temp sensor, external baro)
+            temp_C = 0.0f;
+        }
+
+        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
+
+        mavlink_msg_water_depth_send(
+            chan,
+            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+            last_WATER_DEPTH_index, // rangefinder instance
+            sensor_healthy,     // sensor healthy
+            loc.lat,            // latitude of vehicle
+            loc.lng,            // longitude of vehicle
+            loc.alt * 0.01f,    // altitude of vehicle (MSL)
+            ahrs.get_roll_rad(),    // roll in radians
+            ahrs.get_pitch_rad(),   // pitch in radians
+            ahrs.get_yaw_rad(),     // yaw in radians
+            s->distance(),    // distance in meters
+            temp_C);            // temperature in degC
+
+        break;  // only send one WATER_DEPTH message per loop
+    }
+}
+#endif  // AP_RANGEFINDER_ENABLED
+
 /*
   send PID tuning message
  */
@@ -250,6 +314,13 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 
     case MSG_WIND: // other vehicles do something custom with wind:
         return true;
+
+#if AP_RANGEFINDER_ENABLED
+    case MSG_WATER_DEPTH:
+        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
+        send_water_depth();
+        break;
+#endif  // AP_RANGEFINDER_ENABLED
 
     default:
         return GCS_MAVLINK::try_send_message(id);
