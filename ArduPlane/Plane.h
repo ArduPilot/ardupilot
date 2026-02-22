@@ -1146,6 +1146,9 @@ private:
     void notify_mode(const Mode& mode);
     bool gcs_mode_enabled(const Mode::Number mode_num) const;
 
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    uint32_t get_available_mode_enabled_mask() const override;
+
     // takeoff.cpp
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
