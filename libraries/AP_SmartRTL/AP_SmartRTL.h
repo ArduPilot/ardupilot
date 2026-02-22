@@ -18,7 +18,7 @@
                                                 // The minimum is int((s/2-1)+min(s/2, SMARTRTL_POINTS_MAX-s)), where s = pow(2, floor(log(SMARTRTL_POINTS_MAX)/log(2)))
                                                 // To avoid this annoying math, a good-enough overestimate is ceil(SMARTRTL_POINTS_MAX*2.0f/3.0f)
 #define SMARTRTL_SIMPLIFY_TIME_US        200    // maximum time (in microseconds) the simplification algorithm will run before returning
-#define SMARTRTL_PRUNING_DELTA (_accuracy * 0.99)   // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
+#define SMARTRTL_PRUNING_DELTA (SMARTRTL_ACCURACY_DEFAULT * 0.5)   // How many meters apart must two points be, such that we can assume that there is no obstacle between them.  must be smaller than _ACCURACY parameter
 #define SMARTRTL_PRUNING_LOOP_BUFFER_LEN_MULT 0.25f // pruning loop buffer size as compared to maximum number of points
 #define SMARTRTL_PRUNING_LOOP_TIME_US    200    // maximum time (in microseconds) that the loop finding algorithm will run before returning
 
