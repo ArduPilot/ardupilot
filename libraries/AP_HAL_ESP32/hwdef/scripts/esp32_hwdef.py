@@ -156,7 +156,7 @@ class ESP32HWDef(hwdef.HWDef):
             return
         elif line.startswith("ESP32_SPIBUS"):
             p = shlex.split(line)
-            if len(p) == 5:
+            if len(p) == 6:
                 host_str = p[1].upper()
                 if 'VSPI' in host_str or 'SPI3' in host_str:
                     num = 3
@@ -164,12 +164,13 @@ class ESP32HWDef(hwdef.HWDef):
                     num = 2
                 else:
                     num = 1
-                mosi, miso, sck = p[2], p[3], p[4]
+                dma, mosi, miso, sck = p[2], p[3], p[4], p[5]
                 self.validate_pin_assignment(mosi, 'SPI_MOSI', f'BUS{num}')
                 self.validate_pin_assignment(miso, 'SPI_MISO', f'BUS{num}')
                 self.validate_pin_assignment(sck, 'SPI_SCK', f'BUS{num}')
                 self.spi_buses.append({
                     'num': num,
+                    'dma': dma,
                     'sck': sck.replace('GPIO_NUM_', ''),
                     'miso': miso.replace('GPIO_NUM_', ''),
                     'mosi': mosi.replace('GPIO_NUM_', '')
@@ -284,7 +285,7 @@ class ESP32HWDef(hwdef.HWDef):
                 # Map bus number to host name for ESP32
                 host = "SPI2_HOST" if b['num'] == 2 else "SPI3_HOST" if \
                        b['num'] == 3 else "SPI1_HOST"
-                entries.append(f"    {{.host={host}, .dma_ch=1, "
+                entries.append(f"    {{.host={host}, .dma_ch={b['dma']}, "
                                f".mosi=GPIO_NUM_{b['mosi']}, "
                                f".miso=GPIO_NUM_{b['miso']}, "
                                f".sclk=GPIO_NUM_{b['sck']}}}")
