@@ -283,6 +283,7 @@ AP_Baro::AP_Baro()
     _field_elevation_active = _field_elevation;
 }
 
+#if AP_BARO_CALIBRATION_ENABLED
 // calibrate the barometer. This must be called at least once before
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(bool save)
@@ -407,7 +408,7 @@ void AP_Baro::update_calibration()
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
 }
-
+#endif  // AP_BARO_CALIBRATION_ENABLED
 
 // return air density / sea level density - decreases as altitude climbs
 float AP_Baro::_get_air_density_ratio(void)
