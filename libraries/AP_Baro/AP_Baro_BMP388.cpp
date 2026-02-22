@@ -135,14 +135,14 @@ void AP_Baro_BMP388::timer(void)
     // call.  Retrieve what we need from it beforehand to avoid a
     // warning.
     const uint8_t status = buf[0];
-    const uint32_t pressure_data = (buf[3] << 16) | (buf[2] << 8) | buf[1];
-    const uint32_t temperature_data = (buf[6] << 16) | (buf[5] << 8) | buf[4];
     if ((status & 0x20) != 0) {
         // we have pressure data
+         const uint32_t pressure_data = (buf[3] << 16) | (buf[2] << 8) | buf[1];
         update_pressure(pressure_data);
     }
     if ((status & 0x40) != 0) {
         // we have temperature data
+        const uint32_t temperature_data = (buf[6] << 16) | (buf[5] << 8) | buf[4];
         update_temperature(temperature_data);
     }
 
