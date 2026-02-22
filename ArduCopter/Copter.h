@@ -462,6 +462,9 @@ private:
 
     // Altitude
     float baro_alt_m;                           // barometer altitude in meters above home
+    
+    float rtl_max_alt_reached_m;                // updates max altitude during flight
+
     LowPassFilterVector3f land_accel_ef_filter; // accelerations for land and crash detector tests
 
     // filtered pilot's throttle input used to cancel landing if throttle held high
@@ -731,6 +734,7 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     uint16_t get_pilot_speed_dn() const;
     void run_rate_controller_main();
+    void update_rtl_max_altitude();
 
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     struct RateControllerRates {

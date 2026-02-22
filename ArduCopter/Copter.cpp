@@ -923,6 +923,9 @@ void Copter::update_altitude()
     // read in baro altitude
     read_barometer();
 
+    // update max altitude of flight
+    update_rtl_max_altitude();
+
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
