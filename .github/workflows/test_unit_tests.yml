@@ -154,6 +154,7 @@ jobs:
           PYTHONPATH: "${{ github.workspace }}/Tools/scripts:${{ github.workspace }}/modules/mavlink/pymavlink"
         if: matrix.config == 'unit-tests'
         run: |
+          python3 -m pip install pytest
           Tools/autotest/unittest/extract_param_defaults_unittest.py
 
       - name: Unittest annotate_params
