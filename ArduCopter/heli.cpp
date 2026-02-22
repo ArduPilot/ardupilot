@@ -23,7 +23,7 @@ void Copter::heli_init()
 // should be called at 50hz
 void Copter::check_dynamic_flight(void)
 {
-    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED ||
+    if ((motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && !motors->in_autorotation()) ||
         flightmode->is_landing()) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
