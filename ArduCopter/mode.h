@@ -1548,7 +1548,8 @@ public:
     // enum for RTL_ALT_TYPE parameter
     enum class RTLAltType : int8_t {
         RELATIVE = 0,
-        TERRAIN = 1
+        TERRAIN = 1,
+        MAX_FLIGHT_ALT = 2
     };
     ModeRTL::RTLAltType get_alt_type() const;
 
@@ -1612,7 +1613,9 @@ private:
     enum class ReturnTargetAltType {
         RELATIVE = 0,
         RANGEFINDER = 1,
-        TERRAINDATABASE = 2
+        TERRAINDATABASE = 2,
+        MAX_FLIGHT_ALT = 3
+
     };
 
     // Loiter timer - Records how long we have been in loiter
