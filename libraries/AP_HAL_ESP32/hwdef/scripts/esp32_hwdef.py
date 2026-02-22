@@ -179,11 +179,16 @@ class ESP32HWDef(hwdef.HWDef):
         elif line.startswith("ESP32_SPIDEV"):
             p = shlex.split(line)
             if len(p) == 8:
-                name, cs = p[1], p[4]
+                name, bus, dev, cs, mode, low, high = p[1], p[2], p[3], p[4], p[5], p[6], p[7]
                 self.validate_pin_assignment(cs, 'SPI_CS', name)
                 self.spi_devices.append({
                     'name': name,
-                    'cs': cs.replace('GPIO_NUM_', '')
+                    'bus': bus,
+                    'device': dev,
+                    'cs': cs.replace('GPIO_NUM_', ''),
+                    'mode': mode,
+                    'lspeed': low,
+                    'hspeed': high
                 })
             return
         elif line.startswith("ESP32_I2CBUS"):
@@ -296,11 +301,10 @@ class ESP32HWDef(hwdef.HWDef):
                     "HAL_ESP32_SPI_DEVICES\n#define HAL_ESP32_SPI_DEVICES \\\n")
             entries = []
             for i, d in enumerate(self.spi_devices):
-                # Legacy boards may use .bus=0 as a placeholder
-                bus_idx = d.get('bus', 0)
-                entries.append(f'    {{.name="{d["name"]}", .bus={bus_idx}, '
-                               f'.device={i}, .cs=GPIO_NUM_{d["cs"]}, '
-                               '.mode=0, .lspeed=1*MHZ, .hspeed=10*MHZ}')
+                entries.append(f'    {{.name="{d["name"]}", .bus={d["bus"]}, '
+                               f'.device={d["device"]}, .cs=GPIO_NUM_{d["cs"]}, '
+                               f'.mode={d["mode"]}, .lspeed={d["lspeed"]}, '
+                               f'.hspeed={d["hspeed"]}}}')
             f.write(',\\\n'.join(entries) + '\n#endif\n')
 
         if self.i2c_buses:
