@@ -1038,8 +1038,11 @@ class esp32(Board):
         import esp32_hwdef
         hwdef_dir = os.path.join(cfg.srcnode.abspath(), 'libraries/AP_HAL_ESP32/hwdef')
         hwdef_dat = os.path.join(hwdef_dir, self.name, 'hwdef.dat')
-        if not os.path.exists(cfg.bldnode.abspath()):
-            os.makedirs(cfg.bldnode.abspath())
+        
+        # Use board-specific build directory
+        board_bldnode = os.path.join(cfg.bldnode.abspath(), self.name)
+        if not os.path.exists(board_bldnode):
+            os.makedirs(board_bldnode)
             
         # Detect MCU from board name for legacy fallback
         mcu = 'esp32'
@@ -1056,7 +1059,7 @@ class esp32(Board):
             mcu = 'esp32p4'
             
         eh = esp32_hwdef.ESP32HWDef(
-            outdir=cfg.bldnode.abspath(),
+            outdir=board_bldnode,
             hwdef=[hwdef_dat],
             quiet=True,
             mcu=mcu,

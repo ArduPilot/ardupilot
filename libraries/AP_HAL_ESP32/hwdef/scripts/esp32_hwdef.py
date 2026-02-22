@@ -79,6 +79,7 @@ class ESP32HWDef(hwdef.HWDef):
         self.i2c_buses = []
         self.adc_pins = []
         self.pin_assignments = {}
+        self.sdspi = None
         self.flash_size_mb = None
         self.psram_size = None
         self.partition_table_filename = None
@@ -204,6 +205,18 @@ class ESP32HWDef(hwdef.HWDef):
                 self.validate_pin_assignment(pin, 'ADC', f'CH{ardupilot_pin}')
                 self.adc_pins.append({'channel': int(ardupilot_pin), 'pin': pin})
             return
+        elif line.startswith("ESP32_SDSPI"):
+            p = shlex.split(line)
+            if len(p) == 7:
+                self.sdspi = {
+                    'host': p[1],
+                    'dma': p[2],
+                    'mosi': p[3],
+                    'miso': p[4],
+                    'sclk': p[5],
+                    'cs': p[6]
+                }
+            return
         elif line.startswith("FLASH_SIZE_MB"):
             self.flash_size_mb = int(line.split()[1])
             return
@@ -268,8 +281,9 @@ class ESP32HWDef(hwdef.HWDef):
                     "HAL_ESP32_SPI_BUSES\n#define HAL_ESP32_SPI_BUSES \\\n")
             entries = []
             for b in sorted(self.spi_buses, key=lambda x: x['num']):
-                host = "SPI2_HOST" if b['num'] == 1 else "SPI3_HOST" if \
-                       b['num'] == 2 else "SPI1_HOST"
+                # Map bus number to host name for ESP32
+                host = "SPI2_HOST" if b['num'] == 2 else "SPI3_HOST" if \
+                       b['num'] == 3 else "SPI1_HOST"
                 entries.append(f"    {{.host={host}, .dma_ch=1, "
                                f".mosi=GPIO_NUM_{b['mosi']}, "
                                f".miso=GPIO_NUM_{b['miso']}, "
@@ -281,7 +295,9 @@ class ESP32HWDef(hwdef.HWDef):
                     "HAL_ESP32_SPI_DEVICES\n#define HAL_ESP32_SPI_DEVICES \\\n")
             entries = []
             for i, d in enumerate(self.spi_devices):
-                entries.append(f'    {{.name="{d["name"]}", .bus=0, '
+                # Legacy boards may use .bus=0 as a placeholder
+                bus_idx = d.get('bus', 0)
+                entries.append(f'    {{.name="{d["name"]}", .bus={bus_idx}, '
                                f'.device={i}, .cs=GPIO_NUM_{d["cs"]}, '
                                '.mode=0, .lspeed=1*MHZ, .hspeed=10*MHZ}')
             f.write(',\\\n'.join(entries) + '\n#endif\n')
@@ -303,13 +319,23 @@ class ESP32HWDef(hwdef.HWDef):
                 entries.append(f"    {{{p['pin']}, 11, {p['channel']}}}")
             f.write(',\\\n'.join(entries) + '\n#endif\n')
 
+        if self.sdspi:
+            f.write(f"\n#ifndef HAL_ESP32_SDSPI\n"
+                    f"#define HAL_ESP32_SDSPI {{.host={self.sdspi['host']}, "
+                    f".dma_ch={self.sdspi['dma']}, .mosi={self.sdspi['mosi']}, "
+                    f".miso={self.sdspi['miso']}, .sclk={self.sdspi['sclk']}, "
+                    f".cs={self.sdspi['cs']}}}\n#endif\n")
+
     def generate_esp_idf_config(self):
-        if not self.advanced_build:
-            return []
         config_lines = []
         if self.flash_size_mb:
-            config_lines.append(f"CONFIG_ESPTOOLPY_FLASHSIZE_"
-                                f"{self.flash_size_mb}MB=y")
+            # Set the selected flash size and its corresponding string value
+            config_lines.append(f"CONFIG_ESPTOOLPY_FLASHSIZE_{self.flash_size_mb}MB=y")
+            config_lines.append(f'CONFIG_ESPTOOLPY_FLASHSIZE="{self.flash_size_mb}MB"')
+            # Explicitly disable other common flash sizes to ensure override
+            for size in [1, 2, 4, 8, 16, 32, 64, 128]:
+                if size != self.flash_size_mb:
+                    config_lines.append(f"# CONFIG_ESPTOOLPY_FLASHSIZE_{size}MB is not set")
         if self.psram_size:
             config_lines.append("CONFIG_SPIRAM=y")
             config_lines.append("CONFIG_SPIRAM_TYPE_AUTO=y")
@@ -324,17 +350,23 @@ class ESP32HWDef(hwdef.HWDef):
             config_lines.append("# CONFIG_ESP_WIFI_ENABLED is not set")
         else:
             config_lines.append("CONFIG_ESP_WIFI_ENABLED=y")
+
+        # Essential coredump and panic behavior for ArduPilot on ESP32
+        config_lines.extend([
+            "CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y",
+            "CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y",
+            "CONFIG_ESP_COREDUMP_MAX_TASKS_NUM=64",
+        ])
+        
         return config_lines
 
     def write_esp_idf_config(self, filename="sdkconfig.board"):
-        if not self.advanced_build:
-            return
         config_lines = self.generate_esp_idf_config()
         if not config_lines:
             return
         fname = os.path.join(self.outdir, filename)
         with open(fname, "w") as f:
-            f.write("# Auto-generated config\n")
+            f.write(f"# Auto-generated ESP-IDF configuration for {self.board}\n")
             for line in config_lines:
                 f.write(line + "\n")
 

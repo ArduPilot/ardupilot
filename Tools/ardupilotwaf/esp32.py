@@ -135,8 +135,11 @@ def configure(cfg):
             hwdef_script = os.path.join(cfg.srcnode.abspath(), 'libraries/AP_HAL_ESP32/hwdef/scripts/esp32_hwdef.py')
             if os.path.exists(hwdef_script):
                 import subprocess
-                build_dir = cfg.bldnode.abspath()
-                cmd = [cfg.env.PYTHON[0], hwdef_script, '-D', build_dir, '--mcu', cfg.env.MCU, hwdef_file]
+                # Use board-specific build directory
+                board_build_dir = os.path.join(cfg.bldnode.abspath(), cfg.env.BOARD)
+                if not os.path.exists(board_build_dir):
+                    os.makedirs(board_build_dir)
+                cmd = [cfg.env.PYTHON[0], hwdef_script, '-D', board_build_dir, '--mcu', cfg.env.MCU, hwdef_file]
                 print(f"Processing hwdef: {' '.join(cmd)}")
                 try:
                     subprocess.run(cmd, check=True, cwd=cfg.srcnode.abspath())
@@ -153,7 +156,10 @@ def configure(cfg):
     # Build list of sdkconfig.defaults files: target-level + debug (if --debug) + board-level (if exists)
     target_sdkconfig = os.path.join(cfg.srcnode.abspath(), f'libraries/AP_HAL_ESP32/targets/{mcu.lower()}/esp-idf/sdkconfig.defaults')
     debug_sdkconfig = os.path.join(cfg.srcnode.abspath(), f'libraries/AP_HAL_ESP32/targets/{mcu.lower()}/esp-idf/sdkconfig.debug')
-    board_sdkconfig = os.path.join(cfg.bldnode.abspath(), 'sdkconfig.board')
+    
+    # Use board-specific build directory for generated configs
+    board_build_dir = os.path.join(cfg.bldnode.abspath(), cfg.env.BOARD)
+    board_sdkconfig = os.path.join(board_build_dir, 'sdkconfig.board')
 
     # Check if we need to include debug configuration
     include_debug = cfg.options.debug and os.path.exists(debug_sdkconfig)
@@ -161,7 +167,7 @@ def configure(cfg):
     sdkconfig_list = [target_sdkconfig]
     if os.path.exists(board_sdkconfig) or include_debug:
         # Create a combined sdkconfig.defaults that includes target, debug (if applicable), and board configs
-        combined_sdkconfig = os.path.join(cfg.bldnode.abspath(), 'sdkconfig.combined')
+        combined_sdkconfig = os.path.join(board_build_dir, 'sdkconfig.combined')
         print(f"Creating combined ESP-IDF config: {combined_sdkconfig}")
 
         with open(combined_sdkconfig, 'w') as combined_file:
@@ -187,10 +193,18 @@ def configure(cfg):
 
         cfg.env['ESP_IDF_SDKCONFIG_DEFAULTS'] = combined_sdkconfig
         print(f"Using combined ESP-IDF config: {combined_sdkconfig}")
+        
+        # If combined config exists, ensure we trigger a re-eval by CMake if it changed
+        # by deleting the existing sdkconfig. 
+        # This is a bit heavy-handed but ensures overrides work.
+        sdkconfig_path = os.path.join(board_build_dir, 'esp-idf_build/sdkconfig')
+        if os.path.exists(sdkconfig_path):
+            os.remove(sdkconfig_path)
     else:
         cfg.env['ESP_IDF_SDKCONFIG_DEFAULTS'] = target_sdkconfig
-    cfg.env['PROJECT_DIR'] = cfg.bldnode.abspath()
-    cfg.env['SDKCONFIG'] = os.path.join(cfg.bldnode.abspath(), 'esp-idf_build/sdkconfig')
+    
+    cfg.env['PROJECT_DIR'] = board_build_dir
+    cfg.env['SDKCONFIG'] = os.path.join(board_build_dir, 'esp-idf_build/sdkconfig')
     cfg.env['PYTHON'] = cfg.env.get_flat('PYTHON')
 
     load_env_vars(cfg.env)

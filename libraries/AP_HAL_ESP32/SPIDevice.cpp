@@ -78,7 +78,9 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
     cfg_low.clock_speed_hz = _device_desc.lspeed;
     cfg_low.spics_io_num = -1;
     cfg_low.queue_size = 5;
+#ifdef HAL_ESP32_SPI_BUSES
     spi_bus_add_device(bus_desc[_bus.bus].host, &cfg_low, &low_speed_dev_handle);
+#endif
 
     if (_device_desc.hspeed != _device_desc.lspeed) {
         spi_device_interface_config_t cfg_high;
@@ -87,7 +89,9 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDeviceDesc &_device_desc)
         cfg_high.clock_speed_hz = _device_desc.hspeed;
         cfg_high.spics_io_num = -1;
         cfg_high.queue_size = 5;
+#ifdef HAL_ESP32_SPI_BUSES
         spi_bus_add_device(bus_desc[_bus.bus].host, &cfg_high, &high_speed_dev_handle);
+#endif
     }
 
 
@@ -201,10 +205,11 @@ bool SPIDevice::adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h, uint3
     return bus.adjust_timer(h, period_usec);
 }
 
-#ifdef HAL_ESP32_SPI_DEVICES
+#ifdef HAL_ESP32_SPI_BUSES
 AP_HAL::SPIDevice *
 SPIDeviceManager::get_device_ptr(const char *name)
 {
+#ifdef HAL_ESP32_SPI_DEVICES
 #ifdef SPIDEBUG
     printf("%s:%d %s\n", __PRETTY_FUNCTION__, __LINE__, name);
 #endif
@@ -258,7 +263,10 @@ SPIDeviceManager::get_device_ptr(const char *name)
 #endif
 
     return NEW_NOTHROW SPIDevice(*busp, desc);
+#else
+    return nullptr;
+#endif // HAL_ESP32_SPI_DEVICES
 }
-#endif  // HAL_ESP32_SPI_DEVICES
+#endif  // HAL_ESP32_SPI_BUSES
 
 #endif  // AP_HAL_SPI_ENABLED
