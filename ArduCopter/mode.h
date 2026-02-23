@@ -458,7 +458,6 @@ public:
     void exit() override;
     // Called when air mode is enabled via AUX switch; prevents automatic reset to default air_mode state
     void air_mode_aux_changed();
-    bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
     bool crash_check_enabled() const override { return false; }
     bool allows_entry_in_rc_failsafe() const override { return false; }
