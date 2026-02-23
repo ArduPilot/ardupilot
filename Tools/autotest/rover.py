@@ -7018,8 +7018,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.correct_wp_seq_numbers(fence)
         self.check_fence_upload_download(fence)
 
-        self.delay_sim_time(1000)
-
     def ManyMAVLinkConnections(self):
         '''test testing >8 MAVLink connections'''
         self.set_parameters({
