@@ -362,7 +362,7 @@ class ESP32HWDef(hwdef.HWDef):
             "CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT=y",
             "CONFIG_ESP_COREDUMP_MAX_TASKS_NUM=64",
         ])
-        
+
         return config_lines
 
     def write_esp_idf_config(self, filename="sdkconfig.board"):
