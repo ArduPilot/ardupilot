@@ -498,10 +498,14 @@ void AP_DroneCAN::init(uint8_t driver_index)
     node_status_msg.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
     node_status_msg.sub_mode = 0;
 
-    // Spin node for device discovery
-    for (uint8_t i = 0; i < 5; i++) {
-        send_node_status();
-        canard_iface.process(1000);
+    // If fast boot is not requested, block here to discover CAN devices before
+    // the rest of the system initialises. This is safer but adds ~5s to boot time.
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+    if (boardconfig == nullptr || !boardconfig->fast_boot_dronecan()) {
+        for (uint8_t i = 0; i < 5; i++) {
+            send_node_status();
+            canard_iface.process(1000);
+        }
     }
 
     hal.util->snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
@@ -521,6 +525,17 @@ void AP_DroneCAN::init(uint8_t driver_index)
 
 void AP_DroneCAN::loop(void)
 {
+    // In fast boot mode, device discovery was not done in init(), so do it
+    // here in the DroneCAN thread to avoid blocking the main boot sequence.
+    // Some devices may not be ready before the rest of the system initialises.
+    AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+    if (boardconfig != nullptr && boardconfig->fast_boot_dronecan()) {
+        for (uint8_t i = 0; i < 5; i++) {
+            send_node_status();
+            canard_iface.process(1000);
+        }
+    }
+
     while (true) {
         if (!_initialized) {
             hal.scheduler->delay_microseconds(1000);
