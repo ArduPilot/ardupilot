@@ -1200,6 +1200,11 @@ private:
     // soaring.cpp
 #if HAL_SOARING_ENABLED
     void update_soaring();
+
+    // Handles the altitude target, returns true *once* after soaring is deactivated,
+    // the calling mode can use that to return to its normal operation after thermaling
+    bool set_soaring_altitude();
+    bool soaring_was_active = false;
 #endif
 
     // RC_Channel.cpp
