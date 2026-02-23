@@ -1074,6 +1074,9 @@ if __name__ == "__main__":
     if opts.move_logs_on_test_failure is None:
         opts.move_logs_on_test_failure = opts.autotest_server
 
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        opts.move_logs_on_test_failure = True
+
     steps = [
         'prerequisites',
         'build.Binaries',
