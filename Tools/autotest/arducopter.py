@@ -2919,6 +2919,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.mav.mav.command_ack_send(0, 1)
         self.wait_statustext("Calibration successful")
 
+        # we don't anchor the vehicle when we do this test.  If we
+        # don't reboot then we end up smacking into the ground in the
+        # next test...
+        self.reboot_sitl()
+
     def MagFail(self):
         '''test failover of compass in EKF'''
         # we want both EK2 and EK3
