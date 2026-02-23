@@ -4752,23 +4752,21 @@ class TestSuite(abc.ABC):
             self.LoggingFormatSanityChecks(path)
         self.context_pop()
 
-    def TestLogDownloadMAVProxy(self, upload_logs=False):
+    def TestLogDownloadMAVProxy(self):
         """Download latest log."""
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
         self.set_parameter('SIM_SPEEDUP', 1)
         mavproxy.send("log list\n")
-        mavproxy.expect("numLogs")
-        self.wait_heartbeat()
-        self.wait_heartbeat()
+        mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
         mavproxy.send("set shownoise 0\n")
         mavproxy.send("log download latest %s\n" % filename)
         mavproxy.expect("Finished downloading", timeout=120)
         self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
 
-    def TestLogDownloadMAVProxyNetwork(self, upload_logs=False):
+    def TestLogDownloadMAVProxyNetwork(self):
         """Download latest log over network port"""
         self.context_push()
         self.set_parameters({
@@ -4835,10 +4833,8 @@ class TestSuite(abc.ABC):
             self.mavproxy_load_module(mavproxy, 'log')
             self.wait_heartbeat()
             mavproxy.send("log list\n")
-            mavproxy.expect("numLogs")
             # ensure the full list of logs has come out
-            for i in range(5):
-                self.wait_heartbeat()
+            mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
             mavproxy.send("log download latest %s\n" % filename)
             mavproxy.expect("Finished downloading", timeout=120)
             self.mavproxy_unload_module(mavproxy, 'log')
@@ -4879,10 +4875,7 @@ class TestSuite(abc.ABC):
             self.mavproxy_load_module(mavproxy, 'log')
             self.wait_heartbeat()
             mavproxy.send("log list\n")
-            mavproxy.expect("numLogs")
-            # ensure the full list of logs has come out
-            for i in range(5):
-                self.wait_heartbeat()
+            mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
             mavproxy.send("log download latest %s\n" % filename)
             mavproxy.expect("Finished downloading", timeout=120)
             self.mavproxy_unload_module(mavproxy, 'log')
@@ -4890,7 +4883,7 @@ class TestSuite(abc.ABC):
 
         self.context_pop()
 
-    def TestLogDownloadMAVProxyCAN(self, upload_logs=False):
+    def TestLogDownloadMAVProxyCAN(self):
         """Download latest log over CAN serial port"""
         self.context_push()
         self.set_parameters({
@@ -4915,10 +4908,7 @@ class TestSuite(abc.ABC):
         mavproxy.expect("Detected vehicle")
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
-        mavproxy.expect("numLogs")
-        # ensure the full list of logs has come out
-        for i in range(5):
-            self.wait_heartbeat()
+        mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
         mavproxy.send("set shownoise 0\n")
         mavproxy.send("log download latest %s\n" % filename)
         mavproxy.expect("Finished downloading", timeout=120)
