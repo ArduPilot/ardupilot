@@ -4,5 +4,6 @@ SERVO13_FUNCTION 120
 RELAY4_DEFAULT 1
 # enable DisplayPort
 OSD_TYPE2 5
-FRAME_TYPE 12
+# Motor order implies Betaflight/X for standard ESCs
+FRAME_CLASS 1
 RC2_REVERSED 1
