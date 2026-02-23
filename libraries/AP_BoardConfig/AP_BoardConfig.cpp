@@ -441,6 +441,14 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("IDLE_STATS", 33, AP_BoardConfig, state.idle_stats, 0),
 #endif
 
+    // @Param: FAST_BOOT
+    // @DisplayName: Fast boot
+    // @Description: Bitmask of startup blocking procedures to skip for a faster boot. Set to 0 to disable all fast boot features and use normal startup. Only enable bits you understand and require.
+    // @Bitmask: 0:AllFeatures, 1:DroneCAN
+    // @Bitmask{Copter}: 0:AllFeatures, 1:DroneCAN, 2:ESCCalibration
+    // @User: Advanced
+    AP_GROUPINFO("FAST_BOOT", 34, AP_BoardConfig, _fast_boot, 0),
+
     AP_GROUPEND
 };
 
