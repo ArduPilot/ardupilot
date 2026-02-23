@@ -243,12 +243,13 @@ void NavEKF3_core::setAidingMode()
     checkGyroCalStatus();
 
     // Handle the special case where we are on ground and disarmed without a yaw measurement
-    // and navigating. This can occur if not using a magnetometer and yaw was aligned using GPS
-    // during the previous flight.
+    // and in AID_ABSOLUTE mode. This can occur if not using a magnetometer and yaw was aligned
+    // using GPS during the previous flight. AID_RELATIVE is excluded because optical flow and
+    // body odometry are body-frame sensors that do not require yaw alignment.
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
         !motorsArmed &&
         onGround &&
-        PV_AidingMode != AID_NONE)
+        PV_AidingMode == AID_ABSOLUTE)
     {
         PV_AidingMode = AID_NONE;
         yawAlignComplete = false;
