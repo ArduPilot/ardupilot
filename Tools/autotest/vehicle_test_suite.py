@@ -8442,7 +8442,8 @@ class TestSuite(abc.ABC):
 
     def assert_mode_is(self, mode):
         if not self.mode_is(mode):
-            raise NotAchievedException("Expected mode %s" % str(mode))
+            # note the couple between this and mode_is:
+            raise NotAchievedException(f"Expected mode {str(mode)}, got mode {self.mav.messages['HEARTBEAT'].custom_mode}")
 
     def get_mode(self, cached=False, drain_mav=True):
         '''return numeric custom mode'''
