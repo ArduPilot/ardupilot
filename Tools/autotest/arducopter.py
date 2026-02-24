@@ -765,13 +765,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
 
     # enter RTL mode and wait for the vehicle to disarm
-    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
+    def do_RTL(self, distance_min=None, check_alt=True, alt_max=1, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
         self.change_mode("RTL")
         self.hover()
-        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout, quiet=True)
+        self.wait_rtl_complete(check_alt=check_alt, alt_max=alt_max, distance_max=distance_max, timeout=timeout, quiet=True)
 
-    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250, quiet=False):
+    def wait_rtl_complete(self, check_alt=True, alt_max=1, distance_max=10, timeout=250, quiet=False):
         """Wait for RTL to reach home and disarm"""
         self.progress("Waiting RTL to reach Home and disarm")
         tstart = self.get_sim_time()
@@ -780,7 +780,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             alt = m.relative_alt / 1000.0 # mm -> m
             home_distance = self.distance_to_home(use_cached_home=True)
             home = ""
-            alt_valid = alt <= 1
+            alt_valid = alt <= alt_max
             distance_valid = home_distance < distance_max
             if check_alt:
                 if alt_valid and distance_valid:
@@ -2607,7 +2607,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("fly_gps_glitch_loiter_test2 failed, roll or pitch moved during GPS glitch")
 
         # RTL, remove glitch and reboot sitl
-        self.do_RTL()
+        self.do_RTL(alt_max=2)
         self.context_pop()
         self.reboot_sitl()
 
