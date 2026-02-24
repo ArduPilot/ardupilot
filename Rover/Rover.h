@@ -390,6 +390,9 @@ private:
         return control_mode == &mode_auto;
     }
 
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    uint32_t get_available_mode_enabled_mask() const override;
+
     void startup_INS(void);
     void notify_mode(const Mode *new_mode);
     uint8_t check_digital_pin(uint8_t pin);

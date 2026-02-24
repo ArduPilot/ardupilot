@@ -37,6 +37,9 @@ public:
     // do not allow copying
     CLASS_NO_COPY(Mode);
 
+    // Return true if this mode is enabled, used by MAVLink available mode
+    virtual bool enabled() const { return true; }
+
     // enter this mode, returns false if we failed to enter
     bool enter();
 
@@ -741,6 +744,9 @@ public:
     const char *name() const override { return "Smart RTL"; }
     const char *name4() const override { return "SRTL"; }
 
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override;
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -814,6 +820,9 @@ public:
     const char *name() const override { return "Initialising"; }
     const char *name4() const override { return "INIT"; }
 
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override { return false; };
+
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
@@ -835,6 +844,9 @@ public:
     Number mode_number() const override { return Number::FOLLOW; }
     const char *name() const override { return "Follow"; }
     const char *name4() const override { return "FOLL"; }
+
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override;
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
@@ -903,6 +915,9 @@ public:
     Number mode_number() const override { return Number::DOCK; }
     const char *name() const override { return "Dock"; }
     const char *name4() const override { return "DOCK"; }
+
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override;
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
