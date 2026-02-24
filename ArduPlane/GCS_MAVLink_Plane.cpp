@@ -1372,32 +1372,36 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
 
     // Ask the mode for its name and number
     const char* name;
-    uint8_t mode_number;
+    Mode::Number mode_number;
 
     if (index_zero < fw_mode_count) {
         // A fixedwing mode
         name = fw_modes[index_zero]->name();
-        mode_number = (uint8_t)fw_modes[index_zero]->mode_number();
+        mode_number = fw_modes[index_zero]->mode_number();
 
     } else {
 #if HAL_QUADPLANE_ENABLED
         // A Quadplane mode
         const uint8_t q_index = index_zero - fw_mode_count;
         name = q_modes[q_index]->name();
-        mode_number = (uint8_t)q_modes[q_index]->mode_number();
+        mode_number = q_modes[q_index]->mode_number();
 #else
         // Should not endup here
         return mode_count;
 #endif
     }
 
+    // All modes can be selected except Initialising and those disabled by FLTMODE_GCSBLOCK param
+    const bool user_selectable = (mode_number != Mode::Number::INITIALISING) && plane.gcs_mode_enabled(mode_number);
+
     mavlink_msg_available_modes_send(
         chan,
         mode_count,
         index,
         MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
-        mode_number,
-        0, // MAV_MODE_PROPERTY bitmask
+        (uint8_t)mode_number,
+        // MAV_MODE_PROPERTY bitmask,
+        user_selectable ? 0 : MAV_MODE_PROPERTY_NOT_USER_SELECTABLE,
         name
     );
 
