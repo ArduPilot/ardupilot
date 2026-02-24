@@ -171,8 +171,8 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | Pin | Signal Name     | Voltage |
 |-----|-----------------|---------|
 | 1   | 3V3_FMU        | 3.3V    |
-| 2   | USART4_TX_DEBUG | 3.3V    |
-| 3   | USART4_RX_DEBUG | 3.3V    |
+| 2   | USART3_TX_DEBUG | 3.3V    |
+| 3   | USART3_RX_DEBUG | 3.3V    |
 | 4   | FMU_SWDIO      | 3.3V    |
 | 5   | FMU_SWCLK      | 3.3V    |
 | 6   | GND            | GND     |
@@ -191,6 +191,23 @@ Note: connector pinout not in same order as standard HD VTX cabling
 |SERIAL7|OTG2 (SLCAN)|
 
 All UARTS support DMA. Any UART may be re-tasked by changing its protocol parameter.
+
+### Using the Debug Port as a Serial Port
+
+The debug connector includes USART3, which is configured as a debug console by default. To use it as a regular serial port (SERIAL8), modify `hwdef.dat` to add USART3 to the end of the SERIAL_ORDER list:
+
+```text
+SERIAL_ORDER OTG1 UART7 UART5 USART1 USART2 UART4 USART6 OTG2 USART3
+```
+
+And remove the debug console lines:
+
+```text
+STDOUT_SERIAL SD3
+STDOUT_BAUDRATE 57600
+```
+
+This requires building custom firmware. See the [Loading Firmware](#loading-firmware) section for build instructions.
 
 ## RC Input
 
