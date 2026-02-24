@@ -121,6 +121,7 @@ ModeRTL::RTLAltType ModeRTL::get_alt_type() const
     // sanity check parameter
     switch ((ModeRTL::RTLAltType)g.rtl_alt_type) {
     case RTLAltType::RELATIVE ... RTLAltType::TERRAIN:
+    case RTLAltType::MAX_FLIGHT_ALT:   
         return g.rtl_alt_type;
     }
     // user has an invalid value
@@ -480,6 +481,9 @@ void ModeRTL::compute_return_target()
     // curr_alt_m is current altitude, with any offset removed, above home or above terrain depending upon use_terrain
     float curr_alt_m = copter.current_loc.alt * 0.01 - pos_offset_u_m;
 
+    // use the higher of: max altitude reached during flight OR RTL_ALT_M (as minimum floor)
+    float max_alt_m = (get_alt_type() == RTLAltType::MAX_FLIGHT_ALT) ? MAX(copter.rtl_max_alt_reached_m, altitude_m.get()) : altitude_m.get();
+
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
     if (terrain_following_allowed && (get_alt_type() == RTLAltType::TERRAIN)) {
@@ -497,6 +501,15 @@ void ModeRTL::compute_return_target()
             alt_type = ReturnTargetAltType::TERRAINDATABASE;
             break;
         }
+    }
+
+    if (get_alt_type() == RTLAltType::MAX_FLIGHT_ALT) {
+        
+        alt_type = ReturnTargetAltType::MAX_FLIGHT_ALT;
+
+        rtl_path.return_target.set_alt_m(max_alt_m, Location::AltFrame::ABOVE_HOME);
+
+        gcs().send_text(MAV_SEVERITY_INFO, "RTL: using max flight alt %.1fm", max_alt_m);
     }
 
     // set curr_alt_m and return_target.alt from range finder
@@ -548,18 +561,17 @@ void ModeRTL::compute_return_target()
 
     // increase target to maximum of current altitude + climb_min and rtl altitude
     const float min_rtl_alt_m = MAX(RTL_ALT_MIN_M, curr_alt_m + MAX(0.0f, climb_min_m.get()));
-    target_alt_m = MAX(target_alt_m, MAX(altitude_m.get(), min_rtl_alt_m));
+    target_alt_m = MAX(target_alt_m, MAX(max_alt_m, min_rtl_alt_m));
 
     // reduce climb if close to return target
     float rtl_return_dist_m = rtl_path.return_target.get_distance(rtl_path.origin_point);
-    // don't allow really shallow slopes
-    if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE) {
+    // don't allow really shallow slopes 
+    if (g.rtl_cone_slope >= RTL_MIN_CONE_SLOPE && get_alt_type() != RTLAltType::MAX_FLIGHT_ALT) {
         target_alt_m = MIN(target_alt_m, MAX(rtl_return_dist_m * g.rtl_cone_slope, min_rtl_alt_m));
     }
 
     // set returned target alt to new target_alt_m (don't change altitude type)
-    rtl_path.return_target.set_alt_m(target_alt_m, (alt_type == ReturnTargetAltType::RELATIVE) ? Location::AltFrame::ABOVE_HOME : Location::AltFrame::ABOVE_TERRAIN);
-
+    rtl_path.return_target.set_alt_m(target_alt_m, (alt_type == ReturnTargetAltType::RELATIVE || alt_type == ReturnTargetAltType::MAX_FLIGHT_ALT) ? Location::AltFrame::ABOVE_HOME : Location::AltFrame::ABOVE_TERRAIN);
 #if AP_FENCE_ENABLED
     // ensure not above fence altitude if alt fence is enabled
     // Note: because the rtl_path.climb_target's altitude is simply copied from the return_target's altitude,

@@ -135,3 +135,20 @@ uint16_t Copter::get_pilot_speed_dn() const
         return abs(g2.pilot_speed_dn_cms);
     }
 }
+
+// NEW FUNCTION — track max altitude reached during flight for RTL_ALT_TYPE=2
+void Copter::update_rtl_max_altitude()
+{
+    // only track when armed and airborne
+    if (!motors->armed() || ap.land_complete) {
+        return;
+    }
+
+    // get current altitude above home using current_loc which is always available
+    float current_alt_m = copter.current_loc.alt * 0.01f;
+
+    // update max altitude
+    if (current_alt_m > rtl_max_alt_reached_m) {
+        rtl_max_alt_reached_m = current_alt_m;
+    }
+}
