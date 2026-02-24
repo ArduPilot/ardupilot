@@ -793,7 +793,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                               (alt, home_distance, home))
 
             # our post-condition is that we are disarmed:
-            if not self.armed():
+            if not self.armed(cached=True):
                 if home == "":
                     raise NotAchievedException("Did not get home")
                 # success!
