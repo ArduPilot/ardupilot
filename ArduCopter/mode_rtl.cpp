@@ -34,7 +34,7 @@ const AP_Param::GroupInfo ModeRTL::var_info[] = {
 
     // @Param: SPEED_MS
     // @DisplayName: RTL speed
-    // @Description: The speed in m/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WP_SPEED will be used instead.
+    // @Description: The speed in m/s which the aircraft will attempt to maintain horizontally while flying home. If this is set to zero, WP_SPD will be used instead.
     // @Units: m/s
     // @Range: 0 20
     // @Increment: 0.5
