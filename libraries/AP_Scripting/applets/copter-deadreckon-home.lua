@@ -156,8 +156,8 @@ local fly_timeoout = Parameter("DR_FLY_TIMEOUT")       -- deadreckoning timeout 
   // @User: Standard
 --]]
 local next_mode = Parameter("DR_NEXT_MODE")            -- mode to switch to after GPS recovers or timeout elapses
-local wp_speed_up = Parameter("WP_SPD_UP")           -- maximum climb rate in m/s from WP_SPD_UP
-local wp_accel_z = Parameter("WP_ACC_Z")             -- maximum vertical acceleration in m/s from WP_ACC_Z
+local wp_speed_up = Parameter("WP_SPD_UP")             -- maximum climb rate in m/s from WP_SPD_UP
+local wp_accel_z = Parameter("WP_ACC_Z")               -- maximum vertical acceleration in m/s from WP_ACC_Z
 
 -- modes deadreckoning may be activated from
 -- comment out lines below to remove protection from these modes
