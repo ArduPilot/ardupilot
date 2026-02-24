@@ -2317,7 +2317,7 @@ void GCS_MAVLINK::send_highres_imu()
 #if AP_COMPASS_ENABLED
     const Compass &compass = AP::compass();
     if (compass.get_count() >= 1) {
-        const Vector3f field = compass.get_field() * 1000.0f;
+        const Vector3f field = compass.get_field() * 0.001f;
         reply.xmag = field.x; // convert to gauss
         reply.ymag = field.y;
         reply.zmag = field.z;
