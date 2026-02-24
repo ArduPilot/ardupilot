@@ -31,39 +31,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-void SITL_State::_set_param_default(const char *parm)
-{
-    char *pdup = strdup(parm);
-    char *p = strchr(pdup, '=');
-    if (p == nullptr) {
-        printf("Please specify parameter as NAME=VALUE");
-        exit(1);
-    }
-    float value = strtof(p+1, nullptr);
-    *p = 0;
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(pdup, &var_type);
-    if (vp == nullptr) {
-        printf("Unknown parameter %s\n", pdup);
-        exit(1);
-    }
-    if (var_type == AP_PARAM_FLOAT) {
-        ((AP_Float *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT32) {
-        ((AP_Int32 *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT16) {
-        ((AP_Int16 *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT8) {
-        ((AP_Int8 *)vp)->set_and_save(value);
-    } else {
-        printf("Unable to set parameter %s\n", pdup);
-        exit(1);
-    }
-    printf("Set parameter %s to %f\n", pdup, value);
-    free(pdup);
-}
-
-
 /*
   setup for SITL handling
  */
