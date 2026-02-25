@@ -6326,7 +6326,8 @@ void GCS_MAVLINK::send_flight_information()
         time_boot_ms,
         arm_time_us,
         takeoff_time_us,
-        flight_number
+        flight_number,
+        0  // landing_time, 0 meaning "not supported"
     );
 }
 #endif // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
