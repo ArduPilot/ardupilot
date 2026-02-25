@@ -14,15 +14,15 @@
  */
 
 #pragma once
+#include "AP_GPS_config.h"
+#if AP_GPS_UBLOX_CFGV2_ENABLED
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include "AP_GPS_UBLOX_CFG_List.h"
 #include <AP_Common/AP_Common.h>
-#include "AP_GPS_config.h"
 #include <endian.h>
 
-#if AP_GPS_UBLOX_CFGV2_ENABLED
 
 class AP_GPS_UBLOX;
 

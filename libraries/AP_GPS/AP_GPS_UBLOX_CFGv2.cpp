@@ -13,15 +13,15 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "AP_GPS_UBLOX_CFGv2.h"
+#if AP_GPS_UBLOX_CFGV2_ENABLED
 #include <AP_HAL/AP_HAL.h>
 #include <stdio.h>
-#include "AP_GPS_UBLOX_CFGv2.h"
 #include <AP_GPS/AP_GPS.h>
 #include <AP_GPS/AP_GPS_UBLOX.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#if AP_GPS_UBLOX_CFGV2_ENABLED
 
 extern const AP_HAL::HAL& hal;
 

@@ -28,8 +28,9 @@
 #include "GPS_Backend.h"
 
 #include <AP_HAL/AP_HAL.h>
+#if AP_GPS_UBLOX_CFGV2_ENABLED
 #include "AP_GPS_UBLOX_CFGv2.h"
-
+#endif
 /*
  *  try to put a UBlox into binary mode. This is in two parts. 
  *
@@ -56,10 +57,18 @@
 // a variant with 460800 baudrate
 #define UBLOX_SET_BINARY_460800 "\265\142\006\001\003\000\001\006\001\022\117$PUBX,41,1,0023,0001,460800,0*11\r\n"
 
+#if AP_GPS_UBLOX_CFGV2_ENABLED
 #define UBLOX_RXM_RAW_LOGGING (HAL_LOGGING_ENABLED && (HAL_PROGRAM_SIZE_LIMIT_KB>1024))
+#else
+#define UBLOX_RXM_RAW_LOGGING 1
+#endif
 #define UBLOX_MAX_RXM_RAW_SATS 22
+#if AP_GPS_UBLOX_CFGV2_ENABLED
 #define UBLOX_MAX_RXM_RAWX_SATS 80
 #define UBLOX_MAX_INTERFACE_PORTS 5
+#else
+#define UBLOX_MAX_RXM_RAWX_SATS 32
+#endif
 #define UBLOX_MAX_EXTENSIONS 8
 #define UBLOX_GNSS_SETTINGS 1
 #ifndef UBLOX_TIM_TM2_LOGGING
@@ -73,6 +82,19 @@
 #define UBLOX_MAX_PORTS 6
 #define UBLOX_MODULE_LEN 9
 #define UBLOX_PROTVER_LEN 8
+
+#if !AP_GPS_UBLOX_CFGV2_ENABLED
+#define RATE_POSLLH 1
+#define RATE_STATUS 1
+#define RATE_SOL 1
+#define RATE_TIMEGPS 5
+#define RATE_PVT 1
+#define RATE_VELNED 1
+#define RATE_DOP 1
+#define RATE_HW 5
+#define RATE_HW2 5
+#define RATE_TIM_TM2 1
+#endif
 
 #define CONFIG_RATE_NAV      (1<<0)
 #define CONFIG_RATE_POSLLH   (1<<1)
@@ -121,7 +143,6 @@ class RTCM3_Parser;
 
 class AP_GPS_UBLOX : public AP_GPS_Backend
 {
-    using ConfigKey = AP::UBXConfigKey;
 #if AP_GPS_UBLOX_CFGV2_ENABLED
     using CFGv2 = AP_GPS_UBLOX_CFGv2;
 #endif
@@ -154,9 +175,11 @@ public:
     }
 
     bool get_error_codes(uint32_t &error_codes) const override {
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         if (!_legacy_cfg_supported) {
             return false;
         }
+#endif
         error_codes = _unconfigured_messages;
         return true;
     };
@@ -221,11 +244,14 @@ private:
         uint8_t msg_id;
         uint8_t rates[6];
     };
+
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     struct PACKED ubx_cfg_rst {
         uint16_t navBbrMask;
         uint8_t resetMode;
         uint8_t reserved0;
     };
+#endif
     struct PACKED ubx_cfg_nav_settings {
         uint16_t mask;
         uint8_t dynModel;
@@ -267,7 +293,84 @@ private:
         uint8_t scanmode2;
         uint32_t scanmode1;
     };
+#if !AP_GPS_UBLOX_CFGV2_ENABLED
+    // F9 config keys
+    enum class ConfigKey : uint32_t {
+        CFG_TMODE_MODE = 0x20030001,
+        CFG_RATE_MEAS                   = 0x30210001,
 
+        CFG_UART1_BAUDRATE              = 0x40520001,
+        CFG_UART1_ENABLED               = 0x10520005,
+        CFG_UART1INPROT_UBX             = 0x10730001,
+        CFG_UART1INPROT_NMEA            = 0x10730002,
+        CFG_UART1INPROT_RTCM3X          = 0x10730004,
+        CFG_UART1OUTPROT_UBX            = 0x10740001,
+        CFG_UART1OUTPROT_NMEA           = 0x10740002,
+        CFG_UART1OUTPROT_RTCM3X         = 0x10740004,
+
+        CFG_UART2_BAUDRATE              = 0x40530001,
+        CFG_UART2_ENABLED               = 0x10530005,
+        CFG_UART2INPROT_UBX             = 0x10750001,
+        CFG_UART2INPROT_NMEA            = 0x10750002,
+        CFG_UART2INPROT_RTCM3X          = 0x10750004,
+        CFG_UART2OUTPROT_UBX            = 0x10760001,
+        CFG_UART2OUTPROT_NMEA           = 0x10760002,
+        CFG_UART2OUTPROT_RTCM3X         = 0x10760004,
+
+        MSGOUT_RTCM_3X_TYPE4072_0_UART1 = 0x209102ff,
+        MSGOUT_RTCM_3X_TYPE4072_1_UART1 = 0x20910382,
+        MSGOUT_RTCM_3X_TYPE1077_UART1   = 0x209102cd,
+        MSGOUT_RTCM_3X_TYPE1087_UART1   = 0x209102d2,
+        MSGOUT_RTCM_3X_TYPE1097_UART1   = 0x20910319,
+        MSGOUT_RTCM_3X_TYPE1127_UART1   = 0x209102d7,
+        MSGOUT_RTCM_3X_TYPE1230_UART1   = 0x20910304,
+        MSGOUT_UBX_NAV_RELPOSNED_UART1  = 0x2091008e,
+
+        MSGOUT_RTCM_3X_TYPE4072_0_UART2 = 0x20910300,
+        MSGOUT_RTCM_3X_TYPE4072_1_UART2 = 0x20910383,
+        MSGOUT_RTCM_3X_TYPE1077_UART2   = 0x209102ce,
+        MSGOUT_RTCM_3X_TYPE1087_UART2   = 0x209102d3,
+        MSGOUT_RTCM_3X_TYPE1097_UART2   = 0x2091031a,
+        MSGOUT_RTCM_3X_TYPE1127_UART2   = 0x209102d8,
+        MSGOUT_RTCM_3X_TYPE1230_UART2   = 0x20910305,
+        MSGOUT_UBX_NAV_RELPOSNED_UART2  = 0x2091008f,
+
+        // enable specific signals and constellations
+        CFG_SIGNAL_GPS_ENA              = 0x1031001f,
+        CFG_SIGNAL_GPS_L1CA_ENA         = 0x10310001,
+        CFG_SIGNAL_GPS_L2C_ENA          = 0x10310003,
+        CFG_SIGNAL_GPS_L5_ENA           = 0x10310004,
+        CFG_SIGNAL_SBAS_ENA             = 0x10310020,
+        CFG_SIGNAL_SBAS_L1CA_ENA        = 0x10310005,
+        CFG_SIGNAL_GAL_ENA              = 0x10310021,
+        CFG_SIGNAL_GAL_E1_ENA           = 0x10310007,
+        CFG_SIGNAL_GAL_E5A_ENA          = 0x10310009,
+        CFG_SIGNAL_GAL_E5B_ENA          = 0x1031000a,
+        CFG_SIGNAL_BDS_ENA              = 0x10310022,
+        CFG_SIGNAL_BDS_B1_ENA           = 0x1031000d,
+        CFG_SIGNAL_BDS_B1C_ENA          = 0x1031000f,
+        CFG_SIGNAL_BDS_B2_ENA           = 0x1031000e,
+        CFG_SIGNAL_BDS_B2A_ENA          = 0x10310028,
+        CFG_SIGNAL_QZSS_ENA             = 0x10310024,
+        CFG_SIGNAL_QZSS_L1CA_ENA        = 0x10310012,
+        CFG_SIGNAL_QZSS_L1S_ENA         = 0x10310014,
+        CFG_SIGNAL_QZSS_L2C_ENA         = 0x10310015,
+        CFG_SIGNAL_QZSS_L5_ENA          = 0x10310017,
+        CFG_SIGNAL_GLO_ENA              = 0x10310025,
+        CFG_SIGNAL_GLO_L1_ENA           = 0x10310018,
+        CFG_SIGNAL_GLO_L2_ENA           = 0x1031001a,
+        CFG_SIGNAL_NAVIC_ENA            = 0x10310026,
+        CFG_SIGNAL_NAVIC_L5_ENA         = 0x1031001d,
+
+        CFG_SIGNAL_L5_HEALTH_OVRD       = 0x10320001,
+
+        // other keys
+        CFG_NAVSPG_DYNMODEL             = 0x20110021,
+
+    };
+#else
+    using ConfigKey = AP::UBXConfigKey;
+#endif
     // layers for VALSET
     #define UBX_VALSET_LAYER_RAM 0x1U
     #define UBX_VALSET_LAYER_BBR 0x2U
@@ -284,9 +387,15 @@ private:
     struct PACKED ubx_cfg_valget {
         uint8_t version;
         uint8_t layers;
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         uint16_t position;
+#else
+        uint8_t reserved[2];
+#endif
         // variable length data, check buffer length
     };
+
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     struct PACKED ubx_cfg_valdel {
         uint8_t version;
         uint8_t layers;
@@ -294,6 +403,7 @@ private:
         uint8_t reserved0;
         // variable length data (keys), check buffer length
     };
+#endif
     struct PACKED ubx_nav_posllh {
         uint32_t itow;                                  // GPS msToW
         int32_t longitude;
@@ -468,6 +578,8 @@ private:
         char hwVersion[10];
         char extension[30*UBLOX_MAX_EXTENSIONS]; // extensions are not enabled
     };
+
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     // UBX-MON-RF block (repeated nBlocks times after ubx_mon_rf header)
     struct PACKED ubx_mon_rf_block {
         uint8_t  blockId;        // 0
@@ -492,6 +604,7 @@ private:
         uint8_t reserved0[2];    // 2..3
         ubx_mon_rf_block blocks[2]; // provision for up to 2 RF blocks
     };
+#endif
     struct PACKED ubx_nav_svinfo_header {
         uint32_t itow;
         uint8_t numCh;
@@ -569,6 +682,7 @@ private:
         uint32_t accEst;
     };
 
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     // UBX-MON-COMMS structures (per UBX spec)
     struct PACKED ubx_mon_comms_port_block {
         uint16_t portId;       // 8 + n*40
@@ -594,6 +708,7 @@ private:
         // followed by ubx_mon_comms_port_block[nPorts]
         ubx_mon_comms_port_block port_block[UBLOX_MAX_INTERFACE_PORTS];
     };
+#endif
 
     // Receive buffer
     union PACKED {
@@ -614,7 +729,9 @@ private:
         ubx_mon_hw_68 mon_hw_68;
         ubx_mon_hw2 mon_hw2;
         ubx_mon_ver mon_ver;
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         ubx_mon_rf mon_rf;
+#endif
         ubx_cfg_tp5 nav_tp5;
 #if UBLOX_GNSS_SETTINGS
         ubx_cfg_gnss gnss;
@@ -630,7 +747,9 @@ private:
         ubx_ack_ack ack;
         ubx_ack_nack nack;
         ubx_tim_tm2 tim_tm2;
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         ubx_mon_comms_header mon_comms;
+#endif
     } _buffer;
 
     enum class RELPOSNED {
@@ -670,7 +789,9 @@ private:
         MSG_CFG_CFG = 0x09,
         MSG_CFG_RATE = 0x08,
         MSG_CFG_MSG = 0x01,
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         MSG_CFG_RST = 0x04,
+#endif
         MSG_CFG_NAV_SETTINGS = 0x24,
         MSG_CFG_PRT = 0x00,
         MSG_CFG_SBAS = 0x16,
@@ -678,17 +799,22 @@ private:
         MSG_CFG_TP5 = 0x31,
         MSG_CFG_VALSET = 0x8A,
         MSG_CFG_VALGET = 0x8B,
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         MSG_CFG_VALDEL = 0x8C,
+#endif
         MSG_MON_HW = 0x09,
         MSG_MON_HW2 = 0x0B,
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         MSG_MON_RF = 0x38,
-        MSG_MON_VER = 0x04,
         MSG_MON_COMMS = 0x36,
+#endif
+        MSG_MON_VER = 0x04,
         MSG_NAV_SVINFO = 0x30,
         MSG_RXM_RAW = 0x10,
         MSG_RXM_RAWX = 0x15,
         MSG_TIM_TM2 = 0x03
     };
+
     enum ubx_gnss_identifier {
         GNSS_GPS     = 0x00,
         GNSS_SBAS    = 0x01,
@@ -698,12 +824,16 @@ private:
         GNSS_QZSS    = 0x05,
         GNSS_GLO     = 0x06,
         GNSS_NAVIC   = 0x07,
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         GNSS_LAST
+#endif
     };
 
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     #define UBLOX_GNSS_TYPE_ASSERT(NAME, INDEX) static_assert(AP_GPS_UBLOX::GNSS_##NAME == INDEX);
     UBLOX_GNSS(UBLOX_GNSS_TYPE_ASSERT)
     #undef UBLOX_GNSS_TYPE_ASSERT
+#endif
 
     enum ubs_nav_fix_type {
         FIX_NONE = 0,
@@ -717,6 +847,7 @@ private:
         NAV_STATUS_FIX_VALID = 1,
         NAV_STATUS_DGPS_USED = 2
     };
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     enum ubx_reset_type {
         RESET_HW_WATCHDOG_IMMEDIATE = 0x00,
         RESET_SW_CONTROLLED = 0x01,
@@ -726,6 +857,7 @@ private:
         RESET_GNSS_START = 0x09,
         RESET_HW_PWSEQ_BBR_RETAINED = 0x0a
     };
+#endif
     enum ubx_hardware_version {
         ANTARIS = 0,
         UBLOX_5,
@@ -735,9 +867,11 @@ private:
         UBLOX_F9 = 0x80, // comes from MON_VER hwVersion/swVersion strings
         UBLOX_M9 = 0x81, // comes from MON_VER hwVersion/swVersion strings
         UBLOX_M10 = 0x82,
+#if AP_GPS_UBLOX_CFGV2_ENABLED
         UBLOX_F10 = 0x83,
         UBLOX_F20 = 0x85,
         UBLOX_X20 = 0x84,
+#endif
         UBLOX_UNKNOWN_HARDWARE_GENERATION = 0xff // not in the ublox spec used for
                                                  // flagging state in the driver
     };
@@ -803,7 +937,9 @@ private:
     bool            _have_version;
     struct ubx_mon_ver _version;
     char            _module[UBLOX_MODULE_LEN];
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     char            _protver[UBLOX_PROTVER_LEN];
+#endif
     uint32_t        _unconfigured_messages {CONFIG_ALL};
     uint8_t         _hardware_generation { UBLOX_UNKNOWN_HARDWARE_GENERATION };
     uint8_t         _hardware_variant;
@@ -823,9 +959,10 @@ private:
 
     // Buffer parse & GPS state update
     bool        _parse_gps();
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     bool        _legacy_config_update(void);
     bool        _legacy_cfg_supported = true;
-
+#endif
     // used to update fix between status and position packets
     AP_GPS::GPS_Status next_fix { AP_GPS::NO_FIX };
 
@@ -835,13 +972,28 @@ private:
     
     bool havePvtMsg;
 
+#if AP_GPS_UBLOX_CFGV2_ENABLED
     using config_list = ubx_config_list;
+#else
+    // structure for list of config key/value pairs for
+    // specific configurations
+    struct PACKED config_list {
+        ConfigKey key;
+        // support up to 4 byte values, assumes little-endian
+        uint32_t value;
+    };
+#endif
 
     bool        _configure_message_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     bool        _configure_valset(ConfigKey key, const void *value, uint8_t layers=UBX_VALSET_LAYER_ALL);
     bool        _configure_list_valset(const config_list *list, uint8_t count, uint8_t layers=UBX_VALSET_LAYER_ALL);
     bool        _configure_valget(ConfigKey key);
     void        _configure_rate(void);
+#if AP_GPS_UBLOX_CFGV2_ENABLED
+    static void _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
+#else
+    void        _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
+#endif
     bool        _send_message(uint8_t msg_class, uint8_t msg_id, const void *msg, uint16_t size);
     bool        _request_message_rate(uint8_t msg_class, uint8_t msg_id);
     void        _request_next_config(void);
@@ -850,12 +1002,11 @@ private:
     void        _save_cfg(void);
     void        _verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate);
     void        _check_new_itow(uint32_t itow);
-    static void _update_checksum(uint8_t *data, uint16_t len, uint8_t &ck_a, uint8_t &ck_b);
 
     void unexpected_message(void);
     void log_mon_hw(void);
     void log_mon_hw2(void);
-#if HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED && AP_GPS_UBLOX_CFGV2_ENABLED
     void log_mon_rf(void);
 #endif
     void log_tim_tm2(void);
@@ -908,11 +1059,25 @@ private:
     bool use_single_valget;
 
 #if GPS_MOVING_BASELINE
+#if !AP_GPS_UBLOX_CFGV2_ENABLED
+    // config for moving baseline base
+    static const config_list config_MB_Base_uart1[];
+    static const config_list config_MB_Base_uart2[];
+
+    // config for moving baseline rover
+    static const config_list config_MB_Rover_uart1[];
+    static const config_list config_MB_Rover_uart2[];
+#endif // !AP_GPS_UBLOX_CFGV2_ENABLED
     // RTCM3 parser for when in moving baseline base mode
     RTCM3_Parser *rtcm3_parser;
 #endif // GPS_MOVING_BASELINE
 
     bool supports_l5;
+#if !AP_GPS_UBLOX_CFGV2_ENABLED
+    static const config_list config_M10[];
+    static const config_list config_L5_ovrd_ena[];
+    static const config_list config_L5_ovrd_dis[];
+#endif
     // scratch space for GNSS config
     config_list* config_GNSS;
 #if AP_GPS_UBLOX_CFGV2_ENABLED
