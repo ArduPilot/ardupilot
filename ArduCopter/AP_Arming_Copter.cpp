@@ -30,7 +30,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
     // at the same time.  This cannot be allowed.
     bool passed = true;
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
-        (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
+        (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) ||
         rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP))){
         check_failed(display_failure, "Interlock/E-Stop Conflict");
         passed = false;
@@ -221,7 +221,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
         // acro balance parameter check
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
         if (is_negative(copter.g.acro_balance_roll) || is_negative(copter.g.acro_balance_pitch) ||
-            (copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) || 
+            (copter.g.acro_balance_roll > copter.attitude_control->get_angle_roll_p().kP()) ||
             (copter.g.acro_balance_pitch > copter.attitude_control->get_angle_pitch_p().kP())) {
             check_failed(Check::PARAMETERS, display_failure, "Check ACRO_BAL_ROLL/PITCH");
             return false;
@@ -492,7 +492,10 @@ bool AP_Arming_Copter::mandatory_position_checks(bool display_failure)
     if (copter.g.fs_ekf_thresh > 0.0f) {
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
-        ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
+        if(ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance) == false) {
+            check_failed(display_failure, "get_variances() failed");
+            return false;
+        }
         const struct {
             const char *name;
             float value;
@@ -620,7 +623,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 #else
         const char *rc_item = "Throttle";
 #endif
-        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
+        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto
         if (!((AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) && copter.flightmode->allows_GCS_or_SCR_arming_with_throttle_high())) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate_ms() > 0.0f) {
