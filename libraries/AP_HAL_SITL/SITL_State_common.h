@@ -229,6 +229,9 @@ protected:
     SITL::SIM *_sitl;
 
     void update_voltage_current(struct sitl_input &input, float throttle);
+
+    virtual void _fdm_input_step(void) = 0;
+    virtual void wait_clock(uint64_t wait_time_usec);
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
