@@ -351,3 +351,5 @@ ENABLE_DFU_BOOT 1
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_DSHOT 1
+
+define AP_GPS_UBLOX_CFGV2_ENABLED 0
