@@ -322,11 +322,10 @@ void AP_GPS::init()
     params[0].type.set_default(HAL_GPS1_TYPE_DEFAULT);
 
     // PARAMETER_CONVERSION - Added: Jan-2026
-#if AP_GPS_UBLOX_CFGV2_ENABLED
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         params[i].gnss_mode.convert_parameter_width(AP_PARAM_INT8);
     }
-#endif
+
     convert_parameters();
 
     // Set new primary param based on old auto_switch use second option
