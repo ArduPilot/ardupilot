@@ -6488,7 +6488,7 @@ class TestSuite(abc.ABC):
         for i in range(0, attempts):
             mavproxy.send("param fetch %s\n" % name)
             try:
-                mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/attempts)
+                mavproxy.expect("%s = ([-0-9.]*)" % (name,), timeout=timeout/attempts)
                 try:
                     # sometimes race conditions garble the MAVProxy output
                     ret = float(mavproxy.match.group(1))
