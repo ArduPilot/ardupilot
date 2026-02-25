@@ -11,20 +11,22 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Code by Andy Piper <github@andypiper.com>
  */
 
 /*
- * Crossfire protocol definitions - shared between AP_RCProtocol_CRSF and AP_CRSF_Telem
  * Crossfire constants provided by Team Black Sheep under terms of the 2-Clause BSD License
+ * AP_CRSF_Protocol.h - a stateless parser and encoder for the CRSF wire protocol
  */
 #pragma once
 
 #include "AP_CRSF_config.h"
 
-#if AP_CRSF_ENABLED
+#if AP_CRSF_PROTOCOL_ENABLED
 
 #include <stdint.h>
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/utility/sparse-endian.h>
 
 #define CRSF_MAX_CHANNELS   24U      // Maximum number of channels from crsf datastream
 #define CRSF_FRAMELEN_MAX   64U      // maximum possible framelength
@@ -76,6 +78,7 @@ public:
 
     enum DeviceAddress {
         CRSF_ADDRESS_BROADCAST = 0x00,
+        CRSF_ADDRESS_SYNC_BYTE = 0xC8,
         CRSF_ADDRESS_USB = 0x10,
         CRSF_ADDRESS_TBS_CORE_PNP_PRO = 0x80,
         CRSF_ADDRESS_RESERVED1 = 0x8A,
@@ -142,7 +145,7 @@ public:
     } PACKED;
 
     struct SubsetChannelsFrame {
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#if __BYTE_ORDER != __LITTLE_ENDIAN
 #error "Only supported on little-endian architectures"
 #endif
         uint8_t starting_channel:5;     // which channel number is the first one in the frame
@@ -189,8 +192,44 @@ public:
         uint8_t payload[58];   // largest possible frame is 60
     };
 
-    // get printable name for frame type (for debug)
-    static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0);
+    struct VersionInfo {
+        uint8_t minor;
+        uint8_t major;
+        bool use_rf_mode;
+        bool is_betaflight;
+        ProtocolType protocol;
+    };
+
+    // protocol pure virtual base class
+    virtual void update(void) = 0;
+
+    static const char* get_frame_type_name(uint8_t byte, uint8_t subtype = 0);
+
+    // decode channels from the standard 11bit format (CRSFv2)
+    static void decode_11bit_channels(const uint8_t* payload, uint8_t nchannels, uint16_t *values);
+
+    // decode channels from variable bit length format (CRSFv3)
+    static void decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values);
+
+    // encode channels into a variable bit length format (CRSFv3)
+    // returns number of bytes written to payload
+    static uint8_t encode_variable_bit_channels(uint8_t *payload, const uint16_t *values, uint8_t nchannels, uint8_t start_chan = 0);
+
+    // process a device info frame for version information
+    static bool process_device_info_frame(ParameterDeviceInfoFrame* info, VersionInfo* version, bool fakerx);
+
+    // encode a device info frame for version information
+    static uint32_t encode_device_info(ParameterDeviceInfoFrame& info, uint8_t num_params);
+
+    static void encode_device_info_frame(Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_ping_frame(Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_speed_proposal(uint32_t baudrate, Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_link_stats_tx_frame(uint32_t fps, Frame& frame, DeviceAddress destination, DeviceAddress origin);
+
+    static void encode_heartbeat_frame(Frame& frame, DeviceAddress origin);
 };
 
-#endif  // AP_CRSF_ENABLED
+#endif // AP_CRSF_PROTOCOL_ENABLED
