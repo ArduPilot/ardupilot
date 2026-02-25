@@ -1,3 +1,11 @@
+# Codex notes
+
+- Read the instructions found at ~/ap_ai_playbooks/cpp/AI_PAIR_PROGRAMMING_PLAYBOOK_CPP.md
+- Even though you are not Claude, skim and follow the instructions found in ~/ap_ai_playbooks/claude/libraries
+- Python env: `pyenv` is set via `.python-version`, but `./waf` may still pick Homebrew `python3` unless PATH is prefixed.
+- To build reliably, run: `PATH="$HOME/.pyenv/versions/ardupilot_ecosystem/bin:$PATH" ./waf all`.
+- Verify the active interpreter with: `pyenv exec python3 -c 'import sys; print(sys.executable); import em; print(em.__version__)'`.
+
 # AI Contribution Guidelines for ArduPilot
 
 This document provides guidelines for AI assistants (ChatGPT, Claude, Copilot, Gemini, or any LLM-based tool) contributing code to the ArduPilot project. These rules supplement the existing [CONTRIBUTING.md](.github/CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — both of which apply fully to AI-assisted contributions.
