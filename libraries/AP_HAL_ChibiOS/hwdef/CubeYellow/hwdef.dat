@@ -448,3 +448,4 @@ ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_cube_dshot_highpolh.bin
 define HAL_WITH_IO_MCU_DSHOT 1
 
 define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1
+define AP_GPS_UBLOX_CFGV2_ENABLED AP_GPS_UBLOX_ENABLED
