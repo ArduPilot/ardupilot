@@ -15,11 +15,6 @@
   support for Inertial Sense INS
  */
 
-#include "AP_ExternalAHRS_config.h"
-
-#if AP_EXTERNAL_AHRS_INERTIALSENSE_ENABLED
-
-#include "AP_ExternalAHRS_InertialSense.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -28,6 +23,12 @@
 #undef AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 #endif
 #define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
+
+#include "AP_ExternalAHRS_config.h"
+
+#if AP_EXTERNAL_AHRS_INERTIALSENSE_ENABLED
+
+#include "AP_ExternalAHRS_InertialSense.h"
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
@@ -44,11 +45,8 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
 
-#include "base_port.h"
 #include "data_sets.h"
 #include "ISComm.h"
-#include "serialPort.h"
-#include "serialPortPlatform.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -154,82 +152,91 @@ bool AP_ExternalAHRS_InertialSense::get_variances(float &velVar, float &posVar, 
     return true;
 }
 
-int AP_ExternalAHRS_InertialSense::stop_message_broadcasting(port_handle_t port)
+int AP_ExternalAHRS_InertialSense::stop_message_broadcasting()
 {
     printf("Inertial Sense ExternalAHRS stop_message_broadcasting\r\n");
 
     // Stop all broadcasts on the device
-    int ret = is_comm_stop_broadcasts_current_port(port);
-    if (ret < 0)
-    {
-        printf("Failed to encode and write stop broadcasts message: %d\r\n", ret);
+    // int ret = is_comm_stop_broadcasts_all_ports(port);
+    int size = is_comm_write_to_buf(buffer, sizeof(buffer), &comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
+    if(uart->write(buffer, size) != size) {
+        printf("Failed to encode and write stop broadcasts message\r\n");
+        return -3;
+    }
+
+    // ret = is_comm_stop_broadcasts_current_port(port);
+    size = is_comm_write_to_buf(buffer, sizeof(buffer), &comm, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
+    if(uart->write(buffer, size) != size) {
+        printf("Failed to encode and write stop broadcasts message\r\n");
         return -3;
     }
 
     return 0;
 }
 
-int AP_ExternalAHRS_InertialSense::enable_message_broadcasting(port_handle_t port)
+int AP_ExternalAHRS_InertialSense::enable_message_broadcasting()
 {
     printf("Inertial Sense ExternalAHRS enable_message_broadcasting\r\n");
 
+    int size;
+
     // Ask for INS message w/ update 8ms period (4ms source period x 2)
-    if (is_comm_get_data(port, DID_INS_3, 0, 0, 1) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_INS_3, 0, 0, 1);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get INS message\r\n");
         return -4;
     }
 
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-    if (is_comm_get_data(port, DID_GPS1_POS, 0, 0, 1) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_POS, 0, 0, 1);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get GPS POS message\r\n");
         return -5;
     }
 
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-    if (is_comm_get_data(port, DID_GPS1_VEL, 0, 0, 1) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_VEL, 0, 0, 1);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get GPS VEL message\r\n");
         return -5;
     }
 
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-    if (is_comm_get_data(port, DID_GPS1_RTK_POS_MISC, 0, 0, 1) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_RTK_POS_MISC, 0, 0, 1);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get RTK POS MISC message\r\n");
         return -5;
     }
 
     // Don't offer IMU by default, as it may drop the main loop below minimum rate
     // // Ask for IMU message at period of 20ms (1ms source period x 20).
-    // if (is_comm_get_data(port, DID_PIMU, 0, 0, imu_sample_duration) < 0)
+    // size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_PIMU, 0, 0, imu_sample_duration);
     // {
     //     printf("Failed to encode and write get PIMU message\r\n");
     //     return -6;
     // }
 
-    if (is_comm_get_data(port, DID_MAGNETOMETER, 0, 0, 1) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_MAGNETOMETER, 0, 0, 1);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get MAG message\r\n");
         return -6;
     }
 
-    if (is_comm_get_data(port, DID_BAROMETER, 0, 0, 1) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_BAROMETER, 0, 0, 1);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get BARO message\r\n");
         return -6;
     }
 
-    if (is_comm_get_data(port, DID_INL2_NED_SIGMA, 0, 0, 1) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_INL2_NED_SIGMA, 0, 0, 1);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get NL2_NED_SIGMA message\r\n");
         return -6;
     }
 
     // request a device info message
-    if (is_comm_get_data(port, DID_DEV_INFO, 0, 0, 0) < 0)
-    {
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_DEV_INFO, 0, 0, 0);
+    if(uart->write(buffer, size) != size) {
         printf("Failed to encode and write get BARO message\r\n");
         return -6;
     }
@@ -282,23 +289,16 @@ int AP_ExternalAHRS_InertialSense::initialize()
     }
 #endif
 
-    serialPortPlatformInit(&serialPort);
-
-    if(!serialPortOpen(&serialPort, uart)) {
-        printf("Error: serialPortOpen()\r\n");
-        return -1;
-    }
-
     int error = 0;
 
-    if ((error = stop_message_broadcasting(&serialPort)))
+    if ((error = stop_message_broadcasting()))
     {
         printf("Error: stop_message_broadcasting()\r\n");
         return error;
     }
     hal.scheduler->delay(500);
 
-    if ((error = enable_message_broadcasting(&serialPort)))
+    if ((error = enable_message_broadcasting()))
     {
         printf("Error: enable_message_broadcasting\r\n");
         return error;
@@ -316,7 +316,7 @@ void AP_ExternalAHRS_InertialSense::handleIns1Message(ins_1_t* ins)
     WITH_SEMAPHORE(state.sem);
 
     Quaternion q;
-    q.from_euler(ins->theta[0], ins->theta[1], ins->theta[2]);    
+    q.from_euler(ins->theta[0], ins->theta[1], ins->theta[2]);
     state.quat = q;
     state.have_quaternion = true;
 
@@ -325,7 +325,7 @@ void AP_ExternalAHRS_InertialSense::handleIns1Message(ins_1_t* ins)
     state.have_velocity = true;
 
     state.location = Location{
-        (int32_t)(ins->lla[0] * 1e7), 
+        (int32_t)(ins->lla[0] * 1e7),
         (int32_t)(ins->lla[1] * 1e7),
         state.location.alt,
         Location::AltFrame::ABSOLUTE};
@@ -382,7 +382,7 @@ void AP_ExternalAHRS_InertialSense::handleIns2Message(ins_2_t* ins)
     state.have_velocity = true;
 
     state.location = Location{
-        (int32_t)(ins->lla[0] * 1e7), 
+        (int32_t)(ins->lla[0] * 1e7),
         (int32_t)(ins->lla[1] * 1e7),
         state.location.alt,
         Location::AltFrame::ABSOLUTE};
@@ -440,7 +440,7 @@ void AP_ExternalAHRS_InertialSense::handleIns3Message(ins_3_t* ins)
     state.have_velocity = true;
 
     state.location = Location{
-        (int32_t)(ins->lla[0] * 1e7), 
+        (int32_t)(ins->lla[0] * 1e7),
         (int32_t)(ins->lla[1] * 1e7),
         (int32_t)(ins->msl * 100),
         Location::AltFrame::ABSOLUTE};
@@ -560,7 +560,7 @@ void AP_ExternalAHRS_InertialSense::handleGpsRtkPosMiscMessage(gps_rtk_misc_t* m
     gps_data_msg.vdop = misc->vDop * 100;
 }
 
-void AP_ExternalAHRS_InertialSense::handlePimuMessage(pimu_t* pimu) 
+void AP_ExternalAHRS_InertialSense::handlePimuMessage(pimu_t* pimu)
 {
     last_imu_pkt = AP_HAL::millis();
 

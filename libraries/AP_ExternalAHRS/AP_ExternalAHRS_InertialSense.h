@@ -25,9 +25,8 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 
-#include "data_sets.h"
+#include "AP_ExternalAHRS/data_sets.h"
 #include "ISComm.h"
-#include "serialPort.h"
 
 class AP_ExternalAHRS_InertialSense: public AP_ExternalAHRS_backend
 {
@@ -58,8 +57,8 @@ private:
     void update_thread();
     bool check_uart();
 
-    int stop_message_broadcasting(port_handle_t port);
-    int enable_message_broadcasting(port_handle_t port);
+    int stop_message_broadcasting();
+    int enable_message_broadcasting();
 
     void handleIns1Message(ins_1_t* ins);
     void handleIns2Message(ins_2_t* ins);
@@ -99,7 +98,6 @@ private:
 
     uint8_t comm_buf[2048];
     is_comm_instance_t comm;
-    serial_port_t serialPort;
 
     float vel_cov;
     float pos_cov;
