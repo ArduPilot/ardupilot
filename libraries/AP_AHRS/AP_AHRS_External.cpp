@@ -114,6 +114,11 @@ bool AP_AHRS_External::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
+bool AP_AHRS_External::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+{
+    return AP::externalAHRS().get_variances(velVar, posVar, hgtVar, magVar, tasVar);
+}
+
 void AP_AHRS_External::send_ekf_status_report(GCS_MAVLINK &link) const
 {
     AP::externalAHRS().send_status_report(link);
