@@ -284,6 +284,18 @@ void NavEKF3_core::InitialiseVariables()
     gpsHgtAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     rngOnGnd = 0.05f;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // 2-state AGL KF initialisation
+    // Start with generous uncertainty; the first valid RF measurement will hard-reset the state
+    aglKfH = rngOnGnd;      // assume sitting on ground at minimum range
+    aglKfV = 0.0f;
+    aglKfP[0][0] = 25.0f;   // 5 m initial std-dev in height
+    aglKfP[0][1] = 0.0f;
+    aglKfP[1][0] = 0.0f;
+    aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
+    aglKfValid = false;
+    lastAglRngFuseTime_ms = 0;
+#endif
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
     tiltErrorVariance = sq(M_2PI);

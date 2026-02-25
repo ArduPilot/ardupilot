@@ -322,6 +322,12 @@ bool NavEKF3_core::getPosD(postype_t &posD) const
 // return the estimated height of body frame origin above ground level
 bool NavEKF3_core::getHAGL(float &HAGL) const
 {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+        HAGL = aglKfH;
+        return healthy();
+    }
+#endif
     HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate
     return !hgtTimeout && gndOffsetValid && healthy();

@@ -923,6 +923,11 @@ private:
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
+    void UpdateAglKf();
+#endif
+
 #if EK3_FEATURE_OPTFLOW_FUSION
     // fuse optical flow measurements into the main filter
     // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
@@ -1306,6 +1311,18 @@ private:
     uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
 #if EK3_FEATURE_OPTFLOW_FUSION
     ftype Popt;                     // Optical flow terrain height state covariance (m^2)
+#endif
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // ---- 2-state AGL Kalman Filter ----
+    // Uses bias-corrected IMU delta-velocity for prediction and downward rangefinder
+    // as measurement, decoupled from the main filter's vertical position state.
+    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up)]
+    ftype aglKfH;                   // AGL height estimate (m, positive up from ground)
+    ftype aglKfV;                   // AGL velocity estimate (m/s, positive = climbing)
+    ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
+    bool  aglKfValid;               // true when RF has been fused within the last 5 s
+    uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
