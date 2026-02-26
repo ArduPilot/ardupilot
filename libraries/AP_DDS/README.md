@@ -185,6 +185,7 @@ Subscribed topics:
  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
+ * /ap/clock [rosgraph_msgs/msg/Clock] 1 subscriber
 ```
 
 For a full list of interfaces, see [here](https://ardupilot.org/dev/docs/ros2-interfaces.html).
@@ -307,6 +308,17 @@ ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
+
+## Clock Synchronisation
+
+When running in a simulated environment, The master simulation clock (usually ``/clock``) needs to be provided to Ardupilot to ensure ArduPilot's topics
+have the correct timestamp. This ensure that any sensor fusion (or similar) nodes in ROS 2 fuse the correct data.
+
+On startup, ArduPilot will automatically attempt to subscribe to ``/clock`` topic. If this is unsuccessful, ArduPilot
+will use it's own internal clock. In either case, ArduPilot will publish the clock to to ``/ap/clock``
+(or ``/ap/vN/clock`` if namespacing is used).
+
+For simulators such as Gazebo, the ``/clock`` topic is published automatically and no further configuration is required.
 
 ## Contributing to `AP_DDS` library
 
