@@ -135,13 +135,13 @@ void GCS_MAVLINK_Rover::send_servo_out()
         millis(),
         0,  // port 0
         motor1,
-        0,
+        UINT16_MAX,
         motor3,
-        0,
-        0,
-        0,
-        0,
-        0,
+        UINT16_MAX,
+        UINT16_MAX,
+        UINT16_MAX,
+        UINT16_MAX,
+        UINT16_MAX,
 #if AP_RSSI_ENABLED
         receiver_rssi()
 #else
