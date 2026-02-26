@@ -19,6 +19,7 @@
 #include "AP_MotorsHeli_RSC.h"
 #include <AP_RPM/AP_RPM.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
 
 // default main rotor speed (ch8 out) as a number from 0 ~ 100
 #define AP_MOTORS_HELI_RSC_SETPOINT             70
@@ -224,6 +225,30 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
 
     // 27 was AROT_IDLE, moved to RSC autorotation sub group
 
+    // @Param: BAT_IDX
+    // @DisplayName: Main rotor motor battery index
+    // @Description: Which battery monitor should be used for main rotor motor battery voltage compensation
+    // @Range: 0 15
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("BAT_IDX", 28, AP_MotorsHeli_RSC, batt_idx, 0),
+    
+    // @Param: BAT_V_MAX
+    // @DisplayName: Main rotor motor battery voltage compensation maximum voltage
+    // @Description: Main rotor motor voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust). Should not be used with external governor. Recommend 4.2 * cell count, 0 = Disabled
+    // @Range: 6 53
+    // @Units: V
+    // @User: Standard
+    AP_GROUPINFO("BAT_V_MAX", 29, AP_MotorsHeli_RSC, batt_voltage_max, 0),
+
+    // @Param: BAT_V_MIN
+    // @DisplayName: Main rotor motor battery voltage compensation minimum voltage 
+    // @Description: Main rotor motor voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust). Should not be used with external governor. Recommend 3.3 * cell count, 0 = Disabled
+    // @Range: 6 42
+    // @Units: V
+    // @User: Standard
+    AP_GROUPINFO("BAT_V_MIN", 30, AP_MotorsHeli_RSC, batt_voltage_min, 0),
+
     AP_GROUPEND
 };
 
@@ -377,6 +402,8 @@ void AP_MotorsHeli_RSC::output(RotorControlState state)
         }
         break;
     }
+    
+    _control_output = _control_output * update_battery_compensation(dt);
 
     // update rotor speed run-up estimate
     update_rotor_runup(dt);
@@ -508,6 +535,25 @@ float AP_MotorsHeli_RSC::calculate_throttlecurve(float collective_in)
     return throttle;
 
 }
+
+// battety compensation logic, to get value without updating filter use dt = 0
+// returns 1.0 if a) compensation voltages are not configured, b) v_min > v_max c) batt<0.25*v_min
+float AP_MotorsHeli_RSC::update_battery_compensation(float dt){
+    if ((batt_voltage_max <= 0) || (batt_voltage_min <= 0) || (batt_voltage_min >= batt_voltage_max))
+    {
+        batt_volt_filt.reset(1);
+        return 1.0f;
+    }
+    float batt_voltage = use_raw_voltage ? AP::battery().voltage(batt_idx) : AP::battery().voltage_resting_estimate(batt_idx);
+    if (batt_voltage < 0.25 * batt_voltage_min) { //battery voltage this low leads to dangerously high compensation coefficient, disabling 
+        batt_volt_filt.reset(1);
+        return 1.0f;
+    } else {
+        batt_voltage_min.set(MAX(batt_voltage_min, batt_voltage_max * 0.6));
+        batt_voltage = constrain_float(batt_voltage, batt_voltage_min, batt_voltage_max);
+        return 1 / batt_volt_filt.apply(batt_voltage / batt_voltage_max, dt);
+    }
+}   
 
 // autothrottle_run - calculate throttle output for governor controlled throttle
 void AP_MotorsHeli_RSC::autothrottle_run()
