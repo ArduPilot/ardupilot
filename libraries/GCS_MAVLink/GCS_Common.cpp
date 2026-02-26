@@ -6176,8 +6176,8 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
                                POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE;
 
     // convert altitude to relative to home
-    int32_t rel_alt;
-    if (!loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, rel_alt)) {
+    float rel_alt_m;
+    if (!loc.get_alt_m(Location::AltFrame::ABOVE_HOME, rel_alt_m)) {
         return;
     }
 
@@ -6190,7 +6190,7 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             type_mask,
             loc.lat,
             loc.lng,
-            rel_alt,
+            rel_alt_m,
             0,0,0,  // vx, vy, vz
             0,0,0,  // ax, ay, az
             0,0);   // yaw, yaw_rate
