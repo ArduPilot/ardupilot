@@ -2,7 +2,7 @@
 
 <!-- a one or two line summary of what your PR does here -->
 
-## Testing (more check increases chance of being merged)
+## Testing (more checks increases chance of being merged)
 
 - [ ] Checked by a human programmer
 - [ ] Tested in SITL
