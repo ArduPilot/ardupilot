@@ -10,6 +10,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
+#include "AP_Motors_Thrust_Linearization.h"
 
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
@@ -145,6 +146,8 @@ public:
     // enum for heli optional features
     enum class HeliOption {
         USE_LEAKY_I                     = (1<<0),   // 1
+        MAIN_ROTOR_USE_RAW_VOLTAGE      = (1<<1),   // 2
+        TAIL_ROTOR_USE_RAW_VOLTAGE      = (1<<2),   // 4
     };
 
     // use leaking integrator management scheme
