@@ -877,6 +877,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("chan3=%f want=%f" % (m.chan3_raw, normal_rc_throttle))
             if m.chan3_raw == normal_rc_throttle:
                 break
+        self.progress("Checking RC_CHANNELS_SCALED inactive channels are UINT16_MAX")
+        m = self.poll_message('RC_CHANNELS_SCALED')
+        # Rover uses only chan1 (steering) and chan3 (throttle).
+        # All other channels must be UINT16_MAX per MAVLink spec.
+        # pymavlink decodes the int16_t wire value 0xFFFF as -1.
+        for ch in ('chan2_scaled', 'chan4_scaled', 'chan5_scaled',
+                   'chan6_scaled', 'chan7_scaled', 'chan8_scaled'):
+            val = getattr(m, ch)
+            if val != -1:
+                raise NotAchievedException(
+                    "RC_CHANNELS_SCALED %s=%d want UINT16_MAX (-1)" % (ch, val))
         self.disarm_vehicle()
 
     def RCOverrides(self):

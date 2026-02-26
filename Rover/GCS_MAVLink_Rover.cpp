@@ -135,13 +135,13 @@ void GCS_MAVLINK_Rover::send_servo_out()
         millis(),
         0,  // port 0
         motor1,
-        UINT16_MAX,
+        -1,  // flag value for "not supplied in this message"
         motor3,
-        UINT16_MAX,
-        UINT16_MAX,
-        UINT16_MAX,
-        UINT16_MAX,
-        UINT16_MAX,
+        -1,  // flag value for "not supplied in this message"
+        -1,  // flag value for "not supplied in this message"
+        -1,  // flag value for "not supplied in this message"
+        -1,  // flag value for "not supplied in this message"
+        -1,  // flag value for "not supplied in this message"
 #if AP_RSSI_ENABLED
         receiver_rssi()
 #else
