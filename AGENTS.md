@@ -284,6 +284,7 @@ libraries: fix typo in AP_GPS backend selection
 8. **Limit format only commit**: Only adjust codestyle and cleanup on what’s necessary and keep the file consistent with its current style.
 9. **No random comment around the files**: Adding comments randomly on files is useless and breaks history.
 10. **No useless code moving**: Keep the current file structure unless additions need to move code.
+11. ArduPilot uses .github/PULL_REQUEST_TEMPLATE.md .  When creating a Pull Request against the ArduPilot repository, ensure the format recommended in that template is followed, particularly the Testing list.
 
 ### PR description
 
