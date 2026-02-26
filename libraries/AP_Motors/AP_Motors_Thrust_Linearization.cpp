@@ -188,19 +188,30 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
 // return gain scheduling gain based on voltage and air density
 float Thrust_Linearization::get_compensation_gain() const
 {
+    return get_voltage_compensation_gain() * get_density_compensation_gain();
+}
+
+//return gain scheduling gain based only on voltage
+float Thrust_Linearization::get_voltage_compensation_gain() const
+{
     // avoid divide by zero
     if (get_lift_max() <= 0.0) {
         return 1.0;
     }
 
-    float ret = 1.0 / get_lift_max();
+    return 1.0 / get_lift_max();
 
+}
+
+// return gain scheduling gain based on density
+float Thrust_Linearization::get_density_compensation_gain()
+{
 #if AP_MOTORS_DENSITY_COMP == 1
     // air density ratio is increasing in density / decreasing in altitude
     const float air_density_ratio = AP::ahrs().get_air_density_ratio();
     if (air_density_ratio > 0.3 && air_density_ratio < 1.5) {
-        ret *= 1.0 / constrain_float(air_density_ratio, 0.5, 1.25);
+        return 1.0 / constrain_float(air_density_ratio, 0.5, 1.25);
     }
 #endif
-    return ret;
+    return 1.0;
 }

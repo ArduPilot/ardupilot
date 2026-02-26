@@ -29,6 +29,12 @@ public:
     // return gain scheduling gain based on voltage and air density
     float get_compensation_gain() const;
 
+    // return gain scheduling gain based on voltage 
+    float get_voltage_compensation_gain() const;
+
+    // return gain scheduling gain based on air density
+    static float get_density_compensation_gain();
+
     // Get spin min parameter value
     float get_spin_min() const { return spin_min.get(); }
 
@@ -44,8 +50,11 @@ public:
     // Get lift max
     float get_lift_max() const { return lift_max; }
 
+
+
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
+
 
 protected:
     AP_Float curve_expo;       // curve used to linearize pwm to thrust conversion.  set to 0 for linear and 1 for second order approximation
@@ -62,3 +71,4 @@ private:
 
     AP_Motors& motors;
 };
+
