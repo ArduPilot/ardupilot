@@ -217,7 +217,7 @@ AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Terrain, enable, 1, AP_PARAM_FLAG_ENABLE),
 
 - `@Param:` — short name
 - `@DisplayName:` — human-readable name
-- `@Description:` — detailed description (not to long)
+- `@Description:` — detailed description (not too long)
 - `@Values:` — `value:label` pairs, comma-separated
 - `@Bitmask:` — `bit:label` pairs for bitmask parameters
 - `@Range:` — `min max`
@@ -231,7 +231,7 @@ AP_GROUPINFO_FLAGS("ENABLE", 0, AP_Terrain, enable, 1, AP_PARAM_FLAG_ENABLE),
 - `@Vehicles:` for vehicles specifics parameters
 
 When adding or modifying parameters, always include all relevant annotations.
-Parameters fullname max length is 16 caracters.
+Parameters fullname max length is 16 characters.
 
 ---
 
@@ -274,7 +274,7 @@ libraries: fix typo in AP_GPS backend selection
 
 ### Before opening a PR
 
-1. **Fork and branch**: Work on a featurebranch in your fork, not on `master`.
+1. **Fork and branch**: Work on a feature branch in your fork, not on `master`.
 2. **Rebase on master**: Ensure your branch is up to date with the latest `master`.
 3. **Build locally**: `./waf configure --board sitl && ./waf copter` (or the relevant vehicle), if generic feature/bug fix. Build for the specific board, instead of SITL, if a hardware port.
 4. **Run relevant tests**: At minimum, run SITL for the affected vehicle and any unit tests in the modified library and related autotests.
@@ -294,12 +294,12 @@ libraries: fix typo in AP_GPS backend selection
 - Testing evidence has to be provided.
 - **Explicitly state that the contribution was AI-assisted** and describe the level of AI involvement.
 - If the change affects parameters, note the parameter changes and any migration considerations.
-- Keep the description consise.
+- Keep the description concise.
 
 ### Review process
 
 - ArduPilot is maintained by volunteers. Be patient — reviews can take days or weeks.
-- Respond to all review comments without jokes or long paragraphs. If a reviewer asks for changes, analyse them from the global scope, make them if straighforward or ask for clarification is something is unclear, and push updated commits (then squash if requested).
+- Respond to all review comments without jokes or long paragraphs. If a reviewer asks for changes, analyse them from the global scope, make them if straightforward or ask for clarification is something is unclear, and push updated commits (then squash if requested).
 - CI must pass before merge. If CI fails, investigate and fix — do not ask maintainers to merge with failing CI.
 - Maintainers may ask you to split large PRs into smaller, focused ones.
 - For non-trivial changes, consider opening a discussion thread on [Discourse](https://discuss.ardupilot.org/c/development-team) or [Discord](https://ardupilot.org/discord) before writing code.
