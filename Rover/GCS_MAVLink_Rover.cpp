@@ -320,7 +320,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     // left wheel rate control pid
     if (g.gcs_pid_mask & 8) {
         pid_info = &g2.wheel_rate_control.get_pid(0).get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 7,
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_WHEEL_LEFT,
                                     pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
@@ -337,7 +337,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     // right wheel rate control pid
     if (g.gcs_pid_mask & 16) {
         pid_info = &g2.wheel_rate_control.get_pid(1).get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 8,
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_WHEEL_RIGHT,
                                     pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
@@ -354,7 +354,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     // sailboat heel to mainsail pid
     if (g.gcs_pid_mask & 32) {
         pid_info = &g2.attitude_control.get_sailboat_heel_pid().get_pid_info();
-        mavlink_msg_pid_tuning_send(chan, 9,
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_SAIL_HEEL,
                                     pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
@@ -371,7 +371,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     // Position Controller Velocity North PID
     if (g.gcs_pid_mask & 64) {
         pid_info = &g2.pos_control.get_vel_pid().get_pid_info_x();
-        mavlink_msg_pid_tuning_send(chan, 10,
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_VEL_NORTH,
                                     pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
@@ -388,7 +388,7 @@ void GCS_MAVLINK_Rover::send_pid_tuning()
     // Position Controller Velocity East PID
     if (g.gcs_pid_mask & 128) {
         pid_info = &g2.pos_control.get_vel_pid().get_pid_info_y();
-        mavlink_msg_pid_tuning_send(chan, 11,
+        mavlink_msg_pid_tuning_send(chan, PID_TUNING_VEL_EAST,
                                     pid_info->target,
                                     pid_info->actual,
                                     pid_info->FF,
