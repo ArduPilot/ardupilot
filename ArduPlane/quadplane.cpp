@@ -3434,6 +3434,11 @@ bool QuadPlane::do_vtol_land(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+#if AP_RANGEFINDER_ENABLED
+    // zero rangefinder state, start to accumulate good samples now
+    memset(&plane.rangefinder_state, 0, sizeof(plane.rangefinder_state));
+#endif
+
     plane.set_next_WP(cmd.content.location);
     // initially aim for current altitude
     plane.next_WP_loc.copy_alt_from(plane.current_loc);
