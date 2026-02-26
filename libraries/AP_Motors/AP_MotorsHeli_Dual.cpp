@@ -593,6 +593,7 @@ void AP_MotorsHeli_Dual::Log_Write(void)
     _main_rotor.write_log();
 
     // write density compensation_log
+    log_density_compensation();
 
 }
 #endif

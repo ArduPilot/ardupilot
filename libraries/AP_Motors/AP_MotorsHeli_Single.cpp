@@ -683,9 +683,12 @@ void AP_MotorsHeli_Single::Log_Write(void)
     // is limited at sqrt(2.0), in dual it is limited at 1.0
     float cyclic_angle_scaler = get_cyclic_angle_scaler() * sqrtf(2.0);
     _swashplate.write_log(cyclic_angle_scaler, _collective_min_deg.get(), _collective_max_deg.get(), _collective_min.get(), _collective_max.get());
-
+ 
     // Write RSC logging
     _main_rotor.write_log();
     _tail_rotor.write_log();
+    
+    // log density compensation
+    log_density_compensation();
 }
 #endif

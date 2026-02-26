@@ -270,5 +270,9 @@ void AP_MotorsHeli_Quad::servo_test()
 void AP_MotorsHeli_Quad::Log_Write(void)
 {
     _main_rotor.write_log();
+
+    // write density compensation_log
+    log_density_compensation();
+
 }
 #endif
