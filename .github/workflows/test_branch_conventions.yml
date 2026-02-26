@@ -1,4 +1,4 @@
-name: Fail on Malformed Commits in PR Branch
+name: Test for Malformed Commits in PR Branch
 
 on:
   pull_request:
