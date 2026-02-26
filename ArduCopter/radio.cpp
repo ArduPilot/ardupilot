@@ -218,3 +218,29 @@ int16_t Copter::get_throttle_mid(void)
 #endif
     return channel_throttle->get_control_mid();
 }
+
+// save_trim - adds roll and pitch trims from the radio to AHRS
+// called via the SAVE_TRIM aux function switch
+void Copter::save_trim()
+{
+    float roll_trim_rad = 0.0f;
+    float pitch_trim_rad = 0.0f;
+
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    if (g2.rc_channels.auto_trim.running) {
+        g2.rc_channels.auto_trim.running = false;
+    } else {
+#endif
+
+    // get roll and pitch trim from the attitude controller target
+    flightmode->get_pilot_desired_lean_angles_rad(roll_trim_rad, pitch_trim_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
+
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    }
+#endif
+
+    // save roll and pitch trim
+    AP::ahrs().add_trim(roll_trim_rad, pitch_trim_rad);
+    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
+    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+}
