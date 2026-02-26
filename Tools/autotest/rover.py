@@ -7264,6 +7264,7 @@ return update()
         ret = super(AutoTestRover, self).tests()
 
         ret.extend([
+            self.WaterBaroParams,
             self.MAVProxy_SetModeUsingSwitch,
             self.HIGH_LATENCY2,
             self.MAVProxy_SetModeUsingMode,
@@ -7391,3 +7392,21 @@ return update()
 
     def default_mode(self):
         return 'MANUAL'
+
+    def WaterBaroParams(self):
+        '''Test BARO_SPEC_GRAV exposed for Rover water barometers'''
+        self.progress("Testing BARO_SPEC_GRAV")
+
+        default_val = self.get_parameter("BARO_SPEC_GRAV")
+        if abs(default_val - 1.0) > 0.0001:
+            raise NotAchievedException("BARO_SPEC_GRAV default expected 1.0, got %f" % default_val)
+
+        self.set_parameter("BARO_SPEC_GRAV", 1.024)
+        if abs(self.get_parameter("BARO_SPEC_GRAV") - 1.024) > 0.0001:
+            raise NotAchievedException("BARO_SPEC_GRAV set to 1.024 failed")
+
+        self.reboot_sitl()
+        if abs(self.get_parameter("BARO_SPEC_GRAV") - 1.024) > 0.0001:
+            raise NotAchievedException("BARO_SPEC_GRAV did not persist across reboot")
+
+        self.set_parameter("BARO_SPEC_GRAV", default_val)
