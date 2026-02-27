@@ -320,28 +320,7 @@ void AP_Baro::calibrate(bool save)
     }
     #endif
 
-    // Check if external AHRS is providing baro - needs special handling
-    bool eahrs_baro = false;
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    // External AHRS may take time to establish communication
-    // (CRSF baud negotiation can take 1.5+ seconds, then baro frames at ~10Hz)
-    const int8_t eahrs_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
-    if (eahrs_port >= 0) {
-        eahrs_baro = true;
-        const uint32_t start_ms = AP_HAL::millis();
-        // Wait for AHRS to initialize (receives first packet)
-        while (!AP::externalAHRS().initialised() && (AP_HAL::millis() - start_ms < 10000)) {
-            hal.scheduler->delay(10);
-        }
-        if (AP::externalAHRS().initialised()) {
-            // Wait for baro to become healthy (receives baro frames)
-            while (!healthy() && (AP_HAL::millis() - start_ms < 15000)) {
-                update();
-                hal.scheduler->delay(100);
-            }
-        }
-    }
-#endif
+    _cal_save = save;
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
@@ -357,72 +336,66 @@ void AP_Baro::calibrate(bool save)
         do {
             update();
             if (AP_HAL::millis() - tstart > 500) {
-                if (!eahrs_baro) {
-                    // Internal sensors should always be ready - fail fast
-                    AP_BoardConfig::config_error("Baro: unable to calibrate");
-                }
-                // External AHRS baro may have gaps - continue to next iteration
-                break;
+                // sensor not responding yet; deferred calibration
+                // in update() will handle slow-starting sensors
+                goto deferred;
             }
             hal.scheduler->delay(10);
         } while (!healthy());
         hal.scheduler->delay(100);
     }
 
-    // now average over 5 values for the ground pressure settings
-    float sum_pressure[BARO_MAX_INSTANCES] = {0};
-    uint8_t count[BARO_MAX_INSTANCES] = {0};
-    const uint8_t num_samples = 5;
+    {
+        // now average over 5 values for the ground pressure settings
+        float sum_pressure[BARO_MAX_INSTANCES] = {0};
+        uint8_t count[BARO_MAX_INSTANCES] = {0};
+        const uint8_t num_samples = 5;
 
-    for (uint8_t c = 0; c < num_samples; c++) {
-        uint32_t tstart = AP_HAL::millis();
-        do {
-            update();
-            if (AP_HAL::millis() - tstart > 500) {
-                if (!eahrs_baro) {
-                    AP_BoardConfig::config_error("Baro: unable to calibrate");
+        for (uint8_t c = 0; c < num_samples; c++) {
+            uint32_t tstart = AP_HAL::millis();
+            do {
+                update();
+                if (AP_HAL::millis() - tstart > 500) {
+                    break;
                 }
-                break;
+            } while (!healthy());
+            for (uint8_t i=0; i<_num_sensors; i++) {
+                if (healthy(i)) {
+                    sum_pressure[i] += sensors[i].pressure;
+                    count[i] += 1;
+                }
             }
-            hal.scheduler->delay(10);
-        } while (!healthy());
-        for (uint8_t i=0; i<_num_sensors; i++) {
-            if (healthy(i)) {
-                sum_pressure[i] += sensors[i].pressure;
-                count[i] += 1;
-            }
+            hal.scheduler->delay(100);
         }
-        hal.scheduler->delay(100);
-    }
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        if (count[i] == 0) {
-            sensors[i].calibrated = false;
-        } else {
-            if (save) {
-                float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i], _field_elevation_active);
-                sensors[i].ground_pressure.set_and_save(p0_sealevel);
+        for (uint8_t i=0; i<_num_sensors; i++) {
+            if (count[i] == 0) {
+                sensors[i].calibrated = false;
+            } else {
+                if (save) {
+                    float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i], _field_elevation_active);
+                    sensors[i].ground_pressure.set_and_save(p0_sealevel);
+                }
             }
         }
     }
 
     _guessed_ground_temperature = get_external_temperature();
 
-    // panic if all sensors are not calibrated
-    uint8_t num_calibrated = 0;
+    // report calibration status
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
-            num_calibrated++;
         }
     }
-    if (num_calibrated) {
-        return;
-    }
-    if (eahrs_baro) {
-        // External AHRS baro may recover later - warn but don't halt
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Baro: EAHRS baro not calibrated");
-    } else {
-        AP_BoardConfig::config_error("Baro: all sensors uncalibrated");
+
+deferred:
+    // mark uncalibrated sensors for deferred calibration in update()
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (!sensors[i].calibrated) {
+            sensors[i].cal_start_ms = 0;
+            sensors[i].cal_sum = 0;
+            sensors[i].cal_count = 0;
+        }
     }
 }
 
@@ -952,9 +925,44 @@ void AP_Baro::update(void)
         drivers[i]->backend_update(i);
     }
 
-#if AP_BARO_THST_COMP_ENABLED
-    update_thrust_filter();
-#endif
+    // deferred calibration for sensors not ready during init
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (sensors[i].calibrated) {
+            continue;
+        }
+        if (!sensors[i].healthy) {
+            // sensor not yet producing data, reset state
+            sensors[i].cal_start_ms = 0;
+            sensors[i].cal_count = 0;
+            sensors[i].cal_sum = 0;
+            continue;
+        }
+        const uint32_t now = AP_HAL::millis();
+        if (sensors[i].cal_start_ms == 0) {
+            // first time seeing sensor healthy, start settling
+            sensors[i].cal_start_ms = now;
+            continue;
+        }
+        // collect samples after 1s settling, spaced 100ms apart
+        const uint32_t sample_time_ms = 1000 + (uint32_t)sensors[i].cal_count * 100;
+        if (now - sensors[i].cal_start_ms < sample_time_ms) {
+            continue;
+        }
+        sensors[i].cal_sum += sensors[i].pressure;
+        sensors[i].cal_count++;
+        if (sensors[i].cal_count >= 5) {
+            const float avg = sensors[i].cal_sum / sensors[i].cal_count;
+            const float p0_sealevel = get_sealevel_pressure(avg, _field_elevation_active);
+            if (_cal_save) {
+                sensors[i].ground_pressure.set_and_save(p0_sealevel);
+            } else {
+                sensors[i].ground_pressure.set(p0_sealevel);
+            }
+            sensors[i].calibrated = true;
+            _guessed_ground_temperature = get_external_temperature();
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+        }
+    }
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
@@ -991,6 +999,10 @@ void AP_Baro::update(void)
             }
         }
     }
+
+#if AP_BARO_THST_COMP_ENABLED
+    update_thrust_filter();
+#endif
 
     // ensure the climb rate filter is updated
     if (healthy()) {
