@@ -313,6 +313,11 @@ void AP_Baro::calibrate(bool save)
 
     _cal_save = save;
 
+    if (_num_sensors == 0) {
+        AP_BoardConfig::config_error("Baro: unable to calibrate");
+        return;
+    }
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
@@ -322,6 +327,7 @@ void AP_Baro::calibrate(bool save)
     // let the barometer settle for a full second after startup
     // the MS5611 reads quite a long way off for the first second,
     // leading to about 1m of error if we don't wait
+    bool settled = true;
     for (uint8_t i = 0; i < 10; i++) {
         uint32_t tstart = AP_HAL::millis();
         do {
@@ -329,14 +335,18 @@ void AP_Baro::calibrate(bool save)
             if (AP_HAL::millis() - tstart > 500) {
                 // sensor not responding yet; deferred calibration
                 // in update() will handle slow-starting sensors
-                goto deferred;
+                settled = false;
+                break;
             }
             hal.scheduler->delay(10);
         } while (!healthy());
+        if (!settled) {
+            break;
+        }
         hal.scheduler->delay(100);
     }
 
-    {
+    if (settled) {
         // now average over 5 values for the ground pressure settings
         float sum_pressure[BARO_MAX_INSTANCES] = {0};
         uint8_t count[BARO_MAX_INSTANCES] = {0};
@@ -368,19 +378,23 @@ void AP_Baro::calibrate(bool save)
                 }
             }
         }
-    }
 
-    _guessed_ground_temperature = get_external_temperature();
+        _guessed_ground_temperature = get_external_temperature();
 
-    // report calibration status
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        if (sensors[i].calibrated) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+        // report calibration status
+        for (uint8_t i=0; i<_num_sensors; i++) {
+            if (sensors[i].calibrated) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+            }
+        }
+    } else {
+        // sensors not yet producing data, mark all uncalibrated
+        for (uint8_t i=0; i<_num_sensors; i++) {
+            sensors[i].calibrated = false;
         }
     }
 
-deferred:
-    // mark uncalibrated sensors for deferred calibration in update()
+    // initialize deferred calibration state for uncalibrated sensors
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (!sensors[i].calibrated) {
             sensors[i].cal_start_ms = 0;
