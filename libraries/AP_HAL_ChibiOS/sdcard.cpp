@@ -36,8 +36,12 @@ static bool sdcard_running;
 
 #if HAL_USE_SDC
 static SDCConfig sdcconfig = {
-  SDC_MODE_4BIT,
-  0
+#if defined(SDIO_BUS_WIDE_1B)
+    SDC_MODE_1BIT,
+#else
+    SDC_MODE_4BIT,
+#endif
+    0
 };
 #elif HAL_USE_MMC_SPI
 MMCDriver MMCD1;
