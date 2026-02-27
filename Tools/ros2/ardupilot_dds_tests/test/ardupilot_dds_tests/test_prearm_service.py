@@ -80,7 +80,7 @@ class PreamService(rclpy.node.Node):
     def start_prearm(self):
         try:
             self.prearm_thread.stop()
-        except:
+        except Exception:
             print("start_prearm not started yet")
         self.prearm_thread = threading.Thread(target=self.process_prearm)
         self.prearm_thread.start()

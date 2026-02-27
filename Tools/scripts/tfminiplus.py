@@ -13,7 +13,7 @@ import time
 
 try:
     import argcomplete
-except:
+except Exception:
     pass
 
 SYSTEM_RESET  = struct.pack('B' * 4, 0x5A, 0x04, 0x02, 0x60)

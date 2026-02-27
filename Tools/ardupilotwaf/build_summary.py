@@ -262,7 +262,7 @@ def size_summary(bld, nodes):
             for i, data in enumerate(parsed):
                 try:
                     d.update(data)
-                except:
+                except Exception:
                     print("build summary debug: "+str(i)+"->"+str(data))
 
     return l

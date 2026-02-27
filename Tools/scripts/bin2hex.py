@@ -82,7 +82,7 @@ Options:
                     base = 16
                 try:
                     offset = int(a, base)
-                except:
+                except Exception:
                     raise getopt.GetoptError('Bad offset value')
 
         if not args:

@@ -107,7 +107,7 @@ class PlaneFbwbJoyControl(Node):
         time.sleep(0.2)
         try:
             return future.result().result
-        except:
+        except Exception:
             return False
 
     def arm_with_timeout(self, timeout: rclpy.duration.Duration):
@@ -126,7 +126,7 @@ class PlaneFbwbJoyControl(Node):
         time.sleep(1)
         try:
             return future.result().status and future.result().curr_mode == mode
-        except:
+        except Exception:
             return False
 
     def switch_mode_with_timeout(self, desired_mode: int, timeout: rclpy.duration.Duration):

@@ -53,7 +53,7 @@ def configure(cfg):
     #Check if esp-idf env are loaded, or load it
     try:
         env.IDF = os.environ['IDF_PATH']
-    except:
+    except Exception:
         env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
     print("USING EXPRESSIF IDF:"+str(env.IDF))
 

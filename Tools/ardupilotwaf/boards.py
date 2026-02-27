@@ -1011,7 +1011,7 @@ class esp32(Board):
             return cfg.root.find_dir(env.IDF+p).abspath()
         try:
             env.IDF = os.environ['IDF_PATH'] 
-        except:
+        except Exception:
             env.IDF = cfg.srcnode.abspath()+"/modules/esp_idf"
 
         super(esp32, self).configure_env(cfg, env)
