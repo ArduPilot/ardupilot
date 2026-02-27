@@ -36,7 +36,7 @@ static bool sdcard_running;
 
 #if HAL_USE_SDC
 static SDCConfig sdcconfig = {
-#if defined(SDIO_BUS_WIDE_1B) && (SDIO_BUS_WIDE_1B == 1)
+#if defined(HAL_SDIO_BUS_WIDE_1B) && (HAL_SDIO_BUS_WIDE_1B == 1)
     SDC_MODE_1BIT,
 #else
     SDC_MODE_4BIT,
