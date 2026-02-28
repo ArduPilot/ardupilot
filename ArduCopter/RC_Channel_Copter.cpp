@@ -726,22 +726,7 @@ void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos c
 // save_trim - adds roll and pitch trims from the radio to ahrs
 void RC_Channels_Copter::save_trim()
 {
-    float roll_trim = 0;
-    float pitch_trim = 0;
-#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-    if (auto_trim.running) {
-        auto_trim.running = false;
-    } else {
-#endif
-    // save roll and pitch trim
-    roll_trim = cd_to_rad((float)get_roll_channel().get_control_in());
-    pitch_trim = cd_to_rad((float)get_pitch_channel().get_control_in());
-#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED    
-    }
-#endif
-    AP::ahrs().add_trim(roll_trim, pitch_trim);
-    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
-    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+    save_trim();
 }
 
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
