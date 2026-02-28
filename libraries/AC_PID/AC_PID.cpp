@@ -8,16 +8,19 @@
 
 const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Param: P
+    // @Units: s/rad
     // @DisplayName: PID Proportional Gain
     // @Description: P Gain which produces an output value that is proportional to the current error value
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("P", 0, AC_PID, _kp, default_kp),
 
     // @Param: I
+    // @Units: 1/rad
     // @DisplayName: PID Integral Gain
     // @Description: I Gain which produces an output that is proportional to both the magnitude and the duration of the error
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("I", 1, AC_PID, _ki, default_ki),
 
     // @Param: D
+    // @Units: s^2/rad
     // @DisplayName: PID Derivative Gain
     // @Description: D Gain which produces an output that is proportional to the rate of change of the error
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D", 2, AC_PID, _kd, default_kd),
@@ -25,6 +28,7 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // 3 was for uint16 IMAX
 
     // @Param: FF
+    // @Units: s/rad
     // @DisplayName: FF FeedForward Gain
     // @Description: FF Gain which produces an output value that is proportional to the demanded input
     AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FF", 4, AC_PID, _kff, default_kff),
@@ -61,6 +65,7 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Param: SMAX
     // @DisplayName: Slew rate limit
     // @Description: Sets an upper limit on the slew rate produced by the combined P and D gains. If the amplitude of the control action produced by the rate feedback exceeds this value, then the D+P gain is reduced to respect the limit. This limits the amplitude of high frequency oscillations caused by an excessive gain. The limit should be set to no more than 25% of the actuators maximum slew rate to allow for load effects. Note: The gain will not be reduced to less than 10% of the nominal value. A value of zero will disable this feature.
+    // @Units: 1/s
     // @Range: 0 200
     // @Increment: 0.5
     // @User: Advanced
@@ -75,6 +80,7 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Param: D_FF
     // @DisplayName: PID Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Units: s^2/rad
     // @Range: 0 0.02
     // @Increment: 0.0001
     // @User: Advanced
