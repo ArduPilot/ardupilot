@@ -760,19 +760,21 @@ void Copter::three_hz_loop()
 // save_trim - adds roll and pitch trims from the radio to ahrs
 void Copter::save_trim()
 {
-    float roll_trim = 0;
-    float pitch_trim = 0;
+    float roll_trim_rad = 0.0;
+    float pitch_trim_rad = 0.0;
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
     if (g2.rc_channels.auto_trim.running) {
         g2.rc_channels.auto_trim.running = false;
     } else {
 #endif
-    roll_trim = cd_to_rad((float)channel_roll->get_control_in());
-    pitch_trim = cd_to_rad((float)channel_pitch->get_control_in());
+    flightmode->get_pilot_desired_lean_angles_rad(
+        roll_trim_rad, pitch_trim_rad,
+        attitude_control->lean_angle_max_rad(),
+        attitude_control->get_althold_lean_angle_max_rad());
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED    
     }
 #endif
-    AP::ahrs().add_trim(roll_trim, pitch_trim);
+    AP::ahrs().add_trim(roll_trim_rad, pitch_trim_rad);
     LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
     gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
