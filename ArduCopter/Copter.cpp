@@ -757,6 +757,26 @@ void Copter::three_hz_loop()
     low_alt_avoidance();
 }
 
+// save_trim - adds roll and pitch trims from the radio to ahrs
+void Copter::save_trim()
+{
+    float roll_trim = 0;
+    float pitch_trim = 0;
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    if (g2.rc_channels.auto_trim.running) {
+        g2.rc_channels.auto_trim.running = false;
+    } else {
+#endif
+    roll_trim = cd_to_rad((float)channel_roll->get_control_in());
+    pitch_trim = cd_to_rad((float)channel_pitch->get_control_in());
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED    
+    }
+#endif
+    AP::ahrs().add_trim(roll_trim, pitch_trim);
+    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
+    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+}
+
 // ap_value calculates a 32-bit bitmask representing various pieces of
 // state about the Copter.  It replaces a global variable which was
 // used to track this state.
