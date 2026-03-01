@@ -77,8 +77,6 @@ function control_lockout()
 
     local minimum_for_lockout = 20000
 
-    
-
     if alt_m ~= nil then
         --gcs:send_text(6, "HAGL: "..tostring(alt_m))
         if alt_m < minimum_for_lockout then
@@ -90,7 +88,7 @@ function control_lockout()
         local current_pitch = ahrs:get_pitch_rad()
         local minimum_pitch = math.rad(-30)
 
-        local minimum_speed = 150
+        local minimum_speed = 100
         local current_speed = ahrs:airspeed_estimate()
 
         --gcs:send_text(6, "Pitch: "..tostring(math.deg(current_pitch)).." Speed: "..tostring(current_speed))
