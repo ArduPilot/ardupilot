@@ -975,6 +975,7 @@ private:
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
     int16_t get_throttle_mid(void);
+    void save_trim();
 
     // sensors.cpp
     void read_barometer(void);

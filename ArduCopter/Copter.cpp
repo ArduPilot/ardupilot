@@ -938,6 +938,32 @@ void Copter::update_altitude()
 #endif
 }
 
+void Copter::save_trim()
+{
+    float roll_trim_rad = 0.0f;
+    float pitch_trim_rad = 0.0f;
+
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    if (auto_trim.running) {
+        auto_trim.running = false;
+    } else {
+#endif
+
+        flightmode->get_pilot_desired_lean_angles_rad(
+            roll_trim_rad,
+            pitch_trim_rad,
+            attitude_control->lean_angle_max_rad(),
+            attitude_control->get_althold_lean_angle_max_rad());
+
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+    }
+#endif
+
+    AP::ahrs().add_trim(roll_trim_rad, pitch_trim_rad);
+    LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
+    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+}
+
 // vehicle specific waypoint info helpers
 bool Copter::get_wp_distance_m(float &distance) const
 {
