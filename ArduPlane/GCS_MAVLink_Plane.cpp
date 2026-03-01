@@ -321,7 +321,7 @@ void GCS_MAVLINK_Plane::send_wind() const
         chan,
         degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
                                           // direction wind is coming from
-        wind.length(),
+        wind.xy().length(),               // ground-plane (horizontal) speed only
         wind.z);
 }
 
@@ -1261,7 +1261,7 @@ uint8_t GCS_MAVLINK_Plane::high_latency_wind_speed() const
     wind = AP::ahrs().wind_estimate();
 
     // return units are m/s*5
-    return MIN(wind.length() * 5, UINT8_MAX);
+    return MIN(wind.xy().length() * 5, UINT8_MAX);
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_wind_direction() const

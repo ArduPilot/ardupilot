@@ -352,7 +352,7 @@ void GCS_MAVLINK_Blimp::send_wind() const
     mavlink_msg_wind_send(
         chan,
         degrees(atan2f(-wind.y, -wind.x)),
-        wind.length(),
+        wind.xy().length(),
         wind.z);
 }
 
@@ -367,7 +367,7 @@ uint8_t GCS_MAVLINK_Blimp::high_latency_wind_speed() const
     }
     // return units are m/s*5
     const Vector3f wind = AP::ahrs().wind_estimate();
-    return wind.length() * 5;
+    return wind.xy().length() * 5;
 }
 
 uint8_t GCS_MAVLINK_Blimp::high_latency_wind_direction() const
