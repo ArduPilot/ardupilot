@@ -351,6 +351,10 @@ AP_HW_KHA_ETH                        1315
 
 AP_HW_FlysparkF4                     1361
 
+# IDs 1362-1369 reserved for SparkNavi
+AP_HW_SPARKNAVI_BLUE                 1362
+AP_HW_SPARKNAVI_BLUE2                1363
+
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
 AP_HW_PIXRACER_PERIPH                1402
