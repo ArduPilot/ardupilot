@@ -7,8 +7,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "AP_RCProtocol_DroneCAN.h"
 
-extern const AP_HAL::HAL& hal;
-
 #define LOG_TAG "RCInput"
 
 AP_RCProtocol_DroneCAN::Registry AP_RCProtocol_DroneCAN::registry;
