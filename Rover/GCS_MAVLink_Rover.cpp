@@ -411,7 +411,7 @@ void Rover::send_wheel_encoder_distance(const mavlink_channel_t chan)
         for (uint8_t i = 0; i < g2.wheel_encoder.num_sensors(); i++) {
             distances[i] = wheel_encoder_last_distance_m[i];
         }
-        mavlink_msg_wheel_distance_send(chan, 1000UL * AP_HAL::millis(), g2.wheel_encoder.num_sensors(), distances);
+        mavlink_msg_wheel_distance_send(chan, AP_HAL::micros64(), g2.wheel_encoder.num_sensors(), distances);
     }
 }
 
@@ -1057,15 +1057,19 @@ uint8_t GCS_MAVLINK_Rover::send_available_mode(uint8_t index) const
 
     // Ask the mode for its name and number
     const char* name = modes[index_zero]->name();
-    const uint8_t mode_number = (uint8_t)modes[index_zero]->mode_number();
+    const Mode::Number mode_number = modes[index_zero]->mode_number();
+
+    // the check here must be the same as the one in `get_available_mode_enabled_mask`
+    const bool user_selectable = modes[index_zero]->enabled() && rover.gcs_mode_enabled(mode_number);
 
     mavlink_msg_available_modes_send(
         chan,
         mode_count,
         index,
         MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
-        mode_number,
-        0, // MAV_MODE_PROPERTY bitmask
+        (uint8_t)mode_number,
+        // MAV_MODE_PROPERTY bitmask,
+        user_selectable ? 0 : MAV_MODE_PROPERTY_NOT_USER_SELECTABLE,
         name
     );
 

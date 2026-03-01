@@ -321,3 +321,4 @@ define HAL_ADSB_SAGETECH_MXS_ENABLED HAL_ADSB_ENABLED
 # note that if firmware is build with --secure-bl then DFU is
 # disabled
 ENABLE_DFU_BOOT 1
+define AP_GPS_UBLOX_CFGV2_ENABLED AP_GPS_UBLOX_ENABLED

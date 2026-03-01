@@ -73,7 +73,6 @@ struct sitl_fdm {
     Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
     double battery_voltage; // Volts
     double battery_current; // Amps
-    double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
     uint32_t motor_mask;
     float rpm[32];         // RPM of all motors
@@ -178,7 +177,7 @@ public:
 
     struct sitl_fdm state;
 
-    // throttle when motors are active
+    // throttle when motors are active. 0 = 'no throttle', 1 = 'full throttle'
     float throttle;
 
     static const struct AP_Param::GroupInfo var_info[];

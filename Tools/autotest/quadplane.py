@@ -2088,7 +2088,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
-        self.assert_mode_is('FBWA')
+        self.wait_mode('FBWA')  # initial mode from parameter
         self.delay_sim_time(10)
         self.change_mode('QHOVER')
         self.delay_sim_time(10)

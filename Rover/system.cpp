@@ -207,6 +207,48 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
     return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
 }
 
+// Return mask of enabled modes, order does not matter, its just for tracking changes
+uint32_t Rover::get_available_mode_enabled_mask() const
+{
+    const Mode* flight_modes[] {
+        &rover.mode_manual,
+        &rover.mode_acro,
+        &rover.mode_steering,
+        &rover.mode_hold,
+        &rover.mode_loiter,
+#if MODE_FOLLOW_ENABLED
+        &rover.mode_follow,
+#endif
+        &rover.mode_simple,
+        &rover.g2.mode_circle,
+        &rover.mode_auto,
+        &rover.mode_rtl,
+        &rover.mode_smartrtl,
+        &rover.mode_guided,
+        &rover.mode_initializing,
+#if MODE_DOCK_ENABLED
+        (Mode *)rover.g2.mode_dock_ptr,
+#endif
+    };
+
+    static_assert(ARRAY_SIZE(flight_modes) <= 32, "Flight modes must fit in 32 bit bitmask");
+
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < ARRAY_SIZE(flight_modes); i++) {
+        const Mode* mode = flight_modes[i];
+
+        // the check here must be the same as the one in `send_available_mode`
+        const bool user_selectable = mode->enabled() && rover.gcs_mode_enabled(mode->mode_number());
+
+        if (user_selectable) {
+            mask |= 1U << i;
+        }
+    }
+
+    return mask;
+}
+
+
 bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 {
     if (control_mode == &new_mode) {

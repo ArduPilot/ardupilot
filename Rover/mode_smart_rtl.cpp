@@ -1,5 +1,12 @@
 #include "Rover.h"
 
+// Return true if this mode is enabled, used by MAVLink available mode
+bool ModeSmartRTL::enabled() const
+{
+    // Smart RTL mode requires smart RTL lib
+    return g2.smart_rtl.enabled();
+}
+
 bool ModeSmartRTL::_enter()
 {
     // SmartRTL requires EKF (not DCM)
@@ -9,7 +16,7 @@ bool ModeSmartRTL::_enter()
     }
 
     // refuse to enter SmartRTL if smart RTL's home has not been set
-    if (!g2.smart_rtl.is_active()) {
+    if (!enabled() || !g2.smart_rtl.is_active()) {
         return false;
     }
 
