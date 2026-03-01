@@ -345,6 +345,8 @@ AP_HW_CORVON_V6                      1230
 AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 
+AP_HW_RUA_H743ZIT6                   1241
+
 AP_HW_CBUnmanned-CM405-FC            1301
 
 AP_HW_KHA_ETH                        1315
