@@ -488,7 +488,7 @@ bool AP_AHRS_DCM::use_compass(void)
     // ground speed, then switch to GPS navigation. This will help
     // prevent flyaways with very bad compass offsets
     const float error = fabsf(wrap_180(degrees(yaw) - AP::gps().ground_course()));
-    if (error > 45 && _wind.length() < AP::gps().ground_speed()*0.8f) {
+    if (error > 45 && _wind.xy().length() < AP::gps().ground_speed()*0.8f) {
         if (AP_HAL::millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
