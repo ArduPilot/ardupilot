@@ -15,8 +15,9 @@ NC='\033[0m' # No Color
 # Check operation system
 HOST_OS=$(uname)
 SHELL_PROFILE=~/.bashrc # Ubuntu by default
-PICO_DIR=~/pico
+PICO_DIR=""
 PICOTOOL_REPO_PATH=""
+CAN2040_PATH=""
 SDK_PATH=""
 SDK_BRANCH_NAME=master
 SDK_COMMIT_SHA=""
@@ -63,17 +64,22 @@ check_root_dir() {
     if [ ! -d modules ]; then
         log_error_and_exit "This script needs to be run from the root of your repo, sorry, giving up."
     fi
-    echo `ls modules`
-    cd modules
-
-    if [ ! -d pico ]; then
-        log_warning "Did not find modules/pico folder, making it." 
-        mkdir -p -v pico
+    if [ -n "$PICO_DIR" ]; then
+        mkdir -p -v "$PICO_DIR"
+        log_info "The root pico folder is located here $PICO_DIR"
     else
-        log_info "Found modules/pico folder"
+        echo `ls modules`
+        cd modules
+
+        if [ ! -d pico ]; then
+            log_warning "Did not find modules/pico folder, making it."
+            mkdir -p -v pico
+        else
+            log_info "Found modules/pico folder"
+        fi
+        cd pico
+        PICO_DIR=`pwd`
     fi
-    cd pico
-    PICO_DIR=`pwd`
 
     # Expand the path to be absolute (e.g. ~ in /home/user)
     PICO_DIR=$(eval echo "$PICO_DIR")
@@ -81,12 +87,14 @@ check_root_dir() {
     FREERTOS_PATH="$PICO_DIR/FreeRTOS-Kernel"
     PICOTOOL_REPO_PATH="$PICO_DIR/picotool"
     LITTLEFS_PATH="$PICO_DIR/littlefs-lib"
+    CAN2040_PATH="$PICO_DIR/can2040"
 
     log_debug "PICO_DIR: $PICO_DIR"
     log_debug "SDK_PATH: $SDK_PATH"
     log_debug "FREERTOS_PATH: $FREERTOS_PATH"
     log_debug "PICOTOOL_REPO_PATH: $PICOTOOL_REPO_PATH"
     log_debug "LITTLEFS_PATH: $LITTLEFS_PATH"
+    log_debug "CAN2040_PATH: $CAN2040_PATH"
 }
 
 # Install dependencies and toolchain
@@ -234,6 +242,21 @@ install_picotool() {
     fi
 }
 
+install_can2040() {
+    log_info "*** Installing can2040 library..."
+    local target_dir="$CAN2040_PATH"
+    local repo_url="https://github.com/KevinOConnor/can2040/"
+    # Checking for folder existence to avoid git errors
+    if [ -d "$target_dir" ]; then
+        echo "Directory $target_dir already exists. Updating..."
+        git -C "$target_dir" pull
+    else
+        echo "Installing can2040 in $target_dir..."
+        # Clone the repository directly to the target folder
+        git clone "$repo_url" "$target_dir"
+    fi
+}
+
 while getopts ":d:-directory:" opt; do
   case $opt in
     d)
@@ -258,4 +281,5 @@ clone_sdk
 clone_freertos_kernel
 set_paths
 install_picotool
+install_can2040
 end
