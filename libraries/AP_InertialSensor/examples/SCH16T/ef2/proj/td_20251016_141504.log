@@ -1,0 +1,316 @@
+============================================================
+   Tang Dynasty, V5.6.170155
+      Copyright (c) 2012-2025 Anlogic Inc.
+   Executable = D:/Software/TD/bin/td.exe
+   Built at =   17:28:21 May 30 2024
+   Run by =     Administrator
+   Run Date =   Thu Oct 16 14:15:04 2025
+
+   Run on =     CHINAMI-KU7O1R4
+============================================================
+RUN-001 : GUI based run...
+RUN-1002 : start command "open_project top.al -update"
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../ip/ram_cmd.vhd
+HDL-8007 ERROR: 'eagle_components' is not compiled in library 'eagle_macro' in ../ip/ram_cmd.vhd(15)
+HDL-1007 : analyze entity ram_cmd in ../ip/ram_cmd.vhd(17)
+HDL-8007 ERROR: ignore unit ram_cmd due to previous errors in ../ip/ram_cmd.vhd(17)
+HDL-1007 : VHDL file '../ip/ram_cmd.vhd' is ignored due to errors
+HDL-1007 : analyze VHDL file ../ip/ram_fifo.vhd
+HDL-8007 ERROR: 'eagle_components' is not compiled in library 'eagle_macro' in ../ip/ram_fifo.vhd(15)
+HDL-1007 : analyze entity ram_fifo in ../ip/ram_fifo.vhd(17)
+HDL-8007 ERROR: ignore unit ram_fifo due to previous errors in ../ip/ram_fifo.vhd(17)
+HDL-1007 : VHDL file '../ip/ram_fifo.vhd' is ignored due to errors
+HDL-1007 : analyze VHDL file ../ip/mpll.vhd
+HDL-1007 : analyze entity mpll in ../ip/mpll.vhd(28)
+HDL-1007 : analyze architecture rtl in ../ip/mpll.vhd(37)
+HDL-1007 : analyze verilog file ../ip/ram_sensor_dircet.v
+HDL-1007 : analyze VHDL file ../source/crc8.vhd
+HDL-1007 : analyze entity crc8 in ../source/crc8.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/crc8.vhd(15)
+HDL-1007 : analyze verilog file ../source/mcu_spi_interface.v
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_direct.v
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_top.v
+HDL-1007 : analyze verilog file ../source/spi_addr.v
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(1)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(3)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(4)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(6)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(7)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(8)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(9)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(10)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(11)
+HDL-1007 : analyze verilog file ../source/top.v
+HDL-1007 : analyze verilog file ../source/top_reg.v
+RUN-8019 ERROR: Project manager, failed to analyze source file.
+RUN-1002 : start command "import_device ef2_s4.db -package EF2M45VG81C"
+ARC-1001 : Device Initialization.
+ARC-1001 : -------------------------------------------------
+ARC-1001 :       OPTION       |      IO       |   SETTING   
+ARC-1001 : -------------------------------------------------
+ARC-1001 :       jtagen       |      F6       |    gpio    
+ARC-1001 :   tdi/tms/tck/tdo  |  C6/D7/D8/C9  |  dedicate  
+ARC-1001 : -------------------------------------------------
+ARC-1004 : Device setting, marked 4 dedicate IOs in total.
+RUN-1002 : start command "open_project top.al -update"
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../ip/mpll.vhd
+HDL-1007 : analyze entity mpll in ../ip/mpll.vhd(28)
+HDL-1007 : analyze architecture rtl in ../ip/mpll.vhd(37)
+HDL-1007 : analyze VHDL file ../ip/ram_cmd.vhd
+HDL-1007 : analyze entity ram_cmd in ../ip/ram_cmd.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_cmd.vhd(30)
+HDL-1007 : analyze VHDL file ../ip/ram_fifo.vhd
+HDL-1007 : analyze entity ram_fifo in ../ip/ram_fifo.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_fifo.vhd(30)
+HDL-1007 : analyze VHDL file ../ip/ram_sensor_dircet.vhd
+HDL-1007 : analyze entity ram_sensor_dircet in ../ip/ram_sensor_dircet.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_sensor_dircet.vhd(30)
+HDL-1007 : analyze VHDL file ../source/crc8.vhd
+HDL-1007 : analyze entity crc8 in ../source/crc8.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/crc8.vhd(15)
+HDL-1007 : analyze verilog file ../source/mcu_spi_interface.v
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_direct.v
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_top.v
+HDL-1007 : analyze verilog file ../source/spi_addr.v
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(1)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(3)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(4)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(6)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(7)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(8)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(9)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(10)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(11)
+HDL-1007 : analyze verilog file ../source/top.v
+HDL-1007 : analyze verilog file ../source/top_reg.v
+RUN-1001 : Project manager successfully analyzed 12 source files.
+RUN-1002 : start command "import_device eagle_s20.db -package EG4S20BG256"
+ARC-1001 : Device Initialization.
+ARC-1001 : ------------------------------------------------------------------
+ARC-1001 :            OPTION            |          IO          |   SETTING   
+ARC-1001 : ------------------------------------------------------------------
+ARC-1001 :   cso_b/cclk/mosi/miso/dout  |  T3/R11/T10/P10/S11  |    gpio    
+ARC-1001 :             done             |         P13          |    gpio    
+ARC-1001 :           program_b          |          T2          |  dedicate  
+ARC-1001 :        tdi/tms/tck/tdo       |   C12/A15/C14/E14    |  dedicate  
+ARC-1001 : ------------------------------------------------------------------
+ARC-1004 : Device setting, marked 5 dedicate IOs in total.
+RUN-1002 : start command "open_project top.al -update"
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../ip/mpll.vhd
+HDL-1007 : analyze entity mpll in ../ip/mpll.vhd(28)
+HDL-1007 : analyze architecture rtl in ../ip/mpll.vhd(37)
+HDL-1007 : analyze verilog file ../ip/ram_sensor_dircet.v
+HDL-1007 : analyze VHDL file ../ip/ram_cmd.vhd
+HDL-1007 : analyze entity ram_cmd in ../ip/ram_cmd.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_cmd.vhd(30)
+HDL-1007 : analyze VHDL file ../ip/ram_fifo.vhd
+HDL-1007 : analyze entity ram_fifo in ../ip/ram_fifo.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_fifo.vhd(30)
+HDL-1007 : analyze VHDL file ../source/crc8.vhd
+HDL-1007 : analyze entity crc8 in ../source/crc8.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/crc8.vhd(15)
+HDL-1007 : analyze verilog file ../source/mcu_spi_interface.v
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_direct.v
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_top.v
+HDL-1007 : analyze verilog file ../source/spi_addr.v
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(1)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(3)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(4)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(6)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(7)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(8)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(9)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(10)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(11)
+HDL-1007 : analyze verilog file ../source/top.v
+HDL-1007 : analyze verilog file ../source/top_reg.v
+RUN-1001 : Project manager successfully analyzed 12 source files.
+RUN-1002 : start command "import_device ef2_s4.db -package EF2M45VG81C"
+ARC-1001 : Device Initialization.
+ARC-1001 : -------------------------------------------------
+ARC-1001 :       OPTION       |      IO       |   SETTING   
+ARC-1001 : -------------------------------------------------
+ARC-1001 :       jtagen       |      F6       |    gpio    
+ARC-1001 :   tdi/tms/tck/tdo  |  C6/D7/D8/C9  |  dedicate  
+ARC-1001 : -------------------------------------------------
+ARC-1004 : Device setting, marked 4 dedicate IOs in total.

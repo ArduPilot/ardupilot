@@ -1,0 +1,20 @@
+============================================================
+   Tang Dynasty, V5.6.170155
+      Copyright (c) 2012-2025 Anlogic Inc.
+   Executable = D:/Software/TD/bin/td.exe
+   Built at =   17:28:21 May 30 2024
+   Run by =     Administrator
+   Run Date =   Mon Feb  9 15:05:46 2026
+
+   Run on =     CHINAMI-KU7O1R4
+============================================================
+RUN-001 : GUI based run...
+RUN-1002 : start command "import_device ef2_s4.db -package EF2M45VG81C -basic"
+ARC-1001 : Device Initialization.
+ARC-1001 : -------------------------------------------------
+ARC-1001 :       OPTION       |      IO       |   SETTING   
+ARC-1001 : -------------------------------------------------
+ARC-1001 :       jtagen       |      F6       |    gpio    
+ARC-1001 :   tdi/tms/tck/tdo  |  C6/D7/D8/C9  |  dedicate  
+ARC-1001 : -------------------------------------------------
+ARC-1004 : Device setting, marked 4 dedicate IOs in total.

@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<BramConfig>
+    <GeneralConfig>
+        <Type>EF2_LOGIC_BRAM</Type>
+        <Device>EF2M45VG81C</Device>
+        <create_VHDL>true</create_VHDL>
+        <inst>ram_sensor_dircet</inst>
+        <debug_enable>NO</debug_enable>
+        <pack_enable>NO</pack_enable>
+        <byte_write>none</byte_write>
+    </GeneralConfig>
+    <ImplementOption>
+        <imp_type>9k</imp_type>
+    </ImplementOption>
+    <MemoryType>
+        <mem_type>PDPW</mem_type>
+    </MemoryType>
+    <PortAOption>
+        <mode_a>NORMAL</mode_a>
+        <depth_a>64</depth_a>
+        <width_a>8</width_a>
+        <register_a>None</register_a>
+        <enable_a>enable</enable_a>
+        <enable_wea>disable</enable_wea>
+    </PortAOption>
+    <PortBOption>
+        <mode_b>NORMAL</mode_b>
+        <depth_b>64</depth_b>
+        <width_b>8</width_b>
+        <register_b>None</register_b>
+        <enable_b>disable</enable_b>
+    </PortBOption>
+    <FillMemoryInitValues>
+        <fill_all>NONE</fill_all>
+    </FillMemoryInitValues>
+    <GeneratedFiles>
+        <Verilog Enable="true">ram_sensor_dircet.v</Verilog>
+        <VHDL Enable="false">ram_sensor_dircet.vhd</VHDL>
+    </GeneratedFiles>
+</BramConfig>

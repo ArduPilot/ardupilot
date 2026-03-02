@@ -1,0 +1,46 @@
+standard
+***Report Model: top Device: EF2M45VG81C***
+
+IO Statistics
+#IO                        15
+  #input                    6
+  #output                   9
+  #inout                    0
+
+Gate Statistics
+#Basic gates             1296
+  #and                    129
+  #nand                     0
+  #or                      26
+  #nor                      0
+  #xor                      1
+  #xnor                     0
+  #buf                      0
+  #not                     54
+  #bufif1                   2
+  #MX21                    25
+  #FADD                     0
+  #DFF                   1059
+  #LATCH                    0
+#MACRO_ADD                 33
+#MACRO_EQ                  72
+#MACRO_MUX                539
+#MACRO_OTHERS               5
+
+Report Hierarchy Area:
++-------------------------------------------------------+
+|Instance    |Module            |gates  |seq    |macros |
++-------------------------------------------------------+
+|top         |top               |237    |1059   |110    |
+|  upll      |mpll              |0      |0      |1      |
+|  ureg      |top_reg           |18     |33     |2      |
+|  usch16    |sch16t_top        |113    |647    |83     |
+|    udirect |sch16t_direct     |10     |47     |13     |
+|      urx   |ram_sensor_dircet |0      |0      |1      |
+|      utx   |ram_sensor_dircet |0      |0      |1      |
+|    ufifo   |sch16t_fifo       |65     |542    |62     |
+|      ucmd  |ram_cmd           |0      |0      |1      |
+|      ucrc  |crc8              |5      |8      |0      |
+|      ufifo |ram_fifo          |0      |0      |1      |
+|  uspi      |mcu_spi_interface |89     |299    |21     |
++-------------------------------------------------------+

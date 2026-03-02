@@ -1,0 +1,2003 @@
+============================================================
+   Tang Dynasty, V5.6.119222
+      Copyright (c) 2012-2024 Anlogic Inc.
+   Executable = C:/Anlogic/TD_5.6.5_Release_119.222/bin/td.exe
+   Built at =   17:28:21 May 30 2024
+   Run by =     xu971
+   Run Date =   Thu Jul  3 13:32:59 2025
+
+   Run on =     XSJ
+============================================================
+ARC-1001 : Device Initialization.
+ARC-1001 : ------------------------------------------------------------------
+ARC-1001 :            OPTION            |          IO          |   SETTING   
+ARC-1001 : ------------------------------------------------------------------
+ARC-1001 :   cso_b/cclk/mosi/miso/dout  |  T3/R11/T10/P10/M14  |    gpio    
+ARC-1001 :             done             |         P13          |    gpio    
+ARC-1001 :           program_b          |          T2          |  dedicate  
+ARC-1001 :        tdi/tms/tck/tdo       |   C12/A15/C14/E14    |  dedicate  
+ARC-1001 : ------------------------------------------------------------------
+ARC-1004 : Device setting, marked 5 dedicate IOs in total.
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../source/crc8.vhd
+HDL-1007 : analyze entity crc8 in ../source/crc8.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/crc8.vhd(15)
+HDL-1007 : analyze verilog file ../source/mcu_spi_interface.v
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_direct.v
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+HDL-1007 : analyze verilog file ../source/sch16t/sch16t_top.v
+HDL-1007 : analyze verilog file ../source/spi_addr.v
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(1)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(3)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(4)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(6)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(7)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(8)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(9)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(10)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../source/spi_addr.v(11)
+HDL-1007 : analyze verilog file ../source/top.v
+HDL-1007 : analyze verilog file ../source/top_reg.v
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../ip/mpll.vhd
+HDL-1007 : analyze entity mpll in ../ip/mpll.vhd(28)
+HDL-1007 : analyze architecture rtl in ../ip/mpll.vhd(37)
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../ip/ram_cmd.vhd
+HDL-1007 : analyze entity ram_cmd in ../ip/ram_cmd.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_cmd.vhd(30)
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../ip/ram_fifo.vhd
+HDL-1007 : analyze entity ram_fifo in ../ip/ram_fifo.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_fifo.vhd(30)
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../ip/ram_sensor_dircet.vhd
+HDL-1007 : analyze entity ram_sensor_dircet in ../ip/ram_sensor_dircet.vhd(17)
+HDL-1007 : analyze architecture struct in ../ip/ram_sensor_dircet.vhd(30)
+RUN-1001 : launch_runs syn_1 -step opt_gate.
+RUN-1001 : reset_run phy_1.
+RUN-1001 : syn_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : open_run syn_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/syn_1/top_gate.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1001 : reset_run syn_1 -step opt_gate.
+RUN-1001 : launch_runs syn_1 -step opt_gate.
+RUN-1001 : reset_run phy_1.
+RUN-1001 : syn_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : open_run syn_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/syn_1/top_gate.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1001 : reset_run syn_1 phy_1.
+RUN-1001 : launch_runs syn_1 phy_1  -jobs 6.
+RUN-1001 : syn_1: run complete.
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net upll/fbk_wire will be merged with clock upll/clkc_wire[0]
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 22 feed throughs used by 16 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1003 : finish command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db" in  2.687173s wall, 2.500000s user + 0.265625s system = 2.765625s CPU (102.9%)
+
+RUN-1004 : used memory is 561 MB, reserved memory is 517 MB, peak memory is 590 MB
+RUN-1001 : reset_run syn_1 phy_1.
+RUN-1001 : launch_runs syn_1 phy_1  -jobs 6.
+RUN-1001 : syn_1: run complete.
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net upll/fbk_wire will be merged with clock upll/clkc_wire[0]
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 17 feed throughs used by 13 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1002 : start command "download -bit top_Runs\phy_1\top.bit -mode jtag -spd 7 -sec 64 -cable 0"
+PRG-2014 : Chip validation success: EG4X20
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m jtag_burst -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  1.528865s wall, 0.109375s user + 0.156250s system = 0.265625s CPU (17.4%)
+
+RUN-1004 : used memory is 609 MB, reserved memory is 584 MB, peak memory is 626 MB
+RUN-1003 : finish command "download -bit top_Runs\phy_1\top.bit -mode jtag -spd 7 -sec 64 -cable 0" in  1.710694s wall, 0.171875s user + 0.218750s system = 0.390625s CPU (22.8%)
+
+RUN-1004 : used memory is 609 MB, reserved memory is 584 MB, peak memory is 626 MB
+GUI-1001 : Downloading succeeded!
+GUI-1001 : User opens ChipWatcher ...
+GUI-1001 : User closes ChipWatcher ...
+RUN-1002 : start command "get_ports inclk"
+RUN-1002 : start command "get_ports spisck"
+RUN-1002 : start command "get_pins upll/pll_inst.clkc[0]"
+RUN-1001 : reset_run syn_1 -step opt_gate.
+RUN-1001 : launch_runs syn_1 -step opt_gate.
+RUN-1001 : reset_run phy_1.
+GUI-6001 WARNING: File D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top.bit does not exist!
+RUN-1001 : syn_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : open_run syn_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/syn_1/top_gate.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+GUI-1001 : User opens ChipWatcher ...
+HDL-1007 : analyze verilog file ../source/top.v
+GUI-1001 : User closes ChipWatcher ...
+RUN-1001 : reset_run syn_1 -step read_design.
+RUN-1001 : launch_runs syn_1 -step opt_gate.
+RUN-1001 : reset_run phy_1.
+RUN-1001 : syn_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : open_run syn_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/syn_1/top_gate.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+GUI-1001 : User opens ChipWatcher ...
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+RUN-1001 : reset_run syn_1 -step read_design.
+RUN-1001 : launch_runs syn_1 -step opt_gate.
+RUN-1001 : reset_run phy_1.
+RUN-1001 : syn_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : open_run syn_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/syn_1/top_gate.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1002 : start command "import_db top_Runs/syn_1/top_gate.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1002 : start command "config_chipwatcher -sp tt.cwc -dir ."
+KIT-1004 : ChipWatcher: import watcher inst auto_chipwatcher_0 completed, there are 5 view nodes, 32 trigger nets, 32 data nets.
+KIT-1004 : Chipwatcher code = 1110111001010110
+GUI-1001 : Import tt.cwc success!
+GUI-1001 : Disable bus trigger usch16/ufifo/fifo_wrdt[31:0] success
+RUN-1001 : launch_runs phy_1 -step bitgen.
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net sysclk will be merged with clock upll/clkc_wire[0]
+PHY-1001 : clock net config_inst_syn_10 will be merged with clock config_inst_syn_9
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 34 feed throughs used by 29 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1002 : start command "get_pins config_inst.jtck"
+RUN-1002 : start command "create_clock -name jtck -period 100 "
+RUN-1102 : create_clock: clock name: jtck, type: 0, period: 100000, rise: 0, fall: 50000.
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_uncertainty -hold 0.1 "
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_groups -exclusive -group "
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import ChipWatcher
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1002 : start command "config_chipwatcher -sync tt.cwc -dir "
+KIT-1004 : ChipWatcher: import watcher inst auto_chipwatcher_0 completed, there are 6 view nodes, 64 trigger nets, 64 data nets.
+GUI-1001 : Import tt.cwc success!
+GUI-8501 ERROR: Bit file code (0000000000000000) does not match with the ChipWatcher's (0100110001010110).
+RUN-1002 : start command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111"
+PRG-2014 : Chip validation success: EG4X20
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m jtag_burst -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  1.581165s wall, 0.109375s user + 0.203125s system = 0.312500s CPU (19.8%)
+
+RUN-1004 : used memory is 666 MB, reserved memory is 637 MB, peak memory is 699 MB
+RUN-1003 : finish command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111" in  1.773566s wall, 0.187500s user + 0.281250s system = 0.468750s CPU (26.4%)
+
+RUN-1004 : used memory is 666 MB, reserved memory is 637 MB, peak memory is 699 MB
+GUI-1001 : Downloading succeeded!
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011000010000000000000000100
+KIT-1004 : ChipWatcher: the value of status register = 110000010011101100
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+SYN-2541 : Attrs-to-init for 15 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+KIT-1004 : ChipWatcher: write ctrl reg value: 01101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011000010000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011000010000000000000000100
+KIT-1004 : ChipWatcher: the value of status register = 110000010111000001
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+SYN-2541 : Attrs-to-init for 15 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+KIT-1004 : ChipWatcher: write ctrl reg value: 01101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011000010000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011000010000000000000000100
+KIT-1004 : ChipWatcher: the value of status register = 110000000010100111
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+SYN-2541 : Attrs-to-init for 15 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+KIT-1004 : ChipWatcher: write ctrl reg value: 01101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011000010000000000000000000
+GUI-1001 : Disable bus data usch16/ufifo/fifo_wrdt[31:0] success
+RUN-1001 : reset_run phy_1.
+RUN-1001 : launch_runs phy_1 -step bitgen.
+GUI-6001 WARNING: File D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top.bit does not exist!
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net sysclk will be merged with clock upll/clkc_wire[0]
+PHY-1001 : clock net config_inst_syn_10 will be merged with clock config_inst_syn_9
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 19 feed throughs used by 19 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1002 : start command "get_pins config_inst.jtck"
+RUN-1002 : start command "create_clock -name jtck -period 100 "
+RUN-1102 : create_clock: clock name: jtck, type: 0, period: 100000, rise: 0, fall: 50000.
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_uncertainty -hold 0.1 "
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_groups -exclusive -group "
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import ChipWatcher
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1003 : finish command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db" in  1.145194s wall, 1.078125s user + 0.265625s system = 1.343750s CPU (117.3%)
+
+RUN-1004 : used memory is 675 MB, reserved memory is 646 MB, peak memory is 747 MB
+RUN-1002 : start command "config_chipwatcher -sync tt.cwc -dir "
+KIT-1004 : ChipWatcher: import watcher inst auto_chipwatcher_0 completed, there are 16 view nodes, 99 trigger nets, 67 data nets.
+GUI-1001 : Import tt.cwc success!
+RUN-1002 : start command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111"
+PRG-2014 : Chip validation success: EG4X20
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m jtag_burst -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  1.589702s wall, 0.171875s user + 0.187500s system = 0.359375s CPU (22.6%)
+
+RUN-1004 : used memory is 683 MB, reserved memory is 657 MB, peak memory is 747 MB
+RUN-1003 : finish command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111" in  1.824162s wall, 0.265625s user + 0.203125s system = 0.468750s CPU (25.7%)
+
+RUN-1004 : used memory is 683 MB, reserved memory is 657 MB, peak memory is 747 MB
+GUI-1001 : Downloading succeeded!
+KIT-1004 : ChipWatcher: write ctrl reg value: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 010111011011111100000001011101101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011010111010111011011111111111100000000000001101111111000000001011101011100001000000000000000010000
+KIT-1004 : ChipWatcher: the value of status register = 110000000110011010
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+SYN-2541 : Attrs-to-init for 15 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+KIT-1004 : ChipWatcher: write ctrl reg value: 010111011011111100000001011101101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011010111010111011011111111111100000000000001101111111000000001011101011100001000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 010111011011111100000001011101101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011010111010111011011111111111100000000000001101111111000000001011101011100001000000000000000010000
+KIT-1004 : ChipWatcher: the value of status register = 110000011010111101
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+SYN-2541 : Attrs-to-init for 15 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+KIT-1004 : ChipWatcher: write ctrl reg value: 010111011011111100000001011101101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000000011010111010111011011111111111100000000000001101111111000000001011101011100001000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 010111011011111100000000001101101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111011011111111111100000000000001101111111000000001011101011100001000000000000000010000
+KIT-1004 : ChipWatcher: the value of status register = 110000011110111101
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+SYN-2541 : Attrs-to-init for 15 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+KIT-1004 : ChipWatcher: write ctrl reg value: 010111011011111100000000001101101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111011011111111111100000000000001101111111000000001011101011100001000000000000000000000
+RUN-1001 : reset_run syn_1 phy_1.
+GUI-6001 WARNING: File D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top.bit does not exist!
+RUN-1001 : launch_runs syn_1 phy_1  -jobs 6.
+RUN-1001 : syn_1: run complete.
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net sysclk will be merged with clock upll/clkc_wire[0]
+PHY-1001 : clock net config_inst_syn_10 will be merged with clock config_inst_syn_9
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 19 feed throughs used by 19 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1002 : start command "get_pins config_inst.jtck"
+RUN-1002 : start command "create_clock -name jtck -period 100 "
+RUN-1102 : create_clock: clock name: jtck, type: 0, period: 100000, rise: 0, fall: 50000.
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_uncertainty -hold 0.1 "
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_groups -exclusive -group "
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import ChipWatcher
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1003 : finish command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db" in  1.392437s wall, 1.328125s user + 0.187500s system = 1.515625s CPU (108.8%)
+
+RUN-1004 : used memory is 722 MB, reserved memory is 697 MB, peak memory is 778 MB
+RUN-1002 : start command "config_chipwatcher -sync tt.cwc -dir "
+KIT-1004 : ChipWatcher: import watcher inst auto_chipwatcher_0 completed, there are 16 view nodes, 99 trigger nets, 67 data nets.
+GUI-1001 : Import tt.cwc success!
+GUI-1001 : Disable bus trigger usch16/ufifo/so_shift[36:0] success
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+RUN-1001 : reset_run syn_1.
+RUN-1001 : launch_runs syn_1 -step opt_gate.
+RUN-1001 : reset_run phy_1.
+GUI-6001 WARNING: File D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top.bit does not exist!
+RUN-1001 : syn_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : open_run syn_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/syn_1/top_gate.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+GUI-1001 : User closes ChipWatcher ...
+RUN-1002 : start command "config_chipwatcher tt.cwc -dir "
+KIT-1004 : ChipWatcher: import watcher inst auto_chipwatcher_0 completed, there are 18 view nodes, 137 trigger nets, 105 data nets.
+KIT-1004 : Chipwatcher code = 0000101011110010
+GUI-1001 : Import tt.cwc success!
+GUI-1001 : User opens ChipWatcher ...
+GUI-1001 : Delete usch16/ufifo/so_shift[36:0] successfully
+GUI-1001 : Disable bus trigger usch16/ufifo/so_shift[47:0] success
+GUI-1001 : Disable bus trigger usch16/ufifo/crc_o[7:0] success
+RUN-1001 : launch_runs phy_1 -step bitgen.
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net sysclk will be merged with clock upll/clkc_wire[0]
+PHY-1001 : clock net config_inst_syn_10 will be merged with clock config_inst_syn_9
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 28 feed throughs used by 28 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1002 : start command "get_pins config_inst.jtck"
+RUN-1002 : start command "create_clock -name jtck -period 100 "
+RUN-1102 : create_clock: clock name: jtck, type: 0, period: 100000, rise: 0, fall: 50000.
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_uncertainty -hold 0.1 "
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_groups -exclusive -group "
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import ChipWatcher
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1003 : finish command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db" in  1.213698s wall, 1.187500s user + 0.140625s system = 1.328125s CPU (109.4%)
+
+RUN-1004 : used memory is 741 MB, reserved memory is 715 MB, peak memory is 778 MB
+RUN-1002 : start command "config_chipwatcher -sync tt.cwc -dir "
+KIT-1004 : ChipWatcher: import watcher inst auto_chipwatcher_0 completed, there are 20 view nodes, 157 trigger nets, 125 data nets.
+GUI-1001 : Import tt.cwc success!
+GUI-8501 ERROR: Bit file code (1010010000111000) does not match with the ChipWatcher's (0000010110100000).
+RUN-1002 : start command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111"
+PRG-2014 : Chip validation success: EG4X20
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m jtag_burst -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  1.621589s wall, 0.203125s user + 0.187500s system = 0.390625s CPU (24.1%)
+
+RUN-1004 : used memory is 750 MB, reserved memory is 728 MB, peak memory is 787 MB
+RUN-1003 : finish command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111" in  1.815499s wall, 0.265625s user + 0.250000s system = 0.515625s CPU (28.4%)
+
+RUN-1004 : used memory is 750 MB, reserved memory is 728 MB, peak memory is 787 MB
+GUI-1001 : Downloading succeeded!
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000000110101110110000000000000000001101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 110000001010110001
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001A -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001A successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0020 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0020 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0021 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0021 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0022 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0022 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0023 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0023 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0024 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0024 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0025 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0025 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0026 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0026 successfully.
+SYN-2541 : Attrs-to-init for 28 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+SYN-2541 : Reading sub[15] auto_chipwatcher_0_logicbram_syn_151
+SYN-2541 : Reading sub[16] auto_chipwatcher_0_logicbram_syn_161
+SYN-2541 : Reading sub[17] auto_chipwatcher_0_logicbram_syn_171
+SYN-2541 : Reading sub[18] auto_chipwatcher_0_logicbram_syn_181
+SYN-2541 : Reading sub[19] auto_chipwatcher_0_logicbram_syn_191
+SYN-2541 : Reading sub[20] auto_chipwatcher_0_logicbram_syn_201
+SYN-2541 : Reading sub[21] auto_chipwatcher_0_logicbram_syn_211
+SYN-2541 : Reading sub[22] auto_chipwatcher_0_logicbram_syn_221
+SYN-2541 : Reading sub[23] auto_chipwatcher_0_logicbram_syn_231
+SYN-2541 : Reading sub[24] auto_chipwatcher_0_logicbram_syn_241
+SYN-2541 : Reading sub[25] auto_chipwatcher_0_logicbram_syn_251
+SYN-2541 : Reading sub[26] auto_chipwatcher_0_logicbram_syn_261
+SYN-2541 : Reading sub[27] auto_chipwatcher_0_logicbram_syn_266
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000000110101110110000000000000000001101111000001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000101110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 110000001000001010
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001A -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001A successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0020 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0020 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0021 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0021 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0022 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0022 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0023 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0023 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0024 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0024 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0025 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0025 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0026 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0026 successfully.
+SYN-2541 : Attrs-to-init for 28 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+SYN-2541 : Reading sub[15] auto_chipwatcher_0_logicbram_syn_151
+SYN-2541 : Reading sub[16] auto_chipwatcher_0_logicbram_syn_161
+SYN-2541 : Reading sub[17] auto_chipwatcher_0_logicbram_syn_171
+SYN-2541 : Reading sub[18] auto_chipwatcher_0_logicbram_syn_181
+SYN-2541 : Reading sub[19] auto_chipwatcher_0_logicbram_syn_191
+SYN-2541 : Reading sub[20] auto_chipwatcher_0_logicbram_syn_201
+SYN-2541 : Reading sub[21] auto_chipwatcher_0_logicbram_syn_211
+SYN-2541 : Reading sub[22] auto_chipwatcher_0_logicbram_syn_221
+SYN-2541 : Reading sub[23] auto_chipwatcher_0_logicbram_syn_231
+SYN-2541 : Reading sub[24] auto_chipwatcher_0_logicbram_syn_241
+SYN-2541 : Reading sub[25] auto_chipwatcher_0_logicbram_syn_251
+SYN-2541 : Reading sub[26] auto_chipwatcher_0_logicbram_syn_261
+SYN-2541 : Reading sub[27] auto_chipwatcher_0_logicbram_syn_266
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000101110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000011110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 110000011111100110
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001A -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001A successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0020 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0020 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0021 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0021 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0022 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0022 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0023 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0023 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0024 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0024 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0025 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0025 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0026 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0026 successfully.
+SYN-2541 : Attrs-to-init for 28 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+SYN-2541 : Reading sub[15] auto_chipwatcher_0_logicbram_syn_151
+SYN-2541 : Reading sub[16] auto_chipwatcher_0_logicbram_syn_161
+SYN-2541 : Reading sub[17] auto_chipwatcher_0_logicbram_syn_171
+SYN-2541 : Reading sub[18] auto_chipwatcher_0_logicbram_syn_181
+SYN-2541 : Reading sub[19] auto_chipwatcher_0_logicbram_syn_191
+SYN-2541 : Reading sub[20] auto_chipwatcher_0_logicbram_syn_201
+SYN-2541 : Reading sub[21] auto_chipwatcher_0_logicbram_syn_211
+SYN-2541 : Reading sub[22] auto_chipwatcher_0_logicbram_syn_221
+SYN-2541 : Reading sub[23] auto_chipwatcher_0_logicbram_syn_231
+SYN-2541 : Reading sub[24] auto_chipwatcher_0_logicbram_syn_241
+SYN-2541 : Reading sub[25] auto_chipwatcher_0_logicbram_syn_251
+SYN-2541 : Reading sub[26] auto_chipwatcher_0_logicbram_syn_261
+SYN-2541 : Reading sub[27] auto_chipwatcher_0_logicbram_syn_266
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000011110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000011110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 110000011000000000
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001A -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001A successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0020 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0020 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0021 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0021 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0022 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0022 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0023 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0023 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0024 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0024 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0025 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0025 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0026 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0026 successfully.
+SYN-2541 : Attrs-to-init for 28 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+SYN-2541 : Reading sub[15] auto_chipwatcher_0_logicbram_syn_151
+SYN-2541 : Reading sub[16] auto_chipwatcher_0_logicbram_syn_161
+SYN-2541 : Reading sub[17] auto_chipwatcher_0_logicbram_syn_171
+SYN-2541 : Reading sub[18] auto_chipwatcher_0_logicbram_syn_181
+SYN-2541 : Reading sub[19] auto_chipwatcher_0_logicbram_syn_191
+SYN-2541 : Reading sub[20] auto_chipwatcher_0_logicbram_syn_201
+SYN-2541 : Reading sub[21] auto_chipwatcher_0_logicbram_syn_211
+SYN-2541 : Reading sub[22] auto_chipwatcher_0_logicbram_syn_221
+SYN-2541 : Reading sub[23] auto_chipwatcher_0_logicbram_syn_231
+SYN-2541 : Reading sub[24] auto_chipwatcher_0_logicbram_syn_241
+SYN-2541 : Reading sub[25] auto_chipwatcher_0_logicbram_syn_251
+SYN-2541 : Reading sub[26] auto_chipwatcher_0_logicbram_syn_261
+SYN-2541 : Reading sub[27] auto_chipwatcher_0_logicbram_syn_266
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000011110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000011110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 110000001001011001
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001A -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001A successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0020 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0020 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0021 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0021 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0022 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0022 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0023 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0023 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0024 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0024 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0025 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0025 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0026 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0026 successfully.
+SYN-2541 : Attrs-to-init for 28 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+SYN-2541 : Reading sub[15] auto_chipwatcher_0_logicbram_syn_151
+SYN-2541 : Reading sub[16] auto_chipwatcher_0_logicbram_syn_161
+SYN-2541 : Reading sub[17] auto_chipwatcher_0_logicbram_syn_171
+SYN-2541 : Reading sub[18] auto_chipwatcher_0_logicbram_syn_181
+SYN-2541 : Reading sub[19] auto_chipwatcher_0_logicbram_syn_191
+SYN-2541 : Reading sub[20] auto_chipwatcher_0_logicbram_syn_201
+SYN-2541 : Reading sub[21] auto_chipwatcher_0_logicbram_syn_211
+SYN-2541 : Reading sub[22] auto_chipwatcher_0_logicbram_syn_221
+SYN-2541 : Reading sub[23] auto_chipwatcher_0_logicbram_syn_231
+SYN-2541 : Reading sub[24] auto_chipwatcher_0_logicbram_syn_241
+SYN-2541 : Reading sub[25] auto_chipwatcher_0_logicbram_syn_251
+SYN-2541 : Reading sub[26] auto_chipwatcher_0_logicbram_syn_261
+SYN-2541 : Reading sub[27] auto_chipwatcher_0_logicbram_syn_266
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000011110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000010110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 110000011010001001
+RUN-1002 : start command "rdbk_bram -bram 0X000B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X000F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X000F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0010 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0010 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0011 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0011 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0012 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0012 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0013 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0013 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0014 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0014 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0015 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0015 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0016 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0016 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0017 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0017 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0018 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0018 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0019 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0019 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001A -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001A successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001B -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001B successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001C -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001C successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001D -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001D successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001E -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001E successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X001F -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X001F successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0020 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0020 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0021 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0021 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0022 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0022 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0023 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0023 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0024 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0024 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0025 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0025 successfully.
+RUN-1002 : start command "rdbk_bram -bram 0X0026 -cable 0 -total_dev 1 -cur_dev 1"
+KIT-1001 : Read back data from BRAM 0X0026 successfully.
+SYN-2541 : Attrs-to-init for 28 logic bram(s)
+SYN-2541 : Reading sub[0] auto_chipwatcher_0_logicbram_syn_1
+SYN-2541 : Reading sub[1] auto_chipwatcher_0_logicbram_syn_11
+SYN-2541 : Reading sub[2] auto_chipwatcher_0_logicbram_syn_21
+SYN-2541 : Reading sub[3] auto_chipwatcher_0_logicbram_syn_31
+SYN-2541 : Reading sub[4] auto_chipwatcher_0_logicbram_syn_41
+SYN-2541 : Reading sub[5] auto_chipwatcher_0_logicbram_syn_51
+SYN-2541 : Reading sub[6] auto_chipwatcher_0_logicbram_syn_61
+SYN-2541 : Reading sub[7] auto_chipwatcher_0_logicbram_syn_71
+SYN-2541 : Reading sub[8] auto_chipwatcher_0_logicbram_syn_81
+SYN-2541 : Reading sub[9] auto_chipwatcher_0_logicbram_syn_91
+SYN-2541 : Reading sub[10] auto_chipwatcher_0_logicbram_syn_101
+SYN-2541 : Reading sub[11] auto_chipwatcher_0_logicbram_syn_111
+SYN-2541 : Reading sub[12] auto_chipwatcher_0_logicbram_syn_121
+SYN-2541 : Reading sub[13] auto_chipwatcher_0_logicbram_syn_131
+SYN-2541 : Reading sub[14] auto_chipwatcher_0_logicbram_syn_141
+SYN-2541 : Reading sub[15] auto_chipwatcher_0_logicbram_syn_151
+SYN-2541 : Reading sub[16] auto_chipwatcher_0_logicbram_syn_161
+SYN-2541 : Reading sub[17] auto_chipwatcher_0_logicbram_syn_171
+SYN-2541 : Reading sub[18] auto_chipwatcher_0_logicbram_syn_181
+SYN-2541 : Reading sub[19] auto_chipwatcher_0_logicbram_syn_191
+SYN-2541 : Reading sub[20] auto_chipwatcher_0_logicbram_syn_201
+SYN-2541 : Reading sub[21] auto_chipwatcher_0_logicbram_syn_211
+SYN-2541 : Reading sub[22] auto_chipwatcher_0_logicbram_syn_221
+SYN-2541 : Reading sub[23] auto_chipwatcher_0_logicbram_syn_231
+SYN-2541 : Reading sub[24] auto_chipwatcher_0_logicbram_syn_241
+SYN-2541 : Reading sub[25] auto_chipwatcher_0_logicbram_syn_251
+SYN-2541 : Reading sub[26] auto_chipwatcher_0_logicbram_syn_261
+SYN-2541 : Reading sub[27] auto_chipwatcher_0_logicbram_syn_266
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011101101111110000000010110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011100001111110000100010110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 010000001101111100
+KIT-1004 : ChipWatcher: the value of status register = 010000001100011011
+KIT-1004 : ChipWatcher: the value of status register = 010000011101100111
+KIT-1004 : ChipWatcher: the value of status register = 010000000111101010
+KIT-1004 : ChipWatcher: the value of status register = 010000000110110010
+KIT-1004 : ChipWatcher: the value of status register = 010000000100111111
+KIT-1004 : ChipWatcher: the value of status register = 010000010101000011
+KIT-1004 : ChipWatcher: the value of status register = 010000001110000001
+KIT-1004 : ChipWatcher: the value of status register = 010000000100001100
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011100001111110000100010110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000011
+KIT-1004 : ChipWatcher: the value of status register = 010000011101010001
+KIT-1004 : ChipWatcher: write ctrl reg value: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011100001111110000110010110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000001
+KIT-1004 : ChipWatcher: the value of status register = 010000000111110100
+KIT-1004 : ChipWatcher: the value of status register = 010000000011001101
+KIT-1004 : ChipWatcher: the value of status register = 010000001110110001
+KIT-1004 : ChipWatcher: the value of status register = 010000011100001100
+KIT-1004 : ChipWatcher: the value of status register = 010000010111010110
+KIT-1004 : ChipWatcher: the value of status register = 010000001011000010
+KIT-1004 : ChipWatcher: the value of status register = 010000011110101001
+KIT-1004 : ChipWatcher: the value of status register = 010000010110111110
+KIT-1004 : ChipWatcher: the value of status register = 010000010001100101
+KIT-1004 : ChipWatcher: the value of status register = 010000000111001110
+KIT-1004 : ChipWatcher: the value of status register = 010000011001100010
+KIT-1004 : ChipWatcher: the value of status register = 010000011100001001
+KIT-1004 : ChipWatcher: the value of status register = 010000011100000010
+KIT-1004 : ChipWatcher: the value of status register = 010000001110101100
+KIT-1004 : ChipWatcher: the value of status register = 010000001110101100
+KIT-1004 : ChipWatcher: the value of status register = 010000010010100010
+KIT-1004 : ChipWatcher: the value of status register = 010000000101010010
+KIT-1004 : ChipWatcher: the value of status register = 010000000101111111
+KIT-1004 : ChipWatcher: the value of status register = 010000011101001110
+KIT-1004 : ChipWatcher: the value of status register = 010000001010000101
+KIT-1004 : ChipWatcher: the value of status register = 010000000000111001
+KIT-1004 : ChipWatcher: the value of status register = 010000011101100101
+KIT-1004 : ChipWatcher: the value of status register = 010000001100001101
+KIT-1004 : ChipWatcher: the value of status register = 010000000111001000
+KIT-1004 : ChipWatcher: the value of status register = 010000011010100110
+KIT-1004 : ChipWatcher: the value of status register = 010000010110111111
+KIT-1004 : ChipWatcher: the value of status register = 010000011111111001
+KIT-1004 : ChipWatcher: the value of status register = 010000000101111100
+KIT-1004 : ChipWatcher: the value of status register = 010000000001110011
+KIT-1004 : ChipWatcher: the value of status register = 010000000100001101
+KIT-1004 : ChipWatcher: the value of status register = 010000010101000111
+KIT-1004 : ChipWatcher: the value of status register = 010000000100101101
+KIT-1004 : ChipWatcher: the value of status register = 010000011000110111
+KIT-1004 : ChipWatcher: the value of status register = 010000011110011000
+KIT-1004 : ChipWatcher: the value of status register = 010000001100011001
+KIT-1004 : ChipWatcher: the value of status register = 010000011010100111
+KIT-1004 : ChipWatcher: the value of status register = 010000001011000010
+KIT-1004 : ChipWatcher: the value of status register = 010000011000011111
+KIT-1004 : ChipWatcher: the value of status register = 010000010110000010
+KIT-1004 : ChipWatcher: the value of status register = 010000000110111101
+KIT-1004 : ChipWatcher: the value of status register = 010000011000000111
+KIT-1004 : ChipWatcher: the value of status register = 010000010010100111
+KIT-1004 : ChipWatcher: the value of status register = 010000011110111100
+KIT-1004 : ChipWatcher: the value of status register = 010000001111011011
+KIT-1004 : ChipWatcher: the value of status register = 010000001101011010
+KIT-1004 : ChipWatcher: the value of status register = 010000011010010100
+KIT-1004 : ChipWatcher: the value of status register = 010000001001010000
+KIT-1004 : ChipWatcher: the value of status register = 010000000100000100
+KIT-1004 : ChipWatcher: the value of status register = 010000001011110011
+KIT-1004 : ChipWatcher: the value of status register = 010000010000101001
+KIT-1004 : ChipWatcher: the value of status register = 010000011110101000
+KIT-1004 : ChipWatcher: the value of status register = 010000011101100111
+KIT-1004 : ChipWatcher: the value of status register = 010000011000010101
+KIT-1004 : ChipWatcher: the value of status register = 010000000000100011
+KIT-1004 : ChipWatcher: the value of status register = 010000011100000001
+KIT-1004 : ChipWatcher: the value of status register = 010000000110110110
+KIT-1004 : ChipWatcher: the value of status register = 010000010110001110
+KIT-1004 : ChipWatcher: the value of status register = 010000010011111010
+KIT-1004 : ChipWatcher: the value of status register = 010000000101000010
+KIT-1004 : ChipWatcher: the value of status register = 010000001111100101
+KIT-1004 : ChipWatcher: the value of status register = 010000011101011011
+KIT-1004 : ChipWatcher: the value of status register = 010000001011111011
+KIT-1004 : ChipWatcher: the value of status register = 010000001011100110
+KIT-1004 : ChipWatcher: the value of status register = 010000000011001000
+KIT-1004 : ChipWatcher: the value of status register = 010000011010011001
+KIT-1004 : ChipWatcher: the value of status register = 010000000011000111
+KIT-1004 : ChipWatcher: the value of status register = 010000000000001001
+KIT-1004 : ChipWatcher: the value of status register = 010000001011100010
+KIT-1004 : ChipWatcher: the value of status register = 010000001001110010
+KIT-1004 : ChipWatcher: the value of status register = 010000001010111011
+KIT-1004 : ChipWatcher: the value of status register = 010000010111111101
+KIT-1004 : ChipWatcher: the value of status register = 010000011000110001
+KIT-1004 : ChipWatcher: the value of status register = 010000001101100011
+KIT-1004 : ChipWatcher: the value of status register = 010000001100011101
+KIT-1004 : ChipWatcher: the value of status register = 010000010000011111
+KIT-1004 : ChipWatcher: the value of status register = 010000001101101100
+KIT-1004 : ChipWatcher: the value of status register = 010000011011101011
+KIT-1004 : ChipWatcher: the value of status register = 010000011110100111
+KIT-1004 : ChipWatcher: the value of status register = 010000010000000010
+KIT-1004 : ChipWatcher: the value of status register = 010000000110110000
+KIT-1004 : ChipWatcher: the value of status register = 010000011101110011
+KIT-1004 : ChipWatcher: the value of status register = 010000001101010100
+KIT-1004 : ChipWatcher: the value of status register = 010000001111100111
+KIT-1004 : ChipWatcher: the value of status register = 010000001101100101
+KIT-1004 : ChipWatcher: the value of status register = 010000010110111100
+KIT-1004 : ChipWatcher: the value of status register = 010000010100001100
+KIT-1004 : ChipWatcher: the value of status register = 010000010100010010
+KIT-1004 : ChipWatcher: the value of status register = 010000001000000111
+KIT-1004 : ChipWatcher: the value of status register = 010000001101001100
+KIT-1004 : ChipWatcher: the value of status register = 010000000110111111
+KIT-1004 : ChipWatcher: the value of status register = 010000001011101011
+KIT-1004 : ChipWatcher: the value of status register = 010000010010100110
+KIT-1004 : ChipWatcher: the value of status register = 010000000010110101
+KIT-1004 : ChipWatcher: the value of status register = 010000001000001110
+KIT-1004 : ChipWatcher: the value of status register = 010000000011100000
+KIT-1004 : ChipWatcher: the value of status register = 010000011101100011
+KIT-1004 : ChipWatcher: the value of status register = 010000010010000100
+KIT-1004 : ChipWatcher: the value of status register = 010000000001010110
+KIT-1004 : ChipWatcher: the value of status register = 010000001000010000
+KIT-1004 : ChipWatcher: the value of status register = 010000011000000111
+KIT-1004 : ChipWatcher: the value of status register = 010000001100101111
+KIT-1004 : ChipWatcher: the value of status register = 010000001001011111
+KIT-1004 : ChipWatcher: the value of status register = 010000011100111010
+KIT-1004 : ChipWatcher: the value of status register = 010000001011011110
+KIT-1004 : ChipWatcher: the value of status register = 010000010101001111
+KIT-1004 : ChipWatcher: the value of status register = 010000010011001110
+KIT-1004 : ChipWatcher: the value of status register = 010000011100110001
+KIT-1004 : ChipWatcher: the value of status register = 010000000001001110
+KIT-1004 : ChipWatcher: the value of status register = 010000010110101101
+KIT-1004 : ChipWatcher: the value of status register = 010000010001101000
+KIT-1004 : ChipWatcher: the value of status register = 010000001100010111
+KIT-1004 : ChipWatcher: the value of status register = 010000010111111110
+KIT-1004 : ChipWatcher: the value of status register = 010000000110000000
+KIT-1004 : ChipWatcher: the value of status register = 010000000110010111
+KIT-1004 : ChipWatcher: the value of status register = 010000001111011101
+KIT-1004 : ChipWatcher: the value of status register = 010000011000011101
+KIT-1004 : ChipWatcher: the value of status register = 010000000010001100
+KIT-1004 : ChipWatcher: the value of status register = 010000001000000011
+KIT-1004 : ChipWatcher: the value of status register = 010000001011110010
+KIT-1004 : ChipWatcher: the value of status register = 010000001101011000
+KIT-1004 : ChipWatcher: the value of status register = 010000010100001011
+KIT-1004 : ChipWatcher: the value of status register = 010000011010011000
+KIT-1004 : ChipWatcher: the value of status register = 010000001110110001
+KIT-1004 : ChipWatcher: the value of status register = 010000011111010101
+KIT-1004 : ChipWatcher: the value of status register = 010000010111011100
+KIT-1004 : ChipWatcher: the value of status register = 010000000010111101
+KIT-1004 : ChipWatcher: the value of status register = 010000001000110010
+KIT-1004 : ChipWatcher: the value of status register = 010000011110010110
+KIT-1004 : ChipWatcher: the value of status register = 010000000001000101
+KIT-1004 : ChipWatcher: the value of status register = 010000010111000000
+KIT-1004 : ChipWatcher: the value of status register = 010000000101010111
+KIT-1004 : ChipWatcher: the value of status register = 010000010100100111
+KIT-1004 : ChipWatcher: the value of status register = 010000001000101101
+KIT-1004 : ChipWatcher: the value of status register = 010000010100110011
+KIT-1004 : ChipWatcher: the value of status register = 010000000100101001
+KIT-1004 : ChipWatcher: the value of status register = 010000010101000010
+KIT-1004 : ChipWatcher: the value of status register = 010000011010100001
+KIT-1004 : ChipWatcher: the value of status register = 010000010101000000
+KIT-1004 : ChipWatcher: the value of status register = 010000010001111010
+KIT-1004 : ChipWatcher: the value of status register = 010000011110011011
+KIT-1004 : ChipWatcher: the value of status register = 010000011000101101
+KIT-1004 : ChipWatcher: the value of status register = 010000001001110101
+KIT-1004 : ChipWatcher: the value of status register = 010000011011111000
+KIT-1004 : ChipWatcher: the value of status register = 010000011001001000
+KIT-1004 : ChipWatcher: the value of status register = 010000001010011110
+KIT-1004 : ChipWatcher: the value of status register = 010000010011011000
+KIT-1004 : ChipWatcher: the value of status register = 010000010111010100
+KIT-1004 : ChipWatcher: the value of status register = 010000010111100010
+KIT-1004 : ChipWatcher: the value of status register = 010000011001000011
+KIT-1004 : ChipWatcher: the value of status register = 010000000111000000
+KIT-1004 : ChipWatcher: the value of status register = 010000011011001100
+KIT-1004 : ChipWatcher: the value of status register = 010000001110010011
+KIT-1004 : ChipWatcher: the value of status register = 010000010011101011
+KIT-1004 : ChipWatcher: the value of status register = 010000000011011101
+KIT-1004 : ChipWatcher: the value of status register = 010000001001001101
+KIT-1004 : ChipWatcher: the value of status register = 010000010010111011
+KIT-1004 : ChipWatcher: the value of status register = 010000010101101101
+KIT-1004 : ChipWatcher: the value of status register = 010000011011001110
+KIT-1004 : ChipWatcher: the value of status register = 010000011100010100
+KIT-1004 : ChipWatcher: the value of status register = 010000011000010000
+KIT-1004 : ChipWatcher: the value of status register = 010000000101100000
+KIT-1004 : ChipWatcher: the value of status register = 010000010111011001
+KIT-1004 : ChipWatcher: the value of status register = 010000010101011101
+KIT-1004 : ChipWatcher: the value of status register = 010000010001001111
+KIT-1004 : ChipWatcher: the value of status register = 010000010111110110
+KIT-1004 : ChipWatcher: the value of status register = 010000010010111010
+KIT-1004 : ChipWatcher: the value of status register = 010000010001001110
+KIT-1004 : ChipWatcher: the value of status register = 010000011101110011
+KIT-1004 : ChipWatcher: the value of status register = 010000010110010100
+KIT-1004 : ChipWatcher: the value of status register = 010000000101010110
+KIT-1004 : ChipWatcher: the value of status register = 010000001100001110
+KIT-1004 : ChipWatcher: the value of status register = 010000001110110010
+KIT-1004 : ChipWatcher: the value of status register = 010000011110111100
+KIT-1004 : ChipWatcher: the value of status register = 010000010101010010
+KIT-1004 : ChipWatcher: the value of status register = 010000010010010001
+KIT-1004 : ChipWatcher: the value of status register = 010000001011000101
+KIT-1004 : ChipWatcher: the value of status register = 010000011010100011
+KIT-1004 : ChipWatcher: the value of status register = 010000011110111000
+KIT-1004 : ChipWatcher: the value of status register = 010000010100100110
+KIT-1004 : ChipWatcher: the value of status register = 010000010100110111
+KIT-1004 : ChipWatcher: the value of status register = 010000011011110000
+KIT-1004 : ChipWatcher: the value of status register = 010000011110001110
+KIT-1004 : ChipWatcher: the value of status register = 010000011001010011
+KIT-1004 : ChipWatcher: the value of status register = 010000000010011011
+KIT-1004 : ChipWatcher: the value of status register = 010000010011001010
+KIT-1004 : ChipWatcher: the value of status register = 010000001101111011
+KIT-1004 : ChipWatcher: the value of status register = 010000011110011011
+KIT-1004 : ChipWatcher: the value of status register = 010000010011100001
+KIT-1004 : ChipWatcher: the value of status register = 010000010001111010
+KIT-1004 : ChipWatcher: the value of status register = 010000011011010010
+KIT-1004 : ChipWatcher: the value of status register = 010000011111011000
+KIT-1004 : ChipWatcher: the value of status register = 010000001001000001
+KIT-1004 : ChipWatcher: the value of status register = 010000001110111101
+KIT-1004 : ChipWatcher: the value of status register = 010000000101111010
+KIT-1004 : ChipWatcher: the value of status register = 010000011101010000
+KIT-1004 : ChipWatcher: the value of status register = 010000001110011110
+KIT-1004 : ChipWatcher: the value of status register = 010000011011110011
+KIT-1004 : ChipWatcher: the value of status register = 010000011101100110
+KIT-1004 : ChipWatcher: the value of status register = 010000010000001000
+KIT-1004 : ChipWatcher: the value of status register = 010000000110100111
+KIT-1004 : ChipWatcher: the value of status register = 010000011101001101
+KIT-1004 : ChipWatcher: the value of status register = 010000001101011011
+KIT-1004 : ChipWatcher: the value of status register = 010000001110101011
+KIT-1004 : ChipWatcher: the value of status register = 010000011001100010
+KIT-1004 : ChipWatcher: the value of status register = 010000010110000101
+KIT-1004 : ChipWatcher: the value of status register = 010000011010011100
+KIT-1004 : ChipWatcher: the value of status register = 010000010011000111
+KIT-1004 : ChipWatcher: the value of status register = 010000000100110111
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+KIT-1004 : ChipWatcher: the value of status register = 010000010011100111
+KIT-1004 : ChipWatcher: the value of status register = 010000001010111000
+KIT-1004 : ChipWatcher: the value of status register = 010000011011000101
+KIT-1004 : ChipWatcher: the value of status register = 010000010010101101
+KIT-1004 : ChipWatcher: the value of status register = 010000010110011011
+KIT-1004 : ChipWatcher: the value of status register = 010000010110111000
+KIT-1004 : ChipWatcher: the value of status register = 010000010111000011
+KIT-1004 : ChipWatcher: the value of status register = 010000011111000110
+KIT-1004 : ChipWatcher: the value of status register = 010000010111010110
+KIT-1004 : ChipWatcher: the value of status register = 010000011000110000
+KIT-1004 : ChipWatcher: the value of status register = 010000010010100000
+KIT-1004 : ChipWatcher: the value of status register = 010000000101111000
+KIT-1004 : ChipWatcher: the value of status register = 010000000110010111
+KIT-1004 : ChipWatcher: the value of status register = 010000000100001111
+KIT-1004 : ChipWatcher: the value of status register = 010000010101100101
+KIT-1004 : ChipWatcher: the value of status register = 010000011101001000
+KIT-1004 : ChipWatcher: the value of status register = 010000011001101110
+KIT-1004 : ChipWatcher: the value of status register = 010000000110101110
+KIT-1004 : ChipWatcher: the value of status register = 010000000110110000
+KIT-1004 : ChipWatcher: the value of status register = 010000000000101000
+KIT-1004 : ChipWatcher: the value of status register = 010000001110000100
+KIT-1004 : ChipWatcher: the value of status register = 010000000100000111
+KIT-1004 : ChipWatcher: the value of status register = 010000001111111011
+KIT-1004 : ChipWatcher: the value of status register = 010000000010110010
+KIT-1004 : ChipWatcher: the value of status register = 010000011101001110
+KIT-1004 : ChipWatcher: the value of status register = 010000011000101011
+KIT-1004 : ChipWatcher: write ctrl reg value: 01011100001111110000110010110101110110000000000000000000001111010001101111111100000000011011111111111100000000000001011101101111111111000000000001100000000000000000000000000000000000000000000000000000000000000000010111010111010111010111011011111111111100000000000001101111111000000001100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000101110101110000100000000000000011
+KIT-1004 : ChipWatcher: the value of status register = 010000011111010111
+GUI-1001 : User closes ChipWatcher ...
+RUN-1001 : reset_run phy_1 syn_1.
+GUI-6001 WARNING: File D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top.bit does not exist!
+RUN-1001 : launch_runs syn_1 phy_1  -jobs 6.
+RUN-1001 : syn_1: run complete.
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net sysclk will be merged with clock upll/clkc_wire[0]
+PHY-1001 : clock net config_inst_syn_10 will be merged with clock config_inst_syn_9
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 50 feed throughs used by 47 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1002 : start command "get_pins config_inst.jtck"
+RUN-1002 : start command "create_clock -name jtck -period 100 "
+RUN-1102 : create_clock: clock name: jtck, type: 0, period: 100000, rise: 0, fall: 50000.
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_uncertainty -hold 0.1 "
+RUN-1002 : start command "get_clocks jtck"
+RUN-1002 : start command "set_clock_groups -exclusive -group "
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import ChipWatcher
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1003 : finish command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db" in  1.361154s wall, 1.296875s user + 0.156250s system = 1.453125s CPU (106.8%)
+
+RUN-1004 : used memory is 735 MB, reserved memory is 723 MB, peak memory is 801 MB
+RUN-1002 : start command "config_chipwatcher -sync tt.cwc -dir "
+KIT-1004 : ChipWatcher: import watcher inst auto_chipwatcher_0 completed, there are 20 view nodes, 157 trigger nets, 125 data nets.
+GUI-1001 : Import tt.cwc success!
+GUI-1001 : User opens ChipWatcher ...
+RUN-1002 : start command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111"
+PRG-2014 : Chip validation success: EG4X20
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m jtag_burst -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  1.621686s wall, 0.031250s user + 0.156250s system = 0.187500s CPU (11.6%)
+
+RUN-1004 : used memory is 742 MB, reserved memory is 730 MB, peak memory is 801 MB
+RUN-1003 : finish command "download -bit top_Runs/phy_1/top.bit -mode jtag_burst -spd 7 -cable 0 -total_dev 1 -cur_dev 1 -bypass 11111111" in  1.815737s wall, 0.109375s user + 0.171875s system = 0.281250s CPU (15.5%)
+
+RUN-1004 : used memory is 742 MB, reserved memory is 730 MB, peak memory is 801 MB
+GUI-1001 : Downloading succeeded!
+HDL-1007 : analyze VHDL file ../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../source/sch16t/sch16t_fifo.vhd(33)
+GUI-1001 : User closes ChipWatcher ...
+RUN-1001 : reset_run syn_1 phy_1.
+GUI-6001 WARNING: File D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top.bit does not exist!
+RUN-1001 : launch_runs syn_1 phy_1  -jobs 6.
+RUN-1001 : syn_1: run complete.
+RUN-1001 : phy_1: run complete.
+RUN-1002 : start command "save_best_bits"
+RUN-1001 : The implemented result of phy_1 is saved as best result.
+RUN-1001 : open_run phy_1.
+RUN-1002 : start command "import_db D:/XSJ/20250625/fpga/eg4x/proj/top_Runs/phy_1/top_pr.db"
+RUN-1001 : Importing database generated by Tang Dynasty, V5.6.119222.
+RUN-1001 : Database version number 46146.
+RUN-1001 : Import flow parameters
+PHY-1001 : Generate detailed routing grids ...
+PHY-1001 : Processed IO instance spiso_syn_2 with INV attribute.
+PHY-1001 : Generate nets ...
+PHY-1001 : net inclk_dup_1 will be routed on clock mesh
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[29] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[28] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[27] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[26] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[25] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[24] is skipped due to 0 input or output
+PHY-1001 : clock net spisck_l_syn_8 will be merged with clock spisck_l
+PHY-1001 : clock net sysclk will be merged with clock upll/clkc_wire[0]
+PHY-5010 WARNING: Net spi_wrdt[31] is skipped due to 0 input or output
+PHY-5010 WARNING: Net spi_wrdt[30] is skipped due to 0 input or output
+PHY-5010 Similar messages will be suppressed.
+PHY-1001 : eco open net = 0
+PHY-1001 : 19 feed throughs used by 16 nets
+USR-1006 : Generating FPGA-IP Autogen constraints ...
+RUN-1001 : Import timing constraints
+RUN-1001 : Import IO constraints
+RUN-1001 : Import Inst constraints
+RUN-1001 : Import design success TD_VERSION=5.6.119222 , DB_VERSION=46146
+RUN-1002 : start command "download -bit top_Runs\phy_1\top.bit -mode jtag -spd 7 -sec 64 -cable 0"
+PRG-2014 : Chip validation success: EG4X20
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m jtag_burst -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1002 : start command "program -cable 0 -mode svf -spd 7 -p"
+RUN-1003 : finish command "program -cable 0 -mode svf -spd 7 -p" in  1.542886s wall, 0.125000s user + 0.046875s system = 0.171875s CPU (11.1%)
+
+RUN-1004 : used memory is 738 MB, reserved memory is 727 MB, peak memory is 801 MB
+RUN-1003 : finish command "download -bit top_Runs\phy_1\top.bit -mode jtag -spd 7 -sec 64 -cable 0" in  1.732193s wall, 0.171875s user + 0.125000s system = 0.296875s CPU (17.1%)
+
+RUN-1004 : used memory is 738 MB, reserved memory is 727 MB, peak memory is 801 MB
+GUI-1001 : Downloading succeeded!
+RUN-1002 : start command "download -bit top_Runs\phy_1\top.bit -mode program_spi -v -spd 7 -sec 64 -cable 0 -flashsize 128"
+PRG-2014 : Chip validation success: EG4X20
+PRG-1001 : SPI Flash ID is:  ef
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m program_spi -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1003 : finish command "bit_to_vec -chip EG4X20 -m program_spi -freq 4 -bit top_Runs/phy_1/top.bit" in  1.149618s wall, 1.000000s user + 0.125000s system = 1.125000s CPU (97.9%)
+
+RUN-1004 : used memory is 1048 MB, reserved memory is 1050 MB, peak memory is 1059 MB
+RUN-1002 : start command "program_spi -cable 0 -spd 7"
+RUN-1003 : finish command "program_spi -cable 0 -spd 7" in  12.671272s wall, 1.703125s user + 0.984375s system = 2.687500s CPU (21.2%)
+
+RUN-1004 : used memory is 1050 MB, reserved memory is 1052 MB, peak memory is 1059 MB
+RUN-1002 : start command "bit_to_vec -chip EG4X20 -m verify_spi -freq 4 -bit top_Runs/phy_1/top.bit"
+RUN-1002 : start command "program -cable 0 -spd 4"
+RUN-1003 : finish command "program -cable 0 -spd 4" in  7.043100s wall, 0.234375s user + 0.218750s system = 0.453125s CPU (6.4%)
+
+RUN-1004 : used memory is 857 MB, reserved memory is 850 MB, peak memory is 1059 MB
+RUN-1003 : finish command "download -bit top_Runs\phy_1\top.bit -mode program_spi -v -spd 7 -sec 64 -cable 0 -flashsize 128" in  23.417717s wall, 4.359375s user + 1.484375s system = 5.843750s CPU (25.0%)
+
+RUN-1004 : used memory is 857 MB, reserved memory is 850 MB, peak memory is 1059 MB
+GUI-1001 : Downloading succeeded!

@@ -1,0 +1,51 @@
+standard
+***Report Model: top Device: EF2M45VG81C***
+
+IO Statistics
+#IO                        15
+  #input                    6
+  #output                   9
+  #inout                    0
+
+LUT Statistics
+#Total_luts               929
+  #lut4                   456
+  #lut5                   203
+  #lut6                     0
+  #lut5_mx41                0
+  #lut4_alu1b             270
+
+Utilization Statistics
+#lut                      929   out of   4480   20.74%
+#reg                     1050   out of   4480   23.44%
+#le                         0
+#dsp                        0   out of     15    0.00%
+#bram                       7   out of     12   58.33%
+  #bram9k                   7
+  #fifo9k                   0
+#bram32k                    0   out of      6    0.00%
+#bram128k                   0   out of      1    0.00%
+#bram256k                   0   out of      1    0.00%
+#pad                       15   out of     53   28.30%
+  #ireg                     4
+  #oreg                     6
+  #treg                     1
+#pll                        1   out of      1  100.00%
+
+Report Hierarchy Area:
++----------------------------------------------------------------------------+
+|Instance    |Module            |lut     |ripple  |seq     |bram    |dsp     |
++----------------------------------------------------------------------------+
+|top         |top               |659     |270     |1061    |7       |0       |
+|  upll      |mpll              |0       |0       |0       |0       |0       |
+|  ureg      |top_reg           |10      |0       |33      |0       |0       |
+|  usch16    |sch16t_top        |455     |190     |646     |7       |0       |
+|    udirect |sch16t_direct     |37      |56      |47      |2       |0       |
+|      urx   |ram_sensor_dircet |0       |0       |0       |1       |0       |
+|      utx   |ram_sensor_dircet |0       |0       |0       |1       |0       |
+|    ufifo   |sch16t_fifo       |364     |134     |541     |5       |0       |
+|      ucmd  |ram_cmd           |0       |0       |0       |1       |0       |
+|      ucrc  |crc8              |6       |0       |8       |0       |0       |
+|      ufifo |ram_fifo          |0       |0       |0       |4       |0       |
+|  uspi      |mcu_spi_interface |153     |43      |299     |0       |0       |
++----------------------------------------------------------------------------+

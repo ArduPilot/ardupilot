@@ -1,0 +1,535 @@
+============================================================
+   Tang Dynasty, V5.6.119222
+      Copyright (c) 2012-2024 Anlogic Inc.
+   Executable = C:/Anlogic/TD_5.6.5_Release_119.222/bin/td.exe
+   Built at =   17:28:21 May 30 2024
+   Run by =     xu971
+   Run Date =   Thu Jul  3 13:38:18 2025
+
+   Run on =     XSJ
+============================================================
+RUN-1002 : start command "open_project top.prj"
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : analyze VHDL file ../../../ip/mpll.vhd
+HDL-1007 : analyze entity mpll in ../../../ip/mpll.vhd(28)
+HDL-1007 : analyze architecture rtl in ../../../ip/mpll.vhd(37)
+HDL-1007 : analyze VHDL file ../../../ip/ram_cmd.vhd
+HDL-1007 : analyze entity ram_cmd in ../../../ip/ram_cmd.vhd(17)
+HDL-1007 : analyze architecture struct in ../../../ip/ram_cmd.vhd(30)
+HDL-1007 : analyze VHDL file ../../../ip/ram_fifo.vhd
+HDL-1007 : analyze entity ram_fifo in ../../../ip/ram_fifo.vhd(17)
+HDL-1007 : analyze architecture struct in ../../../ip/ram_fifo.vhd(30)
+HDL-1007 : analyze VHDL file ../../../ip/ram_sensor_dircet.vhd
+HDL-1007 : analyze entity ram_sensor_dircet in ../../../ip/ram_sensor_dircet.vhd(17)
+HDL-1007 : analyze architecture struct in ../../../ip/ram_sensor_dircet.vhd(30)
+HDL-1007 : analyze VHDL file ../../../source/crc8.vhd
+HDL-1007 : analyze entity crc8 in ../../../source/crc8.vhd(5)
+HDL-1007 : analyze architecture rtl in ../../../source/crc8.vhd(15)
+HDL-1007 : analyze verilog file ../../../source/mcu_spi_interface.v
+HDL-1007 : analyze verilog file ../../../source/sch16t/sch16t_direct.v
+HDL-1007 : analyze VHDL file ../../../source/sch16t/sch16t_fifo.vhd
+HDL-1007 : analyze entity sch16t_fifo in ../../../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : analyze architecture rtl in ../../../source/sch16t/sch16t_fifo.vhd(33)
+HDL-1007 : analyze verilog file ../../../source/sch16t/sch16t_top.v
+HDL-1007 : analyze verilog file ../../../source/spi_addr.v
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(1)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(3)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(4)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(6)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(7)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(8)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(9)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(10)
+HDL-5007 WARNING: root scope declaration is not allowed in Verilog 95/2K mode in ../../../source/spi_addr.v(11)
+HDL-1007 : analyze verilog file ../../../source/top.v
+HDL-1007 : analyze verilog file ../../../source/top_reg.v
+RUN-1001 : Project manager successfully analyzed 12 source files.
+RUN-1002 : start command "import_device eagle_20.db -package EG4X20BG256"
+ARC-1001 : Device Initialization.
+ARC-1001 : ------------------------------------------------------------------
+ARC-1001 :            OPTION            |          IO          |   SETTING   
+ARC-1001 : ------------------------------------------------------------------
+ARC-1001 :   cso_b/cclk/mosi/miso/dout  |  T3/R11/T10/P10/M14  |    gpio    
+ARC-1001 :             done             |         P13          |    gpio    
+ARC-1001 :           program_b          |          T2          |  dedicate  
+ARC-1001 :        tdi/tms/tck/tdo       |   C12/A15/C14/E14    |  dedicate  
+ARC-1001 : ------------------------------------------------------------------
+ARC-1004 : Device setting, marked 5 dedicate IOs in total.
+RUN-1002 : start command "elaborate -top top"
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Design Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :   default_reg_initial   |    auto    |       auto       |        
+RUN-1001 :        infer_add        |     on     |        on        |        
+RUN-1001 :        infer_fsm        |    off     |       off        |        
+RUN-1001 :        infer_mult       |     on     |        on        |        
+RUN-1001 :        infer_ram        |     on     |        on        |        
+RUN-1001 :        infer_reg        |     on     |        on        |        
+RUN-1001 :   infer_reg_init_value  |     on     |        on        |        
+RUN-1001 :        infer_rom        |     on     |        on        |        
+RUN-1001 :      infer_shifter      |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+HDL-1007 : elaborate module top in ../../../source/top.v(1)
+HDL-1007 : switch to vhdl to elaborate module mpll in ../../../source/top.v(40)
+HDL-1007 : elaborate mpll(rtl) in ../../../ip/mpll.vhd(28)
+HDL-1007 : elaborate EG_LOGIC_BUFG(rtl) in C:/Anlogic/TD_5.6.5_Release_119.222/arch/eagle_macro.vhd(1178)
+HDL-1007 : elaborate EG_PHY_PLL(fin="25.000000",fbclk_div=5,clkc0_div=8,clkc0_enable="ENABLE",feedbk_path="CLKC0_EXT",stdby_enable="DISABLE",clkc0_cphase=7,gmc_gain=2,icp_current=9,kvco=2,lpf_capacitor=1,lpf_resistor=8,sync_enable="DISABLE")(1,7)(1,7)(1,8)(1,9)(1,6)(1,7)(1,7)(1,7)(1,7)(1,7)(1,7)(1,7)(1,7)(1,7)(1,6)(1,9)(1,7)(1,6)(1,7)(1,7)(1,7)(1,3)(1,3)(1,3)(1,3)(1,3)(1,3)(1,3)(1,3)(1,3)(1,3)(1,7)(1,7)(1,7)(1,7)(1,7)(1,7)(1,7)(1,7)(rtl) in C:/Anlogic/TD_5.6.5_Release_119.222/arch/eagle_macro.vhd(2511)
+HDL-1007 : back to vlog to elaborate in ../../../source/top.v(40)
+HDL-1007 : elaborate module mcu_spi_interface in ../../../source/mcu_spi_interface.v(1)
+HDL-5007 WARNING: system task 'dumpfile' is ignored for synthesis in ../../../source/mcu_spi_interface.v(240)
+HDL-5007 WARNING: system task 'dumpvars' is ignored for synthesis in ../../../source/mcu_spi_interface.v(241)
+HDL-1007 : elaborate module top_reg in ../../../source/top_reg.v(1)
+HDL-1007 : elaborate module sch16t_top in ../../../source/sch16t/sch16t_top.v(1)
+HDL-1007 : elaborate module sch16t_direct in ../../../source/sch16t/sch16t_direct.v(1)
+HDL-1007 : switch to vhdl to elaborate module ram_sensor_dircet in ../../../source/sch16t/sch16t_direct.v(49)
+HDL-1007 : elaborate ram_sensor_dircet(struct) in ../../../ip/ram_sensor_dircet.vhd(17)
+HDL-1007 : elaborate EG_LOGIC_BRAM(data_width_a=8,data_width_b=8,addr_width_a=6,addr_width_b=6,data_depth_a=64,data_depth_b=64,mode="PDPW")(1,4)(1,5)(1,5)(1,6)(1,6)(1,4)(1,2)(1,2)(1,3)(1,4)(1,4)(1,2)(rtl) in C:/Anlogic/TD_5.6.5_Release_119.222/arch/eagle_macro.vhd(2638)
+HDL-1007 : back to vlog to elaborate in ../../../source/sch16t/sch16t_direct.v(49)
+HDL-1007 : switch to vhdl to elaborate module ram_sensor_dircet in ../../../source/sch16t/sch16t_direct.v(108)
+HDL-1007 : back to vlog to elaborate in ../../../source/sch16t/sch16t_direct.v(108)
+HDL-5007 WARNING: actual bit length 5 differs from formal bit length 6 for port 'bytes_sub1' in ../../../source/sch16t/sch16t_top.v(166)
+HDL-1007 : switch to vhdl to elaborate module sch16t_fifo in ../../../source/sch16t/sch16t_top.v(186)
+HDL-1007 : elaborate sch16t_fifo(rtl) in ../../../source/sch16t/sch16t_fifo.vhd(5)
+HDL-1007 : elaborate ram_cmd(struct) in ../../../ip/ram_cmd.vhd(17)
+HDL-1007 : elaborate EG_LOGIC_BRAM(data_width_a=8,data_width_b=8,addr_width_a=9,addr_width_b=9,data_depth_a=512,data_depth_b=512,mode="PDPW")(1,4)(1,5)(1,5)(1,6)(1,6)(1,4)(1,2)(1,2)(1,3)(1,4)(1,4)(1,2)(rtl) in C:/Anlogic/TD_5.6.5_Release_119.222/arch/eagle_macro.vhd(2638)
+HDL-1007 : elaborate crc8(rtl) in ../../../source/crc8.vhd(5)
+HDL-7007 CRITICAL-WARNING: case statement does not cover all choices; 'others' clause is needed in ../../../source/sch16t/sch16t_fifo.vhd(480)
+HDL-1007 : elaborate ram_fifo(struct) in ../../../ip/ram_fifo.vhd(17)
+HDL-1007 : elaborate EG_LOGIC_BRAM(data_width_a=32,data_width_b=8,addr_width_b=12,data_depth_b=4096,mode="PDPW")(1,4)(1,5)(1,5)(1,6)(1,6)(1,4)(1,2)(1,2)(1,3)(1,4)(1,4)(1,2)(rtl) in C:/Anlogic/TD_5.6.5_Release_119.222/arch/eagle_macro.vhd(2638)
+HDL-1007 : back to vlog to elaborate in ../../../source/sch16t/sch16t_top.v(186)
+HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-5001 WARNING: Contains anonymous inst(s) and/or net(s) that have not been renamed
+HDL-1200 : Current top model is top
+HDL-1100 : Inferred 0 RAMs.
+RUN-1002 : start command "read_adc"
+USR-1002 : read_adc file_name -trans <string> -help
+RUN-1001 : Starting of IO setups legality check.
+RUN-1001 : Starting of IO setups legality check.
+RUN-1001 : Starting of IO setups legality check.
+RUN-1001 : Starting of IO vref setups legality check.
+USR-6010 WARNING: ADC constraints: top model pin debug[2] has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin debug[1] has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin debug[0] has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin inclk has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin led[2] has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin led[1] has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin led[0] has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin sensor_rdy has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin sensor_spics has no constraint.
+USR-6010 WARNING: ADC constraints: top model pin sensor_spisck has no constraint.
+USR-6010 Similar messages will be suppressed.
+RUN-1002 : start command "export_db top_elaborate.db"
+RUN-1001 : Exported /
+RUN-1001 : Exported flow parameters
+RUN-1001 : Exported libs
+RUN-1001 : Exported entities
+RUN-1001 : Exported ports
+RUN-1001 : Exported pins
+RUN-1001 : Exported instances
+RUN-1001 : Exported nets
+RUN-1001 : Exported buses
+RUN-1001 : Exported models
+RUN-1001 : Exported congestions
+RUN-1001 : Exported violations
+RUN-1001 : Exported IO constraints
+RUN-1001 : Exported Inst constraints
+RUN-1002 : start command "optimize_rtl"
+RUN-1001 : Open license file C:/Anlogic/TD_5.6.5_Release_119.222/license/Anlogic.lic
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Rtl Property
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :        Parameters       |  Settings  |  Default Values  |  Note  
+RUN-1001 : --------------------------------------------------------------
+RUN-1001 :       compress_add      |   ripple   |      ripple      |        
+RUN-1001 :        elf_sload        |    off     |       off        |        
+RUN-1001 :       fix_undriven      |     0      |        0         |        
+RUN-1001 :         flatten         |    off     |       off        |        
+RUN-1001 :       gate_sharing      |     on     |        on        |        
+RUN-1001 :    hdl_warning_level    |   normal   |      normal      |        
+RUN-1001 :   impl_internal_tribuf  |     on     |        on        |        
+RUN-1001 :      impl_set_reset     |     on     |        on        |        
+RUN-1001 :        infer_gsr        |    off     |       off        |        
+RUN-1001 :      keep_hierarchy     |    auto    |       auto       |        
+RUN-1001 :        max_fanout       |    9999    |       9999       |        
+RUN-1001 :      max_oh2bin_len     |     10     |        10        |        
+RUN-1001 :       merge_equal       |     on     |        on        |        
+RUN-1001 :       merge_equiv       |     on     |        on        |        
+RUN-1001 :        merge_mux        |    off     |       off        |        
+RUN-1001 :     min_control_set     |     8      |        8         |        
+RUN-1001 :      min_ripple_len     |    auto    |       auto       |        
+RUN-1001 :       oh2bin_ratio      |    0.08    |       0.08       |        
+RUN-1001 :     opt_adder_fanout    |     on     |        on        |        
+RUN-1001 :        opt_arith        |     on     |        on        |        
+RUN-1001 :       opt_big_gate      |    off     |       off        |        
+RUN-1001 :        opt_const        |     on     |        on        |        
+RUN-1001 :      opt_const_mult     |     on     |        on        |        
+RUN-1001 :       opt_lessthan      |     on     |        on        |        
+RUN-1001 :         opt_mux         |    off     |       off        |        
+RUN-1001 :         opt_ram         |    high    |       high       |        
+RUN-1001 :      rtl_sim_model      |    off     |       off        |        
+RUN-1001 :         seq_syn         |     on     |        on        |        
+RUN-1001 : --------------------------------------------------------------
+SYN-1012 : SanityCheck: Model "top"
+SYN-1012 : SanityCheck: Model "mpll"
+SYN-1012 : SanityCheck: Model "top_reg"
+SYN-1012 : SanityCheck: Model "sch16t_top"
+SYN-1012 : SanityCheck: Model "sch16t_direct"
+SYN-1012 : SanityCheck: Model "ram_sensor_dircet"
+SYN-1012 : SanityCheck: Model "sch16t_fifo"
+SYN-1012 : SanityCheck: Model "ram_cmd"
+SYN-1012 : SanityCheck: Model "crc8"
+SYN-1012 : SanityCheck: Model "ram_fifo"
+SYN-1012 : SanityCheck: Model "mcu_spi_interface"
+SYN-1043 : Mark mcu_spi_interface as IO macro for instance spiso_i
+SYN-1043 : Mark mpll as IO macro for instance bufg_feedback
+SYN-1011 : Flatten model top
+SYN-1032 : 3999/59 useful/useless nets, 1340/0 useful/useless insts
+SYN-1016 : Merged 35 instances.
+SYN-1032 : 3811/82 useful/useless nets, 1145/7 useful/useless insts
+SYN-1016 : Merged 212 instances.
+SYN-5025 WARNING: Using 0 for all undriven pins and nets
+SYN-1032 : 3590/38 useful/useless nets, 3382/48 useful/useless insts
+SYN-1014 : Optimize round 1
+SYN-1017 : Remove 1 const input seq instances
+SYN-1002 :     ureg/reg0_syn_18
+SYN-1021 : Optimized 16 onehot mux instances.
+SYN-1020 : Optimized 37 distributor mux.
+SYN-1019 : Optimized 1 mux instances.
+SYN-1016 : Merged 91 instances.
+SYN-1015 : Optimize round 1, 1184 better
+SYN-1014 : Optimize round 2
+SYN-1032 : 2618/2 useful/useless nets, 2410/344 useful/useless insts
+SYN-1015 : Optimize round 2, 347 better
+SYN-3004 : Optimized 1 const0 DFF(s)
+SYN-1032 : 2613/4 useful/useless nets, 2405/3 useful/useless insts
+SYN-1014 : Optimize round 1
+SYN-1015 : Optimize round 1, 0 better
+RUN-1002 : start command "report_area -file top_rtl.area"
+RUN-1001 : standard
+***Report Model: top Device: EG4X20BG256***
+
+IO Statistics
+#IO                        16
+  #input                    6
+  #output                  10
+  #inout                    0
+
+Gate Statistics
+#Basic gates             1244
+  #and                    129
+  #nand                     0
+  #or                      26
+  #nor                      0
+  #xor                      1
+  #xnor                     0
+  #buf                      0
+  #not                     54
+  #bufif1                   1
+  #MX21                    25
+  #FADD                     0
+  #DFF                   1008
+  #LATCH                    0
+#MACRO_ADD                 33
+#MACRO_EQ                  71
+#MACRO_MUX                491
+#MACRO_OTHERS               5
+
+Report Hierarchy Area:
++-------------------------------------------------------+
+|Instance    |Module            |gates  |seq    |macros |
++-------------------------------------------------------+
+|top         |top               |236    |1008   |109    |
+|  upll      |mpll              |0      |0      |1      |
+|  ureg      |top_reg           |18     |33     |2      |
+|  usch16    |sch16t_top        |113    |601    |82     |
+|    udirect |sch16t_direct     |10     |47     |13     |
+|      urx   |ram_sensor_dircet |0      |0      |1      |
+|      utx   |ram_sensor_dircet |0      |0      |1      |
+|    ufifo   |sch16t_fifo       |65     |496    |61     |
+|      ucmd  |ram_cmd           |0      |0      |1      |
+|      ucrc  |crc8              |5      |8      |0      |
+|      ufifo |ram_fifo          |0      |0      |1      |
+|  uspi      |mcu_spi_interface |89     |299    |21     |
++-------------------------------------------------------+
+
+RUN-1002 : start command "export_db top_rtl.db"
+RUN-1001 : Exported /
+RUN-1001 : Exported flow parameters
+RUN-1001 : Exported libs
+RUN-1001 : Exported entities
+RUN-1001 : Exported ports
+RUN-1001 : Exported pins
+RUN-1001 : Exported instances
+RUN-1001 : Exported nets
+RUN-1001 : Exported buses
+RUN-1001 : Exported models
+RUN-1001 : Exported congestions
+RUN-1001 : Exported violations
+RUN-1001 : Exported IO constraints
+RUN-1001 : Exported Inst constraints
+RUN-1002 : start command "optimize_gate -maparea top_gate.area"
+RUN-1001 : Open license file C:/Anlogic/TD_5.6.5_Release_119.222/license/Anlogic.lic
+RUN-1001 : Print Global Property
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :        Parameters        |  Settings  |  Default Values  |  Note  
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 :          message         |  standard  |     standard     |        
+RUN-1001 :   mixed_pack_place_flow  |     on     |        on        |        
+RUN-1001 :        qor_monitor       |    off     |       off        |        
+RUN-1001 :        syn_ip_flow       |    off     |       off        |        
+RUN-1001 :          thread          |    auto    |       auto       |        
+RUN-1001 : ---------------------------------------------------------------
+RUN-1001 : Print Gate Property
+RUN-1001 : ------------------------------------------------------------------
+RUN-1001 :          Parameters         |  Settings  |  Default Values  |  Note  
+RUN-1001 : ------------------------------------------------------------------
+RUN-1001 :         cascade_dsp         |    off     |       off        |        
+RUN-1001 :         cascade_eram        |    off     |       off        |        
+RUN-1001 :        gate_sim_model       |    off     |       off        |        
+RUN-1001 :        map_sim_model        |    off     |       off        |        
+RUN-1001 :         map_strategy        |     1      |        1         |        
+RUN-1001 :           opt_area          |   medium   |      medium      |        
+RUN-1001 :          opt_timing         |    auto    |       auto       |        
+RUN-1001 :         pack_effort         |   medium   |      medium      |        
+RUN-1001 :      pack_lslice_ripple     |     on     |        on        |        
+RUN-1001 :   pack_lslice_ripple_ratio  |    0.5     |       0.5        |        
+RUN-1001 :        pack_seq_in_io       |    auto    |       auto       |        
+RUN-1001 :        ph1_mux_ratio        |    1.0     |       1.0        |        
+RUN-1001 :            report           |  standard  |     standard     |        
+RUN-1001 :           retiming          |    off     |       off        |        
+RUN-1001 : ------------------------------------------------------------------
+SYN-2001 : Map 16 IOs to PADs
+SYN-1032 : 2625/4 useful/useless nets, 2414/7 useful/useless insts
+RUN-1002 : start command "update_pll_param -module top"
+SYN-2501 : Processed 0 LOGIC_BUF instances.
+SYN-2501 : 1 BUFG to GCLK
+SYN-2512 : LOGIC BRAM "usch16/udirect/urx/inst"
+SYN-2512 : LOGIC BRAM "usch16/udirect/utx/inst"
+SYN-2512 : LOGIC BRAM "usch16/ufifo/ucmd/inst"
+SYN-2512 : LOGIC BRAM "usch16/ufifo/ufifo/inst"
+SYN-2571 : Optimize after map_dsp, round 1
+SYN-2571 : Optimize after map_dsp, round 1, 0 better
+SYN-1001 : Throwback 77 control mux instances
+SYN-2501 : Optimize round 1
+SYN-1016 : Merged 178 instances.
+SYN-2501 : Optimize round 1, 544 better
+SYN-2501 : Optimize round 2
+SYN-2501 : Optimize round 2, 0 better
+SYN-2501 : Map 33 macro adder
+SYN-1019 : Optimized 50 mux instances.
+SYN-1016 : Merged 34 instances.
+SYN-1032 : 3409/10 useful/useless nets, 3202/0 useful/useless insts
+SYN-3001 : Running gate level optimization.
+SYN-2581 : Mapping with K=5, #lut = 605 (4.01), #lev = 4 (2.34)
+SYN-2551 : Post LUT mapping optimization.
+SYN-2581 : Mapping with K=5, #lut = 601 (3.98), #lev = 4 (2.39)
+SYN-3001 : Logic optimization runtime opt =   0.08 sec, map =   0.00 sec
+SYN-3001 : Mapper mapped 1350 instances into 603 LUTs, name keeping = 80%.
+RUN-1002 : start command "report_area -file top_gate.area"
+RUN-1001 : standard
+***Report Model: top Device: EG4X20BG256***
+
+IO Statistics
+#IO                        16
+  #input                    6
+  #output                  10
+  #inout                    0
+
+LUT Statistics
+#Total_luts               866
+  #lut4                   383
+  #lut5                   220
+  #lut6                     0
+  #lut5_mx41                0
+  #lut4_alu1b             263
+
+Utilization Statistics
+#lut                      866   out of  19600    4.42%
+#reg                     1003   out of  19600    5.12%
+#le                         0
+#dsp                        0   out of     29    0.00%
+#bram                       7   out of     64   10.94%
+  #bram9k                   7
+  #fifo9k                   0
+#bram32k                    0   out of     16    0.00%
+#pad                       16   out of    188    8.51%
+  #ireg                     4
+  #oreg                     7
+  #treg                     0
+#pll                        1   out of      4   25.00%
+
+Report Hierarchy Area:
++----------------------------------------------------------------------------+
+|Instance    |Module            |lut     |ripple  |seq     |bram    |dsp     |
++----------------------------------------------------------------------------+
+|top         |top               |603     |263     |1014    |7       |0       |
+|  upll      |mpll              |0       |0       |0       |0       |0       |
+|  ureg      |top_reg           |10      |0       |33      |0       |0       |
+|  usch16    |sch16t_top        |400     |183     |600     |7       |0       |
+|    udirect |sch16t_direct     |37      |56      |47      |2       |0       |
+|      urx   |ram_sensor_dircet |0       |0       |0       |1       |0       |
+|      utx   |ram_sensor_dircet |0       |0       |0       |1       |0       |
+|    ufifo   |sch16t_fifo       |312     |127     |495     |5       |0       |
+|      ucmd  |ram_cmd           |0       |0       |0       |1       |0       |
+|      ucrc  |crc8              |5       |0       |8       |0       |0       |
+|      ufifo |ram_fifo          |0       |0       |0       |4       |0       |
+|  uspi      |mcu_spi_interface |152     |43      |298     |0       |0       |
++----------------------------------------------------------------------------+
+
+SYN-1001 : Packing model "top" ...
+SYN-4010 : Pack lib has 58 rtl pack models with 25 top pack blocks
+SYN-1014 : Optimize round 1
+SYN-1015 : Optimize round 1, 0 better
+SYN-4002 : Packing 1003 DFF/LATCH to SEQ ...
+SYN-4009 : Pack 9 carry chain into lslice
+SYN-4007 : Packing 128 adder to BLE ...
+SYN-4008 : Packed 128 adder and 32 SEQ to BLE.
+SYN-4007 : Packing 0 gate4 to BLE ...
+SYN-4008 : Packed 0 gate4 and 0 SEQ to BLE.
+SYN-4012 : Packed 0 FxMUX
+RUN-1002 : start command "legalize_phy_inst"
+SYN-1011 : Flatten model top
+RUN-1002 : start command "export_db top_gate.db"
+RUN-1001 : Exported /
+RUN-1001 : Exported flow parameters
+RUN-1001 : Exported libs
+RUN-1001 : Exported entities
+RUN-1001 : Exported ports
+RUN-1001 : Exported pins
+RUN-1001 : Exported instances
+RUN-1001 : Exported nets
+RUN-1001 : Exported buses
+RUN-1001 : Exported models
+RUN-1001 : Exported congestions
+RUN-1001 : Exported violations
+RUN-1001 : Exported IO constraints
+RUN-1001 : Exported Inst constraints
+RUN-1002 : start command "backup_run_log run.log ../.logs/syn_1/td_20250703_133818.log"
