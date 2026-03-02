@@ -25,7 +25,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_ExternalAHRS/data_sets.h"
+#include "data_sets.h"
 #include "ISComm.h"
 
 class AP_ExternalAHRS_InertialSense: public AP_ExternalAHRS_backend
@@ -60,8 +60,6 @@ private:
     int stop_message_broadcasting();
     int enable_message_broadcasting();
 
-    void handleIns1Message(ins_1_t* ins);
-    void handleIns2Message(ins_2_t* ins);
     void handleIns3Message(ins_3_t* ins);
     void handleGpsPosMessage(gps_pos_t* pos);
     void handleGpsVelMessage(gps_vel_t* vel);
