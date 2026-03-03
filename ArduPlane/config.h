@@ -223,3 +223,21 @@
 #ifndef THR_CTRL_LAND_THRESH
  #define THR_CTRL_LAND_THRESH 0.7
 #endif
+
+/////////////////////////////////////////////////////////////////////////////
+//tri mixing
+#ifndef TRI_MIX_GAIN_DEFAULT
+ # define TRI_MIX_GAIN_DEFAULT      0.5f   
+#endif
+
+#ifndef TRI_MIX_ROLL_DEFAULT
+ # define TRI_MIX_ROLL_DEFAULT      1.0f    
+#endif
+
+#ifndef TRI_MIX_PITCH_DEFAULT
+ # define TRI_MIX_PITCH_DEFAULT      1.0f     
+#endif
+
+#ifndef TRI_MIX_YAW_DEFAULT
+ # define TRI_MIX_YAW_DEFAULT      1.0f    
+#endif
