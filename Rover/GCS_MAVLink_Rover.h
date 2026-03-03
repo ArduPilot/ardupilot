@@ -50,8 +50,6 @@ private:
     void handle_radio(const mavlink_message_t &msg);
     void handle_landing_target(const mavlink_landing_target_t &msg, uint32_t timestamp_ms) override;
 
-    void send_servo_out();
-
     // if we receive a message where the user has not masked out
     // acceleration from the input packet we send a curt message
     // informing them:
