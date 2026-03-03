@@ -313,6 +313,11 @@ uint8_t AC_Fence::enable(bool value, uint8_t fence_types, bool update_auto_enabl
 
     if (!value) {
         clear_breach(fences_to_change);
+        if (update_auto_enable) {
+            // explicit user disable resets the manual-recovery suppression
+            // window so that a fresh fence enable will check immediately
+            _manual_recovery_start_ms = 0;
+        }
     }
 
     return fences_to_change;
