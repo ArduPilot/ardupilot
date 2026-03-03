@@ -844,7 +844,7 @@ void AP_Baro::_probe_i2c_barometers(void)
 #if AP_BARO_MS5837_ENABLED
         { PROBE_MS5837, AP_Baro_MS5837::probe, HAL_BARO_MS5837_I2C_ADDR },
 #endif
-#endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
     };
 
     for (const auto &spec : baroprobespec) {

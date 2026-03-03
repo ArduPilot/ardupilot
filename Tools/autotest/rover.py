@@ -7394,6 +7394,15 @@ return update()
         return 'MANUAL'
 
     def WaterBaroParams(self):
-        '''Test BARO_SPEC_GRAV exposed for Rover water barometers'''
-        self.progress("Testing BARO_SPEC_GRAV")
-        self.assert_parameter_value("BARO_SPEC_GRAV", 1.0)
+        '''Test water barometer recognition and depth reporting for Rover'''
+        self.progress("Testing Water Barometer support")
+
+        # Set density and reboot to trigger the new probe logic
+        self.set_parameter("BARO_SPEC_GRAV", 1.024)
+        self.reboot_sitl()
+
+        # Add this delay to let the SITL fully boot before RC is checked
+        self.delay_sim_time(5)
+
+        self.progress("Wait for barometer depth reading")
+        self.wait_altitude(1580, 1590, relative=False)
