@@ -20,6 +20,7 @@ namespace RP {
     class WSPIDeviceManager;
     class Storage;
     class UARTDriver;
+    class USBSerialDriver;
     class Util;
     class Flash;
     class Semaphore;

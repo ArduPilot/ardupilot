@@ -5,6 +5,7 @@
 
 #include "HAL_RP_Class.h"
 #include "LED.h"
+#include "USBSerialDriver.h"
 #include "AP_HAL_RP_Private.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 //#include <AP_Filesystem/AP_Filesystem_RP2350.h>
@@ -13,6 +14,7 @@ using namespace RP;
 
 static UARTDriver serial0Driver(uart0, UART0_TX, UART0_RX, 0, true);
 static UARTDriver serial1Driver(uart1, UART1_TX, UART1_RX, 1);
+static USBSerialDriver usbConsoleDriver;
 
 #if defined(HAL_SERIAL2_DRIVER_ENABLED) && HAL_SERIAL2_DRIVER_ENABLED == 1
 static UARTDriver serial2Driver;
@@ -115,8 +117,11 @@ HAL_RP::HAL_RP() :
 #else
         nullptr,
 #endif
-        //&serial1Driver, // console
-        &serial0Driver, // console
+#if defined(HAL_RP_CONSOLE_USB_CDC) && HAL_RP_CONSOLE_USB_CDC == 1
+        &usbConsoleDriver,
+#else
+        &serial0Driver,
+#endif
         &gpioDriver,
 #if defined(HAL_RCIN_DRIVER_ENABLED) && HAL_RCIN_DRIVER_ENABLED == 1
         &rcinDriver,
@@ -149,8 +154,10 @@ extern const AP_HAL::HAL& hal;
 
 void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
-    //serial(1)->begin(115200);
-    serial(0)->begin(115200);
+    (void)argc;
+    (void)argv;
+
+    console->begin(115200);
 #if defined(HAL_NAND_FLASH_ENABLED) && HAL_NAND_FLASH_ENABLED == 1
     this->get_nand_pio()->init(NAND_FLASH_IO_BASE, NAND_FLASH_SCLK, NAND_FLASH_CS);
 #endif

@@ -65,6 +65,7 @@ add_library(AP_HAL_RP STATIC
     ${HAL_SRC}/Scheduler.cpp
     ${HAL_SRC}/Semaphores.cpp
     ${HAL_SRC}/UARTDriver.cpp
+    ${HAL_SRC}/USBSerialDriver.cpp
     ${HAL_SRC}/SPIDevice.cpp
     ${HAL_SRC}/I2CDevice.cpp
     ${HAL_SRC}/WSPIDevice.cpp
@@ -93,6 +94,7 @@ target_include_directories(AP_HAL_RP PUBLIC
 target_link_libraries(AP_HAL_RP PUBLIC
     pico_stdlib
     pico_multicore
+    pico_stdio_usb
     hardware_spi
     hardware_i2c
     hardware_dma
@@ -210,9 +212,10 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     ${FREERTOS_KERNEL_PATH}/portable/ThirdParty/Community-Supported-Ports/GCC/RP2350_ARM_NTZ/non_secure
 )
 
-# Add USB support if needed (adjust as necessary for your board setup)
-pico_enable_stdio_usb(${CMAKE_PROJECT_NAME} 0)
-pico_enable_stdio_uart(${CMAKE_PROJECT_NAME} 1)
+# Enable USB stdio backend for optional USB CDC console support.
+# UART stdio is disabled because AP_HAL_RP handles UART transport directly.
+pico_enable_stdio_usb(${CMAKE_PROJECT_NAME} 1)
+pico_enable_stdio_uart(${CMAKE_PROJECT_NAME} 0)
 
 # Add the standard Pico build steps to create UF2
 pico_add_extra_outputs(${CMAKE_PROJECT_NAME})

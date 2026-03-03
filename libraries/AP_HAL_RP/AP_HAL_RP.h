@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include "HAL_RP_Class.h"
+#include <stdio.h>
 
 #if defined(HAL_MCU_RP2350A_ENABLED) && HAL_MCU_RP2350A_ENABLED == 1
     #include "rp2350a_gpio_defines.h"

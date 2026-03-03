@@ -227,7 +227,7 @@ void UARTDriver::vprintf(const char *fmt, va_list ap) {
     char buffer[128];
     
     // Format the string
-    int n = vsnprintf(buffer, sizeof(buffer), fmt, ap);
+    int n = hal.util->vsnprintf(buffer, sizeof(buffer), fmt, ap);
     if (n > 0) {
         // Limit the length if the string is longer than the buffer
         size_t len = (size_t)n;

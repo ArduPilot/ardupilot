@@ -23,6 +23,10 @@ define HAL_SPI_DEVICE_DRIVER_ENABLED 1
 define HAL_I2C_DEVICE_DRIVER_ENABLED 1
 
 # Debug options
+# Console transport: 0=UART (default), 1=USB CDC
+# Set to 1 to route hal.console to USB virtual COM port.
+define HAL_RP_CONSOLE_USB_CDC 1
+
 define SCHEDDEBUG 1
 
 # LED
