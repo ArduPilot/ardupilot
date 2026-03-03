@@ -276,18 +276,18 @@ void AP_GSOF::log_pos_time() const
     // @Field: Flags2: Positioning flags byte 2
     // @Field: InitNum: Initialization count
     AP::logger().WriteStreaming(
-        "GSPT",                                         // Message
-        "TimeUS,TOWms,Week,Sats,Flags1,Flags2,InitNum", // Labels
-        "ss-S---",                                      // Units
-        "FC00000",                                      // Multipliers
-        "Q"    "I"   "H"  "B"  "B"    "B"     "B",      // Field types
-        AP_HAL::micros64(),                             // TimeUS
-        pos_time.time_week_ms,                          // TOWms
-        pos_time.time_week,                             // Week
-        pos_time.num_sats,                              // Sats
-        pos_time.pos_flags1,                            // Flags1
-        pos_time.pos_flags2,                            // Flags2
-        pos_time.initialized_number                     // InitNum
+        "GSPT",
+        "TimeUS,TOWms,Week,Sats,Flags1,Flags2,InitNum",
+        "s"    "s"   "-"  "S"  "-"    "-"    "-",
+        "F"    "C"   "0"  "0"  "0"    "0"    "0",
+        "Q"    "I"   "H"  "B"  "B"    "B"    "B",
+        AP_HAL::micros64(),
+        pos_time.time_week_ms,
+        pos_time.time_week,
+        pos_time.num_sats,
+        pos_time.pos_flags1,
+        pos_time.pos_flags2,
+        pos_time.initialized_number
     );
 }
 
@@ -309,10 +309,10 @@ void AP_GSOF::log_ins_full_nav() const
     // @Field: Spd: 3D Speed [m/s]
     AP::logger().WriteStreaming(
         "GSN1",
-        "TimeUS,GpsWk,GpsTs,ImuStat," "GStat," "Lat,"     "Lng,"    "Alt,"  "VN,"      "VE,"     "VD,"        "Spd",
-        "s-s--DUmnnnn",
-        "F0C000000000",
-        "Q"        "H"       "I"          "B"             "B"  "d"        "d"       "d" "f"        "f"       "f"          "f",
+        "TimeUS,GpsWk,GpsTs,ImuStat,GStat,Lat,Lng,Alt,VN," "VE," "VD," "Spd",
+        "s"    "-"   "s"   "-"     "-"   "D" "U" "m" "n"   "n"   "n"   "n",
+        "F"    "0"   "C"   "0"     "0"   "0" "0" "0" "0"   "0"   "0"   "0",
+        "Q"    "H"   "I"   "B"     "B"   "d" "d" "d" "f"   "f"   "f"   "f",
         AP_HAL::micros64(),
         ins_full_nav.gps_week,
         ins_full_nav.gps_time_ms,
@@ -343,9 +343,9 @@ void AP_GSOF::log_ins_full_nav() const
     AP::logger().WriteStreaming(
         "GSN2",
         "TimeUS,Roll,Pitch,Heading,Track,RateX,RateY,RateZ,AccX,AccY,AccZ",
-        "sddhdkkEooo",
-        "F0000000000",
-        "Q"     "d"  "d"   "d"     "d"   "f"   "f"   "f"  "f"  "f"   "f",
+        "s"    "d"  "d"   "h"     "d"   "k"   "k"   "E"   "o"  "o"  "o",
+        "F"    "0"  "0"   "0"     "0"   "0"   "0"   "0"   "0"  "0"  "0",
+        "Q"    "d"  "d"   "d"     "d"   "f"   "f"   "f"   "f"  "f"  "f",
         AP_HAL::micros64(),
         ins_full_nav.roll_deg,
         ins_full_nav.pitch_deg,
@@ -378,9 +378,9 @@ void AP_GSOF::log_ins_rms() const
     AP::logger().WriteStreaming(
         "GSR1",
         "TUS,GpsTMs,PUN,PUE,PUD,VUN,VUE,VUD,RollU,PitchU,YawU",
-        "ssmmmnnnddd",
-        "FC000000000",
-        "Q" "I"    "f" "f"  "f" "f" "f" "f" "f"   "f"    "f",
+        "s" "s"    "m" "m" "m" "n" "n" "n" "d"   "d"    "d",
+        "F" "C"    "0" "0" "0" "0" "0" "0" "0"   "0"    "0",
+        "Q" "I"    "f" "f" "f" "f" "f" "f" "f"   "f"    "f",
         AP_HAL::micros64(),
         ins_rms.gps_time_ms,
         static_cast<uint8_t>(ins_rms.imu_alignment_status),
@@ -409,9 +409,9 @@ void AP_GSOF::log_llh_msl() const
     AP::logger().WriteStreaming(
         "GSLH",
         "TimeUS,Lat,Lng,AltMSL,Model",
-        "sDUm-",
-        "F000-",
-        "Q"     "d"  "d"  "d"   "Z",
+        "s"    "D" "U" "m"    "-",
+        "F"    "0" "0" "0"    "-",
+        "Q"    "d" "d" "d"    "Z",
         AP_HAL::micros64(),
         llh_msl.latitude,
         llh_msl.longitude,
