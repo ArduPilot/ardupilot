@@ -41,7 +41,7 @@ enum ap_message : uint8_t {
     MSG_GPS2_RAW                       =  24,
     MSG_GPS2_RTK                       =  25,
     MSG_SYSTEM_TIME                    =  26,
-    MSG_SERVO_OUT                      =  27,
+    MSG_UNUSED1                        =  27,
     MSG_NEXT_MISSION_REQUEST_WAYPOINTS =  28,
     MSG_NEXT_MISSION_REQUEST_RALLY     =  29,
     MSG_NEXT_MISSION_REQUEST_FENCE     =  30,
