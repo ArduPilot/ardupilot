@@ -1,6 +1,7 @@
 -- This script is a depth failsafe for ArduRover.
--- It monitors the water barometer.
--- If the vehicle goes below the critical depth for a set time, it switches to HOLD mode.
+-- It is useful for amphibious rovers or boats.
+-- It prevents driving deeper if the vehicle fills up with water or flips.
+-- It monitors the water barometer and switches to HOLD mode if depth exceeds limits.
 
 -- depth to trigger failsafe
 local CRITICAL_DEPTH = 2.0
