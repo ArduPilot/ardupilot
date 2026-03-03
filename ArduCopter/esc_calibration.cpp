@@ -9,13 +9,8 @@
 // check if we should enter esc calibration mode
 void Copter::esc_calibration_startup_check()
 {
-    if (g.esc_calibrate == ESCCalibrationModes::ESCCAL_DISABLED) {
-        // esc calibration disabled
-        return;
-    }
-
-    if (motors->is_brushed_pwm_type() || motors->is_digital_pwm_type()) {
-        // ESC cal not valid for brushed motors or DSHOT ESCs
+    if (motors->is_brushed_pwm_type()) {
+        // ESC cal not valid for brushed motors
         return;
     }
 
@@ -30,7 +25,7 @@ void Copter::esc_calibration_startup_check()
     // exit immediately if pre-arm rc checks fail
     if (!arming.rc_calibration_checks(true)) {
         // clear esc flag for next time
-        if ((g.esc_calibrate != ESCCalibrationModes::ESCCAL_NONE)) {
+        if ((g.esc_calibrate != ESCCalibrationModes::ESCCAL_NONE) && (g.esc_calibrate != ESCCalibrationModes::ESCCAL_DISABLED)) {
             g.esc_calibrate.set_and_save(ESCCalibrationModes::ESCCAL_NONE);
         }
         return;
@@ -73,8 +68,9 @@ void Copter::esc_calibration_startup_check()
     }
 
     // clear esc flag for next time
-    g.esc_calibrate.set_and_save(ESCCalibrationModes::ESCCAL_NONE);
-
+    if (g.esc_calibrate != ESCCalibrationModes::ESCCAL_DISABLED) {
+        g.esc_calibrate.set_and_save(ESCCalibrationModes::ESCCAL_NONE);
+    }
 #endif  // FRAME_CONFIG != HELI_FRAME
 }
 
