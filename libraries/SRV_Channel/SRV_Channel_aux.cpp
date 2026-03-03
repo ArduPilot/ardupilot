@@ -190,6 +190,9 @@ void SRV_Channel::aux_servo_function_setup(void)
     case k_roll_out:
     case k_pitch_out:
     case k_yaw_out:
+    case k_trifin1:
+    case k_trifin2:
+    case k_trifin3:
     case k_rcin1_mapped ... k_rcin16_mapped:
         set_angle(4500);
         break;

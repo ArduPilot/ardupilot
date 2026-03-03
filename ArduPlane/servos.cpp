@@ -445,21 +445,9 @@ void Plane::trifin_update()
     fin2 = constrain_float(fin2, -4500, 4500);
     fin3 = constrain_float(fin3, -4500, 4500);
 
-    fin1 = 1150.0;
-    fin2 = 1250.0;
-
     SRV_Channels::set_output_scaled(SRV_Channel::k_trifin1, fin1);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin2, 0.0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin2, fin2);
     SRV_Channels::set_output_scaled(SRV_Channel::k_trifin3, fin3);
-
-    static uint8_t counter = 0;
-    counter++;
-    if (counter > 50) {
-        counter = 0;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "roll value %5.3f", (double)roll);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "pitch value %5.3f", (double)pitch);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "fin3 value %5.3f", (double)fin3);
-    }
 }
 
 
