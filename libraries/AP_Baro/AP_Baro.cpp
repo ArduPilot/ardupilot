@@ -710,6 +710,8 @@ void AP_Baro::init(void)
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
+        // Only probe water barometers if specific gravity is set !0
+        if (_specific_gravity.get() > 0.0f) {
 #if AP_BARO_MS5837_ENABLED
         probe_i2c_dev(AP_Baro_MS5837::probe, _ext_bus, HAL_BARO_MS5837_I2C_ADDR);
         RETURN_IF_NO_SPACE;
@@ -718,12 +720,13 @@ void AP_Baro::init(void)
         probe_i2c_dev(AP_Baro_KellerLD::probe, _ext_bus, HAL_BARO_KELLERLD_I2C_ADDR);
         RETURN_IF_NO_SPACE;
 #endif
+        }
 #else
 #if AP_BARO_MS5611_ENABLED
         probe_i2c_dev(AP_Baro_MS5611::probe, _ext_bus, HAL_BARO_MS5611_I2C_ADDR);
         RETURN_IF_NO_SPACE;
 #endif
-#endif
+#endif // APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
     }
 
 #if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
