@@ -44,7 +44,7 @@ if not FREERTOS_KERNEL_PATH or not os.path.exists(FREERTOS_KERNEL_PATH):
     print("export FREERTOS_KERNEL_PATH=/path/to/your/FreeRTOS-Kernel")
     sys.exit(1)
 
-FREERTOS_KERNEL_CMAKE = os.path.join(FREERTOS_KERNEL_PATH, "portable", "ThirdParty", "GCC", "RP2040", "FreeRTOS_Kernel_import.cmake")
+FREERTOS_KERNEL_CMAKE = os.path.join(FREERTOS_KERNEL_PATH, "portable", "Third" "Party", "GCC", "RP2040", "FreeRTOS_Kernel_import.cmake")
 PICO_SDK_IMPORT_CMAKE = os.path.join(PICO_SDK_PATH, "external", "pico_sdk_import.cmake")
 
 def generate_pico_project(env):
