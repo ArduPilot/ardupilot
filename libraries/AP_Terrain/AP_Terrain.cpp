@@ -118,6 +118,11 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
         return false;
     }
 
+    // reject locations outside valid Earth coordinates.
+    if (labs(loc.lat) > 90 * 10*1000*1000L || labs(loc.lng) > 180 * 10*1000*1000L) {
+        return false;
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     // quick access for home altitude
