@@ -1554,6 +1554,14 @@ void AP_AHRS::use_recorded_origin_maybe()
         return;
     }
 
+    // don't use recorded origin if sources require GPS — GPS will set
+    // a correct origin when it becomes available. Using the recorded
+    // origin here would prevent GPS from setting it later (EKF origin
+    // is immutable once set).
+    if (using_gps()) {
+        return;
+    }
+
     // try to set origin
     const Location loc {
         int32_t(_origin_lat.get() * 1e7),
