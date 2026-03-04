@@ -79,7 +79,7 @@ void ModeAltHold::run()
     case AltHoldModeState::Flying:
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-#if AP_AVOIDANCE_ENABLED
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
         // apply avoidance
         copter.avoid.adjust_roll_pitch_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad());
 #endif
