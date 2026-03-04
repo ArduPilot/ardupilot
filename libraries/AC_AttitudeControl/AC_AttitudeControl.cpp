@@ -1169,7 +1169,9 @@ void AC_AttitudeControl::convert_parameters()
     AP_Param::convert_old_parameters_scaled(conversion_info_001, ARRAY_SIZE(conversion_info_001), 0.01, 0);
 }
 
-// limits angular velocity
+// Limits angular velocity in roll, pitch, and yaw.
+// Roll and pitch are coupled: when both limits are set, they are scaled
+// proportionally as a 2D vector, preserving their ratio. Yaw is clamped independently
 void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max_rads, float ang_vel_pitch_max_rads, float ang_vel_yaw_max_rads) const
 {
     if (is_zero(ang_vel_roll_max_rads) || is_zero(ang_vel_pitch_max_rads)) {
@@ -1192,7 +1194,7 @@ void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_m
     }
 }
 
-// translates body frame acceleration limits to the euler axis
+// translates body frame rotation rates and acceleration limits to the euler axis
 Vector3f AC_AttitudeControl::body_to_euler_limit(const Quaternion &att, const Vector3f &body_limit)
 {
     if (!is_positive(body_limit.x) || !is_positive(body_limit.y) || !is_positive(body_limit.z)) {
