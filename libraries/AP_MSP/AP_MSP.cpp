@@ -233,6 +233,40 @@ bool AP_MSP::is_option_enabled(Option option) const
     return (_options & (uint8_t)option) != 0;
 }
 
+#if AP_MSP_RADAR_ENABLED
+void AP_MSP::update_radar_data(const MSP::msp_radar_pos_message_t &msg)
+{
+    if (msg.radar_no < RADAR_MAX_PEERS) {
+        _radar_data[msg.radar_no].last_update_ms = AP_HAL::millis();
+        _radar_data[msg.radar_no].location = Location(msg.lat, msg.lon, msg.alt, Location::AltFrame::ABSOLUTE);
+    }
+}
+
+const MSP_RadarPeer* AP_MSP::get_radar_peer(uint8_t id) const
+{
+    if (id < RADAR_MAX_PEERS && _radar_data[id].is_healthy()) {
+        return &_radar_data[id];
+    }
+    return nullptr;
+}
+
+uint8_t AP_MSP::get_next_healthy_peer(uint8_t current_id) const
+{
+    for (uint8_t i = 1; i < RADAR_MAX_PEERS; i++) {
+        uint8_t next_peer = (current_id + i) % RADAR_MAX_PEERS;
+        if (get_radar_peer(next_peer) != nullptr) {
+            return next_peer;
+        }
+    }
+    return current_id;
+}
+
+bool MSP_RadarPeer::is_healthy() const
+{
+    return last_update_ms > (AP_HAL::millis() - RADAR_PEER_FRESH_TIME_MS) && !location.is_zero();
+}
+#endif
+
 namespace AP
 {
 AP_MSP *msp()

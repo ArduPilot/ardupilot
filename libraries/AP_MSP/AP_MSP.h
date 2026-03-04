@@ -36,6 +36,17 @@
 #define MSP_OSD_STEP_Y 32
 #define MSP_OSD_POS(osd_setting) (MSP_OSD_START + osd_setting->xpos*MSP_OSD_STEP_X + osd_setting->ypos*MSP_OSD_STEP_Y)
 
+#if AP_MSP_RADAR_ENABLED
+#define RADAR_MAX_PEERS 6
+#define RADAR_PEER_FRESH_TIME_MS 3000
+
+struct MSP_RadarPeer {
+    uint32_t last_update_ms;
+    Location location;
+    bool is_healthy() const;
+};
+#endif
+
 class AP_MSP
 {
     friend class AP_MSP_Telem_Generic;
@@ -66,6 +77,13 @@ public:
 
     bool is_option_enabled(const Option option) const;
 
+#if AP_MSP_RADAR_ENABLED
+    // MSP Radar support
+    void update_radar_data(const MSP::msp_radar_pos_message_t &msg);
+    const MSP_RadarPeer* get_radar_peer(uint8_t id) const;
+    uint8_t get_next_healthy_peer(uint8_t current_id) const;
+#endif
+
     static AP_MSP *get_singleton(void)
     {
         return _singleton;
@@ -80,6 +98,10 @@ private:
     // these are the osd items we support for MSP OSD
     AP_OSD_Setting* _osd_item_settings[MSP::OSD_ITEM_COUNT];
     MSP::osd_config_t _osd_config;
+
+#if AP_MSP_RADAR_ENABLED
+    MSP_RadarPeer _radar_data[RADAR_MAX_PEERS];
+#endif
 
     struct {
         bool flashing_on;                                       // OSD item flashing support @1.4Hz
