@@ -440,7 +440,7 @@ public:
     void ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_max_rads, float ang_vel_pitch_max_rads, float ang_vel_yaw_max_rads) const;
 
     // translates body frame acceleration limits to the euler axis
-    Vector3f euler_accel_limit(const Quaternion &att, const Vector3f &euler_accel);
+    Vector3f body_to_euler_limit(const Quaternion &att, const Vector3f &body_limit);
 
     // Calculates the body frame angular velocities to follow the target attitude
     void update_attitude_target();

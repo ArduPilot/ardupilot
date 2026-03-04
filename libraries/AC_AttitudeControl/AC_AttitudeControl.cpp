@@ -405,8 +405,8 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad(float e
     if (_rate_bf_ff_enabled) {
         // Convert body-frame angular acceleration limits (roll, pitch, yaw) into equivalent
         // Euler-angle acceleration limits for the current attitude target.
-        const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
-        const Vector3f euler_rate_max_rads = euler_accel_limit(_attitude_target, Vector3f{radians(_ang_vel_roll_max_degs), radians(_ang_vel_pitch_max_degs), radians(_ang_vel_yaw_max_degs)});
+        const Vector3f euler_accel = body_to_euler_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
+        const Vector3f euler_rate_max_rads = body_to_euler_limit(_attitude_target, Vector3f{radians(_ang_vel_roll_max_degs), radians(_ang_vel_pitch_max_degs), radians(_ang_vel_yaw_max_degs)});
 
         // Convert the body-frame angular acceleration target into an equivalent Euler-angle
         // acceleration target for the current attitude target.
@@ -479,13 +479,13 @@ void AC_AttitudeControl::input_euler_angle_roll_pitch_yaw_rad(float euler_roll_a
     if (_rate_bf_ff_enabled) {
         // Convert body-frame angular acceleration limits (roll, pitch, yaw) into equivalent
         // Euler-angle acceleration limits for the current attitude target.
-        const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
+        const Vector3f euler_accel = body_to_euler_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
         
         float yaw_rate_max_rads = radians(_ang_vel_yaw_max_degs);
         if (slew_yaw) {
             yaw_rate_max_rads = MIN(yaw_rate_max_rads, slew_yaw_max_rads);
         }
-        const Vector3f euler_rate_max_rads = euler_accel_limit(_attitude_target, Vector3f{radians(_ang_vel_roll_max_degs), radians(_ang_vel_pitch_max_degs), yaw_rate_max_rads});
+        const Vector3f euler_rate_max_rads = body_to_euler_limit(_attitude_target, Vector3f{radians(_ang_vel_roll_max_degs), radians(_ang_vel_pitch_max_degs), yaw_rate_max_rads});
 
         Vector3f euler_accel_target_rads;
         body_to_euler_derivative(_attitude_target, _ang_accel_target_rads, euler_accel_target_rads);
@@ -542,7 +542,7 @@ void AC_AttitudeControl::input_euler_rate_roll_pitch_yaw_rads(float euler_roll_r
     if (_rate_bf_ff_enabled) {
         // Convert body-frame angular acceleration limits (roll, pitch, yaw) into
         // equivalent Euler-angle acceleration limits for the current attitude target.
-        const Vector3f euler_accel = euler_accel_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
+        const Vector3f euler_accel = body_to_euler_limit(_attitude_target, Vector3f{get_accel_roll_max_radss(), get_accel_pitch_max_radss(), get_accel_yaw_max_radss()});
 
         // Convert the body-frame angular acceleration target into an equivalent Euler-angle
         // acceleration target for the current attitude target.
@@ -1213,10 +1213,10 @@ void AC_AttitudeControl::ang_vel_limit(Vector3f& euler_rad, float ang_vel_roll_m
 }
 
 // translates body frame acceleration limits to the euler axis
-Vector3f AC_AttitudeControl::euler_accel_limit(const Quaternion &att, const Vector3f &euler_accel)
+Vector3f AC_AttitudeControl::body_to_euler_limit(const Quaternion &att, const Vector3f &body_limit)
 {
-    if (!is_positive(euler_accel.x) || !is_positive(euler_accel.y) || !is_positive(euler_accel.z)) {
-        return Vector3f { euler_accel };
+    if (!is_positive(body_limit.x) || !is_positive(body_limit.y) || !is_positive(body_limit.z)) {
+        return Vector3f { body_limit };
     }
 
     const float phi = att.get_euler_roll();
@@ -1228,9 +1228,9 @@ Vector3f AC_AttitudeControl::euler_accel_limit(const Quaternion &att, const Vect
     const float cos_theta = constrain_float(fabsf(cosf(theta)), 0.1f, 1.0f);
 
     return Vector3f {
-        euler_accel.x,
-        MIN(euler_accel.y / cos_phi, euler_accel.z / sin_phi),
-        MIN(MIN(euler_accel.x / sin_theta, euler_accel.y / (sin_phi * cos_theta)), euler_accel.z / (cos_phi * cos_theta))
+        body_limit.x,
+        MIN(body_limit.y / cos_phi, body_limit.z / sin_phi),
+        MIN(MIN(body_limit.x / sin_theta, body_limit.y / (sin_phi * cos_theta)), body_limit.z / (cos_phi * cos_theta))
     };
 }
 
