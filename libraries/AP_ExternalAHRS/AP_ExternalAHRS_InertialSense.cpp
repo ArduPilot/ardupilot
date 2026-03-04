@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <cstdint>
 
+#include <stdio.h>
+
 #ifdef AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 #undef AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 #endif
@@ -45,8 +47,518 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
 
-#include "data_sets.h"
-#include "ISComm.h"
+/*
+ * Inertial Sense SDK function implementations, condensed from ISComm.c and
+ * data_sets.c. Only the subset used by this driver is included.
+ */
+
+#ifndef _MIN
+#  define _MIN(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+
+// ===== ISComm.h: special byte constants (from ePktSpecialChars) =====
+
+enum ePktSpecialChars
+{
+    PSC_NMEA_START_BYTE     = 0x24,
+    PSC_NMEA_PRE_END_BYTE   = 0x0D,
+    PSC_NMEA_END_BYTE       = 0x0A,
+    PSC_ISB_PREAMBLE_BYTE1  = 0xEF,
+    PSC_ISB_PREAMBLE_BYTE2  = 0x49,
+    PSC_ISB_PREAMBLE        = (PSC_ISB_PREAMBLE_BYTE2 << 8) | PSC_ISB_PREAMBLE_BYTE1,
+    UBLOX_START_BYTE1       = 0xB5,
+    UBLOX_START_BYTE2       = 0x62,
+    RTCM3_START_BYTE        = 0xD3,
+    SPARTN_START_BYTE       = 0x73,
+    SONY_START_BYTE         = 0x7F,
+};
+
+// ===== data_sets.c: devInfoPopulateMissingHardware =====
+
+static void devInfoPopulateMissingHardware(dev_info_t *devInfo)
+{
+    if (devInfo->hardwareType != IS_HARDWARE_TYPE_UNKNOWN) {
+        return;
+    }
+    int year = ((int)(devInfo->buildYear)) + 2000;
+    if (year <= 2024) {
+        switch (devInfo->hardwareVer[0]) {
+        case 2: devInfo->hardwareType = IS_HARDWARE_TYPE_EVB;  break;
+        case 3: devInfo->hardwareType = IS_HARDWARE_TYPE_UINS; break;
+        case 5: devInfo->hardwareType = IS_HARDWARE_TYPE_IMX;  break;
+        }
+    }
+}
+
+// ===== ISComm.c: checksum helpers =====
+
+typedef union
+{
+    uint16_t ck;
+    struct { uint8_t a; uint8_t b; };
+} checksum16_u;
+
+static uint16_t is_comm_fletcher16(uint16_t cksum_init, const void* data, uint32_t size)
+{
+    checksum16_u cksum;
+    cksum.ck = cksum_init;
+    for (uint32_t i = 0; i < size; i++) {
+        cksum.a += ((const uint8_t*)data)[i];
+        cksum.b += cksum.a;
+    }
+    return cksum.ck;
+}
+
+#define is_comm_isb_checksum16 is_comm_fletcher16
+
+// ===== ISComm.c: parse constants =====
+
+#define MAX_MSG_LENGTH_ISB      PKT_BUF_SIZE
+#define PKT_PARSER_TIMEOUT_MS   100
+
+// ===== ISComm.c: buffer and parser helpers =====
+
+static int is_comm_reset_buffer(is_comm_instance_t* c)
+{
+    c->parser.state = 0;
+    c->rxBuf.head = c->rxBuf.tail = c->rxBuf.scan = c->rxBuf.scanPrior = c->rxBuf.start;
+    c->processPkt = nullptr;
+    return (int)c->rxBuf.size;
+}
+
+static inline void is_comm_reset_parser(is_comm_instance_t* c)
+{
+    c->parser.state = 0;
+    c->rxBuf.scanPrior = c->rxBuf.scan;
+    c->rxBuf.scan = c->rxBuf.head;
+    c->processPkt = nullptr;
+}
+
+static inline void is_comm_to_isb_p_data(const is_comm_instance_t *comm, p_data_t *data)
+{
+    data->hdr.id     = comm->rxPkt.dataHdr.id;
+    data->hdr.offset = comm->rxPkt.offset;
+    data->hdr.size   = (uint16_t)comm->rxPkt.data.size;
+    data->ptr        = comm->rxPkt.data.ptr;
+}
+
+static inline protocol_type_t reportParseError(is_comm_instance_t* c, eParseErrorType errorType)
+{
+    if (!c->rxErrorState) {
+        c->rxErrorState = 1;
+        c->rxErrorCount++;
+        c->rxErrorType = errorType;
+        c->rxErrorTypeCount[errorType]++;
+        return _PTYPE_PARSE_ERROR;
+    }
+    return _PTYPE_NONE;
+}
+
+static inline protocol_type_t parseErrorResetState(is_comm_instance_t* c, eParseErrorType errorType)
+{
+    is_comm_reset_parser(c);
+    return reportParseError(c, errorType);
+}
+
+static inline void validPacketReset(is_comm_instance_t* c, int pktSize)
+{
+    c->rxBuf.head += pktSize;
+    c->rxPktCount++;
+    c->processPkt = nullptr;
+    c->rxErrorState = 0;
+}
+
+
+static void setParserStart(is_comm_instance_t* c, pFnProcessPkt processPkt)
+{
+    c->parser.state = 1;
+    c->rxBuf.head   = c->rxBuf.scan;
+    c->processPkt   = processPkt;
+}
+
+// ===== ISComm.c: ISB packet parser =====
+
+static protocol_type_t processIsbPkt(void* v)
+{
+    is_comm_instance_t* c = (is_comm_instance_t*)v;
+    is_comm_parser_t* p = &(c->parser);
+    int numBytes = 0;
+
+    switch (p->state) {
+    case 0:
+        if (*(c->rxBuf.scan) == PSC_ISB_PREAMBLE_BYTE1) {
+            p->state++;
+        }
+        return _PTYPE_NONE;
+
+    case 1:
+        if (*(c->rxBuf.scan) == PSC_ISB_PREAMBLE_BYTE2) {
+            p->state++;
+            return _PTYPE_NONE;
+        }
+        return parseErrorResetState(c, EPARSE_INVALID_PREAMBLE);
+
+    case 2: {
+        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head);
+        if (numBytes < (int)(sizeof(packet_hdr_t) - 1)) {
+            return _PTYPE_NONE;
+        }
+        p->state++;
+        packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
+        p->size = (uint16_t)(sizeof(packet_hdr_t) + isbPkt->hdr.payloadSize + 2);
+        if (p->size > MAX_MSG_LENGTH_ISB) {
+            return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+        }
+        return _PTYPE_NONE;
+    }
+
+    default:
+        numBytes = (int)(c->rxBuf.scan - c->rxBuf.head) + 1;
+        if (numBytes < (int)(p->size)) {
+            return _PTYPE_NONE;
+        }
+        break;
+    }
+
+    p->state = 0;
+
+    packet_buf_t *isbPkt = (packet_buf_t*)(c->rxBuf.head);
+    if (isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB) {
+        return parseErrorResetState(c, EPARSE_INVALID_SIZE);
+    }
+    if ((isbPkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) &&
+        (isbPkt->payload.offset + isbPkt->hdr.payloadSize > MAX_MSG_LENGTH_ISB)) {
+        return parseErrorResetState(c, EPARSE_INVALID_HEADER);
+    }
+
+    uint16_t payloadSize = isbPkt->hdr.payloadSize;
+    uint8_t *payload     = c->rxBuf.head + sizeof(packet_hdr_t);
+    int bytes_cksum      = p->size - 2;
+    uint16_t calcCksum   = is_comm_isb_checksum16(0, c->rxBuf.head, (uint32_t)bytes_cksum);
+    uint16_t rxCksum;
+    memcpy(&rxCksum, payload + payloadSize, sizeof(uint16_t));
+    if (rxCksum != calcCksum) {
+        return parseErrorResetState(c, EPARSE_INVALID_CHKSUM);
+    }
+
+    validPacketReset(c, numBytes);
+
+    packet_t *pkt          = &(c->rxPkt);
+    pkt->hdr.preamble      = isbPkt->hdr.preamble;
+    pkt->hdr.flags         = isbPkt->hdr.flags;
+    pkt->id = pkt->hdr.id  = isbPkt->hdr.id;
+    pkt->hdr.payloadSize   = payloadSize;
+
+    if (pkt->hdr.flags & ISB_FLAGS_PAYLOAD_W_OFFSET) {
+        pkt->data.size    = (payloadSize < 2 ? 0u : (uint32_t)(payloadSize - 2));
+        pkt->data.ptr     = (pkt->data.size ? payload + 2 : nullptr);
+        memcpy(&pkt->offset, payload, sizeof(uint16_t));
+        pkt->dataHdr.size = (uint16_t)pkt->data.size;
+    } else {
+        pkt->data.size    = payloadSize;
+        pkt->data.ptr     = (payloadSize ? payload : nullptr);
+        pkt->offset       = 0;
+    }
+
+    pkt->checksum = rxCksum;
+    pkt->size     = p->size;
+    c->ackNeeded  = 0;
+
+    uint8_t ptype = pkt->hdr.flags & PKT_TYPE_MASK;
+    switch (ptype) {
+    case PKT_TYPE_SET_DATA:
+    case PKT_TYPE_DATA:
+        if (pkt->data.size <= MAX_DATASET_SIZE) {
+            if (ptype == PKT_TYPE_SET_DATA) {
+                c->ackNeeded = PKT_TYPE_ACK;
+            }
+            return _PTYPE_INERTIAL_SENSE_DATA;
+        } else {
+            c->ackNeeded = PKT_TYPE_NACK;
+        }
+        break;
+
+    case PKT_TYPE_GET_DATA: {
+        p_data_get_t *get = (p_data_get_t*)&(isbPkt->payload.data);
+        if (get->size <= MAX_DATASET_SIZE) {
+            return _PTYPE_INERTIAL_SENSE_CMD;
+        }
+        break;
+    }
+
+    case PKT_TYPE_STOP_BROADCASTS_ALL_PORTS:
+    case PKT_TYPE_STOP_DID_BROADCAST:
+    case PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT:
+        return _PTYPE_INERTIAL_SENSE_CMD;
+
+    case PKT_TYPE_ACK:
+    case PKT_TYPE_NACK:
+        return _PTYPE_INERTIAL_SENSE_ACK;
+    }
+
+    return parseErrorResetState(c, EPARSE_INVALID_DATATYPE);
+}
+
+// ===== ISComm.c: init and protocol registration =====
+
+static void is_comm_init(is_comm_instance_t* c, uint8_t *buffer, int bufferSize,
+                          pfnIsCommHandler pktHandler)
+{
+    memset(c, 0, sizeof(is_comm_instance_t));
+    memset(buffer, 0, (size_t)bufferSize);
+
+    c->rxBuf.size  = (uint32_t)bufferSize;
+    c->rxBuf.start = buffer;
+    c->rxBuf.end   = buffer + bufferSize;
+
+    is_comm_reset_buffer(c);
+
+    c->cb.protocolMask = DEFAULT_PROTO_MASK;
+    c->rxPkt.data.ptr  = c->rxBuf.start;
+    c->rxErrorState    = 1;
+    c->cb.all          = pktHandler;
+}
+
+static void is_comm_enable_protocol(is_comm_instance_t* instance, protocol_type_t ptype)
+{
+    if (instance) {
+        instance->cb.protocolMask |= (0x01u << ptype);
+    }
+}
+
+static pfnIsCommIsbDataHandler is_comm_register_isb_handler(is_comm_instance_t* comm,
+                                                              pfnIsCommIsbDataHandler cbHandler)
+{
+    if (!comm) {
+        return nullptr;
+    }
+    pfnIsCommIsbDataHandler priorCb = comm->cb.isbData;
+    comm->cb.isbData = cbHandler;
+    comm->cb.protocolMask |= ENABLE_PROTOCOL_ISB;
+    return priorCb;
+}
+
+// ===== ISComm.c: buffer management =====
+
+static void move_buffer_32bit(void* dest, void* src, size_t size)
+{
+    uint32_t* dest32 = (uint32_t*)dest;
+    uint32_t* src32  = (uint32_t*)src;
+    size_t size32    = size >> 2;
+    size_t remaining = size & 0x3;
+
+    for (size_t i = 0; i < size32; i++) {
+        dest32[i] = src32[i];
+    }
+    uint8_t* dest8 = (uint8_t*)(dest32 + size32);
+    uint8_t* src8  = (uint8_t*)(src32  + size32);
+    for (size_t i = 0; i < remaining; i++) {
+        dest8[i] = src8[i];
+    }
+}
+
+static int is_comm_free(is_comm_instance_t* c)
+{
+    is_comm_buffer_t *buf = &(c->rxBuf);
+    int bytesFree = (int)(buf->end - buf->tail);
+
+    if (bytesFree < (int)(buf->size)) {
+        if (c->processPkt != nullptr) {
+            if (buf->head != buf->start) {
+                int shift = (int)(buf->head - buf->start);
+                move_buffer_32bit(buf->start, buf->head,
+                                  (size_t)(buf->tail - buf->head));
+                buf->head = buf->start;
+                buf->tail -= shift;
+                buf->scan -= shift;
+                bytesFree = (int)(buf->end - buf->tail);
+            } else if (bytesFree == 0) {
+                reportParseError(c, EPARSE_RXBUFFER_FLUSHED);
+                return is_comm_reset_buffer(c);
+            }
+        } else {
+            if (buf->scan >= buf->tail) {
+                return is_comm_reset_buffer(c);
+            }
+        }
+    }
+    return bytesFree;
+}
+
+// ===== ISComm.c: packet encode and write to buffer =====
+
+static void is_comm_encode_hdr(packet_t *pkt, uint8_t flags, uint16_t did,
+                                 uint16_t data_size, uint16_t offset, const void* data)
+{
+    pkt->hdr.preamble    = PSC_ISB_PREAMBLE;
+    pkt->hdr.flags       = flags;
+    pkt->hdr.id          = (uint8_t)did;
+    pkt->hdr.payloadSize = data_size;
+    pkt->offset          = offset;
+    if (offset) {
+        pkt->hdr.flags       |= ISB_FLAGS_PAYLOAD_W_OFFSET;
+        pkt->hdr.payloadSize  = (uint16_t)(data_size + 2);
+    }
+    pkt->data.ptr  = (uint8_t*)data;
+    pkt->data.size = data_size;
+    pkt->size      = (uint16_t)(pkt->hdr.payloadSize + sizeof(packet_hdr_t) + 2);
+    pkt->hdrCksum  = is_comm_isb_checksum16(0, &pkt->hdr, sizeof(pkt->hdr));
+}
+
+#define MEMCPY_INC(dst, src, size) memcpy((dst), (src), (size)); (dst) += (size);
+
+static void memcpyIncUpdateChecksum(uint8_t **dstBuf, const uint8_t* srcBuf,
+                                     int len, uint16_t *checksum)
+{
+    *checksum = is_comm_isb_checksum16(*checksum, srcBuf, (uint32_t)len);
+    MEMCPY_INC(*dstBuf, srcBuf, (size_t)len);
+}
+
+static int is_comm_write_isb_precomp_to_buffer(uint8_t *buf, uint32_t buf_size,
+                                                 is_comm_instance_t* comm, packet_t *pkt)
+{
+    if (pkt->size > buf_size) {
+        return -1;
+    }
+    pkt->checksum = pkt->hdrCksum;
+    MEMCPY_INC(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));
+    if (pkt->offset) {
+        memcpyIncUpdateChecksum(&buf, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));
+    }
+    if (pkt->data.size) {
+        memcpyIncUpdateChecksum(&buf, (uint8_t*)pkt->data.ptr,
+                                (int)pkt->data.size, &(pkt->checksum));
+    }
+    MEMCPY_INC(buf, (uint8_t*)&(pkt->checksum), 2);
+    comm->txPktCount++;
+    return (int)pkt->size;
+}
+
+static int is_comm_write_to_buf(uint8_t* buf, uint32_t buf_size,
+                                  is_comm_instance_t* comm, uint8_t flags,
+                                  uint16_t did, uint16_t data_size, uint16_t offset,
+                                  const void* data)
+{
+    packet_t txPkt;
+    is_comm_encode_hdr(&txPkt, flags, did, data_size, offset, data);
+    return is_comm_write_isb_precomp_to_buffer(buf, buf_size, comm, &txPkt);
+}
+
+static int is_comm_get_data_to_buf(uint8_t *buf, uint32_t buf_size,
+                                    is_comm_instance_t* comm, uint32_t did,
+                                    uint32_t size, uint32_t offset,
+                                    uint32_t periodMultiple)
+{
+    p_data_get_t get;
+    get.id     = (uint16_t)did;
+    get.offset = (uint16_t)offset;
+    get.size   = (uint16_t)size;
+    get.period = (uint16_t)periodMultiple;
+    return is_comm_write_to_buf(buf, buf_size, comm, PKT_TYPE_GET_DATA, 0,
+                                 sizeof(p_data_get_t), 0, &get);
+}
+
+// ===== ISComm.c: byte-level and buffer-level parsing =====
+
+static protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs);
+
+// ISB-only version: NMEA/UBX/RTCM3/SPARTN/SONY parsers are not included
+// because the Inertial Sense device only outputs ISB binary data.
+static protocol_type_t is_comm_parse_timeout(is_comm_instance_t* c, uint32_t timeMs)
+{
+    is_comm_buffer_t *buf = &(c->rxBuf);
+
+#if PKT_PARSER_TIMEOUT_MS
+    if (c->processPkt) {
+        if (timeMs > c->parser.timeMs + PKT_PARSER_TIMEOUT_MS) {
+            c->rxBuf.head++;
+            is_comm_reset_parser(c);
+        }
+    }
+#endif
+
+    while (buf->scan < buf->tail) {
+        if (c->processPkt == nullptr) {
+            if (*(buf->scan) == PSC_ISB_PREAMBLE_BYTE1) {
+                if (c->cb.protocolMask & ENABLE_PROTOCOL_ISB) {
+                    setParserStart(c, processIsbPkt);
+                }
+            } else {
+                if (reportParseError(c, EPARSE_STREAM_UNPARSABLE)) {
+                    return _PTYPE_PARSE_ERROR;
+                }
+            }
+        } else {
+            protocol_type_t ptype = c->processPkt(c);
+            if (ptype != _PTYPE_NONE) {
+                buf->scan++;
+                return ptype;
+            }
+        }
+        buf->scan++;
+    }
+
+#if PKT_PARSER_TIMEOUT_MS
+    if (c->processPkt) {
+        c->parser.timeMs = timeMs;
+    }
+#endif
+
+    return _PTYPE_NONE;
+}
+
+static inline protocol_type_t is_comm_parse(is_comm_instance_t* instance)
+{
+    return is_comm_parse_timeout(instance, 0);
+}
+
+// ===== ISComm.c: message dispatch =====
+
+static void parse_messages(is_comm_instance_t* comm, port_handle_t port)
+{
+    if (!comm) {
+        return;
+    }
+    protocol_type_t ptype;
+    while ((ptype = is_comm_parse(comm)) != _PTYPE_NONE) {
+        int notConsumed = -1;
+        switch (ptype) {
+        case _PTYPE_INERTIAL_SENSE_DATA:
+            if (comm->cb.isbData) {
+                p_data_t data;
+                is_comm_to_isb_p_data(comm, &data);
+                notConsumed = comm->cb.isbData(comm->cb.context, &data, port);
+            }
+            break;
+        case _PTYPE_INERTIAL_SENSE_ACK:
+        case _PTYPE_INERTIAL_SENSE_CMD:
+            break;
+        default:
+            if (comm->cb.generic[ptype]) {
+                notConsumed = comm->cb.generic[ptype](
+                    comm->cb.context,
+                    comm->rxPkt.data.ptr + comm->rxPkt.offset,
+                    (int)comm->rxPkt.data.size,
+                    port);
+            }
+            break;
+        }
+        if (comm->cb.all && notConsumed) {
+            comm->cb.all(comm->cb.context, ptype, &(comm->rxPkt), port);
+        }
+    }
+}
+
+static void is_comm_buffer_parse_messages(uint8_t *buf, uint32_t buf_size,
+                                           is_comm_instance_t* comm)
+{
+    int n = (int)_MIN((int)buf_size, is_comm_free(comm));
+    memcpy(comm->rxBuf.tail, buf, (size_t)n);
+    comm->rxBuf.tail += n;
+    parse_messages(comm, nullptr);
+}
+
+// ===== End of inlined Inertial Sense SDK =====
 
 extern const AP_HAL::HAL &hal;
 
@@ -158,15 +670,15 @@ int AP_ExternalAHRS_InertialSense::stop_message_broadcasting()
 
     // Stop all broadcasts on the device
     // int ret = is_comm_stop_broadcasts_all_ports(port);
-    int size = is_comm_write_to_buf(buffer, sizeof(buffer), &comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, NULL);
-    if(uart->write(buffer, size) != size) {
+    int size = is_comm_write_to_buf(buffer, sizeof(buffer), &comm, PKT_TYPE_STOP_BROADCASTS_ALL_PORTS, 0, 0, 0, nullptr);
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write stop broadcasts message\r\n");
         return -3;
     }
 
     // ret = is_comm_stop_broadcasts_current_port(port);
-    size = is_comm_write_to_buf(buffer, sizeof(buffer), &comm, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, NULL);
-    if(uart->write(buffer, size) != size) {
+    size = is_comm_write_to_buf(buffer, sizeof(buffer), &comm, PKT_TYPE_STOP_BROADCASTS_CURRENT_PORT, 0, 0, 0, nullptr);
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write stop broadcasts message\r\n");
         return -3;
     }
@@ -182,28 +694,28 @@ int AP_ExternalAHRS_InertialSense::enable_message_broadcasting()
 
     // Ask for INS message w/ update 8ms period (4ms source period x 2)
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_INS_3, 0, 0, 1);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get INS message\r\n");
         return -4;
     }
 
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_POS, 0, 0, 1);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get GPS POS message\r\n");
         return -5;
     }
 
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_VEL, 0, 0, 1);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get GPS VEL message\r\n");
         return -5;
     }
 
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_RTK_POS_MISC, 0, 0, 1);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get RTK POS MISC message\r\n");
         return -5;
     }
@@ -217,26 +729,26 @@ int AP_ExternalAHRS_InertialSense::enable_message_broadcasting()
     // }
 
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_MAGNETOMETER, 0, 0, 1);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get MAG message\r\n");
         return -6;
     }
 
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_BAROMETER, 0, 0, 1);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get BARO message\r\n");
         return -6;
     }
 
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_INL2_NED_SIGMA, 0, 0, 1);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get NL2_NED_SIGMA message\r\n");
         return -6;
     }
 
     // request a device info message
     size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_DEV_INFO, 0, 0, 0);
-    if(uart->write(buffer, size) != size) {
+    if(uart->write(buffer, (uint16_t)size) != (size_t)size) {
         printf("Failed to encode and write get BARO message\r\n");
         return -6;
     }
@@ -275,7 +787,7 @@ int AP_ExternalAHRS_InertialSense::initialize()
 
     uart->begin(baudrate);
 
-    is_comm_init(&comm, comm_buf, sizeof(comm_buf), NULL);
+    is_comm_init(&comm, comm_buf, sizeof(comm_buf), nullptr);
     is_comm_enable_protocol(&comm, _PTYPE_INERTIAL_SENSE_DATA);
 
     instance = this;
@@ -513,7 +1025,7 @@ void AP_ExternalAHRS_InertialSense::handleDevInfoMessage(dev_info_t *dev_info)
 {
     devInfoPopulateMissingHardware(dev_info);
 
-    char *hardware_type;
+    const char *hardware_type;
     switch(dev_info->hardwareType) {
     case 1:
         hardware_type = "uINS";
