@@ -822,10 +822,11 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
 // Optional yaw slew limiting constrains the heading rate input.
 void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& thrust_vector, float heading_rate_rads, bool slew_yaw)
 {
+    float yaw_rate_max_rads = radians(_ang_vel_yaw_max_degs);
     if (slew_yaw) {
         // Constrain heading rate input using the configured yaw slew rate limit (0 disables limiting).
-        const float slew_yaw_max_rads = get_slew_yaw_max_rads();
-        heading_rate_rads = constrain_float(heading_rate_rads, -slew_yaw_max_rads, slew_yaw_max_rads);
+        yaw_rate_max_rads = get_slew_yaw_max_rads();
+        heading_rate_rads = constrain_float(heading_rate_rads, -yaw_rate_max_rads, yaw_rate_max_rads);
     }
 
     // update attitude target
@@ -851,7 +852,7 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
         attitude_command_model(attitude_error.y, 0.0, _ang_vel_target_rads.y, _ang_accel_target_rads.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
 
         // Shape yaw rate input into yaw angular velocity/acceleration targets, applying yaw limits and time constant.
-        attitude_command_model(0.0, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, radians(_ang_vel_yaw_max_degs), get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
+        attitude_command_model(0.0, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, yaw_rate_max_rads, get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
     } else {
         // No shaping/feedforward: directly update the attitude target using the thrust-vector correction and yaw increment.
         Quaternion yaw_quat;
@@ -877,10 +878,6 @@ void AC_AttitudeControl::input_thrust_vector_rate_heading_rads(const Vector3f& t
 // Heading rate is constrained using the configured yaw slew rate limit (0 disables limiting).
 void AC_AttitudeControl::input_thrust_vector_heading_rad(const Vector3f& thrust_vector, float heading_angle_rad, float heading_rate_rads)
 {
-    // Constrain heading rate input using the configured yaw slew rate limit.
-    const float slew_yaw_max_rads = get_slew_yaw_max_rads();
-    heading_rate_rads = constrain_float(heading_rate_rads, -slew_yaw_max_rads, slew_yaw_max_rads);
-
     // update attitude target
     update_attitude_target();
 
@@ -900,9 +897,9 @@ void AC_AttitudeControl::input_thrust_vector_heading_rad(const Vector3f& thrust_
 
         // Shape attitude error and heading rate into body-frame angular velocity/acceleration targets,
         // applying configured rate/acceleration limits and time constants (roll/pitch use _input_tc, yaw uses _rate_y_tc).
-        attitude_command_model(attitude_error.x, 0.0, _ang_vel_target_rads.x, _ang_accel_target_rads.x, radians(_ang_vel_roll_max_degs),  get_accel_roll_max_radss(),  _input_tc,  _dt_s);
-        attitude_command_model(attitude_error.y, 0.0, _ang_vel_target_rads.y, _ang_accel_target_rads.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc,  _dt_s);
-        attitude_command_model(attitude_error.z, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, radians(_ang_vel_yaw_max_degs),   get_accel_yaw_max_radss(),   _rate_y_tc, _dt_s);
+        attitude_command_model(attitude_error.x, 0.0, _ang_vel_target_rads.x, _ang_accel_target_rads.x, radians(_ang_vel_roll_max_degs), get_accel_roll_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(attitude_error.y, 0.0, _ang_vel_target_rads.y, _ang_accel_target_rads.y, radians(_ang_vel_pitch_max_degs), get_accel_pitch_max_radss(), _input_tc, _dt_s);
+        attitude_command_model(attitude_error.z, heading_rate_rads, _ang_vel_target_rads.z, _ang_accel_target_rads.z, get_slew_yaw_max_rads(), get_accel_yaw_max_radss(), _rate_y_tc, _dt_s);
     } else {
         // No shaping/feedforward: directly set the attitude target to the desired attitude.
         _attitude_target = desired_attitude_quat;
@@ -1117,7 +1114,7 @@ void AC_AttitudeControl::attitude_command_model(float error_angle, float desired
     shape_angle_vel_accel( error_angle, desired_ang_vel, 0.0,
                         0.0, target_ang_vel, target_ang_accel,
                         -max_ang_vel, max_ang_vel, accel_max,
-                        accel_max / input_tc, dt, false);
+                        accel_max / input_tc, dt, true);
     target_ang_vel += target_ang_accel * dt;
 }
 
