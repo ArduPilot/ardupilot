@@ -1045,6 +1045,24 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 	AP_SUBGROUPINFO(rrpm, "RPM", 62, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
+#if AP_MSP_RADAR_ENABLED
+    // @Param: RADAR_EN
+    // @DisplayName: RADAR_EN
+    // @Description: Displays iNav Radar info for peer aircraft
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RADAR_X
+    // @DisplayName: RADAR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: RADAR_Y
+    // @DisplayName: RADAR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(radar, "RADAR", 63, AP_OSD_Screen, AP_OSD_Setting),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1800,6 +1818,46 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     }
 }
 
+#if AP_MSP_RADAR_ENABLED
+void AP_OSD_Screen::draw_radar(uint8_t x, uint8_t y)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    AP_MSP *msp = AP::msp();
+    if (!msp) {
+        return;
+    }
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    if (AP_HAL::millis() - _radar_last_peer_change > 2000) {
+        _radar_peer_id = msp->get_next_healthy_peer(_radar_peer_id);
+        _radar_last_peer_change = AP_HAL::millis();
+    }
+    const MSP_RadarPeer *peer = msp->get_radar_peer(_radar_peer_id);
+
+    Location loc;
+    if (ahrs.get_location(loc) && peer) {
+        const Location &peer_loc = peer->location;
+        float distance = loc.get_distance(peer_loc);
+        ftype vertical_distance;
+        if (!peer_loc.get_height_above(loc, vertical_distance)) {
+            vertical_distance = 0.0f;
+        }
+        int32_t angle = wrap_360_cd(loc.get_bearing_to(peer_loc) - ahrs.yaw_sensor);
+        int32_t interval = 36000 / SYMBOL(SYM_ARROW_COUNT);
+        if (distance < 2.0f) {
+            //avoid fast rotating arrow at small distances
+            angle = 0;
+        }
+        char arrow = SYMBOL(SYM_ARROW_START) + ((angle + interval / 2) / interval) % SYMBOL(SYM_ARROW_COUNT);
+        backend->write(x, y, false, "%c%c", _radar_peer_id + 65, arrow);
+        draw_distance(x+2, y, distance);
+        draw_vdistance(x+1, y+1, vertical_distance);
+    } else {
+        backend->write(x, y, true, "%c", _radar_peer_id + 65);
+    }
+}
+#endif // HAL_MSP_ENABLED
+
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
@@ -2004,6 +2062,27 @@ void AP_OSD_Screen::draw_vspeed(uint8_t x, uint8_t y)
     } else {
         const char *fmt = osd->units == AP_OSD::UNITS_AVIATION ? "%c%4d%c" : "%c%2d%c";
         backend->write(x, y, false, fmt, sym, (int)roundf(vs_scaled), u_icon(VSPEED));
+    }
+}
+
+void AP_OSD_Screen::draw_vdistance(uint8_t x, uint8_t y, float distance)
+{
+    char sym;
+    if (distance > 25.0f) {
+        sym = SYMBOL(SYM_UP_UP);
+    } else if (distance >=0.0f) {
+        sym = SYMBOL(SYM_UP);
+    } else if (distance >= -25.0f) {
+        sym = SYMBOL(SYM_DOWN);
+    } else {
+        sym = SYMBOL(SYM_DOWN_DOWN);
+    }
+    float distance_scaled = u_scale(ALTITUDE, fabsf(distance));
+    if ((osd->units != AP_OSD::UNITS_AVIATION) && (distance_scaled < 9.95f)) {
+        backend->write(x, y, false, "%c%.1f%c", sym, (float)distance_scaled, u_icon(DISTANCE));
+    } else {
+        const char *fmt = osd->units == AP_OSD::UNITS_AVIATION ? "%c%4d%c" : "%c%2d%c";
+        backend->write(x, y, false, fmt, sym, (int)roundf(distance_scaled), u_icon(DISTANCE));
     }
 }
 
@@ -2646,6 +2725,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(rc_snr);
     DRAW_SETTING(rc_active_antenna);
     DRAW_SETTING(rc_lq);
+#endif
+#if AP_MSP_RADAR_ENABLED
+    DRAW_SETTING(radar);
 #endif
 }
 #endif
