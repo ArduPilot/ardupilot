@@ -242,6 +242,9 @@ public:
     }
 #endif
 
+    bool fast_boot_dronecan() const { return fast_boot_option_set(FastBootOption::DRONECAN); }
+    bool fast_boot_esc() const { return fast_boot_option_set(FastBootOption::ESC); }
+
 private:
     static AP_BoardConfig *_singleton;
     
@@ -338,6 +341,19 @@ private:
     AP_Int32 _options;
 
     AP_Int8  _alt_config;
+
+    // Bit definitions for the FAST_BOOT bitmask parameter
+    enum class FastBootOption : int32_t {
+        ALL      = (1 << 0),  // enable all fast boot features
+        DRONECAN = (1 << 1),  // skip blocking DroneCAN device discovery
+        ESC      = (1 << 2),  // skip ESC calibration startup check
+    };
+    bool fast_boot_option_set(FastBootOption option) const {
+        return (_fast_boot.get() & (int32_t(FastBootOption::ALL) | int32_t(option))) != 0;
+    }
+
+    // Bitmask controlling which startup blocking procedures are skipped for faster boot
+    AP_Int32 _fast_boot;
 };
 
 namespace AP {
