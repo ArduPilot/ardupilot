@@ -124,7 +124,7 @@ float Aircraft::ground_height_difference() const
     return local_ground_level;
 }
 
-float Aircraft::ambient_temperature_degC() const
+float Aircraft::ambient_outside_temperature_degC() const
 {
     // FIXME: AP_Baro_SITL should be getting temperature from the
     // simulated aircraft, not the other way around!
