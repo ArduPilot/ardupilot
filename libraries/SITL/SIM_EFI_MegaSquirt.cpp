@@ -35,7 +35,7 @@ static uint32_t CRC32_MS(const uint8_t *buf, uint32_t len)
     return crc;
 }
 
-void EFI_MegaSquirt::update()
+void EFI_MegaSquirt::update(const class Aircraft &aircraft)
 {
     auto sitl = AP::sitl();
     if (!sitl || sitl->efi_type != SIM::EFI_TYPE_MS) {
@@ -50,7 +50,7 @@ void EFI_MegaSquirt::update()
     table7.dwell = 2.0;
     table7.baro_hPa = 1000;
     table7.map_hPa = 895;
-    table7.mat_cF = C_TO_F(AP::baro().get_temperature()) * 10;
+    table7.mat_cF = C_TO_F(aircraft.ambient_outside_temperature_degC()) * 10;
     table7.fuelPressure = 6280;
     table7.throttle_pos = tps * 10;
     table7.ct_cF = 3940;
