@@ -129,37 +129,46 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
             return;
         }
         const AP_PIDInfo *pid_info = nullptr;
+        uint8_t mav_axis = 0;
         switch (axes[i]) {
         case PID_SEND::VELX:
             pid_info = &blimp.pid_vel_xy.get_pid_info_x();
+            mav_axis = PID_TUNING_VEL_NORTH;
             break;
         case PID_SEND::VELY:
             pid_info = &blimp.pid_vel_xy.get_pid_info_y();
+            mav_axis = PID_TUNING_VEL_EAST;
             break;
         case PID_SEND::VELZ:
             pid_info = &blimp.pid_vel_z.get_pid_info();
+            mav_axis = PID_TUNING_VEL_DOWN;
             break;
         case PID_SEND::VELYAW:
             pid_info = &blimp.pid_vel_yaw.get_pid_info();
+            mav_axis = PID_TUNING_YAW;
             break;
         case PID_SEND::POSX:
             pid_info = &blimp.pid_pos_xy.get_pid_info_x();
+            mav_axis = PID_TUNING_POS_NORTH;
             break;
         case PID_SEND::POSY:
             pid_info = &blimp.pid_pos_xy.get_pid_info_y();
+            mav_axis = PID_TUNING_POS_EAST;
             break;
         case PID_SEND::POSZ:
             pid_info = &blimp.pid_pos_z.get_pid_info();
+            mav_axis = PID_TUNING_POS_DOWN;
             break;
         case PID_SEND::POSYAW:
             pid_info = &blimp.pid_pos_yaw.get_pid_info();
+            mav_axis = PID_TUNING_YAW_ANGLE;
             break;
         default:
             continue;
         }
         if (pid_info != nullptr) {
             mavlink_msg_pid_tuning_send(chan,
-                                        axes[i],
+                                        mav_axis,
                                         pid_info->target,
                                         pid_info->actual,
                                         pid_info->FF,
