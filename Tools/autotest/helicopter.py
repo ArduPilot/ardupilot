@@ -226,7 +226,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
-        self.set_parameter("PILOT_TKOFF_ALT", 700)
+        self.set_parameter("PILOT_TKO_ALT_M", 7.0)
         self.change_mode('POSHOLD')
         self.zero_throttle()
         self.set_rc(8, 1000)

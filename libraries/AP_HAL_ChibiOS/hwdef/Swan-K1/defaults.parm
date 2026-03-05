@@ -94,9 +94,9 @@ Q_A_RAT_YAW_FLTD      15
 Q_A_RAT_YAW_I          0.07
 Q_A_RAT_YAW_P          0.7
 Q_A_RAT_YAW_SMAX      15
-Q_A_ACCEL_P_MAX    40000
-Q_A_ACCEL_R_MAX    20000
-Q_A_ACCEL_Y_MAX    27000
+Q_A_ACC_P_MAX          400
+Q_A_ACC_R_MAX          200
+Q_A_ACC_Y_MAX          270
 Q_P_D_ACC_P            0.08
 Q_P_D_POS_P            1.5
 Q_P_D_VEL_P            8.0

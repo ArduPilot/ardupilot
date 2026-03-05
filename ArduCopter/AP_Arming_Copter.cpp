@@ -229,8 +229,8 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 #endif
 
         // pilot-speed-up parameter check
-        if (copter.g.pilot_speed_up_cms <= 0) {
-            check_failed(Check::PARAMETERS, display_failure, "Check PILOT_SPEED_UP");
+        if (copter.g2.pilot_speed_up_ms <= 0) {
+            check_failed(Check::PARAMETERS, display_failure, "Check PILOT_SPD_UP");
             return false;
         }
 

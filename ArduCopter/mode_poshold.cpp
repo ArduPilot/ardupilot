@@ -54,7 +54,7 @@ ModePosHold::ModePosHold() : Mode()
 // convert parameters
 void ModePosHold::convert_params()
 {
-    // PARAMETER_CONVERSION - Added: Feb 2026
+    // PARAMETER_CONVERSION - Added: Feb 2026 ahead of ardupilot-4.7
 
     // return immediately if parameter conversion has already been performed
     if (brake_angle_max_deg.configured()) {
@@ -182,7 +182,7 @@ void ModePosHold::run()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01f, 0.0f, 10.0f));
+            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0f, 10.0f));
         }
 
         // avoidance-adjusted climb

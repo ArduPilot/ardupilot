@@ -104,7 +104,7 @@ public:
         k_param_throttle_accel_enabled,     // deprecated - remove
         k_param_wp_yaw_behavior,
         k_param_acro_trainer,
-        k_param_pilot_speed_up_cms,         // renamed from k_param_pilot_velocity_z_max
+        k_param_pilot_speed_up_cms,     // deprecated - moved to G2 as PILOT_SPD_UP
         k_param_circle_rate,            // deprecated - remove
         k_param_rangefinder_gain,       // deprecated - remove
         k_param_ch8_option_old,         // deprecated
@@ -124,7 +124,7 @@ public:
         k_param_rally,
         k_param_poshold_brake_rate_degs,
         k_param_poshold_brake_angle_max,    // deprecated - remove
-        k_param_pilot_accel_d_cmss,
+        k_param_pilot_accel_d_cmss,     // deprecated - moved to G2 as PILOT_ACC_Z
         k_param_serial0_baud,           // deprecated - remove
         k_param_serial1_baud,           // deprecated - remove
         k_param_serial2_baud,           // deprecated - remove
@@ -140,7 +140,7 @@ public:
         k_param_cli_enabled_old,        // deprecated - remove
         k_param_throttle_filt,
         k_param_throttle_behavior,
-        k_param_pilot_takeoff_alt_cm, // 64
+        k_param_pilot_takeoff_alt_cm,   // deprecated - moved to G2 as PILOT_TKO_ALT_M
 
         // 65: AP_Limits Library
         k_param_limits = 65,            // deprecated - remove
@@ -395,7 +395,6 @@ public:
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
-    AP_Float        pilot_takeoff_alt_cm;
 
 #if MODE_RTL_ENABLED
     AP_Float        rtl_cone_slope;
@@ -413,11 +412,6 @@ public:
 #if MODE_POSHOLD_ENABLED
     AP_Int16        poshold_brake_rate_degs;    // PosHold flight mode's rotation rate during braking in deg/sec
 #endif
-
-    // Waypoints
-    //
-    AP_Int16        pilot_speed_up_cms;         // maximum vertical ascending velocity the pilot may request
-    AP_Int16        pilot_accel_d_cmss;         // vertical acceleration the pilot may request
 
     // Throttle
     //
@@ -561,8 +555,11 @@ public:
     AP_Winch winch;
 #endif
 
-    // Additional pilot velocity items
-    AP_Int16    pilot_speed_dn_cms;
+    // Pilot vertical velocity and acceleration
+    AP_Float    pilot_accel_d_mss;      // vertical acceleration the pilot may request
+    AP_Float    pilot_speed_up_ms;      // maximum vertical ascending velocity the pilot may request
+    AP_Float    pilot_speed_dn_ms;      // maximum vertical descending velocity the pilot may request
+    AP_Float    pilot_takeoff_alt_m;    // altitude vehicle will takeoff to after pilot triggers takeoff with throttle stick
 
 #if TOY_MODE_ENABLED
     ToyMode toy_mode;

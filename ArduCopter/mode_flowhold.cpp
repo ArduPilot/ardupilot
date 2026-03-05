@@ -285,7 +285,7 @@ void ModeFlowHold::run()
 
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
+            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
@@ -346,7 +346,7 @@ void ModeFlowHold::run()
     bf_angles_rad.x = constrain_float(bf_angles_rad.x, -angle_max_rad, angle_max_rad);
     bf_angles_rad.y = constrain_float(bf_angles_rad.y, -angle_max_rad, angle_max_rad);
 
-#if AP_AVOIDANCE_ENABLED
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
     // apply avoidance
     copter.avoid.adjust_roll_pitch_rad(bf_angles_rad.x, bf_angles_rad.y, attitude_control->lean_angle_max_rad());
 #endif

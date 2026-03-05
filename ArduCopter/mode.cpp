@@ -1119,19 +1119,19 @@ GCS_Copter &Mode::gcs() const
 // Returns the pilot’s maximum upward speed in m/s.
 float Mode::get_pilot_speed_up_ms() const
 {
-    return g.pilot_speed_up_cms * 0.01;
+    return g2.pilot_speed_up_ms;
 }
 
 // Returns the pilot’s maximum downward speed in m/s.
 float Mode::get_pilot_speed_dn_ms() const
 {
-    return copter.get_pilot_speed_dn() * 0.01;
+    return copter.get_pilot_speed_dn_ms();
 }
 
 // Returns the pilot’s vertical acceleration limit in m/s².
 float Mode::get_pilot_accel_D_mss() const
 {
-    return g.pilot_accel_d_cmss * 0.01;
+    return g2.pilot_accel_d_mss;
 }
 
 // Return stopping point as a location with above origin alt frame
