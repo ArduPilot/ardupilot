@@ -9517,8 +9517,13 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
             self.progress("Item (%s)" % str(items[m.seq]))
             if m.seq in sent:
-                self.progress("received duplicate request for item %u" % m.seq)
-                continue
+                # A duplicate MISSION_REQUEST means our previous send was lost
+                # (common on Mac loopback with higher latency). Per the MAVLink
+                # mission upload protocol the uploader must resend the item.
+                # Restore seq so the send block below handles it normally.
+                self.progress("received duplicate request for item %u; resending" % m.seq)
+                remaining_to_send.add(m.seq)
+                sent.discard(m.seq)
 
             if m.seq not in remaining_to_send:
                 raise NotAchievedException("received request for unknown item %u" % m.seq)
