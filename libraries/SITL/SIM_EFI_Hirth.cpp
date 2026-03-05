@@ -104,7 +104,7 @@ void EFI_Hirth::handle_set_values()
     write_to_autopilot((const char*)set_values_ack, sizeof(set_values_ack));
 }
 
-void EFI_Hirth::update_send()
+void EFI_Hirth::update_send(const class Aircraft &aircraft)
 {
     if (requested_data_record.time_ms == 0) {
         // no outstanding request
@@ -118,7 +118,7 @@ void EFI_Hirth::update_send()
 
     switch (requested_data_record.code) {
     case PacketCode::DataRecord1:
-        send_record1();
+        send_record1(aircraft);
         break;
     case PacketCode::DataRecord2:
         send_record2();
@@ -131,13 +131,11 @@ void EFI_Hirth::update_send()
     }
 }
 
-void EFI_Hirth::update_engine_model()
+void EFI_Hirth::update_engine_model(const class Aircraft &aircraft)
 {
     auto sitl = AP::sitl();
 
-    // FIXME: this should come from simulation, not baro.  baro gets
-    // warmed by the simulated electronics!
-    const float ambient = AP::baro().get_temperature();
+    const float ambient = aircraft.ambient_outside_temperature_degC();
 
     const uint32_t now_ms = AP_HAL::millis();
 
@@ -157,22 +155,23 @@ void EFI_Hirth::update_engine_model()
     engine.cht2_temperature += rpm * delta_t * RPM_GAIN_FACTOR_CHT2;
 }
 
-void EFI_Hirth::init()
+void EFI_Hirth::init(const class Aircraft &aircraft)
 {
     // auto sitl = AP::sitl();
 
-    if (is_zero(AP::baro().get_temperature())) {
+    const float temperature = aircraft.ambient_outside_temperature_degC();
+    if (is_zero(temperature)) {
         // defer until the baro has had a chance to update....
         return;
     }
 
-    engine.cht1_temperature = AP::baro().get_temperature();
-    engine.cht2_temperature = AP::baro().get_temperature();
+    engine.cht1_temperature = temperature;
+    engine.cht2_temperature = temperature;
 
     init_done = true;
 }
 
-void EFI_Hirth::update()
+void EFI_Hirth::update(const class Aircraft &aircraft)
 {
     const auto *sitl = AP::sitl();
     if (!sitl || sitl->efi_type != SIM::EFI_TYPE_HIRTH) {
@@ -180,16 +179,16 @@ void EFI_Hirth::update()
     }
 
     if (!init_done) {
-        init();
+        init(aircraft);
     }
 
     // update throttle; interim thing to make life a little more interesting
     throttle = 0.9 * throttle + 0.1 * settings.throttle/10;
 
-    update_engine_model();
+    update_engine_model(aircraft);
 
     update_receive();
-    update_send();
+    update_send(aircraft);
 }
 
 uint16_t EFI_Hirth::engine_status_field_value() const
@@ -202,7 +201,7 @@ uint16_t EFI_Hirth::engine_status_field_value() const
         );
 }
 
-void SITL::EFI_Hirth::send_record1()
+void SITL::EFI_Hirth::send_record1(const class Aircraft &aircraft)
 {
     const auto *sitl = AP::sitl();
 
@@ -211,7 +210,7 @@ void SITL::EFI_Hirth::send_record1()
     auto &r = packed_record1.record;
     r.engine_status = engine_status_field_value();
     r.rpm = sitl->state.rpm[HIRTH_RPM_INDEX];
-    r.air_temperature = AP::baro().get_temperature();
+    r.air_temperature = aircraft.ambient_outside_temperature_degC();
     r.throttle = settings.throttle / 10;  // just echo this back
 
     packed_record1.update_checksum();

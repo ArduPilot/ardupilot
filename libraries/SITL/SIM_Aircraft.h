@@ -176,7 +176,9 @@ public:
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature() const { return battery.get_temperature(); }
 
-    float ambient_temperature_degC() const;
+    float ambient_outside_temperature_degC() const;
+    float ambient_outside_pressure_Pascal() const;
+    float baro_temperature_degC() const;
 
     ADSB *adsb;
 
