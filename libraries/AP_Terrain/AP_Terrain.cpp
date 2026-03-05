@@ -119,7 +119,7 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
     }
 
     // reject locations outside valid Earth coordinates.
-    if (labs(loc.lat) > 90 * 10*1000*1000L || labs(loc.lng) > 180 * 10*1000*1000L) {
+    if (!check_latlng(loc.lat, loc.lng)) {
         return false;
     }
 
