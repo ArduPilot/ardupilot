@@ -155,7 +155,13 @@ void Sub::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    update_actuators_from_jsbuttons();
+    // PARAMETER_CONVERSION - Added: Mar-2026
+    if (g2.param_conversion_increment < 1) {
+        update_actuators_from_jsbuttons();
+        update_lights_from_rcin();
+        g2.param_conversion_increment.set_and_save(1);
+    }
+
     g2.actuators.initialize_actuators();
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0
@@ -165,7 +171,6 @@ void Sub::init_ardupilot()
     update_relay_pins();
 #endif
     // flag that initialisation has completed
-    update_lights_from_rcin();
     ap.initialised = true;
 }
 
