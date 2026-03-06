@@ -3,6 +3,10 @@
 #include <AP_Math/AP_Math.h>
 #include "AP_Actuators_config.h"
 
+#if defined(APM_BUILD_TYPE)
+// reference to trigger per-vehicle compilation in the build system
+#endif
+
 #if AP_ACTUATORS_ENABLED
 // Singleton instance
 AP_Actuators *AP_Actuators::_singleton;
