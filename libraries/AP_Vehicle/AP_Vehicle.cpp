@@ -553,6 +553,14 @@ void AP_Vehicle::setup()
 #if AP_IBUS_TELEM_ENABLED
     ibus_telem.init();
 #endif
+
+#if AP_IBUS2_MASTER_ENABLED
+    ibus2_master.init();  // registers a timer callback
+#endif
+
+#if AP_IBUS2_SLAVE_ENABLED
+    ibus2_slave.init();   // registers a timer callback
+#endif
 }
 
 void AP_Vehicle::loop()
