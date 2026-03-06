@@ -408,6 +408,7 @@ public:
     AP_Float surface_nobaro_thrust;
     Actuators actuators;
 
+    AP_Int8 param_format_version;
 };
 
 extern const AP_Param::Info        var_info[];
