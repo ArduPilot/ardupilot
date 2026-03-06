@@ -32,6 +32,8 @@
 #include "SIM_RichenPower.h"
 #include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
+#include "SIM_IBUS2_Master.h"
+#include "SIM_IBUS2_Slave.h"
 #include "SIM_Volz.h"
 #include "SIM_I2C.h"
 #include "SIM_Buzzer.h"
@@ -166,6 +168,8 @@ public:
     void set_loweheiser(Loweheiser *_loweheiser) { loweheiser = _loweheiser; }
 #endif
     void set_fetteconewireesc(FETtecOneWireESC *_fetteconewireesc) { fetteconewireesc = _fetteconewireesc; }
+    void set_ibus2master(IBUS2Master *_ibus2master) { ibus2master = _ibus2master; }
+    void set_ibus2slave(IBUS2Slave *_ibus2slave) { ibus2slave = _ibus2slave; }
 #if AP_SIM_VOLZ_ENABLED
     void set_volz(Volz *_volz) { volz = _volz; }
 #endif
@@ -415,6 +419,8 @@ private:
     Loweheiser *loweheiser;
 #endif
     FETtecOneWireESC *fetteconewireesc;
+    IBUS2Master *ibus2master;
+    IBUS2Slave  *ibus2slave;
 #if AP_SIM_VOLZ_ENABLED
     Volz *volz;
 #endif  // AP_SIM_VOLZ_ENABLED

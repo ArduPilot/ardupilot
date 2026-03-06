@@ -1190,6 +1190,14 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         fetteconewireesc->update(*this);
     }
 
+    if (ibus2master) {
+        ibus2master->update(*this);
+    }
+
+    if (ibus2slave) {
+        ibus2slave->update(*this);
+    }
+
 #if AP_SIM_VOLZ_ENABLED
     if (volz) {
         volz->update(*this);
