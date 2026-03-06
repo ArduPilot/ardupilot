@@ -2445,4 +2445,10 @@ float ModeAuto::get_alt_above_ground_m() const
     return Mode::get_alt_above_ground_m();
 }
 
+void ModeAuto::do_wp_speed_change(float speed_cms)
+{
+    wp_nav->set_speed_NE_cms(speed_cms);
+    desired_speed_override_ms.xy = speed_cms * 0.01f;
+}
+
 #endif

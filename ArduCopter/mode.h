@@ -593,6 +593,7 @@ public:
     void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
     void circle_start();
     void nav_guided_start();
+    void do_wp_speed_change(float speed_cms);
 
     bool is_landing() const override;
 

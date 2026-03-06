@@ -126,6 +126,11 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
 
     case TUNING_WP_SPEED:
         wp_nav->set_speed_NE_cms(tuning_value);
+        
+        if (flightmode->mode_number() == Mode::Number::AUTO) {
+            mode_auto.do_wp_speed_change(tuning_value);
+        }
+        
         break;
 
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
