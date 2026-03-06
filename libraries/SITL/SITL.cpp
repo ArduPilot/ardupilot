@@ -655,6 +655,14 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(vicon, "VICON_", 56, SIM, ViconParms),
 #endif  // AP_SIM_VICON_ENABLED
 
+    // @Group: IBUS2M_
+    // @Path: ./SIM_IBUS2_Master.cpp
+    AP_SUBGROUPINFO(ibus2master_sim, "IBUS2M_", 57, SIM, IBUS2Master),
+
+    // @Group: IBUS2S_
+    // @Path: ./SIM_IBUS2_Slave.cpp
+    AP_SUBGROUPINFO(ibus2slave_sim, "IBUS2S_", 58, SIM, IBUS2Slave),
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
