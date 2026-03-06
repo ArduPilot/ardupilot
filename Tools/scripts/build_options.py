@@ -99,6 +99,8 @@ BUILD_OPTIONS = [
     Feature('Telemetry', 'Bidirectional FrSky Telemetry', 'HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL', 'Enable bidirectional FrSky telemetry', 0, 'FrSky SPort'),  # noqa
     Feature('Telemetry', 'GHST', 'AP_GHST_TELEM_ENABLED', 'Enable Ghost telemetry', 0, "RC_GHST"), # noqa
     Feature('Telemetry', 'i-BUS', 'AP_IBUS_TELEM_ENABLED', 'Enable i-BUS telemetry', 0, None),
+    Feature('Telemetry', 'IBUS2 Master', 'AP_IBUS2_MASTER_ENABLED', 'Enable IBUS2 master (AP controls IBUS2 devices)', 0, None),  # noqa
+    Feature('Telemetry', 'IBUS2 Slave', 'AP_IBUS2_SLAVE_ENABLED', 'Enable IBUS2 slave (AP is device on receiver bus)', 0, None),  # noqa
 
     Feature('Notify', 'PLAY_TUNE', 'AP_NOTIFY_MAVLINK_PLAY_TUNE_SUPPORT_ENABLED', 'Enable MAVLink Play Tune command', 0, None),  # noqa
     Feature('Notify', 'TONEALARM', 'AP_NOTIFY_TONEALARM_ENABLED', 'Enable PWM tone alarm', 0, None),  # noqa
