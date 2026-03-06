@@ -813,10 +813,9 @@ void SRV_Channels::set_slew_rate(SRV_Channel::Function function, float slew_rate
         }
     }
 
-    if (!is_positive(max_change)) {
-        // no point in adding a disabled slew limit
-        return;
-    }
+    // The slew limit is still allocated even if the slew rate is 0 for disabled.
+    // This means that if the slew limit is changed at some point in the future we still have
+    // a valid last output to slew from.
 
     // add new item
     slew_list *new_slew = NEW_NOTHROW slew_list(function);
