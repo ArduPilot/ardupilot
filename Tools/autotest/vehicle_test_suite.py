@@ -15035,18 +15035,19 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToHomeMinAlt(self):
         '''fence min-alt threshold is measured relative to home, not EKF origin'''
-        self.set_parameters(self.FenceRelativeToHome_params())
-        self.wait_ready_to_arm()
-        original_home = self.mav.location()
-        home_ofs = 20
         fence_alt_min = 5   # m above home = 25 m above origin
-        offset_home = self.offset_location_up(original_home, home_ofs)
-        self.set_home(offset_home)
-        self.set_parameters({
+        params = self.FenceRelativeToHome_params()
+        params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
+        self.set_parameters(params)
+        self.wait_ready_to_arm()
+        original_home = self.mav.location()
+        home_ofs = 20
+        offset_home = self.offset_location_up(original_home, home_ofs)
+        self.set_home(offset_home)
         self.takeoff(10, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.set_rc(3, 1200)
@@ -15079,20 +15080,21 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToHomeMinAltOriginAbove(self):
         '''fence min-alt relative to home when origin is above home'''
-        self.set_parameters(self.FenceRelativeToHome_params())
-        self.wait_ready_to_arm()
-        original_home = self.mav.location()
-        home_ofs = -20
         # 26 m above home = 6 m above origin; wrong origin-frame would
         # see vehicle (10 m above origin) as below the 26 m fence → breach
         fence_alt_min = 26
-        offset_home = self.offset_location_up(original_home, home_ofs)
-        self.set_home(offset_home)
-        self.set_parameters({
+        params = self.FenceRelativeToHome_params()
+        params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
+        self.set_parameters(params)
+        self.wait_ready_to_arm()
+        original_home = self.mav.location()
+        home_ofs = -20
+        offset_home = self.offset_location_up(original_home, home_ofs)
+        self.set_home(offset_home)
         self.takeoff(30, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
@@ -15104,20 +15106,23 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToHomeCliff(self):
         '''home-relative min fence below arming altitude requires cliff to breach'''
+        self.install_terrain_handlers_context()
         self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
-        self.set_parameters(self.FenceRelativeToHome_params())
-        self.wait_ready_to_arm()
-        original_home = self.mav.location()
-        home_ofs = -20
         fence_alt_min = 5   # m above home = ~150 m AMSL, 15 m below arming alt
-        offset_home = self.offset_location_up(original_home, home_ofs)
-        self.set_home(offset_home)
-        self.set_parameters({
+        params = self.FenceRelativeToHome_params()
+        params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 80,  # generous ceiling
             "FENCE_RADIUS": 10000,  # ensure circle fence cannot limit north flight
+            "TERRAIN_ENABLE": 1,
         })
+        self.set_parameters(params)
+        self.wait_ready_to_arm()
+        original_home = self.mav.location()
+        home_ofs = -20
+        offset_home = self.offset_location_up(original_home, home_ofs)
+        self.set_home(offset_home)
         self.takeoff(25, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
@@ -15129,6 +15134,8 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToOriginMaxAlt(self):
         '''fence max-alt threshold is measured relative to EKF origin, not home'''
+        # restart at default home in case a prior test moved to another location
+        self.customise_SITL_commandline([])
         self.set_parameters(self.FenceRelativeToOrigin_params())
         self.wait_ready_to_arm()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
@@ -15150,17 +15157,18 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToOriginMinAlt(self):
         '''fence min-alt threshold is measured relative to EKF origin, not home'''
-        self.set_parameters(self.FenceRelativeToOrigin_params())
-        self.wait_ready_to_arm()
-        origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         fence_alt_min = 3   # m above origin = 23 m above home
-        original_home = self.mav.location()
-        self.set_home(self.offset_location_up(original_home, -20))
-        self.set_parameters({
+        params = self.FenceRelativeToOrigin_params()
+        params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
+        self.set_parameters(params)
+        self.wait_ready_to_arm()
+        origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
+        original_home = self.mav.location()
+        self.set_home(self.offset_location_up(original_home, -20))
         self.takeoff(25, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.set_rc(3, 1200)
@@ -15172,16 +15180,21 @@ SERIAL5_BAUD 128
     def FenceRelativeToOriginMaxAltHomeAbove(self):
         '''fence max-alt relative to origin when home is above origin'''
         self.set_parameters(self.FenceRelativeToOrigin_params())
+        # reboot to clear stale home offset from prior test
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         fence_alt_max = 50  # m above origin = 30 m above home
+        # take off first from home==origin so relative alt starts at 0
+        self.takeoff(10, mode=self.FenceRelative_TakeoffMode())
+        # now move home 20 m above origin; vehicle at 10 m above origin
+        # is safely below the fence max at 50 m above origin
         original_home = self.mav.location()
-        self.set_home(self.offset_location_up(original_home, 20))
+        self.set_home(self.offset_location_up(original_home, 10))
         self.set_parameters({
             "FENCE_TYPE": 1,   # ALT_MAX only
             "FENCE_ALT_MAX": fence_alt_max,
         })
-        self.takeoff(10, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
         self.set_rc(3, 1800)
@@ -15192,22 +15205,28 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToOriginMinAltHomeAbove(self):
         '''fence min-alt relative to origin when home is above origin'''
-        self.set_parameters(self.FenceRelativeToOrigin_params())
-        self.wait_ready_to_arm()
-        origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         # 15 m above origin = 180 m AMSL (5 m below home); vehicle at
         # 10 m above home = 30 m above origin is above the origin fence.
         # A home-frame interpretation would place the fence at 15 m above
         # home = 200 m AMSL, above the vehicle at 195 m → immediate breach.
         fence_alt_min = 15
-        original_home = self.mav.location()
-        self.set_home(self.offset_location_up(original_home, 20))
-        self.set_parameters({
+        params = self.FenceRelativeToOrigin_params()
+        params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 80,  # generous ceiling
         })
-        self.takeoff(10, mode=self.FenceRelative_TakeoffMode())
+        self.set_parameters(params)
+        # reboot to clear stale home offset from prior test
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
+        # take off first from home==origin so relative alt starts at 0
+        self.takeoff(30, mode=self.FenceRelative_TakeoffMode())
+        # now move home 20 m above origin; vehicle at 30 m above origin
+        # is safely above the fence min at 15 m above origin
+        original_home = self.mav.location()
+        self.set_home(self.offset_location_up(original_home, -10))
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
         self.set_rc(3, 1200)
@@ -15219,6 +15238,8 @@ SERIAL5_BAUD 128
     def FenceRelativeToAMSLMaxAlt(self):
         '''fence max-alt threshold is interpreted as AMSL, not home-relative'''
         self.set_parameters(self.FenceRelativeToAMSL_params())
+        # reboot clears any lingering breach state from prior tests
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         ggo = self.poll_message("GPS_GLOBAL_ORIGIN")
         origin_alt_m = ggo.altitude / 1000.0  # mm -> m
@@ -15239,6 +15260,8 @@ SERIAL5_BAUD 128
     def FenceRelativeToAMSLMinAlt(self):
         '''fence min-alt threshold is interpreted as AMSL, not home-relative'''
         self.set_parameters(self.FenceRelativeToAMSL_params())
+        # reboot clears any lingering breach state from prior tests
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         ggo = self.poll_message("GPS_GLOBAL_ORIGIN")
         origin_alt_m = ggo.altitude / 1000.0  # mm -> m
@@ -15259,6 +15282,7 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToAMSLCliff(self):
         '''AMSL min fence below arming altitude requires cliff to breach'''
+        self.install_terrain_handlers_context()
         self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
         self.set_parameters(self.FenceRelativeToAMSL_params())
         self.wait_ready_to_arm()
@@ -15270,6 +15294,7 @@ SERIAL5_BAUD 128
             "FENCE_ALT_MIN": fence_min_below_arming,
             "FENCE_ALT_MAX": origin_alt_m + 60,  # generous AMSL ceiling
             "FENCE_RADIUS": 10000,  # ensure circle fence cannot limit north flight
+            "TERRAIN_ENABLE": 1,
         })
         self.takeoff(20, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
@@ -15282,6 +15307,8 @@ SERIAL5_BAUD 128
 
     def FenceRelativeToTerrainMaxAlt(self):
         '''fence max-alt threshold is interpreted as AGL (terrain-relative)'''
+        # restart at default home in case a prior test moved to another location
+        self.customise_SITL_commandline([])
         self.install_terrain_handlers_context()
         self.set_parameters(self.FenceRelativeToTerrain_params())
         self.wait_ready_to_arm()
@@ -15307,19 +15334,20 @@ SERIAL5_BAUD 128
     def FenceRelativeToTerrainMinAlt(self):
         '''fence min-alt threshold is interpreted as AGL (terrain-relative)'''
         self.install_terrain_handlers_context()
-        self.set_parameters(self.FenceRelativeToTerrain_params())
-        self.wait_ready_to_arm()
-        original_home = self.mav.location()
-        # home is placed 20 m below terrain; terrain AMSL ≈ original_home.alt
-        terrain_alt_amsl = original_home.alt
         fence_alt_min = 3   # m AGL = 23 m above home
-        offset_home = self.offset_location_up(original_home, -20)
-        self.set_home(offset_home)
-        self.set_parameters({
+        params = self.FenceRelativeToTerrain_params()
+        params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
+        self.set_parameters(params)
+        self.wait_ready_to_arm()
+        original_home = self.mav.location()
+        # home is placed 20 m below terrain; terrain AMSL ≈ original_home.alt
+        terrain_alt_amsl = original_home.alt
+        offset_home = self.offset_location_up(original_home, -20)
+        self.set_home(offset_home)
         self.takeoff(25, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.set_rc(3, 1200)
