@@ -292,6 +292,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(rpm_sensor, "RPM", 32, AP_Vehicle, AP_RPM),
 #endif
 
+#if AP_IBUS2_MASTER_ENABLED
+    // @Group: IBUS2M_
+    // @Path: ../AP_IBUS2_Master/AP_IBUS2_Master.cpp
+    AP_SUBGROUPINFO(ibus2_master, "IBUS2M_", 33, AP_Vehicle, AP_IBUS2_Master),
+#endif
+
     AP_GROUPEND
 };
 

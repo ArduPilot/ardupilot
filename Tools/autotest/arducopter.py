@@ -13275,6 +13275,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()
 
+    def IBUS2Slave(self):
+        '''Test AP as IBUS2 slave receiving RC channels from a FlySky receiver'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        # SIM_IBUS2_Master sends Frame1 with 14 RC channels every 7 ms.
+        # AP_IBUS2_Slave emits a statustext on the first successful Frame1 decode.
+        self.wait_statustext("IBUS2: 14 RC chans from receiver", timeout=10, check_context=True)
+
+    def IBUS2Master(self):
+        '''Test AP as IBUS2 master polling telemetry from a slave device'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 51,  # SerialProtocol_IBUS2_Master
+            "IBUS2M_ENABLE": 1,
+            "IBUS2M_SEND_MASK": 3,   # bit0=GET_TYPE, bit1=GET_VALUE
+            "SIM_IBUS2S_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2slave"])
+        # AP_IBUS2_Master enumerates device 0 then requests GET_VALUE.
+        # The statustext is emitted on the first valid response.
+        self.wait_statustext("IBUS2: device 0 VID=1 PID=3", timeout=15, check_context=True)
+
     def PerfInfo(self):
         '''Test Scheduler PerfInfo output'''
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
@@ -16675,6 +16701,8 @@ return update, 1000
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.IBus,
+            self.IBUS2Slave,
+            self.IBUS2Master,
             self.WaitAndMaintainAttitude_RCFlight,
             self.GuidedYawRate,
             self.RudderDisarmMidair,
