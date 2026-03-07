@@ -166,6 +166,18 @@ public:
     /// get_safe_alt_min_m - returns the minimum safe altitude in alt min frame (i.e. alt_min + margin)
     float get_safe_alt_min_m() const { return _alt_min_m + _margin_m; }
 
+    /// get_safe_alt_max_m_and_frame - returns maximum safe altitude and its frame via references
+    void get_safe_alt_max_m_and_frame(float &alt, uint8_t &frame) const {
+        alt = _alt_max_m - _margin_m;
+        frame = (uint8_t)_alt_max_type.get();
+    }
+
+    /// get_safe_alt_min_m_and_frame - returns minimum safe altitude and its frame via references
+    void get_safe_alt_min_m_and_frame(float &alt, uint8_t &frame) const {
+        alt = _alt_min_m + _margin_m;
+        frame = (uint8_t)_alt_min_type.get();
+    }
+
     /// get_radius_m - returns the fence radius in meters
     float get_radius_m() const { return _circle_radius_m.get(); }
 
