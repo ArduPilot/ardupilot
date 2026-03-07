@@ -18,6 +18,7 @@
 #if AP_IBUS2_MASTER_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 
 extern const AP_HAL::HAL &hal;
@@ -25,8 +26,10 @@ extern const AP_HAL::HAL &hal;
 // IBUS2 baud rate
 #define IBUS2_BAUD 1500000
 
-// Minimum time (µs) to wait for Frame 3 after sending Frame 2
-#define IBUS2_RESPONSE_TIMEOUT_US 500
+// Minimum time (µs) to wait for Frame 3 after sending Frame 2.
+// Must exceed the SITL physics step (~2500 µs) so that the simulator can
+// deliver Frame 3 before the timeout fires.
+#define IBUS2_RESPONSE_TIMEOUT_US 5000
 
 // Interval (µs) between IBUS2 master cycles (~7 ms)
 #define IBUS2_CYCLE_US 7000
@@ -138,6 +141,7 @@ void AP_IBUS2_Master::send_frame1()
 
     ibus2_crc8_write(buf, total_len);
     _port->write(buf, total_len);
+    _tx_pending_echo += total_len;  // half-duplex: TX bytes echoed to RX
 }
 
 void AP_IBUS2_Master::send_frame2(uint8_t addr)
@@ -166,10 +170,20 @@ void AP_IBUS2_Master::send_frame2(uint8_t addr)
     // for a simple single-device setup leave at zero.
     ibus2_crc8_write((uint8_t *)&f2, sizeof(f2));
     _port->write((const uint8_t *)&f2, sizeof(f2));
+    _tx_pending_echo += sizeof(f2);  // half-duplex: TX bytes echoed to RX
 }
 
 void AP_IBUS2_Master::process_rx()
 {
+    // In half-duplex mode our own TX bytes are echoed back; discard them first.
+    while (_tx_pending_echo > 0 && _port->available() > 0) {
+        uint8_t b;
+        if (!_port->read(b)) {
+            break;
+        }
+        _tx_pending_echo--;
+    }
+
     const uint16_t avail = MIN(_port->available(), 256U);
     for (uint16_t i = 0; i < avail; i++) {
         uint8_t b;
@@ -192,6 +206,8 @@ void AP_IBUS2_Master::process_rx()
             if (_rx_len == IBUS2_FRAME3_SIZE) {
                 if (ibus2_crc8_ok(_rx_buf, IBUS2_FRAME3_SIZE)) {
                     handle_frame3((const IBUS2_Frame3 *)_rx_buf);
+                } else {
+                    // CRC failure — discard and move on
                 }
                 _rx_state = RxState::WAIT_HEADER;
                 _waiting_response = false;
@@ -219,6 +235,10 @@ void AP_IBUS2_Master::handle_frame3(const IBUS2_Frame3 *f3)
         memcpy(_devices[addr].value, r->value, sizeof(_devices[addr].value));
         _devices[addr].vid = r->vid;
         _devices[addr].pid = r->pid;
+        if (!_devices[addr].valid) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBUS2: device %u VID=%u PID=%u",
+                          (unsigned)addr, (unsigned)r->vid, (unsigned)r->pid);
+        }
         _devices[addr].valid = true;
         _devices[addr].last_update_ms = AP_HAL::millis();
         break;
