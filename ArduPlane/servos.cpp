@@ -405,7 +405,7 @@ void ModeAuto::wiggle_servos()
 void Plane::trifin_update()
 {   
     // Base axis demands (already computed by controllers)
-    const float roll  = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    const float roll  = 0.0;//SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     const float pitch = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
     const float yaw   = 0.0;//SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
 
@@ -414,16 +414,8 @@ void Plane::trifin_update()
     //
     //   fin_i = G * ( Kr * roll_component_i + Kp * pitch_component_i + Ky * yaw_component_i )
     //
-    // The "component_i" terms define how each axis maps into each fin.
-    // You will tune signs and weights to match your mechanical layout.
-    //
-    // A reasonable *starting* symmetric pattern is:
-    // - Pitch: collective (all fins same sign)
-    // - Yaw: sine distribution around the circle
-    // - Roll: cosine distribution around the circle
-    //
     // (This is a generic linear allocator; it is NOT claiming exact aerodynamics.)
-
+    /*
     const float G  = g.tri_mix_gain.get(); //1.0
     const float Kr = g.tri_mix_roll.get(); //-0.2
     const float Kp = g.tri_mix_pitch.get();//-0.23
@@ -436,10 +428,11 @@ void Plane::trifin_update()
     constexpr float s2 =  0.86602540378f;  // +sqrt(3)/2
     constexpr float c3 = -0.5f;
     constexpr float s3 = -0.86602540378f;  // -sqrt(3)/2
+    */
+    float fin1 = -roll * 0.2 + yaw * 0.2;
+    float fin2 = -roll * 0.2 + yaw * 0.5 * 0.2 - pitch * 0.5;
+    float fin3 = -roll * 0.2 + yaw * 0.5 * 0.2 + pitch * 0.5;
 
-    float fin1 = G * ( Kp * pitch * s1 + Kr * roll + Ky * c1 * yaw );
-    float fin2 = G * ( Kp * pitch * s2 + Kr * roll + Ky * c2 * yaw );
-    float fin3 = G * ( Kp * pitch * s3 + Kr * roll + Ky * c3 * yaw );
 
     fin1 = constrain_float(fin1, -4500, 4500);
     fin2 = constrain_float(fin2, -4500, 4500);

@@ -1006,7 +1006,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Pitch contribution into tri-fin allocation.
     // @Range: -2.0 2.0
     // @Increment: 0.01
-    GSCALAR(tri_mix_pitch, "TRI_MIX_PITCH", -1.0f),
+    GSCALAR(tri_mix_pitch, "TRI_MIX_PITCH", -0.5f),
 
     // @Param: TRI_MIX_YAW
     // @DisplayName: TriFin Yaw Mix
