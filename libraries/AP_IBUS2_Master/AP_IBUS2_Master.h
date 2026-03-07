@@ -99,6 +99,9 @@ private:
     uint32_t _frame2_sent_us;
     bool _waiting_response;
 
+    // Number of TX bytes still to discard from RX (half-duplex echo)
+    uint16_t _tx_pending_echo;
+
     void send_frame1();
     void send_frame2(uint8_t addr);
     void process_rx();

@@ -159,8 +159,12 @@ void AP_IBUS2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
         _rc_channels[i] = (uint16_t)buf[data_start + i * 2] |
                           ((uint16_t)buf[data_start + i * 2 + 1] << 8);
     }
+    const bool was_empty = (_rc_channel_count == 0);
     _rc_channel_count = n_channels;
     _rc_last_update_ms = AP_HAL::millis();
+    if (was_empty && n_channels > 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBUS2: %u RC chans from receiver", (unsigned)n_channels);
+    }
 }
 
 void AP_IBUS2_Slave::handle_frame2(const IBUS2_Frame2 *f2)
