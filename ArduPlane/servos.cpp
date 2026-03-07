@@ -405,9 +405,9 @@ void ModeAuto::wiggle_servos()
 void Plane::trifin_update()
 {   
     // Base axis demands (already computed by controllers)
-    const float roll  = 0.0;//SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+    const float roll  = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     const float pitch = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
-    const float yaw   = 0.0;//SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+    const float yaw   = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
 
     // 3 fins around the body at 0/120/240 degrees:
     // A simple, tunable allocation model:
@@ -429,7 +429,7 @@ void Plane::trifin_update()
     constexpr float c3 = -0.5f;
     constexpr float s3 = -0.86602540378f;  // -sqrt(3)/2
     */
-    float fin1 = -roll * 0.2 + yaw * 0.2;
+    float fin1 = -roll * 0.2 - yaw * 0.2;
     float fin2 = -roll * 0.2 + yaw * 0.5 * 0.2 - pitch * 0.5;
     float fin3 = -roll * 0.2 + yaw * 0.5 * 0.2 + pitch * 0.5;
 
