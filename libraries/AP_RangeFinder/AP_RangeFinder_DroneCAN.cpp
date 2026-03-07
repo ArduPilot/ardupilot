@@ -15,11 +15,11 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_RangeFinder_DroneCAN::var_info[] = {
 
     // @Param: RECV_ID
-    // @DisplayName: RangeFinder CAN receive ID
-    // @Description: The node ID of the CAN device from which to receive range data. A value of zero means any node ID is accepted.
+    // @DisplayName: RangeFinder CAN receive node ID
+    // @Description: The DroneCAN node ID to accept range data from. A value of zero means any node ID is accepted.
     // @Range: 0 127
     // @User: Advanced
-    AP_GROUPINFO("RECV_ID", 10, AP_RangeFinder_DroneCAN, receive_id, 0),
+    AP_GROUPINFO("RECV_ID", 10, AP_RangeFinder_DroneCAN, receive_node_id, 0),
 
     AP_GROUPEND
 };
@@ -40,33 +40,33 @@ bool AP_RangeFinder_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, driver_index) != nullptr);
 }
 
-//Method to find the backend relating to the node id and receive id
-AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address)
+//Method to find the backend relating to the node id and sensor ID
+AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
     }
     RangeFinder &frontend = *AP::rangefinder();
 
-    // Scan through the Rangefinder params to find UAVCAN RFND with matching address and receive_id
+    // Scan through the Rangefinder params to find UAVCAN RFND with matching sensor_id and receive_node_id
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         if ((RangeFinder::Type)frontend.params[i].type.get() != RangeFinder::Type::UAVCAN ||
-            frontend.params[i].address != address) {
+            frontend.params[i].address != sensor_id) {
             continue;
         }
 
         AP_RangeFinder_DroneCAN* driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
 
         if (driver != nullptr) {
-            // Check if this driver's receive_id allows this node_id
-            if (driver->receive_id != 0 && driver->receive_id != node_id) {
+            // Check if this driver's receive_node_id allows this node_id
+            if (driver->receive_node_id != 0 && driver->receive_node_id != node_id) {
                 continue;
             }
             // Check if already bound to this exact node
             if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id) {
                 return driver;
             }
-            // Driver exists with matching receive_id but bound to different node - conflict
+            // Driver exists with matching receive_node_id but bound to different node - conflict
             continue;
         }
 
@@ -81,13 +81,13 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
         if (driver == nullptr) {
             break;
         }
-        // Check receive_id after creation (params are loaded in constructor)
-        if (driver->receive_id != 0 && driver->receive_id != node_id) {
+        // Check receive_node_id after creation (params are loaded in constructor)
+        if (driver->receive_node_id != 0 && driver->receive_node_id != node_id) {
             // This driver is configured for a different node, leave unbound
             continue;
         }
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RangeFinder[%u]: added DroneCAN node %u addr %u",
-                        unsigned(i), unsigned(node_id), unsigned(address));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RangeFinder[%u]: added DroneCAN node %u sensor_id %u",
+                        unsigned(i), unsigned(node_id), unsigned(sensor_id));
         driver->_ap_dronecan = ap_dronecan;
         driver->_node_id = node_id;
         return driver;
