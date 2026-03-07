@@ -992,28 +992,28 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Overall gain applied to tri-fin mixer outputs (scaled units).
     // @Range: 0.1 2.0
     // @Increment: 0.01
-    GSCALAR(tri_mix_gain,  "TRI_MIX_GAIN",  0.5f),
+    GSCALAR(tri_mix_gain,  "TRI_MIX_GAIN",  1.00f),
 
     // @Param: TRI_MIX_ROLL
     // @DisplayName: TriFin Roll Mix
     // @Description: Roll contribution into tri-fin allocation.
     // @Range: -2.0 2.0
     // @Increment: 0.01
-    GSCALAR(tri_mix_roll,  "TRI_MIX_ROLL",  1.0f),
+    GSCALAR(tri_mix_roll,  "TRI_MIX_ROLL",  -0.20f),
 
     // @Param: TRI_MIX_PITCH
     // @DisplayName: TriFin Pitch Mix
     // @Description: Pitch contribution into tri-fin allocation.
     // @Range: -2.0 2.0
     // @Increment: 0.01
-    GSCALAR(tri_mix_pitch, "TRI_MIX_PITCH", 1.0f),
+    GSCALAR(tri_mix_pitch, "TRI_MIX_PITCH", -1.0f),
 
     // @Param: TRI_MIX_YAW
     // @DisplayName: TriFin Yaw Mix
     // @Description: Yaw contribution into tri-fin allocation.
     // @Range: -2.0 2.0
     // @Increment: 0.01
-    GSCALAR(tri_mix_yaw,   "TRI_MIX_YAW",   1.0f),
+    GSCALAR(tri_mix_yaw,   "TRI_MIX_YAW",   -0.2f),
 
     AP_VAREND
 };
