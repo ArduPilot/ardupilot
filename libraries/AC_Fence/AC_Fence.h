@@ -154,10 +154,10 @@ public:
     /// get_action - getter for user requested action on limit breach
     Action get_action() const { return _action; }
 
-    /// get_safe_alt - returns maximum safe altitude in relative frame
+    /// get_relative_safe_alt_max_m - returns maximum safe altitude in relative frame
     float get_relative_safe_alt_max_m() const { return _safe_relhome_alt_max_m ; }
 
-    /// get_safe_alt_min_m - returns the minimum safe altitude in relative frame
+    /// get_relative_safe_alt_min_m - returns the minimum safe altitude in relative frame
     float get_relative_safe_alt_min_m() const { return _safe_relhome_alt_min_m ; }
 
     /// get_safe_alt_max_m - returns maximum safe altitude in alt max frame (i.e. alt_max - margin)
@@ -230,11 +230,17 @@ public:
 #endif
 
     // get altitude in alt max frame
-    bool get_alt_in_alt_max_frame(float &alt) const { return get_alt_in_frame(alt, _alt_max_type); }
+    bool get_alt_in_alt_max_frame_m(float &alt) const { return get_alt_in_frame_m(_alt_max_type, alt); }
     // get altitude in alt min frame
-    bool get_alt_in_alt_min_frame(float &alt) const { return get_alt_in_frame(alt, _alt_min_type); }
+    bool get_alt_in_alt_min_frame_m(float &alt) const { return get_alt_in_frame_m(_alt_min_type, alt); }
     // get alt max frame
     Location::AltFrame get_alt_max_frame() const { return (Location::AltFrame)_alt_max_type.get(); }
+    // get alt min frame
+    Location::AltFrame get_alt_min_frame() const { return (Location::AltFrame)_alt_min_type.get(); }
+
+    // deprecated aliases - use _m suffixed versions
+    bool get_alt_in_alt_max_frame(float &alt) const { return get_alt_in_alt_max_frame_m(alt); }
+    bool get_alt_in_alt_min_frame(float &alt) const { return get_alt_in_alt_min_frame_m(alt); }
 
 private:
     static AC_Fence *_singleton;
@@ -269,8 +275,8 @@ private:
     /// retrieve the current NED position relative to home
     bool get_current_position_NED(Vector3f& currpos) const;
 
-    // get altitude in FENCE_ALT_TYPE frame
-    bool get_alt_in_frame(float &alt, Location::AltFrame alt_frame) const;
+    // get altitude in the supplied frame
+    bool get_alt_in_frame_m(Location::AltFrame alt_frame, float &alt) const;
 
     // additional checks for the different fence types:
     bool pre_arm_check_polygon(char *failure_msg, const uint8_t failure_msg_len) const;
