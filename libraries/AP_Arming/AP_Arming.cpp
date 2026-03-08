@@ -195,8 +195,9 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: SKIPCHK
     // @DisplayName: Arm Checks to Skip (bitmask)
     // @Description: Checks to skip prior to arming motor. This is a bitmask of checks before allowing arming that will be skipped. For most users it is recommended to leave this at the default of 0 (no checks skipped). In extreme circumstances, a value of -1 can be used to skip all non-mandatory current and future checks.
-    // @Bitmask: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
-    // @Bitmask{Plane}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
+    // @Bitmask: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT,20:OSD
+    // @Bitmask{Copter}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT,20:OSD
+    // @Bitmask{Plane}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT,20:OSD
     // @User: Standard
     AP_GROUPINFO("SKIPCHK", 13, AP_Arming, checks_to_skip, 0),
 
