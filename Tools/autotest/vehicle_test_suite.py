@@ -14974,6 +14974,7 @@ SERIAL5_BAUD 128
             "FENCE_ALT_MAX": 0,
         })
         self.assert_prearm_failure("PreArm: Vehicle breaching Max Alt fence")
+        self.customise_SITL_commandline([])
 
     def FenceRelativeToHome_params(self):
         '''returns parameters for FenceRelativeToHome test'''
@@ -15027,11 +15028,12 @@ SERIAL5_BAUD 128
         expected_breach_alt = offset_home.alt + fence_alt_max
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def FenceRelativeToHomeMinAlt(self):
         '''fence min-alt threshold is measured relative to home, not EKF origin'''
         fence_alt_min = 5   # m above home = 25 m above origin
-        params = self.FenceRelativeToHome_params()
+        params = copy.copy(self.FenceRelativeToHome_params())
         params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
@@ -15050,6 +15052,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = offset_home.alt + fence_alt_min
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def FenceRelativeToHomeMaxAltOriginAbove(self):
         '''fence max-alt relative to home when origin is above home'''
@@ -15072,6 +15075,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = offset_home.alt + fence_alt_max
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def FenceRelativeToHomeMinAltOriginAbove(self):
         '''fence min-alt relative to home when origin is above home'''
@@ -15098,6 +15102,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = offset_home.alt + fence_alt_min
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def FenceRelativeToHomeCliff(self):
         '''home-relative min fence below arming altitude requires cliff to breach'''
@@ -15126,11 +15131,10 @@ SERIAL5_BAUD 128
         expected_breach_alt = offset_home.alt + fence_alt_min
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.customise_SITL_commandline([])
 
     def FenceRelativeToOriginMaxAlt(self):
         '''fence max-alt threshold is measured relative to EKF origin, not home'''
-        # restart at default home in case a prior test moved to another location
-        self.customise_SITL_commandline([])
         self.set_parameters(self.FenceRelativeToOrigin_params())
         self.wait_ready_to_arm()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
@@ -15149,6 +15153,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = origin_alt_m + fence_alt_max
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def FenceRelativeToOriginMinAlt(self):
         '''fence min-alt threshold is measured relative to EKF origin, not home'''
@@ -15171,13 +15176,13 @@ SERIAL5_BAUD 128
         expected_breach_alt = origin_alt_m + fence_alt_min
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def FenceRelativeToOriginMaxAltHomeAbove(self):
         '''fence max-alt relative to origin when home is above origin'''
         self.set_parameters(self.FenceRelativeToOrigin_params())
-        # reboot to clear stale home offset from prior test
-        self.reboot_sitl()
         self.wait_ready_to_arm()
+        ground_loc = self.mav.location()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         fence_alt_max = 50  # m above origin = 30 m above home
         # take off first from home==origin so relative alt starts at 0
@@ -15197,6 +15202,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = origin_alt_m + fence_alt_max
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(ground_loc)
 
     def FenceRelativeToOriginMinAltHomeAbove(self):
         '''fence min-alt relative to origin when home is above origin'''
@@ -15212,9 +15218,8 @@ SERIAL5_BAUD 128
             "FENCE_ALT_MAX": 80,  # generous ceiling
         })
         self.set_parameters(params)
-        # reboot to clear stale home offset from prior test
-        self.reboot_sitl()
         self.wait_ready_to_arm()
+        ground_loc = self.mav.location()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         # take off first from home==origin so relative alt starts at 0
         self.takeoff(30, mode=self.FenceRelative_TakeoffMode())
@@ -15229,6 +15234,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = origin_alt_m + fence_alt_min
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(ground_loc)
 
     def FenceRelativeToAMSLMaxAlt(self):
         '''fence max-alt threshold is interpreted as AMSL, not home-relative'''
@@ -15299,11 +15305,10 @@ SERIAL5_BAUD 128
         expected_breach_alt = fence_min_below_arming
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.customise_SITL_commandline([])
 
     def FenceRelativeToTerrainMaxAlt(self):
         '''fence max-alt threshold is interpreted as AGL (terrain-relative)'''
-        # restart at default home in case a prior test moved to another location
-        self.customise_SITL_commandline([])
         self.install_terrain_handlers_context()
         self.set_parameters(self.FenceRelativeToTerrain_params())
         self.wait_ready_to_arm()
@@ -15325,6 +15330,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = terrain_alt_amsl + fence_alt_max
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def FenceRelativeToTerrainMinAlt(self):
         '''fence min-alt threshold is interpreted as AGL (terrain-relative)'''
@@ -15350,6 +15356,7 @@ SERIAL5_BAUD 128
         expected_breach_alt = terrain_alt_amsl + fence_alt_min
         self.assert_altitude(expected_breach_alt, accuracy=10)
         self.disarm_vehicle(force=True)
+        self.set_home(original_home)
 
     def MotorTest(self, timeout=60, **kwargs):
         '''Run Motor Tests'''  # common to Copter and QuadPlane
