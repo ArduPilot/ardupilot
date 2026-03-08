@@ -355,61 +355,12 @@ void AP_Baro::calibrate(bool save)
         hal.scheduler->delay(100);
     }
 
-    if (settled) {
-        // now average over 5 values for the ground pressure settings
-        float sum_pressure[BARO_MAX_INSTANCES] = {0};
-        uint8_t count[BARO_MAX_INSTANCES] = {0};
-        const uint8_t num_samples = 5;
-
-        for (uint8_t c = 0; c < num_samples; c++) {
-            uint32_t tstart = AP_HAL::millis();
-            do {
-                update();
-                if (AP_HAL::millis() - tstart > 500) {
-                    break;
-                }
-            } while (!healthy());
-            for (uint8_t i=0; i<_num_sensors; i++) {
-                if (healthy(i)) {
-                    sum_pressure[i] += sensors[i].pressure;
-                    count[i] += 1;
-                }
-            }
-            hal.scheduler->delay(100);
-        }
-        for (uint8_t i=0; i<_num_sensors; i++) {
-            if (count[i] == 0) {
-                sensors[i].calibrated = false;
-            } else {
-                if (save) {
-                    float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i], _field_elevation_active);
-                    sensors[i].ground_pressure.set_and_save(p0_sealevel);
-                }
-            }
-        }
-
-        _guessed_ground_temperature = get_external_temperature();
-
-        // report calibration status
-        for (uint8_t i=0; i<_num_sensors; i++) {
-            if (sensors[i].calibrated) {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
-            }
-        }
-    } else {
-        // sensors not yet producing data, mark all uncalibrated
-        for (uint8_t i=0; i<_num_sensors; i++) {
-            sensors[i].calibrated = false;
-        }
-    }
-
-    // initialize deferred calibration state for uncalibrated sensors
+    // sensors not yet producing data, mark all uncalibrated
     for (uint8_t i=0; i<_num_sensors; i++) {
-        if (!sensors[i].calibrated) {
-            sensors[i].cal_start_ms = 0;
-            sensors[i].cal_sum = 0;
-            sensors[i].cal_count = 0;
-        }
+        sensors[i].calibrated = false;
+        sensors[i].cal_start_ms = 0;
+        sensors[i].cal_sum = 0;
+        sensors[i].cal_count = 0;
     }
 }
 
