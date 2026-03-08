@@ -689,8 +689,6 @@ is bob we will attempt to checkout bob-AVR'''
         self.progress(f"Generating apm.pdef.xml for {vehicle_type} {git_tag}")
 
         try:
-            # Run param_parse.py to generate metadata
-            # Note: We're already at the correct git tag from the build process
             param_parse_path = os.path.join(topdir(), 'Tools', 'autotest',
                                             'param_metadata', 'param_parse.py')
 
@@ -698,38 +696,39 @@ is bob we will attempt to checkout bob-AVR'''
                 self.progress(f"param_parse.py not found at {param_parse_path}")
                 return False
 
+            # Get current git SHA to embed in the metadata
+            git_sha = self.run_git(["rev-parse", "HEAD"]).rstrip()
+
+            # Remove any stale output file before generating
+            apm_pdef_path = os.path.join(topdir(), 'apm.pdef.xml')
+            apm_pdef_xz_path = apm_pdef_path + '.xz'
+            for stale in (apm_pdef_path, apm_pdef_xz_path):
+                if os.path.exists(stale):
+                    os.remove(stale)
+
             self.run_program(
                 'PARAM-PARSE',
-                ['python3', param_parse_path, '--vehicle', vehicle_type, '--format', 'xml'],
+                ['python3', param_parse_path,
+                 '--vehicle', vehicle_type,
+                 '--format', 'xml',
+                 '--git-sha', git_sha,
+                 '--git-tag', git_tag,
+                 '--compress'],
                 show_output=True
             )
 
-            # Check if the output file was created
-            apm_pdef_path = os.path.join(topdir(), 'apm.pdef.xml')
-            if not os.path.exists(apm_pdef_path):
-                self.progress("apm.pdef.xml was not generated")
+            # Check if the compressed output file was created
+            if not os.path.exists(apm_pdef_xz_path):
+                self.progress("apm.pdef.xml.xz was not generated")
                 return False
 
             # Create destination directory including __METADATA__ subdirectory
             metadata_dir = os.path.join(dst_dir, '__METADATA__')
             self.mkpath(metadata_dir)
 
-            # Add XML comment with generation metadata
-            content = self.read_string_from_filepath(apm_pdef_path)
-            lines = content.splitlines(True)
-
-            now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            comment = f'<!-- Generated from git tag {git_tag} on {now} -->\n'
-
-            # Insert after XML declaration (first line) or at the start
-            insert_position = 1 if lines and lines[0].startswith('<?xml') else 0
-            lines.insert(insert_position, comment)
-
-            self.write_string_to_filepath(''.join(lines), apm_pdef_path)
-
-            # Copy to destination in __METADATA__ subdirectory
-            dst_file = os.path.join(metadata_dir, 'apm.pdef.xml')
-            shutil.copy(apm_pdef_path, dst_file)
+            # Copy compressed file to destination
+            dst_file = os.path.join(metadata_dir, 'apm.pdef.xml.xz')
+            shutil.copy(apm_pdef_xz_path, dst_file)
             self.progress(f"Created {dst_file}")
             return True
 
