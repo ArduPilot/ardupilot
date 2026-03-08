@@ -238,10 +238,6 @@ public:
     // get alt min frame
     Location::AltFrame get_alt_min_frame() const { return (Location::AltFrame)_alt_min_type.get(); }
 
-    // deprecated aliases - use _m suffixed versions
-    bool get_alt_in_alt_max_frame(float &alt) const { return get_alt_in_alt_max_frame_m(alt); }
-    bool get_alt_in_alt_min_frame(float &alt) const { return get_alt_in_alt_min_frame_m(alt); }
-
 private:
     static AC_Fence *_singleton;
 
