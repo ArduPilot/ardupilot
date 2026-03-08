@@ -578,7 +578,7 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
   get our altitude in the supplied frame
   return false if not available
  */
-bool AC_Fence::get_alt_in_frame(float &alt, Location::AltFrame alt_frame) const
+bool AC_Fence::get_alt_in_frame_m(Location::AltFrame alt_frame, float &alt) const
 {
     const auto &ahrs = AP::ahrs();
 
@@ -634,7 +634,7 @@ bool AC_Fence::check_fence_alt_max()
     }
 
     float _curr_alt_u_m;
-    if (!get_alt_in_alt_max_frame(_curr_alt_u_m)) {
+    if (!get_alt_in_alt_max_frame_m(_curr_alt_u_m)) {
         // if we can't get the alt then it is a breach
         return true;
     }
@@ -696,7 +696,7 @@ bool AC_Fence::check_fence_alt_min()
     }
 
     float _curr_alt_u_m;
-    if (!get_alt_in_alt_min_frame(_curr_alt_u_m)) {
+    if (!get_alt_in_alt_min_frame_m(_curr_alt_u_m)) {
         // if we can't get the alt then it is a breach
         return true;
     }
@@ -757,7 +757,7 @@ bool AC_Fence::auto_enable_fence_floor()
     }
 
     float _curr_alt_u_m;
-    if (!get_alt_in_alt_min_frame(_curr_alt_u_m)) {
+    if (!get_alt_in_alt_min_frame_m(_curr_alt_u_m)) {
         // if we can't get the alt then don't enable yet
         return true;
     }
@@ -985,9 +985,9 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
 {
     // Altitude fence check - Fence Ceiling
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX)) {
-        int32_t alt_cm;
-        if (loc.get_alt_cm(_alt_max_type, alt_cm)) {
-            if ((alt_cm * 0.01f) > _alt_max_m) {
+        float alt_m;
+        if (loc.get_alt_m(_alt_max_type, alt_m)) {
+            if (alt_m > _alt_max_m) {
                 return false;
             }
         }
@@ -995,9 +995,9 @@ bool AC_Fence::check_destination_within_fence(const Location& loc)
 
     // Altitude fence check - Fence Floor
     if ((get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN)) {
-        int32_t alt_cm;
-        if (loc.get_alt_cm(_alt_min_type, alt_cm)) {
-            if ((alt_cm * 0.01f) < _alt_min_m) {
+        float alt_m;
+        if (loc.get_alt_m(_alt_min_type, alt_m)) {
+            if (alt_m < _alt_min_m) {
                 return false;
             }
         }
