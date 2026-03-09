@@ -618,6 +618,8 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_CYPRESS_S25FL064L     0x016017
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 #define JEDEC_ID_GIGA_GD25Q16E         0xC84015
+#define JEDEC_ID_ZBIT_ZB25VQ128_SPI_mode     0x5E4018
+#define JEDEC_ID_ZBIT_ZB25VQ128_QPI_mode     0x5E6018
 
 /* Hardware-specific constants */
 
@@ -716,7 +718,8 @@ const static struct lfs_filebd_config fbd_config {
 };
 #endif
 
-uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
+uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count()
+{
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
     if (!wait_until_device_is_ready()) {
         return false;
@@ -846,7 +849,8 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     return id;
 }
 
-bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
+bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem()
+{
     if (dead) {
         return false;
     }
@@ -1028,7 +1032,8 @@ static uint32_t block_erases;
 #endif
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
     lfs_block_t block, lfs_off_t off, void* buffer, lfs_size_t size
-) {
+)
+{
     EXPECT_DELAY_MS((25*size)/(fs_cfg.read_size*1000));
 
     // LittleFS always calls us with off aligned to read_size and size a
@@ -1077,7 +1082,8 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
 
 int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
     lfs_block_t block, lfs_off_t off, const void* buffer, lfs_size_t size
-) {
+)
+{
     EXPECT_DELAY_MS((250*size)/(fs_cfg.read_size*1000));
 
     // LittleFS always calls us with off aligned to prog_size and size a
@@ -1096,7 +1102,7 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
         page_writes++;
         if (AP_HAL::millis() - last_write_msg_ms > 5000) {
             debug("LFS: writes %lukB/s, pages %lu/s (reads %lu/s, block erases %lu/s)",
-                (page_writes*page_size)/(5*1024), page_writes/5, page_reads/5, block_erases/5);
+                  (page_writes*page_size)/(5*1024), page_writes/5, page_reads/5, block_erases/5);
             page_writes = 0;
             page_reads = 0;
             block_erases = 0;
@@ -1128,7 +1134,8 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
     return LFS_ERR_OK;
 }
 
-int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
+int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block)
+{
     if (!write_enable()) {
         return LFS_ERR_IO;
     }
@@ -1152,7 +1159,8 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
     return LFS_ERR_OK;
 }
 
-int AP_Filesystem_FlashMemory_LittleFS::_flashmem_sync() {
+int AP_Filesystem_FlashMemory_LittleFS::_flashmem_sync()
+{
     if (wait_until_device_is_ready()) {
         return LFS_ERR_OK;
     } else {
@@ -1164,7 +1172,8 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_sync() {
 static int flashmem_read(
     const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off,
     void* buffer, lfs_size_t size
-) {
+)
+{
     AP_Filesystem_FlashMemory_LittleFS* self = static_cast<AP_Filesystem_FlashMemory_LittleFS*>(cfg->context);
     return self->_flashmem_read(block, off, buffer, size);
 }
@@ -1172,17 +1181,20 @@ static int flashmem_read(
 static int flashmem_prog(
     const struct lfs_config *cfg, lfs_block_t block, lfs_off_t off,
     const void* buffer, lfs_size_t size
-) {
+)
+{
     AP_Filesystem_FlashMemory_LittleFS* self = static_cast<AP_Filesystem_FlashMemory_LittleFS*>(cfg->context);
     return self->_flashmem_prog(block, off, buffer, size);
 }
 
-static int flashmem_erase(const struct lfs_config *cfg, lfs_block_t block) {
+static int flashmem_erase(const struct lfs_config *cfg, lfs_block_t block)
+{
     AP_Filesystem_FlashMemory_LittleFS* self = static_cast<AP_Filesystem_FlashMemory_LittleFS*>(cfg->context);
     return self->_flashmem_erase(block);
 }
 
-static int flashmem_sync(const struct lfs_config *cfg) {
+static int flashmem_sync(const struct lfs_config *cfg)
+{
     AP_Filesystem_FlashMemory_LittleFS* self = static_cast<AP_Filesystem_FlashMemory_LittleFS*>(cfg->context);
     return self->_flashmem_sync();
 }
@@ -1195,24 +1207,24 @@ static int flashmem_sync(const struct lfs_config *cfg) {
 static int errno_from_lfs_error(int lfs_error)
 {
     switch (lfs_error) {
-        case LFS_ERR_OK: return 0;
-        case LFS_ERR_IO: return EIO;
-        case LFS_ERR_CORRUPT: return EIO;
-        case LFS_ERR_NOENT: return ENOENT;
-        case LFS_ERR_EXIST: return EEXIST;
-        case LFS_ERR_NOTDIR: return ENOTDIR;
-        case LFS_ERR_ISDIR: return EISDIR;
-        case LFS_ERR_NOTEMPTY: return ENOTEMPTY;
-        case LFS_ERR_BADF: return EBADF;
-        case LFS_ERR_FBIG: return EFBIG;
-        case LFS_ERR_INVAL: return EINVAL;
-        case LFS_ERR_NOSPC: return ENOSPC;
-        case LFS_ERR_NOMEM: return ENOMEM;
+    case LFS_ERR_OK: return 0;
+    case LFS_ERR_IO: return EIO;
+    case LFS_ERR_CORRUPT: return EIO;
+    case LFS_ERR_NOENT: return ENOENT;
+    case LFS_ERR_EXIST: return EEXIST;
+    case LFS_ERR_NOTDIR: return ENOTDIR;
+    case LFS_ERR_ISDIR: return EISDIR;
+    case LFS_ERR_NOTEMPTY: return ENOTEMPTY;
+    case LFS_ERR_BADF: return EBADF;
+    case LFS_ERR_FBIG: return EFBIG;
+    case LFS_ERR_INVAL: return EINVAL;
+    case LFS_ERR_NOSPC: return ENOSPC;
+    case LFS_ERR_NOMEM: return ENOMEM;
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-        case LFS_ERR_NOATTR: return ENOATTR;
+    case LFS_ERR_NOATTR: return ENOATTR;
 #endif
-        case LFS_ERR_NAMETOOLONG: return ENAMETOOLONG;
-        default: return EIO;
+    case LFS_ERR_NAMETOOLONG: return ENAMETOOLONG;
+    default: return EIO;
     }
 }
 
