@@ -1965,7 +1965,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FENCE_TYPE": 1,
             "FENCE_ALT_MAX_TP": frame,
             "FENCE_ALT_MAX": alt,
-            "FENCE_ENABLE" : 1,
             "TERRAIN_ENABLE": terrain,
             "SIM_TERRAIN": terrain,
         })
