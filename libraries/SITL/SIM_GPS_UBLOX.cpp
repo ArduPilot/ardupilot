@@ -253,7 +253,9 @@ void GPS_UBlox::send_rxm_rawx(uint8_t num_meas)
         rawx_sv_t sv {};
         sv.gnssId = i % 4;
         sv.svId   = i + 1;
-        sv.cno    = 40;
+        // Encode GPS instance into cno (40 + instance) so the autotest can
+        // verify that GRXS records from different GPS instances are not mixed.
+        sv.cno    = 40 + instance;
         feed((uint8_t*)&sv, sizeof(sv));
         write_to_autopilot((char*)&sv, sizeof(sv));
     }
