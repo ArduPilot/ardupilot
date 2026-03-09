@@ -402,45 +402,68 @@ void ModeAuto::wiggle_servos()
 
 }
 
-void Plane::trifin_update()
+void Plane::trifin_setup()
 {   
-    // Base axis demands (already computed by controllers)
+    if (trifin_initialized) {
+        return;
+    }
+
+    trifin_initialized = true;
+    static int call_count = 0;
+    call_count++;
+    const float k = TRI_MIX_LR;  // tri-mix L/R
+    const float inv_k = 1.0f / k;
+
+    // Fin azimuth angles from config (deg -> radians)
+    const float a1 = radians(TRI_FIN1_AZIMUTH);
+    const float a2 = radians(TRI_FIN2_AZIMUTH);
+    const float a3 = radians(TRI_FIN3_AZIMUTH);
+
+    const float s1 = sinf(a1), c1 = cosf(a1);
+    const float s2 = sinf(a2), c2 = cosf(a2);
+    const float s3 = sinf(a3), c3 = cosf(a3);
+
+    // Roll contribution (all fins same, negative to match conventional control)
+    trifin_mix[0][0] = -1.0f;
+    trifin_mix[1][0] = -1.0f;
+    trifin_mix[2][0] = -1.0f;
+
+    // Pitch contribution
+    trifin_mix[0][1] =  c1 * inv_k;
+    trifin_mix[1][1] =  c2 * inv_k;
+    trifin_mix[2][1] =  c3 * inv_k;
+
+    // Yaw contribution
+    trifin_mix[0][2] =  s1 * inv_k;
+    trifin_mix[1][2] =  s2 * inv_k;
+    trifin_mix[2][2] =  s3 * inv_k;
+}
+
+void Plane::trifin_update()
+{
+    trifin_setup();
+    
+    // Base axis demands from controllers
     const float roll  = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
     const float pitch = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
     const float yaw   = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
 
-    // 3 fins around the body at 0/120/240 degrees:
-    // A simple, tunable allocation model:
-    //
-    //   fin_i = G * ( Kr * roll_component_i + Kp * pitch_component_i + Ky * yaw_component_i )
-    //
-    // (This is a generic linear allocator; it is NOT claiming exact aerodynamics.)
-    /*
-    const float G  = g.tri_mix_gain.get(); //1.0
-    const float Kr = g.tri_mix_roll.get(); //-0.2
-    const float Kp = g.tri_mix_pitch.get();//-0.23
-    const float Ky = g.tri_mix_yaw.get(); //-0.2
+    const float G = g.tri_mix_gain.get();  // tri-mix Gain
+    const float limit = g.tri_deflection_limit.get(); //grid fin limit
 
-    // cos/sin for 0, 120, 240 degrees
-    constexpr float c1 =  1.0f;
-    constexpr float s1 =  0.0f;
-    constexpr float c2 = -0.5f;
-    constexpr float s2 =  0.86602540378f;  // +sqrt(3)/2
-    constexpr float c3 = -0.5f;
-    constexpr float s3 = -0.86602540378f;  // -sqrt(3)/2
-    */
-    float fin1 = -roll * 0.2 - yaw * 0.2;
-    float fin2 = -roll * 0.2 + yaw * 0.5 * 0.2 - pitch * 0.5;
-    float fin3 = -roll * 0.2 + yaw * 0.5 * 0.2 + pitch * 0.5;
+    // Apply the precomputed mixing matrix
+    float fins[3];
+    for (int i = 0; i < 3; i++) {
+        fins[i] = G*(trifin_mix[i][0] * roll
+                + trifin_mix[i][1] * pitch
+                + trifin_mix[i][2] * yaw);
+        fins[i] = constrain_float(fins[i], -limit, limit);  // limit servo deflection
+    }
 
-
-    fin1 = constrain_float(fin1, -4500, 4500);
-    fin2 = constrain_float(fin2, -4500, 4500);
-    fin3 = constrain_float(fin3, -4500, 4500);
-
-    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin1, fin1);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin2, fin2);
-    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin3, fin3);
+    // Set outputs
+    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin1, fins[0]);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin2, fins[1]);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_trifin3, fins[2]);
 }
 
 
@@ -957,9 +980,6 @@ void Plane::set_servos(void)
     // slew rate limit throttle
     throttle_slew_limit();
 
-    //possibly redundant
-    trifin_update();
-
     int8_t min_throttle = 0;
 #if AP_ICENGINE_ENABLED
     if (g2.ice_control.allow_throttle_while_disarmed()) {
@@ -1084,6 +1104,7 @@ void Plane::servos_output(void)
     // implement differential spoilers
     dspoiler_update();
 
+    // implement tri-gridfin mixer
     trifin_update();
 
     //  set control surface servos to neutral

@@ -372,9 +372,7 @@ public:
         k_param__gcs,
 
         k_param_tri_mix_gain,
-        k_param_tri_mix_roll,
-        k_param_tri_mix_pitch,
-        k_param_tri_mix_yaw,
+        k_param_tri_deflection_limit,
 
     };
 
@@ -481,9 +479,7 @@ public:
     AP_Int16 gcs_pid_mask;
     
     AP_Float tri_mix_gain;
-    AP_Float tri_mix_roll;
-    AP_Float tri_mix_pitch;
-    AP_Float tri_mix_yaw;
+    AP_Float tri_deflection_limit;
 };
 
 /*

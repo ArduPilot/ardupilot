@@ -1,0 +1,39 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "PLAV_SITL",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/sitl/bin/arduplane",
+            "args": [
+                "-S",
+                "--model",
+                "+",
+                "--speedup",
+                "1",
+                "--slave",
+                "0",
+                "--sim-address=127.0.0.1",
+                "-IO"
+            ],
+            "cwd": "${workspaceFolder}/ArduPlane",
+            "MIMode": "gdb",
+            "preLaunchTask": "Start PLAV SITL",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "externalConsole": false,
+            "stopAtEntry": false
+        }
+    ]
+}
