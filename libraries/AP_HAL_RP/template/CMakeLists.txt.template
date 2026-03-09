@@ -129,6 +129,10 @@ if(NOT DEFINED ARDUPILOT_CMD)
     set(ARDUPILOT_CMD "none")
 endif()
 
+if(ARDUPILOT_CMD STREQUAL "none" AND NOT WAF_BUILD_TARGET MATCHES "^(examples|tool)/")
+    message(FATAL_ERROR "ARDUPILOT_CMD is not set to a vehicle target. Run waf with a vehicle target (for example: ./waf copter --board <board>).")
+endif()
+
 # Generate PIO headers
 
 # Get a list of all .pio files in the pioasm directory

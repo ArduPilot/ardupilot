@@ -9,8 +9,18 @@
 #include "AP_HAL_RP_Private.h"
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
 //#include <AP_Filesystem/AP_Filesystem_RP2350.h>
+#include "pico/stdlib.h"
+#include "pico/stdio_usb.h"
 
 using namespace RP;
+
+#ifndef HAL_RP_USB_CDC_CONNECT_TIMEOUT_MS
+#define HAL_RP_USB_CDC_CONNECT_TIMEOUT_MS 1500U
+#endif
+
+#ifndef HAL_RP_USB_CDC_FALLBACK_TO_UART0
+#define HAL_RP_USB_CDC_FALLBACK_TO_UART0 0
+#endif
 
 static UARTDriver serial0Driver(uart0, UART0_TX, UART0_RX, 0, true);
 static UARTDriver serial1Driver(uart1, UART1_TX, UART1_RX, 1);
@@ -158,6 +168,21 @@ void HAL_RP::run(int argc, char* const argv[], Callbacks* callbacks) const
     (void)argv;
 
     console->begin(115200);
+
+#if defined(HAL_RP_CONSOLE_USB_CDC) && HAL_RP_CONSOLE_USB_CDC == 1
+    const uint32_t usb_wait_start_ms = AP_HAL::millis();
+    while (!stdio_usb_connected() && (AP_HAL::millis() - usb_wait_start_ms) < HAL_RP_USB_CDC_CONNECT_TIMEOUT_MS) {
+        sleep_ms(10);
+    }
+#if HAL_RP_USB_CDC_FALLBACK_TO_UART0
+    if (!stdio_usb_connected()) {
+        serial0Driver.begin(115200);
+        serial0Driver.printf("USB CDC not detected after %lu ms, falling back to UART0 console\n",
+                             (unsigned long)HAL_RP_USB_CDC_CONNECT_TIMEOUT_MS);
+        const_cast<HAL_RP*>(this)->console = &serial0Driver;
+    }
+#endif
+#endif
 #if defined(HAL_NAND_FLASH_ENABLED) && HAL_NAND_FLASH_ENABLED == 1
     this->get_nand_pio()->init(NAND_FLASH_IO_BASE, NAND_FLASH_SCLK, NAND_FLASH_CS);
 #endif
