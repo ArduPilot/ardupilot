@@ -14969,7 +14969,7 @@ SERIAL5_BAUD 128
         ])
         self.set_parameters(self.FenceRelative_params())
         self.wait_ready_to_arm()
-        original_home = self.mav.location()  # roughly speaking
+        original_home = self.home_position_as_mav_location()
 
         self.start_subtest("Above home-relative fence")
         self.set_home(self.offset_location_up(original_home, -2))
@@ -15015,7 +15015,7 @@ SERIAL5_BAUD 128
         '''fence max-alt threshold is measured relative to home, not EKF origin'''
         self.set_parameters(self.FenceRelativeToHome_params())
         self.wait_ready_to_arm()
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         home_ofs = 20
         fence_alt_max = 20  # m above home = 40 m above origin
         offset_home = self.offset_location_up(original_home, home_ofs)
@@ -15045,7 +15045,7 @@ SERIAL5_BAUD 128
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         home_ofs = 20
         offset_home = self.offset_location_up(original_home, home_ofs)
         self.set_home(offset_home)
@@ -15062,7 +15062,7 @@ SERIAL5_BAUD 128
         '''fence max-alt relative to home when origin is above home'''
         self.set_parameters(self.FenceRelativeToHome_params())
         self.wait_ready_to_arm()
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         home_ofs = -20
         fence_alt_max = 30  # m above home = 10 m above origin
         offset_home = self.offset_location_up(original_home, home_ofs)
@@ -15094,7 +15094,7 @@ SERIAL5_BAUD 128
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         home_ofs = -20
         offset_home = self.offset_location_up(original_home, home_ofs)
         self.set_home(offset_home)
@@ -15123,7 +15123,7 @@ SERIAL5_BAUD 128
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         home_ofs = -20
         offset_home = self.offset_location_up(original_home, home_ofs)
         self.set_home(offset_home)
@@ -15143,7 +15143,7 @@ SERIAL5_BAUD 128
         self.wait_ready_to_arm()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         fence_alt_max = 10  # m above origin = 30 m above home
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         self.set_home(self.offset_location_up(original_home, -20))
         self.set_parameters({
             "FENCE_TYPE": 1,   # ALT_MAX only
@@ -15171,7 +15171,7 @@ SERIAL5_BAUD 128
         self.set_parameters(params)
         self.wait_ready_to_arm()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         self.set_home(self.offset_location_up(original_home, -20))
         self.takeoff(25, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
@@ -15186,7 +15186,7 @@ SERIAL5_BAUD 128
         '''fence max-alt relative to origin when home is above origin'''
         self.set_parameters(self.FenceRelativeToOrigin_params())
         self.wait_ready_to_arm()
-        ground_loc = self.mav.location()
+        ground_loc = self.home_position_as_mav_location()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         fence_alt_max = 50  # m above origin = 30 m above home
         # take off first from home==origin so relative alt starts at 0
@@ -15223,7 +15223,7 @@ SERIAL5_BAUD 128
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
-        ground_loc = self.mav.location()
+        ground_loc = self.home_position_as_mav_location()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         # take off first from home==origin so relative alt starts at 0
         self.takeoff(30, mode=self.FenceRelative_TakeoffMode())
@@ -15316,7 +15316,7 @@ SERIAL5_BAUD 128
         self.install_terrain_handlers_context()
         self.set_parameters(self.FenceRelativeToTerrain_params())
         self.wait_ready_to_arm()
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         # home is placed 20 m below terrain; terrain AMSL ≈ original_home.alt
         terrain_alt_amsl = original_home.alt
         fence_alt_max = 10  # m AGL = 30 m above home
@@ -15348,7 +15348,7 @@ SERIAL5_BAUD 128
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
-        original_home = self.mav.location()
+        original_home = self.home_position_as_mav_location()
         # home is placed 20 m below terrain; terrain AMSL ≈ original_home.alt
         terrain_alt_amsl = original_home.alt
         offset_home = self.offset_location_up(original_home, -20)
