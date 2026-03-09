@@ -276,7 +276,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_RAW:
 #if UBLOX_RXM_RAW_LOGGING
-        if(gps._raw_data == 0) {
+        if(!gps.raw_logging_enabled_for_instance(state.instance)) {
             _unconfigured_messages &= ~CONFIG_RATE_RAW;
         } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RAW)) {
             _next_message--;
@@ -287,7 +287,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_RAWX:
 #if UBLOX_RXM_RAW_LOGGING
-        if(gps._raw_data == 0) {
+        if(!gps.raw_logging_enabled_for_instance(state.instance)) {
             _unconfigured_messages &= ~CONFIG_RATE_RAW;
         } else {
             if (_rxm_rawx == nullptr) {
@@ -482,11 +482,11 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
     case CLASS_RXM:
         switch(msg_id) {
         case MSG_RXM_RAW:
-            desired_rate = gps._raw_data;
+            desired_rate = gps.raw_logging_rate(state.instance);
             config_msg_id = CONFIG_RATE_RAW;
             break;
         case MSG_RXM_RAWX:
-            desired_rate = gps._raw_data;
+            desired_rate = gps.raw_logging_rate(state.instance);
             config_msg_id = CONFIG_RATE_RAW;
             break;
         default:
@@ -943,6 +943,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
     struct log_GPS_RAWH header = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_RAWH_MSG),
         time_us    : now,
+        instance   : state.instance,
         rcvTow     : raw.rcvTow,
         week       : raw.week,
         leapS      : raw.leapS,
@@ -955,6 +956,7 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
         struct log_GPS_RAWS pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_RAWS_MSG),
             time_us    : now,
+            instance   : state.instance,
             prMes      : raw.svinfo[i].prMes,
             cpMes      : raw.svinfo[i].cpMes,
             doMes      : raw.svinfo[i].doMes,
@@ -1508,10 +1510,10 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
 #if UBLOX_RXM_RAW_LOGGING
-    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
+    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps.raw_logging_enabled_for_instance(state.instance)) {
         log_rxm_raw(_buffer.rxm_raw);
         return false;
-    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0 && _rxm_rawx != nullptr) {
+    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps.raw_logging_enabled_for_instance(state.instance) && _rxm_rawx != nullptr) {
         log_rxm_rawx(*_rxm_rawx);
         return false;
     }

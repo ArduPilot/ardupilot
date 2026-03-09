@@ -130,6 +130,7 @@ public:
         AP_Vector3f antenna_offset;
         AP_Int16 delay_ms;
         AP_Int8  com_port;
+        AP_Int8  raw_data;
 #if HAL_ENABLE_DRONECAN_DRIVERS
         AP_Int32 node_id;
         AP_Int32 override_node_id;
@@ -549,8 +550,13 @@ public:
     // returns false if any GPS drivers are not performing their logging appropriately
     bool logging_failed(void) const;
 
-    bool logging_present(void) const { return _raw_data != 0; }
-    bool logging_enabled(void) const { return _raw_data != 0; }
+    bool logging_present(void) const;
+    bool logging_enabled(void) const;
+
+    // Returns the raw logging rate/mode for a specific GPS instance.
+    // 0 means disabled; see GPS_RAW_DATA values for other meanings.
+    uint8_t raw_logging_rate(uint8_t instance) const { return params[instance].raw_data; }
+    bool raw_logging_enabled_for_instance(uint8_t instance) const { return params[instance].raw_data != 0; }
 
     // used to disable GPS for GPS failure testing in flight
     void force_disable(bool disable) {
@@ -608,7 +614,6 @@ protected:
     uint32_t _last_instance_swap_ms;
     AP_Enum<SBAS_Mode> _sbas_mode;
     AP_Int8 _min_elevation;
-    AP_Int8 _raw_data;
     AP_Int8 _save_config;
     AP_Int8 _auto_config;
     AP_Int8 _blend_mask;
