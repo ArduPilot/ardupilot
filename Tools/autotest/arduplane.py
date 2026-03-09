@@ -3010,7 +3010,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(alt*0.9, alt*1.1, minimum_duration=10, relative=True)
         self.fly_home_land_and_disarm()
 
-    def fly_external_AHRS(self, sim, eahrs_type, mission):
+    def fly_generic_mission(self, filename, mission_timeout=60.0, strict=True):
+        """Fly a mission from the Generic_Missions directory."""
+        self.progress("Flying generic mission %s" % filename)
+        num_wp = self.load_generic_mission(filename, strict=strict) - 1
+        self.fly_mission_waypoints(num_wp, mission_timeout=mission_timeout)
+
+    def fly_external_AHRS(self, sim, eahrs_type):
         """Fly with external AHRS"""
         self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
@@ -3033,7 +3039,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.fly_mission(mission)
+        self.fly_generic_mission("externalahrs.txt")
 
     def wait_and_maintain_wind_estimate(
             self,
@@ -3232,19 +3238,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def VectorNavEAHRS(self):
         '''Test VectorNav EAHRS support'''
-        self.fly_external_AHRS("VectorNav", 1, "ap1.txt")
+        self.fly_external_AHRS("VectorNav", 1)
 
     def MicroStrainEAHRS5(self):
         '''Test MicroStrain EAHRS series 5 support'''
-        self.fly_external_AHRS("MicroStrain5", 2, "ap1.txt")
+        self.fly_external_AHRS("MicroStrain5", 2)
 
     def MicroStrainEAHRS7(self):
         '''Test MicroStrain EAHRS series 7 support'''
-        self.fly_external_AHRS("MicroStrain7", 7, "ap1.txt")
+        self.fly_external_AHRS("MicroStrain7", 7)
 
     def InertialLabsEAHRS(self):
         '''Test InertialLabs EAHRS support'''
-        self.fly_external_AHRS("ILabs", 5, "ap1.txt")
+        self.fly_external_AHRS("ILabs", 5)
 
     def GpsSensorPreArmEAHRS(self):
         '''Test pre-arm checks related to EAHRS_SENSORS using the MicroStrain7 driver'''
