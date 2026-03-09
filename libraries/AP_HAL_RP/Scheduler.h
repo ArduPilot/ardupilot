@@ -31,8 +31,13 @@ public:
 
     void     start();
 
+    bool     thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size,
+                            priority_base base, int8_t priority) override;
+
+
     // Priorities (the higher the number, the higher the priority)
     static const int MAX_PRIO     = configMAX_PRIORITIES - 1;
+    static const int MIN_PRIO     = tskIDLE_PRIORITY + 1;
     static const int MAIN_PRIO    = MAX_PRIO - 2;   // Main loop (Core 0)
     static const int TIMER_PRIO   = MAX_PRIO;       // Timers (must be higher than MAIN for accuracy)
     static const int UART_PRIO    = MAX_PRIO - 1;   // UART (fast output, but below the timer)
@@ -59,6 +64,11 @@ private:
     static void _timer_task(void *pvParameters);
     static void _io_task(void *pvParameters);
     static void _uart_task(void *pvParameters);
+
+    static void thread_create_trampoline(void *ctx);
+
+    // calculates an integer to be used as the priority for a newly-created thread
+    uint8_t calculate_thread_priority(priority_base base, int8_t priority) const;
 
     AP_HAL::MemberProc _timer_proc[RP2350_SCHEDULER_MAX_TIMER_PROCS];
     uint8_t _num_timer_procs;

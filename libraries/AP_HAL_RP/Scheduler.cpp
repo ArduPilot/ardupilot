@@ -1,4 +1,6 @@
 #include "AP_HAL_RP/Scheduler.h"
+#include "AP_Math/AP_Math.h"
+#include <cstdlib>
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
 #include "hardware/watchdog.h"
@@ -156,6 +158,71 @@ void Scheduler::_uart_task(void *pvParameters) {
         }
         sched->delay(1);
     }
+}
+
+void Scheduler::thread_create_trampoline(void *ctx)
+{
+    AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
+    (*t)();
+    free(t);
+    vTaskDelete(NULL);
+}
+
+uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
+{
+    uint8_t thread_priority = IO_PRIO;
+    static const struct {
+        priority_base base;
+        uint8_t p;
+    } priority_map[] = {
+        { PRIORITY_BOOST, IO_PRIO},
+        { PRIORITY_MAIN, MAIN_PRIO},
+        { PRIORITY_SPI, SPI_PRIORITY},
+        { PRIORITY_I2C, I2C_PRIORITY},
+        { PRIORITY_CAN, IO_PRIO},
+        { PRIORITY_TIMER, TIMER_PRIO},
+        { PRIORITY_RCOUT, RCOUT_PRIO},
+        { PRIORITY_LED, IO_PRIO},
+        { PRIORITY_RCIN, RCIN_PRIO},
+        { PRIORITY_IO, IO_PRIO},
+        { PRIORITY_UART, UART_PRIO},
+        { PRIORITY_STORAGE, STORAGE_PRIO},
+        { PRIORITY_SCRIPTING, UART_PRIO},
+        { PRIORITY_NET, IO_PRIO},
+    };
+    for (uint8_t i=0; i<ARRAY_SIZE(priority_map); i++) {
+        if (priority_map[i].base == base) {
+            thread_priority = constrain_int16(priority_map[i].p + priority, MIN_PRIO, MAX_PRIO);
+            break;
+        }
+    }
+    return thread_priority;
+}
+
+bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name,
+    uint32_t requested_stack_size, priority_base base, int8_t priority) {
+
+    // take a copy of the MemberProc, it is freed after thread exits
+    AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)calloc(1, sizeof(proc));
+    if (!tproc) {
+        return false;
+    }
+    *tproc = proc;
+
+    const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
+    // chibios has a 'thread working area', we just another 1k.
+    #define EXTRA_THREAD_SPACE 1024
+    uint32_t actual_stack_size = requested_stack_size+EXTRA_THREAD_SPACE;
+
+    TaskHandle_t xhandle;
+    BaseType_t xReturned = xTaskCreate(
+        thread_create_trampoline, name, actual_stack_size, tproc, thread_priority, &xhandle);
+    if (xReturned != pdPASS) {
+        free(tproc);
+        return false;
+    }
+    return true;
 }
 
 void Scheduler::delay(uint16_t ms) {
