@@ -289,8 +289,13 @@ AP_GPS_UBLOX::_request_next_config(void)
 #if UBLOX_RXM_RAW_LOGGING
         if(gps._raw_data == 0) {
             _unconfigured_messages &= ~CONFIG_RATE_RAW;
-        } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RAWX)) {
-            _next_message--;
+        } else {
+            if (_rxm_rawx == nullptr) {
+                _rxm_rawx = NEW_NOTHROW ubx_rxm_rawx;
+            }
+            if (!_request_message_rate(CLASS_RXM, MSG_RXM_RAWX)) {
+                _next_message--;
+            }
         }
 #else
         _unconfigured_messages &= ~CONFIG_RATE_RAW;
@@ -696,6 +701,14 @@ AP_GPS_UBLOX::read(void)
                 CFGv2_Debug("V2 VALGET byte %u/%u: 0x%02x\n", (unsigned)_payload_counter, (unsigned)_payload_length, data);
                 _cfg_v2.process_valget_byte(data);
             }
+#endif
+#if UBLOX_RXM_RAW_LOGGING
+            if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && _rxm_rawx != nullptr) {
+                // Receive RAWX packets directly to _rxm_rawx buffer
+                if (_payload_counter < sizeof(*_rxm_rawx)) {
+                    ((uint8_t *)_rxm_rawx)[_payload_counter] = data;
+                }
+            } else
 #endif
             if (_payload_counter < sizeof(_buffer)) {
                 _buffer[_payload_counter] = data;
@@ -1498,8 +1511,8 @@ AP_GPS_UBLOX::_parse_gps(void)
     if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
         log_rxm_raw(_buffer.rxm_raw);
         return false;
-    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0) {
-        log_rxm_rawx(_buffer.rxm_rawx);
+    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0 && _rxm_rawx != nullptr) {
+        log_rxm_rawx(*_rxm_rawx);
         return false;
     }
 #endif // UBLOX_RXM_RAW_LOGGING
