@@ -670,6 +670,9 @@ AP_GPS_UBLOX::read(void)
 #if AP_GPS_UBLOX_CFGV2_ENABLED
             && !(_class == CLASS_CFG || _msg_id == MSG_CFG_VALGET)
 #endif
+#if UBLOX_RXM_RAW_LOGGING
+            && !(_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && _rxm_rawx != nullptr)
+#endif
             ) {
                 Debug("large payload %u", (unsigned)_payload_length);
                 // assume any payload bigger then what we know about is noise
@@ -919,18 +922,23 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 
     uint64_t now = AP_HAL::micros64();
 
+    // RXM-RAWX packets with numMeas > UBLOX_MAX_RXM_RAWX_SATS are accepted by the parser
+    // but only the first UBLOX_MAX_RXM_RAWX_SATS SVs fit in the receive buffer. Log the
+    // stored count so GRXH.numMeas always matches the number of GRXS entries that follow.
+    const uint8_t num_stored = MIN(raw.numMeas, UBLOX_MAX_RXM_RAWX_SATS);
+
     struct log_GPS_RAWH header = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_RAWH_MSG),
         time_us    : now,
         rcvTow     : raw.rcvTow,
         week       : raw.week,
         leapS      : raw.leapS,
-        numMeas    : raw.numMeas,
+        numMeas    : num_stored,
         recStat    : raw.recStat
     };
     AP::logger().WriteBlock(&header, sizeof(header));
 
-    for (uint8_t i=0; i<raw.numMeas; i++) {
+    for (uint8_t i=0; i<num_stored; i++) {
         struct log_GPS_RAWS pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_RAWS_MSG),
             time_us    : now,
