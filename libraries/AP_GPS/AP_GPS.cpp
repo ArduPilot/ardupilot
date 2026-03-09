@@ -390,6 +390,9 @@ void AP_GPS::convert_parameters()
         { k_param_gps_key, 30, AP_PARAM_INT32, "GPS1_CAN_OVRIDE" },
         { k_param_gps_key, 31, AP_PARAM_INT32, "GPS2_CAN_OVRIDE" },
 #endif
+        // PARAMETER_CONVERSION - Added: Mar-2026 for 4.8
+        { k_param_gps_key, 9, AP_PARAM_INT8, "GPS1_RAW_DATA" },
+        { k_param_gps_key, 9, AP_PARAM_INT8, "GPS2_RAW_DATA" },
     };
     AP_Param::convert_old_parameters(conversion_info, ARRAY_SIZE(conversion_info));
 
