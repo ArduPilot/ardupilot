@@ -1016,7 +1016,7 @@ bool AP_GPS_UBLOX_CFGv2::_init_common_cfg_list(bool check_only, uint32_t key_to_
 
     // Raw logging message configuration
     {
-        const uint8_t raw_rate = ubx_backend.gps._raw_data;
+        const uint8_t raw_rate = ubx_backend.gps.raw_logging_parameter(ubx_backend.state.instance);
         if (module < Module::SINGLE_UART_LAST) {
             PUSH_RUNTIME(CFG_MSGOUT_UBX_RXM_RAWX_UART1, raw_rate)
         } else {
