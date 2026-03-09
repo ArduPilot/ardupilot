@@ -554,7 +554,7 @@ private:
             float doMes;
             uint8_t gnssId;
             uint8_t svId;
-            uint8_t reserved2;
+            uint8_t sigId;
             uint8_t freqId;
             uint16_t locktime;
             uint8_t cno;
