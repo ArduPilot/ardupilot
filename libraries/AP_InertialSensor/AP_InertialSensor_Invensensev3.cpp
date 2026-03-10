@@ -141,6 +141,7 @@ extern const AP_HAL::HAL& hal;
 #define INV3_ID_IIM42652      0x6f
 #define INV3_ID_IIM42653      0x56
 #define INV3_ID_ICM42670      0x67
+#define INV3_ID_ICM45605      0xE5
 #define INV3_ID_ICM45686      0xE9
 
 // enable logging at FIFO rate for debugging
@@ -1003,6 +1004,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 bool AP_InertialSensor_Invensensev3::check_whoami(void)
 {
     uint8_t whoami = register_read(INV3REG_WHOAMI);
+    printf("INV3: WHOAMI@0x75 = 0x%02x\n", whoami);
 
     switch (whoami) {
     case INV3_ID_ICM40609:
@@ -1030,9 +1032,12 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     }
     // check 456 who am i
     whoami = register_read(INV3REG_456_WHOAMI);
+    printf("INV3: WHOAMI@0x72 = 0x%02x\n", whoami);
     switch (whoami) {
+    case INV3_ID_ICM45605:
     case INV3_ID_ICM45686:
         inv3_type = Invensensev3_Type::ICM45686;
+        printf("INV3: ICM-456xx detected (WHOAMI=0x%02x)\n", whoami);
         return true;
     }
     // not a value WHOAMI result

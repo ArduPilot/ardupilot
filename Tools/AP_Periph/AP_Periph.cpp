@@ -169,6 +169,16 @@ void AP_Periph_FW::init()
 
 #if AP_PERIPH_MAG_ENABLED
     compass.init();
+    // uses printf() which goes to STDOUT_SERIAL (USART2/SD2)
+    printf("\n--- RM3100 SPI CHECK ---\n");
+    printf("Compasses found: %d\n", compass.get_count());
+    if (compass.get_count() == 0) {
+        printf("ERROR: RM3100 not responding on SPI!\n");
+        printf("Check: CS=PB2, MISO=PA6, MOSI=PA7, CLK=PA5\n");
+    } else {
+        printf("SUCCESS: RM3100 detected!\n");
+    }
+    printf("--- END CHECK ---\n\n");
 #endif
 
 #if AP_PERIPH_BARO_ENABLED
@@ -178,9 +188,16 @@ void AP_Periph_FW::init()
 #if AP_PERIPH_IMU_ENABLED
     if (g.imu_sample_rate) {
         imu.init(g.imu_sample_rate);
+        printf("\n--- ICM-45605 SPI CHECK ---\n");
+        printf("Accel count: %d  Gyro count: %d\n",
+               imu.get_accel_count(), imu.get_gyro_count());
         if (imu.get_accel_count() > 0 || imu.get_gyro_count() > 0) {
+            printf("SUCCESS: ICM-45605 detected!\n");
             hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Periph_FW::can_imu_update, void), "IMU_UPDATE", 16384, AP_HAL::Scheduler::PRIORITY_CAN, 0);
+        } else {
+            printf("ERROR: ICM-45605 not responding on SPI1!\n");
         }
+        printf("--- END CHECK ---\n\n");
     }
 #endif
 
@@ -433,13 +450,23 @@ void AP_Periph_FW::update()
             palToggleLine(HAL_GPIO_PIN_LED);
         }
 #endif
-#if 0
-#if AP_PERIPH_GPS_ENABLED
-        hal.serial(0)->printf("GPS status: %u\n", (unsigned)gps.status());
-#endif
+#if 1
 #if AP_PERIPH_MAG_ENABLED
-        const Vector3f &field = compass.get_field();
-        hal.serial(0)->printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));
+                printf("MAG c=%u a=%d h=%d\n", compass.get_count(), (int)compass.available(), (int)compass.healthy());
+        if (compass.get_count() > 0) {
+            const Vector3f &field = compass.get_field();
+            printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));
+        }
+#endif
+#if AP_PERIPH_IMU_ENABLED
+        if (imu.get_accel_count() > 0) {
+            const Vector3f &acc = imu.get_accel();
+            const Vector3f &gyr = imu.get_gyro();
+            printf("IMU A=(%d,%d,%d) G=(%d,%d,%d) h=%d\n",
+                   int(acc.x*100), int(acc.y*100), int(acc.z*100),
+                   int(gyr.x*100), int(gyr.y*100), int(gyr.z*100),
+                   (int)imu.healthy());
+        }
 #endif
 #if AP_PERIPH_BARO_ENABLED
         hal.serial(0)->printf("BARO H=%u P=%.2f T=%.2f\n", baro.healthy(), baro.get_pressure(), baro.get_temperature());

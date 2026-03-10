@@ -1,0 +1,3 @@
+# PCBMagNode default parameters
+INS_GYR_CAL 0
+INS_SAMPLE_RATE 100

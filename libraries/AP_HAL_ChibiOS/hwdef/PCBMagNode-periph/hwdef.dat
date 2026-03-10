@@ -1,0 +1,90 @@
+# hwdef.dat — PCBMagNode (STM32G491xx)
+APJ_BOARD_ID 99
+
+MCU STM32G4xx STM32G491xx
+FLASH_SIZE_KB 512
+# 24MHz HSE crystal (CS11335-24M) — verified working
+OSCILLATOR_HZ 24000000
+
+# peripheral firmware build
+env AP_PERIPH 1
+
+# Enable periph sensor features
+define AP_PERIPH_MAG_ENABLED 1
+define AP_PERIPH_IMU_ENABLED 1
+# Dont panic if IMU probe fails (defaults_periph.h sets this to 1 via AP_PERIPH_IMU_ENABLED)
+define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 0
+
+# keep ROMFS uncompressed — not enough RAM to decompress at runtime
+env ROMFS_UNCOMPRESSED True
+
+# No bootloader for initial bring-up — app starts at flash base
+FLASH_RESERVE_START_KB 0
+
+# Use empty storage (RAM-only, no persistence) for bring-up
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+# disable embedded bootloader flashing (no bootloader built yet)
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+# LED heartbeat — AP_Periph blinks this while waiting for CAN DNA
+define HAL_GPIO_PIN_LED HAL_GPIO_PIN_LED1
+
+# USB CDC — STM32G4 uses USB Device (not OTG), need USB1 driver
+USB_VENDOR 0x0483
+USB_PRODUCT 0x5740
+STRING_PRODUCT "MagNode G491"
+PA11 USB_DM OTG1
+PA12 USB_DP OTG1
+define STM32_USB_USE_USB1 TRUE
+
+define HAL_USE_ADC 0
+define HAL_USE_DAC 0
+
+# UART ordering — USB CDC primary, USART2 fallback
+SERIAL_ORDER OTG1 USART2
+
+STDOUT_SERIAL SD2
+STDOUT_BAUDRATE 115200
+
+# CAN bus ordering
+CAN_ORDER 1
+
+# DMA configuration
+define DMA_RESERVE_SIZE 2048
+DMA_NOSHARE SPI1*
+
+# SWD debugging (PA13/PA14 = StLink per schematic)
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# FDCAN
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+PB4 FDCAN1_STBY OUTPUT LOW
+
+# SPI1
+PA5 SPI1_SCK  SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# RM3100 magnetometer (SPI mode)
+PB2 RM3100_CS   CS
+PB0 RM3100_DRDY INPUT
+PB1 MAG_I2C_EN OUTPUT LOW
+COMPASS RM3100 SPI:rm3100 true ROTATION_NONE
+SPIDEV rm3100 SPI1 DEVID1 RM3100_CS MODE3 1*MHZ 1*MHZ
+
+# ICM-45605
+PB7 ICM45605_CS CS
+SPIDEV icm42688 SPI1 DEVID2 ICM45605_CS MODE3 2*MHZ 8*MHZ
+IMU Invensensev3 SPI:icm42688 ROTATION_NONE
+
+# LEDs
+PA0 LED1 OUTPUT LOW
+PA1 LED2 OUTPUT LOW
+
+# Debug UART (PA2/PA3 = StLink VCP per schematic)
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
