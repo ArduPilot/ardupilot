@@ -182,13 +182,13 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 17, AC_PrecLand, _options, 0),
 
-    // @Param{Rover,Copter}: ORIENT
+    // @Param{Rover}: ORIENT
     // @DisplayName: Camera Orientation
     // @Description: Orientation of camera/sensor on body
     // @Values: 0:Forward, 4:Back, 25:Down
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI), 
+    AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER), 
 
     AP_GROUPEND
 };
