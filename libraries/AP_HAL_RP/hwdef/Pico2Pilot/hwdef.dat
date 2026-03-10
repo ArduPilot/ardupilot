@@ -56,7 +56,7 @@ RP2350_SPIBUS spi0      0               1               GPIO_3 GPIO_4 GPIO_2
 
 # i2c Buses
 #             Port SDA     SCL     SPEED    INTERNAL SOFT
-RP2350_I2CBUS I2C0 GPIO_24 GPIO_25 400*KHZ  true     false
+RP2350_I2CBUS I2C1 GPIO_18 GPIO_19 10*KHZ   true     false
 
 # SPI Devices
 #             Name     Bus   Device  ChipSel      Mode LoSpeed HiSpeed
@@ -88,7 +88,10 @@ define AP_COMPASS_AK8963_ENABLED TRUE
 define AP_COMPASS_PROBING_ENABLED 1
 
 # -----BARO-----
-BARO BMP280 I2C:0:0x77
+# Barometer setup
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_DPS280_ENABLED 1
+BARO DPS310 I2C:0:0x76
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # rcin on what pin?

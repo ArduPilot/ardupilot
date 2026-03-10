@@ -96,7 +96,15 @@ class RP2350HWDef(hwdef.HWDef):
             if len(bus) != 6:
                 self.error(f"Badly formed RP2350_I2CBUS line {bus} {len(bus)=} want=6")
             (port, sda, scl, speed, internal, soft) = bus
-            buslist.append(f"{{ .port={port}, .sda={sda}, .scl={scl}, .speed={speed}, .internal={internal}, .soft={soft} }}")
+            # Convert I2C0/I2C1 to i2c0/i2c1 (Pico SDK instance pointers)
+            port_lower = port.lower()
+            if port_lower == 'i2c0':
+                port_instance = 'i2c0'
+            elif port_lower == 'i2c1':
+                port_instance = 'i2c1'
+            else:
+                self.error(f"Unknown I2C port {port}, expected I2C0 or I2C1")
+            buslist.append(f"{{ .port={port_instance}, .sda={sda}, .scl={scl}, .speed={speed}, .internal={internal}, .soft={soft} }}")
 
         self.write_device_table(f, "i2c buses", "HAL_RP2350_I2C_BUSES", buslist)
 

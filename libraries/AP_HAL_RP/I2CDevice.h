@@ -31,6 +31,7 @@
 // Pico SDK
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
+#include "pico/time.h"
 
 namespace RP {
 
@@ -40,6 +41,7 @@ struct I2CBusDesc {
     uint        scl;
     uint32_t    speed;
     bool        internal;
+    bool        soft;  // Use software I2C (bit-banging) instead of hardware
 };
 
 class I2CBus {
@@ -57,9 +59,20 @@ public:
     bool initialized;
 
 private:
+    // Software I2C functions (bit-banging)
+    void soft_i2c_start();
+    void soft_i2c_stop();
+    bool soft_i2c_write_byte(uint8_t byte);
+    uint8_t soft_i2c_read_byte(bool ack);
+    void soft_i2c_delay();
+    bool soft_i2c_transfer(uint8_t address, const uint8_t *send, uint32_t send_len,
+                           uint8_t *recv, uint32_t recv_len);
+    
     i2c_inst_t *_instance;
     uint _sda;
     uint _scl;
+    bool _soft;  // Use software I2C
+    uint32_t _delay_us;  // Delay in microseconds for software I2C timing
 };
 
 class I2CDevice : public AP_HAL::I2CDevice {
@@ -116,6 +129,8 @@ private:
     bool _split_transfers;
     bool _use_smbus;
     uint32_t _timeout_ms;
+    AP_HAL::Device::PeriodicCb _periodic_cb;
+    uint32_t _periodic_period_usec;
 };
 
 class I2CDeviceManager : public AP_HAL::I2CDeviceManager {

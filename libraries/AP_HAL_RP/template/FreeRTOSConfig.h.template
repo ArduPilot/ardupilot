@@ -145,6 +145,13 @@ to exclude the API function. */
 #define INCLUDE_xTaskGetIdleTaskHandle          1
 #define INCLUDE_eTaskGetState                   1
 #define INCLUDE_xTimerPendFunctionCall          1
+#define INCLUDE_xTimerCreate                    1
+#define INCLUDE_xTimerStart                    1
+#define INCLUDE_xTimerStop                     1
+#define INCLUDE_xTimerDelete                   1
+#define INCLUDE_xTimerReset                    1
+#define INCLUDE_xTimerChangePeriod             1
+#define INCLUDE_pcTimerGetTimerName            1
 #define INCLUDE_xTaskAbortDelay                 1
 #define INCLUDE_xTaskGetHandle                  1
 #define INCLUDE_xTaskResumeFromISR              1
