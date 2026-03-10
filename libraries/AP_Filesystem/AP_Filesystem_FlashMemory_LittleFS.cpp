@@ -619,7 +619,7 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 #define JEDEC_ID_GIGA_GD25Q16E         0xC84015
 #define JEDEC_ID_ZBIT_ZB25VQ128_SPI_mode     0x5E4018
-#define JEDEC_ID_ZBIT_ZB25VQ128_QPI_mode     0x5E6018
+
 
 /* Hardware-specific constants */
 
