@@ -8518,6 +8518,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the following is a "magic" location SITL understands which
         # has some posts near it:
         home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 0)
+        # install terrain handler before customising SITL so terrain
+        # requests from the non-default home location are answered:
+        self.install_terrain_handlers_context()
         for (name, prx_type, expected_distances) in sensors:
             self.start_subtest("Testing %s" % name)
             self.set_parameter("PRX1_TYPE", prx_type)
@@ -13444,6 +13447,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SERIAL5_PROTOCOL": 11,
             "PRX1_TYPE": 5,
         })
+        # install terrain handler before customising SITL so terrain
+        # requests from the non-default home location are answered:
+        self.install_terrain_handlers_context()
         self.customise_SITL_commandline([
             "--serial5=sim:%s:" % sim_device_name,
             "--home", "51.8752066,14.6487840,0,0",  # SITL has "posts" here

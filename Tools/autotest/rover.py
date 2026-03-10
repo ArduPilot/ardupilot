@@ -5994,6 +5994,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         rangefinder_params.update(self.analog_rangefinder_parameters())
 
         self.set_parameters(rangefinder_params)
+        # install terrain handler before customising SITL so terrain
+        # requests from the non-default home location are answered:
+        self.install_terrain_handlers_context()
         self.customise_SITL_commandline([
             "--home", home_string,
         ])
