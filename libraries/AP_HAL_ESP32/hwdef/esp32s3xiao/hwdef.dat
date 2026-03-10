@@ -3,10 +3,11 @@ define HAL_ESP32_BOARD_NAME "esp32s3xiao"
 define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_9
 
 // sensors
-define AP_COMPASS_HMC5883_ENABLED 1
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_INS_DEFAULT HAL_INS_MPU6050_I2C
 define INS_MAX_INSTANCES 3  # only here for binary identicality
 
+define HAL_INS_MPU6050_NAME "mpu6050"
 
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
