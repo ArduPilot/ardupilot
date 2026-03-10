@@ -1,4 +1,5 @@
 # ArduPilot Project
+#This repository contains the ArduPilot autopilot software.
 
 [![Discord](https://img.shields.io/discord/674039678562861068.svg)](https://ardupilot.org/discord)
 
