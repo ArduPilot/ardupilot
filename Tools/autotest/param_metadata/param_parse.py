@@ -781,7 +781,7 @@ for emitter_name in emitters_to_use:
         if fname and os.path.exists(fname):
             xz_fname = fname + '.xz'
             with open(fname, 'rb') as f_in:
-                with lzma.open(xz_fname, 'wb', preset=lzma.PRESET_EXTREME) as f_out:
+                with lzma.open(xz_fname, 'wb', preset=9 | lzma.PRESET_EXTREME) as f_out:
                     shutil.copyfileobj(f_in, f_out)
 
 sys.exit(error_count)
