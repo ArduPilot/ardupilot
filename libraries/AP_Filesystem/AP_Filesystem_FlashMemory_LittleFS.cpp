@@ -618,6 +618,7 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_CYPRESS_S25FL064L     0x016017
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 #define JEDEC_ID_GIGA_GD25Q16E         0xC84015
+#define JEDEC_ID_ZBIT_ZB25VQ128        0x5E4018 
 
 /* Hardware-specific constants */
 
@@ -788,6 +789,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     case JEDEC_ID_WINBOND_W25Q128:
     case JEDEC_ID_WINBOND_W25Q128_2:
     case JEDEC_ID_CYPRESS_S25FL128L:
+    case JEDEC_ID_ZBIT_ZB25VQ128:   
         block_count = 256;    /* 16MiB */
         break;
 
