@@ -33,4 +33,5 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          python3 -m pip install pytest
           Tools/scripts/build_ci.sh
