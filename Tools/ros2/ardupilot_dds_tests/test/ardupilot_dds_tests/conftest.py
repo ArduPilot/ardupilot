@@ -24,6 +24,8 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch import LaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
+from launch.actions import RegisterEventHandler
+from launch.event_handlers import OnProcessIO
 
 from pathlib import Path
 
@@ -111,7 +113,18 @@ def mavproxy():
 
 @pytest.fixture(scope="function")
 def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS."""
+    """Fixture to bring up ArduPilot SITL DDS over serial with sequenced startup.
+
+    Process startup is serialised to avoid the race where ArduPilot sends its
+    DDS CREATE_PARTICIPANT request before micro_ros_agent is listening on the
+    virtual serial port:
+
+      socat  --[stderr "starting data transfer loop"]--> micro_ros_agent
+      micro_ros_agent  --[stdout/stderr "running..."]--> SITL
+
+    mavproxy is started immediately alongside socat; it handles reconnection so
+    it does not need to wait for SITL to be up first.
+    """
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
     vp_ld, vp_actions = virtual_ports
@@ -151,12 +164,47 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
         }.items(),
     )
 
+    # Start micro_ros_agent only once socat has created the PTY pair.
+    # socat prints "starting data transfer loop" to stderr when both ends of the
+    # PTY are open, which guarantees tty0 and tty1 symlinks exist.
+    _mra_started = [False]
+
+    def on_socat_stderr(info):
+        if (
+            not _mra_started[0]
+            and vp_actions["virtual_ports"].action is not None
+            and info.action is vp_actions["virtual_ports"].action
+            and b"starting data transfer loop" in info.text
+        ):
+            _mra_started[0] = True
+            return [mra_ld]
+        return []
+
+    # Start SITL only once micro_ros_agent has opened the serial device.
+    # micro_ros_agent prints "running..." when its Termios transport is ready
+    # to accept XRCE-DDS connections, so ArduPilot's CREATE_PARTICIPANT request
+    # will reach a listening agent instead of racing against startup.
+    _sitl_started = [False]
+
+    def on_mra_output(info):
+        if (
+            not _sitl_started[0]
+            and mra_actions["micro_ros_agent"].action is not None
+            and info.action is mra_actions["micro_ros_agent"].action
+            and b"running..." in info.text
+        ):
+            _sitl_started[0] = True
+            return [sitl_ld_args]
+        return []
+
     ld = LaunchDescription(
         [
             vp_ld,
-            mra_ld,
             mp_ld,
-            sitl_ld_args,
+            RegisterEventHandler(OnProcessIO(on_stderr=on_socat_stderr)),
+            RegisterEventHandler(
+                OnProcessIO(on_stdout=on_mra_output, on_stderr=on_mra_output)
+            ),
         ]
     )
     actions = {}
@@ -282,7 +330,10 @@ def sitl_copter_dds_udp_use_ns(micro_ros_agent_udp, mavproxy):
 
 @pytest.fixture(scope="function")
 def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS."""
+    """Fixture to bring up ArduPilot SITL DDS over serial with sequenced startup.
+
+    See sitl_copter_dds_serial for the rationale behind the sequencing.
+    """
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
     vp_ld, vp_actions = virtual_ports
@@ -322,12 +373,40 @@ def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mav
         }.items(),
     )
 
+    _mra_started = [False]
+
+    def on_socat_stderr(info):
+        if (
+            not _mra_started[0]
+            and vp_actions["virtual_ports"].action is not None
+            and info.action is vp_actions["virtual_ports"].action
+            and b"starting data transfer loop" in info.text
+        ):
+            _mra_started[0] = True
+            return [mra_ld]
+        return []
+
+    _sitl_started = [False]
+
+    def on_mra_output(info):
+        if (
+            not _sitl_started[0]
+            and mra_actions["micro_ros_agent"].action is not None
+            and info.action is mra_actions["micro_ros_agent"].action
+            and b"running..." in info.text
+        ):
+            _sitl_started[0] = True
+            return [sitl_ld_args]
+        return []
+
     ld = LaunchDescription(
         [
             vp_ld,
-            mra_ld,
             mp_ld,
-            sitl_ld_args,
+            RegisterEventHandler(OnProcessIO(on_stderr=on_socat_stderr)),
+            RegisterEventHandler(
+                OnProcessIO(on_stdout=on_mra_output, on_stderr=on_mra_output)
+            ),
         ]
     )
     actions = {}
