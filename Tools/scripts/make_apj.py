@@ -6,8 +6,8 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
-import json
 import base64
+import json
 import zlib
 
 parser = argparse.ArgumentParser(description='make_apj')

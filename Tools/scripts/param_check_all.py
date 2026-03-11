@@ -7,15 +7,18 @@ AP_FLAKE8_CLEAN
 '''
 
 from __future__ import annotations
+
+import glob
 import os
 import sys
-import glob
+
 from board_list import BoardList
-from param_check import get_metadata, check_file, SkippedChecks
+from param_check import SkippedChecks
+from param_check import check_file
+from param_check import get_metadata
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../Tools', 'autotest'))
 from pysim.vehicleinfo import VehicleInfo  # noqa: E402
-
 
 periph_hwdefs_to_skip = set([  # Most of these fail due to NET_ params
     'BotBloxDroneNet',

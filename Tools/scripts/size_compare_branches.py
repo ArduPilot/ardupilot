@@ -28,8 +28,11 @@ import shutil
 import tempfile
 import threading
 import time
+
 import board_list
-from build_script_base import BuildScriptBase, VEHICLE_MAP
+
+from build_script_base import VEHICLE_MAP
+from build_script_base import BuildScriptBase
 
 
 class SizeCompareBranchesResult(object):

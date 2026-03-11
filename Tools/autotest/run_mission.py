@@ -10,9 +10,11 @@ import os
 
 os.environ['MAVLINK20'] = '1'
 
-import vehicle_test_suite  # noqa:E402
-import sys  # noqa:E402
 import argparse  # noqa:E402
+import sys  # noqa:E402
+
+import vehicle_test_suite  # noqa:E402
+
 from pysim import util  # noqa:E402
 
 

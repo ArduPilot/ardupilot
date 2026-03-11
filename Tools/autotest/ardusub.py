@@ -9,11 +9,14 @@ AP_FLAKE8_CLEAN
 
 import os
 
-from pymavlink import mavutil, mavextra
+from math import degrees
+
+from pymavlink import mavextra
+from pymavlink import mavutil
 
 import vehicle_test_suite
+
 from vehicle_test_suite import NotAchievedException
-from math import degrees
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))

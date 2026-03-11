@@ -5,11 +5,12 @@ AP_FLAKE8_CLEAN
 """
 
 import os
-import pexpect
 import signal
 import subprocess
 import time
 import traceback
+
+import pexpect
 
 from pysim import util
 

@@ -5,10 +5,11 @@ script to build a html file showing flash free for current builds
 AP_FLAKE8_CLEAN
 '''
 
-import os
 import argparse
 import fnmatch
 import json
+import os
+
 from datetime import datetime
 
 parser = argparse.ArgumentParser(description='create builds.html for list of builds')

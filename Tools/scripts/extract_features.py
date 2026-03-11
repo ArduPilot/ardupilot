@@ -7,7 +7,9 @@ AP_FLAKE8_CLEAN
 """
 import argparse
 import re
+
 import build_options
+
 from build_script_base import BuildScriptBase
 
 

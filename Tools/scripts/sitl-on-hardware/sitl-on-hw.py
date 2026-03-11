@@ -6,10 +6,11 @@ see https://ardupilot.org/dev/docs/sim-on-hardware.html
 AP_FLAKE8_CLEAN
 '''
 
+import os
 import subprocess
 import sys
-import os
 import tempfile
+
 from argparse import ArgumentParser
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools', 'autotest'))

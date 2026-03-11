@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import fnmatch
 import os
 import re
-import fnmatch
+
 from collections.abc import Collection
 
 '''
