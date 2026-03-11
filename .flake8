@@ -1,9 +1,21 @@
 [flake8]
 extend-ignore =
+    # H101: Use TODO(NAME)
+    H101
+    # H216: The unittest.mock module should be used rather than the third party mock package
+    H216,
     # H301: one import per line
     H301,
     # H306: imports not in alphabetical order (time, os)
     H306,
+    # H401: docstring should not start with a space
+    H401,
+    # H403: multi line docstrings should end on a new line
+    H403,
+    # H404: multi line docstring should start without a leading new line
+    H404,
+    # H405: multi line docstring summary not separated with an empty line
+    H405,
     # E226: missing whitespace around arithmetic operator
     E226,
     # E261 at least two spaces before inline comment

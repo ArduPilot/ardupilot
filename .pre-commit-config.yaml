@@ -55,6 +55,8 @@ repos:
       rev: 7.3.0
       hooks:
       -   id: flake8
+          additional_dependencies:
+          -   hacking
   
   -   repo: local
       hooks:
