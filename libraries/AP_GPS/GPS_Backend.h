@@ -113,9 +113,12 @@ public:
     uint32_t get_last_itow_ms(void) const;
 
     // check if an option is set
-    bool option_set(const AP_GPS::DriverOptions option) const {
+    bool gps_option_is_set(const AP_GPS::DriverOptions option) const {
         return gps.option_set(option);
     }
+
+    using Option = AP_GPS::Params::Option;
+    bool option_is_set(Option opt) const { return params.option_is_set(opt); }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
