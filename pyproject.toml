@@ -1,3 +1,35 @@
+[tool.ruff.lint.isort]
+force-single-line = true
+lines-between-types = 1
+known-first-party = [
+    "annotate_params",
+    "antennatracker",
+    "arducopter",
+    "blimp",
+    "board_list",
+    "build_binaries_history",
+    "build_script_base",
+    "controller",
+    "dma_resolver",
+    "emit",
+    "emit_md",
+    "extract_param_defaults",
+    "gen_stable",
+    "generate_manifest",
+    "hal_common",
+    "helicopter",
+    "jsonemit",
+    "mdemit",
+    "param",
+    "param_check",
+    "pysim",
+    "quadplane",
+    "rover",
+    "sailboat",
+    "vehicle_test_suite",
+    "waflib",
+]
+
 [tool.isort]
 profile = "black"
 skip = ["./modules/", "./build/"]
