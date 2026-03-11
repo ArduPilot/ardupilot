@@ -858,14 +858,14 @@ bool AP_GPS_DroneCAN::handle_param_get_set_response_int(AP_DroneCAN* ap_dronecan
     }
 
     if (strcmp(name, "GPS_MB_ONLY_PORT") == 0 && cfg_step == STEP_SET_MB_CAN_TX) {
-        if (option_set(AP_GPS::UAVCAN_MBUseDedicatedBus) && !value) {
+        if (gps_option_is_set(AP_GPS::UAVCAN_MBUseDedicatedBus) && !value) {
             // set up so that another CAN port is used for the Moving Baseline Data
             // setting this value will allow another CAN port to be used as dedicated
             // line for the Moving Baseline Data
             value = 1;
             requires_save_and_reboot = true;
             return true;
-        } else if (!option_set(AP_GPS::UAVCAN_MBUseDedicatedBus) && value) {
+        } else if (!gps_option_is_set(AP_GPS::UAVCAN_MBUseDedicatedBus) && value) {
             // set up so that all CAN ports are used for the Moving Baseline Data
             value = 0;
             requires_save_and_reboot = true;
