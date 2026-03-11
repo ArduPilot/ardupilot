@@ -15,7 +15,7 @@ import traceback
 import hal_common
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_SITL/hwdef/scripts'))
-import sitl_hwdef  # noqa:501
+import sitl_hwdef  # noqa: E402
 
 
 @feature('sitl_ap_program')
