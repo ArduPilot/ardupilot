@@ -13,6 +13,7 @@ from pymavlink import mavextra
 from pymavlink import mavutil
 
 import vehicle_test_suite
+
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts

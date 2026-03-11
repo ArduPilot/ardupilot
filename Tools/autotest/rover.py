@@ -13,17 +13,16 @@ import pathlib
 import sys
 import time
 
+from pymavlink import mavextra
+from pymavlink import mavutil
+
 import vehicle_test_suite
 
 from pysim import util
 from pysim import vehicleinfo
-
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
-
-from pymavlink import mavextra
-from pymavlink import mavutil
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))

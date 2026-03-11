@@ -30,11 +30,13 @@ AP_FLAKE8_CLEAN
 """
 
 from __future__ import annotations
-import os
-import json
-import re
+
 import glob
+import json
+import os
+import re
 import subprocess
+
 from argparse import ArgumentParser
 
 

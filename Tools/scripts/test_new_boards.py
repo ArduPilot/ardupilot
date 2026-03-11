@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Set
 
 import board_list
+
 from build_script_base import BuildScriptBase
 
 

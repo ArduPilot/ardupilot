@@ -6,29 +6,26 @@ AP_FLAKE8_CLEAN
 
 import copy
 import math
+import operator
 import os
 import signal
 import time
 
-from pymavlink import quaternion
 from pymavlink import mavutil
-
+from pymavlink import quaternion
 from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
+from pysim import util
+from pysim import vehicleinfo
+from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import OldpymavlinkException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
 from vehicle_test_suite import WaitModeTimeout
-from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
-
-from pysim import vehicleinfo
-from pysim import util
-
-import operator
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))

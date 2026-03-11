@@ -4,16 +4,17 @@ Fly Helicopter in SITL
 AP_FLAKE8_CLEAN
 '''
 
-from arducopter import AutoTestCopter
-
-import vehicle_test_suite
-from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException
-
-from pymavlink import mavutil
-from pysim import vehicleinfo
-
 import copy
 import operator
+
+from pymavlink import mavutil
+
+import vehicle_test_suite
+
+from arducopter import AutoTestCopter
+from pysim import vehicleinfo
+from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import NotAchievedException
 
 
 class AutoTestHelicopter(AutoTestCopter):
