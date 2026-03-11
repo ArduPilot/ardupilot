@@ -113,7 +113,8 @@ def mavproxy():
 
 @pytest.fixture(scope="function")
 def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS over serial with sequenced startup.
+    """
+    Fixture to bring up ArduPilot SITL DDS over serial with sequenced startup.
 
     Process startup is serialised to avoid the race where ArduPilot sends its
     DDS CREATE_PARTICIPANT request before micro_ros_agent is listening on the
@@ -330,7 +331,8 @@ def sitl_copter_dds_udp_use_ns(micro_ros_agent_udp, mavproxy):
 
 @pytest.fixture(scope="function")
 def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS over serial with sequenced startup.
+    """
+    Fixture to bring up ArduPilot SITL DDS over serial with sequenced startup.
 
     See sitl_copter_dds_serial for the rationale behind the sequencing.
     """
