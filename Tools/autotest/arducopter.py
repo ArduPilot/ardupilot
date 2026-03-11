@@ -12448,7 +12448,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 p2=2,  # 2 m/s
             ),
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
-            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
         ])
 
         self.set_parameter("WP_SPD", 5)
