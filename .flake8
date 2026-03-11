@@ -4,8 +4,6 @@ extend-ignore =
     H101
     # H216: The unittest.mock module should be used rather than the third party mock package
     H216,
-    # H301: one import per line
-    H301,
     # H306: imports not in alphabetical order (time, os)
     H306,
     # H401: docstring should not start with a space
