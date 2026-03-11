@@ -143,7 +143,7 @@ void AP_Formation::update(float dt)
 
     // Check for stale data (5 second timeout)
     uint32_t now = AP_HAL::millis();
-    if (_last_update_ms > 0 && now - _last_update_ms > 5000) {
+    if (_last_update_ms > 0 && now - _last_update_ms > FC::Timing::STALE_DATA_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Formation: Stale data, disabling");
         _active = false;
         _vel_cmd.zero();
@@ -156,11 +156,11 @@ void AP_Formation::update(float dt)
 
     // STEP 2: Adaptive sensor fusion
     // Use UWB range for alpha calculation if available, otherwise GPS
-    float range_for_alpha = (_uwb_range > 0.1f) ? _uwb_range : gps_range;
+    float range_for_alpha = (_uwb_range > FC::SensorFusion::UWB_VALID_MIN_M) ? _uwb_range : gps_range;
     float alpha = calculate_adaptive_alpha(range_for_alpha);
 
     float fused_range;
-    if (_uwb_range > 0.1f && _uwb_range < 500.0f) {
+    if (_uwb_range > FC::SensorFusion::UWB_VALID_MIN_M && _uwb_range < FC::SensorFusion::UWB_SANITY_MAX_M) {
         // Valid UWB range - blend with GPS
         fused_range = alpha * _uwb_range + (1.0f - alpha) * gps_range;
     } else {
@@ -170,7 +170,7 @@ void AP_Formation::update(float dt)
     }
 
     // STEP 3: Heavy smoothing filter (exponential moving average)
-    if (_smooth_range < 0.1f) {
+    if (_smooth_range < FC::SensorFusion::SMOOTH_INIT_THRESH_M) {
         // Initialize on first update
         _smooth_range = fused_range;
     } else {
@@ -204,7 +204,7 @@ void AP_Formation::update(float dt)
 
     // Debug logging every 2 seconds
     static uint32_t last_log_ms = 0;
-    if (now - last_log_ms > 2000) {
+    if (now - last_log_ms > FC::Timing::WARN_LOG_THROTTLE_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO,
             "Formation: range=%.1fm alpha=%.2f speed=%.1fm/s",
             (double)_smooth_range, (double)alpha, (double)target_speed);
@@ -269,10 +269,10 @@ void AP_Formation::reset()
 float AP_Formation::calculate_adaptive_alpha(float range_m) const
 {
     // Range zones for adaptive weighting
-    const float CLOSE_RANGE = 50.0f;   // UWB optimal
-    const float MID_RANGE = 100.0f;    // Transition zone
-    const float FAR_RANGE = 200.0f;    // UWB max effective
-    const float ALPHA_BASE = 0.8f;     // UWB weight when close
+    const float CLOSE_RANGE = FC::SensorFusion::ALPHA_CLOSE_RANGE_M;
+    const float MID_RANGE = FC::SensorFusion::ALPHA_MID_RANGE_M;
+    const float FAR_RANGE = FC::SensorFusion::ALPHA_FAR_RANGE_M;
+    const float ALPHA_BASE = FC::SensorFusion::ALPHA_BASE;
 
     if (range_m < CLOSE_RANGE) {
         // Close range - trust UWB heavily
@@ -280,11 +280,11 @@ float AP_Formation::calculate_adaptive_alpha(float range_m) const
     } else if (range_m < MID_RANGE) {
         // Medium range - linear transition from 0.8 to 0.5
         float t = (range_m - CLOSE_RANGE) / (MID_RANGE - CLOSE_RANGE);
-        return ALPHA_BASE - t * 0.3f;  // 0.8 -> 0.5
+        return ALPHA_BASE - t * FC::SensorFusion::ALPHA_MID_DROP;  // 0.8 -> 0.5
     } else if (range_m < FAR_RANGE) {
         // Far range - linear transition from 0.5 to 0.3
         float t = (range_m - MID_RANGE) / (FAR_RANGE - MID_RANGE);
-        return 0.5f - t * 0.2f;  // 0.5 -> 0.3
+        return 0.5f - t * FC::SensorFusion::ALPHA_FAR_DROP;  // 0.5 -> 0.3
     }
 
     // Beyond UWB range - GPS only

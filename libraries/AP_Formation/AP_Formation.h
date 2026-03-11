@@ -29,6 +29,9 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include "formation_config.h"
+
+namespace FC = FormationConfig;
 
 class AP_Formation {
 public:

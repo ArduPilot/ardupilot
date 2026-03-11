@@ -82,7 +82,7 @@ void FormationController::update(const Location &current_loc,
     }
 
     // =========================================================================
-    // LATE-JOIN SAFE BUILD BEACON (Phase 7D.52)
+    // LATE-JOIN SAFE BUILD BEACON
     // Resend FORM_E_BUILD every 2s for the first 20s after first update().
     // =========================================================================
     if (!_build_beacon.sent && _build_beacon.first_update_ms > 0) {
@@ -106,7 +106,7 @@ void FormationController::update(const Location &current_loc,
     float dt = (now_ms - _last_update_ms) * 0.001f;
 
     // Check for lead aircraft timeout (2 seconds)
-    if (now_ms - _lead.last_update_ms > 2000) {
+    if (now_ms - _lead.last_update_ms > FC::Timing::LEAD_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FormationController: Lead timeout");
         _lead.valid = false;
         return;
@@ -119,7 +119,7 @@ void FormationController::update(const Location &current_loc,
         _pitch_command = 0.0f;
 
         static uint32_t last_stale_warn_ms = 0;
-        if (now_ms - last_stale_warn_ms >= 2000) {
+        if (now_ms - last_stale_warn_ms >= FC::Timing::WARN_LOG_THROTTLE_MS) {
             last_stale_warn_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
                 "[FORM_E] WARN: lead_age=%lums > %lums - wings-level fallback",
@@ -201,7 +201,7 @@ void FormationController::update(const Location &current_loc,
         _last_cross_track_error = 0.0f;
 
         static uint32_t last_bad_geom_ms = 0;
-        if (now_ms - last_bad_geom_ms >= 2000) {
+        if (now_ms - last_bad_geom_ms >= FC::Timing::WARN_LOG_THROTTLE_MS) {
             last_bad_geom_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,
                 "[FORM_E] BAD_GEOM rel=(%.0f,%.0f,%.0f) - wings-level",
@@ -222,13 +222,13 @@ void FormationController::update(const Location &current_loc,
     static float last_behind_for_rate = 0.0f;
 
     float behind_delta = fabsf(behind_m - last_behind_for_rate);
-    if (behind_delta > 0.05f && last_behind_change_ms > 0) {
+    if (behind_delta > FC::DirectThrottle::BEHIND_RATE_DELTA_THRESH_M && last_behind_change_ms > 0) {
         float rate_dt = (now_ms - last_behind_change_ms) * 0.001f;
-        if (rate_dt > 0.02f && rate_dt < 1.0f) {
+        if (rate_dt > FC::DirectThrottle::BEHIND_RATE_DT_MIN_S && rate_dt < FC::DirectThrottle::BEHIND_RATE_DT_MAX_S) {
             float behind_change = last_behind_for_rate - behind_m;
             float raw_closure = behind_change / rate_dt;
-            if (fabsf(raw_closure) < 20.0f) {
-                _direct_throttle.behind_closure_rate = 0.3f * raw_closure + 0.7f * _direct_throttle.behind_closure_rate;
+            if (fabsf(raw_closure) < FC::DirectThrottle::MAX_RAW_CLOSURE_RATE_MPS) {
+                _direct_throttle.behind_closure_rate = FC::DirectThrottle::BEHIND_RATE_ALPHA * raw_closure + (1.0f - FC::DirectThrottle::BEHIND_RATE_ALPHA) * _direct_throttle.behind_closure_rate;
             }
         }
         last_behind_for_rate = behind_m;
@@ -331,7 +331,7 @@ void FormationController::update(const Location &current_loc,
         _pd.spike_count++;
     } else if (fabsf(cross_rate_raw) > FC::PDGains::MAX_CROSS_RATE_M_S) {
         float clamped = copysignf(FC::PDGains::MAX_CROSS_RATE_M_S, cross_rate_raw);
-        if (now_ms - _pd.spike_last_log_ms >= 1000) {
+        if (now_ms - _pd.spike_last_log_ms >= FC::Timing::DIAG_LOG_INTERVAL_MS) {
             _pd.spike_last_log_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
                 "[FORM_E] CRS_SPIKE n=%u raw=%+.0f vrel=(%.1f,%.1f)",
@@ -350,7 +350,7 @@ void FormationController::update(const Location &current_loc,
     _last_cross_track_error = cross_m;
 
     // =========================================================================
-    // TURN-FOLLOWING ROLL GUIDANCE (Phase 7D.49)
+    // TURN-FOLLOWING ROLL GUIDANCE
     // =========================================================================
     float follower_hdg_deg = degrees(current_heading);
     float leader_hdg_deg = degrees(leader_yaw);
@@ -366,7 +366,7 @@ void FormationController::update(const Location &current_loc,
         _turn_follow.active = false;
 
         static uint32_t last_guard_warn_ms = 0;
-        if (now_ms - last_guard_warn_ms >= 2000) {
+        if (now_ms - last_guard_warn_ms >= FC::Timing::WARN_LOG_THROTTLE_MS) {
             last_guard_warn_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,
                 "[TURN_FOLLOW_GUARD] bad_units f=%.0f l=%.0f he=%.0f",
@@ -375,7 +375,7 @@ void FormationController::update(const Location &current_loc,
         }
     }
 
-    // Improved turn detection (Phase 7D.60)
+    // Improved turn detection
     float lead_yr_deg_s = degrees(_lead.yaw_rate_rad_s);
     float yr_abs = fabsf(lead_yr_deg_s);
 
@@ -420,7 +420,7 @@ void FormationController::update(const Location &current_loc,
     }
     _turn_follow.w_turn = _turn_follow.w_turn * _turn_follow.w_turn * (3.0f - 2.0f * _turn_follow.w_turn);
 
-    // Fix W_TURN collapse (Phase 7D.59)
+    // Fix W_TURN collapse
     _turn_follow.w_min_enforced = false;
     _turn_follow.lead_yr_deg_s = lead_yr_deg_s;
     if (_turn_follow.active && fabsf(_turn_follow.bank_turn_deg) > FC::TurnFollow::BANK_FF_MIN_DEG) {
@@ -470,14 +470,14 @@ void FormationController::update(const Location &current_loc,
 
     // Blend cross-track with turn-following roll
     float blended_roll_deg;
-    if (_turn_follow.w_turn > 0.001f) {
+    if (_turn_follow.w_turn > FC::TurnFollow::W_TURN_BLEND_EPSILON) {
         blended_roll_deg = (1.0f - _turn_follow.w_turn) * _turn_follow.bank_cross_deg +
                            _turn_follow.w_turn * _turn_follow.bank_turn_deg;
     } else {
         blended_roll_deg = _turn_follow.bank_cross_deg;
     }
 
-    // Enforce minimum nav_roll during turns (Phase 7D.59)
+    // Enforce minimum nav_roll during turns
     _turn_follow.cross_min_enforced = false;
     if (_turn_follow.active && fabsf(cross_m) > FC::TurnFollow::CROSS_MIN_NAV_ROLL_M) {
         float min_roll_mag = FC::TurnFollow::CROSS_MIN_ROLL_DEG;
@@ -491,7 +491,7 @@ void FormationController::update(const Location &current_loc,
     }
 
     // =========================================================================
-    // CROSS DIVERGENCE PROTECTION (Phase 7D.60)
+    // CROSS DIVERGENCE PROTECTION
     // =========================================================================
     _cross_protect.enforced = false;
     float cross_abs = fabsf(cross_m);
@@ -500,7 +500,7 @@ void FormationController::update(const Location &current_loc,
         if (cross_abs < FC::CrossProtect::OFF_M) {
             _cross_protect.active = false;
             static uint32_t last_xp_off_ms = 0;
-            if (now_ms - last_xp_off_ms >= 2000) {
+            if (now_ms - last_xp_off_ms >= FC::Timing::WARN_LOG_THROTTLE_MS) {
                 last_xp_off_ms = now_ms;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                     "[XP_OFF] cross=%.0fm < %.0fm", (double)cross_abs, (double)FC::CrossProtect::OFF_M);
@@ -510,7 +510,7 @@ void FormationController::update(const Location &current_loc,
         if (cross_abs > FC::CrossProtect::ON_M) {
             _cross_protect.active = true;
             static uint32_t last_xp_on_ms = 0;
-            if (now_ms - last_xp_on_ms >= 2000) {
+            if (now_ms - last_xp_on_ms >= FC::Timing::WARN_LOG_THROTTLE_MS) {
                 last_xp_on_ms = now_ms;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
                     "[XP_ON] cross=%.0fm > %.0fm tf=%u", (double)cross_abs, (double)FC::CrossProtect::ON_M,
@@ -523,7 +523,7 @@ void FormationController::update(const Location &current_loc,
         float cross_correction_sign = (cross_m > 0.0f) ? -1.0f : 1.0f;
         float cross_excess = cross_abs - FC::CrossProtect::OFF_M;
         float roll_range = FC::CrossProtect::MAX_ROLL_DEG - FC::CrossProtect::MIN_ROLL_DEG;
-        float cross_scale = constrain_float(cross_excess / 100.0f, 0.0f, 1.0f);
+        float cross_scale = constrain_float(cross_excess / FC::CrossProtect::CROSS_EXCESS_SCALE_M, 0.0f, 1.0f);
         float xp_roll_mag = FC::CrossProtect::MIN_ROLL_DEG + roll_range * cross_scale;
 
         _cross_protect.roll_deg = xp_roll_mag * cross_correction_sign;
@@ -561,7 +561,7 @@ void FormationController::update(const Location &current_loc,
 
     bool sign_flip = (desired_roll > 0.0f && _pd.prev_roll_cmd < 0.0f) ||
                      (desired_roll < 0.0f && _pd.prev_roll_cmd > 0.0f);
-    bool significant_magnitude = fabsf(desired_roll) > radians(8.0f);
+    bool significant_magnitude = fabsf(desired_roll) > radians(FC::PDGains::SIGN_FLIP_ROLL_THRESH_DEG);
 
     if (sign_flip && significant_magnitude) {
         float accel_max_delta = max_delta * 3.0f;
@@ -576,8 +576,8 @@ void FormationController::update(const Location &current_loc,
                 roll_pd = MIN(max_delta, desired_roll);
             }
         }
-        if ((roll_pd > 0.0f && desired_roll < -radians(8.0f)) ||
-            (roll_pd < 0.0f && desired_roll > radians(8.0f))) {
+        if ((roll_pd > 0.0f && desired_roll < -radians(FC::PDGains::SIGN_FLIP_ROLL_THRESH_DEG)) ||
+            (roll_pd < 0.0f && desired_roll > radians(FC::PDGains::SIGN_FLIP_ROLL_THRESH_DEG))) {
             roll_pd = 0.0f;
         }
     } else {
@@ -682,7 +682,7 @@ void FormationController::update(const Location &current_loc,
     // =========================================================================
     static uint32_t last_pd_log_ms = 0;
     static float prev_log_roll_deg = 0.0f;
-    if (now_ms - last_pd_log_ms >= 1000 && fabsf(cross_m) > 1.0f) {
+    if (now_ms - last_pd_log_ms >= FC::Timing::DIAG_LOG_INTERVAL_MS && fabsf(cross_m) > FC::Timing::LOG_CROSS_THRESH_M) {
         float dt_log = (now_ms - last_pd_log_ms) * 0.001f;
         last_pd_log_ms = now_ms;
         float raw_roll_deg = degrees(_pd.raw_roll_for_log);
@@ -705,7 +705,7 @@ void FormationController::update(const Location &current_loc,
     }
 
     // Turn-follow diagnostic log
-    if (now_ms - _turn_follow.last_log_ms >= 1000) {
+    if (now_ms - _turn_follow.last_log_ms >= FC::Timing::DIAG_LOG_INTERVAL_MS) {
         _turn_follow.last_log_ms = now_ms;
 
         int w_pct = (int)(_turn_follow.w_turn * 100.0f);
@@ -726,8 +726,8 @@ void FormationController::update(const Location &current_loc,
 
     // Detailed turn-follow debug log
     static uint32_t last_tf_dbg_ms = 0;
-    if (now_ms - last_tf_dbg_ms >= 1000) {
-        if (now_ms - _turn_follow.last_log_ms >= 400) {
+    if (now_ms - last_tf_dbg_ms >= FC::Timing::DIAG_LOG_INTERVAL_MS) {
+        if (now_ms - _turn_follow.last_log_ms >= FC::Timing::TF_DBG_LOG_SPACING_MS) {
             last_tf_dbg_ms = now_ms;
 
             const char* guard_str = "ok";
@@ -763,7 +763,7 @@ void FormationController::update(const Location &current_loc,
     _pitch_command = pitch_cmd;
 
     // =========================================================================
-    // DIRECT THROTTLE CONTROL (Test 360)
+    // DIRECT THROTTLE CONTROL
     // =========================================================================
     if (_direct_throttle.behind_m <= FC::DirectThrottle::ENABLE_BEHIND_M && _direct_throttle.behind_m > 0.0f) {
         _direct_throttle.override_active = true;
@@ -775,7 +775,7 @@ void FormationController::update(const Location &current_loc,
         if (!direct_throttle_logged && _direct_throttle.override_active) {
             direct_throttle_logged = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "[T360_DIRECT_THR] ENTER behind=%.1f r=%.1f lead_tas=%.1f fol_tas=%.1f",
+                "[DIRECT_THR] ENTER behind=%.1f r=%.1f lead_tas=%.1f fol_tas=%.1f",
                 (double)_direct_throttle.behind_m, (double)_range_to_lead, (double)leader_tas, (double)follower_tas);
         }
 
@@ -783,20 +783,20 @@ void FormationController::update(const Location &current_loc,
         float base_throttle = FC::DirectThrottle::BASE_THROTTLE_PCT + airspeed_error * FC::DirectThrottle::KP_AIRSPEED_THROTTLE;
 
         float range_trim;
-        if (_direct_throttle.behind_m > 10.0f) {
-            range_trim = (_direct_throttle.behind_m - 10.0f) * 1.0f;
-            range_trim = constrain_float(range_trim, 0.0f, 20.0f);
-        } else if (_direct_throttle.behind_m > 2.0f) {
+        if (_direct_throttle.behind_m > FC::DirectThrottle::RANGE_TRIM_FAR_THRESH_M) {
+            range_trim = (_direct_throttle.behind_m - FC::DirectThrottle::RANGE_TRIM_FAR_THRESH_M) * FC::DirectThrottle::RANGE_TRIM_FAR_GAIN;
+            range_trim = constrain_float(range_trim, 0.0f, FC::DirectThrottle::RANGE_TRIM_FAR_MAX_PCT);
+        } else if (_direct_throttle.behind_m > FC::DirectThrottle::RANGE_TRIM_NEAR_THRESH_M) {
             range_trim = 0.0f;
         } else {
-            range_trim = (_direct_throttle.behind_m - 2.0f) * 1.5f;
-            range_trim = constrain_float(range_trim, -3.0f, 0.0f);
+            range_trim = (_direct_throttle.behind_m - FC::DirectThrottle::RANGE_TRIM_NEAR_THRESH_M) * FC::DirectThrottle::RANGE_TRIM_NEAR_GAIN;
+            range_trim = constrain_float(range_trim, FC::DirectThrottle::RANGE_TRIM_NEAR_MIN_PCT, 0.0f);
         }
 
         _direct_throttle.throttle_percent = constrain_float(base_throttle + range_trim,
                                             FC::DirectThrottle::MIN_THROTTLE_PCT, FC::DirectThrottle::MAX_THROTTLE_PCT);
 
-        // Zone-based pitch control (Test 361)
+        // Zone-based pitch control
         float pitch_trim_deg;
         if (_direct_throttle.behind_m > FC::PitchControl::ZONE_FAR_M) {
             pitch_trim_deg = FC::PitchControl::CLOSING_DEG;
@@ -814,16 +814,16 @@ void FormationController::update(const Location &current_loc,
             _pitch_command = pitch_cmd;
 
             static uint32_t last_alt_floor_log_ms = 0;
-            if (now_ms - last_alt_floor_log_ms >= 2000) {
+            if (now_ms - last_alt_floor_log_ms >= FC::Timing::WARN_LOG_THROTTLE_MS) {
                 last_alt_floor_log_ms = now_ms;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                    "[T362_ALT_FLOOR] descent=%.1fm/s > %.1f - forcing pitch +%.0f",
+                    "[ALT_FLOOR] descent=%.1fm/s > %.1f - forcing pitch +%.0f",
                     (double)_direct_throttle.descent_rate, (double)FC::DirectThrottle::ALT_FLOOR_DESCENT_RATE_MPS,
                     (double)FC::DirectThrottle::ALT_FLOOR_PITCH_DEG);
             }
         }
 
-        // Diverge detection (Test 363)
+        // Diverge detection
         float velocity_closure = follower_tas - leader_tas;
 
         if (velocity_closure < FC::DirectThrottle::DIVERGE_THRESHOLD_MPS) {
@@ -832,7 +832,7 @@ void FormationController::update(const Location &current_loc,
                 _direct_throttle.override_active = false;
                 _direct_throttle.diverge_timer_ms = 0;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                    "[T363_ABORT] Diverging Vc=%.2fm/s for 3s - aborting C++",
+                    "[DIVERGE_ABORT] Diverging Vc=%.2fm/s for 3s - aborting C++",
                     (double)velocity_closure);
             }
         } else {
@@ -843,7 +843,7 @@ void FormationController::update(const Location &current_loc,
         if (now_ms - _direct_throttle.log_last_ms >= FC::DirectThrottle::LOG_INTERVAL_MS) {
             _direct_throttle.log_last_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "[T363_DUAL] b=%.1f th=%.0f p=%ld Vc=%.2f",
+                "[DIVERGE_DUAL] b=%.1f th=%.0f p=%ld Vc=%.2f",
                 (double)_direct_throttle.behind_m,
                 (double)_direct_throttle.throttle_percent,
                 (long)_direct_throttle.pitch_command_cd,
@@ -914,7 +914,7 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
         _fine_ctrl.active = false;
 
     } else if (range_to_lead > FC::FineControl::PREDECEL_ZONE_INNER_M) {
-        // PRE-DECEL PHASE (Test 359)
+        // PRE-DECEL PHASE
         if (!_fine_ctrl.active) {
             _fine_ctrl.active = true;
             _fine_ctrl.entry_ms = now_ms;
@@ -923,7 +923,7 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
             _fine_ctrl.standoff_dwell_s = 0.0f;
             _fine_ctrl.standoff_cleared = false;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "[T359_FINE] ENTER r=%.1f Vc=%.2f TAS=%.1f",
+                "[FINE_CTRL] ENTER r=%.1f Vc=%.2f TAS=%.1f",
                 (double)range_to_lead, (double)_closure_rate, (double)leader_tas);
         }
 
@@ -941,12 +941,12 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
         if (now_ms - _fine_ctrl.last_log_ms >= FC::FineControl::LOG_INTERVAL_MS) {
             _fine_ctrl.last_log_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "[T359_PREDECEL] r=%.1f Vc=%.2f tgt=%.2f adj=%.2f",
+                "[PREDECEL] r=%.1f Vc=%.2f tgt=%.2f adj=%.2f",
                 (double)range_to_lead, (double)_closure_rate, (double)target_vc, (double)speed_adj);
         }
 
     } else if (range_to_lead > FC::FineControl::STANDOFF_INNER_M) {
-        // STANDOFF PHASE (Test 359)
+        // STANDOFF PHASE
         if (!_fine_ctrl.standoff_cleared) {
             if (_closure_rate < FC::FineControl::STANDOFF_VC_THRESHOLD_MPS &&
                 _closure_rate > -FC::FineControl::STANDOFF_VC_THRESHOLD_MPS) {
@@ -955,7 +955,7 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
                 if (_fine_ctrl.standoff_dwell_s >= FC::FineControl::STANDOFF_DWELL_REQUIRED_S) {
                     _fine_ctrl.standoff_cleared = true;
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                        "[T359_STANDOFF] CLEARED after %.1fs dwell at r=%.2f",
+                        "[STANDOFF] CLEARED after %.1fs dwell at r=%.2f",
                         (double)_fine_ctrl.standoff_dwell_s, (double)range_to_lead);
                 }
 
@@ -969,7 +969,7 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
                 if (now_ms - _fine_ctrl.last_log_ms >= FC::FineControl::LOG_INTERVAL_MS) {
                     _fine_ctrl.last_log_ms = now_ms;
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                        "[T359_STANDOFF] HOLD r=%.2f Vc=%.2f dwell=%.1f adj=%.2f",
+                        "[STANDOFF] HOLD r=%.2f Vc=%.2f dwell=%.1f adj=%.2f",
                         (double)range_to_lead, (double)_closure_rate,
                         (double)_fine_ctrl.standoff_dwell_s, (double)speed_adj);
                 }
@@ -983,7 +983,7 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
         }
 
     } else {
-        // CONTACT PHASE (Test 359)
+        // CONTACT PHASE
         float vc_error = _closure_rate - 0.0f;
         float speed_adj = constrain_float(vc_error * 0.3f, -FC::FineControl::CONTACT_MAX_ADJ_MPS, FC::FineControl::CONTACT_MAX_ADJ_MPS);
         desired_speed = leader_tas - speed_adj;
@@ -996,12 +996,12 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
         if (!contact_logged) {
             contact_logged = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "[T359_CONTACT] ENTER r=%.2f Vc=%.3f min_r=%.2f",
+                "[CONTACT] ENTER r=%.2f Vc=%.3f min_r=%.2f",
                 (double)range_to_lead, (double)_closure_rate, (double)_fine_ctrl.min_range);
         }
     }
 
-    // Overtake protection (Test 359)
+    // Overtake protection
     if (range_to_lead < FC::FineControl::PREDECEL_ZONE_INNER_M &&
         _closure_rate > FC::FineControl::OVERTAKE_VC_THRESH_MPS) {
         desired_speed = leader_tas - FC::FineControl::OVERTAKE_BRAKE_ADJ_MPS;
@@ -1012,10 +1012,10 @@ float FormationController::calculate_desired_speed(float range_to_lead) {
             _fine_ctrl.overtake_active_time_s += dt;
         }
 
-        if (now_ms - _fine_ctrl.overtake_last_ms >= 1000) {
+        if (now_ms - _fine_ctrl.overtake_last_ms >= FC::Timing::DIAG_LOG_INTERVAL_MS) {
             _fine_ctrl.overtake_last_ms = now_ms;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
-                "[T359_OVERTAKE] Vc=%.2f at r=%.1fm - BRAKING (n=%u)",
+                "[OVERTAKE] Vc=%.2f at r=%.1fm - BRAKING (n=%u)",
                 (double)_closure_rate, (double)range_to_lead, (unsigned)_fine_ctrl.overtake_count);
         }
     }

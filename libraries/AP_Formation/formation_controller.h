@@ -6,7 +6,7 @@
 
    Author: FlightDock Research Team
    Date: January 2026
-   Version: 7D.63 (T363: Velocity-based closure rate fix)
+   Version: 7D.63 (velocity-based closure rate, graduated fine control, direct throttle)
 
    Refactored: 2026-01-24 - Organized constants into formation_config.h
 */
@@ -50,7 +50,7 @@ struct LeadState {
     uint32_t vel_last_update_ms = 0;
 };
 
-// Turn-following state (Phase 7D.49)
+// Turn-following state
 struct TurnFollowState {
     float hdg_err_deg = 0.0f;           // Heading error (follower - leader)
     float yr_des_deg_s = 0.0f;          // Desired yaw rate
@@ -61,23 +61,23 @@ struct TurnFollowState {
     float prev_bank_turn_deg = 0.0f;    // For rate limiting
     uint32_t last_log_ms = 0;
     bool safety_blocked = false;        // Deep approach blocked
-    bool w_min_enforced = false;        // Phase 7D.59 fix
-    bool cross_min_enforced = false;    // Phase 7D.59 fix
+    bool w_min_enforced = false;        // W_TURN collapse fix
+    bool cross_min_enforced = false;    // Cross min-roll fix
     float lead_yr_deg_s = 0.0f;         // Leader yaw rate for logging
 
-    // Turn detection (Phase 7D.60)
+    // Turn detection
     bool yr_latched = false;            // Yaw-rate based detection
     bool cross_rate_detect = false;     // Cross-rate based detection
 };
 
-// Cross-track protection state (Phase 7D.60)
+// Cross-track protection state
 struct CrossProtectState {
     bool active = false;                // Hysteresis latched
     bool enforced = false;              // Applied this cycle
     float roll_deg = 0.0f;              // Computed roll command
 };
 
-// Sign divergence brake state (Test 233/234)
+// Sign divergence brake state
 struct SignDivergeState {
     uint32_t accum_ms = 0;              // Continuous duration accumulator
     uint32_t last_check_ms = 0;         // Last check timestamp
@@ -89,7 +89,7 @@ struct SignDivergeState {
     bool panic_logged = false;
 };
 
-// Out-of-engage safety state (Test 238)
+// Out-of-engage safety state
 struct OutOfEngageState {
     uint32_t last_log_ms = 0;
     uint32_t accum_ms = 0;              // Persistence accumulator
@@ -97,7 +97,7 @@ struct OutOfEngageState {
     bool latched = false;               // Hysteresis state
 };
 
-// Fine control state (Test 359)
+// Fine control state
 struct FineControlState {
     float standoff_dwell_s = 0.0f;      // Time at low Vc in standoff
     bool standoff_cleared = false;      // Gate passed
@@ -112,7 +112,7 @@ struct FineControlState {
     uint32_t last_log_ms = 0;
 };
 
-// Direct throttle control state (Test 360-367)
+// Direct throttle control state
 struct DirectThrottleState {
     float throttle_percent = 50.0f;     // Output (0-100%)
     bool override_active = false;       // C++ owns throttle
@@ -139,7 +139,7 @@ struct PDControllerState {
     uint32_t spike_count = 0;           // Spike rejection counter
     uint32_t spike_last_log_ms = 0;
     bool spike_this_cycle = false;
-    float delta_roll_rate_deg_s = 0.0f; // Test 240 diagnostic
+    float delta_roll_rate_deg_s = 0.0f; // Diagnostic
     float slew_rate_used_deg_s = 0.0f;
     float prev_roll_cmd = 0.0f;         // For rate limiting
 };
@@ -153,7 +153,7 @@ struct SensorFusionState {
     bool fused_range_initialized = false;
 };
 
-// Build beacon state (Phase 7D.52)
+// Build beacon state
 struct BuildBeaconState {
     bool sent = false;
     uint32_t first_update_ms = 0;
@@ -223,26 +223,26 @@ public:
         return AP_HAL::millis() - _lead.last_update_ms;
     }
 
-    // Leader TAS setter/getter (Test 359)
+    // Leader TAS setter/getter
     void set_lead_tas(float tas) { _lead.tas_actual = tas; _lead.tas_valid = true; }
     float get_lead_tas() const {
         return _lead.tas_valid ? _lead.tas_actual : FC::SpeedControl::LEAD_SPEED_DEFAULT_MPS;
     }
     bool is_lead_tas_valid() const { return _lead.tas_valid; }
 
-    // Standoff state getters (Test 359)
+    // Standoff state getters
     float get_standoff_dwell_s() const { return _fine_ctrl.standoff_dwell_s; }
     bool is_standoff_cleared() const { return _fine_ctrl.standoff_cleared; }
     bool is_fine_control_active() const { return _fine_ctrl.active; }
 
-    // Direct throttle getters (Test 360)
+    // Direct throttle getters
     float get_throttle_percent() const { return _direct_throttle.throttle_percent; }
     bool is_throttle_override_active() const { return _direct_throttle.override_active; }
 
-    // Set current follower airspeed for P-control (Test 360)
+    // Set current follower airspeed for P-control
     void set_follower_airspeed(float airspeed) { _direct_throttle.follower_airspeed = airspeed; }
 
-    // Direct pitch getter (Test 361)
+    // Direct pitch getter
     int32_t get_pitch_command_cd() const { return _direct_throttle.pitch_command_cd; }
 
 private:

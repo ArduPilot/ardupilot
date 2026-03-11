@@ -52,7 +52,7 @@ namespace SpeedControl {
 }
 
 // =========================================================================
-// Fine Control Zones (Test 359)
+// Fine Control Zones
 // =========================================================================
 // Four-stage approach for contact docking:
 //   STAGE 0: PRE-DECEL (2-30m)  - Graduated deceleration
@@ -97,6 +97,7 @@ namespace PDGains {
     constexpr float DT_MIN_S = 0.001f;                // Min valid dt (1ms)
     constexpr float DT_MAX_S = 0.10f;                 // Max valid dt (100ms)
     constexpr float MAX_D_TERM_DEG = 10.0f;           // Max D-term contribution
+    constexpr float SIGN_FLIP_ROLL_THRESH_DEG = 8.0f;   // Threshold for sign-flip slew accel
 }
 
 // =========================================================================
@@ -107,7 +108,7 @@ namespace BankLimits {
     constexpr float MAX_BANK_TURN_DEG = 35.0f;        // Max bank during leader turns
     constexpr float MAX_ROLL_RATE_DEG_S = 30.0f;      // Legacy (unused)
 
-    // Slew rate limits (Test 240)
+    // Slew rate limits
     constexpr float ROLL_SLEW_RATE_NORMAL_DEG_S = 12.0f;   // Normal slew rate
     constexpr float ROLL_SLEW_RATE_BOOST_DEG_S = 15.0f;    // Boosted when saturating
     constexpr float ROLL_SLEW_BOOST_CROSS_THRESH_M = 80.0f; // Cross threshold for boost
@@ -115,7 +116,7 @@ namespace BankLimits {
 }
 
 // =========================================================================
-// Turn Following (Phase 7D.49)
+// Turn Following
 // =========================================================================
 namespace TurnFollow {
     constexpr float K_HDG_YR = 0.3f;                  // Heading error to yaw rate gain
@@ -126,13 +127,13 @@ namespace TurnFollow {
     constexpr float SAFETY_FAR_RANGE_M = 300.0f;      // Block turn-follow beyond this
     constexpr float SAFETY_MAX_CROSS_M = 80.0f;       // Block turn-follow above this
 
-    // Weight collapse fix (Phase 7D.59)
+    // Weight collapse fix
     constexpr float W_MIN = 0.30f;                    // Minimum weight when active
     constexpr float BANK_FF_MIN_DEG = 0.5f;           // Min |bank_turn| to enforce w_min
     constexpr float CROSS_MIN_NAV_ROLL_M = 20.0f;     // Cross threshold for min roll
     constexpr float CROSS_MIN_ROLL_DEG = 5.0f;        // Minimum nav_roll
 
-    // Turn detection thresholds (Phase 7D.60)
+    // Turn detection thresholds
     constexpr float YR_THRESH_ON_DEG_S = 0.5f;        // Yaw rate turn-on threshold
     constexpr float YR_THRESH_OFF_DEG_S = 0.3f;       // Yaw rate turn-off threshold
     constexpr float CROSS_RATE_THRESH_M_S = 3.0f;     // Cross rate for turn detection
@@ -145,20 +146,22 @@ namespace TurnFollow {
 
     // Turn feed-forward
     constexpr float TURN_FF_GAIN = 1.0f;
+    constexpr float W_TURN_BLEND_EPSILON = 0.001f;      // Min w_turn for blended roll path
 }
 
 // =========================================================================
-// Cross Divergence Protection (Phase 7D.60)
+// Cross Divergence Protection
 // =========================================================================
 namespace CrossProtect {
     constexpr float ON_M = 50.0f;                     // Enable above this cross
     constexpr float OFF_M = 30.0f;                    // Disable below this cross
     constexpr float MIN_ROLL_DEG = 5.0f;              // Minimum corrective roll
     constexpr float MAX_ROLL_DEG = 25.0f;             // Maximum corrective roll
+    constexpr float CROSS_EXCESS_SCALE_M = 100.0f;      // Denominator for excess normalization
 }
 
 // =========================================================================
-// Sign Divergence Brake + Panic (Test 233/234)
+// Sign Divergence Brake + Panic
 // =========================================================================
 namespace SignDiverge {
     constexpr float CROSS_THRESH_M = 200.0f;          // Min |cross| to check
@@ -171,7 +174,7 @@ namespace SignDiverge {
 }
 
 // =========================================================================
-// Out of Engage Safety Guard (Test 238)
+// Out of Engage Safety Guard
 // =========================================================================
 namespace OutOfEngage {
     constexpr float RANGE_M = 1500.0f;                // Max range for PD control
@@ -182,7 +185,7 @@ namespace OutOfEngage {
 }
 
 // =========================================================================
-// Direct Throttle Control (Test 360-367)
+// Direct Throttle Control
 // =========================================================================
 namespace DirectThrottle {
     constexpr float BASE_THROTTLE_PCT = 65.0f;        // Base throttle
@@ -209,10 +212,23 @@ namespace DirectThrottle {
 
     // Logging
     constexpr uint32_t LOG_INTERVAL_MS = 500;
+    // Behind-rate estimation
+    constexpr float BEHIND_RATE_DELTA_THRESH_M = 0.05f;  // Min behind_m change for rate update
+    constexpr float BEHIND_RATE_DT_MIN_S = 0.02f;        // Min dt for rate calculation
+    constexpr float BEHIND_RATE_DT_MAX_S = 1.0f;         // Max dt for rate calculation
+    constexpr float BEHIND_RATE_ALPHA = 0.3f;             // EWMA alpha for behind closure rate
+    constexpr float MAX_RAW_CLOSURE_RATE_MPS = 20.0f;     // Reject closure rates above this
+    // Range trim schedule
+    constexpr float RANGE_TRIM_FAR_THRESH_M = 10.0f;     // Far range trim boundary
+    constexpr float RANGE_TRIM_FAR_GAIN = 1.0f;          // Far range trim gain (pct per m)
+    constexpr float RANGE_TRIM_FAR_MAX_PCT = 20.0f;      // Far range trim clamp
+    constexpr float RANGE_TRIM_NEAR_THRESH_M = 2.0f;     // Near range trim boundary
+    constexpr float RANGE_TRIM_NEAR_GAIN = 1.5f;         // Near range trim gain (pct per m)
+    constexpr float RANGE_TRIM_NEAR_MIN_PCT = -3.0f;     // Near range trim clamp
 }
 
 // =========================================================================
-// Pitch Control (Test 361)
+// Pitch Control
 // =========================================================================
 namespace PitchControl {
     constexpr float CLOSING_DEG = -1.5f;              // Nose down for closing
@@ -246,6 +262,16 @@ namespace SensorFusion {
     constexpr float UWB_MAX_RANGE_M = 200.0f;         // Max effective UWB range
     constexpr float SMOOTH_ALPHA = 0.3f;              // Smoothing filter coefficient
     constexpr uint32_t LEAD_STALE_THRESH_MS = 500;    // Lead telemetry freshness
+    constexpr float UWB_VALID_MIN_M = 0.1f;             // Minimum valid UWB range
+    constexpr float UWB_SANITY_MAX_M = 500.0f;          // Maximum sane UWB range
+    constexpr float SMOOTH_INIT_THRESH_M = 0.1f;        // Init threshold for smooth range
+    // Adaptive alpha breakpoints (AP_Formation range-dependent weighting)
+    constexpr float ALPHA_CLOSE_RANGE_M = 50.0f;        // UWB-optimal zone boundary
+    constexpr float ALPHA_MID_RANGE_M = 100.0f;         // Transition zone boundary
+    constexpr float ALPHA_FAR_RANGE_M = 200.0f;         // Max UWB effective range
+    constexpr float ALPHA_BASE = 0.8f;                  // UWB weight when close
+    constexpr float ALPHA_MID_DROP = 0.3f;              // Alpha reduction close→mid
+    constexpr float ALPHA_FAR_DROP = 0.2f;              // Alpha reduction mid→far
 }
 
 // =========================================================================
@@ -255,6 +281,12 @@ namespace Timing {
     constexpr float LOOP_HZ = 400.0f;                 // 400 Hz update rate
     constexpr uint32_t BUILD_BEACON_INTERVAL_MS = 2000;
     constexpr uint32_t BUILD_BEACON_WINDOW_MS = 20000;
+    constexpr uint32_t LEAD_TIMEOUT_MS = 2000;           // Lead aircraft data timeout
+    constexpr uint32_t WARN_LOG_THROTTLE_MS = 2000;      // Min interval between warning logs
+    constexpr uint32_t DIAG_LOG_INTERVAL_MS = 1000;      // Diagnostic log interval (PD/TF/overtake)
+    constexpr uint32_t TF_DBG_LOG_SPACING_MS = 400;      // Min gap after TF log before TF_DBG
+    constexpr uint32_t STALE_DATA_TIMEOUT_MS = 5000;     // AP_Formation stale data timeout
+    constexpr float LOG_CROSS_THRESH_M = 1.0f;           // Min |cross| for PD diagnostic log
 }
 
 } // namespace FormationConfig
