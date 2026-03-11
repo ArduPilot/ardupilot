@@ -33,6 +33,36 @@ known-first-party = [
 [tool.isort]
 profile = "black"
 skip = ["./modules/", "./build/"]
+force_single_line = true
+lines_between_types = 1
+known_first_party = [
+    "annotate_params",
+    "antennatracker",
+    "arducopter",
+    "blimp",
+    "board_list",
+    "build_binaries_history",
+    "build_script_base",
+    "controller",
+    "dma_resolver",
+    "emit",
+    "emit_md",
+    "extract_param_defaults",
+    "gen_stable",
+    "generate_manifest",
+    "hal_common",
+    "helicopter",
+    "jsonemit",
+    "mdemit",
+    "param",
+    "param_check",
+    "pysim",
+    "quadplane",
+    "rover",
+    "sailboat",
+    "vehicle_test_suite",
+    "waflib",
+]
 
 [tool.black]
 line-length = 120
