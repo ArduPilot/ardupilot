@@ -129,6 +129,12 @@ public:
     void stop_capture();
     bool stop_capture(uint8_t instance);
 
+    // total number of images taken since last reset
+    uint16_t total_image_cap(uint8_t instance);
+
+    // current sequence number of image being captured
+    uint16_t image_current_seq(uint8_t instance);
+
     // start/stop recording video
     // start_recording should be true to start recording, false to stop recording
     bool record_video(bool start_recording);

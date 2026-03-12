@@ -189,6 +189,29 @@ bool AP_Camera::stop_capture(uint8_t instance)
     return true;
 }
 
+// total number of images taken since last reset
+uint16_t AP_Camera::total_image_cap(uint8_t instance)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->total_image_cap();
+}
+
+// current sequence number of image being captured
+uint16_t AP_Camera::image_current_seq(uint8_t instance)
+{
+    WITH_SEMAPHORE(_rsem);
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return 0;
+    }
+    return backend->image_current_seq();
+}
+
 // start/stop recording video
 // start_recording should be true to start recording, false to stop recording
 bool AP_Camera::record_video(bool start_recording)
