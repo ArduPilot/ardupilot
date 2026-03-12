@@ -55,8 +55,6 @@ const AP_Param::GroupInfo AP_IBUS2_Master::var_info[] = {
 AP_IBUS2_Master::AP_IBUS2_Master()
 {
     AP_Param::setup_object_defaults(this, var_info);
-    memset(_devices, 0, sizeof(_devices));
-    memset(_device_known, 0, sizeof(_device_known));
 }
 
 void AP_IBUS2_Master::init()
@@ -126,8 +124,7 @@ void AP_IBUS2_Master::send_frame1()
     const uint8_t data_len = max_channels * 2;
     const uint8_t total_len = 3 + data_len + 1;  // header(3) + data + CRC
 
-    uint8_t buf[IBUS2_FRAME1_MAX];
-    memset(buf, 0, sizeof(buf));
+    uint8_t buf[IBUS2_FRAME1_MAX] {};
 
     buf[0] = (IBUS2_PKT_CHANNELS & 0x3);  // PacketType=0, subtype=0, sync/failsafe=0
     buf[1] = total_len;
@@ -162,10 +159,10 @@ void AP_IBUS2_Master::send_frame2(uint8_t addr)
         return;
     }
 
-    IBUS2_Frame2 f2;
-    memset(&f2, 0, sizeof(f2));
-    f2.pkt_type = IBUS2_PKT_COMMAND;
-    f2.cmd_code = (uint8_t)cmd;
+    IBUS2_Frame2 f2 {
+        IBUS2_PKT_COMMAND,
+        (uint8_t)cmd,
+    };
     // data[0..1] encode the address (AddressLevel1/Level2) in the addressing scheme;
     // for a simple single-device setup leave at zero.
     ibus2_crc8_write((uint8_t *)&f2, sizeof(f2));
