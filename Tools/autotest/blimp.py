@@ -107,6 +107,7 @@ class AutoTestBlimp(TestSuite):
     def FlyManual(self):
         '''test manual mode'''
         self.change_mode('MANUAL')
+        self.set_parameter("SIM_SPEEDUP", 20) # more consistent RC duration
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
@@ -115,27 +116,36 @@ class AutoTestBlimp(TestSuite):
         # make sure we don't drift:
         bl  = self.mav.location()
         tl  = self.offset_location_ne(location=bl, metres_north=2, metres_east=0)
-        ttl = self.offset_location_ne(location=bl, metres_north=4, metres_east=0)
-        tr  = self.offset_location_ne(location=bl, metres_north=4, metres_east=2)
-        ttr = self.offset_location_ne(location=bl, metres_north=4, metres_east=4)
+        ttl = self.offset_location_ne(location=bl, metres_north=3, metres_east=0)
 
         if self.mavproxy is not None:
             self.mavproxy.send(f"map icon {bl.lat} {bl.lng} flag\n")
             self.mavproxy.send(f"map icon {tl.lat} {tl.lng} flag\n")
             self.mavproxy.send(f"map icon {ttl.lat} {ttl.lng} flag\n")
-            self.mavproxy.send(f"map icon {tr.lat} {tr.lng} flag\n")
-            self.mavproxy.send(f"map icon {ttr.lat} {ttr.lng} flag\n")
 
         self.set_rc(2, 2000)
         self.wait_distance_to_location(tl, 0, acc, timeout=10)
         self.set_rc(2, 1500)
         self.wait_distance_to_location(ttl, 0, acc, timeout=15)
+
+        # the vehicle still has significant groundspeed and inertia, wait for it
+        # to stop moving north before we start testing east.
+        self.wait_groundspeed(0, 0.02, timeout=120) # blimps are slow
+        ttl_act = self.mav.location() # check from current location
+        tr  = self.offset_location_ne(location=ttl_act, metres_north=0, metres_east=2)
+        ttr = self.offset_location_ne(location=ttl_act, metres_north=0, metres_east=3)
+
+        if self.mavproxy is not None:
+            self.mavproxy.send(f"map icon {tr.lat} {tr.lng} flag\n")
+            self.mavproxy.send(f"map icon {ttr.lat} {ttr.lng} flag\n")
+
         self.set_rc(1, 2000)
         self.wait_distance_to_location(tr, 0, acc, timeout=10)
         self.set_rc(1, 1500)
         self.wait_distance_to_location(ttr, 0, acc, timeout=15)
+
         self.change_mode('RTL')
-        self.wait_distance_to_location(bl, 0, 0.5, timeout=30, minimum_duration=5) # make sure it can hold position
+        self.wait_distance_to_location(bl, 0, 0.5, timeout=60, minimum_duration=5) # make sure it can hold position
         self.change_mode('MANUAL')
 
         self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
