@@ -671,10 +671,7 @@ bool NavEKF3_core::using_gps() const
  */
 bool NavEKF3_core::assume_zero_sideslip(void) const
 {
-    // we don't assume zero sideslip for ground vehicles as EKF could
-    // be quite sensitive to a rapid spin of the ground vehicle if
-    // traction is lost
-    return dal.get_fly_forward() && dal.get_vehicle_class() != AP_DAL::VehicleClass::GROUND;
+    return fly_forward_active;
 }
 
 // sets the local NED origin using a LLH location (latitude, longitude, height)
