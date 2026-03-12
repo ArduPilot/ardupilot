@@ -13283,9 +13283,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.context_collect("STATUSTEXT")
         self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
-        # SIM_IBUS2_Master sends Frame1 with 14 RC channels every 7 ms.
-        # AP_IBUS2_Slave emits a statustext on the first successful Frame1 decode.
+        # Frame 1: SIM master sends 14 RC channels every 7 ms.
         self.wait_statustext("IBUS2: 14 RC chans from receiver", timeout=10, check_context=True)
+        # Frame 2/3: SIM master cycles through all four command codes; verify
+        # AP_IBUS2_Slave handles each one (GET_VALUE is implicit in the above).
+        self.wait_statustext("IBUS2: GET_TYPE cmd from master", timeout=10, check_context=True)
+        self.wait_statustext("IBUS2: GET_PARAM cmd from master", timeout=10, check_context=True)
+        self.wait_statustext("IBUS2: SET_PARAM cmd from master", timeout=10, check_context=True)
 
     def IBUS2Master(self):
         '''Test AP as IBUS2 master polling telemetry from a slave device'''
