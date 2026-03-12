@@ -100,19 +100,20 @@ float Sailboat::get_turn_circle(float steering) const
 // return yaw rate in deg/sec given a steering input (in the range -1 to +1) and speed in m/s
 float Sailboat::get_yaw_rate(float steering, float speed) const
 {
+    if (skid_steering) {
+        return steering * M_PI * 5;
+    }
+
     float rate = 0.0f;
-    if (is_zero(steering) || (!skid_steering && is_zero(speed))) {
+    if (is_zero(steering)) {
         return rate;
     } 
     
-    if (is_zero(speed) && skid_steering) {
-        rate = steering * M_PI * 5;
-    } else {
-        float d = get_turn_circle(steering);
-        float c = M_PI * d;
-        float t = c / speed;
-        rate = 360.0f / t;
-    }
+    float d = get_turn_circle(steering);
+    float c = M_PI * d;
+    float t = c / speed;
+    rate = 360.0f / t;
+
     return rate;
 }
 
