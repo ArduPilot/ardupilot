@@ -7995,7 +7995,10 @@ class TestSuite(abc.ABC):
             lat = m.lat * 1e-7
             lon = m.lon * 1e-7
             alt_m = m.alt * 0.001
-
+        elif m_type == "SIMSTATE":
+            lat = m.lat * 1e-7
+            lon = m.lng * 1e-7
+            alt_m = 0 # not available in SIMSTATE
         if lat == 0 and lon == 0:
             raise ValueError(f"Bad lat/lng {lat=} {lon=}")
 
