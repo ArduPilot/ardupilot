@@ -54,7 +54,7 @@ protected:
     uint16_t _channels[14];
 
     // Last received Frame 2 command — needed by send_response() in subclasses
-    IBUS2_Frame2 _pending_cmd;
+    IBUS2_Pkt<IBUS2_Frame2> _pending_cmd;
 
 private:
     // Frame 1 reception

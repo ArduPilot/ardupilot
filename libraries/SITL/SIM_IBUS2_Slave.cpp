@@ -117,8 +117,9 @@ void IBUS2Slave::process_rx(const Aircraft &aircraft)
         case RxState::IN_FRAME2:
             _rx2_buf[_rx2_len++] = b;
             if (_rx2_len == IBUS2_FRAME2_SIZE) {
-                if (!_respond_pending && ibus2_crc8_ok(_rx2_buf, IBUS2_FRAME2_SIZE)) {
-                    memcpy(&_pending_cmd, _rx2_buf, sizeof(_pending_cmd));
+                const auto *pkt = IBUS2_Pkt<IBUS2_Frame2>::cast_validated(_rx2_buf);
+                if (!_respond_pending && pkt != nullptr) {
+                    memcpy(&_pending_cmd, pkt, sizeof(_pending_cmd));
                     _frame2_end_us = AP_HAL::micros();
                     _respond_pending = true;
                 }
@@ -135,58 +136,58 @@ void IBUS2SlaveDevice::send_response(const Aircraft &aircraft)
 
     switch (cmd) {
     case IBUS2Cmd::GET_TYPE: {
-        IBUS2_Resp_GetType r;
-        memset(&r, 0, sizeof(r));
-        r.pkt_type        = IBUS2_PKT_RESPONSE;
-        r.cmd_code        = (uint8_t)IBUS2Cmd::GET_TYPE;
-        r.type            = (uint8_t)IBUS2DeviceType::DIGITAL_SERVO;
-        r.value_length    = 16;
-        r.channels_types  = 1;
-        r.failsafe        = 1;
-        ibus2_crc8_write((uint8_t *)&r, sizeof(r));
+        const IBUS2_Pkt<IBUS2_Resp_GetType> r{
+            IBUS2_PKT_RESPONSE,
+            (uint8_t)IBUS2Cmd::GET_TYPE,
+            IBUS2_Resp_GetType{
+                (uint8_t)IBUS2DeviceType::DIGITAL_SERVO,
+                16,  // value_length
+                1,   // channels_types
+                1,   // failsafe
+            },
+        };
         write_to_autopilot((const char *)&r, sizeof(r));
         break;
     }
     case IBUS2Cmd::GET_VALUE: {
-        IBUS2_Resp_GetValue r;
-        memset(&r, 0, sizeof(r));
-        r.pkt_type = IBUS2_PKT_RESPONSE;
-        r.cmd_code = (uint8_t)IBUS2Cmd::GET_VALUE;
-        r.vid      = 0x01;
-        r.pid      = 0x03;
-
+        IBUS2_Pkt<IBUS2_Resp_GetValue> r{
+            IBUS2_PKT_RESPONSE,
+            (uint8_t)IBUS2Cmd::GET_VALUE,
+            IBUS2_Resp_GetValue{{}, 0x01, 0x03},  // value[] filled below
+        };
         // Pack one voltage data point (scaled from aircraft battery voltage)
         // PackLength=1, PackCurIndex=0
-        r.value[1] = (1 << 2);
+        r.msg.value[1] = (1 << 2);
         const int16_t volts_raw = (int16_t)(aircraft.get_battery_voltage() * 100);
-        r.value[2] = (uint8_t)IBUS2SensorType::VOLTAGE & 0x3F;
-        r.value[3] = 0;
-        r.value[4] = volts_raw & 0xFF;
-        r.value[5] = (volts_raw >> 8) & 0xFF;
-
-        ibus2_crc8_write((uint8_t *)&r, sizeof(r));
+        r.msg.value[2] = (uint8_t)IBUS2SensorType::VOLTAGE & 0x3F;
+        r.msg.value[3] = 0;
+        r.msg.value[4] = volts_raw & 0xFF;
+        r.msg.value[5] = (volts_raw >> 8) & 0xFF;
+        r.update_crc();
         write_to_autopilot((const char *)&r, sizeof(r));
         break;
     }
     case IBUS2Cmd::GET_PARAM: {
-        IBUS2_Resp_GetParam r;
-        memset(&r, 0, sizeof(r));
-        r.pkt_type    = IBUS2_PKT_RESPONSE;
-        r.cmd_code    = (uint8_t)IBUS2Cmd::GET_PARAM;
-        r.param_type  = ((const IBUS2_Cmd_GetParam *)&_pending_cmd)->param_type;
-        r.param_length = 0;
-        ibus2_crc8_write((uint8_t *)&r, sizeof(r));
+        const IBUS2_Pkt<IBUS2_Resp_GetParam> r{
+            IBUS2_PKT_RESPONSE,
+            (uint8_t)IBUS2Cmd::GET_PARAM,
+            IBUS2_Resp_GetParam{
+                ((const IBUS2_Cmd_GetParam *)&_pending_cmd.msg)->param_type,
+                0,  // param_length: not supported
+            },
+        };
         write_to_autopilot((const char *)&r, sizeof(r));
         break;
     }
     case IBUS2Cmd::SET_PARAM: {
-        IBUS2_Resp_SetParam r;
-        memset(&r, 0, sizeof(r));
-        r.pkt_type    = IBUS2_PKT_RESPONSE;
-        r.cmd_code    = (uint8_t)IBUS2Cmd::SET_PARAM;
-        r.param_type  = ((const IBUS2_Cmd_SetParam *)&_pending_cmd)->param_type;
-        r.param_length = 0;
-        ibus2_crc8_write((uint8_t *)&r, sizeof(r));
+        const IBUS2_Pkt<IBUS2_Resp_SetParam> r{
+            IBUS2_PKT_RESPONSE,
+            (uint8_t)IBUS2Cmd::SET_PARAM,
+            IBUS2_Resp_SetParam{
+                ((const IBUS2_Cmd_SetParam *)&_pending_cmd.msg)->param_type,
+                0,  // param_length: not supported
+            },
+        };
         write_to_autopilot((const char *)&r, sizeof(r));
         break;
     }

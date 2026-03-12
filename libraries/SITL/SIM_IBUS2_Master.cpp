@@ -98,11 +98,7 @@ void IBUS2Master::send_frame1(const Aircraft &aircraft)
 
 void IBUS2Master::send_frame2()
 {
-    IBUS2_Frame2 f2;
-    memset(&f2, 0, sizeof(f2));
-    f2.pkt_type = IBUS2_PKT_COMMAND;
-    f2.cmd_code = (uint8_t)IBUS2Cmd::GET_VALUE;
-    ibus2_crc8_write((uint8_t *)&f2, sizeof(f2));
+    const IBUS2_Pkt<IBUS2_Frame2> f2{IBUS2_PKT_COMMAND, (uint8_t)IBUS2Cmd::GET_VALUE, {}};
     write_to_autopilot((const char *)&f2, sizeof(f2));
 }
 
@@ -126,13 +122,11 @@ void IBUS2Master::read_frame3()
         _rx_buf[_rx_len++] = b;
 
         if (_rx_len == IBUS2_FRAME3_SIZE) {
-            if (ibus2_crc8_ok(_rx_buf, IBUS2_FRAME3_SIZE)) {
-                const IBUS2_Frame3 *f3 = (const IBUS2_Frame3 *)_rx_buf;
-                if ((IBUS2Cmd)f3->cmd_code == IBUS2Cmd::GET_VALUE) {
-                    const IBUS2_Resp_GetValue *rv = (const IBUS2_Resp_GetValue *)f3;
-                    ::fprintf(stderr, "IBUS2Master: Frame3 GET_VALUE VID=%u PID=%u\n",
-                              (unsigned)rv->vid, (unsigned)rv->pid);
-                }
+            const auto *pkt = IBUS2_Pkt<IBUS2_Frame3>::cast_validated(_rx_buf);
+            if (pkt != nullptr && (IBUS2Cmd)pkt->cmd_code == IBUS2Cmd::GET_VALUE) {
+                const IBUS2_Resp_GetValue *rv = (const IBUS2_Resp_GetValue *)&pkt->msg;
+                ::fprintf(stderr, "IBUS2Master: Frame3 GET_VALUE VID=%u PID=%u\n",
+                          (unsigned)rv->vid, (unsigned)rv->pid);
             }
             _rx_len = 0;
         }
