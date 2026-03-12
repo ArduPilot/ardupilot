@@ -181,6 +181,26 @@ void AP_IBUS2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)
 void AP_IBUS2_Slave::send_frame3()
 {
     const IBUS2Cmd cmd = (IBUS2Cmd)_pending_cmd.cmd_code;
+
+    // Log first occurrence of each command type (except GET_VALUE which is routine)
+    const uint8_t cmd_bit = 1U << (uint8_t)cmd;
+    if (!(_logged_cmds & cmd_bit)) {
+        _logged_cmds |= cmd_bit;
+        switch (cmd) {
+        case IBUS2Cmd::GET_TYPE:
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBUS2: GET_TYPE cmd from master");
+            break;
+        case IBUS2Cmd::GET_PARAM:
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBUS2: GET_PARAM cmd from master");
+            break;
+        case IBUS2Cmd::SET_PARAM:
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBUS2: SET_PARAM cmd from master");
+            break;
+        default:
+            break;
+        }
+    }
+
     switch (cmd) {
     case IBUS2Cmd::GET_TYPE:
         send_resp_get_type();

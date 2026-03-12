@@ -86,6 +86,9 @@ private:
     uint8_t _rx_len;
     uint8_t _frame1_expected_len;  // decoded from Frame 1 length byte
 
+    // Bitmask of IBUS2Cmd values for which a GCS log has been emitted (bit N = cmd N)
+    uint8_t _logged_cmds;
+
     // Pending Frame 2 command
     bool _response_pending;
     IBUS2_Pkt<IBUS2_Frame2> _pending_cmd;
