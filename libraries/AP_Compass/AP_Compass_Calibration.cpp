@@ -407,6 +407,10 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
             }
         }
 
+        if (result != MAV_RESULT_ACCEPTED) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Compass calibration failed to start");
+        }
+
         break;
     }
 
