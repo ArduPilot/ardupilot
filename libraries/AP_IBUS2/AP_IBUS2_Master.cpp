@@ -159,6 +159,21 @@ void AP_IBUS2_Master::send_frame2(uint8_t addr)
         return;
     }
 
+    if (cmd == IBUS2Cmd::SET_PARAM) {
+        // Send receiver internal sensor data (spec Appendix 1) via SET_PARAM.
+        // ParamType 0xC000 is defined by the spec for this payload.
+        IBUS2_Cmd_SetParam sp{};
+        sp.param_type   = IBUS2_PARAM_RECEIVER_SENSORS;
+        sp.param_length = sizeof(IBUS2_PA_ReceiverInternalSensors);
+        // TODO: populate with real data from AP_BattMonitor / AP_RCProtocol
+        static_assert(sizeof(IBUS2_PA_ReceiverInternalSensors) <= sizeof(sp.param_value),
+                      "ReceiverInternalSensors too large for param_value");
+        const IBUS2_Pkt<IBUS2_Cmd_SetParam> f2{IBUS2_PKT_COMMAND, (uint8_t)cmd, sp};
+        _port->write((const uint8_t *)&f2, sizeof(f2));
+        _tx_pending_echo += sizeof(f2);
+        return;
+    }
+
     const IBUS2_Pkt<IBUS2_Frame2> f2{IBUS2_PKT_COMMAND, (uint8_t)cmd, {}};
     // data[0..1] encode the address (AddressLevel1/Level2) in the addressing scheme;
     // for a simple single-device setup leave at zero.
@@ -242,11 +257,16 @@ void AP_IBUS2_Master::handle_frame3(const IBUS2_Pkt<IBUS2_Frame3> *f3)
             memcpy(_devices[addr].value, r->param_value,
                    MIN(r->param_length, (uint8_t)sizeof(_devices[addr].value)));
         }
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "IBUS2: device %u GET_PARAM ack type=%u len=%u",
+                      (unsigned)addr, (unsigned)r->param_type, (unsigned)r->param_length);
         break;
     }
-    case IBUS2Cmd::SET_PARAM:
-        // Acknowledge only; nothing stored
+    case IBUS2Cmd::SET_PARAM: {
+        const IBUS2_Resp_SetParam *r = (const IBUS2_Resp_SetParam *)&f3->msg;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "IBUS2: device %u SET_PARAM ack type=%u len=%u",
+                      (unsigned)addr, (unsigned)r->param_type, (unsigned)r->param_length);
         break;
+    }
     default:
         break;
     }

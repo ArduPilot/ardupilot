@@ -309,4 +309,27 @@ public:
 };
 static_assert(sizeof(IBUS2_Resp_SetParam) == 19, "IBUS2_Resp_SetParam size");
 
+// -----------------------------------------------------------------------
+// Appendix 1: Receiver internal sensor data (spec §5, Appendix 1)
+//
+// Sent by the host (receiver/master) to an attached device via SET_PARAM
+// when the device has set ReceiverInternalSensors=1 in its GET_TYPE response.
+// The host fills this struct and transmits it inside IBUS2_Cmd_SetParam with
+// param_type = IBUS2_PARAM_RECEIVER_SENSORS (0xC000).
+//
+// This data is ignored by servos and ESCs; only flight controllers use it.
+// -----------------------------------------------------------------------
+#define IBUS2_PARAM_RECEIVER_SENSORS 0xC000
+
+class PACKED IBUS2_PA_ReceiverInternalSensors {
+public:
+    uint16_t internal_voltage;    // Internal voltage in 10 mV units
+    uint8_t  signal_strength;     // Signal strength 0–100
+    uint16_t rssi;                // RSSI in -0.25 dBm units
+    uint16_t background_noise;    // Background noise in -0.25 dBm units
+    int16_t  snr;                 // SNR in 0.25 dBm units (0 to 40 dBm range)
+};
+static_assert(sizeof(IBUS2_PA_ReceiverInternalSensors) == 9,
+              "IBUS2_PA_ReceiverInternalSensors size");
+
 #endif  // AP_IBUS2_ENABLED
