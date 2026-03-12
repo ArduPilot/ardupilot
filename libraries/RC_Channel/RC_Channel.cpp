@@ -857,6 +857,7 @@ void RC_Channel::do_aux_function_gripper(const AuxSwitchPos ch_flag)
 {
     AP_Gripper *gripper = AP::gripper();
     if (gripper == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Gripper not configured");
         return;
     }
 
