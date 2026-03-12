@@ -18,12 +18,14 @@
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_TECS/AP_TECS.h>
 #include <AP_Common/Location.h>
+#include <AP_Vehicle/AP_FixedWing.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs)
+    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs, const AP_FixedWing &aparm)
         : _ahrs(ahrs)
         , _tecs(tecs)
+        , _aparm(aparm)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -81,6 +83,9 @@ private:
     // pointer to the SpdHgtControl object
     const AP_TECS *_tecs;
 
+    // reference to the fixed-wing parameters object
+    const AP_FixedWing &_aparm;
+
     // lateral acceleration in m/s required to fly to the
     // L1 reference point (+ve to right)
     float _latAccDem;
@@ -122,7 +127,13 @@ private:
     uint32_t _last_update_waypoint_us;
     bool _data_is_stale = true;
 
-    AP_Float _loiter_bank_limit;
+    // navigation-specific roll limiter
+    AP_Float _nav_roll_max;
+    void _constrain_lat_acc_dem_to_roll_limit();
+    float _nav_roll_max_deg() const;
+
+    // pitch used by the coordinated-turn equations
+    float _turn_pitch_rad() const;
 
     // remember reached_loiter_target decision
     struct {

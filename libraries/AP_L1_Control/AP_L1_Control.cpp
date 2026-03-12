@@ -30,13 +30,13 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("XTRACK_I",   2, AP_L1_Control, _L1_xtrack_i_gain, 0.02),
 
-    // @Param: LIM_BANK
-    // @DisplayName: Loiter Radius Bank Angle Limit
-    // @Description: The sealevel bank angle limit for a continuous loiter. (Used to calculate airframe loading limits at higher altitudes). Setting to 0, will instead just scale the loiter radius directly
+    // @Param: ROLL_MAX
+    // @DisplayName: L1 navigation roll limit
+    // @Description: Maximum bank angle that L1 navigation is allowed to command, in degrees. Set to 0 to use the vehicle roll limit (ROLL_LIMIT_DEG). Set to a value smaller than ROLL_LIMIT_DEG to further limit the maximum bank angle in autonomous modes.
     // @Units: deg
     // @Range: 0 89
     // @User: Advanced
-    AP_GROUPINFO("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f),
+    AP_GROUPINFO("ROLL_MAX",   3, AP_L1_Control, _nav_roll_max, 0.0f),
 
     AP_GROUPEND
 };
@@ -87,9 +87,7 @@ int32_t AP_L1_Control::nav_roll_cd(void) const
 		Multiplier 100.0f is for converting degrees to centidegrees
 		Made changes to avoid zero division as proposed by Andrew Tridgell: https://github.com/ArduPilot/ardupilot/pull/24331#discussion_r1267798397		 
 	*/
-	float pitchLimL1 = radians(60); // Suggestion: constraint may be modified to pitch limits if their absolute values are less than 90 degree and more than 60 degrees.
-	float pitchL1 = constrain_float(_ahrs.get_pitch_rad(),-pitchLimL1,pitchLimL1);
-    ret = degrees(atanf(_latAccDem * (1.0f/(GRAVITY_MSS * cosf(pitchL1))))) * 100.0f;
+    ret = degrees(atanf(_latAccDem * (1.0f/(GRAVITY_MSS * cosf(_turn_pitch_rad()))))) * 100.0f;
     ret = constrain_float(ret, -9000, 9000);
     return ret;
 }
@@ -147,7 +145,7 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
 float AP_L1_Control::loiter_radius(const float radius) const
 {
     // prevent an insane loiter bank limit
-    float sanitized_bank_limit = constrain_float(_loiter_bank_limit, 0.0f, 89.0f);
+    float sanitized_bank_limit = constrain_float(_nav_roll_max_deg(), 0.0f, 89.0f);
     float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
 
     float nominal_velocity_sea_level = 0.0f;
@@ -199,6 +197,51 @@ void AP_L1_Control::_prevent_indecision(float &Nu)
         // oscillating in our decision about which way to go
         Nu = _last_Nu;
     }
+}
+
+/*
+  constrain lateral acceleration demand based on the navigation roll limit
+ */
+void AP_L1_Control::_constrain_lat_acc_dem_to_roll_limit()
+{
+    // keep a small floor of 5° to preserve navigation authority even if the
+    // configured roll limit is invalid
+    const float roll_limit_deg =
+        constrain_float(_nav_roll_max_deg(), 5.0f, 89.0f);
+
+    const float lat_accel_max =
+        GRAVITY_MSS * cosf(_turn_pitch_rad()) * tanf(radians(roll_limit_deg));
+
+    _latAccDem = constrain_float(_latAccDem, -lat_accel_max, lat_accel_max);
+}
+
+/*
+  return the navigation roll limit in degrees, falling back to the general roll
+  limit for the vehicle when the navigation-specific limit is zero
+ */
+float AP_L1_Control::_nav_roll_max_deg() const
+{
+    const float general_roll_limit_deg = _aparm.roll_limit;
+    const float nav_roll_limit_deg = _nav_roll_max;
+
+    if (!is_positive(nav_roll_limit_deg)) {
+        return general_roll_limit_deg;
+    }
+
+    return MIN(nav_roll_limit_deg, general_roll_limit_deg);
+}
+
+/*
+  return the pitch used by the coordinated-turn equations, constrained to 60° to
+  keep the cos(pitch) term well-behaved
+ */
+float AP_L1_Control::_turn_pitch_rad() const
+{
+    const float pitch_limit_rad = radians(60.0f);
+    const float limited_pitch_rad = constrain_float(
+        _ahrs.get_pitch_rad(), -pitch_limit_rad, pitch_limit_rad);
+
+    return limited_pitch_rad;
 }
 
 // update L1 control for waypoint navigation
@@ -335,6 +378,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
     // Limit Nu to +-(pi/2)
     Nu = constrain_float(Nu, -1.5708f, +1.5708f);
     _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
+    _constrain_lat_acc_dem_to_roll_limit();
 
     // Waypoint capture status is always false during waypoint following
     _WPcircle = false;
@@ -473,6 +517,8 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
         _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
     }
 
+    _constrain_lat_acc_dem_to_roll_limit();
+
     _last_loiter.radius = radius_unscaled;
     _last_loiter.direction = loiter_direction;
     _last_loiter.center_WP = center_WP;
@@ -519,6 +565,7 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
     // Limit Nu to +-pi
     Nu = constrain_float(Nu, -M_PI_2, M_PI_2);
     _latAccDem = 2.0f*sinf(Nu)*VomegaA;
+    _constrain_lat_acc_dem_to_roll_limit();
 
     _data_is_stale = false; // status are correctly updated with current waypoint data
 }
