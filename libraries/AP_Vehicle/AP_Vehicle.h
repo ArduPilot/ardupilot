@@ -87,8 +87,8 @@
 #endif
 
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
-#include <AP_IBUS2_Master/AP_IBUS2_Master.h>
-#include <AP_IBUS2_Slave/AP_IBUS2_Slave.h>
+#include <AP_IBUS2/AP_IBUS2_Master.h>
+#include <AP_IBUS2/AP_IBUS2_Slave.h>
 
 class AP_DDS_Client;
 
