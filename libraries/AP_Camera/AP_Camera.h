@@ -240,6 +240,9 @@ private:
 
     // perform any required parameter conversion
     void convert_params();
+#if AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+    void convert_runcam_params();
+#endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
 
     // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
