@@ -88,7 +88,7 @@ private:
 
     // Pending Frame 2 command
     bool _response_pending;
-    IBUS2_Frame2 _pending_cmd;
+    IBUS2_Pkt<IBUS2_Frame2> _pending_cmd;
     uint32_t _frame2_end_us;       // micros() when Frame 2 reception completed
 
     // Response delay before sending Frame 3 (µs)
@@ -96,7 +96,7 @@ private:
 
     void process_rx();
     void handle_frame1(const uint8_t *buf, uint8_t len);
-    void handle_frame2(const IBUS2_Frame2 *f2);
+    void handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2);
     void send_frame3();
     void send_resp_get_type();
     void send_resp_get_value();
