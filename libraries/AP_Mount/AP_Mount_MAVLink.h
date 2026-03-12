@@ -47,11 +47,16 @@ protected:
             (1U<<unsigned(MountTargetType::RETRACTED))
         );
 
-        // temporary hack until we get GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL
+        // remove in ArduPilot-4.9; was a temporary hack until we got
+        // GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL
         if ((strncmp(vendor_name, "AVTA", 4) == 0) && (strncmp(model_name, "CM41", 4) != 0)){
             supported_target |= (1U<<unsigned(MountTargetType::LOCATION));
         }
-        
+
+        if (has_capability(GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL)) {
+            supported_target |= (1U<<unsigned(MountTargetType::LOCATION));
+        }
+
         return supported_target;
     };
 
@@ -59,6 +64,12 @@ protected:
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
 private:
+
+    // returns true if the camera is reporting that it has the
+    // capability indicated by flag
+    bool has_capability(GIMBAL_DEVICE_CAP_FLAGS flag) const {
+        return device_capapability_flags & flag;
+    }
 
     // search for gimbal in GCS_MAVLink routing table
     void find_gimbal();
@@ -93,5 +104,6 @@ private:
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
     char vendor_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_VENDOR_NAME_LEN];  // vendor name
     char model_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_MODEL_NAME_LEN];  // model name
+    uint32_t device_capapability_flags;  // from GIMBAL_DEVICE_INFORMATION
 };
 #endif // HAL_MOUNT_MAVLINK_ENABLED
