@@ -37,6 +37,8 @@
 #include <SITL/SIM_Loweheiser.h>
 #include <SITL/SIM_FETtecOneWireESC.h>
 
+#include <SITL/SIM_CapReplay.h>
+
 #include <SITL/SIM_ELRS.h>
 
 #include "AP_HAL_SITL.h"
@@ -176,6 +178,10 @@ public:
     SITL::AIS *ais;
     SITL::AIS_Replay *ais_replay;
 #endif
+
+#if AP_SIM_CAP_REPLAY_ENABLED
+    SITL::CapReplay *capreplay;
+#endif  // AP_SIM_CAP_REPLAY_ENABLED
 
     // simulated EFI MegaSquirt device:
     SITL::EFI_MegaSquirt *efi_ms;

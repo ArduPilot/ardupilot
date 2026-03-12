@@ -4,6 +4,12 @@
 #include "AP_HAL.h"
 #include <AP_Logger/AP_Logger.h>
 
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+#include <AP_Filesystem/AP_Filesystem.h>
+#endif // HAL_UART_DEBUG_LOGGING_ENABLED
+
+extern const AP_HAL::HAL& hal;
+
 void AP_HAL::UARTDriver::begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 {
     if (lock_write_key != 0) {
@@ -54,7 +60,15 @@ size_t AP_HAL::UARTDriver::write_locked(const uint8_t *buffer, size_t size, uint
     if (lock_write_key != 0 && key != lock_write_key) {
         return 0;
     }
-    return _write(buffer, size);
+    const size_t ret = _write(buffer, size);
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    if (ret > 0) {
+        if (option_is_set(Option::LOGGING)) {
+            log_written_data(buffer, ret);
+        }
+    }
+#endif
+    return ret;
 }
 
 /*
@@ -70,6 +84,11 @@ ssize_t AP_HAL::UARTDriver::read_locked(uint8_t *buf, size_t count, uint32_t key
     auto monitor = _monitor_read_buffer;
     if (monitor != nullptr && ret > 0) {
         monitor->write(buf, ret);
+    }
+#endif
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    if (ret > 0) {
+        log_read_data(buf, ret);
     }
 #endif
     return ret;
@@ -88,7 +107,11 @@ size_t AP_HAL::UARTDriver::write(const uint8_t *buffer, size_t size)
     if (lock_write_key != 0) {
         return 0;
     }
-    return _write(buffer, size);
+    const size_t ret = _write(buffer, size);
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    log_written_data(buffer, ret);
+#endif
+    return ret;
 }
 
 size_t AP_HAL::UARTDriver::write(uint8_t c)

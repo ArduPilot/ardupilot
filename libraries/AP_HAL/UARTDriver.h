@@ -5,6 +5,7 @@
 #include "AP_HAL_Namespace.h"
 #include "utility/BetterStream.h"
 #include <AP_Logger/AP_Logger_config.h>
+#include <AP_HAL/utility/RingBuffer.h>
 
 #ifndef HAL_UART_STATS_ENABLED
 #define HAL_UART_STATS_ENABLED AP_HAL_UARTDRIVER_ENABLED
@@ -13,6 +14,10 @@
 #ifndef AP_UART_MONITOR_ENABLED
 #define AP_UART_MONITOR_ENABLED 0
 #endif
+
+#ifndef HAL_UART_DEBUG_LOGGING_ENABLED
+#define HAL_UART_DEBUG_LOGGING_ENABLED AP_HAL_UARTDRIVER_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 2048
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
 
 class ExpandingString;
 class ByteBuffer;
@@ -41,6 +46,10 @@ public:
       be used
      */
     void begin_locked(uint32_t baud, uint16_t rxSpace, uint16_t txSpace, uint32_t write_key);
+
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    void set_instance(uint8_t _instance) { instance = _instance; }
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
 
     /*
       single and multi-byte write methods
@@ -100,6 +109,7 @@ public:
         OPTION_MAVLINK_NO_FORWARD_old = (1U<<10), // // moved to GCS_MAVLINK::Option
         OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
         OPTION_NOSTREAMOVERRIDE_old   = (1U<<12), // moved to GCS_MAVLINK::Option
+        LOGGING                   = (1U<<13), // enable raw logging
     };
 
     bool option_is_set(Option option) const {
@@ -279,4 +289,23 @@ private:
 #if AP_UART_MONITOR_ENABLED
     ByteBuffer *_monitor_read_buffer;
 #endif
+
+#if HAL_UART_DEBUG_LOGGING_ENABLED
+    void log_data(const uint8_t *data, uint16_t length, bool is_written_data);
+    HAL_Semaphore loginfo_creation_sem;  // protects creation of background thread
+    uint8_t instance;
+
+    // support raw serial logging
+    struct LogInfo {
+        struct LogInfo *next;
+        int fd = -1;
+        ByteBuffer buf{16000};
+        uint8_t instance;
+        bool bytes_requiring_fsync;
+        uint32_t last_fsync_ms;
+    };
+    struct LogInfo *loginfo;  // log info for *this* backend
+
+#endif  // HAL_UART_DEBUG_LOGGING_ENABLED
+
 };

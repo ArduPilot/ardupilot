@@ -109,6 +109,13 @@ uint32_t ByteBuffer::write(const uint8_t *data, uint32_t len)
     }
 
     commit(ret);
+
+#if AP_RINGBUFFER_CONTENT_LOGGING_ENABLED
+    if (logger != nullptr) {
+        logger->log_data(logger_channel, data, ret);
+    }
+#endif  // AP_RINGBUFFER_CONTENT_LOGGING_ENABLED
+
     return ret;
 }
 
