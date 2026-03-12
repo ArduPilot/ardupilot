@@ -233,7 +233,7 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
     }
 
     update_topic(msg.header.stamp);
-    static_assert(GPS_MAX_RECEIVERS <= 9, "GPS_MAX_RECEIVERS is greater than 9");
+    static_assert(GPS_MAX_INSTANCES <= 9, "GPS_MAX_INSTANCES is greater than 9");
     hal.util->snprintf(msg.header.frame_id, 2, "%u", instance);
     msg.status.service = 0; // SERVICE_GPS
     msg.status.status = -1; // STATUS_NO_FIX
@@ -301,7 +301,7 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
     msg.transforms_size = 0;
 
     auto &gps = AP::gps();
-    for (uint8_t i = 0; i < GPS_MAX_RECEIVERS; i++) {
+    for (uint8_t i = 0; i < GPS_MAX_INSTANCES; i++) {
         const auto gps_type = gps.get_type(i);
         if (gps_type == AP_GPS::GPS_Type::GPS_TYPE_NONE) {
             continue;
