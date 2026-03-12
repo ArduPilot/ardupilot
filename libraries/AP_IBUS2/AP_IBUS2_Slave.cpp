@@ -35,7 +35,6 @@ extern const AP_HAL::HAL &hal;
 
 AP_IBUS2_Slave::AP_IBUS2_Slave()
 {
-    memset(_rc_channels, 0, sizeof(_rc_channels));
 }
 
 void AP_IBUS2_Slave::init()
@@ -201,27 +200,27 @@ void AP_IBUS2_Slave::send_frame3()
 
 void AP_IBUS2_Slave::send_resp_get_type()
 {
-    IBUS2_Resp_GetType r;
-    memset(&r, 0, sizeof(r));
-    r.pkt_type         = IBUS2_PKT_RESPONSE;
-    r.cmd_code         = (uint8_t)IBUS2Cmd::GET_TYPE;
-    r.type             = (uint8_t)IBUS2DeviceType::DIGITAL_SERVO;
-    r.value_length     = 16;  // use max as recommended
-    r.channels_types   = 1;
-    r.failsafe         = 1;
-    r.rx_internal_sens = 0;
+    IBUS2_Resp_GetType r {
+        IBUS2_PKT_RESPONSE,
+        (uint8_t)IBUS2Cmd::GET_TYPE,
+        (uint8_t)IBUS2DeviceType::DIGITAL_SERVO,
+        16,  // value_length: use max as recommended
+        1,   // channels_types
+        1,   // failsafe
+    };
     ibus2_crc8_write((uint8_t *)&r, sizeof(r));
     _port->write((const uint8_t *)&r, sizeof(r));
 }
 
 void AP_IBUS2_Slave::send_resp_get_value()
 {
-    IBUS2_Resp_GetValue r;
-    memset(&r, 0, sizeof(r));
-    r.pkt_type = IBUS2_PKT_RESPONSE;
-    r.cmd_code = (uint8_t)IBUS2Cmd::GET_VALUE;
-    r.vid      = IBUS2_TELEM_VID;
-    r.pid      = IBUS2_TELEM_PID;
+    IBUS2_Resp_GetValue r {
+        IBUS2_PKT_RESPONSE,
+        (uint8_t)IBUS2Cmd::GET_VALUE,
+        {},              // value[14], filled below
+        IBUS2_TELEM_VID,
+        IBUS2_TELEM_PID,
+    };
 
     populate_sensor_data(r.value);
 
@@ -231,24 +230,24 @@ void AP_IBUS2_Slave::send_resp_get_value()
 
 void AP_IBUS2_Slave::send_resp_get_param(const IBUS2_Cmd_GetParam *cmd)
 {
-    IBUS2_Resp_GetParam r;
-    memset(&r, 0, sizeof(r));
-    r.pkt_type    = IBUS2_PKT_RESPONSE;
-    r.cmd_code    = (uint8_t)IBUS2Cmd::GET_PARAM;
-    r.param_type  = cmd->param_type;
-    r.param_length = 0;  // not supported
+    IBUS2_Resp_GetParam r {
+        IBUS2_PKT_RESPONSE,
+        (uint8_t)IBUS2Cmd::GET_PARAM,
+        cmd->param_type,
+        0,  // param_length: not supported
+    };
     ibus2_crc8_write((uint8_t *)&r, sizeof(r));
     _port->write((const uint8_t *)&r, sizeof(r));
 }
 
 void AP_IBUS2_Slave::send_resp_set_param(const IBUS2_Cmd_SetParam *cmd)
 {
-    IBUS2_Resp_SetParam r;
-    memset(&r, 0, sizeof(r));
-    r.pkt_type    = IBUS2_PKT_RESPONSE;
-    r.cmd_code    = (uint8_t)IBUS2Cmd::SET_PARAM;
-    r.param_type  = cmd->param_type;
-    r.param_length = 0;  // not supported
+    IBUS2_Resp_SetParam r {
+        IBUS2_PKT_RESPONSE,
+        (uint8_t)IBUS2Cmd::SET_PARAM,
+        cmd->param_type,
+        0,  // param_length: not supported
+    };
     ibus2_crc8_write((uint8_t *)&r, sizeof(r));
     _port->write((const uint8_t *)&r, sizeof(r));
 }
