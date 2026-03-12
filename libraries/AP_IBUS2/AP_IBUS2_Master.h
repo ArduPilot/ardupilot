@@ -102,7 +102,7 @@ private:
     void send_frame1();
     void send_frame2(uint8_t addr);
     void process_rx();
-    void handle_frame3(const IBUS2_Frame3 *f3);
+    void handle_frame3(const IBUS2_Pkt<IBUS2_Frame3> *f3);
 
     // Send mask bit definitions
     static const uint8_t SEND_GET_TYPE  = (1U << 0);

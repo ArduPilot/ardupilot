@@ -159,13 +159,9 @@ void AP_IBUS2_Master::send_frame2(uint8_t addr)
         return;
     }
 
-    IBUS2_Frame2 f2 {
-        IBUS2_PKT_COMMAND,
-        (uint8_t)cmd,
-    };
+    const IBUS2_Pkt<IBUS2_Frame2> f2{IBUS2_PKT_COMMAND, (uint8_t)cmd, {}};
     // data[0..1] encode the address (AddressLevel1/Level2) in the addressing scheme;
     // for a simple single-device setup leave at zero.
-    ibus2_crc8_write((uint8_t *)&f2, sizeof(f2));
     _port->write((const uint8_t *)&f2, sizeof(f2));
     _tx_pending_echo += sizeof(f2);  // half-duplex: TX bytes echoed to RX
 }
@@ -201,10 +197,9 @@ void AP_IBUS2_Master::process_rx()
         case RxState::IN_FRAME3:
             _rx_buf[_rx_len++] = b;
             if (_rx_len == IBUS2_FRAME3_SIZE) {
-                if (ibus2_crc8_ok(_rx_buf, IBUS2_FRAME3_SIZE)) {
-                    handle_frame3((const IBUS2_Frame3 *)_rx_buf);
-                } else {
-                    // CRC failure — discard and move on
+                const auto *pkt = IBUS2_Pkt<IBUS2_Frame3>::cast_validated(_rx_buf);
+                if (pkt != nullptr) {
+                    handle_frame3(pkt);
                 }
                 _rx_state = RxState::WAIT_HEADER;
                 _waiting_response = false;
@@ -215,20 +210,20 @@ void AP_IBUS2_Master::process_rx()
     }
 }
 
-void AP_IBUS2_Master::handle_frame3(const IBUS2_Frame3 *f3)
+void AP_IBUS2_Master::handle_frame3(const IBUS2_Pkt<IBUS2_Frame3> *f3)
 {
     const uint8_t addr = _current_addr & 0x7;
     const IBUS2Cmd cmd = (IBUS2Cmd)f3->cmd_code;
 
     switch (cmd) {
     case IBUS2Cmd::GET_TYPE: {
-        const IBUS2_Resp_GetType *r = (const IBUS2_Resp_GetType *)f3;
+        const IBUS2_Resp_GetType *r = (const IBUS2_Resp_GetType *)&f3->msg;
         _devices[addr].device_type = r->type;
         _device_known[addr] = true;
         break;
     }
     case IBUS2Cmd::GET_VALUE: {
-        const IBUS2_Resp_GetValue *r = (const IBUS2_Resp_GetValue *)f3;
+        const IBUS2_Resp_GetValue *r = (const IBUS2_Resp_GetValue *)&f3->msg;
         memcpy(_devices[addr].value, r->value, sizeof(_devices[addr].value));
         _devices[addr].vid = r->vid;
         _devices[addr].pid = r->pid;
@@ -241,7 +236,7 @@ void AP_IBUS2_Master::handle_frame3(const IBUS2_Frame3 *f3)
         break;
     }
     case IBUS2Cmd::GET_PARAM: {
-        const IBUS2_Resp_GetParam *r = (const IBUS2_Resp_GetParam *)f3;
+        const IBUS2_Resp_GetParam *r = (const IBUS2_Resp_GetParam *)&f3->msg;
         // Store raw param value; consumers can read via get_device_data()
         if (r->param_length > 0 && r->param_length <= 16) {
             memcpy(_devices[addr].value, r->param_value,
