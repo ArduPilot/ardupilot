@@ -154,6 +154,14 @@ bool AP_HAL::UARTDriver::discard_input()
     return _discard_input();
 }
 
+uint16_t AP_HAL::UARTDriver::discard_bytes(uint16_t n)
+{
+    if (lock_read_key != 0) {
+        return n;
+    }
+    return BetterStream::discard_bytes(n);
+}
+
 /*
   default implementation of receive_time_constraint_us() will be used
   for subclasses that don't implement the call (eg. network

@@ -13,11 +13,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "AP_IBUS2_Slave.h"
+#include "AP_IBus2_Slave.h"
 
 #if AP_IBUS2_SLAVE_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
@@ -33,11 +34,14 @@ extern const AP_HAL::HAL &hal;
 #define IBUS2_TELEM_VID 0x01
 #define IBUS2_TELEM_PID 0x03
 
-AP_IBUS2_Slave::AP_IBUS2_Slave()
+AP_IBus2_Slave *AP_IBus2_Slave::_singleton;
+
+AP_IBus2_Slave::AP_IBus2_Slave()
 {
+    _singleton = this;
 }
 
-void AP_IBUS2_Slave::init()
+void AP_IBus2_Slave::init()
 {
     const AP_SerialManager &serial_manager = AP::serialmanager();
     _port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_IBUS2_Slave, 0);
@@ -47,10 +51,10 @@ void AP_IBUS2_Slave::init()
     _port->set_options(_port->OPTION_HDPLEX);
     _port->begin(IBUS2_BAUD);
     _initialized = true;
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_IBUS2_Slave::update, void));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_IBus2_Slave::update, void));
 }
 
-void AP_IBUS2_Slave::update()
+void AP_IBus2_Slave::update()
 {
     if (!_initialized) {
         return;
@@ -69,7 +73,7 @@ void AP_IBUS2_Slave::update()
     }
 }
 
-bool AP_IBUS2_Slave::get_rc_channels(uint16_t *channels, uint8_t &count) const
+bool AP_IBus2_Slave::get_rc_channels(uint16_t *channels, uint8_t &count) const
 {
     if (_rc_channel_count == 0) {
         count = 0;
@@ -80,8 +84,11 @@ bool AP_IBUS2_Slave::get_rc_channels(uint16_t *channels, uint8_t &count) const
     return true;
 }
 
-void AP_IBUS2_Slave::process_rx()
+void AP_IBus2_Slave::process_rx()
 {
+    // In half-duplex mode our own TX bytes are echoed back; discard them first.
+    _tx_pending_echo = _port->discard_bytes(_tx_pending_echo);
+
     const uint16_t avail = MIN(_port->available(), 512U);
     for (uint16_t i = 0; i < avail; i++) {
         uint8_t b;
@@ -139,7 +146,7 @@ void AP_IBUS2_Slave::process_rx()
     }
 }
 
-void AP_IBUS2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
+void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
 {
     // buf[0] = header (PacketType, subtype, sync_lost, failsafe)
     // buf[1] = Length
@@ -150,6 +157,9 @@ void AP_IBUS2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
     // For subtype=0 (compressed) we decode 2-byte little-endian values.
     // A real implementation would use the SES_UnpackChannels decompression;
     // for now treat each pair of bytes as a raw 16-bit channel value.
+    const IBUS2_Frame1_Header *hdr = reinterpret_cast<const IBUS2_Frame1_Header *>(buf);
+    _failsafe = hdr->failsafe || hdr->sync_lost;
+
     const uint8_t data_start = 3;
     const uint8_t data_end   = len - 1;  // exclude CRC
     const uint8_t data_len   = data_end - data_start;
@@ -167,7 +177,7 @@ void AP_IBUS2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
     }
 }
 
-void AP_IBUS2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)
+void AP_IBus2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)
 {
     // Only respond if not already waiting to respond
     if (_response_pending) {
@@ -178,7 +188,7 @@ void AP_IBUS2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)
     _response_pending = true;
 }
 
-void AP_IBUS2_Slave::send_frame3()
+void AP_IBus2_Slave::send_frame3()
 {
     const IBUS2Cmd cmd = (IBUS2Cmd)_pending_cmd.cmd_code;
 
@@ -219,7 +229,7 @@ void AP_IBUS2_Slave::send_frame3()
     }
 }
 
-void AP_IBUS2_Slave::send_resp_get_type()
+void AP_IBus2_Slave::send_resp_get_type()
 {
     const IBUS2_Pkt<IBUS2_Resp_GetType> r{
         IBUS2_PKT_RESPONSE,
@@ -231,10 +241,10 @@ void AP_IBUS2_Slave::send_resp_get_type()
             1,   // failsafe
         },
     };
-    _port->write((const uint8_t *)&r, sizeof(r));
+    port_write((const uint8_t *)&r, sizeof(r));
 }
 
-void AP_IBUS2_Slave::send_resp_get_value()
+void AP_IBus2_Slave::send_resp_get_value()
 {
     IBUS2_Pkt<IBUS2_Resp_GetValue> r{
         IBUS2_PKT_RESPONSE,
@@ -243,30 +253,30 @@ void AP_IBUS2_Slave::send_resp_get_value()
     };
     populate_sensor_data(r.msg.value);
     r.update_crc();
-    _port->write((const uint8_t *)&r, sizeof(r));
+    port_write((const uint8_t *)&r, sizeof(r));
 }
 
-void AP_IBUS2_Slave::send_resp_get_param(const IBUS2_Cmd_GetParam *cmd)
+void AP_IBus2_Slave::send_resp_get_param(const IBUS2_Cmd_GetParam *cmd)
 {
     const IBUS2_Pkt<IBUS2_Resp_GetParam> r{
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::GET_PARAM,
         IBUS2_Resp_GetParam{cmd->param_type, 0},  // param_length: not supported
     };
-    _port->write((const uint8_t *)&r, sizeof(r));
+    port_write((const uint8_t *)&r, sizeof(r));
 }
 
-void AP_IBUS2_Slave::send_resp_set_param(const IBUS2_Cmd_SetParam *cmd)
+void AP_IBus2_Slave::send_resp_set_param(const IBUS2_Cmd_SetParam *cmd)
 {
     const IBUS2_Pkt<IBUS2_Resp_SetParam> r{
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::SET_PARAM,
         IBUS2_Resp_SetParam{cmd->param_type, 0},  // param_length: not supported
     };
-    _port->write((const uint8_t *)&r, sizeof(r));
+    port_write((const uint8_t *)&r, sizeof(r));
 }
 
-uint8_t AP_IBUS2_Slave::populate_sensor_data(uint8_t *value14)
+uint8_t AP_IBus2_Slave::populate_sensor_data(uint8_t *value14)
 {
     // Pack sensor data into the 14-byte value field.
     // Format from spec §3 (sIB2_ResponseGetValue):

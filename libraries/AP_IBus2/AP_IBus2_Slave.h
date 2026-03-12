@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  AP_IBUS2_Slave: ArduPilot as an IBUS2 slave device (telemetry adapter role).
+  AP_IBus2_Slave: ArduPilot as an IBUS2 slave device (telemetry adapter role).
 
   In this role a FlySky receiver is the master. ArduPilot:
     - receives Frame 1 → extracts RC channel values
@@ -35,11 +35,11 @@
 
 #pragma once
 
-#include <AP_IBUS2/AP_IBUS2_config.h>
+#include <AP_IBus2/AP_IBus2_config.h>
 
 #if AP_IBUS2_SLAVE_ENABLED
 
-#include <AP_IBUS2/AP_IBUS2.h>
+#include <AP_IBus2/AP_IBus2.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>
@@ -47,15 +47,18 @@
 #include <AP_BattMonitor/AP_BattMonitor_config.h>
 #include <AP_GPS/AP_GPS_config.h>
 
-class AP_IBUS2_Slave
+class AP_IBus2_Slave
 {
 public:
-    AP_IBUS2_Slave();
+    AP_IBus2_Slave();
 
-    CLASS_NO_COPY(AP_IBUS2_Slave);
+    CLASS_NO_COPY(AP_IBus2_Slave);
 
     void init();
     void update();
+
+    // Singleton accessor (set in constructor)
+    static AP_IBus2_Slave *get_singleton() { return _singleton; }
 
     // Number of valid RC channels received from the master
     uint8_t get_rc_channel_count() const { return _rc_channel_count; }
@@ -64,14 +67,23 @@ public:
     // Returns true if any channels are valid
     bool get_rc_channels(uint16_t *channels, uint8_t &count) const;
 
+    // Timestamp (ms) of last Frame 1 reception; 0 if none received yet
+    uint32_t get_rc_last_update_ms() const { return _rc_last_update_ms; }
+
+    // True if master reported failsafe or sync-lost in the last Frame 1
+    bool get_failsafe() const { return _failsafe; }
+
 private:
     AP_HAL::UARTDriver *_port;
     bool _initialized;
+
+    static AP_IBus2_Slave *_singleton;
 
     // RC channels received in Frame 1
     uint16_t _rc_channels[32];
     uint8_t  _rc_channel_count;
     uint32_t _rc_last_update_ms;
+    bool     _failsafe;
 
     // Frame reception state machine
     enum class RxState : uint8_t {
@@ -89,6 +101,9 @@ private:
     // Bitmask of IBUS2Cmd values for which a GCS log has been emitted (bit N = cmd N)
     uint8_t _logged_cmds;
 
+    // Half-duplex echo: bytes sent that will be echoed back to RX
+    uint16_t _tx_pending_echo;
+
     // Pending Frame 2 command
     bool _response_pending;
     IBUS2_Pkt<IBUS2_Frame2> _pending_cmd;
@@ -105,6 +120,10 @@ private:
     void send_resp_get_value();
     void send_resp_get_param(const IBUS2_Cmd_GetParam *cmd);
     void send_resp_set_param(const IBUS2_Cmd_SetParam *cmd);
+
+    void port_write(const uint8_t *buf, size_t size) {
+        _tx_pending_echo += _port->write(buf, size);
+    }
 
     // Populate sensor data into a GET_VALUE response value[14] buffer.
     // Returns number of data points written.

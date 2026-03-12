@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /*
-  AP_IBUS2_Master: ArduPilot as the IBUS2 master (host/receiver role).
+  AP_IBus2_Master: ArduPilot as the IBUS2 master (host/receiver role).
 
   In this role ArduPilot sends:
     Frame 1 – channel values from SRV_Channel PWM outputs
@@ -33,21 +33,21 @@
 
 #pragma once
 
-#include <AP_IBUS2/AP_IBUS2_config.h>
+#include <AP_IBus2/AP_IBus2_config.h>
 
 #if AP_IBUS2_MASTER_ENABLED
 
-#include <AP_IBUS2/AP_IBUS2.h>
+#include <AP_IBus2/AP_IBus2.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
-class AP_IBUS2_Master
+class AP_IBus2_Master
 {
 public:
-    AP_IBUS2_Master();
+    AP_IBus2_Master();
 
-    CLASS_NO_COPY(AP_IBUS2_Master);
+    CLASS_NO_COPY(AP_IBus2_Master);
 
     void init();
     void update();
@@ -103,6 +103,10 @@ private:
     void send_frame2(uint8_t addr);
     void process_rx();
     void handle_frame3(const IBUS2_Pkt<IBUS2_Frame3> *f3);
+
+    void port_write(const uint8_t *buf, size_t size) {
+        _tx_pending_echo += _port->write(buf, size);
+    }
 
     // Send mask bit definitions
     static const uint8_t SEND_GET_TYPE  = (1U << 0);

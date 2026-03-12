@@ -87,8 +87,8 @@
 #endif
 
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
-#include <AP_IBUS2/AP_IBUS2_Master.h>
-#include <AP_IBUS2/AP_IBUS2_Slave.h>
+#include <AP_IBus2/AP_IBus2_Master.h>
+#include <AP_IBus2/AP_IBus2_Slave.h>
 
 class AP_DDS_Client;
 
@@ -378,11 +378,11 @@ protected:
 #endif
 
 #if AP_IBUS2_MASTER_ENABLED
-    AP_IBUS2_Master ibus2_master;
+    AP_IBus2_Master ibus2_master;
 #endif
 
 #if AP_IBUS2_SLAVE_ENABLED
-    AP_IBUS2_Slave ibus2_slave;
+    AP_IBus2_Slave ibus2_slave;
 #endif
 
 #if AP_RSSI_ENABLED

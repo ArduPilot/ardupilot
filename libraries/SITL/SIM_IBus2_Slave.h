@@ -34,14 +34,14 @@ reboot
 
 #include "SIM_SerialDevice.h"
 #include <AP_Param/AP_Param.h>
-#include <AP_IBUS2/AP_IBUS2.h>
+#include <AP_IBus2/AP_IBus2.h>
 
 namespace SITL {
 
 // Abstract base class: handles Frame 1/2 reception, dispatches send_response()
-class IBUS2Slave : public SerialDevice {
+class IBus2Slave : public SerialDevice {
 public:
-    IBUS2Slave();
+    IBus2Slave();
 
     void update(const class Aircraft &aircraft);
 
@@ -81,9 +81,9 @@ private:
 };
 
 // Concrete subclass — current role: respond to Frame 2 queries with telemetry (Frame 3)
-class IBUS2SlaveDevice : public IBUS2Slave {
+class IBus2SlaveDevice : public IBus2Slave {
 public:
-    IBUS2SlaveDevice() = default;
+    IBus2SlaveDevice() = default;
 
     static const AP_Param::GroupInfo var_info[];
 

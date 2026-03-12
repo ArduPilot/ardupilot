@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "AP_IBUS2.h"
+#include "AP_IBus2.h"
 
 #if AP_IBUS2_ENABLED
 
