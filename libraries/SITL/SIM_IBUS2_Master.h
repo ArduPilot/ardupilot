@@ -17,8 +17,8 @@
 
   This simulator acts as a FlySky receiver. It periodically:
     1. Sends Frame 1 with simulated RC channel data
-    2. Sends Frame 2 GET_VALUE command
-    3. Reads and validates Frame 3 telemetry from ArduPilot
+    2. Sends Frame 2 commands, cycling through GET_TYPE/GET_VALUE/GET_PARAM/SET_PARAM
+    3. Reads and validates Frame 3 responses from ArduPilot
 
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter \
   -A --serial5=sim:ibus2master --speedup=1 --console
@@ -51,6 +51,7 @@ private:
     AP_Int8 _enabled;
 
     uint32_t _last_send_us;
+    uint8_t  _cmd_cycle;  // cycles through GET_TYPE/GET_VALUE/GET_PARAM/SET_PARAM
 
     // Frame reception from AP (Frame 3)
     uint8_t _rx_buf[IBUS2_FRAME3_SIZE];
