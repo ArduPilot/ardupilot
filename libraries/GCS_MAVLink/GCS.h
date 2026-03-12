@@ -500,6 +500,8 @@ public:
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
+    bool is_ekf_location_override_enabled() const { return get_ekf_location_override() != 0u; }
+
 protected:
 
     bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
@@ -539,6 +541,7 @@ protected:
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
         FORWARD_BAD_CRC           = (1U << 3),  // forward mavlink packets that don't pass CRC
+        EKF_LOCATION_OVERRIDE     = (1U << 4),  // set EKF location on GPS_RAW_INT messages
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);
@@ -550,6 +553,10 @@ protected:
         options.set_and_save(static_cast<uint16_t>(options) & (~ static_cast<uint16_t>(option)));
     }
     AP_Int8 options_were_converted;
+
+    bool get_ekf_location_override() const {
+        return static_cast<uint16_t>(options) & static_cast<uint16_t>(Option::EKF_LOCATION_OVERRIDE);
+    }
 
     virtual void handle_command_ack(const mavlink_message_t &msg);
     void handle_set_mode(const mavlink_message_t &msg);
