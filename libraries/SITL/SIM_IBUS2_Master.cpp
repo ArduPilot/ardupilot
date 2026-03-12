@@ -98,7 +98,27 @@ void IBUS2Master::send_frame1(const Aircraft &aircraft)
 
 void IBUS2Master::send_frame2()
 {
-    const IBUS2_Pkt<IBUS2_Frame2> f2{IBUS2_PKT_COMMAND, (uint8_t)IBUS2Cmd::GET_VALUE, {}};
+    // Cycle through all four command codes to exercise every AP_IBUS2_Slave path.
+    static const IBUS2Cmd cmds[] = {
+        IBUS2Cmd::GET_TYPE,
+        IBUS2Cmd::GET_VALUE,
+        IBUS2Cmd::GET_PARAM,
+        IBUS2Cmd::SET_PARAM,
+    };
+    const IBUS2Cmd cmd = cmds[_cmd_cycle % ARRAY_SIZE(cmds)];
+    _cmd_cycle++;
+
+    if (cmd == IBUS2Cmd::SET_PARAM) {
+        // Send ReceiverInternalSensors payload (spec Appendix 1, ParamType=0xC000)
+        IBUS2_Cmd_SetParam sp{};
+        sp.param_type   = IBUS2_PARAM_RECEIVER_SENSORS;
+        sp.param_length = sizeof(IBUS2_PA_ReceiverInternalSensors);
+        const IBUS2_Pkt<IBUS2_Cmd_SetParam> f2{IBUS2_PKT_COMMAND, (uint8_t)cmd, sp};
+        write_to_autopilot((const char *)&f2, sizeof(f2));
+        return;
+    }
+
+    const IBUS2_Pkt<IBUS2_Frame2> f2{IBUS2_PKT_COMMAND, (uint8_t)cmd, {}};
     write_to_autopilot((const char *)&f2, sizeof(f2));
 }
 
@@ -123,10 +143,35 @@ void IBUS2Master::read_frame3()
 
         if (_rx_len == IBUS2_FRAME3_SIZE) {
             const auto *pkt = IBUS2_Pkt<IBUS2_Frame3>::cast_validated(_rx_buf);
-            if (pkt != nullptr && (IBUS2Cmd)pkt->cmd_code == IBUS2Cmd::GET_VALUE) {
-                const IBUS2_Resp_GetValue *rv = (const IBUS2_Resp_GetValue *)&pkt->msg;
-                ::fprintf(stderr, "IBUS2Master: Frame3 GET_VALUE VID=%u PID=%u\n",
-                          (unsigned)rv->vid, (unsigned)rv->pid);
+            if (pkt != nullptr) {
+                switch ((IBUS2Cmd)pkt->cmd_code) {
+                case IBUS2Cmd::GET_TYPE: {
+                    const IBUS2_Resp_GetType *r = (const IBUS2_Resp_GetType *)&pkt->msg;
+                    ::fprintf(stderr, "IBUS2Master: GET_TYPE type=0x%02x vlen=%u\n",
+                              (unsigned)r->type, (unsigned)r->value_length);
+                    break;
+                }
+                case IBUS2Cmd::GET_VALUE: {
+                    const IBUS2_Resp_GetValue *r = (const IBUS2_Resp_GetValue *)&pkt->msg;
+                    ::fprintf(stderr, "IBUS2Master: GET_VALUE VID=%u PID=%u\n",
+                              (unsigned)r->vid, (unsigned)r->pid);
+                    break;
+                }
+                case IBUS2Cmd::GET_PARAM: {
+                    const IBUS2_Resp_GetParam *r = (const IBUS2_Resp_GetParam *)&pkt->msg;
+                    ::fprintf(stderr, "IBUS2Master: GET_PARAM type=0x%04x len=%u\n",
+                              (unsigned)r->param_type, (unsigned)r->param_length);
+                    break;
+                }
+                case IBUS2Cmd::SET_PARAM: {
+                    const IBUS2_Resp_SetParam *r = (const IBUS2_Resp_SetParam *)&pkt->msg;
+                    ::fprintf(stderr, "IBUS2Master: SET_PARAM ack type=0x%04x len=%u\n",
+                              (unsigned)r->param_type, (unsigned)r->param_length);
+                    break;
+                }
+                default:
+                    break;
+                }
             }
             _rx_len = 0;
         }
