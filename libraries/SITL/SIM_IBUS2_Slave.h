@@ -38,19 +38,25 @@ reboot
 
 namespace SITL {
 
+// Abstract base class: handles Frame 1/2 reception, dispatches send_response()
 class IBUS2Slave : public SerialDevice {
 public:
     IBUS2Slave();
 
     void update(const class Aircraft &aircraft);
 
-    static const AP_Param::GroupInfo var_info[];
-
     bool enabled() const { return _enabled.get(); }
 
-private:
-    AP_Int8 _enabled;
+protected:
+    AP_Int8  _enabled;
 
+    // Receive channels from Frame 1
+    uint16_t _channels[14];
+
+    // Last received Frame 2 command — needed by send_response() in subclasses
+    IBUS2_Frame2 _pending_cmd;
+
+private:
     // Frame 1 reception
     uint8_t _rx1_buf[IBUS2_FRAME1_MAX];
     uint8_t _rx1_len;
@@ -68,14 +74,21 @@ private:
     RxState _rx_state;
 
     bool     _respond_pending;
-    IBUS2_Frame2 _pending_cmd;
     uint32_t _frame2_end_us;
 
-    // Receive channels from Frame 1
-    uint16_t _channels[14];
-
     void process_rx(const class Aircraft &aircraft);
-    void send_response(const class Aircraft &aircraft);
+    virtual void send_response(const class Aircraft &aircraft) = 0;
+};
+
+// Concrete subclass — current role: respond to Frame 2 queries with telemetry (Frame 3)
+class IBUS2SlaveDevice : public IBUS2Slave {
+public:
+    IBUS2SlaveDevice() = default;
+
+    static const AP_Param::GroupInfo var_info[];
+
+private:
+    void send_response(const class Aircraft &aircraft) override;
 };
 
 }  // namespace SITL

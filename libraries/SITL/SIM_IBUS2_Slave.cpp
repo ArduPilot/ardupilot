@@ -29,20 +29,19 @@ using namespace SITL;
 // Response delay after Frame 2 (µs)
 #define IBUS2_SLAVE_RESPONSE_DELAY_US 160
 
-const AP_Param::GroupInfo IBUS2Slave::var_info[] = {
+const AP_Param::GroupInfo IBUS2SlaveDevice::var_info[] = {
     // @Param: ENA
     // @DisplayName: IBUS2 Slave simulator enable
     // @Description: Enable IBUS2 slave device simulator
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("ENA", 1, IBUS2Slave, _enabled, 0),
+    AP_GROUPINFO("ENA", 1, IBUS2SlaveDevice, _enabled, 0),
 
     AP_GROUPEND
 };
 
 IBUS2Slave::IBUS2Slave() : SerialDevice::SerialDevice()
 {
-    AP_Param::setup_object_defaults(this, var_info);
     memset(_channels, 0, sizeof(_channels));
 }
 
@@ -130,7 +129,7 @@ void IBUS2Slave::process_rx(const Aircraft &aircraft)
     }
 }
 
-void IBUS2Slave::send_response(const Aircraft &aircraft)
+void IBUS2SlaveDevice::send_response(const Aircraft &aircraft)
 {
     const IBUS2Cmd cmd = (IBUS2Cmd)_pending_cmd.cmd_code;
 

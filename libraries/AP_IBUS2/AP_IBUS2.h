@@ -29,11 +29,7 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef AP_IBUS2_ENABLED
-#define AP_IBUS2_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 2048)
-#endif
+#include "AP_IBUS2_config.h"
 
 #if AP_IBUS2_ENABLED
 

@@ -1198,6 +1198,10 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         ibus2slave->update(*this);
     }
 
+    if (ibus2esc) {
+        ibus2esc->update(*this);
+    }
+
 #if AP_SIM_VOLZ_ENABLED
     if (volz) {
         volz->update(*this);
