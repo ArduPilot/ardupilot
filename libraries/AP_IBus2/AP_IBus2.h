@@ -29,7 +29,7 @@
 
 #pragma once
 
-#include "AP_IBUS2_config.h"
+#include "AP_IBus2_config.h"
 
 #if AP_IBUS2_ENABLED
 
@@ -138,10 +138,13 @@ struct PACKED IBUS2_Frame1_Header {
 static_assert(sizeof(IBUS2_Frame1_Header) == 3, "IBUS2_Frame1_Header size");
 
 // -----------------------------------------------------------------------
-// CRC helpers (declared here so IBUS2_Pkt<T> methods below can use them)
+// CRC helpers — defined in AP_IBUS2.cpp (vehicle library).
+// SITL simulation code must not call these; use local static equivalents.
+//
+// CRC8 uses polynomial 0x25 (IBUS2 spec notation: 0x125, leading 1 implicit).
 // -----------------------------------------------------------------------
 
-// Compute CRC8 over buf[0..len-1] using polynomial 0x25 (IBUS2 spec: 0x125).
+// Compute CRC8 over buf[0..len-1].
 uint8_t ibus2_crc8(const uint8_t *buf, uint16_t len);
 
 // Return true if buf[0..len-1] has valid CRC8 (last byte is the CRC).
@@ -149,6 +152,20 @@ bool ibus2_crc8_ok(const uint8_t *buf, uint16_t len);
 
 // Write CRC byte into buf[len-1] covering buf[0..len-2].
 void ibus2_crc8_write(uint8_t *buf, uint16_t len);
+
+// Fixed-size Frame 1 packet for N_CHANNELS channels.
+// Layout: IBUS2_Frame1_Header (3) + channels[N_CHANNELS*2] + crc8
+template<uint8_t N_CHANNELS>
+class PACKED IBUS2_Frame1 {
+public:
+    IBUS2_Frame1_Header hdr;
+    uint8_t channels[N_CHANNELS * 2];
+    uint8_t crc8;
+
+    void update_crc() {
+        ibus2_crc8_write(reinterpret_cast<uint8_t*>(this), sizeof(*this));
+    }
+};
 
 // -----------------------------------------------------------------------
 // IBUS2_Pkt<T>: fixed-size packet wrapper for frames 2 and 3.

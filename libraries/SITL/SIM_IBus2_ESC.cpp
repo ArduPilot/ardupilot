@@ -16,7 +16,7 @@
   Simulator for IBUS2 ESC devices receiving Frame 1 motor commands.
 */
 
-#include "SIM_IBUS2_ESC.h"
+#include "SIM_IBus2_ESC.h"
 
 #if AP_IBUS2_ENABLED
 
@@ -25,18 +25,18 @@
 
 using namespace SITL;
 
-const AP_Param::GroupInfo IBUS2ESC::var_info[] = {
+const AP_Param::GroupInfo IBus2ESC::var_info[] = {
     // @Param: ENA
     // @DisplayName: IBUS2 ESC simulator enable
     // @Description: Enable IBUS2 ESC simulator (overrides servo PWM with IBUS2 channel values)
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("ENA", 1, IBUS2ESC, _enabled, 0),
+    AP_GROUPINFO("ENA", 1, IBus2ESC, _enabled, 0),
 
     AP_GROUPEND
 };
 
-void IBUS2ESC::update_sitl_input_pwm(struct sitl_input &input)
+void IBus2ESC::update_sitl_input_pwm(struct sitl_input &input)
 {
     for (uint8_t i = 0; i < MIN(ARRAY_SIZE(_channels), ARRAY_SIZE(input.servos)); i++) {
         if (_channels[i] != 0) {

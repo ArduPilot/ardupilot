@@ -27,17 +27,17 @@ reboot
 
 #pragma once
 
-#include <AP_IBUS2/AP_IBUS2_config.h>
+#include <AP_IBus2/AP_IBus2_config.h>
 #if AP_IBUS2_ENABLED
 
-#include "SIM_IBUS2_Slave.h"
+#include "SIM_IBus2_Slave.h"
 #include "SITL_Input.h"
 
 namespace SITL {
 
-class IBUS2ESC : public IBUS2Slave {
+class IBus2ESC : public IBus2Slave {
 public:
-    IBUS2ESC() = default;
+    IBus2ESC() = default;
 
     void update_sitl_input_pwm(struct sitl_input &input);
 
