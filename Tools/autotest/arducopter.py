@@ -13301,6 +13301,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # The statustext is emitted on the first valid response.
         self.wait_statustext("IBUS2: device 0 VID=1 PID=3", timeout=15, check_context=True)
 
+    def IBUS2ESC_flight(self):
+        '''fly with motor outputs driven by IBUS2 ESC'''
+        self.start_subtest("IBUS2 ESC flight")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
+        self.fly_loaded_mission(num_wp)
+
+    def IBUS2ESC(self):
+        '''Test IBUS2 ESC motor control via Frame 1 channel outputs'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 51,   # SerialProtocol_IBUS2_Master
+            "IBUS2M_ENABLE": 1,
+            "IBUS2M_SEND_MASK": 0,    # Frame 1 only — no Frame 2 queries needed for ESC
+            "SIM_IBUS2E_ENA": 1,
+            "SERVO1_FUNCTION": 33,    # k_motor1
+            "SERVO2_FUNCTION": 34,    # k_motor2
+            "SERVO3_FUNCTION": 35,    # k_motor3
+            "SERVO4_FUNCTION": 36,    # k_motor4
+        })
+        self.customise_SITL_commandline(["--serial5=sim:ibus2esc"])
+        self.IBUS2ESC_flight()
+
     def PerfInfo(self):
         '''Test Scheduler PerfInfo output'''
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
@@ -16703,6 +16724,7 @@ return update, 1000
             self.IBus,
             self.IBUS2Slave,
             self.IBUS2Master,
+            self.IBUS2ESC,
             self.WaitAndMaintainAttitude_RCFlight,
             self.GuidedYawRate,
             self.RudderDisarmMidair,
