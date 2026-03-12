@@ -755,6 +755,9 @@ bool AC_WPNav::force_stop_at_next_wp()
 // Source may be rangefinder or terrain database depending on availability.
 bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
 {
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+#endif
     // determine terrain data source and compute offset accordingly
     switch (get_terrain_source()) {
     case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
@@ -766,16 +769,23 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
             terrain_u_m = _rangefinder_terrain_u_m;
             return true;
         }
+#if AP_TERRAIN_AVAILABLE
+        // If the rangefinder isn't healthy then use terrain data if available
+        if (AP::terrain() != nullptr && !_pos_control.rangefinder_fallback()) {
+           return false;    // preserve existing pre 4.7 behavior if the PSC_RFND_FBK parameter is not set.
+        }
+        FALLTHROUGH;        
+#else
         return false;
+#endif
 
     case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
-        float height_above_terrain_m = 0.0f;
-        AP_Terrain *terrain = AP::terrain();
+        float terrain_alt_m = 0.0f;
         if (terrain != nullptr &&
-            terrain->height_above_terrain(height_above_terrain_m, true)) {
+            terrain->height_above_terrain(terrain_alt_m, true)) {
             // compute offset as difference between current altitude and terrain height
-            terrain_u_m = _pos_control.get_pos_estimate_U_m() - height_above_terrain_m;
+            terrain_u_m = _pos_control.get_pos_estimate_U_m() - terrain_alt_m;
             return true;
         }
 #endif

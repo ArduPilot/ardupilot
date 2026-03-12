@@ -427,6 +427,9 @@ AC_Circle::TerrainSource AC_Circle::get_terrain_source() const
 // Terrain source may be rangefinder or terrain database.
 bool AC_Circle::get_terrain_U_m(float& terrain_u_m)
 {
+#if AP_TERRAIN_AVAILABLE
+    AP_Terrain *terrain = AP::terrain();
+#endif
     // Determine terrain source and calculate offset accordingly
     switch (get_terrain_source()) {
     case AC_Circle::TerrainSource::TERRAIN_UNAVAILABLE:
@@ -437,11 +440,18 @@ bool AC_Circle::get_terrain_U_m(float& terrain_u_m)
             terrain_u_m = _rangefinder_terrain_u_m;
             return true;
         }
+#if AP_TERRAIN_AVAILABLE
+        // If the rangefinder isn't healthy then use terrain data if available
+        if (AP::terrain() != nullptr && !_pos_control.rangefinder_fallback()) {
+           return false;    // preserve existing pre 4.7 behavior if the PSC_RFND_FBK parameter is not set.
+        }
+        FALLTHROUGH;        
+#else
         return false;
+#endif
     case AC_Circle::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
 #if AP_TERRAIN_AVAILABLE
         float terr_alt_m = 0.0f;
-        AP_Terrain *terrain = AP_Terrain::get_singleton();
         if (terrain != nullptr && terrain->height_above_terrain(terr_alt_m, true)) {
             // Calculate offset from EKF origin altitude to terrain altitude
             terrain_u_m = _pos_control.get_pos_estimate_U_m() - terr_alt_m;
