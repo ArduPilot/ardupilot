@@ -495,7 +495,7 @@ void AP_GPS_Backend::logging_loop(void)
         hal.scheduler->delay(10);
         static uint16_t lognum;
         for (uint8_t instance=0; instance<2; instance++) {
-            if (logging[instance].fd == -1 && logging[instance].buf.available()) {
+            if (logging[instance].f == nullptr && logging[instance].buf.available()) {
                 char fname[] = "gpsN_XXX.log";
                 fname[3] = '1' + instance;
                 if (lognum == 0) {
@@ -508,9 +508,9 @@ void AP_GPS_Backend::logging_loop(void)
                     }
                 }
                 hal.util->snprintf(&fname[5], 8, "%03u.log", lognum);
-                logging[instance].fd = AP::FS().open(fname, O_WRONLY|O_CREAT|O_APPEND);
+                logging[instance].f = AP::FS().fopen(fname, "w");
             }
-            if (logging[instance].fd != -1) {
+            if (logging[instance].f != nullptr) {
                 uint32_t n = 0;
                 const uint8_t *p;
                 while ((p = logging[instance].buf.readptr(n)) != nullptr && n != 0) {
@@ -522,10 +522,10 @@ void AP_GPS_Backend::logging_loop(void)
                     header.n = n;
                     header.time_ms = AP_HAL::millis();
                     // short writes are unlikely and are ignored (only FS full errors)
-                    AP::FS().write(logging[instance].fd, (const uint8_t *)&header, sizeof(header));
-                    AP::FS().write(logging[instance].fd, p, n);
+                    auto *f = logging[instance].f;
+                    AP::FS().fwrite((const uint8_t *)&header, 1, sizeof(header), f);
+                    AP::FS().fwrite(p, 1, n, f);
                     logging[instance].buf.advance(n);
-                    AP::FS().fsync(logging[instance].fd);
                 }
             }
         }
