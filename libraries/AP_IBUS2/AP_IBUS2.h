@@ -138,143 +138,7 @@ struct PACKED IBUS2_Frame1_Header {
 static_assert(sizeof(IBUS2_Frame1_Header) == 3, "IBUS2_Frame1_Header size");
 
 // -----------------------------------------------------------------------
-// Frame 2: command (fixed 21 bytes)
-//
-// Byte 0: PacketType:2 (=1) | CommandCode:6
-// Bytes 1-19: Data (command-specific)
-// Byte 20: CRC8
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Frame2 {
-    uint8_t pkt_type    : 2;  // must be IBUS2_PKT_COMMAND (1)
-    uint8_t cmd_code    : 6;  // IBUS2Cmd
-    uint8_t data[19];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Frame2) == 21, "IBUS2_Frame2 size");
-
-// -----------------------------------------------------------------------
-// Frame 3: response (fixed 21 bytes, same layout as Frame 2)
-//
-// Byte 0: PacketType:2 (=2) | CommandCode:6
-// Bytes 1-19: Data (response-specific)
-// Byte 20: CRC8
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Frame3 {
-    uint8_t pkt_type    : 2;  // must be IBUS2_PKT_RESPONSE (2)
-    uint8_t cmd_code    : 6;  // IBUS2Cmd echoed from Frame 2
-    uint8_t data[19];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Frame3) == 21, "IBUS2_Frame3 size");
-
-// -----------------------------------------------------------------------
-// Frame 2 GET_TYPE command (CommandCode=1)
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Cmd_GetType {
-    uint8_t pkt_type    : 2;
-    uint8_t cmd_code    : 6;  // = (uint8_t)IBUS2Cmd::GET_TYPE
-    uint8_t reserved[19];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Cmd_GetType) == 21, "IBUS2_Cmd_GetType size");
-
-// -----------------------------------------------------------------------
-// Frame 3 GET_TYPE response (CommandCode=1)
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Resp_GetType {
-    uint8_t pkt_type          : 2;
-    uint8_t cmd_code          : 6;  // = (uint8_t)IBUS2Cmd::GET_TYPE
-    uint8_t type;                   // device type (IBUS2DeviceType)
-    uint8_t value_length;           // max sensor data per packet (1-16)
-    uint8_t channels_types    : 1;  // 1 = device needs channel type data
-    uint8_t failsafe          : 1;  // 1 = device needs failsafe data
-    uint8_t rx_internal_sens  : 1;  // 1 = device needs internal receiver sensor data
-    uint8_t reserved_bits     : 5;
-    uint8_t reserved[16];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Resp_GetType) == 21, "IBUS2_Resp_GetType size");
-
-// -----------------------------------------------------------------------
-// Frame 2 GET_VALUE command (CommandCode=2, no parameters)
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Cmd_GetValue {
-    uint8_t pkt_type    : 2;
-    uint8_t cmd_code    : 6;  // = (uint8_t)IBUS2Cmd::GET_VALUE
-    uint8_t reserved[19];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Cmd_GetValue) == 21, "IBUS2_Cmd_GetValue size");
-
-// -----------------------------------------------------------------------
-// Frame 3 GET_VALUE response (CommandCode=2)
-// Value[14] contains packed sensor data (see spec §3 and Telemetry Adapter PDF §3.3)
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Resp_GetValue {
-    uint8_t pkt_type    : 2;
-    uint8_t cmd_code    : 6;  // = (uint8_t)IBUS2Cmd::GET_VALUE
-    uint8_t value[14];        // sensor data, format defined by device
-    uint8_t vid;              // Vendor ID
-    uint8_t pid;              // Product ID
-    uint8_t reserved[3];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Resp_GetValue) == 21, "IBUS2_Resp_GetValue size");
-
-// -----------------------------------------------------------------------
-// Frame 2 GET_PARAM command (CommandCode=3)
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Cmd_GetParam {
-    uint8_t pkt_type        : 2;
-    uint8_t cmd_code        : 6;  // = (uint8_t)IBUS2Cmd::GET_PARAM
-    uint16_t param_type;
-    uint8_t reserved[17];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Cmd_GetParam) == 21, "IBUS2_Cmd_GetParam size");
-
-// -----------------------------------------------------------------------
-// Frame 3 GET_PARAM response (CommandCode=3)
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Resp_GetParam {
-    uint8_t pkt_type        : 2;
-    uint8_t cmd_code        : 6;  // = (uint8_t)IBUS2Cmd::GET_PARAM
-    uint16_t param_type;
-    uint8_t param_length;
-    uint8_t param_value[16];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Resp_GetParam) == 21, "IBUS2_Resp_GetParam size");
-
-// -----------------------------------------------------------------------
-// Frame 2 SET_PARAM command (CommandCode=4)
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Cmd_SetParam {
-    uint8_t pkt_type        : 2;
-    uint8_t cmd_code        : 6;  // = (uint8_t)IBUS2Cmd::SET_PARAM
-    uint16_t param_type;
-    uint8_t param_length;
-    uint8_t param_value[16];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Cmd_SetParam) == 21, "IBUS2_Cmd_SetParam size");
-
-// -----------------------------------------------------------------------
-// Frame 3 SET_PARAM response (CommandCode=4)
-// param_length == 0 means parameter not supported; non-zero means success.
-// -----------------------------------------------------------------------
-struct PACKED IBUS2_Resp_SetParam {
-    uint8_t pkt_type        : 2;
-    uint8_t cmd_code        : 6;  // = (uint8_t)IBUS2Cmd::SET_PARAM
-    uint16_t param_type;
-    uint8_t param_length;   // 0 = not supported, non-zero = success
-    uint8_t reserved[16];
-    uint8_t crc8;
-};
-static_assert(sizeof(IBUS2_Resp_SetParam) == 21, "IBUS2_Resp_SetParam size");
-
-// -----------------------------------------------------------------------
-// CRC helpers
+// CRC helpers (declared here so IBUS2_Pkt<T> methods below can use them)
 // -----------------------------------------------------------------------
 
 // Compute CRC8 over buf[0..len-1] using polynomial 0x25 (IBUS2 spec: 0x125).
@@ -285,5 +149,164 @@ bool ibus2_crc8_ok(const uint8_t *buf, uint16_t len);
 
 // Write CRC byte into buf[len-1] covering buf[0..len-2].
 void ibus2_crc8_write(uint8_t *buf, uint16_t len);
+
+// -----------------------------------------------------------------------
+// IBUS2_Pkt<T>: fixed-size packet wrapper for frames 2 and 3.
+//
+// Layout (21 bytes for all IBUS2 command/response frames):
+//   Byte  0:     pkt_type:2 | cmd_code:6
+//   Bytes 1-19:  T msg  (19-byte payload)
+//   Byte  20:    crc8
+//
+// Usage (transmit):
+//   const IBUS2_Pkt<IBUS2_Resp_GetType> r{IBUS2_PKT_RESPONSE,
+//       (uint8_t)IBUS2Cmd::GET_TYPE, IBUS2_Resp_GetType{...}};
+//   port->write((const uint8_t*)&r, sizeof(r));
+//
+// Usage (receive):
+//   const auto *pkt = IBUS2_Pkt<IBUS2_Frame3>::cast_validated(rx_buf);
+//   if (pkt != nullptr) { handle(&pkt->msg, pkt->cmd_code); }
+// -----------------------------------------------------------------------
+template<typename T>
+class PACKED IBUS2_Pkt {
+public:
+    uint8_t pkt_type : 2;   // IBUS2_PKT_COMMAND (1) or IBUS2_PKT_RESPONSE (2)
+    uint8_t cmd_code : 6;   // IBUS2Cmd
+    T msg;
+    uint8_t crc8;
+
+    IBUS2_Pkt() = default;
+
+    IBUS2_Pkt(uint8_t pkt_type_, uint8_t cmd_code_, const T &_msg)
+        : pkt_type(pkt_type_), cmd_code(cmd_code_), msg(_msg), crc8(0)
+    {
+        update_crc();
+    }
+
+    void update_crc() {
+        ibus2_crc8_write(reinterpret_cast<uint8_t*>(this), sizeof(*this));
+    }
+
+    bool validate_crc() const {
+        return ibus2_crc8_ok(reinterpret_cast<const uint8_t*>(this), sizeof(*this));
+    }
+
+    static const IBUS2_Pkt<T> *cast_validated(const uint8_t *buf) {
+        const IBUS2_Pkt<T> *pkt = reinterpret_cast<const IBUS2_Pkt<T>*>(buf);
+        return pkt->validate_crc() ? pkt : nullptr;
+    }
+};
+
+// -----------------------------------------------------------------------
+// Frame 2 payload: generic command data (19 bytes)
+// Used when the specific command type is not needed.
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Frame2 {
+public:
+    uint8_t data[19];
+};
+static_assert(sizeof(IBUS2_Frame2) == 19, "IBUS2_Frame2 size");
+static_assert(sizeof(IBUS2_Pkt<IBUS2_Frame2>) == 21, "IBUS2_Pkt<IBUS2_Frame2> size");
+
+// -----------------------------------------------------------------------
+// Frame 3 payload: generic response data (19 bytes)
+// Used when the specific response type is not needed.
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Frame3 {
+public:
+    uint8_t data[19];
+};
+static_assert(sizeof(IBUS2_Frame3) == 19, "IBUS2_Frame3 size");
+static_assert(sizeof(IBUS2_Pkt<IBUS2_Frame3>) == 21, "IBUS2_Pkt<IBUS2_Frame3> size");
+
+// -----------------------------------------------------------------------
+// Frame 2 GET_TYPE command payload (CommandCode=1, no parameters)
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Cmd_GetType {
+public:
+    uint8_t reserved[19];
+};
+static_assert(sizeof(IBUS2_Cmd_GetType) == 19, "IBUS2_Cmd_GetType size");
+
+// -----------------------------------------------------------------------
+// Frame 3 GET_TYPE response payload (CommandCode=1)
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Resp_GetType {
+public:
+    uint8_t type;                   // device type (IBUS2DeviceType)
+    uint8_t value_length;           // max sensor data per packet (1-16)
+    uint8_t channels_types    : 1;  // 1 = device needs channel type data
+    uint8_t failsafe          : 1;  // 1 = device needs failsafe data
+    uint8_t rx_internal_sens  : 1;  // 1 = device needs internal receiver sensor data
+    uint8_t reserved_bits     : 5;
+    uint8_t reserved[16];
+};
+static_assert(sizeof(IBUS2_Resp_GetType) == 19, "IBUS2_Resp_GetType size");
+
+// -----------------------------------------------------------------------
+// Frame 2 GET_VALUE command payload (CommandCode=2, no parameters)
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Cmd_GetValue {
+public:
+    uint8_t reserved[19];
+};
+static_assert(sizeof(IBUS2_Cmd_GetValue) == 19, "IBUS2_Cmd_GetValue size");
+
+// -----------------------------------------------------------------------
+// Frame 3 GET_VALUE response payload (CommandCode=2)
+// value[14] contains packed sensor data (see spec §3 and Telemetry Adapter PDF §3.3)
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Resp_GetValue {
+public:
+    uint8_t value[14];        // sensor data, format defined by device
+    uint8_t vid;              // Vendor ID
+    uint8_t pid;              // Product ID
+    uint8_t reserved[3];
+};
+static_assert(sizeof(IBUS2_Resp_GetValue) == 19, "IBUS2_Resp_GetValue size");
+
+// -----------------------------------------------------------------------
+// Frame 2 GET_PARAM command payload (CommandCode=3)
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Cmd_GetParam {
+public:
+    uint16_t param_type;
+    uint8_t reserved[17];
+};
+static_assert(sizeof(IBUS2_Cmd_GetParam) == 19, "IBUS2_Cmd_GetParam size");
+
+// -----------------------------------------------------------------------
+// Frame 3 GET_PARAM response payload (CommandCode=3)
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Resp_GetParam {
+public:
+    uint16_t param_type;
+    uint8_t param_length;
+    uint8_t param_value[16];
+};
+static_assert(sizeof(IBUS2_Resp_GetParam) == 19, "IBUS2_Resp_GetParam size");
+
+// -----------------------------------------------------------------------
+// Frame 2 SET_PARAM command payload (CommandCode=4)
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Cmd_SetParam {
+public:
+    uint16_t param_type;
+    uint8_t param_length;
+    uint8_t param_value[16];
+};
+static_assert(sizeof(IBUS2_Cmd_SetParam) == 19, "IBUS2_Cmd_SetParam size");
+
+// -----------------------------------------------------------------------
+// Frame 3 SET_PARAM response payload (CommandCode=4)
+// param_length == 0 means parameter not supported; non-zero means success.
+// -----------------------------------------------------------------------
+class PACKED IBUS2_Resp_SetParam {
+public:
+    uint16_t param_type;
+    uint8_t param_length;   // 0 = not supported, non-zero = success
+    uint8_t reserved[16];
+};
+static_assert(sizeof(IBUS2_Resp_SetParam) == 19, "IBUS2_Resp_SetParam size");
 
 #endif  // AP_IBUS2_ENABLED
