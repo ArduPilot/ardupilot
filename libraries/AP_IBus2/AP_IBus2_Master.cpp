@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "AP_IBUS2_Master.h"
+#include "AP_IBus2_Master.h"
 
 #if AP_IBUS2_MASTER_ENABLED
 
@@ -34,30 +34,30 @@ extern const AP_HAL::HAL &hal;
 // Interval (µs) between IBUS2 master cycles (~7 ms)
 #define IBUS2_CYCLE_US 7000
 
-const AP_Param::GroupInfo AP_IBUS2_Master::var_info[] = {
+const AP_Param::GroupInfo AP_IBus2_Master::var_info[] = {
     // @Param: ENABLE
     // @DisplayName: IBUS2 Master enable
     // @Description: Enable IBUS2 master driver
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_IBUS2_Master, _enable, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_IBus2_Master, _enable, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: SEND_MASK
     // @DisplayName: IBUS2 Master Frame2 send mask
     // @Description: Bitmask of Frame 2 command types to send each cycle. bit0=GET_TYPE, bit1=GET_VALUE, bit2=GET_PARAM, bit3=SET_PARAM
     // @Bitmask: 0:GET_TYPE,1:GET_VALUE,2:GET_PARAM,3:SET_PARAM
     // @User: Advanced
-    AP_GROUPINFO("SEND_MASK", 2, AP_IBUS2_Master, _send_mask, 3),  // default: GET_TYPE + GET_VALUE
+    AP_GROUPINFO("SEND_MASK", 2, AP_IBus2_Master, _send_mask, 3),  // default: GET_TYPE + GET_VALUE
 
     AP_GROUPEND
 };
 
-AP_IBUS2_Master::AP_IBUS2_Master()
+AP_IBus2_Master::AP_IBus2_Master()
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void AP_IBUS2_Master::init()
+void AP_IBus2_Master::init()
 {
     if (!_enable) {
         return;
@@ -70,10 +70,10 @@ void AP_IBUS2_Master::init()
     _port->set_options(_port->OPTION_HDPLEX);
     _port->begin(IBUS2_BAUD);
     _initialized = true;
-    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_IBUS2_Master::update, void));
+    hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_IBus2_Master::update, void));
 }
 
-void AP_IBUS2_Master::update()
+void AP_IBus2_Master::update()
 {
     if (!_initialized) {
         return;
@@ -114,34 +114,24 @@ void AP_IBUS2_Master::update()
     }
 }
 
-void AP_IBUS2_Master::send_frame1()
+void AP_IBus2_Master::send_frame1()
 {
-    // Build a minimal Frame 1 with channel values from SRV_Channel outputs.
-    // For simplicity we use uncompressed 2-byte channel values (subtype=0 would
-    // normally be compressed; a future revision should implement SES compression).
-    // We send up to 14 channels (14 × 2 bytes = 28 bytes data, total frame = 32 bytes).
-    const uint8_t max_channels = 14;
-    const uint8_t data_len = max_channels * 2;
-    const uint8_t total_len = 3 + data_len + 1;  // header(3) + data + CRC
-
-    uint8_t buf[IBUS2_FRAME1_MAX] {};
-
-    buf[0] = (IBUS2_PKT_CHANNELS & 0x3);  // PacketType=0, subtype=0, sync/failsafe=0
-    buf[1] = total_len;
-    buf[2] = 0;  // AddressLevel1=0, AddressLevel2=0, reserved=0
+    // Send up to 14 channels (14 × 2 bytes = 28 bytes data, total frame = 32 bytes).
+    static const uint8_t max_channels = 14;
+    IBUS2_Frame1<max_channels> f{};
+    f.hdr.length = sizeof(f);
 
     for (uint8_t i = 0; i < max_channels; i++) {
-        uint16_t pwm = SRV_Channels::srv_channel(i) ? SRV_Channels::srv_channel(i)->get_output_pwm() : 1500;
-        buf[3 + i * 2]     = pwm & 0xFF;
-        buf[3 + i * 2 + 1] = (pwm >> 8) & 0xFF;
+        const uint16_t pwm = SRV_Channels::srv_channel(i)
+            ? SRV_Channels::srv_channel(i)->get_output_pwm() : 1500;
+        f.channels[i * 2]     = pwm & 0xFF;
+        f.channels[i * 2 + 1] = (pwm >> 8) & 0xFF;
     }
-
-    ibus2_crc8_write(buf, total_len);
-    _port->write(buf, total_len);
-    _tx_pending_echo += total_len;  // half-duplex: TX bytes echoed to RX
+    f.update_crc();
+    port_write((const uint8_t *)&f, sizeof(f));
 }
 
-void AP_IBUS2_Master::send_frame2(uint8_t addr)
+void AP_IBus2_Master::send_frame2(uint8_t addr)
 {
     const uint8_t mask = (uint8_t)_send_mask.get();
 
@@ -169,28 +159,20 @@ void AP_IBUS2_Master::send_frame2(uint8_t addr)
         static_assert(sizeof(IBUS2_PA_ReceiverInternalSensors) <= sizeof(sp.param_value),
                       "ReceiverInternalSensors too large for param_value");
         const IBUS2_Pkt<IBUS2_Cmd_SetParam> f2{IBUS2_PKT_COMMAND, (uint8_t)cmd, sp};
-        _port->write((const uint8_t *)&f2, sizeof(f2));
-        _tx_pending_echo += sizeof(f2);
+        port_write((const uint8_t *)&f2, sizeof(f2));
         return;
     }
 
     const IBUS2_Pkt<IBUS2_Frame2> f2{IBUS2_PKT_COMMAND, (uint8_t)cmd, {}};
     // data[0..1] encode the address (AddressLevel1/Level2) in the addressing scheme;
     // for a simple single-device setup leave at zero.
-    _port->write((const uint8_t *)&f2, sizeof(f2));
-    _tx_pending_echo += sizeof(f2);  // half-duplex: TX bytes echoed to RX
+    port_write((const uint8_t *)&f2, sizeof(f2));
 }
 
-void AP_IBUS2_Master::process_rx()
+void AP_IBus2_Master::process_rx()
 {
     // In half-duplex mode our own TX bytes are echoed back; discard them first.
-    while (_tx_pending_echo > 0 && _port->available() > 0) {
-        uint8_t b;
-        if (!_port->read(b)) {
-            break;
-        }
-        _tx_pending_echo--;
-    }
+    _tx_pending_echo = _port->discard_bytes(_tx_pending_echo);
 
     const uint16_t avail = MIN(_port->available(), 256U);
     for (uint16_t i = 0; i < avail; i++) {
@@ -225,7 +207,7 @@ void AP_IBUS2_Master::process_rx()
     }
 }
 
-void AP_IBUS2_Master::handle_frame3(const IBUS2_Pkt<IBUS2_Frame3> *f3)
+void AP_IBus2_Master::handle_frame3(const IBUS2_Pkt<IBUS2_Frame3> *f3)
 {
     const uint8_t addr = _current_addr & 0x7;
     const IBUS2Cmd cmd = (IBUS2Cmd)f3->cmd_code;

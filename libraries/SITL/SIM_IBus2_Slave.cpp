@@ -16,7 +16,7 @@
   Simulator for an IBUS2 slave device — used to test AP_IBUS2_Master.
 */
 
-#include "SIM_IBUS2_Slave.h"
+#include "SIM_IBus2_Slave.h"
 
 #if AP_IBUS2_ENABLED
 
@@ -29,23 +29,53 @@ using namespace SITL;
 // Response delay after Frame 2 (µs)
 #define IBUS2_SLAVE_RESPONSE_DELAY_US 160
 
-const AP_Param::GroupInfo IBUS2SlaveDevice::var_info[] = {
+// ---------------------------------------------------------------------------
+// Local CRC8 helpers (polynomial 0x25).
+// Duplicated from AP_IBUS2.cpp so the SITL library is independent of the
+// vehicle library and does not require AP_IBUS2.cpp to be linked.
+// ---------------------------------------------------------------------------
+static uint8_t sitl_ibus2_crc8(const uint8_t *buf, uint16_t len)
+{
+    uint8_t crc = 0;
+    for (uint16_t i = 0; i < len; i++) {
+        crc ^= buf[i];
+        for (uint8_t b = 0; b < 8; b++) {
+            crc = (crc & 0x80) ? (uint8_t)((crc << 1) ^ 0x25) : (uint8_t)(crc << 1);
+        }
+    }
+    return crc;
+}
+
+static bool sitl_ibus2_crc8_ok(const uint8_t *buf, uint16_t len)
+{
+    return len >= 2 && sitl_ibus2_crc8(buf, len - 1) == buf[len - 1];
+}
+
+static void sitl_ibus2_crc8_write(uint8_t *buf, uint16_t len)
+{
+    if (len >= 2) {
+        buf[len - 1] = sitl_ibus2_crc8(buf, len - 1);
+    }
+}
+// ---------------------------------------------------------------------------
+
+const AP_Param::GroupInfo IBus2SlaveDevice::var_info[] = {
     // @Param: ENA
     // @DisplayName: IBUS2 Slave simulator enable
     // @Description: Enable IBUS2 slave device simulator
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("ENA", 1, IBUS2SlaveDevice, _enabled, 0),
+    AP_GROUPINFO("ENA", 1, IBus2SlaveDevice, _enabled, 0),
 
     AP_GROUPEND
 };
 
-IBUS2Slave::IBUS2Slave() : SerialDevice::SerialDevice()
+IBus2Slave::IBus2Slave() : SerialDevice::SerialDevice()
 {
     memset(_channels, 0, sizeof(_channels));
 }
 
-void IBUS2Slave::update(const Aircraft &aircraft)
+void IBus2Slave::update(const Aircraft &aircraft)
 {
     if (!_enabled.get()) {
         return;
@@ -65,7 +95,7 @@ void IBUS2Slave::update(const Aircraft &aircraft)
     }
 }
 
-void IBUS2Slave::process_rx(const Aircraft &aircraft)
+void IBus2Slave::process_rx(const Aircraft &aircraft)
 {
     char raw[64];
     const ssize_t n = read_from_autopilot(raw, sizeof(raw));
@@ -101,7 +131,7 @@ void IBUS2Slave::process_rx(const Aircraft &aircraft)
                     _rx_state = RxState::WAIT_HEADER;
                 }
             } else if (_rx1_len == _rx1_expected_len) {
-                if (ibus2_crc8_ok(_rx1_buf, _rx1_expected_len)) {
+                if (sitl_ibus2_crc8_ok(_rx1_buf, _rx1_expected_len)) {
                     // Decode channels (simple 2-byte LE per channel)
                     const uint8_t data_len = _rx1_expected_len - 4;  // header(3) + crc(1)
                     const uint8_t n_ch = MIN(data_len / 2, (uint8_t)ARRAY_SIZE(_channels));
@@ -117,9 +147,8 @@ void IBUS2Slave::process_rx(const Aircraft &aircraft)
         case RxState::IN_FRAME2:
             _rx2_buf[_rx2_len++] = b;
             if (_rx2_len == IBUS2_FRAME2_SIZE) {
-                const auto *pkt = IBUS2_Pkt<IBUS2_Frame2>::cast_validated(_rx2_buf);
-                if (!_respond_pending && pkt != nullptr) {
-                    memcpy(&_pending_cmd, pkt, sizeof(_pending_cmd));
+                if (!_respond_pending && sitl_ibus2_crc8_ok(_rx2_buf, IBUS2_FRAME2_SIZE)) {
+                    memcpy(&_pending_cmd, _rx2_buf, sizeof(_pending_cmd));
                     _frame2_end_us = AP_HAL::micros();
                     _respond_pending = true;
                 }
@@ -130,70 +159,53 @@ void IBUS2Slave::process_rx(const Aircraft &aircraft)
     }
 }
 
-void IBUS2SlaveDevice::send_response(const Aircraft &aircraft)
+void IBus2SlaveDevice::send_response(const Aircraft &aircraft)
 {
+    // Frame 3 layout: buf[0] = pkt_type:2|cmd_code:6, buf[1..19] = payload, buf[20] = CRC
     const IBUS2Cmd cmd = (IBUS2Cmd)_pending_cmd.cmd_code;
+    uint8_t buf[IBUS2_FRAME3_SIZE] {};
+    buf[0] = (uint8_t)(IBUS2_PKT_RESPONSE | ((uint8_t)cmd << 2));
 
     switch (cmd) {
     case IBUS2Cmd::GET_TYPE: {
-        const IBUS2_Pkt<IBUS2_Resp_GetType> r{
-            IBUS2_PKT_RESPONSE,
-            (uint8_t)IBUS2Cmd::GET_TYPE,
-            IBUS2_Resp_GetType{
-                (uint8_t)IBUS2DeviceType::DIGITAL_SERVO,
-                16,  // value_length
-                1,   // channels_types
-                1,   // failsafe
-            },
-        };
-        write_to_autopilot((const char *)&r, sizeof(r));
+        auto *r = reinterpret_cast<IBUS2_Resp_GetType *>(buf + 1);
+        r->type           = (uint8_t)IBUS2DeviceType::DIGITAL_SERVO;
+        r->value_length   = 16;
+        r->channels_types = 1;
+        r->failsafe       = 1;
         break;
     }
     case IBUS2Cmd::GET_VALUE: {
-        IBUS2_Pkt<IBUS2_Resp_GetValue> r{
-            IBUS2_PKT_RESPONSE,
-            (uint8_t)IBUS2Cmd::GET_VALUE,
-            IBUS2_Resp_GetValue{{}, 0x01, 0x03},  // value[] filled below
-        };
-        // Pack one voltage data point (scaled from aircraft battery voltage)
-        // PackLength=1, PackCurIndex=0
-        r.msg.value[1] = (1 << 2);
+        auto *r = reinterpret_cast<IBUS2_Resp_GetValue *>(buf + 1);
+        r->vid = 0x01;
+        r->pid = 0x03;
+        // Pack one voltage data point: PackLength=1, PackCurIndex=0
+        r->value[1] = (1 << 2);
         const int16_t volts_raw = (int16_t)(aircraft.get_battery_voltage() * 100);
-        r.msg.value[2] = (uint8_t)IBUS2SensorType::VOLTAGE & 0x3F;
-        r.msg.value[3] = 0;
-        r.msg.value[4] = volts_raw & 0xFF;
-        r.msg.value[5] = (volts_raw >> 8) & 0xFF;
-        r.update_crc();
-        write_to_autopilot((const char *)&r, sizeof(r));
+        r->value[2] = (uint8_t)IBUS2SensorType::VOLTAGE & 0x3F;
+        r->value[3] = 0;
+        r->value[4] = volts_raw & 0xFF;
+        r->value[5] = (volts_raw >> 8) & 0xFF;
         break;
     }
     case IBUS2Cmd::GET_PARAM: {
-        const IBUS2_Pkt<IBUS2_Resp_GetParam> r{
-            IBUS2_PKT_RESPONSE,
-            (uint8_t)IBUS2Cmd::GET_PARAM,
-            IBUS2_Resp_GetParam{
-                ((const IBUS2_Cmd_GetParam *)&_pending_cmd.msg)->param_type,
-                0,  // param_length: not supported
-            },
-        };
-        write_to_autopilot((const char *)&r, sizeof(r));
+        auto *r = reinterpret_cast<IBUS2_Resp_GetParam *>(buf + 1);
+        r->param_type   = reinterpret_cast<const IBUS2_Cmd_GetParam *>(&_pending_cmd.msg)->param_type;
+        r->param_length = 0;  // not supported
         break;
     }
     case IBUS2Cmd::SET_PARAM: {
-        const IBUS2_Pkt<IBUS2_Resp_SetParam> r{
-            IBUS2_PKT_RESPONSE,
-            (uint8_t)IBUS2Cmd::SET_PARAM,
-            IBUS2_Resp_SetParam{
-                ((const IBUS2_Cmd_SetParam *)&_pending_cmd.msg)->param_type,
-                0,  // param_length: not supported
-            },
-        };
-        write_to_autopilot((const char *)&r, sizeof(r));
+        auto *r = reinterpret_cast<IBUS2_Resp_SetParam *>(buf + 1);
+        r->param_type   = reinterpret_cast<const IBUS2_Cmd_SetParam *>(&_pending_cmd.msg)->param_type;
+        r->param_length = 0;  // not supported
         break;
     }
     default:
         break;
     }
+
+    sitl_ibus2_crc8_write(buf, sizeof(buf));
+    write_to_autopilot((const char *)buf, sizeof(buf));
 }
 
 #endif  // AP_IBUS2_ENABLED

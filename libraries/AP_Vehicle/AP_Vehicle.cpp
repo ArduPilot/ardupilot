@@ -294,8 +294,8 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 
 #if AP_IBUS2_MASTER_ENABLED
     // @Group: IBUS2M_
-    // @Path: ../AP_IBUS2/AP_IBUS2_Master.cpp
-    AP_SUBGROUPINFO(ibus2_master, "IBUS2M_", 33, AP_Vehicle, AP_IBUS2_Master),
+    // @Path: ../AP_IBus2/AP_IBus2_Master.cpp
+    AP_SUBGROUPINFO(ibus2_master, "IBUS2M_", 33, AP_Vehicle, AP_IBus2_Master),
 #endif
 
     AP_GROUPEND

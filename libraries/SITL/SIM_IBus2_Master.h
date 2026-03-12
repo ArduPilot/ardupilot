@@ -33,13 +33,13 @@ reboot
 
 #include "SIM_SerialDevice.h"
 #include <AP_Param/AP_Param.h>
-#include <AP_IBUS2/AP_IBUS2.h>
+#include <AP_IBus2/AP_IBus2.h>
 
 namespace SITL {
 
-class IBUS2Master : public SerialDevice {
+class IBus2Master : public SerialDevice {
 public:
-    IBUS2Master();
+    IBus2Master();
 
     void update(const class Aircraft &aircraft);
 
@@ -54,6 +54,8 @@ private:
     uint8_t  _cmd_cycle;  // cycles through GET_TYPE/GET_VALUE/GET_PARAM/SET_PARAM
 
     // Frame reception from AP (Frame 3)
+#define IBUS2_FRAME3_SIZE  21   // fixed: 1 hdr + 19 data + 1 crc
+
     uint8_t _rx_buf[IBUS2_FRAME3_SIZE];
     uint8_t _rx_len;
 
