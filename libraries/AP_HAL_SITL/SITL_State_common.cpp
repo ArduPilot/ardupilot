@@ -220,6 +220,9 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
     } else if (streq(name, "ibus2slave")) {
         sitl_model->set_ibus2slave(&_sitl->ibus2slave_sim);
         return &_sitl->ibus2slave_sim;
+    } else if (streq(name, "ibus2esc")) {
+        sitl_model->set_ibus2esc(&_sitl->ibus2esc_sim);
+        return &_sitl->ibus2esc_sim;
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return &_sitl->ie24_sim;
