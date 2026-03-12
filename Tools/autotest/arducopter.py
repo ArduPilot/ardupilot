@@ -13297,9 +13297,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.context_collect("STATUSTEXT")
         self.customise_SITL_commandline(["--serial5=sim:ibus2slave"])
-        # AP_IBUS2_Master enumerates device 0 then requests GET_VALUE.
-        # The statustext is emitted on the first valid response.
+        # Phase 1: enumerate device (GET_TYPE, Frame 2/3 code=1) then read
+        # sensor data (GET_VALUE, Frame 2/3 code=2).
+        # The statustext is emitted on the first valid GET_VALUE response.
         self.wait_statustext("IBUS2: device 0 VID=1 PID=3", timeout=15, check_context=True)
+
+        # Phase 2: exercise GET_PARAM (Frame 2/3 code=3).
+        self.set_parameter("IBUS2M_SEND_MASK", 4)  # bit2=GET_PARAM only
+        self.wait_statustext("IBUS2: device 0 GET_PARAM ack", timeout=15, check_context=True)
+
+        # Phase 3: exercise SET_PARAM (Frame 2/3 code=4) with a
+        # ReceiverInternalSensors payload (ParamType=0xC000, spec Appendix 1).
+        self.set_parameter("IBUS2M_SEND_MASK", 8)  # bit3=SET_PARAM only
+        self.wait_statustext("IBUS2: device 0 SET_PARAM ack", timeout=15, check_context=True)
 
     def IBUS2ESC_flight(self):
         '''fly with motor outputs driven by IBUS2 ESC'''
