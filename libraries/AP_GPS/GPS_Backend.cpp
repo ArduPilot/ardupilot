@@ -257,7 +257,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
             uart_us = AP_HAL::micros64();
         }
 
-        uint32_t now = AP_HAL::millis();
+        uint32_t now = uart_us / 1000;
         uint32_t dt_ms = now - _last_ms;
         _last_ms = now;
 
@@ -290,9 +290,8 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         // calculate pseudo-itow
         _pseudo_itow += dt_ms * 1000U;
 
-        // use msg arrival time, and correct for jitter
-        uint64_t local_us = jitter_correction.correct_offboard_timestamp_usec(_pseudo_itow, uart_us);
-        state.last_corrected_gps_time_us = local_us;
+        uint32_t last_uart_us = state.last_corrected_gps_time_us;
+        state.last_corrected_gps_time_us = uart_us;
         state.corrected_timestamp_updated = true;
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -303,8 +302,8 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         // controller level
         float expected_lag;
         if (gps.get_lag(state.instance, expected_lag)) {
-            float lag_s = (now - (state.last_corrected_gps_time_us/1000U)) * 0.001;
-            if (lag_s > expected_lag+0.05) {
+            uint32_t lag_s = abs((int32_t)(gps.get_rate_ms(state.instance) - (last_uart_us - (state.last_corrected_gps_time_us/1000U))));
+            if (lag_s > (expected_lag+0.05)*1000) {
                 // more than 50ms over expected lag, increment lag counter
                 state.lagged_sample_count++;
             } else {
