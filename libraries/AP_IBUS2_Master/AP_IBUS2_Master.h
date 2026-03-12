@@ -33,14 +33,11 @@
 
 #pragma once
 
-#include <AP_IBUS2/AP_IBUS2.h>
-
-#ifndef AP_IBUS2_MASTER_ENABLED
-#define AP_IBUS2_MASTER_ENABLED AP_IBUS2_ENABLED
-#endif
+#include <AP_IBUS2/AP_IBUS2_config.h>
 
 #if AP_IBUS2_MASTER_ENABLED
 
+#include <AP_IBUS2/AP_IBUS2.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>

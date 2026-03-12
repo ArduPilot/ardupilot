@@ -288,6 +288,15 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     }
 
+    if (_sitl->ibus2esc_sim.enabled()) {
+        _sitl->ibus2esc_sim.update_sitl_input_pwm(input);
+        for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+            if (input.servos[i] != 0 && input.servos[i] < 1000) {
+                AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
+            }
+        }
+    }
+
 #if AP_SIM_VOLZ_ENABLED
     // update simulation input based on data received via "serial" to
     // Volz servos:
