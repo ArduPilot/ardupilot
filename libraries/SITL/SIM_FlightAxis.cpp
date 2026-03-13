@@ -656,6 +656,8 @@ void FlightAxis::update(const struct sitl_input &input)
 
     battery_voltage = MAX(state.m_batteryVoltage_VOLTS, 0);
     battery_current = MAX(state.m_batteryCurrentDraw_AMPS, 0);
+    // this aircraft has a constant battery temperature
+    battery_temperature = 273.0f; // kelvin
     rpm[0] = state.m_heliMainRotorRPM;
     rpm[1] = state.m_propRPM;
     motor_mask = 3;
