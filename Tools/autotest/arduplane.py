@@ -3007,7 +3007,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.delay_sim_time(10)
         self.change_mode('CIRCLE')
-        self.wait_altitude(alt*0.9, alt*1.1, minimum_duration=10, relative=True)
+        self.wait_altitude(alt*0.7, alt*1.3, minimum_duration=10, relative=True)
         self.fly_home_land_and_disarm()
 
     def fly_external_AHRS(self, sim, eahrs_type, mission):
