@@ -430,9 +430,10 @@ public:
         WHEN_MANOEUVRING = 1,
         NEVER = 2,
         AFTER_FIRST_CLIMB = 3,
-        ALWAYS = 4
+        ALWAYS = 4,
         // 5 was EXTERNAL_YAW (do not use)
         // 6 was EXTERNAL_YAW_FALLBACK (do not use)
+        GROUND_AND_INFLIGHT = 7,
     };
 
     // magnetometer fusion selections
