@@ -4630,11 +4630,13 @@ void SLT_Transition::force_transition_complete()
 
 MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
 {
-    if (quadplane.in_vtol_mode()) {
+    if (quadplane.in_vtol_land_approach()) {
         QuadPlane::position_control_state state = quadplane.poscontrol.get_state();
         if ((state == QuadPlane::position_control_state::QPOS_AIRBRAKE) || (state == QuadPlane::position_control_state::QPOS_POSITION1)) {
             return MAV_VTOL_STATE_TRANSITION_TO_MC;
         }
+    }
+    if (quadplane.in_vtol_mode()) {
         return MAV_VTOL_STATE_MC;
     }
 
