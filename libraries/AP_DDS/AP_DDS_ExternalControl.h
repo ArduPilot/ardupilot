@@ -3,6 +3,7 @@
 #if AP_DDS_ENABLED
 #include "ardupilot_msgs/msg/GlobalPosition.h"
 #include "geometry_msgs/msg/TwistStamped.h"
+#include "geometry_msgs/msg/Vector3Stamped.h"
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Common/Location.h>
 
@@ -13,6 +14,7 @@ public:
     // https://ros.org/reps/rep-0147.html#goal-interface
     static bool handle_global_position_control(ardupilot_msgs_msg_GlobalPosition& cmd_pos);
     static bool handle_velocity_control(geometry_msgs_msg_TwistStamped& cmd_vel);
+    static bool handle_gimbal_control(geometry_msgs_msg_Vector3Stamped& cmd_gimbal);
     static bool arm(AP_Arming::Method method, bool do_arming_checks);
     static bool disarm(AP_Arming::Method method, bool do_disarm_checks);
 
