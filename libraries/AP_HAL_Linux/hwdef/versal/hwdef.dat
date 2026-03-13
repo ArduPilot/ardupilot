@@ -1,0 +1,10 @@
+# Versal Linux target
+#
+# This board profile inherits the generic Cortex-A72 baseline and applies
+# Versal-oriented runtime filesystem defaults.
+
+include ../cortexa72/hwdef.dat
+
+define HAL_BOARD_LOG_DIRECTORY "/var/lib/ardupilot/logs"
+define HAL_BOARD_TERRAIN_DIRECTORY "/var/lib/ardupilot/terrain"
+define HAL_BOARD_STORAGE_DIRECTORY "/var/lib/ardupilot/storage"

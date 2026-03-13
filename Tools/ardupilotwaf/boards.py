@@ -8,6 +8,7 @@ import sys, os
 import fnmatch
 import platform
 import glob
+import shlex
 
 import waflib
 from waflib import Utils, Context
@@ -1407,6 +1408,12 @@ class LinuxBoard(Board):
             env.CXXFLAGS += [
                 '-O3',
             ]
+
+        linux_cpu_flags = cfg.env.get_flat('LINUX_CPU_FLAGS')
+        if linux_cpu_flags:
+            cpu_flags = shlex.split(linux_cpu_flags)
+            env.CFLAGS += cpu_flags
+            env.CXXFLAGS += cpu_flags
 
         env.LIB += [
             'm',
