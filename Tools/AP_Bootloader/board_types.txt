@@ -571,6 +571,7 @@ AP_HW_CUAV-X25-EVO                   7002
 
 # IDs 7100-7109 reserved for V-UAV
 AP_HW_VUAV-V7pro                     7100
+AP_HW_VUAV-TinyV7                    7101
 
 # IDs 7110-7119 reserved for AEROFOX
 AP_HW_AEROFOX_H7                     7110
