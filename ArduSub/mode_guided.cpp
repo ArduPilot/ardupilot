@@ -32,7 +32,8 @@ struct Guided_Limit {
 bool ModeGuided::init(bool ignore_checks)
 {
     if (!sub.position_ok() && !ignore_checks) {
-        return false;
+        guided_angle_control_start();
+        return true;
     }
 
     // start in position control mode
@@ -77,6 +78,9 @@ autopilot_yaw_mode ModeGuided::get_default_auto_yaw_mode(bool rtl) const
 // initialise guided mode's position controller
 void ModeGuided::guided_pos_control_start()
 {
+    if (!sub.position_ok()) {
+        return;
+    }
     // set to position control mode
     sub.guided_mode = Guided_WP;
 
@@ -100,6 +104,9 @@ void ModeGuided::guided_pos_control_start()
 // initialise guided mode's velocity controller
 void ModeGuided::guided_vel_control_start()
 {
+    if (!sub.position_ok()) {
+        return;
+    }
     // set guided_mode to velocity controller
     sub.guided_mode = Guided_Velocity;
 
@@ -120,6 +127,9 @@ void ModeGuided::guided_vel_control_start()
 // initialise guided mode's posvel controller
 void ModeGuided::guided_posvel_control_start()
 {
+    if (!sub.position_ok()) {
+        return;
+    }
     // set guided_mode to velocity controller
     sub.guided_mode = Guided_PosVel;
 
@@ -168,6 +178,9 @@ void ModeGuided::guided_angle_control_start()
 // else return false if the waypoint is outside the fence
 bool ModeGuided::guided_set_destination(const Vector3f& destination)
 {
+    if (!sub.position_ok()) {
+        return false;
+    }
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
@@ -199,6 +212,9 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination)
 // or if the fence is enabled and guided waypoint is outside the fence
 bool ModeGuided::guided_set_destination(const Location& dest_loc)
 {
+    if (!sub.position_ok()) {
+        return false;
+    }
 #if AP_FENCE_ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
@@ -234,6 +250,9 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 // else return false if the waypoint is outside the fence
 bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
+    if (!sub.position_ok()) {
+        return false;
+    }
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
@@ -268,6 +287,9 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_ya
 // guided_set_velocity - sets guided mode's target velocity
 void ModeGuided::guided_set_velocity(const Vector3f& velocity)
 {
+    if (!sub.position_ok()) {
+        return;
+    }
     // check we are in velocity control mode
     if (sub.guided_mode != Guided_Velocity) {
         guided_vel_control_start();
