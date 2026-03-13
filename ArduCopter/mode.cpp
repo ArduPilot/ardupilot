@@ -524,12 +524,6 @@ void Copter::exit_mode(Mode *&old_flightmode,
     old_flightmode->exit();
 
 #if FRAME_CONFIG == HELI_FRAME
-    // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_flightmode == &mode_acro) {
-        attitude_control->use_flybar_passthrough(false, false);
-        motors->set_acro_tail(false);
-    }
-
     //last collective output
     input_manager.set_last_coll_output(motors->get_throttle());
 
