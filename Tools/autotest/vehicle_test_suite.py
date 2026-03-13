@@ -9491,7 +9491,7 @@ Also, ignores heartbeats not from our target system'''
                                         len(items),
                                         mission_type)
         remaining_to_send = set(range(0, len(items)))
-        sent = set()
+        last_send_time = {}
         timeout = (10 + len(items)/10.0)
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
@@ -9516,9 +9516,22 @@ Also, ignores heartbeats not from our target system'''
 
             self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
             self.progress("Item (%s)" % str(items[m.seq]))
-            if m.seq in sent:
-                self.progress("received duplicate request for item %u" % m.seq)
-                continue
+            if m.seq in last_send_time:
+                time_since_send = time.time() - last_send_time[m.seq]
+                self.progress("DEBUG: time_since_send=%f (real_time=%f, last_send=%f)" % (time_since_send, time.time(), last_send_time[m.seq]))
+                if time_since_send < 0.5:
+                    self.progress("ignoring fast duplicate request for item %u" % m.seq)
+                    continue
+                if sys.platform != 'darwin':
+                    self.progress("received duplicate request for item %u" % m.seq)
+                    continue
+                # A duplicate MISSION_REQUEST means our previous send was lost
+                # (common on Mac loopback with higher latency). Per the MAVLink
+                # mission upload protocol the uploader must resend the item.
+                # Restore seq so the send block below handles it normally.
+                self.progress("received duplicate request for item %u; resending" % m.seq)
+                remaining_to_send.add(m.seq)
+                del last_send_time[m.seq]
 
             if m.seq not in remaining_to_send:
                 raise NotAchievedException("received request for unknown item %u" % m.seq)
@@ -9539,7 +9552,7 @@ Also, ignores heartbeats not from our target system'''
             items[m.seq].pack(self.mav.mav)
             self.mav.mav.send(items[m.seq])
             remaining_to_send.discard(m.seq)
-            sent.add(m.seq)
+            last_send_time[m.seq] = time.time()
 
             timeout += 10  # we received a good request for item; be generous with our timeouts
 
