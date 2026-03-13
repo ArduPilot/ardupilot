@@ -137,7 +137,7 @@ void Rover::Log_Write_Nav_Tuning()
         wp_bearing          : control_mode->wp_bearing(),
         nav_bearing         : control_mode->nav_bearing(),
         yaw                 : (uint16_t)ahrs.yaw_sensor,
-        xtrack_error        : control_mode->crosstrack_error()
+        xtrack_error        : control_mode->crosstrack_error_m()
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }

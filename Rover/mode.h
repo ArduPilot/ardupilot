@@ -97,7 +97,7 @@ public:
     // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     virtual float wp_bearing() const;
     virtual float nav_bearing() const;
-    virtual float crosstrack_error() const;
+    virtual float crosstrack_error_m() const;
     virtual float get_desired_lat_accel() const;
 
     // get speed error in m/s, not currently supported
@@ -107,7 +107,7 @@ public:
     // navigation methods
     //
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     virtual float get_distance_to_destination() const { return 0.0f; }
 
     // return desired location (used in Guided, Auto, RTL, etc)
@@ -218,7 +218,7 @@ protected:
     class AR_AttitudeControl &attitude_control;
 
     // private members for waypoint navigation
-    float _distance_to_destination; // distance from vehicle to final destination in meters
+    float _distance_to_destination; // straight-line distance from vehicle to final destination in meters
     bool _reached_destination;  // true once the vehicle has reached the destination
     float _desired_yaw_cd;      // desired yaw in centi-degrees.  used in Auto, Guided and Loiter
 };
@@ -268,10 +268,10 @@ public:
     // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
     float nav_bearing() const override;
-    float crosstrack_error() const override;
+    float crosstrack_error_m() const override;
     float get_desired_lat_accel() const override;
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override;
 
     // get or set desired location
@@ -443,13 +443,13 @@ public:
     // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
     float nav_bearing() const override;
-    float crosstrack_error() const override { return dist_to_edge_m; }
+    float crosstrack_error_m() const override { return dist_to_edge_m; }
     float get_desired_lat_accel() const override;
 
     // set desired speed in m/s
     bool set_desired_speed(float speed_ms) override;
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
 
     // get or set desired location
@@ -538,10 +538,10 @@ public:
     // return heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
     float nav_bearing() const override;
-    float crosstrack_error() const override;
+    float crosstrack_error_m() const override;
     float get_desired_lat_accel() const override;
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override;
 
     // return true if vehicle has reached destination
@@ -659,12 +659,12 @@ public:
     // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override { return _desired_yaw_cd * 0.01f; }
     float nav_bearing() const override { return _desired_yaw_cd * 0.01f; }
-    float crosstrack_error() const override { return 0.0f; }
+    float crosstrack_error_m() const override { return 0.0f; }
 
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
 
 protected:
@@ -720,7 +720,7 @@ public:
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
     bool reached_destination() const override;
 
@@ -759,7 +759,7 @@ public:
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
     bool reached_destination() const override { return smart_rtl_state == SmartRTLState::StopAtHome; }
 
@@ -857,12 +857,12 @@ public:
     // return desired heading (in degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing() const override;
     float nav_bearing() const override { return wp_bearing(); }
-    float crosstrack_error() const override { return 0.0f; }
+    float crosstrack_error_m() const override { return 0.0f; }
 
     // return desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED { return false; }
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override;
 
     // set desired speed in m/s
@@ -924,7 +924,7 @@ public:
 
     bool is_autopilot_mode() const override { return true; }
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
 
     static const struct AP_Param::GroupInfo var_info[];
