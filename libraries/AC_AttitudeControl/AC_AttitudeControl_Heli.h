@@ -109,9 +109,6 @@ private:
     // true in inverted flight mode
     bool _inverted_flight;
 
-    // Integrate vehicle rate into _att_error_rot_vec_rad
-    void integrate_bf_rate_error_to_angle_errors();
-
     //
     // body-frame rate controller
     //
