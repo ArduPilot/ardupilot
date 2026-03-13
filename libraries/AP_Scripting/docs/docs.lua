@@ -4020,6 +4020,17 @@ function mavlink:receive_chan() end
 ---@return boolean|nil -- True if send was successful, false if send was not successful, nil if channel does not exist
 function mavlink:send_chan(chan, msgid, message) end
 
+-- sends unknown mavlink message, to use this function the call should be like this:
+-- mavlink:send(chan, mavlink_msgs.encode_full("MSG_NAME", {param1 = value1, param2 = value2, ...}})
+---@param chan integer
+---@param msgid integer
+---@param message string
+---@param min_msg_len integer
+---@param max_msg_len integer
+---@param crc_extra integer
+---@return boolean|nil -- True if send was successful, false if send was not successful, nil if channel does not exist
+function mavlink:send_chan_unknown(chan, msgid, message, min_msg_len, max_msg_len, crc_extra) end
+
 -- Block a given MAV_CMD from being processed by ArduPilot
 ---@param comand_id integer
 ---@return boolean

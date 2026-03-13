@@ -5170,6 +5170,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.context_collect('STATUSTEXT')
         self.context_collect('NAMED_VALUE_FLOAT')
+        self.context_collect('NAMED_VALUE_INT')
 
         self.reboot_sitl()
 
@@ -5187,6 +5188,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ]:
             self.assert_received_message_field_values("NAMED_VALUE_FLOAT", {
                 "name": success_nvf,
+            }, check_context=True)
+
+        for success_nvi in [
+                "test_2",
+        ]:
+            self.assert_received_message_field_values("NAMED_VALUE_INT", {
+                "name": success_nvi,
             }, check_context=True)
 
         self.context_pop()
