@@ -216,3 +216,20 @@ define HAL_OS_FATFS_IO 1
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# IMU setup
+define INS0_ROTATION  ROT_PITCH_180             # IMU1 = pitch 180°
+define INS1_ROTATION  ROT_ROLL_180_YAW_90       # IMU2 = roll 180°, yaw 90°
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define HAL_COMPASS_ENABLED            1
+define AP_COMPASS_IIS2MDC_ENABLED     1
+define AP_COMPASS_IST8308_ENABLED     0
+define AP_COMPASS_IST8310_ENABLED     0
+define AP_COMPASS_QMC5883_ENABLED     0
+define AP_COMPASS_LIS3MDL_ENABLED     0
+
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_TYPE_DEFAULT 12
+define AP_MOTORS_FRAME_QUAD_ENABLED 1
