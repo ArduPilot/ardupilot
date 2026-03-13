@@ -1165,12 +1165,16 @@ public:
         VelAccel,
         Accel,
         Angle,
+        Circle,
+        CircleMoveToEdge,
     };
 
     SubMode submode() const { return guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
+    void circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms);
+    void circle_run();
 
     // return guided mode timeout in milliseconds. Only used for velocity, acceleration, angle control, and angular rate control
     uint32_t get_timeout_ms() const;
