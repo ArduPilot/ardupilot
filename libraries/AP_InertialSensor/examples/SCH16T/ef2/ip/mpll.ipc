@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='utf-8'?>
+<PLLConfig version="1.0">
+    <GeneralConfig>
+        <Type>PLL</Type>
+        <Device>EF2M45VG81C</Device>
+        <create_VHDL>true</create_VHDL>
+    </GeneralConfig>
+    <Page1>
+        <speed_grade>Any</speed_grade>
+        <input_frequency>24.0000000000000000MHz</input_frequency>
+        <feedback_mode>Normal</feedback_mode>
+        <clk_num>CLKC0</clk_num>
+        <enable_reset>ENABLE</enable_reset>
+        <pll_lock>ENABLE</pll_lock>
+    </Page1>
+    <Page2>
+        <bandwidth_setting>Medium</bandwidth_setting>
+    </Page2>
+    <Page3>
+        <setting>frequncy_setting</setting>
+        <multiplication_factor>5</multiplication_factor>
+        <division_factor>1</division_factor>
+        <clocks>
+            <clock>
+                <id>0</id>
+                <clock_division_factor>8</clock_division_factor>
+                <clock_frequency>120.0000000000000000MHz</clock_frequency>
+                <phase_shift>0.0000000000000000deg</phase_shift>
+                <duty_cycle>0.5</duty_cycle>
+            </clock>
+        </clocks>
+    </Page3>
+    <GeneratedFiles>
+        <Verilog Enable="false">mpll.v</Verilog>
+        <VHDL Enable="true">mpll.vhd</VHDL>
+    </GeneratedFiles>
+</PLLConfig>
