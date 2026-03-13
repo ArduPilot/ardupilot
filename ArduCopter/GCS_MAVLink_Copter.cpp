@@ -158,6 +158,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         return;
     case ModeGuided::SubMode::TakeOff:
     case ModeGuided::SubMode::WP:
+    case ModeGuided::SubMode::CircleMoveToEdge:
     case ModeGuided::SubMode::Pos:
         type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
@@ -182,6 +183,9 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
         target_accel_ned_mss = copter.mode_guided.get_target_accel_NED_mss();
         break;
+    case ModeGuided::SubMode::Circle:
+        // circle mode uses circle_nav controller, no local position target to report
+        return;
     }
 
     mavlink_msg_position_target_local_ned_send(
@@ -580,6 +584,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_FAILED;
+
+#endif
+
+#if MODE_GUIDED_ENABLED
+    case MAV_CMD_DO_ORBIT:
+        return handle_MAV_CMD_DO_ORBIT(packet);
+
 #endif
 
     default:
@@ -863,6 +874,58 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_comma
     }
     return MAV_RESULT_DENIED;
 }
+
+#if MODE_GUIDED_ENABLED
+MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int_t &packet)
+{
+    // reject if not in Guided mode
+    if (!copter.flightmode->in_guided_mode()) {
+        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: not in guided mode");
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    // param1: radius (m) - required, must be positive
+    const float radius_m = packet.param1;
+    if (radius_m <= 0.0f) {
+        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: invalid radius");
+        return MAV_RESULT_DENIED;
+    }
+
+    // param2: velocity (m/s) - optional, 0 = use default
+    const float speed_ms = packet.param2;
+
+    // param3: yaw behaviour - ignored for now (ArduCopter always faces center)
+
+    // param4: orbits - ignored (we orbit indefinitely until next command)
+
+    // x/y: center latitude/longitude (int32, degrees * 1e7)
+    // z: altitude
+    if (packet.x == 0 && packet.y == 0) {
+        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: no coordinates");
+        return MAV_RESULT_DENIED;
+    }
+
+    // build center Location from packet
+    Location circle_center;
+    if (!location_from_command_t(packet, circle_center)) {
+        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: location_from_command_t failed");
+        return MAV_RESULT_DENIED;
+    }
+    if (!check_latlng(packet.x, packet.y)) {
+        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: invalid latlng");
+        return MAV_RESULT_DENIED;
+    }
+
+    // direction: param3 bit 0 - 0=clockwise, 1=counter-clockwise
+    // MAVLink spec uses velocity sign for direction
+    const bool ccw = (speed_ms < 0.0f);
+
+    // start orbit
+    copter.mode_guided.circle_start(circle_center, radius_m, ccw, fabsf(speed_ms));
+
+    return MAV_RESULT_ACCEPTED;
+}
+#endif
 
 // this is called on receipt of a MANUAL_CONTROL packet and is
 // expected to call manual_override to override RC input on desired
