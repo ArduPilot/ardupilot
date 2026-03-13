@@ -4,6 +4,9 @@
 #include "pico/stdlib.h"
 #include "pico/bootrom.h"
 #include "hardware/watchdog.h"
+#include "pico/multicore.h"
+#include "hardware/sync.h"
+#include "hardware/flash.h"
 
 using namespace RP;
 
@@ -44,6 +47,7 @@ void Scheduler::init() {
     // In FreeRTOS SMP mask (1 << 0) means work only on Core 0
     #define CORE_0 (1 << 0)
     #define CORE_1 (1 << 1)
+    #define IO_INIT_PRIO (MAIN_PRIO + 1)
     vTaskCoreAffinitySet(_main_task_handle, CORE_0);
 
     // Create a timer task on Core 0 for maximum accuracy
@@ -65,7 +69,7 @@ void Scheduler::init() {
     vTaskCoreAffinitySet(_uart_task_handle, CORE_0);
 
     // Create an IO task on Core 1
-    if (xTaskCreate(_io_task, "Ardu_IO", IO_SS, this, IO_PRIO, &_io_task_handle) == pdPASS) {
+    if (xTaskCreate(_io_task, "Ardu_IO", IO_SS, this, IO_INIT_PRIO, &_io_task_handle) == pdPASS) {
         DEV_PRINTF("OK created task _io_task\n");
     }
     else {
@@ -109,6 +113,9 @@ void Scheduler::_main_task(void *pvParameters) {
 void Scheduler::_timer_task(void *pvParameters) {
     // Here is the logic for calling functions registered via register_timer_process
     Scheduler *sched = (Scheduler *)pvParameters;
+#if PICO_MULTICORE
+    multicore_lockout_victim_init();
+#endif
     for (;;) {
         // Start all timer processes
         for (uint8_t i = 0; i < sched->_num_timer_procs; i++) {
@@ -129,6 +136,10 @@ void Scheduler::_timer_task(void *pvParameters) {
 
 void Scheduler::_io_task(void *pvParameters) {
     Scheduler *sched = (Scheduler *)pvParameters;
+#if PICO_MULTICORE
+    multicore_lockout_victim_init();
+#endif
+    vTaskPrioritySet(nullptr, IO_PRIO);
     for (;;) {
         for (uint8_t i = 0; i < sched->_num_io_procs; i++) {
             if (sched->_io_proc[i]) {
@@ -226,7 +237,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name,
 }
 
 void Scheduler::delay(uint16_t ms) {
-    if (_initialized) {
+    if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
         vTaskDelay(pdMS_TO_TICKS(ms));
     } else {
         sleep_ms(ms); // SDK function until RTOS started

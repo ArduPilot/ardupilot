@@ -91,13 +91,9 @@ bool Flash::write(uint32_t addr, const void *buf, uint32_t count) {
         cmd_hdr[1] = (current_addr >> 16) & 0xFF;
         cmd_hdr[2] = (current_addr >> 8) & 0xFF;
         cmd_hdr[3] = current_addr & 0xFF;
-
-        // Use set_cmd_header to pass the command and address,
-        // and then pass the data to transfer
-        dev->set_cmd_header(AP_HAL::WSPIDevice::CommandHeader{cmd_hdr[0], 4}); // opcode + addr
         
         // Copy to temporary buffer (command + address + data)
-        uint8_t full_packet[256 + 4];
+        static uint8_t full_packet[256 + 4];
         memcpy(full_packet, cmd_hdr, 4);
         memcpy(&full_packet[4], data, chunk);
         

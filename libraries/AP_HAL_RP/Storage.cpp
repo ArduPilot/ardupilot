@@ -1,4 +1,7 @@
 #include "Storage.h"
+#include "pico/multicore.h"
+#include "hardware/sync.h"
+#include "hardware/flash.h"
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -62,7 +65,8 @@ bool Storage::_flash_write(uint8_t sector, uint32_t offset, const uint8_t *data,
 bool Storage::_flash_read(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length) {
     uint32_t addr = hal.flash->getpageaddr(sector) + offset;
     // Read directly from memory (XIP)
-    memcpy(data, (void*)(XIP_BASE + addr), length);
+    const uint8_t *flash_target_addr = (const uint8_t *)(XIP_BASE + addr);
+    memcpy(data, flash_target_addr, length);
     return true;
 }
 

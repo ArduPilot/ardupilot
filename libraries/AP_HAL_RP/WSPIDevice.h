@@ -20,7 +20,7 @@ public:
     bool is_busy() override;
     
     // ArduPilot uses this for JEDEC ID and flash operations
-    bool transfer(const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len) override;
+    __RAMFUNC__ bool transfer(const uint8_t *send, uint32_t send_len, uint8_t *recv, uint32_t recv_len) override;
     
     AP_HAL::Semaphore* get_semaphore() override { return &_semaphore; }
 
@@ -37,8 +37,11 @@ public:
 
 private:
     SemaphoreHandle_t _lock;        // FreeRTOS mutex
-    HAL_Semaphore _semaphore;   // ArduPilot wrapper
+    HAL_Semaphore _semaphore;       // ArduPilot wrapper
     CommandHeader _current_cmd_hdr; // Save the current command
+    bool _write_enabled;
+
+    __RAMFUNC__  bool emul_flash_do_cmd(const uint8_t *txbuf, uint8_t *rxbuf, size_t len);
 };
 
 class WSPIDeviceManager : public AP_HAL::WSPIDeviceManager {
