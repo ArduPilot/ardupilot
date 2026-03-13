@@ -55,11 +55,11 @@ protected:
 
     AP_PIDInfo _pid_info;
 
-    float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, float aspeed, bool ground_mode);
+    float _get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
 
-    virtual bool is_underspeed(const float aspeed) const = 0;
+    bool is_underspeed() const;
 
-    virtual float get_airspeed() const = 0;
+    float get_airspeed() const;
 
     virtual float get_measured_rate() const = 0;
 

@@ -21,8 +21,6 @@ private:
 
     float _get_coordination_rate_offset(const float &aspeed, bool &inverted) const;
 
-    float get_airspeed() const override;
-    bool is_underspeed(const float aspeed) const override;
     float get_measured_rate() const override;
 
 };

@@ -184,21 +184,6 @@ float AP_PitchController::get_measured_rate() const
     return AP::ahrs().get_gyro().y;
 }
 
-float AP_PitchController::get_airspeed() const
-{
-    float aspeed;
-    if (!AP::ahrs().airspeed_EAS(aspeed)) {
-        // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
-    }
-    return aspeed;
-}
-
-bool AP_PitchController::is_underspeed(const float aspeed) const
-{
-    return aspeed <= 0.5*float(aparm.airspeed_min);
-}
-
 /*
   get the rate offset in degrees/second needed for pitch in body frame
   to maintain height in a coordinated turn.
@@ -300,7 +285,7 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
         desired_rate *= (1 - roll_prop);
     }
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
+    return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
 }
 
 /*
