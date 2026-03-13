@@ -572,6 +572,12 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+        // returns false if external gyro is selected for tail control but not supported by tail type
+    if (get_tail_type()==TAIL_TYPE::SERVO_EXTGYRO_OLD){
+        hal.util->snprintf(buffer, buflen, "External gyro no longer supported. See Wiki");
+        return false;
+    }
+
     return true;
 }
 

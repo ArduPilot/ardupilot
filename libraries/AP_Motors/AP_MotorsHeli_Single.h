@@ -96,6 +96,7 @@ protected:
     // Tail types
     enum class TAIL_TYPE {
         SERVO = 0,
+        SERVO_EXTGYRO_OLD = 1,
         DIRECTDRIVE_VARPITCH = 2,
         DIRECTDRIVE_FIXEDPITCH_CW = 3,
         DIRECTDRIVE_FIXEDPITCH_CCW = 4,
