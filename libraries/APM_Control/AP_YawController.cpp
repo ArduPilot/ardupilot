@@ -236,11 +236,14 @@ int32_t AP_YawController::get_servo_out(float scaler, bool disable_integrator)
     // due to bias errors in rate_offset
     // Use a cut-off frequency of omega = 0.2 rad/sec
     // Could make this adjustable by replacing 0.9960080 with (1 - omega * dt)
-    float rate_hp_out = 0.9960080f * _last_rate_hp_out + rate_hp_in - _last_rate_hp_in;
+    float rate_hp_out_old = 0.9960080f * _last_rate_hp_out + rate_hp_in - _last_rate_hp_in;
+    float rate_hp_out = 0.9960080f * (_last_rate_hp_out + rate_hp_in - _last_rate_hp_in);
     _last_rate_hp_out = rate_hp_out;
     _last_rate_hp_in = rate_hp_in;
+    AP::logger().Write("YHPF", "TimeUS,old,new", "Qff",
+                        AP_HAL::micros64(), rate_hp_out_old, rate_hp_out);
 
-    //Calculate input to integrator
+    // Calculate input to integrator
     float integ_in = - _K_I * (_K_A * accel_y + rate_hp_out);
 
     // Apply integrator, but clamp input to prevent control saturation and freeze integrator below min FBW speed
