@@ -328,78 +328,9 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, AP_MotorsHe
 
     // initialise flags
     _flags_heli.leaky_i = true;
-    _flags_heli.flybar_passthrough = false;
-    _flags_heli.tail_passthrough = false;
 #if AP_FILTER_ENABLED
     set_notch_sample_rate(AP::scheduler().get_loop_rate_hz());
 #endif
-}
-
-// passthrough_bf_roll_pitch_rate_yaw_norm - passthrough the pilots roll and pitch inputs directly to swashplate for flybar acro mode
-void AC_AttitudeControl_Heli::passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_norm, float pitch_passthrough_norm, float yaw_passthrough_norm)
-{
-    // store roll, pitch and passthroughs
-    // NOTE: this abuses yaw_rate_bf_rads
-    _passthrough_roll_norm = roll_passthrough_norm;
-    _passthrough_pitch_norm = pitch_passthrough_norm;
-    _passthrough_yaw_norm = yaw_passthrough_norm;
-
-    // set rate controller to use pass through
-    _flags_heli.flybar_passthrough = true;
-
-    // set bf rate targets to current body frame rates (i.e. relax and be ready for vehicle to switch out of acro)
-    _ang_vel_target_rads.x = _ahrs.get_gyro().x;
-    _ang_vel_target_rads.y = _ahrs.get_gyro().y;
-
-    // accel limit desired yaw rate
-    if (get_accel_yaw_max_radss() > 0.0f) {
-        float rate_change_limit_rads = get_accel_yaw_max_radss() * _dt_s;
-        float rate_change_rads = yaw_passthrough_norm * radians(45.0) - _ang_vel_target_rads.z;
-        rate_change_rads = constrain_float(rate_change_rads, -rate_change_limit_rads, rate_change_limit_rads);
-        _ang_vel_target_rads.z += rate_change_rads;
-    } else {
-        _ang_vel_target_rads.z = yaw_passthrough_norm * radians(45.0);
-    }
-
-    integrate_bf_rate_error_to_angle_errors();
-    _att_error_rot_vec_rad.x = 0;
-    _att_error_rot_vec_rad.y = 0;
-
-    // update our earth-frame angle targets
-    Vector3f att_error_euler_rad;
-
-    // convert angle error rotation vector into 321-intrinsic euler angle difference
-    // NOTE: this results an an approximation linearized about the vehicle's attitude
-    Quaternion att;
-    _ahrs.get_quat_body_to_ned(att);
-    if (body_to_euler_derivative(att, _att_error_rot_vec_rad, att_error_euler_rad)) {
-        _euler_angle_target_rad.x = wrap_PI(att_error_euler_rad.x + _ahrs.roll);
-        _euler_angle_target_rad.y = wrap_PI(att_error_euler_rad.y + _ahrs.pitch);
-        _euler_angle_target_rad.z = wrap_2PI(att_error_euler_rad.z + _ahrs.yaw);
-    }
-
-    // handle flipping over pitch axis
-    if (_euler_angle_target_rad.y > M_PI / 2.0f) {
-        _euler_angle_target_rad.x = wrap_PI(_euler_angle_target_rad.x + M_PI);
-        _euler_angle_target_rad.y = wrap_PI(M_PI - _euler_angle_target_rad.x);
-        _euler_angle_target_rad.z = wrap_2PI(_euler_angle_target_rad.z + M_PI);
-    }
-    if (_euler_angle_target_rad.y < -M_PI / 2.0f) {
-        _euler_angle_target_rad.x = wrap_PI(_euler_angle_target_rad.x + M_PI);
-        _euler_angle_target_rad.y = wrap_PI(-M_PI - _euler_angle_target_rad.x);
-        _euler_angle_target_rad.z = wrap_2PI(_euler_angle_target_rad.z + M_PI);
-    }
-
-    // convert body-frame angle errors to body-frame rate targets
-    _ang_vel_body_rads = update_ang_vel_target_from_att_error(_att_error_rot_vec_rad);
-
-    // set body-frame roll/pitch rate target to current desired rates which are the vehicle's actual rates
-    _ang_vel_body_rads.x = _ang_vel_target_rads.x;
-    _ang_vel_body_rads.y = _ang_vel_target_rads.y;
-
-    // add desired target to yaw
-    _ang_vel_body_rads.z += _ang_vel_target_rads.z;
-    _thrust_error_angle_rad = _att_error_rot_vec_rad.xy().length();
 }
 
 void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
@@ -411,18 +342,6 @@ void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
     _att_error_rot_vec_rad.x = constrain_float(_att_error_rot_vec_rad.x, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
     _att_error_rot_vec_rad.y = constrain_float(_att_error_rot_vec_rad.y, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
     _att_error_rot_vec_rad.z = constrain_float(_att_error_rot_vec_rad.z, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
-}
-
-// Sets desired roll, pitch, and yaw angular rates in body-frame (in radians/s).
-// This command is used by fully stabilized acro modes.
-// It applies angular velocity targets in the body frame,
-// shaped using acceleration limits and passed to the rate controller.
-// subclass non-passthrough too, for external gyro, no flybar
-void AC_AttitudeControl_Heli::input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads)
-{
-    _passthrough_yaw_norm = yaw_rate_bf_rads / radians(45.0);
-
-    AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_rads(roll_rate_bf_rads, pitch_rate_bf_rads, yaw_rate_bf_rads);
 }
 
 //
@@ -439,18 +358,8 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     _rate_gyro_time_us = AP_HAL::micros64();
 
     // call rate controllers and send output to motors object
-    // if using a flybar passthrough roll and pitch directly to motors
-    if (_flags_heli.flybar_passthrough) {
-        _motors.set_roll(_passthrough_roll_norm);
-        _motors.set_pitch(_passthrough_pitch_norm);
-    } else {
-        rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
-    }
-    if (_flags_heli.tail_passthrough) {
-        _motors.set_yaw(_passthrough_yaw_norm);
-    } else {
-        _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
-    }
+    rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
+    _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
 
     _sysid_ang_vel_body_rads.zero();
     _actuator_sysid.zero();

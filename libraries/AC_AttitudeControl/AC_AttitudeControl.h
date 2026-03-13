@@ -473,9 +473,6 @@ public:
     virtual void set_throttle_mix_value(float value) {}
     virtual float get_throttle_mix(void) const { return 0; }
 
-    // enable use of flybar passthrough on heli
-    virtual void use_flybar_passthrough(bool passthrough, bool tail_passthrough) {}
-
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage on heli
 	virtual void use_leaky_i(bool leaky_i) {}
 
@@ -489,9 +486,6 @@ public:
     // Return angle in radians to be added to roll angle. Used by heli to counteract
     // tail rotor thrust in hover. Overloaded by AC_Attitude_Heli to return angle.
     float get_roll_trim_rad() { return cd_to_rad(get_roll_trim_cd()); }
-
-    // passthrough_bf_roll_pitch_rate_yaw_norm - roll, pitch and yaw passed through directly to the motor mixers
-    virtual void passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_norm, float pitch_passthrough_norm, float yaw_passthrough_norm) {};
 
     // provide feedback on whether arming would be a good idea right now:
     bool pre_arm_checks(const char *param_prefix,
