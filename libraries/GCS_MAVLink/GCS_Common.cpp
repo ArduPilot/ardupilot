@@ -4876,10 +4876,12 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_in
 
 MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
 {
+#if AP_BARO_CALIBRATION_ENABLED
     // fast barometer calibration
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Updating barometer calibration");
     AP::baro().update_calibration();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer calibration complete");
+#endif  // AP_BARO_CALIBRATION_ENABLED
 
 #if AP_AIRSPEED_ENABLED
 
