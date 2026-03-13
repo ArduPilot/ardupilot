@@ -1,0 +1,2 @@
+SIM_RFL_OPTS,9        # Reset vehicle on start | Don't print frame rate stats
+RC_PROTOCOLS,0x40000  # Only accept UDP RC input
