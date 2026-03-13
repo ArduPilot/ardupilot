@@ -487,7 +487,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Param: EFI_TYPE
     // @DisplayName: Type of Electronic Fuel Injection
     // @Description: Different types of Electronic Fuel Injection (EFI) systems
-    // @Values: 0:None,1:MegaSquirt EFI system, 2:Löweheiser EFI system, 8:Hirth engines
+    // @Values: 0:None,1:MegaSquirt EFI system, 2:Löweheiser EFI system, 8:Hirth engines, 9:Edge Autonomy
     AP_GROUPINFO("EFI_TYPE",    58, SIM,  efi_type,  SIM::EFI_TYPE_NONE),
 
     // 59 was SAFETY_STATE

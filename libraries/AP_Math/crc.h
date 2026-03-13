@@ -36,6 +36,9 @@ uint32_t crc32_small(uint32_t crc, const uint8_t *buf, uint32_t size);
 uint32_t crc_crc24(const uint8_t *bytes, uint16_t len);
 uint16_t crc_crc16_ibm(uint16_t crc_accum, uint8_t *data_blk_ptr, uint16_t data_blk_size);
 
+// CRC-16/ARC (reflected variant, poly=0x8005, init=0, refIn=true, refOut=true)
+uint16_t crc_crc16_arc(uint16_t crc, const uint8_t *buf, uint16_t len);
+
 // checksum used by SPORT/FPort.  For each byte, adds it to a 16-bit
 // sum, then adds those two bytes together.  Returns the complement of
 // the final sum.
