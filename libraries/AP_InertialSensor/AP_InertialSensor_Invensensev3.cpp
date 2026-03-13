@@ -877,8 +877,9 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
         const uint8_t v = register_read(INV3REG_42XXX_INTF_CONFIG1);
 #if defined(INVENSENSEV3_CLKIN_BITMASK)
         uint8_t intf_config1 = (v & 0x3F) | 0x40;
-        // we only support setting RTC mode on IIM42652 now
-        if ((INVENSENSEV3_CLKIN_BITMASK & (1U << gyro_instance)) && (inv3_type == Invensensev3_Type::IIM42652)) {
+        // we only support setting RTC mode on IIM42652 and ICM42688 now
+        if ((INVENSENSEV3_CLKIN_BITMASK & (1U << gyro_instance)) &&
+            (inv3_type == Invensensev3_Type::IIM42652 || inv3_type == Invensensev3_Type::ICM42688)) {
             intf_config1 |= 0x04;   // enable RTC mode
             // setup pin9 function to CLKIN
             const uint8_t intf_config5 = register_read_bank(1, INV3REG_42XXX_INTF_CONFIG5);
