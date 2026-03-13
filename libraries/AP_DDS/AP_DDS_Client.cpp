@@ -15,6 +15,9 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
+#if HAL_NAVEKF3_AVAILABLE && AP_DDS_ODOMETRY_PUB_ENABLED
+#include <AP_NavEKF3/AP_NavEKF3.h>
+#endif // HAL_NAVEKF3_AVAILABLE && AP_DDS_ODOMETRY_PUB_ENABLED
 #if AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
 # endif // AP_DDS_ARM_SERVER_ENABLED
@@ -67,6 +70,9 @@ static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = AP_DDS_DELAY_LOCAL_POSE_TO
 #if AP_DDS_LOCAL_VEL_PUB_ENABLED
 static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS;
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+#if AP_DDS_ODOMETRY_PUB_ENABLED
+static constexpr uint16_t DELAY_ODOMETRY_TOPIC_MS = AP_DDS_DELAY_ODOMETRY_TOPIC_MS;
+#endif // AP_DDS_ODOMETRY_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_MS;
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
@@ -503,6 +509,132 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
     msg.twist.angular.z = -angular_velocity[2];
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+
+#if AP_DDS_ODOMETRY_PUB_ENABLED
+void AP_DDS_Client::update_topic(nav_msgs_msg_Odometry& msg)
+{
+    update_topic(msg.header.stamp);
+    STRCPY(msg.header.frame_id, MAP_FRAME);
+    STRCPY(msg.child_frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    // ROS REP 103 uses the ENU convention:
+    // X - East
+    // Y - North
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // AP_AHRS uses the NED convention
+    // X - North
+    // Y - East
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z
+
+    // Update pose (position and orientation)
+    Vector3f position;
+    if (ahrs.get_relative_position_NED_home(position)) {
+        msg.pose.pose.position.x = position[1];
+        msg.pose.pose.position.y = position[0];
+        msg.pose.pose.position.z = -position[2];
+    }
+
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z (NED to ENU conversion) as well as a 90 degree rotation in the Z axis
+    // for x to point forward
+    Quaternion orientation;
+    if (ahrs.get_quaternion(orientation)) {
+        Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
+        Quaternion transformation(sqrtF(2) * 0.5, 0, 0, sqrtF(2) * 0.5); // Z axis 90 degree rotation
+        orientation = aux * transformation;
+        msg.pose.pose.orientation.w = orientation[0];
+        msg.pose.pose.orientation.x = orientation[1];
+        msg.pose.pose.orientation.y = orientation[2];
+        msg.pose.pose.orientation.z = orientation[3];
+    } else {
+        initialize(msg.pose.pose.orientation);
+    }
+
+#if HAL_NAVEKF3_AVAILABLE
+    float pose_cov_ned[36];
+    if (ahrs.EKF3.healthy() && ahrs.EKF3.getPoseCovariance(pose_cov_ned)) {
+        // Initialize entire covariance matrix to NaN
+        for (uint8_t i = 0; i < 36; i++) {
+            msg.pose.covariance[i] = NAN;
+        }
+
+        // Set position variances (NED to ENU)
+        msg.pose.covariance[0] = pose_cov_ned[7];
+        msg.pose.covariance[7] = pose_cov_ned[0];
+        msg.pose.covariance[14] = pose_cov_ned[14];
+
+        // Set orientation covariance diagonal elements to 1.0
+        msg.pose.covariance[21] = 1.0f;
+        msg.pose.covariance[28] = 1.0f;
+        msg.pose.covariance[35] = 1.0f;
+    } else {
+        memset(msg.pose.covariance, 0, sizeof(msg.pose.covariance));
+    }
+#else
+    memset(msg.pose.covariance, 0, sizeof(msg.pose.covariance));
+#endif // HAL_NAVEKF3_AVAILABLE
+
+    // Update twist (linear and angular velocity)
+    Vector3f velocity;
+    if (ahrs.get_velocity_NED(velocity)) {
+        msg.twist.twist.linear.x = velocity[1];
+        msg.twist.twist.linear.y = velocity[0];
+        msg.twist.twist.linear.z = -velocity[2];
+    }
+
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // The gyro data is received from AP_AHRS in body-frame
+    // X - Forward
+    // Y - Right
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
+    Vector3f angular_velocity = ahrs.get_gyro();
+    msg.twist.twist.angular.x = angular_velocity[0];
+    msg.twist.twist.angular.y = -angular_velocity[1];
+    msg.twist.twist.angular.z = -angular_velocity[2];
+
+    // Populate twist covariance matrix
+#if HAL_NAVEKF3_AVAILABLE
+    float vel_cov[36];
+    if (ahrs.EKF3.healthy() && ahrs.EKF3.getVelocityCovariance(vel_cov)) {
+        // Initialize entire covariance matrix to NaN
+        for (uint8_t i = 0; i < 36; i++) {
+            msg.twist.covariance[i] = NAN;
+        }
+
+        // Set linear velocity variances (NED to ENU)
+        msg.twist.covariance[0] = vel_cov[7];
+        msg.twist.covariance[7] = vel_cov[0];
+        msg.twist.covariance[14] = vel_cov[14];
+
+        // Set angular velocity variances
+        msg.twist.covariance[21] = vel_cov[21];
+        msg.twist.covariance[28] = vel_cov[28];
+        msg.twist.covariance[35] = vel_cov[35];
+    } else {
+        memset(msg.twist.covariance, 0, sizeof(msg.twist.covariance));
+    }
+#else
+    memset(msg.twist.covariance, 0, sizeof(msg.twist.covariance));
+#endif // HAL_NAVEKF3_AVAILABLE
+}
+#endif // AP_DDS_ODOMETRY_PUB_ENABLED
+
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Airspeed& msg)
 {
@@ -1637,6 +1769,24 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
     }
 }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+
+#if AP_DDS_ODOMETRY_PUB_ENABLED
+void AP_DDS_Client::write_odometry_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = nav_msgs_msg_Odometry_size_of_topic(&odometry_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::ODOMETRY_PUB)].dw_id, &ub, topic_size);
+        const bool success = nav_msgs_msg_Odometry_serialize_topic(&ub, &odometry_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_ODOMETRY_PUB_ENABLED
+
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 void AP_DDS_Client::write_tx_local_airspeed_topic()
 {
@@ -1813,6 +1963,13 @@ void AP_DDS_Client::update()
         write_tx_local_velocity_topic();
     }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+#if AP_DDS_ODOMETRY_PUB_ENABLED
+    if (cur_time_ms - last_odometry_time_ms > DELAY_ODOMETRY_TOPIC_MS) {
+        update_topic(odometry_topic);
+        last_odometry_time_ms = cur_time_ms;
+        write_odometry_topic();
+    }
+#endif // AP_DDS_ODOMETRY_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_MS) {
         last_airspeed_time_ms = cur_time_ms;
