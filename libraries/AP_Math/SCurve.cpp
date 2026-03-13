@@ -84,7 +84,7 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
 
     const Vector2f chord = seg_delta.xy();
     const float chord_length = seg_delta.xy().length();
-    if (!is_positive(chord_length) || fabsf(wrap_PI(arc_ang_rad)) < radians(1.0)) {
+    if (!is_positive(chord_length) || fabsF(wrap_PI(arc_ang_rad)) < radians(1.0)) {
         // straight segment
         is_arc_segment = false;
         arc.angle_rad = 0.0f;
