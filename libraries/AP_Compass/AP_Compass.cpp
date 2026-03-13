@@ -2002,6 +2002,7 @@ Compass::save_motor_compensation()
     }
 }
 
+#if AP_AHRS_ENABLED
 void Compass::try_set_initial_location()
 {
     if (!_auto_declination) {
@@ -2025,6 +2026,7 @@ void Compass::try_set_initial_location()
                              (float)loc.lat / 10000000,
                              (float)loc.lng / 10000000)));
 }
+#endif
 
 /// return true if the compass should be used for yaw calculations
 bool

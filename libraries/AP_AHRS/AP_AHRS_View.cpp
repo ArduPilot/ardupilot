@@ -18,6 +18,10 @@
  *
  */
 
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_ENABLED
+
 #include "AP_AHRS_View.h"
 #include <stdio.h>
 
@@ -106,3 +110,5 @@ void AP_AHRS_View::rotate(Vector3f &vec) const
 {
     vec = rot_view * vec;
 }
+
+#endif  // AP_AHRS_ENABLED

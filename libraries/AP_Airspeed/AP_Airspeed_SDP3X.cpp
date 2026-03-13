@@ -215,6 +215,7 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
         return 0.0f;
     }
 
+#if AP_BARO_ENABLED
     AP_Baro *baro = AP_Baro::get_singleton();
 
     float baro_pressure;
@@ -224,6 +225,9 @@ float AP_Airspeed_SDP3X::_correct_pressure(float press)
     } else {
         baro_pressure = baro->get_pressure();
     }
+#else
+    const float baro_pressure = SSL_AIR_PRESSURE;
+#endif
 
     float temperature;
     if (!get_temperature(temperature)) {

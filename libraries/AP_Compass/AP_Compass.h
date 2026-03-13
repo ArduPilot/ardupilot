@@ -30,9 +30,6 @@
 #ifndef COMPASS_MOT_ENABLED
 #define COMPASS_MOT_ENABLED 1
 #endif
-#ifndef COMPASS_LEARN_ENABLED
-#define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
-#endif
 
 // define default compass calibration fitness and consistency checks
 #define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f

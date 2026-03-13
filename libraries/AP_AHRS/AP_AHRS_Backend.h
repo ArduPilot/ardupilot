@@ -20,6 +20,10 @@
  *
  */
 
+#include "AP_AHRS_config.h"
+
+#if AP_AHRS_ENABLED
+
 #include <AP_Math/AP_Math.h>
 #include <inttypes.h>
 #include <AP_Airspeed/AP_Airspeed.h>
@@ -288,3 +292,5 @@ public:
 
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };
+
+#endif  // AP_AHRS_ENABLED
