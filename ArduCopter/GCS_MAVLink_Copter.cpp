@@ -853,48 +853,44 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int
 {
     // reject if not in Guided mode
     if (!copter.flightmode->in_guided_mode()) {
-        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: not in guided mode");
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
 
-    // param1: radius (m) - required, must be positive
-    const float radius_m = packet.param1;
-    if (radius_m <= 0.0f) {
-        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: invalid radius");
+    // param1: radius (m) - positive = CW, negative = CCW (MAVLink spec)
+    if (isnan(packet.param1) || fabsf(packet.param1) < 0.1f) {
         return MAV_RESULT_DENIED;
     }
+    const float radius_m = fabsf(packet.param1);
+    const bool ccw = (packet.param1 < 0.0f);
 
-    // param2: velocity (m/s) - optional, 0 = use default
-    const float speed_ms = packet.param2;
+    // param2: tangential velocity (m/s) - optional, 0 or NaN = use default
+    const float speed_ms = isnan(packet.param2) ? 0.0f : fabsf(packet.param2);
 
-    // param3: yaw behaviour - ignored for now (ArduCopter always faces center)
+    // param3: yaw behaviour - center-facing is default, others are future work
+    // const ORBIT_YAW_BEHAVIOUR yaw_behaviour = isnan(packet.param3)
+    //     ? ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER
+    //     : (ORBIT_YAW_BEHAVIOUR)(int)packet.param3;
 
-    // param4: orbits - ignored (we orbit indefinitely until next command)
-
-    // x/y: center latitude/longitude (int32, degrees * 1e7)
-    // z: altitude
+    // x/y: center coordinates
+    if (packet.x == INT32_MAX || packet.y == INT32_MAX) {
+        return MAV_RESULT_DENIED;
+    }
     if (packet.x == 0 && packet.y == 0) {
-        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: no coordinates");
         return MAV_RESULT_DENIED;
     }
 
     // build center Location from packet
     Location circle_center;
     if (!location_from_command_t(packet, circle_center)) {
-        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: location_from_command_t failed");
         return MAV_RESULT_DENIED;
     }
     if (!check_latlng(packet.x, packet.y)) {
-        send_text(MAV_SEVERITY_WARNING, "DO_ORBIT: invalid latlng");
         return MAV_RESULT_DENIED;
     }
 
-    // direction: param3 bit 0 - 0=clockwise, 1=counter-clockwise
-    // MAVLink spec uses velocity sign for direction
-    const bool ccw = (speed_ms < 0.0f);
-
     // start orbit
-    copter.mode_guided.circle_start(circle_center, radius_m, ccw, fabsf(speed_ms));
+    send_text(MAV_SEVERITY_INFO, "DO_ORBIT: r=%.1f ccw=%d spd=%.1f", radius_m, (int)ccw, speed_ms);
+    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms);
 
     return MAV_RESULT_ACCEPTED;
 }

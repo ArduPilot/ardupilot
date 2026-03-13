@@ -1232,6 +1232,7 @@ private:
     void pause_control_run();
     void posvelaccel_control_run();
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
+    float _orbit_rate_degs = 20.0f;  // desired orbit rate in deg/s (signed for direction)
 
     // controls which controller is run (pos or vel):
     SubMode guided_mode = SubMode::TakeOff;
