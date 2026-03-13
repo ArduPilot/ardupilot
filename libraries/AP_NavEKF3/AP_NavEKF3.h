@@ -157,6 +157,10 @@ public:
     // Returns true if the set was successful
     bool setLatLng(const Location &loc, float posErr, uint32_t timestamp_ms);
 
+    // Set the EKF's NE wind velocity states and their corresponding variances from a supplied speed, direction and uncertainty
+    // Returns true if the set was successful
+    bool setWindNE(const Vector2f &wind_vel, float posErr, uint32_t timestamp_ms);
+
     // return estimated height above ground level
     // return false if ground height is not being estimated.
     bool getHAGL(float &HAGL) const;
