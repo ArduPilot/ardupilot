@@ -71,9 +71,21 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
         auto &ahrs = AP::ahrs();
         linear_velocity = ahrs.body_to_earth(linear_velocity_base_link);
         return external_control->set_linear_velocity_and_yaw_rate(linear_velocity, yaw_rate);
-    }
+    } else if (strcmp(cmd_vel.header.frame_id, BASE_LINK_NED_FRAME_ID) == 0)
+    {
+        // Convert commands from body fixed NED (x-body-forward, y-body-left, z-earth-up) to NED.
+        Vector3f linear_velocity;
+        Vector2f linear_velocity_base_link_flat{
+            float(cmd_vel.twist.linear.x),
+            float(cmd_vel.twist.linear.y)};
 
-    else if (strcmp(cmd_vel.header.frame_id, MAP_FRAME) == 0) {
+        const float yaw_rate = -cmd_vel.twist.angular.z;
+
+        auto &ahrs = AP::ahrs();
+        linear_velocity.xy() = ahrs.body_to_earth2D(linear_velocity_base_link_flat);
+        linear_velocity.z = float(-cmd_vel.twist.linear.z);
+        return external_control->set_linear_velocity_and_yaw_rate(linear_velocity, yaw_rate);
+    } else if (strcmp(cmd_vel.header.frame_id, MAP_FRAME) == 0) {
         // Convert commands from ENU to NED frame
         Vector3f linear_velocity {
             float(cmd_vel.twist.linear.y),
