@@ -30,7 +30,7 @@ private:
         PIXART_3900=0,
         PIXART_3901=1
     } model;
-    
+
     struct RegData {
         uint8_t reg;
         uint8_t value;
@@ -55,7 +55,7 @@ private:
         uint32_t sum_us;
         Vector2f gyro;
     } integral;
-    
+
     static const uint8_t srom_data[];
     static const uint8_t srom_id;
     static const RegData init_data_3900[];
@@ -65,7 +65,7 @@ private:
 
     // setup sensor
     bool setup_sensor(void);
-    
+
     void reg_write(uint8_t reg, uint8_t value);
     uint8_t reg_read(uint8_t reg);
     int16_t reg_read16s(uint8_t reg);

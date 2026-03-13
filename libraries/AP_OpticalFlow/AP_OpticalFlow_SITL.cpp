@@ -39,8 +39,8 @@ void AP_OpticalFlow_SITL::update(void)
     }
     last_flow_ms = now;
 
-    Vector3f gyro(radians(_sitl->state.rollRate), 
-                  radians(_sitl->state.pitchRate), 
+    Vector3f gyro(radians(_sitl->state.rollRate),
+                  radians(_sitl->state.pitchRate),
                   radians(_sitl->state.yawRate));
 
     AP_OpticalFlow::OpticalFlow_state state;
@@ -114,7 +114,7 @@ void AP_OpticalFlow_SITL::update(void)
     }
 
     _applyYaw(state.flowRate);
-    
+
     // copy results to front end
     _update_frontend(state);
 }

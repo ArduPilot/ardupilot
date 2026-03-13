@@ -1137,6 +1137,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if AP_OPTICALFLOW_ENABLED
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+        { MAVLINK_MSG_ID_OPTICAL_FLOW_RAD,      MSG_OPTICAL_FLOW_RAD},
+#endif
 #endif
 #if COMPASS_CAL_ENABLED
         { MAVLINK_MSG_ID_MAG_CAL_PROGRESS,      MSG_MAG_CAL_PROGRESS},
@@ -2964,6 +2967,47 @@ void GCS_MAVLINK::send_opticalflow()
         flowRate.x,
         flowRate.y);
 }
+#if defined(AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED) && AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+void GCS_MAVLINK::send_optical_flow_rad()
+{
+    const AP_OpticalFlow *flow = AP::opticalflow();
+
+    // 1. Safety Check: If sensor is missing or broken, STOP.
+    // This prevents the "Segmentation Fault" / "No Link" crash.
+    if (flow == nullptr || !flow->healthy()) {
+        return;
+    }
+
+    // 2. Get the data
+    const Vector2f &flowRate = flow->flowRate();
+    const Vector2f &bodyRate = flow->bodyRate();
+    float hagl = 0;
+    // 3. Get Distance to Ground (Height Above Ground Level)
+#if AP_AHRS_ENABLED
+    if (!AP::ahrs().get_hagl(hagl)) {
+        hagl = 0;
+    }
+#endif
+
+    // 3. Send the message
+mavlink_msg_optical_flow_rad_send(
+        chan,
+        AP_HAL::micros64(),        // time_usec (uint64_t)
+        0,                         // sensor_id
+        0,                         // integration_time_us (uint32_t) - 0 as it's not provided
+        flowRate.x,                // integrated_x (float)
+        flowRate.y,                // integrated_y (float)
+        bodyRate.x,                // integrated_xgyro (float)
+        bodyRate.y,                // integrated_ygyro (float)
+        0.0f,                      // integrated_zgyro
+        0,                         // temperature
+        flow->quality(),           // quality
+        0,                         // time_delta_distance_us
+        hagl                       // distance (float) - Height above ground
+     );
+}
+#endif  // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_SENDING_ENABLED
+
 #endif  // AP_OPTICALFLOW_ENABLED
 
 /*
@@ -4586,6 +4630,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OPTICAL_FLOW:
         handle_optical_flow(msg);
         break;
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    case MAVLINK_MSG_ID_OPTICAL_FLOW_RAD:
+        handle_optical_flow(msg);
+        break;
+#endif
 #endif
 
     case MAVLINK_MSG_ID_DISTANCE_SENSOR:
@@ -6589,6 +6638,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
         break;
+#if defined(AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_SENDING_ENABLED) && AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_SENDING_ENABLED
+    case MSG_OPTICAL_FLOW_RAD:             
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW_RAD); 
+        send_optical_flow_rad();           
+        break;    
+#endif
 #endif
 
     case MSG_ATTITUDE_TARGET:
