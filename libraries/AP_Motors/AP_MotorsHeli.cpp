@@ -19,6 +19,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AC_Autorotation/RSC_Autorotation.h>
+#include "AP_Motors_Thrust_Linearization.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -108,7 +109,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Heli_Options
     // @Description: Bitmask of heli options.  Bit 0 changes how the pitch, roll, and yaw axis integrator term is managed for low speed and takeoff/landing. In AC 4.0 and earlier, scheme uses a leaky integrator for ground speeds less than 5 m/s and won't let the steady state integrator build above ILMI. The integrator is allowed to build to the ILMI value when it is landed.  The other integrator management scheme bases integrator limiting on takeoff and landing.  Whenever the aircraft is landed the integrator is set to zero.  When the aicraft is airborne, the integrator is only limited by IMAX. 
-    // @Bitmask: 0:Use Leaky I
+    // @Bitmask: 0:Use Leaky I, 1:Main Rotor use raw voltage, 2: Tail Rotor use raw voltage
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 28, AP_MotorsHeli, _heli_options, (uint8_t)HeliOption::USE_LEAKY_I),
 
@@ -523,6 +524,18 @@ void AP_MotorsHeli::update_takeoff_collective_flag(float coll_out)
 bool AP_MotorsHeli::heli_option(HeliOption opt) const
 {
     return (_heli_options & (uint8_t)opt);
+}
+
+bool AP_MotorsHeli::has_option(AP_Motors::MotorOptions opt)
+{
+    switch (opt)
+    {
+    case AP_Motors::MotorOptions::BATT_RAW_VOLTAGE:
+        return heli_option(HeliOption::TAIL_ROTOR_USE_RAW_VOLTAGE);
+        break;
+    default:
+        return false;
+    }
 }
 
 // updates the turbine start flag
