@@ -996,12 +996,38 @@ class esp32(Board):
     toolchain = 'xtensa-esp32-elf'
 
     def configure(self, cfg):
+        import subprocess
+        import glob
+        idf_path = os.environ.get("IDF_PATH", "")
+        if not idf_path or not os.path.exists(idf_path):
+            idf6_candidates = sorted(glob.glob("/opt/espressif/esp-idf-v6*"), reverse=True)
+            if idf6_candidates:
+                idf_path = idf6_candidates[0]
+            else:
+                idf_path = cfg.srcnode.abspath()+"/modules/esp_idf"
+        os.environ["IDF_PATH"] = idf_path
+        export_script = os.path.join(idf_path, "export.sh")
+        if os.path.exists(export_script):
+            try:
+                result = subprocess.run(["bash", "-c", f"source {export_script} && env"], capture_output=True, text=True, check=True)
+                for line in result.stdout.splitlines():
+                    if "=" in line and not line.startswith("_"):
+                        key, value = line.split("=", 1)
+                        if key.startswith(("IDF_", "PATH", "PYTHON")) or "esp" in key.lower():
+                            os.environ[key] = value
+                            if hasattr(cfg, "environ"):
+                                cfg.environ[key] = value
+            except Exception as e:
+                print(f"Warning: Failed to source ESP-IDF environment: {e}")
+
         super(esp32, self).configure(cfg)
         if cfg.env.TOOLCHAIN:
             self.toolchain = cfg.env.TOOLCHAIN
         else:
-            # default tool-chain for esp32-based boards:
-            self.toolchain = 'xtensa-esp32-elf'
+            if 'esp32s3' in self.name.lower():
+                self.toolchain = 'xtensa-esp32s3-elf'
+            else:
+                self.toolchain = 'xtensa-esp32-elf'
 
     def configure_env(self, cfg, env):
         env.BOARD_CLASS = "ESP32"
@@ -1018,6 +1044,9 @@ class esp32(Board):
         cfg.load('esp32')
         env.DEFINES.update(
             CONFIG_HAL_BOARD = 'HAL_BOARD_ESP32',
+            # _GNU_SOURCE is required to enable vasprintf() in the toolchain libc
+            # (e.g. Newlib). Used in AP_Filesystem/posix_compat.cpp and SITL.
+            _GNU_SOURCE = 1,
         )
 
         tt = self.name[5:] #leave off 'esp32' so we just get 'buzz','diy','icarus, etc
@@ -1057,13 +1086,29 @@ class esp32(Board):
                          '-fdata-sections',
                          '-fno-exceptions',
                          '-fno-rtti',
-                         '-nostdlib',
                          '-fstrict-volatile-bitfields',
                          '-Wno-sign-compare',
                          '-fno-inline-functions',
                          '-mlongcalls',
-                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f 
+                         '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
                          '-fno-threadsafe-statics']
+
+        # Detect IDF version from the IDF_PATH set during configure()
+        idf_major = 5
+        idf_version_h = os.path.join(os.environ.get("IDF_PATH", ""), "components/esp_common/include/esp_idf_version.h")
+        if os.path.exists(idf_version_h):
+            with open(idf_version_h, "r") as f:
+                for line in f:
+                    m = re.match(r"#define\s+ESP_IDF_VERSION_MAJOR\s+(\d+)", line)
+                    if m:
+                        idf_major = int(m.group(1))
+                        break
+        if idf_major >= 6:
+            env.CFLAGS += ["-specs=picolibc.specs"]
+            env.CXXFLAGS += ["-specs=picolibc.specs"]
+        else:
+            env.CXXFLAGS += ["-nostdlib"]
+
         env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
 
