@@ -58,4 +58,25 @@ void Plane::update_soaring() {
     g2.soaring_controller.set_throttle_suppressed(false);
 }
 
+bool Plane::set_soaring_altitude()
+{
+    if (!g2.soaring_controller.is_active()) {
+        // Notify the calling mode that we're exiting soaring and it needs to reset altitude
+        bool previous = soaring_was_active;
+        soaring_was_active = false;
+        return previous;
+    }
+
+    if (g2.soaring_controller.get_throttle_suppressed()) {
+        // we're in soaring mode with throttle suppressed
+        set_target_altitude_current();
+    } else {
+        // we're in soaring mode climbing back to altitude. Set target to SOAR_ALT_CUTOFF plus 10m to ensure we positively climb
+        // through SOAR_ALT_CUTOFF, thus triggering throttle suppression and return to glide.
+        target_altitude.amsl_cm = 100 * (plane.g2.soaring_controller.get_alt_cutoff() + 10) + AP::ahrs().get_home().alt;
+    }
+    soaring_was_active = true;
+    return false;
+}
+
 #endif // SOARING_ENABLED
