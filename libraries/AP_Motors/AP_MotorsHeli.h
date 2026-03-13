@@ -72,9 +72,6 @@ public:
     //set turbine start flag on to initiaize starting sequence
     void set_turb_start(bool turb_start) { _heliflags.start_engine = turb_start; }
 
-    // has_flybar - returns true if we have a mechical flybar
-    virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
-
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
@@ -97,16 +94,8 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint32_t get_motor_mask() override;
 
-    virtual void set_acro_tail(bool set) {}
-
-    // ext_gyro_gain - set external gyro gain in range 0 ~ 1
-    virtual void ext_gyro_gain(float gain) {}
-
     // output - sends commands to the motors
     void output() override;
-
-    // supports_yaw_passthrough
-    virtual bool supports_yaw_passthrough() const { return false; }
 
     // update estimated throttle required to hover
     void update_throttle_hover(float dt);
