@@ -333,17 +333,6 @@ AC_AttitudeControl_Heli::AC_AttitudeControl_Heli(AP_AHRS_View &ahrs, AP_MotorsHe
 #endif
 }
 
-void AC_AttitudeControl_Heli::integrate_bf_rate_error_to_angle_errors()
-{
-    // Integrate the angular velocity error into the attitude error
-    _att_error_rot_vec_rad += (_ang_vel_target_rads - _ahrs.get_gyro()) * _dt_s;
-
-    // Constrain attitude error
-    _att_error_rot_vec_rad.x = constrain_float(_att_error_rot_vec_rad.x, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
-    _att_error_rot_vec_rad.y = constrain_float(_att_error_rot_vec_rad.y, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
-    _att_error_rot_vec_rad.z = constrain_float(_att_error_rot_vec_rad.z, -AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD, AC_ATTITUDE_HELI_ACRO_OVERSHOOT_ANGLE_RAD);
-}
-
 //
 // rate controller (body-frame) methods
 //
