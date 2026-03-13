@@ -209,6 +209,13 @@ private:
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_CLOCK_SUB_ENABLED
+    // incoming external clock for simulation time sync
+    static rosgraph_msgs_msg_Clock rx_clock_topic;
+    static builtin_interfaces_msg_Time external_clock_time;
+    static bool has_received_clock;
+#endif // AP_DDS_CLOCK_SUB_ENABLED
+
 #if AP_DDS_STATUS_PUB_ENABLED
     ardupilot_msgs_msg_Status status_topic;
     bool update_topic(ardupilot_msgs_msg_Status& msg);
@@ -331,6 +338,14 @@ public:
 
     //! @brief Update the internally stored DDS messages with latest data
     void update();
+
+#if AP_DDS_CLOCK_SUB_ENABLED
+    //! @brief Get external clock time for use by clock_gettime
+    //! @param sec Pointer to store seconds
+    //! @param nsec Pointer to store nanoseconds
+    //! @return True if external clock is available, false otherwise
+    static bool get_external_clock_time(int32_t* sec, uint32_t* nsec);
+#endif // AP_DDS_CLOCK_SUB_ENABLED
 
     //! @brief GCS message prefix
     static constexpr const char* msg_prefix = "DDS:";
