@@ -67,6 +67,8 @@ private:
     void handle_set_position_target_global_int(const mavlink_message_t &msg);
     void handle_set_position_target_local_ned(const mavlink_message_t &msg);
     void handle_set_attitude_target(const mavlink_message_t &msg);
+    void handle_formation_position_int(const mavlink_message_t &msg);
+    void handle_formation_uwb_range(const mavlink_message_t &msg);
 
 #if HAL_QUADPLANE_ENABLED
 #if AP_MAVLINK_COMMAND_LONG_ENABLED

@@ -290,6 +290,7 @@ public:
         k_param_kff_throttle_to_pitch,
         k_param_scaling_speed,
         k_param_quadplane,
+        k_param_formation,
         k_param_rtl_radius,
         k_param_land_then_servos_neutral,   // unused - moved to AP_Landing
         k_param_rc_15_old,
@@ -595,6 +596,12 @@ public:
 #if AP_PLANE_SYSTEMID_ENABLED
     AP_SystemID systemid;
 #endif
+
+    // FlightDock TECS speed override
+    // FD_SPD_MODE: 0=disabled (stock behavior), 1=override active
+    // FD_SPD_TARGET: desired cruise speed (m/s) when override active
+    AP_Int8  fd_spd_mode;
+    AP_Float fd_spd_target;
 };
 
 extern const AP_Param::Info var_info[];

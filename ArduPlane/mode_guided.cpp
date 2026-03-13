@@ -103,6 +103,16 @@ void ModeGuided::update()
 
 void ModeGuided::navigate()
 {
+    // Tranche H: When formation is active, use direct waypoint following.
+    // Formation waypoints are close trail targets (~12m). update_loiter()
+    // routes them to L1 circle-tracking (distance 12m < 3*WP_LOITER_RAD
+    // = 270m) which demands nav_roll=-65deg and lateral divergence.
+    // update_waypoint() gives smooth pursuit along the prev->next AB
+    // segment instead, with steering proportional to bearing offset.
+    if (plane.formation.pd_enabled() && plane.formation_controller.is_active()) {
+        plane.nav_controller->update_waypoint(plane.prev_WP_loc, plane.next_WP_loc);
+        return;
+    }
     plane.update_loiter(active_radius_m);
 }
 

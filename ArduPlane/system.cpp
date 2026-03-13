@@ -128,6 +128,10 @@ void Plane::init_ardupilot()
     mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
 #endif
 
+    // initialise formation controller
+    formation_controller.init();
+    gcs().send_text(MAV_SEVERITY_INFO, "Formation controller initialized");
+
     // initialise AP_Logger library
 #if HAL_LOGGING_ENABLED
     logger.setVehicle_Startup_Writer(

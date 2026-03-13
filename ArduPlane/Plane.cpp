@@ -65,6 +65,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     FAST_TASK(update_control_mode),
     FAST_TASK(stabilize),
     FAST_TASK(set_servos),
+    FAST_TASK(update_formation_controller),  // NEW: 400 Hz formation control
     SCHED_TASK(read_radio,             50,    100,   6),
     SCHED_TASK(check_short_rc_failsafe,   50,    100,   9),
     SCHED_TASK(update_speed_height,    50,    200,  12),
@@ -1087,3 +1088,83 @@ Plane plane;
 AP_Vehicle& vehicle = plane;
 
 AP_HAL_MAIN_CALLBACKS(&plane);
+
+// Formation controller update - called at 400 Hz via FAST_TASK
+void Plane::update_formation_controller(void)
+{
+    // Gate: FORM_ENABLE must be 1 for C++ to inject waypoints/speed.
+    // When FORM_ENABLE=0 (default), Python owns GUIDED mode entirely.
+    if (!formation.pd_enabled()) {
+        return;
+    }
+
+    if (!formation_controller.is_active()) {
+        return;
+    }
+
+    // Get current vehicle velocity
+    Vector3f current_vel;
+    if (!ahrs.get_velocity_NED(current_vel)) {
+        // No valid velocity estimate available
+        return;
+    }
+
+    // Get current heading in degrees
+    float current_heading = ahrs.yaw_sensor * 0.01f;  // Convert centidegrees to degrees
+
+    // Pass docking params from AP_Formation to FormationController (Tranche H)
+    formation_controller.set_dock_mode(formation.dock_mode());
+    formation_controller.set_dock_trail(formation.dock_trail());
+
+    // Update formation controller (calculates waypoint + speed commands)
+    // Note: current_loc is a member variable updated by update_current_loc()
+    formation_controller.update(current_loc, current_vel, current_heading);
+
+    // Inject formation waypoint into GUIDED mode
+    // IMPORTANT: Do NOT call set_guided_WP() here — it invokes
+    // set_target_altitude_current() which resets the TECS altitude
+    // target to the aircraft's CURRENT altitude.  At 400 Hz this
+    // creates a positive-feedback descent loop (Tranche F5 root cause).
+    // Instead we update next_WP_loc and target_altitude directly from
+    // the waypoint so TECS tracks the COMMANDED altitude.
+    if (control_mode == &mode_guided) {
+        Location formation_wp = formation_controller.get_formation_waypoint();
+        // Tranche S: Bearing-offset prev_WP_loc for L1 cross-track authority.
+        // Tranche H set prev_WP = current_loc, collapsing the AB segment to
+        // ~6cm at 400Hz.  L1 cross-track error (A_air % AB) computes near-zero
+        // regardless of actual lateral offset.  Placing prev_WP 12m behind
+        // along heading gives L1 a stable AB segment for cross-track correction.
+        {
+            Location prev_offset = current_loc;
+            const float yaw_rad = ahrs.get_yaw();
+            prev_offset.offset(-12.0f * cosf(yaw_rad), -12.0f * sinf(yaw_rad));
+            prev_WP_loc = prev_offset;
+        }
+        next_WP_loc = formation_wp;
+        set_target_altitude_location(formation_wp);
+        // Clear stale altitude slope from last DO_REPOSITION.
+        // Without this, Mode::update_target_altitude() may take the
+        // proportion path (offset_cm != 0) and interpolate altitude
+        // between stale prev_WP_loc and next_WP_loc, overriding the
+        // formation waypoint altitude we just set.
+        reset_offset_altitude();
+
+        // VTOL suppression belts (Phase 1 — VTOL transition fix).
+        // Replicate the two clears that set_guided_WP() performs
+        // (commands.cpp:97,100) without the poison
+        // set_target_altitude_current() call.  Prevents L1 "arrived
+        // at waypoint" → loiter.start_time_ms set → VTOL transition
+        // when Q_GUIDED_MODE was historically 1.
+        auto_state.vtol_loiter = false;
+        loiter.start_time_ms = 0;
+    }
+
+    // Inject formation airspeed command (gated by FORM_SPD_EN)
+    // When FORM_SPD_EN=0, Python owns airspeed via DO_CHANGE_SPEED.
+    if (formation.spd_enabled()) {
+        float desired_speed_ms = formation_controller.get_desired_airspeed();
+        // Defensive clamp to airspeed envelope (m/s)
+        desired_speed_ms = constrain_float(desired_speed_ms, aparm.airspeed_min, aparm.airspeed_max);
+        target_airspeed_cm = desired_speed_ms * 100.0f;  // Convert m/s to cm/s
+    }
+}

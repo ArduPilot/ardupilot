@@ -83,6 +83,8 @@
 #include <AP_Landing/AP_Landing.h>
 #include <AP_LandingGear/AP_LandingGear.h>     // Landing Gear library
 #include <AP_Follow/AP_Follow.h>
+#include <AP_Formation/AP_Formation.h>
+#include <AP_Formation/formation_controller.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Plane.h"
@@ -841,6 +843,10 @@ private:
     QuadPlane quadplane{ahrs};
 #endif
 
+    // Formation flight control (GPS+UWB sensor fusion)
+    AP_Formation formation;          // Legacy (velocity-based, not used)
+    FormationController formation_controller;  // Phase 7B waypoint-based
+
 #if AP_TUNING_ENABLED
     // support for transmitter tuning
     AP_Tuning_Plane tuning;
@@ -1084,6 +1090,8 @@ private:
     void update_speed_height(void);
     void update_GPS_50Hz(void);
     void update_GPS_10Hz(void);
+    void update_control_mode(void);
+    void update_formation_controller(void);  // NEW: Formation controller update
     void update_compass(void);
     void update_alt(void);
 #if AP_ADVANCEDFAILSAFE_ENABLED
@@ -1096,7 +1104,6 @@ private:
 #endif
     void update_logging10(void);
     void update_logging25(void);
-    void update_control_mode(void);
     void update_fly_forward(void);
     void update_flight_stage();
     void set_flight_stage(AP_FixedWing::FlightStage fs);

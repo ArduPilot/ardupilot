@@ -289,6 +289,23 @@ void Plane::calc_airspeed_errors()
                                      ? aparm.airspeed_stall
                                      : aparm.airspeed_min;
 
+    // FlightDock TECS speed override hook
+    // When FD_SPD_MODE=1, use FD_SPD_TARGET as the cruise speed setpoint
+    if (g2.fd_spd_mode == 1) {
+        float fd_target_ms = g2.fd_spd_target;
+        // Constrain to airspeed envelope before use
+        fd_target_ms = constrain_float(fd_target_ms, airspeed_lower_bound, aparm.airspeed_max);
+        target_airspeed_cm = fd_target_ms * 100.0f;
+
+        // Log when override is active (only on value change to reduce spam)
+        static float last_fd_target = -1.0f;
+        if (!is_equal(last_fd_target, fd_target_ms)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "FD_SPD: override active, target=%.1f m/s (envelope: %.1f-%.1f)",
+                            (double)fd_target_ms, (double)airspeed_lower_bound, (double)aparm.airspeed_max);
+            last_fd_target = fd_target_ms;
+        }
+    }
+
     // Apply airspeed limit
     target_airspeed_cm = constrain_int32(target_airspeed_cm, airspeed_lower_bound*100, aparm.airspeed_max*100);
 
