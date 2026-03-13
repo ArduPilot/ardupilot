@@ -5,7 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Arming/AP_Arming.h>
-#include "actuators.h"
+#include <AP_Actuators/AP_Actuators.h>
 // Global parameter class.
 //
 class Parameters {
@@ -406,7 +406,7 @@ public:
     SRV_Channels servo_channels;
 
     AP_Float surface_nobaro_thrust;
-    Actuators actuators;
+    AP_Actuators actuators;
 
 };
 
