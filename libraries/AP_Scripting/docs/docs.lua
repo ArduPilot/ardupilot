@@ -3871,6 +3871,36 @@ function ahrs:get_pitch_rad() end
 ---@return number -- roll angle in radians
 function ahrs:get_roll_rad() end
 
+-- Set the 'fly_forward' flag in the AHRS.
+-- When true, this can relax EKF requirements (e.g., allow flight without GPS velocity)
+-- by informing the EKF that the vehicle is expected to be moving forward.
+---@param enabled boolean -- true to enable fly_forward, false to disable
+function ahrs:set_fly_forward(enabled) end
+
+-- Get the current state of the 'fly_forward' flag in the AHRS.
+---@return boolean -- true if fly_forward is enabled
+function ahrs:get_fly_forward() end
+
+-- Check if an airspeed sensor is configured, healthy, and being used by the AHRS.
+---@return boolean -- true if an airspeed sensor is currently in use
+function ahrs:using_airspeed_sensor() end
+
+-- Enable or disable the EKF's wind estimation.
+-- This is often enabled during GPS-enabled flight to calibrate the wind vector.
+---@param enabled boolean -- true to enable wind estimation, false to disable
+function ahrs:set_wind_estimation_enabled(enabled) end
+
+-- Get the current state of the EKF's wind estimation.
+---@return boolean -- true if wind estimation is enabled
+function ahrs:get_wind_estimation_enabled() end
+
+-- Write a default airspeed and variance to the AHRS.
+-- This can be used in GPS-denied flight (when fly_forward is true)
+-- to provide the EKF with an expected airspeed value for sensor fusion.
+---@param airspeed number -- The default airspeed in m/s
+---@param variance number -- The variance (uncertainty) of the airspeed measurement
+function ahrs:writeDefaultAirSpeed(airspeed, variance) end
+
 -- desc
 AC_AttitudeControl = {}
 
