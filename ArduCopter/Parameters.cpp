@@ -1073,6 +1073,29 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
 #endif
 
+    // @Param: TKOFF_GNDEFF_ALT
+    // @DisplayName: Takeoff ground effect altitude
+    // @Description: Altitude above which ground effect compensation is disabled. Ground effect compensation is re-enabled when the vehicle descends below this altitude. Set to zero to disable ground effect altitude re-activation.
+    // @Range: 0 5
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_GNDEFF_ALT", 16, ParametersG2, tkoff_gndeff_alt, 0.5),
+
+    // @Param: ACC_ZBIAS_LEARN
+    // @DisplayName: Accel Z-axis Bias Learning
+    // @Description: Bitmask controlling accelerometer Z-axis bias learning during hover to compensate for vibration rectification. Only active when using EKF3 (AHRS_EKF_TYPE=3). Bit 0: Learn bias during hover and save to EEPROM on disarm. Bit 1: Use saved bias values (apply correction to EKF). Bit 2: Disable EKF bias learning while disarmed (don't use zero velocity assumption on ground).
+    // @Bitmask: 0:Learn and Save,1:Use Saved Values,2:Disable Ground Learning
+    // @User: Advanced
+    AP_GROUPINFO("ACC_ZBIAS_LEARN", 17, ParametersG2, accel_zbias_learn, 0),
+
+    // @Param: TKOFF_GNDEFF_TMO
+    // @DisplayName: Ground Effect Timeout
+    // @Description: Time after throttle up before ground effect compensation can be disabled. When set, ground effect will only be disabled after BOTH this timeout has elapsed AND altitude exceeds TKOFF_GNDEFF_ALT. This prevents premature ground effect disabling when baro noise causes false altitude readings. Set to zero to disable (uses altitude threshold only). Maximum timeout is always 5 seconds regardless of this setting.
+    // @Range: 0 5
+    // @Units: s
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_GNDEFF_TMO", 18, ParametersG2, tkoff_gndeff_tmo, 0),
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.
