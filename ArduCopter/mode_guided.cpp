@@ -258,6 +258,7 @@ void ModeGuided::wp_control_run()
             copter.circle_nav->get_center_NED_m(),
             copter.circle_nav->center_is_terrain_alt(),
             copter.circle_nav->get_rate_degs());
+        auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
         guided_mode = SubMode::Circle;
     }
 
@@ -1284,6 +1285,8 @@ void ModeGuided::circle_start(const Location &circle_center, float radius_m, boo
             copter.circle_nav->get_center_NED_m(),
             copter.circle_nav->center_is_terrain_alt(),
             copter.circle_nav->get_rate_degs());
+        // point camera/yaw toward circle center
+        auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
         guided_mode = SubMode::Circle;
     }
 }
