@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 470" font-family="Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto" markerUnits="userSpaceOnUse">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#546e7a"/>
+    </marker>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#fafafa"/>
+  
+  <!-- Title -->
+  <text x="390" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#263238">AP_Networking Architecture (Layer-2 Ethernet Switch)</text>
+  
+  <!-- ==================== TOP TIER: Switch ==================== -->
+  <rect x="40" y="55" width="700" height="80" rx="8" fill="#4a8ad4" filter="url(#shadow)"/>
+  <text x="390" y="80" text-anchor="middle" font-size="15" font-weight="bold" fill="white">AP_Networking_Switch</text>
+  <text x="390" y="98" text-anchor="middle" font-size="10" fill="white">Routes frames between ports (Layer-2)</text>
+  <text x="390" y="113" text-anchor="middle" font-size="10" fill="white">MAC learning (&gt;2 ports) / Bridge mode (2 ports)</text>
+  <text x="390" y="128" text-anchor="middle" font-size="9" fill="#e3f2fd">Stats: frames_routed/frames_dropped</text>
+  
+  <!-- ==================== MIDDLE TIER: Ports ==================== -->
+  
+  <!-- Port 1: Ethernet -->
+  <rect x="40" y="190" width="170" height="105" rx="6" fill="#d4936a" filter="url(#shadow)"/>
+  <text x="125" y="211" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SwitchPort_Ethernet_ChibiOS</text>
+  <text x="125" y="229" text-anchor="middle" font-size="9" fill="white">Physical Ethernet MAC driver</text>
+  <text x="125" y="244" text-anchor="middle" font-size="9" fill="white">Promiscuous mode for bridging</text>
+  <text x="125" y="259" text-anchor="middle" font-size="9" fill="white">Dedicated RX/TX threads</text>
+  <text x="125" y="278" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">Stats: rx/tx/errors</text>
+  
+  <!-- Port 2: lwIP -->
+  <rect x="220" y="190" width="160" height="105" rx="6" fill="#66bb6a" filter="url(#shadow)"/>
+  <text x="300" y="211" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SwitchPort_lwIP</text>
+  <text x="300" y="229" text-anchor="middle" font-size="9" fill="white">TCP/IP stack interface</text>
+  <text x="300" y="244" text-anchor="middle" font-size="9" fill="white">ByteBuffer inject queue (12KB)</text>
+  <text x="300" y="259" text-anchor="middle" font-size="9" fill="white">Owns netif, DHCP client</text>
+  <text x="300" y="278" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">Stats: rx/tx/errors</text>
+  
+  <!-- Port 3: COBS -->
+  <rect x="390" y="190" width="175" height="140" rx="6" fill="#7e57c2" filter="url(#shadow)"/>
+  <text x="477" y="211" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SwitchPort_COBS</text>
+  <text x="477" y="229" text-anchor="middle" font-size="9" fill="white">Aggregates COBS_Link members</text>
+  <text x="477" y="244" text-anchor="middle" font-size="9" fill="white">Load-balanced TX (earliest completion)</text>
+  <text x="477" y="259" text-anchor="middle" font-size="9" fill="white">RX reordering (multi-link)</text>
+  
+  <!-- COBS_Link stacked box -->
+  <rect x="410" y="277" width="134" height="40" rx="4" fill="#9575cd"/>
+  <rect x="405" y="272" width="134" height="40" rx="4" fill="#b39ddb"/>
+  <text x="472" y="289" text-anchor="middle" font-size="10" font-weight="bold" fill="#311b92">COBS_Link (x1-4)</text>
+  <text x="472" y="303" text-anchor="middle" font-size="8" fill="#4527a0">UART + COBS encoder/decoder</text>
+  
+  <!-- Port 4: MAVLink_COBS -->
+  <rect x="575" y="190" width="165" height="105" rx="6" fill="#26a69a" filter="url(#shadow)"/>
+  <text x="657" y="211" text-anchor="middle" font-size="11" font-weight="bold" fill="white">SwitchPort_MAVLink_COBS</text>
+  <text x="657" y="229" text-anchor="middle" font-size="9" fill="white">COBS over MAVLink TUNNEL</text>
+  <text x="657" y="244" text-anchor="middle" font-size="9" fill="white">128-byte chunked payloads</text>
+  <text x="657" y="259" text-anchor="middle" font-size="9" fill="white">Keepalive-based link status</text>
+  <text x="657" y="278" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.8)">Stats: rx/tx/errors</text>
+  
+  <!-- ==================== Arrows from Switch to Ports ==================== -->
+  <!-- Switch bottom at y=135. Port tops at y=190. Arrow is 10px, line ends at y=180 so tip touches y=190 -->
+  
+  <line x1="125" y1="135" x2="125" y2="180" stroke="#546e7a" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="130" y="163" font-size="9" fill="#455a64">Ethernet Frames</text>
+  
+  <line x1="300" y1="135" x2="300" y2="180" stroke="#546e7a" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="305" y="163" font-size="9" fill="#455a64">Ethernet Frames</text>
+  
+  <line x1="477" y1="135" x2="477" y2="180" stroke="#546e7a" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="482" y="163" font-size="9" fill="#455a64">Ethernet Frames</text>
+  
+  <line x1="657" y1="135" x2="657" y2="180" stroke="#546e7a" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="662" y="163" font-size="9" fill="#455a64">Ethernet Frames</text>
+  
+  <!-- ==================== BOTTOM TIER: Hardware ==================== -->
+  
+  <rect x="40" y="375" width="170" height="48" rx="4" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="1"/>
+  <text x="125" y="396" text-anchor="middle" font-size="10" font-weight="bold" fill="#37474f">STM32 Ethernet MAC (ETHD1)</text>
+  <text x="125" y="411" text-anchor="middle" font-size="8" fill="#546e7a">Physical Ethernet PHY</text>
+  
+  <rect x="220" y="375" width="160" height="48" rx="4" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="1"/>
+  <text x="300" y="396" text-anchor="middle" font-size="10" font-weight="bold" fill="#37474f">lwIP TCP/IP Stack</text>
+  <text x="300" y="411" text-anchor="middle" font-size="8" fill="#546e7a">Sockets, TCP, UDP, DHCP</text>
+  
+  <rect x="390" y="375" width="175" height="48" rx="4" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="1"/>
+  <text x="477" y="396" text-anchor="middle" font-size="10" font-weight="bold" fill="#37474f">UART Hardware</text>
+  <text x="477" y="411" text-anchor="middle" font-size="8" fill="#546e7a">SERIALn_PROTOCOL=COBS_ETH (51/52/53)</text>
+  
+  <rect x="575" y="375" width="165" height="48" rx="4" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="1"/>
+  <text x="657" y="396" text-anchor="middle" font-size="10" font-weight="bold" fill="#37474f">MAVLink Channel</text>
+  <text x="657" y="411" text-anchor="middle" font-size="8" fill="#546e7a">TUNNEL messages to target sysid/compid</text>
+  
+  <!-- ==================== Dashed arrows to hardware ==================== -->
+  <line x1="125" y1="295" x2="125" y2="375" stroke="#78909c" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="130" y="345" font-size="8" fill="#546e7a">MAC I/O</text>
+  
+  <line x1="300" y1="295" x2="300" y2="375" stroke="#78909c" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="305" y="345" font-size="8" fill="#546e7a">get/send_frame()</text>
+  
+  <line x1="477" y1="330" x2="477" y2="375" stroke="#78909c" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="482" y="345" font-size="8" fill="#546e7a">COBS+CRC32</text>
+  
+  <line x1="657" y1="295" x2="657" y2="375" stroke="#78909c" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="662" y="345" font-size="8" fill="#546e7a">TUNNEL msgs</text>
+  
+</svg>
