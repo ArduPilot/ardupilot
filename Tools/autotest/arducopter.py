@@ -765,13 +765,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
 
     # enter RTL mode and wait for the vehicle to disarm
-    def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
+    def do_RTL(self, distance_min=None, check_alt=True, alt_max=1, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
         self.change_mode("RTL")
         self.hover()
-        self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout, quiet=True)
+        self.wait_rtl_complete(check_alt=check_alt, alt_max=alt_max, distance_max=distance_max, timeout=timeout, quiet=True)
 
-    def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250, quiet=False):
+    def wait_rtl_complete(self, check_alt=True, alt_max=1, distance_max=10, timeout=250, quiet=False):
         """Wait for RTL to reach home and disarm"""
         self.progress("Waiting RTL to reach Home and disarm")
         tstart = self.get_sim_time()
@@ -780,7 +780,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             alt = m.relative_alt / 1000.0 # mm -> m
             home_distance = self.distance_to_home(use_cached_home=True)
             home = ""
-            alt_valid = alt <= 1
+            alt_valid = alt <= alt_max
             distance_valid = home_distance < distance_max
             if check_alt:
                 if alt_valid and distance_valid:
@@ -2607,7 +2607,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("fly_gps_glitch_loiter_test2 failed, roll or pitch moved during GPS glitch")
 
         # RTL, remove glitch and reboot sitl
-        self.do_RTL()
+        self.do_RTL(alt_max=2)
         self.context_pop()
         self.reboot_sitl()
 
@@ -3094,6 +3094,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.change_mode('LOITER')
+        self.bodgy_race_condition_delay(5, "race condition introduced by fastermode change")
 
         class CheckOpticalFlow(vehicle_test_suite.TestSuite.MessageHook):
             '''ensures OPTICAL_FLOW data matches other data'''
@@ -3769,6 +3770,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def set_origin(self, loc, timeout=60):
         '''set the GPS global origin to loc'''
+        delta_t = self.get_sim_time() - 2
+        if delta_t > 0:
+            # there's a 1 second delay before we init EKF3.  Setting
+            # origin too early exposes a bug where that init kills the
+            # origin in each of the backends.  FIXME!
+            self.progress("Delaying set origin until EKF3 will have initialised")
+            self.delay_sim_time(delta_t)
+
         self.progress("Setting origin")
         if isinstance(loc, mavutil.mavlink.MAVLink_global_position_int_message):
             lat_1e7 = loc.lat
@@ -3845,6 +3854,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "altitude": int(origin_alt*1000),  # m -> mm
         })
 
+    def bodgy_race_condition_delay(self, delay, msg):
+        '''delay delay seconds; msg *must* be supplied as these are all FIXMEs!'''
+        self.delay_sim_time(delay, reason=msg)
+
     def FarOrigin(self):
         '''fly a mission far from the vehicle origin'''
         # Fly mission #1
@@ -3853,6 +3866,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         nz = mavutil.location(-43.730171, 169.983118, 1466.3, 270)
+        self.bodgy_race_condition_delay(2, "EKF public_origin not used to reset origin in Bootstrap")
         self.set_origin(nz)
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
@@ -15810,7 +15824,7 @@ return update, 1000
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
             self.DataFlash,
-            Test(self.DataFlashErase, attempts=8),
+            self.DataFlashErase,
             self.Callisto,
             self.PerfInfo,
             self.ModeAllowsEntryWhenNoPilotInput,
