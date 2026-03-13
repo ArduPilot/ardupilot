@@ -916,7 +916,7 @@ private:
 #if GPS_MOVING_BASELINE
     // see if we should use uart2 for moving baseline config
     bool mb_use_uart2(void) const {
-        return option_set(AP_GPS::DriverOptions::UBX_MBUseUart2)?true:false;
+        return gps_option_is_set(AP_GPS::DriverOptions::UBX_MBUseUart2)?true:false;
     }
 #endif
 

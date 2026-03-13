@@ -691,21 +691,26 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 
     // all remaining drivers automatically cycle through baud rates to detect
     // the correct baud rate, and should have the selected baud broadcast
-    dstate->auto_detected_baud = true;
+    dstate->auto_detected_baud = !params[instance].option_is_set(Params::Option::DISABLE_AUTOBAUDING);
     const uint32_t now = AP_HAL::millis();
 
     if (now - dstate->last_baud_change_ms > GPS_BAUD_TIME_MS) {
-        // try the next baud rate
-        // incrementing like this will skip the first element in array of bauds
-        // this is okay, and relied upon
-        if (dstate->probe_baud == 0) {
-            dstate->probe_baud = port->get_baud_rate();
-        } else {
-            dstate->current_baud++;
-            if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
-                dstate->current_baud = 0;
+        if (dstate->auto_detected_baud) {
+            // try the next baud rate
+            // incrementing like this will skip the first element in array of bauds
+            // this is okay, and relied upon
+            if (dstate->probe_baud == 0) {
+                dstate->probe_baud = port->get_baud_rate();
+            } else {
+                dstate->current_baud++;
+                if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
+                    dstate->current_baud = 0;
+                }
+                dstate->probe_baud = _baudrates[dstate->current_baud];
             }
-            dstate->probe_baud = _baudrates[dstate->current_baud];
+        } else {
+            // baud rate is fixed at the parameter-configured baud
+            dstate->probe_baud = port->get_baud_rate();
         }
         uint16_t rx_size=0, tx_size=0;
         if (type == GPS_TYPE_UBLOX_RTK_ROVER) {
