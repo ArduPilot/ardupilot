@@ -19,6 +19,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AC_Autorotation/RSC_Autorotation.h>
+#include "AP_Motors_Thrust_Linearization.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -108,7 +109,7 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Heli_Options
     // @Description: Bitmask of heli options.  Bit 0 changes how the pitch, roll, and yaw axis integrator term is managed for low speed and takeoff/landing. In AC 4.0 and earlier, scheme uses a leaky integrator for ground speeds less than 5 m/s and won't let the steady state integrator build above ILMI. The integrator is allowed to build to the ILMI value when it is landed.  The other integrator management scheme bases integrator limiting on takeoff and landing.  Whenever the aircraft is landed the integrator is set to zero.  When the aicraft is airborne, the integrator is only limited by IMAX. 
-    // @Bitmask: 0:Use Leaky I
+    // @Bitmask: 0:Use Leaky I, 1:Main Rotor use raw voltage, 2: Tail Rotor use raw voltage, 3: use density compensation (experimental)
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 28, AP_MotorsHeli, _heli_options, (uint8_t)HeliOption::USE_LEAKY_I),
 
@@ -236,7 +237,13 @@ void AP_MotorsHeli::output_armed_stabilizing()
         reset_flight_controls();
     }
 
-    move_actuators(_roll_in, _pitch_in, get_throttle(), _yaw_in);
+    float density_compensation_gain = 1.0;
+    
+    #ifdef AP_MOTORS_HELI_DENSITY_COMPENSATION
+    density_compensation_gain = heli_option(HeliOption::USE_DENSITY_COMPENSATION ) ? Thrust_Linearization::get_density_compensation_gain() : 1.0;    //optionally apply density compensation to gains, Ben is skeptical of applying simple scaling to pitch roll. 
+    #endif //AP_MOTORS_HELI_DENSITY_COMPENSATION
+    
+    move_actuators(_roll_in * density_compensation_gain, _pitch_in * density_compensation_gain, get_throttle() * density_compensation_gain, _yaw_in * density_compensation_gain);
 }
 
 // output_disarmed - sends commands to the motors
@@ -686,3 +693,17 @@ void AP_MotorsHeli::set_coll_from_ang(float col_ang_deg)
     const float col_norm = (col_ang_deg - _collective_min_deg.get()) / MAX((_collective_max_deg.get() - _collective_min_deg.get()), 1.0);
     set_throttle(constrain_float(col_norm, 0.0, 1.0));
 }
+#ifdef AP_MOTORS_HELI_DENSITY_COMPENSATION
+void AP_MotorsHeli::log_density_compensation() const
+{
+    // @LoggerMessage: HDC
+    // @Description: Helicopter density compensation logging
+    // @Field: TimeUS: Time since system startup
+    // @Field: DensityGain: Density gain
+    if (heli_option(HeliOption::USE_DENSITY_COMPENSATION))
+    {
+        AP::logger().WriteStreaming("HDC", "TimeUS,DensityGain", "sf", "F0", "Qf",
+                                AP_HAL::micros64(), get_density_gain());
+    }
+}
+#endif //AP_MOTORS_HELI_DENSITY_COMPENSATION

@@ -141,6 +141,7 @@ void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
 {
     // Send state update to motors
     _main_rotor.output(state);
+    _main_rotor.set_use_raw_voltage(heli_option(HeliOption::MAIN_ROTOR_USE_RAW_VOLTAGE));
 
     if (state == AP_MotorsHeli_RSC::RotorControlState::STOP) {
         // set engine run enable aux output to not run position to kill engine when disarmed
@@ -269,5 +270,9 @@ void AP_MotorsHeli_Quad::servo_test()
 void AP_MotorsHeli_Quad::Log_Write(void)
 {
     _main_rotor.write_log();
+
+    // write density compensation_log
+    log_density_compensation();
+
 }
 #endif

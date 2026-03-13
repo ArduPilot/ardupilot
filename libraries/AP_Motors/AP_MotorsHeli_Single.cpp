@@ -334,7 +334,9 @@ void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::RotorControlS
 {
     // Send state update to motors
     _tail_rotor.output(state);
+    _tail_rotor.set_use_raw_voltage(heli_option(HeliOption::TAIL_ROTOR_USE_RAW_VOLTAGE));
     _main_rotor.output(state);
+    _main_rotor.set_use_raw_voltage(heli_option(HeliOption::MAIN_ROTOR_USE_RAW_VOLTAGE));
 
     if (state == AP_MotorsHeli_RSC::RotorControlState::STOP){
         // set engine run enable aux output to not run position to kill engine when disarmed
@@ -526,6 +528,9 @@ void AP_MotorsHeli_Single::output_to_ddfp_tail(float throttle)
 {
     // Note: yaw trim thrust has already been applied. the output should only be from 0 to 1.
     // Upper limit
+
+    throttle *= thr_lin.get_voltage_compensation_gain(); // apply battery compensation for DDFP tails here.
+
     if (throttle >= 1.0){
         throttle = 1.0;
         limit.yaw = true;
@@ -678,9 +683,12 @@ void AP_MotorsHeli_Single::Log_Write(void)
     // is limited at sqrt(2.0), in dual it is limited at 1.0
     float cyclic_angle_scaler = get_cyclic_angle_scaler() * sqrtf(2.0);
     _swashplate.write_log(cyclic_angle_scaler, _collective_min_deg.get(), _collective_max_deg.get(), _collective_min.get(), _collective_max.get());
-
+ 
     // Write RSC logging
     _main_rotor.write_log();
     _tail_rotor.write_log();
+    
+    // log density compensation
+    log_density_compensation();
 }
 #endif

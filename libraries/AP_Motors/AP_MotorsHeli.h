@@ -10,6 +10,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include "AP_Motors_Class.h"
 #include "AP_MotorsHeli_RSC.h"
+#include "AP_Motors_Thrust_Linearization.h"
 
 // servo output rates
 #define AP_MOTORS_HELI_SPEED_DEFAULT            125     // default servo update rate for helicopters
@@ -148,6 +149,9 @@ public:
     // enum for heli optional features
     enum class HeliOption {
         USE_LEAKY_I                     = (1<<0),   // 1
+        MAIN_ROTOR_USE_RAW_VOLTAGE      = (1<<1),   // 2
+        TAIL_ROTOR_USE_RAW_VOLTAGE      = (1<<2),   // 4
+        USE_DENSITY_COMPENSATION        = (1<<3),   // 8
     };
 
     // use leaking integrator management scheme
@@ -242,6 +246,15 @@ protected:
 #if HAL_LOGGING_ENABLED
     // Returns the scaling value required to convert the collective angle parameters into the cyclic-output-to-angle conversion for blade angle logging
     float get_cyclic_angle_scaler(void) const;
+#ifdef AP_MOTORS_HELI_DENSITY_COMPENSATION
+    // Returns density gain value
+    float get_density_gain(void) const {return heli_option(HeliOption::USE_DENSITY_COMPENSATION ) ? Thrust_Linearization::get_density_compensation_gain() : 1.0;};
+
+    void log_density_compensation(void) const;
+#else
+    void log_density_compensation(void) const {};
+#endif //AP_MOTORS_HELI_DENSITY_COMPENSATION
+
 #endif
 
     // enum values for HOVER_LEARN parameter
