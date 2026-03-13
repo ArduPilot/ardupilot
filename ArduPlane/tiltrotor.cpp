@@ -209,6 +209,20 @@ float Tiltrotor::get_forward_flight_tilt() const
 }
 
 /*
+  get throttle value adjusted for bicopter tiltrotors which use
+  throttleLeft/throttleRight instead of the generic throttle channel
+ */
+float Tiltrotor::get_bicopter_adjusted_throttle() const
+{
+    if (type == TILT_TYPE_BICOPTER) {
+        const float left = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleLeft);
+        const float right = SRV_Channels::get_output_scaled(SRV_Channel::k_throttleRight);
+        return (left + right) * 0.5;
+    }
+    return SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+}
+
+/*
   update motor tilt for continuous tilt servos
  */
 void Tiltrotor::continuous_update(void)
@@ -229,7 +243,7 @@ void Tiltrotor::continuous_update(void)
 
         max_change = tilt_max_change(false);
 
-        float new_throttle = constrain_float(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)*0.01, 0, 1);
+        float new_throttle = constrain_float(get_bicopter_adjusted_throttle()*0.01, 0, 1);
         if (current_tilt < get_fully_forward_tilt()) {
             current_throttle = constrain_float(new_throttle,
                                                     current_throttle-max_change,
@@ -327,7 +341,7 @@ void Tiltrotor::continuous_update(void)
         // Q_TILT_MAX. Anything above 50% throttle gets
         // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
         // relies heavily on Q_VFWD_GAIN being set appropriately.
-       float settilt = constrain_float((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)-MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
+       float settilt = constrain_float((get_bicopter_adjusted_throttle()-MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
        slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
     }
 }
@@ -677,7 +691,7 @@ void Tiltrotor::bicopter_output(void)
         return;
     }
 
-    float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
+    float throttle = get_bicopter_adjusted_throttle();
     if (quadplane.assisted_flight) {
         quadplane.hold_stabilize(throttle * 0.01f);
         quadplane.motors_output(true);
