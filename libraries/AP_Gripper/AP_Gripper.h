@@ -42,6 +42,9 @@ public:
     // grab - move the servo to the grab position
     void grab();
 
+    // hold - hold the current position of servo
+    void hold();
+
     // release - move the servo output to the release position
     void release();
 
@@ -50,6 +53,10 @@ public:
 
     // grabbed - returns true if currently in grabbed position
     bool grabbed() const;
+
+    // holding - returns true if currently in holding
+    // returns false by default for unsupported backends
+    bool holding() const;
 
     // update - should be called at at least 10hz
     void update();
@@ -68,6 +75,7 @@ public:
         STATE_RELEASING,
         STATE_GRABBED,
         STATE_RELEASED,
+        STATE_HOLDING,
     }  gripper_state;
 
     struct Backend_Config {
