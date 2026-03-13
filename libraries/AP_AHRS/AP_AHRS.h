@@ -402,7 +402,7 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const WARN_IF_UNUSED;
 
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
