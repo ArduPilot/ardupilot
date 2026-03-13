@@ -553,7 +553,7 @@ bool Rover::get_wp_crosstrack_error_m(float &xtrack_error) const
     if (!rover.control_mode->is_autopilot_mode()) {
         return false;
     }
-    xtrack_error = control_mode->crosstrack_error();
+    xtrack_error = control_mode->crosstrack_error_m();
     return true;
 }
 
