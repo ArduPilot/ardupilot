@@ -257,7 +257,7 @@ void ModeGuided::wp_control_run()
         copter.circle_nav->init_NED_m(
             copter.circle_nav->get_center_NED_m(),
             copter.circle_nav->center_is_terrain_alt(),
-            copter.circle_nav->get_rate_degs());
+            _orbit_rate_degs);  
         auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
         guided_mode = SubMode::Circle;
     }
@@ -1258,11 +1258,21 @@ void ModeGuided::circle_start(const Location &circle_center, float radius_m, boo
 {
     // set circle center, radius and direction
     copter.circle_nav->set_center(circle_center);
+    // configure position controller speeds and accelerations
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
     copter.circle_nav->set_radius_m(radius_m);
 
-    // set circle direction via rate sign
-    float current_rate = fabsf(copter.circle_nav->get_rate_degs());
-    copter.circle_nav->set_rate_degs(ccw ? -current_rate : current_rate);
+    // convert tangential speed to angular rate, or use default rate with correct direction
+    if (is_positive(speed_ms) && is_positive(radius_m)) {
+        _orbit_rate_degs = degrees(speed_ms / radius_m);
+    } else {
+        _orbit_rate_degs = fabsf(copter.circle_nav->get_rate_degs());
+    }
+    if (ccw) { _orbit_rate_degs = -_orbit_rate_degs; }
+    copter.circle_nav->set_rate_degs(_orbit_rate_degs);
 
     // check distance to edge of circle
     Vector3p circle_edge_ned_m;
@@ -1284,7 +1294,7 @@ void ModeGuided::circle_start(const Location &circle_center, float radius_m, boo
         copter.circle_nav->init_NED_m(
             copter.circle_nav->get_center_NED_m(),
             copter.circle_nav->center_is_terrain_alt(),
-            copter.circle_nav->get_rate_degs());
+            _orbit_rate_degs);
         // point camera/yaw toward circle center
         auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
         guided_mode = SubMode::Circle;
