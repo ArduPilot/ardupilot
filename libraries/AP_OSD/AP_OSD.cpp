@@ -320,6 +320,11 @@ void AP_OSD::init()
 
 bool AP_OSD::init_backend(const AP_OSD::osd_types type, const uint8_t instance)
 {
+    // don't re-initialize if backend already exists
+    if (_backends[instance] != nullptr) {
+        return false;
+    }
+
     // check if we can run this backend instance in parallel with backend instance 0
     if (instance > 0) {
         if (_backends[0] && !_backends[0]->is_compatible_with_backend_type(type)) {
@@ -403,7 +408,20 @@ void AP_OSD::osd_thread()
             update_stats();
             update_current_screen();
         }
-        update_osd();
+#if AP_SCRIPTING_ENABLED
+        if (!scripting_override) {
+#endif
+            update_osd();
+#if AP_SCRIPTING_ENABLED
+        } else {
+            override_count++;
+            if (override_count > 20) {
+                // timeout after 2 seconds and return to normal OSD
+                scripting_override = false;
+                override_count = 0;
+            }
+        }
+#endif // AP_SCRIPTING_ENABLED
     }
 }
 
