@@ -87,8 +87,7 @@ void ModeAuto::run()
     // start or update mission
     if (waiting_to_start) {
         // don't start the mission until we have an origin
-        Location loc;
-        if (copter.ahrs.get_origin(loc)) {
+        if (copter.ahrs.has_origin()) {
             // start/resume the mission (based on MIS_RESTART parameter)
             mission.start_or_resume();
             waiting_to_start = false;
