@@ -46,7 +46,8 @@ public:
         VISION      = (1U << 18),
         FFT         = (1U << 19),
         OSD         = (1U << 20),
-        CHECK_LAST  = (1U << 21), // must be last
+        LEVEL       = (1U << 21),
+        CHECK_LAST  = (1U << 22), // must be last
     };
 
     enum class Method {
