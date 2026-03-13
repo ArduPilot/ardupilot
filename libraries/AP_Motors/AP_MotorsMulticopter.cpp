@@ -893,9 +893,9 @@ void AP_MotorsMulticopter::output_motor_mask(float thrust, uint32_t mask, float 
     _motor_mask_override = mask;
 
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
-        if (motor_enabled[i] && (mask & (1U << i)) != 0) {
+        if (motor_enabled[i]) {
             // only apply thrust and rudder mixing when armed and interlocked; otherwise zero throttle
-            if (armed() && get_interlock()) {
+            if (armed() && get_interlock() && (mask & (1U << i))) {
                 /*
                  apply rudder mixing differential thrust
                  copter frame roll is plane frame yaw as this only
