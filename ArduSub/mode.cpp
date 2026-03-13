@@ -97,7 +97,7 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
     // we only want to stop changing modes if it could make things worse
     if (!flightmode->requires_altitude() &&
         new_flightmode->requires_altitude() &&
-        !sub.control_check_barometer()) { // maybe use ekf_alt_ok() instead?
+        !sub.ekf_alt_ok()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;

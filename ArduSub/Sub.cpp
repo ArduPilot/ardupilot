@@ -385,6 +385,24 @@ bool Sub::control_check_barometer()
     return true;
 }
 
+// returns true if the ekf has a good altitude estimate (required for modes which do AltHold)
+bool Sub::ekf_alt_ok() const
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow alt control with only dcm
+        return false;
+    }
+
+    // require both vertical velocity and position
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
+        return false;
+    }
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_VEL)) {
+        return false;
+    }
+    return true;
+}
+
 // vehicle specific waypoint info helpers
 bool Sub::get_wp_distance_m(float &distance) const
 {
