@@ -6,6 +6,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger_config.h>
 #include <AC_Autorotation/RSC_Autorotation.h>
+#include "Filter/LowPassFilter.h"
 
 // rotor control modes
 enum RotorControlMode {
@@ -141,7 +142,8 @@ private:
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
     float           _idle_throttle;               // current idle throttle setting
-
+    LowPassFilterFloat batt_volt_filt{0.5f};      // filtered voltage used for compensation
+    
     RotorControlState _rsc_state;
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
@@ -156,6 +158,9 @@ private:
     // calculate_throttlecurve - uses throttle curve and collective input to determine throttle setting
     float           calculate_throttlecurve(float collective_in);
 
+    //calculate battery compensation
+    float          update_battery_compensation(float dt);
+
     // parameters
     AP_Int16        _power_slewrate;            // throttle slew rate (percentage per second)
     AP_Int16        _thrcrv[5];                 // throttle value sent to throttle servo at 0, 25, 50, 75 and 100 percent collective
@@ -166,6 +171,10 @@ private:
     AP_Float        _governor_ff;               // governor feedforward variable
     AP_Float        _governor_range;            // RPM range +/- governor rpm reference setting where governor is operational
     AP_Int16        _cooldown_time;             // cooldown time to provide a fast idle
+    
+    AP_Int8         batt_idx;                   // battery index used for compensation
+    AP_Float        batt_voltage_max;           // maximum voltage used to scale lift
+    AP_Float        batt_voltage_min;           // minimum voltage used to scale lift
 
     // parameter accessors to allow conversions
     float       get_critical_speed() const { return _critical_speed * 0.01; }
