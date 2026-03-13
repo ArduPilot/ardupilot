@@ -466,7 +466,7 @@ void AP_BoardConfig::init()
     }
     
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
-    uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
+    uint8_t slowdown = constrain_int8(_sdcard_slowdown.get(), 0, 32);
     const uint8_t max_slowdown = 8;
     do {
         if (AP::FS().retry_mount()) {
