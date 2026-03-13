@@ -1081,6 +1081,7 @@ private:
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
     void ahrs_update();
+    bool should_run_tecs(void) const;
     void update_speed_height(void);
     void update_GPS_50Hz(void);
     void update_GPS_10Hz(void);
