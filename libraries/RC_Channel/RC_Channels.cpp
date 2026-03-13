@@ -35,6 +35,7 @@ extern const AP_HAL::HAL& hal;
 #include "RC_Channel.h"
 
 #include <AP_Arming/AP_Arming.h>
+#include <GCS_MAVLink/GCS.h>
 
 /*
   channels group object constructor
@@ -239,6 +240,25 @@ void RC_Channels::read_mode_switch()
         return;
     }
     c->read_mode_switch();
+
+    if (option_is_enabled(RC_Channels::Option::SIX_POS_RESET)) {
+        /*
+          if this option is set then when we lose R/C for more than 1
+          minute we reset the stored switch position to the debounce
+          switch position. This has the effect of ignoring an
+          accidental mode switch that happens while R/C is
+          disconnected for an extended period of time
+         */
+        const uint32_t now = AP_HAL::millis();
+        if (last_mode_switch_read_ms != 0 &&
+            now - last_mode_switch_read_ms > 60000) {
+            if (c->switch_state.current_position != c->switch_state.debounce_position) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Mode change suppressed: check R/C switch");
+                c->switch_state.current_position = c->switch_state.debounce_position;
+            }
+        }
+        last_mode_switch_read_ms = now;
+    }
 }
 
 // check if flight mode channel is assigned RC option
