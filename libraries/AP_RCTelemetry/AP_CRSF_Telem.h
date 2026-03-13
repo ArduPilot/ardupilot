@@ -23,6 +23,9 @@
 #include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include "AP_RCTelemetry.h"
 #include <AP_HAL/utility/sparse-endian.h>
+#if AP_CRSF_MAVLINK_ENABLED
+#include <AP_CRSF/AP_CRSF_MAVLink.h>
+#endif
 
 class AP_OSD_ParamSetting;
 
@@ -359,6 +362,9 @@ private:
         GENERAL_COMMAND,
         VERSION_PING,
         DEVICE_PING,
+#if AP_CRSF_MAVLINK_ENABLED
+        MAVLINK_TX,
+#endif
         NUM_SENSORS
     };
 
@@ -476,6 +482,10 @@ private:
     bool _vtx_options_change_pending;
 
     bool _noted_lq_as_rssi_active;
+
+#if AP_CRSF_MAVLINK_ENABLED
+    AP_CRSF_MAVLink _crsf_mavlink;
+#endif
 
     static AP_CRSF_Telem *singleton;
 };
