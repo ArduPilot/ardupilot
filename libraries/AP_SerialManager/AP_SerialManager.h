@@ -161,6 +161,9 @@ public:
         // serial index number
         uint8_t idx;
 
+        // device ID - identifier for the device
+        uint32_t devid;
+
 #if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
         AP_HAL::UARTDriver::StatsTracker stats;
 #endif
