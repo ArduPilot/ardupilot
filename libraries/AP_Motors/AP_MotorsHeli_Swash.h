@@ -57,7 +57,7 @@ private:
     void calculate_roll_pitch_collective_factors();
 
     // Setup a servo
-    void add_servo_angle(uint8_t num, float angle, float collective);
+    void add_servo_angle(uint8_t num, float scale, float angle, float collective);
     void add_servo_raw(uint8_t num, float roll, float pitch, float collective);
 
     // write to a swash servo. output value is pwm
