@@ -639,6 +639,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             timeout=30,
             track_angle=False,
         )
+        self.wait_groundspeed(0.5, 10.0, minimum_duration=5, timeout=30)
         self.wait_distance_to_home(80, 100)
         self.wait_disarmed()
 
@@ -13545,7 +13546,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("FS_GCS_ENABLE", 0)
         self.takeoff(20, mode='GUIDED')
 
-        # get home location as orbit center (offset 50m north)
+        # offset home location 50m North and use as orbit center
         home = self.home_position_as_mav_location()
         orbit_center = self.offset_location_ne(home, 50, 0)
 
@@ -13570,6 +13571,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             track_angle=False,
         )
         self.progress("Clockwise orbit verified")
+        self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
+        self.progress("Clockwise orbit speed verified")
 
         self.start_subtest("Orbit counter-clockwise around offset point")
         self.run_cmd_int(
@@ -13592,6 +13595,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             track_angle=False,
         )
         self.progress("Counter-clockwise orbit verified")
+        self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
+        self.progress("Clockwise orbit speed verified")
 
         self.do_RTL()
 
