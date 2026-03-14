@@ -5,14 +5,16 @@ known-first-party = [
     "annotate_params",
     "antennatracker",
     "arducopter",
+    "balancebot",
     "blimp",
     "board_list",
     "build_binaries_history",
     "build_script_base",
     "controller",
     "dma_resolver",
-    "emit",
     "emit_md",
+    "emit",
+    "examples",
     "extract_param_defaults",
     "gen_stable",
     "generate_manifest",
@@ -20,8 +22,8 @@ known-first-party = [
     "helicopter",
     "jsonemit",
     "mdemit",
-    "param",
     "param_check",
+    "param",
     "pysim",
     "quadplane",
     "rover",
@@ -75,4 +77,15 @@ exclude = [
     'build/',
     'cmake-build-debug/',
     '/setup\.py$'
+]
+
+[tool.ruff]
+target-version = "py310"
+lint.ignore = [
+    "E402",  # module-import-not-at-top-of-file
+    "E741",  # ambiguous-variable-name
+    "F601",  # multi-value-repeated-key-literal
+]
+lint.extend-select = [
+    "I",    # isort
 ]

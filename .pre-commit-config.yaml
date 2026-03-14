@@ -94,13 +94,11 @@ repos:
             --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py,
         ]
 
-# # Use to sort python imports by name and put system import first.
-#   -   repo: https://github.com/pycqa/isort
-#       rev: 5.12.0
-#       hooks:
-#         - id: isort
-#           args: [--check-only]
-#           name: isort (python)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
+    hooks:
+    -   id: ruff-check
+        args: [--exclude=Tools/autotest/autotest.py]
 
 # # Use to check python typing to show errors.
 #   -   repo: https://github.com/pre-commit/mirrors-mypy
