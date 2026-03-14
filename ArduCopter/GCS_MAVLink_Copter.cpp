@@ -130,7 +130,6 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         return;
     case ModeGuided::SubMode::TakeOff:
     case ModeGuided::SubMode::WP:
-    case ModeGuided::SubMode::CircleMoveToEdge:
     case ModeGuided::SubMode::Pos:
         type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                     POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
@@ -156,7 +155,15 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         target_accel_ned_mss = copter.mode_guided.get_target_accel_NED_mss();
         break;
     case ModeGuided::SubMode::Circle:
-        // circle mode uses circle_nav controller, no local position target to report
+        if (copter.mode_guided.circle_moving_to_edge()) {
+            // moving to edge - report WP position target
+            type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                        POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                        POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE;
+            target_pos_ned_m = copter.mode_guided.get_target_pos_NED_m().tofloat();
+            break;
+        }
+        // orbiting - no local position target to report
         return;
     }
 
@@ -875,22 +882,22 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int
     if (packet.x == INT32_MAX || packet.y == INT32_MAX) {
         return MAV_RESULT_DENIED;
     }
-    if (packet.x == 0 && packet.y == 0) {
-        return MAV_RESULT_DENIED;
-    }
 
     // build center Location from packet
+    if (!check_latlng(packet.x, packet.y)) {
+        return MAV_RESULT_DENIED;
+    }
     Location circle_center;
     if (!location_from_command_t(packet, circle_center)) {
         return MAV_RESULT_DENIED;
     }
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_DENIED;
-    }
+
+    // param4: Orbit around the centre point for this many radians. 0: Orbit forever
+    const float turns = isnan(packet.param4) ? 0.0f : fabsf(packet.param4);
+    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, turns);
 
     // start orbit
-    send_text(MAV_SEVERITY_INFO, "DO_ORBIT: r=%.1f ccw=%d spd=%.1f", radius_m, (int)ccw, speed_ms);
-    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms);
+    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, turns);
 
     return MAV_RESULT_ACCEPTED;
 }
