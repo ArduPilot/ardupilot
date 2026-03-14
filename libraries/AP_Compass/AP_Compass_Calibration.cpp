@@ -18,20 +18,30 @@ void Compass::cal_update()
     }
 
     bool running = false;
-
+    int num_compass = 0;
+    int num_compass_successful = 0;
+    
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_calibrator[i] == nullptr) {
             continue;
         }
+        num_compass++;
         if (_calibrator[i]->failed()) {
             AP_Notify::events.compass_cal_failed = 1;
         }
 
         if (_calibrator[i]->running()) {
             running = true;
-        } else if (_cal_autosave && !_cal_saved[i] && _calibrator[i]->get_state().status == CompassCalibrator::Status::SUCCESS) {
-            _accept_calibration(uint8_t(i));
+            continue;
         }
+        if (_calibrator[i]->get_state().status != CompassCalibrator::Status::SUCCESS) {
+            continue;
+        }
+        num_compass_successful++;
+        if (!_cal_autosave || _cal_saved[i]) {
+            continue;
+        }
+        _accept_calibration(uint8_t(i));
     }
 
     AP_Notify::flags.compass_cal_running = running;
@@ -39,10 +49,12 @@ void Compass::cal_update()
     if (is_calibrating()) {
         _cal_has_run = true;
         return;
-    } else if (_cal_has_run && _auto_reboot()) {
-        hal.scheduler->delay(1000);
-        hal.scheduler->reboot();
+    } 
+    if (!_cal_has_run || !_compass_cal_autoreboot || num_compass != num_compass_successful) {
+        return;
     }
+    hal.scheduler->delay(1000);
+    hal.scheduler->reboot();
 }
 
 bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
