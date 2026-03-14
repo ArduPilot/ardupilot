@@ -184,6 +184,12 @@ static void initialize(geometry_msgs_msg_Quaternion& q)
 
 AP_DDS_Client::~AP_DDS_Client()
 {
+    cleanup_session();
+
+    if (!transport_initialized) {
+        return;
+    }
+
     // close transport
     if (is_using_serial) {
         uxr_close_custom_transport(&serial.transport);
@@ -192,6 +198,22 @@ AP_DDS_Client::~AP_DDS_Client()
         uxr_close_custom_transport(&udp.transport);
 #endif
     }
+}
+
+void AP_DDS_Client::cleanup_session()
+{
+    if (session_created) {
+        uxr_delete_session(&session);
+        session_created = false;
+    }
+
+    delete[] input_reliable_stream;
+    input_reliable_stream = nullptr;
+
+    delete[] output_reliable_stream;
+    output_reliable_stream = nullptr;
+
+    connected = false;
 }
 
 #if AP_DDS_TIME_PUB_ENABLED
@@ -1262,6 +1284,7 @@ void AP_DDS_Client::main_loop(void)
 
         // create session
         if (!init_session() || !create()) {
+            cleanup_session();
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
             return;
         }
@@ -1312,15 +1335,14 @@ void AP_DDS_Client::main_loop(void)
             }
         }
 
-        // delete session if connected
-        if (connected) {
-            uxr_delete_session(&session);
-        }
+        cleanup_session();
     }
 }
 
 bool AP_DDS_Client::init_transport()
 {
+    transport_initialized = false;
+
     // serial init will fail if the SERIALn_PROTOCOL is not setup
     bool initTransportStatus = ddsSerialInit();
     is_using_serial = initTransportStatus;
@@ -1342,11 +1364,14 @@ bool AP_DDS_Client::init_transport()
         return false;
     }
 
+    transport_initialized = true;
     return true;
 }
 
 bool AP_DDS_Client::init_session()
 {
+    cleanup_session();
+
     // init session
     uxr_init_session(&session, comm, key);
 
@@ -1360,12 +1385,14 @@ bool AP_DDS_Client::init_session()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization waiting...", msg_prefix);
         hal.scheduler->delay(1000);
     }
+    session_created = true;
 
     // setup reliable stream buffers
     input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
     output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
     if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
+        cleanup_session();
         return false;
     }
 
