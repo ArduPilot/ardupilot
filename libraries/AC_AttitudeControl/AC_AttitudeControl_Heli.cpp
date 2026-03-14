@@ -19,6 +19,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_P
     // @DisplayName: Roll axis rate controller P gain
     // @Description: Roll axis rate controller P gain.  Corrects in proportion to the difference between the desired roll rate vs actual roll rate
+    // @Units: s/rad
     // @Range: 0.0 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -26,6 +27,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_I
     // @DisplayName: Roll axis rate controller I gain
     // @Description: Roll axis rate controller I gain.  Corrects long-term difference in desired roll rate vs actual roll rate
+    // @Units: 1/rad
     // @Range: 0.0 0.6
     // @Increment: 0.01
     // @User: Standard
@@ -46,6 +48,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_D
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
+    // @Units: s^2/rad
     // @Range: 0.0 0.03
     // @Increment: 0.001
     // @User: Standard
@@ -53,6 +56,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_FF
     // @DisplayName: Roll axis rate controller feed forward
     // @Description: Roll axis rate controller feed forward
+    // @Units: s/rad
     // @Range: 0.05 0.5
     // @Increment: 0.001
     // @User: Standard
@@ -91,6 +95,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_D_FF
     // @DisplayName: Roll Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Units: s^2/rad
     // @Range: 0 0.02
     // @Increment: 0.0001
     // @User: Advanced
@@ -112,6 +117,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_P
     // @DisplayName: Pitch axis rate controller P gain
     // @Description: Pitch axis rate controller P gain.  Corrects in proportion to the difference between the desired pitch rate vs actual pitch rate
+    // @Units: s/rad
     // @Range: 0.0 0.35
     // @Increment: 0.005
     // @User: Standard
@@ -119,6 +125,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_I
     // @DisplayName: Pitch axis rate controller I gain
     // @Description: Pitch axis rate controller I gain.  Corrects long-term difference in desired pitch rate vs actual pitch rate
+    // @Units: 1/rad
     // @Range: 0.0 0.6
     // @Increment: 0.01
     // @User: Standard
@@ -139,6 +146,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
+    // @Units: s^2/rad
     // @Range: 0.0 0.03
     // @Increment: 0.001
     // @User: Standard
@@ -146,6 +154,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_FF
     // @DisplayName: Pitch axis rate controller feed forward
     // @Description: Pitch axis rate controller feed forward
+    // @Units: s/rad
     // @Range: 0.05 0.5
     // @Increment: 0.001
     // @User: Standard
@@ -184,6 +193,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_D_FF
     // @DisplayName: Pitch Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Units: s^2/rad
     // @Range: 0 0.02
     // @Increment: 0.0001
     // @User: Advanced
@@ -205,6 +215,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_P
     // @DisplayName: Yaw axis rate controller P gain
     // @Description: Yaw axis rate controller P gain.  Corrects in proportion to the difference between the desired yaw rate vs actual yaw rate
+    // @Units: s/rad
     // @Range: 0.180 0.60
     // @Increment: 0.005
     // @User: Standard
@@ -212,6 +223,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_I
     // @DisplayName: Yaw axis rate controller I gain
     // @Description: Yaw axis rate controller I gain.  Corrects long-term difference in desired yaw rate vs actual yaw rate
+    // @Units: 1/rad
     // @Range: 0.01 0.2
     // @Increment: 0.01
     // @User: Standard
@@ -232,6 +244,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_D
     // @DisplayName: Yaw axis rate controller D gain
     // @Description: Yaw axis rate controller D gain.  Compensates for short-term change in desired yaw rate vs actual yaw rate
+    // @Units: s^2/rad
     // @Range: 0.000 0.02
     // @Increment: 0.001
     // @User: Standard
@@ -239,6 +252,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_FF
     // @DisplayName: Yaw axis rate controller feed forward
     // @Description: Yaw axis rate controller feed forward
+    // @Units: s/rad
     // @Range: 0 0.5
     // @Increment: 0.001
     // @User: Standard
@@ -277,6 +291,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_D_FF
     // @DisplayName: Yaw Derivative FeedForward Gain
     // @Description: FF D Gain which produces an output that is proportional to the rate of change of the target
+    // @Units: s^2/rad
     // @Range: 0 0.02
     // @Increment: 0.0001
     // @User: Advanced
