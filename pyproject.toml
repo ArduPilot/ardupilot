@@ -5,7 +5,9 @@ lint.ignore = [
 ]
 lint.extend-select = [
     "I",    # isort
+    "TID",  # flake8-tidy-imports
 ]
+lint.flake8-tidy-imports.ban-relative-imports = "all"
 lint.per-file-ignores."Tools/autotest/autotest.py" = ["I001"]  # unsorted-imports
 
 [tool.ruff.lint.isort]
