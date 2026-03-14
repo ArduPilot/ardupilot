@@ -719,23 +719,28 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     copter.initial_armed_bearing_rad = ahrs.get_yaw_rad();
 
+    // Always reset EKF height datum on arming so altitude starts at
+    // zero.  Without this, baro drift between home-set and arming
+    // accumulates as permanent altitude error.
+    ahrs.resetHeightDatum();
+    LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
+    copter.arming_altitude_m = 0;
+
     if (!ahrs.home_is_set()) {
-        // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
-
-        // we have reset height, so arming height is zero
-        copter.arming_altitude_m = 0;
+        // home will be set later once EKF origin is available
     } else if (!ahrs.home_is_locked()) {
-        // Reset home position if it has already been set before (but not locked)
+        // try to update home to current location
         if (!copter.set_home_to_current_location(false)) {
-            // ignore failure
+            // set_home failed (e.g. no GPS).  Update home altitude
+            // to match the origin since the datum reset zeroed the
+            // EKF height — this ensures relative_alt reports ~0.
+            Location origin;
+            if (ahrs.get_origin(origin)) {
+                auto home = ahrs.get_home();
+                home.alt = origin.alt;
+                UNUSED_RESULT(ahrs.set_home(home));
+            }
         }
-
-        // remember the height when we armed (ignore failures)
-        float pos_d_m = 0;
-        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
-        copter.arming_altitude_m = -pos_d_m;
     }
     copter.update_super_simple_bearing(false);
 
