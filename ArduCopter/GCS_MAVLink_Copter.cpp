@@ -855,12 +855,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_comma
     return MAV_RESULT_DENIED;
 }
 
-#if MODE_GUIDED_ENABLED
+#if AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int_t &packet)
 {
     // reject if not in Guided mode
     if (!copter.flightmode->in_guided_mode()) {
-        return MAV_RESULT_TEMPORARILY_REJECTED;
+        return MAV_RESULT_FAILED;
     }
 
     // param1: radius (m) - positive = CW, negative = CCW (MAVLink spec)
