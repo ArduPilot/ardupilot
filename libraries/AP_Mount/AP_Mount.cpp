@@ -254,6 +254,28 @@ bool AP_Mount::has_pan_control(uint8_t instance) const
     return backend->has_pan_control();
 }
 
+// get_yaw_range_mid_rad - returns the body-frame yaw angle the vehicle should align to for
+// optimal mount coverage. Returns false if the mount has full range.
+bool AP_Mount::get_yaw_range_mid_rad(uint8_t instance, float &yaw_mid_rad) const
+{
+    if (get_instance(instance) == nullptr) {
+        return false;
+    }
+    const int16_t yaw_min = _params[instance].yaw_angle_min;
+    const int16_t yaw_max = _params[instance].yaw_angle_max;
+    if (yaw_min > yaw_max) {
+        // invalid configuration
+        return false;
+    }
+    if ((yaw_max - yaw_min) >= 360) {
+        // full yaw range, mount can cover any direction
+        return false;
+    }
+    // limited or fixed yaw range, return midpoint angle
+    yaw_mid_rad = radians((yaw_min + yaw_max) * 0.5f);
+    return true;
+}
+
 // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
 MAV_MOUNT_MODE AP_Mount::get_mode(uint8_t instance) const
 {
