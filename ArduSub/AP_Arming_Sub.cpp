@@ -59,6 +59,17 @@ bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
         return false;
     }
 
+    // depth failsafe thresholds require depth sensor 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+    const bool warn_fs_configured     = (sub.g.failsafe_depth_warn     != FS_DEPTH_DISABLED);
+    const bool critical_fs_configured = (sub.g.failsafe_depth_critical != FS_DEPTH_DISABLED);
+#pragma GCC diagnostic pop
+    if ((warn_fs_configured || critical_fs_configured) && !sub.ap.depth_sensor_present) {
+        check_failed(display_failure, "Depth failsafe requires depth sensor");
+        return false;
+    }
+
     return AP_Arming::pre_arm_checks(display_failure);
 }
 
