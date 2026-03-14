@@ -1158,11 +1158,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_circling_point_with_radius(loc, expected_radius)
 
         self.context_collect('CAMERA_FEEDBACK')
+        expected_roll = math.degrees(self.assert_receive_message('ATTITUDE').roll)
         self.set_rc(12, 2000)
         self.delay_sim_time(1)
         self.set_rc(12, 1000)
         self.assert_received_message_field_values('CAMERA_FEEDBACK', {
-            "roll": math.degrees(self.assert_receive_message('ATTITUDE').roll),
+            "roll": expected_roll,
         }, check_context=True, epsilon=5.0)
 
         self.fly_home_land_and_disarm()
@@ -1561,12 +1562,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def test_fence_breach_circle_at(self, loc, disable_on_breach=False):
         self.load_fence("CMAC-fence.txt")
-        want_radius = 100
-        # when ArduPlane is fixed, remove this fudge factor
-        REALLY_BAD_FUDGE_FACTOR = 1.16
-        expected_radius = REALLY_BAD_FUDGE_FACTOR * want_radius
+        expected_radius = 100
         self.set_parameters({
-            "RTL_RADIUS": want_radius,
+            "RTL_RADIUS": expected_radius,
             "NAVL1_LIM_BANK": 60,
             "FENCE_ACTION": 1, # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
         })
@@ -1659,10 +1657,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         return_radius = 100
         return_alt = 80
         self.set_parameters({
-            "RTL_RADIUS": return_radius,
+            "WP_LOITER_RAD": return_radius,
             "FENCE_ACTION": 6, # Set Fence Action to Guided
             "FENCE_TYPE": 8,   # Only use fence floor
             "FENCE_RET_ALT": return_alt,
+            "NAVL1_LIM_BANK": 60,
         })
         self.do_fence_enable()
         self.assert_fence_enabled()
@@ -2279,6 +2278,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "AVD_ENABLE": 1,
             "AVD_F_ACTION": mavutil.mavlink.MAV_COLLISION_ACTION_MOVE_HORIZONTALLY,
             "AVD_F_RCVRY": 3,  # resume auto or loiter
+            "NAVL1_LIM_BANK": 60,
         })
         self.reboot_sitl()
         self.takeoff(50)
@@ -2295,8 +2295,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_heading(290)
         self.wait_heading(300)
         dest = self.position_target_loc()
-        REALLY_BAD_FUDGE_FACTOR = 1.25  # FIXME
-        expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
+        expected_radius = self.get_parameter('WP_LOITER_RAD')
         self.wait_circling_point_with_radius(dest, expected_radius)
 
         self.start_subtest("Testing mission resume")
@@ -4206,7 +4205,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "FENCE_ACTION": 6,
             "FENCE_TYPE": 4,
-            "RTL_RADIUS": want_radius,
+            "WP_LOITER_RAD": want_radius,
             "NAVL1_LIM_BANK": 60,
         })
         home_loc = self.mav.location()
@@ -4265,7 +4264,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Wait for guided return to vehicle calculated fence return location
         self.wait_distance_to_location(ret_loc, 90, 110)
-        self.wait_circling_point_with_radius(ret_loc, 92)
+        self.wait_circling_point_with_radius(ret_loc, want_radius)
 
         self.progress("Test complete, disable fence and come home")
         self.do_fence_disable()
@@ -4281,7 +4280,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ACTION": 6,
             "FENCE_TYPE": 2,
             "FENCE_RADIUS": 300,
-            "RTL_RADIUS": want_radius,
+            "WP_LOITER_RAD": want_radius,
             "NAVL1_LIM_BANK": 60,
         })
 
@@ -4314,7 +4313,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Wait for guided return to vehicle calculated fence return location
         self.wait_distance_to_location(home_loc, 90, 110)
-        self.wait_circling_point_with_radius(home_loc, 92)
+        self.wait_circling_point_with_radius(home_loc, want_radius)
 
         self.progress("Test complete, disable fence and come home")
         self.do_fence_disable()
