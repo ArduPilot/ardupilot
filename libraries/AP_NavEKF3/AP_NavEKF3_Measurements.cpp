@@ -562,11 +562,6 @@ void NavEKF3_core::readGpsData()
     // check for new GPS data
     const auto &gps = dal.gps();
 
-    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::GPS) {
-        // don't read GPS data when disabled in the current source set
-        return;
-    }
-
     // limit update rate to avoid overflowing the FIFO buffer
     if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
         return;
@@ -716,6 +711,11 @@ void NavEKF3_core::readGpsData()
 
     if (gpsGoodToAlign && !have_table_earth_field) {
         setEarthFieldFromLocation(gpsloc);
+    }
+
+    // don't fuse GPS data when GPS is not the configured position source
+    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::GPS) {
+        return;
     }
 
     // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
