@@ -3,6 +3,10 @@ target-version = "py310"
 lint.ignore = [
     "E402",  # module-import-not-at-top-of-file
 ]
+lint.extend-select = [
+    "I",    # isort
+]
+lint.per-file-ignores."Tools/autotest/autotest.py" = ["I001"]  # unsorted-imports
 
 [tool.ruff.lint.isort]
 force-single-line = true
@@ -11,6 +15,7 @@ known-first-party = [
     "annotate_params",
     "antennatracker",
     "arducopter",
+    "balancebot",
     "blimp",
     "board_list",
     "build_binaries_history",
@@ -19,6 +24,7 @@ known-first-party = [
     "dma_resolver",
     "emit",
     "emit_md",
+    "examples",
     "extract_param_defaults",
     "gen_stable",
     "generate_manifest",
