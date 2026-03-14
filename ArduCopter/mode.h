@@ -1153,6 +1153,9 @@ public:
     bool set_speed_up_ms(float speed_up_ms) override;
     bool set_speed_down_ms(float speed_down_ms) override;
 
+    // true while moving to circle edge before orbiting
+    bool _circle_moving_to_edge = false;
+
     // initialises position controller to implement take-off
     // takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
     bool do_user_takeoff_start_m(float takeoff_alt_m) override;
@@ -1165,12 +1168,16 @@ public:
         VelAccel,
         Accel,
         Angle,
+        Circle,
     };
 
     SubMode submode() const { return guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
+    void circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, float turns);
+    void circle_run();
+    bool circle_moving_to_edge() const { return _circle_moving_to_edge; }
 
     // return guided mode timeout in milliseconds. Only used for velocity, acceleration, angle control, and angular rate control
     uint32_t get_timeout_ms() const;
@@ -1228,6 +1235,8 @@ private:
     void pause_control_run();
     void posvelaccel_control_run();
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
+    float _orbit_rate_degs = 20.0f;  // desired orbit rate in deg/s (signed for direction)
+    float _orbit_turns = 0.0f;  // number of turns to complete, 0 = forever
 
     // controls which controller is run (pos or vel):
     SubMode guided_mode = SubMode::TakeOff;

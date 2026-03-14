@@ -123,4 +123,6 @@ private:
     MAV_RESULT handle_MAV_CMD_DO_WINCH(const mavlink_command_int_t &packet);
 #endif
 
+    MAV_RESULT handle_MAV_CMD_DO_ORBIT(const mavlink_command_int_t &packet);
+
 };
