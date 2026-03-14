@@ -27,6 +27,11 @@ void Rover::Log_Write_Attitude()
     if (g2.sailboat.sail_enabled()) {
         logger.Write_PID(LOG_PIDR_MSG, g2.attitude_control.get_sailboat_heel_pid().get_pid_info());
     }
+
+    // log wheel rate controller instance 0
+    if (g2.wheel_rate_control.enabled(0)) {
+        logger.Write_PID(LOG_PIDW_MSG, g2.wheel_rate_control.get_pid(0).get_pid_info());
+    }
 }
 
 #if AP_RANGEFINDER_ENABLED
