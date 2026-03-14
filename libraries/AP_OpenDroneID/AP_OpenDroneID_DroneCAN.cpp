@@ -86,6 +86,21 @@ void AP_OpenDroneID::dronecan_init(AP_DroneCAN *uavcan)
     return;
 
 alloc_failed:
+    delete dc_location[driver_index];
+    dc_location[driver_index] = nullptr;
+
+    delete dc_basic_id[driver_index];
+    dc_basic_id[driver_index] = nullptr;
+
+    delete dc_self_id[driver_index];
+    dc_self_id[driver_index] = nullptr;
+
+    delete dc_system[driver_index];
+    dc_system[driver_index] = nullptr;
+
+    delete dc_operator_id[driver_index];
+    dc_operator_id[driver_index] = nullptr;
+
     dronecan_init_failed |= driver_mask;
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "OpenDroneID DroneCAN alloc failed");
 }

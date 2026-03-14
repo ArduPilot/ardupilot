@@ -351,7 +351,7 @@ bool flash_from_sd()
     if (f_rename(verify_abin_path, flash_abin_path) != FR_OK) {
         // we would be nice to indicate an error here.
         // we could try to drop a message on the SD card?
-        return false;
+        goto out;
     }
 
     flasher = NEW_NOTHROW ABinFlasher{flash_abin_path};
@@ -363,7 +363,7 @@ bool flash_from_sd()
     if (f_rename(flash_abin_path, flashed_abin_path) != FR_OK) {
         // we would be nice to indicate an error here.
         // we could try to drop a message on the SD card?
-        return false;
+        goto out;
     }
 
     ret = true;
