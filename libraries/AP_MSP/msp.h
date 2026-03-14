@@ -129,6 +129,18 @@ typedef enum : uint8_t {
     MSP_BATTERY_INIT
 } battery_state_e;
 
+// inav radar
+typedef struct PACKED {
+    uint8_t radar_no;
+    uint8_t state;
+    uint32_t lat;
+    uint32_t lon;
+    uint32_t alt;
+    uint16_t heading;
+    uint16_t speed;
+    uint8_t lq;
+} msp_radar_pos_message_t;
+
 uint8_t msp_serial_checksum_buf(uint8_t checksum, const uint8_t *data, uint32_t len);
 uint32_t msp_serial_send_frame(msp_port_t *msp, const uint8_t * hdr, uint32_t hdr_len, const uint8_t * data, uint32_t data_len, const uint8_t * crc, uint32_t crc_len);
 uint32_t msp_serial_encode(msp_port_t *msp, msp_packet_t *packet, msp_version_e msp_version, bool is_request=false);
