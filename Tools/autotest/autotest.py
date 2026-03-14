@@ -20,16 +20,15 @@ import sys
 import time
 import traceback
 
-import arduplane
-import ardusub
-import balancebot
-import examples
-
 from pymavlink.generator import mavtemplate
 
 import antennatracker
 import arducopter
+import arduplane
+import ardusub
+import balancebot
 import blimp
+import examples
 import helicopter
 import quadplane
 import rover
