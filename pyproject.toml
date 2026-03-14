@@ -1,3 +1,17 @@
+[tool.ruff]
+target-version = "py310"
+lint.ignore = [
+    "E402",  # module-import-not-at-top-of-file
+    "E741",  # ambiguous-variable-name
+    "F601",  # multi-value-repeated-key-literal
+]
+lint.extend-select = [
+    "TID",    # flake8-tidy-imports
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
 [tool.ruff.lint.isort]
 force-single-line = true
 lines-between-types = 1

@@ -28,7 +28,7 @@ from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-from .actions import ExecuteFunction
+from ardupilot_sitl.actions import ExecuteFunction
 
 TRUE_STRING = "True"
 FALSE_STRING = "False"
