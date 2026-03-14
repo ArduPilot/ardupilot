@@ -95,7 +95,39 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled,1:Warn only
     // @User: Standard
     GSCALAR(failsafe_temperature, "FS_TEMP_ENABLE", FS_TEMP_DISABLED),
-    
+
+    // @Param: FS_DEPTH_WARN
+    // @DisplayName: Depth Failsafe Warning Depth
+    // @Description: The depth in meters at which a warning will be sent to the ground station. Should be set shallower than FS_DEPTH_CRIT to provide advance warning. Set to -1 to avoid sending an early warning.
+    // @Units: m
+    // @Values: -1:Disabled
+    // @Range: -1 11000
+    // @User: Standard
+    GSCALAR(failsafe_depth_warn, "FS_DEPTH_WARN", FS_DEPTH_DISABLED),
+
+    // @Param: FS_DEPTH_CRIT
+    // @DisplayName: Depth Failsafe Critical Depth
+    // @Description: The critical depth in meters at which the failsafe action (FS_DEPTH_CRI_ACT) will be triggered. This should be set based on the shallowest depth rating of any critical vehicle component. Set to -1 to disable the failsafe.
+    // @Units: m
+    // @Values: -1:Disabled
+    // @Range: -1 11000
+    // @User: Standard
+    GSCALAR(failsafe_depth_critical, "FS_DEPTH_CRIT", FS_DEPTH_DISABLED),
+
+    // @Param: FS_DEPTH_CRI_ACT
+    // @DisplayName: Depth Failsafe Critical Action
+    // @Description: The action to take when the vehicle exceeds the critical depth (FS_DEPTH_CRIT).
+    // @Values: 0:Warn only, 1:Surface
+    // @User: Standard
+    GSCALAR(failsafe_depth_critical_action, "FS_DEPTH_CRI_ACT", FS_DEPTH_SURFACE),
+
+    // @Param: FS_DEPTH_WAR_ACT
+    // @DisplayName: Depth Failsafe Warning Action
+    // @Description: The action to take when the vehicle exceeds the warning depth (FS_DEPTH_WARN).
+    // @Values: 0:Warn only, 1:Surface
+    // @User: Standard
+    GSCALAR(failsafe_depth_warn_action, "FS_DEPTH_WAR_ACT", FS_DEPTH_WARN_ONLY),
+
 #if AP_SUB_RC_ENABLED        
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable

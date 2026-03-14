@@ -120,6 +120,13 @@ enum LoggingParameters {
 #define FS_TEMP_DISABLED        0
 #define FS_TEMP_WARN_ONLY       1
 
+// Depth failsafe thresholds
+// Special value to indicate a depth level has not been configured, so the failsafe should not trigger
+#define FS_DEPTH_DISABLED       (-1.0)
+// Depth failsafe options
+#define FS_DEPTH_WARN_ONLY   0
+#define FS_DEPTH_SURFACE     1   // Switch to surface mode
+
 // Crash failsafe options
 #define FS_CRASH_DISABLED  0
 #define FS_CRASH_WARN_ONLY 1
