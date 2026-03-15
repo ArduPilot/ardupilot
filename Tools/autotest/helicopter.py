@@ -282,9 +282,11 @@ class AutoTestHelicopter(AutoTestCopter):
         self.wait_servo_channel_value(8, 1659, timeout=10)
         self.delay_sim_time(20)
         # check we are still on the ground...
+        max_relalt = 1  # metres - same as PosHoldTakeOff
         relative_alt = self.get_altitude(relative=True)
-        if abs(relative_alt) > 0.1:
-            raise NotAchievedException("Took off prematurely")
+        if abs(relative_alt) > max_relalt:
+            raise NotAchievedException("Took off prematurely (abs(%f)>%f)" %
+                                       (relative_alt, max_relalt))
         self.progress("Pushing throttle past half-way")
         self.set_rc(3, 1650)
 
