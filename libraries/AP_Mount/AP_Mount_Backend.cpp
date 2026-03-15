@@ -1291,7 +1291,10 @@ bool AP_Mount_Backend::get_rate_target(float& roll_degs, float& pitch_degs, floa
 // get target angle in deg. returns true on success
 bool AP_Mount_Backend::get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
 {
-    if (mnt_target.target_type == MountTargetType::ANGLE) {
+    // return angles if target type is ANGLE, or if the target type was
+    // converted to angles because it is not natively supported
+    if (mnt_target.target_type == MountTargetType::ANGLE ||
+        (!natively_supports(mnt_target.target_type) && natively_supports(MountTargetType::ANGLE))) {
         roll_deg = degrees(mnt_target.angle_rad.roll);
         pitch_deg = degrees(mnt_target.angle_rad.pitch);
         yaw_deg = degrees(mnt_target.angle_rad.yaw);
