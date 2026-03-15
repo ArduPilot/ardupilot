@@ -56,6 +56,9 @@ public:
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override;
 
+    // Helper function for param conversions to be done in motors class
+    void heli_motors_param_conversions(void) override;
+
 #if HAL_LOGGING_ENABLED
     // heli motors logging - called at 10 Hz
     void Log_Write(void) override;

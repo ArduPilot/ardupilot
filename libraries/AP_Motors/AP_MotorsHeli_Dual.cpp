@@ -580,6 +580,38 @@ bool AP_MotorsHeli_Dual::arming_checks(size_t buflen, char *buffer) const
     return true;
 }
 
+// Helper function for param conversions which are easier to be done in the motors class
+// Called from system.cpp
+void AP_MotorsHeli_Dual::heli_motors_param_conversions(void)
+{
+    // Run common conversions from base class
+    AP_MotorsHeli::heli_motors_param_conversions();
+
+    if (_swashplate1.get_swash_type() == SWASHPLATE_TYPE_H3) {
+        // PARAMETER_CONVERSION - Added: Mar-2026
+        // move autorotation related parameters within the RSC into their own class
+        const AP_Param::ConversionInfo sw1_phase_conversion_info[] = {
+            { 90, 532, AP_PARAM_INT16,  "H_SW_PHANG" },
+        };
+        uint8_t table_size = ARRAY_SIZE(sw1_phase_conversion_info);
+        for (uint8_t i=0; i<table_size; i++) {
+            AP_Param::convert_old_parameter(&sw1_phase_conversion_info[i], 1.0);
+        }
+    }
+    if (_swashplate2.get_swash_type() == SWASHPLATE_TYPE_H3) {
+        // PARAMETER_CONVERSION - Added: Mar-2026
+        // move autorotation related parameters within the RSC into their own class
+        const AP_Param::ConversionInfo sw2_phase_conversion_info[] = {
+            { 90, 533, AP_PARAM_INT16,  "H_SW2_PHANG" },
+        };
+        uint8_t table_size = ARRAY_SIZE(sw2_phase_conversion_info);
+        for (uint8_t i=0; i<table_size; i++) {
+            AP_Param::convert_old_parameter(&sw2_phase_conversion_info[i], 1.0);
+        }
+    }
+
+}
+
 #if HAL_LOGGING_ENABLED
 // heli motors logging - called at 10 Hz
 void AP_MotorsHeli_Dual::Log_Write(void)

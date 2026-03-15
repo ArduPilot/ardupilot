@@ -45,14 +45,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("LIN_SVO", 3, AP_MotorsHeli_Swash, _linear_swash_servo, 0),
 
-    // @Param: H3_PHANG
+    // @Param: PHANG
     // @DisplayName: Swashplate Phase Angle Compensation
-    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
+    // @Description: Phase angle compensation can be used to correct control coupling issues.  If pitching the swash forward induces a roll, this can be correct the problem.
     // @Range: -30 30
     // @Units: deg
     // @User: Advanced
     // @Increment: 1
-    AP_GROUPINFO("H3_PHANG", 8, AP_MotorsHeli_Swash, _phase_angle, 0),
+    AP_GROUPINFO("PHANG", 9, AP_MotorsHeli_Swash, _phase_angle, 0),
    
     // @Param: H3_ENABLE
     // @DisplayName: Enable Generic H3 Swashplate Settings
@@ -84,6 +84,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Swash::var_info[] = {
     // @Units: deg
     // @User: Advanced
     AP_GROUPINFO("H3_SV3_POS", 7, AP_MotorsHeli_Swash, _servo3_pos, 180),
+
+    // index 8 was previously used for H3 phase angle, but this has been moved to index 9 to allow the use for all swashplate types.
     
     AP_GROUPEND
 };

@@ -651,6 +651,18 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
         // Prevent future attempts to convert the param so we don't put a non-sense value in.
         _yaw_trim.save();
     }
+
+    if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H3) {
+        // PARAMETER_CONVERSION - Added: Mar-2026
+        // move autorotation related parameters within the RSC into their own class
+        const AP_Param::ConversionInfo sw_phase_conversion_info[] = {
+            { 90, 532, AP_PARAM_INT16,  "H_SW_PHANG" },
+        };
+        uint8_t table_size = ARRAY_SIZE(sw_phase_conversion_info);
+        for (uint8_t i=0; i<table_size; i++) {
+            AP_Param::convert_old_parameter(&sw_phase_conversion_info[i], 1.0);
+        }
+    }
 }
 
 // Helper to return true for direct drive fixed pitch tail, either CW or CCW
