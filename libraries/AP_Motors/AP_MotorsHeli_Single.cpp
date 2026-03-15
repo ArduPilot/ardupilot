@@ -93,6 +93,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
 
+    // @Param: SW_PHANG
+    // @DisplayName: Swashplate Phase Angle Compensation
+    // @Description: Phase angle compensation can be used to correct control coupling issues.  If pitching the swash forward induces a roll, this can be correct the problem.
+    // @Range: -30 30
+    // @Units: deg
+    // @User: Advanced
+    // @Increment: 1
+
     // @Param: SW_H3_ENABLE
     // @DisplayName: H3 Generic Enable
     // @Description: Automatically set when H3 generic swash type is selected for swashplate. Do not set manually.
@@ -119,14 +127,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-
-    // @Param: SW_H3_PHANG
-    // @DisplayName: H3 Generic Phase Angle Comp
-    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
-    // @Range: -30 30
-    // @Units: deg
-    // @User: Advanced
-    // @Increment: 1
     AP_SUBGROUPINFO(_swashplate, "SW_", 20, AP_MotorsHeli_Single, AP_MotorsHeli_Swash),
 
     // @Param: COL2YAW
@@ -650,6 +650,18 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
         // Motor 4 may not have been assigned to an output yet in which case this is unlikely to be a conversion from old setup.
         // Prevent future attempts to convert the param so we don't put a non-sense value in.
         _yaw_trim.save();
+    }
+
+    if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H3) {
+        // PARAMETER_CONVERSION - Added: Mar-2026
+        // move autorotation related parameters within the RSC into their own class
+        const AP_Param::ConversionInfo sw_phase_conversion_info[] = {
+            { 90, 532, AP_PARAM_INT16,  "H_SW_PHANG" },
+        };
+        uint8_t table_size = ARRAY_SIZE(sw_phase_conversion_info);
+        for (uint8_t i=0; i<table_size; i++) {
+            AP_Param::convert_old_parameter(&sw_phase_conversion_info[i], 1.0);
+        }
     }
 }
 
