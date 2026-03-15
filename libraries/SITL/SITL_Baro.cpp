@@ -45,6 +45,14 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     // @DisplayName: Wind coefficient forward
     // @Description: Barometer wind coefficient direction forward in SITL
     // @User: Advanced
+    // @Param: STRTDLY
+    // @DisplayName: Barometer startup delay
+    // @Description: Delay in seconds before barometer starts producing data. Simulates slow-starting sensors like external AHRS.
+    // @Units: s
+    // @Range: 0 30
+    // @User: Advanced
+    AP_GROUPINFO("STRTDLY", 13, SIM::BaroParm, start_delay, 0),
+
     AP_GROUPINFO("WCF_FWD", 7,  SIM::BaroParm, wcof_xp, 0.0),
     // @Param: WCF_BAK
     // @DisplayName: Wind coefficient backward
