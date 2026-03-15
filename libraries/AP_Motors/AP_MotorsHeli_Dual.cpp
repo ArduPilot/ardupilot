@@ -99,6 +99,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
 
+    // @Param: SW_PHANG
+    // @DisplayName: Swash 1 Phase Angle Compensation
+    // @Description: Phase angle compensation can be used to correct control coupling issues.  If pitching the swash forward induces a roll, this can be correct the problem.
+    // @Range: -30 30
+    // @Units: deg
+    // @User: Advanced
+    // @Increment: 1
+
     // @Param: SW_H3_ENABLE
     // @DisplayName: Swash 1 H3 Generic Enable
     // @Description: Automatically set when H3 generic swash type is selected for swashplate 1. Do not set manually.
@@ -125,14 +133,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-
-    // @Param: SW_H3_PHANG
-    // @DisplayName: Swash 1 H3 Generic Phase Angle Comp
-    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
-    // @Range: -30 30
-    // @Units: deg
-    // @User: Advanced
-    // @Increment: 1
     AP_SUBGROUPINFO(_swashplate1, "SW_", 20, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
 
     // @Param: SW2_TYPE
@@ -152,6 +152,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Description: This linearizes the swashplate 2 servo's mechanical output to account for nonlinear output due to arm rotation.  This requires a specific setup procedure to work properly.  The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links.  See the ardupilot wiki for more details on setup.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
+
+    // @Param: SW2_PHANG
+    // @DisplayName: Swash 2 Phase Angle Compensation
+    // @Description: Phase angle compensation can be used to correct control coupling issues.  If pitching the swash forward induces a roll, this can be correct the problem.
+    // @Range: -30 30
+    // @Units: deg
+    // @User: Advanced
+    // @Increment: 1
 
     // @Param: SW2_H3_ENABLE
     // @DisplayName: Swash 2 H3 Generic Enable
@@ -179,14 +187,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-
-    // @Param: SW2_H3_PHANG
-    // @DisplayName: Swash 2 H3 Generic Phase Angle Comp
-    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
-    // @Range: -30 30
-    // @Units: deg
-    // @User: Advanced
-    // @Increment: 1
     AP_SUBGROUPINFO(_swashplate2, "SW2_", 21, AP_MotorsHeli_Dual, AP_MotorsHeli_Swash),
 
     // @Param: DCP_TRIM
