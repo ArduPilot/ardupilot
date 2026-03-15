@@ -1,0 +1,253 @@
+# hw definition file for processing by chibios_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_SPARKNAVI_BLUE 
+
+FLASH_SIZE_KB 2048
+
+# supports upto 8MBits/s
+CANFD_SUPPORTED 8
+
+# with 2M flash we can afford to optimize for speed
+env OPTIMIZE -O2
+
+# bootloader takes first sector
+FLASH_RESERVE_START_KB 128
+
+# enable RAMTROM parameter storage
+define HAL_STORAGE_SIZE 32768
+
+# order of I2C buses (Mask 1 2...)
+I2C_ORDER I2C2 I2C4
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 UART7 OTG2
+
+# default the 2nd interface to MAVLink2 until MissionPlanner updates drivers
+define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+
+
+# UART for IOMCU
+IOMCU_UART UART8
+
+# UARTs
+# USART2 is telem1
+PD6 USART2_RX USART2
+PD5 USART2_TX USART2
+PD3 USART2_CTS USART2
+PD4 USART2_RTS USART2
+
+# USART3 is telem2
+PD9 USART3_RX USART3
+PD8 USART3_TX USART3
+PD11 USART3_CTS USART3
+PB14 USART3_RTS USART3
+
+# USART1 is GPS1
+PB15 USART1_RX USART1 NODMA
+PA9 USART1_TX USART1 NODMA
+
+# UART4 GPS2
+PD0 UART4_RX UART4 NODMA
+PD1 UART4_TX UART4 NODMA
+
+# UART7 is debug
+PE7 UART7_RX UART7 NODMA
+PE8 UART7_TX UART7 NODMA
+
+# UART8 is for IOMCU
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+
+# analog in
+PA0 BATT_VOLTAGE_SENS ADC1 SCALE(1) #Battery Voltage
+PA1 BATT_CURRENT_SENS ADC1 SCALE(1) #Battery Current Sensor
+
+PA2 BATT2_VOLTAGE_SENS ADC1 SCALE(1) #Battery2 Voltage
+PA3 BATT2_CURRENT_SENS ADC1 SCALE(1) #Battery2 Current Sensor
+
+define HAL_WITH_RAMTRON 1
+
+# now we define the pins that USB is connected on
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# these are the pins for SWD debugging with a STlinkv2 or black-magic probe
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# SPI1 - (IIM-42652/ICM42688)
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PD7 SPI1_MOSI SPI1
+
+# SPI2 - FRAM (FM25V05-G) IC FRAM 512KBIT SPI 40MHZ 8SOIC
+PB13 SPI2_SCK SPI2
+PC2 SPI2_MISO SPI2
+PC3 SPI2_MOSI SPI2
+
+# SPI6 - external SPI connector
+PB3 SPI6_SCK SPI6
+PB4 SPI6_MISO SPI6
+PA7 SPI6_MOSI SPI6
+PB2 EXTERNAL_CS CS
+
+# sensor CS
+PE6 IIM42652_CS CS    
+PA8 ICM42688_CS CS 
+PB12 FRAM_CS CS SPEED_VERYLOW
+
+# I2C buses external connector
+PB10 I2C2_SCL I2C2 PULLUP 
+PB11 I2C2_SDA I2C2 PULLUP
+
+#QMC5883L & SPL06
+PD12 I2C4_SCL I2C4
+PD13 I2C4_SDA I2C4
+
+# drdy pins
+PE10 DRDY_ICM42652 INPUT   
+PE12 DRDY_ICM42688 INPUT
+PD15 DRDY_QMC5883L INPUT
+
+PA4 SPARE2_ADC1 ADC1 SCALE(1)   #ADC1_6V6_IN
+
+PC0 VDD_5V_SENS ADC1 SCALE(2) #5V Sense
+PC1 SCALED_V3V3 ADC1 SCALE(2) #3.3V Sense (ADC1_3V3_IN)
+
+# voltage divider 1/(16.9/(33+16.9))
+define HAL_IOMCU_VSERVO_SCALAR 1 / (16.9 / (33 + 16.9))
+
+# CAN bus
+PB8 CAN1_RX CAN1
+PB9 CAN1_TX CAN1
+
+PB5 CAN2_RX CAN2
+PB6 CAN2_TX CAN2
+
+# GPIOs
+PC13 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
+PC5  GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(71)
+
+# PWM AUX channels  (AUX1~6)
+PE14 TIM1_CH4  TIM1  PWM(1) GPIO(50) BIDIR
+PA10 TIM1_CH3  TIM1  PWM(2) GPIO(51)
+PE11 TIM1_CH2  TIM1  PWM(3) GPIO(52) BIDIR
+PE9  TIM1_CH1  TIM1  PWM(4) GPIO(53)
+PA15 TIM2_CH1  TIM2  PWM(5) GPIO(54) BIDIR
+PD14 TIM4_CH3  TIM4  PWM(6) GPIO(55) 
+
+# PWM output for buzzer
+PE5 TIM15_CH1 TIM15 GPIO(77) ALARM
+
+define HAL_HAVE_IMU_HEATER 0
+#define HAL_IMU_TEMP_DEFAULT 45
+
+PB0 VBUS INPUT
+
+# SPI devices
+SPIDEV icm42652       SPI1 DEVID1  IIM42652_CS     MODE3   8*MHZ  16*MHZ
+SPIDEV icm42688       SPI1 DEVID2  ICM42688_CS     MODE3   8*MHZ  16*MHZ
+SPIDEV ramtron        SPI2 DEVID1  FRAM_CS         MODE3   8*MHZ   8*MHZ 
+
+# Two IMUs
+IMU Invensensev3 SPI:icm42652 ROTATION_NONE
+IMU Invensensev3 SPI:icm42688 ROTATION_NONE
+
+#@Param: _FAST_SAMPLE
+#@Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU
+define HAL_DEFAULT_INS_FAST_SAMPLE 3    
+
+BARO BMP280 I2C:1:0x76
+
+define AP_PERIPH_AIRSPEED_ENABLED 1
+    
+define HAL_I2C_INTERNAL_MASK 1
+define AP_COMPASS_PROBING_ENABLED 1
+
+COMPASS HMC5843 I2C:1:0x1E false ROTATION_ROLL_270_YAW_90
+define AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED 1
+
+define AP_PERIPH_ADSB_ENABLED 1
+
+# allow to have have a dedicated safety switch pin
+define HAL_HAVE_SAFETY_SWITCH 1
+
+# Enable RAMTROM parameter storage.
+define HAL_WITH_RAMTRON 1
+
+# microSD support
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+PC6 LED_GREEN OUTPUT GPIO(1)
+PC7 LED_BLUE OUTPUT GPIO(2)
+
+PB1 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
+
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1 #unmark for 4.6.0-beta
+
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 0
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 2
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 1
+
+
+DMA_PRIORITY SDMMC* UART8* ADC* UART* USART* SPI* TIM*
+
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_8MHz_lowpolh.bin
+
+PE15 VDD_BRICK_VALID INPUT PULLDOWN
+
+#This maps to the MAV_POWER_STATUS_SERVO_VALID in mavlink
+#see AnalogIn.cpp
+#secondary "brick" power supply valid pin. This is servo rail power valid on some boards. Some boards have this active high,
+#some active low. Use nVALID for active low, VALID for active high. This maps to the MAV_POWER_STATUS_SERVO_VALID in mavlink
+#(as this was first added for older boards that used servo rail for backup power)
+
+define VDD_BRICK2_VALID 1
+
+define HAL_BATT_MONITOR_DEFAULT 4  # Analog voltage and current
+define HAL_BATT2_MONITOR_DEFAULT 4  # Analog voltage and current
+define HAL_BATT_VOLT_PIN 16         #ADC1 ADC1_IN16    see AP_BattMonitor_Analog.h
+define HAL_BATT_CURR_PIN 17         #ADC1 ADC1_IN17
+define HAL_BATT2_VOLT_PIN 14        #ADC1 ADC1_IN14
+define HAL_BATT2_CURR_PIN 15        #ADC1 ADC1_IN15
+define HAL_BATT_VOLT_SCALE 16.76111 # for SparkNavi Blue Sapphire Power
+define HAL_BATT_CURR_SCALE 100 # for SparkNavi Blue Blue Sapphire Power
+define HAL_BATT2_VOLT_SCALE 16.76111 # for SparkNavi Blue Sapphire Power
+define HAL_BATT2_CURR_SCALE 100 # for SparkNavi Blue Sapphire Power
+
+
+PE2 VDD_5V_PERIPH_EN OUTPUT HIGH
+PE3 VDD_5V_HIPOWER_EN OUTPUT HIGH
+PB7 VDD_3V3_SD_CARD_EN OUTPUT HIGH
+
+# enable support for dshot on iomcu
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_8MHz_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_DSHOT 1
+
+# enable DFU reboot for installing bootloader
+# note that if firmware is build with --secure-bl then DFU is
+# disabled
+ENABLE_DFU_BOOT 1
+
+#define AP_EXTERNAL_AHRS_TINYPOS900_ENABLED 1
+
+# bootloader embedding  
+define AP_BOOTLOADER_FLASHING_ENABLED 1
