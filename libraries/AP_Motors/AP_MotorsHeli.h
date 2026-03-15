@@ -27,9 +27,6 @@
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
 
 
-// flybar types
-#define AP_MOTORS_HELI_NOFLYBAR                 0
-
 // rsc function output channels.
 #define AP_MOTORS_HELI_RSC                      CH_8
 
