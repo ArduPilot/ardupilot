@@ -162,6 +162,7 @@ public:
         DISABLE_PREARM_DISPLAY             = (1U << 0),
         DISABLE_STATUSTEXT_ON_STATE_CHANGE = (1U << 1),
         SKIP_IMU_CONSISTENCY_ICE_RUNNING   = (1U << 2),
+        PENDING_ARM_ON_SWITCH              = (1U << 3),
     };
     bool option_enabled(Option option) const {
         return (_arming_options & uint32_t(option)) != 0;
@@ -189,6 +190,7 @@ protected:
     AP_Int32                _arming_options;
     AP_Int16                magfield_error_threshold;
     AP_Enum<RequireLocation> require_location;
+    AP_Float                 _pending_arm_timeout_s;
 
     // internal members
     bool                    armed;
