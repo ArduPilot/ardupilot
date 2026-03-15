@@ -372,7 +372,7 @@ public:
         k_param__gcs,
 
         k_param_tri_mix_gain,
-        k_param_tri_deflection_limit,
+        k_param_tri_trim_dz,
 
     };
 
@@ -479,7 +479,7 @@ public:
     AP_Int16 gcs_pid_mask;
     
     AP_Float tri_mix_gain;
-    AP_Float tri_deflection_limit;
+    AP_Float tri_trim_dz;
 };
 
 /*

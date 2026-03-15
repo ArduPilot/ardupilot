@@ -225,20 +225,15 @@
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
-// TRI-FIN MIXING and GRIDFIN CONFIGURATION
+// TRI-FIN MIXING and CONFIGURATION
 
 //tuning parameters
 #ifndef TRI_MIX_GAIN_DEFAULT
  # define TRI_MIX_GAIN_DEFAULT      1.0f   
 #endif
 
-#ifndef TRI_MIX_LR
-//Ratio of CG-to-gridfin distance (L) to radial distance from vehicle centerline to grid fin center (R)
- # define TRI_MIX_LR     5.0f   
-#endif
-
-#ifndef TRI_DEFAULT_LIMIT
- # define TRI_DEFAULT_LIMIT 940  // scaled servo units, default gridfin limit (~15° deflection assuming ~72° max servo travel)
+#ifndef TRI_TRIM_DZ_DEFAULT
+ # define TRI_TRIM_DZ_DEFAULT      0.01f   
 #endif
 
 #ifndef TRI_FIN1_AZIMUTH

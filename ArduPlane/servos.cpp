@@ -409,10 +409,6 @@ void Plane::trifin_setup()
     }
 
     trifin_initialized = true;
-    static int call_count = 0;
-    call_count++;
-    const float k = TRI_MIX_LR;  // tri-mix L/R
-    const float inv_k = 1.0f / k;
 
     // Fin azimuth angles from config (deg -> radians)
     const float a1 = radians(TRI_FIN1_AZIMUTH);
@@ -423,20 +419,24 @@ void Plane::trifin_setup()
     const float s2 = sinf(a2), c2 = cosf(a2);
     const float s3 = sinf(a3), c3 = cosf(a3);
 
+    const float inv_roll_norm  = 1.0f / sqrtf(3.0f);
+    const float inv_pitch_norm = 1.0f / sqrtf(c1*c1 + c2*c2 + c3*c3);
+    const float inv_yaw_norm   = 1.0f / sqrtf(s1*s1 + s2*s2 + s3*s3);
+
     // Roll contribution (all fins same, negative to match conventional control)
-    trifin_mix[0][0] = -1.0f;
-    trifin_mix[1][0] = -1.0f;
-    trifin_mix[2][0] = -1.0f;
+    trifin_mix[0][0] = -1.0f * inv_roll_norm;
+    trifin_mix[1][0] = -1.0f * inv_roll_norm;
+    trifin_mix[2][0] = -1.0f * inv_roll_norm;
 
     // Pitch contribution
-    trifin_mix[0][1] =  c1 * inv_k;
-    trifin_mix[1][1] =  c2 * inv_k;
-    trifin_mix[2][1] =  c3 * inv_k;
+    trifin_mix[0][1] =  c1 * inv_pitch_norm;
+    trifin_mix[1][1] =  c2 * inv_pitch_norm;
+    trifin_mix[2][1] =  c3 * inv_pitch_norm;
 
     // Yaw contribution
-    trifin_mix[0][2] =  s1 * inv_k;
-    trifin_mix[1][2] =  s2 * inv_k;
-    trifin_mix[2][2] =  s3 * inv_k;
+    trifin_mix[0][2] =  s1 * inv_yaw_norm;
+    trifin_mix[1][2] =  s2 * inv_yaw_norm;
+    trifin_mix[2][2] =  s3 * inv_yaw_norm;
 }
 
 void Plane::trifin_update()
@@ -449,15 +449,29 @@ void Plane::trifin_update()
     const float yaw   = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
 
     const float G = g.tri_mix_gain.get();  // tri-mix Gain
-    const float limit = g.tri_deflection_limit.get(); //grid fin limit
 
     // Apply the precomputed mixing matrix
     float fins[3];
+    float max_deflection = 0.0f;
+
+    // First pass: Calculate mixed outputs
     for (int i = 0; i < 3; i++) {
-        fins[i] = G*(trifin_mix[i][0] * roll
-                + trifin_mix[i][1] * pitch
-                + trifin_mix[i][2] * yaw);
-        fins[i] = constrain_float(fins[i], -limit, limit);  // limit servo deflection
+        fins[i] = G * (trifin_mix[i][0] * roll
+                     + trifin_mix[i][1] * pitch
+                     + trifin_mix[i][2] * yaw);
+
+        // Track the highest requested deflection
+        if (fabsf(fins[i]) > max_deflection) {
+            max_deflection = fabsf(fins[i]);
+        }
+    }
+
+    // Proportionally scale down if saturated to maintain control ratios
+    if (max_deflection > 4500.0f) {
+        const float scale_factor = 4500.0f / max_deflection;
+        for (int i = 0; i < 3; i++) {
+            fins[i] *= scale_factor;
+        }
     }
 
     // Set outputs
@@ -1104,7 +1118,7 @@ void Plane::servos_output(void)
     // implement differential spoilers
     dspoiler_update();
 
-    // implement tri-gridfin mixer
+    // implement tri-fin mixer
     trifin_update();
 
     //  set control surface servos to neutral
@@ -1190,6 +1204,30 @@ void Plane::servos_auto_trim(void)
 
     g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_left,  roll_I);
     g2.servo_channels.adjust_trim(SRV_Channel::k_flaperon_right, roll_I);
+
+    // for tri-fin
+
+    //ensures that the trifin_mix matrix is setup (can only run once)
+    trifin_setup();
+
+    // Use a small epsilon to avoid excessive trim corrections (servo chatter)
+    const float epsilon = g.tri_trim_dz; //default 0.01f
+
+    float trifin_trim[3];
+    for (int i = 0; i < 3; i++) {
+        trifin_trim[i] = (roll_I * trifin_mix[i][0]) + (pitch_I * trifin_mix[i][1]);
+        
+        // Deadzone check
+        if (fabsf(trifin_trim[i]) < epsilon) {
+            trifin_trim[i] = 0.0f;
+        }
+    }
+
+    g2.servo_channels.adjust_trim(SRV_Channel::k_trifin1, trifin_trim[0]);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_trifin2, trifin_trim[1]);
+    g2.servo_channels.adjust_trim(SRV_Channel::k_trifin3, trifin_trim[2]);
+
+
 
     // cope with various dspoiler options
     const int8_t bitmask = g2.crow_flap_options.get();

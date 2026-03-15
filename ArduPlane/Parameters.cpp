@@ -989,20 +989,18 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: TRI_MIX_GAIN
     // @DisplayName: TriFin Mixing Gain
-    // @Description: Overall gain applied to tri-gridfin mixer outputs (scaled units).
+    // @Description: Overall gain applied to tri-fin mixer outputs (scaled units).
     // @Range: 0.1 2.0
     // @Increment: 0.01
     GSCALAR(tri_mix_gain,  "TRI_MIX_GAIN",  TRI_MIX_GAIN_DEFAULT),
 
-    // @Param: TRI_DEFLECTION_LIMIT
-    // @DisplayName: Tri-Fin Maximum Deflection
-    // @Description: Maximum absolute tri-gridfin deflection output from the mixer in scaled servo units.
-    // @Description: ArduPilot scaled units map -4500..4500 to the configured SERVOx_MIN..SERVOx_MAX range.
-    // @Description: The default (~940) corresponds to approximately 15 degrees of fin deflection assuming
-    // @Description: a typical servo response of 1000–2000 µs ≈ ±90° and SERVOx_TRIM=1500, SERVOx_MAX=1900.
-    // @Range: 0 4500
-    // @Increment: 1
-    GSCALAR(tri_deflection_limit, "TRI_DEFLECTION_LIMIT", TRI_DEFAULT_LIMIT),
+    // @Param: TRI_TRIM_DZ
+    // @DisplayName: Tri-Fin Trim Deadzone
+    // @Description: Threshold for I-term trim adjustments. Prevents servo chatter by ignoring small persistent errors. 0.01 = 1% I-term.
+    // @Range: 0 0.1
+    // @Increment: 0.001
+    // @User: Advanced
+    GSCALAR(tri_trim_dz, "TRI_TRIM_DZ", TRI_TRIM_DZ_DEFAULT),
 
     AP_VAREND
 };
