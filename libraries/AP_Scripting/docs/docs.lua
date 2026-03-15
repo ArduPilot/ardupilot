@@ -4044,12 +4044,14 @@ function fence:get_margin_breach_time() end
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
 
--- Returns minimum safe altitude in meters above home alt frame (i.e. alt_min + margin)
----@return number 
+-- Returns minimum safe altitude in meters and its altitude frame (i.e. alt_min + margin)
+---@return number altitude_m
+---@return integer frame -- 0:Above sea level, 1:Above Home, 2:Above Origin, 3:Above Terrain
 function fence:get_safe_alt_min() end
 
--- Returns maximum safe altitude in meters above home alt frame (i.e. alt_max - margin)
----@return number 
+-- Returns maximum safe altitude in meters and its altitude frame (i.e. alt_max - margin)
+---@return number altitude_m
+---@return integer frame -- 0:Above sea level, 1:Above Home, 2:Above Origin, 3:Above Terrain
 function fence:get_safe_alt_max() end
 
 -- Returns configured fences
