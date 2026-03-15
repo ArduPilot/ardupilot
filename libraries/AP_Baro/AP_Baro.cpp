@@ -324,29 +324,10 @@ void AP_Baro::calibrate(bool save)
     // offset is supposed to be for within a flight
     _alt_offset.set_and_save(0);
 
-    // let the barometer settle for a full second after startup
-    // the MS5611 reads quite a long way off for the first second,
-    // leading to about 1m of error if we don't wait
-    bool settled = true;
-    for (uint8_t i = 0; i < 10; i++) {
-        uint32_t tstart = AP_HAL::millis();
-        do {
-            update();
-            if (AP_HAL::millis() - tstart > 500) {
-                // sensor not responding yet; deferred calibration
-                // in update() will handle slow-starting sensors
-                settled = false;
-                break;
-            }
-            hal.scheduler->delay(10);
-        } while (!healthy());
-        if (!settled) {
-            break;
-        }
-        hal.scheduler->delay(100);
-    }
-
-    // sensors not yet producing data, mark all uncalibrated
+    // all calibration is deferred to update() to avoid blocking
+    // startup.  Sensors will be calibrated as data arrives with
+    // settling and sampling handled in the deferred path.
+    // A pre-arm check ensures calibration is complete before arming.
     for (uint8_t i=0; i<_num_sensors; i++) {
         sensors[i].calibrated = false;
         sensors[i].cal_start_ms = 0;
@@ -1132,6 +1113,15 @@ void AP_Baro::handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt)
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
 {
+    // check calibration first — gives a more specific message than
+    // "not healthy" when deferred calibration hasn't completed
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (!sensors[i].calibrated) {
+            hal.util->snprintf(buffer, buflen, "#%u not calibrated", i+1);
+            return false;
+        }
+    }
+
     if (!all_healthy()) {
         hal.util->snprintf(buffer, buflen, "not healthy");
         return false;
