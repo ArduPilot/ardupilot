@@ -4391,6 +4391,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SERIAL5_PROTOCOL": 1,
         })
         self.reboot_sitl()
+        # wait for EKF to fully initialize after reboot — without
+        # GPS, the EKF needs time in AID_NONE before it can report
+        # position after origin is set
+        self.delay_sim_time(5)
         # without a GPS or some sort of external prompting, AP
         # doesn't send system_time messages.  So prompt it:
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
@@ -4451,6 +4455,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_VICON_TMASK": 8,  # send VISION_POSITION_DELTA
         })
         self.reboot_sitl()
+        # wait for EKF to fully initialize after reboot
+        self.delay_sim_time(5)
         # without a GPS or some sort of external prompting, AP
         # doesn't send system_time messages.  So prompt it:
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
@@ -11048,6 +11054,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Changed to ALT_HOLD with no altitude estimate")
         self.disarm_vehicle(force=True)
 
+    def BaroDeferredCalibration(self):
+        '''Test that deferred baro calibration works with slow-starting sensor'''
+        # Simulate a slow-starting baro (e.g. external AHRS) that
+        # takes 5 seconds to produce data.  Verify:
+        # 1. Pre-arm check prevents arming before calibration
+        # 2. Calibration completes once data arrives
+        # 3. Vehicle can arm and fly normally afterwards
+        self.set_parameters({
+            "SIM_BARO_STRTDLY": 3,
+            "SIM_BAR2_STRTDLY": 3,
+        })
+        self.reboot_sitl(check_position=False)
+
+        # baro should not be calibrated yet — check pre-arm fails
+        self.delay_sim_time(1)
+        self.assert_prearm_failure("not calibrated")
+
+        # wait for calibration to complete (3s startup + ~2s calibration)
+        self.wait_ready_to_arm(timeout=30)
+
+        # verify we can arm and take off normally
+        self.takeoff(10, mode='LOITER')
+        self.do_RTL()
+
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
         self.wait_ready_to_arm()
@@ -15795,6 +15825,7 @@ return update, 1000
             self.CRSF,
             self.MotorTest,
             self.AltEstimation,
+            self.BaroDeferredCalibration,
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
