@@ -66,6 +66,12 @@ void AP_Baro_SITL::_timer()
         return;
     }
 
+    // simulate slow-starting sensor
+    const float start_delay_s = _sitl->baro[_instance].start_delay;
+    if (start_delay_s > 0 && now < (uint32_t)(start_delay_s * 1000)) {
+        return;
+    }
+
     const auto drift_delta_t_ms = now - last_drift_delta_t_ms;
     last_drift_delta_t_ms = now;
     total_alt_drift += _sitl->baro[_instance].drift * drift_delta_t_ms * 0.001f;
