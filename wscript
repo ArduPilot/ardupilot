@@ -608,6 +608,7 @@ def configure(cfg):
 
     cfg.recurse('libraries/AP_Networking')
     cfg.recurse('libraries/AP_DDS')
+    cfg.recurse('libraries/AP_Zenoh')
 
     cfg.start_msg('Scripting runtime checks')
     if cfg.options.scripting_checks:
@@ -801,6 +802,7 @@ def _build_dynamic_sources(bld):
         )
 
     bld.recurse("libraries/AP_DDS")
+    bld.recurse("libraries/AP_Zenoh")
 
     def write_version_header(tsk):
         bld = tsk.generator.bld
