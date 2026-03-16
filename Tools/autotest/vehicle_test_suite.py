@@ -14565,6 +14565,7 @@ switch value'''
                 raise NotAchievedException(f"gps type {name} misbehaving")
 
     def assert_gps_satellite_count(self, messagename, count):
+        self.drain_mav()
         m = self.assert_receive_message(messagename)
         if m.satellites_visible != count:
             raise NotAchievedException("Expected %u sats, got %u" %
