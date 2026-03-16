@@ -527,7 +527,7 @@ void AP_RCProtocol_CRSF::reset_bootstrap_baudrate()
     }
 }
 
-#endif
+#endif // AP_CRSF_OUT_ENABLED
 
 // send out telemetry
 bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
@@ -539,7 +539,7 @@ bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
     }
 
     if (!telem_available) {
-        if (AP_CRSF_Telem::get_telem_data(this, (AP_CRSF_Protocol::Frame*)&_telemetry_frame, is_tx_active())) {
+        if (AP_CRSF_Telem::get_telem_data((AP_CRSF_Protocol::Frame*)&_telemetry_frame, is_tx_active())) {
             telem_available = true;
         } else {
             return false;
