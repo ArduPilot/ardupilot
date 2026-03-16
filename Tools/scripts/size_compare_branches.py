@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 '''
 Wrapper around elf_diff (https://github.com/noseglasses/elf_diff)
 to create a html report comparing an ArduPilot build across two
@@ -17,6 +15,8 @@ Starting in the ardupilot directory.
 
 Output is placed into ELF_DIFF_[VEHICLE_NAME]
 '''
+
+from __future__ import annotations
 
 import copy
 import fnmatch

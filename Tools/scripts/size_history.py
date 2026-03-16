@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 '''
 Build N commits on a branch and track flash size and feature changes.
 
@@ -16,6 +14,8 @@ Usage:
 
 AP_FLAKE8_CLEAN
 '''
+
+from __future__ import annotations
 
 import argparse
 import html
