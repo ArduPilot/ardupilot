@@ -862,6 +862,10 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
             navail = MIN(navail, max_bytes);
             if (_sim_serial_device != nullptr) {
                 nwritten = _sim_serial_device->write_to_device((const char*)readptr, navail);
+                // Half-duplex: echo TX bytes back to RX to simulate shared-wire behaviour
+                if (nwritten > 0 && (get_options() & OPTION_HDPLEX)) {
+                    _sim_serial_device->write_to_autopilot((const char*)readptr, nwritten);
+                }
             } else if (!_use_send_recv) {
                 nwritten = ::write(_fd, readptr, navail);
                 if (nwritten == -1 && errno != EAGAIN && _uart_path) {
