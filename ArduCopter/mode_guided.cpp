@@ -1358,8 +1358,7 @@ void ModeGuided::orbit_apply_yaw_behaviour()
 void ModeGuided::orbit_run()
 {
     // call circle controller
-    copter.failsafe_terrain_set_status(copter.circle_nav->update_ms());
-
+    copter.failsafe_terrain_set_status(copter.circle_nav->update_ms(0.0f));
     // check if we've completed the requested number of turns
     if (is_positive(_orbit_turns)) {
         const float turns_completed = fabsf(copter.circle_nav->get_angle_total_rad() / float(M_2PI));
@@ -1370,9 +1369,7 @@ void ModeGuided::orbit_run()
             return;
         }
     }
-
     // call attitude, position and yaw controllers
-    copter.failsafe_terrain_set_status(copter.circle_nav->update_ms(0.0f));
     pos_control->D_update_controller();
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
