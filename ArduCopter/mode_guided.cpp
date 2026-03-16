@@ -263,7 +263,7 @@ void ModeGuided::wp_control_run()
             copter.circle_nav->center_is_terrain_alt(),
             _orbit_rate_degs);
         _circle_moving_to_edge = false;
-        auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
+        orbit_apply_yaw_behaviour();
         guided_mode = SubMode::Orbit;
     }
 #endif
@@ -1272,7 +1272,7 @@ bool ModeGuided::resume()
 
 #if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
 // circle_start - initialise guided controller to fly a circle around a specified location
-void ModeGuided::circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns)
+void ModeGuided::circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, uint8_t yaw_behaviour)
 {
     // set circle center, radius and direction
     copter.circle_nav->set_center(circle_center);
@@ -1296,6 +1296,7 @@ void ModeGuided::circle_start(const Location &circle_center, float radius_m, boo
         _orbit_turns = turns;
         _orbit_angle_total_at_start = copter.circle_nav->get_angle_total_rad();
     }
+    _orbit_yaw_behaviour = yaw_behaviour;
 
     // check distance to edge of circle
     Vector3p circle_edge_ned_m;
@@ -1311,6 +1312,8 @@ void ModeGuided::circle_start(const Location &circle_center, float radius_m, boo
             copter.failsafe_terrain_on_event();
             return;
         }
+        // during approach look in direction of travel (default WP yaw behaviour)
+        auto_yaw.set_mode_to_default(false);
         guided_mode = SubMode::Orbit;
         _circle_moving_to_edge = true;
     } else {
@@ -1319,9 +1322,35 @@ void ModeGuided::circle_start(const Location &circle_center, float radius_m, boo
             copter.circle_nav->get_center_NED_m(),
             copter.circle_nav->center_is_terrain_alt(),
             _orbit_rate_degs);
-        // point camera/yaw toward circle center
-        auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
+        // set yaw behaviour
+        orbit_apply_yaw_behaviour();
         guided_mode = SubMode::Orbit;
+    }
+}
+
+// orbit_apply_yaw_behaviour - set yaw mode based on ORBIT_YAW_BEHAVIOUR parameter
+void ModeGuided::orbit_apply_yaw_behaviour()
+{
+    switch (_orbit_yaw_behaviour) {
+    case 0: // ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER
+    default:
+        auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
+        break;
+    case 1: // ORBIT_YAW_BEHAVIOUR_HOLD_INITIAL_HEADING
+        auto_yaw.set_fixed_yaw_rad(AP::ahrs().get_yaw(), 0.0f, 0, false);
+        break;
+    case 2: // ORBIT_YAW_BEHAVIOUR_UNCONTROLLED
+        auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+        break;
+    case 3: // ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TANGENT_TO_CIRCLE
+        auto_yaw.set_mode(AutoYaw::Mode::LOOK_AHEAD);
+        break;
+    case 4: // ORBIT_YAW_BEHAVIOUR_RC_CONTROLLED
+        auto_yaw.set_mode(AutoYaw::Mode::PILOT_RATE);
+        break;
+    case 5: // ORBIT_YAW_BEHAVIOUR_UNCHANGED
+        // do not change yaw mode
+        break;
     }
 }
 
@@ -1335,8 +1364,9 @@ void ModeGuided::orbit_run()
     if (is_positive(_orbit_turns)) {
         const float turns_completed = fabsf(copter.circle_nav->get_angle_total_rad() / float(M_2PI));
         if (turns_completed >= _orbit_turns) {
-            // orbit complete - hold position
-            pos_control_start();
+            // orbit complete - hold position and maintain yaw behaviour
+            hold_position();
+            orbit_apply_yaw_behaviour();
             return;
         }
     }
