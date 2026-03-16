@@ -337,7 +337,7 @@ public:
     // Process a frame from the CRSF protocol decoder
     static bool process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length);
     // get next telemetry data for external consumers of SPort data
-    static bool get_telem_data(const AP_RCProtocol_CRSF* crsf_port, AP_CRSF_Protocol::Frame* frame, bool is_tx_active);
+    static bool get_telem_data(AP_CRSF_Protocol::Frame* frame, bool is_tx_active);
     // start bind request
     void start_bind() { _bind_request_pending = true; }
     bool bind_in_progress() { return _bind_request_pending;}
@@ -420,7 +420,7 @@ private:
     void enable_tx_entries();
 
     // get next telemetry data for external consumers
-    bool _get_telem_data(const AP_RCProtocol_CRSF* crsf_port, AP_CRSF_Protocol::Frame* data, bool is_tx_active);
+    bool _get_telem_data(AP_CRSF_Protocol::Frame* data, bool is_tx_active);
     bool _process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length);
 
     TelemetryPayload _telem;
