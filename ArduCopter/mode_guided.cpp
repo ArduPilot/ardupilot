@@ -1257,7 +1257,7 @@ bool ModeGuided::resume()
 }
 
 // circle_start - initialise guided controller to fly a circle around a specified location
-void ModeGuided::circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, float turns)
+void ModeGuided::circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns)
 {
     // set circle center, radius and direction
     copter.circle_nav->set_center(circle_center);
@@ -1277,7 +1277,10 @@ void ModeGuided::circle_start(const Location &circle_center, float radius_m, boo
     if (ccw) { _orbit_rate_degs = -_orbit_rate_degs; }
     copter.circle_nav->set_rate_degs(_orbit_rate_degs);
     // store requested number of turns (0 = orbit forever)
-    _orbit_turns = turns;
+    if (update_turns) {
+        _orbit_turns = turns;
+        _orbit_angle_total_at_start = copter.circle_nav->get_angle_total_rad();
+    }
 
     // check distance to edge of circle
     Vector3p circle_edge_ned_m;

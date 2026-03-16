@@ -566,10 +566,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 
 #endif
 
-#if MODE_GUIDED_ENABLED
+#if AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
     case MAV_CMD_DO_ORBIT:
         return handle_MAV_CMD_DO_ORBIT(packet);
-
 #endif
 
     default:
@@ -893,11 +892,13 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int
     }
 
     // param4: Orbit around the centre point for this many radians. 0: Orbit forever
-    const float turns = isnan(packet.param4) ? 0.0f : fabsf(packet.param4);
-    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, turns);
+    // NaN means "do not change" - preserve existing turn count
+    const bool update_turns = !isnan(packet.param4);
+    const float turns = update_turns ? fabsf(packet.param4) : 0.0f;
+    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, update_turns, turns);
 
     // start orbit
-    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, turns);
+    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, update_turns, turns);
 
     return MAV_RESULT_ACCEPTED;
 }

@@ -178,6 +178,10 @@
 # define MODE_GUIDED_ENABLED 1
 #endif
 
+#ifndef AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
+# define AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED MODE_GUIDED_ENABLED
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED

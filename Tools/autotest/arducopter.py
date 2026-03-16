@@ -13852,7 +13852,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def DO_ORBIT(self):
         '''test MAV_CMD_DO_ORBIT in Guided mode'''
-        self.set_parameter("FS_GCS_ENABLE", 0)
+        #self.set_parameter("FS_GCS_ENABLE", 0)
         self.takeoff(20, mode='GUIDED')
 
         # offset home location 50m North and use as orbit center
