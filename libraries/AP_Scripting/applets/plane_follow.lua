@@ -25,7 +25,7 @@
    FOLLP_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.7.0-073"
+SCRIPT_VERSION = "4.7.0-074"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -221,7 +221,7 @@ FOLLP_LKAHD = bind_add_param("LKAHD", 16, 3)
     // @Description: Set this switch to simulate losing telemetry from the other vehicle
     // @Range: 300 307
 --]]
-FOLLP_SIM_TLF_FN = bind_add_param("SIM_TlF_FN", 17, 302)
+FOLLP_SIM_TLF_FN = bind_add_param("SIM_TLF_FN", 17, 302)
 
 --[[
     // @Param: FOLLP_XT_P
