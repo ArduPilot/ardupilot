@@ -665,6 +665,13 @@ void AP_RCProtocol_CRSF::start_uart()
     _uart->begin(get_bootstrap_baud_rate());
 }
 
+// return the current baud rate of the managed UART
+uint32_t AP_RCProtocol_CRSF::get_baud_rate() const
+{
+    AP_HAL::UARTDriver* uart = get_current_UART();
+    return uart ? uart->get_baud_rate() : 0;
+}
+
 // change the baudrate of the protocol if we are able
 bool AP_RCProtocol_CRSF::change_baud_rate(uint32_t baudrate)
 {

@@ -67,6 +67,8 @@ public:
 #endif
     // support for CRSF v3
     bool change_baud_rate(uint32_t baudrate);
+    // return the current baud rate of the managed UART
+    uint32_t get_baud_rate() const;
     // bootstrap baudrate
     uint32_t get_bootstrap_baud_rate() const {
 #if AP_RC_CHANNEL_ENABLED

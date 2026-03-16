@@ -85,7 +85,7 @@ void AP_CRSF_Out::init()
     }
 
     // find the configured CRSF output port
-    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF_Output, 0);
+    AP_HAL::UARTDriver* uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF_Output, 0);
     if (uart == nullptr) {
         return;
     }
@@ -145,7 +145,7 @@ void AP_CRSF_Out::crsf_out_thread()
         uint32_t interval_us = frame_interval_us;
 
         // if we have not negotiated a faster baudrate do not go above the default output rate
-        if (uint16_t(rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && uart->get_baud_rate() == CRSF_BAUDRATE) {
+        if (uint16_t(rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && crsf_port->get_baud_rate() == CRSF_BAUDRATE) {
             interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
         }
 

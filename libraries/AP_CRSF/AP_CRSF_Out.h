@@ -137,7 +137,6 @@ private:
 
     // pointer to the CRSF protocol engine instance for our assigned UART
     AP_RCProtocol_CRSF* crsf_port;
-    AP_HAL::UARTDriver* uart;
 
     AP_Int16 rate_hz;
     AP_Float reporting_rate_hz;
