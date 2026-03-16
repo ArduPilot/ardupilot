@@ -459,6 +459,10 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     // if rotor ramp and runup are both at full speed, then run-up has been completed
     if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
         _runup_complete = true;
+            //Send message to GCS for runup complete on non autothrottle modes
+        if (_control_mode != ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Time Elapsed");
+        }
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed
