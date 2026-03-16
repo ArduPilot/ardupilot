@@ -5791,7 +5791,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_preflight_calibration(packet, msg);
 
     case MAV_CMD_PREFLIGHT_STORAGE:
-        if (is_equal(packet.param1, 2.0f)) {
+        if (uint8_t(packet.param1) == PARAM_RESET_FACTORY_DEFAULT ||
+            uint8_t(packet.param1) == PARAM_RESET_ALL_DEFAULT) {
             AP_Param::erase_all();
             send_text(MAV_SEVERITY_WARNING, "All parameters reset, reboot board");
             return MAV_RESULT_ACCEPTED;
