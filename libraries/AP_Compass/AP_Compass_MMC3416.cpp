@@ -297,9 +297,4 @@ void AP_Compass_MMC3416::timer()
     }
 }
 
-void AP_Compass_MMC3416::read()
-{
-    drain_accumulated_samples();
-}
-
 #endif  // AP_COMPASS_MMC3416_ENABLED
