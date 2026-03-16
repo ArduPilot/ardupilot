@@ -154,7 +154,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
         target_accel_ned_mss = copter.mode_guided.get_target_accel_NED_mss();
         break;
-    case ModeGuided::SubMode::Circle:
+    case ModeGuided::SubMode::Orbit:
         if (copter.mode_guided.circle_moving_to_edge()) {
             // moving to edge - report WP position target
             type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
