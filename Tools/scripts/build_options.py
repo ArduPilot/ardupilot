@@ -447,6 +447,7 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'MAVLINK_MSG_RC_CHANNELS_RAW', 'AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', 'Enable RC_CHANNELS_RAW MAVLink messages', 0, None),  # noqa
     Feature('MAVLink', 'AP_MAVLINK_FTP_ENABLED', 'AP_MAVLINK_FTP_ENABLED', 'Enable MAVLink FTP protocol', 0, None),  # noqa
     Feature('MAVLink', 'MAV_CMD_SET_HAGL', 'AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Enable MAVLink HAGL command', 0, None),  # noqa
+    Feature('MAVLink', 'MAV_CMD_DO_ORBIT', 'AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED', 'Enable MAV_CMD_DO_ORBIT command in Guided mode', 0, None),  # noqa
     Feature('MAVLink', 'VIDEO_STREAM_INFORMATION', 'AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'Enable MAVLink VIDEO_STREAM_INFORMATION message', 0, "Camera"), # noqa
     Feature('Other', 'AP_FOLLOW', 'AP_FOLLOW_ENABLED', 'Enable Follow library', 0, None),
     Feature('MAVLink', 'MAVLINK_MSG_FLIGHT_INFORMATION', 'AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'Enable FLIGHT_INFORMATION MAVLink message', 0, None),  # noqa
