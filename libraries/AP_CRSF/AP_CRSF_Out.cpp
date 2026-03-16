@@ -52,34 +52,52 @@ AP_CRSF_Out* AP_CRSF_Out::singleton;
 
 extern const AP_HAL::HAL& hal;
 
-AP_CRSF_Out::AP_CRSF_Out(AP_HAL::UARTDriver& _uart, uint8_t instance, AP_CRSF_OutManager& _frontend) :
-    instance_idx(instance), uart(_uart), frontend(_frontend)
+const AP_Param::GroupInfo AP_CRSF_Out::var_info[] = {
+    // @Param: RATE
+    // @DisplayName: CRSF output rate
+    // @Description: This sets the CRSF output frame rate in Hz for RC Out.
+    // @Range: 25 1000
+    // @User: Advanced
+    // @Units: Hz
+    AP_GROUPINFO("RATE",  1, AP_CRSF_Out, rate_hz, DEFAULT_CRSF_OUTPUT_RATE),
+
+    // @Param: RPT_HZ
+    // @DisplayName: CRSF output reporting rate
+    // @Description: This sets the CRSF output reporting rate in Hz. 0 disables reporting.
+    // @Range: 0 5
+    // @User: Advanced
+    // @Units: Hz
+    AP_GROUPINFO("RPT_HZ",  2, AP_CRSF_Out, reporting_rate_hz, 0),
+    AP_GROUPEND
+};
+
+AP_CRSF_Out::AP_CRSF_Out()
 {
-    // in the future we could consider supporting multiple output handlers
-    if (singleton != nullptr) {
-        AP_HAL::panic("Duplicate CRSF_Out handler");
-    }
-
     singleton = this;
-
-    init(uart);
+    AP_Param::setup_object_defaults(this, var_info);
 }
 
-// Initialise the CRSF output driver
-bool AP_CRSF_Out::init(AP_HAL::UARTDriver& _uart)
+// Initialise the CRSF output driver, find port and start thread
+void AP_CRSF_Out::init()
 {
     if (state != State::WAITING_FOR_PORT) {
-        return false;
+        return;
     }
 
-    crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, &_uart);
+    // find the configured CRSF output port
+    uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF_Output, 0);
+    if (uart == nullptr) {
+        return;
+    }
+
+    crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, uart);
 
     if (crsf_port == nullptr) {
         debug_rcout("Init failed: could not create CRSF output port");
-        return false;
+        return;
     }
 
-    const uint16_t rate = frontend.rate_hz.get();
+    const uint16_t rate = rate_hz.get();
     if (rate > 0) {
         frame_interval_us = 1000000UL / rate;
     } else {
@@ -88,22 +106,19 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver& _uart)
 
     scheduler.init(tasks, rate);
     state = State::WAITING_FOR_RC_LOCK;
-    scheduler.set_task_rate(TaskIds::REPORTING, frontend.reporting_rate_hz);
-
+    scheduler.set_task_rate(TaskIds::REPORTING, reporting_rate_hz);
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::crsf_out_thread, void), "crsf", 2048, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
         delete crsf_port;
         crsf_port = nullptr;
         debug_rcout("Failed to create CRSF_Out thread");
-        return false;
+        return;
     }
-
-    return true;
 }
 
 void AP_CRSF_Out::update_rates_status()
 {
-    const float report_rate = frontend.reporting_rate_hz.get();
+    const float report_rate = reporting_rate_hz.get();
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CRSFOut: RC: %uHz, Lat: %.1fms",
                     int16_t(rate_rc_counter*report_rate), latency_us / 1000.0f);
@@ -120,7 +135,7 @@ void AP_CRSF_Out::crsf_out_thread()
 #ifdef CRSF_RCOUT_DEBUG
         const uint32_t now_ms = AP_HAL::millis();
         if (now_ms - last_update_debug_ms > 1000) {
-            debug_rcout("Frame rate: %uHz, wanted: %uHz.", unsigned(num_frames), unsigned(frontend.rate_hz.get()));
+            debug_rcout("Frame rate: %uHz, wanted: %uHz.", unsigned(num_frames), unsigned(rate_hz.get()));
             last_update_debug_ms = now_ms;
             num_frames = 0;
         }
@@ -130,7 +145,7 @@ void AP_CRSF_Out::crsf_out_thread()
         uint32_t interval_us = frame_interval_us;
 
         // if we have not negotiated a faster baudrate do not go above the default output rate
-        if (uint16_t(frontend.rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && uart.get_baud_rate() == CRSF_BAUDRATE) {
+        if (uint16_t(rate_hz.get()) > DEFAULT_CRSF_OUTPUT_RATE && uart->get_baud_rate() == CRSF_BAUDRATE) {
             interval_us = 1000000UL / DEFAULT_CRSF_OUTPUT_RATE;
         }
 
@@ -447,7 +462,7 @@ void AP_CRSF_Out::send_link_stats_tx()
     debug_rcout("send_link_stats_tx()");
 
     AP_CRSF_Protocol::Frame frame;
-    AP_CRSF_Protocol::encode_link_stats_tx_frame(frontend.rate_hz, frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
+    AP_CRSF_Protocol::encode_link_stats_tx_frame(rate_hz, frame, DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, DeviceAddress::CRSF_ADDRESS_CRSF_RECEIVER);
 
     crsf_port->write_frame(&frame);
 }

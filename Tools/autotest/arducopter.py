@@ -13289,8 +13289,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not lines[0].startswith("TasksV2"):
             raise NotAchievedException("Expected TasksV2 as first line first not (%s)" % lines[0])
         # last line is empty, so -2 here
-        if not lines[-2].startswith("AP_CRSF_OutManager::init"):
-            raise NotAchievedException("Expected CRSF out last not (%s)" % lines[-2])
+        if not lines[-2].startswith("update_arming"):
+            raise NotAchievedException("Expected update_arming last not (%s)" % lines[-2])
 
     def CRSFOutTwoVehicle(self):
         '''Test CRSF output between two vehicles'''

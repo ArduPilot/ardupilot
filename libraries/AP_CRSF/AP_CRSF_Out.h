@@ -29,10 +29,8 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_CRSF_Protocol.h"
-#include "AP_CRSF_OutManager.h"
 
 class AP_RCProtocol_CRSF;
-class AP_CRSF_OutManager;
 
 /*
  * The AP_CRSF_Out class provides the high-level "application" logic for the
@@ -42,14 +40,13 @@ class AP_CRSF_OutManager;
  */
 class AP_CRSF_Out : public AP_CRSF_Protocol {
 public:
-    // constructor for serial interaction
-    AP_CRSF_Out(AP_HAL::UARTDriver& _uart, uint8_t instance, AP_CRSF_OutManager& _frontend);
+    AP_CRSF_Out();
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_CRSF_Out);
 
-    // one-time initialisation
-    bool init(AP_HAL::UARTDriver& uart);
+    // one-time initialisation, finds serial port and starts thread
+    void init();
 
     // rc periodic update, called from loop
     void update() override;
@@ -113,7 +110,6 @@ private:
     bool should_do_status_update();
 
     static AP_CRSF_Out* singleton;
-    static uint8_t num_instances;
 
     State state = State::WAITING_FOR_PORT;
     uint32_t last_frame_us;
@@ -125,7 +121,6 @@ private:
     uint32_t target_baudrate;
     uint32_t last_liveness_check_us;
     uint32_t last_ping_frame_ms;
-    uint8_t instance_idx = 0; // Instance index (0, 1, 2...) for multi-instance use
     // rate counters
     uint32_t last_rate_update_ms;
     uint16_t rate_rc_counter;
@@ -142,8 +137,10 @@ private:
 
     // pointer to the CRSF protocol engine instance for our assigned UART
     AP_RCProtocol_CRSF* crsf_port;
-    AP_HAL::UARTDriver& uart;
-    AP_CRSF_OutManager& frontend;
+    AP_HAL::UARTDriver* uart;
+
+    AP_Int16 rate_hz;
+    AP_Float reporting_rate_hz;
 
     MinimalTickScheduler scheduler;
 
