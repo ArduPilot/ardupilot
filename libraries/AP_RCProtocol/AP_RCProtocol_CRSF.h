@@ -42,10 +42,9 @@ class AP_CRSF_Protocol;
 
 class AP_RCProtocol_CRSF : public AP_RCProtocol_Backend, public AP_CRSF_Protocol {
 public:
-    // a CRSF port can be used for RC IN, VTX control, or RC OUT
+    // a CRSF port can be used for RC IN or RC OUT
     enum class PortMode : uint8_t {
         PASSTHROUGH_RCIN,
-        DIRECT_VTX,
 #if AP_CRSF_OUT_ENABLED
         DIRECT_RCOUT,
 #endif
@@ -53,7 +52,7 @@ public:
 
     // Constructor for RCIN "passthrough" mode (called by AP_RCProtocol)
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend);
-    // Constructor for "direct-attach" modes (called by manager)
+    // Constructor for "direct-attach" modes (e.g. CRSF RC output)
     AP_RCProtocol_CRSF(AP_RCProtocol &_frontend, PortMode mode, AP_HAL::UARTDriver* uart);
 
     // entry point for bytes from high-level RCIN protocol discriminator

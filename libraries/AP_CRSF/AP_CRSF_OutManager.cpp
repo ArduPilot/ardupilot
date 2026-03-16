@@ -99,11 +99,8 @@ void AP_CRSF_OutManager::init()
             continue;
         }
 
-        if (protocol == AP_SerialManager::SerialProtocol_CRSF) {
-            instances[i] = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_VTX, uart);
-            num_instances++;
 #if AP_CRSF_OUT_ENABLED
-        } else if (protocol == AP_SerialManager::SerialProtocol_CRSF_Output) {
+        if (protocol == AP_SerialManager::SerialProtocol_CRSF_Output) {
             instances[i] = create_instance(*uart);
             num_instances++;
         }

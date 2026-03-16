@@ -125,6 +125,12 @@ AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) :
 {
     // This is the RCIN instance, register it as the singleton
     _rcin_singleton = this;
+#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+    _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF, 0);
+    if (_uart) {
+        start_uart();
+    }
+#endif
 }
 
 // constructor for "direct-attach" modes
@@ -335,9 +341,8 @@ void AP_RCProtocol_CRSF::update_uart(void)
 // called at 1KHz from new_input() by the rcin thread
 void AP_RCProtocol_CRSF::update(void)
 {
-    // if we are in direct attach mode for VTX, process data from the uart
-    // CRSF out ports manage this independently
-    if (_mode == PortMode::DIRECT_VTX) {
+    // if we are in standalone mode, process data from the uart
+    if (_uart) {
         update_uart();
     }
 
@@ -441,7 +446,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             // scale factors defined by TBS - TICKS_TO_US(x) ((x - 992) * 5 / 8 + 1500)
             AP_CRSF_Protocol::decode_11bit_channels((const uint8_t*)(&_frame.payload), MAX_CHANNELS, _channels);
             _crsf_v3_active = false;
-            rc_active = true;
+            rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS:
             process_link_stats_frame((uint8_t*)&_frame.payload);
@@ -450,7 +455,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
             if (_mode == PortMode::PASSTHROUGH_RCIN) {
                 AP_CRSF_Protocol::decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, MAX_CHANNELS, _channels);
                 _crsf_v3_active = true;
-                rc_active = true;
+                rc_active = !_uart; // only accept RC data if we are not in standalone mode
             }
             break;
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
