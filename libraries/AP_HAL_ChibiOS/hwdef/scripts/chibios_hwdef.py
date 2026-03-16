@@ -645,7 +645,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             ret = self.config[name][column]
 
         if type is not None:
-            if type == int and ret.startswith('0x'):
+            if type is int and ret.startswith('0x'):
                 try:
                     ret = int(ret, 16)
                 except Exception:
