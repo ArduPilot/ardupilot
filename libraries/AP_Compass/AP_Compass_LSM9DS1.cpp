@@ -152,11 +152,6 @@ void AP_Compass_LSM9DS1::_update(void)
     accumulate_sample(raw_field);
 }
 
-void AP_Compass_LSM9DS1::read()
-{
-    drain_accumulated_samples();
-}
-
 bool AP_Compass_LSM9DS1::_check_id(void)
 {
     // initially run the bus at low speed

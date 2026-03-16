@@ -225,8 +225,4 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
 }
 #endif  // AP_COMPASS_DRONECAN_HIRES_ENABLED
 
-void AP_Compass_DroneCAN::read(void)
-{
-    drain_accumulated_samples();
-}
 #endif  // AP_COMPASS_DRONECAN_ENABLED
