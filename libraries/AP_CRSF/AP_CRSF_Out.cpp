@@ -88,7 +88,7 @@ bool AP_CRSF_Out::init(AP_HAL::UARTDriver& _uart)
 
     scheduler.init(tasks, rate);
     state = State::WAITING_FOR_RC_LOCK;
-    scheduler.set_task_rate(REPORTING, frontend.reporting_rate_hz);
+    scheduler.set_task_rate(TaskIds::REPORTING, frontend.reporting_rate_hz);
 
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::crsf_out_thread, void), "crsf", 2048, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
