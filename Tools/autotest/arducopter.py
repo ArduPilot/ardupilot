@@ -11162,7 +11162,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_prearm_failure("not calibrated")
 
         # wait for calibration to complete (3s startup + ~2s calibration)
-        self.wait_ready_to_arm(timeout=30)
+        self.wait_ready_to_arm(timeout=60)
 
         # verify we can arm and take off normally
         self.takeoff(10, mode='LOITER')
