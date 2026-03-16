@@ -1,10 +1,10 @@
-from __future__ import annotations
-
 '''
 Base class for ArduPilot build scripts providing common utilities
 
 AP_FLAKE8_CLEAN
 '''
+
+from __future__ import annotations
 
 import os
 import pathlib

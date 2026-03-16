@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 '''
 Check PR branch commit conventions and markdown linting.
 
@@ -14,6 +12,8 @@ Validates:
 
 AP_FLAKE8_CLEAN
 '''
+
+from __future__ import annotations
 
 import argparse
 import os

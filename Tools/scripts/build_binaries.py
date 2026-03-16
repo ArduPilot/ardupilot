@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 """
 script to build the latest binaries for each vehicle type, ready to upload
 Peter Barker, August 2017
@@ -9,6 +7,8 @@ based on build_binaries.sh by Andrew Tridgell, March 2013
 
 AP_FLAKE8_CLEAN
 """
+
+from __future__ import annotations
 
 import datetime
 import optparse

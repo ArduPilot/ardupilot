@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 '''
 Look at the difference between this and its merge-base with master
 
@@ -9,6 +7,8 @@ for each new hwdef file, build the board
 
 AP_FLAKE8_CLEAN
 '''
+
+from __future__ import annotations
 
 import optparse
 import os
