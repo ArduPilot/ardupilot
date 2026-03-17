@@ -6202,7 +6202,7 @@ void GCS_MAVLINK::send_position_target_global_int()
     if (!get_target_location(target)) {
         return;
     }
-    if (!target_location.initialised()) {
+    if (!target.initialised()) {
         return;
     }
     float alt_amsl_m;
