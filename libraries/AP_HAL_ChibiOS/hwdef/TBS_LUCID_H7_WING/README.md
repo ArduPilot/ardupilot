@@ -46,8 +46,8 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART6 RX input. It supports all serial RC protocols except PPM.
 
-* For FPort the receiver must be tied to the USART6 TX6 pin , :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3, :ref:`SERIAL6_OPTIONS <SERIAL6_OPTIONS>` = "7" (invert TX/RX, half duplex).
-* For full duplex CRSF/ELRS use both TX6 and RX6, and :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3 and provides telemetry.
+- For FPort the receiver must be tied to the USART6 TX6 pin , :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3, :ref:`SERIAL6_OPTIONS <SERIAL6_OPTIONS>` = "7" (invert TX/RX, half duplex).
+- For full duplex CRSF/ELRS use both TX6 and RX6, and :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3 and provides telemetry.
 
 If SBUS is used on HD VTX connector (DJI TX), then :ref:`SERIAL1_PROTOCOl<SERIAL1_PROTOCOl>` should be set to "23" and :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
 

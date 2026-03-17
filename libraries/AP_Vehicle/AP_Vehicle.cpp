@@ -194,6 +194,8 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Bitmask{Plane}: 17:QLOITER
     // @Bitmask{Plane}: 18:QACRO
     // @Bitmask{Plane}: 19:QAUTOTUNE
+    // @Bitmask{Plane}: 20:Loiter to QLand
+    // @Bitmask{Plane}: 21:Autoland
     // @Bitmask{Rover}: 0:Manual
     // @Bitmask{Rover}: 1:Acro
     // @Bitmask{Rover}: 2:Steering
@@ -1101,6 +1103,18 @@ void AP_Vehicle::one_Hz_update(void)
 #if AP_SERIALMANAGER_REGISTER_ENABLED
     serial_manager.registered_ports_log();
 #endif
+#endif
+
+#if HAL_GCS_ENABLED
+    // Check if available modes have changed
+    const uint32_t available_mode_enabled_mask = get_available_mode_enabled_mask();
+    if (available_mode_enabled_mask != last_available_mode_enabled_mask) {
+        if (last_available_mode_enabled_mask != 0) {
+            // Last value is only zero at init, track changes after that
+            gcs().available_modes_changed();
+        }
+        last_available_mode_enabled_mask = available_mode_enabled_mask;
+    }
 #endif
 
 }

@@ -4,19 +4,19 @@ The Aocoda-RC-H743Dual is a flight controller produced by [Aocoda-RC](https://ww
 
 ## Features
 
-- MCU：STM32H743VIH6
-- Gyro：MPU6000/BIM270x2
-- Baro：DPS310/MS5611/BMP280
-- Blackbox：128MB
-- PWM output：10CH
-- Servo：2CH
-- UART：8CH
-- Power Supply：3-6SLipo
-- BEC Output：5V/2.5A, 9V/3A
+- MCU: STM32H743VIH6
+- Gyro: MPU6000/BIM270x2
+- Baro: DPS310/MS5611/BMP280
+- Blackbox: 128MB
+- PWM output: 10CH
+- Servo: 2CH
+- UART: 8CH
+- Power Supply: 3-6SLipo
+- BEC Output: 5V/2.5A, 9V/3A
 - USB Connector: Type-C
-- Weight：8.8g
-- Size：37mm x 37mm
-- Mounting Hole：30.5mm x 30.5mm
+- Weight: 8.8g
+- Size: 37mm x 37mm
+- Mounting Hole: 30.5mm x 30.5mm
 
 ## Pinout
 
@@ -97,7 +97,7 @@ Please calibrate before use amp parameters.
 - BATT_AMP_PERVLT 17.0
 - BATT2_AMP_PERVLT 17.0
 
-*Note: Please check carefully before use BATT_AMP_PERVLT/BATT2_AMP_PERVLT, as voltage divider circuit for data collection is at ESC/BEC side*
+*Note:* Please check carefully before use BATT_AMP_PERVLT/BATT2_AMP_PERVLT, as voltage divider circuit for data collection is at ESC/BEC side.
 
 ## Compass
 

@@ -79,13 +79,6 @@ void AP_Motors::armed(bool arm)
     }
 };
 
-void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
-{
-    if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
-        _spool_desired = spool;
-    }
-};
-
 // pilot input in the -1 ~ +1 range for roll, pitch and yaw. 0~1 range for throttle
 void AP_Motors::set_radio_passthrough(float roll_input, float pitch_input, float throttle_input, float yaw_input)
 {

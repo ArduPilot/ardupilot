@@ -62,7 +62,7 @@ to set up your environment.
 
 On Linux, creating a virtual serial port will be necessary to use serial in SITL, because of that install socat.
 
-```
+```bash
 sudo apt-get update
 sudo apt-get install socat
 ```
@@ -91,7 +91,7 @@ param set SERIAL1_PROTOCOL 45
 
 DDS is currently enabled by default, if it's part of the build. To disable it, run the following and reboot the simulator.
 
-```
+```text
 param set DDS_ENABLE 0
 REBOOT
 ```
@@ -415,7 +415,7 @@ This will run the tools automatically when you commit. If there are changes, jus
 The easiest way to test DDS is to make use of some boards providing two serial interfaces over USB such as the Pixhawk 6X.
 The [Pixhawk6X/hwdef.dat](../AP_HAL_ChibiOS/hwdef/Pixhawk6X/hwdef.dat) file has this info.
 
-```
+```text
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 ```
 

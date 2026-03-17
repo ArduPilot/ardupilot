@@ -27,6 +27,4 @@ E.g. to open only the log section between 60 and 120 seconds:
  python run_filter_test.py logfile.bin -b 60 -e 120
 ```
 
-More info here:
-
-  https://discuss.ardupilot.org/t/imu-filter-tool/43633
+More info here in the [ArduPilot forum](https://discuss.ardupilot.org/t/imu-filter-tool/43633)

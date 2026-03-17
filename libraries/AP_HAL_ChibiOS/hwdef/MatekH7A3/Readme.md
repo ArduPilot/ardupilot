@@ -1,33 +1,33 @@
 # Matek H7A3-slim Flight Controller
 
-https://www.mateksys.com/?portfolio=h7a3-slim.
+[Matek Systems](https://www.mateksys.com/?portfolio=h7a3-slim.)
 
 ## Features
 
-    Processor
-        STM32H7A3RIT6 Cortex-M7 280 MHz, 2MB flash
-    Sensors
-        ICM-42688p Acc/Gyro
-        SPL06-001 barometer
-        AT7456E OSD
-        W25N01GV dataflash
-    Power
-        2S - 6S Lipo input voltage with voltage monitoring
-        9V, 2A BEC for powering Video Transmitter and camera controlled by GPIO
-        5V, 2A BEC for internal and peripherals
-    Interfaces
-        11x PWM outputs DShot capable
-        6x UARTs
-        1x CAN
-        1x I2C
-        4x ADC
-        128MB NAND for logging
-        USB-C port
-    LED
-        Red, 3.3V power indicator
-        Blue and Green, FC status
-    Size
-        36 x 36mm PCB with 30.5mm M3 mounting
+- Processor
+  - STM32H7A3RIT6 Cortex-M7 280 MHz, 2MB flash
+- Sensors
+  - ICM-42688p Acc/Gyro
+  - SPL06-001 barometer
+  - AT7456E OSD
+  - W25N01GV dataflash
+- Power
+  - 2S - 6S Lipo input voltage with voltage monitoring
+  - 9V, 2A BEC for powering Video Transmitter and camera controlled by GPIO
+  - 5V, 2A BEC for internal and peripherals
+- Interfaces
+  - 11x PWM outputs DShot capable
+  - 6x UARTs
+  - 1x CAN
+  - 1x I2C
+  - 4x ADC
+  - 128MB NAND for logging
+  - USB-C port
+- LED
+  - Red, 3.3V power indicator
+  - Blue and Green, FC status
+- Size
+  - 36 x 36mm PCB with 30.5mm M3 mounting
 
 ## Overview
 
@@ -37,8 +37,8 @@ https://www.mateksys.com/?portfolio=h7a3-slim.
 
 ## UART Mapping
 
-The UARTs are marked Rx* and Tx* in the above pinouts. The Rx* pin is the
-receive pin for UART*. The Tx* pin is the transmit pin for UART*.
+The UARTs are marked Rx and Tx in the above pinouts. The Rx pin is the
+receive pin for UARTx. The Tx pin is the transmit pin for UARTx.
 
 - SERIAL0 -> USB
 - SERIAL1 -> USART1 (MAVLink2 telem)  (DMA capable)
@@ -106,7 +106,7 @@ GPIO 81 controls the 9V BEC output to pins marked "9V". Setting this GPIO high r
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled MatekH7A3.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled MatekH7A3.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "ardu*_with_bl.hex" firmware, using your favourite DFU loading tool. eg STM32CubeProgrammer

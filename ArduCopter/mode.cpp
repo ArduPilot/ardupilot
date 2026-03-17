@@ -211,19 +211,99 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
         (uint8_t)Mode::Number::TURTLE
     };
 
-    if (!block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list))) {
-        return true;
+    return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
+}
+
+// Return mask of enabled modes, order does not matter, its just for tracking changes
+uint32_t Copter::get_available_mode_enabled_mask() const
+{
+    const Mode* modes[] {
+#if MODE_AUTO_ENABLED
+        &copter.mode_auto,
+#endif
+#if MODE_ACRO_ENABLED
+        &copter.mode_acro,
+#endif
+        &copter.mode_stabilize,
+        &copter.mode_althold,
+#if MODE_CIRCLE_ENABLED
+        &copter.mode_circle,
+#endif
+#if MODE_LOITER_ENABLED
+        &copter.mode_loiter,
+#endif
+#if MODE_GUIDED_ENABLED
+        &copter.mode_guided,
+#endif
+        &copter.mode_land,
+#if MODE_RTL_ENABLED
+        &copter.mode_rtl,
+#endif
+#if MODE_DRIFT_ENABLED
+        &copter.mode_drift,
+#endif
+#if MODE_SPORT_ENABLED
+        &copter.mode_sport,
+#endif
+#if MODE_FLIP_ENABLED
+        &copter.mode_flip,
+#endif
+#if AUTOTUNE_ENABLED
+        &copter.mode_autotune,
+#endif
+#if MODE_POSHOLD_ENABLED
+        &copter.mode_poshold,
+#endif
+#if MODE_BRAKE_ENABLED
+        &copter.mode_brake,
+#endif
+#if MODE_THROW_ENABLED
+        &copter.mode_throw,
+#endif
+#if AP_ADSB_AVOIDANCE_ENABLED
+        &copter.mode_avoid_adsb,
+#endif
+#if MODE_GUIDED_NOGPS_ENABLED
+        &copter.mode_guided_nogps,
+#endif
+#if MODE_SMARTRTL_ENABLED
+        &copter.mode_smartrtl,
+#endif
+#if MODE_FLOWHOLD_ENABLED
+        (Mode*)copter.g2.mode_flowhold_ptr,
+#endif
+#if MODE_FOLLOW_ENABLED
+        &copter.mode_follow,
+#endif
+#if MODE_ZIGZAG_ENABLED
+        &copter.mode_zigzag,
+#endif
+#if MODE_SYSTEMID_ENABLED
+        (Mode *)copter.g2.mode_systemid_ptr,
+#endif
+#if MODE_AUTOROTATE_ENABLED
+        &copter.mode_autorotate,
+#endif
+#if MODE_TURTLE_ENABLED
+        &copter.mode_turtle,
+#endif
+    };
+
+    static_assert(ARRAY_SIZE(modes) <= 32, "Flight modes must fit in 32 bit bitmask");
+
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < ARRAY_SIZE(modes); i++) {
+        const Mode* mode = modes[i];
+
+        // the check here must be the same as the one in `send_available_mode`
+        const bool user_selectable = mode->enabled() && copter.gcs_mode_enabled(mode->mode_number());
+
+        if (user_selectable) {
+            mask |= 1U << i;
+        }
     }
 
-    // Mode disabled, try and grab a mode name to give a better warning.
-    Mode *new_flightmode = mode_from_mode_num(mode_num);
-    if (new_flightmode != nullptr) {
-        mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
-    } else {
-        notify_no_such_mode((uint8_t)mode_num);
-    }
-
-    return false;
+    return mask;
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
@@ -252,6 +332,13 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(mode)) {
+        // Mode disabled, try and grab a mode name to give a better warning.
+        const Mode *new_flightmode = mode_from_mode_num(mode);
+        if (new_flightmode == nullptr) {
+            notify_no_such_mode((uint8_t)mode);
+        } else {
+            mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
+        }
         return false;
     }
 
@@ -484,28 +571,28 @@ void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_o
 // transform pilot's roll or pitch input into a desired velocity
 Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {
-    Vector2f vel;
+    Vector2f vel_ne_ms;
 
     if (!rc().has_valid_input()) {
-        return vel;
+        return vel_ne_ms;
     }
     // fetch roll and pitch inputs
-    float roll_out = channel_roll->norm_input_dz();
-    float pitch_out = channel_pitch->norm_input_dz();
+    float roll_out_norm = channel_roll->norm_input_dz();
+    float pitch_out_norm = channel_pitch->norm_input_dz();
 
     // convert roll and pitch inputs into velocity in NE frame
-    vel = Vector2f(-pitch_out, roll_out);
-    if (vel.is_zero()) {
-        return vel;
+    vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
+    if (vel_ne_ms.is_zero()) {
+        return vel_ne_ms;
     }
-    vel = copter.ahrs.body_to_earth2D(vel);
+    vel_ne_ms = copter.ahrs.body_to_earth2D(vel_ne_ms);
 
     // Transform square input range to circular output
     // vel_scalar is the vector to the edge of the +- 1.0 square in the direction of the current input
-    Vector2f vel_scalar = vel / MAX(fabsf(vel.x), fabsf(vel.y));
+    Vector2f vel_scalar = vel_ne_ms / MAX(fabsf(vel_ne_ms.x), fabsf(vel_ne_ms.y));
     // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
-    vel *= vel_max / vel_scalar.length();
-    return vel;
+    vel_ne_ms *= vel_max / vel_scalar.length();
+    return vel_ne_ms;
 }
 
 bool Mode::_TakeOff::triggered_ms(const float target_climb_rate_ms) const
@@ -741,15 +828,15 @@ void Mode::land_run_horizontal_control()
          // get the velocity of the target
         copter.precland.get_target_velocity_ms(pos_control->get_vel_estimate_NED_ms().xy(), target_vel_ne_ms);
 
-        Vector2f accel_zero;
+        Vector2f accel_ne_zero;
         // target vel will remain zero if landing target is stationary
-        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, accel_zero);
+        pos_control->input_pos_vel_accel_NE_m(target_pos_ne_m, target_vel_ne_ms, accel_ne_zero);
     }
 #endif
 
     if (!copter.ap.prec_land_active) {
-        Vector2f accel;
-        pos_control->input_vel_accel_NE_m(vel_correction_ms, accel);
+        Vector2f accel_ne_zero;
+        pos_control->input_vel_accel_NE_m(vel_correction_ms, accel_ne_zero);
     }
 
     // run pos controller
@@ -952,8 +1039,6 @@ Mode::AltHoldModeState Mode::get_alt_hold_state_D_ms(float target_climb_rate_ms)
         if (target_climb_rate_ms < 0.0f && !copter.ap.using_interlock) {
             // the aircraft should move to a ground idle state
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        } else if (copter.ap.using_interlock && !motors->get_interlock()) {
-            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             // the aircraft should prepare for imminent take off
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -984,10 +1069,10 @@ float Mode::get_pilot_desired_yaw_rate_rads() const
     }
 
     // Get yaw input
-    const float yaw_in = channel_yaw->norm_input_dz();
+    const float yaw_in_norm = channel_yaw->norm_input_dz();
 
     // convert pilot input to the desired yaw rate
-    return radians(g2.command_model_pilot_y.get_rate()) * input_expo(yaw_in, g2.command_model_pilot_y.get_expo());
+    return radians(g2.command_model_pilot_y.get_rate()) * input_expo(yaw_in_norm, g2.command_model_pilot_y.get_expo());
 }
 
 // pass-through functions to reduce code churn on conversion;
@@ -1032,19 +1117,19 @@ GCS_Copter &Mode::gcs() const
 // Returns the pilot’s maximum upward speed in m/s.
 float Mode::get_pilot_speed_up_ms() const
 {
-    return g.pilot_speed_up_cms * 0.01;
+    return g2.pilot_speed_up_ms;
 }
 
 // Returns the pilot’s maximum downward speed in m/s.
 float Mode::get_pilot_speed_dn_ms() const
 {
-    return copter.get_pilot_speed_dn() * 0.01;
+    return copter.get_pilot_speed_dn_ms();
 }
 
 // Returns the pilot’s vertical acceleration limit in m/s².
 float Mode::get_pilot_accel_D_mss() const
 {
-    return g.pilot_accel_d_cmss * 0.01;
+    return g2.pilot_accel_d_mss;
 }
 
 // Return stopping point as a location with above origin alt frame

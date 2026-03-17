@@ -3,20 +3,20 @@
 example vehicles using pyBullet
 '''
 
-import os
-import sys
-import time
+import argparse
+import json
 import math
+import os
 import socket
 import struct
-import json
-import argparse
+import sys
+import time
 
 import pybullet as p
 import pybullet_data
 
-from pymavlink.rotmat import Vector3
 from pymavlink.quaternion import Quaternion
+from pymavlink.rotmat import Vector3
 
 # --- Argument parsing ---
 parser = argparse.ArgumentParser(description="pybullet robot (no pyrobolearn)")

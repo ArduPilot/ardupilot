@@ -13,7 +13,7 @@ and ==must be different== from the MAVLINK_SYSID of the following plane.
 | SYSID_THIS_MAV | 1 | 2 |
 | FOLL_SYSID | n/a | 1 |
 
-# Parameters
+## Parameters
 
 The script adds the following parameters to control it's behaviour. It uses
 the existing FOLL parameters that are used for the Copter FOLLOW mode. In addition
@@ -99,7 +99,7 @@ as the error. This is the D gain for the "V" PID controller.
 
 Time to "lookahead" when calculating distance errors.
 
-# Operation
+## Operation
 
 Enable Lua scripting by setting `SCR_ENABLE = 1` on the FOLLOW plane.
 

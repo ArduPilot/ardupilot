@@ -1,6 +1,6 @@
 # Mamba F405 MK2 Flight Controller
 
-https://www.diatone.us/products/mamba-f405-flight-controller-mk2
+[Diatone](https://www.diatone.us/products/mamba-f405-flight-controller-mk2)
 
 The Mamba F405 MK2 is a flight controller produced by [Diatone](https://www.diatone.us).
 

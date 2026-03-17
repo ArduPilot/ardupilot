@@ -2,9 +2,7 @@
 
 The A6 flight controller is manufactured and sold by [YJUAV](http://www.yjuav.net).
 
-The full schematics of the board are available here:
-
-https://github.com/yunjiuav/Hardware/tree/main/A6
+The [full schematics](https://github.com/yunjiuav/Hardware/tree/main/A6) of the board are available.
 
 ## Features
 
@@ -30,7 +28,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 
 ## Connectors
 
-**ADC**
+### ADC
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -39,7 +37,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  3   | ADC_6V6 | +6.6V |
 |  4   |   GND   |  GND  |
 
-**DEBUG**
+### DEBUG
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -50,7 +48,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  5   | SWCLK  | +3.3V |
 |  6   |  GND   |  GND  |
 
-**RSSI&SBUS**
+### RSSI&SBUS
 
 | Pin  |  Signal  | Volt  |
 | :--: | :------: | :---: |
@@ -59,7 +57,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  3   | SBUS_OUT | +3.3V |
 |  4   |   GND    |  GND  |
 
-**SAFETY**
+### SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -68,7 +66,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  3   | SAFETY_SW_LED | +3.3V |
 |  4   |      GND      |  GND  |
 
-**SPI3**
+### SPI3
 
 | Pin  |  Signal  | Volt  |
 | :--: | :------: | :---: |
@@ -79,7 +77,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  5   |  SPI_CS  | +3.3V |
 |  6   |   GND    |  GND  |
 
-**I2C4**
+### I2C4
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -88,7 +86,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  3   | I2C_SDA | +3.3V |
 |  4   |   GND   |  GND  |
 
-**USB EX**
+### USB EX
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -97,7 +95,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  3   |   DP   | +3.3V |
 |  4   |  GND   |  GND  |
 
-**CAN1&CAN2**
+### CAN1&CAN2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -106,7 +104,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  3   | CAN_N  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**GPS1&SAFETY**
+### GPS1&SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -121,7 +119,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  9   |    BUZZER     | +3.3V |
 |  10  |      GND      |  GND  |
 
-**TELEM1&TELEM2**
+### TELEM1&TELEM2
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -132,7 +130,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  5   |   NC    |   -   |
 |  6   |   GND   |  GND  |
 
-**GPS2**
+### GPS2
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -143,7 +141,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  5   | I2C_SDA | +3.3V |
 |  6   |   GND   |  GND  |
 
-**POWER A**
+### POWER A
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -154,7 +152,7 @@ https://github.com/yunjiuav/Hardware/tree/main/A6
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**POWER C**
+### POWER C
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |

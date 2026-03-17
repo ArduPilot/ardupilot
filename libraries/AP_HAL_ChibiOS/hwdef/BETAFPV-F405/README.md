@@ -32,7 +32,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |:-|:-|:-|
 |SERIAL0|COMPUTER|USB|
 |SERIAL1|RX1/TX1|UART1 (GPS, DMA-enabled)|
-|SERIAL3|TX3/RX3|UART3 (ELRS, internal - can be freed up through board modifications, see https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r)
+|SERIAL3|TX3/RX3|UART3 (ELRS, internal - can be freed up through board modifications, see [BETAFPV store](https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r))
 |SERIAL4|TX4/RX4|UART4 (MSP DisplayPort)|
 |SERIAL5|RX5|UART5 (SBUS, inverted and connected to RX-only)|
 |SERIAL6|TX6/RX6|UART6 (Spare, DMA-enabled)|

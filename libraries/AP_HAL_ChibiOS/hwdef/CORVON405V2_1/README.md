@@ -34,9 +34,9 @@ The CORVON405V2.1 is a flight controller produced by CORVON.
 
 The default RC input is configured on the UART6_RX input which is inverted from the SBUS pin. Other RC  protocols  should be applied at UART1 which has DMA, and set the :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` ='23' and change :ref:`SERIAL6_PROTOCOL<>SERIAL6_PROTOCOL` to something other than '23'.
 
-* CRSF/ELRS also requires a TX1 connection, in addition to RX1, and automatically provides telemetry.
-* FPort requires connection to TX1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to "7". See :ref:common-FPort-receivers.
-* SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “4”.
+- CRSF/ELRS also requires a TX1 connection, in addition to RX1, and automatically provides telemetry.
+- FPort requires connection to TX1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to "7". See :ref:common-FPort-receivers.
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
 
 ## OSD Support
 
@@ -65,11 +65,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
-* :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
-* :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
-* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 21.2
-* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 40.2
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 21.2
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 40.2
 
 ## Compass
 
@@ -81,7 +81,7 @@ The CORVON405V2.1 does not have a built-in compass, but you can attach an extern
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled CORVON405V2.1.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled CORVON405V2.1.
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool.
 

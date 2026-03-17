@@ -7,8 +7,8 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../libraries/AP_HAL/hwdef/scripts'))
 import hwdef  # noqa:E402

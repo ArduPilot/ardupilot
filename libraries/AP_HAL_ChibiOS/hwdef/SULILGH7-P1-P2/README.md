@@ -1,12 +1,12 @@
 # SULILGH7P1/P2 Flight Controller
 
-# This firmware is compatible with SULILGH7-P1 and SULILGH7-P2.
+## This firmware is compatible with SULILGH7-P1 and SULILGH7-P2
 
-This is the open-source hardware I have released, and you can find more details at the following link: https://oshwhub.com/shuyedeye/p1-flight-control.
+This is the open-source hardware I have released, and you can find more details at the following link: [OSHW Hub](https://oshwhub.com/shuyedeye/p1-flight-control.)
 
 ![SULILGH7-P1](P1.jpg)
 
-## Features:
+## Features
 
 - Separate flight control core design.
 - MCU
@@ -54,11 +54,11 @@ The RCIN pin, which by default is mapped to a timer input, can be used for all A
 
 To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL5 (UART8) would need to be used for receiver connections. Below are setups using Serial5.
 
-* :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>`  should be set to “23”.
-* CRSF would require  :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>`  set to “0”.
-* SRXL2 would require :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` set to “4”. And only connect the TX pin.
+- :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>`  should be set to "23".
+- CRSF would require  :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>`  set to "0".
+- SRXL2 would require :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` set to "4". And only connect the TX pin.
 
-* The SBUS_IN pin is internally tied to the RCIN pin.
+- The SBUS_IN pin is internally tied to the RCIN pin.
 
 Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details.
 

@@ -1,4 +1,4 @@
-### SITL_arm_linux_gnueabihf
+# SITL_arm_linux_gnueabihf
 
 Software-In-The_Loop target to run on ARM Linux, e.g. Raspberry Pi
 

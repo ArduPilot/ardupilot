@@ -1,6 +1,6 @@
 # GOKU F405 Pro
 
-https://flywoo.net/products/goku-versatile-f405-pro-fc-20x20-30-5x30-5
+[Flywoo store](https://flywoo.net/products/goku-versatile-f405-pro-fc-20x20-30-5x30-5)
 
 The Flywoo GOKU F405 Pro is a flight controller produced by [Flywoo](https://flywoo.net/).
 

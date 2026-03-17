@@ -11,25 +11,24 @@ AP_FLAKE8_CLEAN
 """
 
 import atexit
+import binascii
 import datetime
 import errno
+import math
 import optparse
 import os
 import os.path
 import re
+import shlex
 import signal
 import subprocess
 import sys
 import tempfile
 import textwrap
 import time
-import shlex
-import binascii
-import math
 
 from pysim import util
 from pysim import vehicleinfo
-
 
 # List of open terminal windows for macosx
 windowID = []
@@ -788,7 +787,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--enable-fgview"])
     if opts.sitl_instance_args:
         # this could be a lot better:
-        cmd.extend(opts.sitl_instance_args.split(" "))
+        cmd.extend(opts.sitl_instance_args)
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     path = None
@@ -1208,7 +1207,8 @@ group_sim.add_option("", "--can-peripherals",
                      help="start a DroneCAN peripheral instance")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
-                     default=None,
+                     default=[],
+                     action="append",
                      help="pass arguments to SITL instance")
 group_sim.add_option("-G", "--gdb",
                      action='store_true',
@@ -1648,9 +1648,11 @@ if cmd_opts.delay_start:
 
 tmp = None
 if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
-    # import only here so as to avoid jinja dependency in whole script
-    from jinja2 import Environment, FileSystemLoader
     from tempfile import mkstemp
+
+    # import only here so as to avoid jinja dependency in whole script
+    from jinja2 import Environment
+    from jinja2 import FileSystemLoader
     entities = []
     config = {}
     config['plane'] = cmd_opts.vehicle == 'ArduPlane'

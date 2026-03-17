@@ -1,7 +1,7 @@
 # Flywoo GOKU GN 745 40A/45A AIO
 
-https://flywoo.net/products/goku-gn745-45a-aio-bl_32-mpu6000-v3
-https://flywoo.net/products/goku-gn745-40a-aio-bl_32-mpu6000-25-5-x-25-5
+[Flywoo store](https://flywoo.net/products/goku-gn745-45a-aio-bl_32-mpu6000-v3)
+[Flywoo store](https://flywoo.net/products/goku-gn745-40a-aio-bl_32-mpu6000-25-5-x-25-5)
 
 The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://flywoo.net/).
 
@@ -10,7 +10,7 @@ The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://f
 - MCU: STM32F745 32-bit processor, 216MHz, 1M Flash
 - IMU: MPU6000 or ICM42668P (SPI)
 - Barometer: BMP280
-- Onboard LED：WS2812*4
+- Onboard LED: WS2812*4
 - USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
 - 7 hardware UARTS (UART1, 2, 3, 4, 5, 6, 7; only RX in UART1 in v3)
 - Supports serial receivers (SBUS, iBus, Spektrum, Crossfire) only.
@@ -131,7 +131,7 @@ The board includes a NeoPixel LED pad.
 
 ## Loading Firmware
 
-Firmware for this board can be found on the ArduPilot firmware server, https://firmware.ardupilot.org, in folders labeled "FlywooF745".
+Firmware for this board can be found on the [ArduPilot firmware server](https://firmware.ardupilot.org), in folders labeled "FlywooF745".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

@@ -98,44 +98,44 @@ public:
     float get_default_speed_NE_cms() const { return get_default_speed_NE_ms() * 100.0; }
 
     // Returns the default horizontal speed in m/s used during waypoint navigation.
-    // Derived from the WPNAV_SPEED parameter.
-    float get_default_speed_NE_ms() const { return _wp_speed_cms * 0.01; }
+    // Derived from the WP_SPD parameter.
+    float get_default_speed_NE_ms() const { return _wp_speed_ms; }
 
     // Returns the default climb speed in cm/s used during waypoint navigation.
     // See get_default_speed_up_ms() for full details.
     float get_default_speed_up_cms() const { return get_default_speed_up_ms() * 100.0; }
 
     // Returns the default climb speed in m/s used during waypoint navigation.
-    // Derived from the WPNAV_SPEED_UP parameter.
-    float get_default_speed_up_ms() const { return _wp_speed_up_cms * 0.01; }
+    // Derived from the WP_SPD_UP parameter.
+    float get_default_speed_up_ms() const { return _wp_speed_up_ms; }
 
     // Returns the default descent rate in cm/s used during waypoint navigation.
     // Always positive. See get_default_speed_down_ms() for full details.
     float get_default_speed_down_cms() const { return get_default_speed_down_ms() * 100.0; }
 
     // Returns the default descent rate in m/s used during waypoint navigation.
-    // Derived from the WPNAV_SPEED_DN parameter. Always positive.
-    float get_default_speed_down_ms() const { return fabsf(_wp_speed_down_cms * 0.01); }
+    // Derived from the WP_SPD_DN parameter. Always positive.
+    float get_default_speed_down_ms() const { return fabsf(_wp_speed_down_ms); }
 
     // Returns the vertical acceleration in cm/s² used during waypoint navigation.
     // Always positive. See get_accel_D_mss() for full details.
     float get_accel_D_cmss() const { return get_accel_D_mss() * 100.0; }
 
     // Returns the vertical acceleration in m/s² used during waypoint navigation.
-    // Derived from the WPNAV_ACCEL_Z parameter. Always positive.
-    float get_accel_D_mss() const { return _wp_accel_z_cmss * 0.01; }
+    // Derived from the WP_ACC_Z parameter. Always positive.
+    float get_accel_D_mss() const { return _wp_accel_z_mss; }
 
     // Returns the horizontal acceleration in cm/s² used during waypoint navigation.
     // See get_wp_acceleration_mss() for full details.
     float get_wp_acceleration_cmss() const { return get_wp_acceleration_mss() * 100.0; }
 
     // Returns the horizontal acceleration in m/s² used during waypoint navigation.
-    // Derived from the WPNAV_ACCEL parameter. Falls back to a default if unset.
-    float get_wp_acceleration_mss() const { return (is_positive(_wp_accel_cmss)) ? _wp_accel_cmss * 0.01 : WPNAV_ACCELERATION_MS; }
+    // Derived from the WP_ACC parameter. Falls back to a default if unset.
+    float get_wp_acceleration_mss() const { return (is_positive(_wp_accel_mss)) ? _wp_accel_mss : WPNAV_ACCELERATION_MS; }
 
     // Returns the maximum lateral acceleration in m/s² used during waypoint cornering.
-    // Derived from WPNAV_ACCEL_C or defaults to 2x WPNAV_ACCEL if unset.
-    float get_corner_acceleration_mss() const { return (is_positive(_wp_accel_c_cmss)) ? _wp_accel_c_cmss * 0.01 : 2.0 * get_wp_acceleration_mss(); }
+    // Derived from WP_ACC_C or defaults to 2x WP_ACC if unset.
+    float get_corner_acceleration_mss() const { return (is_positive(_wp_accel_c_mss)) ? _wp_accel_c_mss : 2.0 * get_wp_acceleration_mss(); }
 
     // Returns the destination waypoint vector in NEU frame, in centimeters from EKF origin.
     // See get_wp_destination_NED_m() for full details.
@@ -235,12 +235,15 @@ public:
     // Returns true if the vehicle's horizontal (NE) distance to the waypoint is less than the waypoint radius.
     // Uses the waypoint radius in meters for comparison.
     bool reached_wp_destination_NE() const {
-        return get_wp_distance_to_destination_m() < _wp_radius_cm * 0.01;
+        return get_wp_distance_to_destination_m() < _wp_radius_m;
     }
 
     // Returns the waypoint acceptance radius in meters.
     // This radius defines the distance from the target waypoint within which the vehicle is considered to have arrived.
-    float get_wp_radius_m() const { return _wp_radius_cm * 0.01; }
+    float get_wp_radius_m() const { return _wp_radius_m; }
+
+    // perform any required parameter conversions
+    void convert_parameters();
 
     // Runs the waypoint navigation controller.
     // Advances the target position and updates the position controller.
@@ -350,21 +353,21 @@ protected:
     const AC_AttitudeControl& _attitude_control;
 
     // parameters
-    AP_Float    _wp_speed_cms;      // default horizontal speed in cm/s for waypoint navigation
-    AP_Float    _wp_speed_up_cms;   // default climb rate in cm/s for waypoint navigation
-    AP_Float    _wp_speed_down_cms; // default descent rate in cm/s for waypoint navigation
-    AP_Float    _wp_radius_cm;      // waypoint radius in cm; waypoint is considered reached when within this distance
-    AP_Float    _wp_accel_cmss;     // maximum horizontal acceleration in cm/s² used during waypoint tracking
-    AP_Float    _wp_accel_c_cmss;   // maximum acceleration in cm/s² for turns; defaults to 2x horizontal accel if unset
-    AP_Float    _wp_accel_z_cmss;   // maximum vertical acceleration in cm/s² used during climb or descent
+    AP_Float    _wp_speed_ms;       // default horizontal speed in m/s for waypoint navigation
+    AP_Float    _wp_speed_up_ms;    // default climb rate in m/s for waypoint navigation
+    AP_Float    _wp_speed_down_ms;  // default descent rate in m/s for waypoint navigation
+    AP_Float    _wp_radius_m;       // waypoint radius in m; waypoint is considered reached when within this distance
+    AP_Float    _wp_accel_mss;      // maximum horizontal acceleration in m/s² used during waypoint tracking
+    AP_Float    _wp_accel_c_mss;    // maximum acceleration in m/s² for turns; defaults to 2x horizontal accel if unset
+    AP_Float    _wp_accel_z_mss;    // maximum vertical acceleration in m/s² used during climb or descent
     AP_Float    _wp_jerk_msss;      // maximum jerk in m/s³ used for s-curve trajectory shaping
     AP_Float    _terrain_margin_m;  // minimum altitude margin in meters when terrain following is active
 
-    // WPNAV_SPEED param change checker
-    bool _check_wp_speed_change;    // true if WPNAV_SPEED should be monitored for changes during flight
-    float _last_wp_speed_cms;       // last recorded WPNAV_SPEED value (cm/s) for change detection
-    float _last_wp_speed_up_cms;    // last recorded WPNAV_SPEED_UP value (cm/s)
-    float _last_wp_speed_down_cms;  // last recorded WPNAV_SPEED_DN value (cm/s)
+    // WP_SPD param change checker
+    bool _check_wp_speed_change;    // true if WP_SPD should be monitored for changes during flight
+    float _last_wp_speed_ms;        // last recorded WP_SPD value (m/s) for change detection
+    float _last_wp_speed_up_ms;     // last recorded WP_SPD_UP value (m/s)
+    float _last_wp_speed_down_ms;   // last recorded WP_SPD_DN value (m/s)
 
     // s-curve trajectory objects
     SCurve _scurve_prev_leg;        // s-curve for the previous waypoint leg, used for smoothing transitions

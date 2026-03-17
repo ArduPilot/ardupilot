@@ -6,7 +6,7 @@ resting voltage and a simple cell model.
 This allows the remaining battery percentage to be automatically set
 based on the resting voltage when disarmed.
 
-# Parameters
+## Parameters
 
 You will need to start by setting BATT_SOC_COUNT to the number of
 estimators you want (how many batteries you want to do SoC estimation
@@ -39,7 +39,7 @@ C3 is the third coefficient from your fit of your battery
 
 C4 is the fourth coefficient from your fit of your battery
 
-# Usage
+## Usage
 
 You need to start by working out the coefficients C1, C2, C3 and C4 for
 your battery. You can do this by starting with a fully charged battery

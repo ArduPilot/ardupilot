@@ -360,6 +360,8 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
         return;
     }
 
+    const bool use_ekf_as_gnss = option_is_set(AP_ExternalAHRS::OPTIONS::SBG_EKF_AS_GNSS);
+
     bool updated_gps = false;
     bool updated_baro = false;
     bool updated_ins = false;
@@ -494,40 +496,64 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                     state.origin = state.location;
                     state.have_origin = true;
                 }
+
+                if (ekf_is_full_nav && use_ekf_as_gnss) {
+                    cached.sensors.gps_data.latitude = cached.sbg.ekfNav.position[0] * 1E7;
+                    cached.sensors.gps_data.longitude = cached.sbg.ekfNav.position[1] * 1E7;
+                    cached.sensors.gps_data.msl_altitude = cached.sbg.ekfNav.position[2] * 100;
+
+                    cached.sensors.gps_data.horizontal_pos_accuracy = Vector2f(cached.sbg.ekfNav.positionStdDev[0], cached.sbg.ekfNav.positionStdDev[1]).length();
+                    cached.sensors.gps_data.hdop = cached.sensors.gps_data.horizontal_pos_accuracy;
+                    cached.sensors.gps_data.vertical_pos_accuracy = cached.sbg.ekfNav.positionStdDev[2];
+                    cached.sensors.gps_data.vdop =  cached.sensors.gps_data.vertical_pos_accuracy;
+
+                    cached.sensors.gps_data.fix_type = AP_GPS_FixType::FIX_3D;
+
+                    cached.sensors.gps_data.ned_vel_north = cached.sbg.ekfNav.velocity[0];
+                    cached.sensors.gps_data.ned_vel_east = cached.sbg.ekfNav.velocity[1];
+                    cached.sensors.gps_data.ned_vel_down = cached.sbg.ekfNav.velocity[2];
+                    cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sbg.ekfNav.velocityStdDev[0], cached.sbg.ekfNav.velocityStdDev[1]).length();
+
+                    updated_gps = true;
+                }
                 break;
 
             case SBG_ECOM_LOG_GPS1_VEL: // 13
             case SBG_ECOM_LOG_GPS2_VEL: // 16
                 safe_copy_msg_to_object((uint8_t*)&cached.sbg.gnssVel, sizeof(cached.sbg.gnssVel), msg.data, msg.len);
 
-                cached.sensors.gps_data.ms_tow = cached.sbg.gnssVel.timeOfWeek;
-                cached.sensors.gps_data.ned_vel_north = cached.sbg.gnssVel.velocity[0];
-                cached.sensors.gps_data.ned_vel_east = cached.sbg.gnssVel.velocity[1];
-                cached.sensors.gps_data.ned_vel_down = cached.sbg.gnssVel.velocity[2];
-                cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sbg.gnssVel.velocityAcc[0], cached.sbg.gnssVel.velocityAcc[1]).length();
-                // unused - cached.sbg.gnssVel.course
-                // unused - cached.sbg.gnssVel.courseAcc
-                updated_gps = true;
+                if ((!use_ekf_as_gnss) || (use_ekf_as_gnss && !ekf_is_full_nav)) {
+                    cached.sensors.gps_data.ms_tow = cached.sbg.gnssVel.timeOfWeek;
+                    cached.sensors.gps_data.ned_vel_north = cached.sbg.gnssVel.velocity[0];
+                    cached.sensors.gps_data.ned_vel_east = cached.sbg.gnssVel.velocity[1];
+                    cached.sensors.gps_data.ned_vel_down = cached.sbg.gnssVel.velocity[2];
+                    cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sbg.gnssVel.velocityAcc[0], cached.sbg.gnssVel.velocityAcc[1]).length();
+                    // unused - cached.sbg.gnssVel.course
+                    // unused - cached.sbg.gnssVel.courseAcc
+                    updated_gps = true;
+                }
                 break;
 
             case SBG_ECOM_LOG_GPS1_POS: // 14
             case SBG_ECOM_LOG_GPS2_POS: // 17
                 safe_copy_msg_to_object((uint8_t*)&cached.sbg.gnssPos, sizeof(cached.sbg.gnssPos), msg.data, msg.len);
 
-                cached.sensors.gps_data.ms_tow = cached.sbg.gnssPos.timeOfWeek;
-                cached.sensors.gps_data.latitude = cached.sbg.gnssPos.latitude * 1E7;
-                cached.sensors.gps_data.longitude = cached.sbg.gnssPos.longitude * 1E7;
-                cached.sensors.gps_data.msl_altitude = cached.sbg.gnssPos.altitude * 100;
-                // unused - cached.sbg.gnssPos.undulation
-                cached.sensors.gps_data.horizontal_pos_accuracy = Vector2f(cached.sbg.gnssPos.latitudeAccuracy, cached.sbg.gnssPos.longitudeAccuracy).length();
-                cached.sensors.gps_data.hdop = cached.sensors.gps_data.horizontal_pos_accuracy;
-                cached.sensors.gps_data.vertical_pos_accuracy = cached.sbg.gnssPos.altitudeAccuracy;
-                cached.sensors.gps_data.vdop =  cached.sensors.gps_data.vertical_pos_accuracy;
-                cached.sensors.gps_data.satellites_in_view = cached.sbg.gnssPos.numSvUsed;
-                // unused - cached.sbg.gnssPos.baseStationId
-                // unused - cached.sbg.gnssPos.differentialAge
-                cached.sensors.gps_data.fix_type = SbgGpsPosStatus_to_GpsFixType(cached.sbg.gnssPos.status);
-                updated_gps = true;
+                if ((!use_ekf_as_gnss) || (use_ekf_as_gnss && !ekf_is_full_nav)) {
+                    cached.sensors.gps_data.ms_tow = cached.sbg.gnssPos.timeOfWeek;
+                    cached.sensors.gps_data.latitude = cached.sbg.gnssPos.latitude * 1E7;
+                    cached.sensors.gps_data.longitude = cached.sbg.gnssPos.longitude * 1E7;
+                    cached.sensors.gps_data.msl_altitude = cached.sbg.gnssPos.altitude * 100;
+                    // unused - cached.sbg.gnssPos.undulation
+                    cached.sensors.gps_data.horizontal_pos_accuracy = Vector2f(cached.sbg.gnssPos.latitudeAccuracy, cached.sbg.gnssPos.longitudeAccuracy).length();
+                    cached.sensors.gps_data.hdop = cached.sensors.gps_data.horizontal_pos_accuracy;
+                    cached.sensors.gps_data.vertical_pos_accuracy = cached.sbg.gnssPos.altitudeAccuracy;
+                    cached.sensors.gps_data.vdop =  cached.sensors.gps_data.vertical_pos_accuracy;
+                    cached.sensors.gps_data.satellites_in_view = cached.sbg.gnssPos.numSvUsed;
+                    // unused - cached.sbg.gnssPos.baseStationId
+                    // unused - cached.sbg.gnssPos.differentialAge
+                    cached.sensors.gps_data.fix_type = SbgGpsPosStatus_to_GpsFixType(cached.sbg.gnssPos.status);
+                    updated_gps = true;
+                }
                 break;
 
             case SBG_ECOM_LOG_AIR_DATA: // 36

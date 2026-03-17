@@ -1,6 +1,6 @@
 # iFlight BLITZ Whoop F7 AIO Flight Controller
 
-https://shop.iflight-rc.com/BLITZ-Whoop-F7-AIO-Pro1927
+[iFlight store](https://shop.iflight-rc.com/BLITZ-Whoop-F7-AIO-Pro1927)
 
 The Blitz F7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 

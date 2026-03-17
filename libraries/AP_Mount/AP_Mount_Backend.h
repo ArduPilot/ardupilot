@@ -243,6 +243,7 @@ protected:
         RATE      = 1,
         RETRACTED = 2,
         NEUTRAL   = 3,
+        LOCATION  = 4,
     };
 
     // class for a single angle or rate target
@@ -306,6 +307,7 @@ protected:
     virtual void send_target_rates(const MountRateTarget &rate_rads) { }
     virtual void send_target_retracted() { }
     virtual void send_target_neutral() { }
+    virtual void send_target_location(const Location &roi_loc) { }
 
     // options parameter bitmask handling
     enum class Options : uint8_t {
@@ -399,7 +401,8 @@ protected:
     // RP earth frame locks accessible by backend
     bool _pitch_lock = true;              // pitch_lock used in RC_TARGETING mode. True if the gimbal's tilt target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
     bool _roll_lock = true;               // roll_lock used in RC_TARGETING mode. True if the gimbal's roll target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
-    
+
+    bool clear_roi_pending;     // True if there is a pending clear ROI request
 
 private:
 

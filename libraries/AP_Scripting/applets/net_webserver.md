@@ -2,7 +2,7 @@
 
 This implements a web server for boards that have networking support.
 
-# Parameters
+## Parameters
 
 The web server has a small number of parameters
 
@@ -28,7 +28,7 @@ cost of more memory
 
 This sets the timeout in seconds for inactive client connections.
 
-# Operation
+## Operation
 
 By default the web server serves the root of your microSD card. You
 can include html, javascript (*.js), image files etc on your microSD
@@ -39,7 +39,7 @@ to create a full web server with any structure you want.
 The web server supports embedding lua script elements inside html
 files for files with a filename of *.shtml. Here is an example:
 
-```
+```html
 <html>
   <head>
        <meta http-equiv="refresh" content="1">
@@ -73,7 +73,7 @@ a file extension of ".lua".
 
 Here is an example of a simple cgi script:
 
-```
+```lua
 --[[
 example lua cgi file for cgi-bin/ folder
 --]]

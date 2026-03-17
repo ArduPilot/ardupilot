@@ -6,13 +6,13 @@ see Copter/SIM_multicopter.m for example usage.
 
 The function is defined as:
 
-```
+```matlab
     SITL_connector(state,init_function,physics_function,max_timestep)
 ```
 
 - state: this is the persistent physics state of the vehicle its is a structure and must contain the following felids:
 
-```
+```matlab
     state.gyro(roll, pitch, yaw) (radians/sec) body frame
     state.attitude(roll, pitch yaw) (radians)
     state.accel(x, y, z) (m/s^2) body frame
@@ -29,7 +29,7 @@ the structure can have also any other felids required for the physics model
 
 - physics_function: function handle that will be called to update the physics model by a single time step. It should take in the state and array of 16 PWM inputs and return the state.
 
-```
+```matlab
     function state = physics_step(pwm_in,state)
     physics_function = @physics_step;
 ```
@@ -42,7 +42,7 @@ Using the connection it should be possible to achieve > 1500 fps, at this speed 
 
 [![Matlab Connector demo](https://img.youtube.com/vi/sYCU2ch7oFE/0.jpg)](https://www.youtube.com/watch?v=sYCU2ch7oFE)
 
-# Simulink
+## Simulink
 
 Simulink input and output blocks are provided in AP_Conector.slx. There is a receive block that receives the PWM inputs from SITL. These are output in a 16 element array. The output block takes the vehicle state as outlighned above. The input block also has a reset signal, this will go high if SITL is restarted. This could be used to reset the Simulink model to its initial conditions. Unlike the Matlab connector the time step used by Simulink cannot be adjusted by ArduPilot, it must eb set in Simulink. Variable size time steps are supported.
 

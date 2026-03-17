@@ -14,7 +14,7 @@ const AP_Param::GroupInfo ModeLand::var_info[] = {
 
     // @Param: SPD_HIGH_MS
     // @DisplayName: Land speed high
-    // @Description: The descent speed for the first stage of landing in m/s. If this is zero then WPNAV_SPEED_DN is used
+    // @Description: The descent speed for the first stage of landing in m/s. If this is zero then WP_SPD_DN is used
     // @Units: m/s
     // @Range: 0 5
     // @Increment: 0.1

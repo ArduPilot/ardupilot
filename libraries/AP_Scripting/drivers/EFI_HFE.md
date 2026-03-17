@@ -5,7 +5,7 @@ CAN engine control units. It supports monitoring and control of HFE
 engines on fixed wing aircraft. This driver assumes you are using the
 ICE subsystem in fixed wing aircraft for engine control.
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -41,7 +41,7 @@ ECU requires a high voltage GPIO to enable then you should set a
 RELAY_PIN that the ECU enable is attached to and set the relay number
 here.
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

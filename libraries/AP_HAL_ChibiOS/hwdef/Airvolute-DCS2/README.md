@@ -3,7 +3,7 @@
 DroneCore 2.0 is a modular AI-driven open architecture autopilot designed for complex use cases that combines high computational processing power, redundant connectivity, small size, and low weight.The autopilot represents a one-stop-solution for developers integrating the functionality of carrier board, companion computer, and power distribution board into a single compact form factor.
 This system usually uses a "CUBE" autopilot as its primary FMU, but can use an onboard STM32H743 as the FMU. This board definition and firmware on `the ArduPilot firmware server <https://firmware.ardupilot.org>`__ is for this secondary FMU
 For more information on DCS2.Pilot board see:
-https://docs.airvolute.com/dronecore-autopilot/dcs2
+[Airvolute documentation](https://docs.airvolute.com/dronecore-autopilot/dcs2)
 
 ## Where To Buy
 
@@ -126,7 +126,7 @@ Channels within the same group need to use the same output rate. If any channel 
 
 The board contains two CAN buses - CAN1 and CAN 2. The buses support speeds up to 1 Mbits and in FD mode up to 8 Mbits.
 
-These connectors are not part of DCS2.Pilot board, but they are routed on DCS2.Adapter_board. This board (DCS2.Adapter_board) is fully modular and can be modified according to the customer's requirements. For more information see: https://docs.airvolute.com/dronecore-autopilot/dcs2/adapter-extension-boards/dcs2.-adapter-default-v1.0/connectors-and-pinouts
+These connectors are not part of DCS2.Pilot board, but they are routed on DCS2.Adapter_board. This board (DCS2.Adapter_board) is fully modular and can be modified according to the customer's requirements. For more information see the [Airvolute documentation](https://docs.airvolute.com/dronecore-autopilot/dcs2/adapter-extension-boards/dcs2.-adapter-default-v1.0/connectors-and-pinouts)
 
 JST GH 1.25mm pitch, 4-Pin
 

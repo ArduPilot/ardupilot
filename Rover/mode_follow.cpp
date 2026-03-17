@@ -1,10 +1,18 @@
 #include "Rover.h"
 
 #if MODE_FOLLOW_ENABLED
+
+// Return true if this mode is enabled
+bool ModeFollow::enabled() const
+{
+    // Follow mode requires follow lib
+    return g2.follow.enabled();
+}
+
 // initialize follow mode
 bool ModeFollow::_enter()
 {
-    if (!g2.follow.enabled()) {
+    if (!enabled()) {
         return false;
     }
 
@@ -94,12 +102,12 @@ float ModeFollow::get_distance_to_destination() const
 }
 
 // set desired speed in m/s
-bool ModeFollow::set_desired_speed(float speed)
+bool ModeFollow::set_desired_speed(float speed_ms)
 {
-    if (is_negative(speed)) {
+    if (is_negative(speed_ms)) {
         return false;
     }
-    _desired_speed = speed;
+    _desired_speed = speed_ms;
     return true;
 }
 

@@ -1,6 +1,6 @@
 # iFlight BLITZ Mini F745 Flight Controller
 
-https://shop.iflight.com/BLITZ-Mini-F745-Flight-Controller-Pro2142
+[iFlight store](https://shop.iflight.com/BLITZ-Mini-F745-Flight-Controller-Pro2142)
 
 The BLITZ Mini F745 is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 

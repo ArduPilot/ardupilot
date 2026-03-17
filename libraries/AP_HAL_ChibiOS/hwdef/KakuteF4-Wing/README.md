@@ -4,23 +4,23 @@ The KakuteF4-Wing is a flight controller produced by [Holybro](http://www.holybr
 
 ## Features
 
-    Processor
-        STM32F405 32-bit processor
-        AT7456E OSD
-    Sensors
-        ICM42688 Acc/Gyro
-        SLP06 barometer
-    Power
-        2S - 8S Lipo input voltage with voltage monitoring
-        9V/12V, 1.5A BEC for powering Video Transmitter
-        6V/7.2V, ?A BEC for servos
-        3.3V, 1A BEC
-    Interfaces
-        7x PWM outputs DShot capable, 4 outputs BiDirDShot capable
-        1x RC input
-        5x UARTs/serial for GPS and other peripherals
-        1x I2C ports for external compass, airspeed, etc.
-        USB-C port
+- Processor
+  - STM32F405 32-bit processor
+  - AT7456E OSD
+- Sensors
+  - ICM42688 Acc/Gyro
+  - SLP06 barometer
+- Power
+  - 2S - 8S Lipo input voltage with voltage monitoring
+  - 9V/12V, 1.5A BEC for powering Video Transmitter
+  - 6V/7.2V, ?A BEC for servos
+  - 3.3V, 1A BEC
+- Interfaces
+  - 7x PWM outputs DShot capable, 4 outputs BiDirDShot capable
+  - 1x RC input
+  - 5x UARTs/serial for GPS and other peripherals
+  - 1x I2C ports for external compass, airspeed, etc.
+  - USB-C port
 
 ## Pinout
 
@@ -84,7 +84,7 @@ The KakuteF4-Wing does not have a built-in compass, but you can attach an extern
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “KakuteF4-Wing”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “KakuteF4-Wing”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "KakuteF4-Wing_bl.hex"

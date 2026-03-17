@@ -3,7 +3,7 @@
 This driver implements support for the SkyPower range of EFI engine
 control units. It supports monitoring and control of SkyPower engines.
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -60,7 +60,7 @@ driver will monitor engine RPM when the engine is started and if it
 drops below this value then an engine start will be sent to restart
 the engine.
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

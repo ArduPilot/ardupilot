@@ -51,7 +51,7 @@ The file format of the @PARAM/param.pck file is as follows
 
 There is a 6 byte header, consisting of 3 uint16_t values
 
-```
+```c
   uint16_t magic # 0x671b
   uint16_t num_params
   uint16_t total_params
@@ -70,7 +70,7 @@ The header is little-endian.
 After the header comes a series of variable length parameter blocks, one per
 parameter. The format is:
 
-```
+```c
     uint8_t type:4;         // AP_Param type NONE=0, INT8=1, INT16=2, INT32=3, FLOAT=4
     uint8_t flags:4;        // bit 0: default value included, bits 1-3: for future use
     uint8_t common_len:4;   // number of name bytes in common with previous entry, 0..15

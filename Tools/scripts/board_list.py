@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import fnmatch
 import os
 import re
-import fnmatch
+
 from collections.abc import Collection
 
 '''
@@ -131,7 +132,7 @@ class BoardList(object):
                 elif "ESP32" in hwdef_dir:
                     board.toolchain = 'xtensa-esp32-elf'
                 elif "SITL" in hwdef_dir:
-                    board.toolchain = 'native'
+                    board.toolchain = None
                 else:
                     raise ValueError(f"Unable to determine toolchain for {hwdef_dir}")
 

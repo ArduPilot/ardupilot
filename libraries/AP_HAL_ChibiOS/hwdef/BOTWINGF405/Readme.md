@@ -26,7 +26,7 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 
 ### Power
 
-* 2S–6S LiPo input with onboard voltage and current monitoring
+* 2S-6S LiPo input with onboard voltage and current monitoring
 * BEC Outputs:
   * 5V @ 2.0A
   * 9V @ 2.0A, GPIO controlled

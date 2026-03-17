@@ -16,7 +16,7 @@ ATC_SPEED_D
 CRUISE_SPEED
 CRUISE_THROTTLE
 
-# How To Use
+## How To Use
 
 Install this script in the autopilot's SD card's APM/scripts directory
 Set SCR_ENABLE to 1 and reboot the autopilot
@@ -63,7 +63,7 @@ If the pilot gives steering or throttle input during tuning then tuning is pause
 
 If the vehicle is not able to turn correctly to enter or track the circle, the ``PSC`` parameters may be to be increased. For example ``PSC_VEL_P`` to 20 for very slow (<0.4m/s) vehicles.
 
-# Parameters
+## Parameters
 
 The script has the following parameters to configure its behaviour
 

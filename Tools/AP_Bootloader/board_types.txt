@@ -332,6 +332,7 @@ AP_HW_CORVON_V5                      1211
 
 AP_HW_CSKY_PMU                       1212
 AP_HW_PilotGaeaSH7V1                 1213
+AP_HW_JPilot-C                       1214
 
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
@@ -341,15 +342,21 @@ AP_HW_MatekH7A3_Wing                 1228
 AP_HW_CORVON743V2                    1229
 AP_HW_CORVON_V6                      1230
 
+
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 
+AP_HW_KT_FMU_F1                      1250
 AP_HW_CBUnmanned-CM405-FC            1301
 
 AP_HW_KHA_ETH                        1315
 
 AP_HW_FlysparkF4                     1361
+
+# IDs 1362-1369 reserved for SparkNavi
+AP_HW_SPARKNAVI_BLUE                 1362
+AP_HW_SPARKNAVI_BLUE2                1363
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
@@ -374,7 +381,7 @@ AP_HW_RadiolinkF405                  1417
 
 AP_HW_LongbowF405                    1422
 
-AP_HW_MountainEagleH743              1444
+AP_HW_ResoluteH7                     1445
 
 AP_HW_StellarF4                      1500
 AP_HW_GEPRCF745BTHD                  1501

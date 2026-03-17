@@ -5,29 +5,29 @@ Contact dheeranlabs@gmail.com for sales
 
 ## Features
 
-    Processor
-        STM32F767 32-bit processor
-    Onboard Flash: 2048Mbits
-    Sensors
-        Two IMU : ICM42670, MPU6500/ICM20602 Acc/Gyro
-        One Baro : Internal MS5611/BMP280/DPS310 SPI barometer
-    Internal LIS3MDL Compass
-    Power
-        5v input voltage with voltage monitoring
-    Interfaces
-        10x PWM outputs
-        1x RC input
-        5x UARTs/serial for GPS and other peripherals
-        2x I2C ports for external compass, airspeed, etc.
-    microSD card slot port
-    Internal RGB LED
-    Safety switch port
-    Buzzer port
-        USB-C port
+- Processor
+  - STM32F767 32-bit processor
+  Onboard Flash: 2048Mbits
+- Sensors
+  - Two IMU : ICM42670, MPU6500/ICM20602 Acc/Gyro
+  - One Baro : Internal MS5611/BMP280/DPS310 SPI barometer
+  - Internal LIS3MDL Compass
+- Power
+  - 5v input voltage with voltage monitoring
+- Interfaces
+  - 10x PWM outputs
+  - 1x RC input
+  - 5x UARTs/serial for GPS and other peripherals
+  - 2x I2C ports for external compass, airspeed, etc.
+  - microSD card slot port
+  - Internal RGB LED
+  - Safety switch port
+  - Buzzer port
+  - USB-C port
 
 ## Connectors
 
-**POWER ADC**
+### POWER ADC
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -38,7 +38,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**TELEM1**
+### TELEM1
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -49,7 +49,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   |    RTS   | +3.3V |
 |  6   |    GND   |  GND  |
 
-**TELEM2**
+### TELEM2
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -60,7 +60,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   |     X    |   X   |
 |  6   |    GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -71,7 +71,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   | I2C2_SDA | +3.3V |
 |  6   |    GND   |  GND  |
 
-**SERIAL5**
+### SERIAL5
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -81,7 +81,7 @@ Contact dheeranlabs@gmail.com for sales
 |  4   |     X    |   X   |
 |  5   |    GND   |  GND  |
 
-**SERIAL6, GPIO**
+### SERIAL6, GPIO
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -91,7 +91,7 @@ Contact dheeranlabs@gmail.com for sales
 |  4   |   GPIO   | +3.3V |
 |  5   |    GND   |  GND  |
 
-**SAFETY**
+### SAFETY
 
 | Pin  |      Signal      | Volt  |
 | :--: | :-----------:    | :---: |

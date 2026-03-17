@@ -1,11 +1,9 @@
 # Durandal Flight Controller
 
 The Holybro Durandal flight controller is sold by a range of
-resellers, linked from https://www.holybro.com
+resellers, linked from [Holybro](https://www.holybro.com)
 
-The full schematics of the board are available here:
-
-  https://github.com/ArduPilot/Schematics/tree/master/Holybro/Durandal
+The [full schematics](https://github.com/ArduPilot/Schematics/tree/master/Holybro/Durandal) of the board are available.
 
 ## Features
 

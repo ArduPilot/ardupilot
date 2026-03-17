@@ -3,7 +3,7 @@
 This driver implements support for the Halo6000 generator for hybrid
 multicopters, using CAN protocol.
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -41,7 +41,7 @@ This provides additional options. Currently just one option is
 available. If you set EFI_H6K_OPTIONS to 1 then all CAN frames will be
 logged in the message CANF.
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

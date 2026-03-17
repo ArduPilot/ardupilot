@@ -950,11 +950,11 @@ bool Plane::update_target_location(const Location &old_loc, const Location &new_
 }
 
 // allow for velocity matching in VTOL
-bool Plane::set_velocity_match(const Vector2f &velocity)
+bool Plane::set_velocity_match(const Vector2f &velocity_ne_ms)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() || quadplane.in_vtol_land_sequence()) {
-        quadplane.poscontrol.velocity_match_ms = velocity;
+        quadplane.poscontrol.velocity_match_ms = velocity_ne_ms;
         quadplane.poscontrol.last_velocity_match_ms = AP_HAL::millis();
         return true;
     }
@@ -963,12 +963,12 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
 }
 
 // allow for override of land descent rate
-bool Plane::set_land_descent_rate(float descent_rate)
+bool Plane::set_land_descent_rate(float descent_rate_ms)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() ||
         control_mode == &mode_qland) {
-        quadplane.poscontrol.override_descent_rate_ms = descent_rate;
+        quadplane.poscontrol.override_descent_rate_ms = descent_rate_ms;
         quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
         return true;
     }

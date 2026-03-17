@@ -1,27 +1,27 @@
 # PixSurveyA2-IND Flight Controller
 
-The PixSurveyA2-IND flight controller is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The PixSurveyA2-IND flight controller is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 
-• STM32H743VIT6 microcontroller
-• STM32F103C8T6 IOMCU microcontroller
-• 3x IMUs, 2- ICM-42652(SPI), one ICM42688-P(SPI)
-   • internal heater for IMUs temperature control
-   • internal Soft Rubber Damping Ball isolation for All interna IMUs
-• 2x barometers, BMP388(SPI)
-• Built-in RAMTRON(SPI)
-• microSD card slot
-• 5 UARTs
-• USB(Type-C)
-• PPM & S.Bus input
-• 14 PWM outputs
-• Two I2C ports and Two FDCAN ports, with multiple connectors
-• S.Bus output
-• internal Buzzer
-• Two power module inputs, one analog and one CAN
-• Independent power input for servo rail BEC
-• External safety Switch
+- STM32H743VIT6 microcontroller
+- STM32F103C8T6 IOMCU microcontroller
+- 3x IMUs, 2- ICM-42652(SPI), one ICM42688-P(SPI)
+  - internal heater for IMUs temperature control
+  - internal Soft Rubber Damping Ball isolation for All interna IMUs
+- 2x barometers, BMP388(SPI)
+- Built-in RAMTRON(SPI)
+- microSD card slot
+- 5 UARTs
+- USB(Type-C)
+- PPM & S.Bus input
+- 14 PWM outputs
+- Two I2C ports and Two FDCAN ports, with multiple connectors
+- S.Bus output
+- internal Buzzer
+- Two power module inputs, one analog and one CAN
+- Independent power input for servo rail BEC
+- External safety Switch
 
 ## Where to Buy
 
@@ -125,21 +125,21 @@ All compatible unidirectional RC protocols can be decoded by attaching the Recei
 
 To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART with DMA, such as SERIAL2 would need to be used for receiver connections. Below are setups using Serial6.
 
-* :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` should be set to “23”.
-* FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to “15”.
-* CRSF/ELRS would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to “0”.
-* SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to “4” and connects only the TX pin.
+- :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` should be set to "23".
+- FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".
+- CRSF/ELRS would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "0".
+- SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "4" and connects only the TX pin.
 
 ## PWM Outputs
 
 The autopilot supports up to 14 PWM outputs. All 14 outputs
 support all normal PWM output formats. All outputs also support DShot. Outputs 9-14 support Bi-Directional DShot. Outputs within the same timer group need to use the same output rate. If any output in a group uses DShot then all channels in the group need to use DShot,etc..
 
-* Outputs 1 and 2 in group1
-* Outputs 3 and 4 in group2
-* Outputs 5, 6, 7 and 8 in group3
-* Outputs 9-12 in group4
-* Outputs 13 and 14 in group5
+- Outputs 1 and 2 in group1
+- Outputs 3 and 4 in group2
+- Outputs 5, 6, 7 and 8 in group3
+- Outputs 9-12 in group4
+- Outputs 13 and 14 in group5
 
 ## GPIOs
 

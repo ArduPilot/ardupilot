@@ -1,9 +1,9 @@
-## ZeroOneX6 Flight Controller
+# ZeroOneX6 Flight Controller
 
 The ZeroOne X6 is a series of flight controllers manufactured by ZeroOne, which is based on the open-source FMU v6X architecture and Pixhawk Autopilot Bus open source specifications.
 ![Uploading X6_and_X6Pro.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Pro-250526/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6/X6_and_X6Pro.jpg?raw=true)
 
-## Features:
+## Features
 
 - Separate flight control core design.
 - MCU
@@ -29,7 +29,7 @@ The ZeroOne X6 is a series of flight controllers manufactured by ZeroOne, which 
        IMU2-BMI088(With vibration isolation)
        IMU3-ICM45686(No vibration isolation)
 
-    - **X6 Pro**：
+    - **X6 Pro**:
 
        IMU1-IIM42653(With vibration isolation)
        IMU2-BMI088(With vibration isolation)
@@ -146,8 +146,7 @@ The X6 flight controller has 2 analog inputs.
 
 The X6 flight controller supports switching between 5V and 3.3V PWM levels. Switch PWM output pulse level by configuring parameter BRD_PWM_VOL_SEL. 0 for 3.3V and 1 for 5V output.
 
-Loading Firmware
-================
+## Loading Firmware
 
 The board comes pre-installed with an ArduPilot compatible bootloader,
 allowing the loading of xxxxxx.apj firmware files with any ArduPilot
@@ -156,4 +155,4 @@ Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ 
 
 ## Where to Buy
 
-https://www.01aero.cn
+[ZeroOne](https://www.01aero.cn)

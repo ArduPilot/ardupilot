@@ -60,8 +60,8 @@ AP_FLAKE8_CLEAN
 
 import optparse
 import os
-import subprocess
 import shlex
+import subprocess
 import sys
 import time
 import traceback

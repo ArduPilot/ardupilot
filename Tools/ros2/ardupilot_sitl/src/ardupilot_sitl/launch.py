@@ -14,18 +14,17 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """Launch actions for ArduPilot."""
-from typing import List
 from typing import Dict
+from typing import List
 from typing import Text
 from typing import Tuple
 
 from launch import LaunchContext
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess
 from launch.actions import DeclareLaunchArgument
+from launch.actions import ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
-
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 

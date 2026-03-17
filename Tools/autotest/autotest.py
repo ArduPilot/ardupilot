@@ -7,8 +7,8 @@ Andrew Tridgell, October 2011
  AP_FLAKE8_CLEAN
 """
 import atexit
-import fnmatch
 import copy
+import fnmatch
 import glob
 import optparse
 import os
@@ -20,21 +20,22 @@ import sys
 import time
 import traceback
 
-import blimp
-import rover
-import arducopter
 import arduplane
 import ardusub
-import antennatracker
-import quadplane
 import balancebot
-import sailboat
-import helicopter
-
 import examples
-from pysim import util
+
 from pymavlink.generator import mavtemplate
 
+import antennatracker
+import arducopter
+import blimp
+import helicopter
+import quadplane
+import rover
+import sailboat
+
+from pysim import util
 from vehicle_test_suite import Test
 
 tester = None
@@ -1074,12 +1075,8 @@ if __name__ == "__main__":
     if opts.move_logs_on_test_failure is None:
         opts.move_logs_on_test_failure = opts.autotest_server
 
-        # temporarily default it to the old behaviour, but allow a
-        # user to test it by setting an environment variable:
-        if os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") is not None:
-            opts.move_logs_on_test_failure = os.getenv("AP_AUTOTEST_MOVE_LOGS_ON_FAILURE") == "1"
-        else:
-            opts.move_logs_on_test_failure = True
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        opts.move_logs_on_test_failure = True
 
     steps = [
         'prerequisites',

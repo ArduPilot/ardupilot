@@ -129,6 +129,14 @@
 #define STM32_PLL2_DIVM_VALUE               1
 #define STM32_PLL3_DIVM_VALUE               2
 
+#elif STM32_HSECLK == 12000000U
+// this gives 400MHz system clock
+#define STM32_HSE_ENABLED                   TRUE
+#define STM32_HSI_ENABLED                   FALSE
+#define STM32_PLL1_DIVM_VALUE               3
+#define STM32_PLL2_DIVM_VALUE               1
+#define STM32_PLL3_DIVM_VALUE               3
+
 #elif STM32_HSECLK == 16000000U
 // this gives 400MHz system clock
 #define STM32_HSE_ENABLED                   TRUE
@@ -198,6 +206,33 @@
 #define STM32_PLL1_DIVR_VALUE               2
 
 #define STM32_PLL2_DIVN_VALUE               75
+#define STM32_PLL2_DIVP_VALUE               3
+#define STM32_PLL2_DIVQ_VALUE               6
+#define STM32_PLL2_DIVR_VALUE               3
+
+#define STM32_PLL3_DIVN_VALUE               72
+#define STM32_PLL3_DIVQ_VALUE               6
+#define STM32_PLL3_DIVR_VALUE               9
+
+#elif STM32_HSECLK == 12000000U
+#ifdef HAL_CUSTOM_MCU_CLOCKRATE
+#if HAL_CUSTOM_MCU_CLOCKRATE == 480000000
+#define STM32_PLL1_DIVN_VALUE               240
+#define STM32_PLL1_DIVQ_VALUE               12
+#elif HAL_CUSTOM_MCU_CLOCKRATE == 200000000
+#define STM32_PLL1_DIVN_VALUE               100
+#define STM32_PLL1_DIVQ_VALUE               5
+#else
+#error "Unable to configure custom clockrate"
+#endif
+#else
+#define STM32_PLL1_DIVN_VALUE               200
+#define STM32_PLL1_DIVQ_VALUE               10
+#endif
+#define STM32_PLL1_DIVP_VALUE               2
+#define STM32_PLL1_DIVR_VALUE               2
+
+#define STM32_PLL2_DIVN_VALUE               50
 #define STM32_PLL2_DIVP_VALUE               3
 #define STM32_PLL2_DIVQ_VALUE               6
 #define STM32_PLL2_DIVR_VALUE               3

@@ -86,6 +86,7 @@ public:
     float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
     float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
 
+#if AP_BARO_CALIBRATION_ENABLED
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
     void calibrate(bool save=true);
@@ -93,6 +94,7 @@ public:
     // update the barometer calibration to the current pressure. Can
     // be used for incremental preflight update of baro
     void update_calibration(void);
+#endif  // AP_BARO_CALIBRATION_ENABLED
 
     // get current altitude in meters relative to altitude at the time
     // of the last calibrate() call

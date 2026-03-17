@@ -3,9 +3,9 @@
 This driver implements support for the INF Inject EFI engine
 control units.
 
- https://innoflighttechnology.com/efi/
+ [InnoFlight](https://innoflighttechnology.com/efi/)
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -19,7 +19,7 @@ This sets options for the driver. Currently the only option is to set
 EFI_INF_OPTIONS to 1 to enable logging of the raw serial bytes to a
 file called INF_Inject.log
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

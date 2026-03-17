@@ -37,6 +37,9 @@ public:
     // do not allow copying
     CLASS_NO_COPY(Mode);
 
+    // Return true if this mode is enabled, used by MAVLink available mode
+    virtual bool enabled() const { return true; }
+
     // enter this mode, returns false if we failed to enter
     bool enter();
 
@@ -123,7 +126,7 @@ public:
     float get_speed_default(bool rtl = false) const;
 
     // set desired speed in m/s
-    virtual bool set_desired_speed(float speed) { return false; }
+    virtual bool set_desired_speed(float speed_ms) { return false; }
 
     // execute the mission in reverse (i.e. backing up)
     void set_reversed(bool value);
@@ -277,7 +280,7 @@ public:
     bool reached_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
     // start RTL (within auto)
     void start_RTL();
@@ -545,7 +548,7 @@ public:
     bool reached_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
     // get or set desired location
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
@@ -722,7 +725,7 @@ public:
     bool reached_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
 protected:
 
@@ -741,6 +744,9 @@ public:
     const char *name() const override { return "Smart RTL"; }
     const char *name4() const override { return "SRTL"; }
 
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override;
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -758,7 +764,7 @@ public:
     bool reached_destination() const override { return smart_rtl_state == SmartRTLState::StopAtHome; }
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
     // save current position for use by the smart_rtl flight mode
     void save_position();
@@ -814,6 +820,9 @@ public:
     const char *name() const override { return "Initialising"; }
     const char *name4() const override { return "INIT"; }
 
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override { return false; };
+
     // methods that affect movement of the vehicle in this mode
     void update() override { }
 
@@ -836,6 +845,9 @@ public:
     const char *name() const override { return "Follow"; }
     const char *name4() const override { return "FOLL"; }
 
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override;
+
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
@@ -854,7 +866,7 @@ public:
     float get_distance_to_destination() const override;
 
     // set desired speed in m/s
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 
 protected:
 
@@ -903,6 +915,9 @@ public:
     Number mode_number() const override { return Number::DOCK; }
     const char *name() const override { return "Dock"; }
     const char *name4() const override { return "DOCK"; }
+
+    // Return true if this mode is enabled, used by MAVLink available mode
+    bool enabled() const override;
 
     // methods that affect movement of the vehicle in this mode
     void update() override;

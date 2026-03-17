@@ -88,11 +88,11 @@ The SPRacingH7 RF does not have a builtin compass, but you can attach an externa
 
 ## User Manual
 
-http://seriouslypro.com/files/SPRacingH7RF-Manual-latest.pdf
+[Seriously Pro Racing](http://seriouslypro.com/files/SPRacingH7RF-Manual-latest.pdf)
 
 ## Loading Firmware
 
 Since this board stores the flight control software on external flash the initial firmware load should be done using the
-SPRacing SSBL (https://github.com/spracing/ssbl). Please follow the instructions for loading PX4 firmware to load ArduPilot.
+SPRacing [SSBL](https://github.com/spracing/ssbl). Please follow the instructions for loading PX4 firmware to load ArduPilot.
 A convenience script is provided Tools/scripts/ssbl_uploader.sh to perform the required steps.
 It should also be possible to load the ArduPilot bootloader via DFU, but doing so will invalidate your warranty.

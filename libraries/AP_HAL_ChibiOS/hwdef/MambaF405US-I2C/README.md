@@ -1,7 +1,7 @@
 # Mamba Basic F405 Flight Controllers
 
-30x30: https://www.diatone.us/products/mamba-basic-f405-mk3-lite-flight-controlle
-20x20: https://www.diatone.us/products/mamba-basic-f405mini-mk3-5-fc-m2-20mm
+30x30: [Diatone](https://www.diatone.us/products/mamba-basic-f405-mk3-lite-flight-controlle)
+20x20: [Diatone](https://www.diatone.us/products/mamba-basic-f405mini-mk3-5-fc-m2-20mm)
 
 The Mamba Basic line of flight controllers are produced by [Diatone](https://www.diatone.us).
 

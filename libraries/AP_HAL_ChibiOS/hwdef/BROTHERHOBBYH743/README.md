@@ -33,9 +33,9 @@ The BROTHERHOBBYH743 is a flight controller produced by [BROTHERHOBBY](https://w
 
 The default RC input is configured on the UART2_RX inverted from the SBUS pin.  All unidirectional ArduPilot compatible protocols, except PPM, are supported. Receivers using bi-directional protocols such as CRSF/ELRS should be tied to the TX2 and RX2 pins.
 
-* FPort requires connection to TX2 . See :ref:`FPort Receivers<common-Fport-receivers>`.
-* CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-* SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to “4”.
+- FPort requires connection to TX2 . See :ref:`FPort Receivers<common-Fport-receivers>`.
+- CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to "4".
 
 ## FrSky Telemetry
 
@@ -104,4 +104,4 @@ Initial firmware load can be done with DFU by plugging in USB with the bootloade
 
 Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the "\*.apj" firmware files.
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "BROTHEHOBBYH743".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "BROTHEHOBBYH743".

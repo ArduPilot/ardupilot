@@ -44,7 +44,7 @@ bool AP_Terrain::request_missing(GCS_MAVLINK &link, struct grid_cache &gcache)
 
     struct grid_block &grid = gcache.grid;
 
-    if (options.get() & uint16_t(Options::DisableDownload)) {
+    if (option_set(Options::DisableDownload)) {
         return false;
     }
 

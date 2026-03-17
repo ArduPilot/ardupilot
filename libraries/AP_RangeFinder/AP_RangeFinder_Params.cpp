@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Values: 44:HexsoonRadar
     // @Values: 45:LightWare-GRF
     // @Values: 46:BenewakeTFS20L
-    // @Values: 47:BenewakeTFA1500
+    // @Values: 47:DTS6012M-Serial
     // @Values: 100:SITL
     // @User: Standard
     AP_GROUPINFO_FLAGS("TYPE", 1, AP_RangeFinder_Params, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Values: -1:Not Used,11:Pixracer,13:Pixhawk ADC4,14:Pixhawk ADC3,15:Pixhawk ADC6/Pixhawk2 ADC,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6,103:Pixhawk SBUS
     // @Range: -1 127
     // @User: Standard
-    AP_GROUPINFO("PIN",     2, AP_RangeFinder_Params, pin, -1),
+    AP_GROUPINFO("PIN", 2, AP_RangeFinder_Params, pin, -1),
 
     // @Param: SCALING
     // @DisplayName: Rangefinder scaling
@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Units: V
     // @Increment: 0.001
     // @User: Standard
-    AP_GROUPINFO("OFFSET",  4, AP_RangeFinder_Params, offset, 0.0f),
+    AP_GROUPINFO("OFFSET", 4, AP_RangeFinder_Params, offset, 0.0f),
 
     // @Param: FUNCTION
     // @DisplayName: Rangefinder function
@@ -103,7 +103,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Units: m
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("MIN",  6, AP_RangeFinder_Params, min_distance, 0.20),
+    AP_GROUPINFO("MIN", 6, AP_RangeFinder_Params, min_distance, 0.20),
 
     // @Param: MAX
     // @DisplayName: Rangefinder maximum distance
@@ -111,7 +111,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Units: m
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("MAX",  7, AP_RangeFinder_Params, max_distance, 7.00),
+    AP_GROUPINFO("MAX", 7, AP_RangeFinder_Params, max_distance, 7.00),
 
     // @Param: STOP_PIN
     // @DisplayName: Rangefinder stop pin
@@ -187,9 +187,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, AP_RANGEFINDER_DEFAULT_ORIENTATION),
 
-    AP_GROUPEND
-};
-
+    AP_GROUPEND};
 
 // PARAMETER_CONVERSION - Added: Dec-2024 for 4.7
 void AP_RangeFinder_Params::convert_min_max_params(void)
@@ -200,8 +198,9 @@ void AP_RangeFinder_Params::convert_min_max_params(void)
     ground_clearance.convert_parameter_width(AP_PARAM_INT8, 0.01);
 }
 
-AP_RangeFinder_Params::AP_RangeFinder_Params(void) {
+AP_RangeFinder_Params::AP_RangeFinder_Params(void)
+{
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-#endif  // AP_RANGEFINDER_ENABLED
+#endif // AP_RANGEFINDER_ENABLED

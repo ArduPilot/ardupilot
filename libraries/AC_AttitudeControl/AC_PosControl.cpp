@@ -49,25 +49,34 @@ extern const AP_HAL::HAL& hal;
  # define POSCONTROL_NE_VEL_FILT_HZ             5.0f    // horizontal velocity controller input filter
  # define POSCONTROL_NE_VEL_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
 #else
- // default gains for Copter / TradHeli
+ // default gains common between TradHeli and Copter 
  # define POSCONTROL_D_POS_P                    1.0f    // vertical position controller P gain default
  # define POSCONTROL_D_VEL_P                    5.0f    // vertical velocity controller P gain default
  # define POSCONTROL_D_VEL_IMAX                 10.0f   // vertical velocity controller IMAX gain default
  # define POSCONTROL_D_VEL_FILT_HZ              5.0f    // vertical velocity controller input filter
- # define POSCONTROL_D_VEL_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D
- # define POSCONTROL_D_ACC_P                    0.05f   // vertical acceleration controller P gain default
+ # define POSCONTROL_D_VEL_FILT_D_HZ            5.0f    // vertical velocity controller input filter for D 
  # define POSCONTROL_D_ACC_I                    0.1f    // vertical acceleration controller I gain default
  # define POSCONTROL_D_ACC_D                    0.0f    // vertical acceleration controller D gain default
  # define POSCONTROL_D_ACC_IMAX                 0.8f    // vertical acceleration controller IMAX gain default
  # define POSCONTROL_D_ACC_FILT_HZ              20.0f   // vertical acceleration controller input filter default
  # define POSCONTROL_D_ACC_DT                   0.0025f // vertical acceleration controller dt default
  # define POSCONTROL_NE_POS_P                   1.0f    // horizontal position controller P gain default
- # define POSCONTROL_NE_VEL_P                   2.0f    // horizontal velocity controller P gain default
- # define POSCONTROL_NE_VEL_I                   1.0f    // horizontal velocity controller I gain default
- # define POSCONTROL_NE_VEL_D                   0.25f   // horizontal velocity controller D gain default
  # define POSCONTROL_NE_VEL_IMAX                10.0f   // horizontal velocity controller IMAX gain default
  # define POSCONTROL_NE_VEL_FILT_HZ             5.0f    // horizontal velocity controller input filter
  # define POSCONTROL_NE_VEL_FILT_D_HZ           5.0f    // horizontal velocity controller input filter for D
+ #if APM_BUILD_TYPE(APM_BUILD_Heli)
+  // default gains specific to TradHeli 
+  # define POSCONTROL_D_ACC_P                    0.028f  // vertical acceleration controller P gain default
+  # define POSCONTROL_NE_VEL_P                   1.0f    // horizontal velocity controller P gain default
+  # define POSCONTROL_NE_VEL_I                   0.5f    // horizontal velocity controller I gain default
+  # define POSCONTROL_NE_VEL_D                   0.0f    // horizontal velocity controller D gain default
+ #else
+  // default gains specific to Copter
+  # define POSCONTROL_D_ACC_P                    0.05f   // vertical acceleration controller P gain default
+  # define POSCONTROL_NE_VEL_P                   2.0f    // horizontal velocity controller P gain default
+  # define POSCONTROL_NE_VEL_I                   1.0f    // horizontal velocity controller I gain default
+  # define POSCONTROL_NE_VEL_D                   0.25f   // horizontal velocity controller D gain default
+ #endif
 #endif
 
 // vibration compensation gains

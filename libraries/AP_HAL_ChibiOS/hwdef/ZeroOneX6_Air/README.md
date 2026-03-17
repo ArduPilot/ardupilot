@@ -1,10 +1,10 @@
-## ZeroOneX6 Air/Air+ Flight Controller
+# ZeroOneX6 Air/Air+ Flight Controller
 
 The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, which is based on the open-source FMU v6C architecture and Pixhawk Autopilot Bus open source specifications.
 
 ![Uploading ZeroOneX6_Air.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX6_Air_Series-250103/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX6_Air/ZeroOneX6_Air.png?raw=true)
 
-## Features:
+## Features
 
 - Separate flight control Inertial Measurement Unit design.
 - MCU
@@ -26,12 +26,12 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 - **Air's Sensors**
   - IMU:
 
-        With Synced IMU, BalancedGyro technology, low noise and more shock-resistant:
-        IMU- ICM45686 (No vibration isolation)
+    - With Synced IMU, BalancedGyro technology, low noise and more shock-resistant:
+    - IMU- ICM45686 (No vibration isolation)
 
   - Baro:
 
-      one barometer ：ICP20100
+      one barometer: ICP20100
 
   - Magnetometer:
 
@@ -48,7 +48,7 @@ The ZeroOneX6_Air is a series of flight controllers manufactured by ZeroOne, whi
 
   - Baro:
 
-      Two barometers ：2 x ICP20100
+      Two barometers: 2 x ICP20100
 
   - Magnetometer:
 
@@ -158,8 +158,7 @@ The X6_Air flight controller has 2 analog inputs.
 - ADC Pin12 -> ADC 6.6V Sense
 - ADC Pin13 -> ADC 3.3V Sense
 
-Loading Firmware
-================
+## Loading Firmware
 
 The board comes pre-installed with an ArduPilot compatible bootloader,
 allowing the loading of xxxxxx.apj firmware files with any ArduPilot
@@ -168,4 +167,4 @@ Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ 
 
 ## Where to Buy
 
-https://www.01aero.cn
+[ZeroOne](https://www.01aero.cn)

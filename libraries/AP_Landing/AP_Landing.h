@@ -110,7 +110,7 @@ public:
     int8_t get_then_servos_neutral(void) const { return then_servos_neutral; }
     int8_t get_abort_throttle_enable(void) const { return abort_throttle_enable; }
     int8_t get_flap_percent(void) const { return flap_percent; }
-    int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
+    int16_t get_throttle_slewrate(void) const { return throttle_slewrate; }
     bool is_commanded_go_around(void) const { return flags.commanded_go_around; }
     bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
@@ -171,7 +171,7 @@ private:
     AP_Int8 then_servos_neutral;
     AP_Int8 abort_throttle_enable;
     AP_Int8 flap_percent;
-    AP_Int8 throttle_slewrate;
+    AP_Int16 throttle_slewrate;
     AP_Int8 type;
     AP_Int8 flare_effectivness_pct;
     AP_Float wind_comp;

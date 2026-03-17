@@ -1,8 +1,8 @@
 # F4BY Flight Controller MCU upgrade
 
-The F4BY flight controller shop: https://f4by.com/en/?order/our_product
+The [F4BY flight controller shop](https://f4by.com/en/?order/our_product).
 
-The instructions are available here: https://f4by.com/en/?doc/fc_f4by_v2.1.5
+The instructions are available here: [F4BY mcu upgrade instructions](https://f4by.com/en/?doc/fc_f4by_v2.1.5)
 
 ## Howto
 

@@ -1,4 +1,4 @@
-name: Fail on Malformed Commits in PR Branch
+name: Test for Malformed Commits in PR Branch
 
 on:
   pull_request:
@@ -33,87 +33,24 @@ jobs:
         run: |
           git submodule update --init --recursive
 
+      - name: Install aarch64 cross toolchain for Linux board checks
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y g++-aarch64-linux-gnu
+
       - name: Test new boards compile
         shell: bash
         run: |
-          Tools/scripts/test_new_boards.py --master "upstream/${{ github.event.pull_request.base.ref }}"
+          Tools/scripts/test_new_boards.py --master-branch "upstream/${{ github.event.pull_request.base.ref }}"
 
-      - name: Check for merge commits in PR branch
+      - name: Install markdownlint-cli2
         shell: bash
         run: |
-          # Find merge-base between base branch and (rebased) PR branch
-          echo "Merge target is origin/${{ github.event.pull_request.base.ref }}"
-          echo "github.event.pull_request.base.ref=${{ github.event.pull_request.base.ref }} "
-
-          # Look for merge commits in PR branch only
-          MERGE_COMMITS=$(git log upstream/${{ github.event.pull_request.base.ref }}..HEAD --merges --oneline)
-          echo "Merge commits:"
-          echo "$MERGE_COMMITS"
-
-          if [[ -n "$MERGE_COMMITS" ]]; then
-            echo "❌ Merge commits detected in the PR branch (not allowed):"
-            echo "Please see https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
-            exit 1
-          else
-            echo "✅ No merge commits found in the PR branch."
-          fi
-
-          # Look for fixup! commits in PR branch only
-          COMMITS=$(git log upstream/${{ github.event.pull_request.base.ref }}..HEAD --oneline)
-          echo "Commits:"
-          echo "$COMMITS"
-
-          if [[ "$COMMITS" == *"fixup!"* ]]; then
-            echo "❌ fixup commits detected in the PR branch (not allowed):"
-            echo "$COMMITS"
-            echo "Please see https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
-            exit 1
-          else
-            echo "✅ No fixup commits found in the PR branch."
-          fi
-
-          # require a ":" to appear somewhere in each commit message:
-          while IFS= read x; do
-            if ! [[ "$x" == *":"* ]] ; then
-              echo "❌ Commit message ($x) missing subsystem tag on front.  Re-word your commit to reflect what subsystem it changes. E.g. 'AP_Compass: Added driver for XYZZY' (https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html)"
-              exit 1
-            fi
-          done <<< $COMMITS
-          echo "✅ Commit messages have subsystem tags."
-
-      - name: Lint changed markdown files
-        shell: bash
-        run: |
-          # Get list of added or modified markdown files in the PR
-          CHANGED_MD=$(git diff --name-only --diff-filter=AM upstream/${{ github.event.pull_request.base.ref }}...HEAD -- '*.md')
-
-          if [[ -z "$CHANGED_MD" ]]; then
-            echo "✅ No markdown files changed."
-            exit 0
-          fi
-
-          echo "Changed markdown files:"
-          echo "$CHANGED_MD"
-
-          # Install markdownlint-cli2 (older version compatible with container's Node.js)
           apt-get update && apt-get install -y npm
           npm install -g markdownlint-cli2@0.4.0
 
-          # Lint the changed files
-          if markdownlint-cli2 $CHANGED_MD; then
-            echo "✅ Markdown files pass linting."
-          else
-            echo "❌ Markdown linting errors found."
-            exit 1
-          fi
-
-          # check that no commit subject line exceeds 160 characters:
-          while IFS= read -r line; do
-            if [[ ${#line} -gt 160 ]]; then
-              echo "❌ Commit subject line exceeds 160 characters:"
-              echo "$line"
-              echo "Please keep the commit subject line to 160 characters or fewer."
-              exit 1
-            fi
-          done <<< "$COMMITS"
-          echo "✅ All commit subject lines are within 160 characters."
+      - name: Check branch conventions
+        shell: bash
+        run: |
+          Tools/scripts/check_branch_conventions.py --base-branch "upstream/${{ github.event.pull_request.base.ref }}"

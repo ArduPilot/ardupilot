@@ -44,6 +44,9 @@ public:
     // return true if any avoidance feature is enabled
     bool enabled() const { return _enabled != AC_AVOID_DISABLED; }
 
+    // parameter conversion
+    void convert_params();
+
     // Adjusts the desired velocity so that the vehicle can stop
     // before the fence/object.
     // kP, accel_cmss are for the horizontal axis
@@ -76,10 +79,12 @@ public:
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed_cms, float dt);
     void adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt);
 
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
     // adjust roll-pitch to push vehicle away from objects
     // roll and pitch value are in radians
     // veh_angle_max_rad is the user defined maximum lean angle for the vehicle in radians
     void adjust_roll_pitch_rad(float &roll_rad, float &pitch_rad, float veh_angle_max_rad) const;
+#endif
 
     // enable/disable proximity based avoidance
     void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
@@ -196,18 +201,22 @@ private:
      * methods for avoidance in non-GPS flight modes
      */
 
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
     // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
     float distance_m_to_lean_norm(float dist_m) const;
 
     // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
     void get_proximity_roll_pitch_norm(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative) const;
+#endif
 
     // Logging function
     void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;
 
     // parameters
     AP_Int8 _enabled;
-    AP_Int16 _angle_max_cd;             // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
+    AP_Float _angle_max_deg;            // maximum lean angle in degrees to avoid obstacles (only used in non-GPS flight modes)
+#endif
     AP_Float _dist_max_m;               // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _margin_m;                 // vehicle will attempt to stay this distance (in meters) from objects while in GPS modes
     AP_Int8 _behavior;                  // avoidance behaviour (slide or stop)

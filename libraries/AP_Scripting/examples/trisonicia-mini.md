@@ -3,7 +3,7 @@
 This Lua script reads and logs wind sensor data from the **Trisonica LI-550 Mini** ultrasonic wind sensor connected via serial. It decodes ASCII-formatted key-value pairs and logs the data using dynamic field tags on the `W3D` logging stream.
 
 For sensor details, visit:
-🔗 https://www.licor.com/products/trisonica/LI-550-mini
+🔗 [LI-COR](https://www.licor.com/products/trisonica/LI-550-mini)
 
 ## Features
 
@@ -48,7 +48,7 @@ You must also **enable all fields you want to log**. A recommended set is as fol
 display
 ```
 
-```
+```text
 -----------------------------------------------------------------------------------------
 |     Name |            Description |  Tagged |      Tag | Decimals | Enabled |  Units  |
 -----------------------------------------------------------------------------------------
@@ -129,5 +129,5 @@ graph W3D.U W3D.W W3D.V ARSP.Airspeed
 
 ## Future Improvements
 
-* Use the wind data as input to the EKF for wind speed
-* Use the Trisonica API to have ArduPilot configure the correct data outputs and rates
+- Use the wind data as input to the EKF for wind speed
+- Use the Trisonica API to have ArduPilot configure the correct data outputs and rates

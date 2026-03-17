@@ -9,7 +9,7 @@ The CM4PILOT is a low-cost and compact flight controller which integrated a Rasp
 ## Features
 
 - Raspberry Pi CM4 + Ardupilot, Companion Computers in cockpit structure
-- Small Footprint and Lightweight, 58mm X 50mm X 18mm，26g(without shell)
+- Small Footprint and Lightweight, 58mm x 50mm x 18mm, 26g (without shell)
 - Broadcom BCM2711, quad-core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz
 - STM32F405 microcontroller
 - IMU: BMI088
@@ -83,7 +83,7 @@ The CM4PILOT has one built-in compass LIS3MDLTR, you can also attach an external
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “ACNS-CM4PILOT”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “ACNS-CM4PILOT”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "xxx_bl.hex"

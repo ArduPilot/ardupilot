@@ -36,8 +36,6 @@ class AP_Compass_BMM150 : public AP_Compass_Backend
 public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev, bool force_external, enum Rotation rotation);
 
-    void read() override;
-
     static constexpr const char *name = "BMM150";
 
 private:

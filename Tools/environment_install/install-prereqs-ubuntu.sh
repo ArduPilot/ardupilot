@@ -72,7 +72,7 @@ case ${RELEASE_DISTRIBUTOR} in
     linuxmint)
         # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
         case ${RELEASE_CODENAME} in
-            wilma | xia)
+            zena | wilma | xia)
                 RELEASE_CODENAME='noble'
                 ;;
             vanessa | vera | victoria | virginia)

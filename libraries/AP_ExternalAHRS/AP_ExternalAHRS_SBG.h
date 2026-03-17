@@ -154,7 +154,7 @@ private:
     static void safe_copy_msg_to_object(uint8_t* dest, const uint16_t dest_len, const uint8_t* src, const uint16_t src_len);
     static uint16_t make_gps_week(const SbgEComLogUtc *utc_data);
 
-    bool ekf_is_full_nav = false;
+    bool ekf_is_full_nav;
     static bool SbgEkfStatus_is_fullNav(const uint32_t ekfStatus);
 
     static AP_GPS_FixType SbgGpsPosStatus_to_GpsFixType(const uint32_t gpsPosStatus);
