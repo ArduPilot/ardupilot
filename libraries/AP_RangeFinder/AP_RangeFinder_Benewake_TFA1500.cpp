@@ -23,23 +23,23 @@ void AP_RangeFinder_Benewake_TFA1500::init_serial(uint8_t serial_instance)
 
 bool AP_RangeFinder_Benewake_TFA1500::process_byte(uint8_t received_byte, uint32_t &dist_cm)
 {
-    frame_buf.bytes[tf_frame_len++] = received_byte;
+    tf_frame.bytes[tf_frame_len++] = received_byte;
 
     if (tf_frame_len < TFA1500_FRAME_LENGTH)
     {
         return false;
     }
 
-    if (frame_buf.packet.header == TFA1500_FRAME_HEADER)
+    if (tf_frame.packet.header == TFA1500_FRAME_HEADER)
     {
-        const uint8_t expected_crc = ~(frame_buf.packet.dist_low +
-                                       frame_buf.packet.dist_mid +
-                                       frame_buf.packet.dist_high);
-        if (expected_crc == frame_buf.packet.crc_sum_of_bytes)
+        const uint8_t expected_crc = (uint8_t)~(tf_frame.packet.dist_low +
+                                                tf_frame.packet.dist_mid +
+                                                tf_frame.packet.dist_high);
+        if (expected_crc == tf_frame.packet.crc_sum_of_bytes)
         {
-            dist_cm = (frame_buf.packet.dist_high << 16) |
-                      (frame_buf.packet.dist_mid << 8) |
-                      frame_buf.packet.dist_low;
+            dist_cm = (tf_frame.packet.dist_high << 16) |
+                      (tf_frame.packet.dist_mid << 8) |
+                      tf_frame.packet.dist_low;
             tf_frame_len = 0;
             return true;
         }
@@ -49,14 +49,14 @@ bool AP_RangeFinder_Benewake_TFA1500::process_byte(uint8_t received_byte, uint32
     uint8_t i;
     for (i = 1; i < tf_frame_len; i++)
     {
-        if (frame_buf.bytes[i] == TFA1500_FRAME_HEADER)
+        if (tf_frame.bytes[i] == TFA1500_FRAME_HEADER)
         {
             break;
         }
     }
     if (i < tf_frame_len)
     {
-        memmove(&frame_buf.bytes[0], &frame_buf.bytes[i], tf_frame_len - i);
+        memmove(&tf_frame.bytes[0], &tf_frame.bytes[i], tf_frame_len - i);
         tf_frame_len -= i;
     }
     else
