@@ -443,6 +443,12 @@ public:
     // request EKF yaw reset to try and avoid the need for an EKF lane switch or failsafe
     void request_yaw_reset(void);
 
+#if AP_AHRS_EKF_RESET_ENABLED
+    // request full EKF bootstrap reset
+    // returns true if the reset was performed
+    bool reset_ekf_bootstrap(void);
+#endif  // AP_AHRS_EKF_RESET_ENABLED
+
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx);
 
