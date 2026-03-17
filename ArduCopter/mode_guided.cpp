@@ -1337,7 +1337,7 @@ void ModeGuided::orbit_apply_yaw_behaviour()
         auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
         break;
     case 1: // ORBIT_YAW_BEHAVIOUR_HOLD_INITIAL_HEADING
-        auto_yaw.set_fixed_yaw_rad(AP::ahrs().get_yaw(), 0.0f, 0, false);
+        auto_yaw.set_fixed_yaw_rad(copter.ahrs.get_yaw_rad(), 0.0f, 0, false);
         break;
     case 2: // ORBIT_YAW_BEHAVIOUR_UNCONTROLLED
         auto_yaw.set_mode(AutoYaw::Mode::HOLD);
