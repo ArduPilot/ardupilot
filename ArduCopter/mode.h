@@ -1908,6 +1908,7 @@ private:
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
     uint32_t uprighting_start_ms;     // system time uprighting stage was entered
     uint32_t hgt_stabilise_start_ms;  // system time height stabilise stage was entered
+    uint32_t last_stage_msg_ms;       // last time a stage message was sent
     uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
     float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met
 };
