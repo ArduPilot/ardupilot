@@ -825,8 +825,8 @@ void AP_Baro::_probe_i2c_barometers(void)
         { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR2 },
 #endif
 #if AP_BARO_DPS280_ENABLED
-        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR },
-        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR2 },
+        { PROBE_DPS280, AP_Baro_DPS280::probe, HAL_BARO_DPS280_I2C_ADDR },
+        { PROBE_DPS280, AP_Baro_DPS280::probe, HAL_BARO_DPS280_I2C_ADDR2 },
 #endif
 #if AP_BARO_LPS2XH_ENABLED
         { PROBE_LPS25H, AP_Baro_LPS2XH::probe, HAL_BARO_LPS25H_I2C_ADDR },
