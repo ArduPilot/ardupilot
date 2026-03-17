@@ -1,3 +1,18 @@
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "AP_RangeFinder_config.h"
 
 #if AP_RANGEFINDER_BENEWAKE_TFA1500_ENABLED
@@ -9,50 +24,23 @@
 
 extern const AP_HAL::HAL &hal;
 
-static constexpr uint8_t  TFA1500_FRAME_HEADER     = 0x5CU;
-static constexpr uint8_t  TFA1500_FRAME_LENGTH     = 5U;
-static constexpr uint32_t TFA1500_DIST_MAX_CM      = 130000U;
+static constexpr uint8_t TFA1500_FRAME_HEADER = 0x5C;
+static constexpr uint8_t TFA1500_FRAME_LENGTH = 5;
+static constexpr uint32_t TFA1500_DIST_MAX_CM = 130000;
 
 static const uint8_t TFA1500_CMD_START[] = {
-    0x55U, 0xAAU, 0xCBU, 0xCCU, 0xCCU, 0xCCU, 0xCCU, 0xFBU
-};
+    0x55U, 0xAAU, 0xCBU, 0xCCU, 0xCCU, 0xCCU, 0xCCU, 0xFBU};
 
-static bool parse_frame(const uint8_t *buffer, uint32_t &dist_cm)
+void AP_RangeFinder_Benewake_TFA1500::find_signature_in_buffer(uint8_t start)
 {
-    union {
-        uint8_t bytes[TFA1500_FRAME_LENGTH];
-        struct PACKED {
-            uint8_t header;
-            uint8_t dist_low;
-            uint8_t dist_mid;
-            uint8_t dist_high;
-            uint8_t crc_sum_of_bytes;
-        } packet;
-    } frame;
-
-    memcpy(frame.bytes, buffer, sizeof(frame.bytes));
-
-    if (frame.packet.header != TFA1500_FRAME_HEADER) {
-        return false;
+    for (uint8_t i = start; i < tf_frame_len; i++) {
+        if (tf_frame.bytes[i] == TFA1500_FRAME_HEADER) {
+            memmove(&tf_frame.bytes[0], &tf_frame.bytes[i], tf_frame_len - i);
+            tf_frame_len -= i;
+            return;
+        }
     }
-
-    const uint8_t expected_crc_sum_of_bytes = ~(frame.packet.dist_low +
-                                        frame.packet.dist_mid +
-                                        frame.packet.dist_high);
-
-    if (expected_crc_sum_of_bytes != frame.packet.crc_sum_of_bytes) {
-        return false;
-    }
-
-    dist_cm = (frame.packet.dist_high << 16) |
-              (frame.packet.dist_mid << 8) |
-              frame.packet.dist_low;
-    return true;
-}
-
-void AP_RangeFinder_Benewake_TFA1500::init_serial(uint8_t serial_instance)
-{
-    AP_RangeFinder_Backend_Serial::init_serial(serial_instance);
+    tf_frame_len = 0;
 }
 
 bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
@@ -74,52 +62,46 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
 
     // read limit to prevent consuming too much CPU
     for (auto j = 0U; j < 8192; j++) {
-        uint8_t c;
-        if (!uart->read(c)) {
+        const auto num_read = uart->read(&tf_frame.bytes[tf_frame_len], sizeof(tf_frame) - tf_frame_len);
+        tf_frame_len += num_read;
+        
+        if (tf_frame_len == 0) {
             break;
         }
 
-        tf_linebuf[tf_linebuf_len++] = c;
-
-        if (tf_linebuf_len < TFA1500_FRAME_LENGTH) {
+        if (tf_frame.packet.header != TFA1500_FRAME_HEADER) {
+            find_signature_in_buffer(1);
             continue;
         }
 
-        uint32_t dist_cm = 0U;
-        if (parse_frame(tf_linebuf, dist_cm)) {
+        if (tf_frame_len < TFA1500_FRAME_LENGTH) {
+            break;
+        }
 
-            if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == (uint32_t)model_dist_max_cm())) {
+        const uint8_t expected_checksum = (uint8_t)~(tf_frame.packet.dist_low +
+                                                tf_frame.packet.dist_mid +
+                                                tf_frame.packet.dist_high);
+        if (expected_checksum == tf_frame.packet.checksum_of_bytes) {
+            const uint32_t dist_cm = (tf_frame.packet.dist_high << 16) |
+                                     (tf_frame.packet.dist_mid << 8) |
+                                     tf_frame.packet.dist_low;
+            tf_frame_len = 0;
+
+            if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == 0x3FFFFF)) {
                 count_out_of_range++;
             } else {
                 sum_cm += dist_cm;
                 count++;
             }
-
-            tf_linebuf_len = 0;
-
         } else {
-            
-            // shift buffer until a header byte is found or buffer is empty
-            uint8_t i;
-            for (i = 1; i < tf_linebuf_len; i++) {
-                if (tf_linebuf[i] == TFA1500_FRAME_HEADER) {
-                    break;
-                }
-            }
-            if (i < tf_linebuf_len) {
-                memmove(&tf_linebuf[0], &tf_linebuf[i], tf_linebuf_len - i);
-                tf_linebuf_len -= i;
-            } else {
-                tf_linebuf_len = 0;
-            }
+            find_signature_in_buffer(1);
         }
     }
 
     if (count > 0) {
         reading_m = (sum_cm * 0.01f) / count;
         return true;
-    }
-
+    } 
     if (count_out_of_range > 0) {
         reading_m = MAX(model_dist_max_cm() * 0.01f, max_distance());
         return true;
