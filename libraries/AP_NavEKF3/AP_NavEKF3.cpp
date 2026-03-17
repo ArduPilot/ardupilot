@@ -2180,3 +2180,33 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
     }
     return nullptr;
 }
+
+// Do a reset and bootstrap alignment of all EKF cores
+// return true if successful for all cores
+// When on the ground and stationary, gyros are recalibrated first so
+// the filter bootstraps with clean offsets.  In flight the gyro
+// calibration is skipped and the filter resets with existing biases.
+bool NavEKF3::InitialiseFilterBootstrap()
+{
+    // ignore any data if the EKF is not started
+    if (!core) {
+        return false;
+    }
+
+    // initialise the cores. We return success only if all cores
+    // initialise successfully.  The per-core InitialiseFilterBootstrap()
+    // return value is false when the IMU delay buffer is not yet full,
+    // which is normal during a reset. Check statesInitialised directly
+    // to determine whether the bootstrap alignment succeeded.
+    bool ret = true;
+    for (uint8_t i=0; i<num_cores; i++) {
+        // clear the statesInitialised status to allow a bootstrap alignment
+        core[i].clearStatesInitialised();
+        // perform a bootstrap alignment
+        core[i].InitialiseFilterBootstrap();
+        if (!core[i].isStatesInitialised()) {
+            ret = false;
+        }
+    }
+    return ret;
+}

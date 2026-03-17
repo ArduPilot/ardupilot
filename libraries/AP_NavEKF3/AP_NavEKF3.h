@@ -383,6 +383,10 @@ public:
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const;
 
+    // Do a reset and bootstrap alignment of all EKF cores
+    // return true if successful for all cores
+    bool InitialiseFilterBootstrap();
+
 private:
     class AP_DAL &dal;
 
