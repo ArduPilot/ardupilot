@@ -3398,6 +3398,22 @@ void AP_AHRS::request_yaw_reset(void)
     }
 }
 
+#if AP_AHRS_EKF_RESET_ENABLED
+// request full backend reset, currently only implemented for EKF3
+// returns true if the reset was performed
+bool AP_AHRS::reset_configured_backend(void)
+{
+    // reset EKF3 regardless of active EKF type — if we've fallen back
+    // to DCM due to EKF failure, that's exactly when a bootstrap reset
+    // is most needed to force re-convergence
+#if HAL_NAVEKF3_AVAILABLE
+    return EKF3.InitialiseFilterBootstrap();
+#else
+    return false;
+#endif
+}
+#endif  // AP_AHRS_EKF_RESET_ENABLED
+
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
 void AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx)
 {
