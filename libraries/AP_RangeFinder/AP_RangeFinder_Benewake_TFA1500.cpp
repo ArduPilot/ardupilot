@@ -16,11 +16,6 @@ static constexpr uint32_t TFA1500_DIST_MAX_CM = 130000U;
 static const uint8_t TFA1500_CMD_START[] = {
     0x55U, 0xAAU, 0xCBU, 0xCCU, 0xCCU, 0xCCU, 0xCCU, 0xFBU};
 
-void AP_RangeFinder_Benewake_TFA1500::init_serial(uint8_t serial_instance)
-{
-    AP_RangeFinder_Backend_Serial::init_serial(serial_instance);
-}
-
 bool AP_RangeFinder_Benewake_TFA1500::process_byte(uint8_t received_byte, uint32_t &dist_cm)
 {
     tf_frame.bytes[tf_frame_len++] = received_byte;
