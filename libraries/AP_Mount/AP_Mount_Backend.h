@@ -396,6 +396,7 @@ protected:
         uint32_t last_rate_request_ms;
         uint32_t poi_start_ms;  // time we started trying to find the gimbal POI for an AuxFunc::MOUNT_POI_LOCK
         bool pointing_at_poi_at_home_alt;
+        bool angle_converted;   // true if a non-angle target was converted to angles by send_target_to_gimbal
     } mnt_target;
     
     // RP earth frame locks accessible by backend
