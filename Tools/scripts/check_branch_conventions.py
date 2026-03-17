@@ -25,6 +25,13 @@ import build_script_base
 
 DOCS_URL = "https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
 MAX_SUBJECT_LEN = 160
+BLACKLISTED_PREFIXES = {
+    "DEBUG",
+    "DRAFT",
+    "TEMP",
+    "TMP",
+    "WIP",
+}
 # spaces and quotes allowed to support Revert commits e.g. 'Revert "AP_Periph: ...'
 PREFIX_RE = re.compile(r'^[-A-Za-z0-9._/" ]+$')
 
@@ -97,6 +104,10 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 ok = False
                 continue
             prefix = subject.split(":")[0]
+            if prefix.strip().upper() in BLACKLISTED_PREFIXES:
+                print(f"{FAIL} Bad subsystem prefix '{prefix}': {line}")
+                print(f"       See: {DOCS_URL}")
+                ok = False
             if not PREFIX_RE.match(prefix):
                 print(f"{FAIL} Malformed subsystem prefix '{prefix}': {line}")
                 print("       Prefix must contain only letters, digits, '.', '_', '/', '-', spaces, quotes.")
