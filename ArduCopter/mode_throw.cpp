@@ -18,6 +18,7 @@ bool ModeThrow::init(bool ignore_checks)
     // init state
     stage = Throw_Disarmed;
     nextmode_attempted = false;
+    xy_controller_active = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
 
@@ -74,6 +75,7 @@ void ModeThrow::run()
     } else if (stage == Throw_Uprighting && throw_uprighting_complete()) {
         gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
+        hgt_stabilise_start_ms = AP_HAL::millis();
 
         // initialise the z controller
         pos_control->D_init_controller_no_descent();
@@ -93,16 +95,34 @@ void ModeThrow::run()
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
 
-    } else if (stage == Throw_HgtStabilise && throw_height_good()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
-        stage = Throw_PosHold;
+    } else if (stage == Throw_HgtStabilise &&
+               ((g2.throw_type == ThrowType::Drop)
+                   ? (throw_velocity_good() || (AP_HAL::millis() - hgt_stabilise_start_ms > 3000))
+                   : (throw_height_good() && (throw_velocity_good() || (AP_HAL::millis() - hgt_stabilise_start_ms > 2000))))) {
+        // check if we have horizontal position for PosHold
+        const bool have_horiz_pos = ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
+        // determine if the next mode needs horizontal position
+        const Mode::Number nextmode = (Mode::Number)g2.throw_nextmode.get();
+        const bool nextmode_needs_pos = (nextmode != Mode::Number::STABILIZE &&
+                                         nextmode != Mode::Number::ALT_HOLD);
+        if (have_horiz_pos) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Throw height achieved, good position");
+            stage = Throw_PosHold;
 
-        // initialise position controller
-        pos_control->NE_init_controller();
+            // initialise position controller
+            pos_control->NE_init_controller();
+            xy_controller_active = true;
+        } else if (nextmode_needs_pos) {
+            gcs().send_text(MAV_SEVERITY_WARNING,"Throw height achieved, lost position");
+            stage = Throw_PosHold;
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO,"Throw height achieved");
+            stage = Throw_PosHold;
+        }
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
-    } else if (stage == Throw_PosHold && throw_position_good()) {
+    } else if (stage == Throw_PosHold && (!xy_controller_active || throw_position_good())) {
         if (!nextmode_attempted) {
             switch ((Mode::Number)g2.throw_nextmode.get()) {
                 case Mode::Number::AUTO:
@@ -111,6 +131,8 @@ void ModeThrow::run()
                 case Mode::Number::LAND:
                 case Mode::Number::BRAKE:
                 case Mode::Number::LOITER:
+                case Mode::Number::STABILIZE:
+                case Mode::Number::ALT_HOLD:
                     set_mode((Mode::Number)g2.throw_nextmode.get(), ModeReason::THROW_COMPLETE);
                     break;
                 default:
@@ -233,14 +255,19 @@ void ModeThrow::run()
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // use position controller to stop
-        Vector2f vel_zero;
-        Vector2f accel_zero;
-        pos_control->input_vel_accel_NE_m(vel_zero, accel_zero);
-        pos_control->NE_update_controller();
+        if (xy_controller_active) {
+            // use position controller to stop
+            Vector2f vel_zero;
+            Vector2f accel_zero;
+            pos_control->input_vel_accel_NE_m(vel_zero, accel_zero);
+            pos_control->NE_update_controller();
 
-        // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
+            // call attitude controller
+            attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
+        } else {
+            // no horizontal position available, hold level attitude only
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
+        }
 
         // call height controller
         pos_control->D_set_pos_target_from_climb_rate_ms(0.0f);
@@ -427,6 +454,12 @@ bool ModeThrow::throw_height_good() const
 {
     // Check that we are within 0.5m of the demanded height
     return (fabsf(pos_control->get_pos_error_D_m()) < 0.5);
+}
+
+bool ModeThrow::throw_velocity_good() const
+{
+    // Check that vertical velocity is below 0.5 m/s
+    return (fabsf(pos_control->get_vel_estimate_U_ms()) < 0.5f);
 }
 
 bool ModeThrow::throw_position_good() const

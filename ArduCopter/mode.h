@@ -1859,7 +1859,7 @@ public:
     bool init(bool ignore_checks) override;
     void run() override;
 
-    bool requires_position() const override { return true; }
+    bool requires_position() const override { return false; }
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
@@ -1886,6 +1886,7 @@ private:
     bool throw_uprighting_complete() const;
     bool throw_position_good() const;
     bool throw_height_good() const;
+    bool throw_velocity_good() const;
     bool throw_attitude_good() const;
 
     // Throw stages
@@ -1902,9 +1903,11 @@ private:
     ThrowModeStage prev_stage = Throw_Disarmed;
     uint32_t last_log_ms;
     bool nextmode_attempted;
+    bool xy_controller_active;      // true when XY position controller was initialised
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
     uint32_t uprighting_start_ms;     // system time uprighting stage was entered
+    uint32_t hgt_stabilise_start_ms;  // system time height stabilise stage was entered
     uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
     float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met
 };
