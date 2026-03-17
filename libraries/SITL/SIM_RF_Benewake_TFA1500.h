@@ -2,6 +2,8 @@
 
 #include "SIM_SerialRangeFinder.h"
 
+#if AP_SIM_RF_BENEWAKE_TFA1500_ENABLED
+
 namespace SITL
 {
 
@@ -14,3 +16,5 @@ namespace SITL
     };
 
 }
+
+#endif // AP_SIM_RF_BENEWAKE_TFA1500_ENABLED
