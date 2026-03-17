@@ -337,9 +337,14 @@ void AP_Baro::calibrate(bool save)
     // startup.  Sensors will be calibrated as data arrives with
     // settling and sampling handled in the deferred path.
     // A pre-arm check ensures calibration is complete before arming.
+    // Start the settling timer now so that sensors already producing
+    // data complete calibration sooner once the scheduler starts
+    // calling update().  Sensors not yet healthy will have
+    // cal_start_ms reset to 0 in the deferred path.
+    const uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<_num_sensors; i++) {
         sensors[i].calibrated = false;
-        sensors[i].cal_start_ms = 0;
+        sensors[i].cal_start_ms = now;
         sensors[i].cal_sum = 0;
         sensors[i].cal_count = 0;
     }
