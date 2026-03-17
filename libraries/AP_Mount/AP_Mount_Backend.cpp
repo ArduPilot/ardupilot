@@ -1199,6 +1199,9 @@ void AP_Mount_Backend::_update_mnt_target()
 
 void AP_Mount_Backend::send_target_to_gimbal()
 {
+    // clear valid flag; set below if angles are sent
+    mnt_target.angle_converted = false;
+
     // process any pending clear-roi-target 
     // it is assumed that we have already zeroed _roi_target
     if (clear_roi_pending && natively_supports(MountTargetType::LOCATION)) {
@@ -1240,6 +1243,7 @@ void AP_Mount_Backend::send_target_to_gimbal()
         if (natively_supports(MountTargetType::ANGLE)) {
             // we integrate the rates into the angle:
             update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
+            mnt_target.angle_converted = true;
             send_target_angles(mnt_target.angle_rad);
             return;
         }
@@ -1250,6 +1254,7 @@ void AP_Mount_Backend::send_target_to_gimbal()
             // we update mnt_target for reporting purposes
             const Vector3f &angle_bf_target = _params.retract_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+            mnt_target.angle_converted = true;
             send_target_angles(mnt_target.angle_rad);
             return;
         }
@@ -1260,6 +1265,7 @@ void AP_Mount_Backend::send_target_to_gimbal()
             // we update mnt_target for reporting purposes
             const Vector3f &angle_bf_target = _params.neutral_angles.get();
             mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
+            mnt_target.angle_converted = true;
             send_target_angles(mnt_target.angle_rad);
             return;
         }
@@ -1267,6 +1273,7 @@ void AP_Mount_Backend::send_target_to_gimbal()
     case MountTargetType::LOCATION:
         if (natively_supports(MountTargetType::ANGLE)) {
             if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                mnt_target.angle_converted = true;
                 send_target_angles(mnt_target.angle_rad);
             }
             return;
@@ -1294,7 +1301,7 @@ bool AP_Mount_Backend::get_rate_target(float& roll_degs, float& pitch_degs, floa
 // get target angle in deg. returns true on success
 bool AP_Mount_Backend::get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
 {
-    if (mnt_target.target_type == MountTargetType::ANGLE) {
+    if (mnt_target.target_type == MountTargetType::ANGLE || mnt_target.angle_converted) {
         roll_deg = degrees(mnt_target.angle_rad.roll);
         pitch_deg = degrees(mnt_target.angle_rad.pitch);
         yaw_deg = degrees(mnt_target.angle_rad.yaw);
