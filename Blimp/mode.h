@@ -80,7 +80,7 @@ public:
     {
         return 0.0f;
     }
-    virtual float crosstrack_error() const
+    virtual float crosstrack_error_m() const
     {
         return 0.0f;
     }
