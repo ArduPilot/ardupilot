@@ -1989,6 +1989,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Confirm velocity still tracking GPS after bias convergence
         self.wait_groundspeed(13, 17, timeout=10)
 
+    def EK3_AccelBiasZeroVelOptFlow(self):
+        '''Test EKF3 zero velocity fusion learns bias with optical flow config'''
+        # When optical flow is configured (AID_RELATIVE) but the vehicle is
+        # stationary on the ground, optical flow provides no velocity data.
+        # Without zero velocity fusion, there are no velocity observations and
+        # accel biases cannot converge. This test verifies that synthetic zero
+        # velocity fusion fills the gap, allowing Z-axis bias learning even
+        # when the only velocity source (optical flow) has no data.
+        self.context_push()
+
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm(timeout=120, require_absolute=False)
+
+        # Inject Z-bias on IMU2 and wait for EKF to learn it via zero velocity
+        # fusion. In AID_RELATIVE with no flow data, only the synthetic zero
+        # velocity provides the observation needed to make Z-bias converge.
+        self.start_subtest("Verify Z-bias learned via zero velocity fusion with optical flow config")
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.delay_sim_time(30)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+        )
+
+        self.context_pop()
+        self.reboot_sitl()
+
     # StabilityPatch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
     def StabilityPatch(self,
