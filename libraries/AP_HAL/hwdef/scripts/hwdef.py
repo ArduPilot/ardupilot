@@ -582,11 +582,6 @@ class HWDef:
 
             n = len(devlist)+1
 
-            if driver == "DPS280":
-                # special handling for DPS280; use a probe method of
-                # the correct signature to pass into probe_spi_dev:
-                probe = "probe_280"
-
             backend_probe_method = f"AP_Baro_{driver}::{probe}"
 
             if driver == "ICM20789":
