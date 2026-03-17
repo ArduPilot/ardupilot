@@ -180,7 +180,10 @@ void AP_MotorsHeli_Single::set_update_rate( uint16_t speed_hz )
 
     // setup fast channels
     uint32_t mask = (1U << AP_MOTORS_MOT_4) | _swashplate.get_output_mask();
-
+    
+    if (get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW || get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW) {
+        mask = mask | _tail_rotor.get_output_mask();
+    }
     rc_set_freq(mask, _speed_hz);
 }
 
@@ -198,7 +201,7 @@ void AP_MotorsHeli_Single::init_outputs()
             case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW:
             case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW:
                 // DDFP tails use range as it is easier to ignore servo trim in making for simple implementation of thrust linearisation.
-                SRV_Channels::set_range(SRV_Channel::k_motor4, 1.0f);
+                _tail_rotor.initialize();
                 break;
 
             case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
@@ -261,11 +264,14 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // configure main rotor and update scalars
     _main_rotor.configure();
 
-    // send setpoints to DDVP rotor controller and trigger recalculation of scalars
+    // send setpoints to DDVP rotor controller or DDFP and trigger recalculation of scalars
     if (use_tail_RSC()) {
-        _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
-        // send rsc setpoints to DDVP tailrotor controller
-        _tail_rotor.set_setpoint_desired_rotor_speed(_direct_drive_tailspeed.get());
+        if (get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW || get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW) {
+            _tail_rotor.configure(ROTOR_CONTROL_MODE_DDFP, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
+        } else if (get_tail_type() == TAIL_TYPE::DIRECTDRIVE_VARPITCH || get_tail_type() == TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV) {
+            _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
+            _tail_rotor.set_setpoint_desired_rotor_speed(_direct_drive_tailspeed.get());
+        }
     } else {
         _tail_rotor.configure(ROTOR_CONTROL_MODE_DISABLED, 0, 0, 0, 0);
     }
@@ -433,10 +439,6 @@ void AP_MotorsHeli_Single::output_to_motors()
     // Write swashplate outputs
     _swashplate.output();
 
-    // Output main rotor
-    _main_rotor.output_to_servo();
-    _tail_rotor.output_to_servo();
-
     // Output tail rotor
     switch (get_tail_type()) {
         case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW:
@@ -444,35 +446,23 @@ void AP_MotorsHeli_Single::output_to_motors()
             _servo4_out *= -1.0;
             FALLTHROUGH;
 
-        case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW: {
+        case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW:
             // calc filtered battery voltage and lift_max
             thr_lin.update_lift_max_from_batt_voltage();
-
-            // Only throttle up if in active spool state
-            switch (_spool_state) {
-                case AP_Motors::SpoolState::SHUT_DOWN:
-                case AP_Motors::SpoolState::GROUND_IDLE:
-                case AP_Motors::SpoolState::SPOOLING_DOWN:
-                    // Set DDFP to servo min
-                    output_to_ddfp_tail(0.0);
-                    break;
-
-                case AP_Motors::SpoolState::SPOOLING_UP:
-                case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
-                    // Operate DDFP to between DDFP_SPIN_MIN and DDFP_SPIN_MAX using thrust linearisation
-                    output_to_ddfp_tail(thr_lin.thrust_to_actuator(_servo4_out));
-                    break;
-            }
+            output_to_ddfp_tail(thr_lin.thrust_to_actuator(_servo4_out));
             break;
-        }
 
         case TAIL_TYPE::SERVO:
         case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
         case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
-        default:
+        default: 
             rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
             break;
     }
+
+    // Output main rotor and tail rotor.  must be last so DDFP desired speed gets set before outputting to the motor.
+    _main_rotor.output_to_servo();
+    _tail_rotor.output_to_servo();
 
 }
 
@@ -492,7 +482,7 @@ void AP_MotorsHeli_Single::output_to_ddfp_tail(float throttle)
         limit.yaw = true;
     }
 
-    SRV_Channels::set_output_scaled(SRV_Channel::k_motor4, throttle);
+    _tail_rotor.set_ddfp_desired_rotor_speed(throttle);
 }
 
 // servo_test - move servos through full range of movement
@@ -629,7 +619,9 @@ bool AP_MotorsHeli_Single::use_tail_RSC() const
 {
     const TAIL_TYPE type = get_tail_type();
     return (type == TAIL_TYPE::DIRECTDRIVE_VARPITCH) ||
-           (type == TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV);
+           (type == TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV) ||
+           (type == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW) ||
+           (type == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW);
 }
 
 #if HAL_LOGGING_ENABLED
