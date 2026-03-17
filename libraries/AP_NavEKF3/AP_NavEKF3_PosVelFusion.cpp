@@ -703,7 +703,7 @@ void NavEKF3_core::FuseVelPosNED()
                 R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
 #if EK3_FEATURE_EXTERNAL_NAV
             } else if (extNavUsedForPos) {
-                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 10.0f));
+                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 100.0f));
 #endif
             } else {
                 R_OBS[3] = sq(constrain_ftype(frontend->_gpsHorizPosNoise, 0.1f, 10.0f)) + sq(posErr);
