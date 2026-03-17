@@ -396,6 +396,11 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
         float delay = packet.param4;
         bool autoreboot = packet.x != 0;
 
+        if (autoreboot && !autosave) {
+            //nonsensical, would reboot without applying any changes
+            return MAV_RESULT_DENIED;
+        }
+
         if (mag_mask == 0) { // 0 means all
             _reset_compass_id();
             if (!start_calibration_all(retry, autosave, delay, autoreboot)) {
