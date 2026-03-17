@@ -7989,6 +7989,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             target_compid=mavutil.mavlink.MAV_COMP_ID_GIMBAL
         )
 
+    def MagCalAutorebootWithoutSaveFails(self):
+        """
+        Verify CMD_DO_START_MAG_CAL is rejected when autoreboot=1 and autosave=0
+        """
+
+        self.start_subtest("MAG_CAL autoreboot requires autosave")
+        self.wait_ready_to_arm()
+
+        autoreboot = 1
+        autosave = 0
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL, p3=autosave, p5=autoreboot,
+                     timeout=1, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+
+        self.progress("MAG_CAL correctly rejected when autoreboot=1 and autosave=0")
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -8171,6 +8186,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksAppletRally,
             self.PlaneFollowAppletSanity,
             self.PreflightRebootComponent,
+            self.MagCalAutorebootWithoutSaveFails,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
         ]
