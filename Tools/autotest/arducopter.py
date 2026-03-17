@@ -3087,6 +3087,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "SIM_FLOW_ENABLE": 1,
+            "SIM_FLOW_RND": 0.02,
             "FLOW_TYPE": 10,
         })
 
