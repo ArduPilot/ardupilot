@@ -125,6 +125,13 @@ void ModeThrow::run()
             if (channel_throttle->get_control_in() < copter.get_throttle_mid() - copter.g.throttle_deadzone) {
                 gcs().send_text(MAV_SEVERITY_WARNING, "Throttle low - losing altitude");
             }
+            // switch EKF source set if configured
+            const int8_t srcset = g2.throw_srcset.get();
+            if (srcset >= 1 && srcset <= 3) {
+                AP::ahrs().set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
+                gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
+            }
+
             switch ((Mode::Number)g2.throw_nextmode.get()) {
                 case Mode::Number::AUTO:
                 case Mode::Number::GUIDED:

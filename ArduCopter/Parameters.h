@@ -504,6 +504,7 @@ public:
     // Throw mode parameters
     AP_Int8 throw_nextmode;
     AP_Enum<ModeThrow::ThrowType> throw_type;
+    AP_Int8 throw_srcset;
     AP_Float throw_drop_ag;
 #endif
 
