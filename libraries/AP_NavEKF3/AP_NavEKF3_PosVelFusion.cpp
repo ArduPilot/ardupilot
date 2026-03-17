@@ -788,8 +788,10 @@ void NavEKF3_core::FuseVelPosNED()
             // Synthetic zero velocity in AID_RELATIVE or AID_ABSOLUTE mode when no
             // velocity sensor data is available (e.g. GPS configured but not yet locked,
             // or optical flow with no movement). Use 1 m/s noise for velocity — same
-            // rationale as the AID_NONE case above. Position observations may still be
-            // fused from real sensors so use their actual noise characteristics.
+            // rationale as the AID_NONE case above. Position noise uses actual sensor
+            // characteristics when available (extNav posErr, GPS accuracy), falling back
+            // to _gpsHorizPosNoise as a conservative default since it is the only
+            // position noise parameter available regardless of aiding source.
             R_OBS[0] = sq(1.0f);
             R_OBS[1] = R_OBS[0];
             R_OBS[2] = R_OBS[0];
