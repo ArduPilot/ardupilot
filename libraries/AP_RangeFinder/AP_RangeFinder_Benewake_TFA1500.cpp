@@ -9,61 +9,74 @@
 
 extern const AP_HAL::HAL &hal;
 
-static constexpr uint8_t  TFA1500_FRAME_HEADER     = 0x5CU;
-static constexpr uint8_t  TFA1500_FRAME_LENGTH     = 5U;
-static constexpr uint32_t TFA1500_DIST_MAX_CM      = 130000U;
+static constexpr uint8_t TFA1500_FRAME_HEADER = 0x5CU;
+static constexpr uint8_t TFA1500_FRAME_LENGTH = 5U;
+static constexpr uint32_t TFA1500_DIST_MAX_CM = 130000U;
 
 static const uint8_t TFA1500_CMD_START[] = {
-    0x55U, 0xAAU, 0xCBU, 0xCCU, 0xCCU, 0xCCU, 0xCCU, 0xFBU
-};
-
-static bool parse_frame(const uint8_t *buffer, uint32_t &dist_cm)
-{
-    union {
-        uint8_t bytes[TFA1500_FRAME_LENGTH];
-        struct PACKED {
-            uint8_t header;
-            uint8_t dist_low;
-            uint8_t dist_mid;
-            uint8_t dist_high;
-            uint8_t crc_sum_of_bytes;
-        } packet;
-    } frame;
-
-    memcpy(frame.bytes, buffer, sizeof(frame.bytes));
-
-    if (frame.packet.header != TFA1500_FRAME_HEADER) {
-        return false;
-    }
-
-    const uint8_t expected_crc_sum_of_bytes = ~(frame.packet.dist_low +
-                                        frame.packet.dist_mid +
-                                        frame.packet.dist_high);
-
-    if (expected_crc_sum_of_bytes != frame.packet.crc_sum_of_bytes) {
-        return false;
-    }
-
-    dist_cm = (frame.packet.dist_high << 16) |
-              (frame.packet.dist_mid << 8) |
-              frame.packet.dist_low;
-    return true;
-}
+    0x55U, 0xAAU, 0xCBU, 0xCCU, 0xCCU, 0xCCU, 0xCCU, 0xFBU};
 
 void AP_RangeFinder_Benewake_TFA1500::init_serial(uint8_t serial_instance)
 {
     AP_RangeFinder_Backend_Serial::init_serial(serial_instance);
 }
 
+bool AP_RangeFinder_Benewake_TFA1500::process_byte(uint8_t received_byte, uint32_t &dist_cm)
+{
+    frame_buf.bytes[tf_frame_len++] = received_byte;
+
+    if (tf_frame_len < TFA1500_FRAME_LENGTH)
+    {
+        return false;
+    }
+
+    if (frame_buf.packet.header == TFA1500_FRAME_HEADER)
+    {
+        const uint8_t expected_crc = ~(frame_buf.packet.dist_low +
+                                       frame_buf.packet.dist_mid +
+                                       frame_buf.packet.dist_high);
+        if (expected_crc == frame_buf.packet.crc_sum_of_bytes)
+        {
+            dist_cm = (frame_buf.packet.dist_high << 16) |
+                      (frame_buf.packet.dist_mid << 8) |
+                      frame_buf.packet.dist_low;
+            tf_frame_len = 0;
+            return true;
+        }
+    }
+
+    // shift buffer until a header byte is found or buffer is empty
+    uint8_t i;
+    for (i = 1; i < tf_frame_len; i++)
+    {
+        if (frame_buf.bytes[i] == TFA1500_FRAME_HEADER)
+        {
+            break;
+        }
+    }
+    if (i < tf_frame_len)
+    {
+        memmove(&frame_buf.bytes[0], &frame_buf.bytes[i], tf_frame_len - i);
+        tf_frame_len -= i;
+    }
+    else
+    {
+        tf_frame_len = 0;
+    }
+
+    return false;
+}
 bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
 {
-    if (uart == nullptr) {
+    if (uart == nullptr)
+    {
         return false;
     }
 
     const uint32_t now = AP_HAL::millis();
     if (last_init_ms == 0 ||
-        ((now - last_init_ms > 1000) && (now - state.last_reading_ms > 1000))) {
+        ((now - last_init_ms > 1000) && (now - state.last_reading_ms > 1000)))
+    {
         last_init_ms = now;
         uart->write(TFA1500_CMD_START, sizeof(TFA1500_CMD_START));
     }
@@ -73,54 +86,38 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
     uint16_t count_out_of_range = 0;
 
     // read limit to prevent consuming too much CPU
-    for (auto j = 0U; j < 8192; j++) {
-        uint8_t c;
-        if (!uart->read(c)) {
+    for (auto j = 0U; j < 8192; j++)
+    {
+        uint8_t received_byte;
+        if (!uart->read(received_byte))
+        {
             break;
         }
 
-        tf_linebuf[tf_linebuf_len++] = c;
-
-        if (tf_linebuf_len < TFA1500_FRAME_LENGTH) {
-            continue;
-        }
-
         uint32_t dist_cm = 0U;
-        if (parse_frame(tf_linebuf, dist_cm)) {
 
-            if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == (uint32_t)model_dist_max_cm())) {
+        if (process_byte(received_byte, dist_cm))
+        {
+            if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == (uint32_t)model_dist_max_cm()))
+            {
                 count_out_of_range++;
-            } else {
+            }
+            else
+            {
                 sum_cm += dist_cm;
                 count++;
-            }
-
-            tf_linebuf_len = 0;
-
-        } else {
-            
-            // shift buffer until a header byte is found or buffer is empty
-            uint8_t i;
-            for (i = 1; i < tf_linebuf_len; i++) {
-                if (tf_linebuf[i] == TFA1500_FRAME_HEADER) {
-                    break;
-                }
-            }
-            if (i < tf_linebuf_len) {
-                memmove(&tf_linebuf[0], &tf_linebuf[i], tf_linebuf_len - i);
-                tf_linebuf_len -= i;
-            } else {
-                tf_linebuf_len = 0;
             }
         }
     }
 
-    if (count > 0) {
+    if (count > 0)
+    {
         reading_m = (sum_cm * 0.01f) / count;
         return true;
     }
 
-    if (count_out_of_range > 0) {
+    if (count_out_of_range > 0)
+    {
         reading_m = MAX(model_dist_max_cm() * 0.01f, max_distance());
         return true;
     }
