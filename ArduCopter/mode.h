@@ -1903,6 +1903,8 @@ private:
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
+    uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
+    float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met
 };
 
 #if MODE_TURTLE_ENABLED

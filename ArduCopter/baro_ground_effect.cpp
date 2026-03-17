@@ -22,9 +22,15 @@ void Copter::update_ground_effect_detector(void)
 
     // takeoff logic
 
-    if (flightmode->mode_number() == Mode::Number::THROW) {
-        // throw mode never wants the takeoff expected EKF code
+    if (flightmode->mode_number() == Mode::Number::THROW && ap.land_complete) {
+        // throw mode does not want takeoff ground effect before throw is
+        // detected (land_complete is cleared at detection).  After detection
+        // motors produce prop wash that contaminates the baro, so allow
+        // ground effect compensation to deweight the baro.
         gndeffect_state.takeoff_expected = false;
+    } else if (flightmode->mode_number() == Mode::Number::THROW && !ap.land_complete) {
+        // post-detection: motors running, enable baro deweighting
+        gndeffect_state.takeoff_expected = true;
     } else if (motors->armed() && ap.land_complete) {
         // if we are armed and haven't yet taken off then we expect an imminent takeoff
         gndeffect_state.takeoff_expected = true;

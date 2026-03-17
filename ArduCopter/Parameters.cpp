@@ -551,7 +551,7 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: THROW_ALT_DCSND
     // @DisplayName: Throw mode target altitude to descend
-    // @Description: Target altitude to descend during a drop, (must be positive). This allows for rapidly clearing surrounding obstacles.
+    // @Description: Target altitude to descend below the recovery point during a drop (must be positive). Total altitude lost in a drop is: freefall distance + uprighting distance + this value. Typical total loss is 5-10m depending on release orientation and vehicle thrust-to-weight.
     // @Units: m
     // @User: Advanced
     GSCALAR(throw_altitude_descend, "THROW_ALT_DCSND", 1.0),
@@ -1168,6 +1168,16 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Range: 0.0 10.0
     // @Increment: 0.1
     AP_GROUPINFO("PILOT_TKO_ALT_M", 20, ParametersG2, pilot_takeoff_alt_m, PILOT_TKO_ALT_M_DEFAULT),
+
+#if MODE_THROW_ENABLED
+    // @Param: THROW_DROP_AG
+    // @DisplayName: Drop arrest aggressiveness
+    // @Description: Multiplier on hover throttle for drop arrest. Controls how aggressively the vehicle brakes during drop recovery. At 1.0, maximum arrest thrust equals hover (1g). At 2.0, arrest thrust is 2x hover (2g) giving 1g of net upward deceleration. Higher values arrest descent faster but require more thrust headroom.
+    // @Range: 1.0 4.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("THROW_DROP_AG", 21, ParametersG2, throw_drop_ag, 1.0),
+#endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
