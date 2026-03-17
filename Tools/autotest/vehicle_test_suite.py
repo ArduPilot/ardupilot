@@ -9,48 +9,52 @@ from __future__ import annotations
 
 import abc
 import copy
+import enum
 import errno
+import fnmatch
 import glob
+import importlib.util
 import io
 import math
+import operator
 import os
 import pathlib
+import random
 import re
 import shutil
 import signal
-import sys
-import time
-import traceback
-from datetime import datetime
-from typing import List
-from typing import Tuple
-from typing import Dict
-import importlib.util
-
-import pexpect
-import fnmatch
-import operator
-import numpy
 import socket
 import struct
-import random
+import sys
 import tempfile
 import threading
-import enum
-from inspect import currentframe, getframeinfo
+import time
+import traceback
+
+from datetime import datetime
+from inspect import currentframe
+from inspect import getframeinfo
 from pathlib import Path
+from typing import Dict
+from typing import List
+from typing import Tuple
 
-from MAVProxy.modules.lib import mp_util
+import numpy
+import pexpect
+
 from MAVProxy.modules.lib import mp_elevation
-
-from pymavlink import mavparm
-from pymavlink import mavwp, mavutil, DFReader
+from MAVProxy.modules.lib import mp_util
+from pymavlink import DFReader
 from pymavlink import mavextra
-from pymavlink.rotmat import Vector3
+from pymavlink import mavparm
+from pymavlink import mavutil
+from pymavlink import mavwp
 from pymavlink import quaternion
 from pymavlink.generator import mavgen
+from pymavlink.rotmat import Vector3
 
-from pysim import util, vehicleinfo
+from pysim import util
+from pysim import vehicleinfo
 
 try:
     import queue as Queue
@@ -5303,7 +5307,7 @@ class TestSuite(abc.ABC):
         itemstype = mavutil.mavlink.enums["MAV_MISSION_TYPE"][wploader.mav_mission_type()].name
         self.progress(f"Loading {itemstype} ({os.path.basename(filepath)})")
         wploader.load(filepath)
-        return [self.wp_to_mission_item_int(x, wploader.mav_mission_type()) for x in wploader.wpoints]  # noqa:502
+        return [self.wp_to_mission_item_int(x, wploader.mav_mission_type()) for x in wploader.wpoints]
 
     def mission_from_filepath(self, filepath, target_system=1, target_component=1):
         '''returns a list of mission-item-ints from filepath'''
@@ -9527,7 +9531,7 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("received request for item from wrong mission type")
 
             if items[m.seq].mission_type != mission_type:
-                raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={items[m.seq].mission_type}")  # noqa:501
+                raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={items[m.seq].mission_type}")  # noqa: E501
             if items[m.seq].target_system != target_system:
                 raise NotAchievedException("supplied item not of correct target system")
             if items[m.seq].target_component != target_component:
@@ -11085,7 +11089,7 @@ Also, ignores heartbeats not from our target system'''
 
         dfreader = self.dfreader_for_current_onboard_log()
         types = set()
-        for (name, msgtype, l) in wants:
+        for (name, msgtype, _l) in wants:
             types.add(msgtype)
 
         while True:
@@ -11094,10 +11098,10 @@ Also, ignores heartbeats not from our target system'''
                 break
             wantscopy = copy.copy(wants)
             for want in wantscopy:
-                (name, msgtype, l) = want
+                (name, msgtype, want_l) = want
                 if m.get_type() != msgtype:
                     continue
-                if l(m):
+                if want_l(m):
                     self.progress("Found %s" % name)
                     wants.discard(want)
                     if len(wants) == 0:
@@ -15146,7 +15150,11 @@ SERIAL5_BAUD 128
 
     def create_junit_report(self, test_name: str, results: List[Result], skip_list: List[Tuple[Test, Dict[str, str]]]) -> None:
         """Generate Junit report from the autotest results"""
-        from junitparser import TestCase, TestSuite, JUnitXml, Skipped, Failure
+        from junitparser import Failure
+        from junitparser import JUnitXml
+        from junitparser import Skipped
+        from junitparser import TestCase
+        from junitparser import TestSuite
         frame = self.vehicleinfo_key()
         xml_filename = f"autotest_result_{frame}_{test_name}_junit.xml"
         self.progress(f"Writing test result in jUnit format to {xml_filename}\n")

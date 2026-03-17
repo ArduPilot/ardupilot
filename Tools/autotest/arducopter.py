@@ -9,31 +9,33 @@ from __future__ import annotations
 import copy
 import math
 import os
+import pathlib
+import re
 import shutil
 import tempfile
 import time
+
 import numpy
-import pathlib
-import re
 
-from pymavlink import quaternion
-from pymavlink import mavutil
 from pymavlink import mavextra
+from pymavlink import mavutil
+from pymavlink import quaternion
 from pymavlink import rotmat
-
-from pysim import util
-from pysim import vehicleinfo
+from pymavlink.rotmat import Matrix3
+from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
-from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
-from vehicle_test_suite import Test
+from pysim import util
+from pysim import vehicleinfo
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
+from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import PreconditionFailedException
+from vehicle_test_suite import Test
 from vehicle_test_suite import WaitAndMaintainArmed
 from vehicle_test_suite import WaitAndMaintainAttitude
 from vehicle_test_suite import WaitModeTimeout
-
-from pymavlink.rotmat import Vector3, Matrix3
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -1965,7 +1967,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 0,
             "FENCE_TYPE": 1,
-            "FENCE_ENABLE" : 1,
         })
 
         self.change_alt(10)
@@ -7016,6 +7017,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "THROW_NEXTMODE": 6,
             "SIM_SHOVE_Z": -30,
             "SIM_SHOVE_X": -20,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        tstart = self.get_sim_time()
+        self.wait_mode('RTL')
+        max_good_tdelta = 15
+        tdelta = self.get_sim_time() - tstart
+        self.progress("Vehicle in RTL")
+        self.wait_rtl_complete()
+        self.progress("Vehicle disarmed")
+        if tdelta > max_good_tdelta:
+            raise NotAchievedException("Took too long to enter RTL: %fs > %fs" %
+                                       (tdelta, max_good_tdelta))
+        self.progress("Vehicle returned")
+
+    def ThrowModeRPMMin(self):
+        '''Fly Throw Mode - with a minimum RPM set'''
+        self.ThrowModeRPMMin_main()
+        self.ThrowModeRPMMin_main()
+
+    def ThrowModeRPMMin_main(self):
+        # test boomerang mode:
+        self.progress("Throwing vehicle away")
+        self.set_parameters({
+            "THROW_NEXTMODE": 6,
+            "SIM_SHOVE_Z": -30,
+            "SIM_SHOVE_X": -20,
+            'TKOFF_RPM_MIN': 1000,
         })
         self.change_mode('THROW')
         self.wait_ready_to_arm()
@@ -12904,6 +12940,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''return list of all tests'''
         ret = ([
              self.ThrowMode,
+             self.ThrowModeRPMMin,
              self.BrakeMode,
              self.RecordThenPlayMission,
              self.ThrottleFailsafe,

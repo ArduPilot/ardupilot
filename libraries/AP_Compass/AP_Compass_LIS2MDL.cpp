@@ -157,10 +157,4 @@ check_registers:
     dev->check_next_register();
 }
 
-// @brief Publish accumulated data to the frontend
-void AP_Compass_LIS2MDL::read()
-{
-    drain_accumulated_samples();
-}
-
 #endif  // AP_COMPASS_LIS2MDL_ENABLED

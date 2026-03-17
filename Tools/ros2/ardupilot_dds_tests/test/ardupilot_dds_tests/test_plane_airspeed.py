@@ -22,21 +22,19 @@ colcon test --executor sequential --parallel-workers 0 \
 """
 
 
+import threading
+
 import launch_pytest
 import pytest
 import rclpy
 import rclpy.node
-import threading
-
-from launch import LaunchDescription
-
-from launch_pytest.tools import process as process_tools
-
-from rclpy.qos import QoSProfile
-from rclpy.qos import QoSReliabilityPolicy
-from rclpy.qos import QoSHistoryPolicy
 
 from ardupilot_msgs.msg import Airspeed
+from launch import LaunchDescription
+from launch_pytest.tools import process as process_tools
+from rclpy.qos import QoSHistoryPolicy
+from rclpy.qos import QoSProfile
+from rclpy.qos import QoSReliabilityPolicy
 
 TOPIC = "/ap/airspeed"
 WAIT_FOR_START_TIMEOUT = 5.0

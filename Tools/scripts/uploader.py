@@ -53,21 +53,22 @@
 
 # AP_FLAKE8_CLEAN
 
-import sys
 import argparse
-import binascii
-import serial
-import struct
-import json
-import zlib
-import base64
-import time
 import array
+import base64
+import binascii
+import json
 import os
 import platform
 import re
+import struct
+import sys
+import time
+import zlib
 
 from sys import platform as _platform
+
+import serial
 
 is_WSL = bool("Microsoft" in platform.uname()[2])
 is_WSL2 = bool("microsoft-standard-WSL2" in platform.release())

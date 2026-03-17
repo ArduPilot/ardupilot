@@ -5,20 +5,22 @@ AP_FLAKE8_CLEAN
 
 '''
 
-import os
-import numpy
-import math
 import copy
+import math
+import operator
+import os
+
+import numpy
 
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
+
+from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
-from vehicle_test_suite import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
-
-import operator
-
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))

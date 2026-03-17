@@ -7,23 +7,26 @@ AP_FLAKE8_CLEAN
 """
 
 from __future__ import annotations
+
+import subprocess
 import time
 import unittest
-import subprocess
-from unittest.mock import MagicMock, patch, mock_open
-from param_check import (
-    SkippedChecks,
-    load_params,
-    check_param,
-    check_range,
-    check_values,
-    check_bitmask,
-    generate_metadata,
-    get_metadata,
-    check_file,
-    parse_arguments,
-    main
-)
+
+from unittest.mock import MagicMock
+from unittest.mock import mock_open
+from unittest.mock import patch
+
+from param_check import SkippedChecks
+from param_check import check_bitmask
+from param_check import check_file
+from param_check import check_param
+from param_check import check_range
+from param_check import check_values
+from param_check import generate_metadata
+from param_check import get_metadata
+from param_check import load_params
+from param_check import main
+from param_check import parse_arguments
 
 
 class TestParamCheck(unittest.TestCase):

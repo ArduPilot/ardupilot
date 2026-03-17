@@ -23,7 +23,8 @@ import os
 import shutil
 import subprocess
 
-from build_script_base import BuildScriptBase, VEHICLE_MAP
+from build_script_base import VEHICLE_MAP
+from build_script_base import BuildScriptBase
 
 
 class SizeHistory(BuildScriptBase):

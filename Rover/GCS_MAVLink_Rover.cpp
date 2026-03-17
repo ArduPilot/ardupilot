@@ -78,6 +78,13 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
     if (!rover.control_mode->get_desired_location(target)) {
         return;
     }
+
+    // get altitude as AMSL (this may use the terrain database)
+    float alt_amsl_m;
+    if (!target.get_alt_m(Location::AltFrame::ABSOLUTE, alt_amsl_m)) {
+        return;
+    }
+
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
     static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
                                           POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
@@ -89,7 +96,7 @@ void GCS_MAVLINK_Rover::send_position_target_global_int()
         TYPE_MASK, // ignore everything except the x/y/z components
         target.lat, // latitude as 1e7
         target.lng, // longitude as 1e7
-        target.alt * 0.01f, // altitude is sent as a float
+        alt_amsl_m, // altitude AMSL in metres
         0.0f, // vx
         0.0f, // vy
         0.0f, // vz

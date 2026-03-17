@@ -7,8 +7,8 @@ Andrew Tridgell, October 2011
  AP_FLAKE8_CLEAN
 """
 import atexit
-import fnmatch
 import copy
+import fnmatch
 import glob
 import optparse
 import os
@@ -20,21 +20,22 @@ import sys
 import time
 import traceback
 
-import blimp
-import rover
-import arducopter
 import arduplane
 import ardusub
-import antennatracker
-import quadplane
 import balancebot
-import sailboat
-import helicopter
-
 import examples
-from pysim import util
+
 from pymavlink.generator import mavtemplate
 
+import antennatracker
+import arducopter
+import blimp
+import helicopter
+import quadplane
+import rover
+import sailboat
+
+from pysim import util
 from vehicle_test_suite import Test
 
 tester = None

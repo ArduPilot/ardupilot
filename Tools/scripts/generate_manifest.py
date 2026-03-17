@@ -5,14 +5,15 @@ AP_FLAKE8_CLEAN
 '''
 
 import fnmatch
-import gen_stable
 import gzip
 import json
 import os
 import re
-import subprocess
 import shutil
+import subprocess
 import sys
+
+import gen_stable
 
 FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub", "AP_Periph", "Blimp"]
 RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
