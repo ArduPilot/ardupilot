@@ -180,7 +180,7 @@ void Plane::Log_Write_Nav_Tuning()
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)plane.calc_altitude_error_cm(),
-        xtrack_error        : nav_controller->crosstrack_error(),
+        xtrack_error        : nav_controller->crosstrack_error_m(),
         xtrack_error_i      : nav_controller->crosstrack_error_integrator(),
         airspeed_error      : airspeed_error,
         target_lat          : next_WP_loc.lat,

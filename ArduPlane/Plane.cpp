@@ -873,7 +873,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
         return true;
     }
 #endif
-    xtrack_error = nav_controller->crosstrack_error();
+    xtrack_error = nav_controller->crosstrack_error_m();
     return true;
 }
 
