@@ -21,6 +21,8 @@ void AP_Mount_Scripting::update()
     AP_Mount_Backend::update();
 
     update_mnt_target();
+
+    send_target_to_gimbal();
 }
 
 // return true if healthy
