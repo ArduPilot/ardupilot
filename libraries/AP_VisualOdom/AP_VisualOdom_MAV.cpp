@@ -30,7 +30,6 @@ void AP_VisualOdom_MAV::handle_pose_estimate(uint64_t remote_time_us, uint32_t t
     const float scale_factor =  _frontend.get_pos_scale();
     Vector3f pos{x * scale_factor, y * scale_factor, z * scale_factor};
 
-    posErr = constrain_float(posErr, _frontend.get_pos_noise(), 100.0f);
     angErr = constrain_float(angErr, _frontend.get_yaw_noise(), 1.5f);
 
     // record quality
