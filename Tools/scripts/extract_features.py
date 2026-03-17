@@ -45,8 +45,10 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_ADSB_{type}_ENABLED', r'AP_ADSB_(?P<type>.*)::update',),
             ('HAL_ADSB_UCP_ENABLED', 'AP_ADSB_uAvionix_UCP::update',),
 
-            ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::read\b',),
+            ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::probe\b',),
             ('AP_COMPASS_ICM20948_ENABLED', r'AP_Compass_AK09916::probe_ICM20948',),
+            ('AP_COMPASS_AK8963_ENABLED', r'AP_Compass_AK8963::probe_mpu9250',),
+            ('AP_COMPASS_HMC5843_ENABLED', r'AP_Compass_HMC5843::probe_mpu6000',),
             ('AP_COMPASS_DRONECAN_HIRES_ENABLED', r'AP_Compass_DroneCAN::handle_magnetic_field_hires',),
 
             ('AP_AIS_ENABLED', 'AP_AIS::decode_position_report',),
