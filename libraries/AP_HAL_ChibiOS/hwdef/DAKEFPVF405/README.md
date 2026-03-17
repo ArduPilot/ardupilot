@@ -44,9 +44,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART2 RX input. It supports all unidirectional serial RC protocols except PPM and SBUS. The SBUS pin is inverted and applies to R2 for SBUS support.
 
-* FPort requires an external bi-directional inverter attached to T2 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to 4 (half-duplex).  See :ref:`common-FPort-receivers`.
-* CRSF/ELRS uses RX2/TX2.
-* SRXL2 requires a connection to T2 and automatically provides telemetry.  Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- FPort requires an external bi-directional inverter attached to T2 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to 4 (half-duplex).  See :ref:`common-FPort-receivers`.
+- CRSF/ELRS uses RX2/TX2.
+- SRXL2 requires a connection to T2 and automatically provides telemetry.  Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
 
 ## FrSky Telemetry
 

@@ -1,6 +1,6 @@
 # iFlight Beast F7 v2 55A AIO Flight Controller
 
-https://shop.iflight-rc.com/quad-parts-cat20/electronics-cat27/beast-series-cat330/Beast-F7-45A-V2-AIO-MPU6000-25.5-25.5-Pro1625
+[iFlight store](https://shop.iflight-rc.com/quad-parts-cat20/electronics-cat27/beast-series-cat330/Beast-F7-45A-V2-AIO-MPU6000-25.5-25.5-Pro1625)
 
 The Beast F7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 

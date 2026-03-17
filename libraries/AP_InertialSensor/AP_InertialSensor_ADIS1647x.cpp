@@ -169,7 +169,7 @@ bool AP_InertialSensor_ADIS1647x::check_product_id(uint16_t &prod_id)
     case PROD_ID_16507: {
         // can do up to 40G
         opmode = OpMode::Delta32;
-        expected_sample_rate_hz = 1200;
+        expected_sample_rate_hz = 1000;
         accel_scale = 392.0 / 2097152000.0;
         dvel_scale = 400.0 / (float)0x7FFFFFFF;
         _clip_limit = (40.0f - 0.5f) * GRAVITY_MSS;

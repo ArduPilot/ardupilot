@@ -7,13 +7,13 @@ network communication over LTE networks without using a companion
 computer.
 
 The driver best paired with with the ArduPilot remote support server
-https://support.ardupilot.org, but can also be used for any other
+[ArduPilot support](https://support.ardupilot.org), but can also be used for any other
 network service.
 
 If you don't have access to the ArduPilot support server you can
-install your own using https://github.com/ArduPilot/UDPProxy
+install your own using [UDPProxy](https://github.com/ArduPilot/UDPProxy)
 
-# Supported Hardware
+## Supported Hardware
 
 The driver currently supports:
 
@@ -27,7 +27,7 @@ There are some limitations:
 - the Air780 does not support signal level monitoring
 - the SimCom A7670 only supports TCP connections, not PPP
 
-# Parameters
+## Parameters
 
 The script uses the following parameters:
 
@@ -111,7 +111,7 @@ will attempt to reconnect. Range: 1-60 seconds. Default: 10 seconds.
 
 This sets options for debugging and data display
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either
@@ -122,7 +122,7 @@ directly or via MAVFTP. The following key parameters should be set:
 - SCR_SDEV should be set to 48 (PPP) or 2 (MAVLink2) for the port matching LTE_SCRPORT
 
 If using PPP then you also need to ensure PPP support is compiled into
-your firmware (you can use https://custom.ardupilot.org to do that)
+your firmware (you can use [ArduPilot custom firmware builder](https://custom.ardupilot.org) to do that)
 and set NET_ENABLE=1. You will likely also want to setup some outgoing
 UDP or TCP ports with the NET_Pn parameters.
 
@@ -164,7 +164,7 @@ the support server is used and modem is attached on SERAL1 (no PPP used)
 - LTE_SERVER_IP3 174
 - LTE_SERVER_PORT 20001
 
-# Status Messages
+## Status Messages
 
 The driver provides status messages through the GCS indicating the current
 connection state:
@@ -179,7 +179,7 @@ connection state:
 - "LTE_modem: timeout" - No data received within timeout period
 - "LTE_modem: error response from modem" - Modem returned an error
 
-# Physical Connections
+## Physical Connections
 
 The modem should be connected to a flight controller serial
 port. You may also want to use a serial port with hardware flow
@@ -188,7 +188,7 @@ control support and set BRD_SERn_RTSCRS to 1 for that port.
 Note that the modems can be quite sensitive to power supply
 issues. The power from the serial port will likely not be sufficient.
 
-# Troubleshooting
+## Troubleshooting
 
 The driver creates a log file "LTE_modem.log" on the SD card that contains
 all communication with the modem. This log can be useful for debugging
@@ -205,7 +205,7 @@ Common issues:
 If the connection fails or is lost, the driver will automatically attempt
 to reconnect by restarting the connection sequence.
 
-# Logging
+## Logging
 
 A LTE log message is saved in the onboard log. That has signal
 strength information and data transfer statistics.
@@ -213,7 +213,7 @@ strength information and data transfer statistics.
 A NAMED_VALUE_FLOAT MAVLink message "LTE_RSSI" is sent with the RSSI
 signal strength.
 
-# Notes on specific modems
+## Notes on specific modems
 
 Each modem has it's own unique behaviour. Some of the key differences
 are listed below.
@@ -222,7 +222,7 @@ are listed below.
 
 The SIM7070G is a CAT-M modem, meaning you must have a special CAT-M
 capable SIM. A normal data SIM won't work at all. I recommend the SIMs
-from https://hologram.io
+from [Hologram](https://hologram.io)
 
 The baud rate of the SIM7070G as set by the AP+IPR AT
 command is "sticky", it persists over a power cycle. This means if you
@@ -255,7 +255,7 @@ connect the flight controller TX to the SIM7070G TX and RX to RX.
 ## SIM7600
 
 The SIM7600 is a CAT-1 modem, so it can use any data SIM. I recommend
-using a multi-carrier SIM (eg. the SIMs from https://hologram.io ) to
+using a multi-carrier SIM (eg. the SIMs from [Hologram](https://hologram.io) ) to
 maximimise the number of cell towers you can use.
 
 Depending on your SIM and carrier you may need to enable roaming

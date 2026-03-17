@@ -33,11 +33,11 @@ The BROTHERHOBBYF405v3 is a flight controller produced by [BROTHERHOBBY](https:/
 
 The default RC input is configured on UART2, all ArduPilot compatible protocols, except PPM and SBUS, are supported. SBUS support is provided via the HD VTX connector on SERIAL1 and requires the protocol be set to :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` = "23" and change SERIAL2 _Protocol to something other than '23'.
 
-* PPM is not supported
-* FPort requires an external bi-directional inverter (see :ref:`common-fport-receivers`)
-* CRSF requires connection to TX2 and automatically supports telemetry
-* DSM/SRXL connects to the RX2 pin, but SBUS would still be connected to SBUS.
-* SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to “4”.
+- PPM is not supported
+- FPort requires an external bi-directional inverter (see :ref:`common-fport-receivers`)
+- CRSF requires connection to TX2 and automatically supports telemetry
+- DSM/SRXL connects to the RX2 pin, but SBUS would still be connected to SBUS.
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to "4".
 
 ## FrSky Telemetry
 

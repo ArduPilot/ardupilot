@@ -15,7 +15,6 @@ import sys
 import tempfile
 import time
 
-
 import pexpect
 
 RADIUS_OF_EARTH = 6378100.0  # in meters
@@ -782,7 +781,12 @@ def gps_newpos(lat, lon, bearing, distance):
     """Extrapolate latitude/longitude given a heading and distance
     thanks to http://www.movable-type.co.uk/scripts/latlong.html .
     """
-    from math import sin, asin, cos, atan2, radians, degrees
+    from math import asin
+    from math import atan2
+    from math import cos
+    from math import degrees
+    from math import radians
+    from math import sin
 
     lat1 = radians(lat)
     lon1 = radians(lon)

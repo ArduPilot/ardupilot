@@ -103,7 +103,7 @@ class upload_fw(Task.Task):
         #
         # Solution: simply call "python.exe" instead of 'python' which magically calls it from the windows
         #   system using the same absolute path back into the WSL2's user's directory
-        # Requirements: Windows must have Python3.9.x (NTO 3.10.x) installed and a few packages.
+        # Requirements: Windows must have Python 3.12.x installed and a few packages.
         import subprocess
         try:
             where_python = subprocess.check_output('where.exe python.exe', shell=True, text=True)
@@ -122,11 +122,11 @@ class upload_fw(Task.Task):
         WSL2 firmware uploads use the host's Windows Python.exe so it has access to the COM ports.
 
         %s
-        Please download Windows Installer 3.9.x (not 3.10) from https://www.python.org/downloads/
+        Please download Windows Installer 3.12.x from https://www.python.org/downloads/
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
         
-        pip.exe install empy==3.3.4 pyserial
+        python.exe -m pip install empy==3.3.4 pyserial
         ****************************************
         ****************************************
         """ % error_msg)

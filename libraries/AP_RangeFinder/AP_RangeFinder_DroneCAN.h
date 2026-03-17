@@ -28,6 +28,7 @@ protected:
     }
 private:
     uint8_t _instance;
+    // _status is the state received from the peripheral - or "NoData" in case of timeout
     RangeFinder::Status _status;
     float _distance_m;
     uint32_t _last_reading_ms;

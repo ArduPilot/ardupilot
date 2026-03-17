@@ -4,24 +4,24 @@ The CSKY405 is a flight controller produced by [ClearSky](http://csky.space/prod
 
 ## Features
 
-    Processor
-        STM32F405 168Mhz, 1MB 32-bit processor
-        AT7456E OSD
-    Sensors
-        BMI088 Acc/Gyro
-        BMP390 barometer
-    Power
-        2S - 6S Lipo input voltage with voltage monitoring
-        90A Cont., 215A peak current monitor
-        12V, 2A BEC for powering Video Transmitter controlled by GPIO
-        5V, 2.5A BEC for internal and peripherals
-    Interfaces
-        10x PWM outputs DShot capable
-        1x RC input
-        6x UARTs/serial for GPS and other peripherals
-        I2C port for external compass, airspeed, etc.
-        microSDCard for logging, etc.
-        USB-C port
+- Processor
+  - STM32F405 168Mhz, 1MB 32-bit processor
+  - AT7456E OSD
+- Sensors
+  - BMI088 Acc/Gyro
+  - BMP390 barometer
+- Power
+  - 2S - 6S Lipo input voltage with voltage monitoring
+  - 90A Cont., 215A peak current monitor
+  - 12V, 2A BEC for powering Video Transmitter controlled by GPIO
+  - 5V, 2.5A BEC for internal and peripherals
+- Interfaces
+  - 10x PWM outputs DShot capable
+  - 1x RC input
+  - 6x UARTs/serial for GPS and other peripherals
+  - I2C port for external compass, airspeed, etc.
+  - microSDCard for logging, etc.
+  - USB-C port
 
 ## Overview
 
@@ -90,7 +90,7 @@ GPIO 84 controls the VTX BEC output to pins marked "12V". Setting this GPIO high
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled CSKY405.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled CSKY405.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "CSKY405_bl.hex"

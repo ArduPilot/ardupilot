@@ -7,13 +7,14 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
-import sys
 import fnmatch
 import os
-import dma_resolver
-import shlex
 import re
+import shlex
 import shutil
+import sys
+
+import dma_resolver
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../libraries/AP_HAL/hwdef/scripts'))
 import hwdef  # noqa:E402
@@ -644,7 +645,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             ret = self.config[name][column]
 
         if type is not None:
-            if type == int and ret.startswith('0x'):
+            if type is int and ret.startswith('0x'):
                 try:
                     ret = int(ret, 16)
                 except Exception:

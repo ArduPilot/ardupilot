@@ -2,7 +2,7 @@
 
 Lua script to send a recieve very basic MAVLink telemetry over a
 Rockblock SBD satellite modem
-Requires https://github.com/stephendade/rockblock2mav at the GCS end
+Requires [rockblock2mav](https://github.com/stephendade/rockblock2mav) at the GCS end
 
 Note that this uses MAVLink1 messaging, due to it's smaller message size compared
 to MAVLink2.
@@ -24,7 +24,7 @@ Caveats:
 - Any incoming packets on the first mailbox check will be ignored (as these may be from a long time in the past)
 - Only 1 command can be sent per mailbox check from the GCS. Any additional commands will overwrite the previous command
 
-# Parameters
+## Parameters
 
 The script adds the following parameters:
 

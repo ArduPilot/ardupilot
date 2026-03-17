@@ -32,15 +32,15 @@ The MicoAir743-Lite is a flight controller designed and produced by [MicoAir Tec
 
 The UART6  is compatible with all ArduPilot supported receiver protocols,
 
-* PPM is not supported.
+- PPM is not supported.
 
-* SBUS/DSM/SRXL connects to the RX6 pin.
+- SBUS/DSM/SRXL connects to the RX6 pin.
 
-* FPort requires connection to TX6. See FPort Receivers.
+- FPort requires connection to TX6. See FPort Receivers.
 
-* CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
+- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
 
-* SRXL2 requires a connection to TX6 and automatically provides telemetry. Set SERIAL6_OPTIONS to “4”.
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set SERIAL6_OPTIONS to "4".
 
 Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM. See Radio Control Systems for details.
 

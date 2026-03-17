@@ -20,8 +20,8 @@ Run with default arguments:
 
 ros2 launch ardupilot_sitl virtual_ports.launch.py
 """
-from launch import LaunchDescription
 from ardupilot_sitl.launch import VirtualPortsLaunch
+from launch import LaunchDescription
 
 
 def generate_launch_description() -> LaunchDescription:

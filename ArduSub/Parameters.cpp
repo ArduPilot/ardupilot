@@ -551,9 +551,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,            "INS", AP_InertialSensor),
 
-    // @Group: WPNAV_
+    // @Group: WP_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
-    GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
+    GOBJECT(wp_nav, "WP_", AC_WPNav),
 
     // @Group: LOIT_
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
@@ -859,6 +859,9 @@ void Sub::load_parameters()
     // upgrade attitude controller parameters
     sub.attitude_control.convert_parameters();
 
+    // upgrade waypoint navigation parameters
+    wp_nav.convert_parameters();
+
     // upgrade loiter navigation parameters
     loiter_nav.convert_parameters();
 
@@ -868,12 +871,12 @@ void Sub::load_parameters()
 
     // PARAMETER_CONVERSION - Added: Jan-2026
     // move ORIGIN_LAT, ORIGIN_LON, ORIGIN_ALT to AHRS
-    static const AP_Param::ConversionInfo gcs_conversion_info[] {
+    static const AP_Param::ConversionInfo origin_conversion_info[] {
         { 2, 19, AP_PARAM_FLOAT, "AHRS_ORIGIN_LAT" },   // ORIGIN_LAT moved to AHRS_ORIGIN_LAT
         { 2, 20, AP_PARAM_FLOAT, "AHRS_ORIGIN_LON" },   // ORIGIN_LON moved to AHRS_ORIGIN_LON
         { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
     };
-    AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    AP_Param::convert_old_parameters(&origin_conversion_info[0], ARRAY_SIZE(origin_conversion_info));
 }
 
 void Sub::convert_old_parameters()

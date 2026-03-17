@@ -1,4 +1,4 @@
-# FlySpark F4 — hwdef for ArduPilot / AP_HAL_ChibiOS
+# FlySpark F4 - hwdef for ArduPilot / AP_HAL_ChibiOS
 
 The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/product/flyspark-f4-v1-flight-controller/)
 ![FlySpark F4 V1 Board](flyspark_f4_img.png "FlySpark")
@@ -11,16 +11,16 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 - MAX7456 OSD chip
 - MicroSD card slot
 - USB-C port for firmware flashing and telemetry
-- 6 UART ports (UART1–UART6), UART4 is blocked is only for bluetooth which does not work with ArduPilot
-- 8 PWM motor outputs (M1–M8)
+- 6 UART ports (UART1-UART6), UART4 is blocked is only for bluetooth which does not work with ArduPilot
+- 8 PWM motor outputs (M1-M8)
 - I2C port
 - 5 V (3 A) and 9 V (3 A) regulated power outputs
 - 3.3 V (500 mA) and 4.5 V (1 A) aux rails
 - Buzzer pads (BZ+ / BZ−)
 - RSSI input pad
 - BOOT button for DFU mode
-- 3 S – 6 S LiPo input voltage range
-- 30.5 × 30.5 mm mounting pattern (⌀4 mm holes)
+- 3 S - 6 S LiPo input voltage range
+- 30.5 x 30.5 mm mounting pattern (⌀4 mm holes)
 
 ## Mechanical
 
@@ -35,7 +35,7 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 
 | Function | MCU / Pin | Notes |
 |---|---|---|
-| ESC / motor outputs | M1–M8 | M1–M4 bottom, M5–M8 front side |
+| ESC / motor outputs | M1-M8 | M1-M4 bottom, M5-M8 front side |
 | UART1 | TX1 / RX1 | DisplayPort |
 | UART2 | TX2 / RX2 | For RC. SBUS pins are inverted and connected directly to to RX2. |
 | UART3 | TX3 / RX3 | Spare |
@@ -69,14 +69,14 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 
 ## RC Input
 
-RC input is provided for SBUS on the SBUS pads, or RX2/TX2 for other protocols, see https://ardupilot.org/plane/docs/common-rc-systems.html for more information. Note FPort will work on SBUS inputs but not provide telemetry. To obtain FPort telem a bi-directional inveter will need to be used.
+RC input is provided for SBUS on the SBUS pads, or RX2/TX2 for other protocols, see the [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html) for more information. Note FPort will work on SBUS inputs but not provide telemetry. To obtain FPort telem a bi-directional inverter will need to be used.
 SBUS pins are inverted and connected directly to to RX2.
 
 ---
 
 ## PWM Output
 
-The FlySpark F4 supports **8 PWM outputs** (M1–M8). All outputs support PWM and DShot, Outputs 1-4 support bi-directional DShot. In addition a ninth output is defaulted to serial LED.
+The FlySpark F4 supports **8 PWM outputs** (M1-M8). All outputs support PWM and DShot, Outputs 1-4 support bi-directional DShot. In addition a ninth output is defaulted to serial LED.
 
 PWM groups:
 
@@ -104,7 +104,7 @@ Default configuration:
 - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11.0
 - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 25.0
 
-Supports direct 3 S–6 S LiPo voltage measurement.
+Supports direct 3 S-6 S LiPo voltage measurement.
 
 ---
 
@@ -138,7 +138,7 @@ Connect your receiver’s analog RSSI output to this pad to enable RSSI display 
 
 ## Loading Firmware
 
-Firmware can be downloaded from: https://firmware.ardupilot.org/, by going into the right vehicle directory/version and looking for "FlysparkF4".
+Firmware can be downloaded from the [ArduPilot firmware server](https://firmware.ardupilot.org/), by going into the right vehicle directory/version and looking for "FlysparkF4".
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool.
 

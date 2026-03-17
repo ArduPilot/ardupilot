@@ -48,7 +48,7 @@ There are two types of messages sent to the ESCs configuration and fast-throttle
 
 Consists of six frame bytes + payload bytes.
 
-```
+```text
     Byte 0 is the source type
     Byte 1 is the ID
     Byte 2 is the frame type (Low byte)
@@ -82,7 +82,7 @@ If this was successful the ESC responds with `PackedMessage<OK>`.
 
 ### Fast-throttle message frame
 
-```
+```text
     Byte 0 is the frame header
     Byte 1 is the telemetry request and part of fast throttle signal
     Byte N is CRC (last Byte after the Payload). It uses the same CRC algorithm as Dshot.
@@ -92,7 +92,7 @@ The first two bytes are frame header and telemetry request as well as the first 
 The following bytes are transmitting the throttle signals for the ESCs (11bit per ESC) followed by the CRC.
 The signal is used to transfer the eleven bit throttle signals with as few bytes as possible:
 
-```
+```text
     [990  ..    0] - negative throttle, rotation in one direction (depends on the motor wiring connection). 980 minimum throttle, 00 maximum throttle
     [991  .. 1009] - no rotation, dead-band
     [1010 .. 2000] - positive throttle, rotation in the other direction. 1020 minimum throttle, 2000 maximum throttle
@@ -144,7 +144,7 @@ And these two call all other private internal functions.
 A single (per ESC) state variable (`_escs[i]._state`) is used in both the RX and TX state machines.
 Here is the call graph:
 
-```
+```text
 update()
   init()
     init_uart()

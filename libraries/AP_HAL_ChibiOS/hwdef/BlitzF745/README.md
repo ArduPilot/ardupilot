@@ -1,6 +1,6 @@
 # iFlight BLITZ F745 Flight Controller
 
-https://shop.iflight.com/electronics-cat27/BLITZ-F745-Flight-Controller-Pro2141
+[iFlight store](https://shop.iflight.com/electronics-cat27/BLITZ-F745-Flight-Controller-Pro2141)
 
 The BLITZ F745 is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 

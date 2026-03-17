@@ -31,7 +31,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the R6 (UART6_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
-For Fport, a bi-directional inverter will be required. See https://ardupilot.org/plane/docs/common-connecting-sport-fport.html
+For Fport, a bi-directional inverter will be required. See [ArduPilot FPort documentation](https://ardupilot.org/plane/docs/common-connecting-sport-fport.html)
 
 SBUS is supported. When using an SBUS receiver, the SBUS jumper pad on the flight controller must be soldered. The signal uses hardware inversion and is connected to USART6_RX. SBUS is available on both a dedicated solder pad and the DJI HD connector.
 

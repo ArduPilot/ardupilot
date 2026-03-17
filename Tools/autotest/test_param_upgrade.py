@@ -11,15 +11,16 @@ Test parameter upgrade, master vs branch
 AP_FLAKE8_CLEAN
 '''
 
-import vehicle_test_suite
-import os
-import sys
 import argparse
-import subprocess
-import time
+import os
+import pathlib
 import shutil
 import string
-import pathlib
+import subprocess
+import sys
+import time
+
+import vehicle_test_suite
 
 from pysim import util
 

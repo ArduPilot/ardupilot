@@ -1,7 +1,7 @@
 # Atlas Control Flight Controller
 
 The Atlas Control flight controller
-https://altasflight.github.io/atlas-docs/
+[AtlasFlight documentation](https://altasflight.github.io/atlas-docs/)
 
 ## Features
 
@@ -25,7 +25,7 @@ https://altasflight.github.io/atlas-docs/
 
 ![AtlasControl Board](img.png "Atlas Control")
 
-- 14 PWM servo outputs（12 support DShot）
+- 14 PWM servo outputs (12 support DShot)
 
 - Analog/ PWM RSSI input
 
@@ -142,16 +142,16 @@ RC input is configured on the RCIN pin, at one end of the servo rail,
 marked RCIN in the above diagram. All ArduPilot supported unidirectional
 RC protocols can be input here including PPM. For bi-directional or half-duplex
 protocols, such as CRSF/ELRS a full UART will have to be used.
-See https://ardupilot.org/plane/docs/common-rc-systems.html
+See [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
 
 ## PWM Output
 
 The 14 PWM outputs are in 4 groups: Each group must be the same protocol (ie PWM or DShot or Serial LED, etc.):
 
-* Outputs 1, 2, 3 and 4 in group1 (supports Bi-directional DShot)
-* Outputs 5, 6, 7 and 8 in group2 (supports Bi-directional DShot)
-* Outputs 9, 10, 11 and 12 in group3 (supports DShot)
-* Outputs 13 and 14 in group4 (PWM only, no DMA)
+- Outputs 1, 2, 3 and 4 in group1 (supports Bi-directional DShot)
+- Outputs 5, 6, 7 and 8 in group2 (supports Bi-directional DShot)
+- Outputs 9, 10, 11 and 12 in group3 (supports DShot)
+- Outputs 13 and 14 in group4 (PWM only, no DMA)
 
 ## Battery Monitoring
 
@@ -160,12 +160,12 @@ The board has two dedicated power monitor ports on 6 pin connectors.
 The board is supplied with an analog power module. Analog monitoring is set as the default configuration.
 The module is rated for up to 60V (14S) and 60A continuous current.
 
-* **BATT_MONITOR**: 4 (Analog Voltage and Current)
-* **BATT_VOLT_PIN**: 16
-* **BATT_CURR_PIN**: 17
-* **BATT_VOLT_MULT**: 18.000
-* **BATT_AMP_PERVLT**: 24.000
-* **BATT_VLT_OFFSET**: -0.1
+- **BATT_MONITOR**: 4 (Analog Voltage and Current)
+- **BATT_VOLT_PIN**: 16
+- **BATT_CURR_PIN**: 17
+- **BATT_VOLT_MULT**: 18.000
+- **BATT_AMP_PERVLT**: 24.000
+- **BATT_VLT_OFFSET**: -0.1
 
 ## Compass
 
@@ -201,7 +201,7 @@ BRD_HEAT_TARG parameter, which is in degrees C.
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled “Atlas-Control”.
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled “Atlas-Control”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "xxx_bl.hex"

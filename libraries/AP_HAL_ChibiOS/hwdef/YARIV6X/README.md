@@ -1,16 +1,16 @@
 # YARI V6X
 
-### Introduction
+## Introduction
 
 The YARI V6X autopilot is based on the [FMUV6X and Pixhawk Autopilot Bus open source specifications](https://github.com/pixhawk/Pixhawk-Standards). The Pixhawk Autopilot Bus (PAB) form factor enables the YARI V6X to be used on any PAB carrier board.
 
 ![YARI V6X Product](yariv6x-product.jpg)
 
-### Where to Buy
+## Where to Buy
 
 YARI V6X autopilots are produced and sold by [YARI Robotics](https://yarirobotics.com).
 
-### Features
+## Features
 
 - Modular architecture: Discrete IMU, FMU, and base boards linked by the Pixhawk Autopilot Bus (PAB) for clean routing, serviceability, and future upgrades.
 - High-performance MCU: STM32H743 running up to 480 MHz for fast control loops and advanced onboard applications.
@@ -20,7 +20,7 @@ YARI V6X autopilots are produced and sold by [YARI Robotics](https://yarirobotic
 - Vibration isolation: Durable custom formulated foam material to offer optimal vibration damping characteristics for better IMU stability and accuracy.
 - Rugged enclosure: Precision CNC-machined aluminum housing for durability, thermal performance, and EMI shielding.
 
-### Specifications
+## Specifications
 
 Autopilot Module
 
@@ -57,11 +57,11 @@ Carrier Board
 
 ![YARI V6X Dimensions](yariv6x-dimensions.jpg)
 
-### Pinout
+## Pinout
 
 ![YARI V6X Pinout](yariv6x-pinout.jpg)
 
-### UART Mapping
+## UART Mapping
 
 | Serial# | Port            | UART              |
 |---------|-----------------|-------------------|
@@ -77,7 +77,7 @@ Carrier Board
 
 All UARTs have DMA capability
 
-### PWM Output
+## PWM Output
 
 The YARI V6X supports up to 16 PWM outputs (M1-8 and A1-8). All 16 outputs support all normal PWM output formats. All outputs support DShot and BiDir DShot, except A7 and A8 which only support PWM.
 
@@ -89,7 +89,7 @@ The 8 FMU PWM outputs (A1-8) are in 4 groups:
 
 FMU outputs within the same group need to use the same output rate and protocol. If any output in a group uses DShot then all channels in that group need to use DShot.
 
-### RC Input
+## RC Input
 
 The PPM pin, which by default is mapped to a timer input, can be used for all ArduPilot supported unidirectional receiver protocols,. Half-Duplex and bi-directional protocols, such as CRSF/ELRS, Fport, and SRXL2) require a true UART connection (see below). FPort when connected to PPM will only provide RC without telemetry.
 
@@ -102,7 +102,7 @@ To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receive
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html#common-rc-systems) for details.
 
-### Battery Monitor
+## Battery Monitor
 
 The default battery parameters for use with a digital power module (with INA2xx) connected to Power1 port:
 
@@ -112,11 +112,11 @@ The default battery parameters for use with a digital power module (with INA2xx)
 
 For use with Power2 port update :ref:`BATT_I2C_BUS<BATT_I2C_BUS>` = 2
 
-### Compass
+## Compass
 
 The YARI V6X autopilot has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.
 
-### GPIOs
+## GPIOs
 
 The 8 FMU outputs can be used as GPIOs (relays, buttons, RPM etc). To use them you need to set the output’s `SERVOx_FUNCTION` to -1. See [GPIOs](https://ardupilot.org/copter/docs/common-gpios.html#common-gpios) page for more information.
 
@@ -136,7 +136,7 @@ Additional GPIOs:
 - FMU_CAP1 58
 - NFC_GPIO 59
 
-### Analog Input
+## Analog Input
 
 The YARI V6X has 2 analog inputs, one 6V tolerant and one 3.3V tolerant
 
@@ -144,7 +144,7 @@ The YARI V6X has 2 analog inputs, one 6V tolerant and one 3.3V tolerant
 - ADC Pin13 -> ADC 3.3V Sense
 - Analog 3.3V RSSI input pin = 103 . To use analog RSSI, set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` = 103.
 
-### Loading Firmware
+## Loading Firmware
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of xxxxxx.apj firmware files with any ArduPilot compatible ground station.
 
@@ -152,6 +152,6 @@ Firmware for YARI V6X can be found [here](https://firmware.ardupilot.org) in sub
 
 Subsequently, you can update firmware with Mission Planner or QGroundcontrol.
 
-### More Information
+## More Information
 
 [YARI Robotics Docs](https://yari-robotics.gitbook.io)

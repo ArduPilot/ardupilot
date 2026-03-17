@@ -13,14 +13,17 @@
 // RC AllInOnePRU
 //
 // 1 channel RCInput with 5ns accuracy
-// 12 channel RCOutput with 1us accuracy
+// 6 channel RCOutput with 1us accuracy
 
 // Timer
 #define TICK_PER_US 250
 #define TICK_PER_MS 250000
 
-// PWM
+// Period within which the failsafe bit has to
+// be set.
+#define FAILSAFE_PERIOD (1000 * TICK_PER_MS)
 
+// PWM
 // 0 us
 #define PWM_PULSE_DEFAULT (0 * TICK_PER_US)
 
@@ -52,11 +55,8 @@
 #define ECAP_CAP3 0x10
 #define ECAP_CAP4 0x14
 #define ECAP_ECCTL1 0x28
-//#define ECAP_ECCTL2 0x2a
 #define ECAP_ECEINT 0x2c
-//#define ECAP_ECFLG 0x2e
 #define ECAP_ECCLR 0x30
-//#define ECAP_ECFRC 0x32
 #define ECAP_REVID 0x5c
 
 // ECCTL1
@@ -96,33 +96,19 @@
 
 // RAM
 #define CH_ENABLE_RAM_OFFSET (0 * 4)
-#define CH_1_PULSE_TIME_RAM_OFFSET (1 * 4)
-#define CH_1_T_TIME_RAM_OFFSET  (2 * 4)
-#define CH_2_PULSE_TIME_RAM_OFFSET (3 * 4)
-#define CH_2_T_TIME_RAM_OFFSET  (4 * 4)
-#define CH_3_PULSE_TIME_RAM_OFFSET (5 * 4)
-#define CH_3_T_TIME_RAM_OFFSET  (6 * 4)
-#define CH_4_PULSE_TIME_RAM_OFFSET (7 * 4)
-#define CH_4_T_TIME_RAM_OFFSET  (8 * 4)
-#define CH_5_PULSE_TIME_RAM_OFFSET (9 * 4)
-#define CH_5_T_TIME_RAM_OFFSET  (10 * 4)
-#define CH_6_PULSE_TIME_RAM_OFFSET (11 * 4)
-#define CH_6_T_TIME_RAM_OFFSET  (12 * 4)
-#define CH_7_PULSE_TIME_RAM_OFFSET (13 * 4)
-#define CH_7_T_TIME_RAM_OFFSET  (14 * 4)
-#define CH_8_PULSE_TIME_RAM_OFFSET (15 * 4)
-#define CH_8_T_TIME_RAM_OFFSET  (16 * 4)
-#define CH_9_PULSE_TIME_RAM_OFFSET (17 * 4)
-#define CH_9_T_TIME_RAM_OFFSET  (18 * 4)
-#define CH_10_PULSE_TIME_RAM_OFFSET (19 * 4)
-#define CH_10_T_TIME_RAM_OFFSET  (20 * 4)
-#define CH_11_PULSE_TIME_RAM_OFFSET (21 * 4)
-#define CH_11_T_TIME_RAM_OFFSET  (22 * 4)
-#define CH_12_PULSE_TIME_RAM_OFFSET (23 * 4)
-#define CH_12_T_TIME_RAM_OFFSET  (24 * 4)
-#define TIME_OFFSET (25 * 4)
-#define MAX_CYCLE_TIME_OFFSET (26 * 4)
-
+#define FAILSAFE_RAM_OFFSET  (1 * 4)
+#define CH_1_PULSE_TIME_RAM_OFFSET (2 * 4)
+#define CH_1_T_TIME_RAM_OFFSET  (3 * 4)
+#define CH_2_PULSE_TIME_RAM_OFFSET (4 * 4)
+#define CH_2_T_TIME_RAM_OFFSET  (5 * 4)
+#define CH_3_PULSE_TIME_RAM_OFFSET (6 * 4)
+#define CH_3_T_TIME_RAM_OFFSET  (7 * 4)
+#define CH_4_PULSE_TIME_RAM_OFFSET (8 * 4)
+#define CH_4_T_TIME_RAM_OFFSET  (9 * 4)
+#define CH_5_PULSE_TIME_RAM_OFFSET (10 * 4)
+#define CH_5_T_TIME_RAM_OFFSET  (11 * 4)
+#define CH_6_PULSE_TIME_RAM_OFFSET (12 * 4)
+#define CH_6_T_TIME_RAM_OFFSET  (13 * 4)
 
 #define RCIN_RING_HEAD_OFFSET 0x1000
 #define RCIN_RING_TAIL_OFFSET 0x1002
@@ -142,12 +128,6 @@
 #define RC_CH_4_ENABLE register.ch_enable.t3
 #define RC_CH_5_ENABLE register.ch_enable.t4
 #define RC_CH_6_ENABLE register.ch_enable.t5
-#define RC_CH_7_ENABLE register.ch_enable.t6
-#define RC_CH_8_ENABLE register.ch_enable.t7
-#define RC_CH_9_ENABLE register.ch_enable.t8
-#define RC_CH_10_ENABLE register.ch_enable.t9
-#define RC_CH_11_ENABLE register.ch_enable.t10
-#define RC_CH_12_ENABLE register.ch_enable.t11
 
 // Register struct
 .struct RegisterStruct
@@ -158,12 +138,7 @@
    .u32 ch_4_next_time
    .u32 ch_5_next_time
    .u32 ch_6_next_time
-   .u32 ch_7_next_time
-   .u32 ch_8_next_time
-   .u32 ch_9_next_time
-   .u32 ch_10_next_time
-   .u32 ch_11_next_time
-   .u32 ch_12_next_time
+   .u32 next_failsafe
    .u32 time
    .u32 time_max
    .u32 time_cycle
@@ -284,24 +259,12 @@ rcin_ecap_end:
    sbbo RCIN_TAIL, register.rcin_ram_pointer_tail, 0, 2
 .endm
 
-.macro MAX_CYCLE_TIME
-   lbco register.temp1, IEP, COUNT_REG0, 4
-   sub register.temp, register.temp1, register.time_cycle
-   mov register.time_cycle, register.temp1
-   max register.time_max, register.time_max, register.temp
-   sbco register.time_max, RAM, MAX_CYCLE_TIME_OFFSET, 4
-.endm
-
 .macro INIT
    // Reset PWM pins
    mov r30, 0x0
 
    // Clear register
    zero &register, SIZE(register)
-
-   // Initialize max cycle time
-   mov register.temp, 0
-   sbco register.temp, RAM, MAX_CYCLE_TIME_OFFSET, 4
 
    // Initialize ringbuffer
    mov register.rcin_ram_pointer, RCIN_RINGBUFFER_RAM_OFFSET
@@ -319,12 +282,6 @@ rcin_ecap_end:
    mov register.ch_4_next_time, 4000
    mov register.ch_5_next_time, 5000
    mov register.ch_6_next_time, 6000
-   mov register.ch_7_next_time, 7000
-   mov register.ch_8_next_time, 8000
-   mov register.ch_9_next_time, 9000
-   mov register.ch_10_next_time, 10000
-   mov register.ch_11_next_time, 11000
-   mov register.ch_12_next_time, 12000
 
    // Disable all PWMs
    mov register.ch_enable, 0x0
@@ -338,12 +295,6 @@ rcin_ecap_end:
    sbco register.temp, RAM, CH_4_PULSE_TIME_RAM_OFFSET, 4
    sbco register.temp, RAM, CH_5_PULSE_TIME_RAM_OFFSET, 4
    sbco register.temp, RAM, CH_6_PULSE_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_7_PULSE_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_8_PULSE_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_9_PULSE_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_10_PULSE_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_11_PULSE_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_12_PULSE_TIME_RAM_OFFSET, 4
 
    // Initialize PWM frequency (50Hz)
    mov register.temp, PWM_FREQ_DEFAULT
@@ -353,17 +304,6 @@ rcin_ecap_end:
    sbco register.temp, RAM, CH_4_T_TIME_RAM_OFFSET, 4
    sbco register.temp, RAM, CH_5_T_TIME_RAM_OFFSET, 4
    sbco register.temp, RAM, CH_6_T_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_7_T_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_8_T_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_9_T_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_10_T_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_11_T_TIME_RAM_OFFSET, 4
-   sbco register.temp, RAM, CH_12_T_TIME_RAM_OFFSET, 4
-
-   // Initializes the TIME_OFFSET and MAX_CYCLE_TIME_OFFSET
-   mov register.temp, 0
-   sbco register.temp, RAM, TIME_OFFSET, 4
-   sbco register.temp, RAM, MAX_CYCLE_TIME_OFFSET, 4
 
    // Disables the counter of IEP timer
    // -> 4.5.4.1 IEP_TMR_GLB_CFG Register in TRM
@@ -376,7 +316,6 @@ rcin_ecap_end:
    lbco register.temp, IEP, CMP_CFG_REG, 4
    mov register.temp, 0x20000
    sbco register.temp, IEP, CMP_CFG_REG, 4
-
 
    // Resets the counter of IEP timer
    // Reset Count Register (CNT) by writing 0xFFFFFFFF to clear
@@ -395,17 +334,34 @@ rcin_ecap_end:
 	sbco register.temp, IEP, IEP_TMR_GLB_CFG, 2
 .endm
 
+// -------------- FAILSAFE MACRO 
+// Ensure if ardupilot die the pru will stop
+.macro FAILSAFE_HANDLING
+   sub register.temp, register.next_failsafe, register.time
+   mov register.temp1, 0xF0000000
+   qbgt failsafeend, register.temp, register.temp1
+   mov register.temp, FAILSAFE_PERIOD
+   add register.next_failsafe, register.time, register.temp
+   lbco register.temp, RAM, FAILSAFE_RAM_OFFSET, 4
+   qbbs failsafe_succesful, register.temp.t0
+   sbco register.temp, RAM, CH_ENABLE_RAM_OFFSET, 4
+failsafe_succesful:
+   ldi register.temp, 0
+   sbco register.temp, RAM, FAILSAFE_RAM_OFFSET, 4
+failsafeend:
+.endm
+
 .origin 0
 init:
    INIT
    RCIN_ECAP_INIT
 mainloop:
+   
+   FAILSAFE_HANDLING
+
    lbco register.ch_enable, RAM, CH_ENABLE_RAM_OFFSET, 4
    lbco register.time, IEP, COUNT_REG0, 4
-#ifdef DEBUG
-   //Reports the IEP counter; this used to check that the IEP counter operates normally (for debug)
-   sbco register.time, RAM, TIME_OFFSET, 4
-#endif
+
    RCOUT_PWM RC_CH_1_PIN, register.ch_1_next_time, RC_CH_1_ENABLE, CH_1_PULSE_TIME_RAM_OFFSET, CH_1_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_2_PIN, register.ch_2_next_time, RC_CH_2_ENABLE, CH_2_PULSE_TIME_RAM_OFFSET, CH_2_T_TIME_RAM_OFFSET
    RCOUT_PWM RC_CH_3_PIN, register.ch_3_next_time, RC_CH_3_ENABLE, CH_3_PULSE_TIME_RAM_OFFSET, CH_3_T_TIME_RAM_OFFSET
@@ -414,7 +370,5 @@ mainloop:
    RCOUT_PWM RC_CH_6_PIN, register.ch_6_next_time, RC_CH_6_ENABLE, CH_6_PULSE_TIME_RAM_OFFSET, CH_6_T_TIME_RAM_OFFSET
 
    RCIN_ECAP
-#ifdef DEBUG
-   MAX_CYCLE_TIME
-#endif
+   
 jmp mainloop

@@ -7,9 +7,9 @@ AP_FLAKE8_CLEAN
 
 import os
 
-from rover import AutoTestRover
-
 import vehicle_test_suite
+
+from rover import AutoTestRover
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts

@@ -13,17 +13,16 @@ import pathlib
 import sys
 import time
 
+from pymavlink import mavextra
+from pymavlink import mavutil
+
 import vehicle_test_suite
 
 from pysim import util
 from pysim import vehicleinfo
-
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
-
-from pymavlink import mavextra
-from pymavlink import mavutil
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -1834,15 +1833,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # Trigger telemetry loss with failsafe enabled. Verify
         # failsafe triggers to RTL. Restore telemetry, verify failsafe
         # clears, and change modes.
-        # TODO not implemented
-        # self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1")
-        # self.setGCSfailsafe(1)
-        # self.set_heartbeat_rate(0)
-        # self.wait_mode("RTL")
-        # self.set_heartbeat_rate(self.speedup)
-        # self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        # self.change_mode("MANUAL")
-        # self.end_subtest("Completed GCS failsafe recovery test")
+        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1")
+        self.setGCSfailsafe(1)
+        go_somewhere()
+        self.set_heartbeat_rate(0)
+        self.wait_mode("RTL")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.change_mode("MANUAL")
+        self.end_subtest("Completed GCS failsafe recovery test")
 
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
         self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1")
@@ -2622,7 +2621,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def check_rally_items_same(self, want, got, epsilon=None):
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
-        return self.check_mission_items_same(check_atts, want, got, epsilon=epsilon)
+        return self.check_mission_items_same('rally', check_atts, want, got, epsilon=epsilon)
 
     def click_three_in(self, mavproxy, target_system=1, target_component=1):
         mavproxy.send('rally clear\n')
@@ -5860,6 +5859,47 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def PositionTargetGlobalIntAltFrame(self):
+        '''Test that POSITION_TARGET_GLOBAL_INT sends AMSL altitude'''
+        # Use MAV_CMD_NAV_LOITER_TURNS to trigger SubMode::Circle in AUTO
+        # mode with a 0m altitude in MAV_FRAME_GLOBAL_RELATIVE_ALT_INT.
+        # At the SITL start location (~1584m AMSL) the correct AMSL altitude
+        # is ~1584m, not 0m.
+        home_alt_amsl = SITL_START_LOCATION.alt  # ~1583.7m
+
+        home_loc = self.home_position_as_mav_location()
+        # NAV_LOITER_TURNS: param1=number of turns, param3=radius in metres
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 0, 0),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                p1=100,  # number of turns (large to keep rover circling)
+                p3=500,  # radius in metres
+                x=int(home_loc.lat * 1e7),
+                y=int(home_loc.lng * 1e7),
+                z=0,     # 0m relative to home
+            ),
+        ])
+        self.set_current_waypoint(0, check_afterwards=False)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Wait for the rover to reach and begin the circle waypoint
+        self.wait_current_waypoint(2, timeout=60)
+
+        self.delay_sim_time(10)
+
+        # Check that POSITION_TARGET_GLOBAL_INT reports the correct AMSL
+        # altitude
+        self.assert_received_message_field_values("POSITION_TARGET_GLOBAL_INT", {
+            "alt": home_alt_amsl,
+        }, epsilon=10)
+
+        self.disarm_vehicle()
+
     def MAVProxyParam(self):
         '''Test MAVProxy parameter handling'''
         mavproxy = self.start_mavproxy()
@@ -7018,8 +7058,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.correct_wp_seq_numbers(fence)
         self.check_fence_upload_download(fence)
 
-        self.delay_sim_time(1000)
-
     def ManyMAVLinkConnections(self):
         '''test testing >8 MAVLink connections'''
         self.set_parameters({
@@ -7334,6 +7372,7 @@ return update()
             self.AISDataValidation,
             self.AP_Proximity_MAV,
             self.EndMissionBehavior,
+            self.PositionTargetGlobalIntAltFrame,
             self.FlashStorage,
             self.FRAMStorage,
             self.DepthFinder,

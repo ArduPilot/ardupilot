@@ -8,9 +8,10 @@ decode an watchdog message
 AP_FLAKE8_CLEAN
 '''
 
+import optparse
 import re
 import sys
-import optparse
+
 from collections import OrderedDict
 
 import decode_ICSR

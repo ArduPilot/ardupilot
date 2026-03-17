@@ -2,9 +2,7 @@
 
 The CUAVv5 flight controller is sold by [CUAV](http://store.cuav.net/)
 
-The full schematics of the board are available here:
-
-  https://github.com/ArduPilot/Schematics/tree/master/CUAV/CUAVv5
+The [full schematics](https://github.com/ArduPilot/Schematics/tree/master/CUAV/CUAVv5) of the board are available.
 
 ## Features
 

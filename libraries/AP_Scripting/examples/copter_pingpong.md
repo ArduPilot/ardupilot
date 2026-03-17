@@ -11,7 +11,7 @@ This script makes the drone go forward and backward a defined distance and numbe
 - 4: Go back to the initial position
 - 5: Change to Land mode
 
-## Variables:
+## Variables
 
 - `takeoff_alt`: Takeoff height (m)
 - `copter_guided_mode_num`: Guided mode number
@@ -22,7 +22,7 @@ This script makes the drone go forward and backward a defined distance and numbe
 - `ping_pong_distance`: Distance up to which the drone should go forward (m)
 - `vel`: Drone velocity (m/s)
 
-## Understand the code:
+## Understand the code
 
 First, there is a comment explaining what the code is about and how it works. Then, the local variables that will be used are declared.
  The `copter_guided_mode_num` and `copter_land_mode_num` are standard numbers, defined by ArduPilot, for the Guided and Land flight modes, respectively. The other variables are user-defined settings according to the desired behavior, as indicated in the comments in front of each one.

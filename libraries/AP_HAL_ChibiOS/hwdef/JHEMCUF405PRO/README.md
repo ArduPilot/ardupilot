@@ -46,10 +46,10 @@ These statements are based on the current implementation of the dma_resolver.py 
 
 RC input is best configured on the RX1/TX1 (USART1_RX/USART1_TX) pins due to having full DMA capability and being mostly easy to access for desoldering to enable DFU mode.
 
-* PPM is not supported.
-* FPort requires connection to T1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to “7”.
-* CRSF also requires a T1 connection, in addition to R1, and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “0”.
-* SRXL2 requires a connection to T1 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “4”.
+- PPM is not supported.
+- FPort requires connection to T1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to "7".
+- CRSF also requires a T1 connection, in addition to R1, and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "0".
+- SRXL2 requires a connection to T1 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details.
 
@@ -57,26 +57,26 @@ Any UART can be used for RC system connections in ArduPilot also, and is compati
 
 JHEMCUF405PRO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
-* Use of internal MAX7456 for analog OSD/VTX is enabled by default.
-* Simultaneous HD VTX OSD support is pre-configured on UART6
+- Use of internal MAX7456 for analog OSD/VTX is enabled by default.
+- Simultaneous HD VTX OSD support is pre-configured on UART6
 
 ## PWM Output
 
 JHEMCUF405PRO supports up to 5 motor/servo outputs. 4 motors and 1 LED strip or another PWM output. Outputs are grouped and each group must use the same protocol. All outputs support PWM and DShot.
 
-* Output 1-2 Group 1
-* Output 3-4 Group 2
-* Output 5/LED Group 3
+- Output 1-2 Group 1
+- Output 3-4 Group 2
+- Output 5/LED Group 3
 
 ## Battery Monitoring
 
 The default battery configuration is:
 
-* :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-* :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 13
-* :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 12
-* :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11
-* :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 95.84
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 13
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 12
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 95.84
 
 ## Compass
 

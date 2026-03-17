@@ -6,7 +6,7 @@ User just needs to edit the script to set string username, password and IP addre
 
 Following steps are required before doing ONVIF build:
 
-```
+```bash
 cd modules/gsoap
 autoreconf -f -i
 ./configure

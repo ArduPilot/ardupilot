@@ -211,6 +211,9 @@ void AP_Camera::init()
 
     // perform any required parameter conversion
     convert_params();
+#if AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+    convert_runcam_params();
+#endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
 
     // create each instance
     for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
@@ -922,35 +925,15 @@ AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance) const
     return _backends[instance];
 }
 
-// perform any required parameter conversion
-void AP_Camera::convert_params()
+#if AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+// Convert to runcam specific backend
+void AP_Camera::convert_runcam_params()
 {
-    // exit immediately if CAM1_TYPE has already been configured
-    if (_params[0].type.configured()
-#if AP_CAMERA_RUNCAM_ENABLED
-        && _params[1].type.configured()
-#endif
-       ) {
+    // exit immediately if CAM2_TYPE has already been configured
+    if (_params[1].type.configured()) {
         return;
     }
 
-    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
-
-    // convert CAM_TRIGG_TYPE to CAM1_TYPE
-    int8_t cam_trigg_type = 0;
-    int8_t cam1_type = 0;
-    IGNORE_RETURN(AP_Param::get_param_by_index(this, 0, AP_PARAM_INT8, &cam_trigg_type));
-    if ((cam_trigg_type == 0) && SRV_Channels::function_assigned(SRV_Channel::k_cam_trigger)) {
-        // CAM_TRIGG_TYPE was 0 (Servo) and camera trigger servo function was assigned so set CAM1_TYPE = 1 (Servo)
-        cam1_type = 1;
-    }
-    if ((cam_trigg_type >= 1) && (cam_trigg_type <= 3)) {
-        // CAM_TRIGG_TYPE was set to Relay, GoPro or Mount
-        cam1_type = cam_trigg_type + 1;
-    }
-    _params[0].type.set_and_save(cam1_type);
-
-#if AP_CAMERA_RUNCAM_ENABLED
     // RunCam PARAMETER_CONVERSION - Added: Nov-2024 ahead of 4.7 release
 
     // Since slot 1 is essentially used by the trigger type, we will use slot 2 for runcam
@@ -984,7 +967,33 @@ void AP_Camera::convert_params()
     }
 
     _params[1].type.set_and_save(rc_type);
-#endif // AP_CAMERA_RUNCAM_ENABLED
+
+}
+#endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+
+// perform any required parameter conversion
+void AP_Camera::convert_params()
+{
+    // exit immediately if CAM1_TYPE has already been configured
+    if (_params[0].type.configured()) {
+        return;
+    }
+
+    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
+
+    // convert CAM_TRIGG_TYPE to CAM1_TYPE
+    int8_t cam_trigg_type = 0;
+    int8_t cam1_type = 0;
+    IGNORE_RETURN(AP_Param::get_param_by_index(this, 0, AP_PARAM_INT8, &cam_trigg_type));
+    if ((cam_trigg_type == 0) && SRV_Channels::function_assigned(SRV_Channel::k_cam_trigger)) {
+        // CAM_TRIGG_TYPE was 0 (Servo) and camera trigger servo function was assigned so set CAM1_TYPE = 1 (Servo)
+        cam1_type = 1;
+    }
+    if ((cam_trigg_type >= 1) && (cam_trigg_type <= 3)) {
+        // CAM_TRIGG_TYPE was set to Relay, GoPro or Mount
+        cam1_type = cam_trigg_type + 1;
+    }
+    _params[0].type.set_and_save(cam1_type);
 
     // convert CAM_DURATION (in deci-seconds) to CAM1_DURATION (in seconds)
     int8_t cam_duration = 0;

@@ -8,7 +8,7 @@ The script can also act as a client for QGroundControl's MAVLink Console
 functionality (within the Analyze view), subject to limitations detailed
 below.
 
-### Basic Usage
+## Basic Usage
 
 * Configure a serial port (e.g. `SERIALn_PROTOCOL`) to protocol 28 (Scripting).
   * By default the first such port is used; this can be adjusted in the script
@@ -34,7 +34,7 @@ below.
 
       return to an empty prompt.
 
-### Autopilot Connection
+## Autopilot Connection
 
 * On Linux a convenient command is e.g. `minicom -w -D /dev/ttyACM1 -b 115200`,
 
@@ -44,7 +44,7 @@ below.
 
   control codes and other configuration.
 
-### SITL Connection
+## SITL Connection
 
 * Start SITL with a command like `Tools/autotest/sim_vehicle.py -A --serialN=tcp:9995:wait` to allow connection to the selected serial port.
 * Connect a terminal emulator to localhost TCP port 9995
@@ -52,7 +52,7 @@ below.
   * Note that you must execute `reset` to turn echo back on once disconnected.
   * Scripting must be restarted after a TCP reconnection.
 
-### MAVLink Connection
+## MAVLink Connection
 
 * Requires at least Ardupilot 4.6.
 * Set the port in the script text to `nil` to enable.
@@ -65,7 +65,7 @@ below.
 
   packet loss tracking or retransmission.
 
-### Notes and Limitations
+## Notes and Limitations
 
 * Statements like `local x = 3` create a variable which immediately goes out of
 

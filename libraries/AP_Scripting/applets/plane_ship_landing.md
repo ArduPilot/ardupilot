@@ -11,7 +11,7 @@ ArduPilot Rover firmware. You can set the FRAME_CLASS on the beacon to
 
 The beacon flight controller needs the following:
 
-- a reliable yaw source. Using dual-F9P GPS with moving baseline yaw is recommended if the moving platform will cause problems with compasses. See this page for how to set that up: https://ardupilot.org/rover/docs/common-gps-for-yaw.html.
+- a reliable yaw source. Using dual-F9P GPS with moving baseline yaw is recommended if the moving platform will cause problems with compasses. See the [ArduPilot GPS-for-yaw documentation](https://ardupilot.org/rover/docs/common-gps-for-yaw.html) for how to set that up.
 - a radio setup so that the aircraft can see GLOBAL_POSITION_INT mavlink messages from the beacon flight controller. There are multiple methods of achieving that, see the section below on radio setup
 - the beacon needs a different mavlink system ID to the aircraft and the GCS. You set this with the SYSID_THISMAV parameter. In the example below I have set SYSID_THISMAV=17
 - the beacon can be offset from the actual landing location. The beacon should be placed for optimal radio performance, then the instructions below can be used to setup the actual landing location relative to the beacon.
@@ -32,7 +32,7 @@ There are several ways to setup this type of radio link:
 - you can setup your GCS to forward GLOBAL_POSITION_INT packets from the beacon to the aircraft (for example, mavproxy can do this via the fwdpos setting)
 
 For mesh capable radios, you could use the RFDesign multi-point firmware on three RFD900x radios, with the radios setup for broadcast.
-Alternatively you could use the RFD900x relay firmware from here https://firmware.ardupilot.org/SiK/RFD900x-relay/ with the GCS set as NODE=1, the beacon set as NODE=0 and the aircraft set as NODE=2.
+Alternatively you could use the RFD900x relay firmware from the [ArduPilot firmware server](https://firmware.ardupilot.org/SiK/RFD900x-relay/) with the GCS set as NODE=1, the beacon set as NODE=0 and the aircraft set as NODE=2.
 
 ## Parameters
 

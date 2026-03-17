@@ -7,7 +7,7 @@ It brings you ultimate performance, stability, and reliability in every aspect.
 
 ![AP-H743-R1](ap-h743r1-main.png)
 
-### Processors & Sensors
+## Processors & Sensors
 
 - FMU Processor: STM32H743VIT6
 - 32 Bit Arm® Cortex®-M7, 480MHz, 2MB flash memory, 1MB RAM
@@ -18,7 +18,7 @@ It brings you ultimate performance, stability, and reliability in every aspect.
 - Mag: QMC5883P
 - Barometer: DPS310(Version1),SPL06(Version2)
 
-### Interfaces
+## Interfaces
 
 - 15x PWM Servo Outputs
 - 1x Dedicated S.Bus Input
@@ -124,7 +124,7 @@ The default battery parameters are:
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "X-MAV-AP-H743r1".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "X-MAV-AP-H743r1".
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool.
 

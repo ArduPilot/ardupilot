@@ -208,6 +208,10 @@ public:
     virtual bool allows_weathervaning() const { return false; }
 #endif
 
+    // Return true if this mode is enabled, used by MAVLink available modes
+    // For example flow hold mode requires optical flow to be enabled
+    virtual bool enabled() const { return true; }
+
 protected:
 
     // helper functions
@@ -454,7 +458,6 @@ public:
     void exit() override;
     // Called when air mode is enabled via AUX switch; prevents automatic reset to default air_mode state
     void air_mode_aux_changed();
-    bool allows_save_trim() const override { return true; }
     bool allows_flip() const override { return true; }
     bool crash_check_enabled() const override { return false; }
     bool allows_entry_in_rc_failsafe() const override { return false; }
@@ -484,7 +487,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
-    void virtual_flybar( float &roll_out, float &pitch_out, float &yaw_out, float pitch_leak, float roll_leak);
+    void virtual_flybar( float &roll_out_rads, float &pitch_out_rads, float &yaw_out_rads, float pitch_leak, float roll_leak);
 
 protected:
 private:
@@ -1017,6 +1020,9 @@ public:
     }
     bool allows_flip() const override { return true; }
 
+    // Return true if this mode is enabled, used by MAVLink available modes
+    bool enabled() const override;
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
@@ -1224,12 +1230,13 @@ private:
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
 
     // controls which controller is run (pos or vel):
-    static SubMode guided_mode;
-    static bool send_notification;     // used to send one time notification to ground station
+    SubMode guided_mode = SubMode::TakeOff;
+     // used to send one time notification to ground station:
+    bool send_notification;
     static bool takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
 
     // guided mode is paused or not
-    static bool _paused;
+    bool _paused;
 };
 
 #if AP_SCRIPTING_ENABLED
@@ -1394,8 +1401,8 @@ private:
 class ModePosHold : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // need a constructor for parameters
+    ModePosHold(void);
     Number mode_number() const override { return Number::POSHOLD; }
 
     bool init(bool ignore_checks) override;
@@ -1409,12 +1416,21 @@ public:
     bool allows_autotune() const override { return true; }
     bool allows_auto_trim() const override { return true; }
 
+    // convert parameters
+    void convert_params();
+
+    // mode specific parameter variable table
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     const char *name() const override { return "Position Hold"; }
     const char *name4() const override { return "PHLD"; }
 
 private:
+
+    // parameters
+    AP_Float brake_angle_max_deg;   // max lean angle (in degrees) during braking
 
     void update_pilot_lean_angle_rad(float &lean_angle_filtered_rad, float &lean_angle_raw_rad);
     float mix_controls(float mix_ratio, float first_control, float second_control);
@@ -1634,6 +1650,9 @@ public:
     bool is_landing() const override;
     bool use_pilot_yaw() const override;
 
+    // Return true if this mode is enabled, used by MAVLink available modes
+    bool enabled() const override;
+
     // Safe RTL states
     enum class SubMode : uint8_t {
         WAIT_FOR_PATH_CLEANUP,
@@ -1763,6 +1782,9 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
     bool logs_attitude() const override { return true; }
+
+    // Return true if this mode is enabled, used by MAVLink available modes
+    bool enabled() const override;
 
     void set_magnitude(float input) { waveform_magnitude.set(input); }
 
@@ -1903,6 +1925,9 @@ public:
     void output_to_motors() override;
     bool allows_entry_in_rc_failsafe() const override { return false; }
 
+    // Return true if this mode is enabled, used by MAVLink available modes
+    bool enabled() const override;
+
 protected:
     const char *name() const override { return "Turtle"; }
     const char *name4() const override { return "TRTL"; }
@@ -1968,6 +1993,9 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; }
     bool is_autopilot() const override { return true; }
+
+    // Return true if this mode is enabled, used by MAVLink available modes
+    bool enabled() const override;
 
 protected:
 

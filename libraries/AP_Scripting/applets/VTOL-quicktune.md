@@ -8,7 +8,7 @@ The script is designed to be used in QLOITER mode for quadplanes or
 LOITER mode in multicopters, although it can also be used in other
 VTOL modes.
 
-# Parameters
+## Parameters
 
 The script adds 7 parameters to control it's behaviour. The parameters
 are:
@@ -110,7 +110,7 @@ happening if quicktune gets a false positive oscillation at a low
 gain, which can result in very low rate gains and a dangerous angle P
 oscillation.
 
-# Operation
+## Operation
 
 First you should setup harmonic notch filtering using the guide in the
 ArduPilot wiki. This tuning system relies on you already having
@@ -171,7 +171,7 @@ values. Parameters will also be reverted if you disarm before saving.
 If the pilot gives roll, pitch or yaw input while tuning then the tune
 is paused until 4 seconds after the pilot input stops.
 
-# Using a Two Position Switch
+## Using a Two Position Switch
 
 Some transitters only have 2 position switches, with no 3 position
 switches available. To support quicktune with a 2 position switch

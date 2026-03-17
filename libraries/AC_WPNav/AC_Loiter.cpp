@@ -5,11 +5,19 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define LOITER_SPEED_DEFAULT_MS             12.5    // Default horizontal loiter speed in m/s.
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+ #define LOITER_SPEED_DEFAULT_MS             30.0    // Default horizontal loiter speed in m/s.
+ #define LOITER_BRAKE_ACCEL_DEFAULT_MSS      1.25    // Default maximum braking acceleration when sticks are released (m/s²).
+ #define LOITER_BRAKE_JERK_DEFAULT_MSSS      2.5    // Default maximum jerk applied during braking transitions (m/s³).
+#else
+ #define LOITER_SPEED_DEFAULT_MS             12.5    // Default horizontal loiter speed in m/s.
+ #define LOITER_BRAKE_ACCEL_DEFAULT_MSS      2.5     // Default maximum braking acceleration when sticks are released (m/s²).
+ #define LOITER_BRAKE_JERK_DEFAULT_MSSS      5.0     // Default maximum jerk applied during braking transitions (m/s³).
+#endif
+
+// Common defaults between trad heli and copter
 #define LOITER_SPEED_MIN_MS                 0.2     // Minimum allowed horizontal loiter speed in m/s.
 #define LOITER_ACCEL_MAX_DEFAULT_MSS        5.0     // Default maximum horizontal acceleration in loiter mode (m/s²).
-#define LOITER_BRAKE_ACCEL_DEFAULT_MSS      2.5     // Default maximum braking acceleration when sticks are released (m/s²).
-#define LOITER_BRAKE_JERK_DEFAULT_MSSS      5.0     // Default maximum jerk applied during braking transitions (m/s³).
 #define LOITER_BRAKE_START_DELAY_DEFAULT_S  1.0     // Delay (in seconds) before braking begins after sticks are released.
 #define LOITER_VEL_CORRECTION_MAX_MS        2.0     // Maximum speed (in m/s) used for correcting position errors in loiter.
 #define LOITER_POS_CORRECTION_MAX_M         2.0     // Maximum horizontal position error allowed before correction (m).

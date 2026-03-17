@@ -23,7 +23,7 @@ The S-Vehicle E2-Plus Flight Controller produced by [S-Vehicle](http://svehicle.
 - 100Mbps Ethernet port
 - 3 power monitor inputs
 
-# IOMCU
+## IOMCU
 
 This board has an IOMCU implemented on a STM32F103 microcontroller which, manages
 
@@ -76,7 +76,7 @@ A5, A6 are in a 2nd group.
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
-#### GPIOs
+## GPIOs
 
 Two of the PWM ports on the FMU labeled A5 and A6, can be used as GPIOs (relays, buttons, RPM etc). To use them you need to limit the number of these pins that are used for PWM by setting the BRD_PWM_COUNT to a number less than 6. For example if you set BRD_PWM_COUNT to 4 then PWM A5 and PWM A6 will be available for use as GPIOs.
 
@@ -137,6 +137,6 @@ The E2-Plus has 6 analog inputs.
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "SVehicle-E2".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "SVehicle-E2".
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.

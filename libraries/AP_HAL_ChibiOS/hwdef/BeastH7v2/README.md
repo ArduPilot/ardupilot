@@ -1,6 +1,6 @@
 # iFlight Beast H7 v2 55A AIO Flight Controller
 
-https://shop.iflight-rc.com/Beast-H7-V2-55A-AIO-MPU6000-25.5-25.5-pro1588
+[iFlight store](https://shop.iflight-rc.com/Beast-H7-V2-55A-AIO-MPU6000-25.5-25.5-pro1588)
 
 The Beast H7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 

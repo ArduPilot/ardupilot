@@ -31,7 +31,7 @@ It is an autopilot used CKS MCU.
 
 ## Connectors
 
-**External USB**
+### External USB
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -40,7 +40,7 @@ It is an autopilot used CKS MCU.
 |  3   |   D-    |  D_N  |
 |  4   |   GND   |  GND  |
 
-**Telme1**
+### Telem1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -49,7 +49,7 @@ It is an autopilot used CKS MCU.
 |  3   |  RX    | +3.3V |
 |  4   |  GND   |  GND  |
 
-**Telme2**
+### Telem2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -60,7 +60,7 @@ It is an autopilot used CKS MCU.
 |  5   |  NC    |  - -  |
 |  6   |  GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -71,18 +71,7 @@ It is an autopilot used CKS MCU.
 |  5   |  sda2  | +3.3V |
 |  6   |  GND   |  GND  |
 
-**GPS1**
-
-| Pin  | Signal | Volt  |
-| :--: | :----: | :---: |
-|  1   |  VCC   |  +5V  |
-|  2   |  TX    | +3.3V |
-|  3   |  RX    | +3.3V |
-|  4   |  scl2  | +3.3V |
-|  5   |  sda2  | +3.3V |
-|  6   |  GND   |  GND  |
-
-**UART4 and UART5**
+### UART4 and UART5
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -91,7 +80,7 @@ It is an autopilot used CKS MCU.
 |  3   |  RX    | +3.3V |
 |  4   |  GND   |  GND  |
 
-**CAN1**
+### CAN1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -100,7 +89,7 @@ It is an autopilot used CKS MCU.
 |  3   | CAN1_L | CAN_N |
 |  4   |  GND   |  GND  |
 
-**IIC1**
+### IIC1
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -109,7 +98,7 @@ It is an autopilot used CKS MCU.
 |  3   |  SCL1  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**Safety and buzzer**
+### Safety and buzzer
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -120,7 +109,7 @@ It is an autopilot used CKS MCU.
 |  5   | Buzzer | +3.3V |
 |  6   |  GND   |  GND  |
 
-**VT Port**
+### VT Port
 
 | Pin  |   Signal   | Volt  |
 | :--: |   :----:   | :---: |
@@ -129,7 +118,7 @@ It is an autopilot used CKS MCU.
 |  3   |   9V/12V   | 9V/12V|
 |  4   |    GND     |  GND  |
 
-**PWM11 and PWM12**
+### PWM11 and PWM12
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -138,7 +127,7 @@ It is an autopilot used CKS MCU.
 |  3   | PWM12  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**POWER1 and Power2**
+### POWER1 and Power2
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -149,7 +138,7 @@ It is an autopilot used CKS MCU.
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**Battery Input**
+### Battery Input
 
 | Pin  |     Signal      |   Volt  |
 | :--: | :-------------: |  :---:  |
@@ -210,7 +199,7 @@ BATT2_AMP_PERVLT 60.000
 
 In addition, the builtin voltage divider circuit can be used by Solder pad to switching to share the battery voltage monitoring by power2 support to 6S.
 
-If you want to use the built-in voltage monitor on power 1, you can manually invert the BATT_ VOLT_ PIN to 14, BATT_ CURR_ PIN to 15, BATT2_ VOLT_ PIN to 2, BATT2_ CURR_ PIN to 3.
+If you want to use the built-in voltage monitor on power 1, you can manually invert the `BATT_VOLT_PIN` to 14, `BATT_CURR_PIN` to 15, `BATT2_VOLT_PIN` to 2, `BATT2_CURR_PIN` to 3.
 
 **Built-in BEC**
 The built-in BEC 5V output has a starting voltage of 2S, and 9V/12V has a starting voltage of 3S/4S respectively.

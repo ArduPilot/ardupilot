@@ -14,7 +14,7 @@ The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafp
 - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
 - Integrated 4-in-1 BlueJay ESC
 
-This version supports a compass via the TX3 (SCL) and RX3 (SDA) pins, but requires a hardware mod - see https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r
+This version supports a compass via the TX3 (SCL) and RX3 (SDA) pins, but requires a hardware mod - see [BETAFPV store](https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r)
 
 ## Pinout
 

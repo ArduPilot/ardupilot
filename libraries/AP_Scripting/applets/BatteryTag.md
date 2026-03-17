@@ -7,7 +7,7 @@ with the serial number and number of hours in an armed state.
 
 The data for each battery is logged in the BTAG log message
 
-# Parameters
+## Parameters
 
 ## BTAG_ENABLE
 

@@ -44,7 +44,7 @@ The SERIAL1 and SERIAL2 ports have RTS/CTS pins, the other UARTs do not have RTS
 
 ## RC Input
 
-RC input is provided through the SBUS connector and supports all unidirectional RC protocols. For bi-directional protocols, such as CRSF/ELRS/SRXL2, a UART with DMA will be need to be used, See https://ardupilot.org/plane/docs/common-rc-systems.html for more information.
+RC input is provided through the SBUS connector and supports all unidirectional RC protocols. For bi-directional protocols, such as CRSF/ELRS/SRXL2, a UART with DMA will be need to be used, See [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html) for more information.
   
 ## OSD Support
 
@@ -83,6 +83,6 @@ The SkyRukh Surge H7 does not have a built-in compass, but you can connect one e
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "SkyRukh_Surge_H7".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "SkyRukh_Surge_H7".
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station.

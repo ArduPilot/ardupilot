@@ -11,9 +11,9 @@ that older logs can be replayed with newer code.
 AP_FLAKE8_CLEAN
 '''
 
-from argparse import ArgumentParser
-
 import struct
+
+from argparse import ArgumentParser
 
 from pymavlink import DFReader
 from pymavlink import mavutil

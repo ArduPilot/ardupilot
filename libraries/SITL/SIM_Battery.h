@@ -22,9 +22,6 @@
 
 namespace SITL {
 
-/*
-  class to describe a motor position
- */
 class Battery {
 public:
     void setup(float _capacity_Ah, float _resistance, float _max_voltage);

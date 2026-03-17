@@ -345,6 +345,7 @@ private:
     // Check if instance backend is ok
     AP_Mount_Backend *get_primary() const;
     AP_Mount_Backend *get_instance(uint8_t instance) const;
+    AP_Mount_Backend *mount_device_from_mavlink_gimbal_id(uint8_t gimbal_device_id) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
 

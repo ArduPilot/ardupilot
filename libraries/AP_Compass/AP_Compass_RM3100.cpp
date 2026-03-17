@@ -238,9 +238,4 @@ check_registers:
     dev->check_next_register();
 }
 
-void AP_Compass_RM3100::read()
-{
-	drain_accumulated_samples();
-}
-
 #endif  // AP_COMPASS_RM3100_ENABLED

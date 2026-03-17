@@ -6,16 +6,17 @@ Waf tool for Linux build
 AP_FLAKE8_CLEAN
 """
 
-from waflib.TaskGen import after_method, feature
-
 import os
 import sys
 import traceback
 
 import hal_common
 
+from waflib.TaskGen import after_method
+from waflib.TaskGen import feature
+
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_Linux/hwdef/scripts'))
-import linux_hwdef  # noqa:501
+import linux_hwdef  # noqa: E402
 
 
 @feature('linux_ap_program')

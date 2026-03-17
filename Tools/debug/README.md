@@ -8,10 +8,8 @@ This assumes you are debugging a ChibiOS based firmware on a STM32 board.
 
 ## Debugging with a Black Magic Probe
 
-If you have a black magic probe (see
-https://1bitsquared.com/products/black-magic-probe) then first make
-sure it has the latest firmware. See the wiki here for details:
-https://github.com/blacksphere/blackmagic/wiki
+If you have a [black magic probe](https://1bitsquared.com/products/black-magic-probe)) then first make
+sure it has the latest firmware. See the [blacksphere wiki](https://github.com/blacksphere/blackmagic/wiki) for details.
 
 Next, copy the file gdb-black-magic.init to the ArduPilot source
 directory, in the same directory where you will be starting the
@@ -23,7 +21,7 @@ that the probe will be loaded as /dev/ttyBmpGdb
 
 Now make sure you have the right version of arm-none-eabi-gdb
 installed. We recommend version 10-2020-q4-major, which is available
-here: https://firmware.ardupilot.org/Tools/STM32-tools/
+on the [ArduPilot firmware server](https://firmware.ardupilot.org/Tools/STM32-tools/) .
 
 Now build ArduPilot with the --debug configure option. You may also
 like to include the --enable-asserts. Enabling asserts will slow down
@@ -64,7 +62,7 @@ or STM32H7 then edit the file in the obvious way.
 
 Now start openocd in a terminal. You should get output like this:
 
-```
+```text
 Open On-Chip Debugger 0.10.0+dev-00272-gedb6796 (2018-01-19-17:26)
 Licensed under GNU GPL v2
 For bug reports, read
@@ -97,7 +95,7 @@ arm-none-eabi-gdb in the same manner.
 To see ChibiOS threads use the "info threads" command. See the gdb
 documentation for more information.
 
-# Debugging Hardfaults
+## Debugging Hardfaults
 
 ## Getting fault dump via Serial
 
@@ -124,7 +122,7 @@ or to open in gdb for further postmortem do the following:
 
 `arm-none-eabi-gdb -nx path/to/elf/file -ex "set target-charset ASCII" -ex "target remote | modules/CrashDebug/bins/lin64/CrashDebug --elf path/to/elf/file --dump crash_dump.bin"`
 
-## Debugging faults using GDB:
+## Debugging faults using GDB
 
 * Connect hardware over SWD
 * Place breakpoint at hardfault using `b *&HardFault_Handler`
@@ -136,10 +134,10 @@ and then `set $sp = $psp` and do `backtrace`
 
 * One can also log the RAM, refer crash_debugger app and Tools/debug/crash_dump.scr for the same.
 
-### References:
+### References
 
-https://interrupt.memfault.com/blog/cortex-m-fault-debug
+[Memfault Interrupt](https://interrupt.memfault.com/blog/cortex-m-fault-debug)
 
-https://github.com/adamgreen/CrashCatcher/tree/c8e801225bfa12da70c01ea25b58090b2b7a2e0a
+[CrashCatcher](https://github.com/adamgreen/CrashCatcher/tree/c8e801225bfa12da70c01ea25b58090b2b7a2e0a)
 
-http://www.cyrilfougeray.com/2020/07/27/firmware-logs-with-stack-trace.html
+[Blog](http://www.cyrilfougeray.com/2020/07/27/firmware-logs-with-stack-trace.html)

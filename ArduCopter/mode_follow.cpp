@@ -13,10 +13,16 @@
  * TODO: ensure AP_AVOIDANCE_ENABLED is true because we rely on it velocity limiting functions
  */
 
+// Return true if this mode is enabled, used by MAVLink available modes
+bool ModeFollow::enabled() const
+{
+    return g2.follow.enabled();
+}
+
 // initialise follow mode
 bool ModeFollow::init(const bool ignore_checks)
 {
-    if (!g2.follow.enabled()) {
+    if (!enabled()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
@@ -152,8 +158,8 @@ float ModeFollow::wp_bearing_deg() const
 // Returns target location with offset applied, for MAVLink reporting
 bool ModeFollow::get_wp(Location &loc) const
 {
-    Vector3f vel;
-    return g2.follow.get_target_location_and_velocity_ofs(loc, vel);
+    Vector3f vel_ned_ms;
+    return g2.follow.get_target_location_and_velocity_ofs(loc, vel_ned_ms);
 }
 
 #endif // MODE_FOLLOW_ENABLED

@@ -1,6 +1,6 @@
 # GOKU F405 1-2S 12A AIO w/ built-in ELRS 2.4g RX
 
-https://flywoo.net/collections/aio-evo-stacks-combo/products/goku-versatile-f405-2s-12a-aio-w-build-in-elrs-2-4g-rx-mpu6000
+[Flywoo store](https://flywoo.net/collections/aio-evo-stacks-combo/products/goku-versatile-f405-2s-12a-aio-w-build-in-elrs-2-4g-rx-mpu6000)
 
 The Flywoo GOKU F405 AIO is a flight controller produced by [Flywoo](https://flywoo.net/).
 
@@ -9,7 +9,7 @@ The Flywoo GOKU F405 AIO is a flight controller produced by [Flywoo](https://fly
 - MCU: STM32F405 32-bit processor. 1024Kbytes Flash
 - IMU: MPU6000 (SPI)
 - Barometer: BMP280
-- Onboard LED：WS2812*2
+- Onboard LED: WS2812*2
 - USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
 - 6 hardware UARTS (UART1,2,3,4,5,6)
 - Built-in ELRS 2.4Ghz serial receiver

@@ -13,6 +13,7 @@ from pymavlink import mavextra
 from pymavlink import mavutil
 
 import vehicle_test_suite
+
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
@@ -191,6 +192,23 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("GPS_RAW not tracking simstate yaw")
             self.progress(f"yaw match ({gps_raw_hdg} vs {sim_hdg}")
 
+    def StationaryGlobalPositionIntAlt(self):
+        '''Test GLOBAL_POSITION_INT.alt is correct in stationary mode'''
+        # Disable GPS so the tracker stays in stationary mode (stationary=true).
+        # With GPS enabled the tracker gets a fix, sets stationary=false, and
+        # delegates to the base-class send_global_position_int() which is correct.
+        self.set_parameter("GPS1_TYPE", 0)
+        self.reboot_sitl()
+
+        # Set a known home position; Tracker::set_home() stores this in
+        # current_loc, which the stationary path uses directly.
+        home_loc = self.sitl_start_location()
+        self.set_home(home_loc)
+
+        self.assert_received_message_field_values("GLOBAL_POSITION_INT", {
+            "alt": int(home_loc.alt * 1000),
+        })
+
     def LoggerMsgChunks(self):
         '''create MSG dataflash entries for very long messages'''
         self.assert_parameter_value('LOG_DISARMED', 1)
@@ -247,5 +265,6 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
             self.BaseMessageSet,
             self.GPSForYaw,
             self.LoggerMsgChunks,
+            self.StationaryGlobalPositionIntAlt,
         ])
         return ret

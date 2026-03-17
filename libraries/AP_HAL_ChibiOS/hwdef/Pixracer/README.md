@@ -3,9 +3,7 @@
 The Pixracer flight controller is
 [sold by mRobotics](https://store.mrobotics.io/category-s/112.htm)
 
-The full schematics of the board are available here:
-
-  https://github.com/ArduPilot/Schematics/tree/master/mRobotics
+The [full schematics](https://github.com/ArduPilot/Schematics/tree/master/mRobotics) of the board are available.
 
 ## Features
 

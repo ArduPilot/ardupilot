@@ -3,7 +3,7 @@
 This driver implements support for marine EFI systems using NMEA 2000
 CAN messages.
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -17,7 +17,7 @@ This sets options for the driver. Currently the only option is to set
 EFI_2K_OPTIONS to 1 to enable logging of the raw CAN frames for
 debugging purposes.
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either

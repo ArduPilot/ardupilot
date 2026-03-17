@@ -28,7 +28,10 @@ import shutil
 import tempfile
 import threading
 import time
+
 import board_list
+
+from build_script_base import VEHICLE_MAP
 from build_script_base import BuildScriptBase
 
 
@@ -75,6 +78,7 @@ class SizeCompareBranches(BuildScriptBase):
                  all_vehicles=False,
                  exclude_board_glob: list | None = None,
                  all_boards=False,
+                 modified_boards=False,
                  use_merge_base=True,
                  waf_consistent_builds=True,
                  show_empty=True,
@@ -129,22 +133,17 @@ class SizeCompareBranches(BuildScriptBase):
         for board in board_list.BoardList().boards:
             self.boards_by_name[board.name] = board
 
-        # map from vehicle names to binary names
-        self.vehicle_map = {
-            "rover"     : "ardurover",
-            "copter"    : "arducopter",
-            "plane"     : "arduplane",
-            "sub"       : "ardusub",
-            "heli"      : "arducopter-heli",
-            "blimp"     : "blimp",
-            "antennatracker" : "antennatracker",
-            "AP_Periph" : "AP_Periph",
-            "bootloader": "AP_Bootloader",
-            "iofirmware": "iofirmware_highpolh",  # FIXME: lowpolh?
-        }
+        self.vehicle_map = VEHICLE_MAP
 
         if all_boards:
             self.board = sorted(list(self.boards_by_name.keys()), key=lambda x: x.lower())
+        elif modified_boards:
+            self.board = self.find_modified_boards(
+                self.branch, self.master_branch, self.use_merge_base)
+            if not self.board:
+                raise ValueError(
+                    "No modified boards found between %s and %s" %
+                    (self.branch, self.master_branch))
         else:
             # validate boards
             all_boards = set(self.boards_by_name.keys())
@@ -258,13 +257,16 @@ class SizeCompareBranches(BuildScriptBase):
         if jobs is not None:
             waf_configure_args.extend(["-j", str(jobs)])
 
-        self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
+        non_bootloader_configure_done : bool = False
         for v in vehicle:
             if v == 'bootloader':
                 # need special configuration directive
                 continue
+            if not non_bootloader_configure_done:
+                self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
+                non_bootloader_configure_done = True
             self.run_waf([v], show_output=False, source_dir=source_dir)
         for v in vehicle:
             if v != 'bootloader':
@@ -936,6 +938,11 @@ def main():
                       default=False,
                       help="Build all boards")
     parser.add_option("",
+                      "--modified-boards",
+                      action='store_true',
+                      default=False,
+                      help="Build all boards with modified hwdef files")
+    parser.add_option("",
                       "--exclude-board-glob",
                       default=[],
                       action="append",
@@ -994,6 +1001,7 @@ def main():
         run_elf_diff=(cmd_opts.elf_diff),
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
+        modified_boards=cmd_opts.modified_boards,
         exclude_board_glob=cmd_opts.exclude_board_glob,
         use_merge_base=not cmd_opts.no_merge_base,
         waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,

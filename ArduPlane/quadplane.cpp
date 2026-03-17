@@ -124,7 +124,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
 
     // @Param: LAND_FINAL_ALT
     // @DisplayName: Land final altitude
-    // @Description: The altitude at which we should switch to Q_LAND_SPEED descent rate
+    // @Description: The altitude at which we should switch to Q_LAND_FINAL_SPD descent rate
     // @Units: m
     // @Range: 0.5 50
     // @Increment: 0.1
@@ -597,13 +597,13 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_LOIT_BRK_ACC_M", 0.5 },
     { "Q_LOIT_BRK_JRK_M", 2.5 },
     { "Q_LOIT_SPEED_MS",  5.0 },
-    { "Q_WP_SPEED",       500 },
-    { "Q_WP_ACCEL",       100 },
+    { "Q_WP_SPD",         5.0 },
+    { "Q_WP_ACC",         1.0 },
     { "Q_P_JERK_NE",      2   },
     // lower rotational accel limits
-    { "Q_A_ACCEL_R_MAX", 40000 },
-    { "Q_A_ACCEL_P_MAX", 40000 },
-    { "Q_A_ACCEL_Y_MAX", 10000 },
+    { "Q_A_ACC_R_MAX", 400 },
+    { "Q_A_ACC_P_MAX", 400 },
+    { "Q_A_ACC_Y_MAX", 100 },
 };
 
 /*
@@ -830,6 +830,9 @@ bool QuadPlane::setup(void)
 
     // upgrade position controller parameters added Dec 2025
     pos_control->convert_parameters();
+
+    // upgrade waypoint navigation parameters
+    wp_nav->convert_parameters();
 
     // upgrade loiter navigation parameters
     loiter_nav->convert_parameters();
@@ -2590,7 +2593,7 @@ void QuadPlane::vtol_position_controller(void)
         if (poscontrol.reached_wp_speed ||
             rel_groundspeed_sq < sq(wp_speed_ms) ||
             wp_speed_ms > 1.35*scaled_wp_speed_ms) {
-            // once we get below the Q_WP_SPEED then we don't want to
+            // once we get below the Q_WP_SPD then we don't want to
             // speed up again. At that point we should fly within the
             // limits of the configured VTOL controller we also apply
             // this limit when we are more than 45 degrees off the
@@ -4627,11 +4630,13 @@ void SLT_Transition::force_transition_complete()
 
 MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
 {
-    if (quadplane.in_vtol_mode()) {
+    if (quadplane.in_vtol_land_approach()) {
         QuadPlane::position_control_state state = quadplane.poscontrol.get_state();
         if ((state == QuadPlane::position_control_state::QPOS_AIRBRAKE) || (state == QuadPlane::position_control_state::QPOS_POSITION1)) {
             return MAV_VTOL_STATE_TRANSITION_TO_MC;
         }
+    }
+    if (quadplane.in_vtol_mode()) {
         return MAV_VTOL_STATE_MC;
     }
 

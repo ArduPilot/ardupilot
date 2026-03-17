@@ -1,6 +1,6 @@
 # iFlight Beast F7 45A AIO Flight Controller
 
-https://shop.iflight-rc.com/index.php?route=product/product&product_id=1377
+[iFlight store](https://shop.iflight-rc.com/index.php?route=product/product&product_id=1377)
 
 The Beast F7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 

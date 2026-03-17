@@ -28,6 +28,7 @@
 #include <SITL/SIM_RF_Benewake_TFA1500.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
 #include <SITL/SIM_RF_BLping.h>
+#include <SITL/SIM_RF_DTS6012M.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_RF_JRE.h>
 #include <SITL/SIM_RF_Lanbao.h>

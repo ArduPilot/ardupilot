@@ -1,54 +1,35 @@
-## PixPilot-V6 Flight Controller
+# PixPilot-V6 Flight Controller
 
-The PixPilot-V6 flight controller is sold by a range of resellers listed on the makeflyeasy(http://www.makeflyeasy.com)
+The PixPilot-V6 flight controller is sold by a range of resellers listed at [MakeFlyEasy](http://www.makeflyeasy.com)
 
 ## Features
 
-•    STM32H743VIT6 and STM32F103C8T6 microcontroller
-
-•    Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
-
-•    internal heater for IMUs temperature control
-
-•    internal Soft Rubber Damping Ball isolation for All interna IMUs
-
-•    Two barometers, MS5611(SPI)
-
-•    builtin IST8310 magnetometer(internal I2C)
-
-•    builtin RAMTRON(SPI)
-
-•    microSD card slot
-
-•    5 UARTs
-
-•    USB(Type-C)
-
-•    PPM & S.Bus input
-
-•    14 PWM outputs
-
-•    tow I2C ports and two FDCAN ports
-
-•    one S.Bus output
-
-•    External Buzzer
-
-•    builtin RGB LED
-
-•    two voltage & current monitoring
-
-•    servo rail BEC independent power input for servos
-
-•    external safety Switch
+- STM32H743VIT6 and STM32F103C8T6 microcontroller
+- Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
+- internal heater for IMUs temperature control
+- internal Soft Rubber Damping Ball isolation for All interna IMUs
+- Two barometers, MS5611(SPI)
+- builtin IST8310 magnetometer(internal I2C)
+- builtin RAMTRON(SPI)
+- microSD card slot
+- 5 UARTs
+- USB(Type-C)
+- PPM & S.Bus input
+- 14 PWM outputs
+- tow I2C ports and two FDCAN ports
+- one S.Bus output
+- External Buzzer
+- builtin RGB LED
+- two voltage & current monitoring
+- servo rail BEC independent power input for servos
+- external safety Switch
 
 ## Pinout
 
 ![PixPilot-V6](PixPilot-V6.png "PixPilot-V6")
 ![PixPilot-V6](PixPilot-V6_2.png "PixPilot-V6_2")
 
-UART Mapping
-============
+## UART Mapping
 
 - SERIAL0 -> console (primary mavlink, usually USB)
 - SERIAL1 -> USART2  (telem1)
@@ -57,11 +38,9 @@ UART Mapping
 - SERIAL4 -> UART8   (GPS2)
 - SERIAL5 -> UART7   (USER)
 
-Connector pin assignments
-=========================
+## Connector pin assignments
 
-TELEM1, TELEM2 ports
---------------------
+### TELEM1, TELEM2 ports
 
    | Pin | Signal | Volt |
 | --- | --- | --- |
@@ -70,8 +49,7 @@ TELEM1, TELEM2 ports
 | 3 | RX (IN) | +3.3V |
 | 4 | GND | GND |
 
-I2C1, I2C2 ports
----------------
+### I2C1, I2C2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -80,8 +58,7 @@ I2C1, I2C2 ports
 | 3 | SDA | +3.3V |
 | 4 | GND | GND |
 
-CAN1, CAN2 ports
----------------
+### CAN1, CAN2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -90,8 +67,7 @@ CAN1, CAN2 ports
 | 3 | CAN_L | +12V |
 | 4 | GND | GND |
 
-Safety and buzzer port
------------
+### Safety and buzzer port
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -102,8 +78,7 @@ Safety and buzzer port
 | 5 | 3V+ | +3.3V |
 | 6 | GND | GND |
 
-GPS1/I2C1, GPS2/I2C2 ports
---------------------------
+## GPS1/I2C1, GPS2/I2C2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -114,8 +89,7 @@ GPS1/I2C1, GPS2/I2C2 ports
 | 5 | SDA | +3.3V |
 | 6 | GND | GND |
 
-Serial5 port
---------------------
+### Serial5 port
 
    | Pin | Signal | Volt |
 | --- | --- | --- |
@@ -124,8 +98,7 @@ Serial5 port
 | 3 | RX (IN) | +3.3V |
 | 4 | GND | GND |
 
-Power1, Power2 ports
---------------------
+### Power1, Power2 ports
 
    | PIN | SIGNAL | VOLT |
 | --- | --- | --- |
@@ -136,13 +109,11 @@ Power1, Power2 ports
 | 5 | GND | GND |
 | 6 | GND | GND |
 
-RC Input
---------
+## RC Input
 
 All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
 
-Battery Monitor Settings
-========================
+## Battery Monitor Settings
 
 These should already be set by default. However, if lost or changed:
 
@@ -168,13 +139,11 @@ Then reboot.
 
 :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` 24.0
 
-DroneCAN capability
-===================
+## DroneCAN capability
 
 There are 2 CAN ports which allow connecting two independent CAN bus outputs. Each of these can have multiple CAN peripheral devices connected.
 
-Where to Buy
-============
+## Where to Buy
 
 `makeflyeasy <http://www.makeflyeasy.com>`_
 

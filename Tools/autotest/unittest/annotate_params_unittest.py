@@ -10,16 +10,26 @@ AP_FLAKE8_CLEAN
 Author: Amilcar do Carmo Lucas, IAV GmbH
 '''
 
-import tempfile
-from unittest.mock import patch, mock_open
 import os
+import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-import requests
+
+from unittest.mock import mock_open
+from unittest.mock import patch
+
 import mock
-from annotate_params import get_xml_data, remove_prefix, split_into_lines, create_doc_dict, \
-                            format_columns, update_parameter_documentation, print_read_only_params, \
-                            BASE_URL, PARAM_DEFINITION_XML_FILE
+import requests
+
+from annotate_params import BASE_URL
+from annotate_params import PARAM_DEFINITION_XML_FILE
+from annotate_params import create_doc_dict
+from annotate_params import format_columns
+from annotate_params import get_xml_data
+from annotate_params import print_read_only_params
+from annotate_params import remove_prefix
+from annotate_params import split_into_lines
+from annotate_params import update_parameter_documentation
 
 
 class TestParamDocsUpdate(unittest.TestCase):
