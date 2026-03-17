@@ -1883,6 +1883,7 @@ protected:
 private:
 
     bool throw_detected();
+    bool throw_uprighting_complete() const;
     bool throw_position_good() const;
     bool throw_height_good() const;
     bool throw_attitude_good() const;
@@ -1903,6 +1904,7 @@ private:
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
+    uint32_t uprighting_start_ms;     // system time uprighting stage was entered
     uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
     float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met
 };

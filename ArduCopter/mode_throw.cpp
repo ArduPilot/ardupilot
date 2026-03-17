@@ -70,7 +70,8 @@ void ModeThrow::run()
                motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         gcs().send_text(MAV_SEVERITY_INFO,"throttle is unlimited - uprighting");
         stage = Throw_Uprighting;
-    } else if (stage == Throw_Uprighting && throw_attitude_good()) {
+        uprighting_start_ms = AP_HAL::millis();
+    } else if (stage == Throw_Uprighting && throw_uprighting_complete()) {
         gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
 
@@ -162,20 +163,56 @@ void ModeThrow::run()
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
+        // Keep the attitude controller's internal target tracking the
+        // vehicle's actual attitude through the spool-up.  Without this,
+        // _attitude_target is stale from Detecting and input_quaternion
+        // in Uprighting computes the wrong error, producing a slow mushy
+        // recovery instead of a crisp shortest-path rotation.
+        attitude_control->relax_attitude_controllers();
+        attitude_control->set_throttle_out(0, true, g.throttle_filt);
+
         break;
 
-    case Throw_Uprighting:
+    case Throw_Uprighting: {
 
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // demand a level roll/pitch attitude with zero yaw rate
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
+        // Use quaternion attitude controller to find the shortest rotation
+        // path to level from any starting orientation — including inverted.
+        // The Euler method has singularities near ±90° pitch that produce
+        // suboptimal paths.  Target a level attitude preserving current yaw.
+        Quaternion level_quat;
+        level_quat.from_euler(0.0f, 0.0f, ahrs.get_yaw());
+        Vector3f zero_ang_vel;
+        attitude_control->input_quaternion(level_quat, zero_ang_vel);
 
-        // output 50% throttle and turn off angle boost to maximise righting moment
-        attitude_control->set_throttle_out(0.5f, false, g.throttle_filt);
+        // For drops, scale throttle by cos_tilt so thrust is zero when
+        // inverted and ramps to arrest level as the vehicle rights itself.
+        // Angle boost is disabled since we manage the throttle directly.
+        // For upward throws use 50% without boost to maximise righting moment.
+        if (g2.throw_type == ThrowType::Drop) {
+            const float cos_tilt = MAX(ahrs.get_rotation_body_to_ned().c.z, 0.0f);
+            const float hover_thr = motors->get_throttle_hover();
+            // Scale arrest aggressiveness by descent rate.  When going
+            // up or barely descending, use hover throttle only.
+            // Ramp linearly to full THROW_DROP_AG at THROW_DROP_SPEED_Z_MS.
+            const float ag = MAX(g2.throw_drop_ag, 1.0f);
+            const float vel_z_up = pos_control->get_vel_estimate_U_ms();
+            float thr_scale;
+            if (vel_z_up >= 0.0f) {
+                thr_scale = 1.0f;
+            } else {
+                thr_scale = constrain_float(1.0f + (ag - 1.0f) * (-vel_z_up) * (1.0f / THROW_DROP_SPEED_Z_MS), 1.0f, ag);
+            }
+            const float throttle = constrain_float(hover_thr * thr_scale, 0.0f, 1.0f) * cos_tilt;
+            attitude_control->set_throttle_out(throttle, false, g.throttle_filt);
+        } else {
+            attitude_control->set_throttle_out(0.5f, false, g.throttle_filt);
+        }
 
         break;
+    }
 
     case Throw_HgtStabilise:
 
@@ -360,6 +397,23 @@ bool ModeThrow::throw_detected()
 
     // start motors and enter the control mode if we are in continuous freefall
     return throw_condition_confirmed;
+}
+
+bool ModeThrow::throw_uprighting_complete() const
+{
+    // Three-tier exit from the uprighting stage:
+    // 1. Within ~5° of level — attitude is excellent, proceed immediately
+    // 2. Within 30° of level and 2s elapsed — gave it time, good enough
+    // 3. 3s elapsed — safety timeout, proceed regardless
+    const float cos_tilt = ahrs.get_rotation_body_to_ned().c.z;
+    const uint32_t elapsed_ms = AP_HAL::millis() - uprighting_start_ms;
+    if (cos_tilt > 0.996f) {            // ~5°
+        return true;
+    }
+    if (cos_tilt > 0.866f && elapsed_ms > 2000) {  // ~30°
+        return true;
+    }
+    return (elapsed_ms > 3000);
 }
 
 bool ModeThrow::throw_attitude_good() const
