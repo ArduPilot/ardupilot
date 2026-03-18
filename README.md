@@ -76,7 +76,7 @@ This project integrates with [Python Laptop Air Vehicles (PLAV)](https://github.
 It uses ArduPilot’s SITL with JSON interface:  
 https://ardupilot.org/dev/docs/sitl-with-JSON.html  
 
-This repository also demonstrates how to properly debug SITL with JSON, which is not clearly documented in the official ArduPilot developer docs.
+This repository also demonstrates how to properly debug SITL with JSON in VSCode, which is not clearly documented in the official ArduPilot developer docs.
 
 ---
 
