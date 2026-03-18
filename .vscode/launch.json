@@ -7,15 +7,12 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/sitl/bin/arduplane",
             "args": [
-                "-S",
-                "--model",
-                "+",
-                "--speedup",
-                "1",
-                "--slave",
-                "0",
-                "--sim-address=127.0.0.1",
-                "-IO"
+                "-S",                     // Silent mode (minimal output)
+                "--model", "+",           // Specify model type; "+" is placeholder
+                "--speedup", "1",         // Simulation speed multiplier
+                "--slave", "0",           // SITL slave mode
+                "--sim-address=127.0.0.1",// IP used to connect to SITL
+                "-IO"                     // Input/output options
             ],
             "cwd": "${workspaceFolder}/ArduPlane",
             "MIMode": "gdb",
