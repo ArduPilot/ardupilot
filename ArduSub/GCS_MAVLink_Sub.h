@@ -29,6 +29,9 @@ protected:
     void send_banner() override;
 
     void send_nav_controller_output() const override;
+    // returns a Location to which the vehicle is currently heading, or
+    // would head to in an autonomous mode
+    bool get_target_location(Location &loc) const override;
     void send_pid_tuning() override;
 
     uint64_t capabilities() const override;
