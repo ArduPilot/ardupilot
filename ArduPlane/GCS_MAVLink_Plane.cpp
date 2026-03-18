@@ -497,7 +497,7 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
  */
 void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
 {
-    plane.fix_terrain_WP(location, __LINE__);
+    plane.fix_terrain_WP(location, __AP_LINE__);
 
     if (location.terrain_alt) {
         plane.next_WP_loc.copy_alt_from(location);
@@ -589,7 +589,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     if (!location_from_command_t(packet, requested_position)) {
         return MAV_RESULT_DENIED;
     }
-    plane.fix_terrain_WP(requested_position, __LINE__);
+    plane.fix_terrain_WP(requested_position, __AP_LINE__);
 
     if (isnan(packet.param4) || is_zero(packet.param4)) {
         requested_position.loiter_ccw = 0;

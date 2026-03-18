@@ -34,7 +34,7 @@ void Plane::check_home_alt_change(void)
     if (home_alt_cm != auto_state.last_home_alt_cm && hal.util->get_soft_armed()) {
         // cope with home altitude changing
         const int32_t alt_change_cm = home_alt_cm - auto_state.last_home_alt_cm;
-        fix_terrain_WP(next_WP_loc, __LINE__);
+        fix_terrain_WP(next_WP_loc, __AP_LINE__);
 
         // reset TECS to force the field elevation estimate to reset
         TECS_controller.offset_altitude(alt_change_cm * 0.01f);
