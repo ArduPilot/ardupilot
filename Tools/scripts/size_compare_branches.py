@@ -90,6 +90,7 @@ class SizeCompareBranches(BuildScriptBase):
                  jobs=None,
                  features=False,
                  symbols=False,
+                 compare_object_files=False,
                  ):
         super().__init__()
 
@@ -128,6 +129,7 @@ class SizeCompareBranches(BuildScriptBase):
         self.jobs = jobs
         self.features = features
         self.symbols = symbols
+        self.compare_object_files = compare_object_files
 
         self.boards_by_name = {}
         for board in board_list.BoardList().boards:
@@ -563,6 +565,9 @@ class SizeCompareBranches(BuildScriptBase):
         if self.symbols:
             self.compare_task_results_symbols(pairs)
 
+        if self.compare_object_files:
+            self.compare_task_results_object_files(pairs)
+
     def compare_task_results_sizes(self, pairs):
         results = {}
         for pair in pairs.values():
@@ -715,6 +720,7 @@ class SizeCompareBranches(BuildScriptBase):
                 elf_dirname = esp32_elf_dirname
                 bin_dirname = elf_dirname
                 elf_filename = "ardupilot.elf"
+            v["board_dir"] = os.path.join(elf_basedir, task.board)
             v["bin_dir"] = os.path.join(elf_basedir, task.board, bin_dirname)
             v["bin_filename"] = bin_filename
             v["elf_dir"] = os.path.join(elf_basedir, task.board, elf_dirname)
@@ -827,6 +833,62 @@ class SizeCompareBranches(BuildScriptBase):
                 continue
             results[pair["master"].board] = self.compare_results_symbols(pair["master"], pair["branch"])
         print(self.csv_for_results(results))
+
+    def collect_object_files(self, board_dir):
+        '''return a dict mapping relative path -> absolute path for all .o files under board_dir'''
+        files = {}
+        for root, dirs, filenames in os.walk(board_dir):
+            for filename in filenames:
+                if not filename.endswith('.o'):
+                    continue
+                full_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(full_path, board_dir)
+                files[rel_path] = full_path
+        return files
+
+    def compare_results_object_files(self, result_master: Result, result_branch: Result):
+        '''print object files that differ between master and branch builds'''
+        # use the first available vehicle's board_dir (all vehicles share the same board dir)
+        board_dir_master = None
+        board_dir_branch = None
+        for vehicle, board_info in result_master.vehicle.items():
+            if "board_dir" in board_info:
+                board_dir_master = board_info["board_dir"]
+                break
+        for vehicle, board_info in result_branch.vehicle.items():
+            if "board_dir" in board_info:
+                board_dir_branch = board_info["board_dir"]
+                break
+
+        if board_dir_master is None or board_dir_branch is None:
+            return
+
+        master_files = self.collect_object_files(board_dir_master)
+        branch_files = self.collect_object_files(board_dir_branch)
+
+        all_paths = sorted(set(master_files.keys()) | set(branch_files.keys()))
+        differing = []
+        for rel_path in all_paths:
+            if rel_path not in master_files:
+                differing.append(("only-in-branch", rel_path))
+            elif rel_path not in branch_files:
+                differing.append(("only-in-master", rel_path))
+            elif not self.files_are_identical(master_files[rel_path], branch_files[rel_path]):
+                differing.append(("differs", rel_path))
+
+        board = result_master.board
+        if differing:
+            print(f"Object files differing for {board}:")
+            for (reason, rel_path) in differing:
+                print(f"  {reason}: {rel_path}")
+        else:
+            print(f"No differing object files for {board}")
+
+    def compare_task_results_object_files(self, pairs):
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                continue
+            self.compare_results_object_files(pair["master"], pair["branch"])
 
     def compare_results_sizes(self, result_master, result_branch):
         ret = {}
@@ -961,6 +1023,13 @@ def main():
         action="store_true",
         help="compare symbols present in each firmware",
     )
+    parser.add_option(
+        "",
+        "--compare-object-files",
+        default=False,
+        action="store_true",
+        help="print list of compiler object files which differ between branches",
+    )
     parser.add_option("",
                       "--all-vehicles",
                       action='store_true',
@@ -1011,6 +1080,7 @@ def main():
         jobs=cmd_opts.jobs,
         features=cmd_opts.features,
         symbols=cmd_opts.symbols,
+        compare_object_files=cmd_opts.compare_object_files,
     )
     x.run()
 
