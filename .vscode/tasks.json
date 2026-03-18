@@ -6,12 +6,12 @@
             "type": "shell",
             "command": "../Tools/autotest/sim_vehicle.py",
             "args": [
-                "-f", "JSON:127.0.0.1",
-                "-L", "BRGRBalloon",
-                "--console",
-                "--map",
-                "--osd",
-                "-D"
+                "-f", "JSON:127.0.0.1", // Connect via JSON protocol
+                "-L", "BRGRBalloon",    // Vehicle/Location choice
+                "--console",            // Show console output
+                "--map",                // Show map GUI
+                "--osd",                // Show On-Screen Display
+                "-D"                    // Enable debug output
             ],
             "options": {
                 "cwd": "${workspaceFolder}/ArduPlane"
