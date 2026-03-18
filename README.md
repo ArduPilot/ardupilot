@@ -46,30 +46,34 @@ README.md
 
 ---
 
-## Loading Parameters
-
-1. Connect to your autopilot using Mission Planner
-2. Navigate to:
-
-Config → Full Parameter Tree → Load from File
-
-3. Load:
-
-params/grid_fin_vehicle.param
 
 **Parameter Notes:**
+
+Parameters:
 
 ```text
 TRI_MIX_GAIN      = 1.0    # Overall tri-fin mixer gain
 TRI_TRIM_DZ       = 0.01   # Deadzone for trim (prevents servo chatter)
+```
+Are configurable in flight (Prameters.ccp)
+
+Parameters:
+
+```text
 TRI_FIN1_AZIMUTH  = 90°    # Clockwise from +Y in Y-Z plane
 TRI_FIN2_AZIMUTH  = 210°
 TRI_FIN3_AZIMUTH  = 330°
-SITL Setup
+```
 
-This fork includes configurations for PLAV SITL for rapid testing:
+Are compiled in code can be chagned preflight (config.h)
 
-launch.json: Configures VSCode to launch PLAV SITL with your model
+---
+
+## SITL Setup
+
+This fork includes configurations for PLAV SITL for rapid testing/debugging:
+
+launch.json: Configures VSCode to launch PLAV SITL (self-implemented SITL connecting via UDP socket)
 
 tasks.json: Starts SITL in the background with console, map, and OSD output
 
@@ -77,23 +81,12 @@ tasks.json: Starts SITL in the background with console, map, and OSD output
 "args": ["-S", "--model", "+", "--speedup", "1", "--slave", "0", "--sim-address=127.0.0.1", "-IO"]
 Changes From Upstream ArduPilot
 
-Modified servos.cpp to implement tri-fin mixer
 
-Added new mixer parameters for tuning and geometry
+## Example Use Case
 
-Added VSCode PLAV SITL interface
+This fork is ideal for plane-like vehicles that use grid fins or multi-fin control surfaces.
 
-Tri-fin setup is extensible to more fins or standard control surfaces
-
-Example Use Case
-
-This fork is ideal for plane-like vehicles that use grid fins or multi-fin control surfaces, including:
-
-High-altitude gliders with grid fins
-
-SITL simulation and rapid prototyping for multi-fin configurations
-
-License
+## License
 
 This fork follows the same license as ArduPilot: GNU GPL v3.
 
