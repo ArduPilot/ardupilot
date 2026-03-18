@@ -1154,8 +1154,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             p7=x.alt_rel,    # alt
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
         )
-        expected_radius = 100
-        self.wait_circling_point_with_radius(loc, expected_radius)
+
+        self.set_parameter("NAVL1_LIM_BANK", 60) # enable accurate loiter radii
+        self.wait_circling_point_with_radius(loc, self.get_parameter("WP_LOITER_RAD"))
 
         self.context_collect('CAMERA_FEEDBACK')
         self.set_rc(12, 2000)
