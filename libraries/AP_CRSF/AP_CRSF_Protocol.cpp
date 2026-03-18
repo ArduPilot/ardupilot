@@ -105,38 +105,6 @@ const char* AP_CRSF_Protocol::get_frame_type_name(uint8_t byte, uint8_t subtype)
     return "UNKNOWN";
 }
 
-// unpack channels from a CRSFv2 11-bit fixed-width frame payload
-void AP_CRSF_Protocol::decode_11bit_channels(const uint8_t* payload, uint8_t nchannels, uint16_t *values)
-{
-    // CRSFv2 channels are packed 11 bits each, 16 channels in 22 bytes.
-    // This is the same packing as SBUS.
-    // Explicitly cast to uint32_t to avoid narrowing conversion warnings.
-    const uint32_t raw_channels[16] = {
-        (( (uint32_t)payload[0]    | (uint32_t)payload[1] << 8) & 0x07FF),
-        ((( (uint32_t)payload[1] >> 3 | (uint32_t)payload[2] << 5) & 0x07FF)),
-        ((( (uint32_t)payload[2] >> 6 | (uint32_t)payload[3] << 2 | (uint32_t)payload[4] << 10) & 0x07FF)),
-        ((( (uint32_t)payload[4] >> 1 | (uint32_t)payload[5] << 7) & 0x07FF)),
-        ((( (uint32_t)payload[5] >> 4 | (uint32_t)payload[6] << 4) & 0x07FF)),
-        ((( (uint32_t)payload[6] >> 7 | (uint32_t)payload[7] << 1 | (uint32_t)payload[8] << 9) & 0x07FF)),
-        ((( (uint32_t)payload[8] >> 2 | (uint32_t)payload[9] << 6) & 0x07FF)),
-        ((( (uint32_t)payload[9] >> 5 | (uint32_t)payload[10] << 3) & 0x07FF)),
-        (( (uint32_t)payload[11]   | (uint32_t)payload[12] << 8) & 0x07FF),
-        ((( (uint32_t)payload[12] >> 3 | (uint32_t)payload[13] << 5) & 0x07FF)),
-        ((( (uint32_t)payload[13] >> 6 | (uint32_t)payload[14] << 2 | (uint32_t)payload[15] << 10) & 0x07FF)),
-        ((( (uint32_t)payload[15] >> 1 | (uint32_t)payload[16] << 7) & 0x07FF)),
-        ((( (uint32_t)payload[16] >> 4 | (uint32_t)payload[17] << 4) & 0x07FF)),
-        ((( (uint32_t)payload[17] >> 7 | (uint32_t)payload[18] << 1 | (uint32_t)payload[19] << 9) & 0x07FF)),
-        ((( (uint32_t)payload[18] >> 2 | (uint32_t)payload[19] << 6) & 0x07FF)),
-        ((( (uint32_t)payload[20] >> 5 | (uint32_t)payload[21] << 3) & 0x07FF))
-    };
-
-    const uint8_t num_to_decode = MIN(nchannels, (uint8_t)16);
-    for (uint8_t i = 0; i < num_to_decode; i++) {
-        // scale from CRSFv2's native 172-1811 range to 1000-2000us PWM
-        values[i] = (uint16_t)(((raw_channels[i] - 992) * 5 / 8) + 1500);
-    }
-}
-
 // unpack channels from a CRSFv3 variable bit length frame payload
 void AP_CRSF_Protocol::decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values)
 {
