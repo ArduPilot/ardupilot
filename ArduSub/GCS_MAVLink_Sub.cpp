@@ -93,6 +93,13 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         0);
 }
 
+// returns a Location to which the vehicle is currently heading, or
+// would head in an autonomous mode
+bool GCS_MAVLINK_Sub::get_target_location(Location &loc) const
+{
+    return sub.wp_nav.is_active() && sub.wp_nav.get_wp_destination_loc(loc);
+}
+
 int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
 {
     return (int16_t)(sub.motors.get_throttle() * 100);
