@@ -96,6 +96,8 @@ public:
     bool                get_thrust(uint8_t motor_num, float& thr_out) const override;
 
     bool                get_raw_motor_throttle(uint8_t motor_num, float& thr_out) const override;
+    // no point checking for spoolup conditions until the motors are in a state ready to spoolup
+    bool                get_spoolup_ready() const override { return _spin_up_ratio >= 1.0; }
 
 #if HAL_LOGGING_ENABLED
     // 10hz logging of voltage scaling and max trust

@@ -123,6 +123,8 @@ public:
     // get motor interlock status.  true means motors run, false motors don't run
     bool                get_interlock() const { return _interlock; }
 
+    // no point checking for spoolup conditions until the motors are in a state ready to spoolup
+    virtual bool        get_spoolup_ready() const { return true; }
     // get/set spoolup block
     bool                get_spoolup_block() const { return _spoolup_block; }
     void                set_spoolup_block(bool set) { _spoolup_block = set; }
