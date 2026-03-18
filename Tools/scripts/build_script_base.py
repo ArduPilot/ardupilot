@@ -88,7 +88,7 @@ class BuildScriptBase:
                 path = pathlib.Path(self.tmpdir, f"process-failure-{int(time.time())}")
                 path.write_text(process_failure_content)
                 self.progress("Wrote process failure file (%s)" % path)
-            except Exception:
+            except Exception:  # noqa: BLE001 — best-effort debug-file write
                 self.progress("Writing process failure file failed")
             raise subprocess.CalledProcessError(
                 returncode, cmd_list)

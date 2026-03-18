@@ -294,7 +294,7 @@ class Telem(object):
             if self.port is not None:
                 try:
                     self.port.close() # might be reopening
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             self.port = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.port.connect(self.destination_address)
@@ -2490,7 +2490,7 @@ class TestSuite(abc.ABC):
                 pass
             except socket.error:
                 pass
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.progress("Got unexpected exception (%s)" % str(type(e)))
                 pass
 
@@ -3201,7 +3201,7 @@ class TestSuite(abc.ABC):
         self.stop_SITL()
         try:
             del self.valgrind_restart_customisations
-        except Exception:
+        except AttributeError:
             pass
         self.start_SITL(wipe=True)
         self.set_streamrate(self.sitl_streamrate())
@@ -3763,7 +3763,7 @@ class TestSuite(abc.ABC):
 
             self.run_cmd_enable_high_latency(False)
             self.assert_message_rate_hz("HIGH_LATENCY2", 5, mav=self.mav)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -8551,7 +8551,7 @@ class TestSuite(abc.ABC):
                 self.progress("Prearm bit never went true.  Attempting arm to elicit reason from autopilot")
                 try:
                     self.arm_vehicle()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
                 raise AutoTestTimeoutException("Prearm bit never went true")
             if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
@@ -9147,7 +9147,7 @@ Also, ignores heartbeats not from our target system'''
                 self.set_parameter("SIM_SPEEDUP", test.speedup)
 
             test_function(**test_kwargs)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
             # reset the message hooks; we've failed-via-exception and
@@ -9173,7 +9173,7 @@ Also, ignores heartbeats not from our target system'''
         try:
             self.wait_heartbeat()
             ardupilot_alive = True
-        except Exception:
+        except Exception:  # noqa: BLE001
             # process is dead
             self.progress("No heartbeat after test", send_statustext=False)
             self.dump_process_status(result)
@@ -9183,7 +9183,7 @@ Also, ignores heartbeats not from our target system'''
 
         try:
             self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e, send_statustext=False)
             passed = False
 
@@ -9239,7 +9239,7 @@ Also, ignores heartbeats not from our target system'''
             while len(self.contexts) > old_contexts_length:
                 try:
                     self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     self.print_exception_caught(e, send_statustext=False)
             self.progress("Done popping extra contexts")
 
@@ -10219,7 +10219,7 @@ Also, ignores heartbeats not from our target system'''
                 do_prep_mag_cal_test(mavproxy, curr_params)
                 do_test_mag_cal(mavproxy, curr_params, ntest_compass)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             ex = e
@@ -10580,7 +10580,7 @@ Also, ignores heartbeats not from our target system'''
             self.reboot_sitl()
             self.wait_ready_to_arm(timeout=60)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ex = e
 
         self.context_pop()
@@ -10626,7 +10626,7 @@ Also, ignores heartbeats not from our target system'''
                         raise NotAchievedException("Exceptionally low transfer rate (%u < %u)" % (rate, desired_rate))
             self.disarm_vehicle()
             mavproxy.send('repeat remove 0\n')
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             self.disarm_vehicle()
             ex = e
@@ -10710,7 +10710,7 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.send("log erase\n")
             mavproxy.expect("Chip erase complete")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         mavproxy.send("module unload log\n")
@@ -10741,7 +10741,7 @@ Also, ignores heartbeats not from our target system'''
                     m = mlog.recv_match()
                     if m is None:
                         break
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 raise NotAchievedException("Error reading log file %s: %s" % (logname, str(e)))
 
         herrors = 0
@@ -10821,7 +10821,7 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.send("log erase\n")
             mavproxy.expect("Chip erase complete")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -11309,7 +11309,7 @@ Also, ignores heartbeats not from our target system'''
                 self.set_message_rate_hz(message, rate)
             for message in messages:
                 self.assert_message_rate_hz(message, rate)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -11376,7 +11376,7 @@ Also, ignores heartbeats not from our target system'''
             if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
                 raise NotAchievedException("Getting rate of unsupported message is a failure")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -11530,7 +11530,7 @@ Also, ignores heartbeats not from our target system'''
             self.wait_statustext("Config error", wallclock_timeout=True)
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ex = e
 
         self.progress("Resetting SIM_BARO_COUNT")
@@ -12925,7 +12925,7 @@ switch value'''
             self.context_pop()
             self.set_parameter("AFS_TERMINATE", 0)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             ex = e
         try:
             self.do_fence_disable()
@@ -13084,7 +13084,7 @@ switch value'''
                             (v, pname, expected_v, error_pct))
                     else:
                         self.progress("Correct value %.4f for %s error %.2f%%" % (v, pname, error_pct))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         self.mavproxy_unload_module(mavproxy, "relay")
@@ -14459,7 +14459,7 @@ switch value'''
             self.progress("Writing vtx_unknown")
             crsf.write_data_id(crsf.dataid_vtx_unknown)
             self.delay_sim_time(5)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
@@ -14731,12 +14731,12 @@ switch value'''
                 try:
                     mavproxy.expect("No transfer in progress", timeout=1)
                     break
-                except Exception:
+                except Exception:  # noqa: BLE001
                     continue
             # terminate the connection, or it may still be in progress the next time an FTP is attempted:
             mavproxy.send("ftp cancel\n")
             mavproxy.expect("Terminated session")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -14764,7 +14764,7 @@ switch value'''
                 raise NotAchievedException("No directories?!")
             expected_line = " D %s" % some_directory
             mavproxy.expect(expected_line)  # one line from the ftp list output
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 

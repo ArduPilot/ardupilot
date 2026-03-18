@@ -375,7 +375,7 @@ if __name__ == '__main__':
 
 try:
     bisecter.run()
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print("Caught exception in bisect-helper: %s" % str(e))
     print(get_exception_stacktrace(e))
     sys.exit(129)  # should abort the bisect process

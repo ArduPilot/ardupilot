@@ -405,7 +405,7 @@ def main():
         update_parameter_documentation(doc_dict, args.target, args.sort)
         if args.verbose:
             print_read_only_params(doc_dict)
-    except Exception as exp:  # pylint: disable=W0718
+    except Exception as exp:  # pylint: disable=W0718  # noqa: BLE001
         logging.fatal(exp)
         exit(1)  # pylint: disable=R1722
 

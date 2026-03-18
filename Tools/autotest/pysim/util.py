@@ -315,11 +315,11 @@ def pexpect_close(p):
             time.sleep(0.05)
     try:
         p.close()
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
     try:
         p.close(force=True)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
     if p in close_list:
         close_list.remove(p)
@@ -335,7 +335,7 @@ def pexpect_drain(p):
     """Drain any pending input."""
     try:
         p.read_nonblocking(1000, timeout=0)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pass
 
 

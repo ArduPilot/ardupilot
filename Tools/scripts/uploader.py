@@ -712,7 +712,7 @@ class uploader(object):
             try:
                 report_crc = self.__recv_int()
                 break
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
 
         if time.time() >= deadline:
@@ -741,7 +741,7 @@ class uploader(object):
         else:
             try:
                 self.extf_maxsize = self.__getInfo(uploader.INFO_EXTF_SIZE)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 print("Could not get external flash size, assuming 0")
                 self.extf_maxsize = 0
                 self.__sync()
@@ -754,7 +754,7 @@ class uploader(object):
             # Only run if we are trying to identify the board
             try:
                 self.git_hash_bl = self.__getBootloaderSoftware()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 self.__sync()
 
     def dump_board_info(self):
@@ -786,7 +786,7 @@ class uploader(object):
                     x = x[::-1]  # reverse the bytes
                     print(binascii.hexlify(x).decode('Latin-1'), end='')  # show user
                 print('')
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # ignore bad character encodings
                 pass
 
@@ -901,7 +901,7 @@ class uploader(object):
             if len(ret) == 0:
                 return None
             return " or ".join(ret)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print("Failed to get name: %s" % str(e))
         return None
 
@@ -985,7 +985,7 @@ class uploader(object):
 
         try:
             self.port.baudrate = self.baudrate_flightstack[self.baudrate_flightstack_idx]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
         return True
@@ -1011,11 +1011,11 @@ class uploader(object):
             self.__send(uploader.NSH_REBOOT)
             self.port.flush()
             self.port.baudrate = self.baudrate_bootloader
-        except Exception:
+        except Exception:  # noqa: BLE001
             try:
                 self.port.flush()
                 self.port.baudrate = self.baudrate_bootloader
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
 
         return True
@@ -1089,7 +1089,7 @@ def find_bootloader(up, port):
             print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
             return True
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
         reboot_sent = up.send_reboot()
@@ -1204,7 +1204,7 @@ def main():
                                   args.force_erase,
                                   args.identify)
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     if not is_WSL and not is_WSL2 and "win32" not in _platform:
                         # open failed, WSL must cycle through all ttyS* ports quickly but rate limit everything else
                         print("Exception creating uploader: %s" % str(e))

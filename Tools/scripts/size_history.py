@@ -104,7 +104,7 @@ class SizeHistory(BuildScriptBase):
             from extract_features import ExtractFeatures
             ef = ExtractFeatures(elf_path)
             (features_in, features_not_in) = ef.extract()
-        except Exception as ex:
+        except Exception as ex:  # noqa: BLE001
             self.progress("Feature extraction failed: %s" % str(ex))
             features_in = set()
 

@@ -173,7 +173,7 @@ def cygwin_pidof(proc_name):
         if cmd == proc_name:
             try:
                 pid = int(line_split[0].strip())
-            except Exception:
+            except ValueError:
                 pid = int(line_split[1].strip())
             if pid not in pids:
                 pids.append(pid)
@@ -315,7 +315,7 @@ def kill_tasks():
             kill_tasks_psutil(victim_names)
         except ImportError:
             kill_tasks_pkill(victim_names)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         progress("kill_tasks failed: {}".format(str(e)))
 
 
@@ -516,7 +516,7 @@ def find_geocoder_location(locname):
     # Step 1: Attempt the lookup
     try:
         j = geocoder.osm(locname)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # Handle network/blocked errors (like 403)
         err_msg = str(e)
         if '403' in err_msg:
@@ -604,7 +604,7 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     try:
         p = subprocess.Popen(cmd, **kw)
         ret = os.waitpid(p.pid, 0)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print("[%s] An exception has occurred with command: '%s'" % (what, (' ').join(cmd)))
         print(e)
         sys.exit(1)
@@ -852,7 +852,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         # Parse start_time into a double precision number specifying seconds since 1900.
         try:
             start_time_UTC = time.mktime(datetime.datetime.strptime(cmd_opts.start_time, '%Y-%m-%d-%H:%M').timetuple())
-        except Exception:
+        except ValueError:
             print("Incorrect start time format - require YYYY-MM-DD-HH:MM (given %s)" % cmd_opts.start_time)
             sys.exit(1)
 

@@ -4594,7 +4594,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "New home not where it should be (dist=%f) (want=%s) (got=%s)" %
                     (delta, str(new_home), str(post_reboot_home)))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 

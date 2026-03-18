@@ -349,7 +349,7 @@ class ManifestGenerator():
             return
         try:
             dlist = os.listdir(dir)
-        except Exception:
+        except OSError:
             print("Error listing '%s'" % dir)
             return
         for platformdir in dlist:
@@ -364,12 +364,12 @@ class ManifestGenerator():
                 continue
             try:
                 git_sha = self.git_sha_from_git_version(git_version_txt)
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 print("Failed to parse %s" % git_version_txt, ex, file=sys.stderr)
                 continue
             try:
                 fwversion_str = self.fwversion_from_git_version(git_version_txt)
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 print("Failed to parse APMVERSION %s" % git_version_txt, ex, file=sys.stderr)
                 continue
 
@@ -388,7 +388,7 @@ class ManifestGenerator():
             except ValueError:
                 print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
                 continue
-            except Exception:
+            except OSError:
                 print("bad file %s" % firmware_version_file, file=sys.stderr)
                 # this exception is swallowed.... the current archive
                 # is incomplete.
@@ -551,7 +551,7 @@ class ManifestGenerator():
                 try:
                     (major, minor, patch, release_type) = self.parse_fw_version(
                         firmware["firmware-version"])
-                except Exception:
+                except ValueError:
                     print("Badly formed firmware-version.txt %s" % firmware["firmware-version"], file=sys.stderr)
                     continue
                 some_json["mav-firmware-version"] = ".".join([major,
