@@ -444,7 +444,8 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     switch (_frame.type) {
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
             // scale factors defined by TBS - TICKS_TO_US(x) ((x - 992) * 5 / 8 + 1500)
-            AP_CRSF_Protocol::decode_11bit_channels((const uint8_t*)(&_frame.payload), MAX_CHANNELS, _channels);
+            // The frame is defined as having 16 channels
+            decode_11bit_channels((const uint8_t*)(&_frame.payload), MIN(16, MAX_CHANNELS), _channels, 5U, 8U, 880U);
             _crsf_v3_active = false;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
