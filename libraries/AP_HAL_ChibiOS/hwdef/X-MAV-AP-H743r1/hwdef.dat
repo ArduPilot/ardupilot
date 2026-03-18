@@ -149,9 +149,6 @@ PC12 SPI3_MOSI SPI3
 PD4 FRAM_CS CS
 
 # barometers
-# Version1:
-BARO DPS310 I2C:0:0x76
-# Version2:
 BARO SPL06 I2C:0:0x76
 
 # SPI devices
