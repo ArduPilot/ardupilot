@@ -33,7 +33,7 @@ git bisect reset
 git bisect start
 git bisect bad
 git bisect good HEAD~1024
-time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test  # noqa
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test  # noqa: E501
 
 Work out who overflowed Omnbusf4pro:
 cp -a Tools Tools2
@@ -51,12 +51,12 @@ git bisect good $GOOD &&
 # Use a flapping test to work out which commit broke things.  The
 # "autotest-branch" is the branch containing the flapping test (which
 # may be master)
-rm /tmp/bisect-debug/*; git commit -m "stuff" -a ; cp Tools/autotest/bisect-helper.py /tmp; git bisect reset; git bisect start; git bisect bad d24e569b20; git bisect good 3f6fd49507f286ad8f6ccc9e29b110d5e9fc9207^
-time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Copter --autotest-test=Replay --autotest-branch=wip/bisection-using-flapping-test --autotest-test-passes=40 --autotest-failure-require-string="Mismatch in field XKF1.Pitch" --autotest-failure-ignore-string="HALSITL::SITL_State::_check_rc_input"
+rm /tmp/bisect-debug/*; git commit -m "stuff" -a ; cp Tools/autotest/bisect-helper.py /tmp; git bisect reset; git bisect start; git bisect bad d24e569b20; git bisect good 3f6fd49507f286ad8f6ccc9e29b110d5e9fc9207^  # noqa: E501
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Copter --autotest-test=Replay --autotest-branch=wip/bisection-using-flapping-test --autotest-test-passes=40 --autotest-failure-require-string="Mismatch in field XKF1.Pitch" --autotest-failure-ignore-string="HALSITL::SITL_State::_check_rc_input"  # noqa: E501
 
 AP_FLAKE8_CLEAN
 
-'''
+'''  # noqa:E501
 
 import optparse
 import os
