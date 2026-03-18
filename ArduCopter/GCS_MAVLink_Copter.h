@@ -28,6 +28,9 @@ protected:
     void send_attitude_target() override;
     bool get_target_location(Location &loc) const override;
     void send_position_target_local_ned() override;
+    #if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+        void send_orbit_execution_status();
+    #endif
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
     MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;

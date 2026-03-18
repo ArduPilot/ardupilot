@@ -13882,6 +13882,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
         self.progress("Clockwise orbit speed verified")
 
+        self.start_subtest("ORBIT_EXECUTION_STATUS wird gesendet")
+        self.set_message_rate_hz('ORBIT_EXECUTION_STATUS', 2)
+        m = self.assert_receive_message('ORBIT_EXECUTION_STATUS', timeout=10)
+        self.progress("ORBIT_EXECUTION_STATUS empfangen: radius=%.1f x=%d y=%d z=%.1f" %
+                      (m.radius, m.x, m.y, m.z))
+        if abs(m.radius - 10.0) > 2.0:
+            raise NotAchievedException(
+                "ORBIT_EXECUTION_STATUS radius %.1f != erwartet 10.0" % m.radius)
+        if m.x == 0 and m.y == 0:
+            raise NotAchievedException(
+                "ORBIT_EXECUTION_STATUS Mittelpunkt (0,0) ist ungültig")
+        self.progress("ORBIT_EXECUTION_STATUS Validierung erfolgreich")
+
         self.start_subtest("Orbit counter-clockwise around offset point")
         self.run_cmd_int(
             34,  # MAV_CMD_DO_ORBIT
