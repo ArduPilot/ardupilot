@@ -95,7 +95,7 @@ class HWDef:
         '''check if a string is an integer'''
         try:
             int(str)
-        except Exception:
+        except ValueError:
             return False
         return True
 
