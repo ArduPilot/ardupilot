@@ -333,9 +333,6 @@ private:
     bool variances_valid;
     uint32_t last_ekf_check_us;
 
-    // takeoff check
-    uint32_t takeoff_check_warning_ms;  // system time user was last warned of takeoff check failure
-
     // GCS selection
     GCS_Copter _gcs; // avoid using this; use gcs()
     GCS_Copter &gcs() { return _gcs; }
