@@ -90,7 +90,7 @@ void AP_VisualOdom_IntelT265::handle_pose_estimate(uint64_t remote_time_us, uint
 
 // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
 // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
-void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality)
+void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, int8_t quality)
 {
     // rotate velocity to align with vehicle
     Vector3f vel_corrected = vel;
@@ -110,7 +110,7 @@ void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_
     _last_update_ms = AP_HAL::millis();
 
 #if HAL_LOGGING_ENABLED
-    Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, reset_counter, !consume, _quality);
+    Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, _frontend.get_vel_noise(), reset_counter, !consume, _quality);
 #endif
 }
 

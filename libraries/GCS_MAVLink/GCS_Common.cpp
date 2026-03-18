@@ -4068,7 +4068,7 @@ void GCS_MAVLINK::handle_odometry(const mavlink_message_t &msg)
     // convert velocity vector from FRD to NED frame
     Vector3f vel{m.vx, m.vy, m.vz};
     vel = q * vel;
-    visual_odom->handle_vision_speed_estimate(m.time_usec, timestamp_ms, vel, m.reset_counter, m.quality);
+    visual_odom->handle_vision_speed_estimate(m.time_usec, timestamp_ms, vel, 0, m.reset_counter, m.quality);
 }
 
 // there are several messages which all have identical fields in them.
@@ -4137,7 +4137,11 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
     mavlink_msg_vision_speed_estimate_decode(&msg, &m);
     const Vector3f vel = {m.x, m.y, m.z};
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.usec, PAYLOAD_SIZE(chan, VISION_SPEED_ESTIMATE));
-    visual_odom->handle_vision_speed_estimate(m.usec, timestamp_ms, vel, m.reset_counter, 0);
+    float vel_err = 0;
+    if (!isnan(m.covariance[0])) {
+        vel_err = sqrtf(m.covariance[0]+m.covariance[4]+m.covariance[8]);
+    }
+    visual_odom->handle_vision_speed_estimate(m.usec, timestamp_ms, vel, vel_err, m.reset_counter, 0);
 }
 #endif  // HAL_VISUALODOM_ENABLED
 
