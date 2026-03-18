@@ -15,7 +15,7 @@
 
 ![SDH7V2](SDMODEL_H7V2.jpg)
 
-![SDH7V2](H7V1_0502.jpg)
+![SDH7V2](H7V2_0502.jpg)
 
 ## UART Mapping
 
