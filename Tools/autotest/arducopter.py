@@ -3265,7 +3265,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if ((flow_scalar_y > 30) or (flow_scalar_y < -30)):
                 raise NotAchievedException("FlowCal failed to set FLOW_FYSCALER correctly")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -4929,7 +4929,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_rc(2, 1500)
             self.do_RTL()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             self.disarm_vehicle(force=True)
             ex = e
@@ -5161,7 +5161,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if not self.current_onboard_log_contains_message("PL"):
                     raise NotAchievedException("Did not see expected PL message")
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.print_exception_caught(e)
                 ex = e
             self.reboot_sitl()
@@ -9103,7 +9103,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_rc(2, 1500)
             self.do_RTL()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
@@ -10366,7 +10366,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 )
                 try:
                     self.arm_vehicle()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             self.delay_sim_time(1)  # servo function maps only periodically updated
 #            self.send_debug_trap()
@@ -10394,7 +10394,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.delay_sim_time(0.1)
                 try:
                     self.wait_text("LandingGear: RETRACT", check_context=True, timeout=0.1)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     continue
                 self.progress("Retracted")
                 break
@@ -10415,13 +10415,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 )
                 try:
                     self.wait_text("LandingGear: DEPLOY", check_context=True, timeout=0.1)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     continue
                 self.progress("Deployed")
                 break
             self.disarm_vehicle()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         self.context_pop()
@@ -10596,7 +10596,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                                (expected_dist, rf.min_distance))
 
             self.context_pop()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -11733,7 +11733,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.assert_message_rate_hz("ATTITUDE", 20)
             self.assert_message_rate_hz("SCALED_PRESSURE", 5)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -12548,7 +12548,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
                                          landed_state=mavutil.mavlink.MAV_LANDED_STATE_IN_AIR, timeout=60)
             self.land_and_disarm()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
@@ -15496,7 +15496,7 @@ RTL_ALT_M 111
                 self.assert_receive_message('HEARTBEAT', mav=mav3, verbose=2)
                 self.drain_mav()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         finally:

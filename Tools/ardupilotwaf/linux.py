@@ -47,7 +47,7 @@ def configure(cfg):
 
     try:
         hwdef_obj = generate_hwdef_h(env)
-    except Exception:
+    except Exception:  # noqa: BLE001
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)

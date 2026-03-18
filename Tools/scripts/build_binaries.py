@@ -503,7 +503,7 @@ is bob we will attempt to checkout bob-AVR'''
                 if os.path.exists(ef_path):
                     try:
                         features_text = self.run_program("EF", [ef_path, bare_path], show_output=False)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         self.print_exception_caught(e)
                         self.progress("Failed to extract features")
                         pass
@@ -549,7 +549,7 @@ is bob we will attempt to checkout bob-AVR'''
                             self.progress("Writing (%s)" % features_filepath)
                             self.write_string_to_filepath(features_text, features_filepath)
                         shutil.copy(path, os.path.join(tdir, target_filename))
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         self.print_exception_caught(e)
                         self.progress("Failed to copy %s to %s: %s" % (path, tdir, str(e)))
                 # why is touching this important? -pb20170816
@@ -575,7 +575,7 @@ is bob we will attempt to checkout bob-AVR'''
     def get_exception_stacktrace(self, e):
         try:
             return self._get_exception_stacktrace(e)
-        except Exception:
+        except Exception:  # noqa: BLE001 — defensive wrapper, must not raise
             return "FAILED TO GET EXCEPTION STACKTRACE"
 
     def print_exception_caught(self, e, send_statustext=True):

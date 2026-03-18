@@ -727,7 +727,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 mavproxy.send('switch %u\n' % num)
                 self.wait_mode(expected)
             self.stop_mavproxy(mavproxy)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
 
@@ -1315,13 +1315,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.mav.mav.srcSystem = 1
                 self.arm_vehicle(timeout=5)
                 self.disarm_vehicle()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 comp_arm_exception = e
             self.mav.mav.srcSystem = old_srcSystem
             if comp_arm_exception is not None:
                 raise comp_arm_exception
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         self.mav.mav.srcSystem = old_srcSystem
@@ -4968,7 +4968,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_location(target, timeout=300)
             self.do_RTL()
             self.disarm_vehicle()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
         self.context_pop()

@@ -85,7 +85,7 @@ class AutoTestBalanceBot(AutoTestRover):
                 if delta > 5:
                     raise NotAchievedException("wheel distance incorrect")
             self.disarm_vehicle()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             self.disarm_vehicle()
