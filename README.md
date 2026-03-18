@@ -101,13 +101,13 @@ This repository also demonstrates how to properly debug SITL with JSON, which is
 **Configuration Notes**
 
 The -L BRGRBalloon parameter defines the vehicle spawn location and must exist in:
-
+```text
 locations.txt
-
+```
 Example entry:
-
+```text
 BRGRBalloon=40.269712,-73.769042,34000.0,0
-
+```
 The PLAV model (e.g., brgrBalloonDrop) must match your vehicle configuration.
 
 **WSL / Cross-Platform Notes**
