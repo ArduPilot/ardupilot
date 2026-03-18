@@ -882,7 +882,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
 bool Plane::set_target_location(const Location &target_loc)
 {
     Location loc{target_loc};
-    fix_terrain_WP(loc, __LINE__);
+    fix_terrain_WP(loc, __AP_LINE__);
 
     if (plane.control_mode != &plane.mode_guided) {
         // only accept position updates when in GUIDED mode
@@ -938,7 +938,7 @@ bool Plane::update_target_location(const Location &old_loc, const Location &new_
     }
     next_WP_loc = new_loc;
 
-    fix_terrain_WP(next_WP_loc, __LINE__);
+    fix_terrain_WP(next_WP_loc, __AP_LINE__);
 
 #if HAL_QUADPLANE_ENABLED
     if (control_mode == &mode_qland || control_mode == &mode_qloiter) {
