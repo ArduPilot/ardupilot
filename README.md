@@ -100,7 +100,7 @@ This repository also demonstrates how to properly debug SITL with JSON, which is
 
 **Configuration Notes**
 
-The -L BRGRBalloon parameter defines the vehicle spawn location and must exist in:
+The `-L BRGRBalloon` parameter defines the vehicle spawn location and must exist in:
 ```text
 locations.txt
 ```
