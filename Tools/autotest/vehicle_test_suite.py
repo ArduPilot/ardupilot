@@ -6964,13 +6964,10 @@ class TestSuite(abc.ABC):
     def get_distance(loc1, loc2):
         """Get ground distance between two locations."""
         return TestSuite.get_distance_accurate(loc1, loc2)
-        # dlat = loc2.lat - loc1.lat
-        # try:
-        #     dlong = loc2.lng - loc1.lng
-        # except AttributeError:
-        #     dlong = loc2.lon - loc1.lon
 
-        # return math.sqrt((dlat*dlat) + (dlong*dlong)*TestSuite.longitude_scale(loc2.lat)) * 1.113195e5
+    def location_from_utm_global_position_next_wp(self, m):
+        """Return the next waypoint in a UTM_GLOBAL_POSITION message as a Location."""
+        return mavutil.location(m.next_lat * 1e-7, m.next_lon * 1e-7, 0, 0)
 
     @staticmethod
     def get_distance_accurate(loc1, loc2):
@@ -7007,11 +7004,23 @@ class TestSuite(abc.ABC):
     @staticmethod
     def get_lat_attr(loc):
         '''return any found latitude attribute from loc'''
+        if hasattr(loc, 'get_type'):
+            msg_type = loc.get_type()
+            if msg_type == 'MISSION_ITEM_INT':
+                return loc.x
+            if msg_type == 'UTM_GLOBAL_POSITION':
+                return loc.next_lat
         return TestSuite.get_latlon_attr(loc, ["lat", "latitude"])
 
     @staticmethod
     def get_lon_attr(loc):
-        '''return any found latitude attribute from loc'''
+        '''return any found longitude attribute from loc'''
+        if hasattr(loc, 'get_type'):
+            msg_type = loc.get_type()
+            if msg_type == 'MISSION_ITEM_INT':
+                return loc.y
+            if msg_type == 'UTM_GLOBAL_POSITION':
+                return loc.next_lon
         return TestSuite.get_latlon_attr(loc, ["lng", "lon", "longitude"])
 
     @staticmethod
@@ -7026,14 +7035,6 @@ class TestSuite(abc.ABC):
         return TestSuite.get_distance_accurate(
             mavutil.location(loc1_lat*1e-7, loc1_lon*1e-7),
             mavutil.location(loc2_lat*1e-7, loc2_lon*1e-7))
-
-        # dlat = loc2_lat - loc1_lat
-        # dlong = loc2_lon - loc1_lon
-        #
-        # dlat /= 10000000.0
-        # dlong /= 10000000.0
-        #
-        # return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
 
     def bearing_to(self, loc):
         '''return bearing from here to location'''
