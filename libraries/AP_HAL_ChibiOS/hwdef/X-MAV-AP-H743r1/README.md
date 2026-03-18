@@ -16,7 +16,7 @@ It brings you ultimate performance, stability, and reliability in every aspect.
 - On-board sensors
 - Accel/Gyro: ICM-42688-P\*2(Version1), BMI270\*2(Version2)
 - Mag: QMC5883P
-- Barometer: DPS310(Version1),SPL06(Version2)
+- Barometer: SPL06
 
 ## Interfaces
 
