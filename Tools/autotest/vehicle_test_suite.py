@@ -46,11 +46,16 @@ from MAVProxy.modules.lib import mp_elevation
 from MAVProxy.modules.lib import mp_util
 from pymavlink import DFReader
 from pymavlink import mavextra
+from pymavlink import mavftp_op
 from pymavlink import mavparm
 from pymavlink import mavutil
 from pymavlink import mavwp
 from pymavlink import quaternion
 from pymavlink.generator import mavgen
+from pymavlink.mavftp import MAVFTP as MavFTP
+from pymavlink.mavftp import FtpError
+from pymavlink.mavftp import MAX_Payload as FTP_MAX_PAYLOAD
+from pymavlink.mavftp_op import FTP_OP
 from pymavlink.rotmat import Vector3
 
 from pysim import util
@@ -9488,7 +9493,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Ready to start testing!")
 
-    def upload_using_mission_protocol(self, mission_type, items):
+    def upload_using_mission_protocol(self, mission_type, items, verbose=True):
         '''mavlink2 required'''
         target_system = 1
         target_component = 1
@@ -9522,8 +9527,9 @@ Also, ignores heartbeats not from our target system'''
                     continue
                 raise NotAchievedException(f"Received unexpected mission ack {self.dump_message_verbose(m)}")
 
-            self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
-            self.progress("Item (%s)" % str(items[m.seq]))
+            if verbose:
+                self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
+                self.progress("Item (%s)" % str(items[m.seq]))
             if m.seq in sent:
                 self.progress("received duplicate request for item %u" % m.seq)
                 continue
@@ -14786,6 +14792,244 @@ switch value'''
 
         if ex is not None:
             raise ex
+
+    # build opcode value->name lookup from pymavlink constants
+    _ftp_opcode_names = {
+        v: k[3:]  # strip "OP_" prefix
+        for k, v in vars(mavftp_op).items()
+        if k.startswith('OP_')
+    }
+
+    def ftp_op_to_str(self, op):
+        '''format an FTP_OP as a human-readable string'''
+        opcode = op.opcode
+        op_name = self._ftp_opcode_names.get(opcode, str(opcode))
+        req_opcode = op.req_opcode
+        req_name = self._ftp_opcode_names.get(req_opcode, str(req_opcode))
+        payload = op.payload if op.payload else bytearray()
+        parts = [
+            f"seq={op.seq}",
+            f"op={op_name}",
+            f"sz={op.size}",
+            f"ofs={op.offset}",
+            f"bc={op.burst_complete}",
+        ]
+        if opcode in (mavftp_op.OP_Ack, mavftp_op.OP_Nack):
+            parts.append(f"req={req_name}")
+        if opcode == mavftp_op.OP_Ack \
+           and req_opcode in (mavftp_op.OP_OpenFileRO, mavftp_op.OP_OpenFileWO) \
+           and len(payload) >= 4:
+            file_sz = struct.unpack("<I", payload[:4])[0]
+            parts.append(f"fileSz={file_sz}")
+        if opcode == mavftp_op.OP_Ack \
+           and req_opcode == mavftp_op.OP_CalcFileCRC32 \
+           and len(payload) >= 4:
+            crc = struct.unpack("<I", payload[:4])[0]
+            parts.append(f"crc=0x{crc:08x}")
+        if opcode == mavftp_op.OP_Nack and len(payload) > 0:
+            err = payload[0]
+            try:
+                err_name = FtpError(err).name
+            except ValueError:
+                err_name = str(err)
+            parts.append(f"err={err_name}")
+            if len(payload) > 1:
+                parts.append(f"errNo={payload[1:].hex()}")
+        return " ".join(parts)
+
+    def ftp_send(self, op):
+        '''send an FTP operation via raw FILE_TRANSFER_PROTOCOL message'''
+        self.progress(f"FTP TX: {self.ftp_op_to_str(op)}")
+        payload = op.pack()
+        plen = len(payload)
+        if plen < 251:
+            payload.extend(bytearray([0] * (251 - plen)))
+        self.mav.mav.file_transfer_protocol_send(
+            0,  # target_network
+            self.sysid_thismav(),  # target_system
+            1,  # target_component
+            payload,
+        )
+
+    def ftp_recv(self, timeout=2):
+        '''receive an FTP response, return parsed FTP_OP or None'''
+        m = self.mav.recv_match(
+            type='FILE_TRANSFER_PROTOCOL',
+            blocking=True,
+            timeout=timeout,
+        )
+        if m is None:
+            self.progress("FTP RX: timeout")
+            return None
+        hdr = bytearray(m.payload[0:12])
+        (seq, session, opcode, size, req_opcode,
+         burst_complete, _pad, offset) = struct.unpack("<HBBBBBBI", hdr)
+        payload = bytearray(m.payload[12:])[:size]
+        op = FTP_OP(seq, session, opcode, size, req_opcode,
+                    burst_complete, offset, payload)
+        self.progress(f"FTP RX: {self.ftp_op_to_str(op)}")
+        return op
+
+    def ftp_burst_read(self, path):
+        '''burst-read a file via raw FTP, return (data, eof_nack)
+        where data is the received file content'''
+
+        # reset sessions
+        op = FTP_OP(
+            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to ResetSessions")
+        seq = reply.seq
+
+        # open file read-only
+        path_bytes = bytearray(path.encode('utf-8')) + bytearray([0])
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_OpenFileRO,
+            size=len(path_bytes), req_opcode=0, burst_complete=0,
+            offset=0, payload=path_bytes,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to OpenFileRO")
+        if reply.opcode != mavftp_op.OP_Ack:
+            raise NotAchievedException(f"OpenFileRO failed: opcode={reply.opcode}")
+        seq = reply.seq
+
+        # send burst read request
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_BurstReadFile,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+
+        # collect all burst responses until we get the EOF NAK
+        data = bytearray()
+        eof_nack = None
+        while True:
+            reply = self.ftp_recv(timeout=10)
+            if reply is None:
+                raise NotAchievedException("Timeout waiting for burst response")
+            if reply.opcode == mavftp_op.OP_Ack:
+                data.extend(reply.payload)
+            elif reply.opcode == mavftp_op.OP_Nack:
+                if reply.payload is not None and \
+                   len(reply.payload) > 0 and \
+                   reply.payload[0] == FtpError.EndOfFile:
+                    eof_nack = reply
+                    break
+                raise NotAchievedException(f"Unexpected NACK error: {reply.payload[0]}")
+
+        # terminate session
+        op = FTP_OP(
+            seq=eof_nack.seq, session=0,
+            opcode=mavftp_op.OP_TerminateSession,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+        self.ftp_recv(timeout=5)
+
+        return data, eof_nack
+
+    def verify_ftp_burst_eof(self, data, eof_nack, expected_size, label):
+        '''verify burst read EOF NAK is correct'''
+        if len(data) != expected_size:
+            raise NotAchievedException(f"{label}: data size mismatch: got {len(data)} expected {expected_size}")
+
+        if eof_nack.offset != expected_size:
+            raise NotAchievedException(f"{label}: EOF NACK offset wrong: got {eof_nack.offset} expected {expected_size}")
+
+        if eof_nack.burst_complete != 1:
+            raise NotAchievedException(f"{label}: EOF NACK burst_complete not set")
+
+        self.progress(f"{label}: OK ofs={eof_nack.offset} bc={eof_nack.burst_complete}")
+
+    def MAVFTPBurstEOFOffset(self):
+        '''test that FTP burst read EOF NAK has correct offset'''
+
+        burst_size = FTP_MAX_PAYLOAD
+
+        # Test cases around a file size which is an exact multiple of the
+        # burst size, as this is where off-by-one errors are most likely.
+        nominal_file_size = burst_size * 3
+        for file_size in [nominal_file_size - 1,
+                          nominal_file_size,
+                          nominal_file_size + 1]:
+            self.progress(f"Testing burst EOF offset with file_size={file_size}")
+
+            # create test file
+            test_path = "ftp_burst_test.dat"
+            test_data = (bytes(range(256)) * (file_size // 256) + bytes(range(file_size % 256)))
+            with open(test_path, "wb") as f:
+                f.write(test_data)
+
+            data, eof_nack = self.ftp_burst_read(test_path)
+            self.verify_ftp_burst_eof(data, eof_nack, file_size, f"file_size={file_size}")
+
+            if data != test_data:
+                raise NotAchievedException(f"file_size={file_size}: content mismatch")
+
+            os.unlink(test_path)
+
+    def MAVFTPBurstMissionDat(self):
+        '''test FTP burst read of mission.dat with exact-multiple file sizes'''
+
+        ITEM_SIZE = 38  # MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN
+        HEADER_SIZE = 10  # sizeof(struct header): 5 x uint16_t
+
+        burst_size = FTP_MAX_PAYLOAD
+
+        # 201 items gives file_size = 10 + 201*38 = 7648 = 32*239 exactly
+        exact_items = 201
+
+        for num_items in [exact_items - 1, exact_items, exact_items + 1]:
+            file_size = HEADER_SIZE + num_items * ITEM_SIZE
+            self.progress(
+                f"Testing mission.dat burst with {num_items} items "
+                f"(file_size={file_size}, mod {burst_size}={file_size % burst_size})")
+
+            items = []
+            for i in range(num_items):
+                items.append(
+                    mavutil.mavlink.MAVLink_mission_item_int_message(
+                        1, 1, i,
+                        mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                        mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                        0, 1,
+                        0, 0, 0, 0,
+                        int(-35.363262 * 1e7),
+                        int(149.165237 * 1e7),
+                        100,
+                        mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                    ))
+
+            self.upload_using_mission_protocol(
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                items,
+                verbose=False)
+
+            data, eof_nack = self.ftp_burst_read("@MISSION/mission.dat")
+            self.verify_ftp_burst_eof(data, eof_nack, file_size, f"mission.dat ({num_items} items)")
+
+    def MAVFTPParamPck(self):
+        '''download param.pck via FTP and verify burst mechanics and param count'''
+
+        self.progress("Downloading @PARAM/param.pck via FTP burst read")
+        data, eof_nack = self.ftp_burst_read("@PARAM/param.pck")
+        self.verify_ftp_burst_eof(data, eof_nack, len(data), "param.pck")
+
+        pdata = MavFTP.ftp_param_decode(bytes(data))
+        if pdata is None:
+            raise NotAchievedException("param.pck failed to decode")
+
+        self.progress(f"param.pck: {len(pdata.params)} params OK")
 
     def write_content_to_filepath(self, content, filepath):
         '''write biunary content to filepath'''
