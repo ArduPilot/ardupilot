@@ -69,9 +69,18 @@ Are compiled in code can be chagned preflight (config.h)
 
 ---
 
-## SITL Setup
+## SITL
 
-Our code works with Python Laptop Air Vehicles (PLAV) A 6 Degree-of-Freedom Flight Simulator written in Python with Real-Time Arduino Hardware in Loop Simulation. It is implemented with ArduPilot's SITL with JSON (https://ardupilot.org/dev/docs/sitl-with-JSON.html). Our implementation also helps elucidate how to debugg SITLE with JSON which isnt clearly elucidated in the dev docs.
+This project integrates with [Python Laptop Air Vehicles (PLAV)](https://github.com/adinkojic/PLAV), a 6 Degree-of-Freedom flight simulator written in Python with real-time hardware-in-the-loop support.
+
+It uses ArduPilot’s SITL with JSON interface:  
+https://ardupilot.org/dev/docs/sitl-with-JSON.html  
+
+This repository also demonstrates how to properly debug SITL with JSON, which is not clearly documented in the official ArduPilot developer docs.
+
+---
+
+### Running the Simulation
 
 1. **Start PLAV first**
    ```bash
@@ -80,18 +89,14 @@ Our code works with Python Laptop Air Vehicles (PLAV) A 6 Degree-of-Freedom Flig
   For more details, refer to the PLAV README.
 
 2. **Start ArduPilot SITL**
-
-    For debugging in VSCode:
+    - **For debugging in VSCode:**
+        - Press `F5` to launch the debugger
+        - `tasks.json` will automatically start SITL and attach GDB
     
-    Press F5 to launch the debugger
-    
-    tasks.json will automatically start SITL and attach GDB
-    
-    For a normal run (no debugger):
+    - **For a normal run (no debugger):**
     
     ```bash
     ../Tools/autotest/sim_vehicle.py -f JSON:127.0.0.1 --console --map -L BRGRBalloon
-    ```
 
 **Configuration Notes**
 
