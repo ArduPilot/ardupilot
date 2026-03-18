@@ -33,7 +33,7 @@ This repository contains modifications to **ArduPilot** to support **tri-fin con
 ---
 
 ## Repository Structure
-
+```text
 params/
 └── grid_fin_vehicle.param # Reference vehicle parameters
 ArduPlane/
@@ -42,7 +42,7 @@ ArduPlane/
 └── launch.json # SITL debugging config
 └── tasks.json # SITL tasks
 README.md
-
+```
 
 ---
 
@@ -55,7 +55,7 @@ Parameters:
 TRI_MIX_GAIN      = 1.0    # Overall tri-fin mixer gain
 TRI_TRIM_DZ       = 0.01   # Deadzone for trim (prevents servo chatter)
 ```
-Are configurable in flight (Prameters.ccp)
+Are configurable in flight (Parameters.ccp)
 
 Parameters:
 
@@ -71,15 +71,55 @@ Are compiled in code can be chagned preflight (config.h)
 
 ## SITL Setup
 
-This fork includes configurations for PLAV SITL for rapid testing/debugging:
+Our code works with Python Laptop Air Vehicles (PLAV) A 6 Degree-of-Freedom Flight Simulator written in Python with Real-Time Arduino Hardware in Loop Simulation. It is implemented with ArduPilot's SITL with JSON (https://ardupilot.org/dev/docs/sitl-with-JSON.html). Our implementation also helps elucidate how to debugg SITLE with JSON which isnt clearly elucidated in the dev docs.
 
-launch.json: Configures VSCode to launch PLAV SITL (self-implemented SITL connecting via UDP socket)
+1. **Start PLAV first**
+   ```bash
+   plav sitl-sim --noise --live brgrBalloonDrop
+   ```
+  For more details, refer to the PLAV README.
 
-tasks.json: Starts SITL in the background with console, map, and OSD output
+2. **Start ArduPilot SITL**
 
-"program": "${workspaceFolder}/build/sitl/bin/arduplane",
-"args": ["-S", "--model", "+", "--speedup", "1", "--slave", "0", "--sim-address=127.0.0.1", "-IO"]
-Changes From Upstream ArduPilot
+    For debugging in VSCode:
+    
+    Press F5 to launch the debugger
+    
+    tasks.json will automatically start SITL and attach GDB
+    
+    For a normal run (no debugger):
+    
+    ```bash
+    ../Tools/autotest/sim_vehicle.py -f JSON:127.0.0.1 --console --map -L BRGRBalloon
+    ```
+
+**Configuration Notes**
+
+The -L BRGRBalloon parameter defines the vehicle spawn location and must exist in:
+
+locations.txt
+
+Example entry:
+
+BRGRBalloon=40.269712,-73.769042,34000.0,0
+
+The PLAV model (e.g., brgrBalloonDrop) must match your vehicle configuration.
+
+**WSL / Cross-Platform Notes**
+
+When using WSL, PLAV may require binding to:
+```bash
+0.0.0.0
+```
+To find the Windows host IP from WSL:
+```bash
+ip route | awk '/^default/ {print $3}'
+```
+
+Use this IP when launching ArduPilot SITL (both manually and in the launch and task JSON for debugging):
+```bash
+sim_vehicle.py -f JSON:[WINDOWS_IP]
+```
 
 
 ## Example Use Case
