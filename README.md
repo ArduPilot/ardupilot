@@ -133,6 +133,10 @@ This fork is ideal for plane-like vehicles that use grid fins or multi-fin contr
 
 ## License
 
-This fork follows the same license as ArduPilot: GNU GPL v3.
+This fork follows the same license as ArduPilot: GNU General Public
+License, version 3.
 
-GPLv3 Overview
+- [Overview of license](https://ardupilot.org/dev/docs/license-gplv3.html)
+
+- [Full Text](https://github.com/ArduPilot/ardupilot/blob/master/COPYING.txt)
+
