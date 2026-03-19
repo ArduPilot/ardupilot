@@ -1,0 +1,54 @@
+# hwdef for fmuv3-hil
+# fmuv3 (Pixhawk1) variant configured for Hardware-In-the-Loop (HIL)
+# simulation with mavlink_xplane.py.
+#
+# HIL architecture:
+#   - HIL_SENSOR (MAVLink) injects gyro/accel/baro into sitl->state
+#     → AP_InertialSensor_SITL and AP_Baro_SITL read from sitl->state
+#   - GPS_INPUT (MAVLink) provides position/velocity from X-Plane
+#   - VISION_POSITION_ESTIMATE (MAVLink) provides attitude from X-Plane
+#   - EKF3 fuses all three; AHRS_EKF_TYPE=3 in defaults.parm
+#   - Safety switch disabled (servos output immediately on boot)
+#
+# Build:
+#   ./waf configure --board fmuv3-hil
+#   ./waf plane
+#
+# Default parameters (set automatically via defaults.parm embedded in firmware):
+#   AHRS_EKF_TYPE   3     EKF3 fusing SITL INS + GPS_INPUT + VISO
+#   GPS1_TYPE       14    GPS_INPUT via MAVLink
+#   VISO_TYPE       1     VISION_POSITION_ESTIMATE via MAVLink
+#   BRD_SAFETY_DEFLT 0   No safety switch required
+#   ARMING_SKIPCHK  -1    Skip all pre-arm checks during simulation
+
+include ../fmuv3/hwdef.dat
+
+# ── SITL framework ────────────────────────────────────────────────────────────
+# Enable AP_SIM_ENABLED=1 — activates:
+#   AP_InertialSensor_SITL  reads gyro/accel from sitl->state
+#   AP_Baro_SITL            reads altitude/airspeed from sitl->state
+#   handle_hil_sensor()     MAVLink handler that populates sitl->state
+#     from incoming HIL_SENSOR messages (implemented in GCS_Common.cpp)
+env SIM_ENABLED 1
+
+# Use NoVehicle (no-op physics model) so SIMState::update() does not run
+# a full flight-dynamics simulation on the MCU every scheduler loop.
+# Without this, SITL::Plane runs at 400Hz on the STM32 → watchdog reset.
+define AP_SIM_FRAME_CLASS NoVehicle
+define AP_SIM_FRAME_STRING "none"
+
+# Disable the file-replay INS backend (not needed for live HIL)
+define AP_SIM_INS_FILE_ENABLED 0
+
+# Re-enable the MAVLink GPS backend so GPS1_TYPE=14 (GPS_INPUT) is available.
+define AP_GPS_MAV_ENABLED 1
+
+# ── HIL overrides ────────────────────────────────────────────────────────────
+
+# Disable safety switch — outputs active immediately without pressing button
+undef HAL_HAVE_SAFETY_SWITCH
+define HAL_HAVE_SAFETY_SWITCH 0
+
+# Disable SD-card file logging — no SD card needed for HIL bench testing.
+# Prevents 'Failed to create log directory' warning on boot.
+define HAL_LOGGING_FILESYSTEM_ENABLED 0

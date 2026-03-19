@@ -1,0 +1,29 @@
+# Default parameters for fmuv3-hil (Hardware-In-the-Loop simulation)
+# These are loaded at boot as firmware defaults; user-saved params take precedence.
+
+# EKF: use EKF3, fusing real IMU + GPS_INPUT (accel/gyro/baro from HIL_SENSOR;
+# position/velocity/heading from GPS_INPUT)
+AHRS_EKF_TYPE 3
+
+# EKF3 yaw source: use GPS yaw (from GPS_INPUT yaw field) instead of compass.
+# Without this, EK3_SRC1_YAW defaults to 1 (magnetometer) and the GPS_INPUT
+# yaw is silently ignored, leaving heading driven by the bench compass.
+EK3_SRC1_YAW 2
+
+# GPS: accept GPS_INPUT MAVLink messages instead of serial GPS
+GPS1_TYPE 14
+
+# Vision: disabled — EKF3 uses GPS_INPUT for position/heading (EK3_SRC1_YAW=2).
+# Sending VISION_POSITION_ESTIMATE with position (0,0,0) confuses EKF3 velocity
+# fusion and causes wrong stabilize calculations.
+VISO_TYPE 0
+
+# Safety: no safety switch needed in simulation
+BRD_SAFETY_DEFLT 0
+
+# Arming: skip all pre-arm checks for simulation (-1 = skip all)
+ARMING_SKIPCHK -1
+
+# Logging: disabled — SD card not needed for HIL bench testing
+LOG_BITMASK 0
+LOG_BACKEND_TYPE 0

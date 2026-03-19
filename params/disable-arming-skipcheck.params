@@ -1,0 +1,10 @@
+# Onboard parameters
+#
+# Vehicle-Id	Component-Id	Name	Value	Type
+1	1	COMPASS_ENABLE	0	6
+1	1	ARSPD_TYPE	0	6
+1	1	GPS1_TYPE	14	6
+1	1	EK3_SRC1_POSXY	3	6
+1	1	EK3_SRC1_VELXY	3	6
+1	1	EK3_SRC1_POSZ	1	6
+1	1	EK3_SRC1_YAW	8	6

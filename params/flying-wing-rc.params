@@ -1,0 +1,55 @@
+# Flying Wing RC / Servo configuration
+# Elevon mixing is handled automatically by ArduPlane
+# when SERVO functions are set to elevon left/right.
+#
+# Adjust SERVO*_REVERSED and SERVO*_TRIM per your hardware.
+#
+# Vehicle-Id	Component-Id	Name	Value	Type
+
+# --- Servo output functions ---
+# Elevon left  (function 77)
+1	1	SERVO1_FUNCTION	77	6
+# Elevon right (function 78)
+1	1	SERVO2_FUNCTION	78	6
+# Throttle     (function 70)
+1	1	SERVO3_FUNCTION	70	6
+
+# --- Servo reversal (0=normal, 1=reversed) ---
+# Set to 1 if control surface moves the wrong direction
+1	1	SERVO1_REVERSED	0	6
+1	1	SERVO2_REVERSED	0	6
+
+# --- Servo trim (PWM centre, default 1500 µs) ---
+1	1	SERVO1_TRIM	1500	6
+1	1	SERVO2_TRIM	1500	6
+1	1	SERVO3_TRIM	1000	6
+
+# --- Servo travel (µs) ---
+1	1	SERVO1_MIN	1000	6
+1	1	SERVO1_MAX	2000	6
+1	1	SERVO2_MIN	1000	6
+1	1	SERVO2_MAX	2000	6
+1	1	SERVO3_MIN	1000	6
+1	1	SERVO3_MAX	2000	6
+
+# --- RC input channel mapping ---
+# Channel 1 = Roll, 2 = Pitch, 3 = Throttle, 4 = Yaw (unused)
+1	1	RCMAP_ROLL	1	6
+1	1	RCMAP_PITCH	2	6
+1	1	RCMAP_THROTTLE	3	6
+1	1	RCMAP_YAW	4	6
+
+# --- RC input range (µs) — adjust to match your transmitter ---
+1	1	RC1_MIN	1000	6
+1	1	RC1_MAX	2000	6
+1	1	RC1_TRIM	1500	6
+1	1	RC2_MIN	1000	6
+1	1	RC2_MAX	2000	6
+1	1	RC2_TRIM	1500	6
+1	1	RC3_MIN	1000	6
+1	1	RC3_MAX	2000	6
+1	1	RC3_TRIM	1000	6
+
+# --- Mixing gains ---
+# How much roll/pitch input contributes to elevon movement
+1	1	MIXING_GAIN	0.5	9

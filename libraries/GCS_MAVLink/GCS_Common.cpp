@@ -4484,9 +4484,34 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
 #if AP_GPS_ENABLED
     case MAVLINK_MSG_ID_GPS_RTCM_DATA:
-    case MAVLINK_MSG_ID_GPS_INPUT:
     case MAVLINK_MSG_ID_GPS_INJECT_DATA:
         AP::gps().handle_msg(chan, msg);
+        break;
+    case MAVLINK_MSG_ID_GPS_INPUT:
+        AP::gps().handle_msg(chan, msg);
+#if AP_SIM_ENABLED
+        {
+            // Mirror GPS_INPUT fields into sitl->state so that SIMState
+            // subsystems (set_height_agl, AP_AHRS_SIM) have valid position and
+            // velocity even when GPS is driven via AP_GPS_MAV rather than
+            // SIM_GPS serial output.
+            SITL::SIM *sitl = AP::sitl();
+            if (sitl != nullptr) {
+                mavlink_gps_input_t gps_pkt;
+                mavlink_msg_gps_input_decode(&msg, &gps_pkt);
+                sitl->state.latitude  = gps_pkt.lat * 1.0e-7;
+                sitl->state.longitude = gps_pkt.lon * 1.0e-7;
+                sitl->state.altitude  = gps_pkt.alt;
+                sitl->state.speedN    = gps_pkt.vn;
+                sitl->state.speedE    = gps_pkt.ve;
+                sitl->state.speedD    = gps_pkt.vd;
+                if (gps_pkt.yaw != 0) {
+                    // yaw field: centidegrees, 0 = unknown, 36000 = North
+                    sitl->state.yawDeg = gps_pkt.yaw * 0.01f;
+                }
+            }
+        }
+#endif
         break;
 #endif
 
@@ -4533,7 +4558,13 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 
     case MAVLINK_MSG_ID_DATA96:
         handle_data_packet(msg);
-        break;        
+        break;
+
+#if AP_SIM_ENABLED
+    case MAVLINK_MSG_ID_HIL_SENSOR:
+        handle_hil_sensor(msg);
+        break;
+#endif
 
 #if HAL_VISUALODOM_ENABLED
     case MAVLINK_MSG_ID_VISION_POSITION_DELTA:
@@ -4817,6 +4848,62 @@ void GCS_MAVLINK::send_banner()
 
 
 #if AP_SIM_ENABLED
+/*
+  handle HIL_SENSOR MAVLink message: inject gyro/accel/baro into the
+  SITL state so AP_InertialSensor_SITL and AP_Baro_SITL pick it up.
+  Enabled when firmware is built with env SIM_ENABLED 1 (AP_SIM_ENABLED).
+*/
+void GCS_MAVLINK::handle_hil_sensor(const mavlink_message_t &msg)
+{
+    SITL::SIM *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+
+    mavlink_hil_sensor_t pkt;
+    mavlink_msg_hil_sensor_decode(&msg, &pkt);
+
+    // accel (m/s²) — stored directly
+    sitl->state.xAccel = pkt.xacc;
+    sitl->state.yAccel = pkt.yacc;
+    sitl->state.zAccel = pkt.zacc;
+
+    // gyro (rad/s) — sitl_fdm stores deg/s
+    sitl->state.rollRate  = degrees(pkt.xgyro);
+    sitl->state.pitchRate = degrees(pkt.ygyro);
+    sitl->state.yawRate   = degrees(pkt.zgyro);
+
+    // baro — derive MSL altitude from absolute pressure via ISA model
+    // AP_Baro_SITL reads sitl->state.altitude
+    if (pkt.fields_updated & 0xE00) {   // abs_pressure | diff_pressure | pressure_alt
+        // use pressure_alt directly if provided
+        sitl->state.altitude = pkt.pressure_alt;
+        sitl->state.airspeed = sqrtf(MAX(2.0f * pkt.diff_pressure * 100.0f / 1.225f, 0.0f));
+        // AP_Baro_SITL corrects for wind pressure using velocity_air_bf.x (body-frame airspeed).
+        // For HIL we approximate: airspeed is predominantly along body X in level flight.
+        sitl->state.velocity_air_bf.x = sitl->state.airspeed;
+        sitl->state.velocity_air_bf.y = 0.0f;
+        sitl->state.velocity_air_bf.z = 0.0f;
+    }
+
+    // magnetometer (Gauss) — AP_Compass_SITL reads bodyMagField (mGauss)
+    if (pkt.fields_updated & 0x1C0) {   // xmag | ymag | zmag
+        sitl->state.bodyMagField.x = pkt.xmag * 1000.0f;
+        sitl->state.bodyMagField.y = pkt.ymag * 1000.0f;
+        sitl->state.bodyMagField.z = pkt.zmag * 1000.0f;
+    }
+
+    // simulation timestamp — used by SIMState subsystems (stop_clock)
+    sitl->state.timestamp_us = pkt.time_usec;
+
+    // Do NOT increment flightaxis_imu_frame_num.  Keeping it at 0 leaves
+    // AP_InertialSensor_SITL in the timer-driven path (1000 Hz), which reads
+    // sitl->state.xAccel/rollRate/… on every tick.  Switching to the frame
+    // path (frame_num > 0) would produce samples only at the HIL_SENSOR rate
+    // (50 Hz), causing wait_for_sample() to stall between frames and trigger
+    // the watchdog.
+}
+
 void GCS_MAVLINK::send_simstate() const
 {
     SITL::SIM *sitl = AP::sitl();

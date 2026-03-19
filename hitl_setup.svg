@@ -1,0 +1,265 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 540" width="820" height="540" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arr-yellow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f39c12"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arr-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+    </marker>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="wingGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#93c5fd"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f"/>
+      <stop offset="60%" style="stop-color:#1e3a5f"/>
+      <stop offset="60%" style="stop-color:#14532d"/>
+      <stop offset="100%" style="stop-color:#14532d"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="540" fill="url(#bgGrad)" rx="16"/>
+
+  <!-- Grid dots subtle background -->
+  <pattern id="dots" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+    <circle cx="1" cy="1" r="1" fill="#334155" opacity="0.5"/>
+  </pattern>
+  <rect width="820" height="540" fill="url(#dots)" rx="16"/>
+
+  <!-- Title -->
+  <text x="410" y="36" text-anchor="middle" font-size="19" font-weight="bold" fill="#e2e8f0" letter-spacing="0.5">HITL Physical Setup — FX-61 Phantom</text>
+  <line x1="80" y1="47" x2="740" y2="47" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- ============================================================ -->
+  <!-- RC TRANSMITTER  (centered at x=130)                          -->
+  <!-- ============================================================ -->
+
+  <!-- Antennas -->
+  <line x1="95" y1="80" x2="75" y2="42" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="75" cy="40" r="5" fill="#ef4444"/>
+  <line x1="175" y1="80" x2="195" y2="42" stroke="#64748b" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="195" cy="40" r="5" fill="#ef4444"/>
+
+  <!-- Body -->
+  <rect x="60" y="78" width="155" height="185" rx="12" fill="#1e293b" stroke="#475569" stroke-width="2" filter="url(#shadow)"/>
+
+  <!-- Screen -->
+  <rect x="74" y="90" width="127" height="80" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5"/>
+  <rect x="76" y="92" width="123" height="76" rx="5" fill="#1e3a5f"/>
+  <!-- Screen content -->
+  <text x="137" y="120" text-anchor="middle" font-size="13" fill="#93c5fd" font-weight="bold" font-family="monospace">RC TX</text>
+  <text x="137" y="137" text-anchor="middle" font-size="9" fill="#64748b" font-family="monospace">2.4 GHz  MODE 2</text>
+  <!-- Signal bars on screen -->
+  <rect x="90" y="152" width="5" height="8"  rx="1" fill="#10b981"/>
+  <rect x="98" y="148" width="5" height="12" rx="1" fill="#10b981"/>
+  <rect x="106" y="144" width="5" height="16" rx="1" fill="#10b981"/>
+  <rect x="114" y="156" width="5" height="4"  rx="1" fill="#334155"/>
+  <!-- Battery indicator -->
+  <rect x="158" y="152" width="32" height="10" rx="2" fill="#334155" stroke="#64748b" stroke-width="1"/>
+  <rect x="190" y="155" width="3" height="4" rx="1" fill="#64748b"/>
+  <rect x="159" y="153" width="24" height="8" rx="1" fill="#10b981"/>
+
+  <!-- Button row -->
+  <circle cx="95"  cy="185" r="6" fill="#ef4444" stroke="#fca5a5" stroke-width="1"/>
+  <circle cx="115" cy="185" r="6" fill="#10b981" stroke="#6ee7b7" stroke-width="1"/>
+  <circle cx="155" cy="185" r="6" fill="#f59e0b" stroke="#fcd34d" stroke-width="1"/>
+  <circle cx="175" cy="185" r="6" fill="#8b5cf6" stroke="#c4b5fd" stroke-width="1"/>
+
+  <!-- Gimbals -->
+  <circle cx="97"  cy="222" r="22" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+  <circle cx="97"  cy="222" r="14" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <circle cx="97"  cy="218" r="6"  fill="#3b82f6" filter="url(#glow)"/>
+
+  <circle cx="178" cy="222" r="22" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+  <circle cx="178" cy="222" r="14" fill="#1e293b" stroke="#334155" stroke-width="1"/>
+  <circle cx="175" cy="225" r="6"  fill="#3b82f6" filter="url(#glow)"/>
+
+  <!-- Label -->
+  <text x="137" y="285" text-anchor="middle" font-size="14" font-weight="bold" fill="#e2e8f0">RC Transmitter</text>
+  <text x="137" y="302" text-anchor="middle" font-size="11" fill="#64748b">2.4 GHz Telemetry</text>
+
+
+  <!-- ============================================================ -->
+  <!-- LAPTOP  (centered at x=665)                                  -->
+  <!-- ============================================================ -->
+
+  <!-- Screen lid -->
+  <rect x="545" y="72" width="240" height="160" rx="10" fill="#1e293b" stroke="#475569" stroke-width="2" filter="url(#shadow)"/>
+  <!-- Screen bezel inner -->
+  <rect x="554" y="80" width="222" height="145" rx="6" fill="url(#screenGrad)"/>
+
+  <!-- Sky scene -->
+  <rect x="554" y="80" width="222" height="87" rx="6" fill="#1e3a5f"/>
+  <!-- Horizon -->
+  <line x1="554" y1="167" x2="776" y2="167" stroke="#86efac" stroke-width="1" opacity="0.5"/>
+  <!-- Ground -->
+  <rect x="554" y="167" width="222" height="58" fill="#14532d" opacity="0.9"/>
+  <!-- Grid on ground (runway perspective) -->
+  <line x1="665" y1="167" x2="620" y2="225" stroke="#166534" stroke-width="1"/>
+  <line x1="665" y1="167" x2="710" y2="225" stroke="#166534" stroke-width="1"/>
+  <line x1="665" y1="167" x2="580" y2="225" stroke="#166534" stroke-width="1"/>
+  <line x1="665" y1="167" x2="750" y2="225" stroke="#166534" stroke-width="1"/>
+  <!-- Horizon line cross lines -->
+  <line x1="554" y1="190" x2="776" y2="190" stroke="#166534" stroke-width="0.8"/>
+  <line x1="554" y1="210" x2="776" y2="210" stroke="#166534" stroke-width="0.8"/>
+
+  <!-- Aircraft silhouette on screen -->
+  <g transform="translate(665,140)">
+    <path d="M0,-8 L-28,4 L-24,8 L0,2 L24,8 L28,4 Z" fill="#93c5fd" opacity="0.9"/>
+    <ellipse cx="0" cy="0" rx="5" ry="4" fill="#60a5fa"/>
+  </g>
+
+  <!-- X-Plane HUD overlay -->
+  <rect x="558" y="84" width="58" height="16" rx="3" fill="none" stroke="#86efac" stroke-width="1" opacity="0.8"/>
+  <text x="587" y="95" text-anchor="middle" font-size="7" fill="#86efac" font-family="monospace">X-Plane 11</text>
+  <!-- Altitude/speed readout -->
+  <rect x="724" y="95" width="45" height="28" rx="3" fill="#0f172a" opacity="0.8" stroke="#475569" stroke-width="1"/>
+  <text x="747" y="107" text-anchor="middle" font-size="7" fill="#86efac" font-family="monospace">ALT</text>
+  <text x="747" y="118" text-anchor="middle" font-size="8" fill="#86efac" font-family="monospace" font-weight="bold">738m</text>
+  <!-- Attitude indicator -->
+  <circle cx="665" cy="115" r="18" fill="none" stroke="#86efac" stroke-width="1" opacity="0.6"/>
+  <line x1="647" y1="115" x2="683" y2="115" stroke="#86efac" stroke-width="1" opacity="0.6"/>
+  <line x1="665" y1="97"  x2="665" y2="133" stroke="#86efac" stroke-width="0.8" opacity="0.4"/>
+
+  <!-- Keyboard base -->
+  <rect x="536" y="232" width="258" height="28" rx="0" fill="#1e293b" stroke="#475569" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="536" y="232" width="258" height="6" rx="0" fill="#334155"/>
+  <!-- Keyboard keys hint -->
+  <rect x="565" y="242" width="170" height="12" rx="3" fill="#0f172a" opacity="0.8"/>
+  <!-- Touchpad -->
+  <rect x="620" y="244" width="80" height="10" rx="2" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <!-- USB port -->
+  <rect x="538" y="240" width="14" height="9" rx="2" fill="#475569"/>
+  <rect x="540" y="241" width="10" height="7" rx="1" fill="#8b5cf6" opacity="0.8"/>
+
+  <!-- Software stack badges -->
+  <rect x="557" y="270" width="103" height="26" rx="6" fill="#1d4ed8" opacity="0.9"/>
+  <text x="609" y="287" text-anchor="middle" font-size="11" fill="white" font-weight="bold">MAVProxy</text>
+  <rect x="668" y="270" width="116" height="26" rx="6" fill="#0891b2" opacity="0.9"/>
+  <text x="726" y="287" text-anchor="middle" font-size="11" fill="white" font-weight="bold">QGroundControl</text>
+
+  <!-- Label -->
+  <text x="665" y="320" text-anchor="middle" font-size="14" font-weight="bold" fill="#e2e8f0">Laptop</text>
+  <text x="665" y="337" text-anchor="middle" font-size="11" fill="#64748b">macOS / Linux</text>
+
+
+  <!-- ============================================================ -->
+  <!-- FX-61 PHANTOM  (centered at 410, 448)                       -->
+  <!-- ============================================================ -->
+  <g transform="translate(410,448)">
+
+    <!-- Ground shadow -->
+    <ellipse cx="0" cy="46" rx="210" ry="14" fill="#000" opacity="0.35"/>
+
+    <!-- Winglets (vertical fins at tips) -->
+    <rect x="-220" y="0" width="10" height="22" rx="2" fill="#2563eb" transform="rotate(-8,-215,11)"/>
+    <rect x="210"  y="0" width="10" height="22" rx="2" fill="#2563eb" transform="rotate(8,215,11)"/>
+
+    <!-- Main flying wing -->
+    <path d="M0,-20 L-215,12 L-195,30 L-5,8 L5,8 L195,30 L215,12 Z" fill="url(#wingGrad)" stroke="#60a5fa" stroke-width="2" filter="url(#shadow)"/>
+    <!-- Wing panel highlight -->
+    <path d="M0,-14 L-150,10 L-132,22 L-4,5 L4,5 L132,22 L150,10 Z" fill="#bfdbfe" opacity="0.15"/>
+    <!-- Wing leading edge highlight -->
+    <path d="M0,-20 L-215,12" stroke="#bfdbfe" stroke-width="1" opacity="0.4"/>
+    <path d="M0,-20 L215,12"  stroke="#bfdbfe" stroke-width="1" opacity="0.4"/>
+
+    <!-- Center fuselage pod -->
+    <ellipse cx="0" cy="6" rx="34" ry="16" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+
+    <!-- Pixhawk FC chip -->
+    <rect x="-14" y="-4" width="28" height="19" rx="4" fill="#ef4444" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="0" y="6"  text-anchor="middle" font-size="6.5" fill="white" font-weight="bold" font-family="monospace">PX FC</text>
+    <text x="0" y="14" text-anchor="middle" font-size="5"   fill="#fca5a5" font-family="monospace">fmuv3-hil</text>
+    <!-- FC status LED -->
+    <circle cx="10" cy="-2" r="2.5" fill="#10b981" filter="url(#glow)"/>
+
+    <!-- RC Receiver module -->
+    <rect x="-72" y="-3" width="50" height="15" rx="4" fill="#10b981" stroke="#6ee7b7" stroke-width="1.5"/>
+    <text x="-47" y="8" text-anchor="middle" font-size="7" fill="#0f172a" font-weight="bold" font-family="monospace">RC RX</text>
+
+    <!-- SBUS/PPM connection arrow -->
+    <path d="M-22,4 L-16,4" stroke="#10b981" stroke-width="1.8" marker-end="url(#arr-green)"/>
+
+    <!-- Propeller disc (rear) -->
+    <ellipse cx="0" cy="25" rx="26" ry="6" fill="none" stroke="#475569" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.8"/>
+    <line x1="-26" y1="25" x2="26" y2="25" stroke="#475569" stroke-width="1" opacity="0.5"/>
+    <line x1="0" y1="19" x2="0" y2="31" stroke="#475569" stroke-width="1" opacity="0.5"/>
+
+    <!-- Internal component labels -->
+    <text x="-47" y="-10" text-anchor="middle" font-size="7.5" fill="#10b981" font-family="monospace">SBUS/PPM</text>
+    <path d="M-47,-7 L-47,-4" stroke="#10b981" stroke-width="1" stroke-dasharray="2,1"/>
+
+    <!-- Aircraft labels -->
+    <text x="0" y="60" text-anchor="middle" font-size="15" font-weight="bold" fill="#e2e8f0">FX-61 Phantom</text>
+    <text x="0" y="76" text-anchor="middle" font-size="11" fill="#64748b">Flying Wing  ·  ArduPlane fmuv3-hil</text>
+  </g>
+
+
+  <!-- ============================================================ -->
+  <!-- CONNECTION: RC TX → RC Receiver on FX-61  (radio, dashed)   -->
+  <!-- ============================================================ -->
+
+  <!-- Curved dashed path -->
+  <path d="M210,195 Q295,330 355,440" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="10,6" fill="none" marker-end="url(#arr-yellow)" opacity="0.95" filter="url(#glow)"/>
+
+  <!-- Radio wave arcs emanating from TX -->
+  <path d="M212,158 Q248,150 244,120" stroke="#f59e0b" stroke-width="2"   fill="none" opacity="0.80"/>
+  <path d="M224,156 Q270,143 265,108" stroke="#f59e0b" stroke-width="1.7" fill="none" opacity="0.55"/>
+  <path d="M236,154 Q292,136 287,97"  stroke="#f59e0b" stroke-width="1.4" fill="none" opacity="0.35"/>
+
+  <!-- Label badge -->
+  <rect x="240" y="315" width="115" height="26" rx="7" fill="#92400e" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="297" y="332" text-anchor="middle" font-size="12" font-weight="bold" fill="#fcd34d">2.4 GHz Radio</text>
+
+
+  <!-- ============================================================ -->
+  <!-- CONNECTION: Laptop USB → Pixhawk FC  (solid cable)          -->
+  <!-- ============================================================ -->
+
+  <path d="M608,256 Q530,350 424,436" stroke="#8b5cf6" stroke-width="3.5" fill="none" marker-end="url(#arr-purple)" filter="url(#glow)"/>
+  <!-- Cable sheen -->
+  <path d="M608,256 Q530,350 424,436" stroke="#c4b5fd" stroke-width="1" fill="none" opacity="0.35"/>
+
+  <!-- USB symbol at laptop end -->
+  <g transform="translate(608,246)">
+    <path d="M0,-10 L5,-3 L-5,-3 Z" fill="#8b5cf6"/>
+    <rect x="-1.5" y="-3" width="3" height="12" fill="#8b5cf6"/>
+    <rect x="-7" y="8"  width="5" height="4" rx="1" fill="#8b5cf6"/>
+    <rect x="2"  y="6"  width="4" height="4" rx="1" fill="#8b5cf6"/>
+  </g>
+
+  <!-- Label badge -->
+  <rect x="488" y="322" width="98" height="26" rx="7" fill="#4c1d95" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="537" y="339" text-anchor="middle" font-size="12" font-weight="bold" fill="#c4b5fd">USB Cable</text>
+
+
+  <!-- ============================================================ -->
+  <!-- LEGEND                                                       -->
+  <!-- ============================================================ -->
+  <rect x="28" y="498" width="764" height="32" rx="8" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+  <!-- Radio -->
+  <line x1="50" y1="514" x2="85" y2="514" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="8,5"/>
+  <text x="93" y="518" font-size="11" fill="#cbd5e1">2.4 GHz Radio  (RC control)</text>
+  <!-- USB -->
+  <line x1="280" y1="514" x2="315" y2="514" stroke="#8b5cf6" stroke-width="3.5"/>
+  <text x="323" y="518" font-size="11" fill="#cbd5e1">USB Cable  (MAVLink / HIL data)</text>
+  <!-- SBUS -->
+  <line x1="540" y1="514" x2="575" y2="514" stroke="#10b981" stroke-width="2" marker-end="url(#arr-green)"/>
+  <text x="583" y="518" font-size="11" fill="#cbd5e1">SBUS/PPM  (RC Receiver → FC)</text>
+
+</svg>
