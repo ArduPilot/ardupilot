@@ -20,7 +20,7 @@ The Flywoo GOKU F405 Pro is a flight controller produced by [Flywoo](https://fly
 
 ## Pinout
 
-![GOKU F405 Pro](GOKUF405Pro_Pinout.PNG "GOKU F405 Pro")
+![GOKU F405 Pro](GOKUF405Pro_Pinout.JPG "GOKU F405 Pro")
 
 ## UART Mapping
 
