@@ -14895,6 +14895,35 @@ RTL_ALT_M 111
         # Test done
         self.land_and_disarm()
 
+    def Scripting6DoFMotors(self):
+        '''test 6DoF scripting motor matrix'''
+        self.context_collect('STATUSTEXT')
+
+        self.set_parameters({
+            "FRAME_CLASS": 16,  # MOTOR_FRAME_6DOF_SCRIPTING
+            "SCR_ENABLE": 1,
+        })
+
+        self.install_example_script_context("Copter_Motors_6DoF.lua")
+        self.reboot_sitl()
+
+        self.wait_statustext("6DoF Copter quad scripting", timeout=30, check_context=True)
+        self.wait_ready_to_arm()
+
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 30, 30, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        num_wp = self.get_mission_count()
+        self.set_parameter("AUTO_OPTIONS", 3)
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.wait_waypoint(num_wp-1, num_wp-1, timeout=120)
+        self.wait_disarmed(timeout=60)
+
     def RTLYaw(self):
         '''test that vehicle yaws to original heading on RTL'''
         # 0 is WP_YAW_BEHAVIOR_NONE
@@ -16016,6 +16045,7 @@ return update, 1000
             self.TestTetherStuck,
             self.ScriptingFlipMode,
             self.ScriptingFlyVelocity,
+            self.Scripting6DoFMotors,
             self.EK3_EXT_NAV_vel_without_vert,
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
