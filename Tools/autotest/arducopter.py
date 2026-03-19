@@ -150,14 +150,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode(mode)
         if not self.armed():
             self.wait_ready_to_arm(require_absolute=require_absolute, timeout=timeout)
-            self.zero_throttle()
+            if mode != 'GUIDED':
+                self.zero_throttle()
             self.arm_vehicle()
         if mode == 'GUIDED':
             self.user_takeoff(alt_min=alt_min, timeout=timeout, max_err=max_err)
         else:
             self.set_rc(3, takeoff_throttle)
         self.wait_altitude(alt_min-1, alt_min+max_err, relative=True, timeout=timeout, minimum_duration=alt_minimum_duration)
-        self.hover()
+        if mode != 'GUIDED':
+            self.hover()
         self.progress("TAKEOFF COMPLETE")
 
     def land_and_disarm(self, timeout=60):
@@ -199,6 +201,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             4: 1500,
         })
         self.takeoff(alt_min=dAlt, mode='GUIDED')
+        self.hover()
         self.change_mode("ALT_HOLD")
 
         self.progress("Yaw to east")
@@ -845,6 +848,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("If you haven't taken off yet RC failure should be instant disarm")
         self.change_mode("STABILIZE")
         self.set_parameter("DISARM_DELAY", 0)
+        self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_parameter("SIM_RC_FAIL", 1)
         self.disarm_wait(timeout=1)
@@ -2275,9 +2279,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_fence_enabled()
 
         # Change to RC controlled mode
-        self.change_mode('LOITER')
-
         self.set_rc(3, 1800)
+        self.change_mode('LOITER')
 
         self.wait_mode('RTL', timeout=120)
 
@@ -2314,9 +2317,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_fence_enabled()
 
         # Change to RC controlled mode
-        self.change_mode('LOITER')
-
         self.set_rc(3, 1800)
+        self.change_mode('LOITER')
 
         self.wait_mode('RTL', timeout=120)
         # Assert fence is not healthy now that we are in RTL
@@ -12225,7 +12227,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def SMART_RTL_Repeat(self):
         '''Test whether Smart RTL catches the repeat'''
         self.takeoff(alt_min=10, mode='GUIDED')
-        self.set_rc(3, 1500)
+        self.hover()
         self.change_mode("CIRCLE")
         self.delay_sim_time(1300)
         self.change_mode("SMART_RTL")
@@ -14037,7 +14039,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "DISARM_DELAY": 0,
         })
         self.takeoff(2, mode='GUIDED')
-        self.set_rc(3, 1500)
+        self.hover()
         self.change_mode('LOITER')
         self.set_rc(3, 1300)
 
@@ -14050,7 +14052,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.zero_throttle()
         self.takeoff(2, mode='GUIDED')
-        self.set_rc(3, 1500)
+        self.hover()
         self.change_mode('LOITER')
         self.set_rc(3, 1300)
 
@@ -14081,6 +14083,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         attitudes.append(self.assert_receive_message('ATTITUDE'))
         self.set_rc(12, 1000)
 
+        self.hover()
         self.change_mode('LOITER')
         self.set_rc(1, 1000)
         self.set_rc(2, 1000)
@@ -14130,6 +14133,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode='GUIDED')
         here = self.mav.location()
         self.set_home(here)
+        self.hover()
         self.change_mode('LOITER')
         self.wait_altitude(here.alt-1, here.alt+1, minimum_duration=10)
         self.disarm_vehicle(force=True)
@@ -15331,6 +15335,17 @@ RTL_ALT_M 111
         self.arm_vehicle()
         self.wait_disarmed()
 
+    def RC_OPTIONS_1_FS_THR_ENABLE_0(self):
+        '''check behaviour with unusual RC parameters'''
+        self.set_parameters({
+            "RC_OPTIONS": 1,
+            "FS_THR_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode='GUIDED')
+        self.wait_yaw_speed(0, minimum_duration=10)
+        self.do_land()
+
     def WaitAndMaintainAttitude_RCFlight(self):
         '''just test WaitAndMaintainAttitude works'''
         WaitAndMaintainAttitude(self, 0, 0, epsilon=1).run()
@@ -16010,6 +16025,7 @@ return update, 1000
             self.AHRSOriginRecorded,
             self.TestTetherStuck,
             self.ScriptingFlipMode,
+            self.RC_OPTIONS_1_FS_THR_ENABLE_0,
             self.ScriptingFlyVelocity,
             self.EK3_EXT_NAV_vel_without_vert,
             self.CompassLearnCopyFromEKF,
