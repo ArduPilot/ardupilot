@@ -28,7 +28,7 @@ The KakuteH7-Wing is a flight controller produced by [Holybro](http://www.holybr
 
 ## Pinout
 
-![KakuteH7-Wing Board](KakuteH7-Wing-pinout.jpg "KakuteH7-Wing)
+![KakuteH7-Wing Board](KakuteH7-Wing-pinout.png "KakuteH7-Wing")
 
 ## UART Mapping
 

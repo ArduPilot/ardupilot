@@ -13,8 +13,8 @@ The Skystars H7HDv2 is a flight controller produced by [Skystars](http://www.sky
 
 ## Pinout
 
-![Skystars H7HDv2 Board](SkystarsH43v2.png "Skystars H7HDv2")
-![Skystars H7HDv2 Wiring](SkystarsWiring.png "Skystars H7HDv2 Wiring")
+![Skystars H7HDv2 Board](SkystarsH743v2.png "Skystars H7HDv2")
+![Skystars H7HDv2 Wiring](SkystarsWiring.jpg "Skystars H7HDv2 Wiring")
 
 ## UART Mapping
 
