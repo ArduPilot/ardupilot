@@ -19,13 +19,13 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 local UPDATE_INTERVAL_MS = 10           -- update at about 100hz
 
 -- prefix for all text messages:
-local TEXT_PREFIX_STR = "param-set"
+local TEXT_PREFIX_STR = "param-lockdown"
 
 --
 -- parameter setup
 --
 local PARAM_TABLE_KEY = 92
-local PARAM_TABLE_PREFIX = "PARAM_SET_"
+local PARAM_TABLE_PREFIX = "PARAM_LOCK_"
 assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 7), 'could not add param table')
 
 -- add a parameter and bind it to a variable
@@ -35,13 +35,13 @@ function bind_add_param(name, idx, default_value)
 end
 
 --[[
-  // @Param: PARAM_SET_ENABLE
-  // @DisplayName: Param Set enable
-  // @Description: Param Set enable
+  // @Param: PARAM_LOCK_ENAB
+  // @DisplayName: Param Lockdown enable
+  // @Description: Param Lockdown enable
   // @Values: 0:Disabled,1:Enabled
   // @User: Standard
 --]]
-local PARAM_SET_ENABLE = bind_add_param("ENABLE", 1, 1)
+local PARAM_LOCK_ENAB = bind_add_param("ENAB", 1, 1)
 
 -- initialize MAVLink rx with buffer depth and number of rx message IDs to register
 mavlink:init(5, 1)
@@ -119,7 +119,7 @@ end
 -- handle PARAM_SET message
 local parameters_which_can_be_set = {}
 parameters_which_can_be_set["MAV_OPTIONS"] = true
-parameters_which_can_be_set["PARAM_SET_ENABLE"] = true
+parameters_which_can_be_set["PARAM_LOCK_ENAB"] = true
 parameters_which_can_be_set["BATT_ARM_MAH"] = true
 parameters_which_can_be_set["BATT_ARM_VOLT"] = true
 parameters_which_can_be_set["BATT_CAPACITY"] = true
@@ -171,7 +171,7 @@ local function handle_param_set(name, value)
 end
 
 -- display welcome message
-gcs:send_text(MAV_SEVERITY.INFO, "param-set script loaded")
+gcs:send_text(MAV_SEVERITY.INFO, "param-lockdown script loaded")
 
 -- initialise our knowledge of the GCS's allow-set-parameters state.
 --   We do not want to fight over setting this GCS state via other
@@ -182,7 +182,7 @@ local gcs_allow_set = gcs:get_allow_param_set()
 -- update function to receive param_set messages and perhaps act on them
 local function update()
     -- return immediately if not enabled
-    if (PARAM_SET_ENABLE:get() <= 0) then
+    if (PARAM_LOCK_ENAB:get() <= 0) then
         -- this script is disabled, set allow-via-GCS (once):
         if not gcs_allow_set then
           gcs:set_allow_param_set(true)

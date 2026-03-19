@@ -1,8 +1,8 @@
-# Parameter Set Filter Script
+# Parameter Lockdown Script
 
 ## Description
 
-This Lua script adds a safty-focused layer to MAVLink parameter setting. When enabled, it intercepts all incoming `PARAM_SET` messages and only allows modification of a predefined whitelist of parameters.
+This Lua script adds a safety-focused layer to MAVLink parameter setting. When enabled, it intercepts all incoming `PARAM_SET` messages and only allows modification of a predefined whitelist of parameters.
 
 This is especially useful in scenarios where parameter integrity is critical (e.g., automated testing, payload-hosted GCS systems, or shared telemetry environments).
 
@@ -23,20 +23,20 @@ When enabled, the script disables ArduPilot's default GCS handling for parameter
 
 ## Parameters
 
-This script introduces a new parameter table named `PARAM_SET_`. It includes:
+This script introduces a new parameter table named `PARAM_LOCK_`. It includes:
 
 | Name              | Type   | Default | Description                            |
 |-------------------|--------|---------|----------------------------------------|
-| `ENABLE`          | `int`  | `1`     | Enables (1) or disables (0) the script |
+| `ENAB`            | `int`  | `1`     | Enables (1) or disables (0) the script |
 
-You can disable the script by setting `PARAM_SET_ENABLE = 0`. **Note:** disabling `SCR_ENABLE` while this script is actively blocking parameter sets is not recommended.
+You can disable the script by setting `PARAM_LOCK_ENAB = 0`. **Note:** disabling `SCR_ENABLE` while this script is actively blocking parameter sets is not recommended.
 
 ## Whitelisted Parameters
 
 Only the following parameters are allowed to be set when the script is enabled:
 
 - `MAV_OPTIONS`
-- `PARAM_SET_ENABLE`
+- `PARAM_LOCK_ENAB`
 - Battery parameters (e.g., `BATT_ARM_MAH`, `BATT_FS_CRT_ACT`, etc.)
 - `BRD_OPTIONS`
 - `COMPASS_USE3`
@@ -48,20 +48,20 @@ Only the following parameters are allowed to be set when the script is enabled:
 ## Usage
 
 1. Copy the script into the SD card's scripts directory.
-2. Ensure `SCR_ENABLE` and `PARAM_SET_ENABLE` are both set to `1`.
+2. Ensure `SCR_ENABLE` and `PARAM_LOCK_ENAB` are both set to `1`.
 3. Reboot the autopilot or reload the script if necessary.
 
 ## Logging & Debugging
 
 The script sends diagnostic messages to the GCS:
 
-- Allowed parameter updates show a `param set received` message.
+- Allowed parameter updates show a `param set applied` message.
 - Blocked updates show a `param set denied` message with the offending parameter name.
 
 Example output:
 
-[param-set] param set received
-[param-set] param set denied (LOG_BACKEND_TYPE)
+[param-lockdown] param set applied
+[param-lockdown] param set denied (LOG_BACKEND_TYPE)
 
 ## Limitations
 
