@@ -76,7 +76,7 @@ void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, ui
     // send velocity to EKF if quality OK
     bool consume = (_quality >= _frontend.get_quality_min());
     if (consume) {
-        vel_err = constrain_float(vel_err, _frontend.get_vel_noise(), 5.0f);
+        vel_err = fmaxf(vel_err, _frontend.get_vel_noise());
         AP::ahrs().writeExtNavVelData(vel, vel_err, time_ms, _frontend.get_delay_ms());
     }
 
