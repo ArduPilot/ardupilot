@@ -124,10 +124,6 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
         pos_control->NE_get_vel_pid().set_kI(tuning_value);
         break;
 
-    case TUNING_WP_SPEED:
-        wp_nav->set_speed_NE_cms(tuning_value);
-        break;
-
 #if MODE_ACRO_ENABLED || MODE_SPORT_ENABLED
     // Acro roll pitch rates
     case TUNING_ACRO_RP_RATE:
@@ -220,6 +216,10 @@ void Copter::tuning(const RC_Channel *tuning_ch, int8_t tuning_param, float tuni
 
     case TUNING_LOITER_MAX_XY_SPEED:
         loiter_nav->set_speed_max_NE_ms(tuning_value);
+        break;
+
+    case TUNING_WP_SPEED_MS:
+        flightmode->set_speed_NE_ms(tuning_value);
         break;
     }
 }

@@ -15,8 +15,6 @@ class AP_Compass_SITL : public AP_Compass_Backend {
 public:
     AP_Compass_SITL(uint8_t sitl_instance);
 
-    void read(void) override;
-
 private:
     SITL::SIM *_sitl;
 

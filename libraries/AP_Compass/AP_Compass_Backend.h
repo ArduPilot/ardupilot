@@ -42,7 +42,9 @@ public:
     virtual ~AP_Compass_Backend(void) {}
 
     // read sensor data
-    virtual void read(void) = 0;
+    virtual void read(void) {
+        drain_accumulated_samples();
+    }
 
     /*
       device driver IDs. These are used to fill in the devtype field

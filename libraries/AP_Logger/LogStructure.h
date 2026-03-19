@@ -876,6 +876,8 @@ struct PACKED log_VER {
 // @Description: Proportional/Integral/Derivative gain values for North/South velocity
 // @LoggerMessage: PIDE
 // @Description: Proportional/Integral/Derivative gain values for East/West velocity
+// @LoggerMessage: PIDW
+// @Description: Proportional/Integral/Derivative gain values for wheel rate
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
@@ -1245,6 +1247,8 @@ LOG_STRUCTURE_FROM_SERVO_TELEM \
       "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDE_MSG, sizeof(log_PID), \
       "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
+    { LOG_PIDW_MSG, sizeof(log_PID), \
+      "PIDW", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
 LOG_STRUCTURE_FROM_LANDING \
 LOG_STRUCTURE_FROM_INERTIALSENSOR \
 LOG_STRUCTURE_FROM_DAL \
@@ -1329,6 +1333,7 @@ enum LogMessages : uint8_t {
     LOG_PIDS_MSG,
     LOG_PIDN_MSG,
     LOG_PIDE_MSG,
+    LOG_PIDW_MSG,
     LOG_IDS_FROM_LANDING,
     LOG_MAG_MSG,
     LOG_ARSP_MSG,

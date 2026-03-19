@@ -11089,7 +11089,7 @@ Also, ignores heartbeats not from our target system'''
 
         dfreader = self.dfreader_for_current_onboard_log()
         types = set()
-        for (name, msgtype, l) in wants:
+        for (name, msgtype, _l) in wants:
             types.add(msgtype)
 
         while True:
@@ -11098,10 +11098,10 @@ Also, ignores heartbeats not from our target system'''
                 break
             wantscopy = copy.copy(wants)
             for want in wantscopy:
-                (name, msgtype, l) = want
+                (name, msgtype, want_l) = want
                 if m.get_type() != msgtype:
                     continue
-                if l(m):
+                if want_l(m):
                     self.progress("Found %s" % name)
                     wants.discard(want)
                     if len(wants) == 0:
@@ -14565,6 +14565,7 @@ switch value'''
                 raise NotAchievedException(f"gps type {name} misbehaving")
 
     def assert_gps_satellite_count(self, messagename, count):
+        self.drain_mav()
         m = self.assert_receive_message(messagename)
         if m.satellites_visible != count:
             raise NotAchievedException("Expected %u sats, got %u" %

@@ -1967,7 +1967,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 0,
             "FENCE_TYPE": 1,
-            "FENCE_ENABLE" : 1,
         })
 
         self.change_alt(10)
@@ -3088,6 +3087,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "SIM_FLOW_ENABLE": 1,
+            "SIM_FLOW_RND": 0.02,
             "FLOW_TYPE": 10,
         })
 
@@ -7040,6 +7040,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                        (tdelta, max_good_tdelta))
         self.progress("Vehicle returned")
 
+    def ThrowModeRPMMin(self):
+        '''Fly Throw Mode - with a minimum RPM set'''
+        self.ThrowModeRPMMin_main()
+        self.ThrowModeRPMMin_main()
+
+    def ThrowModeRPMMin_main(self):
+        # test boomerang mode:
+        self.progress("Throwing vehicle away")
+        self.set_parameters({
+            "THROW_NEXTMODE": 6,
+            "SIM_SHOVE_Z": -30,
+            "SIM_SHOVE_X": -20,
+            'TKOFF_RPM_MIN': 1000,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        tstart = self.get_sim_time()
+        self.wait_mode('RTL')
+        max_good_tdelta = 15
+        tdelta = self.get_sim_time() - tstart
+        self.progress("Vehicle in RTL")
+        self.wait_rtl_complete()
+        self.progress("Vehicle disarmed")
+        if tdelta > max_good_tdelta:
+            raise NotAchievedException("Took too long to enter RTL: %fs > %fs" %
+                                       (tdelta, max_good_tdelta))
+        self.progress("Vehicle returned")
+
     def hover_and_check_matched_frequency_with_fft_and_psd(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
                                                            reverse=None, takeoff=True, instance=0):
         '''Takeoff and hover, checking the noise against the provided db level and returning psd'''
@@ -10651,6 +10686,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             I2CDriverToTest("lightware_legacy16bit", 7, rngfnd_addr=0x66),
             I2CDriverToTest("tfs20l", 46, rngfnd_addr=0x10),
             I2CDriverToTest("TFMiniPlus", 25, rngfnd_addr=0x09),
+            I2CDriverToTest("TOFSenseF_I2C", 40, rngfnd_addr=0x08),
         ]
         while len(i2c_drivers):
             do_drivers = i2c_drivers[0:9]
@@ -12906,6 +12942,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''return list of all tests'''
         ret = ([
              self.ThrowMode,
+             self.ThrowModeRPMMin,
              self.BrakeMode,
              self.RecordThenPlayMission,
              self.ThrottleFailsafe,
@@ -13806,9 +13843,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test waypoint speed can be changed via Ch6 tuning knob'''
         self.set_parameters({
             "RC6_OPTION": 219,  # RC6 used for tuning
-            "TUNE": 10,  # 10 is waypoint speed
-            "TUNE_MIN": 0.02,  # 20cm/s
-            "TUNE_MAX": 1000,  # 10m/s
+            "TUNE": 61,  # 61 is waypoint speed (m/s)
+            "TUNE_MIN": 0.2, # 0.2m/s
+            "TUNE_MAX": 10,  # 10m/s
             "AUTO_OPTIONS": 3,
         })
         self.set_rc(6, 2000)

@@ -50,8 +50,6 @@ public:
 									 bool force_external,
                                      enum Rotation rotation);
 
-    void read() override;
-
     static constexpr const char *name = "QMC5883L";
 
 private:
