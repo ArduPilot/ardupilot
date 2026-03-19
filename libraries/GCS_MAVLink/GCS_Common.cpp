@@ -4056,7 +4056,7 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
 
     uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, GLOBAL_POSITION_SENSOR));
     // correct for time delay from measurement to transmission
-    timestamp_ms -= m.processing_time;
+    timestamp_ms -= m.processing_time / 1000;
 
     AP_AHRS &ahrs = AP::ahrs();
     ahrs.handle_external_position_estimate(loc, accuracy, timestamp_ms);
