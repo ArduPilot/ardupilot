@@ -27,3 +27,6 @@ ARMING_SKIPCHK -1
 # Logging: disabled — SD card not needed for HIL bench testing
 LOG_BITMASK 0
 LOG_BACKEND_TYPE 0
+LOG_DISARM 0
+SCHED_LOOP_RATE 100
+ARSPD_TYPE 100
