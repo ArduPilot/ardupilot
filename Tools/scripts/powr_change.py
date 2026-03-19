@@ -10,7 +10,7 @@ AP_FLAKE8_CLEAN
 
 import sys
 
-from bitmask_change import BitmaskChange
+import pymavlink.tools.mavbitmask_change
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -20,4 +20,4 @@ if __name__ == '__main__':
         ("POWR", "Flags"),
         ("POWR", "AccFlags", True),   # optional: not present in all firmware
     ]
-    BitmaskChange(sys.argv[1], fields).run()
+    pymavlink.tools.mavbitmask_change.BitmaskChange(sys.argv[1], fields).run()
