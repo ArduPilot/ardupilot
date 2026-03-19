@@ -1,0 +1,14 @@
+# Husein Sastranegara Airport (WICC), Bandung — Runway 13 threshold
+# Heading 131 deg (NW end, takeoff toward SE), elevation 738 m MSL
+SIM_OPOS_LAT  -6.900300
+SIM_OPOS_LNG  107.575200
+SIM_OPOS_ALT  738.0
+SIM_OPOS_HDG  131.0
+
+# Pass all 8 IOMCU servo/motor outputs through to real hardware
+# Bitmask: bit N enables channel N+1 (0-indexed). 255 = channels 1-8.
+SIM_OH_MASK   255
+
+# Require explicit arm command — do not auto-arm at startup
+ARMING_REQUIRE  1
+ARMING_SKIPCHK  0
