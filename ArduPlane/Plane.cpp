@@ -383,7 +383,7 @@ void Plane::one_second_loop()
     // changed. Update every 5s at most
     if (!arming.is_armed() &&
         gps.last_message_time_ms() - last_home_update_ms > 5000 &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        gps.status() >= AP_GPS_FixType::FIX_3D) {
             last_home_update_ms = gps.last_message_time_ms();
             update_home();
             
@@ -419,7 +419,7 @@ void Plane::airspeed_ratio_update(void)
         !ahrs.get_fly_forward() ||
         !is_flying() ||
         !airspeed.enabled() ||
-        gps.status() < AP_GPS::GPS_OK_FIX_3D ||
+        gps.status() < AP_GPS_FixType::FIX_3D ||
         gps.ground_speed() < 4) {
         // don't calibrate when not moving
         return;        
@@ -459,7 +459,7 @@ void Plane::update_GPS_50Hz(void)
 void Plane::update_GPS_10Hz(void)
 {
     static uint32_t last_gps_msg_ms;
-    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS_FixType::FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
         if (ground_start_count > 1) {
@@ -484,7 +484,7 @@ void Plane::update_GPS_10Hz(void)
 
         // update wind estimate
         ahrs.estimate_wind();
-    } else if (gps.status() < AP_GPS::GPS_OK_FIX_3D && ground_start_count != 0) {
+    } else if (gps.status() < AP_GPS_FixType::FIX_3D && ground_start_count != 0) {
         // lost 3D fix, start again
         ground_start_count = 5;
     }
@@ -601,7 +601,7 @@ void Plane::update_alt()
     Vector3f vel;
     if (ahrs.get_velocity_NED(vel)) {
         sink_rate = vel.z;
-    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.have_vertical_velocity()) {
+    } else if (gps.status() >= AP_GPS_FixType::FIX_3D && gps.have_vertical_velocity()) {
         sink_rate = gps.velocity().z;
     } else {
         sink_rate = -barometer.get_climb_rate();        
