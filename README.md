@@ -34,7 +34,7 @@ This repository contains modifications to **ArduPilot** to support **tri-fin con
 
 ## Repository Structure
 ```text
-params/
+brgr/
 └── grid_fin_vehicle.param # Reference vehicle parameters
 ArduPlane/
 └── servos.cpp # Tri-fin control implementation
