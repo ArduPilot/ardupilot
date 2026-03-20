@@ -111,7 +111,7 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
-    const uint8_t num_flight_modes = 6;
+    static constexpr uint8_t num_flight_modes = 6;
 
     // Arming/Disarming management class
     AP_Arming_Blimp arming;
