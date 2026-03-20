@@ -313,7 +313,7 @@ bool AP_GPS_NMEA::_term_complete()
                     state.ground_speed     = _new_speed*0.01f;
                     state.ground_course    = wrap_360(_new_course*0.01f);
                 }
-                if (state.status >= AP_GPS::GPS_OK_FIX_3D) {
+                if (state.status >= AP_GPS_FixType::FIX_3D) {
                     make_gps_time(_new_date, _new_time * 10);
                     if (_last_AGRICA_ms != 0) {
                         state.time_week_ms = _last_itow_ms;
@@ -337,28 +337,28 @@ bool AP_GPS_NMEA::_term_complete()
                 state.hdop          = _new_hdop;
                 switch(_new_quality_indicator) {
                 case 0: // Fix not available or invalid
-                    state.status = AP_GPS::NO_FIX;
+                    state.status = AP_GPS_FixType::NONE;
                     break;
                 case 1: // GPS SPS Mode, fix valid
-                    state.status = AP_GPS::GPS_OK_FIX_3D;
+                    state.status = AP_GPS_FixType::FIX_3D;
                     break;
                 case 2: // Differential GPS, SPS Mode, fix valid
-                    state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                    state.status = AP_GPS_FixType::DGPS;
                     break;
                 case 3: // GPS PPS Mode, fix valid
-                    state.status = AP_GPS::GPS_OK_FIX_3D;
+                    state.status = AP_GPS_FixType::FIX_3D;
                     break;
                 case 4: // Real Time Kinematic. System used in RTK mode with fixed integers
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                    state.status = AP_GPS_FixType::RTK_FIXED;
                     break;
                 case 5: // Float RTK. Satellite system used in RTK mode, floating integers
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    state.status = AP_GPS_FixType::RTK_FLOAT;
                     break;
                 case 6: // Estimated (dead reckoning) Mode
-                    state.status = AP_GPS::NO_FIX;
+                    state.status = AP_GPS_FixType::NONE;
                     break;
                 default://to maintain compatibility with MAV_GPS_INPUT and others
-                    state.status = AP_GPS::GPS_OK_FIX_3D;
+                    state.status = AP_GPS_FixType::FIX_3D;
                     break;
                 }
                 break;
