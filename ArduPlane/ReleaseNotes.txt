@@ -1,5 +1,37 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.7.0-beta2 21-Mar-2026
+
+Changes from 4.7.0-beta1
+
+1) Board specific changes
+
+- UAV-DEV GmbH Powermodule changes for production (@mirkix, PR:32417)
+- X-MAV_AP-H743r1 switch to SPL06 baro only (@TompsonTan, PR:32480)
+
+2) Driver changes
+
+- External AHRS variances used in arming checks and EKF failsafe (@oursland, PR:32364)
+- Precision landing ORIENT parameter only visible on Rover (@rmackay9, PR:32403)
+- RunCam parameter conversion fix (@IamPete1, PR:32428)
+- Trimble PX-1 GNSS-RTX-INS External AHRS support (@Ryanf55, PR:30232)
+
+3) Copter/Tradheli specific changes
+
+- Copter CTUN climb rate logging converted to m/s (@piVerified, PR:32474)
+- TradHeli attitude controller leaky-I term during power-off fixed (@Ferruccio1984, PR:32273)
+
+4) Plane specific changes
+
+- Throttle slew fixed during first takeoff (@IamPete1, PR:32381)
+- EXTENDED_SYS_STATE during AIRBRAKE fixed (@robertlong13, PR:32422)
+
+5) Scripting changes
+
+- param-set script renamed to param-lockdown (@rmackay9, PR:32489)
+- PlaneFollow scripting parameter case fixed (@timtuxworth, PR:32456)
+
+------------------------------------------------------------------
 Release 4.7.0-beta1 06-Mar-2026
 
 Changes from 4.6.3
