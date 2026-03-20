@@ -213,19 +213,19 @@ AP_GPS_GSOF::pack_state_data()
     state.num_sats = pos_time.num_sats;
 
     if ((pos_time.pos_flags1 & 1)) { // New position
-        state.status = AP_GPS::GPS_OK_FIX_3D;
+        state.status = AP_GPS_FixType::FIX_3D;
         if ((pos_time.pos_flags2 & 1)) { // Differential position 
-            state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+            state.status = AP_GPS_FixType::DGPS;
             if (pos_time.pos_flags2 & 2) { // Differential position method
                 if (pos_time.pos_flags2 & 4) {// Differential position method
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                    state.status = AP_GPS_FixType::RTK_FIXED;
                 } else {
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    state.status = AP_GPS_FixType::RTK_FLOAT;
                 }
             }
         }
     } else {
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
     }
 
     state.location.lat = (int32_t)(RAD_TO_DEG_DOUBLE * position.latitude_rad * (double)1e7);

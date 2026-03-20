@@ -508,38 +508,38 @@ AP_GPS_SBF::process_message(void)
         Debug("temp.Mode=0x%02x\n", (unsigned)temp.Mode);
         switch (temp.Mode & 15) {
             case 0: // no pvt
-                state.status = AP_GPS::NO_FIX;
+                state.status = AP_GPS_FixType::NONE;
                 break;
             case 1: // standalone
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS_FixType::FIX_3D;
                 break;
             case 2: // dgps
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS_FixType::DGPS;
                 break;
             case 3: // fixed location
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS_FixType::FIX_3D;
                 break;
             case 4: // rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                state.status = AP_GPS_FixType::RTK_FIXED;
                 break;
             case 5: // rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                state.status = AP_GPS_FixType::RTK_FLOAT;
                 break;
             case 6: // sbas
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS_FixType::DGPS;
                 break;
             case 7: // moving rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                state.status = AP_GPS_FixType::RTK_FIXED;
                 break;
             case 8: // moving rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                state.status = AP_GPS_FixType::RTK_FLOAT;
                 break;
         }
         
         if ((temp.Mode & 64) > 0) { // gps is in base mode
-            state.status = AP_GPS::NO_FIX;
+            state.status = AP_GPS_FixType::NONE;
         } else if ((temp.Mode & 128) > 0) { // gps only has 2d fix
-            state.status = AP_GPS::GPS_OK_FIX_2D;
+            state.status = AP_GPS_FixType::FIX_2D;
         }
                     
         return true;

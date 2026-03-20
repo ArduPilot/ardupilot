@@ -166,21 +166,21 @@ AP_GPS_ERB::_parse_gps(void)
               _buffer.stat.fix_type);
         if (_buffer.stat.fix_status & STAT_FIX_VALID) {
             if (_buffer.stat.fix_type == AP_GPS_ERB::FIX_FIX) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                next_fix = AP_GPS_FixType::RTK_FIXED;
             } else if (_buffer.stat.fix_type == AP_GPS_ERB::FIX_FLOAT) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                next_fix = AP_GPS_FixType::RTK_FLOAT;
             } else if (_buffer.stat.fix_type == AP_GPS_ERB::FIX_SINGLE) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D;
+                next_fix = AP_GPS_FixType::FIX_3D;
             } else {
-                next_fix = AP_GPS::NO_FIX;
-                state.status = AP_GPS::NO_FIX;
+                next_fix = AP_GPS_FixType::NONE;
+                state.status = AP_GPS_FixType::NONE;
             }
         } else {
-            next_fix = AP_GPS::NO_FIX;
-            state.status = AP_GPS::NO_FIX;
+            next_fix = AP_GPS_FixType::NONE;
+            state.status = AP_GPS_FixType::NONE;
         }
         state.num_sats = _buffer.stat.satellites;
-        if (next_fix >= AP_GPS::GPS_OK_FIX_3D) {
+        if (next_fix >= AP_GPS_FixType::FIX_3D) {
             // use the uart receive time to make packet timestamps more accurate
             set_uart_timestamp(_payload_length + sizeof(erb_header) + 2);
             state.last_gps_time_ms = AP_HAL::millis();
