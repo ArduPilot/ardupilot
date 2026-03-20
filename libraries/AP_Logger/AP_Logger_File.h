@@ -130,15 +130,15 @@ private:
     // corrupt filesystems which cause loss of data, failure to gather
     // data and failures-to-boot.
     uint32_t _free_space_last_check_time; // milliseconds
-    const uint32_t _free_space_check_interval = 1000UL; // milliseconds
+    static constexpr uint32_t _free_space_check_interval = 1000UL; // milliseconds
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    const uint32_t _free_space_min_avail = 1024 * 1024; // bytes
+    static constexpr uint32_t _free_space_min_avail = 1024 * 1024; // bytes
 #else
-    const uint32_t _free_space_min_avail = 1024 * 256; // bytes
+    static constexpr uint32_t _free_space_min_avail = 1024 * 256; // bytes
 #endif
 #else
-    const uint32_t _free_space_min_avail = 8388608; // bytes
+    static constexpr uint32_t _free_space_min_avail = 8388608; // bytes
 #endif
 
     // semaphore mediates access to the ringbuffer
