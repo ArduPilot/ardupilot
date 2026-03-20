@@ -65,7 +65,7 @@ private:
     void copy_variables_from_parameters();
 
     uint64_t last_flush_ms; // in terms of system uptime
-    const uint16_t flush_interval_ms = 30000;
+    static constexpr uint16_t flush_interval_ms = 30000;
 
     uint64_t _flying_ms;
     uint64_t _last_runtime_ms;
