@@ -76,11 +76,11 @@ LiPo batteries.
 
 The default battery parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 11
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 15 (CURR pin)
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.2
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 1 (will need to be adjusted for whichever current sensor is attached)
+BATT_MONITOR=4
+BATT_VOLT_PIN=11
+BATT_CURR_PIN=15
+BATT_VOLT_MULT=11.2
+BATT_AMP_PERVLT=1
 
 ## RSSI
 

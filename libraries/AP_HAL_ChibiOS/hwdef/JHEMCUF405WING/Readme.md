@@ -101,15 +101,11 @@ LiPo batteries.
 
 The correct battery setting parameters are set by default and are:
 
-:ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-
-:ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 10
-
-:ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 11
-
-:ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11.05
-
-:ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 50
+BATT_MONITOR=4
+BATT_VOLT_PIN=10
+BATT_CURR_PIN=11
+BATT_VOLT_MULT=11.05
+BATT_AMP_PERVLT=50
 
 ## Compass
 

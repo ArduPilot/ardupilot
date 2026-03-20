@@ -89,11 +89,11 @@ sensor can read up to 130 Amps. The voltage sensor can handle up to 12S LiPo bat
 
 The correct battery setting parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 11
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 10
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 16.0
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 83.3
+BATT_MONITOR=4
+BATT_VOLT_PIN=11
+BATT_CURR_PIN=10
+BATT_VOLT_MULT=16.0
+BATT_AMP_PERVLT=83.3
 
 ## RSSI
 

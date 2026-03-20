@@ -144,27 +144,16 @@ to use DShot.
 
 These should already be set by default. However, if lost or changed:
 
-Enable Battery monitor with these parameter settings :
+Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
-:ref:`BATT_MONITOR<BATT_MONITOR>` =4
-
-Then reboot.
-
-:ref:`BATT_VOLT_PIN<BATT_VOLT_PIN>` 2
-
-:ref:`BATT_CURR_PIN<BATT_CURR_PIN>` 3
-
-:ref:`BATT_VOLT_MULT<BATT_VOLT_MULT>` 18.0
-
-:ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` 24.0
-
-:ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN>` 14
-
-:ref:`BATT2_CURR_PIN<BATT2_CURR_PIN>` 13
-
-:ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT>` 18.0
-
-:ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` 24.0
+BATT_VOLT_PIN=2
+BATT_CURR_PIN=3
+BATT_VOLT_MULT=18.0
+BATT_AMP_PERVLT=24.0
+BATT2_VOLT_PIN=14
+BATT2_CURR_PIN=13
+BATT2_VOLT_MULT=18.0
+BATT2_AMP_PERVLT=24.0
 
 ## DroneCAN capability
 
