@@ -75,6 +75,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 | Name | Description | Default |
 | - | - | - |
 | DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
+| DDS_USE_NS | Set to 1 to include `v<MAV_SYSID>` in topic/service names | 0 |
 | SERIAL1_BAUD | The serial baud rate for DDS | 57 |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
 
