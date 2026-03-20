@@ -263,7 +263,7 @@ private:
 
     // maximum task slowdown compared to desired task rate before we
     // start giving extra time per loop
-    const uint8_t max_task_slowdown = 4;
+    static constexpr uint8_t max_task_slowdown = 4;
 
     // counters to handle dynamically adjusting extra loop time to
     // cope with low CPU conditions
