@@ -676,6 +676,7 @@ public:
         USE_CRSF_LQ_AS_RSSI     = (1U << 11), // returns CRSF link quality as RSSI value, instead of RSSI
         CRSF_FM_DISARM_STAR     = (1U << 12), // when disarmed, add a star at the end of the flight mode in CRSF telemetry
         ELRS_420KBAUD           = (1U << 13), // use 420kbaud for ELRS protocol
+        SIX_POS_RESET           = (1U << 14), // on regain of R/C input after 1 minute suppress mode switch
     };
 
     bool option_is_enabled(Option option) const {
@@ -794,6 +795,9 @@ private:
 
     // true if GCS is performing a RC calibration
     bool gcs_is_calibrating;
+
+    // see SIX_POS_RESET option
+    uint32_t last_mode_switch_read_ms;
 
 #if AP_SCRIPTING_ENABLED
     // bitmask of last aux function value, 2 bits per function
