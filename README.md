@@ -10,7 +10,7 @@ This repository contains modifications to **ArduPilot** to support **tri-fin con
 
 *This fork was developed with the BRGR high-altitude glider in mind.*  
 
-![BRGR Glider](path/to/brgr_glider_image.png)  
+![BRGR Glider](brgr/Images/brgr.png)  
 *Example vehicle that benefits from tri-fin control.*
 
 ---
