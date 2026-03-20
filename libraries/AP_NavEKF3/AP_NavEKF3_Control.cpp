@@ -478,9 +478,11 @@ void NavEKF3_core::setAidingMode()
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
                 }
                 // handle height reset as special case
-                hgtMea = -extNavDataDelayed.pos.z;
-                posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
-                ResetHeight();
+                if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
+                    hgtMea = -extNavDataDelayed.pos.z;
+                    posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    ResetHeight();
+                }
 #endif // EK3_FEATURE_EXTERNAL_NAV
             }
 
