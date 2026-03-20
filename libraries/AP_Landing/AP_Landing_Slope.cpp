@@ -37,7 +37,7 @@ void AP_Landing::type_slope_do_land(const AP_Mission::Mission_Command& cmd, cons
     // once landed, post some landing statistics to the GCS
     type_slope_flags.post_stats = false;
 
-    type_slope_stage = SlopeStage::NORMAL;
+    type_slope_stage = SlopeStage::NOT_STARTED;
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Landing approach start at %.1fm", (double)relative_altitude);
 }
 
@@ -61,7 +61,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     // adjust final landing parameters
 
     // determine stage
-    if (type_slope_stage == SlopeStage::NORMAL) {
+    if (type_slope_stage == SlopeStage::NOT_STARTED) {
         const bool heading_lined_up = abs(nav_controller->bearing_error_cd()) < 1000 && !nav_controller->data_is_stale();
         const bool on_flight_line = fabsf(nav_controller->crosstrack_error()) < 5.0f && !nav_controller->data_is_stale();
         const bool below_prev_WP = current_loc.alt < loc_alt_AMSL_cm(prev_WP_loc);
@@ -103,7 +103,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
         (!rangefinder_state_in_range && wp_proportion >= 1) ||
         probably_crashed) {
 
-        if (type_slope_stage != SlopeStage::FINAL) {
+        if (type_slope_stage != SlopeStage::FLARE) {
             type_slope_flags.post_stats = true;
             if (is_flying && (AP_HAL::millis()-last_flying_ms) > 3000) {
                 GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Flare crash detected: speed=%.1f", (double)gps.ground_speed());
@@ -114,7 +114,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
                                   (double)current_loc.get_distance(next_WP_loc));
             }
             
-            type_slope_stage = SlopeStage::FINAL;
+            type_slope_stage = SlopeStage::FLARE;
 
 #if AP_LANDINGGEAR_ENABLED
             // Check if the landing gear was deployed before landing
@@ -162,12 +162,12 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
     }
 
     // check if we should auto-disarm after a confirmed landing
-    if (type_slope_stage == SlopeStage::FINAL) {
+    if (type_slope_stage == SlopeStage::FLARE) {
         disarm_if_autoland_complete_fn();
     }
 
     if (mission.continue_after_land() &&
-        type_slope_stage == SlopeStage::FINAL &&
+        type_slope_stage == SlopeStage::FLARE &&
         gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
         gps.ground_speed() < 1) {
         /*
@@ -357,13 +357,13 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
         target_airspeed_cm = 100 * 0.5 * (aparm.airspeed_cruise + aparm.airspeed_min);
     }
     switch (type_slope_stage) {
-    case SlopeStage::NORMAL:
+    case SlopeStage::NOT_STARTED:
         target_airspeed_cm = aparm.airspeed_cruise*100;
         break;
     case SlopeStage::APPROACH:
         break;
     case SlopeStage::PREFLARE:
-    case SlopeStage::FINAL:
+    case SlopeStage::FLARE:
         if (pre_flare_airspeed > 0) {
             // if we just preflared then continue using the pre-flare airspeed during final flare
             target_airspeed_cm = pre_flare_airspeed * 100;
@@ -383,7 +383,7 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
 
 int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)
 {
-    if (type_slope_stage == SlopeStage::FINAL) {
+    if (type_slope_stage == SlopeStage::FLARE) {
         return constrain_int32(desired_roll_cd, level_roll_limit_cd * -1, level_roll_limit_cd);
     } else {
         return desired_roll_cd;
@@ -392,13 +392,13 @@ int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, con
 
 bool AP_Landing::type_slope_is_flaring(void) const
 {
-    return (type_slope_stage == SlopeStage::FINAL);
+    return (type_slope_stage == SlopeStage::FLARE);
 }
 
 bool AP_Landing::type_slope_is_on_final(void) const
 {
     return (type_slope_stage == SlopeStage::PREFLARE ||
-            type_slope_stage == SlopeStage::FINAL);
+            type_slope_stage == SlopeStage::FLARE);
 }
 
 bool AP_Landing::type_slope_is_on_approach(void) const
@@ -414,7 +414,7 @@ bool AP_Landing::type_slope_is_expecting_impact(void) const
 
 bool AP_Landing::type_slope_is_complete(void) const
 {
-    return (type_slope_stage == SlopeStage::FINAL);
+    return (type_slope_stage == SlopeStage::FLARE);
 }
 
 #if HAL_LOGGING_ENABLED
@@ -444,5 +444,5 @@ void AP_Landing::type_slope_log(void) const
 
 bool AP_Landing::type_slope_is_throttle_suppressed(void) const
 {
-    return type_slope_stage == SlopeStage::FINAL;
+    return type_slope_stage == SlopeStage::FLARE;
 }
