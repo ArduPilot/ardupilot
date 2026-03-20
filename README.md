@@ -1,4 +1,4 @@
-# ArduPilot Grid Fin Control Fork
+# ArduPilot Fin Control Fork
 
 [![Discord](https://img.shields.io/discord/674039678562861068.svg)](https://ardupilot.org/discord)  
 
@@ -8,10 +8,13 @@ This repository contains modifications to **ArduPilot** to support **tri-fin con
 
 ## BRGR Glider Example
 
-*This fork was developed with the BRGR high-altitude glider in mind.*  
 
-![BRGR Glider](brgr/Images/brgr.png)  
-*Example vehicle that benefits from tri-fin control.*
+This fork was developed with the BRGR high-altitude glider in mind.
+
+<p align="center">
+  <img src="brgr/images/brgr.png" width="400"/>
+</p>
+<p align="center"><em>Example vehicle that benefits from tri-fin control.</em></p>
 
 ---
 
@@ -65,7 +68,9 @@ TRI_FIN2_AZIMUTH  = 210°
 TRI_FIN3_AZIMUTH  = 330°
 ```
 
-Are compiled in code can be chagned preflight (config.h)
+Are compiled in code and can be changed preflight (`config.h`).
+
+<p align="center"> <img src="brgr/images/FinAzimuth.png" width="400"/> </p> <p align="center"><em>Fin azimuth definitions in the Y–Z plane (clockwise from +Y).</em></p>
 
 ---
 
