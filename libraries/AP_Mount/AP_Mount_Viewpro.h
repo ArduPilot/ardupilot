@@ -384,7 +384,7 @@ private:
     // internal variables
     uint8_t _msg_buff[AP_MOUNT_VIEWPRO_PACKETLEN_MAX];  // buffer holding latest bytes from gimbal
     uint8_t _msg_buff_len;                          // number of bytes held in msg buff
-    const uint8_t _msg_buff_data_start = 2;         // data starts at this byte of _msg_buff
+    static constexpr uint8_t _msg_buff_data_start = 2;         // data starts at this byte of _msg_buff
 
     // parser state and unpacked fields
     struct {

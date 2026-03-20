@@ -324,7 +324,7 @@ private:
     // buffer holding bytes from latest packet.  This is only used to calculate the crc
     uint8_t _msg_buff[AP_MOUNT_SIYI_PACKETLEN_MAX];
     uint8_t _msg_buff_len;
-    const uint8_t _msg_buff_data_start = 8;         // data starts at this byte of _msg_buff
+    static constexpr uint8_t _msg_buff_data_start = 8;         // data starts at this byte of _msg_buff
 
     // parser state and unpacked fields
     struct PACKED {
