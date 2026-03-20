@@ -38,6 +38,9 @@
 #if AP_DDS_NEEDS_TWIST
 #include "geometry_msgs/msg/TwistStamped.h"
 #endif // AP_DDS_NEEDS_TWIST
+#if AP_DDS_ODOMETRY_PUB_ENABLED
+#include "nav_msgs/msg/Odometry.h"
+#endif // AP_DDS_ODOMETRY_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 #include "geographic_msgs/msg/GeoPointStamped.h"
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
@@ -154,6 +157,15 @@ private:
     void write_tx_local_velocity_topic();
     static void update_topic(geometry_msgs_msg_TwistStamped& msg);
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+
+#if AP_DDS_ODOMETRY_PUB_ENABLED
+    nav_msgs_msg_Odometry odometry_topic;
+    // The last ms timestamp AP_DDS wrote an Odometry message
+    uint64_t last_odometry_time_ms;
+    //! @brief Serialize the current odometry and publish to the IO stream(s)
+    void write_odometry_topic();
+    static void update_topic(nav_msgs_msg_Odometry& msg);
+#endif // AP_DDS_ODOMETRY_PUB_ENABLED
 
 #if AP_DDS_AIRSPEED_PUB_ENABLED
     ardupilot_msgs_msg_Airspeed tx_local_airspeed_topic;
