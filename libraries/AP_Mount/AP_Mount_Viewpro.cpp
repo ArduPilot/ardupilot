@@ -237,7 +237,8 @@ void AP_Mount_Viewpro::process_packet()
         }
         case CommConfigCmd::QUERY_MODEL:
             // gimbal model, length is 10 bytes
-            strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
+            memset(_model_name, '\0', sizeof(_model_name));
+            memcpy(_model_name, &_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
             _got_model_name = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
             break;
