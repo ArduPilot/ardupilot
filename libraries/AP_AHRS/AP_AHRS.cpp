@@ -1030,7 +1030,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
     if (_should_use_airspeed_sensor(idx)) {
         airspeed_ret = AP::airspeed()->get_airspeed(idx);
 
-        if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+        if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
             // constrain the airspeed by the ground speed
             // and AHRS_WIND_MAX
             const float gnd_speed = AP::gps().ground_speed();
@@ -1976,7 +1976,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
 #if AP_GPS_ENABLED
         const auto &gps = AP::gps();
         if (_gps_use == GPSUse::EnableWithHeight &&
-            gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+            gps.status() >= AP_GPS_FixType::FIX_3D) {
             posD = (_home.alt - gps.location().alt) * 0.01;
             return;
         }
@@ -2155,7 +2155,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         if (hal.util->get_soft_armed() &&
             (_gps_use != GPSUse::Disable) &&
             should_use_gps &&
-            AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
+            AP::gps().status() >= AP_GPS_FixType::FIX_3D &&
             (!filt_state.flags.using_gps || !filt_state.flags.horiz_pos_abs)) {
             /*
                If the EKF is not fusing GPS or doesn't have a 2D fix and we have a 3D GPS lock,
@@ -2183,7 +2183,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         if (!filt_state.flags.horiz_vel ||
             (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
             if ((!AP::compass().use_for_yaw()) &&
-                AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
+                AP::gps().status() >= AP_GPS_FixType::FIX_3D &&
                 AP::gps().ground_speed() < 2) {
                 /*
                   special handling for non-compass mode when sitting
