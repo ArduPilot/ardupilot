@@ -106,11 +106,11 @@ Any UART can be used for RC system connections in ArduPilot also, and is compati
 
 The default battery parameters for use with a digital power module (with INA2xx) connected to Power1 port:
 
-- :ref:`BATT_I2C_BUS<BATT_I2C_BUS>` = 1
-- :ref:`BATT_I2C_ADDR<BATT_I2C_ADDR>` = 0
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 21
+BATT_I2C_BUS=1
+BATT_I2C_ADDR=0
+BATT_MONITOR=21
 
-For use with Power2 port update :ref:`BATT_I2C_BUS<BATT_I2C_BUS>` = 2
+For use with Power2 port update BATT_I2C_BUS = 2
 
 ## Compass
 

@@ -91,21 +91,14 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 ## Battery Monitor Configuration
 
-These settings are set as defaults when the firmware is loaded (except :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
+These settings are set as defaults when the firmware is loaded (except `BATT_AMP_PERVLT` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
 
-Enable Battery monitor.
+Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
-:ref:`BATT_MONITOR<BATT_MONITOR>` =4
-
-Then reboot.
-
-:ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 10
-
-:ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 11
-
-:ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11
-
-:ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 30
+BATT_VOLT_PIN=10
+BATT_CURR_PIN=11
+BATT_VOLT_MULT=11
+BATT_AMP_PERVLT=30
 
 ## Connecting a GPS/Compass module
 
