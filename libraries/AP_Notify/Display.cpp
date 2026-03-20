@@ -534,25 +534,25 @@ void Display::update_gps(uint8_t r)
     char msg [DISPLAY_MESSAGE_SIZE];
     const char * fixname;
     switch  (AP_Notify::flags.gps_status) {
-        case AP_GPS::NO_GPS:
+        case AP_GPS_FixType::NO_GPS:
             fixname = gpsfixname[1];
             break;
-        case AP_GPS::NO_FIX:
+        case AP_GPS_FixType::NONE:
             fixname = gpsfixname[2];
             break;
-        case AP_GPS::GPS_OK_FIX_2D:
+        case AP_GPS_FixType::FIX_2D:
             fixname = gpsfixname[3];
             break;
-        case AP_GPS::GPS_OK_FIX_3D:
+        case AP_GPS_FixType::FIX_3D:
             fixname = gpsfixname[4];
             break;
-        case AP_GPS::GPS_OK_FIX_3D_DGPS:
+        case AP_GPS_FixType::DGPS:
             fixname = gpsfixname[5];
             break;
-        case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+        case AP_GPS_FixType::RTK_FLOAT:
             fixname = gpsfixname[6];
             break;
-        case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+        case AP_GPS_FixType::RTK_FIXED:
             fixname = gpsfixname[7];
             break;
         default:
