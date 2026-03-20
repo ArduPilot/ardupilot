@@ -225,29 +225,10 @@ void AP_MotorsHeli_Dual::init_outputs()
 {
     if (!initialised_ok()) {
         // set rotor servo range
-        _main_rotor.init_servo();
+        _main_rotor.initialize();
     }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_DUAL);
-}
-
-// calculate_armed_scalars
-void AP_MotorsHeli_Dual::calculate_armed_scalars()
-{
-    // Set rsc mode specific parameters
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_THROTTLECURVE || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
-        _main_rotor.set_throttle_curve();
-    }
-    // keeps user from changing RSC mode while armed
-    if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
-        _main_rotor.reset_rsc_mode_param();
-        _heliflags.save_rsc_mode = true;
-    }
-    // saves rsc mode parameter when disarmed if it had been reset while armed
-    if (_heliflags.save_rsc_mode && !armed()) {
-        _main_rotor._rsc_mode.save();
-        _heliflags.save_rsc_mode = false;
-    }
 }
 
 // calculate_scalars
@@ -289,9 +270,8 @@ void AP_MotorsHeli_Dual::calculate_scalars()
     // configure swashplate 2 and update scalars
     _swashplate2.configure();
 
-    // set mode of main rotor controller and trigger recalculation of scalars
-    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
-    calculate_armed_scalars();
+    // configure main rotor and update scalars
+    _main_rotor.configure();
 }
 
 // Mix and output swashplates for tandem
@@ -352,12 +332,12 @@ void AP_MotorsHeli_Dual::mix_intermeshing(float pitch_input, float roll_input, f
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Dual::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
+void AP_MotorsHeli_Dual::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
 {
     // Send state update to motors
-    _main_rotor.output(state);
+    _main_rotor.update(state);
 
-    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP) {
+    if (state == AP_MotorsHeli_RSC::DesiredRSCSpoolState::SHUT_DOWN) {
         // set engine run enable aux output to not run position to kill engine when disarmed
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
@@ -507,7 +487,7 @@ void AP_MotorsHeli_Dual::output_to_motors()
     _swashplate1.output();
     _swashplate2.output();
 
-    update_motor_control(get_rotor_control_state());
+    _main_rotor.output_to_servo();
 
 }
 

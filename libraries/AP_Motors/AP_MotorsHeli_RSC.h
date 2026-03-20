@@ -32,15 +32,43 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     };
 
-    // rotor controller states
-    enum class RotorControlState {
-        STOP = 0,
-        IDLE,
-        ACTIVE
+    // desired spool states
+    enum class DesiredRSCSpoolState : uint8_t {
+        SHUT_DOWN = 0,              // all motors should move to stop
+        GROUND_IDLE = 1,            // all motors should move to ground idle
+        THROTTLE_UNLIMITED = 2,     // motors should move to being a state where throttle is unconstrained (e.g. by start up procedure)
     };
 
-    // init_servo - servo initialization on start-up
-    void        init_servo();
+    // spool states
+    enum class RSCSpoolState : uint8_t {
+        SHUT_DOWN = 0,                      // all motors stop
+        GROUND_IDLE = 1,                    // all motors at ground idle
+        SPOOLING_UP = 2,                       // increasing maximum throttle while stabilizing
+        THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
+        SPOOLING_DOWN = 4,                     // decreasing maximum throttle while stabilizing
+    };
+
+    // initialize - servo initialization and parameter setup on start-up
+    void        initialize();
+
+    // configure - configures RSC for current control mode, should be called on each update of control mode and on start-up after initialize() to setup parameters and scalars for the current control mode
+    void        configure();
+
+    // configure - configure the RSC with specific settings, allows caller to specify settings instead of using parameters.
+    void        configure(RotorControlMode control_mode,
+                          int8_t ramp_time,
+                          int8_t runup_time,
+                          float critical_speed,
+                          float idle_output);
+
+    // configure - configures the parameters for the armed state, should be called on each update of control mode and on start-up after initialize() to setup parameters and scalars for the current control mode
+    void        configure_armed();
+
+    // update - runs RSC logic and outputs to motors, returns current spool state for use in motor output logic
+    void        update(DesiredRSCSpoolState desired_spool_state);
+
+    // output_to_servo - outputs pwm onto output rsc channel.
+    void        output_to_servo() { write_rsc(_control_output);}
 
     // set_control_mode - sets control mode
     void        set_control_mode(RotorControlMode mode) { _control_mode = mode; }
@@ -58,7 +86,7 @@ public:
     float       get_desired_speed() const { return _desired_speed; }
 
     // set_desired_speed - this requires input to be 0-1
-    void        set_desired_speed(float desired_speed) { _desired_speed = desired_speed; }
+    void        set_passthrough_desired_speed(float desired_speed) { _pilot_desired_speed = desired_speed; }
 
     // functions for autothrottle, throttle curve, governor, idle speed, output to servo
     void        set_governor_output(float governor_output) {_governor_output = governor_output; }
@@ -84,9 +112,6 @@ public:
 
     // turbine start initialize sequence
     void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
-
-    // output - update value to send to ESC/Servo
-    void        output(RotorControlState state);
 
     // Return mask of output channels which the RSC is outputting on
     uint32_t    get_output_mask() const;
@@ -120,9 +145,14 @@ private:
     const SRV_Channel::Function _aux_fn;
     const uint8_t _default_channel;
 
+    RSCSpoolState          _spool_state;               // current spool state
+    DesiredRSCSpoolState   _desired_spool_state;
+
+
     // internal variables
     RotorControlMode _control_mode = ROTOR_CONTROL_MODE_DISABLED;   // motor control mode, Passthrough or Setpoint
-    float           _desired_speed;               // latest desired rotor speed from pilot
+    float           _pilot_desired_speed;         // latest pilot desired rotor speed, used for passthrough mode
+    float           _desired_speed;               // latest desired rotor speed
     float           _control_output;              // latest logic controlled output
     float           _rotor_ramp_output;           // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
     float           _rotor_runup_output;          // scalar used to store status of rotor run-up time (0.0-1.0f)
@@ -141,8 +171,8 @@ private:
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
     float           _idle_throttle;               // current idle throttle setting
+    bool            _save_rsc_mode;               // flag to determine if we should save RSC mode changes to EEPROM, used to prevent saving changes to RSC mode param while armed.
 
-    RotorControlState _rsc_state;
 
     // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
     void            update_rotor_ramp(float rotor_ramp_input, float dt);

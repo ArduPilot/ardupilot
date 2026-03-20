@@ -192,7 +192,7 @@ void AP_MotorsHeli_Single::init_outputs()
         add_motor_num(CH_4);
 
         // initialize main rotor servo
-        _main_rotor.init_servo();
+        _main_rotor.initialize();
 
         switch (get_tail_type()) {
             case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW:
@@ -203,7 +203,7 @@ void AP_MotorsHeli_Single::init_outputs()
 
             case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
             case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
-                _tail_rotor.init_servo();
+                _tail_rotor.initialize();
                 // yaw servo is an angle from -4500 to 4500
                 SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
                 break;
@@ -217,34 +217,6 @@ void AP_MotorsHeli_Single::init_outputs()
     }
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI);
-}
-
-// set_desired_rotor_speed
-void AP_MotorsHeli_Single::set_desired_rotor_speed(float desired_speed)
-{
-    _main_rotor.set_desired_speed(desired_speed);
-
-    // always send desired speed to tail rotor control, will do nothing if not DDVP not enabled
-    _tail_rotor.set_desired_speed(_direct_drive_tailspeed*0.01f);
-}
-
-// calculate_scalars - recalculates various scalers used.
-void AP_MotorsHeli_Single::calculate_armed_scalars()
-{
-    // Set rsc mode specific parameters
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_THROTTLECURVE || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
-        _main_rotor.set_throttle_curve();
-    }
-    // keeps user from changing RSC mode while armed
-    if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
-        _main_rotor.reset_rsc_mode_param();
-        _heliflags.save_rsc_mode = true;
-    }
-    // saves rsc mode parameter when disarmed if it had been reset while armed
-    if (_heliflags.save_rsc_mode && !armed()) {
-        _main_rotor._rsc_mode.save();
-        _heliflags.save_rsc_mode = false;
-    }
 }
 
 // calculate_scalars - recalculates various scalers used.
@@ -274,23 +246,14 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // configure swashplate and update scalars
     _swashplate.configure();
 
-    // send setpoints to main rotor controller and trigger recalculation of scalars
-    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
-    calculate_armed_scalars();
+    // configure main rotor and update scalars
+    _main_rotor.configure();
 
     // send setpoints to DDVP rotor controller and trigger recalculation of scalars
     if (use_tail_RSC()) {
-        _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_SETPOINT);
-        _tail_rotor.set_ramp_time(_main_rotor._ramp_time.get());
-        _tail_rotor.set_runup_time(_main_rotor._runup_time.get());
-        _tail_rotor.set_critical_speed(_main_rotor._critical_speed.get());
-        _tail_rotor.set_idle_output(_main_rotor._idle_output.get());
+        _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
     } else {
-        _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
-        _tail_rotor.set_ramp_time(0);
-        _tail_rotor.set_runup_time(0);
-        _tail_rotor.set_critical_speed(0);
-        _tail_rotor.set_idle_output(0);
+        _tail_rotor.configure(ROTOR_CONTROL_MODE_DISABLED, 0, 0, 0, 0);
     }
 }
 
@@ -302,13 +265,13 @@ uint32_t AP_MotorsHeli_Single::get_motor_mask()
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
+void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
 {
     // Send state update to motors
-    _tail_rotor.output(state);
-    _main_rotor.output(state);
+    _tail_rotor.update(state);
+    _main_rotor.update(state);
 
-    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP){
+    if (state == AP_MotorsHeli_RSC::DesiredRSCSpoolState::SHUT_DOWN){
         // set engine run enable aux output to not run position to kill engine when disarmed
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
@@ -443,7 +406,8 @@ void AP_MotorsHeli_Single::output_to_motors()
     _swashplate.output();
 
     // Output main rotor
-    update_motor_control(get_rotor_control_state());
+    _main_rotor.output_to_servo();
+    _tail_rotor.output_to_servo();
 
     // Output tail rotor
     switch (get_tail_type()) {
