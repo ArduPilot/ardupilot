@@ -1341,9 +1341,9 @@ private:
     char statustext_printf_buffer[256+1];
 
 #if AP_GPS_ENABLED
-    virtual AP_GPS::GPS_Status min_status_for_gps_healthy() const {
+    virtual AP_GPS_FixType min_status_for_gps_healthy() const {
         // NO_FIX simply excludes NO_GPS
-        return AP_GPS::GPS_Status::NO_FIX;
+        return AP_GPS_FixType::NONE;
     }
 #endif
 
