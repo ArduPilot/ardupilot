@@ -34,9 +34,6 @@ public:
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
 
-    // calculate_armed_scalars - recalculates scalars that can change while armed
-    void calculate_armed_scalars() override;
-
     // servo_test - move servos through full range of movement
     void servo_test() override;
 
@@ -54,7 +51,7 @@ protected:
     void init_outputs () override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
 
     // calculate_roll_pitch_collective_factors - setup rate factors
     void calculate_roll_pitch_collective_factors ();

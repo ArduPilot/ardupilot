@@ -40,14 +40,8 @@ public:
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
-    // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
-    void set_desired_rotor_speed(float desired_speed) override;
-
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
-
-    // calculate_armed_scalars - recalculates scalars that can change while armed
-    void calculate_armed_scalars() override;
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -76,7 +70,7 @@ protected:
     void init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
-    void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
 
     // heli_move_actuators - moves swash plate and tail rotor
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) override;
