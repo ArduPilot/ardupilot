@@ -21,7 +21,7 @@ This fork was developed with the BRGR high-altitude glider in mind.
 ## Key Modifications
 
 - **Tri-Fin Mixing**
-  - Implemented in `ArduPlane/servos.cpp`
+  - Primarily implemented in `ArduPlane/servos.cpp`
   - Supports 3-fin control allocation for pitch, yaw, and roll
   - Configurable azimuth angles for each fin
 - **Parameters Added**
