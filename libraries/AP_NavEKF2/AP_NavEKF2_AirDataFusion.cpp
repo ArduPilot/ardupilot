@@ -208,8 +208,8 @@ void NavEKF2_core::SelectTasFusion()
 
 
 // select fusion of synthetic sideslip measurements
-// synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
-// it requires a stable wind for best results and should not be used for aerobatic flight with manoeuvres that induce large sidslip angles (eg knife-edge, spins, etc)
+// synthetic sideslip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
+// it requires a stable wind for best results and should not be used for aerobatic flight with manoeuvres that induce large sideslip angles (eg knife-edge, spins, etc)
 void NavEKF2_core::SelectBetaFusion()
 {
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz

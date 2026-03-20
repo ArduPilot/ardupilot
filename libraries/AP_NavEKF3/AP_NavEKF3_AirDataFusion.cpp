@@ -203,8 +203,8 @@ void NavEKF3_core::SelectTasFusion()
 
 
 // select fusion of synthetic sideslip measurements or body frame drag
-// synthetic sidelip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
-// body frame drag only works for bluff body multi rotor vehices with thrust forces aligned with the Z axis
+// synthetic sideslip fusion only works for fixed wing aircraft and relies on the average sideslip being close to zero
+// body frame drag only works for bluff body multi rotor vehicles with thrust forces aligned with the Z axis
 // it requires a stable wind for best results and should not be used for aerobatic flight
 void NavEKF3_core::SelectBetaDragFusion()
 {
@@ -254,14 +254,14 @@ void NavEKF3_core::SelectBetaDragFusion()
 }
 
 /*
- * Fuse sythetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
+ * Fuse synthetic sideslip measurement of zero using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
  * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
 */
 void NavEKF3_core::FuseSideslip()
 {
     // declarations
-    const ftype R_BETA = 0.03f; // assume a sideslip angle RMS of ~10 deg
+    ftype R_BETA;
     Vector13 SH_BETA;
     Vector8 SK_BETA;
     Vector3F vel_rel_wind;
@@ -289,6 +289,20 @@ void NavEKF3_core::FuseSideslip()
     // perform fusion of assumed sideslip  = 0
     if (vel_rel_wind.x > 5.0f)
     {
+        // calculate predicted sideslip innovation using small angle approximation
+        innovBeta = vel_rel_wind.y / vel_rel_wind.x;
+
+        // base synthetic sideslip measurement variance (~10 deg 1-sigma)
+        const ftype betaVarRad2 = 0.03f;
+
+        // start down-weighting synthetic sideslip fusion beyond this many sigma
+        const ftype innovBetaThreshSigma = 2.0f;
+
+        // inflate synthetic measurement variance for large innovations
+        const ftype innovBetaThreshRad = innovBetaThreshSigma * sqrtF(betaVarRad2);
+        const ftype innovBetaNorm = MAX(1.0f, fabsF(innovBeta) / innovBetaThreshRad);
+        R_BETA = betaVarRad2 * sq(innovBetaNorm);
+
         // Calculate observation jacobians
         SH_BETA[0] = (vn - vwn)*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + (ve - vwe)*(2*q0*q3 + 2*q1*q2);
         if (fabsF(SH_BETA[0]) <= 1e-9f) {
@@ -343,7 +357,7 @@ void NavEKF3_core::FuseSideslip()
         SK_BETA[6] = SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10];
         SK_BETA[7] = SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8];
 
-        if (!airDataFusionWindOnly) {
+        if (!airDataFusionWindOnly && innovBetaNorm <= 1.0f) {
             Kfusion[0] = SK_BETA[0]*(P[0][0]*SK_BETA[5] + P[0][1]*SK_BETA[4] - P[0][4]*SK_BETA[1] + P[0][5]*SK_BETA[2] + P[0][2]*SK_BETA[6] + P[0][6]*SK_BETA[3] - P[0][3]*SK_BETA[7] + P[0][22]*SK_BETA[1] - P[0][23]*SK_BETA[2]);
             Kfusion[1] = SK_BETA[0]*(P[1][0]*SK_BETA[5] + P[1][1]*SK_BETA[4] - P[1][4]*SK_BETA[1] + P[1][5]*SK_BETA[2] + P[1][2]*SK_BETA[6] + P[1][6]*SK_BETA[3] - P[1][3]*SK_BETA[7] + P[1][22]*SK_BETA[1] - P[1][23]*SK_BETA[2]);
             Kfusion[2] = SK_BETA[0]*(P[2][0]*SK_BETA[5] + P[2][1]*SK_BETA[4] - P[2][4]*SK_BETA[1] + P[2][5]*SK_BETA[2] + P[2][2]*SK_BETA[6] + P[2][6]*SK_BETA[3] - P[2][3]*SK_BETA[7] + P[2][22]*SK_BETA[1] - P[2][23]*SK_BETA[2]);
@@ -359,7 +373,7 @@ void NavEKF3_core::FuseSideslip()
             zero_range(&Kfusion[0], 0, 9);
         }
 
-        if (!inhibitDelAngBiasStates && !airDataFusionWindOnly) {
+        if (!inhibitDelAngBiasStates && !airDataFusionWindOnly && innovBetaNorm <= 1.0f) {
             Kfusion[10] = SK_BETA[0]*(P[10][0]*SK_BETA[5] + P[10][1]*SK_BETA[4] - P[10][4]*SK_BETA[1] + P[10][5]*SK_BETA[2] + P[10][2]*SK_BETA[6] + P[10][6]*SK_BETA[3] - P[10][3]*SK_BETA[7] + P[10][22]*SK_BETA[1] - P[10][23]*SK_BETA[2]);
             Kfusion[11] = SK_BETA[0]*(P[11][0]*SK_BETA[5] + P[11][1]*SK_BETA[4] - P[11][4]*SK_BETA[1] + P[11][5]*SK_BETA[2] + P[11][2]*SK_BETA[6] + P[11][6]*SK_BETA[3] - P[11][3]*SK_BETA[7] + P[11][22]*SK_BETA[1] - P[11][23]*SK_BETA[2]);
             Kfusion[12] = SK_BETA[0]*(P[12][0]*SK_BETA[5] + P[12][1]*SK_BETA[4] - P[12][4]*SK_BETA[1] + P[12][5]*SK_BETA[2] + P[12][2]*SK_BETA[6] + P[12][6]*SK_BETA[3] - P[12][3]*SK_BETA[7] + P[12][22]*SK_BETA[1] - P[12][23]*SK_BETA[2]);
@@ -368,7 +382,7 @@ void NavEKF3_core::FuseSideslip()
             zero_range(&Kfusion[0], 10, 12);
         }
 
-        if (!inhibitDelVelBiasStates && !airDataFusionWindOnly) {
+        if (!inhibitDelVelBiasStates && !airDataFusionWindOnly && innovBetaNorm <= 1.0f) {
             for (uint8_t index = 0; index < 3; index++) {
                 const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
@@ -383,7 +397,7 @@ void NavEKF3_core::FuseSideslip()
         }
 
         // zero Kalman gains to inhibit magnetic field state estimation
-        if (!inhibitMagStates && !airDataFusionWindOnly) {
+        if (!inhibitMagStates && !airDataFusionWindOnly && innovBetaNorm <= 1.0f) {
             Kfusion[16] = SK_BETA[0]*(P[16][0]*SK_BETA[5] + P[16][1]*SK_BETA[4] - P[16][4]*SK_BETA[1] + P[16][5]*SK_BETA[2] + P[16][2]*SK_BETA[6] + P[16][6]*SK_BETA[3] - P[16][3]*SK_BETA[7] + P[16][22]*SK_BETA[1] - P[16][23]*SK_BETA[2]);
             Kfusion[17] = SK_BETA[0]*(P[17][0]*SK_BETA[5] + P[17][1]*SK_BETA[4] - P[17][4]*SK_BETA[1] + P[17][5]*SK_BETA[2] + P[17][2]*SK_BETA[6] + P[17][6]*SK_BETA[3] - P[17][3]*SK_BETA[7] + P[17][22]*SK_BETA[1] - P[17][23]*SK_BETA[2]);
             Kfusion[18] = SK_BETA[0]*(P[18][0]*SK_BETA[5] + P[18][1]*SK_BETA[4] - P[18][4]*SK_BETA[1] + P[18][5]*SK_BETA[2] + P[18][2]*SK_BETA[6] + P[18][6]*SK_BETA[3] - P[18][3]*SK_BETA[7] + P[18][22]*SK_BETA[1] - P[18][23]*SK_BETA[2]);
@@ -403,8 +417,8 @@ void NavEKF3_core::FuseSideslip()
             zero_range(&Kfusion[0], 22, 23);
         }
 
-        // calculate predicted sideslip angle and innovation using small angle approximation
-        innovBeta = constrain_ftype(vel_rel_wind.y / vel_rel_wind.x, -0.5f, 0.5f);
+        // constrain innovation to a sane range to keep sideslip approximation well behaved
+        innovBeta = constrain_ftype(innovBeta, -0.5f, 0.5f);
 
         // correct the state vector
         for (uint8_t j= 0; j<=stateIndexLim; j++) {
