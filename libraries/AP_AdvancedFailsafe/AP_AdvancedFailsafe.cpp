@@ -372,7 +372,7 @@ AP_AdvancedFailsafe::gps_altitude_ok() const
         return false;
     }
     const AP_GPS &gps = AP::gps();
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.status() < AP_GPS_FixType::FIX_3D) {
         return false;
     }
     const auto &location = gps.location();
@@ -505,7 +505,7 @@ void AP_AdvancedFailsafe::max_range_update(void)
     }
 
     if (!_have_first_location) {
-        if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        if (AP::gps().status() < AP_GPS_FixType::FIX_3D) {
             // wait for 3D fix
             return;
         }
@@ -517,7 +517,7 @@ void AP_AdvancedFailsafe::max_range_update(void)
         _have_first_location = true;
     }
 
-    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+    if (AP::gps().status() < AP_GPS_FixType::FIX_2D) {
         // don't trigger when dead-reckoning
         return;
     }
