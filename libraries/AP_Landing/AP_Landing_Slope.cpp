@@ -168,7 +168,7 @@ bool AP_Landing::type_slope_verify_land(const Location &prev_WP_loc, Location &n
 
     if (mission.continue_after_land() &&
         type_slope_stage == SlopeStage::FINAL &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D &&
+        gps.status() >= AP_GPS_FixType::FIX_3D &&
         gps.ground_speed() < 1) {
         /*
           user has requested to continue with mission after a
