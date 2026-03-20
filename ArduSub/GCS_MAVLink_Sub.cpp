@@ -377,11 +377,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_do_reposition(const mavlink_comma
         return MAV_RESULT_DENIED;
     }
 
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_DENIED;
-    }
-
     Location request_location;
     if (!location_from_command_t(packet, request_location)) {
         return MAV_RESULT_DENIED;
