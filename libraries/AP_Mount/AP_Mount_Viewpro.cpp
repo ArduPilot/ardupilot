@@ -240,7 +240,7 @@ void AP_Mount_Viewpro::process_packet()
             memset(_model_name, '\0', sizeof(_model_name));
             memcpy(_model_name, &_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
             _got_model_name = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, _model_name);
             break;
         default:
             // unsupported control command
@@ -870,7 +870,7 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
     static const uint8_t vendor_name[32] = "Viewpro";
     uint8_t model_name[32] {};
     if (_got_model_name) {
-        strncpy((char *)model_name, (const char*)_model_name, MIN(sizeof(model_name), sizeof(_model_name)));
+        strncpy((char *)model_name, _model_name, MIN(sizeof(model_name), sizeof(_model_name)));
     }
     const char cam_definition_uri[140] {};
 
@@ -887,7 +887,7 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         chan,
         AP_HAL::millis(),       // time_boot_ms
         vendor_name,            // vendor_name uint8_t[32]
-        _model_name,            // model_name uint8_t[32]
+        (const uint8_t*)_model_name, // model_name uint8_t[32]
         _firmware_version,      // firmware version uint32_t
         NaNf,                   // sensor_size_h float (mm)
         NaNf,                   // sensor_size_v float (mm)

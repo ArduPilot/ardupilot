@@ -459,7 +459,7 @@ void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
 
     // copy model name if available
     if (_got_gimbal_model_name) {
-        strncpy((char*)model_name, (const char*)_model_name, ARRAY_SIZE(model_name));
+        strncpy((char*)model_name, _model_name, ARRAY_SIZE(model_name));
     }
 
     // capability flags
@@ -1040,7 +1040,7 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 // gimbal model name message analysis
 void AP_Mount_Topotek::gimbal_model_name_analyse()
 {
-    strncpy((char *)_model_name, (const char *)_msg_buff + 10, char_to_hex(_msg_buff[5]));
+    strncpy(_model_name, (const char *)_msg_buff + 10, char_to_hex(_msg_buff[5]));
 
     // display gimbal model name to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_message_prefix, _model_name);
