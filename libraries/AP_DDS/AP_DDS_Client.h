@@ -306,8 +306,17 @@ private:
     // pointer to transport's communication structure
     uxrCommunication *comm{nullptr};
 
-    // client key we present
-    static constexpr uint32_t key = 0xAAAABBBB;
+    // client key prefix
+    static constexpr uint32_t key_base = 0xAD000000;
+
+    // DDS constants
+    static constexpr const char *dds_pubsub_prefix = "rt";
+    static constexpr const char *dds_service_prefix = "rs";
+    static constexpr const char *dds_service_request_prefix = "rq";
+    static constexpr const char *dds_service_reply_prefix = "rr";
+    static constexpr const char *participant_name_prefix = "ap";
+
+    static void dds_format_name(char* buf, const char* dds_prefix, uint8_t sysid, const char* name, bool use_sysid_ns);
 
 
 public:
@@ -346,6 +355,9 @@ public:
 
     //! @brief Maximum number of attempts to ping the XRCE agent before exiting
     AP_Int8 ping_max_retry;
+
+    //! @brief Use namespace when enabled
+    AP_Int8 use_ns;
 
     //! @brief Enum used to mark a topic as a data reader or writer
     enum class Topic_rw : uint8_t {
