@@ -86,10 +86,9 @@ The default battery configuration is:
 
  The autopilot does not have a built-in compass, however you can attach an external compass using I2C on the SDA and SCL pads.
 
-## Firmware¶
+## Loading Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org`__  in sub-folders labeled “BrahmaF4”.
-Loading Firmware¶
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “BrahmaF4”.
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the “with_bl.hex” firmware, using your favourite DFU loading tool.
 
