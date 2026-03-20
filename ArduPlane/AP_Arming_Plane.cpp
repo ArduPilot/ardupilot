@@ -394,7 +394,7 @@ void AP_Arming_Plane::update_soft_armed()
 
 #if AP_PLANE_BLACKBOX_LOGGING
     if (blackbox_speed > 0) {
-        const float speed3d = plane.gps.status() >= AP_GPS::GPS_OK_FIX_3D?plane.gps.velocity().length():0;
+        const float speed3d = plane.gps.status() >= AP_GPS_FixType::FIX_3D?plane.gps.velocity().length():0;
         const uint32_t now = AP_HAL::millis();
         if (speed3d > blackbox_speed) {
             last_over_3dspeed_ms = now;
