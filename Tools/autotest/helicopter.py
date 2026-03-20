@@ -158,7 +158,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("wait for rotor runup to complete")
         if self.get_parameter("H_RSC_MODE") == 4:
             self.context_collect('STATUSTEXT')
-            self.wait_statustext("Governor Engaged", check_context=True)
+            self.wait_statustext("Runup Complete", check_context=True)
         elif self.get_parameter("H_RSC_MODE") == 3:
             self.wait_rpm(1, 1300, 1400)
         else:
