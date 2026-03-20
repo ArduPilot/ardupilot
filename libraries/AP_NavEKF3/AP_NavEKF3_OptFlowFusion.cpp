@@ -834,6 +834,17 @@ void NavEKF3_core::UpdateAglKf()
     // Negate: downward acceleration reduces AGL rate.
     aglKfV -= velDotNED.z * imuDt;
 
+    // First-order decay of v_agl toward zero when RF is absent (tau = 2 s).
+    // Without range measurements v_agl is unobservable; accumulated IMU bias
+    // error will cause it to drift, pulling h_agl to the floor during
+    // subsequent climbs.  The decay limits that drift.
+    // At the 5 s validity timeout, |v| is at most exp(-5/2) ~ 8% of its
+    // value at last RF fusion, so the hard reset finds v near zero.
+    if (!rangeDataToFuse) {
+        const ftype tau_v = 2.0f;
+        aglKfV *= expf(-imuDt / tau_v);
+    }
+
     // AGL cannot go below the on-ground sensor reading
     aglKfH = MAX(aglKfH, rngOnGnd);
 
