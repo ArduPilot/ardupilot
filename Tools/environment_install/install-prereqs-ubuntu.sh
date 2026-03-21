@@ -38,7 +38,7 @@ if $QUIET; then
 fi
 
 # update apt package list
-$APT_GET update
+#$APT_GET update
 
 function package_is_installed() {
     dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -c "ok installed"
