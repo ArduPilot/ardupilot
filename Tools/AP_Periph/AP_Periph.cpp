@@ -169,16 +169,6 @@ void AP_Periph_FW::init()
 
 #if AP_PERIPH_MAG_ENABLED
     compass.init();
-    // uses printf() which goes to STDOUT_SERIAL (USART2/SD2)
-    printf("\n--- RM3100 SPI CHECK ---\n");
-    printf("Compasses found: %d\n", compass.get_count());
-    if (compass.get_count() == 0) {
-        printf("ERROR: RM3100 not responding on SPI!\n");
-        printf("Check: CS=PB2, MISO=PA6, MOSI=PA7, CLK=PA5\n");
-    } else {
-        printf("SUCCESS: RM3100 detected!\n");
-    }
-    printf("--- END CHECK ---\n\n");
 #endif
 
 #if AP_PERIPH_BARO_ENABLED
@@ -188,16 +178,9 @@ void AP_Periph_FW::init()
 #if AP_PERIPH_IMU_ENABLED
     if (g.imu_sample_rate) {
         imu.init(g.imu_sample_rate);
-        printf("\n--- ICM-45605 SPI CHECK ---\n");
-        printf("Accel count: %d  Gyro count: %d\n",
-               imu.get_accel_count(), imu.get_gyro_count());
         if (imu.get_accel_count() > 0 || imu.get_gyro_count() > 0) {
-            printf("SUCCESS: ICM-45605 detected!\n");
             hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Periph_FW::can_imu_update, void), "IMU_UPDATE", 16384, AP_HAL::Scheduler::PRIORITY_CAN, 0);
-        } else {
-            printf("ERROR: ICM-45605 not responding on SPI1!\n");
         }
-        printf("--- END CHECK ---\n\n");
     }
 #endif
 
@@ -452,7 +435,7 @@ void AP_Periph_FW::update()
 #endif
 #if 1
 #if AP_PERIPH_MAG_ENABLED
-                printf("MAG c=%u a=%d h=%d\n", compass.get_count(), (int)compass.available(), (int)compass.healthy());
+        printf("MAG c=%u a=%d h=%d\n", compass.get_count(), (int)compass.available(), (int)compass.healthy());
         if (compass.get_count() > 0) {
             const Vector3f &field = compass.get_field();
             printf("MAG (%d,%d,%d)\n", int(field.x), int(field.y), int(field.z));

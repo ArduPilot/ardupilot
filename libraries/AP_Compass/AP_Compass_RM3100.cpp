@@ -51,7 +51,7 @@
 
 #define RM3100_BIST_REG       0x33
 #define RM3100_STATUS_REG     0x34
-#define RM3100_HSHAKE_REG     0x34
+#define RM3100_HSHAKE_REG     0x35
 #define RM3100_REVID_REG      0x36
 
 #define CCP0    0xC8      // Cycle Count values
@@ -63,7 +63,7 @@
 #define GAIN_CC200 75.0f
 
 #define TMRC    0x94    // Update rate 150Hz
-#define CMM     0x71    // read 3 axes and set data ready if 3 axes are ready
+#define CMM     0x79    // CMM all axes + DRDM=10 (DRDY after full measurement per manual Section 5.7.2)
 
 extern const AP_HAL::HAL &hal;
 
@@ -125,25 +125,18 @@ bool AP_Compass_RM3100::init()
         return false;
     }
 
-    dev->setup_checked_registers(8);
+    dev->setup_checked_registers(6);
 
-    dev->write_register(RM3100_TMRC_REG, TMRC, true); // CMM data rate
-    dev->write_register(RM3100_CMM_REG, CMM, true); // CMM configuration
+    // init order per manual: cycle counts first, then TMRC, then CMM last
     dev->write_register(RM3100_CCX1_REG, CCP1, true); // cycle count x
-    dev->write_register(RM3100_CCX0_REG, CCP0, true); // cycle count x
+    dev->write_register(RM3100_CCX0_REG, CCP0, true);
     dev->write_register(RM3100_CCY1_REG, CCP1, true); // cycle count y
-    dev->write_register(RM3100_CCY0_REG, CCP0, true); // cycle count y
+    dev->write_register(RM3100_CCY0_REG, CCP0, true);
     dev->write_register(RM3100_CCZ1_REG, CCP1, true); // cycle count z
-    dev->write_register(RM3100_CCZ0_REG, CCP0, true); // cycle count z
+    dev->write_register(RM3100_CCZ0_REG, CCP0, true);
 
-    // verify register writes via readback
-    {
-        uint8_t tmrc_rb, cmm_rb;
-        dev->read_registers(RM3100_TMRC_REG, &tmrc_rb, 1);
-        dev->read_registers(RM3100_CMM_REG, &cmm_rb, 1);
-        printf("RM3100: TMRC=0x%02x(exp 0x%02x) CMM=0x%02x(exp 0x%02x)\n",
-               tmrc_rb, TMRC, cmm_rb, CMM);
-    }
+    dev->write_register(RM3100_TMRC_REG, TMRC); // CMM data rate — not checked (writing TMRC kills CMM)
+    dev->write_register(RM3100_CMM_REG, CMM);   // start CMM last — not checked (reading CMM kills CMM)
 
     _scaler = (1 / GAIN_CC200) * UTESLA_TO_MGAUSS; // has to be changed if using a different cycle count
 
@@ -175,12 +168,6 @@ bool AP_Compass_RM3100::init()
 
 void AP_Compass_RM3100::timer()
 {
-    static uint32_t _dbg_calls = 0;
-    static uint32_t _dbg_status_fail = 0;
-    static uint32_t _dbg_drdy_wait = 0;
-    static uint32_t _dbg_read_ok = 0;
-    static uint8_t _dbg_last_status = 0;
-    _dbg_calls++;
 
     struct PACKED {
         uint8_t magx_2;
@@ -201,48 +188,17 @@ void AP_Compass_RM3100::timer()
     // check data ready on 3 axis
     uint8_t status;
     if (!dev->read_registers(RM3100_STATUS_REG, (uint8_t *)&status, 1)) {
-        _dbg_status_fail++;
         goto check_registers;
     }
-    _dbg_last_status = status;
 
     if (!(status & 0x80)) {
-        _dbg_drdy_wait++;
-        // try reading data anyway to debug (ignore DRDY)
-        if (_dbg_calls % 80 == 0) {
-            struct PACKED { uint8_t b[9]; } raw;
-            dev->read_registers(RM3100_MX2_REG, raw.b, 9);
-            printf("RM3100 RAW: %02x %02x %02x  %02x %02x %02x  %02x %02x %02x\n",
-                   raw.b[0], raw.b[1], raw.b[2],
-                   raw.b[3], raw.b[4], raw.b[5],
-                   raw.b[6], raw.b[7], raw.b[8]);
-        }
-        // After 400 DRDY failures (~5 seconds), try POLL mode once per second
-        if (_dbg_drdy_wait > 160 && (_dbg_calls % 80 == 40)) {
-            // Disable CMM first
-            dev->write_register(RM3100_CMM_REG, 0x00);
-            // Trigger single measurement on all 3 axes
-            dev->write_register(RM3100_POLL_REG, 0x70);
-            hal.scheduler->delay_microseconds(20000); // 20ms for measurement
-            uint8_t poll_status;
-            dev->read_registers(RM3100_STATUS_REG, &poll_status, 1);
-            struct PACKED { uint8_t b[9]; } poll_raw;
-            dev->read_registers(RM3100_MX2_REG, poll_raw.b, 9);
-            printf("RM3100 POLL: st=0x%02x data=%02x%02x%02x %02x%02x%02x %02x%02x%02x\n",
-                   poll_status,
-                   poll_raw.b[0], poll_raw.b[1], poll_raw.b[2],
-                   poll_raw.b[3], poll_raw.b[4], poll_raw.b[5],
-                   poll_raw.b[6], poll_raw.b[7], poll_raw.b[8]);
-            // Re-enable CMM
-            dev->write_register(RM3100_CMM_REG, CMM);
-        }
+        // data not available yet
         goto check_registers;
     }
 
     if (!dev->read_registers(RM3100_MX2_REG, (uint8_t *)&data, sizeof(data))) {
         goto check_registers;
     }
-    _dbg_read_ok++;
 
     // the 24 bits of data for each axis are in 2s complement representation
     // each byte is shifted to its position in a 24-bit unsigned integer and from 8 more bits to be left-aligned in a 32-bit integer
@@ -282,16 +238,6 @@ void AP_Compass_RM3100::timer()
     }
 
 check_registers:
-    if (_dbg_calls % 80 == 0) {
-        uint8_t cmm_rb = 0, tmrc_rb = 0, revid = 0;
-        dev->read_registers(RM3100_CMM_REG, &cmm_rb, 1);
-        dev->read_registers(RM3100_TMRC_REG, &tmrc_rb, 1);
-        dev->read_registers(RM3100_REVID_REG, &revid, 1);
-        printf("RM3100: n=%u sfail=%u drdy_w=%u ok=%u st=0x%02x cmm=0x%02x tmrc=0x%02x rev=0x%02x\n",
-               (unsigned)_dbg_calls, (unsigned)_dbg_status_fail,
-               (unsigned)_dbg_drdy_wait, (unsigned)_dbg_read_ok,
-               _dbg_last_status, cmm_rb, tmrc_rb, revid);
-    }
     dev->check_next_register();
 }
 
