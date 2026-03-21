@@ -237,7 +237,7 @@
 #endif
 
 #ifndef TRI_FIN1_AZIMUTH
-  #define TRI_FIN1_AZIMUTH 90.0f // deg, clockwise around X from +Y in Y-Z plane
+  #define TRI_FIN1_AZIMUTH 90.0f // deg, counter-clockwise around X from -Y in Y-Z plane
 #endif
 
 #ifndef TRI_FIN2_AZIMUTH
