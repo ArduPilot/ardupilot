@@ -5,6 +5,7 @@
 
 #if AP_DDS_VISUALODOM_ENABLED
 
+#include <AP_HAL/AP_HAL.h>
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -81,8 +82,12 @@ void AP_DDS_External_Odom::handle_external_odom(const nav_msgs_msg_Odometry& msg
         return;
     }
 
+    // Use ArduPilot's internal clock for time_ms passed to the EKF.
+    // The EKF compares this against imuSampleTime_ms (boot-relative),
+    // so we must use the same epoch.  The ROS header stamp (Unix epoch
+    // or zero from ros2 topic pub) is kept only for logging.
     const uint64_t remote_time_us {AP_DDS_Type_Conversions::time_u64_micros(msg.header.stamp)};
-    const uint32_t time_ms {static_cast<uint32_t>(remote_time_us * 1E-3)};
+    const uint32_t time_ms {AP_HAL::millis()};
 
     // Extract position from pose (ENU to NED)
     const Vector3f ap_position {
@@ -99,13 +104,18 @@ void AP_DDS_External_Odom::handle_external_odom(const nav_msgs_msg_Odometry& msg
     ap_rotation.q4 = -msg.pose.pose.orientation.z;
     ap_rotation.normalize();
 
-    // Extract velocity from twist (ENU to NED)
-    // twist.twist.linear is in the child_frame_id (body frame, ENU convention)
-    const Vector3f ap_velocity {
+    // Extract velocity from twist (body-frame FLU → body-frame FRD)
+    // twist.twist.linear is in the child_frame_id (base_link, FLU convention)
+    Vector3f ap_velocity {
         static_cast<float>(msg.twist.twist.linear.x),
         static_cast<float>(-msg.twist.twist.linear.y),
         static_cast<float>(-msg.twist.twist.linear.z)
     };
+
+    // Rotate velocity from body frame (FRD) to world frame (NED).
+    // handle_vision_speed_estimate → EKF3::writeExtNavVelData expects NED.
+    // This matches the MAVLink ODOMETRY handler which does: vel = q * vel;
+    ap_velocity = ap_rotation * ap_velocity;
 
     // Use pose covariance diagonal as error estimates if available
     // covariance is row-major 6x6: [0]=xx, [7]=yy, [14]=zz
@@ -117,10 +127,10 @@ void AP_DDS_External_Odom::handle_external_odom(const nav_msgs_msg_Odometry& msg
 
     const uint8_t reset_counter {0};
 
-    // Send pose estimate to EKF
+    // Send pose estimate to EKF (position is in local FRD, rotated internally by AP_VisualOdom)
     visual_odom->handle_pose_estimate(remote_time_us, time_ms, ap_position.x, ap_position.y, ap_position.z, ap_rotation, posErr, angErr, reset_counter, 0);
 
-    // Send velocity estimate to EKF
+    // Send velocity estimate to EKF (velocity is now in NED world frame)
     visual_odom->handle_vision_speed_estimate(remote_time_us, time_ms, ap_velocity, reset_counter, 0);
 }
 #endif // AP_DDS_ODOM_SUB_ENABLED
