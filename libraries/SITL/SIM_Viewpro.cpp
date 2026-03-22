@@ -318,9 +318,7 @@ void Viewpro::send_v_response(CommConfigCmd cmd)
         databuff[5] = '_';
         databuff[6] = 'V';
         databuff[7] = 'P';
-        // pad to 10 name bytes so the driver's fixed-length copy does not
-        // reach the CRC byte; databuff is zero-initialised so bytes 8-11 = 0
-        total_len = 12;
+        total_len = 8;
         break;
 
     default:
