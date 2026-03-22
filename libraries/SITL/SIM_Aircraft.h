@@ -43,6 +43,10 @@
 #include "SIM_GPIO_LED_2.h"
 #include "SIM_GPIO_LED_3.h"
 #include "SIM_GPIO_LED_RGB.h"
+#include "SIM_Siyi.h"
+#include "SIM_Topotek.h"
+#include "SIM_Viewpro.h"
+#include "SIM_Mount.h"
 
 #define MAX_SIM_INSTANCES 16
 
@@ -177,6 +181,18 @@ public:
     float get_battery_temperature() const { return battery.get_temperature(); }
 
     float ambient_temperature_degC() const;
+
+#if AP_SIM_MOUNT_ENABLED
+    void add_gimbal_sim(Mount &sim) {
+        for (uint8_t i = 0; i < GIMBAL_SIM_MAX; i++) {
+            if (gimbal_sims[i] == nullptr) {
+                gimbal_sims[i] = &sim;
+                return;
+            }
+        }
+        AP_HAL::panic("Too many gimbal simulators");
+    }
+#endif  // AP_SIM_MOUNT_ENABLED
 
     ADSB *adsb;
 
@@ -425,6 +441,11 @@ private:
 
     static Aircraft *instances[MAX_SIM_INSTANCES];
     HAL_Semaphore pose_sem;
+
+#if AP_SIM_MOUNT_ENABLED
+    static constexpr uint8_t GIMBAL_SIM_MAX = 8;
+    Mount *gimbal_sims[GIMBAL_SIM_MAX];
+#endif
 };
 
 } // namespace SITL
