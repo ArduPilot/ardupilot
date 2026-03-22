@@ -887,7 +887,7 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         chan,
         AP_HAL::millis(),       // time_boot_ms
         vendor_name,            // vendor_name uint8_t[32]
-        (const uint8_t*)_model_name, // model_name uint8_t[32]
+        model_name,             // model_name uint8_t[32]
         _firmware_version,      // firmware version uint32_t
         NaNf,                   // sensor_size_h float (mm)
         NaNf,                   // sensor_size_v float (mm)
