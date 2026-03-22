@@ -1376,7 +1376,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         // @Field: pmax: pitch upper limit
         // @Field: dspdem: demanded acceleration output ("delta-speed demand")
         // @Field: f: flags
-        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd
+        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd,GlidingRequested,isGliding,PropulsionFailed,Reset
         AP::logger().WriteStreaming("TECS", "TimeUS,h,dh,hin,hdem,dhdem,spdem,sp,dsp,th,ph,pmin,pmax,dspdem,f",
                                     "smnmmnnnn------",
                                     "F00000000------",
