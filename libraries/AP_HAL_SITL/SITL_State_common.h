@@ -23,6 +23,11 @@
 
 #include <SITL/SIM_SerialRangeFinder.h>
 
+#include <SITL/SIM_Siyi_ZT30.h>
+#include <SITL/SIM_Topotek.h>
+#include <SITL/SIM_Viewpro.h>
+#include <SITL/SIM_AVT_CM62.h>
+
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
 // #include <SITL/SIM_Frsky_SPort.h>
