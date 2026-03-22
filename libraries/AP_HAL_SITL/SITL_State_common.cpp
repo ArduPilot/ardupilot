@@ -223,6 +223,30 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_volz(&_sitl->volz_sim);
         return &_sitl->volz_sim;
 #endif  // AP_SIM_VOLZ_ENABLED
+#if AP_SIM_SIYI_ZT30_ENABLED
+    } else if (streq(name, "siyi_zt30")) {
+        const auto siyi = NEW_NOTHROW SITL::Siyi_ZT30();
+        sitl_model->add_siyi(*siyi, arg);
+        return siyi;
+#endif  // AP_SIM_SIYI_ZT30_ENABLED
+#if AP_SIM_TOPOTEK_ENABLED
+    } else if (streq(name, "topotek")) {
+        const auto topotek = NEW_NOTHROW SITL::Topotek();
+        sitl_model->add_topotek(*topotek, arg);
+        return topotek;
+#endif  // AP_SIM_TOPOTEK_ENABLED
+#if AP_SIM_VIEWPRO_ENABLED
+    } else if (streq(name, "viewpro")) {
+        const auto viewpro = NEW_NOTHROW SITL::Viewpro();
+        sitl_model->add_viewpro(*viewpro, arg);
+        return viewpro;
+#endif  // AP_SIM_VIEWPRO_ENABLED
+#if AP_SIM_AVT_CM62_ENABLED
+    } else if (streq(name, "avt_cm62_gimbal")) {
+        const auto avt_cm62 = NEW_NOTHROW SITL::AVT_CM62();
+        sitl_model->add_mount_sim(*avt_cm62);
+        return avt_cm62;
+#endif  // AP_SIM_AVT_CM62_ENABLED
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");
