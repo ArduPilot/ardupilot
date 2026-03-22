@@ -993,13 +993,13 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
         return;
     }
 
-    static const uint8_t vendor_name[32] = "Siyi";
-    static uint8_t model_name[32] {};
+    static const uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN] { "Siyi" };
+    static uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN] {};
     const uint32_t fw_version = _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
-    const char cam_definition_uri[140] {};
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
 
     // copy model name
-    strncpy((char *)model_name, get_model_name(), sizeof(model_name)-1);
+    strncpy_noterm((char *)model_name, get_model_name(), sizeof(model_name));
 
     // focal length
     // To-Do: check these values are correct for A2, ZR30, ZT30
