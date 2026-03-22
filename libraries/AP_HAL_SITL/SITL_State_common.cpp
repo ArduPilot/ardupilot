@@ -226,25 +226,27 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
 #if AP_SIM_SIYI_ZT30_ENABLED
     } else if (streq(name, "siyi_zt30")) {
         const auto siyi = NEW_NOTHROW SITL::Siyi_ZT30();
-        sitl_model->add_siyi(*siyi, arg);
+        sitl_model->add_gimbal_sim(*siyi);
         return siyi;
 #endif  // AP_SIM_SIYI_ZT30_ENABLED
 #if AP_SIM_TOPOTEK_ENABLED
     } else if (streq(name, "topotek")) {
         const auto topotek = NEW_NOTHROW SITL::Topotek();
-        sitl_model->add_topotek(*topotek, arg);
+        sitl_model->add_gimbal_sim(*topotek);
         return topotek;
 #endif  // AP_SIM_TOPOTEK_ENABLED
 #if AP_SIM_VIEWPRO_ENABLED
     } else if (streq(name, "viewpro")) {
         const auto viewpro = NEW_NOTHROW SITL::Viewpro();
-        sitl_model->add_viewpro(*viewpro, arg);
+        sitl_model->add_gimbal_sim(*viewpro);
         return viewpro;
 #endif  // AP_SIM_VIEWPRO_ENABLED
 #if AP_SIM_AVT_CM62_ENABLED
     } else if (streq(name, "avt_cm62_gimbal")) {
+        static uint8_t mavlink_gimbal_count;
         const auto avt_cm62 = NEW_NOTHROW SITL::AVT_CM62();
-        sitl_model->add_mount_sim(*avt_cm62);
+        avt_cm62->set_instance(mavlink_gimbal_count++);
+        sitl_model->add_gimbal_sim(*avt_cm62);
         return avt_cm62;
 #endif  // AP_SIM_AVT_CM62_ENABLED
     } else if (streq(name, "megasquirt")) {
