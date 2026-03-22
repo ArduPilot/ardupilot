@@ -254,7 +254,7 @@ private:
     bool _got_gimbal_model_name;                                // true if gimbal's model name has been received
     bool _last_zoom_stop;                                       // true if zoom has been stopped (used to re-send in order to handle lost packets)
     bool _last_focus_stop;                                      // true if focus has been stopped (used to re-sent in order to handle lost packets)
-    char _model_name[16];                                       // gimbal model name
+    char _model_name[16];                                       // gimbal model name, always null-terminated
     uint8_t _sent_time_count;                                   // count of current time messages sent to gimbal
     uint32_t _firmware_ver;                                     // firmware version
     Vector3f _current_angle_rad;                                // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
