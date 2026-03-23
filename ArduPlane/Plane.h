@@ -170,6 +170,7 @@ public:
     friend class ModeQLand;
     friend class ModeQRTL;
     friend class ModeQAcro;
+    friend class ModeQThrow;
     friend class ModeQAutotune;
     friend class ModeTakeoff;
     friend class ModeThermal;

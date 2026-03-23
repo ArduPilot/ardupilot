@@ -42,6 +42,18 @@ bool ModeQThrow::_pre_arm_checks(size_t buflen, char *buffer) const
 
 void ModeQThrow::update()
 {
+    // Q_THROW is tailsitter-only, so use tailsitter stick mapping directly
+    const float roll_input = (float)plane.channel_roll->get_control_in() / plane.channel_roll->get_range();
+    const float pitch_input = (float)plane.channel_pitch->get_control_in() / plane.channel_pitch->get_range();
+
+    if (quadplane.tailsitter.max_roll_angle > 0) {
+        plane.nav_roll_cd = quadplane.tailsitter.max_roll_angle * 100.0f * roll_input;
+    } else {
+        plane.nav_roll_cd = roll_input * quadplane.attitude_control->lean_angle_max_cd();
+    }
+
+    plane.nav_pitch_cd = pitch_input * quadplane.attitude_control->lean_angle_max_cd();
+    quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd);
     plane.mode_qstabilize.update();
 }
 
