@@ -10,6 +10,7 @@
 #include "AP_Logger_MAVLink.h"
 
 #include <AP_InternalError/AP_InternalError.h>
+#include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Rally/AP_Rally.h>
@@ -203,6 +204,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("_MAX_FILES", 12, AP_Logger, _params.max_log_files, MAX_LOG_FILES),
 
+    // @Param: _ANON
+    // @DisplayName: Log anonymization
+    // @Description: If enabled, all latitude and longitude values in onboard logs are shifted by a random offset generated at boot. The flight path shape is preserved but the absolute location is hidden. Useful for sharing logs without revealing flight location. Does not affect telemetry to the GCS. Note: LOG_REPLAY should be disabled when using this feature as EKF replay messages contain un-anonymized coordinates.
+    // @Values: 0:Disabled,1:Enabled
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_ANON", 13, AP_Logger, _params.anon, 0),
+
     AP_GROUPEND
 };
 
@@ -289,6 +298,95 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
     start_io_thread();
 
     EnableWrites(true);
+
+    // generate anonymization offsets if enabled
+    _anon_lat_offset = 0;
+    _anon_lng_offset = 0;
+    if (_params.anon.get() != 0) {
+        uint32_t raw_lat, raw_lng;
+        if (!hal.util->get_random_vals(reinterpret_cast<uint8_t*>(&raw_lat), sizeof(raw_lat)) ||
+            !hal.util->get_random_vals(reinterpret_cast<uint8_t*>(&raw_lng), sizeof(raw_lng))) {
+            raw_lat = (static_cast<uint32_t>(get_random16()) << 16) | get_random16();
+            raw_lng = (static_cast<uint32_t>(get_random16()) << 16) | get_random16();
+        }
+        _anon_lat_offset = static_cast<int32_t>(raw_lat % 200000001) - 100000000;
+        _anon_lng_offset = static_cast<int32_t>(raw_lng % 200000001) - 100000000;
+    }
+}
+
+/*
+  anonymize lat/lng fields in a log block buffer. Scans the format
+  string for 'L' (lat/lng) fields and adds the random offset.
+ */
+void AP_Logger::anonymize_log_block(const void *pBuffer, uint16_t size) const
+{
+    if (_anon_lat_offset == 0 && _anon_lng_offset == 0) {
+        return;
+    }
+    if (size < LOG_PACKET_HEADER_LEN) {
+        return;
+    }
+    auto *buf = const_cast<uint8_t *>(static_cast<const uint8_t *>(pBuffer));
+    const uint8_t msg_type = buf[2];
+
+    // find the format string for this message type
+    const char *fmt = nullptr;
+    const struct LogStructure *s = structure_for_msg_type(msg_type);
+    if (s != nullptr) {
+        fmt = s->format;
+    } else {
+        const struct log_write_fmt *f = log_write_fmt_for_msg_type(msg_type);
+        if (f != nullptr) {
+            fmt = f->fmt;
+        }
+    }
+    if (fmt == nullptr) {
+        return;
+    }
+
+    // walk the format string, tracking byte offset into the buffer
+    // the first field starts after the 3-byte header (HEAD1, HEAD2, msg_type)
+    uint16_t offset = LOG_PACKET_HEADER_LEN;
+    bool is_lat = true;  // alternate lat/lng for consecutive L fields
+    for (uint8_t i = 0; fmt[i] != '\0' && offset < size; i++) {
+        uint8_t field_size;
+        switch (fmt[i]) {
+        case 'a': field_size = sizeof(int16_t[32]); break;
+        case 'b': field_size = sizeof(int8_t); break;
+        case 'c': field_size = sizeof(int16_t); break;
+        case 'd': field_size = sizeof(double); break;
+        case 'e': field_size = sizeof(int32_t); break;
+        case 'f': field_size = sizeof(float); break;
+        case 'g': field_size = 2; break; // float16
+        case 'h': field_size = sizeof(int16_t); break;
+        case 'i': field_size = sizeof(int32_t); break;
+        case 'n': field_size = 4; break;
+        case 'B': field_size = sizeof(uint8_t); break;
+        case 'C': field_size = sizeof(uint16_t); break;
+        case 'E': field_size = sizeof(uint32_t); break;
+        case 'H': field_size = sizeof(uint16_t); break;
+        case 'I': field_size = sizeof(uint32_t); break;
+        case 'L': field_size = sizeof(int32_t); break;
+        case 'M': field_size = sizeof(uint8_t); break;
+        case 'N': field_size = 16; break;
+        case 'Z': field_size = 64; break;
+        case 'q': field_size = sizeof(int64_t); break;
+        case 'Q': field_size = sizeof(uint64_t); break;
+        default:
+            return;  // unknown format, bail
+        }
+        if (fmt[i] == 'L' && offset + sizeof(int32_t) <= size) {
+            auto *field = buf + offset;
+            int32_t val;
+            memcpy(&val, field, sizeof(val));
+            if (val != 0) {
+                val += is_lat ? _anon_lat_offset : _anon_lng_offset;
+                memcpy(field, &val, sizeof(val));
+            }
+            is_lat = !is_lat;
+        }
+        offset += field_size;
+    }
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -754,16 +852,18 @@ void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     save_format_Replay(pBuffer);
 #endif
+    anonymize_log_block(pBuffer, size);
     FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
 }
 
 // only the first backend write need succeed for us to be successful
-bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size) 
+bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size)
 {
     if (_next_backend == 0) {
         return false;
     }
-    
+    anonymize_log_block(pBuffer, size);
+
     for (uint8_t i=1; i<_next_backend; i++) {
         backends[i]->WriteBlock(pBuffer, size);
     }
@@ -799,6 +899,7 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
 }
 
 void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
+    anonymize_log_block(pBuffer, size);
     FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
 

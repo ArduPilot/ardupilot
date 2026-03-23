@@ -324,6 +324,7 @@ bool AP_Logger_Backend::Write(const uint8_t msg_type, va_list arg_list, bool is_
         }
     }
 
+    _front.anonymize_log_block(buffer, msg_len);
     return WritePrioritisedBlock(buffer, msg_len, is_critical, is_streaming);
 }
 

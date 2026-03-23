@@ -364,6 +364,7 @@ public:
         AP_Float blk_ratemax;
         AP_Float disarm_ratemax;
         AP_Int16 max_log_files;
+        AP_Int8 anon;
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
@@ -450,6 +451,12 @@ private:
     uint8_t _next_backend;
     AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
     const AP_Int32 *_log_bitmask;
+
+    // log anonymization: offset 'L' (lat/lng) fields in a log block
+    // buffer in-place before it is passed to backends
+    void anonymize_log_block(const void *pBuffer, uint16_t size) const;
+    int32_t _anon_lat_offset;
+    int32_t _anon_lng_offset;
 
     enum class Backend_Type : uint8_t {
         NONE       = 0,
