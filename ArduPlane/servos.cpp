@@ -401,7 +401,12 @@ void ModeAuto::wiggle_servos()
     SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, servo_valueAileronRudder);
 
 }
-
+/*
+  Initialize the tri-fin mixing matrix.
+  Coordinate System:
+  - Azimuth 0 is -Z (Top Dead Center / Up).
+  - Azimuth increases Clockwise (CW) looking from the Tail to Nose.
+*/
 void Plane::trifin_setup()
 {   
     if (trifin_initialized) {
@@ -420,8 +425,8 @@ void Plane::trifin_setup()
     const float s3 = sinf(a3), c3 = cosf(a3);
 
     const float inv_roll_norm  = 1.0f / sqrtf(3.0f);
-    const float inv_pitch_norm = 1.0f / sqrtf(c1*c1 + c2*c2 + c3*c3);
-    const float inv_yaw_norm   = 1.0f / sqrtf(s1*s1 + s2*s2 + s3*s3);
+    const float inv_pitch_norm = 1.0f / sqrtf(s1*s1 + s2*s2 + s3*s3);
+    const float inv_yaw_norm   = 1.0f / sqrtf(c1*c1 + c2*c2 + c3*c3);
 
     // Roll contribution (all fins same, negative to match conventional control)
     trifin_mix[0][0] = -1.0f * inv_roll_norm;
@@ -429,16 +434,21 @@ void Plane::trifin_setup()
     trifin_mix[2][0] = -1.0f * inv_roll_norm;
 
     // Pitch contribution
-    trifin_mix[0][1] =  c1 * inv_pitch_norm;
-    trifin_mix[1][1] =  c2 * inv_pitch_norm;
-    trifin_mix[2][1] =  c3 * inv_pitch_norm;
+    trifin_mix[0][1] =  -s1 * inv_pitch_norm;
+    trifin_mix[1][1] =  -s2 * inv_pitch_norm;
+    trifin_mix[2][1] =  -s3 * inv_pitch_norm;
 
     // Yaw contribution
-    trifin_mix[0][2] =  s1 * inv_yaw_norm;
-    trifin_mix[1][2] =  s2 * inv_yaw_norm;
-    trifin_mix[2][2] =  s3 * inv_yaw_norm;
+    trifin_mix[0][2] =  c1 * inv_yaw_norm;
+    trifin_mix[1][2] =  c1 * inv_yaw_norm;
+    trifin_mix[2][2] =  c3 * inv_yaw_norm;
 }
 
+/*
+ Project Roll, Pitch, and Yaw demands onto tri-fin surfaces.
+ Uses a precomputed mixing matrix and proportional desaturation
+ to maintain control ratios when servos reach their limits (4500).
+*/
 void Plane::trifin_update()
 {
     trifin_setup();

@@ -237,13 +237,13 @@
 #endif
 
 #ifndef TRI_FIN1_AZIMUTH
-  #define TRI_FIN1_AZIMUTH 90.0f // deg, counter-clockwise around X from -Y in Y-Z plane
+  #define TRI_FIN1_AZIMUTH 0.0f // deg, (Tail to Nose) increases clockwise from -Z (up) in Y-Z plane.
 #endif
 
 #ifndef TRI_FIN2_AZIMUTH
-  #define TRI_FIN2_AZIMUTH 210.0f
+  #define TRI_FIN2_AZIMUTH 120.0f 
 #endif
 
 #ifndef TRI_FIN3_AZIMUTH
-  #define TRI_FIN3_AZIMUTH 330.0f
+  #define TRI_FIN3_AZIMUTH 240.0f
 #endif
