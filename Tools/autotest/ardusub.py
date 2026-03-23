@@ -781,9 +781,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
 
     def GPSForYaw(self):
-        '''Consume heading of NMEA GPS and propagate to ATTITUDE'''
+        '''Test consumption of heading from NMEA GPS and its propagation to ATTITUDE'''
 
-        # load parameters with gps for yaw and 10 degrees offset
         self.load_default_params_file("sub-gps-for-yaw-nmea.parm")
         self.reboot_sitl()
         # wait for the vehicle to be ready
