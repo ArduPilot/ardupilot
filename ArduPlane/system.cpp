@@ -218,6 +218,7 @@ bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::QHOVER,
         (uint8_t)Mode::Number::QLOITER,
         (uint8_t)Mode::Number::QACRO,
+        (uint8_t)Mode::Number::QTHROW,
 #if QAUTOTUNE_ENABLED
         (uint8_t)Mode::Number::QAUTOTUNE,
 #else
@@ -225,7 +226,7 @@ bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
 #endif // QAUTOTUNE_ENABLED
         (uint8_t)Mode::Number::LOITER_ALT_QLAND,
 #else
-        0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+        0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
 #endif // HAL_QUADPLANE_ENABLED
 #if MODE_AUTOLAND_ENABLED
         (uint8_t)Mode::Number::AUTOLAND,
@@ -235,7 +236,7 @@ bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
     };
 
     // Place holders should mean that array is always the same size
-    static_assert(ARRAY_SIZE(mode_list) == 22, "mode_list placeholders incorrect");
+    static_assert(ARRAY_SIZE(mode_list) == 23, "mode_list placeholders incorrect");
 
     return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
 }
