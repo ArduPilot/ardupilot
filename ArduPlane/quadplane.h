@@ -61,6 +61,7 @@ public:
     friend class ModeQStabilize;
     friend class ModeQAutotune;
     friend class ModeQAcro;
+    friend class ModeQThrow;
     friend class ModeLoiterAltQLand;
     friend class ModeAutoLand;
     friend class AP_SystemID;
@@ -386,6 +387,9 @@ private:
     AP_Float acro_roll_rate;
     AP_Float acro_pitch_rate;
     AP_Float acro_yaw_rate;
+
+    // flight mode to switch to after a successful Q_THROW launch
+    AP_Int8 throw_next_mode;
 
     // gain from forward acceleration to forward throttle
     AP_Float q_fwd_thr_gain;
