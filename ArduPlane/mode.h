@@ -70,6 +70,9 @@ public:
 #if MODE_AUTOLAND_ENABLED
         AUTOLAND      = 26,
 #endif
+#if HAL_QUADPLANE_ENABLED
+        QTHROW        = 27,
+#endif
 
     // Mode number 30 reserved for "offboard" for external/lua control.
     };
@@ -898,6 +901,42 @@ public:
 protected:
 
     bool _enter() override;
+};
+
+class ModeQThrow : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::QTHROW; }
+    const char *name() const override { return "QTHROW"; }
+    const char *name4() const override { return "QTHR"; }
+
+    bool is_vtol_mode() const override { return true; }
+
+    void update() override;
+    void run() override;
+
+protected:
+
+    bool _enter() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override;
+
+private:
+
+    enum class Stage : uint8_t {
+        Disarmed,
+        Detecting,
+        Uprighting,
+    };
+
+    bool throw_detected();
+    bool throw_attitude_good() const;
+    bool switch_to_next_mode();
+
+    Stage stage;
+    uint32_t free_fall_start_ms;
+    float free_fall_start_vel_u_ms;
+    bool next_mode_attempted;
 };
 
 #if QAUTOTUNE_ENABLED
