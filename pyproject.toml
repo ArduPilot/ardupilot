@@ -1,5 +1,6 @@
 [tool.ruff]
-target-version = "py310"
+target-version = "py39"  # Default Python of the oldest Standard Support Debian + Ubuntu LTS.
+# This should be kept in sync with `min_ver` in the files `./wscript` and `./waf`.
 line-length = 127
 lint.select = [
     "BLE001",  # flake8-blind-except

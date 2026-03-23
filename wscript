@@ -539,10 +539,12 @@ def configure(cfg):
         # also in env for hrt.c
         cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
 
-    # require python 3.8.x or later
-    # also update `MIN_VER` in `./waf`
+    # default Python of the oldest Standard Support Debian + Ubuntu LTS.
+    # Debian releases: https://www.debian.org/releases
+    # Ubuntu releases: https://releases.ubuntu.com
+    # also update `MIN_VER` in `./waf` and `target-version` in `pyproject.toml`
     cfg.load('python')
-    cfg.check_python_version(minver=(3,8,0))
+    cfg.check_python_version(minver=(3, 9, 0))
 
     cfg.load('ap_library')
 
