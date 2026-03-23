@@ -35,7 +35,7 @@ public:
     void output();
 
     // get_phase_angle - returns the rotor phase angle
-    int16_t get_phase_angle() const { return _phase_angle; }
+    float get_phase_angle() const { return _phase_angle; }
 
     // Get function output mask
     uint32_t get_output_mask() const;
@@ -97,7 +97,7 @@ private:
     AP_Int16 _servo1_pos;                        // servo1 azimuth position on swashplate with front of heli being 0 deg
     AP_Int16 _servo2_pos;                        // servo2 azimuth position on swashplate with front of heli being 0 deg
     AP_Int16 _servo3_pos;                        // servo3 azimuth position on swashplate with front of heli being 0 deg
-    AP_Int16 _phase_angle;                       // Phase angle correction for rotor head.  If pitching the swash forward induces 
+    AP_Float _phase_angle;                       // Phase angle correction for rotor head.  If pitching the swash forward induces 
                                                  // a roll, this can be negative depending on mechanics.
 
 };
