@@ -175,7 +175,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-venv python3-setuptools python3-serial python3-gevent python3-cryptography python3-future python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 cmake
+          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-venv python3-setuptools python3-serial python3-gevent python3-cryptography python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 cmake
           python3 --version
           python3 -m pip install gevent
 
@@ -199,7 +199,7 @@ jobs:
           ./install.sh esp32,esp32s3
           source ./export.sh
           cd ../..
-          python3 -m pip install --progress-bar off future lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan "pydantic<2.12"
+          python3 -m pip install --progress-bar off lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan "pydantic<2.12"
           which cmake
           ./waf configure --board ${{matrix.config}} 
           echo './waf configure --board ${{matrix.config}}' >> $GITHUB_STEP_SUMMARY  
