@@ -54,6 +54,7 @@ void ModeQThrow::update()
 
     plane.nav_pitch_cd = pitch_input * quadplane.attitude_control->lean_angle_max_cd();
     quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd);
+    plane.mode_qstabilize.update();
 }
 
 void ModeQThrow::run()
