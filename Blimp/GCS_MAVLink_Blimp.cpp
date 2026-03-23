@@ -95,7 +95,9 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         PID_SEND::POSX,
         PID_SEND::POSY,
         PID_SEND::POSZ,
-        PID_SEND::POSYAW
+        PID_SEND::POSYAW,
+        PID_SEND::LVLRLL,
+        PID_SEND::LVLPIT
     };
     for (uint8_t i=0; i<ARRAY_SIZE(axes); i++) {
         if (!(blimp.g.gcs_pid_mask & (1<<(axes[i]-1)))) {
@@ -108,11 +110,11 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         uint8_t mav_axis = 0;
         switch (axes[i]) {
         case PID_SEND::VELX:
-            pid_info = &blimp.pid_vel_xy.get_pid_info_x();
+            pid_info = &blimp.pid_vel_x.get_pid_info();
             mav_axis = PID_TUNING_VEL_NORTH;
             break;
         case PID_SEND::VELY:
-            pid_info = &blimp.pid_vel_xy.get_pid_info_y();
+            pid_info = &blimp.pid_vel_y.get_pid_info();
             mav_axis = PID_TUNING_VEL_EAST;
             break;
         case PID_SEND::VELZ:
@@ -124,11 +126,11 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
             mav_axis = PID_TUNING_YAW;
             break;
         case PID_SEND::POSX:
-            pid_info = &blimp.pid_pos_xy.get_pid_info_x();
+            pid_info = &blimp.pid_pos_x.get_pid_info();
             mav_axis = PID_TUNING_POS_NORTH;
             break;
         case PID_SEND::POSY:
-            pid_info = &blimp.pid_pos_xy.get_pid_info_y();
+            pid_info = &blimp.pid_posy.get_pid_info();
             mav_axis = PID_TUNING_POS_EAST;
             break;
         case PID_SEND::POSZ:
