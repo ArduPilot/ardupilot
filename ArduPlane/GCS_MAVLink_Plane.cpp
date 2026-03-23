@@ -44,6 +44,7 @@ uint8_t GCS_MAVLINK_Plane::base_mode() const
     case Mode::Number::QHOVER:
     case Mode::Number::QLOITER:
     case Mode::Number::QLAND:
+    case Mode::Number::QTHROW:
 #if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
 #endif
@@ -1326,6 +1327,7 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
         &plane.mode_qland,
         &plane.mode_qrtl,
         &plane.mode_qacro,
+        &plane.mode_qthrow,
         &plane.mode_loiter_qland,
 #if QAUTOTUNE_ENABLED
         &plane.mode_qautotune,
