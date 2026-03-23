@@ -908,7 +908,7 @@ class ModeQThrow : public Mode
 public:
 
     Number mode_number() const override { return Number::QTHROW; }
-    const char *name() const override { return "QThrow"; }
+    const char *name() const override { return "QTHROW"; }
     const char *name4() const override { return "QTHR"; }
 
     bool is_vtol_mode() const override { return true; }
