@@ -21,9 +21,9 @@ env ROMFS_UNCOMPRESSED True
 # No bootloader for initial bring-up — app starts at flash base
 FLASH_RESERVE_START_KB 0
 
-# Use empty storage (RAM-only, no persistence) for bring-up
-define HAL_USE_EMPTY_STORAGE 1
-define HAL_STORAGE_SIZE 16384
+# Persistent flash storage at end of flash (pages 254-255)
+STORAGE_FLASH_PAGE 254
+define HAL_STORAGE_SIZE 800
 
 # disable embedded bootloader flashing (no bootloader built yet)
 define AP_BOOTLOADER_FLASHING_ENABLED 0
@@ -80,6 +80,16 @@ SPIDEV rm3100 SPI1 DEVID1 RM3100_CS MODE3 1*MHZ 1*MHZ
 PB7 ICM45605_CS CS
 SPIDEV icm42688 SPI1 DEVID2 ICM45605_CS MODE3 2*MHZ 8*MHZ
 IMU Invensensev3 SPI:icm42688 ROTATION_NONE
+
+# I2C2 bus for TMP117 temperature sensor
+I2C_ORDER I2C2
+PA8 I2C2_SDA I2C2
+PA9 I2C2_SCL I2C2
+define HAL_I2C_INTERNAL_MASK 1
+
+# TMP117 temperature sensor
+define AP_PERIPH_DEVICE_TEMPERATURE_ENABLED 1
+define AP_TEMPERATURE_SENSOR_MAX_INSTANCES 1
 
 # LEDs
 PA0 LED1 OUTPUT LOW

@@ -1,3 +1,10 @@
 # PCBMagNode default parameters
 INS_GYR_CAL 0
 INS_SAMPLE_RATE 100
+
+# TMP117 temperature sensor on I2C2
+TEMP1_TYPE 10
+TEMP1_BUS 0
+TEMP1_ADDR 72
+TEMP1_SRC 6
+TEMP_MSG_RATE 5
