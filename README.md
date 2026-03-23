@@ -63,9 +63,9 @@ Are configurable in flight (Parameters.ccp)
 Parameters:
 
 ```text
-TRI_FIN1_AZIMUTH  = 90°    # Clockwise from +Y in Y-Z plane
-TRI_FIN2_AZIMUTH  = 210°
-TRI_FIN3_AZIMUTH  = 330°
+TRI_FIN1_AZIMUTH  = 0°    # Clockwise from -Z in Y-Z plane (Tail to Nose)
+TRI_FIN2_AZIMUTH  = 120°
+TRI_FIN3_AZIMUTH  = 240°
 ```
 
 Are compiled in code and can be changed preflight (`config.h`).
