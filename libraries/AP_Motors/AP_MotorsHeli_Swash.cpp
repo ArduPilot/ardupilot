@@ -191,7 +191,7 @@ void AP_MotorsHeli_Swash::calculate_roll_pitch_collective_factors()
 
 void AP_MotorsHeli_Swash::add_servo_angle(uint8_t num, float scale, float angle, float collective)
 {
-    int16_t phase_angle = constrain_int16(_phase_angle, -30, 30);
+    float phase_angle = constrain_float(_phase_angle, -30, 30);
     add_servo_raw(num,
                   scale * cosf(radians(angle + 90 - phase_angle)),
                   scale * cosf(radians(angle - phase_angle)),
