@@ -37,6 +37,7 @@ public:
         MLX90614                    = 7,
         SHT3x                       = 8,
         MAX31865_3_wire             = 9,
+        TMP117                      = 10,
     };
 
     // option to map to another system component
