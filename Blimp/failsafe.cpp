@@ -51,12 +51,11 @@ void Blimp::failsafe_check()
     if (!in_failsafe && failsafe_enabled && tnow - failsafe_last_timestamp > 2000000) {
         // motors are running but we have gone 2 second since the
         // main loop ran. That means we're in trouble and should
-        // disarm the motors->
+        // disarm the motors.
         in_failsafe = true;
         // reduce motors to minimum (we do not immediately disarm because we want to log the failure)
         if (motors->armed()) {
             motors->output_min();
-            //TODO: this may not work correctly.
         }
 
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);
