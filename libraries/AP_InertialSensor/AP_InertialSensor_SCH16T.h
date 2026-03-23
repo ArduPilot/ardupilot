@@ -24,7 +24,8 @@ class AP_InertialSensor_SCH16T : public AP_InertialSensor_Backend {
 public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                            enum Rotation rotation);
+                                            enum Rotation rotation,
+                                            uint8_t drdy_gpio=0);
 
     /**
      * Configure the sensors and start reading routine.
@@ -35,8 +36,9 @@ public:
 private:
 
     AP_InertialSensor_SCH16T(AP_InertialSensor &imu,
-                                AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                enum Rotation rotation);
+                             AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+                             enum Rotation _rotation,
+                             uint8_t _drdy_gpio);
 
     struct SensorData {
         int32_t acc_x;
@@ -71,8 +73,7 @@ private:
         uint16_t value;
     };
 
-    void run_state_machine(void);
-    bool collect_and_publish();
+    bool init();
 
     void reset_chip();
     bool read_product_id();
@@ -82,34 +83,39 @@ private:
     bool validate_register_configuration();
 
     bool read_data(SensorData *data);
+    void collect_and_publish();
 
     void register_write(uint8_t addr, uint16_t value);
     uint64_t register_read(uint8_t addr);
+    uint64_t register_read_measure(uint8_t addr);
     uint64_t transfer_spi_frame(uint64_t frame);
     uint8_t calculate_crc8(uint64_t frame);
 
-    enum class State : uint8_t {
-        PowerOn,
-        Reset,
-        Configure,
-        LockConfiguration,
-        Validate,
-        Read,
-    } _state = State::PowerOn;
+    void loop(void);
+
+    enum class Sch16t_Type : uint8_t {
+        SCH16T_K01 = 0, 
+        SCH16T_K10 = 1, 
+    };
 
     RegisterConfig _registers[6];
     SensorStatus _sensor_status;
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
-    AP_HAL::Device::PeriodicHandle periodic_handle;
 
     uint8_t accel_instance {};
-    uint8_t gyro_instance = {};
+    uint8_t gyro_instance {};
     enum Rotation rotation {};
     uint8_t drdy_pin {};
 
-    int failure_count {};
-    float expected_sample_rate_hz {};
+    // which sensor type this is
+    enum Sch16t_Type sch16t_type {};
+
+    float temp_sum {};
+    uint32_t temp_cnt {};
+
+    // int failure_count {};
+    uint16_t expected_sample_rate_hz {};
 
     float accel_scale {};
     float gyro_scale {};

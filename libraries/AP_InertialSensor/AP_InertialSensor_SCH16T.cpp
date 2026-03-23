@@ -25,13 +25,14 @@
 static constexpr uint16_t EOI = (1 << 1);               // End of Initialization
 static constexpr uint16_t EN_SENSOR = (1 << 0);         // Enable RATE and ACC measurement
 static constexpr uint16_t DRY_DRV_EN = (1 << 5);        // Enables Data ready function
-static constexpr uint16_t FILTER_68HZ = (0x0000);       // 68 Hz default filter
-static constexpr uint16_t FILTER_BYPASS = (0b0000000111111111);     // No filtering
-static constexpr uint16_t RATE_300DPS_1475HZ = 0b0001001011011011; // Gyro XYZ range 300 deg/s @ 1475Hz
-static constexpr uint16_t ACC12_8G_1475HZ = 0b0001001011011011;  // Acc XYZ range 8 G and 1475 update rate
-static constexpr uint16_t ACC3_26G = (0b000 << 0);
+static constexpr uint16_t FILTER_LPF5 = (0b0000000101101101);           // LPF5, Gyro: 235Hz, Accel: 210Hz
+static constexpr uint16_t RATE_300DPS_1475HZ = (0b0001001011011011);    // Gyro XYZ range 300 deg/s @ 1475Hz, K01
+static constexpr uint16_t RATE_2000DPS_1475HZ_K10_200LSB = (0b0011011011011011); // Gyro XYZ range 2000 deg/s @ 1475Hz, 200 LSB/(°/s)
+static constexpr uint16_t RATE_2000DPS_2950HZ_K10 = (0b0011011010010010); // Gyro XYZ range 2000 deg/s @ 2950Hz, 200 LSB/(°/s)
+static constexpr uint16_t ACC12_8G_1475HZ = (0b0001001011011011);   // Acc XYZ range 8G and 1475Hz, 3200 LSB/(m/s^2)
+static constexpr uint16_t ACC12_8G_2950HZ = (0b0001001010010010);   // Acc XYZ range 8G and 2950Hz, 3200 LSB/(m/s^2)
+static constexpr uint16_t ACC3_26G = (0b000 << 0);  // 8G measurement range, 26G dynamic range, 1600 LSB/(m/s^2)
 static constexpr uint16_t SPI_SOFT_RESET = (0b1010);
-static constexpr uint32_t POWER_ON_TIME = 250000UL;
 
 // Data registers
 #define RATE_X1         0x01 // 20 bit
@@ -79,49 +80,95 @@ static constexpr uint32_t POWER_ON_TIME = 250000UL;
 #define SN_ID2          0x3E // 16 bit
 #define SN_ID3          0x3F // 16 bit
 
-#define T_STALL_US   20U
-
 #define SPI48_DATA_INT32(a)     (((int32_t)(((a) << 4)  & 0xfffff000UL)) >> 12)
 #define SPI48_DATA_UINT32(a)    ((uint32_t)(((a) >> 8)  & 0x000fffffUL))
 #define SPI48_DATA_UINT16(a)    ((uint16_t)(((a) >> 8)  & 0x0000ffffUL))
 
+// use crc table for save some cpu.
+static constexpr uint8_t read_data_crc_table[] = {
+    0xAC, 0x9A, 0x6D, 0xF6, 0x01, 0x37, 0xC0, 0x2E, 0xD9, 0xEF, 0x18, 0x83, 0x74, 0x42, 0xB5, 0xB1
+};
+
 extern const AP_HAL::HAL& hal;
 
 AP_InertialSensor_SCH16T::AP_InertialSensor_SCH16T(AP_InertialSensor &imu,
-                                                         AP_HAL::OwnPtr<AP_HAL::Device> _dev,
-                                                         enum Rotation _rotation)
+                                                   AP_HAL::OwnPtr<AP_HAL::Device> _dev,
+                                                   enum Rotation _rotation,
+                                                   uint8_t _drdy_gpio)
     : AP_InertialSensor_Backend(imu)
     , dev(std::move(_dev))
     , rotation(_rotation)
+    , drdy_pin(_drdy_gpio)
 {
-    expected_sample_rate_hz = 1475;
-    accel_scale = 1.f / 1600.f;
-    gyro_scale = radians(1.f / 1600.f);
-
-    _registers[0] = RegisterConfig(CTRL_FILT_RATE,  FILTER_BYPASS);
-    _registers[1] = RegisterConfig(CTRL_FILT_ACC12, FILTER_BYPASS);
-    _registers[2] = RegisterConfig(CTRL_FILT_ACC3,  FILTER_BYPASS);
-    _registers[3] = RegisterConfig(CTRL_RATE,       RATE_300DPS_1475HZ); // +/- 300 deg/s, 1600 LSB/(deg/s) -- default, Decimation 8, 1475Hz
-    _registers[4] = RegisterConfig(CTRL_ACC12,      ACC12_8G_1475HZ);    // +/- 80 m/s^2, 3200 LSB/(m/s^2) -- default, Decimation 8, 1475Hz
-    _registers[5] = RegisterConfig(CTRL_ACC3,       ACC3_26G);           // +/- 260 m/s^2, 1600 LSB/(m/s^2) -- default
 }
 
 AP_InertialSensor_Backend *
 AP_InertialSensor_SCH16T::probe(AP_InertialSensor &imu,
-                                   AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                   enum Rotation rotation)
+                                AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                enum Rotation rotation,
+                                uint8_t drdy_gpio)
 {
     if (!dev) {
         return nullptr;
     }
 
-    auto sensor = new AP_InertialSensor_SCH16T(imu, std::move(dev), rotation);
+    AP_InertialSensor_SCH16T *sensor = NEW_NOTHROW AP_InertialSensor_SCH16T(imu, std::move(dev), rotation, drdy_gpio);
 
-    if (!sensor) {
+    if (!sensor || !sensor->init()) {
+        delete sensor;
         return nullptr;
     }
 
     return sensor;
+}
+
+bool AP_InertialSensor_SCH16T::init()
+{
+    // Wait 32ms for sensor NVM read and SPI start up
+    hal.scheduler->delay(32);
+
+    WITH_SEMAPHORE(dev->get_semaphore());
+
+    if (!read_product_id()) {
+        return false;
+    }
+
+    reset_chip();
+
+    hal.scheduler->delay(50);
+
+    if (!read_product_id()) {
+        return false;
+    }
+
+    _registers[0] = RegisterConfig(CTRL_FILT_RATE, FILTER_LPF5);
+    _registers[1] = RegisterConfig(CTRL_FILT_ACC12, FILTER_LPF5);
+    _registers[2] = RegisterConfig(CTRL_FILT_ACC3, FILTER_LPF5);
+
+    // Configure and enable sensor
+    configure_registers();
+
+    hal.scheduler->delay(216);  // after enable sensor, we need wait at least 215ms, from datasheet
+
+    // Read all status registers once
+    read_status_registers();
+
+    register_write(CTRL_MODE, (EOI | EN_SENSOR)); // Write EOI and EN_SENSOR
+
+    hal.scheduler->delay(4);    // from datasheet
+
+    // Read all status registers twice
+    read_status_registers();
+    read_status_registers();
+
+    // Check that registers are configured properly and that the sensor status is OK
+    if (!(validate_sensor_status() && validate_register_configuration())) {
+        return false;
+    }
+
+    dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+
+    return true;
 }
 
 void AP_InertialSensor_SCH16T::start()
@@ -135,91 +182,13 @@ void AP_InertialSensor_SCH16T::start()
     set_gyro_orientation(gyro_instance, rotation);
     set_accel_orientation(accel_instance, rotation);
 
-    uint32_t period_us = 1000000UL / expected_sample_rate_hz;
-    periodic_handle = dev->register_periodic_callback(period_us, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCH16T::run_state_machine, void));
+    if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SCH16T::loop, void), "SCH16T",
+                                      1024, AP_HAL::Scheduler::PRIORITY_BOOST, 1)) {
+        AP_HAL::panic("Failed to create SCH16T thread");
+    }
 }
 
-void AP_InertialSensor_SCH16T::run_state_machine()
-{
-    WITH_SEMAPHORE(dev->get_semaphore());
-
-    switch (_state) {
-    case State::PowerOn: {
-            _state = State::Reset;
-            dev->adjust_periodic_callback(periodic_handle, POWER_ON_TIME);
-            break;
-        }
-
-    case State::Reset: {
-            failure_count = 0;
-            reset_chip();
-            _state = State::Configure;
-            dev->adjust_periodic_callback(periodic_handle, POWER_ON_TIME);
-            break;
-        }
-
-    case State::Configure: {
-            if (!read_product_id()) {
-                _state = State::Reset;
-                dev->adjust_periodic_callback(periodic_handle, 2000000); // 2s
-                break;
-            }
-
-            configure_registers();
-            _state = State::LockConfiguration;
-            dev->adjust_periodic_callback(periodic_handle, POWER_ON_TIME);
-            break;
-        }
-
-    case State::LockConfiguration: {
-            read_status_registers(); // Read all status registers once
-            register_write(CTRL_MODE, (EOI | EN_SENSOR)); // Write EOI and EN_SENSOR
-            _state = State::Validate;
-            dev->adjust_periodic_callback(periodic_handle, 50000UL); // 50ms
-            break;
-        }
-
-    case State::Validate: {
-            read_status_registers(); // Read all status registers twice
-            read_status_registers();
-
-            // Check that registers are configured properly and that the sensor status is OK
-            if (validate_sensor_status() && validate_register_configuration()) {
-                _state = State::Read;
-                dev->adjust_periodic_callback(periodic_handle, 1000000UL / expected_sample_rate_hz);
-
-            } else {
-                _state = State::Reset;
-                dev->adjust_periodic_callback(periodic_handle, POWER_ON_TIME);
-            }
-
-            break;
-        }
-
-    case State::Read: {
-            if (collect_and_publish()) {
-                if (failure_count > 0) {
-                    failure_count--;
-                }
-            } else {
-                failure_count++;
-            }
-
-            // Reset if successive failures
-            if (failure_count > 10) {
-                _state = State::Reset;
-                return;
-            }
-
-            break;
-        }
-
-    default:
-        break;
-    } // end switch/case
-}
-
-bool AP_InertialSensor_SCH16T::collect_and_publish()
+void AP_InertialSensor_SCH16T::collect_and_publish()
 {
     SensorData data = {};
     bool success = read_data(&data);
@@ -228,18 +197,21 @@ bool AP_InertialSensor_SCH16T::collect_and_publish()
         Vector3f gyro{gyro_scale*data.gyro_x, gyro_scale*data.gyro_y, gyro_scale*data.gyro_z};
 
         _rotate_and_correct_accel(accel_instance, accel);
-        _notify_new_accel_raw_sample(accel_instance, accel);
+        _notify_new_accel_raw_sample(accel_instance, accel, AP_HAL::micros64());
 
         _rotate_and_correct_gyro(gyro_instance, gyro);
-        _notify_new_gyro_raw_sample(gyro_instance, gyro);
+        _notify_new_gyro_raw_sample(gyro_instance, gyro, AP_HAL::micros64());
 
-        _publish_temperature(accel_instance, float(data.temp)/100.f);
+        temp_sum += float(data.temp) * 0.01f;
+        temp_cnt++;
 
-        // adjust the periodic callback to be synchronous with the incoming data
-        dev->adjust_periodic_callback(periodic_handle, 1000000UL / expected_sample_rate_hz);
+        // publish temperature at 50Hz
+        if (temp_cnt == uint32_t(expected_sample_rate_hz / 50)) {
+            _publish_temperature(accel_instance, temp_sum / temp_cnt);
+            temp_sum = 0.0f;
+            temp_cnt = 0;
+        }
     }
-
-    return success;
 }
 
 void AP_InertialSensor_SCH16T::reset_chip()
@@ -255,14 +227,16 @@ void AP_InertialSensor_SCH16T::reset_chip()
 
 bool AP_InertialSensor_SCH16T::read_data(SensorData *data)
 {
-    register_read(RATE_X2);
-    uint64_t gyro_x = register_read(RATE_Y2);
-    uint64_t gyro_y = register_read(RATE_Z2);
-    uint64_t gyro_z = register_read(ACC_X3);
-    uint64_t acc_x  = register_read(ACC_Y3);
-    uint64_t acc_y  = register_read(ACC_Z3);
-    uint64_t acc_z  = register_read(TEMP);
-    uint64_t temp   = register_read(TEMP);
+    WITH_SEMAPHORE(dev->get_semaphore());
+
+    (void)register_read_measure(RATE_X2);
+    uint64_t gyro_x = register_read_measure(RATE_Y2);
+    uint64_t gyro_y = register_read_measure(RATE_Z2);
+    uint64_t gyro_z = register_read_measure(ACC_X2);
+    uint64_t acc_x  = register_read_measure(ACC_Y2);
+    uint64_t acc_y  = register_read_measure(ACC_Z2);
+    uint64_t acc_z  = register_read_measure(TEMP);
+    uint64_t temp   = register_read_measure(TEMP);
 
     static constexpr uint64_t MASK48_ERROR = 0x001E00000000UL;
     uint64_t values[] = { gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, temp };
@@ -320,7 +294,44 @@ bool AP_InertialSensor_SCH16T::read_product_id()
 
     // SCH16T-K01   -   ID hex = 0x0020
     // SCH1633-B13  -   ID hex = 0x0017
-    bool success = asic_id == 0x20 && comp_id == 0x17;
+    // SCH16T-K10   -   ID hex = 0x0021
+    bool success = false;
+    if ((asic_id == 0x20 && comp_id == 0x17) || (asic_id == 0x21 && comp_id == 0x23)) {
+        // SCH16T-K01
+        accel_scale = 1.f / 3200.f;
+        gyro_scale = radians(1.f / 1600.f);
+        sch16t_type = Sch16t_Type::SCH16T_K01;
+        _registers[3] = RegisterConfig(CTRL_RATE, RATE_300DPS_1475HZ);  // +/- 300 deg/s, 1600 LSB/(deg/s), Decimation 8, 1475Hz
+        _registers[4] = RegisterConfig(CTRL_ACC12, ACC12_8G_1475HZ);    // +/- 80 m/s^2, 3200 LSB/(m/s^2), Decimation 8, 1475Hz
+        _registers[5] = RegisterConfig(CTRL_ACC3, ACC3_26G);            // +/- 80 m/s^2, 1600 LSB/(m/s^2)
+        expected_sample_rate_hz = 1475;
+        _clip_limit = (8.0f - 0.2f) * GRAVITY_MSS;
+        success = true;
+    } else if (asic_id == 0x21 && comp_id == 0x21) {
+        // SCH16T-K10, 20-bit mode  
+        accel_scale = 1.f / 3200.f;
+        gyro_scale = radians(1.f / 200.f);
+        sch16t_type = Sch16t_Type::SCH16T_K10;
+
+        bool fast_sample = false;
+        if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate()) {
+            fast_sample = (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI);
+        }
+
+        if (fast_sample) {
+            _registers[3] = RegisterConfig(CTRL_RATE, RATE_2000DPS_2950HZ_K10); // +/- 2000 deg/s, 200 LSB/(deg/s), Decimation 4, 2950Hz
+            _registers[4] = RegisterConfig(CTRL_ACC12, ACC12_8G_2950HZ);        // +/- 80 m/s^2, 3200 LSB/(m/s^2), Decimation 4, 2950Hz
+            expected_sample_rate_hz = 2950;
+        } else {
+            _registers[3] = RegisterConfig(CTRL_RATE, RATE_2000DPS_1475HZ_K10_200LSB);  // +/- 2000 deg/s, 200 LSB/(deg/s), Decimation 8, 1475Hz
+            _registers[4] = RegisterConfig(CTRL_ACC12, ACC12_8G_1475HZ);        // +/- 80 m/s^2, 3200 LSB/(m/s^2), Decimation 8, 1475Hz
+            expected_sample_rate_hz = 1475;
+        }
+
+        _registers[5] = RegisterConfig(CTRL_ACC3, ACC3_26G);    // +/- 80 m/s^2, 1600 LSB/(m/s^2)
+        _clip_limit = (16.0f - 0.2f) * GRAVITY_MSS;
+        success = true;
+    }
 
     return success;
 }
@@ -331,7 +342,11 @@ void AP_InertialSensor_SCH16T::configure_registers()
         register_write(r.addr, r.value);
     }
 
-    register_write(CTRL_USER_IF, DRY_DRV_EN); // Enable data ready
+    register_read(CTRL_USER_IF);
+    uint16_t ctrl_user_if = SPI48_DATA_UINT16(register_read(CTRL_USER_IF));
+    ctrl_user_if |= DRY_DRV_EN;
+
+    register_write(CTRL_USER_IF, ctrl_user_if); // Enable data ready
     register_write(CTRL_MODE, EN_SENSOR); // Enable the sensor
 }
 
@@ -390,6 +405,24 @@ uint64_t AP_InertialSensor_SCH16T::register_read(uint8_t addr)
     return transfer_spi_frame(frame);
 }
 
+// This function only use for reading sensor measurement data.
+uint64_t AP_InertialSensor_SCH16T::register_read_measure(uint8_t addr)
+{
+    uint8_t buf[6] = {0};
+    buf[0] = addr >> 2;
+    buf[1] = ((addr & 0x03) << 6) | (1U << 3);
+    buf[5] = read_data_crc_table[addr - 1];
+
+    dev->transfer_fullduplex(buf, 6);
+
+    uint64_t value = {};
+    for (uint8_t i = 0; i < 6; i++) {
+        value |= (uint64_t(buf[i]) << (40 - 8 * i));
+    }
+
+    return value;
+}
+
 // Non-data registers are the only writable ones and are 16 bit or less
 void AP_InertialSensor_SCH16T::register_write(uint8_t addr, uint16_t value)
 {
@@ -407,20 +440,16 @@ void AP_InertialSensor_SCH16T::register_write(uint8_t addr, uint16_t value)
 // The SPI protocol (SafeSPI) is 48bit out-of-frame. This means read return frames will be received on the next transfer.
 uint64_t AP_InertialSensor_SCH16T::transfer_spi_frame(uint64_t frame)
 {
-    uint16_t buf[3];
-    for (int index = 0; index < 3; index++) {
-        uint16_t lower_byte = (frame >> (index << 4)) & 0xFF;
-        uint16_t upper_byte = (frame >> ((index << 4) + 8)) & 0xFF;
-        buf[3 - index - 1] = (lower_byte << 8) | upper_byte;
+    uint8_t buf[6];
+    for (uint8_t i = 0; i < 6; i++) {
+        buf[i] = (frame >> (40 - 8 * i)) & 0xFF;
     }
 
-    dev->transfer((uint8_t*)buf, 6, (uint8_t*)buf, 6);
+    dev->transfer_fullduplex(buf, 6);
 
     uint64_t value = {};
-    for (int index = 0; index < 3; index++) {
-        uint16_t lower_byte = buf[index] & 0xFF;
-        uint16_t upper_byte = (buf[index] >> 8) & 0xFF;
-        value |= (uint64_t)(upper_byte | (lower_byte << 8)) << ((3 - index - 1) << 4);
+    for (uint8_t i = 0; i < 6; i++) {
+        value |= (uint64_t(buf[i]) << (40 - 8 * i));
     }
 
     return value;
@@ -437,6 +466,31 @@ uint8_t AP_InertialSensor_SCH16T::calculate_crc8(uint64_t frame)
     }
 
     return crc;
+}
+
+/**
+ * @brief Sensor read loop
+ */
+void AP_InertialSensor_SCH16T::loop(void)
+{
+    while (true) {
+        uint32_t tstart = AP_HAL::micros();
+        // we deliberately set the period a bit fast to ensure we don't lose a sample
+        const uint32_t period_us = (1000000UL / expected_sample_rate_hz) - 20U;
+        bool wait_ok = false;
+        if (drdy_pin != 0) {
+            // when we have a DRDY pin then wait for rising edge
+            wait_ok = hal.gpio->wait_pin(drdy_pin, AP_HAL::GPIO::INTERRUPT_RISING, 800);
+        }
+        collect_and_publish();
+        uint32_t dt = AP_HAL::micros() - tstart;
+        if (dt < period_us) {
+            uint32_t wait_us = period_us - dt;
+            if (!wait_ok || wait_us > period_us/2) {
+                hal.scheduler->delay_microseconds(wait_us);
+            }
+        }
+    }
 }
 
 bool AP_InertialSensor_SCH16T::update()
