@@ -170,6 +170,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::QLOITER:
     case Mode::Number::QTHROW:
     case Mode::Number::QACRO:
+    case Mode::Number::QTHROW:
 #if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
 #endif
