@@ -90,9 +90,10 @@ void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
 void AP_AHRS::Write_POS() const
 {
     Location loc;
-    if (!get_location(loc)) {
-        return;
-    }
+    // get_location() fills loc with the best available position even when
+    // returning false.  Continue logging so the estimated path is preserved
+    // for post-processing and analysis.
+    get_location(loc);
     float home;
     AP::ahrs().get_relative_position_D_home(home);
 
