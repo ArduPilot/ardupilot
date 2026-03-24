@@ -1136,7 +1136,7 @@ void NavEKF3_core::FuseVelPosNED()
                     }
                 } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
-                    const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
+                    const ftype gndMaxBaroErr = fabsF(frontend->_baroGndEffectDeadZone);
                     const ftype gndBaroInnovFloor = -0.5;
 
                     if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
@@ -1493,7 +1493,18 @@ void NavEKF3_core::selectHeightForFusion()
         posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.1f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
         if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
-            posDownObsNoise *= frontend->gndEffectBaroScaler;
+            if (is_negative(frontend->_baroGndEffectDeadZone)) {
+                // Use |value| as the observation noise floor in metres.
+                // This heavily deweights baro during ground effect while
+                // maintaining a weak anchor against pure-IMU drift.
+                // E.g. -8 sets noise to 8 m (variance 64), giving K≈0.008
+                // so even -8 m of prop wash only contributes ~0.004 m per
+                // fusion cycle.
+                const ftype gnd_eff_noise_m = fabsF(frontend->_baroGndEffectDeadZone);
+                posDownObsNoise = sq(MAX(gnd_eff_noise_m, 1.0f));
+            } else {
+                posDownObsNoise *= frontend->gndEffectBaroScaler;
+            }
         }
         velPosObs[5] = -hgtMea;
     } else if ((activeHgtSource == AP_NavEKF_Source::SourceZ::NONE && imuSampleTime_ms - lastHgtPassTime_ms > 70)) {
