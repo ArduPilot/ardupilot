@@ -41,6 +41,16 @@ void AP_Mount_Scripting::set_attitude_euler(float roll_deg, float pitch_deg, flo
     current_angle_deg.z = yaw_bf_deg;
 }
 
+// called by send_target_to_gimbal() after it has written the converted angle
+// into mnt_target.angle_rad.  Stamp the target_type as ANGLE so that the
+// base-class get_angle_target() returns the value to the Lua script.
+// This covers every non-ANGLE mode that converts to angles (RETRACT, NEUTRAL,
+// LOCATION, and rate-to-angle if the backend were NATIVE_ANGLES_ONLY).
+void AP_Mount_Scripting::send_target_angles(const MountAngleTarget &angle_rad)
+{
+    mnt_target.target_type = MountTargetType::ANGLE;
+}
+
 // get attitude as a quaternion.  returns true on success
 bool AP_Mount_Scripting::get_attitude_quaternion(Quaternion& att_quat)
 {
