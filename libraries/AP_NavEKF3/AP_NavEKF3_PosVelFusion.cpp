@@ -1083,9 +1083,17 @@ void NavEKF3_core::FuseVelPosNED()
                 }
 
                 if (hgtTimeout) {
-                    ResetHeight();
+                    // Do not reset height during ground effect — baro is
+                    // known to be corrupted by prop wash and would drive
+                    // the state estimate to a fictitious altitude.
+                    const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+                    if (!gndEffectActive) {
+                        ResetHeight();
+                    }
 
-                    // Don't fuse the same data we have used to reset states.
+                    // Don't fuse the same data we have used to reset
+                    // states, or that we have rejected due to ground
+                    // effect.
                     fuseHgtData = false;
                 }
 
