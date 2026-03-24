@@ -260,6 +260,13 @@ public:
    // return the innovation consistency test ratios for the velocity, position, magnetometer and true airspeed measurements
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // return 1-sigma position and velocity uncertainty derived from the EKF state error covariance matrix P
+    // pos_horiz_m: 2D RMS horizontal position uncertainty (m)
+    // pos_vert_m:  1-sigma vertical position uncertainty (m)
+    // vel_m_s:     1-sigma worst-case NED velocity uncertainty (m/s)
+    // returns false if EKF is not yet initialised
+    bool getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const;
+
     // get a particular source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
