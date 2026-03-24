@@ -33,6 +33,13 @@ def launch_sitl_copter_dds_udp(sitl_copter_dds_udp):
 
 
 @launch_pytest.fixture(scope="function")
+def launch_sitl_copter_dds_udp_use_ns(sitl_copter_dds_udp_use_ns):
+    """Launch SITL Copter with DDS over UDP and with namespaced ros2 names."""
+    sitl_ld, sitl_actions = sitl_copter_dds_udp_use_ns
+    yield LaunchDescription([sitl_ld, launch_pytest.actions.ReadyToTest()]), sitl_actions
+
+
+@launch_pytest.fixture(scope="function")
 def launch_sitl_plane_dds_serial(sitl_plane_dds_serial):
     """Launch SITL Plane with DDS over serial."""
     sitl_ld, sitl_actions = sitl_plane_dds_serial
