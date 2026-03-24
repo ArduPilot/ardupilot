@@ -3268,6 +3268,19 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
     return false;
 }
 
+// get 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
+bool AP_AHRS::get_pos_vel_uncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
+{
+    switch (active_EKF_type()) {
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.getPosVelUncertainty(pos_horiz_m, pos_vert_m, vel_m_s);
+#endif
+    default:
+        return false;
+    }
+}
+
 // get a source's velocity innovations.  source should be from 0 to 7 (see AP_NavEKF_Source::SourceXY)
 // returns true on success and results are placed in innovations and variances arguments
 bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const
