@@ -683,6 +683,13 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 // returns false if the origin is already set
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
+    // reject external origin setting until the filter has finished
+    // bootstrap initialisation.  InitialiseVariables() resets
+    // validOrigin, so an origin set before that point is lost.
+    // Callers (e.g. AHRS use_recorded_origin_maybe) will retry.
+    if (!statesInitialised) {
+        return false;
+    }
     return setOrigin(loc);
 }
 
