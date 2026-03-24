@@ -728,6 +728,7 @@ bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)
     return true;
 }
 
+#if AP_SCRIPTING_ENABLED
 // get target rate in deg/sec. returns true on success
 bool AP_Mount::get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
@@ -748,7 +749,6 @@ bool AP_Mount::get_angle_target(uint8_t instance, float& roll_deg, float& pitch_
     return backend->get_angle_target(roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame);
 }
 
-#if AP_SCRIPTING_ENABLED
 // get mount target location. returns true on success
 bool AP_Mount::get_location_target(uint8_t instance, Location& target_loc)
 {
