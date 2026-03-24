@@ -404,6 +404,13 @@ public:
     // boolean false is returned if variances are not available
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
+    // get 1-sigma position and velocity uncertainty derived from the EKF state error covariance matrix P
+    // pos_horiz_m: 2D RMS horizontal position uncertainty (m)
+    // pos_vert_m:  1-sigma vertical position uncertainty (m)
+    // vel_m_s:     1-sigma worst-case NED velocity uncertainty (m/s)
+    // returns false if not available
+    bool get_pos_vel_uncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const;
+
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
