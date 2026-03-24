@@ -12874,6 +12874,86 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Sprayer OK")
 
+    def LogAnon(self):
+        '''test log anonymization with LOG_ANON parameter'''
+
+        home = self.sitl_start_location()
+        home_lat = home.lat
+        home_lng = home.lng
+
+        # Test 1: LOG_ANON=1 - coordinates should be offset
+        self.context_push()
+        self.set_parameters({
+            "LOG_ANON": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode("ALT_HOLD")
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(8, 12, relative=True, timeout=30)
+        self.delay_sim_time(5)
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=60)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        for mtype in ['POS', 'AHR2', 'ORGN']:
+            dfreader.rewind()
+            # skip messages with zero lat/lng (before EKF convergence)
+            while True:
+                m = dfreader.recv_match(type=mtype)
+                if m is None:
+                    raise NotAchievedException("No non-zero %s message in log" % mtype)
+                if m.Lat != 0 and m.Lng != 0:
+                    break
+            lat = m.Lat
+            lng = m.Lng
+            if abs(lat - home_lat) < 0.1 and abs(lng - home_lng) < 0.1:
+                raise NotAchievedException(
+                    "%s not anonymized: lat=%f lng=%f (home: %f,%f)" %
+                    (mtype, lat, lng, home_lat, home_lng))
+            self.progress(
+                "%s anonymized OK: lat=%f lng=%f (offset: %+.2f, %+.2f)" %
+                (mtype, lat, lng, lat - home_lat, lng - home_lng))
+        self.context_pop()
+
+        # Test 2: LOG_ANON=0 - coordinates should match home
+        self.context_push()
+        self.set_parameters({
+            "LOG_ANON": 0,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode("ALT_HOLD")
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(8, 12, relative=True, timeout=30)
+        self.delay_sim_time(5)
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=60)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        for mtype in ['POS', 'AHR2', 'ORGN']:
+            dfreader.rewind()
+            while True:
+                m = dfreader.recv_match(type=mtype)
+                if m is None:
+                    raise NotAchievedException("No non-zero %s message in log" % mtype)
+                if m.Lat != 0 and m.Lng != 0:
+                    break
+            lat = m.Lat
+            lng = m.Lng
+            if abs(lat - home_lat) > 0.1 or abs(lng - home_lng) > 0.1:
+                raise NotAchievedException(
+                    "%s unexpectedly offset: lat=%f lng=%f (home: %f,%f)" %
+                    (mtype, lat, lng, home_lat, home_lng))
+            self.progress(
+                "%s not anonymized OK: lat=%f lng=%f" %
+                (mtype, lat, lng))
+        self.context_pop()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
@@ -15890,6 +15970,7 @@ return update, 1000
             self.GripperInitialPosition,
             self.REQUIRE_LOCATION_FOR_ARMING,
             self.LoggingFormat,
+            self.LogAnon,
             self.MissionRTLYawBehaviour,
             self.BatteryInternalUseOnly,
             self.MAV_CMD_MISSION_START_p1_p2,
