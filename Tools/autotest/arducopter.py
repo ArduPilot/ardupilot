@@ -11183,6 +11183,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ("rds02uf", 43),
             ("lightware_grf", 45),
             ("dts6012m", 47),
+            ("benewake_tfa1500", 48),
         ]
         # you can use terrain - if you don't the vehicle just uses a
         # plane based on home.

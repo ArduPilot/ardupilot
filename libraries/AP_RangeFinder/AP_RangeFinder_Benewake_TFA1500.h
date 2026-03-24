@@ -24,16 +24,14 @@ private:
     bool process_byte(uint8_t received_byte, uint32_t &dist_cm);
     bool get_reading(float &reading_m) override;
 
-    union
-    {
+    union {
         uint8_t bytes[5];
-        struct PACKED
-        {
+        struct PACKED {
             uint8_t header;
             uint8_t dist_low;
             uint8_t dist_mid;
             uint8_t dist_high;
-            uint8_t crc_sum_of_bytes;
+            uint8_t checksum_of_bytes;
         } packet;
     } tf_frame;
 

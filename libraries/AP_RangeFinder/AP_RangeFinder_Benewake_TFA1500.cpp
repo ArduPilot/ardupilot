@@ -62,15 +62,10 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
 
     // read limit to prevent consuming too much CPU
     for (auto j = 0U; j < 8192; j++) {
-<<<<<<< HEAD
         const auto num_read = uart->read(&tf_frame.bytes[tf_frame_len], sizeof(tf_frame) - tf_frame_len);
         tf_frame_len += num_read;
         
         if (tf_frame_len == 0) {
-=======
-        uint8_t received_byte;
-        if (!uart->read(received_byte)) {
->>>>>>> 2c8ea5ee73 (AP_RangeFinder: Refactor AP_RangeFinder library and add support for Benewake TFA1500)
             break;
         }
 
@@ -79,7 +74,6 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
             continue;
         }
 
-<<<<<<< HEAD
         if (tf_frame_len < TFA1500_FRAME_LENGTH) {
             break;
         }
@@ -94,10 +88,6 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
             tf_frame_len = 0;
 
             if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == 0x3FFFFF)) {
-=======
-        if (process_byte(received_byte, dist_cm)) {
-            if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == (uint32_t)model_dist_max_cm())) {
->>>>>>> 2c8ea5ee73 (AP_RangeFinder: Refactor AP_RangeFinder library and add support for Benewake TFA1500)
                 count_out_of_range++;
             } else {
                 sum_cm += dist_cm;
@@ -111,12 +101,7 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
     if (count > 0) {
         reading_m = (sum_cm * 0.01f) / count;
         return true;
-<<<<<<< HEAD
     } 
-=======
-    }
-
->>>>>>> 2c8ea5ee73 (AP_RangeFinder: Refactor AP_RangeFinder library and add support for Benewake TFA1500)
     if (count_out_of_range > 0) {
         reading_m = MAX(model_dist_max_cm() * 0.01f, max_distance());
         return true;
