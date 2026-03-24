@@ -481,10 +481,10 @@ def run_step(step):
 
     # see if we need any supplementary binaries
     supplementary_binaries = []
-    for k in supplementary_test_binary_map.keys():
-        if step.startswith(k):
+    for key, value in supplementary_test_binary_map.items():
+        if step.startswith(key):
             # this test needs to use supplementary binaries
-            for supplementary_test_binary in supplementary_test_binary_map[k]:
+            for supplementary_test_binary in value:
                 a = supplementary_test_binary.split(':')
                 if len(a) != 4:
                     raise ValueError("Bad supplementary_test_binary %s" % supplementary_test_binary)
