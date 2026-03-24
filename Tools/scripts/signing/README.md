@@ -47,7 +47,7 @@ standard ArduPilot firmware release and also prevents issues with
 vendors who can no longer provide firmware updates to users. If you
 have a very good reason for not including the ArduPilot signing keys
 then you can pass the option --omit-ardupilot-keys to the
-make_secure_bl.py script.
+build_bootloaders.py script mentioned above.
 
 ## Building Signed Firmware
 
@@ -123,14 +123,14 @@ public keys from the signed bootloader:
 
 ```text
   module load SecureCommand
-  securecommand set private_keyfile my_private_key.dat
+  securecommand set private_keyfile NAME_private_key.dat
   securecommand getsessionkey
 ```
 
 This opens a secure command session using your private_key.dat file to allow the removal of all public keys from the bootloader using these commands:
 
 ```text
-  securecommand getpublickeys        will return the number of public keys...you will need this next
+  securecommand getpublickeys          will return the number of public keys...you will need this next
   securecommand removepublickeys 0 X   where X is the number of public keys...this removes them
 ```
 
@@ -138,7 +138,7 @@ For example, if you have a standard firmware with the 3 ArduPilot
 public keys and one of your own public keys then X will be 4 in the
 above command.
 
-Re-run the 'getpublickeys' command again to verify that all keys have
+Re-run the 'securecommand getpublickeys' command again to verify that all keys have
 been removed.
 
 Now exit MAVProxy and build a firmware using the normal bootloader but still using the --signed-fw option:
