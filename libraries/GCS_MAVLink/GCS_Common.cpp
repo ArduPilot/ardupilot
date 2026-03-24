@@ -6257,6 +6257,16 @@ void GCS_MAVLINK::send_utm_global_position() const
         break;
     }
 
+    uint16_t h_acc_mm = 0, v_acc_mm = 0, vel_acc_cms = 0;
+    {
+        float pos_horiz_m, pos_vert_m, vel_m_s;
+        if (ahrs.get_pos_vel_uncertainty(pos_horiz_m, pos_vert_m, vel_m_s)) {
+            h_acc_mm    = (uint16_t)constrain_float(pos_horiz_m * 1000.0f, 0, UINT16_MAX);
+            v_acc_mm    = (uint16_t)constrain_float(pos_vert_m  * 1000.0f, 0, UINT16_MAX);
+            vel_acc_cms = (uint16_t)constrain_float(vel_m_s     *  100.0f, 0, UINT16_MAX);
+        }
+    }
+
     mavlink_utm_global_position_t msg_utm {
         time         : time_usec,
         lat          : lat,
@@ -6269,9 +6279,9 @@ void GCS_MAVLINK::send_utm_global_position() const
         vx           : vx,
         vy           : vy,
         vz           : vz,
-        h_acc        : 0,   // not available from AHRS
-        v_acc        : 0,   // not available from AHRS
-        vel_acc      : 0,   // not available from AHRS
+        h_acc        : h_acc_mm,
+        v_acc        : v_acc_mm,
+        vel_acc      : vel_acc_cms,
         update_rate  : 0,   // unknown/data-driven
         flight_state : flight_state,
         flags        : flags,
