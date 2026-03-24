@@ -103,8 +103,17 @@ bool ModeQThrow::throw_detected()
     const bool changing_height = vel_u_ms > THROW_VERTICAL_SPEED_MS;
     const bool free_falling = ahrs.get_accel_ef().z > -THROW_FREEFALL_ACCEL_G * GRAVITY_MSS;
     const bool no_throw_action = plane.ins.get_accel().length() < THROW_POST_RELEASE_ACCEL_G * GRAVITY_MSS;
+    float altitude_above_home_m;
+    if (ahrs.home_is_set()) {
+        ahrs.get_relative_position_D_home(altitude_above_home_m);
+        altitude_above_home_m = -altitude_above_home_m;
+    } else {
+        altitude_above_home_m = pos_control->get_pos_estimate_U_m();
+    }
+    const float qthrow_min_alt = quadplane.qthrow_min_alt;
+    const bool above_min_alt = (qthrow_min_alt <= 0.0f) || (altitude_above_home_m >= qthrow_min_alt);
 
-    const bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action;
+    const bool possible_throw_detected = (free_falling || high_speed) && changing_height && no_throw_action && above_min_alt;
     const uint32_t now = AP_HAL::millis();
 
     if (possible_throw_detected && ((now - free_fall_start_ms) > THROW_DETECTION_WINDOW_MS)) {

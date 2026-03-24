@@ -579,6 +579,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("THROW_NMODE", 43, QuadPlane, throw_next_mode, -1),
 
+    // @Param: THROW_MIN_ALT
+    // @DisplayName: Q_THROW minimum detection altitude
+    // @Description: Minimum altitude above home in meters required before Q_THROW can trigger uprighting and motor spool-up. Set to 0 to disable this altitude gate.
+    // @Units: m
+    // @Range: 0 50
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("THROW_MIN_ALT", 44, QuadPlane, qthrow_min_alt, 3.0f),
+
     AP_GROUPEND
 };
 

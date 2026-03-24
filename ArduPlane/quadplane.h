@@ -391,6 +391,9 @@ private:
     // flight mode to switch to after a successful Q_THROW launch
     AP_Int8 throw_next_mode;
 
+    // minimum altitude above home before Q_THROW can trigger uprighting
+    AP_Float qthrow_min_alt;
+
     // gain from forward acceleration to forward throttle
     AP_Float q_fwd_thr_gain;
 
