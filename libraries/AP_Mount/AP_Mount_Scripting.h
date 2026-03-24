@@ -38,12 +38,17 @@ public:
 
 protected:
 
-    // Scripting doesn't actually send anything (the script polls the
-    // library for the targets)
+    // Scripting backends poll get_angle_target / get_rate_target rather than
+    // receiving pushed targets, so native support for both types is declared so
+    // send_target_to_gimbal() never converts rates to angles on the backend's
+    // behalf.  send_target_angles() stamps mnt_target.target_type = ANGLE so
+    // that get_angle_target() returns the converted value for non-angle modes
+    // (RETRACT, NEUTRAL, LOCATION) that send_target_to_gimbal() converts and
+    // stores into mnt_target.angle_rad before calling send_target_angles().
     uint8_t natively_supported_mount_target_types() const override {
         return NATIVE_ANGLES_AND_RATES_ONLY;
     };
-    void send_target_angles(const MountAngleTarget &angle_rad) override {};
+    void send_target_angles(const MountAngleTarget &angle_rad) override;
     void send_target_rates(const MountRateTarget &rate_rads) override {};
 
     // get attitude as a quaternion.  returns true on success
