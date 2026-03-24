@@ -1261,8 +1261,24 @@ void NavEKF3_core::selectHeightForFusion()
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
         const ftype rangeMaxUse = 1e-2 * (ftype)_rng->max_distance_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
-        bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
-        bool belowLowerSwHgt = ((terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse) && (imuSampleTime_ms - gndHgtValidTime_ms < 1000);
+
+        // Use the AGL KF height estimate when available. The default
+        // (terrainState - position.z) rides on the main filter's vertical
+        // position, which baro ground effect corrupts. The AGL KF fuses IMU
+        // and rangefinder, so it does not carry that error directly - baro
+        // reaches it only through the accel bias the main filter learns.
+        ftype heightAboveGnd;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+            heightAboveGnd = aglKfH;
+        } else
+#endif
+        {
+            heightAboveGnd = terrainState - stateStruct.position.z;
+        }
+
+        bool aboveUpperSwHgt = heightAboveGnd > rangeMaxUse;
+        bool belowLowerSwHgt = (heightAboveGnd < 0.7f * rangeMaxUse) && (imuSampleTime_ms - gndHgtValidTime_ms < 1000);
 
         // If the terrain height is consistent and we are moving slowly, then it can be
         // used as a height reference in combination with a range finder
