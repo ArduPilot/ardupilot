@@ -175,6 +175,7 @@ public:
 #endif
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature() const { return battery.get_temperature(); }
+    float get_battery_current() const { return battery_current; }
 
     float ambient_temperature_degC() const;
 
