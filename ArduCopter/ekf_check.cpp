@@ -24,6 +24,7 @@ static struct {
     bool has_ever_passed;       // true if the ekf checks have ever passed
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
     uint8_t last_source_set;    // last known EKF source set, used to detect intentional switches
+    uint32_t source_switch_ms;  // time of last source set change, used for holdoff
 } ekf_check_state;
 
 // ekf_check - detects if ekf variance are out of tolerance and triggers failsafe
@@ -54,11 +55,26 @@ void Copter::ekf_check()
     // triggers on the position loss even though the new configuration
     // may not need position.  Resetting has_ever_passed lets the new
     // source set establish itself before the failsafe can fire.
+    //
+    // A holdoff period is needed because the EKF takes up to 10 seconds
+    // (posRetryTimeUseVel_ms) to update its aiding mode after a source
+    // change.  During that window the EKF still reports position from
+    // the old source, which would immediately re-latch has_ever_passed
+    // and defeat the reset.  The holdoff suppresses the check entirely
+    // until the EKF has reached steady state under the new source set.
     const uint8_t current_source_set = ahrs.get_posvelyaw_source_set();
     if (current_source_set != ekf_check_state.last_source_set) {
         ekf_check_state.last_source_set = current_source_set;
         ekf_check_state.has_ever_passed = false;
         ekf_check_state.fail_count = 0;
+        ekf_check_state.source_switch_ms = AP_HAL::millis();
+    }
+
+    // suppress check during source transition holdoff
+    const uint16_t SOURCE_SWITCH_HOLDOFF_MS = 12000;
+    if (ekf_check_state.source_switch_ms > 0 &&
+        (AP_HAL::millis() - ekf_check_state.source_switch_ms) < SOURCE_SWITCH_HOLDOFF_MS) {
+        return;
     }
 
     // compare compass and velocity variance vs threshold and also check
