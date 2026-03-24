@@ -596,9 +596,9 @@ class ChibiOSHWDef(hwdef.HWDef):
                 'I2C*SCL' : 'PERIPH_TYPE::I2C_SCL',
                 'EXTERN_GPIO*' : 'PERIPH_TYPE::GPIO',
             }
-            for k in patterns.keys():
-                if fnmatch.fnmatch(self.label, k):
-                    return patterns[k]
+            for key, value in patterns.items():
+                if fnmatch.fnmatch(self.label, key):
+                    return value
             return 'PERIPH_TYPE::OTHER'
 
         def periph_instance(self):
