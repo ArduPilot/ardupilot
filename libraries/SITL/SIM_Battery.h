@@ -29,7 +29,11 @@ public:
     void init_voltage(float voltage);
     void init_capacity(float capacity);
 
+    // set the current-draw at the instant identified as "now"
+    void set_current(float current_amps, uint64_t now_micros);
+    // set the current-draw using AP_HAL::micros64() as "now"
     void set_current(float current_amps);
+
     float get_voltage(void) const;
     float get_capacity(void) const { return capacity_Ah; }
 
@@ -42,7 +46,7 @@ private:
     float max_voltage;
     float voltage_set;
     float remaining_Ah;
-    uint64_t last_us;
+    uint64_t last_micros;
 
     struct {
         float kelvin = 273;
