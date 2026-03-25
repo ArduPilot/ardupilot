@@ -658,9 +658,8 @@ def write_webresults(results_to_write):
     t = mavtemplate.MAVTemplate()
     for h in glob.glob(util.reltopdir('Tools/autotest/web/*.html')):
         html = util.loadfile(h)
-        f = open(buildlogs_path(os.path.basename(h)), mode='w')
-        t.write(f, html, results_to_write)
-        f.close()
+        with open(buildlogs_path(os.path.basename(h)), mode='w') as f:
+            t.write(f, html, results_to_write)
     for f in glob.glob(util.reltopdir('Tools/autotest/web/*.png')):
         shutil.copy(f, buildlogs_path(os.path.basename(f)))
     copy_tree(util.reltopdir("Tools/autotest/web/css"), buildlogs_path("css"), dirs_exist_ok=True)

@@ -74,27 +74,27 @@ class CheckAutoTestSpeedup(object):
         self.run_program("BUILD", build_args)
         results = {
         }
-        f = open(os.path.join("/tmp/speedup.txt"), "w")
-        for i in range(self.max_speedup, self.min_speedup-1, -1):
-            self.progress("Checking speedup %u" % i)
-            run_args = [
-                "./Tools/autotest/autotest.py",
-                "--speedup", str(i),
-                "--show-test-timings",
-                self.test_target,
-            ]
-            if opts.gdb:
-                run_args.append("--gdb")
-            self.run_program("SPEEDUP-%03u" % i, run_args)
-            for line in self.program_output.split("\n"):
-                match = re.match(".*tests_total_time.*?([0-9.]+)s.*", line)
-                if match is not None:
-                    break
-            results[i] = float(match.group(1))
-            prog = "%u %f" % (i, results[i])
-            self.progress(prog)
-            print(prog, file=f)
-            f.flush()
+        with open(os.path.join("/tmp/speedup.txt"), "w") as f:
+            for i in range(self.max_speedup, self.min_speedup-1, -1):
+                self.progress("Checking speedup %u" % i)
+                run_args = [
+                    "./Tools/autotest/autotest.py",
+                    "--speedup", str(i),
+                    "--show-test-timings",
+                    self.test_target,
+                ]
+                if opts.gdb:
+                    run_args.append("--gdb")
+                self.run_program("SPEEDUP-%03u" % i, run_args)
+                for line in self.program_output.split("\n"):
+                    match = re.match(".*tests_total_time.*?([0-9.]+)s.*", line)
+                    if match is not None:
+                        break
+                results[i] = float(match.group(1))
+                prog = "%u %f" % (i, results[i])
+                self.progress(prog)
+                print(prog, file=f)
+                f.flush()
 
         for (speedup, t) in results.items():
             print("%u %f" % (speedup, t))

@@ -446,9 +446,10 @@ class TestBuildOptions(object):
         extra_hwdef_filepath = "/tmp/extra.hwdef"
         self.write_defines_to_file(defines, extra_hwdef_filepath)
         if self.extra_hwdef is not None:
-            content = open(self.extra_hwdef, "r").read()
-            with open(extra_hwdef_filepath, "a") as f:
-                f.write(content)
+            with open(self.extra_hwdef, "r") as f_in:
+                content = f_in.read()
+            with open(extra_hwdef_filepath, "a") as f_out:
+                f_out.write(content)
         util.waf_configure(
             self.board(),
             extra_hwdef=extra_hwdef_filepath,

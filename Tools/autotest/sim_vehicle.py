@@ -708,13 +708,13 @@ def start_CAN_Periph(opts, frame_info):
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
-        gdb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        atexit.register(os.unlink, gdb_commands_file.name)
-        gdb_commands_file.write("set pagination off\n")
-        if not opts.gdb_stopped:
-            gdb_commands_file.write("r\n")
-        gdb_commands_file.close()
-        cmd.extend(["-x", gdb_commands_file.name])
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as gdb_commands_file:
+            gdb_commands_file.write("set pagination off\n")
+            if not opts.gdb_stopped:
+                gdb_commands_file.write("r\n")
+                gdb_file_path=gdb_commands_file.name
+        atexit.register(os.unlink, gdb_file_path)
+        cmd.extend(["-x", gdb_file_path])
         cmd.append("--args")
     cmd.append(exe)
     if defaults_path is not None:
@@ -742,31 +742,30 @@ def start_vehicle(binary, opts, stuff, spawns=None):
     if opts.gdb or opts.gdb_stopped:
         cmd_name += " (gdb)"
         cmd.append("gdb")
-        gdb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        atexit.register(os.unlink, gdb_commands_file.name)
-
-        for breakpoint in opts.breakpoint:
-            gdb_commands_file.write("b %s\n" % (breakpoint,))
-        if opts.disable_breakpoints:
-            gdb_commands_file.write("disable\n")
-        gdb_commands_file.write("set pagination off\n")
-        if not opts.gdb_stopped:
-            gdb_commands_file.write("r\n")
-        gdb_commands_file.close()
-        cmd.extend(["-x", gdb_commands_file.name])
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as gdb_commands_file:
+            for breakpoint in opts.breakpoint:
+                gdb_commands_file.write("b %s\n" % (breakpoint,))
+            if opts.disable_breakpoints:
+                gdb_commands_file.write("disable\n")
+            gdb_commands_file.write("set pagination off\n")
+            if not opts.gdb_stopped:
+                gdb_commands_file.write("r\n")
+            gdb_file_path=gdb_commands_file.name
+        atexit.register(os.unlink, gdb_file_path)
+        cmd.extend(["-x", gdb_file_path])
         cmd.append("--args")
     elif opts.lldb or opts.lldb_stopped:
         cmd_name += " (lldb)"
         cmd.append("lldb")
-        lldb_commands_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        atexit.register(os.unlink, lldb_commands_file.name)
-
-        for breakpoint in opts.breakpoint:
-            lldb_commands_file.write("b %s\n" % (breakpoint,))
-        if not opts.lldb_stopped:
-            lldb_commands_file.write("process launch\n")
-        lldb_commands_file.close()
-        cmd.extend(["-s", lldb_commands_file.name])
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as lldb_commands_file:
+            for breakpoint in opts.breakpoint:
+                lldb_commands_file.write("b %s\n" % (breakpoint,))
+            if not opts.lldb_stopped:
+                lldb_commands_file.write("process launch\n")
+            # lldb_commands_file.close()
+            file_path=lldb_commands_file.name
+        atexit.register(os.unlink, file_path)
+        cmd.extend(["-s", file_path])
         cmd.append("--")
     if opts.strace:
         cmd_name += " (strace)"
@@ -825,16 +824,16 @@ def start_vehicle(binary, opts, stuff, spawns=None):
 
             progress("Adding parameters from (%s)" % (str(file),))
     if opts.param:
-        param_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        atexit.register(os.unlink, param_file.name)
-        param_dir = os.path.join(param_file.name)
-        single_params = []
-        for p in opts.param:
-            single_params.extend(p.split(','))
-        for sp in single_params:
-            sp.replace("=", " ")
-            sp = sp.strip()
-            param_file.write(f"{sp}\n")
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as param_file:
+            atexit.register(os.unlink, param_file.name)
+            param_dir = os.path.join(param_file.name)
+            single_params = []
+            for p in opts.param:
+                single_params.extend(p.split(','))
+            for sp in single_params:
+                sp.replace("=", " ")
+                sp = sp.strip()
+                param_file.write(f"{sp}\n")
         if path is not None:
             path += "," + str(param_dir)
         else:

@@ -180,9 +180,8 @@ def process_vehicle(vehicle):
     debug("===\n\n\nProcessing %s" % vehicle.name)
     current_file = vehicle.path+'/Parameters.cpp'
 
-    f = open(current_file)
-    p_text = f.read()
-    f.close()
+    with open(current_file) as f:
+        p_text = f.read()
     group_matches = prog_groups.findall(p_text)
 
     debug(group_matches)
@@ -283,9 +282,8 @@ def process_library(vehicle, library, pathprefix=None):
         else:
             libraryfname = os.path.normpath(os.path.join(apm_path + '/libraries/' + path))
         if path and os.path.exists(libraryfname):
-            f = open(libraryfname)
-            p_text = f.read()
-            f.close()
+            with open (libraryfname) as f:
+                p_text = f.read()
         else:
             error("Path %s not found for library %s (fname=%s)" % (path, library.name, libraryfname))
             continue
