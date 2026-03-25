@@ -1,5 +1,3 @@
-#include <AP_DDS/AP_DDS_config.h>
-
 #include "builtin_interfaces/msg/Time.h"
 #include "sensor_msgs/msg/NavSatFix.h"
 #include "tf2_msgs/msg/TFMessage.h"
@@ -89,7 +87,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::TIME_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::TIME_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "time",
+        .topic_name = "rt/ap/time",
         .type_name = "builtin_interfaces::msg::dds_::Time_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -107,7 +105,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::NAV_SAT_FIX_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::NAV_SAT_FIX_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "navsat",
+        .topic_name = "rt/ap/navsat",
         .type_name = "sensor_msgs::msg::dds_::NavSatFix_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -125,7 +123,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::STATIC_TRANSFORMS_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::STATIC_TRANSFORMS_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "tf_static",
+        .topic_name = "rt/ap/tf_static",
         .type_name = "tf2_msgs::msg::dds_::TFMessage_",
         .qos = {
             .durability = UXR_DURABILITY_TRANSIENT_LOCAL,
@@ -143,7 +141,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::BATTERY_STATE_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::BATTERY_STATE_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "battery",
+        .topic_name = "rt/ap/battery",
         .type_name = "sensor_msgs::msg::dds_::BatteryState_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -161,7 +159,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::IMU_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::IMU_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "imu/experimental/data",
+        .topic_name = "rt/ap/imu/experimental/data",
         .type_name = "sensor_msgs::msg::dds_::Imu_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -179,7 +177,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_POSE_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_POSE_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "pose/filtered",
+        .topic_name = "rt/ap/pose/filtered",
         .type_name = "geometry_msgs::msg::dds_::PoseStamped_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -197,7 +195,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_VELOCITY_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_VELOCITY_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "twist/filtered",
+        .topic_name = "rt/ap/twist/filtered",
         .type_name = "geometry_msgs::msg::dds_::TwistStamped_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -215,7 +213,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "airspeed",
+        .topic_name = "rt/ap/airspeed",
         .type_name = "ardupilot_msgs::msg::dds_::Airspeed_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -233,7 +231,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_RC_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::LOCAL_RC_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "rc",
+        .topic_name = "rt/ap/rc",
         .type_name = "ardupilot_msgs::msg::dds_::Rc_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -251,7 +249,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::GEOPOSE_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::GEOPOSE_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "geopose/filtered",
+        .topic_name = "rt/ap/geopose/filtered",
         .type_name = "geographic_msgs::msg::dds_::GeoPoseStamped_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -269,7 +267,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::GOAL_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::GOAL_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "goal_lla",
+        .topic_name = "rt/ap/goal_lla",
         .type_name = "geographic_msgs::msg::dds_::GeoPointStamped_",
         .qos = {
             .durability = UXR_DURABILITY_TRANSIENT_LOCAL,
@@ -287,7 +285,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::CLOCK_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::CLOCK_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "clock",
+        .topic_name = "rt/ap/clock",
         .type_name = "rosgraph_msgs::msg::dds_::Clock_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -305,7 +303,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::GPS_GLOBAL_ORIGIN_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "gps_global_origin/filtered",
+        .topic_name = "rt/ap/gps_global_origin/filtered",
         .type_name = "geographic_msgs::msg::dds_::GeoPointStamped_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -323,7 +321,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::STATUS_PUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::STATUS_PUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataWriter,
-        .topic_name = "status",
+        .topic_name = "rt/ap/status",
         .type_name = "ardupilot_msgs::msg::dds_::Status_",
         .qos = {
             .durability = UXR_DURABILITY_TRANSIENT_LOCAL,
@@ -341,7 +339,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::JOY_SUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::JOY_SUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataReader,
-        .topic_name = "joy",
+        .topic_name = "rt/ap/joy",
         .type_name = "sensor_msgs::msg::dds_::Joy_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -359,7 +357,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataReader,
-        .topic_name = "tf",
+        .topic_name = "rt/ap/tf",
         .type_name = "tf2_msgs::msg::dds_::TFMessage_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -377,7 +375,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::VELOCITY_CONTROL_SUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::VELOCITY_CONTROL_SUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataReader,
-        .topic_name = "cmd_vel",
+        .topic_name = "rt/ap/cmd_vel",
         .type_name = "geometry_msgs::msg::dds_::TwistStamped_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,
@@ -395,7 +393,7 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::GLOBAL_POSITION_SUB), .type=UXR_DATAWRITER_ID},
         .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::GLOBAL_POSITION_SUB), .type=UXR_DATAREADER_ID},
         .topic_rw = Topic_rw::DataReader,
-        .topic_name = "cmd_gps_pose",
+        .topic_name = "rt/ap/cmd_gps_pose",
         .type_name = "ardupilot_msgs::msg::dds_::GlobalPosition_",
         .qos = {
             .durability = UXR_DURABILITY_VOLATILE,

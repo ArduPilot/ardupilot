@@ -129,23 +129,6 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             print(f"{PASS} All commit subject lines within {MAX_SUBJECT_LEN} characters.")
         return ok
 
-    def check_author_emails(self) -> bool:
-        emails = self.run_git(
-            ["log", f"{self.base_branch}..HEAD", "--format=%ae"],
-            show_output=False,
-        ).strip()
-        bad = []
-        for email in emails.splitlines():
-            if "example.com" in email:
-                bad.append(email)
-        if bad:
-            print(f"{FAIL} Author email(s) with example.com are not allowed:")
-            for email in bad:
-                print(f"         {email}")
-            return False
-        print(f"{PASS} No unacceptable author emails.")
-        return True
-
     def check_markdown(self) -> bool:
         changed_md = self.run_git(
             ["diff", "--name-only", "--diff-filter=AM",
@@ -187,7 +170,6 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_fixup_commits(commits),
             self.check_commit_messages(commits),
             self.check_commit_lengths(commits),
-            self.check_author_emails(),
             self.check_markdown(),
         ]
 

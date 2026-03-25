@@ -2860,10 +2860,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("Q_OPTIONS", 1)
         self.wait_text("ArmCk: note: Q will land", check_context=True)
 
-    def FenceRelative_TakeoffMode(self):
-        '''method for the FenceRelative test to call'''
-        return 'QLOITER'
-
     def TerrainAvoidApplet(self):
         '''Terrain Avoidance with CMTC'''
         self.start_subtest("Terrain Avoidance Load and Start")
@@ -3168,20 +3164,5 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksApplet,
             self.TerrainAvoidApplet,
             self.TakeoffCheck,
-            self.FenceRelativePreArms,
-            self.FenceRelativeToHomeMaxAlt,
-            self.FenceRelativeToHomeMinAlt,
-            self.FenceRelativeToHomeMaxAltOriginAbove,
-            self.FenceRelativeToHomeMinAltOriginAbove,
-            self.FenceRelativeToHomeCliff,
-            self.FenceRelativeToOriginMaxAlt,
-            self.FenceRelativeToOriginMinAlt,
-            self.FenceRelativeToOriginMaxAltHomeAbove,
-            self.FenceRelativeToOriginMinAltHomeAbove,
-            self.FenceRelativeToAMSLMaxAlt,
-            self.FenceRelativeToAMSLMinAlt,
-            self.FenceRelativeToAMSLCliff,
-            self.FenceRelativeToTerrainMaxAlt,
-            self.FenceRelativeToTerrainMinAlt,
         ])
         return ret

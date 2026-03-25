@@ -182,7 +182,6 @@
 #endif
 #endif
 
-// Max DDS topic/service string
-#ifndef AP_DDS_MAX_NAME_LEN
-#define AP_DDS_MAX_NAME_LEN 128
+#ifndef AP_DDS_PARTICIPANT_NAME
+#define AP_DDS_PARTICIPANT_NAME "ap"
 #endif
