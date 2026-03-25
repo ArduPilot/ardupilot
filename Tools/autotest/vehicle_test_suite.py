@@ -9585,7 +9585,7 @@ Also, ignores heartbeats not from our target system'''
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not get MISSION_COUNT packet")
-            m = self.mav.recv_match(blocking=True, timeout=0.1)
+            m = self.mav.recv_match(blocking=True, timeout=0.2)
             if m is None:
                 raise NotAchievedException("Did not get MISSION_COUNT response")
             if verbose:
