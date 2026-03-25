@@ -235,6 +235,12 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         efi_hirth = NEW_NOTHROW SITL::EFI_Hirth();
         return efi_hirth;
+    } else if (streq(name, "efi_edge")) {
+        if (efi_edge != nullptr) {
+            AP_HAL::panic("Only one efi_edge at a time");
+        }
+        efi_edge = NEW_NOTHROW SITL::EFI_Edge();
+        return efi_edge;
     } else if (streq(name, "VectorNav")) {
         if (vectornav != nullptr) {
             AP_HAL::panic("Only one VectorNav at a time");
@@ -348,6 +354,9 @@ void SITL_State_Common::sim_update(void)
     }
     if (efi_hirth != nullptr) {
         efi_hirth->update();
+    }
+    if (efi_edge != nullptr) {
+        efi_edge->update();
     }
 
     if (frsky_d != nullptr) {

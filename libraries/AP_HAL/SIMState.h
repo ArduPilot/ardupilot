@@ -40,6 +40,7 @@
 #include <SITL/SIM_GPS.h>
 
 #include <SITL/SIM_EFI_Hirth.h>
+#include <SITL/SIM_EFI_Edge.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
@@ -229,6 +230,9 @@ private:
 
     // simulated EFI Hirth device:
     SITL::EFI_Hirth *efi_hirth;
+
+    // simulated EFI Edge Autonomy device:
+    SITL::EFI_Edge *efi_edge;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // output socket for flightgear viewing

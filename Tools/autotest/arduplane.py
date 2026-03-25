@@ -5424,7 +5424,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             'SIM_EFI_TYPE': efi_type,
             'EFI_TYPE': efi_type,
             'SERIAL5_PROTOCOL': 24,
-            'RPM1_TYPE': 10,
+            'RPM1_TYPE': 3,
         })
 
         self.customise_SITL_commandline(
@@ -5495,6 +5495,78 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def Hirth(self):
         '''Test Hirth EFI'''
         self.EFITest(8, "Hirth", "hirth")
+
+    def EFITestScripting(self, sim_efi_type, script_name, sim_name):
+        '''method to be called by scripting EFI tests'''
+        name = script_name.replace(".lua", "")
+        self.start_subtest("EFI Scripting Test for (%s)" % name)
+        self.context_push()
+        self.install_driver_script_context(script_name)
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            'SIM_EFI_TYPE': sim_efi_type,
+            'EFI_TYPE': 7,
+            'SERIAL5_PROTOCOL': 28,
+            'SCR_ENABLE': 1,
+            'RPM1_TYPE': 3,
+        })
+
+        self.customise_SITL_commandline(
+            ["--serial5=sim:%s" % sim_name],
+        )
+
+        # wait for scripting engine to load the driver
+        self.wait_text("%s: loaded" % name, check_context=True, timeout=30)
+
+        self.wait_ready_to_arm()
+
+        baro_m = self.assert_receive_message("SCALED_PRESSURE")
+        baro_temperature = baro_m.temperature / 100.0
+
+        m = self.assert_received_message_field_values("EFI_STATUS", {
+            "health": 1,
+        }, very_verbose=1, timeout=30)
+
+        if abs(baro_temperature - m.intake_manifold_temperature) > 5:
+            raise NotAchievedException(
+                "Bad intake manifold temperature (want=%f got=%f)" %
+                (baro_temperature, m.intake_manifold_temperature))
+
+        self.arm_vehicle()
+        self.set_rc(3, 1300)
+
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 30:
+                raise NotAchievedException("RPM1 and EFI_STATUS.rpm did not match")
+            rpm_m = self.assert_receive_message("RPM", verbose=1)
+            want_rpm = 1000
+            if rpm_m.rpm1 < want_rpm:
+                continue
+
+            m = self.assert_receive_message("EFI_STATUS", verbose=1)
+            if abs(m.rpm - rpm_m.rpm1) > 100:
+                continue
+
+            break
+
+        self.progress("Engine running, check throttle and fuel flow")
+        m = self.wait_message_field_values("EFI_STATUS", {
+            "throttle_position": 31,
+        }, very_verbose=1, epsilon=5, timeout=30)
+
+        if m.fuel_flow <= 0:
+            raise NotAchievedException("Expected non-zero fuel flow, got %f" % m.fuel_flow)
+
+        self.set_rc(3, 1000)
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
+    def EFIEdge(self):
+        '''Test Edge Autonomy EFI via Lua scripting driver'''
+        self.EFITestScripting(9, "EFI_EDGE_Serial.lua", "efi_edge")
 
     def AltitudeSlopeMaxHeight(self):
         '''Test rebuild altitude slope if above and climbing'''
@@ -8171,6 +8243,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksAppletRally,
             self.PlaneFollowAppletSanity,
             self.PreflightRebootComponent,
+            self.EFIEdge,
         ]
 
     def tests1c(self):
