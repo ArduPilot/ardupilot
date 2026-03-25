@@ -40,7 +40,7 @@
 
 class AP_CRSF_Protocol;
 
-class AP_RCProtocol_CRSF : public AP_RCProtocol_Backend, public AP_CRSF_Protocol {
+class AP_RCProtocol_CRSF : public AP_RCProtocol_Backend {
 public:
     // a CRSF port can be used for RC IN or RC OUT
     enum class PortMode : uint8_t {
