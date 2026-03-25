@@ -216,15 +216,23 @@ class Context(object):
 class TeeBoth(object):
     def __init__(self, name, mode, mavproxy_logfile, suppress_stdout=False):
         self.suppress_stdout = suppress_stdout
-        self.file = open(name, mode)
+        self.file = open(name, mode)  # noqa: SIM115
         self.stdout = sys.stdout
         self.stderr = sys.stderr
         self.mavproxy_logfile = mavproxy_logfile
         self.mavproxy_logfile.set_fh(self)
         sys.stdout = self
         sys.stderr = self
+    def __enter__(self):
+        return self 
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close() 
 
     def close(self):
+        if self.file is not None:
+            self.file.close()
+            self.file = None
         sys.stdout = self.stdout
         sys.stderr = self.stderr
         self.mavproxy_logfile.set_fh(None)
@@ -2194,16 +2202,17 @@ class TestSuite(abc.ABC):
     def count_expected_fence_lines_in_filepath(self, filepath):
         count = 0
         is_qgc = False
-        for i in open(filepath):
-            i = re.sub("#.*", "", i) # trim comments
-            if i.isspace():
-                # skip empty lines
-                continue
-            if re.match("QGC", i):
-                # skip QGC header line
-                is_qgc = True
-                continue
-            count += 1
+        with open(filepath) as f:
+            for i in f:
+                i = re.sub("#.*", "", i) # trim comments
+                if i.isspace():
+                    # skip empty lines
+                    continue
+                if re.match("QGC", i):
+                    # skip QGC header line
+                    is_qgc = True
+                    continue
+                count += 1
         if is_qgc:
             count += 2 # file doesn't include return point + closing point
         return count
@@ -2289,13 +2298,14 @@ class TestSuite(abc.ABC):
             filepath = self.generic_mission_filepath_for_filename(filename)
         self.progress("Loading fence from (%s)" % str(filepath))
         locs = []
-        for line in open(filepath, 'rb'):
-            if len(line) == 0:
-                continue
-            m = re.match(r"([-\d.]+)\s+([-\d.]+)\s*", line.decode('ascii'))
-            if m is None:
-                raise ValueError("Did not match (%s)" % line)
-            locs.append(mavutil.location(float(m.group(1)), float(m.group(2)), 0, 0))
+        with open(filepath, 'rb') as f:
+            for line in f:
+                if len(line) == 0:
+                    continue
+                m = re.match(r"([-\d.]+)\s+([-\d.]+)\s*", line.decode('ascii'))
+                if m is None:
+                    raise ValueError("Did not match (%s)" % line)
+                locs.append(mavutil.location(float(m.group(1)), float(m.group(2)), 0, 0))
         if self.is_plane():
             # create return point as the centroid:
             total_lat = 0
@@ -2566,7 +2576,8 @@ class TestSuite(abc.ABC):
 
     def htree_from_xml(self, xml_filepath):
         '''swiped from mavproxy_param.py'''
-        xml = open(xml_filepath, 'rb').read()
+        with open(xml_filepath) as f:
+           xml=f.read()  
         from lxml import objectify
         objectify.enable_recursive_str()
         tree = objectify.fromstring(xml)
@@ -2692,7 +2703,8 @@ class TestSuite(abc.ABC):
         structure_files = self.find_LogStructureFiles()
         structure_lines = []
         for f in structure_files:
-            structure_lines.extend(open(f).readlines())
+            with open(f) as f2:
+                structure_lines.extend(f2.readlines())
 
         defines = self.find_format_defines(structure_lines)
 
@@ -2710,79 +2722,80 @@ class TestSuite(abc.ABC):
             debug = False
             if f == "/home/pbarker/rc/ardupilot/libraries/AP_HAL_ChibiOS/LogStructure.h":
                 debug = True
-            for line in open(f).readlines():
-                if debug:
-                    print("line: %s" % line)
-                if isinstance(line, bytes):
-                    line = line.decode("utf-8")
-                line = re.sub("//.*", "", line) # trim comments
-                if re.match(r"\s*$", line):
-                    # blank line
-                    continue
-                if state == state_outside:
-                    if ("#define LOG_COMMON_STRUCTURES" in line or
-                            re.match("#define LOG_STRUCTURE_FROM_.*", line) or
-                            re.match("#define LOG_RTC_MESSAGE.*", line)):
-                        if debug:
-                            self.progress("Moving inside")
-                        state = state_inside
-                    continue
-                if state == state_inside:
-                    if linestate == linestate_none:
-                        allowed_list = [
-                            'LOG_STRUCTURE_FROM_',
-                            'LOG_RTC_MESSAGE',
-                        ]
+            with open(f) as fh:
+                for line in fh.readlines():
+                    if debug:
+                        print("line: %s" % line)
+                    if isinstance(line, bytes):
+                        line = line.decode("utf-8")
+                    line = re.sub("//.*", "", line) # trim comments
+                    if re.match(r"\s*$", line):
+                        # blank line
+                        continue
+                    if state == state_outside:
+                        if ("#define LOG_COMMON_STRUCTURES" in line or
+                                re.match("#define LOG_STRUCTURE_FROM_.*", line) or
+                                re.match("#define LOG_RTC_MESSAGE.*", line)):
+                            if debug:
+                                self.progress("Moving inside")
+                            state = state_inside
+                        continue
+                    if state == state_inside:
+                        if linestate == linestate_none:
+                            allowed_list = [
+                                'LOG_STRUCTURE_FROM_',
+                                'LOG_RTC_MESSAGE',
+                            ]
 
-                        allowed = False
-                        for a in allowed_list:
-                            if a in line:
-                                allowed = True
-                        if allowed:
-                            continue
-                        m = re.match(r"\s*{(.*)},\s*", line)
-                        if m is not None:
-                            # complete line
+                            allowed = False
+                            for a in allowed_list:
+                                if a in line:
+                                    allowed = True
+                            if allowed:
+                                continue
+                            m = re.match(r"\s*{(.*)},\s*", line)
+                            if m is not None:
+                                # complete line
+                                if debug:
+                                    print("Complete line: %s" % str(line))
+                                message_infos.append(m.group(1))
+                                continue
+                            m = re.match(r"\s*{(.*)\\", line)
+                            if m is None:
+                                if debug:
+                                    self.progress("Moving outside")
+                                state = state_outside
+                                continue
+                            partial_line = m.group(1)
                             if debug:
-                                print("Complete line: %s" % str(line))
-                            message_infos.append(m.group(1))
+                                self.progress("partial line")
+                            linestate = linestate_within
                             continue
-                        m = re.match(r"\s*{(.*)\\", line)
-                        if m is None:
+                        if linestate == linestate_within:
                             if debug:
-                                self.progress("Moving outside")
-                            state = state_outside
+                                self.progress("Looking for close-brace")
+                            m = re.match("(.*)}", line)
+                            if m is None:
+                                if debug:
+                                    self.progress("no close-brace")
+                                line = line.rstrip()
+                                newline = re.sub(r"\\$", "", line)
+                                if newline == line:
+                                    raise NotAchievedException("Expected backslash at end of line")
+                                line = newline
+                                line = line.rstrip()
+                                # cpp-style string concatenation:
+                                if debug:
+                                    self.progress("more partial line")
+                                line = re.sub(r'"\s*"', '', line)
+                                partial_line += line
+                                continue
+                            if debug:
+                                self.progress("found close-brace")
+                            message_infos.append(partial_line + m.group(1))
+                            linestate = linestate_none
                             continue
-                        partial_line = m.group(1)
-                        if debug:
-                            self.progress("partial line")
-                        linestate = linestate_within
-                        continue
-                    if linestate == linestate_within:
-                        if debug:
-                            self.progress("Looking for close-brace")
-                        m = re.match("(.*)}", line)
-                        if m is None:
-                            if debug:
-                                self.progress("no close-brace")
-                            line = line.rstrip()
-                            newline = re.sub(r"\\$", "", line)
-                            if newline == line:
-                                raise NotAchievedException("Expected backslash at end of line")
-                            line = newline
-                            line = line.rstrip()
-                            # cpp-style string concatenation:
-                            if debug:
-                                self.progress("more partial line")
-                            line = re.sub(r'"\s*"', '', line)
-                            partial_line += line
-                            continue
-                        if debug:
-                            self.progress("found close-brace")
-                        message_infos.append(partial_line + m.group(1))
-                        linestate = linestate_none
-                        continue
-                    raise NotAchievedException("Bad line (%s)")
+                        raise NotAchievedException("Bad line (%s)")
 
             if linestate != linestate_none:
                 raise NotAchievedException("Must be linestate-none at end of file")
@@ -2795,64 +2808,65 @@ class TestSuite(abc.ABC):
         linestate_none = 89
         linestate_within = 90
         linestate = linestate_none
-        for line in open(filepath, 'rb').readlines():
-            if isinstance(line, bytes):
-                line = line.decode("utf-8")
-            line = re.sub("//.*", "", line) # trim comments
-            if re.match(r"\s*$", line):
-                # blank line
-                continue
-            if state == state_outside:
-                if ("const LogStructure" in line or
-                        "const struct LogStructure" in line):
-                    state = state_inside
-                continue
-            if state == state_inside:
-                if re.match("};", line):
-                    state = state_outside
-                    break
-                if linestate == linestate_none:
-                    if "#if HAL_QUADPLANE_ENABLED" in line:
-                        continue
-                    if "#if FRAME_CONFIG == HELI_FRAME" in line:
-                        continue
-                    if "#if AC_PRECLAND_ENABLED" in line:
-                        continue
-                    if "#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED" in line:
-                        continue
-                    if "#end" in line:
-                        continue
-                    if "LOG_COMMON_STRUCTURES" in line:
-                        continue
-                    m = re.match(r"\s*{(.*)},\s*", line)
-                    if m is not None:
-                        # complete line
-                        # print("Complete line: %s" % str(line))
-                        message_infos.append(m.group(1))
-                        continue
-                    m = re.match(r"\s*{(.*)", line)
-                    if m is None:
-                        raise NotAchievedException("Bad line %s" % line)
-                    partial_line = m.group(1)
-                    linestate = linestate_within
+        with open(filepath, 'rb') as fh:
+            for line in fh.readlines():
+                if isinstance(line, bytes):
+                    line = line.decode("utf-8")
+                line = re.sub("//.*", "", line) # trim comments
+                if re.match(r"\s*$", line):
+                    # blank line
                     continue
-                if linestate == linestate_within:
-                    m = re.match("(.*)}", line)
-                    if m is None:
-                        line = line.rstrip()
-                        newline = re.sub(r"\\$", "", line)
-                        if newline == line:
-                            raise NotAchievedException("Expected backslash at end of line")
-                        line = newline
-                        line = line.rstrip()
-                        # cpp-style string concatenation:
-                        line = re.sub(r'"\s*"', '', line)
-                        partial_line += line
-                        continue
-                    message_infos.append(partial_line + m.group(1))
-                    linestate = linestate_none
+                if state == state_outside:
+                    if ("const LogStructure" in line or
+                            "const struct LogStructure" in line):
+                        state = state_inside
                     continue
-                raise NotAchievedException("Bad line (%s)")
+                if state == state_inside:
+                    if re.match("};", line):
+                        state = state_outside
+                        break
+                    if linestate == linestate_none:
+                        if "#if HAL_QUADPLANE_ENABLED" in line:
+                            continue
+                        if "#if FRAME_CONFIG == HELI_FRAME" in line:
+                            continue
+                        if "#if AC_PRECLAND_ENABLED" in line:
+                            continue
+                        if "#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED" in line:
+                            continue
+                        if "#end" in line:
+                            continue
+                        if "LOG_COMMON_STRUCTURES" in line:
+                            continue
+                        m = re.match(r"\s*{(.*)},\s*", line)
+                        if m is not None:
+                            # complete line
+                            # print("Complete line: %s" % str(line))
+                            message_infos.append(m.group(1))
+                            continue
+                        m = re.match(r"\s*{(.*)", line)
+                        if m is None:
+                            raise NotAchievedException("Bad line %s" % line)
+                        partial_line = m.group(1)
+                        linestate = linestate_within
+                        continue
+                    if linestate == linestate_within:
+                        m = re.match("(.*)}", line)
+                        if m is None:
+                            line = line.rstrip()
+                            newline = re.sub(r"\\$", "", line)
+                            if newline == line:
+                                raise NotAchievedException("Expected backslash at end of line")
+                            line = newline
+                            line = line.rstrip()
+                            # cpp-style string concatenation:
+                            line = re.sub(r'"\s*"', '', line)
+                            partial_line += line
+                            continue
+                        message_infos.append(partial_line + m.group(1))
+                        linestate = linestate_none
+                        continue
+                    raise NotAchievedException("Bad line (%s)")
 
         if state == state_inside:
             raise NotAchievedException("Should not be in state_inside at end")
@@ -2895,27 +2909,28 @@ class TestSuite(abc.ABC):
                         # this is the sample file which contains examples...
                         continue
                     count = 0
-                    for line in open(filepath, 'rb').readlines():
-                        if isinstance(line, bytes):
-                            line = line.decode("utf-8")
-                        if state == state_outside:
-                            if (re.match(r"\s*AP::logger\(\)[.]Write(?:Streaming)?\(", line) or
-                                    re.match(r"\s*logger[.]Write(?:Streaming)?\(", line)):
-                                state = state_inside
+                    with open(filepath, 'rb') as fh:
+                        for line in fh:
+                            if isinstance(line, bytes):
+                                line = line.decode("utf-8")
+                            if state == state_outside:
+                                if (re.match(r"\s*AP::logger\(\)[.]Write(?:Streaming)?\(", line) or
+                                        re.match(r"\s*logger[.]Write(?:Streaming)?\(", line)):
+                                    state = state_inside
+                                    line = re.sub("//.*", "", line) # trim comments
+                                    log_write_statement = line
+                                continue
+                            if state == state_inside:
                                 line = re.sub("//.*", "", line) # trim comments
-                                log_write_statement = line
-                            continue
-                        if state == state_inside:
-                            line = re.sub("//.*", "", line) # trim comments
-                            # cpp-style string concatenation:
-                            line = re.sub(r'"\s*"', '', line)
-                            log_write_statement += line
-                            if re.match(r".*\);", line):
-                                log_write_statements.append(log_write_statement)
-                                state = state_outside
-                        count += 1
-                    if state != state_outside:
-                        raise NotAchievedException("Expected to be outside at end of file")
+                                # cpp-style string concatenation:
+                                line = re.sub(r'"\s*"', '', line)
+                                log_write_statement += line
+                                if re.match(r".*\);", line):
+                                    log_write_statements.append(log_write_statement)
+                                    state = state_outside
+                            count += 1
+                        if state != state_outside:
+                            raise NotAchievedException("Expected to be outside at end of file")
 #                    print("%s has %u lines" % (f, count))
         # change all whitespace to single space
         log_write_statements = [re.sub(r"\s+", " ", x) for x in log_write_statements]
@@ -3037,7 +3052,8 @@ class TestSuite(abc.ABC):
         self.progress("xml file length is %u" % length)
 
         from lxml import objectify
-        xml = open(xml_filepath, 'rb').read()
+        with open(xml_filepath, 'rb') as f:
+            xml = f.read()
         objectify.enable_recursive_str()
         tree = objectify.fromstring(xml)
 
@@ -3441,7 +3457,7 @@ class TestSuite(abc.ABC):
         usec = int(time.time() * 1.0e6)
         if self.tlog is None:
             tlog_filename = "autotest-%u.tlog" % usec
-            self.tlog = open(tlog_filename, 'wb')
+            self.tlog = open(tlog_filename, 'wb')   # noqa: SIM115
 
         content = bytearray(struct.pack('>Q', usec) + msg.get_msgbuf())
         self.tlog.write(content)
@@ -5023,10 +5039,9 @@ class TestSuite(abc.ABC):
     def assert_mission_files_same(self, file1, file2, match_comments=False):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
 
-        f1 = open(file1)
-        f2 = open(file2)
-        lines1 = f1.readlines()
-        lines2 = f2.readlines()
+        with open(file1) as f1, open(file2) as f2:
+            lines1 = f1.readlines()
+            lines2 = f2.readlines()
 
         if not match_comments:
             # strip comments from all lines
@@ -5179,15 +5194,14 @@ class TestSuite(abc.ABC):
 
     def assert_rally_files_same(self, file1, file2):
         self.progress("Comparing (%s) and (%s)" % (file1, file2, ))
-        f1 = open(file1)
-        f2 = open(file2)
-        lines_f1 = f1.readlines()
-        lines_f2 = f2.readlines()
+        with open(file1) as f1, open(file2) as f2:
+            lines_f1 = f1.readlines()
+            lines_f2 = f2.readlines()
         self.assert_rally_content_same(lines_f1, lines_f2)
 
     def assert_rally_filepath_content(self, file1, content):
-        f1 = open(file1)
-        lines_f1 = f1.readlines()
+        with open(file1) as f1:
+            lines_f1 = f1.readlines()
         lines_content = content.split("\n")
         print("lines content: %s" % str(lines_content))
         self.assert_rally_content_same(lines_f1, lines_content)
@@ -14723,38 +14737,39 @@ switch value'''
         mavproxy = self.start_mavproxy()
         mavproxy.expect("Saved .* parameters to")
         ex = None
-        tmpfile = tempfile.NamedTemporaryFile(mode='r', delete=False)
-        try:
-            mavproxy.send("module load ftp\n")
-            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
-            mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
-            mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
-            mavproxy.expect("Getting")
-            tstart = self.get_sim_time()
-            while True:
-                now = self.get_sim_time()
-                if now - tstart > timeout:
-                    raise NotAchievedException("expected complete transfer")
-                self.progress("Polling status")
-                mavproxy.send("ftp status\n")
-                try:
-                    mavproxy.expect("No transfer in progress", timeout=1)
-                    break
-                except Exception:  # noqa: BLE001
-                    continue
-            # terminate the connection, or it may still be in progress the next time an FTP is attempted:
-            mavproxy.send("ftp cancel\n")
-            mavproxy.expect("Terminated session")
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmpfile:
+            try:
+                mavproxy.send("module load ftp\n")
+                mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+                mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
+                mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
+                mavproxy.expect("Getting")
+                tstart = self.get_sim_time()
+                while True:
+                    now = self.get_sim_time()
+                    if now - tstart > timeout:
+                        raise NotAchievedException("expected complete transfer")
+                    self.progress("Polling status")
+                    mavproxy.send("ftp status\n")
+                    try:
+                        mavproxy.expect("No transfer in progress", timeout=1)
+                        break
+                    except Exception:  # noqa: BLE001
+                        continue
+                # terminate the connection, or it may still be in progress the next time an FTP is attempted:
+                mavproxy.send("ftp cancel\n")
+                mavproxy.expect("Terminated session")
+            except Exception as e:  # noqa: BLE001
+                self.print_exception_caught(e)
+                ex = e
 
-        self.stop_mavproxy(mavproxy)
+            self.stop_mavproxy(mavproxy)
 
-        if ex is not None:
-            raise ex
+            if ex is not None:
+                raise ex
+            tempfile_content=tmpfile.read()
 
-        return tmpfile.read()
+        return tempfile_content
 
     def MAVFTP(self):
         '''ensure MAVProxy can do MAVFTP to ardupilot'''

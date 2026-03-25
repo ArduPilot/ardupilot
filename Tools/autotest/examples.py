@@ -23,8 +23,8 @@ def run_example(name, filepath, valgrind=False, gdb=False):
         cmd.append("gdb")
     cmd.append(filepath)
     print("Running: (%s)" % str(cmd))
-    devnull = open("/dev/null", "w")
-    bob = subprocess.Popen(cmd, stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
+    with open("/dev/null", "w") as devnull:
+        bob = subprocess.Popen(cmd, stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
 
     expect_exit = False
     timeout = 10

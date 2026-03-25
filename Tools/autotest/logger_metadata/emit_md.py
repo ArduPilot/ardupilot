@@ -61,7 +61,7 @@ DO NOT EDIT
         return ""
 
     def start(self):
-        self.fh = open("LogMessages.md", mode='w')
+        self.fh = open("LogMessages.md", mode='w')   # noqa: SIM115
         print(self.preface(), file=self.fh)
 
     def emit(self, doccos, enumerations=None):

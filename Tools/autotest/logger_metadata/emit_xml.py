@@ -17,7 +17,7 @@ class XMLEmitter(emitter.Emitter):
 
     def start(self):
         self.logname = "LogMessages.xml"
-        self.fh = open("LogMessages.xml", mode='w')
+        self.fh = open("LogMessages.xml", mode='w')   # noqa: SIM115
         print(self.preface(), file=self.fh)
         self.loggermessagefile = etree.Element('loggermessagefile')
 

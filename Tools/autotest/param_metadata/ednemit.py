@@ -27,10 +27,8 @@ class EDNEmit(Emit):
         else:
             raise Exception('Vehicle name never found')
         self.output += "}"
-        f = open("parameters.edn", mode='w')
-        f.write(self.output)
-        f.close()
-
+        with open("parameters.edn", mode='w') as f:
+            f.write(self.output)
     def start_libraries(self):
         pass
 

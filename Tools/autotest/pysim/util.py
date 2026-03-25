@@ -477,26 +477,25 @@ def start_SITL(binary,
         cmd.extend(['gdbserver', 'localhost:3333'])
         if gdb:
             # attach gdb to the gdbserver:
-            f = open("/tmp/x.gdb", "w")
-            f.write("target extended-remote localhost:3333\nc\n")
+            with open("/tmp/x.gdb", "w") as f:
+                f.write("target extended-remote localhost:3333\nc\n")
+                for breakingpoint in breakpoints:
+                    f.write("b %s\n" % (breakingpoint,))
+                if disable_breakpoints:
+                    f.write("disable\n")
+                # f.close()
+            run_cmd('screen -d -m -S ardupilot-gdbserver '
+                    'bash -c "gdb -x /tmp/x.gdb"')
+    elif gdb:
+        with open("/tmp/x.gdb", "w") as f:
+            f.write("set pagination off\n")
             for breakingpoint in breakpoints:
                 f.write("b %s\n" % (breakingpoint,))
             if disable_breakpoints:
                 f.write("disable\n")
-            f.close()
-            run_cmd('screen -d -m -S ardupilot-gdbserver '
-                    'bash -c "gdb -x /tmp/x.gdb"')
-    elif gdb:
-        f = open("/tmp/x.gdb", "w")
-        f.write("set pagination off\n")
-        for breakingpoint in breakpoints:
-            f.write("b %s\n" % (breakingpoint,))
-        if disable_breakpoints:
-            f.write("disable\n")
-        if not gdb_no_tui:
-            f.write("tui enable\n")
-        f.write("r\n")
-        f.close()
+            if not gdb_no_tui:
+                f.write("tui enable\n")
+            f.write("r\n")
         if sys.platform == "darwin" and os.getenv('DISPLAY'):
             cmd.extend(['gdb', '-x', '/tmp/x.gdb', '--args'])
         elif os.environ.get('DISPLAY'):
@@ -513,14 +512,13 @@ def start_SITL(binary,
         strace_options = ['-f', '-o', binary + '.strace', '-s', '8000', '-ttt']
         cmd.extend(strace_options)
     elif lldb:
-        f = open("/tmp/x.lldb", "w")
-        for breakingpoint in breakpoints:
-            f.write("b %s\n" % (breakingpoint,))
-        if disable_breakpoints:
-            f.write("disable\n")
-        f.write("settings set target.process.stop-on-exec false\n")
-        f.write("process launch\n")
-        f.close()
+        with open("/tmp/x.lldb", "w") as f:
+            for breakingpoint in breakpoints:
+                f.write("b %s\n" % (breakingpoint,))
+            if disable_breakpoints:
+                f.write("disable\n")
+            f.write("settings set target.process.stop-on-exec false\n")
+            f.write("process launch\n")
         if sys.platform == "darwin" and os.getenv('DISPLAY'):
             cmd.extend(['lldb', '-s', '/tmp/x.lldb', '--'])
         elif os.environ.get('DISPLAY'):
@@ -538,10 +536,11 @@ def start_SITL(binary,
 
     if param_defaults is not None:
         text = "".join([f"{name} {value}\n" for (name, value) in param_defaults.items()])
-        filepath = tempfile.NamedTemporaryFile(mode="w", delete=False)
-        print(text, file=filepath)
-        filepath.close()
-        defaults.append(str(filepath.name))
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as filepath:
+            print(text, file=filepath)
+            tmp_filepath = filepath.name
+            # filepath.close()
+        defaults.append(str(tmp_filepath))
 
     if not supplementary:
         if wipe:
@@ -551,12 +550,13 @@ def start_SITL(binary,
         if model is not None:
             cmd.extend(['--model', model])
         if speedup is not None and speedup != 1:
-            ntf = tempfile.NamedTemporaryFile(mode="w", delete=False)
-            print(f"SIM_SPEEDUP {speedup}", file=ntf)
-            ntf.close()
+            with tempfile.NamedTemporaryFile(mode="w", delete=False) as ntf:
+                print(f"SIM_SPEEDUP {speedup}", file=ntf)
+                ntf_name= ntf.name
+                # ntf.close()
             # prepend it so that a caller can override the speedup in
             # passed-in defaults:
-            defaults = [ntf.name] + defaults
+            defaults = [ntf_name] + defaults
         if sim_rate_hz is not None:
             cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
@@ -744,16 +744,14 @@ def mkdir_p(directory):
 
 def loadfile(fname):
     """Load a file as a string."""
-    f = open(fname, mode='r')
-    r = f.read()
-    f.close()
-    return r
+    with open(fname, mode='r') as f:
+        return f.read()
 
 
 def lock_file(fname):
     """Lock a file."""
     import fcntl
-    f = open(fname, mode='w')
+    f = open(fname, mode='w')  # noqa: SIM115
     try:
         fcntl.lockf(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
