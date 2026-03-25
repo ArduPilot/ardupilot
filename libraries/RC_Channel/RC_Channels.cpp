@@ -86,7 +86,8 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 // update all the input channels
 bool RC_Channels::read_input(void)
 {
-    if (hal.rcin->new_input()) {
+    if (hal.rcin->new_input() &&
+        !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
         _has_had_rc_receiver = true;
     } else if (!has_new_overrides) {
         return false;
