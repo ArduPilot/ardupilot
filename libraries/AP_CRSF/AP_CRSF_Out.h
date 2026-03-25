@@ -38,7 +38,7 @@ class AP_RCProtocol_CRSF;
  * from the main SRV_Channels and telling its underlying CRSF protocol instance
  * to send them at a user-configurable rate. It also handles baud rate negotiation.
  */
-class AP_CRSF_Out : public AP_CRSF_Protocol {
+class AP_CRSF_Out {
 public:
     AP_CRSF_Out();
 
@@ -47,9 +47,6 @@ public:
 
     // one-time initialisation, finds serial port and starts thread
     void init();
-
-    // rc periodic update, called from loop
-    void update() override;
 
     // PWM push called from SRV_Channels::push
     void push();

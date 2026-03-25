@@ -200,9 +200,6 @@ public:
         ProtocolType protocol;
     };
 
-    // protocol pure virtual base class
-    virtual void update(void) = 0;
-
     static const char* get_frame_type_name(uint8_t byte, uint8_t subtype = 0);
 
     // decode channels from variable bit length format (CRSFv3)

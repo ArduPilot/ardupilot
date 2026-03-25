@@ -186,12 +186,6 @@ void AP_CRSF_Out::crsf_out_thread()
     }
 }
 
-// callback from the RC thread
-void AP_CRSF_Out::update()
-{
-
-}
-
 // PWM push called from SRV_Channels::push
 void AP_CRSF_Out::push()
 {
