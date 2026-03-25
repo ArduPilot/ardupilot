@@ -105,11 +105,28 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
+        // Detect ground effect clearing.  When neither takeoff nor
+        // touchdown ground effect is expected, the baro is trustworthy
+        // again (configured via TKOFF_GNDEFF_ALT/TMO on the vehicle).
+        const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+        const bool gndEffectJustCleared = prevGndEffectActive && !gndEffectActive;
+        prevGndEffectActive = gndEffectActive;
+
         // fuse range finder data
         if (rangeDataToFuse) {
-            // reset terrain state if rangefinder data not fused for 5 seconds
             if (imuSampleTime_ms - gndHgtValidTime_ms > 5000) {
+                // reset terrain state if rangefinder data not fused for 5 seconds
                 terrainState = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd) + stateStruct.position.z;
+            } else if (gndEffectJustCleared) {
+                // Reset terrain offset using raw baro height (now
+                // trusted) and rangefinder, independent of PD which
+                // may have been contaminated during ground effect.
+                // Use raw baroDataDelayed.hgt (not baroHgt - baroHgtOffset)
+                // because baroHgtOffset tracks the contaminated PD.
+                // Raw baro after datum reset reads height above takeoff.
+                const ftype rngAgl = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+                terrainState = -baroDataDelayed.hgt + rngAgl;
+                Popt = sq(frontend->_rngNoise);
             }
 
             // predict range
