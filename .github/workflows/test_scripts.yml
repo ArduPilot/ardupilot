@@ -8,7 +8,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-slim
     container: ardupilot/ardupilot-dev-base:v0.1.3
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -21,7 +21,7 @@ jobs:
             validate_board_list,
             logger_metadata,
             param-file-validation,
-       ]
+          ]
     steps:
       # git checkout the PR
       - uses: actions/checkout@v6
