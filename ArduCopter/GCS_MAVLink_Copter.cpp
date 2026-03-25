@@ -594,7 +594,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
 
         float takeoff_alt_m = packet.z;
 
-        if (!copter.flightmode->do_user_takeoff_U_m(takeoff_alt_m, is_zero(packet.param3))) {
+        const bool must_navigate = ((uint32_t(packet.param3) & NAV_TAKEOFF_FLAGS_HORIZONTAL_POSITION_NOT_REQUIRED) == 0);
+        if (!copter.flightmode->do_user_takeoff_U_m(takeoff_alt_m, must_navigate)) {
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
