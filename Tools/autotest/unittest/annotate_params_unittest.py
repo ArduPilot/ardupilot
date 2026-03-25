@@ -39,8 +39,8 @@ class TestParamDocsUpdate(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
 
         # Create a temporary file
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
-
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            self.temp_file = temp_file.name
         # Create a dictionary of parameter documentation
         self.doc_dict = {
             "PARAM1": {
