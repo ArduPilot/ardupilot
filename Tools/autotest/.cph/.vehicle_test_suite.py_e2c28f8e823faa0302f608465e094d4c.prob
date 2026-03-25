@@ -1,0 +1,1 @@
+{"name":"Local: vehicle_test_suite","url":"d:\\ardupilot\\Tools\\autotest\\vehicle_test_suite.py","tests":[{"id":1775067039730,"input":"","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"d:\\ardupilot\\Tools\\autotest\\vehicle_test_suite.py","group":"local","local":true}

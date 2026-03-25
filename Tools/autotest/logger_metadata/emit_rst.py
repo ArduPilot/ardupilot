@@ -24,7 +24,7 @@ This is a list of log messages which may be present in logs produced and stored 
         return ""
 
     def start(self):
-        self.fh = open("LogMessages.rst", mode='w')
+        self.fh = open("LogMessages.rst", mode='w')   # noqa: SIM115
         print(self.preface(), file=self.fh)
 
     def emit(self, doccos, enumerations):

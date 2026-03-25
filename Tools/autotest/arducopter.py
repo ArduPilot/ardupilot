@@ -14802,13 +14802,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def ReadOnlyDefaults(self):
         '''test that defaults marked "readonly" can't be set'''
-        defaults_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        defaults_filepath.write("""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as defaults_filepath:
+            defaults_filepath.write("""
 DISARM_DELAY 77 @READONLY
 RTL_ALT_M 123
 RTL_ALT_FINAL_M 129
 """)
-        defaults_filepath.close()
         self.customise_SITL_commandline([
         ], defaults_filepath=defaults_filepath.name)
 
@@ -14821,13 +14820,11 @@ RTL_ALT_FINAL_M 129
 
         self.start_subtest('Ensure something is writable....')
         self.set_parameter('RTL_ALT_FINAL_M', 101)
-
-        new_values_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        new_values_filepath.write("""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as new_values_filepath:
+            new_values_filepath.write("""
 DISARM_DELAY 99
 RTL_ALT_M 111
 """)
-        new_values_filepath.close()
 
         self.start_subtest("Ensure parameters can't be set via FTP either")
         mavproxy = self.start_mavproxy()

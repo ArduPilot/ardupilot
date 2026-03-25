@@ -39,7 +39,7 @@ class TestParamDocsUpdate(unittest.TestCase):
         self.temp_dir = tempfile.mkdtemp()
 
         # Create a temporary file
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False)
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False) # noqa: SIM115
 
         # Create a dictionary of parameter documentation
         self.doc_dict = {
