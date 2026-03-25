@@ -212,6 +212,16 @@ docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf copter
 Alternatively, simply run `docker run --rm -it -v $PWD:/ardupilot ardupilot-dev` to
 start a `bash` shell in which you can run other commands from this document.
 
+### Running SITL on WSL (Windows)
+
+For setting up ArduPilot SITL on WSL, please refer to the official documentation:
+https://ardupilot.org/dev/docs/building-setup-windows10.html
+
+Notes:
+- Clone the repository inside the WSL filesystem (e.g., `~/ardupilot`) rather than `/mnt/c/`
+- Ensure Git uses LF line endings to avoid issues (e.g., `git config --global core.autocrlf input`)
+- If MAVProxy console input does not work in WSLg, use the main terminal instead of `--console`
+
 ## Advanced usage
 
 This section contains some explanations on how the Waf build system works
