@@ -120,6 +120,9 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
     mnt_target.angle_rad.yaw_is_ef = FPV_option ? false : _yaw_lock;
     mnt_target.angle_rad.roll_is_ef = FPV_option ? false : _roll_lock;
     mnt_target.angle_rad.pitch_is_ef = FPV_option ? false : _pitch_lock;
+    mnt_target.rate_rads.yaw_is_ef = FPV_option ? false : _yaw_lock;
+    mnt_target.rate_rads.roll_is_ef = FPV_option ? false : _roll_lock;
+    mnt_target.rate_rads.pitch_is_ef = FPV_option ? false : _pitch_lock;
 
     // if RC_RATE is zero, targets are angle
     if (_params.rc_rate_max <= 0) {
