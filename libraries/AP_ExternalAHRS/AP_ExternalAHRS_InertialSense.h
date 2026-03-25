@@ -243,7 +243,7 @@ private:
         pfnIsCommGenMsgHandler      generic[_PTYPE_SIZE];
     };
 
-    struct PACKED is_comm_instance_t
+    struct is_comm_instance_t
     {
         is_comm_buffer_t    rxBuf;
         uint32_t            txPktCount;
