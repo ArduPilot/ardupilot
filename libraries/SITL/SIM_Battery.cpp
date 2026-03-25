@@ -17,6 +17,7 @@
 */
 
 #include "SIM_Battery.h"
+#include <AP_Math/AP_Math.h>
 
 using namespace SITL;
 
@@ -123,6 +124,7 @@ void Battery::setup(float _capacity_Ah, float _resistance, float _max_voltage)
 
 void Battery::init_voltage(float voltage)
 {
+    voltage = MIN(voltage, max_voltage);
     voltage_filter.reset(voltage);
     voltage_set = voltage;
     set_initial_SoC(voltage);
@@ -136,13 +138,19 @@ void Battery::init_capacity(float capacity)
 
 void Battery::set_current(float current)
 {
-    uint64_t now = AP_HAL::micros64();
-    float dt = (now - last_us) * 1.0e-6;
+    const uint64_t now_micros = AP_HAL::micros64();
+    set_current(current, now_micros);
+}
+
+void Battery::set_current(float current, uint64_t now_micros)
+{
+    constexpr float micros_to_sec = 1.0e-6f;
+    float dt = static_cast<float>(now_micros - last_micros) * micros_to_sec;
     if (dt > 0.1) {
         // we stopped updating
         dt = 0;
     }
-    last_us = now;
+    last_micros = now_micros;
     float delta_Ah = current * dt / 3600;
     remaining_Ah -= delta_Ah;
     remaining_Ah = MAX(0, remaining_Ah);
@@ -158,8 +166,8 @@ void Battery::set_current(float current)
     voltage_filter.apply(voltage, dt);
 
     {
-        const uint64_t temperature_dt = now - temperature.last_update_micros;
-        temperature.last_update_micros = now;
+        const uint64_t temperature_dt = now_micros - temperature.last_update_micros;
+        temperature.last_update_micros = now_micros;
         // 1 amp*1 second == 0.1 degrees of energy.  Did those units hurt?
         temperature.kelvin += 0.1 * current * temperature_dt * 0.000001;
         // decay temperature at some %second towards ambient
