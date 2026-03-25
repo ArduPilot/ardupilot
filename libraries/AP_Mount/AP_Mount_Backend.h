@@ -270,6 +270,8 @@ protected:
         float roll;      // roll rate in radians/second
         float pitch;     // roll rate in radians/second
         float yaw;       // roll rate in radians/second
+        bool pitch_is_ef = true;
+        bool roll_is_ef = true;
         bool yaw_is_ef;  // if set then `yaw` is a rate in earth frame
     };
 
