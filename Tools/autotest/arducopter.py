@@ -12539,6 +12539,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "IMU": 25,
         })
 
+    def LogBitmaskGPSPosition(self):
+        '''ensure MASK_LOG_GPS gates absolute position messages'''
+
+        # Test 1: default bitmask — position messages should be present
+        path = self.generate_rate_sample_log()
+        dfreader = self.dfreader_for_path(path)
+        for msg_type in ['GPS', 'POS', 'ORGN', 'AHR2']:
+            dfreader.rewind()
+            m = dfreader.recv_match(type=msg_type)
+            if m is None:
+                raise NotAchievedException(
+                    "Expected %s in log with default bitmask" % msg_type)
+
+        # Test 2: GPS bit disabled — position messages should be absent
+        log_bitmask = int(self.get_parameter('LOG_BITMASK'))
+        log_bitmask_no_gps = log_bitmask & ~(1 << 2)  # clear bit 2
+
+        path = self.generate_rate_sample_log(log_bitmask=log_bitmask_no_gps)
+        dfreader = self.dfreader_for_path(path)
+
+        # These should be absent
+        for msg_type in ['GPS', 'POS', 'ORGN', 'AHR2']:
+            dfreader.rewind()
+            m = dfreader.recv_match(type=msg_type)
+            if m is not None:
+                raise NotAchievedException(
+                    "%s found in log with GPS bit disabled" % msg_type)
+
+        # These should still be present
+        for msg_type in ['XKF1', 'ATT', 'IMU']:
+            dfreader.rewind()
+            m = dfreader.recv_match(type=msg_type)
+            if m is None:
+                raise NotAchievedException(
+                    "Expected %s in log even with GPS bit disabled" % msg_type)
+
     def FETtecESC_flight(self):
         '''fly with servo outputs from FETtec ESC'''
         self.start_subtest("FETtec ESC flight")
@@ -12980,6 +13016,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.VisionPosition,
              self.ATTITUDE_FAST,
              self.BaseLoggingRates,
+             self.LogBitmaskGPSPosition,
              self.BodyFrameOdom,
              self.GPSViconSwitching,
         ])
