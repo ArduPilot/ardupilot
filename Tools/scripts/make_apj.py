@@ -18,7 +18,8 @@ parser.add_argument('--board-id', type=int, default=1, help='board ID')
 
 args = parser.parse_args()
 
-img = open(args.bin, 'rb').read()
+with open(args.bin, 'rb') as in_file:
+    img = in_file.read()
 d = {
     "board_id": int(args.board_id),
     "magic": "APJFWv1",
@@ -31,6 +32,5 @@ d = {
     "signed_firmware": False,
 }
 
-f = open(args.apj, "w")
-f.write(json.dumps(d, indent=4))
-f.close()
+with open(args.apj, "w") as out_file:
+    out_file.write(json.dumps(d, indent=4))

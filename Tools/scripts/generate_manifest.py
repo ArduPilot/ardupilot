@@ -182,7 +182,8 @@ class ManifestGenerator():
     def git_sha_from_git_version(self, filepath):
         '''parses get-version.txt (as emitted by build_binaries.py, returns
         git sha from it'''
-        content = open(filepath).read()
+        with open(filepath) as in_file:
+            content = in_file.read()
         sha_regex = re.compile("commit (?P<sha>[0-9a-f]+)")
         m = sha_regex.search(content)
         if m is None:
@@ -193,7 +194,8 @@ class ManifestGenerator():
     def fwversion_from_git_version(self, filepath):
         '''parses get-version.txt (as emitted by build_binaries.py, returns
         git sha from it'''
-        content = open(filepath).read()
+        with open(filepath) as in_file:
+            content = in_file.read()
         sha_regex = re.compile(r"APMVERSION: \S+\s+(\S+)")
         m = sha_regex.search(content)
         if m is None:
@@ -229,7 +231,8 @@ class ManifestGenerator():
         if not os.path.exists(apj_path):
             print("bad apj path %s" % apj_path, file=sys.stderr)
             return
-        apj_json = json.load(open(apj_path, 'r'))
+        with open(apj_path, 'r') as in_file:
+            apj_json = json.load(in_file)
         if 'board_id' not in apj_json:
             print("no board_id in %s" % apj_path, file=sys.stderr)
             return
@@ -382,9 +385,9 @@ class ManifestGenerator():
                 continue
 
             try:
-                firmware_version = open(firmware_version_file).read()
-                firmware_version = firmware_version.strip()
-                (_, _) = firmware_version.split("-")
+                with open(firmware_version_file) as in_file:
+                    firmware_version = in_file.read()
+                (_, _) = firmware_version.strip().split("-")
             except ValueError:
                 print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
                 continue
@@ -410,7 +413,8 @@ class ManifestGenerator():
             features_text = None
             features_filepath = os.path.join(some_dir, "features.txt")
             if os.path.exists(features_filepath):
-                features_text = sorted(open(features_filepath).read().rstrip().split("\n"))
+                with open(features_filepath) as in_file:
+                    features_text = sorted(in_file.read().rstrip().split("\n"))
 
             for filename in os.listdir(some_dir):
                 if filename in ["git-version.txt", "firmware-version.txt", "files.html", "features.txt"]:

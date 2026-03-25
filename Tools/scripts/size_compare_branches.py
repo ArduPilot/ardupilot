@@ -652,15 +652,13 @@ class SizeCompareBranches(BuildScriptBase):
         # slurp all content into a variable:
         content = bytearray()
         for extra_hwdef in extra_hwdefs:
-            with open(extra_hwdef, "r+b") as f:
-                content += f.read()
+            with open(extra_hwdef, "r+b") as in_file:
+                content += in_file.read()
 
         # spew content to single file:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        f.write(content)
-        f.close()
-
-        return f.name
+        with tempfile.NamedTemporaryFile(delete=False) as out_file:
+            out_file.write(content)
+            return out_file.name
 
     def run_build_task(self, task, source_dir=None, jobs=None):
         self.progress(f"Building {task}")

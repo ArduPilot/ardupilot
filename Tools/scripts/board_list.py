@@ -148,9 +148,9 @@ class BoardList(object):
                 raise ValueError(f"Unable to determine HAL for {hwdef_dir}")
 
     def read_hwdef(self, filepath):
-        fh = open(filepath)
         ret = []
-        text = fh.readlines()
+        with open(filepath) as in_file:
+            text = in_file.readlines()
         for line in text:
             m = re.match(r"^\s*include\s+(.+)\s*$", line)
             if m is not None:
