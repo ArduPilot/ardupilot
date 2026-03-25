@@ -1054,6 +1054,7 @@ void NavEKF3_core::FuseVelPosNED()
             const bool onGroundNotNavigating = (PV_AidingMode == AID_NONE) && onGround;
             const float maxTestRatio = onGroundNotNavigating ? 3.0f : 1.0f;
             bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
+            const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
             if (hgtTestRatio < maxTestRatio) {
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
@@ -1086,7 +1087,6 @@ void NavEKF3_core::FuseVelPosNED()
                     // Do not reset height during ground effect — baro is
                     // known to be corrupted by prop wash and would drive
                     // the state estimate to a fictitious altitude.
-                    const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
                     if (!gndEffectActive) {
                         ResetHeight();
                     }
@@ -1493,13 +1493,22 @@ void NavEKF3_core::selectHeightForFusion()
         posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.1f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
         if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
-            if (is_negative(frontend->_baroGndEffectDeadZone)) {
-                // Use |value| as the observation noise floor in metres.
-                // This heavily deweights baro during ground effect while
-                // maintaining a weak anchor against pure-IMU drift.
-                // E.g. -8 sets noise to 8 m (variance 64), giving K≈0.008
-                // so even -8 m of prop wash only contributes ~0.004 m per
-                // fusion cycle.
+            if (is_negative(frontend->_baroGndEffectDeadZone) &&
+                dal.get_time_flying_ms() == 0) {
+                // Before the vehicle is flying, replace the corrupt
+                // baro with a synthetic observation at the pre-ground-
+                // effect baro reference.  This anchors PD near zero and
+                // prevents IMU drift during the spool-up phase when the
+                // baro is most severely corrupted.  Use moderate noise
+                // so the anchor counters AccZ bias drift.
+                // time_flying_ms comes from the Copter land detector
+                // (throttle + IMU based, not baro) and is zero until
+                // land_complete goes false at actual liftoff.
+                hgtMea = meaHgtAtTakeOff;
+                posDownObsNoise = sq(MAX(fabsF(frontend->_baroGndEffectDeadZone) * 0.1f, 1.0f));
+            } else if (is_negative(frontend->_baroGndEffectDeadZone)) {
+                // After liftoff, use the noise floor to deweight the
+                // baro while still allowing it to contribute weakly.
                 const ftype gnd_eff_noise_m = fabsF(frontend->_baroGndEffectDeadZone);
                 posDownObsNoise = sq(MAX(gnd_eff_noise_m, 1.0f));
             } else {
