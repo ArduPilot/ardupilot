@@ -833,17 +833,18 @@ int AP_ExternalAHRS_InertialSense::is_comm_write_isb_precomp_to_buffer(uint8_t *
     if (pkt->size > buf_size) {
         return -1;
     }
-    pkt->checksum = pkt->hdrCksum;
+    uint16_t checksum = pkt->hdrCksum;
     memcpy(buf, (uint8_t*)&(pkt->hdr), sizeof(packet_hdr_t));
     buf += sizeof(packet_hdr_t);
     if (pkt->offset) {
-        memcpy_inc_update_checksum(&buf, (uint8_t*)&(pkt->offset), 2, &(pkt->checksum));
+        memcpy_inc_update_checksum(&buf, (uint8_t*)&(pkt->offset), 2, &checksum);
     }
     if (pkt->data.size) {
         memcpy_inc_update_checksum(&buf, (uint8_t*)pkt->data.ptr,
-                                (int)pkt->data.size, &(pkt->checksum));
+                                (int)pkt->data.size, &checksum);
     }
-    memcpy(buf, (uint8_t*)&(pkt->checksum), 2);
+    pkt->checksum = checksum;
+    memcpy(buf, &checksum, sizeof(checksum));
     buf += 2;
     comm->txPktCount++;
     return (int)pkt->size;
