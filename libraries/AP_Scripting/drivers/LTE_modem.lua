@@ -1123,7 +1123,8 @@ local function check_CPSI(s)
 
     if system_mode and sinr_str then
         -- Convert strings to numbers
-        local tac = tonumber(tac_str:match("0x(%w+)"), 16) or tonumber(tac_str) or 0
+        local tac_hex = tac_str:match("^0x(%x+)$")
+        local tac = (tac_hex and tonumber(tac_hex, 16)) or tonumber(tac_str) or 0
         local scell_id = tonumber(scell_id_str) or 0
         local pcid = tonumber(pcid_str) or 0
         local ul_freq = tonumber(ul_freq_str) or 0
