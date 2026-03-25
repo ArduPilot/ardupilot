@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+
+# Allow generating lua docs matching AP_Scripting generator output without the full vehicle.
+def build(bld):
+    # Force docs path generation behavior for this example target.
+    bld.options.scripting_docs = True
+    bld.options.enable_scripting = True
+
+    bld.ap_example(
+        program_groups='examples',
+        use=[],
+    )
