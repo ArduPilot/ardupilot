@@ -13830,6 +13830,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self._MAV_CMD_SET_EKF_SOURCE_SET(self.run_cmd)
         self._MAV_CMD_SET_EKF_SOURCE_SET(self.run_cmd_int)
 
+    def MAV_CMD_NAV_TAKEOFF_no_location(self):
+        '''make sure nav_takeoff works in alt_hold when option forced'''
+        self.set_parameter('GPS1_TYPE', 0)
+        self.reboot_sitl()
+        self.change_mode('ALT_HOLD')
+        self.wait_prearm_sys_status_healthy()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=10,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p3=1,
+            p7=10,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.disarm_vehicle(force=True)
+
     def MAV_CMD_NAV_TAKEOFF(self):
         '''test issuing takeoff command via mavlink'''
         self.change_mode('GUIDED')
@@ -16014,6 +16035,7 @@ return update, 1000
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
             self.MAV_CMD_SET_EKF_SOURCE_SET,
+            self.MAV_CMD_NAV_TAKEOFF_no_location,
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
             self.Ch6TuningWPSpeed,
