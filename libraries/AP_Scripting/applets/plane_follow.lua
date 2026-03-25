@@ -564,14 +564,13 @@ local follow_mode = {
       else
          if reported_target then -- i.e. if we previously reported a target but lost it
             if (now_ms - lost_target_now_ms) > 5000 then
-               gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": lost prior target: " .. follow:get_target_sysid())
+               gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": lost prior SYSID: " .. tostring(follow:get_target_sysid()) )
                lost_target_now_ms = now_ms
             end
          end
          reported_target = false
-         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": no target: " .. follow:get_target_sysid())
+         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": no target SYSID: " .. tostring(follow:get_target_sysid()) )
       end
-
       return reported_target
    end
    function follow_mode.enable()
