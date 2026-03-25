@@ -528,6 +528,10 @@ public:
     void Log_Write_Home_And_Origin();
     void Write_Attitude(const Vector3f &targets) const;
 
+    // indicate which bit in LOG_BITMASK indicates position logging enabled
+    void set_log_pos_bit(uint32_t log_bit) { _log_pos_bit = log_bit; }
+    uint32_t get_log_pos_bit() const { return _log_pos_bit; }
+
     enum class LogOriginType {
         ekf_origin = 0,
         ahrs_home = 1
@@ -724,6 +728,9 @@ public:
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
 private:
+
+    // bitmask bit for position logging (set by vehicle code)
+    uint32_t _log_pos_bit;
 
     // roll/pitch/yaw euler angles, all in radians
     float roll;

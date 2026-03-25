@@ -8,6 +8,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_Logger.h"
 #include <AP_RCProtocol/AP_RCProtocol.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
@@ -390,6 +391,13 @@ void LoggerMessageWriter_WriteAllRallyPoints::process()
         return;
     }
 
+    // suppress rally points when position logging is disabled
+    const uint32_t pos_bit = AP::ahrs().get_log_pos_bit();
+    if (pos_bit && !AP::logger().should_log(pos_bit)) {
+        _finished = true;
+        return;
+    }
+
     switch(stage) {
 
     case Stage::WRITE_NEW_RALLY_MESSAGE:
@@ -492,6 +500,13 @@ void LoggerMessageWriter_Write_Polyfence::process() {
 
     AC_Fence *fence = AP::fence();
     if (fence == nullptr) {
+        _finished = true;
+        return;
+    }
+
+    // suppress fence points when position logging is disabled
+    const uint32_t pos_bit = AP::ahrs().get_log_pos_bit();
+    if (pos_bit && !AP::logger().should_log(pos_bit)) {
         _finished = true;
         return;
     }

@@ -458,6 +458,10 @@ const AP_PIDInfo& AP_Landing_Deepstall::get_pid_info(void) const
 
 #if HAL_LOGGING_ENABLED
 void AP_Landing_Deepstall::Log(void) const {
+    const uint32_t pos_bit = AP::ahrs().get_log_pos_bit();
+    if (pos_bit && !AP::logger().should_log(pos_bit)) {
+        return;
+    }
     const AP_PIDInfo& pid_info = ds_PID.get_pid_info();
     struct log_DSTL pkt = {
         LOG_PACKET_HEADER_INIT(LOG_DSTL_MSG),

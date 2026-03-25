@@ -12,6 +12,9 @@
 // Write an AHRS2 packet
 void AP_AHRS::Write_AHRS2() const
 {
+    if (_log_pos_bit && !AP::logger().should_log(_log_pos_bit)) {
+        return;
+    }
     Vector3f euler;
     Location loc;
     Quaternion quat;
@@ -71,6 +74,9 @@ void AP_AHRS::Write_Attitude(const Vector3f &targets) const
 
 void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
 {
+    if (_log_pos_bit && !AP::logger().should_log(_log_pos_bit)) {
+        return;
+    }
     int32_t alt_cm;
     if (!loc.initialised() || !loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
         alt_cm = 0;
@@ -89,6 +95,9 @@ void AP_AHRS::Write_Origin(LogOriginType origin_type, const Location &loc) const
 // Write a POS packet
 void AP_AHRS::Write_POS() const
 {
+    if (_log_pos_bit && !AP::logger().should_log(_log_pos_bit)) {
+        return;
+    }
     Location loc;
     if (!get_location(loc)) {
         return;

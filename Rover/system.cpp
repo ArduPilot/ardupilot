@@ -61,6 +61,8 @@ void Rover::init_ardupilot()
     gps.set_log_gps_bit(MASK_LOG_GPS);
     gps.init();
 
+    ahrs.set_log_pos_bit(MASK_LOG_GPS);
+
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
     init_rc_in();            // sets up rc channels deadzone

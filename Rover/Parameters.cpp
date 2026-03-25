@@ -16,7 +16,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @Param: LOG_BITMASK
     // @DisplayName: Log bitmask
     // @Description: Bitmap of what log types to enable in on-board logger. This value is made up of the sum of each of the log types you want to be saved. On boards supporting microSD cards or other large block-storage devices it is usually best just to enable all basic log types by setting this to 65535.
-    // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS,3:System Performance,4:Throttle,5:Navigation Tuning,7:IMU,8:Mission Commands,9:Battery Monitor,10:Rangefinder,11:Compass,12:Camera,13:Steering,14:RC Input-Output,19:Raw IMU,20:Video Stabilization,21:Optical Flow
+    // @Bitmask: 0:Fast Attitude,1:Medium Attitude,2:GPS/Position,3:System Performance,4:Throttle,5:Navigation Tuning,7:IMU,8:Mission Commands,9:Battery Monitor,10:Rangefinder,11:Compass,12:Camera,13:Steering,14:RC Input-Output,19:Raw IMU,20:Video Stabilization,21:Optical Flow
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 
