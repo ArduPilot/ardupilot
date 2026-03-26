@@ -226,6 +226,14 @@ uint32_t UARTDriver::txspace(void)
     return _writebuffer.space();
 }
 
+enum AP_HAL::UARTDriver::flow_control UARTDriver::get_flow_control(void)
+{
+    if (_uart_path) {
+        return _sitlState->use_rtscts() ? FLOW_CONTROL_ENABLE : FLOW_CONTROL_DISABLE;
+    }
+    return FLOW_CONTROL_ENABLE;
+}
+
 ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
     const ssize_t ret = _readbuffer.read(buffer, count);
