@@ -65,9 +65,11 @@ public:
     void        configure_armed();
 
     // update - runs RSC logic and outputs to motors, returns current spool state for use in motor output logic
-    void        update(DesiredRSCSpoolState desired_spool_state);
+    RSCSpoolState        update(DesiredRSCSpoolState desired_spool_state);
 
-    // output_to_servo - outputs pwm onto output rsc channel.
+    void     update_spool_state(DesiredRSCSpoolState desired_spool_state);
+
+// output_to_servo - outputs pwm onto output rsc channel.
     void        output_to_servo() { write_rsc(_control_output);}
 
     // set_control_mode - sets control mode

@@ -357,6 +357,10 @@ void AP_MotorsHeli::output_logic()
         _spool_state = SpoolState::SHUT_DOWN;
     }
 
+    // send desired spool state update to Heli RSC and update outputs
+    // the Heli RSC will return the current spool state which is used to update _spool_state variable
+    _spool_state=update_motor_control(get_rotor_control_state());
+
     // Always reset the collective limit flags, they get set in move_actuators() if collective reaches a limit
     limit.set_throttle(false);
 
@@ -371,13 +375,6 @@ void AP_MotorsHeli::output_logic()
             } else {
                 limit.set_rpy(false);
             }
-
-            // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DesiredSpoolState::SHUT_DOWN) {
-                _spool_state = SpoolState::GROUND_IDLE;
-                break;
-            }
-
             break;
 
         case SpoolState::GROUND_IDLE: {
@@ -388,16 +385,6 @@ void AP_MotorsHeli::output_logic()
             } else {
                 limit.set_rpy(false);
             }
-
-            // Servos should be moving to correct the current attitude.
-            if (_spool_desired == DesiredSpoolState::SHUT_DOWN){
-                _spool_state = SpoolState::SHUT_DOWN;
-            } else if(_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
-                _spool_state = SpoolState::SPOOLING_UP;
-            } else {    // _spool_desired == GROUND_IDLE
-
-            }
-
             break;
         }
         case SpoolState::SPOOLING_UP:
@@ -411,15 +398,6 @@ void AP_MotorsHeli::output_logic()
                 limit.set_rpy(false);
             }
 
-            // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED ){
-                _spool_state = SpoolState::SPOOLING_DOWN;
-                break;
-            }
-
-            if (_heliflags.rotor_runup_complete){
-                _spool_state = SpoolState::THROTTLE_UNLIMITED;
-            }
             break;
 
         case SpoolState::THROTTLE_UNLIMITED:
@@ -431,12 +409,6 @@ void AP_MotorsHeli::output_logic()
                 limit.set_rpy(true);
             } else {
                 limit.set_rpy(false);
-            }
-
-            // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DesiredSpoolState::THROTTLE_UNLIMITED) {
-                _spool_state = SpoolState::SPOOLING_DOWN;
-                break;
             }
 
             break;
@@ -451,19 +423,9 @@ void AP_MotorsHeli::output_logic()
             } else {
                 limit.set_rpy(false);
             }
-
-            // make sure the motors are spooling in the correct direction
-            if (_spool_desired == DesiredSpoolState::THROTTLE_UNLIMITED) {
-                _spool_state = SpoolState::SPOOLING_UP;
-                break;
-            }
-            if (_heliflags.rotor_spooldown_complete){
-                _spool_state = SpoolState::GROUND_IDLE;
-            }
             break;
     }
-    // send state update to motors and update outputs
-    update_motor_control(get_rotor_control_state());
+
 }
 
 // update the throttle input filter
@@ -638,6 +600,31 @@ AP_MotorsHeli_RSC::DesiredRSCSpoolState AP_MotorsHeli::get_rotor_control_state()
 
     // Should be unreachable, but needed to keep the compiler happy
     return AP_MotorsHeli_RSC::DesiredRSCSpoolState::SHUT_DOWN;
+}
+
+// Converts AP_MotorsHeli_RSC::RSCSpoolState from _rotor_spool_state variable to AP_Motors::SpoolState
+AP_Motors::SpoolState AP_MotorsHeli::convert_spool_state(AP_MotorsHeli_RSC::RSCSpoolState rotor_spool_state) const
+{
+    switch (rotor_spool_state) {
+        case AP_MotorsHeli_RSC::RSCSpoolState::SHUT_DOWN:
+            // sends minimum values out to the motors
+            return AP_Motors::SpoolState::SHUT_DOWN;
+        case AP_MotorsHeli_RSC::RSCSpoolState::GROUND_IDLE:
+            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
+            return AP_Motors::SpoolState::GROUND_IDLE;
+        case AP_MotorsHeli_RSC::RSCSpoolState::THROTTLE_UNLIMITED:
+            // set motor output based on thrust requests
+            return AP_Motors::SpoolState::THROTTLE_UNLIMITED;
+        case AP_MotorsHeli_RSC::RSCSpoolState::SPOOLING_UP:
+            // sends idle output to motors when armed. rotor could be static or turning (autorotation)
+            return AP_Motors::SpoolState::SPOOLING_UP;
+        case AP_MotorsHeli_RSC::RSCSpoolState::SPOOLING_DOWN:
+            // set motor output based on thrust requests
+            return AP_Motors::SpoolState::SPOOLING_DOWN;
+    }
+
+    // Should be unreachable, but needed to keep the compiler happy
+    return AP_Motors::SpoolState::SHUT_DOWN;
 }
 
 // Update _heliflags.rotor_runup_complete value writing log event on state change
