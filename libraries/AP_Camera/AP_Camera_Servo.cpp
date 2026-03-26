@@ -9,6 +9,9 @@ extern const AP_HAL::HAL& hal;
 // initialize the AP_Camera_Servo driver
 void AP_Camera_Servo::init()
 {
+    // call parent init to set default camera info (flags, focal length, etc.)
+    AP_Camera_Backend::init();
+
     // set the zoom and focus to the trim point
     SRV_Channels::set_output_scaled(SRV_Channel::k_cam_zoom, 500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_cam_focus, 500);
