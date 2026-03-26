@@ -117,10 +117,10 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
+AP_Motors::SpoolState  AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
 {
     // Send state update to motors
-    _main_rotor.update(state);
+    AP_MotorsHeli_RSC::RSCSpoolState main_rotor_state = _main_rotor.update(state);
 
     if (state == AP_MotorsHeli_RSC::DesiredRSCSpoolState::SHUT_DOWN) {
         // set engine run enable aux output to not run position to kill engine when disarmed
@@ -131,10 +131,10 @@ void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpool
     }
 
     // Check if rotors are run-up
-    set_rotor_runup_complete(_main_rotor.is_runup_complete());
+    set_rotor_runup_complete(main_rotor_state == AP_MotorsHeli_RSC::RSCSpoolState::THROTTLE_UNLIMITED);
 
-    // Check if rotors are spooled down
-    _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
+    return convert_spool_state(main_rotor_state);
+
 }
 
 //

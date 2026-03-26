@@ -265,11 +265,11 @@ uint32_t AP_MotorsHeli_Single::get_motor_mask()
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
+AP_Motors::SpoolState AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
 {
     // Send state update to motors
     _tail_rotor.update(state);
-    _main_rotor.update(state);
+    AP_MotorsHeli_RSC::RSCSpoolState main_rotor_state = _main_rotor.update(state);
 
     if (state == AP_MotorsHeli_RSC::DesiredRSCSpoolState::SHUT_DOWN){
         // set engine run enable aux output to not run position to kill engine when disarmed
@@ -278,12 +278,12 @@ void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpo
         // else if armed, set engine run enable output to run position
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
     }
+    
+    // Check if rotors are run-up
+    set_rotor_runup_complete(main_rotor_state == AP_MotorsHeli_RSC::RSCSpoolState::THROTTLE_UNLIMITED);
 
-    // Check if both rotors are run-up, tail rotor controller always returns true if not enabled
-    set_rotor_runup_complete(_main_rotor.is_runup_complete() && _tail_rotor.is_runup_complete());
+    return convert_spool_state(main_rotor_state);
 
-    // Check if both rotors are spooled down, tail rotor controller always returns true if not enabled
-    _heliflags.rotor_spooldown_complete = ( _main_rotor.is_spooldown_complete() );
 }
 
 //
