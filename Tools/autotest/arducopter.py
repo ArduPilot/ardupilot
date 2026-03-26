@@ -773,7 +773,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
         self.change_mode("RTL")
-        self.hover()
+        self.zero_throttle()
         self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout, quiet=True)
 
     def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250, quiet=False):
@@ -14642,7 +14642,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_mode_is('AUTO')
         self.change_mode('LOITER')
         self.wait_groundspeed(0, 0.1, minimum_duration=30, timeout=450)
-        self.do_RTL()
+        # do_RTL plays with RC inputs, don't use it.
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
     def MissionRTLYawBehaviour(self):
         '''check end-of-mission yaw behaviour'''
