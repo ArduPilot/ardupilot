@@ -48,6 +48,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # and this is the default box that will be booted if no name is specified
   config.vm.boot_timeout = 1500
 
+  # https://releases.ubuntu.com
+  # https://ubuntu.com/about/release-cycle
+  # https://en.wikipedia.org/wiki/Ubuntu_version_history#Table_of_versions
+
+  # 22.04 LTS Standard Support EOL May 2027
   config.vm.define "autotest-server", primary: true do |autotest|
     autotest.vm.box = "ubuntu/jammy64"
     autotest.vm.provision :shell, path: "Tools/vagrant/initvagrant-autotest-server.sh"
@@ -57,26 +62,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     autotest.vm.boot_timeout = 1200
   end
 
-  # 20.04 LTS  EOL April 2025
-  config.vm.define "focal", autostart: false do |focal|
-    focal.vm.box = "ubuntu/focal64"
-    focal.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    focal.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (focal)"
-    end
-    focal.vm.boot_timeout = 1200
-  end
-  config.vm.define "focal-desktop", autostart: false do |focal|
-    focal.vm.box = "ubuntu/focal64"
-    focal.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-    focal.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (focal-desktop)"
-      vb.gui = true
-    end
-    focal.vm.boot_timeout = 1500
-  end
-
-  # 22.04 LTS EOL Apr 2032
+  # 22.04 LTS Standard Support EOL May 2027
   config.vm.define "jammy", primary: true do |jammy|
     jammy.vm.box = "ubuntu/jammy64"
     jammy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -95,7 +81,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     jammy.vm.boot_timeout = 1200
   end
 
-  # 23.04 EOL Jan 2024
+  # 23.04 Standard Support EOL Jan 2024
   config.vm.define "lunar", autostart: false do |lunar|
     lunar.vm.box = "ubuntu/lunar64"
     lunar.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -114,7 +100,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     lunar.vm.boot_timeout = 1200
   end
 
-  # 23.10 EOL Jul 2024
+  # 23.10 Standard Support EOL Jul 2024
   config.vm.define "mantic", autostart: false do |mantic|
     mantic.vm.box = "ubuntu/mantic64"
     mantic.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -133,7 +119,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     mantic.vm.boot_timeout = 1200
   end
 
-  # 24.04 end of standard support Jun 2029
+  # 24.04 LTS Standard Support EOL May 2029
   # note the use of "bento" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "noble", autostart: false do |noble|
@@ -154,7 +140,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     noble.vm.boot_timeout = 1200
   end
 
-  # 24.10 end of standard support ??
+  # 24.10 Standard Support EOL Jul 2025
   # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "oracular", autostart: false do |oracular|
@@ -175,7 +161,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     oracular.vm.boot_timeout = 1200
   end
 
-  # 25.04 end of standard support ??
+  # 25.04 Standard Support EOL Jan 2026
   # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "plucky", autostart: false do |plucky|
@@ -196,7 +182,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     plucky.vm.boot_timeout = 1200
   end
 
-  # 25.10 end of standard support ??
+  # 25.10 Standard Support EOL Jul 2026
   # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "questing", autostart: false do |questing|
