@@ -41,6 +41,23 @@ repos:
         -   id: check-xml
         -   id: check-yaml
 
+  -   repo: https://github.com/igrr/astyle_py
+      rev: v1.1.0
+      hooks:
+      -   id: astyle_py
+          args:  # Artistic Style version info: https://astyle.sourceforge.net/news.html
+            - --astyle-version=3.1  # Aligns with Artistic Style 3.1 in Ubuntu 24.04
+            - --options=Tools/CodeStyle/astylerc
+          files: |
+            (?x)^(
+              ArduCopter\/AP_ExternalControl_Copter\.(c|cpp|h|hpp)$ |
+              libraries\/AP_DDS\/.*\.(c|cpp|h|hpp)$ |
+              libraries\/AP_ExternalAHRS\/AP_ExternalAHRS_MicroStrain7\.(c|cpp|h|hpp)$ |
+              libraries\/AP_ExternalControl\/.*\.(c|cpp|h|hpp)$ |
+              libraries\/AP_GSOF\/.*\.(c|cpp|h|hpp)$ |
+              Rover\/AP_ExternalControl_Rover\.(c|cpp|h|hpp)$ |
+            )$
+
   -   repo: https://github.com/psf/black
       rev: 25.1.0
       hooks:
