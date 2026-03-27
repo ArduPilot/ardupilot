@@ -98,7 +98,9 @@ PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to defaul
 PIP=pip3
 
 if [ ${RELEASE_CODENAME} == 'bionic' ] ||
-      [ ${RELEASE_CODENAME} == 'buster' ]; then
+      [ ${RELEASE_CODENAME} == 'buster' ] ||
+      [ ${RELEASE_CODENAME} == 'focal' ] ||
+      [ ${RELEASE_CODENAME} == 'groovy' ]; then
     echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
     exit 1
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
@@ -107,11 +109,6 @@ elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     PYTHON_V="python3"
     PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -151,8 +148,7 @@ elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+elif [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -308,12 +304,7 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'focal' ];
-then
-    BASE_PKGS+=" python-is-python3"
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
@@ -340,9 +331,6 @@ fi
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITL_PKGS+=" libjpeg62-turbo-dev"
-  elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-           [ ${RELEASE_CODENAME} == 'focal' ]; then
-    SITL_PKGS+=" libjpeg8-dev"
   elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
@@ -397,8 +385,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'focal' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -503,9 +489,6 @@ fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
 SETUPTOOLS="setuptools"
-if [ ${RELEASE_CODENAME} == 'focal' ]; then
-    SETUPTOOLS=setuptools==70.3.0
-fi
 $PIP install $PIP_USER_ARGUMENT -U pip packaging $SETUPTOOLS wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
@@ -532,11 +515,6 @@ for PACKAGE in $PYTHON_PKGS; do
         echo "##### $PACKAGE takes a *VERY* long time to install (~30 minutes).  Be patient."
         # Use wheel repository for specific supported Ubuntu releases only
         case ${RELEASE_CODENAME} in
-            focal)
-                echo "##### Adding wxpython wheel repository for faster installation"
-                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-20.04"
-                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
-                ;;
             jammy)
                 echo "##### Adding wxpython wheel repository for faster installation"
                 WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04"
