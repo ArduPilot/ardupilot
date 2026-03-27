@@ -559,9 +559,7 @@ done
 
 # somehow Plucky really wants Pillow reinstalled or MAVProxy's map
 # won't load (version mismatch between "Core" and "Pillow")
-if [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       ${RELEASE_CODENAME} == 'questing' ] ||
-       false; then
+if [ ${RELEASE_CODENAME} == 'plucky' ] || [ ${RELEASE_CODENAME} == 'questing' ] || false; then
     $PIP install --force-reinstall pillow
 fi
 
