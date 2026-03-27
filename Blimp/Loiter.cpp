@@ -917,24 +917,30 @@ void Loiter::run_vel(Vector3f& target_vel_ef, float& target_vel_yaw, Vector4b ax
     float scaler_z_n = 1;
     float scaler_yaw_n = 1;
 
-    if ((Fins::motor_frame)blimp.g2.frame_class.get() == Fins::MOTOR_FRAME_FISHBLIMP) {
+    switch ((Fins::motor_frame)blimp.g2.frame_class.get()) {
+    case Fins::MOTOR_FRAME_FISHBLIMP: {
         float xz_out = fabsf(blimp.motors->front_out) + fabsf(blimp.motors->down_out);
-        if (xz_out > 1) {
-            scaler_x_n = 1 / xz_out;
-            scaler_z_n = 1 / xz_out;
+        if (xz_out > 1.0f) {
+            scaler_x_n = 1.0f / xz_out;
+            scaler_z_n = 1.0f / xz_out;
         }
         float yyaw_out = fabsf(blimp.motors->right_out) + fabsf(blimp.motors->yaw_out);
-        if (yyaw_out > 1) {
-            scaler_y_n = 1 / yyaw_out;
-            scaler_yaw_n = 1 / yyaw_out;
+        if (yyaw_out > 1.0f) {
+            scaler_y_n = 1.0f / yyaw_out;
+            scaler_yaw_n = 1.0f / yyaw_out;
         }
+        break;
     }
-    else if ((Fins::motor_frame)blimp.g2.frame_class.get() == Fins::MOTOR_FRAME_FOUR_MOTOR) {
+    case Fins::MOTOR_FRAME_FOUR_MOTOR: {
         float xyaw_out = fabsf(blimp.motors->front_out) + fabsf(blimp.motors->yaw_out);
-        if (xyaw_out > 1) {
-            scaler_x_n = 1 / xyaw_out;
-            scaler_yaw_n = 1 / xyaw_out;
+        if (xyaw_out > 1.0f) {
+            scaler_x_n = 1.0f / xyaw_out;
+            scaler_yaw_n = 1.0f / xyaw_out;
         }
+        break;
+    }
+    default:
+        break;
     }
 
     scaler_x = scaler_x*scaler_spd + scaler_x_n*(1-scaler_spd);
