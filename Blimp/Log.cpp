@@ -87,8 +87,6 @@ void Blimp::Log_Write_PIDs()
     logger.Write_PID(LOG_PIDE_MSG, loiter->pid_pos_y.get_pid_info());
     logger.Write_PID(LOG_PIDD_MSG, loiter->pid_pos_z.get_pid_info());
     logger.Write_PID(LOG_PIDY_MSG, loiter->pid_pos_yaw.get_pid_info());
-    logger.Write_PID(LOG_PIDP_MSG, loiter->pid_lvl_pitch.get_pid_info());
-    logger.Write_PID(LOG_PIDR_MSG, loiter->pid_lvl_roll.get_pid_info());
 }
 
 // Write an attitude packet
