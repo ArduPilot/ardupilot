@@ -1549,11 +1549,8 @@ void AP_AHRS::use_recorded_origin_maybe()
         return;
     }
 
-    // don't use recorded origin if the configured EKF uses GPS for
-    // position — GPS will set a correct origin when it gets
-    // a fix. Using the recorded origin here would prevent GPS from
-    // setting it later (EKF origin is immutable once set).
-    if (using_gps_for_pos()) {
+    // only set if not using GPS
+    if (using_gps()) {
         return;
     }
 
@@ -3614,34 +3611,6 @@ bool AP_AHRS::using_gps(void) const
         return true;
     }
     // since there is no default case above, this is unreachable
-    return true;
-}
-
-// check if GPS is configured as the position source for
-// the configured EKF type
-bool AP_AHRS::using_gps_for_pos(void) const
-{
-    switch (active_EKF_type()) {
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return EKF2.configuredToUseGPSForPosXY();
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return EKF3.configuredToUseGPSForPos();
-#endif
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return _gps_use != GPSUse::Disable;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        return true;
-    }
     return true;
 }
 

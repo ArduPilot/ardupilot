@@ -12,6 +12,7 @@ apk update && apk add --no-cache \
         linux-headers \
         g++ \
         python3 \
+        py-future \
         py-pip \
         libxml2-dev \
         libxslt-dev \

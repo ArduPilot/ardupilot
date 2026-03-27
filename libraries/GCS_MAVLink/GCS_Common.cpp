@@ -4931,7 +4931,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif
 
 #if HAL_INS_ACCELCAL_ENABLED
-    if (packet.x == PREFLIGHT_CALIBRATION_ACCELEROMETER_FULL) {
+    if (packet.x == 1) {
         // start with gyro calibration
         if (!AP::ins().calibrate_gyros()) {
             return MAV_RESULT_FAILED;
@@ -4945,12 +4945,12 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 
 #if AP_INERTIALSENSOR_ENABLED
 #if AP_AHRS_ENABLED
-    if (packet.x == PREFLIGHT_CALIBRATION_ACCELEROMETER_TRIM) {
+    if (packet.x == 2) {
         return AP::ins().calibrate_trim();
     }
 #endif
 
-    if (packet.x == PREFLIGHT_CALIBRATION_ACCELEROMETER_SIMPLE) {
+    if (packet.x == 4) {
         // simple accel calibration
         return AP::ins().simple_accel_cal();
     }
@@ -4960,7 +4960,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
       compass to be written as valid. This is useful when reloading
       parameters after a full parameter erase
      */
-    if (packet.x == PREFLIGHT_CALIBRATION_ACCELEROMETER_FORCE_SAVE) {
+    if (packet.x == 76) {
         // force existing accel calibration to be accepted as valid
         AP::ins().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;
@@ -4968,7 +4968,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 #endif  // AP_INERTIALSENSOR_ENABLED
 
 #if AP_COMPASS_ENABLED
-    if (is_equal(packet.param2, static_cast<float>(PREFLIGHT_CALIBRATION_MAGNETOMETER_FORCE_SAVE))) {
+    if (is_equal(packet.param2,76.0f)) {
         // force existing compass calibration to be accepted as valid
         AP::compass().force_save_calibration();
         ret = MAV_RESULT_ACCEPTED;

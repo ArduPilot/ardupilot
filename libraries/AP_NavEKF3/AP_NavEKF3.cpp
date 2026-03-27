@@ -1605,15 +1605,6 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
     return false;
 }
 
-// check if configured to use GPS for horizontal position estimation
-bool NavEKF3::configuredToUseGPSForPos(void) const
-{
-    if (configuredToUseGPSForPosXY() || sources.getPosZSource(primary) == AP_NavEKF_Source::SourceZ::GPS) {
-        return true;
-    }
-    return false;
-}
-
 // write the raw optical flow measurements
 // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
 // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.

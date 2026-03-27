@@ -13,7 +13,7 @@ class SocketAPM;
 class BL_Network {
 public:
     void init(void);
-    void restore_comms_ip(void);
+    void save_comms_ip(void);
     void status_printf(const char *fmt, ...);
 
 private:

@@ -501,18 +501,18 @@ bool AP_OABendyRuler::calc_margin_from_alt_fence(const Location &start, const Lo
         return false;
     }
 
-    int32_t alt_above_frame_cm_start, alt_above_frame_cm_end;    
-    if (!start.get_alt_cm(fence->get_alt_max_frame(), alt_above_frame_cm_start)) {
+    int32_t alt_above_home_cm_start, alt_above_home_cm_end;    
+    if (!start.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm_start)) {
         return false;
     }
-    if (!end.get_alt_cm(fence->get_alt_max_frame(), alt_above_frame_cm_end )) {
+    if (!end.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_above_home_cm_end )) {
         return false;
     }
 
     // safe max alt = fence alt - fence margin
     const float max_fence_alt = fence->get_safe_alt_max_m();
-    const float margin_start =  max_fence_alt - alt_above_frame_cm_start * 0.01f;
-    const float margin_end =  max_fence_alt - alt_above_frame_cm_end * 0.01f;
+    const float margin_start =  max_fence_alt - alt_above_home_cm_start * 0.01f;
+    const float margin_end =  max_fence_alt - alt_above_home_cm_end * 0.01f;
 
     // margin is minimum distance to fence from either start or end location
     margin = MIN(margin_start,margin_end);
