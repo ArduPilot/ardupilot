@@ -233,12 +233,19 @@ void Blimp::read_AHRS(void)
 
     vel_yaw = ahrs.get_yaw_rate_earth();
 
-    if (g2.frame_class.get() == Fins::MOTOR_FRAME_FISHBLIMP) {
-        vel_ned_filtd = {vel_x_filter.apply(vel_ned.x), vel_y_filter.apply(vel_ned.y), vel_z_filter.apply(vel_ned.z)};
-        vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
-    } else {
-        vel_ned_filtd = vel_ned;
-        vel_yaw_filtd = vel_yaw;
+    switch (motors->_frame) {
+        case Fins::MOTOR_FRAME_FISHBLIMP:
+            vel_ned_filtd = {vel_x_filter.apply(vel_ned.x), vel_y_filter.apply(vel_ned.y), vel_z_filter.apply(vel_ned.z)};
+            vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
+            break;
+        case Fins::MOTOR_FRAME_FOUR_MOTOR:
+            FALLTHROUGH;
+        case Fins::MOTOR_FRAME_UNDEFINED:
+            FALLTHROUGH;
+        default:
+            vel_ned_filtd = vel_ned;
+            vel_yaw_filtd = vel_yaw;
+            break;
     }
 
 #if HAL_LOGGING_ENABLED

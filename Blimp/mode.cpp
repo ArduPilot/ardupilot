@@ -171,10 +171,10 @@ void Mode::get_pilot_input(Vector3f &pilot, float &yaw)
         return;
     }
     // fetch pilot inputs
-    pilot.y = channel_right->get_control_in() / float(RC_SCALE);
-    pilot.x = channel_front->get_control_in() / float(RC_SCALE);
-    pilot.z = -channel_up->get_control_in() / float(RC_SCALE);
-    yaw = channel_yaw->get_control_in() / float(RC_SCALE);
+    pilot.y = channel_right->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
+    pilot.x = channel_front->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
+    pilot.z = -channel_up->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
+    yaw = channel_yaw->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
 }
 
 bool Mode::is_disarmed_or_landed() const
@@ -187,10 +187,13 @@ bool Mode::is_disarmed_or_landed() const
 
 void Mode::yaw_forward()
 {
+    if (!blimp.position_ok()) {
+        return;
+    }
     const float speed_sq = blimp.vel_ned_filtd.xy().length_squared();
     // Make sure the blimp is keeping up with the target
     const bool close_yaw = fabsf(wrap_PI(target_yaw-ahrs.get_yaw())) < (loiter->max_pos_yaw*blimp.loiter->pos_lag);
-    if (blimp.position_ok() && (speed_sq > sq(g.wp_yaw_min_vel)) && close_yaw) {
+    if ((speed_sq > sq(g.wp_yaw_min_vel)) && close_yaw) {
         const float new_tar = atan2f(blimp.vel_ned_filtd.y,blimp.vel_ned_filtd.x);
         // Set target_yaw to automatically look ahead
         if (wrap_PI(new_tar - target_yaw) > 0) {

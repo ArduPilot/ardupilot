@@ -48,7 +48,7 @@ void Fins::setup_finsmotors()
             setup_motors();
             break;
         default:
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ERROR: Wrong frame class.");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ERROR: Bad frame class.");
             break;
     }
 }
@@ -62,10 +62,10 @@ void Fins::setup_fins()
     add_fin(2, -1,  0,   0, 0.5,    0,  0,    0,  0.5); //Right
     add_fin(3,  1,  0,   0, 0.5,    0,  0,    0, -0.5); //Left
 
-    SRV_Channels::set_angle(SRV_Channel::k_motor1, RC_SCALE);
-    SRV_Channels::set_angle(SRV_Channel::k_motor2, RC_SCALE);
-    SRV_Channels::set_angle(SRV_Channel::k_motor3, RC_SCALE);
-    SRV_Channels::set_angle(SRV_Channel::k_motor4, RC_SCALE);
+    SRV_Channels::set_angle(SRV_Channel::k_motor1, INPUT_AND_OUTPUT_SCALING);
+    SRV_Channels::set_angle(SRV_Channel::k_motor2, INPUT_AND_OUTPUT_SCALING);
+    SRV_Channels::set_angle(SRV_Channel::k_motor3, INPUT_AND_OUTPUT_SCALING);
+    SRV_Channels::set_angle(SRV_Channel::k_motor4, INPUT_AND_OUTPUT_SCALING);
 }
 
 void Fins::setup_motors()
@@ -75,10 +75,10 @@ void Fins::setup_motors()
     add_motor(2,  0,  0, -1,   0); //Up         35
     add_motor(3,  1,  0,   0,  0); //Right      36
 
-    SRV_Channels::set_angle(SRV_Channel::k_motor1, RC_SCALE);
-    SRV_Channels::set_angle(SRV_Channel::k_motor2, RC_SCALE);
-    SRV_Channels::set_angle(SRV_Channel::k_motor3, RC_SCALE);
-    SRV_Channels::set_angle(SRV_Channel::k_motor4, RC_SCALE);
+    SRV_Channels::set_angle(SRV_Channel::k_motor1, INPUT_AND_OUTPUT_SCALING);
+    SRV_Channels::set_angle(SRV_Channel::k_motor2, INPUT_AND_OUTPUT_SCALING);
+    SRV_Channels::set_angle(SRV_Channel::k_motor3, INPUT_AND_OUTPUT_SCALING);
+    SRV_Channels::set_angle(SRV_Channel::k_motor4, INPUT_AND_OUTPUT_SCALING);
 }
 
 void Fins::add_fin(int8_t fin_num, float right_amp_fac, float front_amp_fac, float down_amp_fac, float yaw_amp_fac,
@@ -148,7 +148,7 @@ void Fins::output()
             output_motors();
             break;
         default:
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ERROR: Wrong frame class.");
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "ERROR: Bad frame class.");
             break;
     }
 }
@@ -194,7 +194,7 @@ void Fins::output_fins()
         }
         // finding and outputting current position for each servo from sine wave
         _thrpos[i]= _amp[i]*cosf(freq_hz * _freq[i] * _time * 2 * M_PI) + _off[i];
-        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _thrpos[i] * RC_SCALE);
+        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _thrpos[i] * INPUT_AND_OUTPUT_SCALING);
     }
 
 #if HAL_LOGGING_ENABLED
@@ -209,7 +209,7 @@ void Fins::output_motors()
         _thrpos[i] = constrain_float(_right_amp_factor[i]*right_out + _front_amp_factor[i]*front_out + _down_amp_factor[i]*down_out + _yaw_amp_factor[i]*yaw_out, -thr_max, thr_max);
 
         //Set output
-        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _thrpos[i] * RC_SCALE);
+        SRV_Channels::set_output_scaled(SRV_Channels::get_motor_function(i), _thrpos[i] * INPUT_AND_OUTPUT_SCALING);
     }
 
 }
@@ -228,12 +228,9 @@ const char* Fins::get_frame_string()
     switch (_frame) {
         case Fins::MOTOR_FRAME_FISHBLIMP:
             return "FISHBLIMP";
-            break;
         case Fins::MOTOR_FRAME_FOUR_MOTOR:
             return "FOURMOTOR";
-            break;
         default:
             return "NOFRAME";
-            break;
     }
 }

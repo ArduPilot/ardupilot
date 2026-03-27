@@ -30,62 +30,32 @@ public:
     CLASS_NO_COPY(Mode);
 
     // child classes should override these methods
-    virtual bool init(bool ignore_checks)
-    {
-        return true;
-    }
+    virtual bool init(bool ignore_checks) { return true; }
     virtual void run() = 0;
     virtual bool requires_GPS() const = 0;
     virtual bool has_manual_throttle() const = 0;
     virtual bool allows_arming(bool from_gcs) const = 0;
-    virtual bool is_autopilot() const
-    {
-        return false;
-    }
-    virtual bool has_user_takeoff(bool must_navigate) const
-    {
-        return false;
-    }
-    virtual bool in_guided_mode() const
-    {
-        return false;
-    }
-
+    virtual bool is_autopilot() const { return false; }
+    virtual bool has_user_takeoff(bool must_navigate) const { return false; }
+    virtual bool in_guided_mode() const { return false; }
+    
     // return a string for this flightmode
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
-
+    
     // returns a unique number specific to this mode
     virtual Mode::Number number() const = 0;
-
-    virtual bool is_landing() const
-    {
-        return false;
-    }
-
+    
+    virtual bool is_landing() const { return false; }
+    
     // mode requires terrain to be present to be functional
-    virtual bool requires_terrain_failsafe() const
-    {
-        return false;
-    }
-
+    virtual bool requires_terrain_failsafe() const { return false; }
+    
     // functions for reporting to GCS
-    virtual bool get_wp(Location &loc)
-    {
-        return false;
-    };
-    virtual int32_t wp_bearing() const
-    {
-        return 0;
-    }
-    virtual float wp_distance_m() const
-    {
-        return 0.0f;
-    }
-    virtual float crosstrack_error() const
-    {
-        return 0.0f;
-    }
+    virtual bool get_wp(Location &loc) { return false; };
+    virtual int32_t wp_bearing() const { return 0; }
+    virtual float wp_distance_m() const { return 0.0f; }
+    virtual float crosstrack_error() const { return 0.0f; }
 
     void update_navigation();
 
@@ -142,33 +112,15 @@ public:
 
     virtual void run() override;
 
-    bool requires_GPS() const override
-    {
-        return false;
-    }
-    bool has_manual_throttle() const override
-    {
-        return true;
-    }
-    bool allows_arming(bool from_gcs) const override
-    {
-        return true;
-    };
-    bool is_autopilot() const override
-    {
-        return false;
-    }
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
-    const char *name() const override
-    {
-        return "Manual";
-    }
-    const char *name4() const override
-    {
-        return "MANU";
-    }
+    const char *name() const override { return "Manual"; }
+    const char *name4() const override { return "MANU"; }
 
     Mode::Number number() const override { return Mode::Number::MANUAL; }
 
@@ -185,34 +137,15 @@ public:
 
     virtual void run() override;
 
-    bool requires_GPS() const override
-    {
-        return true;
-    }
-    bool has_manual_throttle() const override
-    {
-        return false;
-    }
-    bool allows_arming(bool from_gcs) const override
-    {
-        return true;
-    };
-    bool is_autopilot() const override
-    {
-        return false;
-        //TODO
-    }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; } //TODO
 
 protected:
 
-    const char *name() const override
-    {
-        return "Velocity";
-    }
-    const char *name4() const override
-    {
-        return "VELY";
-    }
+    const char *name() const override { return "Velocity"; }
+    const char *name4() const override { return "VELY"; }
 
     Mode::Number number() const override { return Mode::Number::VELOCITY; }
 
@@ -230,34 +163,15 @@ public:
     virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
-    bool requires_GPS() const override
-    {
-        return true;
-    }
-    bool has_manual_throttle() const override
-    {
-        return false;
-    }
-    bool allows_arming(bool from_gcs) const override
-    {
-        return true;
-    };
-    bool is_autopilot() const override
-    {
-        return false;
-        //TODO
-    }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return false; } //TODO
 
 protected:
 
-    const char *name() const override
-    {
-        return "Loiter";
-    }
-    const char *name4() const override
-    {
-        return "LOIT";
-    }
+    const char *name() const override { return "Loiter"; }
+    const char *name4() const override { return "LOIT"; }
 
     Mode::Number number() const override { return Mode::Number::LOITER; }
 
@@ -273,33 +187,15 @@ public:
     virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
-    bool requires_GPS() const override
-    {
-        return false;
-    }
-    bool has_manual_throttle() const override
-    {
-        return true;
-    }
-    bool allows_arming(bool from_gcs) const override
-    {
-        return false;
-    };
-    bool is_autopilot() const override
-    {
-        return false;
-    }
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
-    const char *name() const override
-    {
-        return "Land";
-    }
-    const char *name4() const override
-    {
-        return "LAND";
-    }
+    const char *name() const override { return "Land"; }
+    const char *name4() const override { return "LAND"; }
 
     Mode::Number number() const override { return Mode::Number::LAND; }
 
@@ -319,34 +215,15 @@ public:
     virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
-    bool requires_GPS() const override
-    {
-        return true;
-    }
-    bool has_manual_throttle() const override
-    {
-        return false;
-    }
-    bool allows_arming(bool from_gcs) const override
-    {
-        return true;
-    };
-    bool is_autopilot() const override
-    {
-        return false;
-        //TODO
-    }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return true; }
 
 protected:
 
-    const char *name() const override
-    {
-        return "RTL";
-    }
-    const char *name4() const override
-    {
-        return "RTL";
-    }
+    const char *name() const override { return "RTL"; }
+    const char *name4() const override { return "RTL"; }
 
     Mode::Number number() const override { return Mode::Number::RTL; }
 
@@ -362,23 +239,10 @@ public:
     virtual bool init(bool ignore_checks) override;
     virtual void run() override;
 
-    bool requires_GPS() const override
-    {
-        return true;
-    }
-    bool has_manual_throttle() const override
-    {
-        return false;
-    }
-    bool allows_arming(bool from_gcs) const override
-    {
-        return true;
-    };
-    bool is_autopilot() const override
-    {
-        return false;
-        //TODO
-    }
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; };
+    bool is_autopilot() const override { return true; }
 
     Vector3f target_vel;
     Vector3f target_accel;
@@ -413,14 +277,8 @@ public:
 
 protected:
 
-    const char *name() const override
-    {
-        return "AUTO";
-    }
-    const char *name4() const override
-    {
-        return "AUTO";
-    }
+    const char *name() const override { return "AUTO"; }
+    const char *name4() const override { return "AUTO"; }
 
     Mode::Number number() const override { return Mode::Number::AUTO; }
 
@@ -440,33 +298,15 @@ public:
 
     virtual void run() override;
 
-    bool requires_GPS() const override
-    {
-        return false;
-    }
-    bool has_manual_throttle() const override
-    {
-        return true;
-    }
-    bool allows_arming(bool from_gcs) const override
-    {
-        return false;
-    };
-    bool is_autopilot() const override
-    {
-        return false;
-    }
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return true; }
+    bool allows_arming(bool from_gcs) const override { return false; };
+    bool is_autopilot() const override { return false; }
 
 protected:
 
-    const char *name() const override
-    {
-        return "HOLD";
-    }
-    const char *name4() const override
-    {
-        return "HOLD";
-    }
+    const char *name() const override { return "HOLD"; }
+    const char *name4() const override { return "HOLD"; }
 
     Mode::Number number() const override { return Mode::Number::HOLD; }
 

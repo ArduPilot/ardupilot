@@ -6,7 +6,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define NUM_FINS 4 //Current maximum number of fins or motors that can be added.
-#define RC_SCALE 1000 //Input and output scaling
+#define INPUT_AND_OUTPUT_SCALING 1000 //Input and output scaling
 
 class Fins
 {

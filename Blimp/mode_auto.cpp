@@ -96,7 +96,7 @@ Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Lo
 Vector3p ModeAuto::vec_from_loc(const Location& loc)
 {
     Vector3p vec;
-    if(loc.get_vector_from_origin_NEU(vec)){
+    if (loc.get_vector_from_origin_NEU(vec)){
         vec.x = vec.x * 0.01;
         vec.y = vec.y * 0.01;
         vec.z = - vec.z * 0.01;
@@ -162,7 +162,7 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     scurve_this_leg_origin = origin;
 
-    if(!mission_started) {
+    if (!mission_started) {
         AP_Mission::Mission_Command cmd_start;
         if (!mission.get_next_nav_cmd(1, cmd_start)) {
             fast_wp = false;

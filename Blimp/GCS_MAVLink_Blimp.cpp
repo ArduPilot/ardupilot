@@ -97,7 +97,7 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         PID_SEND::POSZ,
         PID_SEND::POSYAW,
         PID_SEND::LVLRLL,
-        PID_SEND::LVLPIT
+        PID_SEND::LVLPIT,
     };
     for (uint8_t i=0; i<ARRAY_SIZE(axes); i++) {
         if (!(blimp.g.gcs_pid_mask & (1<<(axes[i]-1)))) {
