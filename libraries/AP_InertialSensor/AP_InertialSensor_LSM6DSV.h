@@ -129,7 +129,6 @@ private:
     enum Rotation _rotation;
     float _accel_scale;
     float _gyro_scale;
-    float _accel_range_g;
     uint8_t _whoami;
     uint8_t _temperature_counter;
     uint16_t _backend_rate_hz;

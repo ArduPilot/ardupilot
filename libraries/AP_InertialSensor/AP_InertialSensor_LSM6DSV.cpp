@@ -36,8 +36,8 @@ extern const AP_HAL::HAL& hal;
 
 namespace {
 
-#ifndef LSM6DSV_EXPERIMENTAL_PRIMARY_FIFO
-#define LSM6DSV_EXPERIMENTAL_PRIMARY_FIFO 1
+#ifndef LSM6DSV_USE_FIFO
+#define LSM6DSV_USE_FIFO 1
 #endif
 
 // Enable the second-stage digital low-pass filter (LPF2) on the
@@ -55,125 +55,125 @@ namespace {
 #endif
 
 // ---- FIFO control registers (R/W) ----
-constexpr uint8_t LSM6DSV_REG_FIFO_CTRL1 = 0x07;  // FIFO watermark threshold [7:0]
-constexpr uint8_t LSM6DSV_REG_FIFO_CTRL2 = 0x08;  // FIFO watermark threshold [8], compression
-constexpr uint8_t LSM6DSV_REG_FIFO_CTRL3 = 0x09;  // FIFO gyro/accel batch data rate
-constexpr uint8_t LSM6DSV_REG_FIFO_CTRL4 = 0x0A;  // FIFO mode selection
+#define LSM6DSV_REG_FIFO_CTRL1              0x07  // FIFO watermark threshold [7:0]
+#define LSM6DSV_REG_FIFO_CTRL2              0x08  // FIFO watermark threshold [8], compression
+#define LSM6DSV_REG_FIFO_CTRL3              0x09  // FIFO gyro/accel batch data rate
+#define LSM6DSV_REG_FIFO_CTRL4              0x0A  // FIFO mode selection
 
-constexpr uint8_t LSM6DSV_FIFO_CTRL3_BDR_DISABLED     = 0x00;
-constexpr uint8_t LSM6DSV_FIFO_CTRL4_MODE_BYPASS       = 0x00;
-constexpr uint8_t LSM6DSV_FIFO_CTRL4_MODE_CONTINUOUS   = 0x06;
+#define LSM6DSV_FIFO_CTRL3_BDR_DISABLED     0x00
+#define LSM6DSV_FIFO_CTRL4_MODE_BYPASS       0x00
+#define LSM6DSV_FIFO_CTRL4_MODE_CONTINUOUS   0x06
 
 // ---- WHO_AM_I register (R) ----
-constexpr uint8_t LSM6DSV_REG_WHO_AM_I   = 0x0F;
-constexpr uint8_t LSM6DSV_ID_LSM6DSV16X  = 0x70;
+#define LSM6DSV_REG_WHO_AM_I                0x0F
+#define LSM6DSV_ID_LSM6DSV16X               0x70
 
 // ---- Accelerometer control register 1 (R/W) ----
 // [6:4] OP_MODE_XL: operating mode   [3:0] ODR_XL: output data rate
-constexpr uint8_t LSM6DSV_REG_CTRL1      = 0x10;
+#define LSM6DSV_REG_CTRL1                   0x10
 
 // ---- Gyroscope control register 2 (R/W) ----
 // [6:4] OP_MODE_G: operating mode   [3:0] ODR_G: output data rate
-constexpr uint8_t LSM6DSV_REG_CTRL2      = 0x11;
+#define LSM6DSV_REG_CTRL2                   0x11
 
 // ---- Control register 3 (R/W) ----
-constexpr uint8_t LSM6DSV_REG_CTRL3      = 0x12;
-constexpr uint8_t LSM6DSV_CTRL3_BDU       = 1U << 6;  // block data update
-constexpr uint8_t LSM6DSV_CTRL3_IF_INC    = 1U << 2;  // auto-increment address
-constexpr uint8_t LSM6DSV_CTRL3_SW_RESET  = 1U << 0;  // software reset
+#define LSM6DSV_REG_CTRL3                   0x12
+#define LSM6DSV_CTRL3_BDU                   (1U << 6)  // block data update
+#define LSM6DSV_CTRL3_IF_INC                (1U << 2)  // auto-increment address
+#define LSM6DSV_CTRL3_SW_RESET              (1U << 0)  // software reset
 
 // [4] OP_MODE: 0=high-performance, 1=high-accuracy ODR
-constexpr uint8_t LSM6DSV_CTRL_MODE_HAODR = 0x10;
+#define LSM6DSV_CTRL_MODE_HAODR             0x10
 
 // ---- Control register 6 — gyro full-scale selection (R/W) ----
 // [3:0] FS_G: gyroscope full-scale
-constexpr uint8_t LSM6DSV_REG_CTRL6      = 0x15;
-constexpr uint8_t LSM6DSV_CTRL6_FS_G_125DPS   = 0x00;
-constexpr uint8_t LSM6DSV_CTRL6_FS_G_250DPS   = 0x01;
-constexpr uint8_t LSM6DSV_CTRL6_FS_G_500DPS   = 0x02;
-constexpr uint8_t LSM6DSV_CTRL6_FS_G_1000DPS  = 0x03;
-constexpr uint8_t LSM6DSV_CTRL6_FS_G_2000DPS  = 0x04;
-constexpr uint8_t LSM6DSV_CTRL6_FS_G_4000DPS  = 0xC0;
+#define LSM6DSV_REG_CTRL6                   0x15
+#define LSM6DSV_CTRL6_FS_G_125DPS           0x00
+#define LSM6DSV_CTRL6_FS_G_250DPS           0x01
+#define LSM6DSV_CTRL6_FS_G_500DPS           0x02
+#define LSM6DSV_CTRL6_FS_G_1000DPS          0x03
+#define LSM6DSV_CTRL6_FS_G_2000DPS          0x04
+#define LSM6DSV_CTRL6_FS_G_4000DPS          0xC0
 
 // ---- Control register 8 — accel full-scale & LPF2 BW (R/W) ----
 // [7:5] HP_LPF2_XL_BW   [1:0] FS_XL: accelerometer full-scale
-constexpr uint8_t LSM6DSV_REG_CTRL8      = 0x17;
-constexpr uint8_t LSM6DSV_CTRL8_FS_XL_2G      = 0x00;
-constexpr uint8_t LSM6DSV_CTRL8_FS_XL_4G      = 0x01;
-constexpr uint8_t LSM6DSV_CTRL8_FS_XL_8G      = 0x02;
-constexpr uint8_t LSM6DSV_CTRL8_FS_XL_16G     = 0x03;
+#define LSM6DSV_REG_CTRL8                   0x17
+#define LSM6DSV_CTRL8_FS_XL_2G              0x00
+#define LSM6DSV_CTRL8_FS_XL_4G              0x01
+#define LSM6DSV_CTRL8_FS_XL_8G              0x02
+#define LSM6DSV_CTRL8_FS_XL_16G             0x03
 
 // ---- Control register 9 — accel LPF2 enable (R/W) ----
-constexpr uint8_t LSM6DSV_REG_CTRL9      = 0x18;
-constexpr uint8_t LSM6DSV_CTRL9_LPF2_XL_EN = 1U << 3;
+#define LSM6DSV_REG_CTRL9                   0x18
+#define LSM6DSV_CTRL9_LPF2_XL_EN            (1U << 3)
 
 // ---- FIFO status registers (R) ----
-constexpr uint8_t LSM6DSV_REG_FIFO_STATUS1 = 0x1B;  // DIFF_FIFO [7:0]
-constexpr uint8_t LSM6DSV_REG_FIFO_STATUS2 = 0x1C;  // flags + DIFF_FIFO [8]
-constexpr uint8_t LSM6DSV_FIFO_STATUS2_DIFF_FIFO_8 = 1U << 0;
+#define LSM6DSV_REG_FIFO_STATUS1            0x1B  // DIFF_FIFO [7:0]
+#define LSM6DSV_REG_FIFO_STATUS2            0x1C  // flags + DIFF_FIFO [8]
+#define LSM6DSV_FIFO_STATUS2_DIFF_FIFO_8    (1U << 0)
 
 // ---- Status register (R) ----
-constexpr uint8_t LSM6DSV_REG_STATUS     = 0x1E;
-constexpr uint8_t LSM6DSV_STATUS_XLDA     = 1U << 0;  // accel data available
-constexpr uint8_t LSM6DSV_STATUS_GDA      = 1U << 1;  // gyro data available
-constexpr uint8_t LSM6DSV_STATUS_TDA      = 1U << 2;  // temperature data available
+#define LSM6DSV_REG_STATUS                  0x1E
+#define LSM6DSV_STATUS_XLDA                 (1U << 0)  // accel data available
+#define LSM6DSV_STATUS_GDA                  (1U << 1)  // gyro data available
+#define LSM6DSV_STATUS_TDA                  (1U << 2)  // temperature data available
 
 // ---- Data output registers (R) ----
-constexpr uint8_t LSM6DSV_REG_OUT_TEMP_L = 0x20;  // temperature output (16-bit)
-constexpr uint8_t LSM6DSV_REG_OUTX_L_G   = 0x22;  // gyro XYZ output (6 bytes)
-constexpr uint8_t LSM6DSV_REG_OUTX_L_A   = 0x28;  // accel XYZ output (6 bytes)
+#define LSM6DSV_REG_OUT_TEMP_L              0x20  // temperature output (16-bit)
+#define LSM6DSV_REG_OUTX_L_G                0x22  // gyro XYZ output (6 bytes)
+#define LSM6DSV_REG_OUTX_L_A                0x28  // accel XYZ output (6 bytes)
 
 // ---- HAODR configuration register (R/W) ----
 // [1:0] HAODR_SEL: high-accuracy ODR mode selection
-constexpr uint8_t LSM6DSV_REG_HAODR_CFG  = 0x62;
-constexpr uint8_t LSM6DSV_HAODR_CFG_MODE1 = 0x01;
+#define LSM6DSV_REG_HAODR_CFG               0x62
+#define LSM6DSV_HAODR_CFG_MODE1             0x01
 
 // HAODR mode-1 ODR codes (written to CTRL1/CTRL2 ODR_XL/ODR_G [3:0])
-constexpr uint8_t LSM6DSV_MODE1_ODR_125HZ  = 0x06;
-constexpr uint8_t LSM6DSV_MODE1_ODR_250HZ  = 0x07;
-constexpr uint8_t LSM6DSV_MODE1_ODR_500HZ  = 0x08;
-constexpr uint8_t LSM6DSV_MODE1_ODR_1000HZ = 0x09;
-constexpr uint8_t LSM6DSV_MODE1_ODR_2000HZ = 0x0A;
-constexpr uint8_t LSM6DSV_MODE1_ODR_4000HZ = 0x0B;
-constexpr uint8_t LSM6DSV_MODE1_ODR_8000HZ = 0x0C;
+#define LSM6DSV_MODE1_ODR_125HZ             0x06
+#define LSM6DSV_MODE1_ODR_250HZ             0x07
+#define LSM6DSV_MODE1_ODR_500HZ             0x08
+#define LSM6DSV_MODE1_ODR_1000HZ            0x09
+#define LSM6DSV_MODE1_ODR_2000HZ            0x0A
+#define LSM6DSV_MODE1_ODR_4000HZ            0x0B
+#define LSM6DSV_MODE1_ODR_8000HZ            0x0C
 
 // ---- FIFO data output registers (R) ----
-constexpr uint8_t LSM6DSV_REG_FIFO_DATA_OUT_TAG = 0x78;  // FIFO tag byte
-constexpr uint8_t LSM6DSV_REG_FIFO_DATA_OUT_X_L = 0x79;  // FIFO data start
+#define LSM6DSV_REG_FIFO_DATA_OUT_TAG       0x78  // FIFO tag byte
+#define LSM6DSV_REG_FIFO_DATA_OUT_X_L       0x79  // FIFO data start
 
 // ---- SPI protocol ----
-constexpr uint8_t LSM6DSV_SPI_READ_FLAG   = 0x80;
+#define LSM6DSV_SPI_READ_FLAG               0x80
 
 // ---- Driver timing constants ----
-constexpr uint16_t LSM6DSV_DEFAULT_BACKEND_RATE_HZ = 1000;
-constexpr uint8_t LSM6DSV_INIT_MAX_TRIES = 5;
-constexpr uint8_t LSM6DSV_RESET_TIMEOUT_MS = 100;
-constexpr uint8_t LSM6DSV_DATA_READY_TIMEOUT_MS = 20;
-constexpr uint8_t LSM6DSV_POWERUP_DELAY_MS = 5;
-constexpr uint8_t LSM6DSV_TEMPERATURE_UPDATE_INTERVAL = 100;
+#define LSM6DSV_DEFAULT_BACKEND_RATE_HZ     1000
+#define LSM6DSV_INIT_MAX_TRIES              5
+#define LSM6DSV_RESET_TIMEOUT_MS            100
+#define LSM6DSV_DATA_READY_TIMEOUT_MS       20
+#define LSM6DSV_POWERUP_DELAY_MS            5
+#define LSM6DSV_TEMPERATURE_UPDATE_INTERVAL 100
 
 // ---- FIFO sizing ----
-constexpr uint16_t LSM6DSV_PRIMARY_FIFO_WATERMARK_WORDS = 2;
-constexpr uint16_t LSM6DSV_FIFO_MAX_DRAIN_WORDS = 32;
-constexpr uint16_t LSM6DSV_FIFO_BURST_WORDS = 16;
+#define LSM6DSV_PRIMARY_FIFO_WATERMARK_WORDS 2
+#define LSM6DSV_FIFO_MAX_DRAIN_WORDS        32
+#define LSM6DSV_FIFO_BURST_WORDS            16
 
 // ---- Temperature conversion ----
-constexpr float LSM6DSV_TEMPERATURE_ZERO_C = 25.0f;
-constexpr float LSM6DSV_TEMPERATURE_SENSITIVITY = 256.0f;  // LSB/°C
+#define LSM6DSV_TEMPERATURE_ZERO_C          25.0f
+#define LSM6DSV_TEMPERATURE_SENSITIVITY     256.0f  // LSB/°C
 
 // ---- Accelerometer sensitivity (mg/LSB → m/s²) ----
-constexpr float LSM6DSV_ACCEL_SCALE_2G  = GRAVITY_MSS *  2.0f / 32768.0f;
-constexpr float LSM6DSV_ACCEL_SCALE_4G  = GRAVITY_MSS *  4.0f / 32768.0f;
-constexpr float LSM6DSV_ACCEL_SCALE_8G  = GRAVITY_MSS *  8.0f / 32768.0f;
-constexpr float LSM6DSV_ACCEL_SCALE_16G = GRAVITY_MSS * 16.0f / 32768.0f;
+#define LSM6DSV_ACCEL_SCALE_2G              (GRAVITY_MSS *  2.0f / 32768.0f)
+#define LSM6DSV_ACCEL_SCALE_4G              (GRAVITY_MSS *  4.0f / 32768.0f)
+#define LSM6DSV_ACCEL_SCALE_8G              (GRAVITY_MSS *  8.0f / 32768.0f)
+#define LSM6DSV_ACCEL_SCALE_16G             (GRAVITY_MSS * 16.0f / 32768.0f)
 
 // ---- Gyroscope sensitivity per ST datasheet (mdps/LSB → rad/s) ----
-constexpr float LSM6DSV_GYRO_SCALE_125DPS  = radians(4.375f  / 1000.0f);
-constexpr float LSM6DSV_GYRO_SCALE_250DPS  = radians(8.75f   / 1000.0f);
-constexpr float LSM6DSV_GYRO_SCALE_500DPS  = radians(17.50f  / 1000.0f);
-constexpr float LSM6DSV_GYRO_SCALE_1000DPS = radians(35.0f   / 1000.0f);
-constexpr float LSM6DSV_GYRO_SCALE_2000DPS = radians(70.0f   / 1000.0f);
-constexpr float LSM6DSV_GYRO_SCALE_4000DPS = radians(140.0f  / 1000.0f);
+#define LSM6DSV_GYRO_SCALE_125DPS           radians(4.375f  / 1000.0f)
+#define LSM6DSV_GYRO_SCALE_250DPS           radians(8.75f   / 1000.0f)
+#define LSM6DSV_GYRO_SCALE_500DPS           radians(17.50f  / 1000.0f)
+#define LSM6DSV_GYRO_SCALE_1000DPS          radians(35.0f   / 1000.0f)
+#define LSM6DSV_GYRO_SCALE_2000DPS          radians(70.0f   / 1000.0f)
+#define LSM6DSV_GYRO_SCALE_4000DPS          radians(140.0f  / 1000.0f)
 
 struct PACKED RawSample {
     le16_t gyro[3];
@@ -206,7 +206,6 @@ AP_InertialSensor_LSM6DSV::AP_InertialSensor_LSM6DSV(AP_InertialSensor &imu,
     , _rotation(rotation)
     , _accel_scale(LSM6DSV_ACCEL_SCALE_16G)
     , _gyro_scale(LSM6DSV_GYRO_SCALE_2000DPS)
-    , _accel_range_g(16.0f)
     , _whoami(0)
     , _temperature_counter(0)
     , _fifo_buffer(nullptr)
@@ -434,7 +433,7 @@ bool AP_InertialSensor_LSM6DSV::configure_accel()
 
 bool AP_InertialSensor_LSM6DSV::configure_primary_fifo()
 {
-#if !LSM6DSV_EXPERIMENTAL_PRIMARY_FIFO
+#if !LSM6DSV_USE_FIFO
     return true;
 #else
     const uint8_t odr = odr_code_for_rate(_backend_rate_hz);
@@ -479,7 +478,7 @@ uint16_t AP_InertialSensor_LSM6DSV::calculate_backend_rate(uint16_t base_rate_hz
 
 AP_InertialSensor_LSM6DSV::SampleSourceMode AP_InertialSensor_LSM6DSV::active_sample_source() const
 {
-#if LSM6DSV_EXPERIMENTAL_PRIMARY_FIFO
+#if LSM6DSV_USE_FIFO
     return SampleSourceMode::FIFO;
 #else
     return SampleSourceMode::Polling;
