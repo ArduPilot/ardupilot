@@ -254,6 +254,7 @@ public:
     AP_Float mag_scaling[MAX_CONNECTED_MAGS]; // scaling factor
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons
+    AP_Float thrust_asymmetry; // ratio of reverse to forward thrust (only use positive values)
     AP_Int16 loop_rate_hz;
     AP_Int16 loop_time_jitter_us;
     AP_Int32 on_hardware_output_enable_mask;  // mask of output channels passed through to actual hardware
