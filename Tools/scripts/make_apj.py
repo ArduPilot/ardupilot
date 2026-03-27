@@ -8,6 +8,7 @@ AP_FLAKE8_CLEAN
 import argparse
 import base64
 import json
+import pathlib
 import zlib
 
 parser = argparse.ArgumentParser(description='make_apj')
@@ -18,8 +19,7 @@ parser.add_argument('--board-id', type=int, default=1, help='board ID')
 
 args = parser.parse_args()
 
-with open(args.bin, 'rb') as in_file:
-    img = in_file.read()
+img = pathlib.Path(args.bin).read_bytes()
 d = {
     "board_id": int(args.board_id),
     "magic": "APJFWv1",

@@ -8,6 +8,7 @@ import fnmatch
 import gzip
 import json
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -182,8 +183,7 @@ class ManifestGenerator():
     def git_sha_from_git_version(self, filepath):
         '''parses get-version.txt (as emitted by build_binaries.py, returns
         git sha from it'''
-        with open(filepath) as in_file:
-            content = in_file.read()
+        content = pathlib.Path(filepath).read_text()
         sha_regex = re.compile("commit (?P<sha>[0-9a-f]+)")
         m = sha_regex.search(content)
         if m is None:
@@ -194,8 +194,7 @@ class ManifestGenerator():
     def fwversion_from_git_version(self, filepath):
         '''parses get-version.txt (as emitted by build_binaries.py, returns
         git sha from it'''
-        with open(filepath) as in_file:
-            content = in_file.read()
+        content = pathlib.Path(filepath).read_text()
         sha_regex = re.compile(r"APMVERSION: \S+\s+(\S+)")
         m = sha_regex.search(content)
         if m is None:

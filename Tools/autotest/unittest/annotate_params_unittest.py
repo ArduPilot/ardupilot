@@ -11,6 +11,7 @@ Author: Amilcar do Carmo Lucas, IAV GmbH
 '''
 
 import os
+import pathlib
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -321,8 +322,7 @@ class TestParamDocsUpdate(unittest.TestCase):
         update_parameter_documentation(self.doc_dict, self.temp_file.name)
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         # Check if the file has been updated correctly
         self.assertIn("Param 1", updated_content)
@@ -342,8 +342,7 @@ class TestParamDocsUpdate(unittest.TestCase):
         update_parameter_documentation(self.doc_dict, self.temp_file.name)
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         expected_content = '''# Param 2
 # Documentation for Param 2
@@ -383,8 +382,7 @@ PARAM1 100
         update_parameter_documentation(self.doc_dict, self.temp_file.name, "missionplanner")
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         expected_content = '''# Param _ 1
 # Documentation for Param_1
@@ -421,8 +419,7 @@ PARAM2 100 # ignore, me
         update_parameter_documentation(self.doc_dict, self.temp_file.name, "mavproxy")
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         expected_content = '''# Param 1
 # Documentation for Param 1
@@ -538,8 +535,7 @@ PARAM_1\t100
         update_parameter_documentation(self.doc_dict, self.temp_file.name)
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         # Check if the file is still empty
         self.assertEqual(updated_content, "")
