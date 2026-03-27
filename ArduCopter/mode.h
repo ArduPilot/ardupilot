@@ -1180,7 +1180,7 @@ public:
     void angle_control_start();
     void angle_control_run();
 #if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
-    void circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, uint8_t yaw_behaviour = 0);
+    void circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, ORBIT_YAW_BEHAVIOUR yaw_behaviour = ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER);
     void orbit_run();
     void orbit_apply_yaw_behaviour();
     bool circle_moving_to_edge() const { return _circle_moving_to_edge; }
@@ -1244,7 +1244,7 @@ private:
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
 #if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
     float _orbit_rate_degs = 20.0f;  // desired orbit rate in deg/s (signed for direction)
-    uint8_t _orbit_yaw_behaviour = 0; // yaw behaviour during orbit (ORBIT_YAW_BEHAVIOUR enum)
+    ORBIT_YAW_BEHAVIOUR _orbit_yaw_behaviour = ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER;
     float _orbit_turns = 0.0f;
     float _orbit_angle_total_at_start = 0.0f;
     bool _orbit_update_turns = true;

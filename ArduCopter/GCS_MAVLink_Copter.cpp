@@ -154,6 +154,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
         target_accel_ned_mss = copter.mode_guided.get_target_accel_NED_mss();
         break;
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED        
     case ModeGuided::SubMode::Orbit:
         if (copter.mode_guided.circle_moving_to_edge()) {
             // moving to edge - report WP position target
@@ -165,6 +166,7 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
         }
         // orbiting - no local position target to report
         return;
+#endif  // AC_COPTER_MODEGUIDED_ORBIT_ENABLED
     }
 
     mavlink_msg_position_target_local_ned_send(
@@ -893,7 +895,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int
     const bool update_turns = !isnan(packet.param4);
     const float turns = update_turns ? fabsf(packet.param4) : 0.0f;
     // param3: yaw behaviour (ORBIT_YAW_BEHAVIOUR enum), NaN or 0 = face center
-    const uint8_t yaw_behaviour = (isnan(packet.param3) || packet.param3 < 0) ? 0 : (uint8_t)packet.param3;
+    const ORBIT_YAW_BEHAVIOUR yaw_behaviour = (isnan(packet.param3) || packet.param3 < 0) ? ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER : (ORBIT_YAW_BEHAVIOUR)(int)packet.param3;
     copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, update_turns, turns, yaw_behaviour);
 
     return MAV_RESULT_ACCEPTED;
