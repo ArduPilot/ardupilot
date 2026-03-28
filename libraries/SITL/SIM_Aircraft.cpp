@@ -1470,3 +1470,13 @@ bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion
 {
     return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
 }
+
+/*
+  wrapper for scripting access with explicit flags
+ */
+bool SITL::SIM::set_pose_flags(uint8_t instance, const Location &loc, const Quaternion &quat,
+                               const Vector3f &velocity_ef, const Vector3f &gyro_rads,
+                               uint8_t flags)
+{
+    return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads, flags);
+}
