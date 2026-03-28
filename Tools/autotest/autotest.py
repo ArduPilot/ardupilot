@@ -1058,11 +1058,11 @@ if __name__ == "__main__":
 
         def notify_discord():
             try:
-                print("\n🚀 Sending Notification to Discord...")
+                print("\nSending Notification to Discord...")
                 requests.post(opts.discord_webhook, json={"content": "✅ ArduPilot Autotest Run Finished!"})
-                print("✅ Notification Sent!")
-            except Exception as e:
-                print(f"❌ Notification Failed: {e}")
+                print(" Notification Sent!")
+            except requests.exceptions.RequestException as e:
+                print(f" Notification Failed: {e}")
 
         atexit.register(notify_discord)
     # ----------------------------------------------------
