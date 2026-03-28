@@ -991,7 +991,13 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 
     // extract firmware version
     // the version can be in the format "1.2.3" or "123"
+    // _msg_buff[5] holds the ASCII hex-encoded data length byte from the packet header;
+    // char_to_hex returns 255 for an invalid (non-hex) character, which we treat as a
+    // malformed packet rather than capping, since a valid length field is always a hex digit
     const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
+    if (data_buf_len == 255) {
+        return;
+    }
 
     // check for "."
     bool contains_period = false;
@@ -1045,7 +1051,8 @@ void AP_Mount_Topotek::gimbal_model_name_analyse()
         // flag value indicating invalid character
         return;
     }
-    strncpy((char *)_model_name, (const char *)_msg_buff + 10, len);
+    memset(_model_name, 0, sizeof(_model_name));
+    memcpy(_model_name, _msg_buff + 10, MIN((uint8_t)(sizeof(_model_name)-1), len));
 
     // display gimbal model name to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_message_prefix, _model_name);
