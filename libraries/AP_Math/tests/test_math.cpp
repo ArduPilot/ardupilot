@@ -7,6 +7,7 @@
 #include <AP_gtest.h>
 
 #include <AP_Math/AP_Math.h>
+#include <AP_Math/control.h>
 #include <AP_Math/div1000.h>
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
@@ -510,7 +511,9 @@ TEST(MathWrapTest, Angle360)
     EXPECT_EQ(0.0f,     wrap_360(720.0f));
     EXPECT_EQ(0.0f,     wrap_360(3600.0f));
     EXPECT_EQ(0.0f,     wrap_360(7200.0f));
+    EXPECT_EQ(350.0f,   wrap_360(-10.0f));
     EXPECT_EQ(260.0f,     wrap_360(-100.0f));
+    EXPECT_EQ(350,      wrap_360((int16_t)-10));
 
     EXPECT_EQ(45,  wrap_360((int16_t)45));
     EXPECT_EQ(90,  wrap_360((int16_t)90));
@@ -522,6 +525,8 @@ TEST(MathWrapTest, Angle360)
     EXPECT_EQ(0,     wrap_360((int16_t)3600));
     EXPECT_EQ(0,     wrap_360((int16_t)7200));
     EXPECT_EQ(260,     wrap_360((int16_t)-100));
+
+    EXPECT_EQ(35900.0f, wrap_360_cd(-100.0f));
 
 }
 
@@ -590,6 +595,176 @@ TEST(MathTest, Interpolation)
     EXPECT_NEAR(1000.0f, linear_interpolate(1000.0f, 2000.0f, 1100.0f, 1200.0f, 1800.0f), accuracy);
     EXPECT_NEAR(2000.0f, linear_interpolate(1000.0f, 2000.0f, 1900.0f, 1200.0f, 1800.0f), accuracy);
 
+    EXPECT_FLOAT_EQ(linear_interpolate(0.0f, 100.0f, 20.0f, 0.0f, 10.0f), 100.0f);
+    EXPECT_FLOAT_EQ(linear_interpolate(0.0f, 100.0f, 12.0f, 10.0f, 0.0f), 0.0f);
+
+}
+
+TEST(MathTest, ShapeAccelJerkLimit)
+{
+    float accel = 0.0f;
+    shape_accel(10.0f, accel, 2.0f, 0.5f);
+    EXPECT_FLOAT_EQ(accel, 1.0f);
+
+    shape_accel(-10.0f, accel, 2.0f, 0.5f);
+    EXPECT_FLOAT_EQ(accel, 0.0f);
+}
+
+TEST(MathTest, ShapeAccelNoUpdateWhenDtNonPositive)
+{
+    float accel = 3.0f;
+    shape_accel(10.0f, accel, 2.0f, 0.0f);
+    EXPECT_FLOAT_EQ(accel, 3.0f);
+
+    shape_accel(-10.0f, accel, 2.0f, -0.1f);
+    EXPECT_FLOAT_EQ(accel, 3.0f);
+}
+
+TEST(MathTest, ShapeVelAccelLimitTotalSwitch)
+{
+    float accel_limit_off = 0.0f;
+    shape_vel_accel(0.0f, 10.0f,
+                    0.0f, accel_limit_off,
+                    -2.0f, 2.0f,
+                    10.0f, 1.0f, false);
+    EXPECT_FLOAT_EQ(accel_limit_off, 10.0f);
+
+    float accel_limit_on = 0.0f;
+    shape_vel_accel(0.0f, 10.0f,
+                    0.0f, accel_limit_on,
+                    -2.0f, 2.0f,
+                    10.0f, 1.0f, true);
+    EXPECT_FLOAT_EQ(accel_limit_on, 2.0f);
+}
+
+TEST(MathTest, ShapePosVelAccelLimitTotalSwitch)
+{
+    float accel_limit_off = 0.0f;
+    shape_pos_vel_accel(0.0f, 0.0f, 10.0f,
+                        0.0f, 0.0f, accel_limit_off,
+                        -5.0f, 5.0f,
+                        -2.0f, 2.0f,
+                        10.0f, 1.0f, false);
+    EXPECT_FLOAT_EQ(accel_limit_off, 10.0f);
+
+    float accel_limit_on = 0.0f;
+    shape_pos_vel_accel(0.0f, 0.0f, 10.0f,
+                        0.0f, 0.0f, accel_limit_on,
+                        -5.0f, 5.0f,
+                        -2.0f, 2.0f,
+                        10.0f, 1.0f, true);
+    EXPECT_FLOAT_EQ(accel_limit_on, 2.0f);
+}
+
+TEST(MathTest, ShapePosVelAccelNoUpdateWhenDtZero)
+{
+    float accel = 1.0f;
+    shape_pos_vel_accel(5.0f, 0.0f, 0.0f,
+                        0.0f, 0.0f, accel,
+                        -5.0f, 5.0f,
+                        -2.0f, 2.0f,
+                        10.0f, 0.0f, true);
+    EXPECT_FLOAT_EQ(accel, 1.0f);
+}
+
+TEST(MathTest, ShapePosVelAccelXyLimitTotalSwitch)
+{
+    Vector2f accel_limit_off;
+    shape_pos_vel_accel_xy(Vector2p(), Vector2f(), Vector2f(10.0f, 0.0f),
+                           Vector2p(), Vector2f(), accel_limit_off,
+                           5.0f, 2.0f,
+                           10.0f, 1.0f, false);
+    EXPECT_FLOAT_EQ(accel_limit_off.x, 10.0f);
+    EXPECT_FLOAT_EQ(accel_limit_off.y, 0.0f);
+
+    Vector2f accel_limit_on;
+    shape_pos_vel_accel_xy(Vector2p(), Vector2f(), Vector2f(10.0f, 0.0f),
+                           Vector2p(), Vector2f(), accel_limit_on,
+                           5.0f, 2.0f,
+                           10.0f, 1.0f, true);
+    EXPECT_FLOAT_EQ(accel_limit_on.x, 2.0f);
+    EXPECT_FLOAT_EQ(accel_limit_on.y, 0.0f);
+}
+
+TEST(MathTest, ShapePosVelAccelXyNoUpdateWhenDtZero)
+{
+    Vector2f accel(1.0f, -2.0f);
+    shape_pos_vel_accel_xy(Vector2p(5.0f, 0.0f), Vector2f(), Vector2f(),
+                           Vector2p(), Vector2f(), accel,
+                           5.0f, 2.0f,
+                           10.0f, 0.0f, true);
+    EXPECT_FLOAT_EQ(accel.x, 1.0f);
+    EXPECT_FLOAT_EQ(accel.y, -2.0f);
+}
+
+TEST(MathTest, LimitAccelXyInvalidLimit)
+{
+    Vector2f accel(3.0f, 4.0f);
+    EXPECT_FALSE(limit_accel_xy(Vector2f(1.0f, 0.0f), accel, 0.0f));
+    EXPECT_FLOAT_EQ(accel.x, 3.0f);
+    EXPECT_FLOAT_EQ(accel.y, 4.0f);
+}
+
+TEST(MathTest, LimitAccelXyWithinLimit)
+{
+    Vector2f accel(1.0f, 1.0f);
+    EXPECT_FALSE(limit_accel_xy(Vector2f(1.0f, 0.0f), accel, 2.0f));
+    EXPECT_FLOAT_EQ(accel.x, 1.0f);
+    EXPECT_FLOAT_EQ(accel.y, 1.0f);
+}
+
+TEST(MathTest, LimitAccelXyZeroVelocityBranch)
+{
+    Vector2f accel(3.0f, 4.0f);
+    EXPECT_TRUE(limit_accel_xy(Vector2f(), accel, 4.0f));
+    EXPECT_NEAR(accel.length(), 4.0f, 1.0e-6f);
+}
+
+TEST(MathTest, LimitAccelXyCrossTrackPriority)
+{
+    Vector2f accel(4.0f, 4.0f);
+    EXPECT_TRUE(limit_accel_xy(Vector2f(10.0f, 0.0f), accel, 4.0f));
+    EXPECT_NEAR(accel.x, 0.0f, 1.0e-6f);
+    EXPECT_NEAR(accel.y, 4.0f, 1.0e-6f);
+}
+
+TEST(MathTest, LimitAccelXyCrossTrackDominant)
+{
+    Vector2f accel(1.0f, 10.0f);
+    EXPECT_TRUE(limit_accel_xy(Vector2f(10.0f, 0.0f), accel, 4.0f));
+    EXPECT_NEAR(accel.x, 0.0f, 1.0e-6f);
+    EXPECT_NEAR(accel.y, 4.0f, 1.0e-6f);
+}
+
+TEST(MathTest, LimitAccelCornerXyInvalidLimit)
+{
+    Vector2f accel(3.0f, 4.0f);
+    EXPECT_FALSE(limit_accel_corner_xy(Vector2f(1.0f, 0.0f), accel, 0.0f));
+    EXPECT_FLOAT_EQ(accel.x, 3.0f);
+    EXPECT_FLOAT_EQ(accel.y, 4.0f);
+}
+
+TEST(MathTest, LimitAccelCornerXyZeroVelocityBranch)
+{
+    Vector2f accel(3.0f, 4.0f);
+    EXPECT_TRUE(limit_accel_corner_xy(Vector2f(), accel, 4.0f));
+    EXPECT_NEAR(accel.length(), 4.0f, 1.0e-6f);
+}
+
+TEST(MathTest, LimitAccelCornerXyNonBrakingPriority)
+{
+    Vector2f accel(4.0f, 4.0f);
+    EXPECT_TRUE(limit_accel_corner_xy(Vector2f(1.0f, 0.0f), accel, 4.0f));
+    EXPECT_NEAR(accel.x, 0.0f, 1.0e-6f);
+    EXPECT_NEAR(accel.y, 4.0f, 1.0e-6f);
+}
+
+TEST(MathTest, LimitAccelCornerXyBrakingPriority)
+{
+    Vector2f accel(-5.0f, 4.0f);
+    EXPECT_TRUE(limit_accel_corner_xy(Vector2f(1.0f, 0.0f), accel, 4.0f));
+    EXPECT_NEAR(accel.x, -4.0f, 1.0e-6f);
+    EXPECT_NEAR(accel.y, 0.0f, 1.0e-6f);
 }
 
 TEST(MathTest, ThrottleCurve)
@@ -685,6 +860,21 @@ TEST(MathTest, LOWPASSALPHA)
     EXPECT_EQ(1.0f, calc_lowpass_alpha_dt(1.0f, 0.0f));
 
     EXPECT_NEAR(0.926288f, calc_lowpass_alpha_dt(1.0f, 2.0f), accuracy);
+
+    EXPECT_FLOAT_EQ(calc_lowpass_alpha_dt(0.01f, 0.0f), 1.0f);
+    EXPECT_FLOAT_EQ(calc_lowpass_alpha_dt(0.0f, 10.0f), 0.0f);
+
+    const float dt = 0.01f;
+    const float cutoff = 10.0f;
+    const float rc = 1.0f / (M_2PI * cutoff);
+    const float expected = dt / (dt + rc);
+    EXPECT_NEAR(calc_lowpass_alpha_dt(dt, cutoff), expected, 1.0e-6f);
+}
+
+TEST(MathTest, GetTwosComplementSignBranch)
+{
+    EXPECT_EQ(get_twos_complement(0xFFu, 8), -1);
+    EXPECT_EQ(get_twos_complement(0x7Fu, 8), 127);
 }
 
 TEST(MathTest, FIXEDWINGTURNRATE)
