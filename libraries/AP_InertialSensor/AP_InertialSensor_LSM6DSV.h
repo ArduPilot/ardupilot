@@ -34,16 +34,13 @@ public:
                                             AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
                                             enum Rotation rotation=LSM6DSV_DEFAULT_ROTATION);
 
+    ~AP_InertialSensor_LSM6DSV() override;
+
     void start() override;
     bool update() override;
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
 private:
-    enum class SampleSourceMode : uint8_t {
-        Polling,
-        FIFO,
-    };
-
     enum class FifoTag : uint8_t {
         Empty = 0x00,
         GyroNC = 0x01,
@@ -66,18 +63,10 @@ private:
     struct SampleFrame {
         Vector3f gyro;
         Vector3f accel;
-        int16_t raw_temp;
-        bool has_raw_temp;
-    };
-
-    struct SourceFrame {
-        SampleFrame sample;
-        uint8_t gyro_status;
-        uint8_t accel_status;
     };
 
     struct FifoFrame {
-        SourceFrame source;
+        SampleFrame sample;
         FifoTag tag;
         uint16_t unread_words;
         uint8_t tag_count;
@@ -98,26 +87,17 @@ private:
 
     bool read_registers(uint8_t reg, uint8_t *data, uint8_t len);
     bool write_register(uint8_t reg, uint8_t value, bool checked=false);
-    bool fetch_primary_sample(SampleFrame &sample);
-    bool read_sample(SampleFrame &sample);
-    bool read_status_registers(uint8_t &gyro_status, uint8_t &accel_status, uint32_t now_us);
-    bool sample_ready_for_route(uint8_t gyro_status, uint8_t accel_status, uint32_t now_us);
-    bool fetch_current_sample(SampleFrame &sample, uint32_t now_us);
-    bool fetch_polling_frame(SampleFrame &sample, uint32_t now_us);
-    bool fetch_source_frame(SourceFrame &frame, uint32_t now_us);
     bool read_fifo_status(FifoFrame &frame, uint32_t now_us);
     bool read_fifo_words_block(uint16_t n_words, uint32_t now_us);
     bool consume_fifo_word(FifoFrame &frame, SampleFrame &sample, const uint8_t *raw_word);
     uint16_t drain_fifo(uint32_t now_us);
     void publish_gyro_sample(SampleFrame &sample);
     void publish_accel_sample(SampleFrame &sample);
-    void publish_current_sample(SampleFrame &sample, uint8_t gyro_status);
     void check_register_monitor();
-    void update_temperature(uint8_t status, const int16_t *raw_temp=nullptr);
+    void update_temperature();
     uint8_t odr_code_for_rate(uint16_t rate_hz) const;
     uint16_t calculate_backend_rate(uint16_t base_rate_hz) const;
 
-    SampleSourceMode active_sample_source() const;
     static bool fifo_tag_supported_for_primary(FifoTag tag);
     static FifoTag decode_fifo_tag(uint8_t raw_tag);
     static uint8_t decode_fifo_tag_count(uint8_t raw_tag);
@@ -130,7 +110,7 @@ private:
     float _accel_scale;
     float _gyro_scale;
     uint8_t _whoami;
-    uint8_t _temperature_counter;
+    uint32_t _temperature_last_ms;
     uint16_t _backend_rate_hz;
     uint32_t _backend_period_us;
     bool _fast_sampling = false;

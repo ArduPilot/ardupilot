@@ -36,10 +36,6 @@ extern const AP_HAL::HAL& hal;
 
 namespace {
 
-#ifndef LSM6DSV_USE_FIFO
-#define LSM6DSV_USE_FIFO 1
-#endif
-
 // Enable the second-stage digital low-pass filter (LPF2) on the
 // accelerometer output.  Bandwidth is set by LSM6DSV_ACCEL_LPF2_BW.
 #ifndef LSM6DSV_ACCEL_LPF2_ENABLED
@@ -93,7 +89,7 @@ namespace {
 #define LSM6DSV_CTRL6_FS_G_500DPS           0x02
 #define LSM6DSV_CTRL6_FS_G_1000DPS          0x03
 #define LSM6DSV_CTRL6_FS_G_2000DPS          0x04
-#define LSM6DSV_CTRL6_FS_G_4000DPS          0xC0
+#define LSM6DSV_CTRL6_FS_G_4000DPS          0x0C
 
 // ---- Control register 8 — accel full-scale & LPF2 BW (R/W) ----
 // [7:5] HP_LPF2_XL_BW   [1:0] FS_XL: accelerometer full-scale
@@ -150,12 +146,14 @@ namespace {
 #define LSM6DSV_RESET_TIMEOUT_MS            100
 #define LSM6DSV_DATA_READY_TIMEOUT_MS       20
 #define LSM6DSV_POWERUP_DELAY_MS            5
-#define LSM6DSV_TEMPERATURE_UPDATE_INTERVAL 100
 
 // ---- FIFO sizing ----
 #define LSM6DSV_PRIMARY_FIFO_WATERMARK_WORDS 2
 #define LSM6DSV_FIFO_MAX_DRAIN_WORDS        32
 #define LSM6DSV_FIFO_BURST_WORDS            16
+
+// temperature update interval in milliseconds
+#define LSM6DSV_TEMPERATURE_UPDATE_MS       100
 
 // ---- Temperature conversion ----
 #define LSM6DSV_TEMPERATURE_ZERO_C          25.0f
@@ -175,24 +173,11 @@ namespace {
 #define LSM6DSV_GYRO_SCALE_2000DPS          radians(70.0f   / 1000.0f)
 #define LSM6DSV_GYRO_SCALE_4000DPS          radians(140.0f  / 1000.0f)
 
-struct PACKED RawSample {
-    le16_t gyro[3];
-    le16_t accel[3];
-};
-
-struct PACKED RawSampleWithTemp {
-    le16_t temp;
-    le16_t gyro[3];
-    le16_t accel[3];
-};
-
 struct PACKED RawFifoWord {
     uint8_t tag;
     le16_t axis[3];
 };
 
-static_assert(sizeof(RawSample) == 12, "RawSample must be 12 bytes");
-static_assert(sizeof(RawSampleWithTemp) == 14, "RawSampleWithTemp must be 14 bytes");
 static_assert(sizeof(RawFifoWord) == 7, "RawFifoWord must be 7 bytes");
 constexpr uint16_t LSM6DSV_FIFO_BURST_BUFFER_SIZE = LSM6DSV_FIFO_BURST_WORDS * sizeof(RawFifoWord) + 1;
 
@@ -206,10 +191,15 @@ AP_InertialSensor_LSM6DSV::AP_InertialSensor_LSM6DSV(AP_InertialSensor &imu,
     , _rotation(rotation)
     , _accel_scale(LSM6DSV_ACCEL_SCALE_16G)
     , _gyro_scale(LSM6DSV_GYRO_SCALE_2000DPS)
-    , _whoami(0)
-    , _temperature_counter(0)
-    , _fifo_buffer(nullptr)
 {
+}
+
+AP_InertialSensor_LSM6DSV::~AP_InertialSensor_LSM6DSV()
+{
+    if (_fifo_buffer != nullptr) {
+        hal.util->free_type(_fifo_buffer, LSM6DSV_FIFO_BURST_BUFFER_SIZE,
+                            AP_HAL::Util::MEM_DMA_SAFE);
+    }
 }
 
 AP_InertialSensor_Backend *AP_InertialSensor_LSM6DSV::probe(AP_InertialSensor &imu,
@@ -266,26 +256,21 @@ void AP_InertialSensor_LSM6DSV::start()
         if (!configure_primary_fifo()) {
             return;
         }
-    }
 
-    // re-configure ODR registers for the target sampling rate
-    WITH_SEMAPHORE(_dev->get_semaphore());
-    const uint8_t odr = odr_code_for_rate(_backend_rate_hz);
-    write_register(LSM6DSV_REG_CTRL1, LSM6DSV_CTRL_MODE_HAODR | odr, true);
-    write_register(LSM6DSV_REG_CTRL2, LSM6DSV_CTRL_MODE_HAODR | odr, true);
-    if (active_sample_source() == SampleSourceMode::FIFO) {
+        // re-configure ODR registers for the target sampling rate
+        const uint8_t odr = odr_code_for_rate(_backend_rate_hz);
+        write_register(LSM6DSV_REG_CTRL1, LSM6DSV_CTRL_MODE_HAODR | odr, true);
+        write_register(LSM6DSV_REG_CTRL2, LSM6DSV_CTRL_MODE_HAODR | odr, true);
         configure_primary_fifo();
     }
 
     set_gyro_orientation(gyro_instance, _rotation);
     set_accel_orientation(accel_instance, _rotation);
 
-    if (active_sample_source() == SampleSourceMode::FIFO) {
-        _fifo_buffer = static_cast<uint8_t *>(hal.util->malloc_type(LSM6DSV_FIFO_BURST_BUFFER_SIZE,
-                                                                     AP_HAL::Util::MEM_DMA_SAFE));
-        if (_fifo_buffer == nullptr) {
-            return;
-        }
+    _fifo_buffer = static_cast<uint8_t *>(hal.util->malloc_type(LSM6DSV_FIFO_BURST_BUFFER_SIZE,
+                                                                 AP_HAL::Util::MEM_DMA_SAFE));
+    if (_fifo_buffer == nullptr) {
+        AP_HAL::panic("LSM6DSV: Unable to allocate FIFO buffer");
     }
 
     periodic_handle = _dev->register_periodic_callback(_backend_period_us,
@@ -301,9 +286,9 @@ bool AP_InertialSensor_LSM6DSV::update()
 
 bool AP_InertialSensor_LSM6DSV::get_output_banner(char* banner, uint8_t banner_len)
 {
-    snprintf(banner, banner_len, "IMU%u: LSM6DSV16X%s sampling %.1fkHz",
+    snprintf(banner, banner_len, "IMU%u: LSM6DSV16X %s sampling %.1fkHz",
              gyro_instance,
-             _fast_sampling ? " fast" : " normal",
+             _fast_sampling ? "fast" : "normal",
              _backend_rate_hz * 0.001f);
     return true;
 }
@@ -401,7 +386,8 @@ bool AP_InertialSensor_LSM6DSV::reset_device()
         return false;
     }
 
-    for (uint8_t i = 0; i < LSM6DSV_RESET_TIMEOUT_MS; i++) {
+    const uint32_t start_ms = AP_HAL::millis();
+    while (AP_HAL::millis() - start_ms < LSM6DSV_RESET_TIMEOUT_MS) {
         uint8_t ctrl3 = 0;
         hal.scheduler->delay(1);
         if (!read_registers(LSM6DSV_REG_CTRL3, &ctrl3, 1)) {
@@ -433,9 +419,6 @@ bool AP_InertialSensor_LSM6DSV::configure_accel()
 
 bool AP_InertialSensor_LSM6DSV::configure_primary_fifo()
 {
-#if !LSM6DSV_USE_FIFO
-    return true;
-#else
     const uint8_t odr = odr_code_for_rate(_backend_rate_hz);
     const uint8_t fifo_ctrl3 = uint8_t((odr << 4) | odr);
 
@@ -445,7 +428,6 @@ bool AP_InertialSensor_LSM6DSV::configure_primary_fifo()
            write_register(LSM6DSV_REG_FIFO_CTRL2, 0x00, true) &&
            write_register(LSM6DSV_REG_FIFO_CTRL3, fifo_ctrl3, true) &&
            write_register(LSM6DSV_REG_FIFO_CTRL4, LSM6DSV_FIFO_CTRL4_MODE_CONTINUOUS, true);
-#endif
 }
 
 uint8_t AP_InertialSensor_LSM6DSV::odr_code_for_rate(uint16_t rate_hz) const
@@ -473,16 +455,6 @@ uint16_t AP_InertialSensor_LSM6DSV::calculate_backend_rate(uint16_t base_rate_hz
     }
     const uint8_t mult = constrain_int16(get_fast_sampling_rate(), min_mult, 8);
     return constrain_int16(base_rate_hz * mult, base_rate_hz, 8000);
-}
-
-
-AP_InertialSensor_LSM6DSV::SampleSourceMode AP_InertialSensor_LSM6DSV::active_sample_source() const
-{
-#if LSM6DSV_USE_FIFO
-    return SampleSourceMode::FIFO;
-#else
-    return SampleSourceMode::Polling;
-#endif
 }
 
 bool AP_InertialSensor_LSM6DSV::fifo_tag_supported_for_primary(const FifoTag tag)
@@ -560,109 +532,6 @@ bool AP_InertialSensor_LSM6DSV::write_register(uint8_t reg, uint8_t value, bool 
     return _dev->write_register(reg, value, checked);
 }
 
-bool AP_InertialSensor_LSM6DSV::fetch_primary_sample(SampleFrame &sample)
-{
-    // Primary mode is the planned first FIFO landing zone, so keep the current
-    // burst-read path isolated from the other route-specific fetch logic.
-    RawSampleWithTemp raw{};
-    if (!read_registers(LSM6DSV_REG_OUT_TEMP_L, reinterpret_cast<uint8_t *>(&raw), sizeof(raw))) {
-        return false;
-    }
-
-    sample.raw_temp = int16_t(le16toh(raw.temp));
-    sample.has_raw_temp = true;
-
-    sample.gyro = Vector3f{
-        float(int16_t(le16toh(raw.gyro[0]))) * _gyro_scale,
-        float(int16_t(le16toh(raw.gyro[1]))) * _gyro_scale,
-        float(int16_t(le16toh(raw.gyro[2]))) * _gyro_scale,
-    };
-
-    sample.accel = Vector3f{
-        float(int16_t(le16toh(raw.accel[0]))) * _accel_scale,
-        float(int16_t(le16toh(raw.accel[1]))) * _accel_scale,
-        float(int16_t(le16toh(raw.accel[2]))) * _accel_scale,
-    };
-
-    return true;
-}
-
-bool AP_InertialSensor_LSM6DSV::read_sample(SampleFrame &sample)
-{
-    return fetch_primary_sample(sample);
-}
-
-bool AP_InertialSensor_LSM6DSV::read_status_registers(uint8_t &gyro_status, uint8_t &accel_status, uint32_t now_us)
-{
-    gyro_status = 0;
-    accel_status = 0;
-
-    if (!read_registers(LSM6DSV_REG_STATUS, &gyro_status, 1)) {
-        _inc_accel_error_count(accel_instance);
-        _inc_gyro_error_count(gyro_instance);
-        return false;
-    }
-
-    accel_status = gyro_status;
-    return true;
-}
-
-bool AP_InertialSensor_LSM6DSV::sample_ready_for_route(uint8_t gyro_status, uint8_t accel_status, uint32_t now_us)
-{
-    const bool gyro_ready = (gyro_status & LSM6DSV_STATUS_GDA) != 0;
-    const bool accel_ready = (accel_status & LSM6DSV_STATUS_XLDA) != 0;
-    return gyro_ready && accel_ready;
-}
-
-bool AP_InertialSensor_LSM6DSV::fetch_current_sample(SampleFrame &sample, uint32_t now_us)
-{
-    if (read_sample(sample)) {
-        return true;
-    }
-
-    _inc_accel_error_count(accel_instance);
-    _inc_gyro_error_count(gyro_instance);
-    return false;
-}
-
-bool AP_InertialSensor_LSM6DSV::fetch_polling_frame(SampleFrame &sample, uint32_t now_us)
-{
-    uint8_t gyro_status = 0;
-    uint8_t accel_status = 0;
-
-    if (!read_status_registers(gyro_status, accel_status, now_us)) {
-        return false;
-    }
-
-    if (!sample_ready_for_route(gyro_status, accel_status, now_us)) {
-        return false;
-    }
-
-    return fetch_current_sample(sample, now_us);
-}
-
-bool AP_InertialSensor_LSM6DSV::fetch_source_frame(SourceFrame &frame, uint32_t now_us)
-{
-    uint8_t gyro_status = 0;
-    uint8_t accel_status = 0;
-
-    if (!read_status_registers(gyro_status, accel_status, now_us)) {
-        return false;
-    }
-
-    if (!sample_ready_for_route(gyro_status, accel_status, now_us)) {
-        return false;
-    }
-
-    if (!fetch_current_sample(frame.sample, now_us)) {
-        return false;
-    }
-
-    frame.gyro_status = gyro_status;
-    frame.accel_status = accel_status;
-    return true;
-}
-
 bool AP_InertialSensor_LSM6DSV::read_fifo_status(FifoFrame &frame, uint32_t now_us)
 {
     uint8_t fifo_status[2] {};
@@ -685,6 +554,7 @@ bool AP_InertialSensor_LSM6DSV::read_fifo_words_block(const uint16_t n_words, ui
     }
 
     _fifo_buffer[0] = LSM6DSV_REG_FIFO_DATA_OUT_TAG | LSM6DSV_SPI_READ_FLAG;
+    // zero MOSI payload for SPI full-duplex read
     memset(_fifo_buffer + 1, 0, n_words * sizeof(RawFifoWord));
     if (!_dev->transfer_fullduplex(_fifo_buffer, n_words * sizeof(RawFifoWord) + 1)) {
         _inc_accel_error_count(accel_instance);
@@ -697,7 +567,7 @@ bool AP_InertialSensor_LSM6DSV::read_fifo_words_block(const uint16_t n_words, ui
 
 bool AP_InertialSensor_LSM6DSV::consume_fifo_word(FifoFrame &frame, SampleFrame &sample, const uint8_t *raw_word)
 {
-    RawFifoWord raw{};
+    RawFifoWord raw;
     memcpy(&raw, raw_word, sizeof(raw));
 
     frame.tag = decode_fifo_tag(raw.tag);
@@ -730,15 +600,6 @@ bool AP_InertialSensor_LSM6DSV::consume_fifo_word(FifoFrame &frame, SampleFrame 
 uint16_t AP_InertialSensor_LSM6DSV::drain_fifo(uint32_t now_us)
 {
     FifoFrame frame{};
-    frame.tag = FifoTag::Empty;
-    frame.unread_words = 0;
-    frame.tag_count = 0;
-    frame.source.gyro_status = 0;
-    frame.source.accel_status = 0;
-    frame.source.sample.raw_temp = 0;
-    frame.source.sample.has_raw_temp = false;
-    frame.source.sample.gyro.zero();
-    frame.source.sample.accel.zero();
 
     if (!read_fifo_status(frame, now_us)) {
         return 0;
@@ -762,17 +623,17 @@ uint16_t AP_InertialSensor_LSM6DSV::drain_fifo(uint32_t now_us)
 
         const uint8_t *raw_word = _fifo_buffer + 1;
         for (uint16_t i = 0; i < block_words; i++, raw_word += sizeof(RawFifoWord)) {
-            if (!consume_fifo_word(frame, frame.source.sample, raw_word)) {
+            if (!consume_fifo_word(frame, frame.sample, raw_word)) {
                 return samples_published;
             }
             drained++;
             if (frame.tag == FifoTag::GyroNC) {
-                publish_gyro_sample(frame.source.sample);
+                publish_gyro_sample(frame.sample);
                 samples_published++;
-                frame.source.sample.gyro.zero();
+                frame.sample.gyro.zero();
             } else if (frame.tag == FifoTag::AccelNC) {
-                publish_accel_sample(frame.source.sample);
-                frame.source.sample.accel.zero();
+                publish_accel_sample(frame.sample);
+                frame.sample.accel.zero();
             }
         }
     }
@@ -794,16 +655,7 @@ void AP_InertialSensor_LSM6DSV::publish_accel_sample(SampleFrame &sample)
 {
     _rotate_and_correct_accel(accel_instance, sample.accel);
     _notify_new_accel_raw_sample(accel_instance, sample.accel);
-    update_temperature(LSM6DSV_STATUS_GDA, nullptr);
-}
-
-void AP_InertialSensor_LSM6DSV::publish_current_sample(SampleFrame &sample, uint8_t gyro_status)
-{
-    _rotate_and_correct_accel(accel_instance, sample.accel);
-    _rotate_and_correct_gyro(gyro_instance, sample.gyro);
-    _notify_new_accel_raw_sample(accel_instance, sample.accel);
-    _notify_new_gyro_raw_sample(gyro_instance, sample.gyro);
-    update_temperature(gyro_status, sample.has_raw_temp ? &sample.raw_temp : nullptr);
+    update_temperature();
 }
 
 void AP_InertialSensor_LSM6DSV::check_register_monitor()
@@ -818,48 +670,26 @@ void AP_InertialSensor_LSM6DSV::check_register_monitor()
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 }
 
-void AP_InertialSensor_LSM6DSV::update_temperature(const uint8_t status, const int16_t *raw_temp)
+void AP_InertialSensor_LSM6DSV::update_temperature()
 {
-    if (_temperature_counter++ < LSM6DSV_TEMPERATURE_UPDATE_INTERVAL) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _temperature_last_ms < LSM6DSV_TEMPERATURE_UPDATE_MS) {
         return;
     }
-    _temperature_counter = 0;
+    _temperature_last_ms = now_ms;
 
-    int16_t temperature_raw = 0;
-    if (raw_temp != nullptr) {
-        temperature_raw = *raw_temp;
-    } else {
-        const bool fifo_temp_poll = active_sample_source() == SampleSourceMode::FIFO;
-        if (!fifo_temp_poll && (status & LSM6DSV_STATUS_TDA) == 0) {
-            return;
-        }
-        uint8_t tbuf[2];
-        if (!read_registers(LSM6DSV_REG_OUT_TEMP_L, tbuf, sizeof(tbuf))) {
-            _inc_accel_error_count(accel_instance);
-            return;
-        }
-        temperature_raw = int16_t(uint16_t(tbuf[0] | (tbuf[1] << 8)));
+    uint8_t tbuf[2];
+    if (!read_registers(LSM6DSV_REG_OUT_TEMP_L, tbuf, sizeof(tbuf))) {
+        _inc_accel_error_count(accel_instance);
+        return;
     }
-
+    const int16_t temperature_raw = int16_t(uint16_t(tbuf[0] | (tbuf[1] << 8)));
     const float temp_degc = LSM6DSV_TEMPERATURE_ZERO_C + temperature_raw / LSM6DSV_TEMPERATURE_SENSITIVITY;
     _publish_temperature(accel_instance, temp_degc);
 }
 
 void AP_InertialSensor_LSM6DSV::poll_data()
 {
-    const uint32_t now_us = AP_HAL::micros();
-
-    if (active_sample_source() == SampleSourceMode::FIFO) {
-        drain_fifo(now_us);
-        check_register_monitor();
-        return;
-    }
-
-    SourceFrame frame{};
-    if (!fetch_source_frame(frame, now_us)) {
-        return;
-    }
-
-    publish_current_sample(frame.sample, frame.gyro_status);
+    drain_fifo(AP_HAL::micros());
     check_register_monitor();
 }
