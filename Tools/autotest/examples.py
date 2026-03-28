@@ -36,20 +36,17 @@ def run_example(name, filepath, valgrind=False, gdb=False):
     ]:
         expect_exit = True
 
-    tstart = time.time()
-    while True:
-        if time.time() - tstart > timeout:
-            break
-        if not expect_exit:
-            retcode = bob.poll()
-            if retcode is not None:
-                raise ValueError("Process exited before I could kill it (%s)" % str(retcode))
+    time.sleep(timeout)
 
     if expect_exit:
         retcode = bob.wait()
         if retcode is None:
             raise ValueError("Expected example to exit, it did not")
     else:
+        retcode = bob.poll()
+        if retcode is not None:
+            raise ValueError("Process exited before I could kill it (%s)" % str(retcode))
+
         bob.send_signal(signal.SIGTERM)
         time.sleep(1)
         retcode = bob.poll()
