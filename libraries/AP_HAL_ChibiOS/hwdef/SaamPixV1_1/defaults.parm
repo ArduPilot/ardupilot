@@ -1,0 +1,37 @@
+# rate controllers
+#ATC_ACCEL_R_MAX    160000
+#ATC_ACCEL_P_MAX    160000
+#ATC_ACCEL_Y_MAX     54000
+#ATC_ANG_PIT_P          8.0
+#ATC_ANG_RLL_P          8.0
+BATT_LOW_VOLT           21.6
+BATT_FS_LOW_ACT         2
+BRD_SAFETY_DEFLT        0
+BRD_BOOT_DELAY          500
+BATT_MONITOR            3
+AHRS_ORIENTATION        8
+
+ATC_RAT_PIT_P          0.180
+ATC_RAT_RLL_P          0.180
+
+ATC_RAT_RLL_I          0.180
+ATC_RAT_PIT_I          0.180
+
+ATC_RAT_RLL_D          0.006
+ATC_RAT_PIT_D          0.006
+
+#ATC_ANG_YAW_P          7.16
+#ATC_RAT_PIT_FILT      10
+#ATC_RAT_PIT_FLTD      10
+#ATC_RAT_PIT_IMAX       0.5
+#ATC_RAT_RLL_FILT      10
+#ATC_RAT_RLL_FLTD      10
+#ATC_RAT_RLL_IMAX       0.5
+#ATC_RAT_YAW_P          0.6887
+#ATC_RAT_YAW_I          0.0689
+#ATC_RAT_YAW_IMAX       0.3
+#ATC_RAT_YAW_FILT       4.5125
+#ATC_RAT_YAW_FLTE       4.5125
+#ATC_SLEW_YAW        3250
+#ATC_THR_MIX_MAN        4
+#ATC_THR_MIX_MAX        0.9
