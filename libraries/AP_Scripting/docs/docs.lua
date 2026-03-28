@@ -4370,6 +4370,16 @@ sim = {}
 ---@return boolean
 function sim:set_pose(instance, loc, orient, velocity_bf, gyro_rads) end
 
+-- set pose of simulated vehicle with flags. Bit 0 resets home and origin. Requires AHRS_EKF_TYPE=10
+---@param instance integer -- 0 for first vehicle
+---@param loc Location_ud
+---@param orient Quaternion_ud
+---@param velocity_bf Vector3f_ud -- body frame velocity
+---@param gyro_rads Vector3f_ud -- gyro body rate in rad/s
+---@param flags integer -- bitmask, bit 0 resets home and origin
+---@return boolean
+function sim:set_pose_flags(instance, loc, orient, velocity_bf, gyro_rads, flags) end
+
 -- CRSF menu parameter userdata object
 ---@class (exact) CRSFParameter_ud
 local CRSFParameter_ud = {}
@@ -4490,4 +4500,3 @@ function DroneCAN_Handle_ud:request(target_node, payload) end
 ---@param payload string -- payload for message
 ---@return boolean -- true if send succeeded
 function DroneCAN_Handle_ud:broadcast(payload) end
-
