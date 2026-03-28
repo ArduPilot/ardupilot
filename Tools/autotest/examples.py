@@ -39,9 +39,12 @@ def run_example(name, filepath, valgrind=False, gdb=False):
     time.sleep(timeout)
 
     if expect_exit:
-        retcode = bob.wait()
+        retcode = bob.poll()
         if retcode is None:
-            raise ValueError("Expected example to exit, it did not")
+            # should maybe be an error in the future; that was the original intent
+            print("process did not exit by the expected time")
+
+        retcode = bob.wait()
     else:
         retcode = bob.poll()
         if retcode is not None:
