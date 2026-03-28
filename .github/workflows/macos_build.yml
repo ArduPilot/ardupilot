@@ -4,11 +4,9 @@ on:
   push:
     paths-ignore:
       # remove other env install scripts
-      - 'Tools/environment_install/APM_install.sh'
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
       - 'Tools/environment_install/install-prereqs-ubuntu.sh'
-      - 'Tools/environment_install/install-prereqs-windows-andAPMSource.ps1'
       - 'Tools/environment_install/install-prereqs-windows.ps1'
       # remove non esp32 HAL
       - 'libraries/AP_HAL_ESP32/**'
@@ -69,11 +67,9 @@ on:
   pull_request:
     paths-ignore:
       # remove other env install scripts
-      - 'Tools/environment_install/APM_install.sh'
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
       - 'Tools/environment_install/install-prereqs-ubuntu.sh'
-      - 'Tools/environment_install/install-prereqs-windows-andAPMSource.ps1'
       - 'Tools/environment_install/install-prereqs-windows.ps1'
       # remove non esp32 HAL
       - 'libraries/AP_HAL_ESP32/**'
