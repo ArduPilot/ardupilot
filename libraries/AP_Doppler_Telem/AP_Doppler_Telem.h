@@ -35,6 +35,13 @@ public:
     void update();
     void send();
     bool get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const;
+    bool get_bi_msg(DVL_BI_Msg &msg) const;
+    bool get_bd_msg(DVL_BD_Msg &msg) const;
+    bool get_wi_msg(DVL_WI_Msg &msg) const;
+    bool get_ua_msg(DVL_U_Msg &msg) const;
+    bool get_ub_msg(DVL_U_Msg &msg) const;
+    bool get_uc_msg(DVL_U_Msg &msg) const;
+    bool get_ud_msg(DVL_U_Msg &msg) const;
     const AP_Doppler_Parameters &parameters() const { return *_doppler_parameters; }
 
     static AP_Doppler_Telem *get_singleton(void) {

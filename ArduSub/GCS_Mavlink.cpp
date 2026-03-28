@@ -3,6 +3,73 @@
 #include "GCS_Mavlink.h"
 #include <AP_RPM/AP_RPM_config.h>
 
+namespace {
+
+#if defined(MAVLINK_MSG_ID_DVL_BI_LEN)
+static inline void send_mavlink_dvl_bi(mavlink_channel_t chan, const DVL_BI_Msg &msg)
+{
+    mavlink_msg_dvl_bi_send(chan, msg.time_usec, msg.valid ? 1U : 0U, msg.status, msg.sequence, msg.vx_mps, msg.vy_mps, msg.vz_mps, msg.vel_error_mps);
+}
+#else
+static inline void send_mavlink_dvl_bi(mavlink_channel_t, const DVL_BI_Msg &) {}
+#endif
+
+#if defined(MAVLINK_MSG_ID_DVL_BD_LEN)
+static inline void send_mavlink_dvl_bd(mavlink_channel_t chan, const DVL_BD_Msg &msg)
+{
+    mavlink_msg_dvl_bd_send(chan, msg.time_usec, msg.valid ? 1U : 0U, msg.status, msg.sequence, msg.east_m, msg.north_m, msg.up_m, msg.bottom_m, msg.time_since_valid_s);
+}
+#else
+static inline void send_mavlink_dvl_bd(mavlink_channel_t, const DVL_BD_Msg &) {}
+#endif
+
+#if defined(MAVLINK_MSG_ID_DVL_WI_LEN)
+static inline void send_mavlink_dvl_wi(mavlink_channel_t chan, const DVL_WI_Msg &msg)
+{
+    mavlink_msg_dvl_wi_send(chan, msg.time_usec, msg.valid ? 1U : 0U, msg.status, msg.sequence, msg.vx_mps, msg.vy_mps, msg.vz_mps, msg.vel_error_mps);
+}
+#else
+static inline void send_mavlink_dvl_wi(mavlink_channel_t, const DVL_WI_Msg &) {}
+#endif
+
+#if defined(MAVLINK_MSG_ID_DVL_UA_LEN)
+static inline void send_mavlink_dvl_ua(mavlink_channel_t chan, const DVL_U_Msg &msg)
+{
+    mavlink_msg_dvl_ua_send(chan, msg.time_usec, msg.valid ? 1U : 0U, msg.status, msg.sequence, msg.velocity_mps, msg.distance_m, msg.rssi, msg.nsd);
+}
+#else
+static inline void send_mavlink_dvl_ua(mavlink_channel_t, const DVL_U_Msg &) {}
+#endif
+
+#if defined(MAVLINK_MSG_ID_DVL_UB_LEN)
+static inline void send_mavlink_dvl_ub(mavlink_channel_t chan, const DVL_U_Msg &msg)
+{
+    mavlink_msg_dvl_ub_send(chan, msg.time_usec, msg.valid ? 1U : 0U, msg.status, msg.sequence, msg.velocity_mps, msg.distance_m, msg.rssi, msg.nsd);
+}
+#else
+static inline void send_mavlink_dvl_ub(mavlink_channel_t, const DVL_U_Msg &) {}
+#endif
+
+#if defined(MAVLINK_MSG_ID_DVL_UC_LEN)
+static inline void send_mavlink_dvl_uc(mavlink_channel_t chan, const DVL_U_Msg &msg)
+{
+    mavlink_msg_dvl_uc_send(chan, msg.time_usec, msg.valid ? 1U : 0U, msg.status, msg.sequence, msg.velocity_mps, msg.distance_m, msg.rssi, msg.nsd);
+}
+#else
+static inline void send_mavlink_dvl_uc(mavlink_channel_t, const DVL_U_Msg &) {}
+#endif
+
+#if defined(MAVLINK_MSG_ID_DVL_UD_LEN)
+static inline void send_mavlink_dvl_ud(mavlink_channel_t chan, const DVL_U_Msg &msg)
+{
+    mavlink_msg_dvl_ud_send(chan, msg.time_usec, msg.valid ? 1U : 0U, msg.status, msg.sequence, msg.velocity_mps, msg.distance_m, msg.rssi, msg.nsd);
+}
+#else
+static inline void send_mavlink_dvl_ud(mavlink_channel_t, const DVL_U_Msg &) {}
+#endif
+
+}
+
 MAV_TYPE GCS_Sub::frame_type() const
 {
     return MAV_TYPE_SUBMARINE;
@@ -248,6 +315,10 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
 #endif
         break;
 
+    case MSG_DVL_MESSAGES:
+        send_dvl_messages();
+        break;
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -382,7 +453,8 @@ static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_SIMSTATE,
 #endif
     MSG_AHRS2,
-    MSG_PID_TUNING
+    MSG_PID_TUNING,
+    MSG_DVL_MESSAGES
 };
 static const ap_message STREAM_EXTRA2_msgs[] = {
     MSG_VFR_HUD
@@ -432,6 +504,196 @@ const struct GCS_MAVLINK::stream_entries GCS_MAVLINK::all_stream_entries[] = {
     MAV_STREAM_ENTRY(STREAM_PARAMS),
     MAV_STREAM_TERMINATOR // must have this at end of stream_entries
 };
+
+void GCS_MAVLINK_Sub::send_dvl_messages()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    const AP_Doppler_Parameters &params = dvl->parameters();
+    if (!params.mav_enabled()) {
+        return;
+    }
+
+    const uint8_t rate_hz = params.mav_rate_hz();
+    const uint32_t period_ms = MAX(uint32_t(1), uint32_t(1000U / rate_hz));
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - _dvl_last_send_ms) < period_ms) {
+        return;
+    }
+    _dvl_last_send_ms = now_ms;
+
+    send_dvl_bi();
+    send_dvl_bd();
+    send_dvl_wi();
+    send_dvl_ua();
+    send_dvl_ub();
+    send_dvl_uc();
+    send_dvl_ud();
+}
+
+void GCS_MAVLINK_Sub::send_dvl_bi()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    DVL_BI_Msg msg {};
+    if (!dvl->get_bi_msg(msg)) {
+        return;
+    }
+
+#if defined(MAVLINK_MSG_ID_DVL_BI_LEN)
+    if (!check_payload_size(MAVLINK_MSG_ID_DVL_BI_LEN)) {
+        return;
+    }
+    // Future MAVROS topic: /mavros/dvl/bi
+    send_mavlink_dvl_bi(chan, msg);
+#else
+    (void)msg;
+#endif
+}
+
+void GCS_MAVLINK_Sub::send_dvl_bd()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    DVL_BD_Msg msg {};
+    if (!dvl->get_bd_msg(msg)) {
+        return;
+    }
+
+#if defined(MAVLINK_MSG_ID_DVL_BD_LEN)
+    if (!check_payload_size(MAVLINK_MSG_ID_DVL_BD_LEN)) {
+        return;
+    }
+    // Future MAVROS topic: /mavros/dvl/bd
+    send_mavlink_dvl_bd(chan, msg);
+#else
+    (void)msg;
+#endif
+}
+
+void GCS_MAVLINK_Sub::send_dvl_wi()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    DVL_WI_Msg msg {};
+    if (!dvl->get_wi_msg(msg)) {
+        return;
+    }
+
+#if defined(MAVLINK_MSG_ID_DVL_WI_LEN)
+    if (!check_payload_size(MAVLINK_MSG_ID_DVL_WI_LEN)) {
+        return;
+    }
+    // Future MAVROS topic: /mavros/dvl/wi
+    send_mavlink_dvl_wi(chan, msg);
+#else
+    (void)msg;
+#endif
+}
+
+void GCS_MAVLINK_Sub::send_dvl_ua()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    DVL_U_Msg msg {};
+    if (!dvl->get_ua_msg(msg)) {
+        return;
+    }
+
+#if defined(MAVLINK_MSG_ID_DVL_UA_LEN)
+    if (!check_payload_size(MAVLINK_MSG_ID_DVL_UA_LEN)) {
+        return;
+    }
+    // Future MAVROS topic: /mavros/dvl/ua
+    send_mavlink_dvl_ua(chan, msg);
+#else
+    (void)msg;
+#endif
+}
+
+void GCS_MAVLINK_Sub::send_dvl_ub()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    DVL_U_Msg msg {};
+    if (!dvl->get_ub_msg(msg)) {
+        return;
+    }
+
+#if defined(MAVLINK_MSG_ID_DVL_UB_LEN)
+    if (!check_payload_size(MAVLINK_MSG_ID_DVL_UB_LEN)) {
+        return;
+    }
+    // Future MAVROS topic: /mavros/dvl/ub
+    send_mavlink_dvl_ub(chan, msg);
+#else
+    (void)msg;
+#endif
+}
+
+void GCS_MAVLINK_Sub::send_dvl_uc()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    DVL_U_Msg msg {};
+    if (!dvl->get_uc_msg(msg)) {
+        return;
+    }
+
+#if defined(MAVLINK_MSG_ID_DVL_UC_LEN)
+    if (!check_payload_size(MAVLINK_MSG_ID_DVL_UC_LEN)) {
+        return;
+    }
+    // Future MAVROS topic: /mavros/dvl/uc
+    send_mavlink_dvl_uc(chan, msg);
+#else
+    (void)msg;
+#endif
+}
+
+void GCS_MAVLINK_Sub::send_dvl_ud()
+{
+    const AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    if (dvl == nullptr) {
+        return;
+    }
+
+    DVL_U_Msg msg {};
+    if (!dvl->get_ud_msg(msg)) {
+        return;
+    }
+
+#if defined(MAVLINK_MSG_ID_DVL_UD_LEN)
+    if (!check_payload_size(MAVLINK_MSG_ID_DVL_UD_LEN)) {
+        return;
+    }
+    // Future MAVROS topic: /mavros/dvl/ud
+    send_mavlink_dvl_ud(chan, msg);
+#else
+    (void)msg;
+#endif
+}
 
 bool GCS_MAVLINK_Sub::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {

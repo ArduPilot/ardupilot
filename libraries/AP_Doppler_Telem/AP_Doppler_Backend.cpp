@@ -94,7 +94,7 @@ void AP_Doppler_Backend::loop(void)
     }
 
     _port->begin(AP_DOPPLER_BAUD, AP_DOPPLER_BUFSIZE_RX, AP_DOPPLER_BUFSIZE_TX);
-    _port->write((const uint8_t *)AP_DOPPLER_LAUNCH, 16);
+    send_epd6_startup_commands();
 
     char buffer[AP_DOPPLER_LINE_BUFFER_SIZE];
     uint8_t idx = 0;
@@ -102,7 +102,7 @@ void AP_Doppler_Backend::loop(void)
 
     while (true) {
         if (_port->available() == 0) {
-            _port->write((const uint8_t *)AP_DOPPLER_LAUNCH, 16);
+            _port->write((const uint8_t *)AP_DOPPLER_LAUNCH, AP_DOPPLER_CMD_LENGTH);
             hal.scheduler->delay(100);
             continue;
         }
@@ -131,35 +131,35 @@ void AP_Doppler_Backend::loop(void)
 
                 buffer[idx] = '\0';
                 if (strncmp(buffer, "SA", 2) == 0) {
-                    parse_SA(buffer);
+                    parse_epd6_sa(buffer);
                 } else if (strncmp(buffer, "TS", 2) == 0) {
-                    parse_TS(buffer);
+                    parse_epd6_ts(buffer);
                 } else if (strncmp(buffer, "BI", 2) == 0) {
-                    parse_BI(buffer);
+                    parse_epd6_bi(buffer);
                 } else if (strncmp(buffer, "BS", 2) == 0) {
-                    parse_BS(buffer);
+                    parse_epd6_bs(buffer);
                 } else if (strncmp(buffer, "BE", 2) == 0) {
-                    parse_BE(buffer);
+                    parse_epd6_be(buffer);
                 } else if (strncmp(buffer, "BD", 2) == 0) {
-                    parse_BD(buffer);
+                    parse_epd6_bd(buffer);
                 } else if (strncmp(buffer, "WI", 2) == 0) {
-                    parse_WI(buffer);
+                    parse_epd6_wi(buffer);
                 } else if (strncmp(buffer, "WS", 2) == 0) {
-                    parse_WS(buffer);
+                    parse_epd6_ws(buffer);
                 } else if (strncmp(buffer, "WE", 2) == 0) {
-                    parse_WE(buffer);
+                    parse_epd6_we(buffer);
                 } else if (strncmp(buffer, "WD", 2) == 0) {
-                    parse_WD(buffer);
+                    parse_epd6_wd(buffer);
                 } else if (strncmp(buffer, "UA", 2) == 0) {
-                    parse_UA(buffer);
+                    parse_epd6_ua(buffer);
                 } else if (strncmp(buffer, "UB", 2) == 0) {
-                    parse_UB(buffer);
+                    parse_epd6_ub(buffer);
                 } else if (strncmp(buffer, "UC", 2) == 0) {
-                    parse_UC(buffer);
+                    parse_epd6_uc(buffer);
                 } else if (strncmp(buffer, "UD", 2) == 0) {
-                    parse_UD(buffer);
+                    parse_epd6_ud(buffer);
                 } else if (strncmp(buffer, "TD", 2) == 0) {
-                    parse_TD(buffer);
+                    parse_epd6_td(buffer);
                 }
 
                 idx = 0;
@@ -182,6 +182,66 @@ void AP_Doppler_Backend::send()
     if (_port == nullptr) {
         return;
     }
+}
+
+bool AP_Doppler_Backend::get_bi_msg(DVL_BI_Msg &msg) const
+{
+    WITH_SEMAPHORE(_sample_sem);
+    msg = bi_msg;
+    return msg.valid;
+}
+
+bool AP_Doppler_Backend::get_bd_msg(DVL_BD_Msg &msg) const
+{
+    WITH_SEMAPHORE(_sample_sem);
+    msg = bd_msg;
+    return msg.valid;
+}
+
+bool AP_Doppler_Backend::get_wi_msg(DVL_WI_Msg &msg) const
+{
+    WITH_SEMAPHORE(_sample_sem);
+    msg = wi_msg;
+    return msg.valid;
+}
+
+bool AP_Doppler_Backend::get_ua_msg(DVL_U_Msg &msg) const
+{
+    WITH_SEMAPHORE(_sample_sem);
+    msg = ua_msg;
+    return msg.valid;
+}
+
+bool AP_Doppler_Backend::get_ub_msg(DVL_U_Msg &msg) const
+{
+    WITH_SEMAPHORE(_sample_sem);
+    msg = ub_msg;
+    return msg.valid;
+}
+
+bool AP_Doppler_Backend::get_uc_msg(DVL_U_Msg &msg) const
+{
+    WITH_SEMAPHORE(_sample_sem);
+    msg = uc_msg;
+    return msg.valid;
+}
+
+bool AP_Doppler_Backend::get_ud_msg(DVL_U_Msg &msg) const
+{
+    WITH_SEMAPHORE(_sample_sem);
+    msg = ud_msg;
+    return msg.valid;
+}
+
+void AP_Doppler_Backend::send_epd6_startup_commands()
+{
+    if (_port == nullptr) {
+        return;
+    }
+
+    _port->write((const uint8_t *)AP_DOPPLER_SET_EPD6, AP_DOPPLER_CMD_LENGTH);
+    hal.scheduler->delay(50);
+    _port->write((const uint8_t *)AP_DOPPLER_LAUNCH, AP_DOPPLER_CMD_LENGTH);
 }
 
 static inline float parse_float(const char *&p)
@@ -231,15 +291,15 @@ static inline char parse_char(const char *&p)
     return c;
 }
 
-void AP_Doppler_Backend::parse_SA(const char *payload)
+void AP_Doppler_Backend::parse_epd6_sa(const char *payload)
 {
     const char *p = payload + 3;
-    Posture_data.pitch_deg = parse_float(p);
-    Posture_data.roll_deg  = parse_float(p);
-    Posture_data.yaw_deg   = parse_float(p);
+    _epd6_sa.roll_deg  = parse_float(p);
+    _epd6_sa.pitch_deg = parse_float(p);
+    _epd6_sa.yaw_deg   = parse_float(p);
 }
 
-void AP_Doppler_Backend::parse_TS(const char *payload)
+void AP_Doppler_Backend::parse_epd6_ts(const char *payload)
 {
     const char *p = payload + 3;
 
@@ -249,7 +309,7 @@ void AP_Doppler_Backend::parse_TS(const char *payload)
     }
 
     size_t len = comma - p;
-    char time_buf[sizeof(Parameters_data.time)];
+    char time_buf[sizeof(_epd6_ts.time)];
     if (len >= sizeof(time_buf)) {
         len = sizeof(time_buf) - 1;
     }
@@ -260,176 +320,257 @@ void AP_Doppler_Backend::parse_TS(const char *payload)
     const float satellites_PPT = parse_float(p);
     const float temperature_C = parse_float(p);
     const float deep_m = parse_float(p);
-    const float voltage_m_s = parse_float(p);
-    const char status_char = parse_char(p);
-    const uint8_t version = (uint8_t)parse_float(p);
+    const float sound_speed_m_s = parse_float(p);
 
-    Parameters_data.status = static_cast<Message_Status>(status_char);
-    if (Parameters_data.status == STATUS_ACQUIRING) {
-        memcpy(Parameters_data.time, time_buf, sizeof(time_buf));
-        Parameters_data.satellites_PPT = satellites_PPT;
-        Parameters_data.temperature_C = temperature_C;
-        Parameters_data.deep_m = deep_m;
-        Parameters_data.voltage_m_s = voltage_m_s;
-        Parameters_data.version = version;
+    while (*p == ' ') {
+        ++p;
     }
-}
-
-void AP_Doppler_Backend::parse_BI(const char *payload)
-{
-    const char *p = payload + 3;
-    const float x_velocity_m_s = parse_float(p);
-    const float y_velocity_m_s = parse_float(p);
-    const float z_velocity_m_s = parse_float(p);
-    const float velocity_error_mm_s = parse_float(p);
-    velocity_data.status = static_cast<Message_Status>(parse_char(p));
-    if (velocity_data.status == STATUS_ACQUIRING) {
-        velocity_data.X_velocity_m_s = x_velocity_m_s;
-        velocity_data.Y_velocity_m_s = y_velocity_m_s;
-        velocity_data.Z_velocity_m_s = z_velocity_m_s;
-        velocity_data.velocity_error_mm_s = velocity_error_mm_s;
+    char status_buf[4] {};
+    size_t status_len = 0;
+    while (*p != '\0' && *p != '\r' && *p != '\n' && status_len < 3) {
+        if (*p != ',' && *p != ' ') {
+            status_buf[status_len++] = *p;
+        }
+        ++p;
     }
+
+    memcpy(_epd6_ts.time, time_buf, sizeof(time_buf));
+    _epd6_ts.satellites_PPT = satellites_PPT;
+    _epd6_ts.temperature_C = temperature_C;
+    _epd6_ts.deep_m = deep_m;
+    _epd6_ts.sound_speed_m_s = sound_speed_m_s;
+    _epd6_ts.fault_code = (status_len > 0 && status_buf[0] >= '0' && status_buf[0] <= '9') ? uint8_t(status_buf[0] - '0') : 0;
+    _epd6_ts.protocol_version[0] = (status_len > 1) ? status_buf[1] : '\0';
+    _epd6_ts.protocol_version[1] = (status_len > 2) ? status_buf[2] : '\0';
+    _epd6_ts.protocol_version[2] = '\0';
 }
 
-void AP_Doppler_Backend::parse_BS(const char *payload)
-{
-    const char *p = payload + 3;
-    const float x_velocity_mm_s = parse_float(p);
-    const float y_velocity_mm_s = parse_float(p);
-    const float z_velocity_mm_s = parse_float(p);
-    BottomTrackShipVel.status = static_cast<Message_Status>(parse_char(p));
-    if (BottomTrackShipVel.status == STATUS_ACQUIRING) {
-        BottomTrackShipVel.x_velocity_mm_s = x_velocity_mm_s;
-        BottomTrackShipVel.y_velocity_mm_s = y_velocity_mm_s;
-        BottomTrackShipVel.z_velocity_mm_s = z_velocity_mm_s;
-        update_velocity_sample(_bottom_track_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, DVL_LockState::BOTTOM_LOCK);
-    }
-}
-
-void AP_Doppler_Backend::parse_BE(const char *payload)
-{
-    const char *p = payload + 3;
-    const float east_velocity_mm_s = parse_float(p);
-    const float north_velocity_mm_s = parse_float(p);
-    const float up_velocity_mm_s = parse_float(p);
-    BottomTrackEarthVel.status = static_cast<Message_Status>(parse_char(p));
-    if (BottomTrackEarthVel.status == STATUS_ACQUIRING) {
-        BottomTrackEarthVel.east_velocity_mm_s = east_velocity_mm_s;
-        BottomTrackEarthVel.north_velocity_mm_s = north_velocity_mm_s;
-        BottomTrackEarthVel.up_velocity_mm_s = up_velocity_mm_s;
-    }
-}
-
-void AP_Doppler_Backend::parse_BD(const char *payload)
-{
-    const char *p = payload + 3;
-    BottomTrackDistance.east_distance_m = parse_float(p);
-    BottomTrackDistance.north_distance_m = parse_float(p);
-    BottomTrackDistance.up_distance_m = parse_float(p);
-    BottomTrackDistance.bottom_distance_m = parse_float(p);
-    BottomTrackDistance.time_since_valid_s = parse_float(p);
-}
-
-void AP_Doppler_Backend::parse_WI(const char *payload)
+void AP_Doppler_Backend::parse_epd6_bi(const char *payload)
 {
     const char *p = payload + 3;
     const float x_velocity_mm_s = parse_float(p);
     const float y_velocity_mm_s = parse_float(p);
     const float z_velocity_mm_s = parse_float(p);
     const float velocity_error_mm_s = parse_float(p);
-    WaterTrackInstrumentVel.status = static_cast<Message_Status>(parse_char(p));
-    if (WaterTrackInstrumentVel.status == STATUS_ACQUIRING) {
-        WaterTrackInstrumentVel.x_velocity_mm_s = x_velocity_mm_s;
-        WaterTrackInstrumentVel.y_velocity_mm_s = y_velocity_mm_s;
-        WaterTrackInstrumentVel.z_velocity_mm_s = z_velocity_mm_s;
-        WaterTrackInstrumentVel.velocity_error_mm_s = velocity_error_mm_s;
+    _epd6_bi.status = static_cast<EPD6_Status>(parse_char(p));
+    if (_epd6_bi.status == EPD6_STATUS_ACQUIRING) {
+        _epd6_bi.X_velocity_mm_s = x_velocity_mm_s;
+        _epd6_bi.Y_velocity_mm_s = y_velocity_mm_s;
+        _epd6_bi.Z_velocity_mm_s = z_velocity_mm_s;
+        _epd6_bi.velocity_error_mm_s = velocity_error_mm_s;
     }
+
+    WITH_SEMAPHORE(_sample_sem);
+    bi_msg.time_usec = AP_HAL::micros64();
+    bi_msg.sequence++;
+    bi_msg.valid = (_epd6_bi.status == EPD6_STATUS_ACQUIRING);
+    bi_msg.status = uint8_t(_epd6_bi.status);
+    bi_msg.vx_mps = x_velocity_mm_s * 0.001f;
+    bi_msg.vy_mps = y_velocity_mm_s * 0.001f;
+    bi_msg.vz_mps = z_velocity_mm_s * 0.001f;
+    bi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
 }
 
-void AP_Doppler_Backend::parse_WS(const char *payload)
+void AP_Doppler_Backend::parse_epd6_bs(const char *payload)
 {
     const char *p = payload + 3;
     const float x_velocity_mm_s = parse_float(p);
     const float y_velocity_mm_s = parse_float(p);
     const float z_velocity_mm_s = parse_float(p);
-    WaterTrackShipVel.status = static_cast<Message_Status>(parse_char(p));
-    if (WaterTrackShipVel.status == STATUS_ACQUIRING) {
-        WaterTrackShipVel.x_velocity_mm_s = x_velocity_mm_s;
-        WaterTrackShipVel.y_velocity_mm_s = y_velocity_mm_s;
-        WaterTrackShipVel.z_velocity_mm_s = z_velocity_mm_s;
-        update_velocity_sample(_water_track_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, DVL_LockState::WATER_TRACK);
+    _epd6_bs.status = static_cast<EPD6_Status>(parse_char(p));
+    if (_epd6_bs.status == EPD6_STATUS_ACQUIRING) {
+        _epd6_bs.x_velocity_mm_s = x_velocity_mm_s;
+        _epd6_bs.y_velocity_mm_s = y_velocity_mm_s;
+        _epd6_bs.z_velocity_mm_s = z_velocity_mm_s;
+        update_epd6_velocity_sample(_epd6_bottom_track_velocity_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, DVL_LockState::BOTTOM_LOCK);
     }
 }
 
-void AP_Doppler_Backend::parse_WE(const char *payload)
+void AP_Doppler_Backend::parse_epd6_be(const char *payload)
 {
     const char *p = payload + 3;
     const float east_velocity_mm_s = parse_float(p);
     const float north_velocity_mm_s = parse_float(p);
     const float up_velocity_mm_s = parse_float(p);
-    WaterTrackEarthVel.status = static_cast<Message_Status>(parse_char(p));
-    if (WaterTrackEarthVel.status == STATUS_ACQUIRING) {
-        WaterTrackEarthVel.east_velocity_mm_s = east_velocity_mm_s;
-        WaterTrackEarthVel.north_velocity_mm_s = north_velocity_mm_s;
-        WaterTrackEarthVel.up_velocity_mm_s = up_velocity_mm_s;
+    _epd6_be.status = static_cast<EPD6_Status>(parse_char(p));
+    if (_epd6_be.status == EPD6_STATUS_ACQUIRING) {
+        _epd6_be.east_velocity_mm_s = east_velocity_mm_s;
+        _epd6_be.north_velocity_mm_s = north_velocity_mm_s;
+        _epd6_be.up_velocity_mm_s = up_velocity_mm_s;
     }
 }
 
-void AP_Doppler_Backend::parse_WD(const char *payload)
+void AP_Doppler_Backend::parse_epd6_bd(const char *payload)
 {
     const char *p = payload + 3;
-    WaterTrackEarthDist.east_distance_m = parse_float(p);
-    WaterTrackEarthDist.north_distance_m = parse_float(p);
-    WaterTrackEarthDist.up_distance_m = parse_float(p);
-    WaterTrackEarthDist.center_distance_m = parse_float(p);
-    WaterTrackEarthDist.time_since_valid_s = parse_float(p);
+    _epd6_bd.east_distance_m = parse_float(p);
+    _epd6_bd.north_distance_m = parse_float(p);
+    _epd6_bd.up_distance_m = parse_float(p);
+    _epd6_bd.bottom_distance_m = parse_float(p);
+    _epd6_bd.time_since_valid_s = parse_float(p);
+
+    WITH_SEMAPHORE(_sample_sem);
+    bd_msg.time_usec = AP_HAL::micros64();
+    bd_msg.sequence++;
+    bd_msg.valid = true;
+    bd_msg.status = uint8_t(_epd6_bs.status);
+    bd_msg.east_m = _epd6_bd.east_distance_m;
+    bd_msg.north_m = _epd6_bd.north_distance_m;
+    bd_msg.up_m = _epd6_bd.up_distance_m;
+    bd_msg.bottom_m = _epd6_bd.bottom_distance_m;
+    bd_msg.time_since_valid_s = _epd6_bd.time_since_valid_s;
 }
 
-void AP_Doppler_Backend::parse_UA(const char *payload)
+void AP_Doppler_Backend::parse_epd6_wi(const char *payload)
+{
+    const char *p = payload + 3;
+    const float x_velocity_mm_s = parse_float(p);
+    const float y_velocity_mm_s = parse_float(p);
+    const float z_velocity_mm_s = parse_float(p);
+    const float velocity_error_mm_s = parse_float(p);
+    _epd6_wi.status = static_cast<EPD6_Status>(parse_char(p));
+    if (_epd6_wi.status == EPD6_STATUS_ACQUIRING) {
+        _epd6_wi.x_velocity_mm_s = x_velocity_mm_s;
+        _epd6_wi.y_velocity_mm_s = y_velocity_mm_s;
+        _epd6_wi.z_velocity_mm_s = z_velocity_mm_s;
+        _epd6_wi.velocity_error_mm_s = velocity_error_mm_s;
+    }
+
+    WITH_SEMAPHORE(_sample_sem);
+    wi_msg.time_usec = AP_HAL::micros64();
+    wi_msg.sequence++;
+    wi_msg.valid = (_epd6_wi.status == EPD6_STATUS_ACQUIRING);
+    wi_msg.status = uint8_t(_epd6_wi.status);
+    wi_msg.vx_mps = x_velocity_mm_s * 0.001f;
+    wi_msg.vy_mps = y_velocity_mm_s * 0.001f;
+    wi_msg.vz_mps = z_velocity_mm_s * 0.001f;
+    wi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
+}
+
+void AP_Doppler_Backend::parse_epd6_ws(const char *payload)
+{
+    const char *p = payload + 3;
+    const float x_velocity_mm_s = parse_float(p);
+    const float y_velocity_mm_s = parse_float(p);
+    const float z_velocity_mm_s = parse_float(p);
+    _epd6_ws.status = static_cast<EPD6_Status>(parse_char(p));
+    if (_epd6_ws.status == EPD6_STATUS_ACQUIRING) {
+        _epd6_ws.x_velocity_mm_s = x_velocity_mm_s;
+        _epd6_ws.y_velocity_mm_s = y_velocity_mm_s;
+        _epd6_ws.z_velocity_mm_s = z_velocity_mm_s;
+        update_epd6_velocity_sample(_epd6_water_track_velocity_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, DVL_LockState::WATER_TRACK);
+    }
+}
+
+void AP_Doppler_Backend::parse_epd6_we(const char *payload)
+{
+    const char *p = payload + 3;
+    const float east_velocity_mm_s = parse_float(p);
+    const float north_velocity_mm_s = parse_float(p);
+    const float up_velocity_mm_s = parse_float(p);
+    _epd6_we.status = static_cast<EPD6_Status>(parse_char(p));
+    if (_epd6_we.status == EPD6_STATUS_ACQUIRING) {
+        _epd6_we.east_velocity_mm_s = east_velocity_mm_s;
+        _epd6_we.north_velocity_mm_s = north_velocity_mm_s;
+        _epd6_we.up_velocity_mm_s = up_velocity_mm_s;
+    }
+}
+
+void AP_Doppler_Backend::parse_epd6_wd(const char *payload)
+{
+    const char *p = payload + 3;
+    _epd6_wd.east_distance_m = parse_float(p);
+    _epd6_wd.north_distance_m = parse_float(p);
+    _epd6_wd.up_distance_m = parse_float(p);
+    _epd6_wd.center_distance_m = parse_float(p);
+    _epd6_wd.time_since_valid_s = parse_float(p);
+}
+
+void AP_Doppler_Backend::parse_epd6_ua(const char *payload)
 {
     const char *p = payload + 3;
     const float velocity_mm_s = parse_float(p);
     const float distance_m = parse_float(p);
     const float rssi = parse_float(p);
     const float nsd = parse_float(p);
-    const Message_Status status = static_cast<Message_Status>(parse_char(p));
-    update_beam_sample(_beam_samples[0], velocity_mm_s, distance_m, rssi, nsd, status);
+    const EPD6_Status status = static_cast<EPD6_Status>(parse_char(p));
+    update_epd6_beam_sample(_epd6_beam_samples[0], velocity_mm_s, distance_m, rssi, nsd, status);
+
+    WITH_SEMAPHORE(_sample_sem);
+    ua_msg.time_usec = AP_HAL::micros64();
+    ua_msg.sequence++;
+    ua_msg.valid = (status == EPD6_STATUS_ACQUIRING);
+    ua_msg.status = uint8_t(status);
+    ua_msg.velocity_mps = velocity_mm_s * 0.001f;
+    ua_msg.distance_m = distance_m;
+    ua_msg.rssi = rssi;
+    ua_msg.nsd = nsd;
 }
 
-void AP_Doppler_Backend::parse_UB(const char *payload)
+void AP_Doppler_Backend::parse_epd6_ub(const char *payload)
 {
     const char *p = payload + 3;
     const float velocity_mm_s = parse_float(p);
     const float distance_m = parse_float(p);
     const float rssi = parse_float(p);
     const float nsd = parse_float(p);
-    const Message_Status status = static_cast<Message_Status>(parse_char(p));
-    update_beam_sample(_beam_samples[1], velocity_mm_s, distance_m, rssi, nsd, status);
+    const EPD6_Status status = static_cast<EPD6_Status>(parse_char(p));
+    update_epd6_beam_sample(_epd6_beam_samples[1], velocity_mm_s, distance_m, rssi, nsd, status);
+
+    WITH_SEMAPHORE(_sample_sem);
+    ub_msg.time_usec = AP_HAL::micros64();
+    ub_msg.sequence++;
+    ub_msg.valid = (status == EPD6_STATUS_ACQUIRING);
+    ub_msg.status = uint8_t(status);
+    ub_msg.velocity_mps = velocity_mm_s * 0.001f;
+    ub_msg.distance_m = distance_m;
+    ub_msg.rssi = rssi;
+    ub_msg.nsd = nsd;
 }
 
-void AP_Doppler_Backend::parse_UC(const char *payload)
+void AP_Doppler_Backend::parse_epd6_uc(const char *payload)
 {
     const char *p = payload + 3;
     const float velocity_mm_s = parse_float(p);
     const float distance_m = parse_float(p);
     const float rssi = parse_float(p);
     const float nsd = parse_float(p);
-    const Message_Status status = static_cast<Message_Status>(parse_char(p));
-    update_beam_sample(_beam_samples[2], velocity_mm_s, distance_m, rssi, nsd, status);
+    const EPD6_Status status = static_cast<EPD6_Status>(parse_char(p));
+    update_epd6_beam_sample(_epd6_beam_samples[2], velocity_mm_s, distance_m, rssi, nsd, status);
+
+    WITH_SEMAPHORE(_sample_sem);
+    uc_msg.time_usec = AP_HAL::micros64();
+    uc_msg.sequence++;
+    uc_msg.valid = (status == EPD6_STATUS_ACQUIRING);
+    uc_msg.status = uint8_t(status);
+    uc_msg.velocity_mps = velocity_mm_s * 0.001f;
+    uc_msg.distance_m = distance_m;
+    uc_msg.rssi = rssi;
+    uc_msg.nsd = nsd;
 }
 
-void AP_Doppler_Backend::parse_UD(const char *payload)
+void AP_Doppler_Backend::parse_epd6_ud(const char *payload)
 {
     const char *p = payload + 3;
     const float velocity_mm_s = parse_float(p);
     const float distance_m = parse_float(p);
     const float rssi = parse_float(p);
     const float nsd = parse_float(p);
-    const Message_Status status = static_cast<Message_Status>(parse_char(p));
-    update_beam_sample(_beam_samples[3], velocity_mm_s, distance_m, rssi, nsd, status);
+    const EPD6_Status status = static_cast<EPD6_Status>(parse_char(p));
+    update_epd6_beam_sample(_epd6_beam_samples[3], velocity_mm_s, distance_m, rssi, nsd, status);
+
+    WITH_SEMAPHORE(_sample_sem);
+    ud_msg.time_usec = AP_HAL::micros64();
+    ud_msg.sequence++;
+    ud_msg.valid = (status == EPD6_STATUS_ACQUIRING);
+    ud_msg.status = uint8_t(status);
+    ud_msg.velocity_mps = velocity_mm_s * 0.001f;
+    ud_msg.distance_m = distance_m;
+    ud_msg.rssi = rssi;
+    ud_msg.nsd = nsd;
 }
 
-void AP_Doppler_Backend::parse_TD(const char *payload)
+void AP_Doppler_Backend::parse_epd6_td(const char *payload)
 {
     const char *p = payload + 3;
     const uint32_t period_ms = parse_u32(p);
@@ -437,14 +578,14 @@ void AP_Doppler_Backend::parse_TD(const char *payload)
     const uint64_t report_unix_ms = parse_u64(p);
 
     WITH_SEMAPHORE(_sample_sem);
-    _extended_time_sample.period_ms = period_ms;
-    _extended_time_sample.echo_unix_ms = echo_unix_ms;
-    _extended_time_sample.report_unix_ms = report_unix_ms;
-    _extended_time_sample.valid = true;
-    _extended_time_sample.update_ms = AP_HAL::millis();
+    _epd6_td.period_ms = period_ms;
+    _epd6_td.echo_unix_ms = echo_unix_ms;
+    _epd6_td.report_unix_ms = report_unix_ms;
+    _epd6_td.valid = true;
+    _epd6_td.update_ms = AP_HAL::millis();
 }
 
-void AP_Doppler_Backend::update_velocity_sample(DVLVelocitySample &sample, float x_velocity_mm_s, float y_velocity_mm_s, float z_velocity_mm_s, DVL_LockState lock)
+void AP_Doppler_Backend::update_epd6_velocity_sample(EPD6VelocitySample &sample, float x_velocity_mm_s, float y_velocity_mm_s, float z_velocity_mm_s, DVL_LockState lock)
 {
     WITH_SEMAPHORE(_sample_sem);
     sample.vel_body_mps.x = x_velocity_mm_s * 0.001f;
@@ -456,12 +597,12 @@ void AP_Doppler_Backend::update_velocity_sample(DVLVelocitySample &sample, float
     sample.valid = true;
 }
 
-void AP_Doppler_Backend::update_beam_sample(DVLBeamSample &sample, float velocity_mm_s, float distance_m, float rssi, float nsd, Message_Status status)
+void AP_Doppler_Backend::update_epd6_beam_sample(EPD6BeamSample &sample, float velocity_mm_s, float distance_m, float rssi, float nsd, EPD6_Status status)
 {
     WITH_SEMAPHORE(_sample_sem);
     sample.status = status;
     sample.update_ms = AP_HAL::millis();
-    if (status == STATUS_ACQUIRING) {
+    if (status == EPD6_STATUS_ACQUIRING) {
         sample.velocity_mm_s = velocity_mm_s;
         sample.distance_m = distance_m;
         sample.rssi = rssi;
@@ -478,21 +619,21 @@ bool AP_Doppler_Backend::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_m
     const uint32_t now_ms = AP_HAL::millis();
     WITH_SEMAPHORE(_sample_sem);
 
-    if (_bottom_track_sample.valid &&
-        (now_ms - _bottom_track_sample.update_ms) <= DVL_TIMEOUT_MS) {
-        vel_body_mps = _bottom_track_sample.vel_body_mps;
-        t_ms = _bottom_track_sample.update_ms;
-        quality = _bottom_track_sample.quality;
-        lock = _bottom_track_sample.lock;
+    if (_epd6_bottom_track_velocity_sample.valid &&
+        (now_ms - _epd6_bottom_track_velocity_sample.update_ms) <= DVL_TIMEOUT_MS) {
+        vel_body_mps = _epd6_bottom_track_velocity_sample.vel_body_mps;
+        t_ms = _epd6_bottom_track_velocity_sample.update_ms;
+        quality = _epd6_bottom_track_velocity_sample.quality;
+        lock = _epd6_bottom_track_velocity_sample.lock;
         return true;
     }
 
-    if (_water_track_sample.valid &&
-        (now_ms - _water_track_sample.update_ms) <= DVL_TIMEOUT_MS) {
-        vel_body_mps = _water_track_sample.vel_body_mps;
-        t_ms = _water_track_sample.update_ms;
-        quality = _water_track_sample.quality;
-        lock = _water_track_sample.lock;
+    if (_epd6_water_track_velocity_sample.valid &&
+        (now_ms - _epd6_water_track_velocity_sample.update_ms) <= DVL_TIMEOUT_MS) {
+        vel_body_mps = _epd6_water_track_velocity_sample.vel_body_mps;
+        t_ms = _epd6_water_track_velocity_sample.update_ms;
+        quality = _epd6_water_track_velocity_sample.quality;
+        lock = _epd6_water_track_velocity_sample.lock;
         return true;
     }
 

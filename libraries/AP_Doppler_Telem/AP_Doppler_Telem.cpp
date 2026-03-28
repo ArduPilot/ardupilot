@@ -89,6 +89,62 @@ bool AP_Doppler_Telem::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms,
     return _backend->get_velocity_body(vel_body_mps, t_ms, quality, lock);
 }
 
+bool AP_Doppler_Telem::get_bi_msg(DVL_BI_Msg &msg) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_bi_msg(msg);
+}
+
+bool AP_Doppler_Telem::get_bd_msg(DVL_BD_Msg &msg) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_bd_msg(msg);
+}
+
+bool AP_Doppler_Telem::get_wi_msg(DVL_WI_Msg &msg) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_wi_msg(msg);
+}
+
+bool AP_Doppler_Telem::get_ua_msg(DVL_U_Msg &msg) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_ua_msg(msg);
+}
+
+bool AP_Doppler_Telem::get_ub_msg(DVL_U_Msg &msg) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_ub_msg(msg);
+}
+
+bool AP_Doppler_Telem::get_uc_msg(DVL_U_Msg &msg) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_uc_msg(msg);
+}
+
+bool AP_Doppler_Telem::get_ud_msg(DVL_U_Msg &msg) const
+{
+    if (_backend == nullptr) {
+        return false;
+    }
+    return _backend->get_ud_msg(msg);
+}
+
 
 
 

@@ -46,6 +46,14 @@ private:
     bool try_send_message(enum ap_message id) override;
 
     bool send_info(void);
+    void send_dvl_messages();
+    void send_dvl_bi();
+    void send_dvl_bd();
+    void send_dvl_wi();
+    void send_dvl_ua();
+    void send_dvl_ub();
+    void send_dvl_uc();
+    void send_dvl_ud();
 
     MAV_MODE base_mode() const override;
     MAV_STATE vehicle_system_status() const override;
@@ -65,4 +73,6 @@ private:
     uint16_t high_latency_tgt_dist() const override;
     uint8_t high_latency_tgt_airspeed() const override;
 #endif // HAL_HIGH_LATENCY2_ENABLED
+
+    uint32_t _dvl_last_send_ms = 0;
 };
