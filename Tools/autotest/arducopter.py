@@ -15126,6 +15126,67 @@ RTL_ALT_M 111
         self.do_land()
         self.set_rc(9, 1000)
 
+    def SaveTrim(self):
+        '''test save trim functionality'''
+        self.set_parameters({
+            'RC9_OPTION': 5,  # SAVE_TRIM
+        })
+
+        # happy path: STABILIZE mode, throttle=0, roll stick deflected right
+        self.progress("Testing SaveTrim: happy path in STABILIZE")
+        self.set_parameters({
+            'AHRS_TRIM_X': 0.0,
+            'AHRS_TRIM_Y': 0.0,
+        })
+        self.change_mode('STABILIZE')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(1, 1600)  # roll stick right of centre
+        self.context_collect('STATUSTEXT')
+        self.set_rc(9, 2000)  # flip save-trim switch HIGH
+        self.wait_statustext('Trim saved', check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+        trim_x = self.get_parameter('AHRS_TRIM_X')
+        if trim_x <= 0:
+            raise NotAchievedException(
+                f"Expected positive AHRS_TRIM_X after roll-right SaveTrim, got {trim_x}")
+        self.set_rc(9, 1000)
+        self.set_rc_default()
+        self.disarm_vehicle()
+
+        # rejection: throttle not at zero — save trim must not fire
+        self.progress("Testing SaveTrim: rejected when throttle != 0")
+        self.set_parameters({'AHRS_TRIM_X': 0.0})
+        self.change_mode('STABILIZE')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1200)  # throttle above zero
+        self.set_rc(1, 1600)
+        self.set_rc(9, 2000)
+        self.delay_sim_time(0.5)
+        trim_x = self.get_parameter('AHRS_TRIM_X')
+        if abs(trim_x) > 0.001:
+            raise NotAchievedException(
+                f"SaveTrim fired with throttle != 0, AHRS_TRIM_X={trim_x}")
+        self.set_rc(9, 1000)
+        self.set_rc_default()
+        self.disarm_vehicle()
+
+        # rejection: mode that does not allow save trim (LOITER)
+        self.progress("Testing SaveTrim: rejected in LOITER mode")
+        self.set_parameters({'AHRS_TRIM_X': 0.0})
+        self.set_rc(9, 1000)  # ensure switch is LOW before mode change
+        self.change_mode('LOITER')
+        self.set_rc(1, 1600)
+        self.set_rc(9, 2000)
+        self.delay_sim_time(0.5)
+        trim_x = self.get_parameter('AHRS_TRIM_X')
+        if abs(trim_x) > 0.001:
+            raise NotAchievedException(
+                f"SaveTrim fired in LOITER, AHRS_TRIM_X={trim_x}")
+        self.set_rc(9, 1000)
+        self.set_rc_default()
+
     def RTLStoppingDistanceSpeed(self):
         '''test stopping distance unaffected by RTL speed'''
         self.upload_simple_relhome_mission([
@@ -16019,6 +16080,7 @@ return update, 1000
             self.EK3_EXT_NAV_vel_without_vert,
             self.CompassLearnCopyFromEKF,
             self.AHRSAutoTrim,
+            self.SaveTrim,
             self.Ch6TuningLoitMaxXYSpeed,
             self.IgnorePilotYaw,
             self.TestEKF3CompassFailover,
