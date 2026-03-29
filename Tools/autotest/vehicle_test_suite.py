@@ -2566,7 +2566,8 @@ class TestSuite(abc.ABC):
 
     def htree_from_xml(self, xml_filepath):
         '''swiped from mavproxy_param.py'''
-        xml = open(xml_filepath, 'rb').read()
+        with open(xml_filepath, 'rb') as f:
+            xml = f.read()
         from lxml import objectify
         objectify.enable_recursive_str()
         tree = objectify.fromstring(xml)
@@ -2692,7 +2693,8 @@ class TestSuite(abc.ABC):
         structure_files = self.find_LogStructureFiles()
         structure_lines = []
         for f in structure_files:
-            structure_lines.extend(open(f).readlines())
+            with open(f, 'r') as fd:
+                structure_lines.extend(fd.readlines())
 
         defines = self.find_format_defines(structure_lines)
 
@@ -2795,27 +2797,29 @@ class TestSuite(abc.ABC):
         linestate_none = 89
         linestate_within = 90
         linestate = linestate_none
-        for line in open(filepath, 'rb').readlines():
-            if isinstance(line, bytes):
-                line = line.decode("utf-8")
-            line = re.sub("//.*", "", line) # trim comments
-            if re.match(r"\s*$", line):
-                # blank line
-                continue
-            if state == state_outside:
-                if ("const LogStructure" in line or
-                        "const struct LogStructure" in line):
-                    state = state_inside
-                continue
-            if state == state_inside:
-                if re.match("};", line):
-                    state = state_outside
-                    break
-                if linestate == linestate_none:
-                    if "#if HAL_QUADPLANE_ENABLED" in line:
-                        continue
-                    if "#if FRAME_CONFIG == HELI_FRAME" in line:
-                        continue
+        
+        with open(filepath, 'rb') as f:
+            for line in f.readlines():
+                if isinstance(line, bytes):
+                    line = line.decode("utf-8")
+                line = re.sub("//.*", "", line) # trim comments
+                if re.match(r"\s*$", line):
+                    # blank line
+                    continue
+                if state == state_outside:
+                    if ("const LogStructure" in line or
+                            "const struct LogStructure" in line):
+                        state = state_inside
+                    continue
+                if state == state_inside:
+                    if re.match("};", line):
+                        state = state_outside
+                        break
+                    if linestate == linestate_none:
+                        if "#if HAL_QUADPLANE_ENABLED" in line:
+                            continue
+                        if "#if FRAME_CONFIG == HELI_FRAME" in line:
+                            continue
                     if "#if AC_PRECLAND_ENABLED" in line:
                         continue
                     if "#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED" in line:
@@ -2897,25 +2901,28 @@ class TestSuite(abc.ABC):
                         # this is the sample file which contains examples...
                         continue
                     count = 0
-                    for line in open(filepath, 'rb').readlines():
-                        if isinstance(line, bytes):
-                            line = line.decode("utf-8")
-                        if state == state_outside:
-                            if (re.match(r"\s*AP::logger\(\)[.]Write(?:Streaming)?\(", line) or
-                                    re.match(r"\s*logger[.]Write(?:Streaming)?\(", line)):
-                                state = state_inside
+
+                    with open(filepath, 'rb') as file_obj:
+                        for line in file_obj.readlines():
+                            if isinstance(line, bytes):
+                                line = line.decode("utf-8")
+                            if state == state_outside:
+                                if (re.match(r"\s*AP::logger\(\)[.]Write(?:Streaming)?\(", line) or
+                                        re.match(r"\s*logger[.]Write(?:Streaming)?\(", line)):
+                                    state = state_inside
+                                    line = re.sub("//.*", "", line) # trim comments
+                                    log_write_statement = line
+                                continue
+                            if state == state_inside:
                                 line = re.sub("//.*", "", line) # trim comments
-                                log_write_statement = line
-                            continue
-                        if state == state_inside:
-                            line = re.sub("//.*", "", line) # trim comments
-                            # cpp-style string concatenation:
-                            line = re.sub(r'"\s*"', '', line)
-                            log_write_statement += line
-                            if re.match(r".*\);", line):
-                                log_write_statements.append(log_write_statement)
-                                state = state_outside
-                        count += 1
+                                # cpp-style string concatenation:
+                                line = re.sub(r'"\s*"', '', line)
+                                log_write_statement += line
+                                if re.match(r".*\);", line):
+                                    log_write_statements.append(log_write_statement)
+                                    state = state_outside
+                            count += 1
+
                     if state != state_outside:
                         raise NotAchievedException("Expected to be outside at end of file")
 #                    print("%s has %u lines" % (f, count))
@@ -3039,7 +3046,8 @@ class TestSuite(abc.ABC):
         self.progress("xml file length is %u" % length)
 
         from lxml import objectify
-        xml = open(xml_filepath, 'rb').read()
+        with open(xml_filepath, 'rb') as f:
+            xml = f.read()
         objectify.enable_recursive_str()
         tree = objectify.fromstring(xml)
 
