@@ -15,6 +15,7 @@ import sys
 from argparse import ArgumentParser
 
 from htmlemit import HtmlEmit
+from mavlink_compinfo_jsonemit import MAVLinkCompInfoJSONEmit
 from rstemit import RSTEmit
 from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
@@ -52,7 +53,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'mavlink_compinfo', 'edn', 'md'],
                     help="what output format to use")
 
 args = parser.parse_args()
@@ -703,6 +704,7 @@ if not args.emit_params:
 
 all_emitters = {
     'json': JSONEmit,
+    'mavlink_compinfo': MAVLinkCompInfoJSONEmit,
     'xml': XmlEmit,
     'html': HtmlEmit,
     'rst': RSTEmit,

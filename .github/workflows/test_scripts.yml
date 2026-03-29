@@ -21,6 +21,7 @@ jobs:
             validate_board_list,
             logger_metadata,
             param-file-validation,
+            compinfo-parameter-validation,
        ]
     steps:
       # git checkout the PR

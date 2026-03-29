@@ -1,0 +1,128 @@
+{
+    "$id":          "https://ardupilot.org/compinfo-parameter.schema.json",
+    "$schema":      "http://json-schema.org/draft-07/schema",
+    "description":  "Schema for ArduPilot parameter metadata (extends MAVLink COMP_METADATA_TYPE_PARAMETER)",
+    "type":         "object",
+
+    "properties": {
+        "version": {
+            "description":  "Version number for the format of this file.",
+            "type":         "integer",
+            "minimum":      1
+        },
+        "parameters": {
+            "type": "array",
+
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description":  "Parameter Name.",
+                        "type":         "string",
+                        "pattern":      "^[\\.\\-a-zA-Z0-9_\\{\\}]{1,16}$"
+                    },
+                    "type": {
+                        "description":  "Parameter type.",
+                        "type":         "string",
+                        "enum":         [ "Uint8", "Int8", "Uint16", "Int16", "Uint32", "Int32", "Float" ]
+                    },
+                    "shortDesc": {
+                        "description":  "Short user facing description/name for parameter.",
+                        "type":         "string",
+                        "default":      ""
+                    },
+                    "longDesc": {
+                        "description":  "Long user facing documentation of how the parameters works.",
+                        "type":         "string",
+                        "default":      ""
+                    },
+                    "units": {
+                        "description":  "Units for parameter value.",
+                        "type":         "string",
+                        "default":      ""
+                    },
+                    "default": {
+                        "description":  "Default value for parameter.",
+                        "type":         "number"
+                    },
+                    "decimalPlaces": {
+                        "description":  "Number of decimal places to show for user facing display.",
+                        "type":         "integer",
+                        "minimum":      0,
+                        "default":      7
+                    },
+                    "min": {
+                        "description":  "Minimum valid value",
+                        "type":         "number"
+                    },
+                    "max": {
+                        "description":  "Maximum valid value",
+                        "type":         "number"
+                    },
+                    "increment": {
+                        "description":  "Increment to use for user facing UI which increments a value",
+                        "type":         "number"
+                    },
+                    "rebootRequired": {
+                        "description":  "true: Vehicle must be rebooted if this value is changed",
+                        "type":         "boolean",
+                        "default":      false
+                    },
+                    "readOnly": {
+                        "description":  "true: Parameter is read-only and should not be modified by the user. ArduPilot extension.",
+                        "type":         "boolean",
+                        "default":      false
+                    },
+                    "group": {
+                        "description":  "User readable name for a group of parameters which are commonly modified together.",
+                        "type":         "string",
+                        "default":      ""
+                    },
+                    "category": {
+                        "description":  "User readable name for a 'type' of parameter. For example 'Standard' or 'Advanced'.",
+                        "type":         "string",
+                        "default":      ""
+                    },
+                    "volatile": {
+                        "description":  "true: value is volatile. Should not be included in creation of a CRC over param values.",
+                        "type":         "boolean",
+                        "default":      false
+                    },
+                    "values": {
+                        "description":  "Array of values and textual descriptions for use by GCS ui.",
+                        "type":         "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "number"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "bitmask": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "index": {
+                                    "type": "integer"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "required":             [ "name", "type" ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required":             [ "version", "parameters" ],
+    "additionalProperties": false
+}

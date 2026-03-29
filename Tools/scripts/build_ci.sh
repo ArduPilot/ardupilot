@@ -412,7 +412,7 @@ for t in $CI_BUILD_TARGET; do
         $waf AP_Periph
         continue
     fi
-    
+
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
         $waf configure --board Durandal --enable-DDS
@@ -568,6 +568,16 @@ for t in $CI_BUILD_TARGET; do
     if [ "$t" == "param_parse" ]; then
         for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp AP_Periph; do
             python3 Tools/autotest/param_metadata/param_parse.py --vehicle $v
+        done
+        continue
+    fi
+
+    if [ "$t" == "compinfo-parameter-validation" ]; then
+        pip install --quiet jsonschema 2>/dev/null || true
+        for v in Rover AntennaTracker ArduCopter ArduPlane ArduSub Blimp AP_Periph; do
+            python3 Tools/autotest/param_metadata/param_parse.py --vehicle $v --format mavlink_compinfo
+            python3 -m unittest Tools/scripts/test_compinfo_parameter_schema.py
+            rm -f compinfo-parameter.json
         done
         continue
     fi

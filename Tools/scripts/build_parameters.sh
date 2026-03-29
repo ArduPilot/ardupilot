@@ -38,6 +38,13 @@ generate_parameters() {
           xz -e <"$F" >"$F.xz.new" && mv "$F.xz.new" "$F.xz"
         popd
     fi
+    F="compinfo-parameter.json"
+    if [ -e "$F" ]; then
+	    /bin/cp "$F" "$VEHICLE_PARAMS_DIR/"
+        pushd "$VEHICLE_PARAMS_DIR"
+          xz -e <"$F" >"$F.xz.new" && mv "$F.xz.new" "$F.xz"
+        popd
+    fi
 }
 
 generate_parameters ArduPlane
