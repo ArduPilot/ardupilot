@@ -10,18 +10,18 @@ import os
 import sys
 import time
 import unittest
-from unittest.mock import MagicMock, patch
+
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 # ensure the script's own directory is on the path regardless of cwd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from sitl_mavlink_vision_bridge import (  # noqa: E402
-    build_pose_covariance,
-    main,
-    parse_args,
-    send_landing_target_demo,
-    send_vision_demo,
-)
+from sitl_mavlink_vision_bridge import build_pose_covariance  # noqa: E402
+from sitl_mavlink_vision_bridge import main  # noqa: E402
+from sitl_mavlink_vision_bridge import parse_args  # noqa: E402
+from sitl_mavlink_vision_bridge import send_landing_target_demo  # noqa: E402
+from sitl_mavlink_vision_bridge import send_vision_demo  # noqa: E402
 
 
 class TestParseArgs(unittest.TestCase):

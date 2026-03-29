@@ -31,7 +31,7 @@ mavproxy.py --master tcp:127.0.0.1:5762
 
 Then in the MAVProxy console:
 
-```
+```bash
 param set VISO_TYPE 1
 param set EK3_SRC1_POSXY 6
 param set EK3_SRC1_VELXY 0
@@ -47,7 +47,7 @@ write_params
 
 Reboot SITL after parameter changes:
 
-```
+```bash
 reboot
 ```
 
@@ -86,7 +86,7 @@ takeoff 5
 
 In MAVProxy:
 
-```
+```bash
 graph EKF5.normInnov5
 ```
 
@@ -94,7 +94,7 @@ graph EKF5.normInnov5
 
 Also check:
 
-```
+```bash
 status EKF_STATUS_REPORT
 ```
 
@@ -102,7 +102,7 @@ Look for `pos_horiz_abs=True` — this confirms EKF has a good absolute horizont
 
 To watch raw message flow:
 
-```
+```bash
 mavproxy.py --master tcp:127.0.0.1:5762 --show-raw
 ```
 
@@ -125,7 +125,7 @@ ArduPilot re-emits `VISION_POSITION_DELTA` when it processes incoming vision —
 
 ### 1. Parameters (MAVProxy)
 
-```
+```bash
 param set PLND_ENABLED 1
 param set PLND_TYPE 1
 param set PLND_EST_TYPE 0
