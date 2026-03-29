@@ -566,10 +566,10 @@ struct log_RWOH {
 // @Field: DAZ: delta-angle-Z
 // @Field: DT: delta-time
 // @Field: TS: data timestamp
-// @Field: OX: zero, unused
-// @Field: OY: zero, unused
-// @Field: OZ: zero, unused
-// @Field: D: zero, unused
+// @Field: OX: pos-offset-X
+// @Field: OY: pos-offset-Y
+// @Field: OZ: pos-offset-Z
+// @Field: D: delay in body odometry data
 struct log_RBOH {
     float quality;
     Vector3f delPos;
