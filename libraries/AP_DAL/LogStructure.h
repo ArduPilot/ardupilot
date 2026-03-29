@@ -404,10 +404,10 @@ struct log_RMGI {
 
 // @LoggerMessage: RBCH
 // @Description: Replay Data Beacon Header
-// @Field: PX: zero, unused
-// @Field: PY: zero, unused
-// @Field: PZ: zero, unused
-// @Field: AE: zero, unused
+// @Field: PX: beacon system estimated vehicle position, North
+// @Field: PY: beacon system estimated vehicle position, East
+// @Field: PZ: beacon system estimated vehicle position, Down
+// @Field: AE: beacon system estimated vehicle position accuracy
 // @Field: OLat: origin latitude
 // @Field: OLng: origin longitude
 // @Field: OAlt: origin altitude
