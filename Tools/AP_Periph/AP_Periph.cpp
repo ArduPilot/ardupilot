@@ -433,7 +433,7 @@ void AP_Periph_FW::update()
             palToggleLine(HAL_GPIO_PIN_LED);
         }
 #endif
-#if 1
+#if 0
 #if AP_PERIPH_MAG_ENABLED
         printf("MAG c=%u a=%d h=%d\n", compass.get_count(), (int)compass.available(), (int)compass.healthy());
         if (compass.get_count() > 0) {
