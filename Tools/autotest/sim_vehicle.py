@@ -14,10 +14,12 @@ import atexit
 import binascii
 import datetime
 import errno
+import json
 import math
 import optparse
 import os
 import os.path
+import platform
 import re
 import shlex
 import signal
@@ -35,6 +37,29 @@ windowID = []
 
 autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
+
+
+# #region agent log
+def _debug_agent_log(hypothesis_id, location, message, data=None, run_id="pre-fix"):
+    """Append one NDJSON line for Cursor debug mode (best-effort, no secrets)."""
+    try:
+        log_path = os.path.join(root_dir, ".cursor", "debug.log")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        payload = {
+            "timestamp": int(time.time() * 1000),
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data or {},
+            "runId": run_id,
+        }
+        with open(log_path, "a", encoding="utf-8") as lf:
+            lf.write(json.dumps(payload) + "\n")
+    except OSError:
+        pass
+
+
+# #endregion
 
 try:
     from pymavlink import mavextra
@@ -252,14 +277,49 @@ def kill_tasks_psutil(victims):
 
 def kill_tasks_pkill(victims):
     """Shell out to pkill(1) to kill processed by name"""
+    # #region agent log
+    _debug_agent_log("H2", "sim_vehicle.py:kill_tasks_pkill", "enter pkill loop", {"victim_count": len(victims)})
+    # #endregion
     for victim in victims:  # pkill takes a single pattern, so iterate
         cmd = ["pkill", victim[:15]]  # pkill matches only first 15 characters
-        run_cmd_blocking("pkill", cmd, quiet=True)
+        try:
+            subprocess.run(
+                cmd,
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+        except (FileNotFoundError, OSError) as e:
+            # #region agent log
+            _debug_agent_log(
+                "H1",
+                "sim_vehicle.py:kill_tasks_pkill",
+                "pkill unavailable or failed",
+                {"cmd": cmd[0], "err": str(e)},
+            )
+            # #endregion
+            progress("pkill not available; skip stray-process cleanup (install psutil for session cleanup)")
+            return
+        except Exception as ex:  # noqa: BLE001
+            # #region agent log
+            _debug_agent_log("H4", "sim_vehicle.py:kill_tasks_pkill", "pkill exception", {"err": str(ex)})
+            # #endregion
+            progress("pkill failed: %s" % str(ex))
 
 
 def kill_tasks():
     """Clean up stray processes by name.  This is a shotgun approach"""
     progress("Killing tasks")
+
+    # #region agent log
+    _debug_agent_log(
+        "H1",
+        "sim_vehicle.py:kill_tasks",
+        "kill_tasks entry",
+        {"platform": platform.system()},
+    )
+    # #endregion
 
     if cmd_opts.coverage:
         import psutil
@@ -313,7 +373,22 @@ def kill_tasks():
 
         try:
             kill_tasks_psutil(victim_names)
+            # #region agent log
+            _debug_agent_log("H3", "sim_vehicle.py:kill_tasks", "used psutil path", {})
+            # #endregion
         except ImportError:
+            # Windows has no pkill(1); without psutil, skip rather than sys.exit from run_cmd_blocking.
+            if platform.system() == "Windows":
+                # #region agent log
+                _debug_agent_log(
+                    "H1",
+                    "sim_vehicle.py:kill_tasks",
+                    "skip pkill on Windows without psutil",
+                    {},
+                )
+                # #endregion
+                progress("install psutil to enable stray-process cleanup on Windows")
+                return
             kill_tasks_pkill(victim_names)
     except Exception as e:  # noqa: BLE001
         progress("kill_tasks failed: {}".format(str(e)))
@@ -333,6 +408,13 @@ def wait_unlimited():
 vinfo = vehicleinfo.VehicleInfo()
 
 
+def waf_cmd(waf_light, *waf_args):
+    """Build argv to run waf-light. On Windows the script is not directly executable."""
+    if platform.system() == "Windows":
+        return [sys.executable, waf_light] + list(waf_args)
+    return [waf_light] + list(waf_args)
+
+
 def do_build(opts, frame_options):
     """Build sitl using waf"""
     progress("WAF build")
@@ -344,7 +426,7 @@ def do_build(opts, frame_options):
 
     configure_target = frame_options.get('configure_target', 'sitl')
 
-    cmd_configure = [waf_light, "configure", "--board", configure_target]
+    cmd_configure = waf_cmd(waf_light, "configure", "--board", configure_target)
     if opts.debug:
         cmd_configure.append("--debug")
 
@@ -421,10 +503,10 @@ def do_build(opts, frame_options):
         run_cmd_blocking("Configure waf", cmd_configure, check=True)
 
     if opts.clean:
-        run_cmd_blocking("Building clean", [waf_light, "clean"])
+        run_cmd_blocking("Building clean", waf_cmd(waf_light, "clean"))
 
     print(frame_options)
-    cmd_build = [waf_light, "build", "--target", frame_options["waf_target"]]
+    cmd_build = waf_cmd(waf_light, "build", "--target", frame_options["waf_target"])
     if opts.jobs is not None:
         cmd_build += ['-j', str(opts.jobs)]
     pieces = [shlex.split(x) for x in opts.waf_build_args]
@@ -436,7 +518,7 @@ def do_build(opts, frame_options):
     if sts != 0:  # build failed
         if opts.rebuild_on_failure:
             progress("Build failed; cleaning and rebuilding")
-            run_cmd_blocking("Building clean", [waf_light, "clean"])
+            run_cmd_blocking("Building clean", waf_cmd(waf_light, "clean"))
 
             _, sts = run_cmd_blocking("Building", cmd_build)
             if sts != 0:

@@ -1,0 +1,4 @@
+{"timestamp": 1774787322557, "hypothesisId": "H1", "location": "sim_vehicle.py:kill_tasks", "message": "kill_tasks entry", "data": {"platform": "Windows"}, "runId": "pre-fix"}
+{"timestamp": 1774787322564, "hypothesisId": "H1", "location": "sim_vehicle.py:kill_tasks", "message": "skip pkill on Windows without psutil", "data": {}, "runId": "pre-fix"}
+{"timestamp": 1774787322643, "hypothesisId": "H1", "location": "sim_vehicle.py:kill_tasks", "message": "kill_tasks entry", "data": {"platform": "Windows"}, "runId": "pre-fix"}
+{"timestamp": 1774787322647, "hypothesisId": "H1", "location": "sim_vehicle.py:kill_tasks", "message": "skip pkill on Windows without psutil", "data": {}, "runId": "pre-fix"}
