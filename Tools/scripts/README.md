@@ -91,14 +91,14 @@ python3 sitl_mavlink_vision_bridge.py --connection udpin:127.0.0.1:14550
 
 Set the following parameters:
 
-```
+```bash
 VISO_TYPE = 1
 EK3_SRC1_POSXY = 6
 ```
 
 Optional (depending on setup):
 
-```
+```bash
 EK3_SRC1_POSZ
 EK3_SRC1_YAW
 ```
@@ -107,7 +107,7 @@ EK3_SRC1_YAW
 
 ### For Precision Landing
 
-```
+```bash
 PLND_ENABLED = 1
 PLND_TYPE = 1
 ```

@@ -64,7 +64,7 @@ python3 Tools/scripts/sitl_mavlink_vision_bridge.py \
 
 Expected output:
 
-```
+```text
 Waiting for heartbeat...
 Heartbeat from system 1 component 1
 Sending vision at 20.0 Hz on tcp:127.0.0.1:5760 (Ctrl+C to stop)
@@ -74,7 +74,7 @@ Sending vision at 20.0 Hz on tcp:127.0.0.1:5760 (Ctrl+C to stop)
 
 ### 4. Arm and fly (MAVProxy terminal)
 
-```
+```bash
 mode guided
 arm throttle
 takeoff 5
@@ -149,7 +149,7 @@ python3 Tools/scripts/sitl_mavlink_vision_bridge.py \
 
 ### 3. Arm, take off, trigger precision land (MAVProxy)
 
-```
+```bash
 mode guided
 arm throttle
 takeoff 10
@@ -162,7 +162,7 @@ With `PLND_ENABLED=1` and an active `LANDING_TARGET` stream, LAND mode activates
 
 ### 4. Verify precision landing is active
 
-```
+```bash
 status LANDING_TARGET
 ```
 
@@ -170,7 +170,7 @@ You should see the message echoed back with your angle/distance values.
 
 Watch the precision landing estimator state:
 
-```
+```bash
 graph PRECLAND.pX PRECLAND.pY
 ```
 
@@ -180,7 +180,7 @@ Non-zero and changing values confirm the estimator is running. If both stay at 0
 
 ## Expected MAVLink message flow
 
-```
+```text
 Bridge  →  VISION_POSITION_ESTIMATE (id 102)  →  ArduPilot
 ArduPilot  →  VISION_POSITION_DELTA (id 11011) →  (internal, visible on output port)
 
@@ -190,7 +190,7 @@ ArduPilot  →  EKF fuses target into PRECLAND estimator
 
 Confirm message IDs are flowing with:
 
-```bash
+```python
 python3 - <<'EOF'
 from pymavlink import mavutil
 m = mavutil.mavlink_connection('tcp:127.0.0.1:5762')
@@ -219,7 +219,7 @@ Timestamp mismatch. ArduPilot rejects `VISION_POSITION_ESTIMATE` if the `usec` f
 
 **Step 1** — check the rejection counter in MAVProxy:
 
-```
+```bash
 param show EK3_LOG_MASK
 status XKF4
 ```
