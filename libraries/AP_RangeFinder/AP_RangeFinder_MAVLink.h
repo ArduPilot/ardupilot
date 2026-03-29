@@ -33,7 +33,7 @@ public:
 
 protected:
 
-    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+    AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const override {
         return sensor_type;
     }
 
@@ -49,7 +49,7 @@ private:
     static bool start_reading(void);
     static bool get_reading(uint16_t &reading_cm);
 
-    MAV_DISTANCE_SENSOR sensor_type = MAV_DISTANCE_SENSOR_UNKNOWN;
+    AP_RangeFinder_DistanceSensorType sensor_type = AP_RangeFinder_DistanceSensorType::UNKNOWN;
 };
 
 #endif

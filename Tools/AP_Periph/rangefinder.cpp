@@ -7,6 +7,7 @@
  */
 
 #include <dronecan_msgs.h>
+#include <AP_RangeFinder/AP_RangeFinder_DistanceSensorType.h>
 
 #ifndef AP_PERIPH_PROBE_CONTINUOUS
 #define AP_PERIPH_PROBE_CONTINUOUS 0
@@ -88,14 +89,14 @@ void AP_Periph_FW::can_rangefinder_update(void)
             break;
         }
 
-        switch (backend->get_mav_distance_sensor_type()) {
-        case MAV_DISTANCE_SENSOR_LASER:
+        switch (backend->get_distance_sensor_type()) {
+        case AP_RangeFinder_DistanceSensorType::LASER:
             pkt.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_LIDAR;
             break;
-        case MAV_DISTANCE_SENSOR_ULTRASOUND:
+        case AP_RangeFinder_DistanceSensorType::ULTRASOUND:
             pkt.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_SONAR;
             break;
-        case MAV_DISTANCE_SENSOR_RADAR:
+        case AP_RangeFinder_DistanceSensorType::RADAR:
             pkt.sensor_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_RADAR;
             break;
         default:

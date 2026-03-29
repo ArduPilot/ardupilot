@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
+#include "AP_RangeFinder_DistanceSensorType.h"
 
 // Maximum number of range finder instances available on this platform
 #ifndef RANGEFINDER_MAX_INSTANCES 
@@ -304,7 +305,7 @@ public:
     float max_distance_orient(enum Rotation orientation) const;
     float min_distance_orient(enum Rotation orientation) const;
     float ground_clearance_orient(enum Rotation orientation) const;
-    MAV_DISTANCE_SENSOR get_mav_distance_sensor_type_orient(enum Rotation orientation) const;
+    AP_RangeFinder_DistanceSensorType get_distance_sensor_type_orient(enum Rotation orientation) const;
     RangeFinder::Status status_orient(enum Rotation orientation) const;
     bool has_data_orient(enum Rotation orientation) const;
     uint8_t range_valid_count_orient(enum Rotation orientation) const;
