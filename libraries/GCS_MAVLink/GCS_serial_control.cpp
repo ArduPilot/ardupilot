@@ -35,6 +35,13 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
     mavlink_serial_control_t packet;
     mavlink_msg_serial_control_decode(&msg, &packet);
 
+    // SANITIZATION: Prevent uninitialized byte propagation in the forwarding path
+    if (packet.count < sizeof(packet.data)) {
+        memset(&packet.data[packet.count], 0, sizeof(packet.data) - packet.count);
+    } else if (packet.count > sizeof(packet.data)) {
+        packet.count = sizeof(packet.data);
+    }
+
     AP_HAL::UARTDriver *port = nullptr;
     AP_HAL::BetterStream *stream = nullptr;
 
