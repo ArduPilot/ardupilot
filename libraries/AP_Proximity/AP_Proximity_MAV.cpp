@@ -20,7 +20,12 @@
 #include "AP_Proximity_MAV.h"
 #include <AP_HAL/AP_HAL.h>
 #include <ctype.h>
+#include <AP_Math/rotations.h>
 #include <stdio.h>
+
+// ensure MAVLink and local rotation constants stay in sync
+static_assert((uint32_t)ROTATION_YAW_315 == (uint32_t)MAV_SENSOR_ROTATION_YAW_315, "ROTATION_YAW_315 mismatch");
+static_assert((uint32_t)ROTATION_PITCH_90 == (uint32_t)MAV_SENSOR_ROTATION_PITCH_90, "ROTATION_PITCH_90 mismatch");
 
 extern const AP_HAL::HAL& hal;
 
@@ -74,7 +79,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
     mavlink_msg_distance_sensor_decode(&msg, &packet);
 
     // store distance to appropriate sector based on orientation field
-    if (packet.orientation <= MAV_SENSOR_ROTATION_YAW_315) {
+    if (packet.orientation <= ROTATION_YAW_315) {
         const uint32_t previous_sys_time = _last_update_ms;
         _last_update_ms = AP_HAL::millis();
 
@@ -109,7 +114,7 @@ void AP_Proximity_MAV::handle_distance_sensor_msg(const mavlink_message_t &msg)
     }
 
     // store upward distance
-    if (packet.orientation == MAV_SENSOR_ROTATION_PITCH_90) {
+    if (packet.orientation == ROTATION_PITCH_90) {
         _distance_upward = packet.current_distance * 0.01f;
         _last_upward_update_ms = AP_HAL::millis();
     }
