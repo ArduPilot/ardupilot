@@ -980,10 +980,13 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     }
 
     // check for supported coordinate frames
-    if (packet.coordinate_frame != MAV_FRAME_LOCAL_NED &&
-        packet.coordinate_frame != MAV_FRAME_LOCAL_OFFSET_NED &&
-        packet.coordinate_frame != MAV_FRAME_BODY_NED &&
-        packet.coordinate_frame != MAV_FRAME_BODY_OFFSET_NED) {
+    switch (packet.coordinate_frame) {
+    case MAV_FRAME_LOCAL_NED:
+    case MAV_FRAME_LOCAL_OFFSET_NED:
+    case MAV_FRAME_BODY_NED:
+    case MAV_FRAME_BODY_OFFSET_NED:
+        break;
+    default:
         // unsupported coordinate frame
         copter.mode_guided.hold_position();
         return;
@@ -1008,15 +1011,14 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
     if (!pos_ignore) {
         // convert to m
         pos_ned_m = Vector3p{packet.x, packet.y, packet.z};
+        switch (packet.coordinate_frame) {
         // rotate to body-frame if necessary
-        if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-            packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        case MAV_FRAME_BODY_NED:
+        case MAV_FRAME_BODY_OFFSET_NED:
             pos_ned_m.xy() = copter.ahrs.body_to_earth2D_p(pos_ned_m.xy());
-        }
+            FALLTHROUGH;
         // add body offset if necessary
-        if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
-            packet.coordinate_frame == MAV_FRAME_BODY_NED ||
-            packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
+        case MAV_FRAME_LOCAL_OFFSET_NED: {
             Vector3p rel_pos_ned_m;
             if (!AP::ahrs().get_relative_position_NED_origin(rel_pos_ned_m)) {
                 // need position estimate to calculate target position
@@ -1024,6 +1026,10 @@ void GCS_MAVLINK_Copter::handle_message_set_position_target_local_ned(const mavl
                 return;
             }
             pos_ned_m += rel_pos_ned_m;
+            break;
+        }
+        default:
+            break;
         }
     }
 
