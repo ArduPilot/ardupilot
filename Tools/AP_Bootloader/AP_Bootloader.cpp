@@ -43,6 +43,7 @@ extern "C" {
     int main(void);
 }
 
+
 struct boardinfo board_info = {
     .board_type = APJ_BOARD_ID,
     .board_rev = 0,
@@ -210,6 +211,80 @@ int main(void)
 
 #if defined(BOOTLOADER_DEV_LIST)
     init_uarts();
+#endif
+
+#if HAL_ENABLE_DFU_BOOT && defined(STM32H7)
+    /*
+      check if the main firmware requested a reboot into DFU mode
+      (STM32 system bootloader for USB firmware upload).
+
+      this check is placed here deliberately — after ChibiOS init and
+      init_uarts() — for two reasons:
+
+      1. D-Cache flush requires caches to be enabled. the firmware
+         uses AXI SRAM as primary RAM with write-back D-Cache. dirty
+         cache lines persist through NVIC_SystemReset. if not flushed,
+         the system bootloader reads stale data from AXI SRAM and its
+         USB OTG core soft reset (GRSTCTL.CSRST) hangs permanently.
+         SCB_CleanDCache() is a no-op when caches are disabled, so we
+         must wait until __cpu_init has re-enabled them.
+
+      2. the USB OTG FS peripheral is configured by init_uarts() and
+         must be fully de-initialised before the system bootloader can
+         re-initialise it. without this, the USB PHY is left in an
+         active state that prevents the system bootloader's core reset
+         from completing.
+
+      the firmware signals DFU mode by setting boot_to_dfu in the
+      persistent data (RTC backup registers) and rebooting with
+      RTC_BOOT_HOLD so the bootloader stays long enough to reach here.
+    */
+    {
+        AP_HAL::Util::PersistentData pd;
+        stm32_watchdog_load((uint32_t *)&pd, (sizeof(pd)+3)/4);
+        if (pd.boot_to_dfu) {
+            pd.boot_to_dfu = false;
+            stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
+
+            // fully de-initialise the USB OTG FS peripheral:
+            // disconnect from bus, power down the analog PHY,
+            // complete a core soft reset, then reset via RCC
+            // and gate the clock
+            RCC->AHB1ENR |= RCC_AHB1ENR_USB2OTGHSEN;
+            __DSB();
+            *(__IO uint32_t *)(0x40080804U) |= 2;   // DCTL: set SDIS (disconnect)
+            *(__IO uint32_t *)(0x40080038U) = 0;     // GCCFG: PWRDWN=0 (PHY off)
+            *(__IO uint32_t *)(0x40080010U) = 1;     // GRSTCTL: CSRST=1
+            while (*(__IO uint32_t *)(0x40080010U) & 1) {} // wait for CSRST
+            RCC->AHB1RSTR |= RCC_AHB1RSTR_USB2OTGHSRST;
+            __DSB();
+            RCC->AHB1RSTR &= ~RCC_AHB1RSTR_USB2OTGHSRST;
+            RCC->AHB1ENR &= ~RCC_AHB1ENR_USB2OTGHSEN;
+
+            // flush dirty D-Cache lines to RAM — the firmware's
+            // cached writes to AXI SRAM must reach physical memory
+            // before the system bootloader reads it
+            SCB_CleanDCache();
+            SCB_DisableDCache();
+            SCB_InvalidateICache();
+            SCB_DisableICache();
+
+            // restore remaining CPU state to reset defaults.
+            // the system bootloader expects the state it would
+            // see after a hardware power-on reset.
+            __enable_irq();
+            SCB->VTOR = 0;
+            SCB->CPACR = 0;
+            __set_CONTROL(0);
+            __ISB();
+
+            // jump to STM32 system bootloader in system memory
+            const uint32_t *app_base = (const uint32_t *)(0x1FF09800);
+            __set_MSP(*app_base);
+            ((void (*)())*(&app_base[1]))();
+            while (true);
+        }
+    }
 #endif
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
     can_start();
