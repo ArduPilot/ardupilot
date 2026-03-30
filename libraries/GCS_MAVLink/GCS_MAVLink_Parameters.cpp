@@ -337,6 +337,9 @@ static const ap_message STREAM_EXTRA2_msgs[] = {
 };
 
 static const ap_message STREAM_EXTRA3_msgs[] = {
+#if APM_BUILD_COPTER_OR_HELI
+    MSG_ORBIT_EXECUTION_STATUS,
+#endif  // APM_BUILD_COPTER_OR_HELI
 #if AP_AHRS_ENABLED
     MSG_AHRS,
 #endif  // AP_AHRS_ENABLED

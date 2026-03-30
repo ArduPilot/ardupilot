@@ -352,10 +352,12 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
         CHECK_PAYLOAD_SIZE(WIND);
         send_wind();
         break;
-
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
     case MSG_ORBIT_EXECUTION_STATUS:
         CHECK_PAYLOAD_SIZE(ORBIT_EXECUTION_STATUS);
         send_orbit_execution_status();
+        break;
+#endif  // AC_COPTER_MODEGUIDED_ORBIT_ENABLED
         break;    
 
     case MSG_ADSB_VEHICLE: {
@@ -942,7 +944,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int
     const float turns = update_turns ? fabsf(packet.param4) : 0.0f;
     // param3: yaw behaviour (ORBIT_YAW_BEHAVIOUR enum), NaN or 0 = face center
     const ORBIT_YAW_BEHAVIOUR yaw_behaviour = (isnan(packet.param3) || packet.param3 < 0) ? ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER : (ORBIT_YAW_BEHAVIOUR)(int)packet.param3;
-    copter.mode_guided.circle_start(circle_center, radius_m, ccw, speed_ms, update_turns, turns, yaw_behaviour);
+    copter.mode_guided.orbit_start(circle_center, radius_m, ccw, speed_ms, update_turns, turns, yaw_behaviour);
 
     return MAV_RESULT_ACCEPTED;
 }
