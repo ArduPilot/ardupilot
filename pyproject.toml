@@ -16,6 +16,7 @@ lint.extend-select = [
 ]
 lint.flake8-tidy-imports.ban-relative-imports = "all"
 lint.per-file-ignores."Tools/autotest/autotest.py" = ["I001"]  # unsorted-imports
+per-file-target-version."Tools/scripts/mavlink_parse.py" = "py310"
 
 [tool.ruff.lint.isort]
 force-single-line = true
