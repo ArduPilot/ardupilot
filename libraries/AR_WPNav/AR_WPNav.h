@@ -58,7 +58,7 @@ public:
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return _reached_destination; }
 
-    // return distance (in meters) to destination
+    // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const { return _distance_to_destination; }
 
     // return true if destination is valid
@@ -67,10 +67,10 @@ public:
     // get current destination. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     const Location &get_destination() const { return _destination; }
 
-    // return heading (in centi-degrees) and cross track error (in meters) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
+    // for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
     float wp_bearing_cd() const { return _wp_bearing_cd; }
     float nav_bearing_cd() const { return _desired_heading_cd; }
-    float crosstrack_error() const { return _cross_track_error; }
+    float crosstrack_error_m() const { return _cross_track_error; }
 
     // get object avoidance adjusted origin. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
     virtual const Location &get_oa_origin() const { return _origin; }
@@ -117,13 +117,14 @@ protected:
     // update psc input shaping navigation controller
     void update_psc_input_shaping(float dt);
 
-    // update distance and bearing from vehicle's current position to destination
+    // update straight-line distance and bearing from vehicle's current position to destination
     void update_distance_and_bearing_to_destination();
 
     // calculate steering and speed to drive along line from origin to destination waypoint
     void update_steering_and_speed(const Location &current_loc, float dt);
 
-    // calculate the crosstrack error (does not rely on L1 controller)
+    // calculate the crosstrack error
+    // value is negative when the vehicle is on the path's left side
     float calc_crosstrack_error(const Location& current_loc) const;
 
     // calculate yaw change at next waypoint in degrees
@@ -187,9 +188,9 @@ protected:
     float _desired_lat_accel;       // desired lateral acceleration (for reporting only)
     float _desired_heading_cd;      // desired heading (back towards line between origin and destination)
     float _wp_bearing_cd;           // heading to waypoint in centi-degrees
-    float _cross_track_error;       // cross track error (in meters).  distance from current position to closest point on line between origin and destination
+    float _cross_track_error;       // meters, negative when vehicle is on path's left side
 
     // variables for reporting
-    float _distance_to_destination; // distance from vehicle to final destination in meters
+    float _distance_to_destination; // straight-line distance from vehicle to final destination in meters
     bool _reached_destination;      // true once the vehicle has reached the destination
 };
