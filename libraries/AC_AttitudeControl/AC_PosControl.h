@@ -23,7 +23,7 @@
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX_M     2.0f    // max stopping distance (in m) vertically while descending
 
 #define POSCONTROL_SPEED_MS                     5.0f    // default horizontal speed in m/s
-#define POSCONTROL_SPEED_DOWN_MS                1.5f    // default descent rate in m/s
+#define POSCONTROL_SPEED_DOWN_MS                1.5f    // default descent rate in m/sfv
 #define POSCONTROL_SPEED_UP_MS                  2.5f    // default climb rate in m/s
 
 #define POSCONTROL_ACCEL_D_MSS                  2.5f    // default vertical acceleration in m/s²
@@ -34,6 +34,10 @@
 #define POSCONTROL_OVERSPEED_GAIN_U             2.0f    // gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range
 
 #define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the I term to 5% in half a second
+
+// PSC_OPTIONS parameter bitmask
+#define PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT  (1 << 0)    // bit 0: disable EKF control scaling when using optical flow
+
 
 class AC_PosControl
 {
@@ -722,7 +726,8 @@ protected:
     AC_PID_2D       _pid_vel_ne_m;          // XY axis velocity controller to convert target velocity (m/s) to target acceleration (m/s²)
     AC_PID_Basic    _pid_vel_d_m;           // Z axis velocity controller to convert target climb rate (m/s) to target acceleration (m/s²)
     AC_PID          _pid_accel_d_m;         // Z axis acceleration controller to convert target acceleration (in units of gravity) to normalised throttle output
-
+    AP_Int16        _options;               // options bitmask for position controller
+    
     // internal variables
     float       _dt_s;                      // time difference (in seconds) since the last loop time
     uint32_t    _last_update_ne_ticks;      // ticks of last NE_update_controller call

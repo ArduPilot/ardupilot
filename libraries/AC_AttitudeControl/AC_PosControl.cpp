@@ -343,6 +343,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 14, AC_PosControl, AC_PID_2D),
 
+    // @Param: OPTIONS
+    // @DisplayName: Position Controller Options
+    // @Description: Bitmask of options for the position controller
+    // @Bitmask: 0:Disable EKF control limits when using optical flow
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS", 15, AC_PosControl, _options, 0),
+
+
     AP_GROUPEND
 };
 
@@ -711,6 +719,12 @@ void AC_PosControl::NE_update_controller()
 
     float ahrsGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
+
+    // if EKF control limiting is disabled via PSC_OPTIONS, restore full authority
+    if (_options & PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT) {
+        ahrsControlScaleXY = 1.0f;
+        ahrsGndSpdLimit = 400.0f;
+    }
 
     // Update lateral position, velocity, and acceleration offsets using path shaping
     NE_update_offsets();
@@ -1095,7 +1109,9 @@ void AC_PosControl::D_update_controller()
 
     // P controller: convert position error to velocity target
     _vel_target_ned_ms.z = _p_pos_d_m.update_all(_pos_target_ned_m.z, _pos_estimate_ned_m.z);
-    _vel_target_ned_ms.z *= AP::ahrs().getControlScaleZ();
+    // _vel_target_ned_ms.z *= AP::ahrs().getControlScaleZ();
+
+    _vel_target_ned_ms.z *= (_options & PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT) ? 1.0f : AP::ahrs().getControlScaleZ();
 
     _pos_desired_ned_m.z = _pos_target_ned_m.z - (_pos_offset_ned_m.z + _pos_terrain_d_m);
 
@@ -1106,7 +1122,9 @@ void AC_PosControl::D_update_controller()
 
     // PID controller: convert velocity error to acceleration
     _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
-    _accel_target_ned_mss.z *= AP::ahrs().getControlScaleZ();
+    // _accel_target_ned_mss.z *= AP::ahrs().getControlScaleZ();
+
+    _accel_target_ned_mss.z *= (_options & PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT) ? 1.0f : AP::ahrs().getControlScaleZ();
 
     // add feed forward component
     _accel_target_ned_mss.z += _accel_desired_ned_mss.z + _accel_offset_ned_mss.z + _accel_terrain_d_mss;
