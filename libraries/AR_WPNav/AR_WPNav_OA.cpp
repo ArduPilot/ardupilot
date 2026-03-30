@@ -133,7 +133,7 @@ void AR_WPNav_OA::update(float dt)
         } // switch (oa_retstate) {
     } // if (oa != nullptr) {
 
-    update_oa_distance_and_bearing_to_destination();
+    update_oa_bearing_to_destination();
 
     // handle stopping vehicle if avoidance has failed
     if (stop_vehicle) {
@@ -204,16 +204,13 @@ float AR_WPNav_OA::oa_wp_bearing_cd() const
     return AR_WPNav::oa_wp_bearing_cd();
 }
 
-// update distance from vehicle's current position to destination
-void AR_WPNav_OA::update_oa_distance_and_bearing_to_destination()
+// update bearing from vehicle's current position to destination
+void AR_WPNav_OA::update_oa_bearing_to_destination()
 {
-    // update OA adjusted values
     Location current_loc;
     if (_oa_active && AP::ahrs().get_location(current_loc)) {
-        _oa_distance_to_destination = current_loc.get_distance(_oa_destination);
         _oa_wp_bearing_cd = current_loc.get_bearing_to(_oa_destination);
     } else {
-        _oa_distance_to_destination = AR_WPNav::get_distance_to_destination();
         _oa_wp_bearing_cd = AR_WPNav::wp_bearing_cd();
     }
 }
