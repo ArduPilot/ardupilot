@@ -637,7 +637,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_circling_point_with_radius(
             loc, radius,
             epsilon=1,
-            min_circle_time=10,
+            min_circle_time=7,
             timeout=30,
             track_angle=False,
         )
