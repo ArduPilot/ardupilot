@@ -2597,6 +2597,23 @@ class TestSuite(abc.ABC):
             17 # squawk
         )
 
+    def subgroupvarptr_activation_params(self):
+        '''Return parameters to set (before restarting SITL) to activate
+        AP_SUBGROUPVARPTR backends, making their parameters visible in the
+        parameter download.  Only entries whose key appears in the htree will
+        be applied.  Subclasses may call super() and pop entries that are not
+        compiled in for their vehicle type.'''
+        return {
+            "CAM1_TYPE": 8,       # AP_Camera: RunCam backend
+            "PRX1_TYPE": 10,      # AP_Proximity: SITL backend
+            "RNGFND1_TYPE": 100,  # AP_RangeFinder: SIM backend
+            "BATT2_MONITOR": 4,   # AP_BattMonitor: instance 1 (Analog V+I)
+            "FILT1_TYPE": 1,      # AP_Filter: NotchFilter backend
+            "TEMP1_TYPE": 8,      # AP_TemperatureSensor: SHT3X (simulated in SITL)
+            "GEN_TYPE": 1,        # AP_Generator: IE_650_800 backend
+            "CC_TYPE": 2,         # AC_CustomControl: PID backend (ArduCopter)
+        }
+
     def test_parameter_documentation_get_all_parameters(self):
 
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
@@ -2619,6 +2636,14 @@ class TestSuite(abc.ABC):
 
         target_system = self.sysid_thismav()
         target_component = 1
+
+        # Activate AP_SUBGROUPVARPTR backends whose type params appear in the
+        # documented parameter set, so their params are visible in the download.
+        # customise_SITL_commandline() below restarts SITL without wiping
+        # EEPROM, so these settings persist into the restarted instance.
+        for name, value in self.subgroupvarptr_activation_params().items():
+            if name in htree:
+                self.set_parameter(name, value)
 
         self.customise_SITL_commandline([
             "--unhide-groups"
