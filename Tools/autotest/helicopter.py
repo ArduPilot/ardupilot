@@ -39,6 +39,12 @@ class AutoTestHelicopter(AutoTestCopter):
     def is_heli(self):
         return True
 
+    def subgroupvarptr_activation_params(self):
+        ret = super(AutoTestHelicopter, self).subgroupvarptr_activation_params()
+        # AC_CustomControl is disabled on heli (AC_CUSTOMCONTROL_MULTI_ENABLED is false)
+        ret.pop("CC_TYPE", None)
+        return ret
+
     def rc_defaults(self):
         ret = super(AutoTestHelicopter, self).rc_defaults()
         ret[8] = 1000
