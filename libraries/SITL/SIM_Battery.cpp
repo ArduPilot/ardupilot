@@ -138,19 +138,19 @@ void Battery::init_capacity(float capacity)
 
 void Battery::set_current(float current)
 {
-    const uint64_t now_micros = AP_HAL::micros64();
-    set_current(current, now_micros);
+    const uint64_t now_us = AP_HAL::micros64();
+    set_current(current, now_us);
 }
 
-void Battery::set_current(float current, uint64_t now_micros)
+void Battery::set_current(float current, uint64_t now_us)
 {
-    constexpr float micros_to_sec = 1.0e-6f;
-    float dt = static_cast<float>(now_micros - last_micros) * micros_to_sec;
+    constexpr float microsec_to_sec = 1.0e-6f;
+    float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
     if (dt > 0.1) {
         // we stopped updating
         dt = 0;
     }
-    last_micros = now_micros;
+    last_us = now_us;
     float delta_Ah = current * dt / 3600;
     remaining_Ah -= delta_Ah;
     remaining_Ah = MAX(0, remaining_Ah);
@@ -166,8 +166,8 @@ void Battery::set_current(float current, uint64_t now_micros)
     voltage_filter.apply(voltage, dt);
 
     {
-        const uint64_t temperature_dt = now_micros - temperature.last_update_micros;
-        temperature.last_update_micros = now_micros;
+        const uint64_t temperature_dt = now_us - temperature.last_update_us;
+        temperature.last_update_us = now_us;
         // 1 amp*1 second == 0.1 degrees of energy.  Did those units hurt?
         temperature.kelvin += 0.1 * current * temperature_dt * 0.000001;
         // decay temperature at some %second towards ambient
