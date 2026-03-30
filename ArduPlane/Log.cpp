@@ -53,8 +53,6 @@ void Plane::Log_Write_Attitude(void)
     if (steerController.active()) {
         logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
     }
-
-    AP::ahrs().Log_Write();
 }
 
 // do fast logging for plane
