@@ -12833,10 +12833,48 @@ switch value'''
             raise NotAchievedException("MAVProxy failed to get parameter")
         self.stop_mavproxy(mavproxy)
 
+    def test_subgroupvarptr_annotated(self):
+        '''Check that every AP_SUBGROUPVARPTR entry in the source tree has
+        @Group: and @Path: annotations immediately preceding it.  Without
+        these annotations param_parse.py cannot discover the backend
+        parameters, so documentation mismatches would never be caught.'''
+        failures = []
+        skip_dirs = {'modules', 'build', '.git', 'docs'}
+        for dirpath, dirnames, filenames in os.walk(self.rootdir()):
+            dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+            for filename in filenames:
+                if not filename.endswith('.cpp'):
+                    continue
+                filepath = os.path.join(dirpath, filename)
+                lines = pathlib.Path(filepath).read_text().splitlines()
+                for i, line in enumerate(lines):
+                    if not line.strip().startswith('AP_SUBGROUPVARPTR'):
+                        continue
+                    has_group = False
+                    has_path = False
+                    for j in range(i - 1, max(i - 5, -1), -1):
+                        prev = lines[j].strip()
+                        if not prev:
+                            continue
+                        if '@Group:' in prev:
+                            has_group = True
+                        elif '@Path:' in prev:
+                            has_path = True
+                        if not prev.startswith('//'):
+                            break
+                    if not (has_group and has_path):
+                        failures.append("%s:%d" % (os.path.relpath(filepath, self.rootdir()), i + 1))
+        for f in failures:
+            self.progress("AP_SUBGROUPVARPTR missing @Group:/@Path: at %s" % f)
+        if failures:
+            raise NotAchievedException("AP_SUBGROUPVARPTR entries missing @Group:/@Path: annotations")
+
     def test_parameter_documentation(self):
         '''ensure parameter documentation is valid'''
         self.start_subsubtest("Check all parameters are documented")
         self.test_parameter_documentation_get_all_parameters()
+        self.start_subsubtest("Check AP_SUBGROUPVARPTR entries have documentation annotations")
+        self.test_subgroupvarptr_annotated()
 
     def Parameters(self):
         '''general small tests for parameter system'''
