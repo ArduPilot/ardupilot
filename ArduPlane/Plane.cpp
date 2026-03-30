@@ -268,13 +268,20 @@ void Plane::update_compass(void)
  */
 void Plane::update_logging10(void)
 {
-    bool log_faster = (should_log(MASK_LOG_ATTITUDE_FULLRATE) || should_log(MASK_LOG_ATTITUDE_FAST));
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !log_faster) {
+    const bool attitude_med = should_log(MASK_LOG_ATTITUDE_MED);
+    const bool attitude_faster = should_log(MASK_LOG_ATTITUDE_FULLRATE) || should_log(MASK_LOG_ATTITUDE_FAST);
+
+    // Log attitude only if no faster logging is selected
+    if (attitude_med && !attitude_faster) {
         Log_Write_Attitude();
-        ahrs.Write_AOA_SSA();
-    } else if (log_faster) {
+        AP::ahrs().Log_Write();
+    }
+
+    // If any attitude logging is enabled log AOA and SSA
+    if (attitude_med || attitude_faster) {
         ahrs.Write_AOA_SSA();
     }
+
 #if HAL_MOUNT_ENABLED
     if (should_log(MASK_LOG_CAMERA)) {
         camera_mount.write_log();
@@ -295,11 +302,17 @@ void Plane::update_logging10(void)
  */
 void Plane::update_logging25(void)
 {
-    // MASK_LOG_ATTITUDE_FULLRATE logs at 400Hz, MASK_LOG_ATTITUDE_FAST at 25Hz, MASK_LOG_ATTIUDE_MED logs at 10Hz
-    // highest rate selected wins
-    bool log_faster = should_log(MASK_LOG_ATTITUDE_FULLRATE);
-    if (should_log(MASK_LOG_ATTITUDE_FAST) && !log_faster) {
+    const bool attitude_fast = should_log(MASK_LOG_ATTITUDE_FAST);
+    const bool attitude_full_rate = should_log(MASK_LOG_ATTITUDE_FULLRATE);
+
+    // Log at fast rate if fast logging is the fastest enabled
+    if (attitude_fast && !attitude_full_rate) {
         Log_Write_Attitude();
+    }
+
+    // Log AHRS at fast rate if either fast or full rate is selected
+    if (attitude_fast || attitude_full_rate) {
+        AP::ahrs().Log_Write();
     }
 
     if (should_log(MASK_LOG_CTUN)) {
