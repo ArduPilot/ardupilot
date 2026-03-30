@@ -19,7 +19,7 @@ constexpr float low_resistance_Ohm = 0.005f;
 constexpr float high_resistance_Ohm = 0.04f;
 
 // This can be any value, in operation it would come from AP_HAL::micros64().
-constexpr uint64_t initial_micros = 0;
+constexpr uint64_t initial_us = 0;
 
 class BatteryTest : public testing::Test {
 protected:
@@ -97,13 +97,13 @@ TEST_F(BatteryTest, EnergyConsumption)
         float prev_temperature = initial_temperature;
 
         for (float t = 0.0f; t <= test_duration_sec; t+=dt_sec) {
-            const uint64_t now_micros = initial_micros + static_cast<uint64_t>(t * 1e6);
+            const uint64_t now_us = initial_us + static_cast<uint64_t>(t * 1e6);
 
             // Consume battery energy (or not)
             if (t > 0.0f && t < first_half) {
-                battery.set_current(current_amps, now_micros);
+                battery.set_current(current_amps, now_us);
             } else {
-                battery.set_current(0.0f, now_micros);
+                battery.set_current(0.0f, now_us);
             }
 
             // Confirm temperature rise
@@ -198,7 +198,7 @@ void use_some_energy(SITL::Battery& battery) {
     constexpr float dt_sec = 0.01f;
 
     for (float t = 0.0f; t <= current_duration_sec; t+=dt_sec) {
-        battery.set_current(current_amps, initial_micros + static_cast<uint64_t>(t * 1e6));
+        battery.set_current(current_amps, initial_us + static_cast<uint64_t>(t * 1e6));
     }
 };
 } // namespace

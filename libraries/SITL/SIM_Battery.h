@@ -30,7 +30,7 @@ public:
     void init_capacity(float capacity);
 
     // set the current-draw at the instant identified as "now"
-    void set_current(float current_amps, uint64_t now_micros);
+    void set_current(float current_amps, uint64_t now_us);
     // set the current-draw using AP_HAL::micros64() as "now"
     void set_current(float current_amps);
 
@@ -46,11 +46,11 @@ private:
     float max_voltage;
     float voltage_set;
     float remaining_Ah;
-    uint64_t last_micros;
+    uint64_t last_us;
 
     struct {
         float kelvin = 273;
-        uint64_t last_update_micros;
+        uint64_t last_update_us;
     } temperature;
 
     // 10Hz filter for battery voltage
