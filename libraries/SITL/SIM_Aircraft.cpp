@@ -1205,6 +1205,14 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 #if AP_SIM_GPIO_LED_RGB_ENABLED
     sim_ledrgb.update(*this);
 #endif
+
+#if AP_SIM_MOUNT_ENABLED
+    for (uint8_t i = 0; i < GIMBAL_SIM_MAX; i++) {
+        if (gimbal_sims[i] != nullptr) {
+            gimbal_sims[i]->update(*this);
+        }
+    }
+#endif
 }
 
 void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)

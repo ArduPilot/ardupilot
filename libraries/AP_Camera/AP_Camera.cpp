@@ -475,7 +475,13 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
         break;
     case MSG_CAMERA_INFORMATION:
         CHECK_PAYLOAD_SIZE2(CAMERA_INFORMATION);
-        send_camera_information(chan);
+        if (_camera_information_send_instance >= 0) {
+            const int16_t instance = _camera_information_send_instance;
+            _camera_information_send_instance = -1;
+            send_camera_information((uint8_t)instance, chan);
+        } else {
+            send_camera_information(chan);
+        }
         break;
     case MSG_CAMERA_SETTINGS:
         CHECK_PAYLOAD_SIZE2(CAMERA_SETTINGS);
@@ -614,6 +620,18 @@ void AP_Camera::send_camera_information(mavlink_channel_t chan)
             _backends[instance]->send_camera_information(chan);
         }
     }
+}
+
+// send camera information for a specific instance to GCS
+void AP_Camera::send_camera_information(uint8_t instance, mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->send_camera_information(chan);
 }
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED

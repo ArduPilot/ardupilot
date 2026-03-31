@@ -152,14 +152,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode(mode)
         if not self.armed():
             self.wait_ready_to_arm(require_absolute=require_absolute, timeout=timeout)
-            self.zero_throttle()
+            if mode != 'GUIDED':
+                self.zero_throttle()
             self.arm_vehicle()
         if mode == 'GUIDED':
             self.user_takeoff(alt_min=alt_min, timeout=timeout, max_err=max_err)
         else:
             self.set_rc(3, takeoff_throttle)
         self.wait_altitude(alt_min-1, alt_min+max_err, relative=True, timeout=timeout, minimum_duration=alt_minimum_duration)
-        self.hover()
+        if mode != 'GUIDED':
+            self.hover()
         self.progress("TAKEOFF COMPLETE")
 
     def land_and_disarm(self, timeout=60):
@@ -201,6 +203,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             4: 1500,
         })
         self.takeoff(alt_min=dAlt, mode='GUIDED')
+        self.hover()
         self.change_mode("ALT_HOLD")
 
         self.progress("Yaw to east")
@@ -770,7 +773,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
         self.change_mode("RTL")
-        self.hover()
+        self.zero_throttle()
         self.wait_rtl_complete(check_alt=check_alt, distance_max=distance_max, timeout=timeout, quiet=True)
 
     def wait_rtl_complete(self, check_alt=True, distance_max=10, timeout=250, quiet=False):
@@ -847,6 +850,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("If you haven't taken off yet RC failure should be instant disarm")
         self.change_mode("STABILIZE")
         self.set_parameter("DISARM_DELAY", 0)
+        self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_parameter("SIM_RC_FAIL", 1)
         self.disarm_wait(timeout=1)
@@ -2277,9 +2281,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_fence_enabled()
 
         # Change to RC controlled mode
-        self.change_mode('LOITER')
-
         self.set_rc(3, 1800)
+        self.change_mode('LOITER')
 
         self.wait_mode('RTL', timeout=120)
 
@@ -2316,9 +2319,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_fence_enabled()
 
         # Change to RC controlled mode
-        self.change_mode('LOITER')
-
         self.set_rc(3, 1800)
+        self.change_mode('LOITER')
 
         self.wait_mode('RTL', timeout=120)
         # Assert fence is not healthy now that we are in RTL
@@ -6254,8 +6256,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
 
     def constrained_mount_pitch(self, pitch_angle_deg, mount_instance=1):
-        PITCH_MIN = self.get_parameter("MNT%u_PITCH_MIN" % mount_instance)
-        PITCH_MAX = self.get_parameter("MNT%u_PITCH_MAX" % mount_instance)
+        PITCH_MIN = self.get_parameter("MNT%u_PITCH_MIN" % mount_instance, verbose=False)
+        PITCH_MAX = self.get_parameter("MNT%u_PITCH_MAX" % mount_instance, verbose=False)
         return min(max(pitch_angle_deg, PITCH_MIN), PITCH_MAX)
 
     def test_mount_pitch(self, despitch, despitch_tolerance, mount_mode, timeout=10, hold=0, constrained=True):
@@ -6430,7 +6432,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_rc(12, 1500)
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
-    def mount_test_body(self, pitch_rc_neutral=1500, do_rate_tests=True, constrain_sysid_target=True):
+    def mount_test_body(self, pitch_rc_neutral=1500, do_rate_tests=True, constrain_sysid_target=True, neutral_tol_deg=0):
         '''Test Camera/Antenna Mount - assumes a camera is set up and ready to go'''
         if True:
             # make sure we're getting gimbal device attitude status
@@ -6439,10 +6441,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # change mount to neutral mode (point forward, not stabilising)
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
 
-            # test pitch is not neutral to start with
-            mount_roll_deg, mount_pitch_deg, mount_yaw_deg, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
-            if mount_roll_deg != 0 or mount_pitch_deg != 0 or mount_yaw_deg != 0:
-                raise NotAchievedException("Mount not neutral")
+            # wait for mount to report neutral angles (external MAVLink gimbals may
+            # have in-flight messages from the previous mode in the receive queue)
+            tstart = self.get_sim_time()
+            while True:
+                mount_roll_deg, mount_pitch_deg, mount_yaw_deg, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
+                if (abs(mount_roll_deg) <= neutral_tol_deg and
+                        abs(mount_pitch_deg) <= neutral_tol_deg and
+                        abs(mount_yaw_deg) <= neutral_tol_deg):
+                    break
+                if self.get_sim_time() - tstart > 5:
+                    raise NotAchievedException("Mount not neutral (r=%f p=%f y=%f)" % (
+                        mount_roll_deg, mount_pitch_deg, mount_yaw_deg))
 
             self.takeoff(30, mode='GUIDED')
 
@@ -6457,7 +6467,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             # check gimbal is still not stabilising
             mount_roll_deg, mount_pitch_deg, mount_yaw_deg, mount_yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
-            if mount_roll_deg != 0 or mount_pitch_deg != 0 or mount_yaw_deg != 0:
+            if (abs(mount_roll_deg) > neutral_tol_deg or
+                    abs(mount_pitch_deg) > neutral_tol_deg or
+                    abs(mount_yaw_deg) > neutral_tol_deg):
                 raise NotAchievedException("Mount stabilising when not requested")
 
             # center RC tilt control and change mount to RC_TARGETING mode
@@ -6757,6 +6769,160 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             do_rate_tests=False,  # solo can't do rate control (yet?)
             constrain_sysid_target=False,  # not everything constrains all angles
         )
+
+    def mount_check_camera_information(
+            self,
+            expected_vendor: str,
+            expected_model: str,
+            expected_fw_version: int | None = None,
+            expected_cap_flags: int | None = None,
+            expected_gimbal_device_id: int | None = None,
+            timeout: int = 30,
+    ) -> None:
+        '''poll CAMERA_INFORMATION, retrying until vendor name, model name and
+        firmware version all match what the simulated backend sends.  Vendor
+        name is used to detect driver initialisation; model name and firmware
+        version may arrive in separate handshake messages so we keep retrying
+        on empty/zero values rather than failing immediately.'''
+        self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=10, very_verbose=True)
+        # param2 of MAV_CMD_REQUEST_MESSAGE selects a specific camera instance
+        # (1-based); 0 requests all cameras.  Use the gimbal_device_id directly
+        # as the selector so each call retrieves exactly one camera's data.
+        poll_p2 = expected_gimbal_device_id if expected_gimbal_device_id is not None else 0
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "Never received complete CAMERA_INFORMATION for vendor=%s" % expected_vendor)
+            try:
+                m = self.poll_message('CAMERA_INFORMATION', timeout=5, p2=poll_p2)
+            except NotAchievedException:
+                continue
+            got_vendor = bytes(m.vendor_name).split(b'\x00')[0].decode('utf-8')
+            if not got_vendor:
+                continue  # driver not initialised yet
+            if got_vendor != expected_vendor:
+                raise NotAchievedException(
+                    "Unexpected vendor name: want=%s got=%s" % (expected_vendor, got_vendor))
+            got_model = bytes(m.model_name).split(b'\x00')[0].decode('utf-8')
+            if not got_model:
+                continue  # model name handshake not complete yet
+            if got_model != expected_model:
+                raise NotAchievedException(
+                    "Unexpected model name: want=%s got=%s" % (expected_model, got_model))
+            if expected_fw_version is not None:
+                if m.firmware_version == 0:
+                    continue  # firmware version handshake not complete yet
+                if m.firmware_version != expected_fw_version:
+                    raise NotAchievedException(
+                        "Unexpected firmware version: want=0x%08x got=0x%08x" %
+                        (expected_fw_version, m.firmware_version))
+            if expected_cap_flags is not None:
+                if m.flags != expected_cap_flags:
+                    raise NotAchievedException(
+                        "Unexpected cap flags: want=0x%08x got=0x%08x" %
+                        (expected_cap_flags, m.flags))
+            return
+
+    def MountSiyiZT30(self):
+        '''test Siyi ZT30 gimbal using SIM_Siyi_ZT30 simulator'''
+        self.set_parameters({
+            "MNT1_TYPE": 8,       # Siyi
+            "CAM1_TYPE": 4,       # Mount
+            "SERIAL5_PROTOCOL": 8,  # gimbal
+            "RC6_OPTION": 213,    # MOUNT1_PITCH
+        })
+        self.customise_SITL_commandline(["--serial5=sim:siyi_zt30:"])
+        # camera fw 1.2.3 from SIM_Siyi_ZT30: major=1, minor=2, patch=3
+        # firmware_version = major | (minor<<8) | (patch<<16) = 0x030201
+        # cap flags: CAPTURE_VIDEO | CAPTURE_IMAGE | HAS_BASIC_ZOOM | HAS_BASIC_FOCUS
+        self.mount_check_camera_information(
+            "Siyi", "ZT30",
+            expected_fw_version=0x030201,
+            expected_cap_flags=0xC3,
+        )
+
+    def MountTopotek(self):
+        '''test Topotek gimbal using SIM_Topotek simulator'''
+        self.set_parameters({
+            "MNT1_TYPE": 12,      # Topotek
+            "CAM1_TYPE": 4,       # Mount
+            "SERIAL5_PROTOCOL": 8,  # gimbal
+            "RC6_OPTION": 213,    # MOUNT1_PITCH
+        })
+        self.customise_SITL_commandline(["--serial5=sim:topotek:"])
+        # version "1.0.0" from SIM_Topotek: major=1 | (minor=0)<<8 | (patch=0)<<16 = 1
+        # cap flags: CAPTURE_VIDEO | CAPTURE_IMAGE | HAS_BASIC_ZOOM | HAS_BASIC_FOCUS |
+        #            HAS_TRACKING_POINT | HAS_TRACKING_RECTANGLE
+        self.mount_check_camera_information(
+            "Topotek", "SIM_TP",
+            expected_fw_version=1,
+            expected_cap_flags=0x6C3,
+        )
+        # pitch_rc_neutral=1818: with RC6 min=1000 max=2000 trim=1500 and
+        # default MNT1_PITCH_MIN=-90 / MNT1_PITCH_MAX=20, norm_input=0.636
+        # maps to exactly 0 deg pitch.
+        # constrain_sysid_target=False: the driver does not yet clamp pitch to
+        # MNT1_PITCH_MAX before sending, so the 68-deg sysid test is skipped
+        # until AP_Mount_Topotek::send_target_angles enforces the limit.
+        self.mount_test_body(pitch_rc_neutral=1818, do_rate_tests=False,
+                             constrain_sysid_target=False)
+
+    def MountViewPro(self):
+        '''test Viewpro gimbal using SIM_Viewpro simulator'''
+        self.set_parameters({
+            "MNT1_TYPE": 11,      # Viewpro
+            "CAM1_TYPE": 4,       # Mount
+            "SERIAL5_PROTOCOL": 8,  # gimbal
+            "RC6_OPTION": 213,    # MOUNT1_PITCH
+        })
+        self.customise_SITL_commandline(["--serial5=sim:viewpro:"])
+        # firmware "Sys20220101" from SIM_Viewpro: major=20, minor=22, patch=1
+        # firmware_version = major | (minor<<8) | (patch<<16) = 0x011614
+        # cap flags: CAPTURE_VIDEO | CAPTURE_IMAGE | HAS_BASIC_ZOOM | HAS_BASIC_FOCUS |
+        #            HAS_TRACKING_POINT | HAS_TRACKING_RECTANGLE
+        self.mount_check_camera_information(
+            "Viewpro", "SIM_VP",
+            expected_fw_version=0x011614,
+            expected_cap_flags=0x6C3,
+        )
+        # Viewpro roll uses 12-bit encoding (0..4095 = -90..+90 deg); the
+        # midpoint 2047.5 is not an integer so neutral 0 deg cannot be
+        # represented exactly.  Max quantisation error is 180/(4095*2) ≈ 0.022 deg.
+        # pitch_rc_neutral=1818: with RC6 min=1000 max=2000 trim=1500 and
+        # default MNT1_PITCH_MIN=-90 / MNT1_PITCH_MAX=20, norm_input=0.636
+        # maps to exactly 0 deg pitch.
+        # constrain_sysid_target=False: the driver does not yet clamp pitch to
+        # MNT1_PITCH_MAX before sending, so the 68-deg sysid test is skipped
+        # until AP_Mount_Viewpro::send_target_angles enforces the limit.
+        self.mount_test_body(pitch_rc_neutral=1818, neutral_tol_deg=0.05,
+                             do_rate_tests=False, constrain_sysid_target=False)
+
+    def MountAVTCM62(self):
+        '''test MAVLink (Gimbal Protocol v2) gimbal using SIM_AVT_CM62 simulator'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,         # MAVLink
+            "CAM1_TYPE": 4,         # Mount
+            "SERIAL5_PROTOCOL": 2,  # MAVLink2
+            "RC6_OPTION": 213,      # MOUNT1_PITCH
+        })
+        self.customise_SITL_commandline(["--serial5=sim:avt_cm62_gimbal:"])
+
+    def MountAVTCM62Dual(self):
+        '''test two simultaneous MAVLink (Gimbal Protocol v2) gimbals using
+        two SIM_AVT_CM62 simulators on separate serial ports'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,         # MAVLink
+            "MNT2_TYPE": 6,         # MAVLink
+            "CAM1_TYPE": 4,         # Mount
+            "CAM2_TYPE": 4,         # Mount
+            "SERIAL5_PROTOCOL": 2,  # MAVLink2
+            "SERIAL6_PROTOCOL": 2,  # MAVLink2
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:avt_cm62_gimbal:",
+            "--serial6=sim:avt_cm62_gimbal:",
+        ])
 
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
@@ -12264,7 +12430,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def SMART_RTL_Repeat(self):
         '''Test whether Smart RTL catches the repeat'''
         self.takeoff(alt_min=10, mode='GUIDED')
-        self.set_rc(3, 1500)
+        self.hover()
         self.change_mode("CIRCLE")
         self.delay_sim_time(1300)
         self.change_mode("SMART_RTL")
@@ -14098,7 +14264,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "DISARM_DELAY": 0,
         })
         self.takeoff(2, mode='GUIDED')
-        self.set_rc(3, 1500)
+        self.hover()
         self.change_mode('LOITER')
         self.set_rc(3, 1300)
 
@@ -14111,7 +14277,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.zero_throttle()
         self.takeoff(2, mode='GUIDED')
-        self.set_rc(3, 1500)
+        self.hover()
         self.change_mode('LOITER')
         self.set_rc(3, 1300)
 
@@ -14142,6 +14308,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         attitudes.append(self.assert_receive_message('ATTITUDE'))
         self.set_rc(12, 1000)
 
+        self.hover()
         self.change_mode('LOITER')
         self.set_rc(1, 1000)
         self.set_rc(2, 1000)
@@ -14191,6 +14358,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode='GUIDED')
         here = self.mav.location()
         self.set_home(here)
+        self.hover()
         self.change_mode('LOITER')
         self.wait_altitude(here.alt-1, here.alt+1, minimum_duration=10)
         self.disarm_vehicle(force=True)
@@ -14638,7 +14806,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_mode_is('AUTO')
         self.change_mode('LOITER')
         self.wait_groundspeed(0, 0.1, minimum_duration=30, timeout=450)
-        self.do_RTL()
+        # do_RTL plays with RC inputs, don't use it.
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
     def MissionRTLYawBehaviour(self):
         '''check end-of-mission yaw behaviour'''
@@ -15421,6 +15591,17 @@ RTL_ALT_M 111
         self.arm_vehicle()
         self.wait_disarmed()
 
+    def RC_OPTIONS_1_FS_THR_ENABLE_0(self):
+        '''check behaviour with unusual RC parameters'''
+        self.set_parameters({
+            "RC_OPTIONS": 1,
+            "FS_THR_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode='GUIDED')
+        self.wait_yaw_speed(0, minimum_duration=10)
+        self.do_land()
+
     def WaitAndMaintainAttitude_RCFlight(self):
         '''just test WaitAndMaintainAttitude works'''
         WaitAndMaintainAttitude(self, 0, 0, epsilon=1).run()
@@ -16047,6 +16228,11 @@ return update, 1000
             self.ScriptMountAllModes,
             self.ScriptCopterPosOffsets,
             self.MountSolo,
+            self.MountSiyiZT30,
+            self.MountTopotek,
+            self.MountViewPro,
+            self.MountAVTCM62,
+            self.MountAVTCM62Dual,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
@@ -16101,6 +16287,7 @@ return update, 1000
             self.AHRSOriginRecorded,
             self.TestTetherStuck,
             self.ScriptingFlipMode,
+            self.RC_OPTIONS_1_FS_THR_ENABLE_0,
             self.ScriptingFlyVelocity,
             self.Scripting6DoFMotors,
             self.EK3_EXT_NAV_vel_without_vert,
