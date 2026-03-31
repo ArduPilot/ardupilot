@@ -136,12 +136,6 @@ void Battery::init_capacity(float capacity)
     set_initial_SoC(voltage_set);
 }
 
-void Battery::set_current(float current)
-{
-    const uint64_t now_us = AP_HAL::micros64();
-    set_current(current, now_us);
-}
-
 void Battery::set_current(float current, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
