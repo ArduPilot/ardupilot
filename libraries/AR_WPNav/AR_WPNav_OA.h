@@ -32,6 +32,9 @@ private:
     // update distance and bearing from vehicle's current position to destination
     void update_oa_distance_and_bearing_to_destination();
 
+    // get straight-line OA-adjusted distance to destination in meters
+    float get_oa_distance_to_destination() const override { return _oa_distance_to_destination; }
+
     // object avoidance variables
     bool _oa_active;                // true if we should use alternative destination to avoid obstacles
     Location _origin_oabak;         // backup of _origin so it can be restored when oa completes

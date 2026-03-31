@@ -59,7 +59,7 @@ public:
     virtual bool reached_destination() const { return _reached_destination; }
 
     // return straight-line distance (in meters) to destination
-    float get_distance_to_destination() const { return _distance_to_destination; }
+    float get_distance_to_destination() const { return get_oa_distance_to_destination(); }
 
     // return true if destination is valid
     bool is_destination_valid() const { return _orig_and_dest_valid; }
@@ -193,4 +193,9 @@ protected:
     // variables for reporting
     float _distance_to_destination; // straight-line distance from vehicle to final destination in meters
     bool _reached_destination;      // true once the vehicle has reached the destination
+
+private:
+
+    // return straight-line distance from vehicle to final destination in meters
+    virtual float get_oa_distance_to_destination() const { return _distance_to_destination; }
 };
