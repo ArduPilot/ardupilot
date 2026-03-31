@@ -1592,7 +1592,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     uint8_t nsat = gps.num_sats();
-    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS_FixType::FIX_3D);
     backend->write(x, y, flash, "%c%c%2u", SYMBOL(SYM_SAT_L), SYMBOL(SYM_SAT_R), nsat);
 }
 
@@ -2447,7 +2447,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
     AP_GPS & gps = AP::gps();
     const Location &loc = gps.location();
     char buff[16];
-    if (gps.status() == AP_GPS::NO_GPS || gps.status() == AP_GPS::NO_FIX){
+    if (gps.status() == AP_GPS_FixType::NO_GPS || gps.status() == AP_GPS_FixType::NONE){
         backend->write(x, y, false, "--------+--");
     } else {
         AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));

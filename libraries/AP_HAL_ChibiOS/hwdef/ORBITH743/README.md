@@ -163,25 +163,21 @@ This board does **not** include GPS or compass modules. An [external GPS/compass
 
 These are set by default. If reset:
 
-Enable battery monitor with:
-
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-
-Then reboot.
+Enable battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
 **First battery monitor is enabled by default:**
 
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN>` = 10
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN>` = 11
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT>` = 10.1
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor.)*
+BATT_VOLT_PIN=10
+BATT_CURR_PIN=11
+BATT_VOLT_MULT=10.1
+BATT_AMP_PERVLT=80.0
 
 **The second battery monitor is not enabled by default, but its parameter defaults have been set:**
 
-- :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN>` = 4
-- :ref:`BATT2_CURR_PIN<BATT2_CURR_PIN>` = 18
-- :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT>` = 10.1
-- :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` = 80.0 *(Calibrate as needed, depending on current sensor)*
+BATT2_VOLT_PIN=4
+BATT2_CURR_PIN=18
+BATT2_VOLT_MULT=10.1
+BATT2_AMP_PERVLT=80.0
 
 ## Where to Buy
 

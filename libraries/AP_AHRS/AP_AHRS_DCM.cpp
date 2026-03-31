@@ -445,7 +445,7 @@ AP_AHRS_DCM::_yaw_gain(void) const
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
-    if (_gps_use == GPSUse::Disable || AP::gps().status() <= AP_GPS::NO_FIX) {
+    if (_gps_use == GPSUse::Disable || AP::gps().status() <= AP_GPS_FixType::NONE) {
         return false;
     }
     return true;
@@ -714,7 +714,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     const bool fly_forward = AP::ahrs().get_fly_forward();
 
     if (!have_gps() ||
-            _gps.status() < AP_GPS::GPS_OK_FIX_3D ||
+            _gps.status() < AP_GPS_FixType::FIX_3D ||
             _gps.num_sats() < _gps_minsats) {
         // no GPS, or not a good lock. From experience we need at
         // least 6 satellites to get a really reliable velocity number
@@ -944,7 +944,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _omega_P *= 8;
     }
 
-    if (fly_forward && _gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
+    if (fly_forward && _gps.status() >= AP_GPS_FixType::FIX_2D &&
             _gps.ground_speed() < GPS_SPEED_MIN &&
             _ins.get_accel().x >= 7 &&
         pitch > radians(-30) && pitch < radians(30)) {
@@ -1070,7 +1070,7 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
     const auto &gps = AP::gps();
     int32_t alt_cm;
     if (_gps_use == GPSUse::EnableWithHeight &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        gps.status() >= AP_GPS_FixType::FIX_3D) {
         alt_cm = gps.location().alt;
     } else {
         alt_cm = baro.get_altitude() * 100 + AP::ahrs().get_home().alt;
@@ -1117,7 +1117,7 @@ bool AP_AHRS_DCM::airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) cons
     }
 
     const float _wind_max = AP::ahrs().get_max_wind();
-    if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+    if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
         // constrain the airspeed by the ground speed
         // and AHRS_WIND_MAX
         const float gnd_speed = AP::gps().ground_speed();
@@ -1172,7 +1172,7 @@ bool AP_AHRS_DCM::healthy(void) const
 bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
 {
     const AP_GPS &_gps = AP::gps();
-    if (_gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (_gps.status() < AP_GPS_FixType::FIX_3D) {
         return false;
     }
     vec = _gps.velocity();
@@ -1187,7 +1187,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     Vector2f gndVelGPS;
     float airspeed = 0;
     const bool gotAirspeed = airspeed_TAS(airspeed);
-    const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
+    const bool gotGPS = (AP::gps().status() >= AP_GPS_FixType::FIX_2D);
     if (gotAirspeed) {
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
         Vector3f wind;

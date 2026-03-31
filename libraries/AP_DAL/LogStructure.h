@@ -404,10 +404,10 @@ struct log_RMGI {
 
 // @LoggerMessage: RBCH
 // @Description: Replay Data Beacon Header
-// @Field: PX: zero, unused
-// @Field: PY: zero, unused
-// @Field: PZ: zero, unused
-// @Field: AE: zero, unused
+// @Field: PX: beacon system estimated vehicle position, North
+// @Field: PY: beacon system estimated vehicle position, East
+// @Field: PZ: beacon system estimated vehicle position, Down
+// @Field: AE: beacon system estimated vehicle position accuracy
 // @Field: OLat: origin latitude
 // @Field: OLng: origin longitude
 // @Field: OAlt: origin altitude
@@ -566,10 +566,10 @@ struct log_RWOH {
 // @Field: DAZ: delta-angle-Z
 // @Field: DT: delta-time
 // @Field: TS: data timestamp
-// @Field: OX: zero, unused
-// @Field: OY: zero, unused
-// @Field: OZ: zero, unused
-// @Field: D: zero, unused
+// @Field: OX: pos-offset-X
+// @Field: OY: pos-offset-Y
+// @Field: OZ: pos-offset-Z
+// @Field: D: delay in body odometry data
 struct log_RBOH {
     float quality;
     Vector3f delPos;

@@ -317,7 +317,7 @@ void Rover::ahrs_update()
     Vector3f velocity;
     if (ahrs.get_velocity_NED(velocity)) {
         ground_speed = velocity.xy().length();
-    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    } else if (gps.status() >= AP_GPS_FixType::FIX_3D) {
         ground_speed = ahrs.groundspeed();
     }
     
@@ -553,7 +553,7 @@ bool Rover::get_wp_crosstrack_error_m(float &xtrack_error) const
     if (!rover.control_mode->is_autopilot_mode()) {
         return false;
     }
-    xtrack_error = control_mode->crosstrack_error();
+    xtrack_error = control_mode->crosstrack_error_m();
     return true;
 }
 

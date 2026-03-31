@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime
 import optparse
 import os
+import pathlib
 import re
 import shutil
 import string
@@ -356,10 +357,7 @@ is bob we will attempt to checkout bob-AVR'''
 
     def read_string_from_filepath(self, filepath):
         '''returns content of filepath as a string'''
-        with open(filepath, 'rb') as fh:
-            content = fh.read()
-
-        return content.decode('ascii')
+        return pathlib.Path(filepath).read_text(encoding='ascii')
 
     def string_in_filepath(self, string, filepath):
         '''returns true if string exists in the contents of filepath'''

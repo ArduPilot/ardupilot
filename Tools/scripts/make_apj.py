@@ -8,6 +8,7 @@ AP_FLAKE8_CLEAN
 import argparse
 import base64
 import json
+import pathlib
 import zlib
 
 parser = argparse.ArgumentParser(description='make_apj')
@@ -18,7 +19,7 @@ parser.add_argument('--board-id', type=int, default=1, help='board ID')
 
 args = parser.parse_args()
 
-img = open(args.bin, 'rb').read()
+img = pathlib.Path(args.bin).read_bytes()
 d = {
     "board_id": int(args.board_id),
     "magic": "APJFWv1",
@@ -31,6 +32,5 @@ d = {
     "signed_firmware": False,
 }
 
-f = open(args.apj, "w")
-f.write(json.dumps(d, indent=4))
-f.close()
+with open(args.apj, "w") as out_file:
+    out_file.write(json.dumps(d, indent=4))

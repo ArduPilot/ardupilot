@@ -9585,7 +9585,7 @@ Also, ignores heartbeats not from our target system'''
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not get MISSION_COUNT packet")
-            m = self.mav.recv_match(blocking=True, timeout=0.1)
+            m = self.mav.recv_match(blocking=True, timeout=0.2)
             if m is None:
                 raise NotAchievedException("Did not get MISSION_COUNT response")
             if verbose:
@@ -9938,7 +9938,7 @@ Also, ignores heartbeats not from our target system'''
 
     # this autotest appears to interfere with FixedYawCalibration, no idea why.
     def SITLCompassCalibration(self, compass_count=3, timeout=1000):
-        '''Test Fixed Yaw Calibration"'''
+        '''Test Compass Calibration"'''
 
         timeout /= 8
         timeout *= self.speedup
@@ -11400,7 +11400,7 @@ Also, ignores heartbeats not from our target system'''
         if ex is not None:
             raise ex
 
-    def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False, mav=None):
+    def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False, mav=None, p2=0):
         if mav is None:
             mav = self.mav
         if isinstance(message_id, str):
@@ -11408,13 +11408,14 @@ Also, ignores heartbeats not from our target system'''
         self.send_cmd(
             mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
             p1=message_id,
+            p2=p2,
             target_sysid=target_sysid,
             target_compid=target_compid,
             quiet=quiet,
             mav=mav,
         )
 
-    def poll_message(self, message_id, timeout=10, quiet=False, mav=None, target_sysid=None, target_compid=None):
+    def poll_message(self, message_id, timeout=10, quiet=False, mav=None, target_sysid=None, target_compid=None, p2=0):
         if mav is None:
             mav = self.mav
         if target_sysid is None:
@@ -11424,7 +11425,7 @@ Also, ignores heartbeats not from our target system'''
         if isinstance(message_id, str):
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
-        self.send_poll_message(message_id, quiet=quiet, mav=mav, target_sysid=target_sysid, target_compid=target_compid)
+        self.send_poll_message(message_id, quiet=quiet, mav=mav, target_sysid=target_sysid, target_compid=target_compid, p2=p2)
         self.run_cmd_get_ack(
             mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
             mavutil.mavlink.MAV_RESULT_ACCEPTED,

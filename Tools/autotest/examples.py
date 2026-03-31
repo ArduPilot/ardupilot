@@ -23,8 +23,8 @@ def run_example(name, filepath, valgrind=False, gdb=False):
         cmd.append("gdb")
     cmd.append(filepath)
     print("Running: (%s)" % str(cmd))
-    devnull = open("/dev/null", "w")
-    bob = subprocess.Popen(cmd, stdin=devnull, stdout=devnull, stderr=devnull, close_fds=True)
+    bob = subprocess.Popen(cmd, stdin=subprocess.DEVNULL,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     expect_exit = False
     timeout = 10
@@ -36,20 +36,20 @@ def run_example(name, filepath, valgrind=False, gdb=False):
     ]:
         expect_exit = True
 
-    tstart = time.time()
-    while True:
-        if time.time() - tstart > timeout:
-            break
-        if not expect_exit:
-            retcode = bob.poll()
-            if retcode is not None:
-                raise ValueError("Process exited before I could kill it (%s)" % str(retcode))
+    time.sleep(timeout)
 
     if expect_exit:
-        retcode = bob.wait()
+        retcode = bob.poll()
         if retcode is None:
-            raise ValueError("Expected example to exit, it did not")
+            # should maybe be an error in the future; that was the original intent
+            print("process did not exit by the expected time")
+
+        retcode = bob.wait()
     else:
+        retcode = bob.poll()
+        if retcode is not None:
+            raise ValueError("Process exited before I could kill it (%s)" % str(retcode))
+
         bob.send_signal(signal.SIGTERM)
         time.sleep(1)
         retcode = bob.poll()

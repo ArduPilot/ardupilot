@@ -164,9 +164,8 @@ class firmware(object):
     def __init__(self, path):
 
         # read the file
-        f = open(path, "r")
-        self.desc = json.load(f)
-        f.close()
+        with open(path, "r") as in_file:
+            self.desc = json.load(in_file)
 
         self.image = bytearray(zlib.decompress(base64.b64decode(self.desc['image'])))
         if 'extf_image' in self.desc:
@@ -587,24 +586,22 @@ class uploader(object):
     # download code
     def __download(self, label, fw):
         print("\n", end='')
-        f = open(fw, 'wb')
-
         downloadProgress = 0
         readsize = uploader.READ_MULTI_MAX
         total = 0
-        while True:
-            n = min(self.fw_maxsize - total, readsize)
-            bb = self.__read_multi(n)
-            f.write(bb)
+        with open(fw, 'wb') as out_file:
+            while True:
+                n = min(self.fw_maxsize - total, readsize)
+                bb = self.__read_multi(n)
+                out_file.write(bb)
 
-            total += len(bb)
-            # Print download progress (throttled, so it does not delay download progress)
-            downloadProgress += 1
-            if downloadProgress % 256 == 0:
-                self.__drawProgressBar(label, total, self.fw_maxsize)
-            if len(bb) < readsize:
-                break
-        f.close()
+                total += len(bb)
+                # Print download progress (throttled, so it does not delay download progress)
+                downloadProgress += 1
+                if downloadProgress % 256 == 0:
+                    self.__drawProgressBar(label, total, self.fw_maxsize)
+                if len(bb) < readsize:
+                    break
         self.__drawProgressBar(label, total, self.fw_maxsize)
         print("\nReceived %u bytes to %s" % (total, fw))
 
@@ -888,10 +885,8 @@ class uploader(object):
                     filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
                     if not os.path.exists(filepath):
                         continue
-                    fh = open(filepath)
-                    if fh is None:
-                        continue
-                    text = fh.readlines()
+                    with open(filepath) as in_file:
+                        text = in_file.readlines()
                     for line in text:
                         m = re.match(r"^\s*APJ_BOARD_ID\s+(\d+)\s*$", line)
                         if m is None:

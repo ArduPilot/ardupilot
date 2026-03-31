@@ -71,7 +71,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     }
 
     if (option_set(Option::CAL_REQUIRE_GPS)) {
-        if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+        if (AP::gps().status() < AP_GPS_FixType::FIX_2D) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Compass cal requires GPS lock");
             return false;
         }
@@ -516,7 +516,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
         Location loc;
         // get AHRS position. If unavailable then try GPS location
         if (!AP::ahrs().get_location(loc)) {
-            if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+            if (AP::gps().status() < AP_GPS_FixType::FIX_3D) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag: no position available");
                 return false;
             }

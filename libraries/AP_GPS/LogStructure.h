@@ -19,7 +19,7 @@
 // @Field: TimeUS: Time since system startup
 // @Field: I: GPS instance number
 // @Field: Status: GPS Fix type; 2D fix, 3D fix etc.
-// @FieldValueEnum: Status: AP_GPS::GPS_Status
+// @FieldValueEnum: Status: AP_GPS_FixType
 // @Field: GMS: milliseconds since start of GPS Week
 // @Field: GWk: weeks since 5 Jan 1980
 // @Field: NSats: number of satellites visible

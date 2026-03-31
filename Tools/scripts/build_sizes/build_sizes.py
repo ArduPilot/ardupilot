@@ -51,13 +51,15 @@ def firmware_list(basedir):
             if f in LINUX_BINARIES:
                 git_version = os.path.join(root, "git-version.txt")
                 try:
-                    line = open(git_version, 'r').readline()
+                    with open(git_version, 'r') as in_file:
+                        line = in_file.readline()
                     githash = line.split()[1][:8]
                 except OSError:
                     githash = "unknown"
                 flash_free = 999999
             else:
-                fw_json = json.load(open(fname, "r"))
+                with open(fname, "r") as in_file:
+                    fw_json = json.load(in_file)
                 githash = fw_json['git_identity']
                 flash_free = fw_json.get('flash_free', -1)
             apjinfo = APJInfo(vehicle, board, githash, mtime, flash_free)
@@ -185,8 +187,8 @@ def write_table(h, build_type):
 ''')
 
 
-h = open(args.outfile, "w")
-write_headers(h)
-for t in build_dirs:
-    write_table(h, t)
-write_footer(h)
+with open(args.outfile, "w") as out_file:
+    write_headers(out_file)
+    for t in build_dirs:
+        write_table(out_file, t)
+    write_footer(out_file)

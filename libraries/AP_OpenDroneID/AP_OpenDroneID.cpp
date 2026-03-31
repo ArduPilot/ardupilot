@@ -339,8 +339,8 @@ void AP_OpenDroneID::send_location_message()
     const auto &barometer = AP::baro();
     const auto &gps = AP::gps();
 
-    const AP_GPS::GPS_Status gps_status = gps.status();
-    const bool got_bad_gps_fix = (gps_status < AP_GPS::GPS_Status::GPS_OK_FIX_3D);
+    const AP_GPS_FixType gps_status = gps.status();
+    const bool got_bad_gps_fix = (gps_status < AP_GPS_FixType::FIX_3D);
     const bool armed = hal.util->get_soft_armed();
 
     Location current_location;

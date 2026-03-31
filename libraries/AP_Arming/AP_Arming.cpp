@@ -720,7 +720,7 @@ bool AP_Arming::gps_checks(bool report)
             }
 
             //GPS OK?
-            if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
+            if (gps.status(i) < AP_GPS_FixType::FIX_3D) {
                 check_failed(Check::GPS, report, "GPS %i: Bad fix", i+1);
                 return false;
             }

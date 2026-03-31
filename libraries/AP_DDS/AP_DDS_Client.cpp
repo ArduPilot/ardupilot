@@ -255,20 +255,20 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     const auto status = gps.status(instance);
     switch (status) {
-    case AP_GPS::NO_GPS:
-    case AP_GPS::NO_FIX:
+    case AP_GPS_FixType::NO_GPS:
+    case AP_GPS_FixType::NONE:
         msg.status.status = -1; // STATUS_NO_FIX
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
-    case AP_GPS::GPS_OK_FIX_2D:
-    case AP_GPS::GPS_OK_FIX_3D:
+    case AP_GPS_FixType::FIX_2D:
+    case AP_GPS_FixType::FIX_3D:
         msg.status.status = 0; // STATUS_FIX
         break;
-    case AP_GPS::GPS_OK_FIX_3D_DGPS:
+    case AP_GPS_FixType::DGPS:
         msg.status.status = 1; // STATUS_SBAS_FIX
         break;
-    case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
-    case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+    case AP_GPS_FixType::RTK_FLOAT:
+    case AP_GPS_FixType::RTK_FIXED:
         msg.status.status = 2; // STATUS_SBAS_FIX
         break;
     default:

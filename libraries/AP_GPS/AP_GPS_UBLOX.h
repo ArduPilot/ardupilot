@@ -143,7 +143,7 @@ public:
     // Methods
     bool read() override;
 
-    AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
+    AP_GPS_FixType highest_supported_status(void) override { return AP_GPS_FixType::RTK_FIXED; }
 
     static bool _detect(struct UBLOX_detect_state &state, uint8_t data);
 
@@ -878,7 +878,7 @@ private:
     bool        _legacy_cfg_supported = true;
 #endif
     // used to update fix between status and position packets
-    AP_GPS::GPS_Status next_fix { AP_GPS::NO_FIX };
+    AP_GPS_FixType next_fix { AP_GPS_FixType::NONE };
 
     bool _cfg_needs_save;
 

@@ -95,7 +95,7 @@ float ModeFollow::wp_bearing() const
     return g2.follow.get_bearing_to_target_deg();
 }
 
-// return distance (in meters) to destination
+// return straight-line distance (in meters) to destination
 float ModeFollow::get_distance_to_destination() const
 {
     return g2.follow.get_distance_to_target_m();

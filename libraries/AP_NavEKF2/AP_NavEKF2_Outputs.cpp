@@ -222,7 +222,7 @@ bool NavEKF2_core::getPosNE(Vector2p &posNE) const
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
-            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_GPS_FixType::FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = dal.gps().location();
                 posNE = EKF_origin.get_distance_NE_postype(gpsloc);
@@ -302,7 +302,7 @@ bool NavEKF2_core::getLLH(Location &loc) const
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
-            if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status() >= AP_GPS_FixType::FIX_2D)) {
                 // we have a GPS position fix to return
                 const Location &gpsloc = gps.location();
                 loc.lat = gpsloc.lat;
@@ -324,7 +324,7 @@ bool NavEKF2_core::getLLH(Location &loc) const
     } else {
         // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
         // GPS reading if available and return false
-        if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+        if ((gps.status() >= AP_GPS_FixType::FIX_3D)) {
             loc = gps.location();
         }
         return false;
