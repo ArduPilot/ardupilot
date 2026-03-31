@@ -5213,10 +5213,18 @@ MAV_RESULT CommandDoSprayerHandler::_run()
 #endif
 
 #if AP_LANDINGGEAR_ENABLED
+class Command_AIRFRAME_CONFIGURATION : public CommandIntHandler {
+    using CommandIntHandler::CommandIntHandler;
+
+    MAV_RESULT _run() override;
+    // if param1 is sent this command will fail!
+    uint8_t used_param_mask() const override { return 0b00000010; }
+};
+
 /*
   handle MAV_CMD_AIRFRAME_CONFIGURATION for landing gear control
  */
-MAV_RESULT GCS_MAVLINK::handle_command_airframe_configuration(const mavlink_command_int_t &packet)
+MAV_RESULT Command_AIRFRAME_CONFIGURATION::_run()
 {
     // Param 1: Select which gear, not used in ArduPilot
     // Param 2: 0 = Deploy, 1 = Retract
@@ -5697,6 +5705,10 @@ CommandIntHandler *new_command_int_handler(const mavlink_command_int_t &packet, 
     case MAV_CMD_DO_GRIPPER:
         return NEW_NOTHROW CommandDoGripperHandler(packet, msg);
 #endif  // AP_GRIPPER_ENABLED
+#if AP_LANDINGGEAR_ENABLED
+    case MAV_CMD_AIRFRAME_CONFIGURATION:
+        return NEW_NOTHROW Command_AIRFRAME_CONFIGURATION(packet, msg);
+#endif  // AP_LANDINGGEAR_ENABLED
     default:
         break;
     }
@@ -5779,11 +5791,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 #if HAL_INS_ACCELCAL_ENABLED
     case MAV_CMD_ACCELCAL_VEHICLE_POS:
         return handle_command_accelcal_vehicle_pos(packet);
-#endif
-
-#if AP_LANDINGGEAR_ENABLED
-    case MAV_CMD_AIRFRAME_CONFIGURATION:
-        return handle_command_airframe_configuration(packet);
 #endif
 
 #if AP_BATTERY_ENABLED
