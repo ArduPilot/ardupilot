@@ -31,8 +31,6 @@ public:
 
     // set the current-draw at the instant identified as "now"
     void set_current(float current_amps, uint64_t now_us);
-    // set the current-draw using AP_HAL::micros64() as "now"
-    void set_current(float current_amps);
 
     float get_voltage(void) const;
     float get_capacity(void) const { return capacity_Ah; }

@@ -73,7 +73,8 @@ void MultiCopter::update(const struct sitl_input &input)
     // estimate voltage and current
     frame->current_and_voltage(battery_voltage, battery_current);
 
-    battery.set_current(battery_current);
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.set_current(battery_current, now_us);
 
     update_dynamics(rot_accel);
     update_external_payload(input);
