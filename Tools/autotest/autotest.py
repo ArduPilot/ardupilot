@@ -12,6 +12,7 @@ import fnmatch
 import glob
 import optparse
 import os
+import pathlib
 import re
 import shutil
 import signal
@@ -638,8 +639,7 @@ class TestResults(object):
 
         # Load template file
         template_path = 'Tools/autotest/web/autotest-badge-template.svg'
-        with open(util.reltopdir(template_path), "r") as f:
-            template = f.read()
+        template = pathlib.Path(util.reltopdir(template_path)).read_text()
 
         # Add our results to the template
         badge = template.format(color=badge_color,

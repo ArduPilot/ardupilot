@@ -25,6 +25,7 @@ import argparse
 import glob
 import logging
 import os
+import pathlib
 import re
 import xml.etree.ElementTree as ET
 
@@ -93,8 +94,7 @@ def get_xml_data(base_url: str, directory: str, filename: str) -> ET.Element:
     # Check if the locally cached file exists
     if os.path.isfile(file_path):
         # Load the file content relative to the script location
-        with open(file_path, "r", encoding="utf-8") as file:
-            xml_data = file.read()
+        xml_data = pathlib.Path(file_path).read_text(encoding="utf-8")
     else:
         # No locally cached file exists, get it from the internet
         try:

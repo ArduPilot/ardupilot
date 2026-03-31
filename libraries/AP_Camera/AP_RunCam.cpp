@@ -51,13 +51,13 @@ const AP_Param::GroupInfo AP_RunCam::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BT_DELAY", 3, AP_RunCam, _boot_delay_ms, 7000),
 
-    // @Param: BTN_DELAY
+    // @Param: BTN_DELY
     // @DisplayName: RunCam button delay before allowing further button presses
     // @Description: Time it takes for the a RunCam button press to be actived in ms. If this is too short then commands can get out of sync.
     // @User: Advanced
     AP_GROUPINFO("BTN_DELY", 4, AP_RunCam, _button_delay_ms, RUNCAM_DEFAULT_BUTTON_PRESS_DELAY),
 
-    // @Param: MDE_DELAY
+    // @Param: MDE_DELY
     // @DisplayName: RunCam mode delay before allowing further button presses
     // @Description: Time it takes for the a RunCam mode button press to be actived in ms. If a mode change first requires a video recording change then double this value is used. If this is too short then commands can get out of sync.
     // @User: Advanced
