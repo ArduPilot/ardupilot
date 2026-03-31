@@ -73,6 +73,7 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
             find_signature_in_buffer(1);
             continue;
         }
+<<<<<<< HEAD
 
         if (tf_frame_len < TFA1500_FRAME_LENGTH) {
             break;
@@ -88,6 +89,23 @@ bool AP_RangeFinder_Benewake_TFA1500::get_reading(float &reading_m)
             tf_frame_len = 0;
 
             if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == 0x3FFFFF)) {
+=======
+
+        if (tf_frame_len < TFA1500_FRAME_LENGTH) {
+            break;
+        }
+
+        const uint8_t expected_checksum = (uint8_t)~(tf_frame.packet.dist_low +
+                                                tf_frame.packet.dist_mid +
+                                                tf_frame.packet.dist_high);
+        if (expected_checksum == tf_frame.packet.checksum_of_bytes) {
+            const uint32_t dist_cm = (tf_frame.packet.dist_high << 16) |
+                                     (tf_frame.packet.dist_mid << 8) |
+                                     tf_frame.packet.dist_low;
+            tf_frame_len = 0;
+
+            if ((dist_cm >= TFA1500_DIST_MAX_CM) || (dist_cm == (uint32_t)model_dist_max_cm())) {
+>>>>>>> e69e6d8ec2 (AP_RangeFinder: Add max-height test for Benewake TFA1500 and improve processing logic)
                 count_out_of_range++;
             } else {
                 sum_cm += dist_cm;

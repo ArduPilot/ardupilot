@@ -11340,6 +11340,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         )
         self.wait_text("Rangefinder: MCU Temperature alert", check_context=True)
 
+    def RangeFinderDriversMaxAlt_BenewakeTFA1500(self) -> None:
+        '''test max-height behaviour - Benewake_TFA1500'''
+        self.RangeFinderDriversMaxAlt_FlyDriver(
+            name="Benewake-TFA1500",
+            rngfnd_type=48,
+            simname='benewake_tfa1500',
+            maxalt=1300,
+            sqalt=1295,
+            sq_at_sqalt=None,
+        )
+
     def RangeFinderDriversLongRange(self):
         '''test rangefinder above 327m'''
         # FIXME: when we get a driver+simulator for a rangefinder with
@@ -13631,6 +13642,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RangeFinderDriversMaxAlt_LightwareSerial,
              self.RangeFinderDriversMaxAlt_AinsteinLRD1,
              self.RangeFinderDriversMaxAlt_AinsteinLRD1_v19,
+             self.RangeFinderDriversMaxAlt_BenewakeTFA1500,
              self.RangeFinderDriversLongRange,
              self.RangeFinderSITLLongRange,
              self.MaxBotixI2CXL,

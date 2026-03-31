@@ -1,3 +1,18 @@
+/*
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 // Datasheet: https://en.benewake.com/DataDownload/index_pid_20_lcid_104.html
@@ -21,8 +36,8 @@ protected:
 
 private:
     using AP_RangeFinder_Benewake::AP_RangeFinder_Benewake;
-    bool process_byte(uint8_t received_byte, uint32_t &dist_cm);
     bool get_reading(float &reading_m) override;
+    void find_signature_in_buffer(uint8_t start);
 
     union {
         uint8_t bytes[5];
@@ -36,7 +51,7 @@ private:
     } tf_frame;
 
     uint8_t tf_frame_len;
-    uint32_t last_init_ms = 0;
+    uint32_t last_init_ms;
 };
 
 #endif // AP_RANGEFINDER_BENEWAKE_TFA1500
