@@ -745,6 +745,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 
     // This adds support for leak detectors in a separate enclosure
     // connected to a mavlink enabled subsystem
+#if AP_LEAKDETECTOR_ENABLED
     case MAVLINK_MSG_ID_SYS_STATUS: {
         uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
@@ -757,7 +758,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         }
         break;
     }
-
+#endif
     default:
         GCS_MAVLINK::handle_message(msg);
         break;
