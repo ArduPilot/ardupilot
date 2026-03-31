@@ -633,7 +633,7 @@ AP_GPS_SBF::process_message(void)
         const msg4028 &temp = sbf_msg.data.msg4028u;
 
         // just breakout any consts we need for Do Not Use (DNU) reasons
-        constexpr double doubleDNU = -2e-10;
+        constexpr double doubleDNU = -2e+10;
         constexpr uint16_t uint16DNU = 65535;
 
         check_new_itow(temp.TOW, sbf_msg.length);
