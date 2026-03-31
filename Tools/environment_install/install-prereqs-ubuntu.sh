@@ -94,13 +94,16 @@ case ${RELEASE_DISTRIBUTOR} in
         ;;
 esac
 
-PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
+PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default Python interpreter
 PIP=pip3
 
 if [ ${RELEASE_CODENAME} == 'bionic' ] ||
       [ ${RELEASE_CODENAME} == 'buster' ] ||
       [ ${RELEASE_CODENAME} == 'focal' ] ||
-      [ ${RELEASE_CODENAME} == 'groovy' ]; then
+      [ ${RELEASE_CODENAME} == 'groovy' ] ||
+      [ ${RELEASE_CODENAME} == 'lunar' ] ||
+      [ ${RELEASE_CODENAME} == 'mantic' ] ||
+      [ ${RELEASE_CODENAME} == 'oracular' ]; then
     echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
     exit 1
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
@@ -118,22 +121,7 @@ elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'mantic' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     SITLFML_VERSION="2.6"
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
@@ -202,14 +190,11 @@ ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 
 if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'lunar' ] ||
-   [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'oracular' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
    false; then
-    # on Lunar (and presumably later releases), we install in venv, below
+    # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
     PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
 else
@@ -220,10 +205,7 @@ fi
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     if [ ${RELEASE_CODENAME} == 'trixie' ] ||
        [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-       [ ${RELEASE_CODENAME} == 'lunar' ] ||
-       [ ${RELEASE_CODENAME} == 'mantic' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'oracular' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
        false; then
@@ -312,11 +294,7 @@ elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} != 'mantic' ] &&
-     [ ${RELEASE_CODENAME} != 'noble' ] &&
-     [ ${RELEASE_CODENAME} != 'oracular' ] &&
+elif [ ${RELEASE_CODENAME} != 'noble' ] &&
      [ ${RELEASE_CODENAME} != 'plucky' ] &&
      [ ${RELEASE_CODENAME} != 'questing' ] &&
      true; then
@@ -335,15 +313,8 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-  elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-  elif [ ${RELEASE_CODENAME} == 'mantic' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
@@ -371,13 +342,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-      PYTHON_PKGS+=" wxpython opencv-python"
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'mantic' ] ||
-       [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'oracular' ] ||
+  elif [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
        false; then
@@ -435,13 +400,9 @@ PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
 PYTHON_VENV_PACKAGE=""
-if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'lunar' ] ||
-   [ ${RELEASE_CODENAME} == 'mantic' ]; then
+if [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     PYTHON_VENV_PACKAGE=python3.11-venv
 elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    PYTHON_VENV_PACKAGE=python3.12-venv
-elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     PYTHON_VENV_PACKAGE=python3.12-venv
 elif [ ${RELEASE_CODENAME} == 'trixie' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
@@ -497,10 +458,7 @@ fi
 
 if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'lunar' ] ||
-   [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'oracular' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
    false; then
