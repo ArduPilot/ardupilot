@@ -15,4 +15,3 @@ disable=SC2145  # 1 instance
 disable=SC2148  # 3 instances
 disable=SC2173  # 1 instance
 disable=SC2199  # 1 instance
-disable=SC2284  # 1 instance fixed in https://github.com/ArduPilot/ardupilot/pull/32579
