@@ -67,7 +67,10 @@ class VirtualPortsLaunch:
             shell=True,
             output="both",
             respawn=False,
-            cached_output=True,
+            # cached_output=True would buffer all output until the process
+            # exits, suppressing real-time ProcessIO events.  socat runs for
+            # the lifetime of the test, so the "starting data transfer loop"
+            # trigger in conftest.py would never fire.  Leave uncached.
         )
         return action
 
