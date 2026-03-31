@@ -386,3 +386,15 @@ env BUILD_ABIN True
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_BIDIR_DSHOT 1
+define AP_EXTERNAL_AHRS_ENABLED 1
+
+# SPI6 - Xsens MTi-7/8
+PB3  SPI6_SCK SPI6
+PA6  SPI6_MISO SPI6
+PG14 SPI6_MOSI SPI6
+PI10 XSENS_CS CS
+PF3  XSENS_DRDY INPUT
+
+SPIDEV xsens SPI6 DEVID1 XSENS_CS MODE3 1*MHZ 1*MHZ
+
+# define HAL_GPIO_XSENS_DRDY 94
