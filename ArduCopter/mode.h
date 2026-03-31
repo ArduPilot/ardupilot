@@ -1180,11 +1180,11 @@ public:
     void angle_control_start();
     void angle_control_run();
 #if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
-    void circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, ORBIT_YAW_BEHAVIOUR yaw_behaviour = ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER);
+    void orbit_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, ORBIT_YAW_BEHAVIOUR yaw_behaviour = ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER);
     void orbit_run();
     void orbit_apply_yaw_behaviour();
     bool circle_moving_to_edge() const { return _circle_moving_to_edge; }
-#endif
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 
     // return guided mode timeout in milliseconds. Only used for velocity, acceleration, angle control, and angular rate control
     uint32_t get_timeout_ms() const;

@@ -182,10 +182,6 @@
 # define AC_COPTER_MODEGUIDED_ORBIT_ENABLED (MODE_GUIDED_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB>1024)
 #endif
 
-#ifndef AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
-# define AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED AC_COPTER_MODEGUIDED_ORBIT_ENABLED
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED

@@ -266,7 +266,7 @@ void ModeGuided::wp_control_run()
         orbit_apply_yaw_behaviour();
         guided_mode = SubMode::Orbit;
     }
-#endif
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->D_update_controller();
@@ -490,7 +490,7 @@ bool ModeGuided::get_wp(Location& destination) const
             destination = circle_center;
             return true;
         }
-#endif
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
     case SubMode::Angle:
     case SubMode::TakeOff:
     case SubMode::Accel:
@@ -1271,8 +1271,8 @@ bool ModeGuided::resume()
 }
 
 #if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
-// circle_start - initialise guided controller to fly a circle around a specified location
-void ModeGuided::circle_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, ORBIT_YAW_BEHAVIOUR yaw_behaviour)
+// orbit_start - initialise guided controller to fly a circle around a specified location
+void ModeGuided::orbit_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, ORBIT_YAW_BEHAVIOUR yaw_behaviour)
 {
     // set circle center, radius and direction
     copter.circle_nav->set_center(circle_center);

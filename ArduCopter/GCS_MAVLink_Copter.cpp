@@ -571,7 +571,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
 #if AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
     case MAV_CMD_DO_ORBIT:
         return handle_MAV_CMD_DO_ORBIT(packet);
-#endif
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
@@ -900,7 +900,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int
 
     return MAV_RESULT_ACCEPTED;
 }
-#endif
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 
 // this is called on receipt of a MANUAL_CONTROL packet and is
 // expected to call manual_override to override RC input on desired
