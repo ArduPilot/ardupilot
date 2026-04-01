@@ -63,13 +63,14 @@ bool AP_Doppler_Telem::init(const AP_SerialManager &serial_manager)
 }
 
 
-
+/*
 void AP_Doppler_Telem::update()
 {
     if (_backend == nullptr) {
         return;
     }
 }
+*/
 
 void AP_Doppler_Telem::send()
 {
