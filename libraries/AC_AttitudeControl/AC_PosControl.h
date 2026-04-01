@@ -23,7 +23,7 @@
 #define POSCONTROL_STOPPING_DIST_DOWN_MAX_M     2.0f    // max stopping distance (in m) vertically while descending
 
 #define POSCONTROL_SPEED_MS                     5.0f    // default horizontal speed in m/s
-#define POSCONTROL_SPEED_DOWN_MS                1.5f    // default descent rate in m/sfv
+#define POSCONTROL_SPEED_DOWN_MS                1.5f    // default descent rate in m/s
 #define POSCONTROL_SPEED_UP_MS                  2.5f    // default climb rate in m/s
 
 #define POSCONTROL_ACCEL_D_MSS                  2.5f    // default vertical acceleration in m/s²
