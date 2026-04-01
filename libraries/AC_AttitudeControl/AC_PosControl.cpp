@@ -346,7 +346,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Position Controller Options
     // @Description: Bitmask of options for the position controller
-    // @Bitmask: 0:Disable EKF control limits when using optical flow
+    // @Bitmask: 0:Disable EKF control limits
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 15, AC_PosControl, _options, 0),
 
