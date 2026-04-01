@@ -771,7 +771,7 @@ void NavEKF3_core::FuseVelPosNED()
                 // giving stronger velocity/bias convergence while we have high confidence
                 // the vehicle is stationary. Not as tight as a real sensor since
                 // the measurement is an assumption, not a physical observation.
-                R_OBS[0] = sq(1.0f);
+                R_OBS[0] = sq(MIN(frontend->_noaidHorizNoise, 1.0f));
             } else if (tiltAlignComplete && motorsArmed) {
                 // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
                 R_OBS[0] = sq(constrain_ftype(frontend->_noaidHorizNoise, 0.5f, 50.0f));
