@@ -213,7 +213,7 @@ int main(void)
     init_uarts();
 #endif
 
-#if HAL_ENABLE_DFU_BOOT && defined(STM32H7)
+#if HAL_ENABLE_DFU_BOOT
     /*
       check if the main firmware requested a reboot into DFU mode
       (STM32 system bootloader for USB firmware upload).
@@ -221,19 +221,18 @@ int main(void)
       this check is placed here deliberately — after ChibiOS init and
       init_uarts() — for two reasons:
 
-      1. D-Cache flush requires caches to be enabled. the firmware
-         uses AXI SRAM as primary RAM with write-back D-Cache. dirty
-         cache lines persist through NVIC_SystemReset. if not flushed,
-         the system bootloader reads stale data from AXI SRAM and its
-         USB OTG core soft reset (GRSTCTL.CSRST) hangs permanently.
-         SCB_CleanDCache() is a no-op when caches are disabled, so we
-         must wait until __cpu_init has re-enabled them.
+      1. on Cortex-M7 (F7/H7), D-Cache flush requires caches to be
+         enabled. the firmware uses write-back D-Cache and dirty cache
+         lines persist through NVIC_SystemReset. if not flushed, the
+         system bootloader reads stale data and its USB OTG core soft
+         reset (GRSTCTL.CSRST) hangs. SCB_CleanDCache() is a no-op
+         when caches are disabled, so we must wait until __cpu_init
+         has re-enabled them.
 
       2. the USB OTG FS peripheral is configured by init_uarts() and
          must be fully de-initialised before the system bootloader can
          re-initialise it. without this, the USB PHY is left in an
-         active state that prevents the system bootloader's core reset
-         from completing.
+         active state that prevents the core reset from completing.
 
       the firmware signals DFU mode by setting boot_to_dfu in the
       persistent data (RTC backup registers) and rebooting with
@@ -246,32 +245,49 @@ int main(void)
             pd.boot_to_dfu = false;
             stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
 
+            // determine USB OTG FS base address and RCC bits per family
+#if defined(STM32H7)
+            const uint32_t usb_base = 0x40080000U;  // USB2_OTG_FS
+            RCC->AHB1ENR |= RCC_AHB1ENR_USB2OTGHSEN;
+#elif defined(STM32F7) || defined(STM32F4)
+            const uint32_t usb_base = 0x50000000U;  // USB_OTG_FS
+            RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+#endif
+            __DSB();
+
             // fully de-initialise the USB OTG FS peripheral:
             // disconnect from bus, power down the analog PHY,
             // complete a core soft reset, then reset via RCC
-            // and gate the clock
-            RCC->AHB1ENR |= RCC_AHB1ENR_USB2OTGHSEN;
-            __DSB();
-            *(__IO uint32_t *)(0x40080804U) |= 2;   // DCTL: set SDIS (disconnect)
-            *(__IO uint32_t *)(0x40080038U) = 0;     // GCCFG: PWRDWN=0 (PHY off)
-            *(__IO uint32_t *)(0x40080010U) = 1;     // GRSTCTL: CSRST=1
-            while (*(__IO uint32_t *)(0x40080010U) & 1) {} // wait for CSRST
+            // and gate the clock. register offsets are the same
+            // across all STM32 families (DWC OTG IP).
+            *(__IO uint32_t *)(usb_base + 0x804U) |= 2;  // DCTL: SDIS
+            *(__IO uint32_t *)(usb_base + 0x038U) = 0;    // GCCFG: PHY off
+            *(__IO uint32_t *)(usb_base + 0x010U) = 1;    // GRSTCTL: CSRST
+            while (*(__IO uint32_t *)(usb_base + 0x010U) & 1) {}
+
+#if defined(STM32H7)
             RCC->AHB1RSTR |= RCC_AHB1RSTR_USB2OTGHSRST;
             __DSB();
             RCC->AHB1RSTR &= ~RCC_AHB1RSTR_USB2OTGHSRST;
             RCC->AHB1ENR &= ~RCC_AHB1ENR_USB2OTGHSEN;
+#elif defined(STM32F7) || defined(STM32F4)
+            RCC->AHB2RSTR |= RCC_AHB2RSTR_OTGFSRST;
+            __DSB();
+            RCC->AHB2RSTR &= ~RCC_AHB2RSTR_OTGFSRST;
+            RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN;
+#endif
 
-            // flush dirty D-Cache lines to RAM — the firmware's
-            // cached writes to AXI SRAM must reach physical memory
-            // before the system bootloader reads it
+#if CORTEX_MODEL == 7
+            // flush dirty D-Cache lines to RAM and disable caches.
+            // on Cortex-M7 (F7/H7) the firmware's cached writes
+            // persist through NVIC_SystemReset and must be flushed.
             SCB_CleanDCache();
             SCB_DisableDCache();
             SCB_InvalidateICache();
             SCB_DisableICache();
+#endif
 
-            // restore remaining CPU state to reset defaults.
-            // the system bootloader expects the state it would
-            // see after a hardware power-on reset.
+            // restore CPU state to power-on reset defaults
             __enable_irq();
             SCB->VTOR = 0;
             SCB->CPACR = 0;
@@ -279,7 +295,13 @@ int main(void)
             __ISB();
 
             // jump to STM32 system bootloader in system memory
+#if defined(STM32H7)
             const uint32_t *app_base = (const uint32_t *)(0x1FF09800);
+#elif defined(STM32F7)
+            const uint32_t *app_base = (const uint32_t *)(0x1FF00000);
+#else
+            const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
+#endif
             __set_MSP(*app_base);
             ((void (*)())*(&app_base[1]))();
             while (true);
