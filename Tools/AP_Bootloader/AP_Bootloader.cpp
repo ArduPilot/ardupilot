@@ -245,37 +245,22 @@ int main(void)
             pd.boot_to_dfu = false;
             stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
 
-            // determine USB OTG FS base address and RCC bits per family
-#if defined(STM32H7)
-            const uint32_t usb_base = 0x40080000U;  // USB2_OTG_FS
-            RCC->AHB1ENR |= RCC_AHB1ENR_USB2OTGHSEN;
-#elif defined(STM32F7) || defined(STM32F4)
-            const uint32_t usb_base = 0x50000000U;  // USB_OTG_FS
-            RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
-#endif
-            __DSB();
+            // ensure USB OTG FS clock is enabled so we can
+            // access its registers for de-initialisation
+            rccEnableOTG_FS(false);
 
             // fully de-initialise the USB OTG FS peripheral:
             // disconnect from bus, power down the analog PHY,
-            // complete a core soft reset, then reset via RCC
-            // and gate the clock. register offsets are the same
-            // across all STM32 families (DWC OTG IP).
-            *(__IO uint32_t *)(usb_base + 0x804U) |= 2;  // DCTL: SDIS
-            *(__IO uint32_t *)(usb_base + 0x038U) = 0;    // GCCFG: PHY off
-            *(__IO uint32_t *)(usb_base + 0x010U) = 1;    // GRSTCTL: CSRST
-            while (*(__IO uint32_t *)(usb_base + 0x010U) & 1) {}
+            // and complete a core soft reset. the register layout
+            // (stm32_otg_t) is the same across all STM32 families.
+            OTG_FS->DCTL |= DCTL_SDIS;
+            OTG_FS->GCCFG = 0;
+            OTG_FS->GRSTCTL = GRSTCTL_CSRST;
+            while (OTG_FS->GRSTCTL & GRSTCTL_CSRST) {}
 
-#if defined(STM32H7)
-            RCC->AHB1RSTR |= RCC_AHB1RSTR_USB2OTGHSRST;
-            __DSB();
-            RCC->AHB1RSTR &= ~RCC_AHB1RSTR_USB2OTGHSRST;
-            RCC->AHB1ENR &= ~RCC_AHB1ENR_USB2OTGHSEN;
-#elif defined(STM32F7) || defined(STM32F4)
-            RCC->AHB2RSTR |= RCC_AHB2RSTR_OTGFSRST;
-            __DSB();
-            RCC->AHB2RSTR &= ~RCC_AHB2RSTR_OTGFSRST;
-            RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN;
-#endif
+            // reset the peripheral via RCC and disable its clock
+            rccResetOTG_FS();
+            rccDisableOTG_FS();
 
 #if CORTEX_MODEL == 7
             // flush dirty D-Cache lines to RAM and disable caches.
