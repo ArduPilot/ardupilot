@@ -36,7 +36,7 @@
 #define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the I term to 5% in half a second
 
 // PSC_OPTIONS parameter bitmask
-#define PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT  (1 << 0)    // bit 0: disable EKF control scaling when using optical flow
+#define PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT  (1U << 0)   // bit 0: disable EKF control scaling when using optical flow
 
 
 class AC_PosControl
