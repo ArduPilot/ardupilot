@@ -1,89 +1,60 @@
-/*
- * This file is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This file is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/*
-  the BMI088 is unusual as it has separate chip-select for accel and
-  gyro, which means it needs two Device pointers
- */
 #pragma once
 
-#include <AP_HAL/AP_HAL.h>
-
-#include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Math/AP_Math.h>
 
-class AP_InertialSensor_BMI088 : public AP_InertialSensor_Backend {
+// Custom BMI088 IMU Driver
+class AP_InertialSensor_BMI088_Custom : public AP_InertialSensor_Backend {
 public:
-    static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
-                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
-                                            AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
-                                            enum Rotation rotation);
+    // Probe function to detect sensor
+    static AP_InertialSensor_Backend* probe(AP_InertialSensor &imu);
 
-    /**
-     * Configure the sensors and start reading routine.
-     */
+    // Start and update lifecycle
     void start() override;
     bool update() override;
 
 private:
-    AP_InertialSensor_BMI088(AP_InertialSensor &imu,
-                             AP_HAL::OwnPtr<AP_HAL::Device> dev_accel,
-                             AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro,
-                             enum Rotation rotation);
+    // Constructor
+    AP_InertialSensor_BMI088_Custom(AP_InertialSensor &imu);
 
-    /*
-     initialise hardware layer
-     */
+    // Initialization functions
+    bool init();
     bool accel_init();
     bool gyro_init();
 
-    /*
-      initialise driver
-     */
-    bool init();
+    // Configuration
+    bool configure_accel();
+    bool configure_gyro();
 
-    /*
-      read data from the FIFOs
-     */
-    void read_fifo_accel();
-    void read_fifo_gyro();
+    // Register operations
+    uint8_t read_reg(uint8_t reg);
+    void write_reg(uint8_t reg, uint8_t val);
 
-    /*
-      read from accelerometer registers, special SPI handling needed
-     */
-    bool read_accel_registers(uint8_t reg, uint8_t *data, uint8_t len);
+    // Sensor reading
+    void read_accel();
+    void read_gyro();
 
-    /*
-      write to an accelerometer register with retries
-     */
-    bool write_accel_register(uint8_t reg, uint8_t v);
+    // Scaling helpers
+    float accel_scale(int16_t raw);
+    float gyro_scale(int16_t raw);
 
-    /*
-      configure accel registers
-     */
-    bool setup_accel_config(void);
+    // SPI device
+    AP_HAL::SPIDevice *_dev;
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_accel;
-    AP_HAL::Device::PeriodicHandle accel_periodic_handle;
-    AP_HAL::OwnPtr<AP_HAL::Device> dev_gyro;
-    AP_HAL::Device::PeriodicHandle gyro_periodic_handle;
+    // Sensor instances
+    uint8_t accel_instance;
+    uint8_t gyro_instance;
 
-    enum Rotation rotation;
-    uint8_t temperature_counter;
-    enum DevTypes _accel_devtype;
-    float accel_range;
+    // Raw sensor data
+    int16_t _ax, _ay, _az;
+    int16_t _gx, _gy, _gz;
 
-    bool done_accel_config;
-    uint32_t accel_config_count;
+    // Scaled data
+    Vector3f accel;
+    Vector3f gyro;
+
+    // Constants
+    static constexpr float ACCEL_RANGE = 24.0f;   // ±24g
+    static constexpr float GYRO_RANGE  = 2000.0f; // ±2000 dps
 };
