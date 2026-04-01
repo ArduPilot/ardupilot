@@ -8,12 +8,12 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  // default gains for Plane
- # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.2f    // Soft
+ # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.15f    // Medium
  #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN     5.0     // Min lean angle so that vehicle can maintain limited control
  #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 0
 #else
  // default gains for Copter and Sub
- # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.15f   // Medium
+ # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.10f   // Crisp
  #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN     10.0   // Min lean angle so that vehicle can maintain limited control
  #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 1
 #endif
