@@ -707,9 +707,9 @@ void NavEKF3_core::SelectVelPosFusion()
     // when the vehicle is being moved, and takeoff_expected for armed-on-ground.
     // Gate behind fuseHgtData to limit fusion rate to baro rate (~10Hz) and avoid
     // overconstraining the filter by fusing at IMU rate.
-    const bool onGroundNotFlying2 = onGroundNotMoving || dal.get_takeoff_expected();
+    const bool onGroundNotFlying = onGroundNotMoving || dal.get_takeoff_expected();
 
-    if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying2) {
+    if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying) {
         // Check if we have recent velocity aiding from any source
         const uint32_t velAidTimeout_ms = 1000;
         const bool haveRecentGpsVel = (imuSampleTime_ms - lastVelPassTime_ms < velAidTimeout_ms);
