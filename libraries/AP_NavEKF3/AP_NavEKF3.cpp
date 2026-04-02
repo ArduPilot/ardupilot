@@ -816,10 +816,10 @@ bool NavEKF3::InitialiseFilter(void)
         // breaking the feedback loop between learning and correction. The INS parameter
         // may be updated by learning during flight, but only the frozen value is used
         // for correction.
-        // Load from DAL so Replay gets the correct correction value from
-        // logged data. Vehicle code may override via
-        // setHoverZBiasCorrection() based on its learning mode setting.
-        {
+        // Load hover Z-bias correction if enabled by vehicle code.
+        // Uses DAL so Replay gets the correct values from logged data.
+        // Vehicle code may override via setHoverZBiasCorrection().
+        if (dal.get_hover_z_bias_enabled()) {
             for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
                 constexpr float MAX_HOVER_BIAS_CORRECTION = 0.6f;
                 _accelBiasHoverZ_correction[i] = constrain_float(

@@ -740,12 +740,12 @@ void NavEKF3_core::correctDeltaVelocity(Vector3F &delVel, ftype delVelDT, uint8_
     // Uses a value FROZEN at boot (not the learning parameter) to avoid feedback
     // instability. Each IMU has its own learned correction value.
     //
-    // Apply when motors are armed - this is when vibration rectification exists.
+    // Only applied when enabled by vehicle code and motors are armed.
     // Z-bias learning is already inhibited during ground effect (takeoff_expected
     // or touchdown_expected), so the EKF won't learn to compensate for this
     // correction while on the ground. Applying immediately on arm avoids a
     // sudden shift when transitioning above ground effect altitude.
-    if (motorsArmed) {
+    if (dal.get_hover_z_bias_enabled() && motorsArmed) {
         delVel.z -= frontend->_accelBiasHoverZ_correction[accel_index] * delVelDT;
     }
 }
