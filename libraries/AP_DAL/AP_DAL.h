@@ -105,7 +105,7 @@ public:
 
     enum class RFRNFlags {
         ARMED = (1U<<0),
-        UNUSED = (1U<<1),
+        HOVER_Z_BIAS_ENABLED = (1U<<1),
         FLY_FORWARD = (1U<<2),
         AHRS_AIRSPEED_SENSOR_ENABLED = (1U<<3),
         OPTICALFLOW_ENABLED = (1U<<4),
@@ -203,6 +203,10 @@ public:
 
     bool get_touchdown_expected(void) const {
         return _RFRN.touchdown_expected;
+    }
+
+    bool get_hover_z_bias_enabled(void) const {
+        return _RFRN.hover_z_bias_enabled;
     }
 
     // for EKF usage to enable takeoff expected to true
