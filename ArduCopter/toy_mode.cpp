@@ -855,7 +855,7 @@ void ToyMode::throttle_adjust(float &throttle_control)
         // user wants to climb - don't play with throttle  
         return;  
     }  
-    const float height = -pos_d_m - copter.arming_altitude_m;  
+    const float height = -pos_d_m - copter.arming_alt_above_origin_m;
     if (height >= TOY_DESCENT_SLOW_HEIGHT + TOY_DESCENT_SLOW_RAMP) {  
         // vehicle is above ramp-adjusted slow-down height  
         return;  
