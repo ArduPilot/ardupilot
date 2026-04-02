@@ -110,7 +110,7 @@ public:
     float getHoverZBiasCorrection(uint8_t imu_index) const;
 
     // set the frozen hover Z-bias correction for a specific IMU
-    // value is clamped to +/-0.3 m/s^2 for safety
+    // value is clamped to +/-HOVER_Z_BIAS_LIM
     // returns true if set successfully, false if EKF not initialized
     bool setHoverZBiasCorrection(uint8_t imu_index, float correction);
 
@@ -336,10 +336,6 @@ public:
 
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
-
-    // Note: Hover Z-bias learning (update_accel_bias_hover, save_accel_bias_hover)
-    // has been moved to ArduCopter (Attitude.cpp). The frozen correction is still
-    // loaded here and applied in correctDeltaVelocity().
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
@@ -582,8 +578,8 @@ private:
     // filter state so learning and correction cannot feed back into each other
     float _accelBiasHoverZ_correction[INS_MAX_INSTANCES];
 
-    // flag to inhibit all accel bias learning (set by vehicle code during high-G maneuvers)
-    bool _inhibitAccelBiasLearning = false;
+    // flag to inhibit all accel bias learning, set by vehicle code
+    bool _inhibitAccelBiasLearning;
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
