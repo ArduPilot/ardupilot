@@ -383,7 +383,6 @@
 #ifndef AP_SIM_XPLANE_ENABLED
 #define AP_SIM_XPLANE_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif  // AP_SIM_XPLANE_ENABLED
-<<<<<<< HEAD
 
 // base class for Siyi simulations:
 #ifndef AP_SIM_SIYI_ENABLED
@@ -393,5 +392,3 @@
 #ifndef AP_SIM_GIMBAL_ENABLED
 #define AP_SIM_GIMBAL_ENABLED (AP_SIM_SOLOGIMBAL_ENABLED || AP_SIM_SIYI_ZT30_ENABLED || AP_SIM_TOPOTEK_ENABLED || AP_SIM_VIEWPRO_ENABLED || AP_SIM_MOUNT_ENABLED)
 #endif  // AP_SIM_GIMBAL_ENABLED
-=======
->>>>>>> 2c8ea5ee73 (AP_RangeFinder: Refactor AP_RangeFinder library and add support for Benewake TFA1500)
