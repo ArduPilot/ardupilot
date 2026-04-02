@@ -1163,8 +1163,8 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
         return true;
     }
 
-    // clear warning timer when disarmed or motors stopped
-    if (!motors->get_spoolup_ready()) {
+    // clear warning timer when disarmed or motors not yet spinning
+    if (!motors->armed() || motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
         takeoff_check_state.warning_ms = 0;
         return false;
     }
