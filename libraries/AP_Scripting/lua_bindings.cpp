@@ -1121,16 +1121,27 @@ int lua_GCS_command_int(lua_State *L)
 
     pkt.command = command;
 
-    float *params = &pkt.param1;
-    int32_t *xy = &pkt.x;
-
     // extract the first 4 parameters as floats
     for (uint8_t i=0; i<4; i++) {
         char pname[3] { 'p' , char('1' + i), 0 };
         lua_pushstring(L, pname);
         lua_gettable(L, 3);
         if (lua_isnumber(L, -1)) {
-            params[i] = lua_tonumber(L, -1);
+            const auto val = lua_tonumber(L, -1);
+            switch (i) {
+            case 0:
+                pkt.param1 = val;
+                break;
+            case 1:
+                pkt.param2 = val;
+                break;
+            case 2:
+                pkt.param3 = val;
+                break;
+            case 3:
+                pkt.param4 = val;
+                break;
+            }
         }
         lua_pop(L, 1);
     }
@@ -1141,7 +1152,12 @@ int lua_GCS_command_int(lua_State *L)
         lua_pushstring(L, names[i]);
         lua_gettable(L, 3);
         if (lua_isinteger(L, -1)) {
-            xy[i] = lua_tointeger(L, -1);
+            const auto val = lua_tointeger(L, -1);
+            if (i == 0) {
+                pkt.x = val;
+            } else {
+                pkt.y = val;
+            }
         }
         lua_pop(L, 1);
     }
