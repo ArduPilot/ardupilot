@@ -50,8 +50,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-//#define RCPROTOCOL_DEBUG_DETECTION
-#ifdef RCPROTOCOL_DEBUG_DETECTION
+#if RCPROTOCOL_DEBUG_DETECTION
 # define debug_detect(fmt, args...)	hal.console->printf("RC: " fmt "\n", ##args)
 #else
 # define debug_detect(fmt, args...)	do {} while(0)
@@ -391,7 +390,9 @@ void AP_RCProtocol::check_added_uart(void)
 
     uint32_t n = added.uart->available();
     n = MIN(n, 255U);
+#if RCPROTOCOL_DEBUG_DETECTION
     added.bytes_received += n;
+#endif
     for (uint8_t i=0; i<n; i++) {
         int16_t b = added.uart->read();
         if (b >= 0) {
@@ -402,7 +403,9 @@ void AP_RCProtocol::check_added_uart(void)
         if (now - added.last_config_change_ms > 1000) {
             // change configs if not detected once a second
             debug_detect("UART received %lu bytes at %lukBd", added.bytes_received, serial_configs[added.config_num].baud/1000);
+#if RCPROTOCOL_DEBUG_DETECTION
             added.bytes_received = 0;
+#endif
             added.config_num++;
             if (added.config_num >= ARRAY_SIZE(serial_configs)) {
                 added.config_num = 0;

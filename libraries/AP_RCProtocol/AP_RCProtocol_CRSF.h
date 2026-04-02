@@ -249,11 +249,7 @@ private:
     void process_link_stats_rx_frame(const void* data);
     void process_link_stats_tx_frame(const void* data);
 
-    AP_HAL::UARTDriver* get_current_UART() const {
-        if (_uart) return _uart;
-        // Fallback for RCIN mode
-        return get_available_UART();
-    }
+    AP_HAL::UARTDriver* get_current_UART() const;
 
     uint16_t _channels[CRSF_MAX_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */
 
@@ -265,7 +261,7 @@ private:
     bool telem_available;
     uint32_t _new_baud_rate;
     bool _crsf_v3_active;
-    PortMode _mode;
+    PortMode _mode = PortMode::PASSTHROUGH_RCIN;
 
     bool _use_lq_for_rssi;
     int16_t derive_scaled_lq_value(uint8_t uplink_lq);
@@ -283,5 +279,3 @@ namespace AP {
 };
 
 #endif  // AP_RCPROTOCOL_CRSF_ENABLED
-
-

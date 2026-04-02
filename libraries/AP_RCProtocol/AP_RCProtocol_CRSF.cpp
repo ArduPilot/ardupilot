@@ -119,9 +119,7 @@ AP_RCProtocol_CRSF* AP_RCProtocol_CRSF::_rcin_singleton = nullptr;
 
 // constructor for RCIN "passthrough" mode
 AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) :
-    AP_RCProtocol_Backend(_frontend),
-    _mode(PortMode::PASSTHROUGH_RCIN),
-    _uart(nullptr)
+    AP_RCProtocol_Backend(_frontend)
 {
     // This is the RCIN instance, register it as the singleton
     _rcin_singleton = this;
@@ -140,6 +138,13 @@ AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend, PortMode mode, 
     _uart(uart)
 {
     start_uart();
+}
+
+AP_HAL::UARTDriver* AP_RCProtocol_CRSF::get_current_UART() const
+{
+    if (_uart) return _uart;
+    // Fallback for RCIN mode
+    return get_available_UART();
 }
 
 // get the protocol string
