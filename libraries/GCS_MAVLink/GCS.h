@@ -149,13 +149,14 @@ public:
     Type task;
     MAV_CMD mav_cmd;
 
-    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan);
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint32_t sysid, uint8_t compid, uint32_t command_opaque_id, mavlink_channel_t chan);
 
     static void check_tasks();
 
 private:
 
     uint32_t requesting_sysid;
+    uint32_t requesting_command_opaque_id;
     uint8_t requesting_compid;
     mavlink_channel_t chan;
 
@@ -706,7 +707,7 @@ protected:
     virtual MAV_RESULT handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
     virtual MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_message_t &msg);
+    virtual MAV_RESULT _handle_command_preflight_calibration_baro(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
 #if AP_MISSION_ENABLED
     virtual MAV_RESULT handle_command_do_set_mission_current(const mavlink_command_int_t &packet);

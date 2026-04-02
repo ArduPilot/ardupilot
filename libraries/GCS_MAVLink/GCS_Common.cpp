@@ -1454,7 +1454,8 @@ bool GCS_MAVLINK_InProgress::send_ack(MAV_RESULT result)
         0,
         0,
         requesting_sysid,
-        requesting_compid
+        requesting_compid,
+        requesting_command_opaque_id
         );
 
     return true;
@@ -1474,10 +1475,11 @@ bool GCS_MAVLINK_InProgress::conclude(MAV_RESULT result)
     return true;
 }
 
-GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan)
+GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint32_t sysid, uint8_t compid, uint32_t command_opaque_id, mavlink_channel_t chan)
 {
     // we can't have two outstanding tasks for the same command from
     // the same mavlink node or the result is ambiguous:
+    // note: this does not use command_opaque_id as yet
     for (auto &_task : in_progress_tasks) {
         if (_task.task == Type::NONE) {
             continue;
@@ -1498,6 +1500,7 @@ GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MA
         _task.mav_cmd = mav_cmd;
         _task.requesting_sysid = sysid;
         _task.requesting_compid = compid;
+        _task.requesting_command_opaque_id = command_opaque_id;
         return &_task;
     }
     return nullptr;
@@ -3455,7 +3458,9 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
             MAV_CMD_ACCELCAL_VEHICLE_POS,
             0,
             (float) position,
-            0, 0, 0, 0, 0, 0);
+            0, 0, 0, 0, 0, 0,
+            0  // command_opaque_id
+            );
     }
 }
 
@@ -3610,7 +3615,9 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     mavlink_msg_command_ack_send(chan, packet.command, MAV_RESULT_ACCEPTED,
                                  0, 0,
                                  msg.sysid,
-                                 msg.compid);
+                                 msg.compid,
+                                 packet.command_opaque_id
+        );
 
 #if AP_VEHICLE_ENABLED
     AP::vehicle()->reboot(reboot_to_bootloader);  // not expected to return
@@ -4819,7 +4826,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_in
 }
 #endif  // AP_BOOTLOADER_FLASHING_ENABLED
 
-MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
 #if AP_BARO_CALIBRATION_ENABLED
     // fast barometer calibration
@@ -4832,7 +4839,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
 
     AP_Airspeed &airspeed = AP::airspeed();
     if (airspeed.enabled()) {
-        GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, chan);
+        GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, packet.command_opaque_id, chan);
         if (task == nullptr) {
             return MAV_RESULT_TEMPORARILY_REJECTED;
         }
@@ -4861,7 +4868,7 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
     }
 
     if (is_equal(packet.param3,1.0f)) {
-        return _handle_command_preflight_calibration_baro(msg);
+        return _handle_command_preflight_calibration_baro(packet, msg);
     }
 
 #if AP_RC_CHANNEL_ENABLED
@@ -5362,6 +5369,7 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
     out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
     out.z = in.param7;
+    out.command_opaque_id = in.command_opaque_id;
 }
 
 void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
@@ -5386,7 +5394,9 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     mavlink_msg_command_ack_send(chan, packet.command, result,
                                  0, camera_command_result_param2(packet, result),
                                  msg.sysid,
-                                 msg.compid);
+                                 msg.compid,
+                                 packet.command_opaque_id
+    );
 
 #if HAL_LOGGING_ENABLED
     // log the packet:
@@ -5416,7 +5426,8 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
         0,
         0,
         msg.sysid,
-        msg.compid
+        msg.compid,
+        packet.command_opaque_id
    );
 
 }
@@ -5604,7 +5615,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
         !is_equal(packet.param2, 1.0f)) {
         return MAV_RESULT_UNSUPPORTED;
     }
-    GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_STORAGE_FORMAT, GCS_MAVLINK_InProgress::Type::SD_FORMAT, msg.sysid, msg.compid, chan);
+    GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_STORAGE_FORMAT, GCS_MAVLINK_InProgress::Type::SD_FORMAT, msg.sysid, msg.compid, packet.command_opaque_id, chan);
     if (task == nullptr) {
         return MAV_RESULT_TEMPORARILY_REJECTED;
     }
@@ -5909,7 +5920,9 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
     mavlink_msg_command_ack_send(chan, packet.command, result,
                                  0, camera_command_result_param2(packet, result),
                                  msg.sysid,
-                                 msg.compid);
+                                 msg.compid,
+                                 packet.command_opaque_id
+    );
 
 #if HAL_LOGGING_ENABLED
     uint32_t target_system;
