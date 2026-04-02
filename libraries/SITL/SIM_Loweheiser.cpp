@@ -132,7 +132,8 @@ void Loweheiser::handle_message(const mavlink_message_t &msg)
                 0,
                 0,
                 msg.sysid,
-                msg.compid
+                msg.compid,
+                0  // command_opaque_id
                 );
             uint8_t buf[300];
             uint16_t buf_len = mavlink_msg_to_send_buffer(buf, &ack);
