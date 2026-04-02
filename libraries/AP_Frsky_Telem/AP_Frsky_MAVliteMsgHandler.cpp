@@ -19,9 +19,12 @@ void AP_Frsky_MAVliteMsgHandler::handle_command_long(const AP_Frsky_MAVlite_Mess
     uint8_t cmd_options;
     float params[7] {};
 
-    if (!rxmsg.get_uint16(mav_command_long.command, 0)) {
+    // mav_command_long-t is packed, can't take a reference to it.
+    uint16_t mavlink_command;
+    if (!rxmsg.get_uint16(mavlink_command, 0)) {
         return;
     }
+    mav_command_long.command = mavlink_command;
     if (!rxmsg.get_uint8(cmd_options, 2)) {
         return;
     }
