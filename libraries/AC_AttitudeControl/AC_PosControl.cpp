@@ -345,7 +345,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 14, AC_PosControl, AC_PID_2D),
 
-    // @Param: OPTIONS
+    // @Param: _OPTIONS
     // @DisplayName: Position Controller Options
     // @Description: Bitmask of options for the position controller
     // @Bitmask: 0:Disable EKF control limits
