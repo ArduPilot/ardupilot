@@ -2087,7 +2087,8 @@ void NavEKF3_core::ConstrainStates()
     // height limit covers home alt on everest through to home alt at SL and balloon drop
     stateStruct.position.z = constrain_ftype(stateStruct.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit (this needs to be set based on manufacturers specs)
-    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
+    const ftype gyro_bias_limit = getGyroBiasLimit();
+    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-gyro_bias_limit*dtEkfAvg,gyro_bias_limit*dtEkfAvg);
     // the accelerometer bias limit is controlled by a user adjustable parameter
     for (uint8_t i=13; i<=15; i++) statesArray[i] = constrain_ftype(statesArray[i],-frontend->_accBiasLim*dtEkfAvg,frontend->_accBiasLim*dtEkfAvg);
     // earth magnetic field limit
