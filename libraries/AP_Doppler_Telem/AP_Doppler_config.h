@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_Doppler_TELEM_ENABLED
-#define AP_Doppler_TELEM_ENABLED 
+#define AP_Doppler_TELEM_ENABLED 1
 #endif
 
 #ifndef AP_Doppler_D_TELEM_ENABLED
