@@ -752,6 +752,10 @@ public:
     // inhibit all accel bias learning (for high-G maneuvers like acro)
     void set_inhibit_accel_bias_learning(bool inhibit);
 
+    // enable/disable hover Z-bias correction in the EKF
+    void set_hover_z_bias_enabled(bool enable) { _hover_z_bias_enabled = enable; }
+    bool get_hover_z_bias_enabled(void) const { return _hover_z_bias_enabled; }
+
 private:
 
     // roll/pitch/yaw euler angles, all in radians
@@ -910,6 +914,7 @@ private:
     uint32_t takeoff_expected_start_ms;
     bool touchdown_expected;    // true if the vehicle is in a state that touchdown might be expected.  Ground effect may be in play.
     uint32_t touchdown_expected_start_ms;
+    bool _hover_z_bias_enabled;  // true if hover Z-bias correction is enabled by vehicle code
 
     /*
      * wind estimation support
