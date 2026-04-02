@@ -509,9 +509,6 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             }
 
             if (!accelBiasLearningInhibited() && !badIMUdata) {
-                // Z-axis bias is weakly observable from baro height corrections, and strongly
-                // observable when we have Z velocity (GPS/external nav). Ground effect inhibition
-                // in FuseVelPosNED() prevents learning of motor-induced bias on ground.
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -677,9 +674,6 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             }
 
             if (!accelBiasLearningInhibited() && !badIMUdata) {
-                // Z-axis bias is weakly observable from baro height corrections, and strongly
-                // observable when we have Z velocity (GPS/external nav). Ground effect inhibition
-                // in FuseVelPosNED() prevents learning of motor-induced bias on ground.
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
