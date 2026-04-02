@@ -10,6 +10,7 @@ AP_DAL_InertialSensor::AP_DAL_InertialSensor()
     }
     // seed RISJ with legacy defaults so replay of older logs (with no
     // RISJ messages) still gives the EKF sane gyro bias clamp/init values.
+    // accel_vrf_bias_z is left at zero, which replays as the feature off.
     for (uint8_t i=0; i<ARRAY_SIZE(_RISJ); i++) {
         _RISJ[i].instance = i;
         _RISJ[i].gyro_bias_limit = 0.5f;
@@ -51,12 +52,13 @@ void AP_DAL_InertialSensor::start_frame()
 
         WRITE_REPLAY_BLOCK_IFCHANGED(RISI, RISI, old_RISI);
 
-        // RISJ holds per-instance gyro bias metadata. These are constants
-        // set by the backend, so the message is only written when changed.
+        // RISJ holds per-instance INS metadata that changes rarely, so the
+        // message is only written when changed.
         log_RISJ &RISJ = _RISJ[i];
         const log_RISJ old_RISJ = RISJ;
         RISJ.gyro_bias_limit = ins.get_gyro_bias_limit_rads(i);
         RISJ.gyro_bias_init_dps = ins.get_gyro_bias_init_dps(i);
+        RISJ.accel_vrf_bias_z = ins.get_accel_vrf_bias_z(i);
         WRITE_REPLAY_BLOCK_IFCHANGED(RISJ, RISJ, old_RISJ);
 
         // update sensor position

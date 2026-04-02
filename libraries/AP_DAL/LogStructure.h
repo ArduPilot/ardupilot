@@ -159,10 +159,12 @@ struct log_RISI {
 // @Description: Replay Inertial Sensor instance metadata (low-rate, only logged when changed)
 // @Field: GBL: gyro bias limit (rad/s) for the EKF gyro bias state clamp
 // @Field: GBI: initial gyro bias 1-sigma uncertainty (deg/s)
+// @Field: VRFBZ: learned hover Z-axis accel bias (m/s/s)
 // @Field: I: IMU instance
 struct log_RISJ {
     float gyro_bias_limit;
     float gyro_bias_init_dps;
+    float accel_vrf_bias_z;
     uint8_t instance;
     uint8_t _end;
 };
@@ -666,7 +668,7 @@ struct log_RTER {
     { LOG_RISI_MSG, RLOG_SIZE(RISI),                                   \
       "RISI", "ffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,Flags,I", "---------#", "----------" }, \
     { LOG_RISJ_MSG, RLOG_SIZE(RISJ),                                   \
-      "RISJ", "ffB", "GBL,GBI,I", "--#", "---" }, \
+      "RISJ", "fffB", "GBL,GBI,VRFBZ,I", "---#", "----" }, \
     { LOG_RASH_MSG, RLOG_SIZE(RASH),                                   \
       "RASH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RASI_MSG, RLOG_SIZE(RASI),                                   \
