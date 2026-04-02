@@ -83,6 +83,8 @@ extern const AP_HAL::HAL& hal;
 #define POSCONTROL_VIBE_COMP_P_GAIN 0.250f
 #define POSCONTROL_VIBE_COMP_I_GAIN 0.125f
 
+
+
 // velocity offset targets timeout if not updated within 3 seconds
 #define POSCONTROL_POSVELACCEL_OFFSET_TARGET_TIMEOUT_MS 3000
 
@@ -700,6 +702,10 @@ bool AC_PosControl::NE_is_active() const
     return dt_ticks <= 1;
 }
 
+// Maximum ground speed limit in m/s used to effectively disable limiting
+static constexpr float POSCONTROL_SPEED_LIMIT_MAX = 400.0f;
+
+
 // Uses P and PID controllers to generate corrections which are added to feedforward velocity/acceleration.
 // Requires all desired targets to be pre-set using the input_* or set_* methods.
 void AC_PosControl::NE_update_controller()
@@ -723,7 +729,7 @@ void AC_PosControl::NE_update_controller()
     // if EKF control limiting is disabled via PSC_OPTIONS, restore full authority
     if (_options & PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT) {
         ahrsControlScaleXY = 1.0f;
-        ahrsGndSpdLimit = 400.0f;
+        ahrsGndSpdLimit = POSCONTROL_SPEED_LIMIT_MAX;
     }
 
     // Update lateral position, velocity, and acceleration offsets using path shaping
