@@ -290,6 +290,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('MODE_FLOWHOLD_ENABLED')
             feature_define_whitelist.add('MODE_FLIP_ENABLED')
             feature_define_whitelist.add('MODE_BRAKE_ENABLED')
+            feature_define_whitelist.add('MODE_THROW_ENABLED')
             feature_define_whitelist.add('AP_TEMPCALIBRATION_ENABLED')
             feature_define_whitelist.add('AC_PAYLOAD_PLACE_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ENABLED')

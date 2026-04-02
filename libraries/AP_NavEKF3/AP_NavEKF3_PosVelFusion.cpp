@@ -1580,51 +1580,37 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[4] = t77*(t69+P[4][5]*t4+P[4][0]*t14-P[4][6]*t11+P[4][1]*t18-P[4][2]*t21+P[4][3]*t24);
             Kfusion[5] = t77*(t32+P[5][4]*t9+P[5][0]*t14-P[5][6]*t11+P[5][1]*t18-P[5][2]*t21+P[5][3]*t24);
             Kfusion[6] = t77*(-t81+P[6][5]*t4+P[6][4]*t9+P[6][0]*t14+P[6][1]*t18-P[6][2]*t21+P[6][3]*t24);
-            Kfusion[7] = t77*(P[7][5]*t4+P[7][4]*t9+P[7][0]*t14-P[7][6]*t11+P[7][1]*t18-P[7][2]*t21+P[7][3]*t24);
-            Kfusion[8] = t77*(P[8][5]*t4+P[8][4]*t9+P[8][0]*t14-P[8][6]*t11+P[8][1]*t18-P[8][2]*t21+P[8][3]*t24);
-            Kfusion[9] = t77*(P[9][5]*t4+P[9][4]*t9+P[9][0]*t14-P[9][6]*t11+P[9][1]*t18-P[9][2]*t21+P[9][3]*t24);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(P[10][5]*t4+P[10][4]*t9+P[10][0]*t14-P[10][6]*t11+P[10][1]*t18-P[10][2]*t21+P[10][3]*t24);
-                Kfusion[11] = t77*(P[11][5]*t4+P[11][4]*t9+P[11][0]*t14-P[11][6]*t11+P[11][1]*t18-P[11][2]*t21+P[11][3]*t24);
-                Kfusion[12] = t77*(P[12][5]*t4+P[12][4]*t9+P[12][0]*t14-P[12][6]*t11+P[12][1]*t18-P[12][2]*t21+P[12][3]*t24);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t77*(P[stateIndex][5]*t4+P[stateIndex][4]*t9+P[stateIndex][0]*t14-P[stateIndex][6]*t11+P[stateIndex][1]*t18-P[stateIndex][2]*t21+P[stateIndex][3]*t24);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15 = 3
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t77*(P[16][5]*t4+P[16][4]*t9+P[16][0]*t14-P[16][6]*t11+P[16][1]*t18-P[16][2]*t21+P[16][3]*t24);
-                Kfusion[17] = t77*(P[17][5]*t4+P[17][4]*t9+P[17][0]*t14-P[17][6]*t11+P[17][1]*t18-P[17][2]*t21+P[17][3]*t24);
-                Kfusion[18] = t77*(P[18][5]*t4+P[18][4]*t9+P[18][0]*t14-P[18][6]*t11+P[18][1]*t18-P[18][2]*t21+P[18][3]*t24);
-                Kfusion[19] = t77*(P[19][5]*t4+P[19][4]*t9+P[19][0]*t14-P[19][6]*t11+P[19][1]*t18-P[19][2]*t21+P[19][3]*t24);
-                Kfusion[20] = t77*(P[20][5]*t4+P[20][4]*t9+P[20][0]*t14-P[20][6]*t11+P[20][1]*t18-P[20][2]*t21+P[20][3]*t24);
-                Kfusion[21] = t77*(P[21][5]*t4+P[21][4]*t9+P[21][0]*t14-P[21][6]*t11+P[21][1]*t18-P[21][2]*t21+P[21][3]*t24);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t77*(P[22][5]*t4+P[22][4]*t9+P[22][0]*t14-P[22][6]*t11+P[22][1]*t18-P[22][2]*t21+P[22][3]*t24);
-                Kfusion[23] = t77*(P[23][5]*t4+P[23][4]*t9+P[23][0]*t14-P[23][6]*t11+P[23][1]*t18-P[23][2]*t21+P[23][3]*t24);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t77*(P[i][5]*t4+P[i][4]*t9+P[i][0]*t14-P[i][6]*t11+P[i][1]*t18-P[i][2]*t21+P[i][3]*t24);
+                }
+                Kfusion[i] = res;
             }
         } else if (obsIndex == 1) {
             // calculate Y axis observation Jacobian
@@ -1757,51 +1743,37 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[4] = t77*(-t78+P[4][5]*t8+P[4][0]*t15+P[4][6]*t12+P[4][1]*t18+P[4][2]*t22-P[4][3]*t25);
             Kfusion[5] = t77*(t69-P[5][4]*t3+P[5][0]*t15+P[5][6]*t12+P[5][1]*t18+P[5][2]*t22-P[5][3]*t25);
             Kfusion[6] = t77*(t38-P[6][4]*t3+P[6][5]*t8+P[6][0]*t15+P[6][1]*t18+P[6][2]*t22-P[6][3]*t25);
-            Kfusion[7] = t77*(-P[7][4]*t3+P[7][5]*t8+P[7][0]*t15+P[7][6]*t12+P[7][1]*t18+P[7][2]*t22-P[7][3]*t25);
-            Kfusion[8] = t77*(-P[8][4]*t3+P[8][5]*t8+P[8][0]*t15+P[8][6]*t12+P[8][1]*t18+P[8][2]*t22-P[8][3]*t25);
-            Kfusion[9] = t77*(-P[9][4]*t3+P[9][5]*t8+P[9][0]*t15+P[9][6]*t12+P[9][1]*t18+P[9][2]*t22-P[9][3]*t25);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(-P[10][4]*t3+P[10][5]*t8+P[10][0]*t15+P[10][6]*t12+P[10][1]*t18+P[10][2]*t22-P[10][3]*t25);
-                Kfusion[11] = t77*(-P[11][4]*t3+P[11][5]*t8+P[11][0]*t15+P[11][6]*t12+P[11][1]*t18+P[11][2]*t22-P[11][3]*t25);
-                Kfusion[12] = t77*(-P[12][4]*t3+P[12][5]*t8+P[12][0]*t15+P[12][6]*t12+P[12][1]*t18+P[12][2]*t22-P[12][3]*t25);
-            } else {
-                // zero indexes 10 to 12 = 3
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t77*(-P[stateIndex][4]*t3+P[stateIndex][5]*t8+P[stateIndex][0]*t15+P[stateIndex][6]*t12+P[stateIndex][1]*t18+P[stateIndex][2]*t22-P[stateIndex][3]*t25);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t77*(-P[16][4]*t3+P[16][5]*t8+P[16][0]*t15+P[16][6]*t12+P[16][1]*t18+P[16][2]*t22-P[16][3]*t25);
-                Kfusion[17] = t77*(-P[17][4]*t3+P[17][5]*t8+P[17][0]*t15+P[17][6]*t12+P[17][1]*t18+P[17][2]*t22-P[17][3]*t25);
-                Kfusion[18] = t77*(-P[18][4]*t3+P[18][5]*t8+P[18][0]*t15+P[18][6]*t12+P[18][1]*t18+P[18][2]*t22-P[18][3]*t25);
-                Kfusion[19] = t77*(-P[19][4]*t3+P[19][5]*t8+P[19][0]*t15+P[19][6]*t12+P[19][1]*t18+P[19][2]*t22-P[19][3]*t25);
-                Kfusion[20] = t77*(-P[20][4]*t3+P[20][5]*t8+P[20][0]*t15+P[20][6]*t12+P[20][1]*t18+P[20][2]*t22-P[20][3]*t25);
-                Kfusion[21] = t77*(-P[21][4]*t3+P[21][5]*t8+P[21][0]*t15+P[21][6]*t12+P[21][1]*t18+P[21][2]*t22-P[21][3]*t25);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t77*(-P[22][4]*t3+P[22][5]*t8+P[22][0]*t15+P[22][6]*t12+P[22][1]*t18+P[22][2]*t22-P[22][3]*t25);
-                Kfusion[23] = t77*(-P[23][4]*t3+P[23][5]*t8+P[23][0]*t15+P[23][6]*t12+P[23][1]*t18+P[23][2]*t22-P[23][3]*t25);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t77*(-P[i][4]*t3+P[i][5]*t8+P[i][0]*t15+P[i][6]*t12+P[i][1]*t18+P[i][2]*t22-P[i][3]*t25);
+                }
+                Kfusion[i] = res;
             }
         } else if (obsIndex == 2) {
             // calculate Z axis observation Jacobian
@@ -1926,7 +1898,7 @@ void NavEKF3_core::FuseBodyVel()
             // calculate innovation for Z axis observation
             innovBodyVel[2] = bodyVelPred.z - bodyOdmDataDelayed.vel.z;
 
-            // calculate Kalman gains for X-axis observation
+            // calculate Kalman gains for Z-axis observation
             Kfusion[0] = t77*(t29+P[0][4]*t4+P[0][6]*t9-P[0][5]*t11-P[0][1]*t17+P[0][2]*t20+P[0][3]*t24);
             Kfusion[1] = t77*(P[1][4]*t4+P[1][0]*t14+P[1][6]*t9-P[1][5]*t11-P[1][1]*t17+P[1][2]*t20+P[1][3]*t24);
             Kfusion[2] = t77*(t58+P[2][4]*t4+P[2][0]*t14+P[2][6]*t9-P[2][5]*t11-P[2][1]*t17+P[2][3]*t24);
@@ -1934,52 +1906,37 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[4] = t77*(t31+P[4][0]*t14+P[4][6]*t9-P[4][5]*t11-P[4][1]*t17+P[4][2]*t20+P[4][3]*t24);
             Kfusion[5] = t77*(-t80+P[5][4]*t4+P[5][0]*t14+P[5][6]*t9-P[5][1]*t17+P[5][2]*t20+P[5][3]*t24);
             Kfusion[6] = t77*(t69+P[6][4]*t4+P[6][0]*t14-P[6][5]*t11-P[6][1]*t17+P[6][2]*t20+P[6][3]*t24);
-            Kfusion[7] = t77*(P[7][4]*t4+P[7][0]*t14+P[7][6]*t9-P[7][5]*t11-P[7][1]*t17+P[7][2]*t20+P[7][3]*t24);
-            Kfusion[8] = t77*(P[8][4]*t4+P[8][0]*t14+P[8][6]*t9-P[8][5]*t11-P[8][1]*t17+P[8][2]*t20+P[8][3]*t24);
-            Kfusion[9] = t77*(P[9][4]*t4+P[9][0]*t14+P[9][6]*t9-P[9][5]*t11-P[9][1]*t17+P[9][2]*t20+P[9][3]*t24);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(P[10][4]*t4+P[10][0]*t14+P[10][6]*t9-P[10][5]*t11-P[10][1]*t17+P[10][2]*t20+P[10][3]*t24);
-                Kfusion[11] = t77*(P[11][4]*t4+P[11][0]*t14+P[11][6]*t9-P[11][5]*t11-P[11][1]*t17+P[11][2]*t20+P[11][3]*t24);
-                Kfusion[12] = t77*(P[12][4]*t4+P[12][0]*t14+P[12][6]*t9-P[12][5]*t11-P[12][1]*t17+P[12][2]*t20+P[12][3]*t24);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
-
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t77*(P[stateIndex][4]*t4+P[stateIndex][0]*t14+P[stateIndex][6]*t9-P[stateIndex][5]*t11-P[stateIndex][1]*t17+P[stateIndex][2]*t20+P[stateIndex][3]*t24);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t77*(P[16][4]*t4+P[16][0]*t14+P[16][6]*t9-P[16][5]*t11-P[16][1]*t17+P[16][2]*t20+P[16][3]*t24);
-                Kfusion[17] = t77*(P[17][4]*t4+P[17][0]*t14+P[17][6]*t9-P[17][5]*t11-P[17][1]*t17+P[17][2]*t20+P[17][3]*t24);
-                Kfusion[18] = t77*(P[18][4]*t4+P[18][0]*t14+P[18][6]*t9-P[18][5]*t11-P[18][1]*t17+P[18][2]*t20+P[18][3]*t24);
-                Kfusion[19] = t77*(P[19][4]*t4+P[19][0]*t14+P[19][6]*t9-P[19][5]*t11-P[19][1]*t17+P[19][2]*t20+P[19][3]*t24);
-                Kfusion[20] = t77*(P[20][4]*t4+P[20][0]*t14+P[20][6]*t9-P[20][5]*t11-P[20][1]*t17+P[20][2]*t20+P[20][3]*t24);
-                Kfusion[21] = t77*(P[21][4]*t4+P[21][0]*t14+P[21][6]*t9-P[21][5]*t11-P[21][1]*t17+P[21][2]*t20+P[21][3]*t24);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t77*(P[22][4]*t4+P[22][0]*t14+P[22][6]*t9-P[22][5]*t11-P[22][1]*t17+P[22][2]*t20+P[22][3]*t24);
-                Kfusion[23] = t77*(P[23][4]*t4+P[23][0]*t14+P[23][6]*t9-P[23][5]*t11-P[23][1]*t17+P[23][2]*t20+P[23][3]*t24);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t77*(P[i][4]*t4+P[i][0]*t14+P[i][6]*t9-P[i][5]*t11-P[i][1]*t17+P[i][2]*t20+P[i][3]*t24);
+                }
+                Kfusion[i] = res;
             }
         } else {
             return;

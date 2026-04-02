@@ -312,7 +312,7 @@ is bob we will attempt to checkout bob-AVR'''
         gitversion_content = gitlog
         versionfile = self.version_h_path(src)
         if os.path.exists(versionfile):
-            content = self.read_string_from_filepath(versionfile)
+            content = pathlib.Path(versionfile).read_text(encoding='ascii')
             match = re.search('define.THISFIRMWARE "([^"]+)"', content)
             if match is None:
                 self.progress("Failed to retrieve THISFIRMWARE from version.h")
@@ -334,7 +334,7 @@ is bob we will attempt to checkout bob-AVR'''
         ss = r".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*" \
              r"(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*" \
              r"(?P<type>[A-Z_]+)[	 ]*"
-        content = self.read_string_from_filepath(versionfile)
+        content = pathlib.Path(versionfile).read_text(encoding='ascii')
         match = re.search(ss, content)
         if match is None:
             self.progress("Failed to retrieve FIRMWARE_VERSION from version.h")
@@ -354,14 +354,6 @@ is bob we will attempt to checkout bob-AVR'''
         '''write version information into destdir'''
         self.addfwversion_gitversion(destdir, src)
         self.addfwversion_firmwareversiontxt(destdir, src)
-
-    def read_string_from_filepath(self, filepath):
-        '''returns content of filepath as a string'''
-        return pathlib.Path(filepath).read_text(encoding='ascii')
-
-    def string_in_filepath(self, string, filepath):
-        '''returns true if string exists in the contents of filepath'''
-        return string in self.read_string_from_filepath(filepath)
 
     def mkpath(self, path):
         '''make directory path and all elements leading to it'''
