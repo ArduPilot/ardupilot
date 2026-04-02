@@ -317,6 +317,11 @@ protected:
         _imu._accel_orientation[instance] = rotation;
     }
 
+    // mark an IMU instance as low drift for EKF bias learning
+    void set_low_drift(uint8_t instance) {
+        _imu._low_drift_mask |= (1U<<instance);
+    }
+
     uint8_t get_gyro_instance() const {
         return gyro_instance;
     }

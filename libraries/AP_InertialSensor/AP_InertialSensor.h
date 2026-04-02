@@ -187,6 +187,11 @@ public:
         return _accel_pos(_first_usable_accel);
     }
 
+    // return true if this IMU instance is marked as low drift
+    bool is_low_drift(uint8_t instance) const {
+        return (_low_drift_mask & (1U<<instance)) != 0;
+    }
+
     // return the temperature if supported. Zero is returned if no
     // temperature is available
     float get_temperature(uint8_t instance) const { return _temperature[instance]; }
@@ -655,6 +660,9 @@ private:
     // per-sensor orientation to allow for board type defaults at runtime
     enum Rotation _gyro_orientation[INS_MAX_INSTANCES];
     enum Rotation _accel_orientation[INS_MAX_INSTANCES];
+
+    // bitmask of IMU instances marked as low drift
+    uint8_t _low_drift_mask;
 
     // calibrated_ok/id_ok flags
     bool _gyro_cal_ok[INS_MAX_INSTANCES];
