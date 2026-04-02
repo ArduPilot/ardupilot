@@ -41,6 +41,8 @@ void AP_DAL_InertialSensor::start_frame()
             RISI.get_delta_angle_ret = ins.get_delta_angle(i, RISI.delta_angle, RISI.delta_angle_dt);
         }
 
+        RISI.low_drift = ins.is_low_drift(i);
+
         update_filtered(i);
 
         WRITE_REPLAY_BLOCK_IFCHANGED(RISI, RISI, old_RISI);
