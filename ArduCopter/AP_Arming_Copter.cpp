@@ -758,8 +758,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // finally actually arm the motors
     copter.motors->armed(true);
 
-    // Clear accel bias learning inhibit that may have been set while disarmed
-    // (ACC_ZBIAS_LEARN bit 2). Mode-specific code (e.g., acro) may set it again.
+    // clear the accel bias learning inhibit set while disarmed by ACC_ZBIAS_LEARN bit 2
     ahrs.set_inhibit_accel_bias_learning(false);
 
 #if HAL_LOGGING_ENABLED

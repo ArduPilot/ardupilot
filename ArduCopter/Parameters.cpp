@@ -1073,9 +1073,10 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: ACC_ZBIAS_LEARN
     // @DisplayName: Accel Z-axis Bias Learning
-    // @Description: Bitmask controlling accelerometer Z-axis bias learning during hover to compensate for vibration rectification. Only active when using EKF3 (AHRS_EKF_TYPE=3). Bit 0: Learn bias during hover and save to EEPROM on disarm. Bit 1: Use saved bias values (apply correction to EKF). Bit 2: Disable EKF bias learning while disarmed (don't use zero velocity assumption on ground).
-    // @Bitmask: 0:Learn and Save,1:Use Saved Values,2:Disable Ground Learning
+    // @Description: Bitmask controlling learning of the Z-axis accelerometer bias seen in hover, to help the EKF converge on the correct bias faster after arming. The value learned is the total Z bias reported by the EKF, which includes the residual sensor bias left after accel calibration as well as the vibration rectification offset, not just the vibration component. The EKF will still learn the correct bias in flight regardless of these settings. Only active when using EKF3 (AHRS_EKF_TYPE=3). Bit 0: learn the bias during hover and save it to INS_ACC_VRFB_Z on disarm. Bit 1: apply the saved bias as an IMU level correction for as long as the vehicle is armed. Bit 2: inhibit EKF accelerometer bias learning on all three axes while disarmed. Set this when the vehicle may be armed on something that is moving, such as a car or a boat: the EKF's on-ground movement check compares only the length of the accelerometer vector against gravity, so a steady platform acceleration looks identical to standing still and is learned as accelerometer bias that does not exist once airborne.
+    // @Bitmask: 0:Learn and Save,1:Use Saved Values,2:Inhibit Disarmed Learning
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("ACC_ZBIAS_LEARN", 25, ParametersG2, accel_zbias_learn, 0),
 
     // @Param: FS_EKF_FILT
