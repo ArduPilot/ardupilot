@@ -379,6 +379,9 @@ void AP_InertialSensor_Invensensev3::start()
     set_gyro_orientation(gyro_instance, rotation);
     set_accel_orientation(accel_instance, rotation);
 
+    // Invensensev3 sensors are low drift
+    set_low_drift(gyro_instance);
+
     // allocate fifo buffer
 #if HAL_INS_HIGHRES_SAMPLE
     if (highres_sampling) {
