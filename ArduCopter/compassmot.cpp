@@ -86,7 +86,9 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
     // send back initial ACK
     mavlink_msg_command_ack_send(gcs_chan.get_chan(), MAV_CMD_PREFLIGHT_CALIBRATION,0,
-                                 0, 0, 0, 0);
+                                 0, 0, 0, 0,
+                                 0  // command_opaque_id
+    );
 
     // flash leds
     AP_Notify::flags.esc_calibration = true;
