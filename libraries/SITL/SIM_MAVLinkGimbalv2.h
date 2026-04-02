@@ -80,6 +80,7 @@ private:
     void send_attitude_status();
     void request_telemetry();
     void send_command_ack(uint32_t target_sysid, uint8_t target_compid,
+                          uint32_t command_opaque_id,
                           MAV_CMD command, MAV_RESULT result);
 
     uint8_t _compid {MAV_COMP_ID_GIMBAL};

@@ -46,15 +46,15 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
     case MAV_CMD_REQUEST_MESSAGE:
         if ((uint32_t)cmd.param1 == MAVLINK_MSG_ID_CAMERA_INFORMATION) {
             send_camera_information(msg.sysid, msg.compid);
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_ACCEPTED);
         } else if ((uint32_t)cmd.param1 == MAVLINK_MSG_ID_CAMERA_SETTINGS) {
             send_camera_settings();
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_ACCEPTED);
         } else if ((uint32_t)cmd.param1 == MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS) {
             send_camera_capture_status();
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_ACCEPTED);
         } else if ((uint32_t)cmd.param1 == MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION) {
             MAV_RESULT result = MAV_RESULT_DENIED;
@@ -75,10 +75,10 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
                     }
                 }
             }
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_REQUEST_MESSAGE, result);
         } else {
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_DENIED);
         }
         break;
@@ -86,26 +86,26 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
         _camera.trigger_shutter();
         ::printf("MAVLinkCamV2[compid=%u]: image captured (shot %u)\n",
                  (unsigned)_camera_compid, (unsigned)_camera.shot_count());
-        send_camera_command_ack(msg.sysid, msg.compid,
+        send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                 MAV_CMD_IMAGE_START_CAPTURE, MAV_RESULT_ACCEPTED);
         send_camera_capture_status();
         break;
     case MAV_CMD_IMAGE_STOP_CAPTURE:
-        send_camera_command_ack(msg.sysid, msg.compid,
+        send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                 MAV_CMD_IMAGE_STOP_CAPTURE, MAV_RESULT_ACCEPTED);
         send_camera_capture_status();
         break;
     case MAV_CMD_VIDEO_START_CAPTURE:
         _camera.set_recording(true);
         _recording_started_ms = AP_HAL::millis();
-        send_camera_command_ack(msg.sysid, msg.compid,
+        send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                 MAV_CMD_VIDEO_START_CAPTURE, MAV_RESULT_ACCEPTED);
         send_camera_capture_status();
         break;
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         _camera.set_recording(false);
         _recording_started_ms = 0;
-        send_camera_command_ack(msg.sysid, msg.compid,
+        send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                 MAV_CMD_VIDEO_STOP_CAPTURE, MAV_RESULT_ACCEPTED);
         send_camera_capture_status();
         break;
@@ -114,11 +114,11 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
             (is_equal(cmd.param2, (float)CAMERA_MODE_IMAGE) ||
              is_equal(cmd.param2, (float)CAMERA_MODE_VIDEO))) {
             _camera.set_mode((uint8_t)cmd.param2);
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_SET_CAMERA_MODE, MAV_RESULT_ACCEPTED);
             send_camera_settings();
         } else {
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_SET_CAMERA_MODE, MAV_RESULT_DENIED);
         }
         break;
@@ -127,11 +127,11 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
             _camera.set_zoom_pct(cmd.param2);
             ::printf("MAVLinkCamV2[compid=%u]: zoom set to %.1f%%\n",
                      (unsigned)_camera_compid, (double)cmd.param2);
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_SET_CAMERA_ZOOM, MAV_RESULT_ACCEPTED);
             send_camera_settings();
         } else {
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_SET_CAMERA_ZOOM, MAV_RESULT_DENIED);
         }
         break;
@@ -140,16 +140,16 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
             _camera.set_focus_pct(cmd.param2);
             ::printf("MAVLinkCamV2[compid=%u]: focus set to %.1f%%\n",
                      (unsigned)_camera_compid, (double)cmd.param2);
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_SET_CAMERA_FOCUS, MAV_RESULT_ACCEPTED);
             send_camera_settings();
         } else {
-            send_camera_command_ack(msg.sysid, msg.compid,
+            send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id,
                                     MAV_CMD_SET_CAMERA_FOCUS, MAV_RESULT_DENIED);
         }
         break;
     default:
-        send_camera_command_ack(msg.sysid, msg.compid, (MAV_CMD)cmd.command,
+        send_camera_command_ack(msg.sysid, msg.compid, cmd.command_opaque_id, (MAV_CMD)cmd.command,
                                 MAV_RESULT_UNSUPPORTED);
         break;
     }
@@ -244,6 +244,7 @@ bool MAVLinkCamV2::send_video_stream_information(uint8_t stream_id)
 }
 
 void MAVLinkCamV2::send_camera_command_ack(uint32_t target_sysid, uint8_t target_compid,
+                                            uint32_t command_opaque_id,
                                             MAV_CMD cmd, MAV_RESULT result)
 {
     // pack rather than encode so a target over 255 goes in the extended
@@ -255,7 +256,8 @@ void MAVLinkCamV2::send_camera_command_ack(uint32_t target_sysid, uint8_t target
         (uint16_t)cmd, (uint8_t)result,
         255,                // progress
         0,                  // result_param2
-        target_sysid, target_compid);
+        target_sysid, target_compid,
+        command_opaque_id);
     camera_send_mavlink_message(msg);
 }
 
