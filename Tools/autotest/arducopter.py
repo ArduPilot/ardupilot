@@ -13306,7 +13306,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # Start the RX vehicle FIRST (it listens on the TCP port)
             # Note: start_SITL waits for "Waiting for " before returning,
             # so the RX vehicle is already listening when it returns.
-            self.progress("Starting TX vehicle with CRSF output on port %u" % crsf_port)
+            self.progress("Starting RX vehicle with CRSF output on port %u" % crsf_port)
             rx_rundir = util.reltopdir('rx-copter')
             if not os.path.exists(rx_rundir):
                 os.mkdir(rx_rundir)
@@ -13326,7 +13326,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     "--serial5=tcp:%u" % crsf_port,  # listen for CRSF connection
                 ],
                 param_defaults={
-                    "SYSID_THISMAV": 2,
+                    "MAV_SYSID": 2,
                     "SERIAL1_PROTOCOL": 2,
                     "SERIAL5_PROTOCOL": 23,
                     "RC_PROTOCOLS": 512,
@@ -13378,11 +13378,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "--serial5=tcpclient:127.0.0.1:%u" % crsf_port
             ])
 
-            self.set_rc(1, 1500)
-            self.set_rc(2, 1500)
-            self.set_rc(3, 1000)
-            self.set_rc(4, 1500)
-            self.set_rc(5, 1563)    # canary channel
+            self.set_rc_from_map({
+                1: 1500,
+                2: 1500,
+                3: 1000,
+                4: 1500,
+                5: 1563,    # canary channel
+            }, quiet=True)
 
             self.context_collect('STATUSTEXT')
 
