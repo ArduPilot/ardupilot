@@ -1111,7 +1111,7 @@ void AC_PosControl::D_update_controller()
     _vel_target_ned_ms.z = _p_pos_d_m.update_all(_pos_target_ned_m.z, _pos_estimate_ned_m.z);
    
 
-    _vel_target_ned_ms.z *= (_options & PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT) ? 1.0f : AP::ahrs().getControlScaleZ();
+    _vel_target_ned_ms.z *= AP::ahrs().getControlScaleZ();
 
     _pos_desired_ned_m.z = _pos_target_ned_m.z - (_pos_offset_ned_m.z + _pos_terrain_d_m);
 
@@ -1124,7 +1124,7 @@ void AC_PosControl::D_update_controller()
     _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
     
 
-    _accel_target_ned_mss.z *= (_options & PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT) ? 1.0f : AP::ahrs().getControlScaleZ();
+    _accel_target_ned_mss.z *= AP::ahrs().getControlScaleZ();
 
     // add feed forward component
     _accel_target_ned_mss.z += _accel_desired_ned_mss.z + _accel_offset_ned_mss.z + _accel_terrain_d_mss;
