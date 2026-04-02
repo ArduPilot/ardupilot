@@ -301,9 +301,11 @@ private:
         bool alt_ok;                    // true if calculated altitude is ok
         bool calibrated;                // true if calculated calibrated successfully
         // deferred calibration state for sensors not ready during init
-        uint32_t cal_start_ms;          // when sensor first seen healthy (0=not started)
-        float cal_sum;                  // accumulated pressure during sampling
-        uint8_t cal_count;              // number of calibration samples collected
+        struct {
+            uint32_t start_ms;          // when sensor first seen healthy (0=not started)
+            float sum;                  // accumulated pressure during sampling
+            uint8_t count;              // number of samples collected
+        } cal;
         AP_Int32 bus_id;
 #if HAL_BARO_WIND_COMP_ENABLED
         WindCoeff wind_coeff;

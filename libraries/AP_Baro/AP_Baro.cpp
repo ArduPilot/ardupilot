@@ -340,13 +340,13 @@ void AP_Baro::calibrate(bool save)
     // Start the settling timer now so that sensors already producing
     // data complete calibration sooner once the scheduler starts
     // calling update().  Sensors not yet healthy will have
-    // cal_start_ms reset to 0 in the deferred path.
+    // cal.start_ms reset to 0 in the deferred path.
     const uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<_num_sensors; i++) {
         sensors[i].calibrated = false;
-        sensors[i].cal_start_ms = now;
-        sensors[i].cal_sum = 0;
-        sensors[i].cal_count = 0;
+        sensors[i].cal.start_ms = now;
+        sensors[i].cal.sum = 0;
+        sensors[i].cal.count = 0;
     }
 }
 
@@ -876,33 +876,33 @@ void AP_Baro::update(void)
         drivers[i]->backend_update(i);
     }
 
-    // deferred calibration for sensors not ready during init
+    // run-time calibration for sensors
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].calibrated) {
             continue;
         }
         if (!sensors[i].healthy) {
             // sensor not yet producing data, reset state
-            sensors[i].cal_start_ms = 0;
-            sensors[i].cal_count = 0;
-            sensors[i].cal_sum = 0;
+            sensors[i].cal.start_ms = 0;
+            sensors[i].cal.count = 0;
+            sensors[i].cal.sum = 0;
             continue;
         }
         const uint32_t now = AP_HAL::millis();
-        if (sensors[i].cal_start_ms == 0) {
+        if (sensors[i].cal.start_ms == 0) {
             // first time seeing sensor healthy, start settling
-            sensors[i].cal_start_ms = now;
+            sensors[i].cal.start_ms = now;
             continue;
         }
         // collect samples after 1s settling, spaced 100ms apart
-        const uint32_t sample_time_ms = 1000 + (uint32_t)sensors[i].cal_count * 100;
-        if (now - sensors[i].cal_start_ms < sample_time_ms) {
+        const uint32_t sample_time_ms = 1000 + (uint32_t)sensors[i].cal.count * 100;
+        if (now - sensors[i].cal.start_ms < sample_time_ms) {
             continue;
         }
-        sensors[i].cal_sum += sensors[i].pressure;
-        sensors[i].cal_count++;
-        if (sensors[i].cal_count >= 5) {
-            const float avg = sensors[i].cal_sum / sensors[i].cal_count;
+        sensors[i].cal.sum += sensors[i].pressure;
+        sensors[i].cal.count++;
+        if (sensors[i].cal.count >= 5) {
+            const float avg = sensors[i].cal.sum / sensors[i].cal.count;
             const float p0_sealevel = get_sealevel_pressure(avg, _field_elevation_active);
             if (_cal_save) {
                 sensors[i].ground_pressure.set_and_save(p0_sealevel);
