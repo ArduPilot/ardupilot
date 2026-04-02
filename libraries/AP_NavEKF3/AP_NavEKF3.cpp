@@ -150,6 +150,9 @@
 
 #endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Replay)
 
+// limit on the learned hover Z-bias correction (m/s/s)
+#define HOVER_Z_BIAS_LIM        0.6f
+
 #ifndef EK3_PRIMARY_DEFAULT
 #define EK3_PRIMARY_DEFAULT 0
 #endif
@@ -831,21 +834,13 @@ bool NavEKF3::InitialiseFilter(void)
             }
         }
 
-        // Freeze the hover Z-bias correction at boot for each IMU used by a core.
-        // This value is applied at the IMU level and does NOT change during flight,
-        // breaking the feedback loop between learning and correction. The INS parameter
-        // may be updated by learning during flight, but only the frozen value is used
-        // for correction.
-        // Load hover Z-bias correction if enabled by vehicle code.
-        // Uses DAL so Replay gets the correct values from logged data.
-        // Vehicle code may override via setHoverZBiasCorrection().
+        // read through the DAL so Replay uses the logged values rather than the
+        // host's current parameters
         if (dal.get_hover_z_bias_enabled()) {
             for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-                constexpr float MAX_HOVER_BIAS_CORRECTION = 0.6f;
                 _accelBiasHoverZ_correction[i] = constrain_float(
                     dal.ins().get_accel_vrf_bias_z(i),
-                    -MAX_HOVER_BIAS_CORRECTION,
-                    MAX_HOVER_BIAS_CORRECTION);
+                    -HOVER_Z_BIAS_LIM, HOVER_Z_BIAS_LIM);
             }
         }
 
@@ -1057,9 +1052,6 @@ void NavEKF3::UpdateFilter(void)
 
     // align position of inactive sources to ahrs
     sources.align_inactive_sources();
-
-    // Note: Hover Z-axis accel bias learning has been moved to ArduCopter
-    // (Copter::update_hover_bias_learning() in Attitude.cpp, called from update_throttle_hover())
 }
 
 /*
@@ -1369,11 +1361,8 @@ bool NavEKF3::setHoverZBiasCorrection(uint8_t imu_index, float correction)
     if (imu_index >= INS_MAX_INSTANCES || !core) {
         return false;
     }
-    // Clamp to safe range - vibration rectification shouldn't exceed +/-0.6 m/s^2
-    constexpr float MAX_HOVER_BIAS_CORRECTION = 0.6f;
     _accelBiasHoverZ_correction[imu_index] = constrain_float(correction,
-                                                              -MAX_HOVER_BIAS_CORRECTION,
-                                                              MAX_HOVER_BIAS_CORRECTION);
+                                                             -HOVER_Z_BIAS_LIM, HOVER_Z_BIAS_LIM);
     return true;
 }
 
@@ -2079,6 +2068,3 @@ bool NavEKF3::InitialiseFilterBootstrap()
     }
     return ret;
 }
-
-// Note: Hover Z-bias learning has been moved to ArduCopter (Attitude.cpp)
-// The frozen correction (_accelBiasHoverZ_correction) is still loaded and applied here
