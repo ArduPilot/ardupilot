@@ -716,10 +716,14 @@ void AP_AHRS::update_EKF2(void)
             if (EKF2.getOriginLLH(new_origin)) {
                 bool set_origin_success = true;
 #if HAL_NAVEKF3_AVAILABLE
-                set_origin_success &= EKF3.setOriginLLH(new_origin);
+                if (_ekf3_started) {
+                    set_origin_success &= EKF3.setOriginLLH(new_origin);
+                }
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
-                set_origin_success &= external.set_origin(new_origin);
+                if (external.initialised()) {
+                    set_origin_success &= external.set_origin(new_origin);
+                }
 #endif
                 done_common_origin = set_origin_success;
             }
@@ -801,10 +805,14 @@ void AP_AHRS::update_EKF3(void)
             if (EKF3.getOriginLLH(new_origin)) {
                 bool set_origin_success = true;
 #if HAL_NAVEKF2_AVAILABLE
-                set_origin_success &= EKF2.setOriginLLH(new_origin);
+                if (_ekf2_started) {
+                    set_origin_success &= EKF2.setOriginLLH(new_origin);
+                }
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
-                set_origin_success &= external.set_origin(new_origin);
+                if (external.initialised()) {
+                    set_origin_success &= external.set_origin(new_origin);
+                }
 #endif
                 done_common_origin = set_origin_success;
             }
@@ -831,10 +839,14 @@ void AP_AHRS::update_external(void)
         if (external.get_origin(new_origin)) {
             bool set_origin_success = true;
 #if HAL_NAVEKF2_AVAILABLE
-            set_origin_success &= EKF2.setOriginLLH(new_origin);
+            if (_ekf2_started) {
+                set_origin_success &= EKF2.setOriginLLH(new_origin);
+            }
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-            set_origin_success &= EKF3.setOriginLLH(new_origin);
+            if (_ekf3_started) {
+                set_origin_success &= EKF3.setOriginLLH(new_origin);
+            }
 #endif
             done_common_origin = set_origin_success;
         }
