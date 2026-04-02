@@ -145,7 +145,7 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
 
     // @Param: ACC_VRFB_Z
     // @DisplayName: Accelerometer vibration rectification Z bias
-    // @Description: {Copter} Z-axis accelerometer bias learned during hover to compensate for vibration rectification. This is a DC offset in AccZ caused by motor vibration that only exists when motors are running.
+    // @Description: {Copter} Z-axis accelerometer bias learned during hover to compensate for vibration rectification. Used as an initial estimate to help the EKF converge faster after arming. The EKF will still learn the correct bias in flight even if this value is incorrect.
     // @Units: m/s/s
     // @Range: -0.5 0.5
     // @User: Advanced
