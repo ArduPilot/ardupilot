@@ -51,7 +51,7 @@ extern const AP_HAL::HAL& hal;
 // get printable name for frame type (for debug)
 const char* AP_CRSF_Protocol::get_frame_type_name(uint8_t byte, uint8_t subtype)
 {
-    switch(byte) {
+    switch (byte) {
     case CRSF_FRAMETYPE_GPS:
         return "GPS";
     case CRSF_FRAMETYPE_BATTERY_SENSOR:
@@ -142,8 +142,13 @@ void AP_CRSF_Protocol::decode_variable_bit_channels(const uint8_t* payload, uint
 }
 
 // encode 16 channels of PWM values into a CRSFv3 variable bit length frame payload
-uint8_t AP_CRSF_Protocol::encode_variable_bit_channels(uint8_t *payload, const uint16_t *values, uint8_t nchannels, uint8_t start_chan)
+void AP_CRSF_Protocol::encode_variable_bit_channels(Frame& frame, const uint16_t *values, uint8_t nchannels, uint8_t start_chan)
 {
+    frame.device_address = DeviceAddress::CRSF_ADDRESS_SYNC_BYTE;
+    frame.type = FrameType::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED;
+
+    uint8_t *payload = (uint8_t*)frame.payload;
+
     // We will use 11-bit resolution which is standard for CRSFv3
     const uint8_t channelBits = CRSF_SUBSET_RC_RES_BITS_11B;
 
@@ -174,7 +179,7 @@ uint8_t AP_CRSF_Protocol::encode_variable_bit_channels(uint8_t *payload, const u
         payload[writeByteIndex++] = writeValue & 0xFF;
     }
 
-    return writeByteIndex;
+    frame.length = writeByteIndex + 2; // +1 for type, +1 for CRC
 }
 
 // encode a ping frame
@@ -234,6 +239,10 @@ bool AP_CRSF_Protocol::process_device_info_frame(ParameterDeviceInfoFrame* info,
 {
     const uint8_t origin = fakerx ? CRSF_ADDRESS_FLIGHT_CONTROLLER : CRSF_ADDRESS_CRSF_RECEIVER;
 
+    if (info == nullptr) {
+        return false;
+    }
+
     if ((fakerx && info->destination != 0 && info->destination != CRSF_ADDRESS_CRSF_RECEIVER && info->destination != CRSF_ADDRESS_RADIO_TRANSMITTER)
         || (!fakerx && info->destination != 0 && info->destination != CRSF_ADDRESS_FLIGHT_CONTROLLER)) {
         debug("process_device_info_frame(): rejected destination 0x%x -> %s", info->destination, info->payload);
@@ -255,8 +264,9 @@ bool AP_CRSF_Protocol::process_device_info_frame(ParameterDeviceInfoFrame* info,
         uint8_t Parameters count
         uint8_t Parameter version number
     */
+    const uint8_t MAX_DEVICE_NAME_LEN = 42U;
     // get the terminator of the device name string
-    const uint8_t offset = strnlen((char*)info->payload,42U);
+    const uint8_t offset = strnlen((char*)info->payload, MAX_DEVICE_NAME_LEN);
     if (strncmp((char*)info->payload, "Tracer", 6) == 0) {
         version->protocol = ProtocolType::PROTOCOL_TRACER;
     } else if (strncmp((char*)&info->payload[offset+1], "ELRS", 4) == 0) {
@@ -285,9 +295,9 @@ bool AP_CRSF_Protocol::process_device_info_frame(ParameterDeviceInfoFrame* info,
     }
 
     // should we use rf_mode reported by link statistics?
-    if (version->protocol == ProtocolType::PROTOCOL_ELRS
-        || (version->protocol != ProtocolType::PROTOCOL_TRACER
-            && (version->major > 3 || (version->major == 3 && version->minor >= 72)))) {
+    if (version->protocol == ProtocolType::PROTOCOL_ELRS ||
+        (version->protocol != ProtocolType::PROTOCOL_TRACER &&
+         (version->major > 3 || (version->major == 3 && version->minor >= 72)))) {
         version->use_rf_mode = true;
     }
 
@@ -295,23 +305,6 @@ bool AP_CRSF_Protocol::process_device_info_frame(ParameterDeviceInfoFrame* info,
 
     return true;
 }
-
-#if 0
-bool AP_CRSF_Protocol::process_ping_frame(ParameterPingFrame* info, bool fakerx)
-{
-    const uint8_t destination = fakerx ? CRSF_ADDRESS_CRSF_RECEIVER : CRSF_ADDRESS_FLIGHT_CONTROLLER;
-    const uint8_t origin = fakerx ? CRSF_ADDRESS_FLIGHT_CONTROLLER : CRSF_ADDRESS_CRSF_RECEIVER;
-
-    if (info->destination != 0 && info->destination != destination) {
-        return false; // request was not for us
-    }
-
-    // we are only interested in RC device info for firmware version detection
-    if (info->origin != 0 && info->origin != origin) {
-        return false;
-    }
-}
-#endif
 
 // encode a ping frame
 void AP_CRSF_Protocol::encode_device_info_frame(Frame& frame, DeviceAddress destination, DeviceAddress origin)

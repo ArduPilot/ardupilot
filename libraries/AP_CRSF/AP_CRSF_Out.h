@@ -61,12 +61,12 @@ public:
 
 private:
     enum class State : uint8_t {
-        WAITING_FOR_PORT,
         WAITING_FOR_RC_LOCK,
         WAITING_FOR_DEVICE_INFO,
         NEGOTIATING_2M,
         NEGOTIATING_1M,
         HEALTH_CHECK_PING,
+        RESET,
         RUNNING,
     };
 
@@ -108,7 +108,7 @@ private:
 
     static AP_CRSF_Out* singleton;
 
-    State state = State::WAITING_FOR_PORT;
+    State state = State::WAITING_FOR_RC_LOCK;
     uint32_t last_frame_us;
     uint32_t last_status_update_ms;
     uint32_t last_baud_neg_us;
@@ -128,8 +128,6 @@ private:
 
     AP_CRSF_Protocol::VersionInfo version;
     BaudNegotiationResult baud_negotiation_result;
-    // check baudrate negotiation status
-    BaudNegotiationResult get_baud_negotiation_result() const { return baud_negotiation_result; }
     void reset_baud_negotiation();
 
     // pointer to the CRSF protocol engine instance for our assigned UART
