@@ -691,8 +691,8 @@ void NavEKF3_core::SelectVelPosFusion()
             }
         } else {
             fusePosData = true;
-            // When stationary on ground, fuse zero velocity
-            // to constrain gyro bias and Z-axis accel bias learning. XY accel biases
+            // When stationary on ground or armed before takeoff, fuse zero velocity
+            // to improve gyro bias and Z-axis accel bias learning. XY accel biases
             // remain unobservable until the vehicle accelerates and are separately
             // inhibited by dvelBiasAxisInhibit in CovariancePrediction.
             // Use onGroundNotMoving to avoid fusing zero velocity when the vehicle
@@ -713,7 +713,7 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     // When in AID_RELATIVE or AID_ABSOLUTE mode but stationary on ground without velocity
-    // aiding, fuse synthetic zero velocity to constrain gyro bias and Z-axis accel bias
+    // aiding, fuse synthetic zero velocity to improve gyro bias and Z-axis accel bias
     // learning. XY accel biases are unobservable on the ground and are inhibited by
     // dvelBiasAxisInhibit. Without this, configurations like optical flow where
     // PV_AidingMode is AID_RELATIVE but no velocity data is available when stationary
@@ -738,7 +738,7 @@ void NavEKF3_core::SelectVelPosFusion()
 
         if (!haveRecentGpsVel && !haveRecentFlowVel && !haveRecentBodyVel) {
             // No velocity aiding available while stationary - fuse synthetic zero velocity
-            // to constrain gyro bias and gravity-aligned accel bias
+            // to improve gyro bias and gravity-aligned accel bias learning
             fuseVelData = true;
             fusingStationaryZeroVel = true;
             velPosObs[0] = 0.0f;
@@ -1164,8 +1164,9 @@ void NavEKF3_core::FuseVelPosNED()
                 // Don't use 'fake' horizontal measurements used to constrain attitude drift during
                 // periods of non-aiding to learn bias as these can give incorrect esitmates.
                 const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
-                // Inhibit Z-axis accel bias learning during ground effect because motor thrust
-                // causes a DC offset in AccZ that is not present in normal flight.
+                // Inhibit Z-axis accel bias learning during ground effect because motor
+                // vibration causes a rectification offset in AccZ that differs between
+                // ground and flight conditions.
                 // When out of ground effect (controlled by TKOFF_GNDEFF_ALT on Copter side),
                 // allow bias learning from baro position corrections - this allows the EKF to
                 // adapt to in-flight AccZ offsets (vibration rectification) that differ from
