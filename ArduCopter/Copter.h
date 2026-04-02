@@ -792,7 +792,7 @@ private:
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
 
     // compassmot.cpp
-    MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);
+    MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan, const mavlink_command_int_t &packet);
     void compassmot_output();
 
     // crash_check.cpp
