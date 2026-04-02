@@ -480,7 +480,8 @@ void AP_Generator_Loweheiser::command_generator()
         throttle,  // p4, desired manual throttle
         run_electric_starter,  // p5, electric starter
         0,  // p6, empty
-        0   // p7, empty
+        0,  // p7, empty
+        0  // command_opaque_id, unused
         );
 
 #if HAL_LOGGING_ENABLED
