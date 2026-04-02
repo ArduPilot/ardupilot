@@ -4445,10 +4445,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SERIAL5_PROTOCOL": 1,
         })
         self.reboot_sitl()
-        # wait for EKF to fully initialize after reboot — without
-        # GPS, the EKF needs time in AID_NONE before it can report
-        # position after origin is set
-        self.delay_sim_time(5)
+        # wait for EKF attitude convergence before setting origin
+        self.wait_ekf_flags(
+            mavutil.mavlink.EKF_ATTITUDE,
+            0,
+            timeout=30,
+        )
         # without a GPS or some sort of external prompting, AP
         # doesn't send system_time messages.  So prompt it:
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
@@ -4509,8 +4511,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_VICON_TMASK": 8,  # send VISION_POSITION_DELTA
         })
         self.reboot_sitl()
-        # wait for EKF to fully initialize after reboot
-        self.delay_sim_time(5)
+        # wait for EKF attitude convergence before setting origin
+        self.wait_ekf_flags(
+            mavutil.mavlink.EKF_ATTITUDE,
+            0,
+            timeout=30,
+        )
         # without a GPS or some sort of external prompting, AP
         # doesn't send system_time messages.  So prompt it:
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
