@@ -2186,10 +2186,11 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
 float AP_AHRS::get_hover_z_bias_correction(uint8_t imu_index) const
 {
 #if HAL_NAVEKF3_AVAILABLE
-    return ekf3.EKF3.getHoverZBiasCorrection(imu_index);
-#else
-    return 0.0f;
+    if (_hover_z_bias_enabled) {
+        return ekf3.EKF3.getHoverZBiasCorrection(imu_index);
+    }
 #endif
+    return 0.0f;
 }
 
 bool AP_AHRS::set_hover_z_bias_correction(uint8_t imu_index, float correction)
