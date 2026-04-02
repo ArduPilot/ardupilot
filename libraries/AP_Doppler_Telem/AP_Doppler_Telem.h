@@ -52,10 +52,20 @@ protected:
     
 
 private:
+    void update_simulated_messages();
 
     AP_Doppler_Parameters *_doppler_parameters;
     AP_HAL::UARTDriver *port;
     AP_Doppler_Backend *_backend;
+    mutable HAL_Semaphore _sim_sem;
+    uint32_t _sim_last_update_ms = 0;
+    DVL_BI_Msg _sim_bi_msg {};
+    DVL_BD_Msg _sim_bd_msg {};
+    DVL_WI_Msg _sim_wi_msg {};
+    DVL_U_Msg _sim_ua_msg {};
+    DVL_U_Msg _sim_ub_msg {};
+    DVL_U_Msg _sim_uc_msg {};
+    DVL_U_Msg _sim_ud_msg {};
     static AP_Doppler_Telem *singleton;
 
 };
