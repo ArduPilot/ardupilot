@@ -59,8 +59,6 @@ void AP_Doppler_FitSurface::reset_solution()
     _normal_body.zero();
     _plane_d_sensor = 0.0f;
     _residual_m = 0.0f;
-    _pitch_error_rad = 0.0f;
-    _roll_error_rad = 0.0f;
 }
 
 bool AP_Doppler_FitSurface::update()
