@@ -33,6 +33,7 @@ public:
 
     bool mav_enabled() const { return _mav_en.get() != 0; }
     uint8_t mav_rate_hz() const { return uint8_t(MAX(int16_t(_mav_rate_hz.get()), int16_t(1))); }
+    bool sim_enabled() const { return _sim_en.get() != 0; }
 
 
 
@@ -42,6 +43,7 @@ private:
     AP_Int8 _options;
     AP_Int8 _mav_en;
     AP_Int8 _mav_rate_hz;
+    AP_Int8 _sim_en;
 
     // settable parameters
 

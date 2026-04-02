@@ -39,6 +39,13 @@ const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MAV_RATE", 3, AP_Doppler_Parameters, _mav_rate_hz, 5),
 
+    // @Param: SIM_EN
+    // @DisplayName: DVL simulation enable
+    // @Description: Enable simulated DVL MAVLink cache updates for link bring-up without hardware
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("SIM_EN", 4, AP_Doppler_Parameters, _sim_en, 0),
+
     AP_GROUPEND
 };
 
