@@ -180,6 +180,9 @@ void Copter::init_hover_bias_correction(void)
         return;
     }
 
+    // Enable hover Z-bias correction in the EKF via AHRS
+    ahrs.set_hover_z_bias_enabled(true);
+
     // Initialize learning state from INS parameters
     // The actual EKF correction will be set later once EKF3 is active
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
