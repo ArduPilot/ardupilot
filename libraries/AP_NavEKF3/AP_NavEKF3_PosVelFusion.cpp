@@ -417,11 +417,13 @@ bool NavEKF3_core::resetHeightDatum(void)
         hgtTimeout = false;
     }
 
-    // Note: do not adjust EKF_origin altitude here.  The baro has
-    // been recalibrated to read zero at the current height, and
-    // position.z has been zeroed.  Changing origin.alt would put it
-    // out of sync with the baro field elevation, causing persistent
-    // altitude errors in the baro fallback path.
+    // Do not adjust EKF_origin altitude here.  The origin is the
+    // NED reference frame anchor and should be immutable once set.
+    // The baro has been recalibrated to read zero at the current
+    // height, and position.z has been zeroed — both are consistent
+    // with the unchanged origin.  Callers that need to preserve
+    // absolute altitude across large elevation changes should skip
+    // the datum reset entirely (e.g. re-arming far from home).
 
     // set the terrain state to zero (on ground). The adjustment for
     // frame height will get added in the later constraints
