@@ -68,7 +68,7 @@ bool AP_Doppler_Telem::init(const AP_SerialManager &serial_manager)
 }
 
 
-
+/*
 void AP_Doppler_Telem::update()
 {
     if (_doppler_parameters->sim_enabled()) {
@@ -80,6 +80,7 @@ void AP_Doppler_Telem::update()
         return;
     }
 }
+*/
 
 void AP_Doppler_Telem::send()
 {

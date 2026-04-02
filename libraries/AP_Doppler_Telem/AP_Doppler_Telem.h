@@ -32,7 +32,7 @@ public:
 
     // init - perform required initialisation
     bool init(const AP_SerialManager &serial_manager);
-    void update();
+    //void update();
     void send();
     bool get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const;
     bool get_bi_msg(DVL_BI_Msg &msg) const;
