@@ -5,7 +5,6 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include <GCS_MAVLink/GCS.h>
-#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -817,15 +816,14 @@ bool NavEKF3::InitialiseFilter(void)
         // breaking the feedback loop between learning and correction. The INS parameter
         // may be updated by learning during flight, but only the frozen value is used
         // for correction.
-        // Load from INS parameters so Replay (which has no vehicle code) gets the
-        // correct correction value. Vehicle code may override via
+        // Load from DAL so Replay gets the correct correction value from
+        // logged data. Vehicle code may override via
         // setHoverZBiasCorrection() based on its learning mode setting.
         {
-            const auto &real_ins = AP::ins();
             for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
                 constexpr float MAX_HOVER_BIAS_CORRECTION = 0.6f;
                 _accelBiasHoverZ_correction[i] = constrain_float(
-                    real_ins.get_accel_vrf_bias_z(i),
+                    dal.ins().get_accel_vrf_bias_z(i),
                     -MAX_HOVER_BIAS_CORRECTION,
                     MAX_HOVER_BIAS_CORRECTION);
             }
