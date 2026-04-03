@@ -359,6 +359,7 @@ BUILD_OPTIONS = [
     Feature('Proximity', 'PROXIMITY_TERRARANGERTOWEREVO', 'AP_PROXIMITY_TERARANGERTOWEREVO_ENABLED', 'Enable TerraRangerTower Evo Proximity Sensors', 0, "PROXIMITY"),  # noqa
     Feature('Proximity', 'PROXIMITY_MR72_ENABLED', 'AP_PROXIMITY_MR72_ENABLED', 'Enable NanoRadar MR72 Proximity Sensors', 0, "PROXIMITY"),  # noqa
     Feature('Proximity', 'PROXIMITY_HEXSOONRADAR_ENABLED', 'AP_PROXIMITY_HEXSOONRADAR_ENABLED', 'Enable Hexsoon Radar Proximity Sensors', 0, "PROXIMITY"),  # noqa
+    Feature('Proximity', 'PROXIMITY_CAMSENSE_X1_ENABLED', 'AP_PROXIMITY_CAMSENSE_X1_ENABLED', 'Enable Camsense x1 Radar Proximity Sensors', 0, "PROXIMITY"),  # noqa
 
     Feature('Baro', 'BMP085', 'AP_BARO_BMP085_ENABLED', 'Enable BMP085 Barometric Sensor', 1, None),
     Feature('Baro', 'BMP280', 'AP_BARO_BMP280_ENABLED', 'Enable BMP280 Barometric Sensor', 1, None),
