@@ -12273,6 +12273,67 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
                                        (duration, want_lt))
 
+    def TakeoffGroundEffectAlt(self):
+        '''Test TKOFF_GNDEFF_ALT and TKOFF_GNDEFF_TMO control ground effect'''
+        self.context_push()
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+
+        # Subtest A: large threshold — takeoff_expected persists at 5m
+        self.start_subtest("Large TKOFF_GNDEFF_ALT keeps ground effect at 5m")
+        self.set_parameter("TKOFF_GNDEFF_ALT", 10)
+        self.takeoff(5, mode='ALT_HOLD')
+        self.delay_sim_time(5)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_large = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_large = sum(durations_large)
+        self.progress("takeoff_expected total with GNDEFF_ALT=10: %fs" % total_large)
+        if total_large < 3:
+            raise NotAchievedException(
+                "takeoff_expected should persist with large threshold (got %fs, want>3)" % total_large)
+
+        # Subtest B: small threshold — takeoff_expected clears quickly
+        self.start_subtest("Small TKOFF_GNDEFF_ALT clears ground effect at 5m")
+        self.set_parameter("TKOFF_GNDEFF_ALT", 0.5)
+        self.takeoff(5, mode='ALT_HOLD')
+        self.delay_sim_time(5)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_small = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_small = sum(durations_small)
+        self.progress("takeoff_expected total with GNDEFF_ALT=0.5: %fs" % total_small)
+
+        # Comparative assertion: large threshold should have longer duration
+        if total_small >= total_large:
+            raise NotAchievedException(
+                "Smaller threshold should have shorter ground effect (small=%fs >= large=%fs)"
+                % (total_small, total_large))
+
+        # Subtest C: TKOFF_GNDEFF_TMO requires both timeout AND altitude
+        # With small altitude threshold but timeout set, ground effect should persist longer
+        self.start_subtest("TKOFF_GNDEFF_TMO extends ground effect duration")
+        self.set_parameters({
+            "TKOFF_GNDEFF_ALT": 0.5,  # Small threshold - would clear quickly without timeout
+            "TKOFF_GNDEFF_TMO": 3,    # Require 3s timeout as well
+        })
+        self.reboot_sitl()
+        self.takeoff(5, mode='ALT_HOLD')
+        self.delay_sim_time(5)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_tmo = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_tmo = sum(durations_tmo)
+        self.progress("takeoff_expected total with GNDEFF_TMO=3: %fs" % total_tmo)
+
+        # With timeout, ground effect should persist longer than without (even with small alt threshold)
+        if total_tmo <= total_small:
+            raise NotAchievedException(
+                "TKOFF_GNDEFF_TMO should extend ground effect (tmo=%fs <= no_tmo=%fs)"
+                % (total_tmo, total_small))
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
         self.takeoff(20, mode='GUIDED')
@@ -13216,6 +13277,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.TakeoffGroundEffectAlt,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
