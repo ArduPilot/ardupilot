@@ -1,7 +1,7 @@
 -- mount-driver.lua: Example scripting gimbal driver
 --
 -- Template for writing a Lua gimbal driver using the scripting mount backend.
--- Populate send_target_angles and send_target_rates with your gimbal's
+-- Populate send_target_angles with your gimbal's
 -- protocol (serial, CAN, etc). This example simulates a gimbal by tracking
 -- targets internally and reporting them back as attitude.
 --
@@ -20,6 +20,7 @@ local MOUNT_INSTANCE = 0                -- default to MNT1
 local INIT_INTERVAL_MS = 3000           -- attempt to initialise the gimbal at this interval
 local UPDATE_INTERVAL_MS = 100          -- update at 10hz
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
+local MOUNT_TARGET_TYPE = {ANGLE=1, RATE=2, RETRACTED=4, NEUTRAL=8, LOCATION=16}
 
 -- local variables
 local sim_state = {
@@ -28,7 +29,6 @@ local sim_state = {
   yaw_bf_deg=0
 }
 local initialised = false
-local last_update_ms = 0
 
 -- wrap yaw angle in degrees to value between 0 and 360
 local function wrap_360(angle)
@@ -59,8 +59,9 @@ local function init()
   end
 
   initialised = true
-  last_update_ms = millis():tofloat()
   gcs:send_text(MAV_SEVERITY.INFO, "MountDriver: started")
+
+  mount:set_natively_supported_mount_target_types(MOUNT_INSTANCE, MOUNT_TARGET_TYPE.ANGLE)
 end
 
 -- send target angles (in degrees) to gimbal
@@ -81,26 +82,6 @@ local function send_target_angles(roll_ef_deg, pitch_ef_deg, yaw_deg, yaw_is_ef)
   sim_state.yaw_bf_deg = yaw_deg
 end
 
--- send target rates (in deg/sec) to gimbal
-local function send_target_rates(roll_degs, pitch_degs, yaw_degs, yaw_is_ef, dt_s)
-  -- default argument values
-  roll_degs = roll_degs or 0
-  pitch_degs = pitch_degs or 0
-  yaw_degs = yaw_degs or 0
-  yaw_is_ef = yaw_is_ef or false
-
-  if yaw_is_ef then
-    yaw_degs = yaw_degs - math.deg(ahrs:get_gyro():z())
-  end
-
-  send_target_angles(
-    sim_state.roll_ef_deg + roll_degs * dt_s,
-    sim_state.pitch_ef_deg + pitch_degs * dt_s,
-    sim_state.yaw_bf_deg + yaw_degs * dt_s,
-    false
-  )
-end
-
 -- the main update function
 local function update()
 
@@ -109,11 +90,6 @@ local function update()
     init()
     return
   end
-
-  -- calculate dt
-  local now_ms = millis():tofloat()
-  local dt_s = (now_ms - last_update_ms) / 1000.0
-  last_update_ms = now_ms
 
   -- report gimbal attitude. Must be called periodically or the backend reports
   -- unhealthy. Ideally, populate this from a gimbal attitude message. If your
@@ -126,14 +102,6 @@ local function update()
   local roll_deg, pitch_deg, yaw_deg, yaw_is_ef = mount:get_angle_target(MOUNT_INSTANCE)
   if roll_deg and pitch_deg and yaw_deg then
     send_target_angles(roll_deg, pitch_deg, yaw_deg, yaw_is_ef)
-    return
-  end
-
-  -- send rate target
-  local roll_degs, pitch_degs, yaw_degs
-  roll_degs, pitch_degs, yaw_degs, yaw_is_ef = mount:get_rate_target(MOUNT_INSTANCE)
-  if roll_degs and pitch_degs and yaw_degs then
-    send_target_rates(roll_degs, pitch_degs, yaw_degs, yaw_is_ef, dt_s)
     return
   end
 end
