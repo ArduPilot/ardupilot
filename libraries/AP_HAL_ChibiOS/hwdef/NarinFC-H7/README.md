@@ -177,7 +177,7 @@ ALL outputs within the same group need to use the same output rate and protocol.
 
 ## GPIOs
 
-The 14 outputs can be used as GPIOs (relays, buttons, RPM etc). To use them you need to set the output’s ``SERVOx_FUNCTION`` to -1. See GPIOs page for more information.
+The 14 outputs can be used as GPIOs (relays, buttons, RPM etc). To use them you need to set the output’s `SERVOx_FUNCTION` to -1. See GPIOs page for more information.
 
 The numbering of the GPIOs for use in the PIN parameters in ArduPilot is:
 

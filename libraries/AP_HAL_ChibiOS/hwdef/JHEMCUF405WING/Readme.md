@@ -113,11 +113,11 @@ The JHEMCUF405Wing does not have a built-in compass, but you can attach an exter
 
 ## VTX power control
 
-GPIO 81 controls the VTX BEC output to pins marked "9V". Setting this GPIO high removes voltage supply to pins. ``Relay2`` controls this GPIO by default.
+GPIO 81 controls the VTX BEC output to pins marked "9V". Setting this GPIO high removes voltage supply to pins. `Relay2` controls this GPIO by default.
 
 ## Camera Control
 
-GPIO 82 switches the C1 and C2 camera inputs. ``Relay 3`` controls this GPIO by default.
+GPIO 82 switches the C1 and C2 camera inputs. `Relay 3` controls this GPIO by default.
 
 ## Loading Firmware
 

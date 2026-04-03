@@ -143,7 +143,7 @@ support all normal PWM output formats. All outputs also support DShot. Outputs 9
 
 ## GPIOs
 
-All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s ``SERVOx_FUNCTION`` to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
+All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s `SERVOx_FUNCTION` to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
 .. raw:: html
 
