@@ -99,6 +99,6 @@ fi
 
 python3 -m pip install --progress-bar off --user -U argparse pyserial pexpect lxml
 python3 -m pip install --progress-bar off --user -U intelhex
-python3 -m pip install --progress-bar off --user -U numpy
+python3 -m pip install --progress-bar off --user -U "numpy<2"
 python3 -m pip install --progress-bar off --user -U edn_format
 python3 -m pip install --progress-bar off --user -U empy==3.3.4

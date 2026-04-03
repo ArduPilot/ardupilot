@@ -210,7 +210,7 @@ if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
    false; then
     # on Lunar (and presumably later releases), we install in venv, below
-    PYTHON_PKGS+=" numpy pyparsing psutil"
+    PYTHON_PKGS+=" numpy<2 pyparsing psutil"
     SITL_PKGS="python3-dev"
 else
 SITL_PKGS="libtool libxml2-dev libxslt1-dev ${PYTHON_V}-dev ${PYTHON_V}-pip ${PYTHON_V}-setuptools ${PYTHON_V}-numpy ${PYTHON_V}-pyparsing ${PYTHON_V}-psutil"
