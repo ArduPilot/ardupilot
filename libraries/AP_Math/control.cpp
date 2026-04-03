@@ -702,11 +702,6 @@ float stopping_distance(float velocity, float p, float accel_max)
 // Returns 0 if the direction is zero or any limit is zero.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float max_z_pos)
 {
-    // Reject zero-length direction
-    if (is_zero(direction.length_squared())) {
-        return 0.0;
-    }
-
     // Decompose into horizontal magnitude and vertical component
     const float dir_xy = direction.xy().length();
 
@@ -730,24 +725,15 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float m
 float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, float max_z_pos)
 {
     // Reject invalid limits
-    if (is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
+    if (!is_positive(max_xy) || !is_positive(max_z_pos) || !is_positive(max_z_neg)) {
         return 0.0;
     }
-
-    // Ensure limits are positive magnitudes
-    max_xy = fabsf(max_xy);
-    max_z_pos = fabsf(max_z_pos);
-    max_z_neg = fabsf(max_z_neg);
 
     // Check for zero length direction vector
     const float dir_length = safe_sqrt(sq(dir_xy) + sq(dir_z));
     if (!is_positive(dir_length)) {
         return 0.0;
     }
-
-    // Normalize the direction vector (only ratio matters)
-    dir_xy /= dir_length;
-    dir_z /= dir_length;
 
     if (is_zero(dir_xy)) {
         // Pure vertical - constrained only by vertical limits
@@ -758,6 +744,10 @@ float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, 
         // Pure horizontal - constrained only by horizontal limits
         return max_xy;
     }
+
+    // Normalize the direction vector (only ratio matters)
+    dir_xy /= dir_length;
+    dir_z /= dir_length;
 
     // Compare the direction slope (|dir_z/dir_xy|) to the limit slope
     // (max_z/max_xy) to determine which axis constraint is hit first.
