@@ -38,7 +38,7 @@ receive pin. The TX pin is the transmit pin .
 ## RC Input
 
 The default RC input is configured on USART2. RC could  be applied instead to a different UART port,  and set
-the protocol to receive RC data ``SERIALn_PROTOCOL`` = 23 and change :ref:`SERIAL2 _PROTOCOL <SERIAL2 _PROTOCOL>`
+the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change :ref:`SERIAL2 _PROTOCOL <SERIAL2 _PROTOCOL>`
 to something other than '23'. For rc protocols other than unidirectional, the USART2_TX pin will need to be used:
 
 - FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".

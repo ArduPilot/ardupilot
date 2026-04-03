@@ -87,7 +87,7 @@ The ORBITH743 has an onboard OSD using a MAX7456 chip and is enabled by default.
 
 ## DJI Video and OSD
 
-An **SH1.0 6P** connector supports a standard DJI HD VTX. ``SERIAL3`` is configured by default for DisplayPort. Pin 1 provides 10V which is controlled by GPIO81 -**do not** connect peripherals that require 5V to this pin.
+An **SH1.0 6P** connector supports a standard DJI HD VTX. `SERIAL3` is configured by default for DisplayPort. Pin 1 provides 10V which is controlled by GPIO81 -**do not** connect peripherals that require 5V to this pin.
 
 ## DShot Capability
 
@@ -105,7 +105,7 @@ Servo outputs (Outputs 9-12, marked S1-S4) on PA15, PB3, PD12, and PD13 (TIM2 an
 ## GPIOs
 
 ORBITH743 outputs can be used as GPIOs (relays, buttons, RPM, etc.).  
-Set the ``SERVOx_FUNCTION`` = -1 to enable GPIO functionality. See [ArduPilot GPIO docs](https://ardupilot.org) for more info.
+Set the `SERVOx_FUNCTION` = -1 to enable GPIO functionality. See [ArduPilot GPIO docs](https://ardupilot.org) for more info.
 
 ### GPIO Pin Mapping
 

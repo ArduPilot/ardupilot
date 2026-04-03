@@ -36,7 +36,7 @@ The CORVON743V1 is a flight controller designed and produced by [CORVON]
 
 ## RC Input
 
-The default RC input is configured on the UART6. The SBUS pin is inverted and connected to RX6. Non SBUS, single wire serial inputs can be directly tied to RX6 if SBUS pin is left unconnected. RC could  be applied instead to a different UART port such as UART1, UART4 or UART8, and set the protocol to receive RC data ``SERIALn_PROTOCO`` =23 and change :ref:`SERIAL5 _PROTOCOL <SERIAL5 _PROTOCOL>` to something other than '23'. For rc protocols other than unidirectional, the TX6 pin will need to be used:
+The default RC input is configured on the UART6. The SBUS pin is inverted and connected to RX6. Non SBUS, single wire serial inputs can be directly tied to RX6 if SBUS pin is left unconnected. RC could  be applied instead to a different UART port such as UART1, UART4 or UART8, and set the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change :ref:`SERIAL5 _PROTOCOL <SERIAL5 _PROTOCOL>` to something other than '23'. For rc protocols other than unidirectional, the TX6 pin will need to be used:
 
 - :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>` should be set to "23".
 - FPort would require :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` be set to "15".

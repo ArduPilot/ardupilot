@@ -46,7 +46,7 @@ The USART3 connector is labelled debug, but is available as a general purpose UA
 
 ## RC Input
 
-All ArduPilot supported unidirectional RC protocols can be input on the port marked RC IN, including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used set to ``SERIALLx_PROTOCOL`` = 23. See :ref:`common-rc-systems` for more details.
+All ArduPilot supported unidirectional RC protocols can be input on the port marked RC IN, including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used set to `SERIALLx_PROTOCOL` = 23. See :ref:`common-rc-systems` for more details.
 
 ## PWM Output
 

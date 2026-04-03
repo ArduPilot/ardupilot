@@ -34,7 +34,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 The default RC input is configured on USART1. RC could  be applied instead to a different UART port such as  and set
-the protocol to receive RC data ``SERIALn_PROTOCOL`` = 23 and change :ref:`SERIAL1 _PROTOCOL <SERIAL1 _PROTOCOL>`
+the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change :ref:`SERIAL1 _PROTOCOL <SERIAL1 _PROTOCOL>`
 to something other than '23'. For rc protocols other than unidirectional, the USART1_TX pin will need to be used:
 
 - :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` should be set to "23".
