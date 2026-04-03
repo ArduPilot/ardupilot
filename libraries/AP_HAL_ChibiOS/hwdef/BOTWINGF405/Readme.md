@@ -15,44 +15,44 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 
 ### Processor
 
-* STM32F405RGT6, 168 MHz, 1MB flash
-* 24MHz external crystal
+- STM32F405RGT6, 168 MHz, 1MB flash
+- 24MHz external crystal
 
 ### Sensors
 
-* ICM42688P Accelerometer/Gyroscope
-* DPS310 Barometer
-* Optional External Compass (AK8963 supported)
+- ICM42688P Accelerometer/Gyroscope
+- DPS310 Barometer
+- Optional External Compass (AK8963 supported)
 
 ### Power
 
-* 2S-6S LiPo input with onboard voltage and current monitoring
-* BEC Outputs:
-  * 5V @ 2.0A
-  * 9V @ 2.0A, GPIO controlled
+- 2S-6S LiPo input with onboard voltage and current monitoring
+- BEC Outputs:
+  - 5V @ 2.0A
+  - 9V @ 2.0A, GPIO controlled
 
 ### Storage
 
-* 32MB onboard dataflash for logging
-* JEDEC-compatible SPI Flash (W25Q256)
+- 32MB onboard dataflash for logging
+- JEDEC-compatible SPI Flash (W25Q256)
 
 ### Interfaces
 
-* 6x UARTs (for GPS, telemetry, RC, camera, etc.)
-* I2C port for barometer and external compass
-* USB OTG port (USB connector)
-* 5 configured PWM outputs (4 for motors, 1 for RGB LED)
-* 1x RC input (SBUS, PPM or CRSF/ELRS selectable)
+- 6x UARTs (for GPS, telemetry, RC, camera, etc.)
+- I2C port for barometer and external compass
+- USB OTG port (USB connector)
+- 5 configured PWM outputs (4 for motors, 1 for RGB LED)
+- 1x RC input (SBUS, PPM or CRSF/ELRS selectable)
 
 ### External Connections
 
-* 6-pin JST-GH for GPS/Compass
-* 6-pin JST-GH for HD VTXX or other peripherals
-* 8-pin JST-GH for ESC
-* 4-pin JST-GH for Receiver input
-* 5-pin JST-GH for User
-* 5-pin JST-GH for Camera Input
-* 4 x 4-pin JST-GH for LED Strip-NEOPIXEL
+- 6-pin JST-GH for GPS/Compass
+- 6-pin JST-GH for HD VTXX or other peripherals
+- 8-pin JST-GH for ESC
+- 4-pin JST-GH for Receiver input
+- 5-pin JST-GH for User
+- 5-pin JST-GH for Camera Input
+- 4 x 4-pin JST-GH for LED Strip-NEOPIXEL
 
 ## Wiring Diagram
 
@@ -62,13 +62,13 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 
 The UARTs default protocol and serial port assignments are:
 
-* SERIAL0 -> USB
-* SERIAL1 -> USART1 (DMA capable,RX tied to SBUS RC input and pin used as an interrupt input, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) = 1)
-* SERIAL2 -> USART2 (ESC Telemetry)
-* SERIAL3 -> USART3 (DisplayPort, TX DMA Capable)
-* SERIAL4 -> UART4  (USER, TX DMA Capable)
-* SERIAL5 -> UART5  (USER, TX DMA Capable)
-* SERIAL6 -> USART6 (GPS)
+- SERIAL0 -> USB
+- SERIAL1 -> USART1 (DMA capable,RX tied to SBUS RC input and pin used as an interrupt input, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) = 1)
+- SERIAL2 -> USART2 (ESC Telemetry)
+- SERIAL3 -> USART3 (DisplayPort, TX DMA Capable)
+- SERIAL4 -> UART4  (USER, TX DMA Capable)
+- SERIAL5 -> UART5  (USER, TX DMA Capable)
+- SERIAL6 -> USART6 (GPS)
 
 ## RC Input
 
@@ -78,10 +78,10 @@ To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receive
 
 With this option:
 
-* PPM is not supported.
-* FPort requires connection to TX1 via an external bi-directional and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to “7”.
-* CRSF also requires a TX1 connection, in addition to R6, and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to “0”.
-* SRXL2 requires a connection to T1 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to “4”.
+- PPM is not supported.
+- FPort requires connection to TX1 via an external bi-directional and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to “7”.
+- CRSF also requires a TX1 connection, in addition to R6, and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to “0”.
+- SRXL2 requires a connection to T1 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to “4”.
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for more details.
 
@@ -93,11 +93,9 @@ The BOTWINGF405 includes an internal AT7456E OSD enabled for analog video. Simul
 
 All motor/servo outputs are Dshot and PWM capable. M1-4 are also BDshot capable. However, mixing Dshot, serial LED, and normal PWM operation for outputs is restricted into groups, ie. enabling Dshot for an output in a group requires that ALL outputs in that group be configured and used as Dshot, rather than PWM outputs.
 
-PWM 1,2 in group1
-
-PWM 3,4 in group2
-
-PWM 5 (LED) group3
+- PWM 1,2 in group1
+- PWM 3,4 in group2
+- PWM 5 (LED) group3
 
 ## Battery Monitoring
 
@@ -105,11 +103,11 @@ The board has a built-in voltage sensor and external current sensor input. The c
 sensor can read up to 120 Amps. The voltage sensor can handle up to 6S LiPo batteries.
 The default battery monitor parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=11
-BATT_CURR_PIN=13
-BATT_VOLT_MULT=11.0
-BATT_AMP_PERVLT=37
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 11
+- BATT_CURR_PIN = 13
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 37
 
 ## Compass
 
@@ -129,14 +127,14 @@ Analog RSSI input is via pin 12.  Set [RSSI_ANA_PIN](https://ardupilot.org/copte
 
 ## LEDs and Buzzer
 
-* LED0 (GPIO0)
-* ED1 (GPIO1)
-* Buzzer (GPIO80)
+- LED0 (GPIO0)
+- ED1 (GPIO1)
+- Buzzer (GPIO80)
 
 ## Logging
 
-* 32MB onboard SPI flash for data logging
-* Uses JEDEC-compatible `AP_Logger_Flash_JEDEC` driver
+- 32MB onboard SPI flash for data logging
+- Uses JEDEC-compatible `AP_Logger_Flash_JEDEC` driver
 
 ## Loading Firmware
 
@@ -150,4 +148,4 @@ Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 \*.apj firmware files.
 
-**Note:** SWD access for development/debugging available on PA13/PA14.
+**Note:*- SWD access for development/debugging available on PA13/PA14.

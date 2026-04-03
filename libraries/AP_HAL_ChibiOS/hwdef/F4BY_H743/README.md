@@ -147,11 +147,11 @@ The board has a external current and voltage sensor input. The sensors range fro
 
 The default battery parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=13
-BATT_CURR_PIN=12
-BATT_VOLT_MULT=16.04981
-BATT_AMP_PERVLT=100
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 13
+- BATT_CURR_PIN = 12
+- BATT_VOLT_MULT = 16.04981
+- BATT_AMP_PERVLT = 100
 
 ## Compass
 

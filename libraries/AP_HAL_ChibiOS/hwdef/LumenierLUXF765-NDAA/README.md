@@ -171,11 +171,11 @@ for an external current sensor input. The voltage sensor can handle up to an 8S 
 
 The default parameters are as follows:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=12
-BATT_CURR_PIN=13
-BATT_VOLT_MULT=10.1
-BATT_AMP_PERVLT=17.0
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 12
+- BATT_CURR_PIN = 13
+- BATT_VOLT_MULT = 10.1
+- BATT_AMP_PERVLT = 17.0
 
 ## Compass
 

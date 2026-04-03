@@ -76,11 +76,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11.0
-BATT_AMP_PERVLT=25.0
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 25.0
 
 ## Analog RSSI input
 

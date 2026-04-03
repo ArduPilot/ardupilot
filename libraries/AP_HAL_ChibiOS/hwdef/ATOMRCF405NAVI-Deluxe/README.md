@@ -93,10 +93,10 @@ These settings are set as defaults when the firmware is loaded (except `BATT_AMP
 
 Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11
-BATT_AMP_PERVLT=30
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11
+- BATT_AMP_PERVLT = 30
 
 ## Connecting a GPS/Compass module
 

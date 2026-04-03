@@ -67,9 +67,9 @@ The SpeedyBee F405 AIO supports up to 5 PWM outputs. The pads for motor output E
 
 The PWM are in 3 groups:
 
-PWM 1-2: Group 1
-PWM 3-4: Group 2
-LED: Group 3
+- PWM 1-2: Group 1
+- PWM 3-4: Group 2
+- LED: Group 3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
