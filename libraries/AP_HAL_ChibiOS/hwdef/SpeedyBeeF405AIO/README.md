@@ -27,7 +27,7 @@ The SpeedyBee F405 AIO is a flight controller produced by [SpeedyBee](https://ww
 
 ![SpeedyBee F405 AIO](SpeedyBeeF405AIO_Pinout.png "SpeedyBee F405 AIO")
 
-.. note:: S pin for "Meteor LED" does not work with this firmware
+> **Note:** S pin for "Meteor LED" does not work with this firmware
 
 ## UART Mapping
 
