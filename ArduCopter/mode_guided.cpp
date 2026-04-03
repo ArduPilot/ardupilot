@@ -106,8 +106,18 @@ void ModeGuided::run()
     case SubMode::Angle:
         angle_control_run();
         break;
+
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    case SubMode::Orbit:
+        if (_circle_moving_to_edge) {
+            wp_control_run();
+        } else {
+            orbit_run();
+        }
+        break;
+#endif  // AC_COPTER_MODEGUIDED_ORBIT_ENABLED
     }
- }
+}
 
 // returns true if the Guided-mode-option is set (see GUID_OPTIONS)
 bool ModeGuided::option_is_enabled(Option option) const
@@ -147,6 +157,9 @@ bool ModeGuided::move_vehicle_on_ekf_reset() const
     case SubMode::WP:
     case SubMode::Pos:
     case SubMode::PosVelAccel:
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    case SubMode::Orbit:
+#endif
         // these submodes have absolute position targets so we smoothly slew the target upon an ekf reset
         return true;
     }
@@ -240,6 +253,20 @@ void ModeGuided::wp_control_run()
 
     // run waypoint controller
     copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
+
+    // if moving to circle edge, check if we've arrived
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    if (guided_mode == SubMode::Orbit && _circle_moving_to_edge && wp_nav->reached_wp_destination()) {
+        // initialise circle controller and switch to circle submode
+        copter.circle_nav->init_NED_m(
+            copter.circle_nav->get_center_NED_m(),
+            copter.circle_nav->center_is_terrain_alt(),
+            _orbit_rate_degs);
+        _circle_moving_to_edge = false;
+        orbit_apply_yaw_behaviour();
+        guided_mode = SubMode::Orbit;
+    }
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 
     // call z-axis position controller (wpnav should have already updated it's alt target)
     pos_control->D_update_controller();
@@ -449,6 +476,21 @@ bool ModeGuided::get_wp(Location& destination) const
     case SubMode::Pos:
         destination = Location::from_ekf_offset_NED_m(guided_pos_target_ned_m, guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         return true;
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    case SubMode::Orbit:
+        if (_circle_moving_to_edge) {
+            return wp_nav->get_oa_wp_destination(destination);
+        }
+        // already orbiting - return circle center
+        {
+            Location circle_center;
+            if (!AP::ahrs().get_location_from_origin_offset_NED(circle_center, copter.circle_nav->get_center_NED_m())) {
+                return false;
+            }
+            destination = circle_center;
+            return true;
+        }
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
     case SubMode::Angle:
     case SubMode::TakeOff:
     case SubMode::Accel:
@@ -1147,6 +1189,12 @@ float ModeGuided::wp_distance_m() const
         return get_horizontal_distance(pos_control->get_pos_estimate_NED_m().xy().tofloat(), guided_pos_target_ned_m.xy().tofloat());
     case SubMode::PosVelAccel:
         return pos_control->get_pos_error_NE_m();
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    case SubMode::Orbit:
+        return _circle_moving_to_edge ? 
+            wp_nav->get_wp_distance_to_destination_m() :
+            copter.circle_nav->get_distance_to_target_m();
+#endif
     default:
         return 0.0f;
     }
@@ -1161,6 +1209,12 @@ float ModeGuided::wp_bearing_deg() const
         return degrees(get_bearing_rad(pos_control->get_pos_estimate_NED_m().xy().tofloat(), guided_pos_target_ned_m.xy().tofloat()));
     case SubMode::PosVelAccel:
         return degrees(pos_control->get_bearing_to_target_rad());
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    case SubMode::Orbit:
+        return _circle_moving_to_edge ?
+            degrees(wp_nav->get_wp_bearing_to_destination_rad()) :
+            degrees(copter.circle_nav->get_bearing_to_target_rad());
+#endif
     case SubMode::TakeOff:
     case SubMode::Accel:
     case SubMode::VelAccel:
@@ -1183,6 +1237,11 @@ float ModeGuided::crosstrack_error_m() const
     case SubMode::VelAccel:
     case SubMode::PosVelAccel:
         return pos_control->crosstrack_error_m();
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    case SubMode::Orbit:
+        return _circle_moving_to_edge ?
+            wp_nav->crosstrack_error_m() : 0;
+#endif
     case SubMode::Angle:
         // no track to have a crosstrack to
         return 0;
@@ -1211,4 +1270,110 @@ bool ModeGuided::resume()
     return true;
 }
 
-#endif
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+// orbit_start - initialise guided controller to fly a circle around a specified location
+void ModeGuided::orbit_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, ORBIT_YAW_BEHAVIOUR yaw_behaviour)
+{
+    // set circle center, radius and direction
+    copter.circle_nav->set_center(circle_center);
+    // configure position controller speeds and accelerations
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+    copter.circle_nav->set_radius_m(radius_m);
+
+    // convert tangential speed to angular rate, or use default rate with correct direction
+    if (is_positive(speed_ms) && is_positive(radius_m)) {
+        _orbit_rate_degs = degrees(speed_ms / radius_m);
+    } else {
+        _orbit_rate_degs = fabsf(copter.circle_nav->get_rate_degs());
+    }
+    if (ccw) {
+        _orbit_rate_degs = -_orbit_rate_degs;
+    }
+    copter.circle_nav->set_rate_degs(_orbit_rate_degs);
+    // store requested number of turns (0 = orbit forever)
+    if (update_turns) {
+        _orbit_turns = turns;
+        _orbit_angle_total_at_start = copter.circle_nav->get_angle_total_rad();
+    }
+    _orbit_yaw_behaviour = yaw_behaviour;
+
+    // check distance to edge of circle
+    Vector3p circle_edge_ned_m;
+    float dist_to_edge_m;
+    copter.circle_nav->get_closest_point_on_circle_NED_m(circle_edge_ned_m, dist_to_edge_m);
+
+    // if more than 0.1m away, fly to edge first
+    if (dist_to_edge_m > 0.1f) {
+        Location circle_edge = Location::from_ekf_offset_NED_m(circle_edge_ned_m, Location::AltFrame::ABOVE_ORIGIN);
+        circle_edge.copy_alt_from(circle_center);
+        if (!wp_nav->set_wp_destination_loc(circle_edge)) {
+            // terrain data missing
+            copter.failsafe_terrain_on_event();
+            return;
+        }
+        // during approach look in direction of travel (default WP yaw behaviour)
+        auto_yaw.set_mode_to_default(false);
+        guided_mode = SubMode::Orbit;
+        _circle_moving_to_edge = true;
+    } else {
+        // already at edge - start circling immediately
+        copter.circle_nav->init_NED_m(
+            copter.circle_nav->get_center_NED_m(),
+            copter.circle_nav->center_is_terrain_alt(),
+            _orbit_rate_degs);
+        // set yaw behaviour
+        orbit_apply_yaw_behaviour();
+        guided_mode = SubMode::Orbit;
+    }
+}
+
+// orbit_apply_yaw_behaviour - set yaw mode based on ORBIT_YAW_BEHAVIOUR parameter
+void ModeGuided::orbit_apply_yaw_behaviour()
+{
+    switch ((ORBIT_YAW_BEHAVIOUR)_orbit_yaw_behaviour) {
+    case ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER:
+    default:
+        auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
+        break;
+    case ORBIT_YAW_BEHAVIOUR_HOLD_INITIAL_HEADING:
+        auto_yaw.set_fixed_yaw_rad(copter.ahrs.get_yaw_rad(), 0.0f, 0, false);
+        break;
+    case ORBIT_YAW_BEHAVIOUR_UNCONTROLLED:
+        auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+        break;
+    case ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TANGENT_TO_CIRCLE:
+        auto_yaw.set_mode(AutoYaw::Mode::LOOK_AHEAD);
+        break;
+    case ORBIT_YAW_BEHAVIOUR_RC_CONTROLLED:
+        auto_yaw.set_mode(AutoYaw::Mode::PILOT_RATE);
+        break;
+    case ORBIT_YAW_BEHAVIOUR_UNCHANGED:
+        // do not change yaw mode
+        break;
+    }
+}
+
+// orbit_run - run circle controller
+void ModeGuided::orbit_run()
+{
+    // call circle controller
+    copter.failsafe_terrain_set_status(copter.circle_nav->update_ms(0.0f));
+    // check if we've completed the requested number of turns
+    if (is_positive(_orbit_turns)) {
+        const float turns_completed = fabsf(copter.circle_nav->get_angle_total_rad() / float(M_2PI));
+        if (turns_completed >= _orbit_turns) {
+            // orbit complete - hold position and maintain yaw behaviour
+            hold_position();
+            orbit_apply_yaw_behaviour();
+            return;
+        }
+    }
+    // call attitude, position and yaw controllers
+    pos_control->D_update_controller();
+    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+}
+#endif  // AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+#endif  // MODE_GUIDED_ENABLED

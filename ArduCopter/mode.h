@@ -1153,6 +1153,11 @@ public:
     bool set_speed_up_ms(float speed_up_ms) override;
     bool set_speed_down_ms(float speed_down_ms) override;
 
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    // true while moving to circle edge before orbiting
+    bool _circle_moving_to_edge = false;
+#endif
+
     // initialises position controller to implement take-off
     // takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
     bool do_user_takeoff_start_m(float takeoff_alt_m) override;
@@ -1165,12 +1170,23 @@ public:
         VelAccel,
         Accel,
         Angle,
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+        Orbit,
+#endif
     };
 
     SubMode submode() const { return guided_mode; }
 
     void angle_control_start();
     void angle_control_run();
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    // orbit_start - start orbiting around a location
+    // speed_ms: tangential speed in m/s, 0 or NaN means use default circle rate
+    void orbit_start(const Location &circle_center, float radius_m, bool ccw, float speed_ms, bool update_turns, float turns, ORBIT_YAW_BEHAVIOUR yaw_behaviour = ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER);
+    void orbit_run();
+    void orbit_apply_yaw_behaviour();
+    bool circle_moving_to_edge() const { return _circle_moving_to_edge; }
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 
     // return guided mode timeout in milliseconds. Only used for velocity, acceleration, angle control, and angular rate control
     uint32_t get_timeout_ms() const;
@@ -1228,6 +1244,13 @@ private:
     void pause_control_run();
     void posvelaccel_control_run();
     void set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle);
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+    float _orbit_rate_degs = 20.0f;  // desired orbit rate in deg/s (signed for direction)
+    ORBIT_YAW_BEHAVIOUR _orbit_yaw_behaviour = ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER;
+    float _orbit_turns;
+    float _orbit_angle_total_at_start;
+    bool _orbit_update_turns = true;
+#endif
 
     // controls which controller is run (pos or vel):
     SubMode guided_mode = SubMode::TakeOff;

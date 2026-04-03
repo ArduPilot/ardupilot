@@ -305,6 +305,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
             feature_define_whitelist.add('AP_RC_TRANSMITTER_TUNING_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ALTHOLD_ENABLED')
+            feature_define_whitelist.add('AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED')
 
         if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
             # plane has a dependency for AP_Follow which is not
