@@ -13416,7 +13416,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.progress("CRSF two-vehicle test passed")
 
-        except Exception as e:
+        except NotAchievedException as e:
             self.print_exception_caught(e)
             ex = e
         finally:
