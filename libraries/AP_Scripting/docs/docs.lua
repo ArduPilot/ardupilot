@@ -1791,6 +1791,19 @@ function mount:get_attitude_euler(instance) end
 
 -- methods used to implement a gimbal driver in Lua (MNTn_TYPE = 9):
 
+-- Declare which target types the gimbal driver natively supports as a bitmask of MountTargetType
+-- bit values. The mount frontend uses this to decide what to pass through and what to convert.
+-- e.g., if your gimbal only supports setting the angle targets, then the frontend will convert
+-- location and rate commands to an angle for you.
+---@param instance integer -- mount instance (0 or 1)
+---@param types_mask integer -- bitmask of supported MountTargetType values, combine with bitwise OR
+---| '1' # angle (1 << 0)
+---| '2' # rate (1 << 1)
+---| '4' # retracted (1 << 2)
+---| '8' # neutral (1 << 3)
+---| '16' # location (1 << 4)
+function mount:set_natively_supported_mount_target_types(instance, types_mask) end
+
 -- Get the angle target that the frontend has requested, in degrees. Returns nil if angles are not the active target type
 ---@param instance integer -- mount instance (0 or 1)
 ---@return number|nil   -- roll_deg
@@ -1809,6 +1822,7 @@ function mount:get_rate_target(instance) end
 
 -- Get the location the mount should be pointing at, if any. Returns a target when the mount mode
 -- implies a location (GPS_POINT, HOME_LOCATION, SYSID_TARGET), nil otherwise.
+-- Unlike get_angle_target/get_rate_target this is not affected by natively supported types
 ---@param instance integer -- mount instance (0 or 1)
 ---@return Location_ud|nil
 function mount:get_location_target(instance) end
