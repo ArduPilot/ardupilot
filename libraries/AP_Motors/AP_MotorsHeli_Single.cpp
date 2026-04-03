@@ -282,7 +282,7 @@ AP_Motors::SpoolState AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_R
     // Check if rotors are run-up
     set_rotor_runup_complete(main_rotor_state == AP_MotorsHeli_RSC::RSCSpoolState::THROTTLE_UNLIMITED);
 
-    return convert_spool_state(main_rotor_state);
+    return main_rotor_state;
 
 }
 

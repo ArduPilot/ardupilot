@@ -6,6 +6,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger_config.h>
 #include <AC_Autorotation/RSC_Autorotation.h>
+#include "AP_Motors_Class.h"
 
 // rotor control modes
 enum RotorControlMode {
@@ -32,21 +33,8 @@ public:
         AP_Param::setup_object_defaults(this, var_info);
     };
 
-    // desired spool states
-    enum class DesiredRSCSpoolState : uint8_t {
-        SHUT_DOWN = 0,              // all motors should move to stop
-        GROUND_IDLE = 1,            // all motors should move to ground idle
-        THROTTLE_UNLIMITED = 2,     // motors should move to being a state where throttle is unconstrained (e.g. by start up procedure)
-    };
-
-    // spool states
-    enum class RSCSpoolState : uint8_t {
-        SHUT_DOWN = 0,                      // all motors stop
-        GROUND_IDLE = 1,                    // all motors at ground idle
-        SPOOLING_UP = 2,                       // increasing maximum throttle while stabilizing
-        THROTTLE_UNLIMITED = 3,             // throttle is no longer constrained by start up procedure
-        SPOOLING_DOWN = 4,                     // decreasing maximum throttle while stabilizing
-    };
+    using DesiredRSCSpoolState = AP_Motors::DesiredSpoolState;
+    using RSCSpoolState = AP_Motors::SpoolState;
 
     // initialize - servo initialization and parameter setup on start-up
     void        initialize();
