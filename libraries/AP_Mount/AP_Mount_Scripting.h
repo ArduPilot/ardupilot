@@ -44,13 +44,14 @@ public:
 
 protected:
 
-    // Scripting backends poll get_angle_target / get_rate_target rather than
-    // receiving pushed targets, so native support for both types is declared so
-    // send_target_to_gimbal() never converts rates to angles on the backend's
-    // behalf.  send_target_angles() / send_target_rates() store the converted
-    // target for retrieval via get_angle_target() / get_rate_target().
+    void set_natively_supported_mount_target_types(uint8_t types_mask) override {
+        supported_target_types_mask = types_mask;
+    }
+
+    // Scripting doesn't actually send anything (the script polls the
+    // library for the targets)
     uint8_t natively_supported_mount_target_types() const override {
-        return NATIVE_ANGLES_AND_RATES_ONLY;
+        return supported_target_types_mask;
     };
     void send_target_angles(const MountAngleTarget &angle_rad) override;
     void send_target_rates(const MountRateTarget &rate_rads) override;
@@ -73,6 +74,7 @@ private:
     MountAngleTarget _angle_target {};  // last angle target pushed by send_target_angles()
     MountRateTarget  _rate_target {};   // last rate target pushed by send_target_rates()
 
+    uint8_t supported_target_types_mask = NATIVE_ANGLES_AND_RATES_ONLY;
 };
 
 #endif // HAL_MOUNT_SCRIPTING_ENABLED
