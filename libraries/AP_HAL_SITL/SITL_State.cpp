@@ -54,6 +54,11 @@ void SITL_State::_sitl_setup()
 #endif
 
         sitl_model->set_buzzer(&_sitl->buzzer_sim);
+#if AP_SIM_CAM_ENABLED && AP_SIM_MAX_CAMERAS > 0
+        for (uint8_t i = 0; i < AP_SIM_MAX_CAMERAS; i++) {
+            sitl_model->add_camera(&_sitl->camera_sim[i]);
+        }
+#endif
         sitl_model->set_sprayer(&_sitl->sprayer_sim);
         sitl_model->set_gripper_servo(&_sitl->gripper_sim);
         sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
