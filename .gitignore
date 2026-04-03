@@ -1,4 +1,3 @@
-/ArduPlane/ap-*.core
 /.lock-waf*
 /.waf*
 /Tools/autotest/aircraft/Rascal/reset.xml
@@ -115,8 +114,6 @@ GTAGS
 .gdbinit
 .vscode/*
 !.vscode/extensions.json
-!.vscode/launch.json
-!.vscode/tasks.json
 /.history
 Parameters.html
 Parameters.md
