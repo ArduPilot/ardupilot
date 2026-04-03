@@ -68,11 +68,11 @@ The board has a built-in voltage sensor and external current sensor input. The v
 
 The correct battery setting parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11.0
-BATT_AMP_PERVLT=40
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 40
 
 ## Compass
 

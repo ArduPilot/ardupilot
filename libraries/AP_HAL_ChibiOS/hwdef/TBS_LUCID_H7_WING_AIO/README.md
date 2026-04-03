@@ -90,19 +90,19 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11.0
-BATT_AMP_PERVLT=40.0
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 40.0
 
-Pads for a second analog battery monitor are provided. To use:
+Pads for a second analog - BATTery monitor are provided. To use:
 
-BATT2_MONITOR=4
-BATT2_VOLT_PIN=18
-BATT2_CURR_PIN=7
-BATT2_VOLT_MULT=11.0
-BATT2_AMP_PERVLT=as required
+- BATT2_MONITOR = 4
+- BATT2_VOLT_PIN = 18
+- BATT2_CURR_PIN = 7
+- BATT2_VOLT_MULT = 11.0
+- BATT2_AMP_PERVLT = as required
 
 ## Analog RSSI and AIRSPEED inputs
 

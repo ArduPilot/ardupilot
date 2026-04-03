@@ -72,11 +72,11 @@ JHEMCUF405PRO supports up to 5 motor/servo outputs. 4 motors and 1 LED strip or 
 
 The default battery configuration is:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=13
-BATT_CURR_PIN=12
-BATT_VOLT_MULT=11
-BATT_AMP_PERVLT=95.84
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 13
+- BATT_CURR_PIN = 12
+- BATT_VOLT_MULT = 11
+- BATT_AMP_PERVLT = 95.84
 
 ## Compass
 

@@ -147,8 +147,9 @@ If SBUS is used on HD VTX connector (DJI TX), then SERIAL1_PROTOCOl should be se
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT:
-SERIAL1_PROTOCOL = 10
-SERIAL1_OPTIONS = 7
+
+- SERIAL1_PROTOCOL = 10
+- SERIAL1_OPTIONS = 7
 
 ## OSD Support
 

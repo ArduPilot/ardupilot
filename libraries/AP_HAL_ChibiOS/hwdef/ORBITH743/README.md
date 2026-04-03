@@ -167,17 +167,17 @@ Enable battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
 **First battery monitor is enabled by default:**
 
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=10.1
-BATT_AMP_PERVLT=80.0
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 10.1
+- BATT_AMP_PERVLT = 80.0
 
 **The second battery monitor is not enabled by default, but its parameter defaults have been set:**
 
-BATT2_VOLT_PIN=4
-BATT2_CURR_PIN=18
-BATT2_VOLT_MULT=10.1
-BATT2_AMP_PERVLT=80.0
+- BATT2_VOLT_PIN = 4
+- BATT2_CURR_PIN = 18
+- BATT2_VOLT_MULT = 10.1
+- BATT2_AMP_PERVLT = 80.0
 
 ## Where to Buy
 
