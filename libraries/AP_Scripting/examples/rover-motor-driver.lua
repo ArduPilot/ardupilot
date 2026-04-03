@@ -29,6 +29,10 @@ function update()
       if throttle < 0 then
           steering = -steering
       end
+
+      -- Language checker thinks steering could be nil, reassure it that it cannot
+      ---@cast steering number
+
       SRV_Channels:set_output_norm(K_SCRIPTING1, steering)
       SRV_Channels:set_output_norm(K_SCRIPTING3, throttle)
     end
