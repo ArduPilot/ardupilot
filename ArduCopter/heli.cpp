@@ -160,7 +160,7 @@ void Copter::heli_update_rotor_speed_targets()
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
 
-    if (rsc_control_mode==ROTOR_CONTROL_MODE_PASSTHROUGH) {
+    if (rsc_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) {
         // pass through pilot desired rotor speed from the RC
         if (get_pilot_desired_rotor_speed() > 0.01) {
             ap.motor_interlock_switch = true;
