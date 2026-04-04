@@ -1009,7 +1009,7 @@ bool AP_Baro::healthy(uint8_t instance) const {
     if (instance >= BARO_MAX_INSTANCES) {
         return false;
     }
-    return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated;
+    return sensors[instance].healthy && sensors[instance].alt_ok;
 }
 #endif
 
