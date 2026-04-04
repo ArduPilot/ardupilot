@@ -11153,7 +11153,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def BaroDeferredCalibration(self):
         '''Test that deferred baro calibration works with slow-starting sensor'''
         # Simulate a slow-starting baro (e.g. external AHRS) that
-        # takes 5 seconds to produce data.  Verify:
+        # takes 3 seconds to produce data.  Verify:
         # 1. Pre-arm check prevents arming before calibration
         # 2. Calibration completes once data arrives
         # 3. Vehicle can arm and fly normally afterwards
@@ -11169,6 +11169,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # wait for calibration to complete (3s startup + ~2s calibration)
         self.wait_ready_to_arm(timeout=60)
+
+        # clear the startup delay immediately so it cannot persist
+        # into subsequent tests if the flight phase below fails
+        self.set_parameters({
+            "SIM_BARO_STRTDLY": 0,
+            "SIM_BAR2_STRTDLY": 0,
+        })
 
         # verify we can arm and take off normally
         self.takeoff(10, mode='LOITER')
