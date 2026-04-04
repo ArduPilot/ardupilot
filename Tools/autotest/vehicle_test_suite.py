@@ -15045,11 +15045,13 @@ SERIAL5_BAUD 128
         params = copy.copy(self.FenceRelativeToHome_params())
         params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
-            "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
+        # set min-alt after arming checks pass — on the ground the
+        # vehicle would be below the min-alt fence and block arming
+        self.set_parameter("FENCE_ALT_MIN", fence_alt_min)
         original_home = self.home_position_as_mav_location()
         home_ofs = 20
         offset_home = self.offset_location_up(original_home, home_ofs)
@@ -15094,11 +15096,13 @@ SERIAL5_BAUD 128
         params = self.FenceRelativeToHome_params()
         params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
-            "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
+        # set min-alt after arming checks pass — on the ground the
+        # vehicle would be below the min-alt fence and block arming
+        self.set_parameter("FENCE_ALT_MIN", fence_alt_min)
         original_home = self.home_position_as_mav_location()
         home_ofs = -20
         offset_home = self.offset_location_up(original_home, home_ofs)
@@ -15170,11 +15174,13 @@ SERIAL5_BAUD 128
         params = self.FenceRelativeToOrigin_params()
         params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
-            "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
+        # set min-alt after arming checks pass — on the ground the
+        # vehicle would be below the min-alt fence and block arming
+        self.set_parameter("FENCE_ALT_MIN", fence_alt_min)
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         original_home = self.home_position_as_mav_location()
         self.set_home(self.offset_location_up(original_home, -20))
@@ -15223,11 +15229,13 @@ SERIAL5_BAUD 128
         params = self.FenceRelativeToOrigin_params()
         params.update({
             "FENCE_TYPE": 8,   # ALT_MIN only
-            "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 80,  # generous ceiling
         })
         self.set_parameters(params)
         self.wait_ready_to_arm()
+        # set min-alt after arming checks pass — on the ground the
+        # vehicle would be below the min-alt fence and block arming
+        self.set_parameter("FENCE_ALT_MIN", fence_alt_min)
         ground_loc = self.home_position_as_mav_location()
         origin_alt_m = self.poll_message("GPS_GLOBAL_ORIGIN").altitude / 1000.0
         # take off first from home==origin so relative alt starts at 0
