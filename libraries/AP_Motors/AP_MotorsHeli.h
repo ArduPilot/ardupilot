@@ -73,7 +73,7 @@ public:
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
     // get_rsc_mode - gets the current rotor speed control method
-    uint8_t get_rsc_mode() const { return _main_rotor.get_control_mode(); }
+    uint8_t get_rsc_mode() const { return _main_rotor.get_rsc_control_mode(); }
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
@@ -82,7 +82,7 @@ public:
     virtual void set_desired_rotor_speed(float desired_speed);
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
-    float get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
+    float get_desired_rotor_speed() const { return _main_rotor.get_desired_rotor_speed(); }
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -173,7 +173,7 @@ protected:
     // update_motor_controls - sends commands to motor controllers
     virtual AP_Motors::SpoolState update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
 
-// run spool logic
+    // run spool logic
     void                output_logic();
 
     // output_to_motors - sends commands to the motors
