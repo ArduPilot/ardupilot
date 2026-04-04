@@ -242,7 +242,7 @@ void AP_MotorsHeli_RSC::initialize()
 void AP_MotorsHeli_RSC::configure()
 {
 
-    set_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
+    set_rsc_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
     set_ramp_time(_ramp_time.get());
     set_runup_time(_runup_time.get());
     set_critical_speed(_critical_speed.get());
@@ -254,7 +254,7 @@ void AP_MotorsHeli_RSC::configure()
 // configure - configure the RSC with specific settings, allows caller to specify settings instead of using parameters.
 void AP_MotorsHeli_RSC::configure(RotorControlMode control_mode, int8_t ramp_time, int8_t runup_time, float critical_speed, float idle_output)
 {
-    set_control_mode(control_mode);
+    set_rsc_control_mode(control_mode);
     set_ramp_time(ramp_time);
     set_runup_time(runup_time);
     set_critical_speed(critical_speed);
@@ -268,21 +268,21 @@ void AP_MotorsHeli_RSC::configure_armed()
 {
 
     // set desired speed for each control mode
-    switch(_control_mode) {
+    switch (_rsc_control_mode) {
     case ROTOR_CONTROL_MODE_PASSTHROUGH:
         // passthrough mode uses the pilot's desired speed directly as the control output, so set the desired speed to the pilot's input
-        _desired_speed = _pilot_desired_speed;
+        _desired_rotor_speed = _passthru_desired_rotor_speed;
         break;
     case ROTOR_CONTROL_MODE_SETPOINT:
-        _desired_speed = _rsc_setpoint.get() * 0.01f;
+        _desired_rotor_speed = _rsc_setpoint.get() * 0.01f;
         break;
     case ROTOR_CONTROL_MODE_THROTTLECURVE:
     case ROTOR_CONTROL_MODE_AUTOTHROTTLE:
         // throttle curve and autothrottle both use the pilot's desired speed as the input to the throttle curve, so set the desired speed to the pilot's input
-        _desired_speed = 1.0f;
+        _desired_rotor_speed = 1.0f;
         break;
     default:
-        _desired_speed = 0.0f;
+        _desired_rotor_speed = 0.0f;
         break;
     }
 
@@ -291,7 +291,7 @@ void AP_MotorsHeli_RSC::configure_armed()
         set_throttle_curve();
     }
     // keeps user from changing RSC mode while armed
-    if (_rsc_mode.get() != get_control_mode()) {
+    if (_rsc_mode.get() != get_rsc_control_mode()) {
         reset_rsc_mode_param();
         _save_rsc_mode = true;
     }
@@ -436,14 +436,14 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
         // if turbine engine started without using start sequence, set starting flag just to be sure it can't be triggered when back in idle
         _starting = false;
 
-        if ((_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
+        if ((_rsc_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_rsc_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
             // set control rotor speed to ramp slewed value between idle and desired speed
-            _control_output = _idle_throttle + (_rotor_ramp_output * (_desired_speed - _idle_throttle));
-        } else if (_control_mode == ROTOR_CONTROL_MODE_THROTTLECURVE) {
+            _control_output = _idle_throttle + (_rotor_ramp_output * (_desired_rotor_speed - _idle_throttle));
+        } else if (_rsc_control_mode == ROTOR_CONTROL_MODE_THROTTLECURVE) {
             // throttle output from throttle curve based on collective position
             float throttlecurve = calculate_throttlecurve(_collective_in);
             _control_output = _idle_throttle + (_rotor_ramp_output * (throttlecurve - _idle_throttle));
-        } else if (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
+        } else if (_rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
             autothrottle_run();
         }
         break;
@@ -463,7 +463,7 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
 
 }
 
-
+// update_spool_state - updates the spool state machine based on the desired spool state and current spool state
 void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
 {
     switch (_spool_state) {
@@ -586,13 +586,13 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     // update run-up complete flag
 
     // if control mode is disabled, then run-up complete always returns true
-    if ( _control_mode == ROTOR_CONTROL_MODE_DISABLED ) {
+    if ( _rsc_control_mode == ROTOR_CONTROL_MODE_DISABLED ) {
         _runup_complete = true;
         return;
     }
 
     // if rotor ramp and runup are both at full speed, then run-up has been completed
-    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
+    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
         _runup_complete = true;
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Complete");
     }
@@ -613,7 +613,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
 // servo_out parameter is of the range 0 ~ 1
 void AP_MotorsHeli_RSC::write_rsc(float servo_out)
 {
-    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
+    if (_rsc_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
         // do not do servo output to avoid conflicting with other output on the channel
         // ToDo: We should probably use RC_Channel_Aux to avoid this problem
         return;
@@ -625,7 +625,7 @@ void AP_MotorsHeli_RSC::write_rsc(float servo_out)
 // Return mask of output channels which the RSC is outputting on
 uint32_t AP_MotorsHeli_RSC::get_output_mask() const
 {
-    if (_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
+    if (_rsc_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
         return 0;
     }
     return SRV_Channels::get_output_channel_mask(_aux_fn);
@@ -753,7 +753,7 @@ void AP_MotorsHeli_RSC::write_log(void) const
                         "QBfffffB",
                         AP_HAL::micros64(),
                         _instance,
-                        get_desired_speed(),
+                        get_desired_rotor_speed(),
                         _rotor_runup_output,
                         _governor_output,
                         get_control_output(),

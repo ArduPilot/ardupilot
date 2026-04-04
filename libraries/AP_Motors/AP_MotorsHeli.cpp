@@ -578,9 +578,9 @@ uint32_t AP_MotorsHeli::get_motor_mask()
 }
 
 // set_desired_rotor_speed
-void AP_MotorsHeli::set_desired_rotor_speed(float desired_speed)
+void AP_MotorsHeli::set_desired_rotor_speed(float desired_rotor_speed)
 {
-    _main_rotor.set_passthrough_desired_speed(desired_speed);
+    _main_rotor.set_passthru_desired_rotor_speed(desired_rotor_speed);
 }
 
 // Update _heliflags.rotor_runup_complete value writing log event on state change
