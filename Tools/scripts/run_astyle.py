@@ -6,12 +6,11 @@ Runs astyle over directory sub-trees known to be "astyle-clean"
  AP_FLAKE8_CLEAN
 """
 
+import argparse
 import os
 import pathlib
 import subprocess
 import sys
-
-import argparse
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 DRY_RUN_DEFAULT = False
@@ -60,7 +59,7 @@ class AStyleChecker(object):
             self.progress("astyle check failed: (%s)" % (ret.stdout))
             self.retcode = 1
         if "Formatted" in ret.stdout:
-            self.progress("Files needing formatting found")
+            self.progress("Files needing formatting found.")
             print(ret.stdout)
             self.retcode = 1
 

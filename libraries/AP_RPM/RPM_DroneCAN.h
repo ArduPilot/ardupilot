@@ -27,7 +27,7 @@ public:
     AP_RPM_DroneCAN(AP_RPM &_ap_rpm, uint8_t instance, AP_RPM::RPM_State &_state);
 
     // Subscribe to incoming rpm messages
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     // update state
     void update(void) override;

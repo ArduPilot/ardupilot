@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AP_Beacon_config.h"
 
 #define LOG_IDS_FROM_BEACON \
     LOG_BEACON_MSG
@@ -32,6 +33,10 @@ struct PACKED log_Beacon {
     float posz;
 };
 
+#if AP_BEACON_ENABLED
 #define LOG_STRUCTURE_FROM_BEACON \
     { LOG_BEACON_MSG, sizeof(log_Beacon), \
         "BCN", "QBBfffffff",  "TimeUS,Health,Cnt,D0,D1,D2,D3,PosX,PosY,PosZ", "s--mmmmmmm", "F--0000000", true },
+#else
+#define LOG_STRUCTURE_FROM_BEACON
+#endif

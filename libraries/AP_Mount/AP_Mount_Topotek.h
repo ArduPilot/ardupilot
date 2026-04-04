@@ -106,6 +106,11 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // Topotek can send either rates or angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_AND_RATES_ONLY;
+    };
+
 private:
 
     // header type (fixed or variable length)
@@ -154,7 +159,8 @@ private:
     enum class TrackingStatus : uint8_t {
         STOPPED_TRACKING = 0x30,                // not tracking
         WAITING_FOR_TRACKING = 0x31,            // wait to track command status
-        TRACKING_IN_PROGRESS = 0x32             // the status is being tracked.
+        TRACKING_IN_PROGRESS = 0x32,            // the status is being tracked
+        LENS_UNSUPPORT_TRACK = 0x34,            // this lens does not support tracking
     };
 
     // identifier bytes
@@ -182,10 +188,10 @@ private:
     void request_gimbal_model_name();
 
     // send angle target in radians to gimbal
-    void send_angle_target(const MountTarget& angle_rad);
+    void send_target_angles(const MountAngleTarget& angle_rad) override;
 
     // send rate target in rad/s to gimbal
-    void send_rate_target(const MountTarget& rate_rads);
+    void send_target_rates(const MountRateTarget& rate_rads) override;
 
     // send time and date to gimbal
     bool send_time_to_gimbal();
@@ -272,7 +278,7 @@ private:
 
     // stores command ID and corresponding member functions that are compared with the command received by the gimbal
     UartCmdFunctionHandler uart_recv_cmd_compare_list[AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM] = {
-        {{"GAC"}, &AP_Mount_Topotek::gimbal_angle_analyse},
+        {{"GIA"}, &AP_Mount_Topotek::gimbal_angle_analyse},
         {{"REC"}, &AP_Mount_Topotek::gimbal_record_analyse},
         {{"SDC"}, &AP_Mount_Topotek::gimbal_sdcard_analyse},
         {{"LRF"}, &AP_Mount_Topotek::gimbal_dist_info_analyse},

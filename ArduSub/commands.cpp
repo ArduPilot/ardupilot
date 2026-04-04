@@ -7,29 +7,8 @@ void Sub::update_home_from_EKF()
     if (ahrs.home_is_set()) {
         return;
     }
-
-    // special logic if home is set in-flight
-    if (motors.armed()) {
-        set_home_to_current_location_inflight();
-    } else {
-        // move home to current ekf location (this will set home_state to HOME_SET)
-        if (!set_home_to_current_location(false)) {
-            // ignore this failure
-        }
-    }
-}
-
-// set_home_to_current_location_inflight - set home to current GPS location (horizontally) and EKF origin vertically
-void Sub::set_home_to_current_location_inflight()
-{
-    // get current location from EKF
-    Location temp_loc;
-    Location ekf_origin;
-    if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
-        temp_loc.alt = ekf_origin.alt;
-        if (!set_home(temp_loc, false)) {
-            // ignore this failure
-        }
+    if (!set_home_to_current_location(false)) {
+        // ignore this failure
     }
 }
 
@@ -44,7 +23,7 @@ bool Sub::set_home_to_current_location(bool lock)
         // This allows disarming and arming again at depth.
         // This also ensures that mission items with relative altitude frame, are always
         // relative to the water's surface, whether in a high elevation lake, or at sea level.
-        temp_loc.alt -= barometer.get_altitude() * 100.0f;
+        temp_loc.offset_up_m(-barometer.get_altitude());
         return set_home(temp_loc, lock);
     }
     return false;

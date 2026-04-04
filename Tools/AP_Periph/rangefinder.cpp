@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
 
 /*
   rangefinder support
@@ -118,4 +118,4 @@ void AP_Periph_FW::can_rangefinder_update(void)
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_RANGEFINDER
+#endif // AP_PERIPH_RANGEFINDER_ENABLED

@@ -21,21 +21,23 @@
 #if AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED
 
 #include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend.h"
+#include "AP_RangeFinder_Backend_I2C.h"
+
+#include <AP_HAL/utility/sparse-endian.h>
 
 #define TFMINIPLUS_ADDR_DEFAULT              0x10        // TFMini default device id
 
-#include <AP_HAL/utility/sparse-endian.h>
-#include <AP_HAL/I2CDevice.h>
-
-class AP_RangeFinder_Benewake_TFMiniPlus : public AP_RangeFinder_Backend
+class AP_RangeFinder_Benewake_TFMiniPlus : public AP_RangeFinder_Backend_I2C
 {
 
 public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
                                           AP_RangeFinder_Params &_params,
-                                          AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+                                          class AP_HAL::I2CDevice &dev) {
+        // this will free the object if configuration fails:
+        return configure(NEW_NOTHROW AP_RangeFinder_Benewake_TFMiniPlus(_state, _params, dev));
+    }
 
     // update state
     void update(void) override;
@@ -47,19 +49,15 @@ protected:
     }
 
 private:
-    AP_RangeFinder_Benewake_TFMiniPlus(RangeFinder::RangeFinder_State &_state,
-                                       AP_RangeFinder_Params &_params,
-                                       AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    using AP_RangeFinder_Backend_I2C::AP_RangeFinder_Backend_I2C;
 
-    bool init();
+    bool init() override;
     void timer();
 
     void process_raw_measure(le16_t distance_raw, le16_t strength_raw,
                              uint16_t &output_distance_cm);
 
     bool check_checksum(uint8_t *arr, int pkt_len);
-
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
 
     struct {
         uint32_t sum;

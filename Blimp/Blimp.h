@@ -49,7 +49,6 @@
 #include <AC_PID/AC_PID_2D.h>
 #include <AC_PID/AC_PID_Basic.h>
 #include <AC_PID/AC_PID.h>
-#include <AP_Vehicle/AP_MultiCopter.h>
 
 #include <Filter/NotchFilter.h>
 
@@ -60,11 +59,11 @@
 #include "Fins.h"
 #include "Loiter.h"
 
-#include "RC_Channel.h"         // RC Channel Library
+#include "RC_Channel_Blimp.h"         // RC Channel Library
 
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Blimp.h"
 #include "GCS_Blimp.h"
-#include "AP_Arming.h"
+#include "AP_Arming_Blimp.h"
 
 #include <AP_Mount/AP_Mount.h>
 
@@ -100,9 +99,6 @@ public:
 
 private:
 
-    // key aircraft parameters passed to multiple libraries
-    AP_MultiCopter aparm;
-
     // Global parameters are all contained within the 'g' class.
     Parameters g;
     ParametersG2 g2;
@@ -115,7 +111,7 @@ private:
 
     // flight modes convenience array
     AP_Int8 *flight_modes;
-    const uint8_t num_flight_modes = 6;
+    static constexpr uint8_t num_flight_modes = 6;
 
     // Arming/Disarming management class
     AP_Arming_Blimp arming;
@@ -168,7 +164,6 @@ private:
     // There are multiple states defined such as STABILIZE, ACRO,
     Mode::Number control_mode;
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
-    Mode::Number prev_control_mode;
 
     RCMapper rcmap;
 
@@ -239,10 +234,6 @@ private:
     // --------------
     // arm_time_ms - Records when vehicle was armed. Will be Zero if we are disarmed.
     uint32_t arm_time_ms;
-
-    // Used to exit the roll and pitch auto trim function
-    uint8_t auto_trim_counter;
-    bool auto_trim_started = false;
 
     // last valid RC input time
     uint32_t last_radio_update_ms;
@@ -394,7 +385,6 @@ private:
     // Parameters.cpp
     void load_parameters(void) override;
     void convert_pid_parameters(void);
-    void convert_lgr_parameters(void);
     void convert_fs_options_params(void);
 
     // radio.cpp
@@ -412,11 +402,6 @@ private:
     void read_rangefinder(void);
     bool rangefinder_alt_ok();
     bool rangefinder_up_ok();
-
-    // RC_Channel.cpp
-    void save_trim();
-    void auto_trim();
-    void auto_trim_cancel();
 
     // system.cpp
     void init_ardupilot() override;

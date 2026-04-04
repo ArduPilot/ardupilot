@@ -38,10 +38,6 @@ GCS_Dummy _gcs;
 #define DELAY_MICROS(x)         do { hal.scheduler->delay_microseconds(x); } while(0)
 #endif
 
-const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
-        AP_GROUPEND
-};
-
 static AP_SerialManager serial_manager;
 static AP_BoardConfig board_config;
 

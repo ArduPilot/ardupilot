@@ -23,7 +23,6 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <AP_HAL/I2CDevice.h>
 #include <utility>
 
@@ -39,6 +38,10 @@ class AP_Airspeed_SDP3X : public AP_Airspeed_Backend
 public:
 
     using AP_Airspeed_Backend::AP_Airspeed_Backend;
+
+    ~AP_Airspeed_SDP3X() {
+        delete _dev;
+    }
 
     // probe and initialise the sensor
     bool init() override;
@@ -64,7 +67,7 @@ private:
     uint32_t _last_sample_time_ms;
     uint16_t _scale;
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+    AP_HAL::I2CDevice *_dev;
 };
 
 

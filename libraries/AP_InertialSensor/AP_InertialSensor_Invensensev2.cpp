@@ -506,7 +506,7 @@ void AP_InertialSensor_Invensensev2::_read_fifo()
                 goto check_registers;
             }
             memset(rx, 0, n * INV2_SAMPLE_SIZE);
-            if (!_dev->transfer(rx, n * INV2_SAMPLE_SIZE, rx, n * INV2_SAMPLE_SIZE)) {
+            if (!_dev->transfer_fullduplex(rx, n * INV2_SAMPLE_SIZE)) {
                 if (!hal.scheduler->in_expected_delay()) {
                     debug("INV2: error in fifo read %u bytes\n", n * INV2_SAMPLE_SIZE);
                 }

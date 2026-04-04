@@ -14,4 +14,4 @@ generate-core-file $COREFILE
 quit
 EOF
 gdb -n -batch -x $TMPFILE --pid $PID < /dev/null 2>&1
-/bin/rm -f $TMPFILE
+rm -f $TMPFILE

@@ -5,8 +5,8 @@ allowing fixed wing aircraft to execute a number of aerobatic
 manoeuvres either in AUTO mission or by triggering using pilot commands
 using RC switches.
 
-As always, but particularly with scripted aerobatics, test in SITL until 
-you understand the function and behaviour of each manouver. You will need 
+As always, but particularly with scripted aerobatics, test in SITL until
+you understand the function and behaviour of each manouver. You will need
 an appropriate aircraft, and be ready to take manual control if necessary!
 
 These tricks are rate-based vs the precision trajectory-based manouvers of the script in the TrajectoryBased directory above this one. However, many planes have difficulty completing those tricks unless they can sustain extended vertical climbs and knife-edges, especially in wind. These tricks do not try to maintain a geospatial track, but rather, just attitude rates. Even planes that cannot hold the 90 deg knife edge trick, will probably hold the 180 deg (inverted) one and do loops and rolls, and these tricks can be done in even strong wind, although will not be well shaped.
@@ -16,7 +16,7 @@ These tricks are rate-based vs the precision trajectory-based manouvers of the s
 The following table gives the available manoeuvres. Each manoeuvre has
 an ID number which is used in the AUTO mission or in the TRIKn_ID
 parameters (described below). The present ground track is used as the track for the trick.
-The "Turnaround" column indicates if the manoeuvre results in a course reversal, which impacts how it is used in 
+The "Turnaround" column indicates if the manoeuvre results in a course reversal, which impacts how it is used in
 AUTO missions. Once the trick is completed, the mode that was being used at the start of the trick is restored. If the mode is CRUISE, its
 track and altitude are reset to the values present when the mode is restored. Tricks in AUTO missions require that they be performed between two waypoints to establish
 the ground track.
@@ -41,9 +41,9 @@ APM/SCRIPTS directory. You can use MAVFtp to do this.
 
 Then set
 
- - SCR_ENABLE = 1
- - SCR_HEAP_SIZE = 150000
- - SCR_VM_I_COUNT = 100000
+- SCR_ENABLE = 1
+- SCR_HEAP_SIZE = 150000
+- SCR_VM_I_COUNT = 100000
 
 You will need to refresh parameters after setting SCR_ENABLE. Then
 reboot to start scripting.
@@ -53,8 +53,8 @@ reboot to start scripting.
 The aircraft needs to be setup to perform well in ACRO mode. You need
 to enable the yaw rate controller by setting if it has a rudder (even if it cannot hold a sustained 90 degree knife-edge:
 
- - YAW_RATE_ENABLE = 1
- - ACRO_YAW_RATE = 90
+- YAW_RATE_ENABLE = 1
+- ACRO_YAW_RATE = 90
 
 The ACRO_YAW_RATE depends on the capabilities of the aircraft, but
 around 90 degrees/second is reasonable.
@@ -69,9 +69,9 @@ of axis tuning will sometimes be required, especially pitch and yaw tuning in or
 To use in an AUTO mission you can create waypoint missions containing
 NAV_SCRIPT_TIME elements (shown as SCRIPT_TIME in MissionPlanner). These mission items take the following arguments:
 
- - the command ID from the table above
- - the timeout in seconds
- - up to two arguments as shown in the above table
+- the command ID from the table above
+- the timeout in seconds
+- up to two arguments as shown in the above table
 
 The aerobatics system will use the location of the previous and next
 waypoints to line up the manoeuvre. You need to plan a normal
@@ -85,13 +85,13 @@ up to 11 tricks pre-programmed on your transmitter ready for use in
 fixed wing flight. You can trigger the tricks in the following flight
 modes:
 
- - CIRCLE
- - STABILIZE
- - ACRO
- - FBWA
- - FBWB
- - CRUISE
- - LOITER
+- CIRCLE
+- STABILIZE
+- ACRO
+- FBWA
+- FBWB
+- CRUISE
+- LOITER
 
 Set TRIKR_COUNT to the number of tricks you want to make available and reboot,
 with a maximum of 11. (Why 11 when fewer than that are available? To allow variants, such as different knife-edges, ie 90 deg and 180 deg inverted flight)
@@ -99,11 +99,11 @@ with a maximum of 11. (Why 11 when fewer than that are available? To allow varia
 After setting TRIKR_COUNT, reboot and refresh parameters. You will find
 you will now have 5 parameters per trick,but only three are used at this time.
 
- - TRIKRn_ID
- - TRIKRn_ARG1
- - TRIKRn_ARG2
- - TRIKRn_ARG3 (unused, future use)
- - TRIKRn_ARG4 (unused, future use)
+- TRIKRn_ID
+- TRIKRn_ARG1
+- TRIKRn_ARG2
+- TRIKRn_ARG3 (unused, future use)
+- TRIKRn_ARG4 (unused, future use)
 
 The ID parameter is the manoeuvre from the above table, and the arguments are the arguments to each manoeuvre.
 
@@ -116,14 +116,14 @@ select tricks. It is best to use a knob for the trick selector so you can have u
 
 Work out which RC input channel you want to use for activation (a 3 position switch) and set
 
- - RCn_OPTION = 300
- 
+- RCn_OPTION = 300
+
 Note: It is not required to setup the 300 function for activation by the Transmitter switch. You can also activate a trick via the GCS. Mission Planner has an AUX Functions tab to enable setting the "300" function from the GCS.
 
 Then work out what RC input channel you want to use for selection and set
 
- - RCn_OPTION = 301
- 
+- RCn_OPTION = 301
+
  TRIKR_COUNT must be non-zero and an RC channel set to function 301 for Tricks on a Switch to function.
 
 ## Flying with tricks
@@ -144,8 +144,7 @@ Changing flight modes will also cancel any active trick.
 
 There are a number of parameters added by this script to control its control loops. The defaults should be satisfactory, but some of the key parameters are:
 
-
- - AEROR_HGT_KE_BIAS: knife-edge boost. Adds immediate rudder as the plane rolls into 90 degree positions rather than waiting of an altitude change
- - AEROR_THR_FF : modulates throttle as pitch increases or decreases
+- AEROR_HGT_KE_BIAS: knife-edge boost. Adds immediate rudder as the plane rolls into 90 degree positions rather than waiting of an altitude change
+- AEROR_THR_FF : modulates throttle as pitch increases or decreases
 
 the other parameters control the height and speed PID controllers used in the script

@@ -1592,7 +1592,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     uint8_t nsat = gps.num_sats();
-    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS_FixType::FIX_3D);
     backend->write(x, y, flash, "%c%c%2u", SYMBOL(SYM_SAT_L), SYMBOL(SYM_SAT_R), nsat);
 }
 
@@ -1674,7 +1674,7 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 // draw a arrow at the given angle, and print the given magnitude
 void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude)
 {
-    int32_t angle_cd = angle_rad * DEGX100;
+    int32_t angle_cd = rad_to_cd(angle_rad);
     char arrow = get_arrow_font_index(angle_cd);
     if (u_scale(SPEED, magnitude) < 9.95) {
         backend->write(x, y, false, "%c %1.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED));
@@ -1692,7 +1692,7 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
-        angle = atan2f(v.y, v.x) - ahrs.get_yaw();
+        angle = atan2f(v.y, v.x) - ahrs.get_yaw_rad();
     }
     draw_speed(x + 1, y, angle, length);
 }
@@ -1803,7 +1803,7 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
-    uint16_t yaw = ahrs.yaw_sensor / 100;
+    uint16_t yaw = ahrs.get_yaw_deg();
     backend->write(x, y, false, "%3d%c", yaw, SYMBOL(SYM_DEGR));
 }
 
@@ -1862,7 +1862,7 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     float alt = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_speed_estimate = ahrs.airspeed_estimate(aspd);
+    bool have_speed_estimate = ahrs.airspeed_EAS(aspd);
     if (!have_speed_estimate) { aspd = 0.0f; }
     ahrs.get_relative_position_D_home(alt);
     float scaled_aspd = u_scale(SPEED, aspd);
@@ -1947,7 +1947,7 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
         if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
             angle = M_PI;
         }
-        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw();
+        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw_rad();
     } 
     draw_speed(x + 1, y, angle, length);
 
@@ -1966,7 +1966,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_estimate = ahrs.airspeed_estimate(aspd);
+    bool have_estimate = ahrs.airspeed_EAS(aspd);
     if (have_estimate) {
         backend->write(x, y, false, "%c%4d%c", SYMBOL(SYM_ASPD), (int)u_scale(SPEED, aspd), u_icon(SPEED));
     } else {
@@ -2059,12 +2059,12 @@ void AP_OSD_Screen::draw_esc_amps(uint8_t x, uint8_t y)
 bool AP_OSD_Screen::is_btfl_fonts()
 {
     const AP_MSP *p_msp = AP::msp();
-    return (p_msp != nullptr && p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS));
+    return (p_msp != nullptr && p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS) && !p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS));
 }
 
 void AP_OSD_Screen::draw_rc_tx_power(uint8_t x, uint8_t y)
 {
-    const int16_t tx_power = AP::crsf()->get_link_status().tx_power;
+    const int16_t tx_power = AP::RC().get_link_status().tx_power;
     bool btfl = is_btfl_fonts();
     if (tx_power > 0) {
         if (tx_power < 1000) {
@@ -2092,7 +2092,7 @@ void AP_OSD_Screen::draw_rc_tx_power(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_rssi_dbm(uint8_t x, uint8_t y)
 {
-    const int8_t rssidbm = AP::crsf()->get_link_status().rssi_dbm;
+    const int8_t rssidbm = AP::RC().get_link_status().rssi_dbm;
     const bool blink = -rssidbm < osd->warn_rssi;
     bool btfl = is_btfl_fonts();
 
@@ -2115,7 +2115,7 @@ void AP_OSD_Screen::draw_rc_rssi_dbm(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_snr(uint8_t x, uint8_t y)
 {
-    const int8_t snr = AP::crsf()->get_link_status().snr;
+    const int8_t snr = AP::RC().get_link_status().snr;
     const bool blink = snr < osd->warn_snr;
     bool btfl = is_btfl_fonts();
     if (snr == INT8_MIN) {
@@ -2135,7 +2135,7 @@ void AP_OSD_Screen::draw_rc_snr(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_active_antenna(uint8_t x, uint8_t y)
 {
-    const int8_t active_antenna = AP::crsf()->get_link_status().active_antenna;
+    const int8_t active_antenna = AP::RC().get_link_status().active_antenna;
     bool btfl = is_btfl_fonts();
     if (active_antenna < 0) {
         if (btfl) {
@@ -2154,7 +2154,7 @@ void AP_OSD_Screen::draw_rc_active_antenna(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_lq(uint8_t x, uint8_t y)
 {    
-    const int16_t lqv = AP::crsf()->get_link_status().link_quality;
+    const int16_t lqv = AP::RC().get_link_status().link_quality;
     const bool blink = lqv < osd->warn_lq;
     bool btfl = is_btfl_fonts();
     bool prefix_rf = check_option(AP_OSD::OPTION_RF_MODE_ALONG_WITH_LQ);
@@ -2219,32 +2219,30 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t roll = abs(ahrs.roll_sensor) / 100;
+    const float roll_deg = AP::ahrs().get_roll_deg();
     char r;
-    if (ahrs.roll_sensor > 50) {
+    if (roll_deg > 0.5) {
         r = SYMBOL(SYM_ROLLR);
-    } else if (ahrs.roll_sensor < -50) {
+    } else if (roll_deg < -0.5) {
         r = SYMBOL(SYM_ROLLL);
     } else {
         r = SYMBOL(SYM_ROLL0);
     }
-    backend->write(x, y, false, "%c%3d%c", r, roll, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", r, int(fabsf(roll_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t pitch = abs(ahrs.pitch_sensor) / 100;
+    const float pitch_deg = AP::ahrs().get_pitch_deg();
     char p;
-    if (ahrs.pitch_sensor > 50) {
+    if (pitch_deg > 0.5) {
         p = SYMBOL(SYM_PTCHUP);
-    } else if (ahrs.pitch_sensor < -50) {
+    } else if (pitch_deg < -0.5) {
         p = SYMBOL(SYM_PTCHDWN);
     } else {
         p = SYMBOL(SYM_PTCH0);
     }
-    backend->write(x, y, false, "%c%3d%c", p, pitch, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", p, int(fabsf(pitch_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
@@ -2449,7 +2447,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
     AP_GPS & gps = AP::gps();
     const Location &loc = gps.location();
     char buff[16];
-    if (gps.status() == AP_GPS::NO_GPS || gps.status() == AP_GPS::NO_FIX){
+    if (gps.status() == AP_GPS_FixType::NO_GPS || gps.status() == AP_GPS_FixType::NONE){
         backend->write(x, y, false, "--------+--");
     } else {
         AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));

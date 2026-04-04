@@ -71,7 +71,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     }
 
     if (option_set(Option::CAL_REQUIRE_GPS)) {
-        if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+        if (AP::gps().status() < AP_GPS_FixType::FIX_2D) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Compass cal requires GPS lock");
             return false;
         }
@@ -105,7 +105,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     }
 
     // disable compass learning both for calibration and after completion
-    _learn.set_and_save(0);
+    _learn.set_and_save(LearnType::NONE);
 
     return true;
 }
@@ -407,6 +407,10 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
             }
         }
 
+        if (result != MAV_RESULT_ACCEPTED) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Compass calibration failed to start");
+        }
+
         break;
     }
 
@@ -512,7 +516,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
         Location loc;
         // get AHRS position. If unavailable then try GPS location
         if (!AP::ahrs().get_location(loc)) {
-            if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+            if (AP::gps().status() < AP_GPS_FixType::FIX_3D) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag: no position available");
                 return false;
             }
@@ -534,11 +538,11 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
     // create a field vector and rotate to the required orientation
     Vector3f field(1e3f * intensity, 0.0f, 0.0f);
     Matrix3f R;
-    R.from_euler(0.0f, -ToRad(inclination), ToRad(declination));
+    R.from_euler(0.0f, -radians(inclination), radians(declination));
     field = R * field;
 
     Matrix3f dcm;
-    dcm.from_euler(AP::ahrs().get_roll(), AP::ahrs().get_pitch(), radians(yaw_deg));
+    dcm.from_euler(AP::ahrs().get_roll_rad(), AP::ahrs().get_pitch_rad(), radians(yaw_deg));
 
     // Rotate into body frame using provided yaw
     field = dcm.transposed() * field;
@@ -552,7 +556,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
             continue;
         }
         if (!healthy(i)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag[%u]: unhealthy\n", i);
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag[%u]: unhealthy", i);
             return false;
         }
 

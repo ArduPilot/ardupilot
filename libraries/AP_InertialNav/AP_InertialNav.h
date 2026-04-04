@@ -21,11 +21,6 @@ public:
     void        update(bool high_vibes = false);
 
     /**
-     * get_filter_status - returns filter status as a series of flags
-     */
-    nav_filter_status get_filter_status() const;
-
-    /**
      * get_position_neu_cm - returns the current position relative to the EKF origin in cm.
      *
      * @return

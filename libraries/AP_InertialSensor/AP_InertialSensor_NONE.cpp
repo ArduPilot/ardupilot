@@ -184,7 +184,7 @@ void AP_InertialSensor_NONE::generate_gyro()
         float r = radians(0.01) + gyro_drift();
 
         // minimum gyro noise is less than 1 bit
-        float gyro_noise = ToRad(0.04f);
+        float gyro_noise = radians(0.04f);
         float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
         float freq_variation = 0.12f;
@@ -198,7 +198,7 @@ void AP_InertialSensor_NONE::generate_gyro()
         // giving a gyro noise variation of 0.33 rad/s or 20deg/s over the full throttle range
         if (motors_on) {
             // add extra noise when the motors are on
-            gyro_noise = ToRad(0.01) * 0.01;
+            gyro_noise = radians(0.01) * 0.01;
         }
 
         // VIB_FREQ is a static vibration applied to each axis
@@ -289,9 +289,9 @@ float AP_InertialSensor_NONE::gyro_drift(void)
     double period  = 0.01 * 2;
     double minutes = fmod(AP_HAL::micros64() / 60.0e6, period);
     if (minutes < period/2) {
-        return minutes * ToRad(0.01);
+        return minutes * radians(0.01);
     }
-    return (period - minutes) * ToRad(0.01);
+    return (period - minutes) * radians(0.01);
 }
 
 

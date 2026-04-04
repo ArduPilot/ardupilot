@@ -1,8 +1,9 @@
-# Building ArduPilot #
+# Building ArduPilot
 
 ## Get the Source
 
 Clone the project from GitHub:
+
 ```sh
 git clone --recursive https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
@@ -16,12 +17,12 @@ waf should always be called from the locally cloned ardupilot root directory for
 **Note**
 Do not run `waf` with `sudo`!  This leads to permission and environment problems.
 
-## Basic usage ##
+## Basic usage
 
 There are several commands in the build system for advanced usage, but here we
 list some basic and more used commands as example.
 
-* **Build ArduCopter**
+- **Build ArduCopter**
 
     Below shows how to build ArduCopter for the Pixhawk2/Cube. Many other boards are
     supported and the next section shows how to get a full list of them.
@@ -46,12 +47,11 @@ list some basic and more used commands as example.
     ```sh
     ./waf configure --board bebop --static
     ./waf copter
-    ```    
+    ```
 
     The "arducopter" binary should appear in the `build/<board-name>/bin` directory.
 
-* **List available boards**
-
+- **List available boards**
 
     It's possible to get a list of supported boards on ArduPilot with the command
     below
@@ -77,7 +77,7 @@ list some basic and more used commands as example.
 
     ```
 
-* **List of available vehicle types**
+- **List of available vehicle types**
 
     Here is a list of the most common vehicle build targets:
 
@@ -89,10 +89,10 @@ list some basic and more used commands as example.
     ./waf sub                               # ROV and other submarines
     ./waf antennatracker                    # Antenna trackers
     ./waf AP_Periph                         # AP Peripheral
-    
+
     ```
 
-* **Clean the build**
+- **Clean the build**
 
     Commands `clean` and `distclean` can be used to clean the objects produced by
     the build. The first keeps the `configure` information, cleaning only the
@@ -108,7 +108,7 @@ list some basic and more used commands as example.
 
     In some some cases `submodule_force_clean` may be necessary. This removes all submodules and then performs a `submodulesync`. (Note whitelisted modules like esp_idf is not removed.)
 
-* **Upload or install**
+- **Upload or install**
 
     Build commands have a `--upload` option in order to upload the binary built
     to a connected board. This option is supported by Pixhawk and Linux-based boards.
@@ -146,7 +146,7 @@ list some basic and more used commands as example.
     DESTDIR=/my/temporary/location ./waf install
     ```
 
-* **Use different targets**
+- **Use different targets**
 
     The build commands in the items above use `copter` as argument. This
     builds all binaries that fall under the "copter" group. See the
@@ -155,13 +155,13 @@ list some basic and more used commands as example.
 
     This shows a list of all possible targets:
 
-    ```
+    ```bash
     ./waf list
     ```
 
     For example, to build only a single binary:
 
-    ```
+    ```bash
     # Quad frame of ArduCopter
     ./waf --targets bin/arducopter
 
@@ -169,29 +169,29 @@ list some basic and more used commands as example.
     ./waf --targets tests/test_math
     ```
 
-* **Use clang instead of gcc**
+- **Use clang instead of gcc**
 
     Currently, gcc is the default on linux, and clang is used for MacOS.
     Building with clang on linux can be accomplished by setting the CXX
     environment variables during the configure step, e.g.:
 
-    ```
+    ```bash
     CXX=clang++ CC=clang ./waf configure --board=sitl
     ```
 
     Note: Your clang binary names may differ.
 
-* **Other options**
+- **Other options**
 
     It's possible to see all available commands and options:
 
-    ```
+    ```bash
     ./waf -h
     ```
 
     Also, take a look on the [Advanced section](#advanced-usage) below.
 
-### Using Docker ###
+### Using Docker
 
 A docker environment is provided which may be helpful for building in a clean
 environment and avoiding modification of the host environment.
@@ -212,7 +212,7 @@ docker run --rm -it -v $PWD:/ardupilot ardupilot-dev ./waf copter
 Alternatively, simply run `docker run --rm -it -v $PWD:/ardupilot ardupilot-dev` to
 start a `bash` shell in which you can run other commands from this document.
 
-## Advanced usage ##
+## Advanced usage
 
 This section contains some explanations on how the Waf build system works
 and how you can use more advanced features.
@@ -242,7 +242,7 @@ so the `-j` option is usually not needed, unless you are using icecc (thus
 you want a bigger value) or you don't want to stress your machine with
 the build.
 
-### Program groups ###
+### Program groups
 
 Program groups are used to represent a class of programs. They can be used to
 build all programs of a certain class without having to specify each program.
@@ -252,20 +252,20 @@ to one main group.
 
 There's a special group, called "all", that comprises all programs.
 
-#### Main groups ####
+#### Main groups
 
 The main groups form a partition of all programs. Besides separating the
 programs logically, they also define where they are built.
 
 The main groups are:
 
- - bin: *the main binaries, that is, ardupilot's main products - the vehicles and
+- bin: *the main binaries, that is, ardupilot's main products - the vehicles and
    Antenna Tracker*
- - tools
- - examples: *programs that show how certain libraries are used or to simply
+- tools
+- examples: *programs that show how certain libraries are used or to simply
    test their operation*
- - benchmarks: *requires `--enable-benchmarks` during configurarion*
- - tests: *basically unit tests to ensure changes don't break the system's
+- benchmarks: *requires `--enable-benchmarks` during configurarion*
+- tests: *basically unit tests to ensure changes don't break the system's
    logic*
 
 All build files are placed under `build/<board>/`, where `<board>` represents
@@ -276,7 +276,7 @@ main group the program belongs to. For example, for a linux build, arduplane,
 which belongs to the main group "bin", will be located at
 `build/linux/bin/arduplane`.
 
-#### Main product groups ####
+#### Main product groups
 
 Those are groups for ardupilot's main products. They contain programs for the
 product they represent. Currently only the "copter" group has more than one
@@ -284,12 +284,12 @@ program - one for each frame type.
 
 The main product groups are:
 
- - antennatracker
- - copter
- - plane
- - rover
+- antennatracker
+- copter
+- plane
+- rover
 
-#### Building a program group ####
+#### Building a program group
 
 Ardupilot adds to waf an option called `--program-group`, which receives as
 argument the group you want it to build. For a build command, if you don't pass
@@ -308,7 +308,8 @@ Examples:
 # Build all benchmarks and tests
 ./waf --program-group benchmarks --program-group tests
 ```
-#### Shortcut for program groups ####
+
+#### Shortcut for program groups
 
 For less typing, you can use the group name as the command to waf. Examples:
 
@@ -323,7 +324,7 @@ For less typing, you can use the group name as the command to waf. Examples:
 ./waf copter
 ```
 
-### Building a specific program ###
+### Building a specific program
 
 In order to build a specific program, you just need to pass its path relative
 to `build/<board>/` to the option `--targets`. Example:
@@ -336,17 +337,17 @@ to `build/<board>/` to the option `--targets`. Example:
 ./waf --targets tests/test_vectors
 ```
 
-### Checking ###
+### Checking
 
 The command `check` builds all programs and then executes the relevant tests.
 In that context, a relevant test is a program from the group "tests" that makes
 one of the following statements true:
 
- - it's the first time the test is built since the last cleanup or when the
+- it's the first time the test is built since the last cleanup or when the
    project was cloned.
- - the program had to be rebuilt (due to modifications in the code or
+- the program had to be rebuilt (due to modifications in the code or
    dependencies, for example)
- - the test program failed in the previous check.
+- the test program failed in the previous check.
 
 That is, the tests are run only if necessary. If you want waf to run all tests,
 then you can use either option `--alltests` or the shortcut command
@@ -365,13 +366,13 @@ Examples:
 ./waf check-all
 ```
 
-### Debugging ###
+### Debugging
 
 It's possible to pass the option `--debug` to the `configure` command. That
 will set compiler flags to store debugging information in the binaries so that
 you can use them with `gdb`, for example. That option might come handy when using SITL.
 
-### Build-system wrappers ###
+### Build-system wrappers
 
 The `waf` binary on root tree is actually a wrapper to the real `waf` that's
 maintained in its own submodule.  It's possible to call the latter directly via
@@ -386,7 +387,7 @@ alias waf="<ardupilot-directory>/modules/waf/waf-light"
 There's also a make wrapper called `Makefile.waf`. You can use
 `make -f Makefile.waf help` for instructions on how to use it.
 
-### Command line help ###
+### Command line help
 
 You can use `waf --help` to see information about commands and options built-in
 to waf as well as some quick help on those added by ardupilot.

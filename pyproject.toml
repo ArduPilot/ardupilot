@@ -1,6 +1,90 @@
+[tool.ruff]
+target-version = "py39"  # Default Python of the oldest Standard Support Debian + Ubuntu LTS.
+# This should be kept in sync with `min_ver` in the files `./wscript` and `./waf`.
+line-length = 127
+lint.select = [
+    "BLE001",  # flake8-blind-except
+    "E",       # pycodestyle
+    "F",       # Pyflakes
+]
+lint.ignore = [
+    "E402",  # module-import-not-at-top-of-file
+]
+lint.extend-select = [
+    "I",    # isort
+    "TID",  # flake8-tidy-imports
+]
+lint.flake8-tidy-imports.ban-relative-imports = "all"
+lint.per-file-ignores."Tools/autotest/autotest.py" = ["I001"]  # unsorted-imports
+per-file-target-version."Tools/scripts/mavlink_parse.py" = "py310"
+
+[tool.ruff.lint.isort]
+force-single-line = true
+lines-between-types = 1
+known-first-party = [
+    "annotate_params",
+    "antennatracker",
+    "arducopter",
+    "balancebot",
+    "blimp",
+    "board_list",
+    "build_binaries_history",
+    "build_script_base",
+    "controller",
+    "dma_resolver",
+    "emit",
+    "emit_md",
+    "examples",
+    "extract_param_defaults",
+    "gen_stable",
+    "generate_manifest",
+    "hal_common",
+    "helicopter",
+    "jsonemit",
+    "mdemit",
+    "param",
+    "param_check",
+    "pysim",
+    "quadplane",
+    "rover",
+    "sailboat",
+    "vehicle_test_suite",
+    "waflib",
+]
+
 [tool.isort]
 profile = "black"
 skip = ["./modules/", "./build/"]
+force_single_line = true
+lines_between_types = 1
+known_first_party = [
+    "annotate_params",
+    "antennatracker",
+    "arducopter",
+    "blimp",
+    "board_list",
+    "build_binaries_history",
+    "build_script_base",
+    "controller",
+    "dma_resolver",
+    "emit",
+    "emit_md",
+    "extract_param_defaults",
+    "gen_stable",
+    "generate_manifest",
+    "hal_common",
+    "helicopter",
+    "jsonemit",
+    "mdemit",
+    "param",
+    "param_check",
+    "pysim",
+    "quadplane",
+    "rover",
+    "sailboat",
+    "vehicle_test_suite",
+    "waflib",
+]
 
 [tool.black]
 line-length = 120

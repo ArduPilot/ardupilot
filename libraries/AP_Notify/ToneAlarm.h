@@ -64,7 +64,7 @@ private:
         uint16_t powering_off          : 1;    // 1 if smart battery is powering off
         uint16_t temp_cal_running      : 1;    // 1 if temperature calibration is running
     } flags;
-    bool _have_played_ready_tone : 1;
+    bool _have_played_ready_tone;
 
     int8_t _cont_tone_playing;
     int8_t _tone_playing;
@@ -72,7 +72,7 @@ private:
 
     struct Tone {
         const char *str;
-        const uint8_t continuous : 1;
+        const bool continuous;
     };
 
     const static Tone _tones[];

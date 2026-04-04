@@ -2,6 +2,8 @@
 
 include ../revo-mini-i2c/hwdef.dat
 
+SERIAL_ORDER OTG1 USART1 USART3 USART6
+
 undef PB0 PB1 PA3 PA2 PA1 PA0
 
 PB0 TIM3_CH3  TIM3 PWM(1) GPIO(50)

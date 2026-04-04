@@ -17,7 +17,6 @@
 
 #if AP_BARO_KELLERLD_ENABLED
 
-#include <utility>
 #include <stdio.h>
 
 #include <AP_Math/AP_Math.h>
@@ -43,19 +42,16 @@ static const uint8_t CMD_PRANGE_MAX_LSB = 0x16;
 // write to this address to start pressure measurement
 static const uint8_t CMD_REQUEST_MEASUREMENT = 0xAC;
 
-AP_Baro_KellerLD::AP_Baro_KellerLD(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_KellerLD::AP_Baro_KellerLD(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(&dev)
 {
 }
 
 // Look for the device on the bus and see if it responds appropriately
-AP_Baro_Backend *AP_Baro_KellerLD::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_KellerLD::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-    if (!dev) {
-        return nullptr;
-    }
-    AP_Baro_KellerLD *sensor = NEW_NOTHROW AP_Baro_KellerLD(baro, std::move(dev));
+    AP_Baro_KellerLD *sensor = NEW_NOTHROW AP_Baro_KellerLD(baro, dev);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

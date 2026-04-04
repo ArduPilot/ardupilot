@@ -158,7 +158,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
 #if AP_FILESYSTEM_SYS_FLASH_ENABLED
     if (strcmp(fname, "flash.bin") == 0) {
         void *ptr = (void*)0x08000000;
-        const size_t size = BOARD_FLASH_SIZE*1024;
+        const size_t size = HAL_PROGRAM_SIZE_LIMIT_KB*1024;
         r.str->set_buffer((char*)ptr, size, size);
     }
 #endif

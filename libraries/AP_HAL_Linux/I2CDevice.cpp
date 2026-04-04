@@ -280,11 +280,11 @@ I2CDeviceManager::I2CDeviceManager()
     _buses.reserve(4);
 }
 
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
-                             uint32_t bus_clock,
-                             bool use_smbus,
-                             uint32_t timeout_ms)
+AP_HAL::I2CDevice *
+I2CDeviceManager::get_device_ptr(uint8_t bus, uint8_t address,
+                                 uint32_t bus_clock,
+                                 bool use_smbus,
+                                 uint32_t timeout_ms)
 {
     for (uint8_t i = 0, n = _buses.size(); i < n; i++) {
         if (_buses[i]->bus == bus) {
@@ -313,10 +313,10 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
 }
 
 /* Create a new device increasing the bus reference */
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
+AP_HAL::I2CDevice *
 I2CDeviceManager::_create_device(I2CBus &b, uint8_t address) const
 {
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(b, address));
+    auto *dev = NEW_NOTHROW I2CDevice(b, address);
     if (!dev) {
         return nullptr;
     }

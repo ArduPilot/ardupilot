@@ -143,6 +143,9 @@ struct PACKED log_Video_Stabilisation {
 // @Field: PDScX: PD scale X
 // @Field: PDScY: PD scale Y
 // @Field: PDScZ: PD scale Z
+// @Field: IScX: I scale X
+// @Field: IScY: I scale Y
+// @Field: IScZ: I scale Z
 struct PACKED log_ATSC {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -152,6 +155,9 @@ struct PACKED log_ATSC {
     float scalePD_x;
     float scalePD_y;
     float scalePD_z;
+    float scaleI_x;
+    float scaleI_y;
+    float scaleI_z;
 };
 
 
@@ -167,7 +173,7 @@ struct PACKED log_ATSC {
     { LOG_POS_MSG, sizeof(log_POS), \
         "POS","QLLfff","TimeUS,Lat,Lng,Alt,RelHomeAlt,RelOriginAlt", "sDUmmm", "FGG000" , true }, \
     { LOG_ATSC_MSG, sizeof(log_ATSC), \
-        "ATSC", "Qffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ", "s------", "F000000" , true }, \
+        "ATSC", "Qfffffffff",  "TimeUS,AngPScX,AngPScY,AngPScZ,PDScX,PDScY,PDScZ,IScX,IScY,IScZ", "s---------", "F000000000" , true }, \
     { LOG_VIDEO_STABILISATION_MSG, sizeof(log_Video_Stabilisation), \
         "VSTB", "Qffffffffff",  "TimeUS,GyrX,GyrY,GyrZ,AccX,AccY,AccZ,Q1,Q2,Q3,Q4", "sEEEooo----", "F0000000000" },
 

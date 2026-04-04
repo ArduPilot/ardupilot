@@ -110,12 +110,12 @@ void ExternalLED::update(void)
 
     // GPS led control
     switch (AP_Notify::flags.gps_status) {
-        case 0:
+        case AP_GPS_FixType::NO_GPS:
             // no GPS attached
             gps_led(false);
             break;
-        case 1:
-        case 2:
+        case AP_GPS_FixType::NONE:
+        case AP_GPS_FixType::FIX_2D:
             // GPS attached but no lock, blink at 4Hz
             switch(_counter2) {                             // Pattern: 3(off), 2(on), 3(off), 2(on), repeat
                 case 0:
@@ -134,7 +134,7 @@ void ExternalLED::update(void)
                     break;
             }
             break;
-        case 3:
+        default:
             // solid blue on gps lock
             gps_led(true);
             break;

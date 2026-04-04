@@ -8,6 +8,9 @@ To start the simulation use this:
 
   morse run rover_follow.py
 '''
+
+# flake8: noqa
+
 from morse.builder import *
 
 num_vehicles = 3

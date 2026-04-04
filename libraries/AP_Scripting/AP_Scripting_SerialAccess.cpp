@@ -24,6 +24,31 @@ void AP_Scripting_SerialAccess::begin(uint32_t baud)
     }
 }
 
+void AP_Scripting_SerialAccess::begin()
+{
+    if (!check_is_device_port()) {
+        stream->begin(stream->get_baud_rate());
+    }
+}
+
+void AP_Scripting_SerialAccess::configure_parity(uint8_t parity) {
+    if (!check_is_device_port()) {
+        stream->configure_parity(parity);
+    }
+}
+
+void AP_Scripting_SerialAccess::set_stop_bits(uint8_t stop_bits) {
+    if (!check_is_device_port()) {
+        stream->set_stop_bits(stop_bits);
+    }
+}
+
+void AP_Scripting_SerialAccess::set_unbuffered_writes(bool on) {
+    if (!check_is_device_port()) {
+        stream->set_unbuffered_writes(on);
+    }
+}
+
 size_t AP_Scripting_SerialAccess::write(uint8_t c)
 {
     return write(&c, 1);

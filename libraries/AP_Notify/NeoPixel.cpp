@@ -43,12 +43,19 @@ uint16_t NeoPixel::init_ports()
 {
     uint16_t mask = 0;
     for (uint16_t i=0; i<AP_NOTIFY_NEOPIXEL_MAX_INSTANCES; i++) {
-        const SRV_Channel::Aux_servo_function_t fn = (SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_LED_neopixel1 + i);
+        const SRV_Channel::Function fn = (SRV_Channel::Function)((uint8_t)SRV_Channel::k_LED_neopixel1 + i);
         if (!SRV_Channels::function_assigned(fn)) {
             continue;
         }
         mask |= SRV_Channels::get_output_channel_mask(fn);
     }
+
+#if AP_NOTIFY_NEOPIXEL_MASK
+    // Use board-defined default mask if no servo functions assigned
+    if (mask == 0) {
+        mask = AP_NOTIFY_NEOPIXEL_MASK;
+    }
+#endif
 
     if (mask == 0) {
         return 0;

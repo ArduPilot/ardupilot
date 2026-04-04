@@ -88,7 +88,7 @@ void NavEKF2_core::controlMagYawReset()
     magYawResetRequest = magYawResetRequest || // an external request
             initialResetRequest || // an initial alignment performed by all vehicle types using magnetometer
             interimResetRequest || // an interim alignment required to recover from ground based magnetic anomaly
-            finalResetRequest; // the final reset when we have acheived enough height to be in stable magnetic field environment
+            finalResetRequest; // the final reset when we have achieved enough height to be in stable magnetic field environment
 
     // Perform a reset of magnetic field states and reset yaw to corrected magnetic heading
     if (magYawResetRequest || magStateResetRequest || extNavYawResetRequest) {

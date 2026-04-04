@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 test script to check if all CAN GPS nodes are producing Fix2 frames at the expected rate
 '''

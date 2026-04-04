@@ -41,7 +41,7 @@ public:
 
     bool _unbuffered_writes;
 
-    enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
+    enum flow_control get_flow_control(void) override;
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;

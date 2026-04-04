@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # Taken from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
+
+# flake8: noqa
 from sympy import ccode
 from sympy.codegen.ast import float32, real
 
@@ -9,11 +11,22 @@ class CodeGenerator:
         self.file_name = file_name
         self.file = open(self.file_name, 'w')
 
+        # custom SymPy -> C function mappings. note that at least one entry must
+        # match, the last entry will always be used if none match!
+        self._custom_funcs = {
+            "Pow": [
+                (lambda b, e: e == 2, lambda b, e: f"sq({b})"), # use square function for b**2
+                (lambda b, e: e == -1, lambda b, e: f"1.0F/({b})"), # inverse
+                (lambda b, e: e == -2, lambda b, e: f"1.0F/sq({b})"), # inverse square
+                (lambda b, e: True, "powf"), # otherwise use default powf
+            ],
+        }
+
     def print_string(self, string):
         self.file.write("// " + string + "\n")
 
     def get_ccode(self, expression):
-        return ccode(expression, type_aliases={real:float32})
+        return ccode(expression, type_aliases={real:float32}, user_functions=self._custom_funcs)
 
     def write_subexpressions(self,subexpressions):
         write_string = ""

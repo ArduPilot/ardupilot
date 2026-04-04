@@ -14,6 +14,9 @@ void Copter::takeoff_check()
         return;
     }
 
+    // Run the common motor checks (called early so it can clear its warning timer when disarmed)
+    const bool motor_check_passed = motors_takeoff_check(g2.takeoff_rpm_min, g2.takeoff_rpm_max);
+
     // block takeoff when disarmed but do not display warnings
     if (!motors->armed()) {
         motors->set_spoolup_block(true);
@@ -27,18 +30,22 @@ void Copter::takeoff_check()
         return;
     }
 
-    // check ESCs are sending RPM at expected level
-    uint32_t motor_mask = motors->get_motor_mask();
-    const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
-    const bool rpm_adequate = AP::esc_telem().are_motors_running(motor_mask, g2.takeoff_rpm_min, g2.takeoff_rpm_max);
+    // Check system load
+    float avg_load, peak_load;
+    bool load_adequate = true;
+    if (hal.util->get_system_load(avg_load, peak_load)) {
+        if (avg_load > 95.0f || peak_load > 99.5f) {
+            load_adequate = false;
+        }
+    }
 
-    // if RPM is at the expected level clear block
-    if (telem_active && rpm_adequate) {
+    // Clear block if all checks passed
+    if (motor_check_passed && load_adequate) {
         motors->set_spoolup_block(false);
         return;
     }
 
-    // warn user telem inactive or rpm is inadequate every 5 seconds
+    // warn about CPU load every 5 seconds
     uint32_t now_ms = AP_HAL::millis();
     if (takeoff_check_warning_ms == 0) {
         takeoff_check_warning_ms = now_ms;
@@ -46,10 +53,8 @@ void Copter::takeoff_check()
     if (now_ms - takeoff_check_warning_ms > 5000) {
         takeoff_check_warning_ms = now_ms;
         const char* prefix_str = "Takeoff blocked:";
-        if (!telem_active) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s waiting for ESC RPM", prefix_str);
-        } else if (!rpm_adequate) {
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s ESC RPM out of range", prefix_str);
+        if (!load_adequate) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s CPU overload (%4.1f%%)", prefix_str, avg_load);
         }
     }
 #endif

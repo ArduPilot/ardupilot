@@ -1,5 +1,4 @@
 -- Script decodes, checks and prints NMEA messages
--- luacheck: only 0
 
 -- find the serial first (0) scripting serial port instance
 local port = serial:find_serial(0)
@@ -40,8 +39,8 @@ local function decode_NMEA(byte)
             -- test the checksum
             string_complete = true
             return checksum == tonumber(term[term_number],16)
-        else
-            -- we could further decode the message data here
+
+        -- else -- we could further decode the message data here
         end
 
         if char == '*' then

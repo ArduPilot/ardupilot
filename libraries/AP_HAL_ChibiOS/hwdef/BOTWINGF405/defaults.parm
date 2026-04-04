@@ -1,0 +1,9 @@
+#osd params
+OSD_TYPE2 5
+
+#ntf LED & buzzer params
+SERVO5_FUNCTION 120
+
+#Power control for relay1
+RELAY1_DEFAULT  1
+

@@ -15,7 +15,7 @@
 
 //  Novatel/Tersus/ComNav GPS driver for ArduPilot.
 //  Code by Michael Oborne
-//  Derived from http://www.novatel.com/assets/Documents/Manuals/om-20000129.pdf
+//  Derived from https://hexagondownloads.blob.core.windows.net/public/Novatel/assets/Documents/Manuals/om-20000129/om-20000129.pdf
 
 #pragma once
 
@@ -28,7 +28,7 @@ class AP_GPS_NOVA : public AP_GPS_Backend
 public:
     AP_GPS_NOVA(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GPS_State &_state, AP_HAL::UARTDriver *_port);
 
-    AP_GPS::GPS_Status highest_supported_status(void) override { return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED; }
+    AP_GPS_FixType highest_supported_status(void) override { return AP_GPS_FixType::RTK_FIXED; }
 
     // Methods
     bool read() override;
@@ -89,6 +89,7 @@ private:
         uint16_t recvswver;
     };    
 
+    static const uint8_t NOVA_PSRDOP = 174;
     struct PACKED psrdop
     {
         float gdop;
@@ -101,6 +102,7 @@ private:
         // extra data for individual prns
     };
 
+    static const uint8_t NOVA_BESTPOS = 42;
     struct PACKED bestpos
     {
         uint32_t solstat;      ///< Solution status
@@ -127,6 +129,7 @@ private:
         uint8_t gpsglosigmask;
     };
 
+    static const uint8_t NOVA_BESTVEL = 99;
     struct PACKED bestvel
     {
         uint32_t solstat;

@@ -18,7 +18,7 @@
 
 #include "SIM_Morse.h"
 
-#if HAL_SIM_MORSE_ENABLED
+#if AP_SIM_MORSE_ENABLED
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -164,7 +164,7 @@ bool Morse::parse_sensors(const char *json)
         p += strlen(key.key)+3;
         switch (key.type) {
         case DATA_FLOAT:
-            *((float *)key.ptr) = atof(p);
+            *((float *)key.ptr) = strtof(p, nullptr);
             break;
 
         case DATA_DOUBLE:
@@ -237,7 +237,7 @@ bool Morse::parse_sensors(const char *json)
                     v->data = d;
                     v->length = n+1;
                 }
-                v->data[n] = atof(p);
+                v->data[n] = strtof(p, nullptr);
                 n++;
                 p = strchr(p,',');
                 if (!p) {
@@ -674,4 +674,4 @@ void Morse::send_report(void)
 }
 #endif  // HAL_GCS_ENABLED
 
-#endif  // HAL_SIM_MORSE_ENABLED
+#endif  // AP_SIM_MORSE_ENABLED

@@ -32,8 +32,8 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
 
     // @Param: GNSS_MODE
     // @DisplayName: GNSS system configuration
-    // @Description: Bitmask for what GNSS system to use on the first GPS (all unchecked or zero to leave GPS as configured)
-    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
+    // @Description: Bitmask for what GNSS system to use (all unchecked or zero to leave GPS as configured)
+    // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS,7:NAVIC
     // @User: Advanced
     AP_GROUPINFO("GNSS_MODE", 2, AP_GPS::Params, gnss_mode, 0),
 

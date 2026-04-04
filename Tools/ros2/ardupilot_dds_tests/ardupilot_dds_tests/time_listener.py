@@ -15,11 +15,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """Subscribe to Time messages on topic /ap/time."""
-import rclpy
 import time
 
-from rclpy.node import Node
+import rclpy
+
 from builtin_interfaces.msg import Time
+from rclpy.node import Node
 
 
 class TimeListener(Node):

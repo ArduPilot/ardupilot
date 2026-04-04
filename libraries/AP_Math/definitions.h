@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_HAL/AP_HAL_Macros.h>  // sets AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 
 #ifdef M_PI
 # undef M_PI
@@ -27,22 +28,18 @@
   #define MATH_CHECK_INDEXES 0
 #endif
 
+#define CDEG_TO_RAD     (M_PI / 18000.0f)
+#define RAD_TO_CDEG     (18000.0f / M_PI)
 #define DEG_TO_RAD      (M_PI / 180.0f)
 #define RAD_TO_DEG      (180.0f / M_PI)
-
-// Centi-degrees to radians
-#define DEGX100 5729.57795f
 
 // GPS Specific double precision conversions
 // The precision here does matter when using the wsg* functions for converting
 // between LLH and ECEF coordinates.
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 static const double DEG_TO_RAD_DOUBLE = asin(1) / 90;
 static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 #endif
-
-#define RadiansToCentiDegrees(x) (static_cast<float>(x) * RAD_TO_DEG * static_cast<float>(100))
-#define CentiDegreesToRadians(x) (static_cast<float>(x) * DEG_TO_RAD * 0.01f)
 
 // acceleration due to gravity in m/s/s
 #define GRAVITY_MSS     9.80665f
@@ -69,7 +66,7 @@ static const double WGS84_F = ((double)1.0 / WGS84_IF);
 static const double WGS84_B = (WGS84_A * (1 - WGS84_F));
 
 // Eccentricity of the Earth
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 #endif
 

@@ -113,11 +113,13 @@ void NavEKF3_core::setWindMagStateLearningMode()
         ((effectiveMagCal == MagCal::WHEN_FLYING) && inFlight) || // when flying
         ((effectiveMagCal == MagCal::WHEN_MANOEUVRING) && manoeuvring)  || // when manoeuvring
         ((effectiveMagCal == MagCal::AFTER_FIRST_CLIMB) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
-        (effectiveMagCal == MagCal::ALWAYS); // all the time
+        (effectiveMagCal == MagCal::ALWAYS) || // all the time
+        ((effectiveMagCal == MagCal::GROUND_AND_INFLIGHT) && (!inFlight || (finalInflightYawInit && finalInflightMagInit))); // on ground and after initial in-air yaw and mag field reset
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
     // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
-    bool magCalDenied = !use_compass() || (effectiveMagCal == MagCal::NEVER) || (onGround && effectiveMagCal != MagCal::ALWAYS);
+    bool magCalDenied = !use_compass() || (effectiveMagCal == MagCal::NEVER) ||
+        (onGround && effectiveMagCal != MagCal::ALWAYS && effectiveMagCal != MagCal::GROUND_AND_INFLIGHT);
 
     // Inhibit the magnetic field calibration if not requested or denied
     bool setMagInhibit = !magCalRequested || magCalDenied;
@@ -213,7 +215,7 @@ void NavEKF3_core::updateStateIndexLim()
 // set the default yaw source
 void NavEKF3_core::setYawSource()
 {
-    AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
+    AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource(core_index);
     if (wasLearningCompass_ms > 0) {
         // can't use compass while it is being calibrated
         if (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS) {
@@ -243,12 +245,13 @@ void NavEKF3_core::setAidingMode()
     checkGyroCalStatus();
 
     // Handle the special case where we are on ground and disarmed without a yaw measurement
-    // and navigating. This can occur if not using a magnetometer and yaw was aligned using GPS
-    // during the previous flight.
+    // and in AID_ABSOLUTE mode. This can occur if not using a magnetometer and yaw was aligned
+    // using GPS during the previous flight. AID_RELATIVE is excluded because optical flow and
+    // body odometry are body-frame sensors that do not require yaw alignment.
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
         !motorsArmed &&
         onGround &&
-        PV_AidingMode != AID_NONE)
+        PV_AidingMode == AID_ABSOLUTE)
     {
         PV_AidingMode = AID_NONE;
         yawAlignComplete = false;
@@ -477,9 +480,11 @@ void NavEKF3_core::setAidingMode()
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
                 }
                 // handle height reset as special case
-                hgtMea = -extNavDataDelayed.pos.z;
-                posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
-                ResetHeight();
+                if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
+                    hgtMea = -extNavDataDelayed.pos.z;
+                    posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    ResetHeight();
+                }
 #endif // EK3_FEATURE_EXTERNAL_NAV
             }
 
@@ -546,7 +551,7 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
         return false;
     }
 
-    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
+    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index)) {
         return false;
     }
 
@@ -559,8 +564,8 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
 #if EK3_FEATURE_BODY_ODOM
-    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
-        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
+    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV, core_index) &&
+        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER, core_index)) {
         // exit immediately if sources not configured to fuse external nav or wheel encoders
         return false;
     }
@@ -584,7 +589,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF3_core::readyToUseGPS(void) const
 {
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::GPS) {
         return false;
     }
 
@@ -595,7 +600,7 @@ bool NavEKF3_core::readyToUseGPS(void) const
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {
 #if EK3_FEATURE_BEACON_FUSION
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::BEACON) {
+    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::BEACON) {
         return false;
     }
 
@@ -609,7 +614,7 @@ bool NavEKF3_core::readyToUseRangeBeacon(void) const
 bool NavEKF3_core::readyToUseExtNav(void) const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::EXTNAV) {
+    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::EXTNAV) {
         return false;
     }
 
@@ -659,6 +664,12 @@ bool NavEKF3_core::using_extnav_for_yaw() const
     return false;
 }
 
+// are we using a gps
+bool NavEKF3_core::using_gps() const
+{
+    return frontend->sources.usingGPS(core_index);
+}
+
 /*
   should we assume zero sideslip?
  */
@@ -674,6 +685,13 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 // returns false if the origin is already set
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
+    // reject external origin setting until the filter has finished
+    // bootstrap initialisation.  InitialiseVariables() resets
+    // validOrigin, so an origin set before that point is lost.
+    // Callers (e.g. AHRS use_recorded_origin_maybe) will retry.
+    if (!statesInitialised) {
+        return false;
+    }
     return setOrigin(loc);
 }
 
@@ -770,13 +788,20 @@ void  NavEKF3_core::updateFilterStatus(void)
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
 
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
-    bool hgtNotAccurate = (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
+    bool hgtNotAccurate = (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
 
     // set individual flags
     status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
     status.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+    const bool optflow_gnd_offset = gndOffsetValid || terrain_srtm_alt_valid;
+#else
+    const bool optflow_gnd_offset = gndOffsetValid;
+#endif
+    status.flags.horiz_pos_rel = ((doingFlowNav && optflow_gnd_offset) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
+
     status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid
@@ -787,7 +812,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.takeoff = dal.get_takeoff_expected(); // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     status.flags.touchdown = dal.get_touchdown_expected(); // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
     status.flags.using_gps = ((imuSampleTime_ms - lastGpsPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
-    status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
+    status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     status.flags.gps_quality_good = gpsGoodToAlign;
     // for reporting purposes we report rejecting airspeed after 3s of not fusing when we want to fuse the data
     status.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&
@@ -807,8 +832,8 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     // ensure GPS is used for horizontal position and velocity
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::GPS ||
+        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index)) {
         return;
     }
 
@@ -828,8 +853,8 @@ void NavEKF3_core::runYawEstimatorCorrection()
         return;
     }
     // ensure GPS is used for horizontal position and velocity
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::GPS ||
+        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index)) {
         return;
     }
 

@@ -58,6 +58,7 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     // @DisplayName: Input pin number
     // @Description: Which digital GPIO pin to use. Only used on type = GPIO. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     AP_GROUPINFO("PIN", 6, AP_RPM_Params, pin, -1),
 
@@ -78,7 +79,7 @@ const AP_Param::GroupInfo AP_RPM_Params::var_info[] = {
     AP_GROUPINFO("ESC_INDEX", 8, AP_RPM_Params, esc_telem_outbound_index, 0),
 #endif
 
-#if AP_RPM_DRONECAN_ENABLED || defined(HAL_PERIPH_ENABLE_RPM_STREAM)
+#if AP_RPM_DRONECAN_ENABLED || AP_RPM_STREAM_ENABLED
     // @Param: DC_ID
     // @DisplayName: DroneCAN Sensor ID
     // @Description: DroneCAN sensor ID to assign to this backend

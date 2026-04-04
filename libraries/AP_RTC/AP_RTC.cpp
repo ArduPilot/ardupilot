@@ -8,6 +8,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/time.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -47,9 +48,19 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 {
     const uint64_t oldest_acceptable_date_us = 1640995200ULL*1000*1000; // 2022-01-01 0:00
 
-    if (type >= rtc_source_type) {
-        // e.g. system-time message when we've been set by the GPS
-        return;
+    // only allow time to be moved forward from the same sourcetype
+    // while the vehicle is disarmed:
+    if (hal.util->get_soft_armed()) {
+        if (type >= rtc_source_type) {
+            // e.g. system-time message when we've been set by the GPS
+            return;
+        }
+    } else {
+        // vehicle is disarmed; accept (e.g.) GPS time source updates
+        if (type > rtc_source_type) {
+            // e.g. system-time message when we've been set by the GPS
+            return;
+        }
     }
 
     // check it's from an allowed sources:
@@ -68,6 +79,13 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
         // can't allow time to go backwards, ever
         return;
     }
+
+#if AP_RTC_LOGGING_ENABLED
+    if (rtc_source_type != type || tmp != rtc_shift) {
+        AP::logger().Write_RTC();
+    }
+#endif  // AP_RTC_LOGGING_ENABLED
+
     WITH_SEMAPHORE(rsem);
 
     rtc_shift = tmp;
@@ -79,10 +97,10 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
 
     rtc_source_type = type;
 
-#if HAL_GCS_ENABLED
+#if AP_MAVLINK_SIGNING_ENABLED
     // update signing timestamp
     GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
-#endif
+#endif  // AP_MAVLINK_SIGNING_ENABLED
 }
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const

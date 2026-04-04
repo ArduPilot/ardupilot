@@ -1,8 +1,7 @@
 #include "Rover.h"
 
 #define AR_CIRCLE_ACCEL_DEFAULT         1.0 // default acceleration in m/s/s if not specified by user
-#define AR_CIRCLE_RADIUS_MIN            0.5 // minimum radius in meters
-#define AR_CIRCLE_REACHED_EDGE_DIST     0.2 // vehicle has reached edge if within 0.2m
+#define AR_CIRCLE_RADIUS_MIN            0.1 // minimum radius in meters
 
 const AP_Param::GroupInfo ModeCircle::var_info[] = {
 
@@ -39,12 +38,21 @@ ModeCircle::ModeCircle() : Mode()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+// get the distance at which the vehicle is considered to be on track along the circle
+float ModeCircle::get_reached_distance() const
+{
+    if (config.radius >= 0.5) {
+        return 0.2;
+    }
+    return 0.1;
+}
+
 // initialise with specific center location, radius (in meters) and direction
 // replaces use of _enter when initialised from within Auto mode
 bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir_ccw)
 {
     Vector2f center_pos_cm;
-    if (!center_loc.get_vector_xy_from_origin_NE(center_pos_cm)) {
+    if (!center_loc.get_vector_xy_from_origin_NE_cm(center_pos_cm)) {
         return false;
     }
     if (!_enter()) {
@@ -70,11 +78,11 @@ bool ModeCircle::set_center(const Location& center_loc, float radius_m, bool dir
     return true;
 }
 
-// initialize dock mode
+// initialize circle mode from current position
 bool ModeCircle::_enter()
 {
     // capture starting point and yaw
-    if (!AP::ahrs().get_relative_position_NE_origin(config.center_pos)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(config.center_pos)) {
         return false;
     }
     config.radius = MAX(fabsf(radius), AR_CIRCLE_RADIUS_MIN);
@@ -82,11 +90,17 @@ bool ModeCircle::_enter()
 
     config.dir = (direction == 1) ? Direction::CCW : Direction::CW;
     config.speed = is_positive(speed) ? speed : g2.wp_nav.get_default_speed();
-    target.yaw_rad = AP::ahrs().get_yaw();
+    target.yaw_rad = AP::ahrs().get_yaw_rad();
     target.speed = 0;
+
+    // record center as location (only used for reporting)
+    config.center_loc = rover.current_loc;
 
     // check speed around circle does not lead to excessive lateral acceleration
     check_config_speed();
+
+    // reset tracking_back 
+    tracking_back = false;
 
     // calculate speed, accel and jerk limits
     // otherwise the vehicle uses wp_nav default speed limit
@@ -115,8 +129,8 @@ void ModeCircle::init_target_yaw_rad()
 {
     // if no position estimate use vehicle yaw
     Vector2f curr_pos_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
-        target.yaw_rad = AP::ahrs().get_yaw();
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE)) {
+        target.yaw_rad = AP::ahrs().get_yaw_rad();
         return;
     }
 
@@ -126,7 +140,7 @@ void ModeCircle::init_target_yaw_rad()
 
     // if current position is exactly at the center of the circle return vehicle yaw
     if (is_zero(dist_m)) {
-        target.yaw_rad = AP::ahrs().get_yaw();
+        target.yaw_rad = AP::ahrs().get_yaw_rad();
     } else {
         target.yaw_rad = center_to_veh.angle();
     }
@@ -136,7 +150,7 @@ void ModeCircle::update()
 {
     // get current position
     Vector2f curr_pos;
-    const bool position_ok = AP::ahrs().get_relative_position_NE_origin(curr_pos);
+    const bool position_ok = AP::ahrs().get_relative_position_NE_origin_float(curr_pos);
 
     // if no position estimate stop vehicle
     if (!position_ok) {
@@ -146,13 +160,20 @@ void ModeCircle::update()
 
     // Update distance to destination and distance to edge
     const Vector2f center_to_veh = curr_pos - config.center_pos;
-    _distance_to_destination = center_to_veh.length();
-    dist_to_edge_m = fabsf(_distance_to_destination - config.radius);
+    _distance_to_destination = (target.pos.tofloat() - curr_pos).length();
+    dist_to_edge_m = fabsf(center_to_veh.length() - config.radius);
 
     // Update depending on stage
     if (!reached_edge) {
         update_drive_to_radius();
-
+    } else if (dist_to_edge_m > 2 * MAX(g2.turn_radius, get_reached_distance()) && !tracking_back) {
+        // if more than 2* turn_radius outside circle radius, slow vehicle by 20%
+        config.speed = 0.8 * config.speed;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: cannot keep up, slowing to %.1fm/s", config.speed);
+        tracking_back = true;
+    } else if (dist_to_edge_m < MAX(g2.turn_radius, get_reached_distance()) && tracking_back) {
+        // if within turn_radius, call the vehicle back on track
+        tracking_back = false;
     } else {
         update_circling();
     }
@@ -171,7 +192,7 @@ void ModeCircle::update()
 void ModeCircle::update_drive_to_radius()
 {
     // check if vehicle has reached edge of circle
-    const float dist_thresh_m = MAX(g2.turn_radius, AR_CIRCLE_REACHED_EDGE_DIST);
+    const float dist_thresh_m = MAX(g2.turn_radius, get_reached_distance());
     reached_edge |= dist_to_edge_m <= dist_thresh_m;
 
     // calculate target point's position, velocity and acceleration
@@ -190,12 +211,16 @@ void ModeCircle::update_circling()
     const float accel_fb = constrain_float(config.speed - target.speed, -speed_change_max, speed_change_max);
     target.speed += accel_fb;
 
-    // calculate angular rate and update target angle
-    const float circumference = 2.0 * M_PI * config.radius;
-    const float angular_rate_rad = (target.speed / circumference) * M_2PI * (config.dir == Direction::CW ? 1.0 : -1.0);
-    const float angle_dt = angular_rate_rad * rover.G_Dt;
-    target.yaw_rad = wrap_PI(target.yaw_rad + angle_dt);
-    angle_total_rad += angle_dt;
+    // calculate angular rate and update target angle, if the vehicle is not trying to track back
+    if (!tracking_back) {
+        const float circumference = 2.0 * M_PI * config.radius;
+        const float angular_rate_rad = (target.speed / circumference) * M_2PI * (config.dir == Direction::CW ? 1.0 : -1.0);
+        const float angle_dt = angular_rate_rad * rover.G_Dt;
+        target.yaw_rad = wrap_PI(target.yaw_rad + angle_dt);
+        angle_total_rad += angle_dt;
+    } else {
+        init_target_yaw_rad();
+    }
 
     // calculate target point's position, velocity and acceleration
     target.pos = config.center_pos.topostype();
@@ -217,11 +242,11 @@ void ModeCircle::update_circling()
 float ModeCircle::wp_bearing() const
 {
     Vector2f curr_pos_NE;
-    if (!AP::ahrs().get_relative_position_NE_origin(curr_pos_NE)) {
+    if (!AP::ahrs().get_relative_position_NE_origin_float(curr_pos_NE)) {
         return 0;
     }
     // calc vector from circle center to vehicle
-    Vector2f veh_to_center = (config.center_pos - curr_pos_NE);
+    Vector2f veh_to_center = (target.pos.tofloat() - curr_pos_NE);
     if (veh_to_center.is_zero()) {
         return 0;
     }
@@ -266,6 +291,7 @@ bool ModeCircle::set_desired_speed(float speed_ms)
 bool ModeCircle::get_desired_location(Location& destination) const
 {
     destination = config.center_loc;
+    destination.offset_bearing(degrees(target.yaw_rad), config.radius);
     return true;
 }
 
@@ -279,7 +305,7 @@ void ModeCircle::check_config_speed()
 
     if (config.speed > speed_max) {
         config.speed = speed_max;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: max speed is %4.1f", (double)config.speed);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: max speed is %4.1f", (double)config.speed);
     }
 }
 
@@ -291,6 +317,6 @@ void ModeCircle::check_config_radius()
     // ensure radius is at least as large as vehicle's turn radius
     if (config.radius < g2.turn_radius) {
         config.radius = g2.turn_radius;
-        gcs().send_text(MAV_SEVERITY_WARNING, "Circle: radius increased to TURN_RADIUS (%4.1f)", (double)g2.turn_radius);
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Circle: radius increased to TURN_RADIUS (%4.1f)", (double)g2.turn_radius);
     }
 }

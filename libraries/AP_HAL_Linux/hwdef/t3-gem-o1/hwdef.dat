@@ -1,0 +1,56 @@
+# T3 Gemstone O1
+
+# References:
+#   Website:       https://www.t3gemstone.org/en
+#   Board Specs:   https://docs.t3gemstone.org/en/boards/o1/introduction
+#   Documentation: https://docs.t3gemstone.org/en/projects/ardupilot
+
+env TOOLCHAIN aarch64-linux-gnu
+
+# IMU: ICM-20948
+IMU Invensensev2 SPI:icm20948 ROTATION_ROLL_180_YAW_90
+
+# Compass: AK09916
+COMPASS AK09916:probe_ICM20948 0 ROTATION_ROLL_180
+define AP_COMPASS_PROBING_ENABLED 1
+
+# Baro: BMP390
+BARO BMP388 SPI:bmp390
+
+# CAN: TCAN1462-Q1
+env WITH_CAN 1
+define HAL_NUM_CAN_IFACES 1
+
+# GPIO:
+define HAL_LINUX_GPIO_T3_GEM_O1_ENABLED 1
+
+# LEDs:
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
+define HAL_GPIO_A_LED_PIN 0 # Green
+define HAL_GPIO_B_LED_PIN 1 # Red
+define HAL_GPIO_LED_ON    1
+
+# Buzzer:
+define AP_NOTIFY_BUZZER_ENABLED 1
+define HAL_BUZZER_PIN 26
+
+# I2C:
+# Only probe i2c-1 which is the only i2c exposed on a header
+# Don't probe internal buses
+define HAL_LINUX_I2C_EXTERNAL_BUS_MASK 1 << 1
+define HAL_LINUX_I2C_INTERNAL_BUS_MASK 0
+
+# SPI:
+#            NAME       BUS SUBDEV MODE       BPW CS_PIN        LOWSPD HIGHSPD
+LINUX_SPIDEV "icm20948" 0   3      SPI_MODE_3 8   SPI_CS_KERNEL 4*MHZ  8*MHZ
+LINUX_SPIDEV "bmp390"   0   1      SPI_MODE_3 8   SPI_CS_KERNEL 10*MHZ 10*MHZ
+
+# Directories:
+define HAL_BOARD_LOG_DIRECTORY     "/opt/ardupilot/var/log"
+define HAL_BOARD_TERRAIN_DIRECTORY "/opt/ardupilot/var/terrain"
+define HAL_BOARD_STORAGE_DIRECTORY "/opt/ardupilot/var/storage"
+define HAL_PARAM_DEFAULTS_PATH     "/opt/ardupilot/etc/ardupilot.parm"
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_T3_GEM_O1

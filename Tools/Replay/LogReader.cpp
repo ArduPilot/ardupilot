@@ -24,9 +24,9 @@ extern struct user_parameter *user_parameters;
 
 LogReader::LogReader(struct LogStructure *log_structure, NavEKF2 &_ekf2, NavEKF3 &_ekf3) :
     AP_LoggerFileReader(),
-    _log_structure(log_structure),
     ekf2(_ekf2),
-    ekf3(_ekf3)
+    ekf3(_ekf3),
+    _log_structure(log_structure)
 {
 }
 
@@ -126,6 +126,8 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RWOH(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "RBOH")) {
         msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBOH(formats[f.type], ekf2, ekf3);
+    } else if (streq(name, "RTER")) {
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RTER(formats[f.type], ekf2, ekf3);
 	} else {
         // debug("  No parser for (%s)\n", name);
     }

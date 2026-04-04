@@ -1,12 +1,12 @@
 {
-    "__comment": "by buzz try to match common autotest warnings and errors that arent caught by gcc.json or python.json",
+    "__comment": "by buzz try to match autotest test failures",
     "problemMatcher": [
         {
             "owner": "autotest-fail-matcher",
             "severity": "error",
             "pattern": [
                 {
-                    "regexp": "^(.*)(TIMEOUT|Build failed|FAILED STEP):(.*)$",
+                    "regexp": "^(.*)(TIMEOUT|Build failed|FAILED STEP|FAILED):(.*)$",
                     "column": 1,
                     "code": 2,
                     "message": 3

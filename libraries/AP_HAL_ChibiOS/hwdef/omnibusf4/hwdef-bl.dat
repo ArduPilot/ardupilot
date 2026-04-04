@@ -4,5 +4,5 @@
 include ../omnibusf4pro/hwdef-bl.dat
 undef APJ_BOARD_ID
 
-# board ID for firmware load
-APJ_BOARD_ID 1002
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_OMNIBUSF4

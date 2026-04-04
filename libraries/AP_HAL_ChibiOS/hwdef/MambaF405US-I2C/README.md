@@ -1,17 +1,17 @@
 # Mamba Basic F405 Flight Controllers
 
-30x30: https://www.diatone.us/products/mamba-basic-f405-mk3-lite-flight-controlle
-20x20: https://www.diatone.us/products/mamba-basic-f405mini-mk3-5-fc-m2-20mm
+30x30: [Diatone](https://www.diatone.us/products/mamba-basic-f405-mk3-lite-flight-controlle)
+20x20: [Diatone](https://www.diatone.us/products/mamba-basic-f405mini-mk3-5-fc-m2-20mm)
 
 The Mamba Basic line of flight controllers are produced by [Diatone](https://www.diatone.us).
 
 ## Features
 
- - STM32F405RGT6 microcontroller
- - MPU6000 IMU
- - AT7456E OSD
- - 4 UARTs
- - 4 PWM outputs
+- STM32F405RGT6 microcontroller
+- MPU6000 IMU
+- AT7456E OSD
+- 4 UARTs
+- 4 PWM outputs
 
 ## Pinout
 
@@ -31,11 +31,10 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL4|TX4/RX4|UART4 (Empty)|
 |SERIAL6|TX6/RX6|UART6 (GPS)|
 
-
 ## RC Input
- 
+
 RC input is configured on the PPM (UART1_RX) pin. It supports all RC protocols.
-  
+
 ## OSD Support
 
 The Mamba F405 MK2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -52,20 +51,20 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage sensor. The voltage sensor can handle up to 6S
+The board has a built-in voltage sensor. The voltage sensor can handle up to 6S
 LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 3
- - BATT_VOLT_PIN 11
- - BATT_VOLT_MULT around 11.0
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT around 28 with the 20x20 40A ESC (calculated, needs to be verified)
+- BATT_MONITOR 3
+- BATT_VOLT_PIN 11
+- BATT_VOLT_MULT around 11.0
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT around 28 with the 20x20 40A ESC (calculated, needs to be verified)
 
 ## Compass
 
-The Mamba Basic flight controllers do not have a builting compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+The Mamba Basic flight controllers do not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
 ## Alternate settings
 

@@ -22,15 +22,28 @@
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-
+#include <AP_Logger/AP_Logger.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
 // create barometer object
 static AP_Baro barometer;
-#if HAL_EXTERNAL_AHRS_ENABLED
+
+// creating other objects
+#if HAL_LOGGING_ENABLED
+static AP_Logger logger;
+AP_Int32 logger_bitmask;
+static const struct LogStructure log_structure[] = {
+    LOG_COMMON_STRUCTURES
+};
+#endif  // HAL_LOGGING_ENABLED
+
+static AP_AHRS ahrs;
+
+#if AP_EXTERNAL_AHRS_ENABLED
  static AP_ExternalAHRS eAHRS;
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 
 static uint32_t timer;
 static AP_BoardConfig board_config;
@@ -49,6 +62,12 @@ void setup()
     hal.console->printf("Barometer library test\n");
 
     board_config.init();
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
+#if HAL_LOGGING_ENABLED
+    logger.init(logger_bitmask, log_structure, ARRAY_SIZE(log_structure));
+#endif  // HAL_LOGGING_ENABLED
 
     hal.scheduler->delay(1000);
 
@@ -98,9 +117,6 @@ void loop()
     }
 }
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 

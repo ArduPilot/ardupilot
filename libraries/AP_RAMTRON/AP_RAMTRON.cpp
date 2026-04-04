@@ -48,7 +48,7 @@ const AP_RAMTRON::ramtron_id AP_RAMTRON::ramtron_ids[] = {
 // initialise the driver
 bool AP_RAMTRON::init(void)
 {
-    dev = hal.spi->get_device("ramtron");
+    dev = hal.spi->get_device_ptr("ramtron");
     if (!dev) {
         DEV_PRINTF("No RAMTRON device\n");
         return false;

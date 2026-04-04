@@ -20,7 +20,8 @@
      AHRS_EKF_TYPE = 11
      EAHRS_TYPE=1
 
-     sim_vehicle.py -D --console --map -A --serial5=sim:VectorNav
+     To simulate VN-300: sim_vehicle.py -D --console --map -A --serial5=sim:VectorNav
+     To simulate VN-100: sim_vehicle.py -D --console --map -A --serial5=sim:VectorNav_VN100
 */
 
 #pragma once
@@ -34,20 +35,30 @@ namespace SITL {
 
 class VectorNav : public SerialDevice {
 public:
+    enum class VNModel {
+      VN100,
+      VN300
+    };
 
-    VectorNav();
+    VectorNav(VNModel VN_Name);
 
     // update state
     void update(void);
+
+    VNModel model;
 
 private:
     uint32_t last_imu_pkt_us;
     uint32_t last_ekf_pkt_us;
     uint32_t last_gnss_pkt_us;
+    uint32_t last_ahrs_pkt_us;
 
     void send_imu_packet();
     void send_ins_ekf_packet();
     void send_ins_gnss_packet();
+
+    void send_ahrs_packet(); // for VN-100
+
     void nmea_printf(const char *fmt, ...);
 };
 

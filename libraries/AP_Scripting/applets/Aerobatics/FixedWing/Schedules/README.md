@@ -33,7 +33,6 @@ right-to-left and you want to fly it left-to-right due to the wind
 direction. If you set AEROM_PATH_SCALE to -0.5 then it would do a
 half-scale mirrored schedule.
 
-
 ## Alignment
 
 Two commands are provided to provide alignment within the aerobatic "box":

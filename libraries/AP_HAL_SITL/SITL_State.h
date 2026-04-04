@@ -57,7 +57,6 @@ public:
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
-    void _set_param_default(const char *parm);
     void _usage(void);
     void _sitl_setup();
     void _setup_timer(void);
@@ -87,8 +86,6 @@ private:
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
 
-    bool _synthetic_clock_mode;
-
     bool _use_rtscts;
     bool _use_fg_view;
     
@@ -107,11 +104,6 @@ private:
     VectorN<readings_wind,wind_buffer_length> buffer_wind;
     uint32_t time_delta_wind;
     uint32_t delayed_time_wind;
-    uint32_t wind_start_delay_micros;
-    uint32_t last_wind_update_us;
-
-    // simulated GPS devices
-    SITL::GPS *gps[2];  // constrained by # of parameter sets
 
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor

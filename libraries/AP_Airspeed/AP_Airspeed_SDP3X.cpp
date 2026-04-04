@@ -52,7 +52,7 @@ bool AP_Airspeed_SDP3X::_send_command(uint16_t cmd)
 }
 
 // probe and initialise the sensor
-bool AP_Airspeed_SDP3X::init()
+__INITFUNC__ bool AP_Airspeed_SDP3X::init()
 {
     const uint8_t addresses[3] = { SDP3XD0_I2C_ADDR,
                                    SDP3XD1_I2C_ADDR,
@@ -62,7 +62,7 @@ bool AP_Airspeed_SDP3X::init()
     bool ret = false;
 
     for (uint8_t i=0; i<ARRAY_SIZE(addresses) && !found; i++) {
-        _dev = hal.i2c_mgr->get_device(get_bus(), addresses[i]);
+        _dev = hal.i2c_mgr->get_device_ptr(get_bus(), addresses[i]);
         if (!_dev) {
             continue;
         }
@@ -136,13 +136,9 @@ bool AP_Airspeed_SDP3X::init()
         return false;
     }
 
-    /*
-      this sensor uses zero offset and skips cal
-     */
+    // this sensor uses zero offset
     set_use_zero_offset();
-    set_skip_cal();
-    set_offset(0);
-    
+
     _dev->set_device_type(uint8_t(DevType::SDP3X));
     set_bus_id(_dev->get_bus_id());
 

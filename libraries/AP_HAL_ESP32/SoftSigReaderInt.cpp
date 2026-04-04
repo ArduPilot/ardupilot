@@ -28,7 +28,7 @@
 
 // future possible TODO - can we use the RMT peripheral on the esp32 to do this ? looks plausible.
 // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/rmt.html
-// with an example here for both transmit and recieve of IR signals:
+// with an example here for both transmit and receive of IR signals:
 // https://github.com/espressif/esp-idf/tree/2f8b6cfc7/examples/peripherals/rmt_nec_tx_rx
 
 
@@ -92,7 +92,7 @@ void IRAM_ATTR SoftSigReaderInt::_irq_handler(void *arg)
     }
 
     // reset on too-big-a-big gap between pulse edges
-    if ( AP_HAL::micros() - last_transitioned_time > 1000000 ) { // thats 1 second with no data at all.
+    if ( AP_HAL::micros() - last_transitioned_time > 1000000 ) { // that's 1 second with no data at all.
         //we have probably missed some pulses
         //try to reset RCProtocol parser by returning invalid value (i.e. 0 width pulse)
         //pulse.w0 = 0;
@@ -140,7 +140,7 @@ void SoftSigReaderInt::init()
     // apply settings to this gpio
     gpio_config(&io_conf);
 
-    //change gpio intrrupt type for one pin
+    //change gpio interrupt type for one pin
     //gpio_set_intr_type(GPIO_INPUT_IO_0, GPIO_INTR_ANYEDGE);
 
     //create a queue to handle gpio event from isr

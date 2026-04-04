@@ -63,9 +63,9 @@ void ModeQAcro::run()
 
         // run attitude controller
         if (plane.g.acro_locking) {
-            attitude_control->input_rate_bf_roll_pitch_yaw_3(target_roll, target_pitch, target_yaw);
+            attitude_control->input_rate_bf_roll_pitch_yaw_3_cds(target_roll, target_pitch, target_yaw);
         } else {
-            attitude_control->input_rate_bf_roll_pitch_yaw_2(target_roll, target_pitch, target_yaw);
+            attitude_control->input_rate_bf_roll_pitch_yaw_2_cds(target_roll, target_pitch, target_yaw);
         }
 
         // output pilot's throttle without angle boost

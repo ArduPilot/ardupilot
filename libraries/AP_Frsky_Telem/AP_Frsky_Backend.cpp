@@ -108,7 +108,7 @@ void AP_Frsky_Backend::calc_gps_position(void)
         _SPort_data.speed_in_centimeter = 0;
     }
 
-    _SPort_data.yaw = (uint16_t)((_ahrs.yaw_sensor / 100) % 360); // heading in degree based on AHRS and not GPS
+    _SPort_data.yaw = uint16_t(_ahrs.get_yaw_deg()); // heading in degree based on AHRS and not GPS
 }
 
 /*

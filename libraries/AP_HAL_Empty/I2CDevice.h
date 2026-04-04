@@ -20,7 +20,6 @@
 
 #include <AP_HAL/HAL.h>
 #include <AP_HAL/I2CDevice.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 namespace Empty {
 
@@ -83,10 +82,10 @@ public:
     I2CDeviceManager() { }
 
     /* AP_HAL::I2CDeviceManager implementation */
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
-                                                 uint32_t bus_clock=400000,
-                                                 bool use_smbus = false,
-                                                 uint32_t timeout_ms=4) override
+    AP_HAL::I2CDevice *get_device_ptr(uint8_t bus, uint8_t address,
+                                      uint32_t bus_clock=400000,
+                                      bool use_smbus = false,
+                                      uint32_t timeout_ms=4) override
     {
         return nullptr;
     }

@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 check firmware-version.txt in binaries directory
 '''
@@ -28,7 +31,7 @@ def check_fw_version(version):
     try:
         (version_numbers, release_type) = version.split("-")
         (_, _, _) = version_numbers.split(".")
-    except Exception:
+    except ValueError:
         return False
     return True
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 A script suitable for use as a git pre-commit hook to ensure your
@@ -11,8 +11,8 @@ Use this by copying it to a file called $ARDUPILOT_ROOT/.git/hooks/pre-commit
 
 import os
 import re
-import sys
 import subprocess
+import sys
 
 
 class AP_PreCommit(object):

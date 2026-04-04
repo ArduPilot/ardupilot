@@ -46,9 +46,9 @@ public:
     float last_roll_value, last_pitch_value;
 
     Motor(uint8_t _servo, float _angle, float _yaw_factor, uint8_t _display_order) :
-        servo(_servo), // what servo output drives this motor
         angle(_angle), // angle in degrees from front
         yaw_factor(_yaw_factor), // positive is clockwise
+        servo(_servo), // what servo output drives this motor
         display_order(_display_order) // order for clockwise display
     {
         position.x = cosf(radians(angle));
@@ -66,9 +66,9 @@ public:
     Motor(uint8_t _servo, float _angle, float _yaw_factor, uint8_t _display_order,
           int8_t _roll_servo, float _roll_min, float _roll_max,
           int8_t _pitch_servo, float _pitch_min, float _pitch_max) :
-        servo(_servo), // what servo output drives this motor
         angle(_angle), // angle in degrees from front
         yaw_factor(_yaw_factor), // positive is clockwise
+        servo(_servo), // what servo output drives this motor
         display_order(_display_order), // order for clockwise display
         roll_servo(_roll_servo),
         roll_min(_roll_min),

@@ -1,0 +1,10 @@
+# setup for LEDs on chan13
+SERVO13_FUNCTION 120
+# Default to CAM1
+RELAY3_DEFAULT 1
+# Default VTX power to on
+RELAY4_DEFAULT 1
+# Default VSW power to on
+RELAY2_DEFAULT 1
+# Support HD VTX as well
+OSD_TYPE2 5

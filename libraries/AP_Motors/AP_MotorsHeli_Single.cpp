@@ -29,31 +29,19 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Param: TAIL_TYPE
     // @DisplayName: Tail Type
     // @Description: Tail type selection. Servo Only uses tail rotor pitch to provide yaw control (including stabilization) via an output assigned to Motor4.  Servo with External Gyro uses an external gyro to control tail rotor pitch via a servo.  Yaw control without stabilization is passed to the external gyro via the output assigned to Motor4.  Direct Drive Variable Pitch(DDVP) is used for tails that have a motor whose ESC is connected to an output with function HeliTailRSC. Tail pitch is still accomplished with a servo on an output assigned to Motor4 function.  Direct Drive Fixed Pitch (DDFP) CW is used for helicopters with a rotor that spins clockwise when viewed from above with a motor whose ESC is controlled by an output whose function is Motor4. Direct Drive Fixed Pitch (DDFP) CCW is used for helicopters with a rotor that spins counter clockwise when viewed from above with a motor whose ESC is controlled by an output whose function is Motor4. In both DDFP cases, no servo is used for the tail and the tail motor esc on Motor4 output is used to control the yaw axis using motor speed.
-    // @Values: 0:Servo only,1:Servo with ExtGyro,2:DirectDrive VarPitch,3:DirectDrive FixedPitch CW,4:DirectDrive FixedPitch CCW
+    // @Values: 0:Servo only,2:DirectDrive VarPitch,3:DirectDrive FixedPitch CW,4:DirectDrive FixedPitch CCW
     // @User: Standard
     AP_GROUPINFO("TAIL_TYPE", 4, AP_MotorsHeli_Single, _tail_type, float(TAIL_TYPE::SERVO)),
 
     // Indice 5 was used by SWASH_TYPE and should not be used
 
-    // @Param: GYR_GAIN
-    // @DisplayName: External Gyro Gain
-    // @Description: PWM in microseconds sent to external gyro on an servo/output whose function is Motor7 when tail type is Servo w/ ExtGyro
-    // @Range: 0 1000
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("GYR_GAIN", 6, AP_MotorsHeli_Single, _ext_gyro_gain_std, AP_MOTORS_HELI_SINGLE_EXT_GYRO_GAIN),
+    // Indice 6 was used by GYR_GAIN and should not be used
 
     // Index 7 was used for phase angle and should not be used
 
     // Indice 8 was used by COLYAW and should not be used
 
-    // @Param: FLYBAR_MODE
-    // @DisplayName: Flybar Mode Selector
-    // @Description: Flybar present or not.  Affects attitude controller used during ACRO flight mode
-    // @Values: 0:NoFlybar,1:Flybar
-    // @User: Standard
-    AP_GROUPINFO("FLYBAR_MODE", 9, AP_MotorsHeli_Single, _flybar_mode, AP_MOTORS_HELI_NOFLYBAR),
+    // Indice 9 was used by FLYBAR_MODE and should not be used
 
     // @Param: TAIL_SPEED
     // @DisplayName: DDVP Tail ESC speed
@@ -64,14 +52,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("TAIL_SPEED", 10, AP_MotorsHeli_Single, _direct_drive_tailspeed, AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT),
 
-    // @Param: GYR_GAIN_ACRO
-    // @DisplayName: ACRO External Gyro Gain
-    // @Description: PWM in microseconds sent to external gyro on an servo/output whose function is Motor7 when tail type is Servo w/ ExtGyro in mode ACRO instead of H_GYR_GAIN. A value of zero means to use H_GYR_GAIN
-    // @Range: 0 1000
-    // @Units: PWM
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("GYR_GAIN_ACRO", 11, AP_MotorsHeli_Single,  _ext_gyro_gain_acro, 0),
+    // Indice 11 was used by GYR_GAIN_ACRO and should not be used
 
     // Indices 16-19 were used by RSC_PWM_MIN, RSC_PWM_MAX, RSC_PWM_REV, and COL_CTRL_DIR and should not be used
 
@@ -92,6 +73,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Description: This linearizes the swashplate servo's mechanical output to account for nonlinear output due to arm rotation.  This requires a specific setup procedure to work properly.  The servo arm must be centered on the mechanical throw at the servo trim position and the servo trim position kept as close to 1500 as possible. Leveling the swashplate can only be done through the pitch links.  See the ardupilot wiki for more details on setup.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
+
+    // @Param: SW_PHANG
+    // @DisplayName: Swashplate Phase Angle Compensation
+    // @Description: Phase angle compensation can be used to correct control coupling issues.  If pitching the swash forward induces a roll, this can be correct the problem.
+    // @Range: -30 30
+    // @Units: deg
+    // @User: Advanced
+    // @Increment: 1
 
     // @Param: SW_H3_ENABLE
     // @DisplayName: H3 Generic Enable
@@ -119,14 +108,6 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @Range: -180 180
     // @Units: deg
     // @User: Advanced
-
-    // @Param: SW_H3_PHANG
-    // @DisplayName: H3 Generic Phase Angle Comp
-    // @Description: Only for H3 swashplate.  If pitching the swash forward induces a roll, this can be correct the problem
-    // @Range: -30 30
-    // @Units: deg
-    // @User: Advanced
-    // @Increment: 1
     AP_SUBGROUPINFO(_swashplate, "SW_", 20, AP_MotorsHeli_Single, AP_MotorsHeli_Swash),
 
     // @Param: COL2YAW
@@ -147,18 +128,21 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @DisplayName: DDFP Tail Rotor Motor Spin minimum
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @Range: 0.0 0.3
     // @User: Standard
 
     // @Param: DDFP_SPIN_MAX
     // @DisplayName: DDFP Tail Rotor Motor Spin maximum
     // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.9:Low, 0.95:Default, 1.0:High
+    // @Range: 0.9 1.0
     // @User: Standard
 
     // @Param: DDFP_BAT_IDX
     // @DisplayName: DDFP Tail Rotor Battery compensation index
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
+    // @Range: 0 15
     // @User: Standard
 
     // @Param: DDFP_BAT_V_MAX
@@ -178,8 +162,8 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
 
     // @Param: YAW_TRIM
     // @DisplayName: Tail Rotor Trim
-    // @Description: Fixed offset applied to yaw output to minimize yaw I-term contribution needed to counter rotor drag. Currently only works of DDFP tails (H_TAIL_TYPE = 3 or H_TAIL_TYPE = 4). If using the H_COL2YAW compensation this trim is used to compensate for the main rotor profile drag. If H_COL2YAW is not used, this value can be set to reduce the yaw I contribution to zero when in a steady hover.
-    // @Range: 0 1
+    // @Description: Fixed offset applied to yaw output to minimize yaw I-term contribution needed to counter rotor drag. Currently only works for DDFP tails (H_TAIL_TYPE = 3 or H_TAIL_TYPE = 4). If using the H_COL2YAW compensation this trim is used to compensate for the main rotor profile drag. If H_COL2YAW is not used, this value can be set to reduce the yaw I-term to zero when in a steady hover. In this case, move trim in the direction of the I-term found in PIDY.I log message (e.g. negative I means you want negative trim).
+    // @Range: -1 1
     // @User: Standard
     AP_GROUPINFO("YAW_TRIM", 23,  AP_MotorsHeli_Single, _yaw_trim, 0.0f),
 
@@ -224,15 +208,6 @@ void AP_MotorsHeli_Single::init_outputs()
                 SRV_Channels::set_angle(SRV_Channel::k_motor4, YAW_SERVO_MAX_ANGLE);
                 break;
 
-            case TAIL_TYPE::SERVO_EXTGYRO:
-                // external gyro output
-                add_motor_num(AP_MOTORS_HELI_SINGLE_EXTGYRO);
-
-
-                // External Gyro uses PWM output thus servo endpoints are forced
-                SRV_Channels::set_output_min_max(SRV_Channels::get_motor_function(AP_MOTORS_HELI_SINGLE_EXTGYRO), 1000, 2000);
-                FALLTHROUGH;
-
             case TAIL_TYPE::SERVO:
             default:
                 // yaw servo is an angle from -4500 to 4500
@@ -269,22 +244,6 @@ void AP_MotorsHeli_Single::calculate_armed_scalars()
     if (_heliflags.save_rsc_mode && !armed()) {
         _main_rotor._rsc_mode.save();
         _heliflags.save_rsc_mode = false;
-    }
-
-    // allow use of external governor autorotation bailout
-    if (_heliflags.in_autorotation) {
-        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        // set bailout ramp time
-        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-        if (use_tail_RSC()) {
-            _tail_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-            _tail_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-        }
-    } else {
-        _main_rotor.set_autorotation_flag(false);
-        if (use_tail_RSC()) {
-            _tail_rotor.set_autorotation_flag(false);
-        }
     }
 }
 
@@ -326,18 +285,12 @@ void AP_MotorsHeli_Single::calculate_scalars()
         _tail_rotor.set_runup_time(_main_rotor._runup_time.get());
         _tail_rotor.set_critical_speed(_main_rotor._critical_speed.get());
         _tail_rotor.set_idle_output(_main_rotor._idle_output.get());
-        _tail_rotor.set_arot_idle_output(_main_rotor._arot_idle_output.get());
-        _tail_rotor.set_rsc_arot_man_enable(_main_rotor._rsc_arot_man_enable.get());
-        _tail_rotor.set_rsc_arot_engage_time(_main_rotor._rsc_arot_engage_time.get());
     } else {
         _tail_rotor.set_control_mode(ROTOR_CONTROL_MODE_DISABLED);
         _tail_rotor.set_ramp_time(0);
         _tail_rotor.set_runup_time(0);
         _tail_rotor.set_critical_speed(0);
         _tail_rotor.set_idle_output(0);
-        _tail_rotor.set_arot_idle_output(0);
-        _tail_rotor.set_rsc_arot_man_enable(0);
-        _tail_rotor.set_rsc_arot_engage_time(0);
     }
 }
 
@@ -380,10 +333,6 @@ void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::RotorControlS
 //
 void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out)
 {
-    // initialize limits flag
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
     // rescale roll_out and pitch_out into the min and max ranges to provide linear motion
     // across the input range instead of stopping when the input hits the constrain value
     // these calculations are based on an assumption of the user specified cyclic_max
@@ -410,18 +359,13 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     }
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < _collective_land_min_pct && !_heliflags.in_autorotation) {
+    if (_heliflags.landing_collective && collective_out < _collective_land_min_pct && !_main_rotor.in_autorotation()) {
         collective_out = _collective_land_min_pct;
         limit.throttle_lower = true;
-
     }
 
     // updates below land min collective flag
-    if (collective_out <= _collective_land_min_pct) {
-        _heliflags.below_land_min_coll = true;
-    } else {
-        _heliflags.below_land_min_coll = false;
-    }
+    _heliflags.below_land_min_coll = !is_positive(collective_out - _collective_land_min_pct);
 
     // updates takeoff collective flag based on 50% hover collective
     update_takeoff_collective_flag(collective_out);
@@ -464,12 +408,12 @@ void AP_MotorsHeli_Single::move_yaw(float yaw_out)
 // Get yaw offset required to cancel out steady state main rotor torque
 float AP_MotorsHeli_Single::get_yaw_offset(float collective)
 {
-    if ((get_tail_type() == TAIL_TYPE::SERVO_EXTGYRO) || (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED)) {
+    if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         // Not in direct control of tail with external gyro or manual servo mode
         return 0.0;
     }
 
-    if (_heliflags.in_autorotation || (_main_rotor.get_control_output() <= _main_rotor.get_idle_output())) {
+    if (_main_rotor.autorotation.active() || (_main_rotor.get_control_output() <= _main_rotor.get_idle_output())) {
         // Motor is stopped or at idle, and thus not creating torque
         return 0.0;
     }
@@ -530,15 +474,6 @@ void AP_MotorsHeli_Single::output_to_motors()
             break;
         }
 
-        case TAIL_TYPE::SERVO_EXTGYRO:
-            // output gain to external gyro
-            if (_acro_tail && _ext_gyro_gain_acro > 0) {
-                rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, 1000 + _ext_gyro_gain_acro);
-            } else {
-                rc_write(AP_MOTORS_HELI_SINGLE_EXTGYRO, 1000 + _ext_gyro_gain_std);
-            }
-            FALLTHROUGH;
-
         case TAIL_TYPE::SERVO:
         case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
         case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
@@ -571,31 +506,31 @@ void AP_MotorsHeli_Single::output_to_ddfp_tail(float throttle)
 // servo_test - move servos through full range of movement
 void AP_MotorsHeli_Single::servo_test()
 {
-    _servo_test_cycle_time += _dt;
+    _servo_test_cycle_time += _dt_s;
 
     if ((_servo_test_cycle_time >= 0.0f && _servo_test_cycle_time < 0.5f)||                                   // Tilt swash back
         (_servo_test_cycle_time >= 6.0f && _servo_test_cycle_time < 6.5f)){
-        _pitch_test += 2.0 * _dt;
-        _oscillate_angle += 8 * M_PI * _dt;
+        _pitch_test += 2.0 * _dt_s;
+        _oscillate_angle += 8 * M_PI * _dt_s;
         _yaw_test = 0.5f * sinf(_oscillate_angle);
     } else if ((_servo_test_cycle_time >= 0.5f && _servo_test_cycle_time < 4.5f)||                            // Roll swash around
                (_servo_test_cycle_time >= 6.5f && _servo_test_cycle_time < 10.5f)){
-        _oscillate_angle += 0.5 * M_PI * _dt;
+        _oscillate_angle += 0.5 * M_PI * _dt_s;
         _roll_test = sinf(_oscillate_angle);
         _pitch_test = cosf(_oscillate_angle);
         _yaw_test = sinf(_oscillate_angle);
     } else if ((_servo_test_cycle_time >= 4.5f && _servo_test_cycle_time < 5.0f)||                            // Return swash to level
                (_servo_test_cycle_time >= 10.5f && _servo_test_cycle_time < 11.0f)){
-        _pitch_test -= 2.0 * _dt;
-        _oscillate_angle += 8 * M_PI * _dt;
+        _pitch_test -= 2.0 * _dt_s;
+        _oscillate_angle += 8 * M_PI * _dt_s;
         _yaw_test = 0.5f * sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test += _dt;
-        _oscillate_angle += 2 * M_PI * _dt;
+        _collective_test += _dt_s;
+        _oscillate_angle += 2 * M_PI * _dt_s;
         _yaw_test = sinf(_oscillate_angle);
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -= _dt;
-        _oscillate_angle += 2 * M_PI * _dt;
+        _collective_test -= _dt_s;
+        _oscillate_angle += 2 * M_PI * _dt_s;
         _yaw_test = sinf(_oscillate_angle);
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;
@@ -632,20 +567,14 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
     }
 
     // returns false if Phase Angle is outside of range for H3 swashplate
-    if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H3 && (_swashplate.get_phase_angle() > 30 || _swashplate.get_phase_angle() < -30)){
-        hal.util->snprintf(buffer, buflen, "H_SW_H3_PHANG out of range");
+    if (_swashplate.get_phase_angle() > 30 || _swashplate.get_phase_angle() < -30){
+        hal.util->snprintf(buffer, buflen, "H_SW_PHANG out of range");
         return false;
     }
 
-    // returns false if Acro External Gyro Gain is outside of range
-    if ((_ext_gyro_gain_acro < 0) || (_ext_gyro_gain_acro > 1000)) {
-        hal.util->snprintf(buffer, buflen, "H_GYR_GAIN_ACRO out of range");
-        return false;
-    }
-
-    // returns false if Standard External Gyro Gain is outside of range
-    if ((_ext_gyro_gain_std < 0) || (_ext_gyro_gain_std > 1000)) {
-        hal.util->snprintf(buffer, buflen, "H_GYR_GAIN out of range");
+        // returns false if external gyro is selected for tail control but not supported by tail type
+    if (get_tail_type()==TAIL_TYPE::SERVO_EXTGYRO_OLD){
+        hal.util->snprintf(buffer, buflen, "External gyro no longer supported. See Wiki");
         return false;
     }
 
@@ -656,6 +585,9 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
 // Called from system.cpp
 void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
 {
+    // Run common conversions from base class
+    AP_MotorsHeli::heli_motors_param_conversions();
+
     // PARAMETER_CONVERSION - Added: Nov-2023
     // Convert trim for DDFP tails
     // Previous DDFP configs used servo trim for setting the yaw trim, which no longer works with thrust linearisation. Convert servo trim
@@ -675,6 +607,20 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
         // Motor 4 may not have been assigned to an output yet in which case this is unlikely to be a conversion from old setup.
         // Prevent future attempts to convert the param so we don't put a non-sense value in.
         _yaw_trim.save();
+    }
+
+    if (_swashplate.get_swash_type() == SWASHPLATE_TYPE_H3) {
+        // PARAMETER_CONVERSION - Added: Mar-2026
+        // Previous versions had phase angle for only the generic H3 swashplate.  Phase angle is now available for all swashplate 
+        // types but needs to be converted for users of the generic H3 type.  Convert old H3 phase angle parameter to new parameter
+        // applicable to all swashplate types.
+        const AP_Param::ConversionInfo sw_phase_conversion_info[] = {
+            { 90, 532, AP_PARAM_INT16,  "H_SW_PHANG" },
+        };
+        uint8_t table_size = ARRAY_SIZE(sw_phase_conversion_info);
+        for (uint8_t i=0; i<table_size; i++) {
+            AP_Param::convert_old_parameter(&sw_phase_conversion_info[i], 1.0);
+        }
     }
 }
 

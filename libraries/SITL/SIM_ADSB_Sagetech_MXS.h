@@ -70,9 +70,9 @@ private:
     class PACKED PackedMessage {
     public:
         PackedMessage(T _msg, MsgType _msgtype, uint8_t _msgid) :
-            msg{_msg},
             msgtype{_msgtype},
-            msgid{_msgid}
+            msgid{_msgid},
+            msg{_msg}
         {
             update_checksum();
         }

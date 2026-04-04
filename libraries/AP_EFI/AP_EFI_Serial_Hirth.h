@@ -47,10 +47,10 @@ public:
     };
 
     enum class Sensor_Status_Bitfield : uint8_t {
-        ENGINE_TEMP_SENSOR_OK = 1U<<0, // true if engine temperature sensor is OK
-        AIR_TEMP_SENSOR_OK = 1U<<1, // true if air temperature sensor is OK
-        AIR_PRESSURE_SENSOR_OK = 1U<<2, // true if intake air pressure sensor is OK
-        THROTTLE_SENSOR_OK = 1U<<3, // true if throttle sensor is OK
+        ENGINE_TEMP_SENSOR_OK = 1U<<1, // true if engine temperature sensor is OK
+        AIR_TEMP_SENSOR_OK = 1U<<2, // true if air temperature sensor is OK
+        AIR_PRESSURE_SENSOR_OK = 1U<<3, // true if intake air pressure sensor is OK
+        THROTTLE_SENSOR_OK = 1U<<4, // true if throttle sensor is OK
     };
 
 private:

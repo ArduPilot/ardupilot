@@ -20,6 +20,10 @@
  *
  * See: http://irlock.com/pages/serial-communication-protocol
  */
+#include "AP_IRLock_config.h"
+
+#if AP_IRLOCK_I2C_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include "AP_IRLock_I2C.h"
 #include <stdio.h>
@@ -171,3 +175,5 @@ bool AP_IRLock_I2C::update()
     // return true if new data found
     return new_data;
 }
+
+#endif  // AP_IRLOCK_I2C_ENABLED

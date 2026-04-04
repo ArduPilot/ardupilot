@@ -45,15 +45,33 @@ public:
 
     enum class Type {
         NONE = 0,
+#if AP_OPTICALFLOW_PX4FLOW_ENABLED
         PX4FLOW = 1,
+#endif  // AP_OPTICALFLOW_PX4FLOW_ENABLED
+#if AP_OPTICALFLOW_PIXART_ENABLED
         PIXART = 2,
+#endif  // AP_OPTICALFLOW_PIXART_ENABLED
+#if AP_OPTICALFLOW_ONBOARD_ENABLED
         BEBOP = 3,
+#endif  // AP_OPTICALFLOW_ONBOARD_ENABLED
+#if AP_OPTICALFLOW_CXOF_ENABLED
         CXOF = 4,
+#endif  // AP_OPTICALFLOW_CXOF_ENABLED
+#if AP_OPTICALFLOW_MAV_ENABLED
         MAVLINK = 5,
+#endif  // AP_OPTICALFLOW_MAV_ENABLED
+#if AP_OPTICALFLOW_HEREFLOW_ENABLED
         UAVCAN = 6,
+#endif  // AP_OPTICALFLOW_HEREFLOW_ENABLED
+#if HAL_MSP_OPTICALFLOW_ENABLED
         MSP = 7,
+#endif  // HAL_MSP_OPTICALFLOW_ENABLED
+#if AP_OPTICALFLOW_UPFLOW_ENABLED
         UPFLOW = 8,
+#endif  // AP_OPTICALFLOW_UPFLOW_ENABLED
+#if AP_OPTICALFLOW_SITL_ENABLED
         SITL = 10,
+#endif  // AP_OPTICALFLOW_SITL_ENABLED
     };
 
     // init - initialise sensor
@@ -116,7 +134,7 @@ private:
     OpticalFlow_backend *backend;
 
     struct AP_OpticalFlow_Flags {
-        uint8_t healthy     : 1;    // true if sensor is healthy
+        bool healthy;               // true if sensor is healthy
     } _flags;
 
     // parameters
@@ -127,6 +145,7 @@ private:
     AP_Vector3f _pos_offset;        // position offset of the flow sensor in the body frame
     AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
     AP_Float  _height_override;              // height of the sensor above the ground. Only used in rover
+    AP_Int16 _options;              // options parameter
 
     // method called by backend to update frontend state:
     void update_state(const OpticalFlow_state &state);

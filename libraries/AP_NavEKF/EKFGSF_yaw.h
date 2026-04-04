@@ -136,7 +136,7 @@ private:
     GSF_struct GSF;
 
     // Returns the probability for a selected model assuming a Gaussian error distribution
-    // Used by the Guassian Sum Filter to calculate the weightings when combining the outputs from the bank of EKF's
+    // Used by the Gaussian Sum Filter to calculate the weightings when combining the outputs from the bank of EKF's
     ftype gaussianDensity(const uint8_t mdl_idx) const;
 
     // number of models whose weights underflowed due to excessive

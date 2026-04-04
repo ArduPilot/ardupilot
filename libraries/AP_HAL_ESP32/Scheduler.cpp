@@ -23,8 +23,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "soc/rtc_wdt.h"
-#include "esp_int_wdt.h"
 #include "esp_task_wdt.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -38,39 +36,33 @@ using namespace ESP32;
 extern const AP_HAL::HAL& hal;
 
 bool Scheduler::_initialized = true;
-TaskHandle_t idle_0 = NULL;
-TaskHandle_t idle_1 = NULL;
 
 Scheduler::Scheduler()
 {
     _initialized = false;
 }
 
-void disableCore0WDT()
+Scheduler::~Scheduler()
 {
-     idle_0 = xTaskGetIdleTaskHandleForCPU(0);
-    if (idle_0 == NULL || esp_task_wdt_delete(idle_0) != ESP_OK) {
-        //print("Failed to remove Core 0 IDLE task from WDT");
+    if (_initialized) {
+        esp_task_wdt_deinit();
     }
 }
 
-void disableCore1WDT()
+void Scheduler::wdt_init(uint32_t timeout, uint32_t core_mask)
 {
-     idle_1 = xTaskGetIdleTaskHandleForCPU(1);
-    if (idle_1 == NULL || esp_task_wdt_delete(idle_1) != ESP_OK) {
-        //print("Failed to remove Core 1 IDLE task from WDT");
+    esp_task_wdt_config_t config = {
+        .timeout_ms = timeout,
+        .idle_core_mask = core_mask,
+        .trigger_panic = true
+    };
+
+    if ( ESP_OK != esp_task_wdt_init(&config) ) {
+        printf("esp_task_wdt_init() failed\n");
     }
-}
-void enableCore0WDT()
-{
-    if (idle_0 != NULL && esp_task_wdt_add(idle_0) != ESP_OK) {
-        //print("Failed to add Core 0 IDLE task to WDT");
-    }
-}
-void enableCore1WDT()
-{
-    if (idle_1 != NULL && esp_task_wdt_add(idle_1) != ESP_OK) {
-        //print("Failed to add Core 1 IDLE task to WDT");
+
+    if (ESP_OK != esp_task_wdt_add(NULL)) {
+        printf("esp_task_wdt_add(NULL) failed");
     }
 }
 
@@ -80,11 +72,6 @@ void Scheduler::init()
 #ifdef SCHEDDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
-
-    // disable wd while booting, as things like mounting the sd-card in the io thread can take a while, especially if there isn't hardware attached.
-    disableCore0WDT(); //FASTCPU
-    disableCore1WDT(); //SLOWCPU
-
 
     hal.console->printf("%s:%d running with CONFIG_FREERTOS_HZ=%d\n", __PRETTY_FUNCTION__, __LINE__,CONFIG_FREERTOS_HZ);
 
@@ -126,7 +113,7 @@ void Scheduler::init()
     	hal.console->printf("OK created task _uart_thread on FASTCPU\n");
     }	  
 
-    // we put thos on the SLOW core as it mounts the sd card, and that often isn't conencted.
+    // we put those on the SLOW core as it mounts the sd card, and that often isn't connected.
     if (xTaskCreatePinnedToCore(_io_thread, "SchedulerIO:APM_IO", IO_SS, this, IO_PRIO, &_io_task_handle,SLOWCPU) != pdPASS) {
         hal.console->printf("FAILED to create task _io_thread on SLOWCPU\n");
     } else {
@@ -134,17 +121,12 @@ void Scheduler::init()
     }	 
 
     if (xTaskCreatePinnedToCore(_storage_thread, "APM_STORAGE", STORAGE_SS, this, STORAGE_PRIO, &_storage_task_handle,SLOWCPU) != pdPASS) { //no actual flash writes without this, storage kinda appears to work, but does an erase on every boot and params don't persist over reset etc.
-        hal.console->printf("FAILED to create task _storage_thread\n");
+        hal.console->printf("FAILED to create task _storage_thread on SLOWCPU\n");
     } else {
-    	hal.console->printf("OK created task _storage_thread\n");
+    	hal.console->printf("OK created task _storage_thread on SLOWCPU\n");
     }
 
     //   xTaskCreatePinnedToCore(_print_profile, "APM_PROFILE", IO_SS, this, IO_PRIO, nullptr,SLOWCPU);
-
-    hal.console->printf("OK Sched Init, enabling WD\n");
-    enableCore0WDT();   //FASTCPU
-    //enableCore1WDT();   //we don't enable WD on SLOWCPU right now.
-
 }
 
 template <typename T>
@@ -158,6 +140,9 @@ void IRAM_ATTR Scheduler::thread_create_trampoline(void *ctx)
     AP_HAL::MemberProc *t = (AP_HAL::MemberProc *)ctx;
     (*t)();
     free(t);
+
+    // delete the calling task
+    vTaskDelete(NULL);
 }
 
 /*
@@ -232,7 +217,7 @@ void IRAM_ATTR Scheduler::delay(uint16_t ms)
 void IRAM_ATTR Scheduler::delay_microseconds(uint16_t us)
 {
     if (in_main_thread() && us < 100) {
-        ets_delay_us(us);
+        esp_rom_delay_us(us);
     } else { // Minimum delay for FreeRTOS is 1ms
         uint32_t tick = portTICK_PERIOD_MS * 1000;
 
@@ -337,7 +322,7 @@ void IRAM_ATTR Scheduler::_timer_thread(void *arg)
         sched->delay_microseconds(1000);
         sched->_run_timers();
         //analog in
-#ifndef HAL_DISABLE_ADC_DRIVER
+#if AP_HAL_ANALOGIN_ENABLED
         ((AnalogIn*)hal.analogin)->_timer_tick();
 #endif
     }
@@ -562,7 +547,7 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
 #endif
     Scheduler *sched = (Scheduler *)arg;
 
-#ifndef HAL_DISABLE_ADC_DRIVER
+#if AP_HAL_ANALOGIN_ENABLED
     hal.analogin->init();
 #endif
     hal.rcout->init();
@@ -570,6 +555,10 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
     sched->callbacks->setup();
 
     sched->set_system_initialized();
+
+    //initialize WTD for current thread on FASTCPU, all cores will be (1 << CONFIG_FREERTOS_NUMBER_OF_CORES) - 1
+    wdt_init( TWDT_TIMEOUT_MS, 1 << FASTCPU ); // 3 sec
+
 
 #ifdef SCHEDDEBUG
     printf("%s:%d initialised\n", __PRETTY_FUNCTION__, __LINE__);
@@ -579,8 +568,14 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
         sched->delay_microseconds(250);
 
         // run stats periodically
+#ifdef SCHEDDEBUG
         sched->print_stats();
+#endif
         sched->print_main_loop_rate();
+
+        if (ESP_OK != esp_task_wdt_reset()) {
+            printf("esp_task_wdt_reset() failed\n");
+        };
     }
 }
 

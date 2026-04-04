@@ -16,6 +16,12 @@ public:
         Sets the target global position for a loiter point.
     */
     bool set_global_position(const Location& loc) override WARN_IF_UNUSED;
+
+    /*
+        Sets the target airspeed.
+    */
+    bool set_airspeed(const float airspeed) override WARN_IF_UNUSED;
+
 };
 
 #endif // AP_EXTERNAL_CONTROL_ENABLED

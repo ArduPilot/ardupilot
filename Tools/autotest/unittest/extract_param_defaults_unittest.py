@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 '''
 Extracts parameter default values from an ArduPilot .bin log file. Unittests.
@@ -9,10 +9,19 @@ Amilcar do Carmo Lucas, IAV GmbH
 '''
 
 import unittest
-from unittest.mock import patch, MagicMock
-from extract_param_defaults import extract_parameter_default_values, missionplanner_sort, \
-                                   mavproxy_sort, sort_params, output_params, parse_arguments, \
-                                   NO_DEFAULT_VALUES_MESSAGE, MAVLINK_SYSID_MAX, MAVLINK_COMPID_MAX
+
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
+from extract_param_defaults import MAVLINK_COMPID_MAX
+from extract_param_defaults import MAVLINK_SYSID_MAX
+from extract_param_defaults import NO_DEFAULT_VALUES_MESSAGE
+from extract_param_defaults import extract_parameter_default_values
+from extract_param_defaults import mavproxy_sort
+from extract_param_defaults import missionplanner_sort
+from extract_param_defaults import output_params
+from extract_param_defaults import parse_arguments
+from extract_param_defaults import sort_params
 
 
 class TestArgParseParameters(unittest.TestCase):
@@ -243,25 +252,27 @@ class TestOutputParams(unittest.TestCase):
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
-    def test_output_params_qgcs_SYSID_THISMAV(self, mock_print):
+    def test_output_params_qgcs_MAV_SYSID(self, mock_print):
         # Prepare a dummy defaults dictionary
-        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'SYSID_THISMAV': 3.0}
+        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'MAV_SYSID': 3.0}
 
         # Call the function with the dummy dictionary, 'qgcs' format type and 'qgcs' sort type
         defaults = sort_params(defaults, 'qgcs')
         output_params(defaults, 'qgcs', -1, 7)
 
         # Check if the print function was called with the correct parameters
-        expected_calls = [unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM1', 1.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM2', 2.0, 9)),
-                          unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'SYSID_THISMAV', 3.0, 9))]
+        expected_calls = [
+            unittest.mock.call("\n# # Vehicle-Id Component-Id Name Value Type\n"),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'MAV_SYSID', 3.0, 9)),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM1', 1.0, 9)),
+            unittest.mock.call("%u %u %-15s %.6f %u" % (3, 7, 'PARAM2', 2.0, 9)),
+        ]
         mock_print.assert_has_calls(expected_calls, any_order=False)
 
     @patch('extract_param_defaults.print')
     def test_output_params_qgcs_SYSID_INVALID(self, mock_print):
         # Prepare a dummy defaults dictionary
-        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'SYSID_THISMAV': -1.0}
+        defaults = {'PARAM2': 2.0, 'PARAM1': 1.0, 'MAV_SYSID': -1.0}
 
         # Assert that a SystemExit is raised with the correct message when an invalid sysid is used
         with self.assertRaises(SystemExit) as cm:

@@ -74,6 +74,9 @@ private:
     uint32_t _last_update_ms;
     bool _healthy;
     Vector3d _target_pos;
+
+    // last time we warned user about needed to et lat/lng/alt:
+    uint32_t last_set_parameters_warning_ms;
 };
 
 }

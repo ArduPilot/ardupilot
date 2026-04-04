@@ -242,7 +242,7 @@ void SITL::I2CRegisters_ConfigurableLength::set_register(uint8_t reg, uint8_t va
     if (reg_data_len[reg] != 1) {
         AP_HAL::panic("Invalid set_register len");
     }
-    reg_data[reg] = value;
+    reg_data[reg] = value << 24;
 }
 
 void SITL::I2CRegisters_ConfigurableLength::set_register(uint8_t reg, int8_t value)
@@ -254,7 +254,7 @@ void SITL::I2CRegisters_ConfigurableLength::set_register(uint8_t reg, int8_t val
     if (reg_data_len[reg] != 1) {
         AP_HAL::panic("Invalid set_register len");
     }
-    reg_data[reg] = value;
+    reg_data[reg] = value << 24;
 }
 
 int SITL::I2CRegisters_ConfigurableLength::rdwr(I2C::i2c_rdwr_ioctl_data *&data)

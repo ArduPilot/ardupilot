@@ -175,11 +175,11 @@ AP_GPS_SIRF::_parse_gps(void)
         //time                    = _swapl(&_buffer.nav.time);
         // parse fix type
         if (_buffer.nav.fix_invalid) {
-            state.status = AP_GPS::NO_FIX;
+            state.status = AP_GPS_FixType::NONE;
         }else if ((_buffer.nav.fix_type & FIX_MASK) == FIX_3D) {
-            state.status = AP_GPS::GPS_OK_FIX_3D;
+            state.status = AP_GPS_FixType::FIX_3D;
         }else{
-            state.status = AP_GPS::GPS_OK_FIX_2D;
+            state.status = AP_GPS_FixType::FIX_2D;
         }
         state.location.lat      = int32_t(be32toh(_buffer.nav.latitude));
         state.location.lng      = int32_t(be32toh(_buffer.nav.longitude));

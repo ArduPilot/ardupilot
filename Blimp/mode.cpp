@@ -5,8 +5,6 @@
  * flight modes is in control_acro.cpp, control_stabilize.cpp, etc
  */
 
-#include <AP_Vehicle/AP_MultiCopter.h>
-
 /*
   constructor for Mode object
  */
@@ -101,9 +99,6 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
 
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
-
-    // store previous flight mode (only used by tradeheli's autorotation)
-    prev_control_mode = control_mode;
 
     // update flight mode
     flightmode = new_flightmode;

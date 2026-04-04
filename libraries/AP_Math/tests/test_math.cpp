@@ -533,8 +533,7 @@ TEST(MathWrapTest, AnglePI)
     EXPECT_NEAR(0.f,     wrap_PI(M_2PI),     accuracy);
     EXPECT_NEAR(0,       wrap_PI(M_PI * 10), accuracy);
     EXPECT_NEAR(-2.1415925025939941f,    wrap_PI(M_PI+1),      accuracy);
-    EXPECT_NEAR(1.f,     wrap_PI(1),     accuracy);
-    EXPECT_NEAR(1.f,     wrap_PI((short)1),     accuracy);
+    EXPECT_NEAR(1.f,     wrap_PI(1.0),     accuracy);
 }
 
 TEST(MathWrapTest, Angle2PI)
@@ -547,8 +546,7 @@ TEST(MathWrapTest, Angle2PI)
     EXPECT_NEAR(0.f,  wrap_2PI(0.f), accuracy);
     EXPECT_NEAR(M_PI, wrap_2PI(-M_PI), accuracy);
     EXPECT_NEAR(0,    wrap_2PI(-M_2PI), accuracy);
-    EXPECT_NEAR(1,    wrap_2PI(1), accuracy);
-    EXPECT_NEAR(1,    wrap_2PI((short)1), accuracy);
+    EXPECT_NEAR(1,    wrap_2PI(1.0), accuracy);
 }
 
 TEST(MathTest, ASin)

@@ -40,8 +40,6 @@ public:
                                      bool force_external,
                                      enum Rotation rotation);
 
-    void read() override;
-
     static constexpr const char *name = "RM3100";
 
 private:
@@ -57,7 +55,6 @@ private:
     bool init();
     void timer();
 
-    uint8_t compass_instance;
     bool force_external;
     enum Rotation rotation;
     float _scaler = 1.0;

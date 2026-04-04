@@ -1,21 +1,21 @@
 # iFlight BLITZ Whoop F7 AIO Flight Controller
 
-https://shop.iflight-rc.com/BLITZ-Whoop-F7-AIO-Pro1927
+[iFlight store](https://shop.iflight-rc.com/BLITZ-Whoop-F7-AIO-Pro1927)
 
 The Blitz F7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 
 ## Features
 
- - MCU: BGA-STM32F745, 216MHz
- - Gyro: BMI270 or ICM42688
- - 16Mb Onboard Flash
- - BEC output: 5V 2.5A
- - Barometer: DPS310 or None
- - OSD: AT7456E
- - 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
- - I2C for external compass.
- - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
- - Integrated 55A 4-in-1 BLHeli_S / BlueJay ESC
+- MCU: BGA-STM32F745, 216MHz
+- Gyro: BMI270 or ICM42688
+- 16Mb Onboard Flash
+- BEC output: 5V 2.5A
+- Barometer: DPS310 or None
+- OSD: AT7456E
+- 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
+- I2C for external compass.
+- 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
+- Integrated 55A 4-in-1 BLHeli_S / BlueJay ESC
 
 ## Pinout
 
@@ -48,8 +48,8 @@ The BLITZ Whoop F7 AIO has 4 PWM outputs internally connected to its 4-in-1 ESC.
 
 The PWM are in in two groups:
 
- - PWM 1-4 in group1
- - PWM 5   in group2
+- PWM 1-4 in group1
+- PWM 5   in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -62,11 +62,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT 10.9
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT 50
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT 10.9
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

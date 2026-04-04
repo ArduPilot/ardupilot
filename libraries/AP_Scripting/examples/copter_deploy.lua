@@ -5,8 +5,6 @@
 local PARAM_TABLE_KEY = 72
 local PARAM_TABLE_PREFIX = "DEPL_"
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
-
----@diagnostic disable: missing-parameter
 ---@diagnostic disable: param-type-mismatch
 
 -- bind a parameter to a variable
@@ -69,7 +67,7 @@ function update_state()
    gcs:send_text(MAV_SEVERITY.INFO, "DEPL: deploying")
    vehicle:set_mode(MODE_LAND)
    arming:arm_force()
-   if not vehicle:get_mode() == MODE_LAND or not arming:is_armed() then
+   if (vehicle:get_mode() ~= MODE_LAND) or not arming:is_armed() then
       gcs:send_text(MAV_SEVERITY.INFO, "DEPL: Arming failed")
       return
    end

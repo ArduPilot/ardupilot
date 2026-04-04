@@ -7,8 +7,8 @@ FLASH_SIZE_KB 512
 define HAL_STORAGE_SIZE 15360
 STORAGE_FLASH_PAGE 2
 
-# board ID for firmware load
-APJ_BOARD_ID 6001
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_sw-boom-f407
 
 env AP_PERIPH 1
 
@@ -56,13 +56,13 @@ PA0 UART4_TX UART4 SPEED_HIGH DMA
 PA1 UART4_RX UART4 SPEED_HIGH DMA
 
 # APD telem
-define HAL_PERIPH_ENABLE_ESC_APD 1
+define AP_PERIPH_ESC_APD_ENABLED 1
 define APD_ESC_INSTANCES 2
 define APD_ESC_SERIAL_0 1
 define APD_ESC_SERIAL_1 2
 
 # pwm
-define HAL_PERIPH_ENABLE_RC_OUT
+define AP_PERIPH_RC_OUT_ENABLED 1
 PE9   TIM1_CH1  TIM1 PWM(1) GPIO(51) # esc front
 PE11  TIM1_CH2  TIM1 PWM(2) GPIO(52) # esc rear
 PB11  TIM2_CH4  TIM2 PWM(4) GPIO(54) # aux 3
@@ -76,14 +76,14 @@ PE4  ID_PIN         INPUT  GPIO(4) # high on left, low on right
 PB10 HEAT_PIN       OUTPUT GPIO(5) LOW # heater control, low is heater off, high is heater on
 PB12 AUX3           OUTPUT GPIO(6) # aux 3
 
-define HAL_PERIPH_ENABLE_RELAY 1
+define AP_PERIPH_RELAY_ENABLED 1
 define AP_RELAY_ENABLED 1
 define RELAY1_PIN_DEFAULT 3
 define RELAY2_PIN_DEFAULT 5
 
 
 # battery
-define HAL_PERIPH_ENABLE_BATTERY
+define AP_PERIPH_BATTERY_ENABLED 1
 define HAL_PERIPH_BATTERY_SKIP_NAME
 define HAL_USE_ADC TRUE
 define STM32_ADC_USE_ADC1 TRUE

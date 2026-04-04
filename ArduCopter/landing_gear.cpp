@@ -11,7 +11,7 @@ void Copter::landinggear_update()
     }
 
     // support height based triggering using rangefinder or altitude above ground
-    int32_t height_cm = flightmode->get_alt_above_ground_cm();
+    float height_m = flightmode->get_alt_above_ground_m();
 
     // use rangefinder if available
 #if AP_RANGEFINDER_ENABLED
@@ -23,18 +23,18 @@ void Copter::landinggear_update()
 
     case RangeFinder::Status::OutOfRangeLow:
         // altitude is close to zero (gear should deploy)
-        height_cm = 0;
+        height_m = 0;
         break;
 
     case RangeFinder::Status::OutOfRangeHigh:
     case RangeFinder::Status::Good:
         // use last good reading
-        height_cm = rangefinder_state.alt_cm_filt.get();
+        height_m = rangefinder_state.alt_m_filt.get();
         break;
     }
 #endif  // AP_RANGEFINDER_ENABLED
 
-    landinggear.update(height_cm * 0.01f); // convert cm->m for update call
+    landinggear.update(height_m);
 }
 
 #endif // AP_LANDINGGEAR_ENABLED

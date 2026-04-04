@@ -1,6 +1,8 @@
-#include "AP_Avoidance.h"
+#include "AP_Avoidance_config.h"
 
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
+
+#include "AP_Avoidance.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -80,49 +82,49 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Description: Aircraft velocity vectors are multiplied by this time to determine closest approach.  If this results in an approach closer than W_DIST_XY or W_DIST_Z then W_ACTION is undertaken (assuming F_ACTION is not undertaken)
     // @Units: s
     // @User: Advanced
-    AP_GROUPINFO("W_TIME",      6, AP_Avoidance, _warn_time_horizon, AP_AVOIDANCE_WARN_TIME_DEFAULT),
+    AP_GROUPINFO("W_TIME",      6, AP_Avoidance, _warn_time_horizon_s, AP_AVOIDANCE_WARN_TIME_DEFAULT),
 
     // @Param: F_TIME
     // @DisplayName: Time Horizon Fail
     // @Description: Aircraft velocity vectors are multiplied by this time to determine closest approach.  If this results in an approach closer than F_DIST_XY or F_DIST_Z then F_ACTION is undertaken
     // @Units: s
     // @User: Advanced
-    AP_GROUPINFO("F_TIME",      7, AP_Avoidance, _fail_time_horizon, AP_AVOIDANCE_FAIL_TIME_DEFAULT),
+    AP_GROUPINFO("F_TIME",      7, AP_Avoidance, _fail_time_horizon_s, AP_AVOIDANCE_FAIL_TIME_DEFAULT),
 
     // @Param: W_DIST_XY
     // @DisplayName: Distance Warn XY
     // @Description: Closest allowed projected distance before W_ACTION is undertaken
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("W_DIST_XY",   8, AP_Avoidance, _warn_distance_xy, AP_AVOIDANCE_WARN_DISTANCE_XY_DEFAULT),
+    AP_GROUPINFO("W_DIST_XY",   8, AP_Avoidance, _warn_distance_ne_m, AP_AVOIDANCE_WARN_DISTANCE_XY_DEFAULT),
 
     // @Param: F_DIST_XY
     // @DisplayName: Distance Fail XY
     // @Description: Closest allowed projected distance before F_ACTION is undertaken
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("F_DIST_XY",   9, AP_Avoidance, _fail_distance_xy, AP_AVOIDANCE_FAIL_DISTANCE_XY_DEFAULT),
+    AP_GROUPINFO("F_DIST_XY",   9, AP_Avoidance, _fail_distance_ne_m, AP_AVOIDANCE_FAIL_DISTANCE_XY_DEFAULT),
 
     // @Param: W_DIST_Z
     // @DisplayName: Distance Warn Z
     // @Description: Closest allowed projected distance before BEHAVIOUR_W is undertaken
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("W_DIST_Z",    10, AP_Avoidance, _warn_distance_z, AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT),
+    AP_GROUPINFO("W_DIST_Z",    10, AP_Avoidance, _warn_distance_d_m, AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT),
 
     // @Param: F_DIST_Z
     // @DisplayName: Distance Fail Z
     // @Description: Closest allowed projected distance before BEHAVIOUR_F is undertaken
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_z, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
+    AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_d_m, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
     
     // @Param: F_ALT_MIN
     // @DisplayName: ADS-B avoidance minimum altitude
     // @Description: Minimum AMSL (above mean sea level) altitude for ADS-B avoidance. If the vehicle is below this altitude, no avoidance action will take place. Useful to prevent ADS-B avoidance from activating while below the tree line or around structures. Default of 0 is no minimum.
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("F_ALT_MIN",    12, AP_Avoidance, _fail_altitude_minimum, 0),
+    AP_GROUPINFO("F_ALT_MIN",    12, AP_Avoidance, _fail_altitude_min_m, 0),
 
     AP_GROUPEND
 };
@@ -191,12 +193,12 @@ bool AP_Avoidance::check_startup()
     return _obstacles != nullptr;
 }
 
-// vel is north/east/down!
+// vel_ned_ms is north/east/down
 void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const MAV_COLLISION_SRC src,
                                 const uint32_t src_id,
                                 const Location &loc,
-                                const Vector3f &vel_ned)
+                                const Vector3f &vel_ned_ms)
 {
     if (! check_startup()) {
         return;
@@ -237,7 +239,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
     }
 
     _obstacles[index]._location = loc;
-    _obstacles[index]._velocity = vel_ned;
+    _obstacles[index]._velocity_ned_ms = vel_ned_ms;
     _obstacles[index].timestamp_ms = obstacle_timestamp_ms;
 }
 
@@ -246,15 +248,15 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const uint32_t src_id,
                                 const Location &loc,
                                 const float cog,
-                                const float hspeed,
-                                const float vspeed)
+                                const float speed_ne_ms,
+                                const float speed_d_ms)
 {
-    Vector3f vel;
-    vel[0] = hspeed * cosf(radians(cog));
-    vel[1] = hspeed * sinf(radians(cog));
-    vel[2] = vspeed;
-    // debug("cog=%f hspeed=%f veln=%f vele=%f", cog, hspeed, vel[0], vel[1]);
-    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel);
+    Vector3f vel_ned_ms;
+    vel_ned_ms[0] = speed_ne_ms * cosf(radians(cog));
+    vel_ned_ms[1] = speed_ne_ms * sinf(radians(cog));
+    vel_ned_ms[2] = speed_d_ms;
+    // debug("cog=%f speed_ne_ms=%f veln=%f vele=%f", cog, speed_ne_ms, vel_ned_ms[0], vel[1]);
+    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel_ned_ms);
 }
 
 uint32_t AP_Avoidance::src_id_for_adsb_vehicle(const AP_ADSB::adsb_vehicle_t &vehicle) const
@@ -279,110 +281,110 @@ void AP_Avoidance::get_adsb_samples()
     }
 }
 
-float closest_approach_xy(const Location &my_loc,
-                          const Vector3f &my_vel,
+float closest_approach_NE_m(const Location &loc,
+                          const Vector3f &vel_ned_ms,
                           const Location &obstacle_loc,
-                          const Vector3f &obstacle_vel,
-                          const uint8_t time_horizon)
+                          const Vector3f &obstacle_vel_ned_ms,
+                          const uint8_t time_horizon_s)
 {
 
-    Vector2f delta_vel_ne = Vector2f(obstacle_vel[0] - my_vel[0], obstacle_vel[1] - my_vel[1]);
-    const Vector2f delta_pos_ne = obstacle_loc.get_distance_NE(my_loc);
+    Vector2f delta_vel_ne_ms = Vector2f(obstacle_vel_ned_ms[0] - vel_ned_ms[0], obstacle_vel_ned_ms[1] - vel_ned_ms[1]);
+    const Vector2f delta_pos_ne_m = obstacle_loc.get_distance_NE(loc);
 
-    Vector2f line_segment_ne = delta_vel_ne * time_horizon;
+    Vector2f line_segment_ne_m = delta_vel_ne_ms * time_horizon_s;
 
-    float ret = Vector2<float>::closest_distance_between_radial_and_point
-        (line_segment_ne,
-         delta_pos_ne);
+    float dist_ne_m = Vector2<float>::closest_distance_between_radial_and_point
+        (line_segment_ne_m,
+         delta_pos_ne_m);
 
-    debug("   time_horizon: (%d)", time_horizon);
-    debug("   delta pos: (y=%f,x=%f)", delta_pos_ne[0], delta_pos_ne[1]);
-    debug("   delta vel: (y=%f,x=%f)", delta_vel_ne[0], delta_vel_ne[1]);
-    debug("   line segment: (y=%f,x=%f)", line_segment_ne[0], line_segment_ne[1]);
-    debug("   closest: (%f)", ret);
+    debug("   time_horizon: (%d)", time_horizon_s);
+    debug("   delta pos: (y=%f,x=%f)", delta_pos_ne_m[0], delta_pos_ne_m[1]);
+    debug("   delta vel: (y=%f,x=%f)", delta_vel_ne_ms[0], delta_vel_ne_ms[1]);
+    debug("   line segment: (y=%f,x=%f)", line_segment_ne_m[0], line_segment_ne_m[1]);
+    debug("   closest: (%f)", dist_ne_m);
 
-    return ret;
+    return dist_ne_m;
 }
 
 // returns the closest these objects will get in the body z axis (in metres)
-float closest_approach_z(const Location &my_loc,
-                         const Vector3f &my_vel,
+float closest_approach_D_m(const Location &loc,
+                         const Vector3f &vel_ned_ms,
                          const Location &obstacle_loc,
-                         const Vector3f &obstacle_vel,
-                         const uint8_t time_horizon)
+                         const Vector3f &obstacle_vel_ned_ms,
+                         const uint8_t time_horizon_s)
 {
 
-    float delta_vel_d = obstacle_vel[2] - my_vel[2];
-    float delta_pos_d = obstacle_loc.alt - my_loc.alt;
+    float delta_vel_d_ms = obstacle_vel_ned_ms[2] - vel_ned_ms[2];
+    float delta_pos_d_cm = obstacle_loc.alt - loc.alt;
 
-    float ret;
-    if (delta_pos_d >= 0 && delta_vel_d >= 0) {
-        ret = delta_pos_d;
-    } else if (delta_pos_d <= 0 && delta_vel_d <= 0) {
-        ret = fabsf(delta_pos_d);
+    float dist_d_cm;
+    if (delta_pos_d_cm >= 0 && delta_vel_d_ms >= 0) {
+        dist_d_cm = delta_pos_d_cm;
+    } else if (delta_pos_d_cm <= 0 && delta_vel_d_ms <= 0) {
+        dist_d_cm = fabsf(delta_pos_d_cm);
     } else {
-        ret = fabsf(delta_pos_d - delta_vel_d * time_horizon);
+        dist_d_cm = fabsf(delta_pos_d_cm - delta_vel_d_ms * time_horizon_s * 100.0);
     }
 
-    debug("   time_horizon: (%d)", time_horizon);
-    debug("   delta pos: (%f) metres", delta_pos_d*0.01f);
-    debug("   delta vel: (%f) m/s", delta_vel_d);
-    debug("   closest: (%f) metres", ret*0.01f);
+    debug("   time_horizon: (%d)", time_horizon_s);
+    debug("   delta pos: (%f) metres", delta_pos_d_cm*0.01f);
+    debug("   delta vel: (%f) m/s", delta_vel_d_ms);
+    debug("   closest: (%f) metres", dist_d_cm*0.01f);
 
-    return ret*0.01f;
+    return dist_d_cm * 0.01f;
 }
 
-void AP_Avoidance::update_threat_level(const Location &my_loc,
-                                       const Vector3f &my_vel,
+void AP_Avoidance::update_threat_level(const Location &loc,
+                                       const Vector3f &vel_ned_ms,
                                        AP_Avoidance::Obstacle &obstacle)
 {
 
     Location &obstacle_loc = obstacle._location;
-    Vector3f &obstacle_vel = obstacle._velocity;
+    Vector3f &obstacle_vel_ned_ms = obstacle._velocity_ned_ms;
 
     obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
 
-    const uint32_t obstacle_age = AP_HAL::millis() - obstacle.timestamp_ms;
-    float closest_xy = closest_approach_xy(my_loc, my_vel, obstacle_loc, obstacle_vel, _fail_time_horizon + obstacle_age/1000);
-    if (closest_xy < _fail_distance_xy) {
+    const uint32_t obstacle_age_ms = AP_HAL::millis() - obstacle.timestamp_ms;
+    float closest_ne_m = closest_approach_NE_m(loc, vel_ned_ms, obstacle_loc, obstacle_vel_ned_ms, _fail_time_horizon_s + obstacle_age_ms/1000);
+    if (closest_ne_m < _fail_distance_ne_m) {
         obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_HIGH;
     } else {
-        closest_xy = closest_approach_xy(my_loc, my_vel, obstacle_loc, obstacle_vel, _warn_time_horizon + obstacle_age/1000);
-        if (closest_xy < _warn_distance_xy) {
+        closest_ne_m = closest_approach_NE_m(loc, vel_ned_ms, obstacle_loc, obstacle_vel_ned_ms, _warn_time_horizon_s + obstacle_age_ms/1000);
+        if (closest_ne_m < _warn_distance_ne_m) {
             obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_LOW;
         }
     }
 
     // check for vertical separation; our threat level is the minimum
     // of vertical and horizontal threat levels
-    float closest_z = closest_approach_z(my_loc, my_vel, obstacle_loc, obstacle_vel, _warn_time_horizon + obstacle_age/1000);
+    float closest_d_m = closest_approach_D_m(loc, vel_ned_ms, obstacle_loc, obstacle_vel_ned_ms, _warn_time_horizon_s + obstacle_age_ms/1000);
     if (obstacle.threat_level != MAV_COLLISION_THREAT_LEVEL_NONE) {
-        if (closest_z > _warn_distance_z) {
+        if (closest_d_m > _warn_distance_d_m) {
             obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
         } else {
-            closest_z = closest_approach_z(my_loc, my_vel, obstacle_loc, obstacle_vel, _fail_time_horizon + obstacle_age/1000);
-            if (closest_z > _fail_distance_z) {
+            closest_d_m = closest_approach_D_m(loc, vel_ned_ms, obstacle_loc, obstacle_vel_ned_ms, _fail_time_horizon_s + obstacle_age_ms/1000);
+            if (closest_d_m > _fail_distance_d_m) {
                 obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_LOW;
             }
         }
     }
 
     // If we haven't heard from a vehicle then assume it is no threat
-    if (obstacle_age > MAX_OBSTACLE_AGE_MS) {
+    if (obstacle_age_ms > MAX_OBSTACLE_AGE_MS) {
         obstacle.threat_level = MAV_COLLISION_THREAT_LEVEL_NONE;
     }
 
     // could optimise this to not calculate a lot of this if threat
     // level is none - but only *once the GCS has been informed*!
-    obstacle.closest_approach_xy = closest_xy;
-    obstacle.closest_approach_z = closest_z;
-    float current_distance = my_loc.get_distance(obstacle_loc);
-    obstacle.distance_to_closest_approach = current_distance - closest_xy;
-    Vector2f net_velocity_ne = Vector2f(my_vel[0] - obstacle_vel[0], my_vel[1] - obstacle_vel[1]);
-    obstacle.time_to_closest_approach = 0.0f;
-    if (!is_zero(obstacle.distance_to_closest_approach) &&
-        ! is_zero(net_velocity_ne.length())) {
-        obstacle.time_to_closest_approach = obstacle.distance_to_closest_approach / net_velocity_ne.length();
+    obstacle.closest_approach_ne_m = closest_ne_m;
+    obstacle.closest_approach_d_m = closest_d_m;
+    float current_distance_ne_m = loc.get_distance(obstacle_loc);
+    obstacle.distance_to_closest_approach_ned_m = current_distance_ne_m - closest_ne_m;
+    Vector2f net_velocity_ne_ms = Vector2f(vel_ned_ms[0] - obstacle_vel_ned_ms[0], vel_ned_ms[1] - obstacle_vel_ned_ms[1]);
+    obstacle.time_to_closest_approach_s = 0.0f;
+    if (!is_zero(obstacle.distance_to_closest_approach_ned_m) &&
+        ! is_zero(net_velocity_ne_ms.length())) {
+        obstacle.time_to_closest_approach_s = obstacle.distance_to_closest_approach_ned_m / net_velocity_ne_ms.length();
     }
 }
 
@@ -401,9 +403,9 @@ void AP_Avoidance::send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_
 {
     const mavlink_collision_t packet{
         id: threat.src_id,
-        time_to_minimum_delta: threat.time_to_closest_approach,
-        altitude_minimum_delta: threat.closest_approach_z,
-        horizontal_minimum_delta: threat.closest_approach_xy,
+        time_to_minimum_delta: threat.time_to_closest_approach_s,
+        altitude_minimum_delta: threat.closest_approach_d_m,
+        horizontal_minimum_delta: threat.closest_approach_ne_m,
         src: MAV_COLLISION_SRC_ADSB,
         action: (uint8_t)behaviour,
         threat_level: (uint8_t)threat.threat_level,
@@ -449,7 +451,7 @@ bool AP_Avoidance::obstacle_is_more_serious_threat(const AP_Avoidance::Obstacle 
         return true;
     }
     if (obstacle.threat_level == current.threat_level &&
-        obstacle.time_to_closest_approach < current.time_to_closest_approach) {
+        obstacle.time_to_closest_approach_s < current.time_to_closest_approach_s) {
         return true;
     }
     return false;
@@ -459,14 +461,14 @@ void AP_Avoidance::check_for_threats()
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
-    Location my_loc;
-    if (!_ahrs.get_location(my_loc)) {
+    Location loc;
+    if (!_ahrs.get_location(loc)) {
         // if we don't know our own location we can't determine any threat level
         return;
     }
 
-    Vector3f my_vel;
-    if (!_ahrs.get_velocity_NED(my_vel)) {
+    Vector3f vel_ned_ms;
+    if (!_ahrs.get_velocity_NED(vel_ned_ms)) {
         // assuming our own velocity to be zero here may cause us to
         // fly into something.  Better not to attempt to avoid in this
         // case.
@@ -480,14 +482,14 @@ void AP_Avoidance::check_for_threats()
     for (uint8_t i=0; i<_obstacle_count; i++) {
 
         AP_Avoidance::Obstacle &obstacle = _obstacles[i];
-        const uint32_t obstacle_age = AP_HAL::millis() - obstacle.timestamp_ms;
-        debug("i=%d src_id=%d timestamp=%u age=%d", i, obstacle.src_id, obstacle.timestamp_ms, obstacle_age);
+        const uint32_t obstacle_age_ms = AP_HAL::millis() - obstacle.timestamp_ms;
+        debug("i=%d src_id=%d timestamp=%u age=%d", i, obstacle.src_id, obstacle.timestamp_ms, obstacle_age_ms);
 
-        update_threat_level(my_loc, my_vel, obstacle);
+        update_threat_level(loc, vel_ned_ms, obstacle);
         debug("   threat-level=%d", obstacle.threat_level);
 
         // ignore any really old data:
-        if (obstacle_age > MAX_OBSTACLE_AGE_MS) {
+        if (obstacle_age_ms > MAX_OBSTACLE_AGE_MS) {
             // shrink list if this is the last entry:
             if (i == _obstacle_count-1) {
                 _obstacle_count -= 1;
@@ -543,9 +545,9 @@ void AP_Avoidance::handle_avoidance_local(AP_Avoidance::Obstacle *threat)
         new_threat_level = threat->threat_level;
         if (new_threat_level == MAV_COLLISION_THREAT_LEVEL_HIGH) {
             action = (MAV_COLLISION_ACTION)_fail_action.get();
-            Location my_loc;
-            if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_minimum > 0 &&
-                AP::ahrs().get_location(my_loc) && ((my_loc.alt*0.01f) < _fail_altitude_minimum)) {
+            Location loc;
+            if (action != MAV_COLLISION_ACTION_NONE && _fail_altitude_min_m > 0 &&
+                AP::ahrs().get_location(loc) && ((loc.alt * 0.01f) < _fail_altitude_min_m)) {
                 // disable avoidance when close to ground, report only
                 action = MAV_COLLISION_ACTION_REPORT;
 			}
@@ -602,7 +604,7 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
         int32_t(packet.alt * 0.1),  // mm -> cm
         Location::AltFrame::ABSOLUTE
     };
-    const Vector3f vel {
+    const Vector3f vel_ned_ms {
         packet.vx * 0.01f, // cm to m
         packet.vy * 0.01f,
         packet.vz * 0.01f
@@ -611,19 +613,19 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
                  MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
                  loc,
-                 vel);
+                 vel_ned_ms);
 }
 
 // get unit vector away from the nearest obstacle
-bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu) const
+bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu_unit) const
 {
     if (obstacle == nullptr) {
         // why where we called?!
         return false;
     }
 
-    Location my_abs_pos;
-    if (!AP::ahrs().get_location(my_abs_pos)) {
+    Location current_loc;
+    if (!AP::ahrs().get_location(current_loc)) {
         // we should not get to here!  If we don't know our position
         // we can't know if there are any threats, for starters!
         return false;
@@ -632,50 +634,38 @@ bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstac
     // if their velocity is moving around close to zero then flying
     // perpendicular to that velocity may mean we do weird things.
     // Instead, we will fly directly away from them
-    if (obstacle->_velocity.length() < _low_velocity_threshold) {
-        const Vector2f delta_pos_xy =  obstacle->_location.get_distance_NE(my_abs_pos);
-        const float delta_pos_z = my_abs_pos.alt - obstacle->_location.alt;
-        Vector3f delta_pos_xyz = Vector3f(delta_pos_xy.x, delta_pos_xy.y, delta_pos_z);
+    if (obstacle->_velocity_ned_ms.length() < _low_velocity_threshold) {
+        const Vector2f delta_pos_ne_m =  obstacle->_location.get_distance_NE(current_loc);
+        const float delta_pos_u_cm = current_loc.alt - obstacle->_location.alt;
+        Vector3f delta_pos_neu_m = Vector3f{delta_pos_ne_m.x, delta_pos_ne_m.y, delta_pos_u_cm * 0.01};
         // avoid div by zero
-        if (delta_pos_xyz.is_zero()) {
+        if (delta_pos_neu_m.is_zero()) {
             return false;
         }
-        delta_pos_xyz.normalize();
-        vec_neu = delta_pos_xyz;
+        delta_pos_neu_m.normalize();
+        vec_neu_unit = delta_pos_neu_m;
         return true;
     } else {
-        vec_neu = perpendicular_xyz(obstacle->_location, obstacle->_velocity, my_abs_pos);
+        vec_neu_unit = perpendicular_neu_m(obstacle->_location, obstacle->_velocity_ned_ms, current_loc);
         // avoid div by zero
-        if (vec_neu.is_zero()) {
+        if (vec_neu_unit.is_zero()) {
             return false;
         }
-        vec_neu.normalize();
+        vec_neu_unit.normalize();
         return true;
     }
 }
 
 // helper functions to calculate 3D destination to get us away from obstacle
-// v1 is NED
-Vector3f AP_Avoidance::perpendicular_xyz(const Location &p1, const Vector3f &v1, const Location &p2)
+// v1_ned is NED
+Vector3f AP_Avoidance::perpendicular_neu_m(const Location &p1, const Vector3f &v1_ned, const Location &p2)
 {
-    const Vector2f delta_p_2d = p1.get_distance_NE(p2);
-    Vector3f delta_p_xyz = Vector3f(delta_p_2d[0],delta_p_2d[1],(p2.alt-p1.alt)*0.01f); //check this line
-    Vector3f v1_xyz = Vector3f(v1[0], v1[1], -v1[2]);
-    Vector3f ret = Vector3f::perpendicular(delta_p_xyz, v1_xyz);
-    return ret;
+    const Vector2f delta_p_ne_m = p1.get_distance_NE(p2);
+    Vector3f delta_p_neu_m = Vector3f(delta_p_ne_m[0], delta_p_ne_m[1], (p2.alt - p1.alt) * 0.01f); //check this line
+    Vector3f v1_neu = Vector3f(v1_ned[0], v1_ned[1], -v1_ned[2]);
+    Vector3f ret_neu_m = Vector3f::perpendicular(delta_p_neu_m, v1_neu);
+    return ret_neu_m;
 }
-
-// helper functions to calculate horizontal destination to get us away from obstacle
-// v1 is NED
-Vector2f AP_Avoidance::perpendicular_xy(const Location &p1, const Vector3f &v1, const Location &p2)
-{
-    const Vector2f delta_p = p1.get_distance_NE(p2);
-    Vector2f delta_p_n = Vector2f(delta_p[0],delta_p[1]);
-    Vector2f v1n(v1[0],v1[1]);
-    Vector2f ret_xy = Vector2f::perpendicular(delta_p_n, v1n);
-    return ret_xy;
-}
-
 
 // singleton instance
 AP_Avoidance *AP_Avoidance::_singleton;
@@ -689,4 +679,4 @@ AP_Avoidance *ap_avoidance()
 
 }
 
-#endif // HAL_ADSB_ENABLED
+#endif // AP_ADSB_AVOIDANCE_ENABLED

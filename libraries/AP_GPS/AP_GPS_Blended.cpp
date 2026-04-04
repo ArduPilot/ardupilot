@@ -16,16 +16,12 @@
 */
 bool AP_GPS_Blended::_calc_weights(void)
 {
-    // zero the blend weights
-    memset(&_blend_weights, 0, sizeof(_blend_weights));
-
-
     static_assert(GPS_MAX_RECEIVERS == 2, "GPS blending only currently works with 2 receivers");
     // Note that the early quit below relies upon exactly 2 instances
     // The time delta calculations below also rely upon every instance being currently detected and being parsed
 
     // exit immediately if not enough receivers to do blending
-    if (gps.state[0].status <= AP_GPS::NO_FIX || gps.state[1].status <= AP_GPS::NO_FIX) {
+    if (gps.state[0].status <= AP_GPS_FixType::NONE || gps.state[1].status <= AP_GPS_FixType::NONE) {
         return false;
     }
 
@@ -60,7 +56,7 @@ bool AP_GPS_Blended::_calc_weights(void)
     float speed_accuracy_sum_sq = 0.0f;
     if (gps._blend_mask & BLEND_MASK_USE_SPD_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_3D) {
+            if (gps.state[i].status >= AP_GPS_FixType::FIX_3D) {
                 if (gps.state[i].have_speed_accuracy && gps.state[i].speed_accuracy > 0.0f) {
                     speed_accuracy_sum_sq += sq(gps.state[i].speed_accuracy);
                 } else {
@@ -76,7 +72,7 @@ bool AP_GPS_Blended::_calc_weights(void)
     float horizontal_accuracy_sum_sq = 0.0f;
     if (gps._blend_mask & BLEND_MASK_USE_HPOS_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_2D) {
+            if (gps.state[i].status >= AP_GPS_FixType::FIX_2D) {
                 if (gps.state[i].have_horizontal_accuracy && gps.state[i].horizontal_accuracy > 0.0f) {
                     horizontal_accuracy_sum_sq += sq(gps.state[i].horizontal_accuracy);
                 } else {
@@ -92,7 +88,7 @@ bool AP_GPS_Blended::_calc_weights(void)
     float vertical_accuracy_sum_sq = 0.0f;
     if (gps._blend_mask & BLEND_MASK_USE_VPOS_ACC) {
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_3D) {
+            if (gps.state[i].status >= AP_GPS_FixType::FIX_3D) {
                 if (gps.state[i].have_vertical_accuracy && gps.state[i].vertical_accuracy > 0.0f) {
                     vertical_accuracy_sum_sq += sq(gps.state[i].vertical_accuracy);
                 } else {
@@ -119,7 +115,7 @@ bool AP_GPS_Blended::_calc_weights(void)
         // calculate the weights using the inverse of the variances
         float sum_of_hpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_2D && gps.state[i].horizontal_accuracy >= 0.001f) {
+            if (gps.state[i].status >= AP_GPS_FixType::FIX_2D && gps.state[i].horizontal_accuracy >= 0.001f) {
                 hpos_blend_weights[i] = horizontal_accuracy_sum_sq / sq(gps.state[i].horizontal_accuracy);
                 sum_of_hpos_weights += hpos_blend_weights[i];
             }
@@ -139,7 +135,7 @@ bool AP_GPS_Blended::_calc_weights(void)
         // calculate the weights using the inverse of the variances
         float sum_of_vpos_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_3D && gps.state[i].vertical_accuracy >= 0.001f) {
+            if (gps.state[i].status >= AP_GPS_FixType::FIX_3D && gps.state[i].vertical_accuracy >= 0.001f) {
                 vpos_blend_weights[i] = vertical_accuracy_sum_sq / sq(gps.state[i].vertical_accuracy);
                 sum_of_vpos_weights += vpos_blend_weights[i];
             }
@@ -159,7 +155,7 @@ bool AP_GPS_Blended::_calc_weights(void)
         // calculate the weights using the inverse of the variances
         float sum_of_spd_weights = 0.0f;
         for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
-            if (gps.state[i].status >= AP_GPS::GPS_OK_FIX_3D && gps.state[i].speed_accuracy >= 0.001f) {
+            if (gps.state[i].status >= AP_GPS_FixType::FIX_3D && gps.state[i].speed_accuracy >= 0.001f) {
                 spd_blend_weights[i] = speed_accuracy_sum_sq / sq(gps.state[i].speed_accuracy);
                 sum_of_spd_weights += spd_blend_weights[i];
             }
@@ -193,6 +189,19 @@ bool AP_GPS_Blended::calc_weights()
     } else if (_blend_health_counter > 0) {
         _blend_health_counter--;
     }
+
+    // we are never healthy if we do not have any weights:
+    bool non_zero_weight_found = false;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_blend_weights[i] > 0) {
+            non_zero_weight_found = true;
+            break;
+        }
+    }
+    if (!non_zero_weight_found) {
+        return false;
+    }
+
     // stop blending if unhealthy
     return _blend_health_counter < 50;
 }
@@ -204,7 +213,7 @@ void AP_GPS_Blended::calc_state(void)
 {
     // initialise the blended states so we can accumulate the results using the weightings for each GPS receiver
     state.instance = GPS_BLENDED_INSTANCE;
-    state.status = AP_GPS::NO_FIX;
+    state.status = AP_GPS_FixType::NONE;
     state.time_week_ms = 0;
     state.time_week = 0;
     state.ground_speed = 0.0f;
@@ -327,7 +336,7 @@ void AP_GPS_Blended::calc_state(void)
 
     // Add the sum of weighted offsets to the reference location to obtain the blended location
     state.location.offset(blended_NE_offset_m.x, blended_NE_offset_m.y);
-    state.location.alt += (int)blended_alt_offset_cm;
+    state.location.offset_up_cm(blended_alt_offset_cm);
 
     // Calculate ground speed and course from blended velocity vector
     state.ground_speed = state.velocity.xy().length();
@@ -386,6 +395,13 @@ void AP_GPS_Blended::calc_state(void)
         gps.Write_GPS(GPS_BLENDED_INSTANCE);
     }
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // sanity checks
+    if (state.status > AP_GPS_FixType::NONE && !state.location.initialised()) {
+        AP_HAL::panic("status is >NO_FIX but location is zero");
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 }
 
 bool AP_GPS_Blended::get_lag(float &lag_sec) const

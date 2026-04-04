@@ -5,13 +5,11 @@ AP_FLAKE8_CLEAN
 
 '''
 
-from __future__ import print_function
-
 import os
 
-from rover import AutoTestRover
-
 import vehicle_test_suite
+
+from rover import AutoTestRover
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
@@ -87,7 +85,7 @@ class AutoTestBalanceBot(AutoTestRover):
                 if delta > 5:
                     raise NotAchievedException("wheel distance incorrect")
             self.disarm_vehicle()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.progress("Caught exception: %s" %
                           self.get_exception_stacktrace(e))
             self.disarm_vehicle()

@@ -2,7 +2,7 @@
 MCU STM32H7xx STM32H743xx
 
 # board ID for firmware load
-APJ_BOARD_ID 1146
+APJ_BOARD_ID AP_HW_AnyleafH7
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 16000000

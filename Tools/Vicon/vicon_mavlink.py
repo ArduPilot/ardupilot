@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 connect to a vicon and send mavlink vision data on UDP
 Released under GNU GPL v3 or later

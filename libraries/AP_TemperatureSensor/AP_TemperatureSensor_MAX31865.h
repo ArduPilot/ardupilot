@@ -26,14 +26,28 @@
 #if AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
 
 class AP_TemperatureSensor_MAX31865 : public AP_TemperatureSensor_Backend {
-    using AP_TemperatureSensor_Backend::AP_TemperatureSensor_Backend;
 public:
+    AP_TemperatureSensor_MAX31865(AP_TemperatureSensor &front, AP_TemperatureSensor::TemperatureSensor_State &state, AP_TemperatureSensor_Params &params);
 
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
 
     void update(void) override {};
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
+
+    // Vbias = ON (must be on for automatic mode)
+    // Conversion mode: Auto
+    // Fault Status: 1set 1 to Clear all latched faults
+    uint8_t config_register = 0b11000010;
+
+    AP_Float nominal_resistance;
+    AP_Float reference_resistance;
+
+    // Convert raw value in to temperature in deg celsius
+    float calculate_temperature(const uint16_t raw) const;
+
     void thread_tick(void);
 };
 

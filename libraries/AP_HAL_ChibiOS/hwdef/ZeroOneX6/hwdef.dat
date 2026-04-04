@@ -13,8 +13,8 @@ OSCILLATOR_HZ 16000000
 # ChibiOS system timer
 STM32_ST_USE_TIMER 2
 
-# board ID for firmware load
-APJ_BOARD_ID 5600
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ZeroOne_X6
 
 FLASH_RESERVE_START_KB 128
 
@@ -27,8 +27,6 @@ FLASH_SIZE_KB 2048
 
 # supports upto 8MBits/s
 CANFD_SUPPORTED 8
-
-env OPTIMIZE -O2
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
@@ -286,7 +284,7 @@ BARO ICP201XX I2C:0:0x64
 BARO ICP201XX I2C:2:0x63
 
 # compass
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # builtin compass on ZeroOne X6
 COMPASS RM3100 I2C:0:0x20 false ROTATION_PITCH_180
@@ -312,7 +310,7 @@ IMU Invensensev3 SPI:icm45686_2 ROTATION_NONE
 define HAL_INS_HIGHRES_SAMPLE 7
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
 
@@ -335,9 +333,6 @@ ENABLE_DFU_BOOT 1
 env BUILD_ABIN True
 
 # enable support for dshot on iomcu
-#github suggestion
-ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_highpolh.bin
-define HAL_WITH_IO_MCU_DSHOT 1
-#V6X
-#ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
-#define HAL_WITH_IO_MCU_BIDIR_DSHOT 1
+# V6X
+ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
+define HAL_WITH_IO_MCU_BIDIR_DSHOT 1

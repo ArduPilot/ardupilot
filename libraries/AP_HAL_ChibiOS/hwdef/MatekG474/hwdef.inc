@@ -15,7 +15,7 @@ define HAL_STORAGE_SIZE 1800
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_MatekG474
 
 # crystal frequency
@@ -27,14 +27,6 @@ env AP_PERIPH 1
 define SERIAL_BUFFERS_SIZE 512
 # stack for fast interrupts
 define PORT_INT_REQUIRED_STACK 64
-
-define HAL_NO_GPIO_IRQ
-define HAL_NO_MONITOR_THREAD
-define HAL_USE_RTC FALSE
-define HAL_DISABLE_LOOP_DELAY
-define HAL_NO_GCS
-define HAL_NO_LOGGING
-
 
 define DMA_RESERVE_SIZE 2048
 

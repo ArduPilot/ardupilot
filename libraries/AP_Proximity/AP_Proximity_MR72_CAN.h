@@ -1,7 +1,7 @@
 #pragma once
 #include "AP_Proximity_config.h"
 
-#if AP_PROXIMITY_MR72_ENABLED
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
@@ -28,8 +28,8 @@ public:
     bool parse_distance_message(AP_HAL::CANFrame &frame);
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override { return MR72_MAX_RANGE_M; }
-    float distance_min() const override { return MR72_MIN_RANGE_M; }
+    float distance_max_m() const override { return MR72_MAX_RANGE_M; }
+    float distance_min_m() const override { return MR72_MIN_RANGE_M; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -48,4 +48,4 @@ private:
     MultiCAN* multican_MR72;            // Allows for multiple CAN rangefinders on a single bus
 };
 
-#endif // HAL_PROXIMITY_ENABLED
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED

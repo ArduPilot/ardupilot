@@ -5,13 +5,13 @@
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
 {
     // sanity check angle max parameter
-    aparm.angle_max.set(constrain_int16(aparm.angle_max,1000,8000));
+    const float angle_max_cd = attitude_control.lean_angle_max_cd();
 
     // limit max lean angle
-    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
+    angle_max = constrain_float(angle_max, 1000, angle_max_cd);
 
-    // scale roll_in, pitch_in to ANGLE_MAX parameter range
-    float scaler = aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    // scale roll_in, pitch_in to ATC_ANGLE_MAX parameter range
+    float scaler = angle_max_cd/(float)ROLL_PITCH_INPUT_MAX;
     roll_in *= scaler;
     pitch_in *= scaler;
 
@@ -94,33 +94,54 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
         return 0.0f;
     }
 
-    float desired_rate = 0.0f;
-    float mid_stick = channel_throttle->get_control_mid();
-    float deadband_top = mid_stick + g.throttle_deadzone * gain;
-    float deadband_bottom = mid_stick - g.throttle_deadzone * gain;
-
     // ensure a reasonable throttle value
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
 
+    float mid_stick = channel_throttle->get_control_mid();
+    float deadband_top = mid_stick + g.throttle_deadzone * gain;
+    float deadband_bottom = mid_stick - g.throttle_deadzone * gain;
+
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate = get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
+        return get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate = g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        return g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
     } else {
         // must be in the deadband
-        desired_rate = 0.0f;
+        return 0.0f;
+    }
+}
+
+// behavior is similar to Sub::get_pilot_desired_climb_rate
+float Sub::get_pilot_desired_horizontal_rate(RC_Channel *channel) const
+{
+    if (failsafe.pilot_input) {
+        return 0;
     }
 
-    // desired climb rate for logging
-    desired_climb_rate = desired_rate;
+    // forward and lateral sticks have center trim, unlike throttle
+    auto control = channel->norm_input();
 
-    return desired_rate;
+    // normalize deadzone
+    auto dz = (float)g.throttle_deadzone * 2.0f / (float)(channel->get_radio_max() - channel->get_radio_min());
+    auto deadband_top = dz * gain;
+    auto deadband_bottom = -dz * gain;
+
+    if (control < deadband_bottom) {
+        // below the deadband
+        return (float)g.pilot_speed * (control - deadband_bottom);
+    } else if (control > deadband_top) {
+        // above the deadband
+        return (float)g.pilot_speed * (control - deadband_top);
+    } else {
+        // must be in the deadband
+        return 0;
+    }
 }
 
 // rotate vector from vehicle's perspective to North-East frame

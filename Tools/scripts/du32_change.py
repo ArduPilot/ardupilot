@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Parses a log file and shows how Copter's du32 changes over time
@@ -6,8 +6,6 @@ Parses a log file and shows how Copter's du32 changes over time
 AP_FLAKE8_CLEAN
 
 """
-
-from __future__ import print_function
 
 import optparse
 import sys
@@ -86,9 +84,9 @@ class DU32Change(object):
                     else:
                         print("Original %s: 0" % bit)
             else:
-                for bit in bit_descriptions.keys():
-                    old_bit_set = old_m.Value & (1 << bit_descriptions[bit])
-                    new_bit_set = m.Value & (1 << bit_descriptions[bit])
+                for bit, description in bit_descriptions.items():
+                    old_bit_set = old_m.Value & (1 << description)
+                    new_bit_set = m.Value & (1 << description)
                     if new_bit_set and not old_bit_set:
                         line += " +%s" % bit
                     elif not new_bit_set and old_bit_set:

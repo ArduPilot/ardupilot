@@ -6,7 +6,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_HAL/utility/OwnPtr.h>
 
 #ifndef HAL_BARO_BMP280_I2C_ADDR
  #define HAL_BARO_BMP280_I2C_ADDR  (0x76)
@@ -18,12 +17,12 @@
 class AP_Baro_BMP280 : public AP_Baro_Backend
 {
 public:
-    AP_Baro_BMP280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_BMP280(AP_Baro &baro, AP_HAL::Device &dev);
 
     /* AP_Baro public interface: */
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 
 private:
 
@@ -32,7 +31,7 @@ private:
     void _update_temperature(int32_t);
     void _update_pressure(int32_t);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
     uint8_t _instance;
     int32_t _t_fine;

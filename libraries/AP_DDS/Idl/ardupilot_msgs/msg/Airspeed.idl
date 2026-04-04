@@ -1,0 +1,23 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/Airspeed.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    struct Airspeed {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "True Airspeed vector in ROS REP103 axis orientation" "\n"
+        "x: forward; y: left; z: up")
+      geometry_msgs::msg::Vector3 true_airspeed;
+
+      @verbatim (language="comment", text=
+        "Equivalent to True airspeed conversion factor.")
+      float eas_2_tas;
+    };
+  };
+};

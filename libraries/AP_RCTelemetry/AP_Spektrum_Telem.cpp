@@ -521,7 +521,7 @@ void AP_Spektrum_Telem::calc_gps_location()
     _telem.gpsloc.HDOP = ((hdop % 1000 / 100) << 4) | (hdop % 100 / 10); // BCD, format 1.1
     _telem.gpsloc.GPSflags = 0;
 
-    if (AP::gps().status(0) >= AP_GPS::GPS_OK_FIX_3D) {
+    if (AP::gps().status(0) >= AP_GPS_FixType::FIX_3D) {
         _telem.gpsloc.GPSflags |= GPS_INFO_FLAGS_3D_FIX;
     }
     if (loc.alt < 0) {
@@ -536,10 +536,10 @@ void AP_Spektrum_Telem::calc_gps_location()
     if (loc.lng >= 0) {
         _telem.gpsloc.GPSflags |= GPS_INFO_FLAGS_IS_EAST;
     }
-    if (AP::gps().status(0) > AP_GPS::NO_FIX) {
+    if (AP::gps().status(0) > AP_GPS_FixType::NONE) {
         _telem.gpsloc.GPSflags |= GPS_INFO_FLAGS_GPS_FIX_VALID;
     }
-    if (AP::gps().status(0) >= AP_GPS::NO_FIX) {
+    if (AP::gps().status(0) >= AP_GPS_FixType::NONE) {
         _telem.gpsloc.GPSflags |= GPS_INFO_FLAGS_GPS_DATA_RECEIVED;
     }
     _telem_pending = true;

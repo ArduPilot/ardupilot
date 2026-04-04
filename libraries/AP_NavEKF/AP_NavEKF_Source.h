@@ -48,7 +48,9 @@ public:
     // enum for OPTIONS parameter
     enum class SourceOptions {
         FUSE_ALL_VELOCITIES = (1 << 0),                 // fuse all velocities configured in source sets
-        ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW = (1 << 1)  // align position of inactive sources to ahrs when using optical flow
+        ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW = (1 << 1),  // align position of inactive sources to ahrs when using optical flow
+        // reserved = (1 << 2),                          // reserved for future use
+        SRC_PER_CORE = (1 << 3)                         // use a separate source set for each core
     };
 
     enum class SourceSetSelection : uint8_t {
@@ -60,27 +62,41 @@ public:
     // initialisation
     void init();
 
+    // This function will get the active source set or get the source set for the core index if SRC_PER_CORE SourceOption is set
+    uint8_t getActiveSourceSet(uint8_t core_index) const {
+        // check if we are using a separate source set for each core
+        if (option_is_set(SourceOptions::SRC_PER_CORE)) {
+            if (core_index >= AP_NAKEKF_SOURCE_SET_MAX) {
+                // we need to return a valid source set
+                return active_source_set;
+            }
+            return core_index;
+        }
+        return active_source_set;
+     }
+
     // get current position source
-    SourceXY getPosXYSource() const { return _source_set[active_source_set].posxy; }
-    SourceZ getPosZSource() const;
+    SourceXY getPosXYSource(uint8_t core_index) const { return _source_set[getActiveSourceSet(core_index)].posxy; }
+
+    SourceZ getPosZSource(uint8_t core_index) const;
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void setPosVelYawSourceSet(SourceSetSelection source_set_idx);
     uint8_t getPosVelYawSourceSet() const { return active_source_set; }
 
     // get/set velocity source
-    SourceXY getVelXYSource() const { return _source_set[active_source_set].velxy; }
-    SourceZ getVelZSource() const { return _source_set[active_source_set].velz; }
+    SourceXY getVelXYSource(uint8_t core_index) const { return _source_set[getActiveSourceSet(core_index)].velxy; }
+    SourceZ getVelZSource(uint8_t core_index) const { return _source_set[getActiveSourceSet(core_index)].velz; }
 
     // true/false of whether velocity source should be used
-    bool useVelXYSource(SourceXY velxy_source) const;
-    bool useVelZSource(SourceZ velz_source) const;
+    bool useVelXYSource(SourceXY velxy_source, uint8_t core_index) const;
+    bool useVelZSource(SourceZ velz_source, uint8_t core_index) const;
 
     // true if a velocity source is configured
-    bool haveVelZSource() const;
+    bool haveVelZSource(uint8_t core_index) const;
 
     // get yaw source
-    SourceYaw getYawSource() const;
+    SourceYaw getYawSource(uint8_t core_index) const;
 
     // align position of inactive sources to ahrs
     void align_inactive_sources();
@@ -88,7 +104,7 @@ public:
     // sensor-specific helper functions
 
     // true if any source is GPS
-    bool usingGPS() const;
+    bool usingGPS(uint8_t core_index) const;
 
     // true if source parameters have been configured (used for parameter conversion)
     bool configured();

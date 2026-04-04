@@ -4,17 +4,17 @@ The Pixhawk4-Mini flight controller is sold by [Holybro](https://shop.holybro.co
 
 ## Features
 
- - STM32F765 microcontroller
- - Two IMUs: ICM20689 and BMI055
- - MS5611 SPI barometer
- - builtin I2C IST8310 magnetometer
- - microSD card slot
- - 5 UARTs plus USB
- - 8 PWM outputs
- - Two I2C and one CAN ports
- - External Buzzer
- - external safety Switch
- - dedicated power input port for external power bricks
+- STM32F765 microcontroller
+- Two IMUs: ICM20689 and BMI055
+- MS5611 SPI barometer
+- builtin I2C IST8310 magnetometer
+- microSD card slot
+- 5 UARTs plus USB
+- 8 PWM outputs
+- Two I2C and one CAN ports
+- External Buzzer
+- external safety Switch
+- dedicated power input port for external power bricks
 
 ## Pinout
 
@@ -22,12 +22,12 @@ The Pixhawk4-Mini flight controller is sold by [Holybro](https://shop.holybro.co
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> UART4 (Telem2)
- - SERIAL3 -> UART1 (GPS)
- - SERIAL4 -> UART6 (RCIN port)
- - SERIAL5 -> UART7 (debug)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> UART4 (Telem2)
+- SERIAL3 -> UART1 (GPS)
+- SERIAL4 -> UART6 (RCIN port)
+- SERIAL5 -> UART7 (debug)
 
 The Telem1 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
@@ -39,7 +39,7 @@ The UART7 connector is inside the case and labelled as debug, but is
 available as a general purpose UART with ArduPilot.
 
 ## RC Input
- 
+
 RC input is configured on the port marked PPM. This connector supports
 all RC protocols (including SBUS, DSM, ST24, SRXL and PPM). The RCIN
 port is not used for RC input.
@@ -59,10 +59,10 @@ to 11.
 
 The 11 PWM outputs are in 4 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5 and 6 in group2
- - PWM 7 and 8 in group3
- - PWM 9, 10 and 11 in group4
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
+- PWM 7 and 8 in group3
+- PWM 9, 10 and 11 in group4
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -90,32 +90,32 @@ CAP2 and CAP3 will be available for use as GPIOs.
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - PWM1 50
- - PWM2 51
- - PWM3 52
- - PWM4 53
- - PWM5 54
- - PWM6 55
- - PWM7 56
- - PWM8 57
+- PWM1 50
+- PWM2 51
+- PWM3 52
+- PWM4 53
+- PWM5 54
+- PWM6 55
+- PWM7 56
+- PWM8 57
 
 In addition the 4 pins on the servo rail marked CAP1 to CAP4 can be
 used as GPIOs. These are available as GPIOs in ArduPilot using the
 following GPIO numbers:
 
- - CAP1 58
- - CAP2 59
- - CAP3 60
- - CAP4 61
+- CAP1 58
+- CAP2 59
+- CAP3 60
+- CAP4 61
 
 ## Analog inputs
 
 The Pixhawk4-Mini has 4 analog inputs
 
- - ADC Pin0 -> Battery Voltage
- - ADC Pin1 -> Battery Current Sensor
- - ADC Pin10 -> ADC 5V Sense
- - ADC Pin11 -> ADC 3.3V Sense
+- ADC Pin0 -> Battery Voltage
+- ADC Pin1 -> Battery Current Sensor
+- ADC Pin10 -> ADC 5V Sense
+- ADC Pin11 -> ADC 3.3V Sense
 
 ## Connectors
 
@@ -123,271 +123,74 @@ Unless noted otherwise all connectors are JST GH
 
 ### TELEM port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>CTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>RTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
-
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | CTS | +3.3V |
+| 5 (blk) | RTS | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### GPS port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SERIAL3 TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SERIAL3 RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>SafetyButton</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>7 (blk)</td>
-   <td>SafetyLED</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>8 (blk)</td>
-   <td>VDD 3.3 (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>9 (blk)</td>
-   <td>Buzzer</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>10 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SERIAL3 TX (OUT) | +3.3V |
+| 3 (blk) | SERIAL3 RX (IN) | +3.3V |
+| 4 (blk) | SCL | +3.3 (pullups) |
+| 5 (blk) | SDA | +3.3 (pullups) |
+| 6 (blk) | SafetyButton | +3.3V |
+| 7 (blk) | SafetyLED | +3.3V |
+| 8 (blk) | VDD 3.3 (OUT) | +3.3V |
+| 9 (blk) | Buzzer | +3.3V |
+| 10 (blk) | GND | GND |
 
 ### TELEM2 & I2CB port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL I2C2</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA I2C2</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | SCL I2C2 | +3.3V |
+| 5 (blk) | SDA I2C2 | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### POWER1&2
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CURRENT</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>VOLTAGE</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <td>5 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (red) | VCC | +5V |
+| 3 (blk) | CURRENT | up to +3.3V |
+| 4 (blk) | VOLTAGE | up to +3.3V |
+| 5 (blk) | GND | GND |
+| 6 (blk) | GND | GND |
 
 ### RCIN port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>RCIN (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RSSI (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>VDD3.3</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | RCIN (IN) | +3.3V |
+| 3 (blk) | RSSI (IN) | +3.3V |
+| 4 (blk) | VDD3.3 | +3.3V |
+| 5 (blk) | GND | GND |
 
 ## Debug
 
 The Pixhawk4 supports SWD debugging on the debug port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>FMU VDD 3.3</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>UART TX Debug (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>UART RX Debug (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SWDIO</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SWCLK</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | FMU VDD 3.3 | +3.3V |
+| 2 (blk) | UART TX Debug (OUT) | +3.3V |
+| 3 (blk) | UART RX Debug (IN) | +3.3V |
+| 4 (blk) | SWDIO | +3.3V |
+| 5 (blk) | SWCLK | +3.3V |
+| 6 (blk) | GND | GND |
 
 ## Loading Firmware
 

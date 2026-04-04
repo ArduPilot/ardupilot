@@ -2,7 +2,7 @@
 
 #include "GPIO_Edge.h"
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
+#if HAL_LINUX_GPIO_EDGE_ENABLED
 
 const unsigned Linux::GPIO_Sysfs::pin_table[] = {
     [EDGE_GPIO_PWM1] =    500,
@@ -25,4 +25,4 @@ const uint8_t Linux::GPIO_Sysfs::n_pins = _EDGE_GPIO_MAX;
 static_assert(ARRAY_SIZE(Linux::GPIO_Sysfs::pin_table) == _EDGE_GPIO_MAX,
               "GPIO pin_table must have the same size of entries in enum edge");
 
-#endif
+#endif  // HAL_LINUX_GPIO_EDGE_ENABLED

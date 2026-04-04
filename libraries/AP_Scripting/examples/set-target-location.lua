@@ -21,7 +21,7 @@ function update()
     if pwm7 and pwm7 > 1800 then                        -- check if RC input 7 has moved high
       local mode = vehicle:get_mode()                   -- get current mode
       if not sent_target then                           -- if we haven't sent the target yet
-        if not (mode == copter_guided_mode_num) then    -- change to guided mode
+        if mode ~= copter_guided_mode_num then    -- change to guided mode
           vehicle:set_mode(copter_guided_mode_num)
         else
           local above_home = ahrs:get_home()            -- get home location
@@ -33,7 +33,7 @@ function update()
       else
 
         -- change to land mode when within 2m of home
-        if not (mode == copter_land_mode_num) then
+        if mode ~= copter_land_mode_num then
           local home = ahrs:get_home()
           local curr_loc = ahrs:get_location()
           if home and curr_loc then

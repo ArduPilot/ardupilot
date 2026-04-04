@@ -16,6 +16,12 @@ public:
     bool handle_frame(AP_HAL::CANFrame &frame) override;
 
     static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+
+    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
+        return MAV_DISTANCE_SENSOR_RADAR;
+    }
 };
 
 #endif  // AP_RANGEFINDER_USD1_CAN_ENABLED

@@ -11,13 +11,12 @@
 class AP_Compass_ExternalAHRS : public AP_Compass_Backend
 {
 public:
-    AP_Compass_ExternalAHRS(uint8_t instance);
+    using AP_Compass_Backend::AP_Compass_Backend;
 
-    void read(void) override;
+    static AP_Compass_Backend *probe(uint8_t port);
 
 private:
     void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) override;
-    uint8_t instance;
 };
 
 #endif  // AP_COMPASS_EXTERNALAHRS_ENABLED

@@ -47,7 +47,9 @@ const AP_Param::GroupInfo AP_BattMonitor_INA239::var_info[] = {
     // @Units: Ohm
     // @User: Advanced
     AP_GROUPINFO("SHUNT", 28, AP_BattMonitor_INA239, rShunt, HAL_BATTMON_INA239_SHUNT_RESISTANCE),
-    
+
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
+
     AP_GROUPEND
 };
 
@@ -62,7 +64,7 @@ AP_BattMonitor_INA239::AP_BattMonitor_INA239(AP_BattMonitor &mon,
 
 void AP_BattMonitor_INA239::init(void)
 {
-    dev = hal.spi->get_device(AP_BATTERY_INA239_SPI_DEVICE);
+    dev = hal.spi->get_device_ptr(AP_BATTERY_INA239_SPI_DEVICE);
     if (!dev) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "device fail");
         return;

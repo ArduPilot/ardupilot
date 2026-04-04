@@ -27,7 +27,7 @@ function update()
     if pwm6 and pwm6 > 1800 then    -- check if RC6 input has moved high
       if (stage == 0) then          -- change to guided mode
         if (vehicle:set_mode(copter_guided_mode_num)) then  -- change to Guided mode
-          local yaw_rad = ahrs:get_yaw()
+          local yaw_rad = ahrs:get_yaw_rad()
           yaw_cos = math.cos(yaw_rad)
           yaw_sin = math.sin(yaw_rad)
           stage = stage + 1

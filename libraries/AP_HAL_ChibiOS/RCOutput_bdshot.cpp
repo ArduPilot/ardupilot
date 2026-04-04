@@ -121,7 +121,7 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
             // when switching from output to input
 #if defined(STM32F1)
             // on F103 the line mode has to be managed manually
-            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medieum speed on other MCUs
+            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medium speed on other MCUs
             palSetLineMode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
 #else
             palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
@@ -367,7 +367,7 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     dmaStreamSetMode(ic_dma,
                     STM32_DMA_CR_CHSEL(group->dma_ch[curr_ch].channel) |
                     STM32_DMA_CR_DIR_P2M |
-                    STM32_DMA_CR_PSIZE_WORD |
+                    STM32_DMA_CR_PSIZE_WORD |   // transactions are read in word (dmar_uint_t) size
                     STM32_DMA_CR_MSIZE_WORD |
                     STM32_DMA_CR_MINC | STM32_DMA_CR_PL(3) |
                     STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
@@ -496,6 +496,13 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif
+    osalDbgAssert(group->dshot_waiter, "No dshot waiter to signal");
+
+    if (group->dshot_waiter == nullptr) {   // transaction was cancelled, leave everything alone
+        chSysUnlockFromISR();
+        return;
+    }
+
     uint8_t curr_telem_chan = group->bdshot.curr_telem_chan;
 
     // the DMA buffer is either the regular outbound one because we are sharing UP and CH
@@ -508,7 +515,8 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     group->bdshot.dma_tx_size = MIN(uint16_t(GCR_TELEMETRY_BIT_LEN),
         GCR_TELEMETRY_BIT_LEN - dmaStreamGetTransactionSize(dma));
 
-    stm32_cacheBufferInvalidate(group->dma_buffer, group->bdshot.dma_tx_size);
+    // flush / invalidate all the data we are going to read
+    stm32_cacheBufferInvalidate(group->dma_buffer, ((sizeof(dmar_uint_t) * group->bdshot.dma_tx_size)+31)&~31);
     memcpy(group->bdshot.dma_buffer_copy, group->dma_buffer, sizeof(dmar_uint_t) * group->bdshot.dma_tx_size);
 
 #ifdef HAL_TIM_UP_SHARED
@@ -542,6 +550,8 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
 
     // tell the waiting process we've done the DMA
     chEvtSignalI(group->dshot_waiter, group->dshot_event_mask);
+    group->dshot_waiter = nullptr;
+
 #ifdef HAL_GPIO_LINE_GPIO56
     TOGGLE_PIN_DEBUG(56);
 #endif
@@ -636,8 +646,10 @@ __RAMFUNC__ void RCOutput::dma_up_irq_callback(void *p, uint32_t flags)
 
     if (soft_serial_waiting()) {
 #if HAL_SERIAL_ESC_COMM_ENABLED
-        // tell the waiting process we've done the DMA
-        chEvtSignalI(irq.waiter, serial_event_mask);
+        if (group->in_serial_dma) {
+            // tell the waiting process we've done the DMA
+            chEvtSignalI(irq.waiter, serial_event_mask);
+        }
 #endif
     } else if (!group->in_serial_dma && group->bdshot.enabled) {
         group->dshot_state = DshotState::SEND_COMPLETE;

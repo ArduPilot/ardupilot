@@ -50,6 +50,7 @@ void Gimbal::update(const class Aircraft &aircraft)
     const Matrix3f &vehicle_dcm = aircraft.get_dcm();
     if (!init_done) {
         dcm = vehicle_dcm;
+        init_done = true;
     }
 
     const Vector3f &vehicle_gyro = AP::ins().get_gyro();

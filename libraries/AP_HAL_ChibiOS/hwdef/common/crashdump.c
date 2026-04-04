@@ -97,7 +97,7 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void);
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 {
     // do a full dump if on serial
-    static CrashCatcherMemoryRegion regions[60] = {
+    static CrashCatcherMemoryRegion regions[80] = {
     {(uint32_t)&__ram0_start__, (uint32_t)&__ram0_end__, CRASH_CATCHER_BYTE},
     {(uint32_t)&ch_system, (uint32_t)&ch_system + sizeof(ch_system), CRASH_CATCHER_BYTE}};
     uint32_t total_dump_size = dump_size + buf_off + REMAINDER_MEM_REGION_SIZE;
@@ -138,7 +138,7 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
     // log statically alocated memory
     int32_t bss_size = ((uint32_t)&__bss_end__) - ((uint32_t)&__bss_base__);
     int32_t available_space = stm32_crash_dump_max_size() - total_dump_size;
-    if (available_space < 0) {
+    if (available_space < 0 || curr_region >= (ARRAY_SIZE(regions) - 1)) {
         // we can't log anymore than this
         goto finalise;
     }
@@ -157,7 +157,7 @@ const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
     // dump the Heap as well as much as we can
     int32_t heap_size = ((uint32_t)&__heap_end__) - ((uint32_t)&__heap_base__);
     available_space = stm32_crash_dump_max_size() - total_dump_size;
-    if (available_space < 0) {
+    if (available_space < 0 || curr_region >= (ARRAY_SIZE(regions) - 1)) {
         // we can't log anymore than this
         goto finalise;
     }

@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+
+def build(bld):
+
+    if bld.env.BOARD != 'sitl':
+        return
+
+    bld.ap_stlib(
+        name='AP_FW_Controller_test_libs',
+        ap_vehicle='UNKNOWN',
+        ap_libraries=bld.ap_common_vehicle_libraries() + [
+            'SITL',
+            'APM_Control',
+            'AP_AdvancedFailsafe',
+            'AP_Avoidance',
+        ],
+    )
+
+    bld.ap_program(
+        use='AP_FW_Controller_test_libs',
+        program_groups=['examples'],
+    )

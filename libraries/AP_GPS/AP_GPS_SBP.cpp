@@ -30,7 +30,6 @@
 extern const AP_HAL::HAL& hal;
 
 #define SBP_DEBUGGING 1
-#define SBP_HW_LOGGING HAL_LOGGING_ENABLED
 
 #define SBP_TIMEOUT_HEATBEAT  4000
 #define SBP_TIMEOUT_PVT       500
@@ -59,7 +58,7 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps,
     parser_state.state = sbp_parser_state_t::WAITING;
 
     //Externally visible state
-    state.status = AP_GPS::NO_FIX;
+    state.status = AP_GPS_FixType::NONE;
     state.last_gps_time_ms = last_heatbeat_received_ms = AP_HAL::millis();
 
 }
@@ -232,10 +231,6 @@ AP_GPS_SBP::_sbp_process_message() {
             // The log mask will be used to adjust or suppress logging
             break;
     }
-
-#if SBP_HW_LOGGING
-    logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
-#endif
 }
 
 bool
@@ -252,7 +247,7 @@ AP_GPS_SBP::_attempt_state_update()
 
     if (now - last_heatbeat_received_ms > SBP_TIMEOUT_HEATBEAT) {
 
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
         Debug("No Heartbeats from Piksi! Driver Ready to Die!");
 
     } else if (last_pos_llh_rtk.tow == last_vel_ned.tow
@@ -285,18 +280,18 @@ AP_GPS_SBP::_attempt_state_update()
         state.num_sats          = pos_llh->n_sats;
 
         if (pos_llh->flags == 0) {
-            state.status = AP_GPS::GPS_OK_FIX_3D;
+            state.status = AP_GPS_FixType::FIX_3D;
         } else if (pos_llh->flags == 2) {
-            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+            state.status = AP_GPS_FixType::RTK_FLOAT;
         } else if (pos_llh->flags == 1) {
-            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+            state.status = AP_GPS_FixType::RTK_FIXED;
         }
 
         last_full_update_tow = last_vel_ned.tow;
         last_full_update_cpu_ms = now;
         state.rtk_iar_num_hypotheses = last_iar_num_hypotheses;
 
-#if SBP_HW_LOGGING
+#if HAL_LOGGING_ENABLED
         logging_log_full_update();
 #endif
         ret = true;
@@ -305,7 +300,7 @@ AP_GPS_SBP::_attempt_state_update()
 
         //INVARIANT: If we currently have a fix, ONLY return true after a full update.
 
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
         ret = true;
 
     } else {
@@ -395,8 +390,7 @@ AP_GPS_SBP::_detect(struct SBP_detect_state &state, uint8_t data)
     return false;
 }
 
-#if SBP_HW_LOGGING
-
+#if HAL_LOGGING_ENABLED
 void
 AP_GPS_SBP::logging_log_full_update()
 {
@@ -415,54 +409,6 @@ AP_GPS_SBP::logging_log_full_update()
 
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
+#endif // HAL_LOGGING_ENABLED
 
-void
-AP_GPS_SBP::logging_log_raw_sbp(uint16_t msg_type,
-        uint16_t sender_id,
-        uint8_t msg_len,
-        uint8_t *msg_buff) {
-    if (!should_log()) {
-        return;
-    }
-
-    //MASK OUT MESSAGES WE DON'T WANT TO LOG
-    if (( ((uint16_t) gps._sbp_logmask) & msg_type) == 0) {
-        return;
-    }
-
-    uint64_t time_us = AP_HAL::micros64();
-    uint8_t pages = 1;
-
-    if (msg_len > 48) {
-        pages += (msg_len - 48) / 104 + 1;
-    }
-
-    struct log_SbpRAWH pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
-        time_us         : time_us,
-        msg_type        : msg_type,
-        sender_id       : sender_id,
-        index           : 1,
-        pages           : pages,
-        msg_len         : msg_len,
-    };
-    memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
-
-    for (uint8_t i = 0; i < pages - 1; i++) {
-        struct log_SbpRAWM pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
-            time_us         : time_us,
-            msg_type        : msg_type,
-            sender_id       : sender_id,
-            index           : uint8_t(i + 2),
-            pages           : pages,
-            msg_len         : msg_len,
-        };
-        memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
-        AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
-    }
-};
-
-#endif // SBP_HW_LOGGING
 #endif // AP_GPS_SBP_ENABLED

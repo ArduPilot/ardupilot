@@ -32,8 +32,9 @@ using namespace Linux;
 
 static void catch_sigbus(int sig)
 {
-    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error generated\n");
+    AP_HAL::panic("RCOutputAioPRU.cpp:SIGBUS error generated");
 }
+
 void RCOutput_AioPRU::init()
 {
    uint32_t mem_fd;
@@ -53,7 +54,6 @@ void RCOutput_AioPRU::init()
    // Reset PRU
    *ctrl = 0;
 
-   // Load firmware
    memcpy(iram, PRUcode, sizeof(PRUcode));
 
    // Start PRU

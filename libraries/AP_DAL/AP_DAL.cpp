@@ -8,6 +8,7 @@
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_NavEKF3/AP_NavEKF3_feature.h>
+#include <AP_NavEKF/AP_Nav_Common.h>
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #include <AP_NavEKF2/AP_NavEKF2.h>
@@ -78,7 +79,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.opticalflow_enabled = AP::opticalflow() && AP::opticalflow()->enabled();
 #endif
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
-    _RFRN.ekf_type = ahrs.get_ekf_type();
+    _RFRN.ekf_type = int8_t(ahrs.configured_ekf_type());
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
     // update body conversion
@@ -419,7 +420,21 @@ void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vec
     _RBOH.delAng = delAng;
     _RBOH.delTime = delTime;
     _RBOH.timeStamp_ms = timeStamp_ms;
+    _RBOH.posOffset = posOffset;
+    _RBOH.delay_ms = delay_ms;
     WRITE_REPLAY_BLOCK_IFCHANGED(RBOH, _RBOH, old);
+}
+
+// Write terrain altitude (derived from SRTM) in meters above the origin
+void AP_DAL::writeTerrainData(float alt_m)
+{
+#if EK3_FEATURE_OPTFLOW_SRTM
+    end_frame();
+
+    const log_RTER old = _RTER;
+    _RTER.alt_m = alt_m;
+    WRITE_REPLAY_BLOCK_IFCHANGED(RTER, _RTER, old);
+#endif
 }
 
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -518,6 +533,18 @@ void AP_DAL::handle_message(const log_RBOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 }
 
 /*
+ * handle terrain altitude data message
+ */
+void AP_DAL::handle_message(const log_RTER &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
+{
+#if EK3_FEATURE_OPTFLOW_SRTM
+    _RTER = msg;
+    // note that EKF2 does not accept the terrain altitude
+    ekf3.writeTerrainData(msg.alt_m);
+#endif
+}
+
+/*
   handle position reset
  */
 void AP_DAL::handle_message(const log_RSLL &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
@@ -554,6 +581,9 @@ void rprintf(const char *format, ...)
     static FILE *f;
     if (!f) {
         f = ::fopen(fname, "w");
+    }
+    if (!f) {
+        return;
     }
     va_list ap;
     va_start(ap, format);

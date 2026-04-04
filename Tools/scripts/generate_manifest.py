@@ -1,30 +1,23 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from __future__ import print_function
+'''
+AP_FLAKE8_CLEAN
+'''
 
-import copy
 import fnmatch
-import gen_stable
 import gzip
 import json
 import os
+import pathlib
 import re
-import subprocess
 import shutil
+import subprocess
 import sys
 
-if sys.version_info[0] < 3:
-    running_python3 = False
-    running_python310 = False
-elif sys.version_info[1] < 10:
-    running_python3 = True
-    running_python310 = False
-else:
-    running_python3 = True
-    running_python310 = True
+import gen_stable
 
 FIRMWARE_TYPES = ["AntennaTracker", "Copter", "Plane", "Rover", "Sub", "AP_Periph", "Blimp"]
-RELEASE_TYPES = ["beta", "beta-4.3", "latest", "stable", "stable-*", "dirty"]
+RELEASE_TYPES = ["beta", "latest", "stable", "stable-*", "dirty"]
 
 # mapping for board names to brand name and manufacturer
 brand_map = {
@@ -106,8 +99,14 @@ brand_map = {
     "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
     "MicoAir405v2" : ("MicoAir F405 v2.1", "MicoAir"),
     "MicoAir405Mini" : ("MicoAir F405 Mini", "MicoAir"),
-    "GEPRCF745BTHD": ("TAKER F745 BT","GEPRC"),
+    "MicoAir743" : ("MicoAir H743 v1.3", "MicoAir"),
+    "MicoAir743-AIO" : ("MicoAir H743 AIO", "MicoAir"),
+    "MicoAir743v2" : ("MicoAir H743 v2.0", "MicoAir"),
+    "MicoAir743-Lite" : ("MicoAir H743 Lite v1.1", "MicoAir"),
+    "GEPRCF745BTHD": ("TAKER F745 BT", "GEPRC"),
+    "GEPRC_TAKER_H743": ("TAKER H743 BT", "GEPRC"),
 }
+
 
 class Firmware():
     def __init__(self,
@@ -184,7 +183,7 @@ class ManifestGenerator():
     def git_sha_from_git_version(self, filepath):
         '''parses get-version.txt (as emitted by build_binaries.py, returns
         git sha from it'''
-        content = open(filepath).read()
+        content = pathlib.Path(filepath).read_text()
         sha_regex = re.compile("commit (?P<sha>[0-9a-f]+)")
         m = sha_regex.search(content)
         if m is None:
@@ -195,14 +194,14 @@ class ManifestGenerator():
     def fwversion_from_git_version(self, filepath):
         '''parses get-version.txt (as emitted by build_binaries.py, returns
         git sha from it'''
-        content = open(filepath).read()
-        sha_regex = re.compile("APMVERSION: \S+\s+(\S+)")
+        content = pathlib.Path(filepath).read_text()
+        sha_regex = re.compile(r"APMVERSION: \S+\s+(\S+)")
         m = sha_regex.search(content)
         if m is None:
             raise Exception(
                 "filepath (%s) does not contain an APMVERSION" % (filepath,))
         return m.group(1)
-    
+
     def add_USB_IDs_PX4(self, firmware):
         '''add USB IDs to a .px4 firmware'''
         url = firmware['url']
@@ -231,7 +230,8 @@ class ManifestGenerator():
         if not os.path.exists(apj_path):
             print("bad apj path %s" % apj_path, file=sys.stderr)
             return
-        apj_json = json.load(open(apj_path, 'r'))
+        with open(apj_path, 'r') as in_file:
+            apj_json = json.load(in_file)
         if 'board_id' not in apj_json:
             print("no board_id in %s" % apj_path, file=sys.stderr)
             return
@@ -304,14 +304,14 @@ class ManifestGenerator():
             # special case for 6C, they always get the px4 bootloader IDs as an option
             firmware['bootloader_str'].append('PX4 BL FMU v6C.x')
             firmware['USBID'].append('0x3185/0x0038')
-            
+
         if platform in brand_map:
             (brand_name, manufacturer) = brand_map[platform]
             firmware['brand_name'] = brand_name
             firmware['manufacturer'] = manufacturer
 
         # copy over some extra information if available
-        extra_tags = [ 'image_size', 'brand_name', 'manufacturer' ]
+        extra_tags = ['image_size', 'brand_name', 'manufacturer']
         for tag in extra_tags:
             if tag in apj_json:
                 firmware[tag] = apj_json[tag]
@@ -332,8 +332,7 @@ class ManifestGenerator():
             return "".join(filename.split(".")[-1:])
         # no extension; ensure this is an elf:
         text = subprocess.check_output(["file", "-b", filepath])
-        if running_python3:
-            text = text.decode('ascii')
+        text = text.decode('ascii')
 
         if re.match("^ELF", text):
             return "ELF"
@@ -347,12 +346,12 @@ class ManifestGenerator():
                                    vehicletype,
                                    releasetype="dev"):
         '''accumulate additional information about firmwares from directory'''
-        variant_firmware_regex = re.compile("[^-]+-(?P<variant>v\d+)[.px4]")
+        variant_firmware_regex = re.compile(r"[^-]+-(?P<variant>v\d+)[.px4]")
         if not os.path.isdir(dir):
             return
         try:
             dlist = os.listdir(dir)
-        except Exception:
+        except OSError:
             print("Error listing '%s'" % dir)
             return
         for platformdir in dlist:
@@ -367,12 +366,12 @@ class ManifestGenerator():
                 continue
             try:
                 git_sha = self.git_sha_from_git_version(git_version_txt)
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 print("Failed to parse %s" % git_version_txt, ex, file=sys.stderr)
                 continue
             try:
                 fwversion_str = self.fwversion_from_git_version(git_version_txt)
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 print("Failed to parse APMVERSION %s" % git_version_txt, ex, file=sys.stderr)
                 continue
 
@@ -385,13 +384,13 @@ class ManifestGenerator():
                 continue
 
             try:
-                firmware_version = open(firmware_version_file).read()
-                firmware_version = firmware_version.strip()
-                (_, _) = firmware_version.split("-")
+                with open(firmware_version_file) as in_file:
+                    firmware_version = in_file.read()
+                (_, _) = firmware_version.strip().split("-")
             except ValueError:
                 print("malformed firmware-version.txt at (%s)" % (firmware_version_file,), file=sys.stderr)
                 continue
-            except Exception as ex:
+            except OSError:
                 print("bad file %s" % firmware_version_file, file=sys.stderr)
                 # this exception is swallowed.... the current archive
                 # is incomplete.
@@ -413,7 +412,8 @@ class ManifestGenerator():
             features_text = None
             features_filepath = os.path.join(some_dir, "features.txt")
             if os.path.exists(features_filepath):
-                features_text = sorted(open(features_filepath).read().rstrip().split("\n"))
+                with open(features_filepath) as in_file:
+                    features_text = sorted(in_file.read().rstrip().split("\n"))
 
             for filename in os.listdir(some_dir):
                 if filename in ["git-version.txt", "firmware-version.txt", "files.html", "features.txt"]:
@@ -434,7 +434,7 @@ class ManifestGenerator():
 
                 filepath = os.path.join(some_dir, filename)
                 firmware_format = self.firmware_format_for_filepath(filepath)
-                if firmware_format not in [ "elf", "ELF", "abin", "apj", "hex", "px4", "bin" ]:
+                if firmware_format not in ["elf", "ELF", "abin", "apj", "hex", "px4", "bin"]:
                     print("Unknown firmware format (%s)" % firmware_format)
 
                 firmware = Firmware()
@@ -486,7 +486,7 @@ class ManifestGenerator():
     def walk_directory(self, basedir):
         '''walks directory structure created by build_binaries, returns Python
         structure representing releases in that structure'''
-        year_month_regex = re.compile("(?P<year>\d{4})-(?P<month>\d{2})")
+        year_month_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})")
 
         firmwares = []
 
@@ -517,7 +517,7 @@ class ManifestGenerator():
                 tag = firstlevel
                 if not self.valid_release_type(tag):
                     print("Unknown tag (%s) in directory (%s)" %
-                          (tag, os.path.join(vdir)), file=sys.stderr)
+                          (tag, os.path.join(*vdir)), file=sys.stderr)
                     continue
                 tag_path = os.path.join(basedir, vehicletype, tag)
                 if not os.path.isdir(tag_path):
@@ -554,7 +554,7 @@ class ManifestGenerator():
                 try:
                     (major, minor, patch, release_type) = self.parse_fw_version(
                         firmware["firmware-version"])
-                except Exception:
+                except ValueError:
                     print("Badly formed firmware-version.txt %s" % firmware["firmware-version"], file=sys.stderr)
                     continue
                 some_json["mav-firmware-version"] = ".".join([major,
@@ -566,7 +566,6 @@ class ManifestGenerator():
 
             self.add_USB_IDs(some_json)
 
-            #print(some_json['url'])
             firmware_json.append(some_json)
 
             # now the features the firmware supports...
@@ -574,8 +573,8 @@ class ManifestGenerator():
                 features = firmware["features"]
                 # check apj here in case we're creating bin and apj etc:
                 if (firmware["format"] == "apj" and
-                    features is not None and
-                    bool(firmware["latest"])):
+                        features is not None and
+                        bool(firmware["latest"])):
                     x = dict({
                         "vehicletype": firmware["vehicletype"],
                         "platform": firmware["platform"],
@@ -632,8 +631,7 @@ class ManifestGenerator():
         # "gzip -9"s to 300k in 1 second, "xz -e"s to 80k in 26 seconds
         new_json_filepath_gz = path + ".gz.new"
         with gzip.open(new_json_filepath_gz, 'wb') as gf:
-            if running_python3:
-                content = bytes(content, 'ascii')
+            content = bytes(content, 'ascii')
             gf.write(content)
             gf.close()
         shutil.move(new_json_filepath, path)
@@ -646,6 +644,7 @@ class ManifestGenerator():
     def write_features_json(self, path):
         '''write generated features JSON content to path'''
         self.write_json(self.json_features(), path)
+
 
 def usage():
     return '''Usage:

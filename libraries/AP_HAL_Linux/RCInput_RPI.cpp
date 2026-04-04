@@ -290,7 +290,7 @@ void RCInput_RPI::set_physical_addresses()
         clk_base = RCIN_RPI_RPI4_CLK_BASE;
         pcm_base = RCIN_RPI_RPI4_PCM_BASE;
     } else {
-        fprintf(stderr,"Unknown Linux Board version!\n");
+        fprintf(stderr,"Unknown Linux Board version: %i\n", int(_version));
         exit(-1);
     }
 }

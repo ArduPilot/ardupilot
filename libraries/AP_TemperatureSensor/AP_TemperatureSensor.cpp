@@ -19,7 +19,9 @@
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#ifndef AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
 #define AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED (!(APM_BUILD_TYPE(APM_BUILD_ArduSub) || (AP_TEMPERATURE_SENSOR_ENABLED == 1)))
+#endif
 
 
 #if !AP_TEMPERATURE_SENSOR_DUMMY_METHODS_ENABLED
@@ -30,6 +32,8 @@
 #include "AP_TemperatureSensor_MAX31865.h"
 #include "AP_TemperatureSensor_Analog.h"
 #include "AP_TemperatureSensor_DroneCAN.h"
+#include "AP_TemperatureSensor_MLX90614.h"
+#include "AP_TemperatureSensor_SHT3x.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -57,6 +61,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 1_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 1_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 1_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_", 19, AP_TemperatureSensor, backend_var_info[0]),
 
 #if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 2
@@ -66,6 +74,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 2_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 2_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 2_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_", 20, AP_TemperatureSensor, backend_var_info[1]),
 #endif
 
@@ -76,6 +88,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 3_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 3_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 3_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_", 21, AP_TemperatureSensor, backend_var_info[2]),
 #endif
 
@@ -86,6 +102,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 4_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 4_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 4_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_", 22, AP_TemperatureSensor, backend_var_info[3]),
 #endif
 
@@ -96,6 +116,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 5_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 5_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 5_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_", 23, AP_TemperatureSensor, backend_var_info[4]),
 #endif
 
@@ -106,6 +130,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 6_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 6_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 6_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[5], "6_", 24, AP_TemperatureSensor, backend_var_info[5]),
 #endif
 
@@ -116,6 +144,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 7_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 7_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 7_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[6], "7_", 25, AP_TemperatureSensor, backend_var_info[6]),
 #endif
 
@@ -126,6 +158,10 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 8_
     // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 8_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 8_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
     AP_SUBGROUPVARPTR(drivers[7], "8_", 26, AP_TemperatureSensor, backend_var_info[7]),
 #endif
 
@@ -136,7 +172,95 @@ const AP_Param::GroupInfo AP_TemperatureSensor::var_info[] = {
 
     // @Group: 9_
     // @Path: AP_TemperatureSensor_Analog.cpp
-    AP_SUBGROUPVARPTR(drivers[8], "9_", 26, AP_TemperatureSensor, backend_var_info[8]),
+    // @Group: 9_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 9_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
+    AP_SUBGROUPVARPTR(drivers[8], "9_", 27, AP_TemperatureSensor, backend_var_info[8]),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 10
+    // @Group: 10_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[9], "10_", 28, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 10_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 10_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 10_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
+    AP_SUBGROUPVARPTR(drivers[9], "10_", 29, AP_TemperatureSensor, backend_var_info[9]),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 11
+    // @Group: 11_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[10], "11_", 30, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 11_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 11_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 11_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
+    AP_SUBGROUPVARPTR(drivers[10], "11_", 31, AP_TemperatureSensor, backend_var_info[10]),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 12
+    // @Group: 12_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[11], "12_", 32, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 12_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 12_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 12_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
+    AP_SUBGROUPVARPTR(drivers[11], "12_", 33, AP_TemperatureSensor, backend_var_info[11]),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 13
+    // @Group: 13_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[12], "13_", 34, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 13_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 13_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 13_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
+    AP_SUBGROUPVARPTR(drivers[12], "13_", 35, AP_TemperatureSensor, backend_var_info[12]),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 14
+    // @Group: 14_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[13], "14_", 36, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 14_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 14_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 14_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
+    AP_SUBGROUPVARPTR(drivers[13], "14_", 37, AP_TemperatureSensor, backend_var_info[13]),
+#endif
+
+#if AP_TEMPERATURE_SENSOR_MAX_INSTANCES >= 15
+    // @Group: 15_
+    // @Path: AP_TemperatureSensor_Params.cpp
+    AP_SUBGROUPINFO(_params[14], "15_", 38, AP_TemperatureSensor, AP_TemperatureSensor_Params),
+
+    // @Group: 15_
+    // @Path: AP_TemperatureSensor_Analog.cpp
+    // @Group: 15_
+    // @Path: AP_TemperatureSensor_DroneCAN.cpp
+    // @Group: 15_
+    // @Path: AP_TemperatureSensor_MAX31865.cpp
+    AP_SUBGROUPVARPTR(drivers[14], "15_", 39, AP_TemperatureSensor, backend_var_info[14]),
 #endif
 
     AP_GROUPEND
@@ -185,10 +309,16 @@ void AP_TemperatureSensor::init()
                 break;
 #endif
 #if AP_TEMPERATURE_SENSOR_MAX31865_ENABLED
-            case AP_TemperatureSensor_Params::Type::MAX31865:
+            case AP_TemperatureSensor_Params::Type::MAX31865_2_or_4_wire:
+            case AP_TemperatureSensor_Params::Type::MAX31865_3_wire:
                 drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_MAX31865(*this, _state[instance], _params[instance]);
                 break;
 #endif
+#if AP_TEMPERATURE_SENSOR_SHT3X_ENABLED
+            case AP_TemperatureSensor_Params::Type::SHT3x:
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_SHT3x(*this, _state[instance], _params[instance]);
+                break;
+#endif  // AP_TEMPERATURE_SENSOR_SHT3X_ENABLED
 #if AP_TEMPERATURE_SENSOR_TSYS03_ENABLED
             case AP_TemperatureSensor_Params::Type::TSYS03:
                 drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_TSYS03(*this, _state[instance], _params[instance]);
@@ -202,6 +332,11 @@ void AP_TemperatureSensor::init()
 #if AP_TEMPERATURE_SENSOR_DRONECAN_ENABLED
             case AP_TemperatureSensor_Params::Type::DRONECAN:
                 drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_DroneCAN(*this, _state[instance], _params[instance]);
+                break;
+#endif
+#if AP_TEMPERATURE_SENSOR_MLX90614_ENABLED
+            case AP_TemperatureSensor_Params::Type::MLX90614:
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_MLX90614(*this, _state[instance], _params[instance]);
                 break;
 #endif
             case AP_TemperatureSensor_Params::Type::NONE:

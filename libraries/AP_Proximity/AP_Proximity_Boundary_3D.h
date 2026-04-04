@@ -170,8 +170,8 @@ private:
     Vector3f _sector_edge_vector[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
     Vector3f _boundary_points[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];
 
-    float _angle[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // yaw angle in degrees to closest object within each sector and layer
-    float _pitch[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
+    float _angle_deg[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // yaw angle in degrees to closest object within each sector and layer
+    float _pitch_deg[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
     float _distance[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];       // distance to closest object within each sector and layer
     bool _distance_valid[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // true if a valid distance received for each sector and layer
     uint32_t _last_update_ms[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS]; // time when distance was last updated
@@ -195,8 +195,8 @@ public:
 
     // add a distance to the temp boundary if it is shorter than any other provided distance since the last time the boundary was reset
     // pitch and yaw are in degrees, distance is in meters
-    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch, float yaw, float distance);
-    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw, float distance) { add_distance(face, 0.0f, yaw, distance); }
+    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float pitch_deg, float yaw_deg, float distance_m);
+    void add_distance(const AP_Proximity_Boundary_3D::Face &face, float yaw_deg, float distance_m) { add_distance(face, 0.0f, yaw_deg, distance_m); }
 
     // fill the original 3D boundary with the contents of this temporary boundary
     // prx_instance should be set to the proximity sensor's backend instance number
@@ -204,7 +204,7 @@ public:
 
 private:
 
-    float _distances[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];      // distance to closest object within each sector and layer. Will start with FLT_MAX, and then be changed to a valid distance if needed
-    float _angle[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // yaw angle in degrees to closest object within each sector and layer
-    float _pitch[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];          // pitch angle in degrees to the closest object within each sector and layer
+    float _distances[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // distance to closest object within each sector and layer. Will start with FLT_MAX, and then be changed to a valid distance if needed
+    float _angle_deg[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];  // yaw angle in degrees to closest object within each sector and layer
+    float _pitch_deg[PROXIMITY_NUM_LAYERS][PROXIMITY_NUM_SECTORS];      // pitch angle in degrees to the closest object within each sector and layer
 };

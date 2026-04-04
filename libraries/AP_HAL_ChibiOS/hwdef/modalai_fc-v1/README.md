@@ -1,6 +1,6 @@
 # ModalAI Flight Core v1 Controller
 
-The [ModalAI](http://www.modalai.com/) FlightCore is a flight controller made in the USA. 
+The [ModalAI](http://www.modalai.com/) FlightCore is a flight controller made in the USA.
 The Flight Core can be paired with ModalAI VOXL for obstacle avoidance and GPS-denied navigation, or used independently as a standalone flight controller.
 
 Buy [Here](https://www.modalai.com/products/flight-core)
@@ -37,7 +37,6 @@ See Flight Core Datasheet [Here](https://docs.modalai.com/flight-core-datasheets
 |                  | I2C                                                                                                                                                             |
 |                  | GPIO                                                                                                                                                            |
 
-
 ## Pinout
 
 ![ModalAI_v1 Board](fc-overlay-top-144-dpi.jpg "ModalAI_v1")
@@ -59,15 +58,15 @@ For detailed pinout descriptions see [FlightCore Pinout](https://docs.modalai.co
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART7 (Telem1)
- - SERIAL2 -> UART5 (Telem2)
- - SERIAL3 -> USART1 (GPS)
- - SERIAL4 -> UART4 (GPS2)
- - SERIAL5 -> USART2
- - SERIAL6 -> USART6 (spektrum RCIN)
- - SERIAL7 -> USART3
- - SERIAL8 -> USB2
+- SERIAL0 -> USB
+- SERIAL1 -> UART7 (Telem1)
+- SERIAL2 -> UART5 (Telem2)
+- SERIAL3 -> USART1 (GPS)
+- SERIAL4 -> UART4 (GPS2)
+- SERIAL5 -> USART2
+- SERIAL6 -> USART6 (spektrum RCIN)
+- SERIAL7 -> USART3
+- SERIAL8 -> USB2
 
 ## RC Input
 
@@ -83,8 +82,8 @@ The ModalAI_v1 supports up to 8 PWM outputs on the PWM output connector
 
 The PWM is in 2 groups:
 
- - PWM 1, 2, 3, 4 in group1
- - PWM 5, 6, 7, 8 in group2
+- PWM 1, 2, 3, 4 in group1
+- PWM 5, 6, 7, 8 in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -102,4 +101,3 @@ set BATTERY_MONITOR to 22.
 
 The ModalAI_v1 does not have a built-in compass, but you can attach an
 external compass
-

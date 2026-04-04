@@ -50,9 +50,9 @@ struct Param_header {
     uint32_t group_element : 18;
 };
 
-static const uint16_t       _sentinal_key   = 0x1FF;
-static const uint8_t        _sentinal_type  = 0x1F;
-static const uint8_t        _sentinal_group = 0xFF;
+static const uint16_t       _sentinel_key   = 0x1FF;
+static const uint8_t        _sentinel_type  = 0x1F;
+static const uint8_t        _sentinel_group = 0xFF;
 
 static uint8_t type_size(enum ap_var_type type)
 {
@@ -121,8 +121,8 @@ main(int argc, char *argv[])
         uint8_t size;
         var = (struct Param_header *)&eeprom[index];
         const uint16_t key = ((uint16_t)var->key_high)<<8 | var->key_low;
-        if (key == _sentinal_key ||
-            var->type == _sentinal_type) {
+        if (key == _sentinel_key ||
+            var->type == _sentinel_type) {
             printf("end sentinel at %u\n", index);
             break;
         }

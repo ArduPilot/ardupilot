@@ -108,12 +108,12 @@ public:
     // Write the last calculated NE position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNE(Vector2f &posNE) const;
+    bool getPosNE(Vector2p &posNE) const;
 
     // Write the last calculated D position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosD(float &posD) const;
+    bool getPosD(postype_t &posD) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
@@ -787,6 +787,9 @@ private:
     static const uint32_t OBS_BUFFER_LENGTH = 5;
     static const uint32_t FLOW_BUFFER_LENGTH = 15;
     static const uint32_t EXTNAV_BUFFER_LENGTH = 15;
+
+    static Matrix24 KH;             // intermediate result used for covariance updates
+    static Matrix24 nextP;          // Predicted covariance matrix before addition of process noise to diagonals
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised

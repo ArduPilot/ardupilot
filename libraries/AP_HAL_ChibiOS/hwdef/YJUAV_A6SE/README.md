@@ -4,29 +4,29 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 
 ## Features
 
- - STM32H750 microcontroller
- - Onboard Flash: 128Mbits/16Mbytes
- - Two IMUs: ICM42688, ICM42688
- - Internal ITS8310 I2C magnetometer
- - Internal DPS310 SPI barometer
- - Internal RGB LED
- - microSD card slot port
- - 1 analog power ports
- - 5 UARTs and 1 USB ports
- - 3 I2C and 2 CAN ports
- - 11 PWM output ports
- - Safety switch port
- - External SPI port
- - Buzzer port
- - RC IN port
+- STM32H750 microcontroller
+- Onboard Flash: 128Mbits/16Mbytes
+- Two IMUs: ICM42688, ICM42688
+- Internal ITS8310 I2C magnetometer
+- Internal DPS310 SPI barometer
+- Internal RGB LED
+- microSD card slot port
+- 1 analog power ports
+- 5 UARTs and 1 USB ports
+- 3 I2C and 2 CAN ports
+- 11 PWM output ports
+- Safety switch port
+- External SPI port
+- Buzzer port
+- RC IN port
 
 ## Pinout
-![YJUAV_A6SE Board](YJUAV_A6SE-pinout.jpg "YJUAV_A6SE")
 
+![YJUAV_A6SE Board](YJUAV_A6SE-pinout.jpg "YJUAV_A6SE")
 
 ## Connectors
 
-**POWER ADC**
+### POWER ADC
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -37,7 +37,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**TELEM1&TELEM2**
+### TELEM1&TELEM2
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -48,7 +48,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**ADC**
+### ADC
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -57,7 +57,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  3   | ADC_6V6 | +6.6V |
 |  4   |   GND   |  GND  |
 
-**SPI**
+### SPI
 
 | Pin  |  Signal  | Volt  |
 | :--: | :------: | :---: |
@@ -68,7 +68,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |  SPI_CS  | +3.3V |
 |  6   |   GND    |  GND  |
 
-**I2C**
+### I2C
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -77,7 +77,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  3   | I2C_SDA | +3.3V |
 |  4   |   GND   |  GND  |
 
-**CAN1&CAN2**
+### CAN1&CAN2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -86,7 +86,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  3   | CAN_N  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -97,7 +97,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   | I2C_SDA | +3.3V |
 |  6   |   GND   |  GND  |
 
-**GPS2&SAFETY**
+### GPS2&SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -112,7 +112,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  9   |    BUZZER     | +3.3V |
 |  10  |      GND      |  GND  |
 
-**DEBUG**
+### DEBUG
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -123,7 +123,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   | SWCLK  | +3.3V |
 |  6   |  GND   |  GND  |
 
-**SAFETY**
+### SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -134,7 +134,7 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  5   |     RSSI      | +3.3V |
 |  6   |      GND      |  GND  |
 
-**USB EX**
+### USB EX
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -145,14 +145,14 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 
 ## UART Mapping
 
- - SERIAL0 -> USB (OTG1)
- - SERIAL1 -> USART1 (Telem1)
- - SERIAL2 -> USART6 (Telem2)
- - SERIAL3 -> USART3 (GPS1), NODMA
- - SERIAL4 -> USART2 (GPS2), NODMA
- - SERIAL5 -> UART8 (SBUS)
- - SERIAL6 -> UART7 (Debug), NODMA
- - SERIAL7 -> USB2 (OTG2)
+- SERIAL0 -> USB (OTG1)
+- SERIAL1 -> USART1 (Telem1)
+- SERIAL2 -> USART6 (Telem2)
+- SERIAL3 -> USART3 (GPS1), NODMA
+- SERIAL4 -> USART2 (GPS2), NODMA
+- SERIAL5 -> UART8 (SBUS)
+- SERIAL6 -> UART7 (Debug), NODMA
+- SERIAL7 -> USB2 (OTG2)
 
 ## RC Input
 
@@ -166,9 +166,9 @@ The A6SE supports up to 11 PWM outputs,support all PWM protocols as well as DSho
 
 The 11 PWM outputs are in 4 groups:
 
- - PWM 1, 2, 3 and 4 in group1
- - PWM 5, 6, 7 and 8 in group2
- - PWM 9, 10, 11 in group3
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 in group3
 
 Channels 1-8 support bi-directional Dshot.
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
@@ -193,11 +193,11 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 
 The A6SE flight controller has 5 analog inputs
 
- - ADC Pin4   -> Battery Current 
- - ADC Pin2 -> Battery Voltage 
- - ADC Pin8   -> ADC 3V3 Sense
- - ADC Pin10 -> ADC 6V6 Sense
- - ADC Pin11 -> RSSI voltage monitoring
+- ADC Pin4   -> Battery Current
+- ADC Pin2 -> Battery Voltage
+- ADC Pin8   -> ADC 3V3 Sense
+- ADC Pin10 -> ADC 6V6 Sense
+- ADC Pin11 -> RSSI voltage monitoring
 
 ## Build the FC
 
@@ -206,9 +206,6 @@ The A6SE flight controller has 5 analog inputs
 
 The compiled firmware is located in folder **"build/YJUAV_A6SE/bin/arducopter.apj"**.
 
-
-
 ## Loading Firmware
 
 The A6SE flight controller comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.
-

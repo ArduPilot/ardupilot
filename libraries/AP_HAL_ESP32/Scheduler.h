@@ -23,7 +23,7 @@
 
 #define ESP32_SCHEDULER_MAX_TIMER_PROCS 10
 #define ESP32_SCHEDULER_MAX_IO_PROCS 10
-
+#define TWDT_TIMEOUT_MS 3000
 
 /* Scheduler implementation: */
 class ESP32::Scheduler : public AP_HAL::Scheduler
@@ -31,6 +31,7 @@ class ESP32::Scheduler : public AP_HAL::Scheduler
 
 public:
     Scheduler();
+    ~Scheduler();
     /* AP_HAL::Scheduler methods */
     void     init() override;
     void     set_callbacks(AP_HAL::HAL::Callbacks *cb)
@@ -84,16 +85,16 @@ public:
     static const int IO_PRIO      = 5;
     static const int STORAGE_PRIO = 4;
 
-    static const int TIMER_SS 	  = 4096;
-    static const int MAIN_SS      = 8192;
-    static const int RCIN_SS      = 4096;
-    static const int RCOUT_SS     = 4096;
-    static const int WIFI_SS1     = 6192;
-    static const int WIFI_SS2     = 6192;
-    static const int UART_SS      = 2048;
-    static const int DEVICE_SS    = 4096;
-    static const int IO_SS        = 4096;
-    static const int STORAGE_SS   = 8192;
+    static const int TIMER_SS     = 1024*3;
+    static const int MAIN_SS      = 1024*5;
+    static const int RCIN_SS      = 1024*3;
+    static const int RCOUT_SS     = 1024*1.5;
+    static const int WIFI_SS1     = 1024*2.25;
+    static const int WIFI_SS2     = 1024*2.25;
+    static const int UART_SS      = 1024*2.25;
+    static const int DEVICE_SS    = 1024*4;     // DEVICEBUS/s
+    static const int IO_SS        = 1024*3.5;   // APM_IO
+    static const int STORAGE_SS   = 1024*2;     // APM_STORAGE
 
 private:
     AP_HAL::HAL::Callbacks *callbacks;
@@ -129,6 +130,8 @@ private:
     static void _print_profile(void* arg);
 
     static void test_esc(void* arg);
+
+    static void wdt_init(uint32_t timeout, uint32_t core_mask);
 
     bool _in_timer_proc;
     void _run_timers();

@@ -9,28 +9,26 @@ based on sim_vehicle.sh by Andrew Tridgell, October 2011
 AP_FLAKE8_CLEAN
 
 """
-from __future__ import print_function
 
 import atexit
+import binascii
 import datetime
 import errno
+import math
 import optparse
 import os
 import os.path
 import re
+import shlex
 import signal
 import subprocess
 import sys
 import tempfile
 import textwrap
 import time
-import shlex
-import binascii
-import math
 
 from pysim import util
 from pysim import vehicleinfo
-
 
 # List of open terminal windows for macosx
 windowID = []
@@ -175,7 +173,7 @@ def cygwin_pidof(proc_name):
         if cmd == proc_name:
             try:
                 pid = int(line_split[0].strip())
-            except Exception:
+            except ValueError:
                 pid = int(line_split[1].strip())
             if pid not in pids:
                 pids.append(pid)
@@ -192,7 +190,7 @@ def under_macos():
 
 
 def under_vagrant():
-    return os.path.isfile("/ardupilot.vagrant")
+    return os.path.isdir("/vagrant")
 
 
 def under_wsl2():
@@ -201,7 +199,7 @@ def under_wsl2():
 
 
 def wsl2_host_ip():
-    if not under_wsl2():
+    if not under_wsl2() or cmd_opts.no_wsl2_network:
         return None
 
     pipe = subprocess.Popen("ip route show default | awk '{print $3}'",
@@ -257,11 +255,6 @@ def kill_tasks_pkill(victims):
     for victim in victims:  # pkill takes a single pattern, so iterate
         cmd = ["pkill", victim[:15]]  # pkill matches only first 15 characters
         run_cmd_blocking("pkill", cmd, quiet=True)
-
-
-class BobException(Exception):
-    """Handle Bob's Exceptions"""
-    pass
 
 
 def kill_tasks():
@@ -322,7 +315,7 @@ def kill_tasks():
             kill_tasks_psutil(victim_names)
         except ImportError:
             kill_tasks_pkill(victim_names)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         progress("kill_tasks failed: {}".format(str(e)))
 
 
@@ -379,10 +372,10 @@ def do_build(opts, frame_options):
         cmd_configure.append("--enable-math-check-indexes")
 
     if opts.enable_ekf2:
-        cmd_configure.append("--enable-ekf2")
+        cmd_configure.append("--enable-EKF2")
 
     if opts.disable_ekf3:
-        cmd_configure.append("--disable-ekf3")
+        cmd_configure.append("--disable-EKF3")
 
     if opts.postype_single:
         cmd_configure.append("--postype-single")
@@ -408,14 +401,14 @@ def do_build(opts, frame_options):
     for nv in opts.define:
         cmd_configure.append("--define=%s" % nv)
 
-    if opts.enable_dds:
-        cmd_configure.append("--enable-dds")
+    if opts.enable_DDS:
+        cmd_configure.append("--enable-DDS")
 
     if opts.disable_networking:
         cmd_configure.append("--disable-networking")
 
     if opts.enable_ppp:
-        cmd_configure.append("--enable-ppp")
+        cmd_configure.append("--enable-PPP")
 
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
@@ -520,12 +513,29 @@ def find_geocoder_location(locname):
     except ImportError:
         print("geocoder not installed")
         return None
-    j = geocoder.osm(locname)
-    if j is None or not hasattr(j, 'lat') or j.lat is None:
-        print("geocoder failed to find '%s'" % locname)
+    # Step 1: Attempt the lookup
+    try:
+        j = geocoder.osm(locname)
+    except Exception as e:  # noqa: BLE001
+        # Handle network/blocked errors (like 403)
+        err_msg = str(e)
+        if '403' in err_msg:
+            print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        else:
+            print(f"geocoder error: {err_msg}")
         return None
-    lat = j.lat
-    lon = j.lng
+    # Step 2: Validate the response object (Handles status_code 403 if no exception was raised)
+    status_code = getattr(j, 'status_code', None)
+    if status_code == 403:
+        print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        return None
+
+    if j is None or not hasattr(j, 'lat') or j.lat is None:
+        print(f"geocoder failed to find '{locname}'")
+        return None
+    # Step 3: Success logic
+    lat, lon = j.lat, j.lng
+
     from MAVProxy.modules.mavproxy_map import srtm
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
@@ -537,7 +547,7 @@ def find_geocoder_location(locname):
             alt = tile.getAltitudeFromLatLon(lat, lon)
             break
     if alt is None:
-        print("timed out getting altitude for '%s'" % locname)
+        print(f"timed out getting altitude for '{locname}'")
         return None
     return [lat, lon, alt, 0.0]
 
@@ -594,7 +604,7 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     try:
         p = subprocess.Popen(cmd, **kw)
         ret = os.waitpid(p.pid, 0)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print("[%s] An exception has occurred with command: '%s'" % (what, (' ').join(cmd)))
         print(e)
         sys.exit(1)
@@ -609,7 +619,6 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
 def run_in_terminal_window(name, cmd, **kw):
 
     """Execute the run_in_terminal_window.sh command for cmd"""
-    global windowID
     runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), name]
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
@@ -766,7 +775,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(strace_options)
 
     cmd.append(binary)
-    cmd.append("-S")
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -779,7 +787,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--enable-fgview"])
     if opts.sitl_instance_args:
         # this could be a lot better:
-        cmd.extend(opts.sitl_instance_args.split(" "))
+        cmd.extend(opts.sitl_instance_args)
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     path = None
@@ -792,10 +800,10 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             if not os.path.isfile(x):
                 print("The parameter file (%s) does not exist" % (x,))
                 sys.exit(1)
-        path = ",".join(paths)
         if cmd_opts.count > 1 or opts.auto_sysid:
             # we are in a subdirectory when using -n
-            path = os.path.join("..", path)
+            paths = [os.path.join("..", x) for x in paths]
+        path = ",".join(paths)
         progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
@@ -816,6 +824,22 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 path = str(file)
 
             progress("Adding parameters from (%s)" % (str(file),))
+    if opts.param:
+        param_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        atexit.register(os.unlink, param_file.name)
+        param_dir = os.path.join(param_file.name)
+        single_params = []
+        for p in opts.param:
+            single_params.extend(p.split(','))
+        for sp in single_params:
+            sp.replace("=", " ")
+            sp = sp.strip()
+            param_file.write(f"{sp}\n")
+        if path is not None:
+            path += "," + str(param_dir)
+        else:
+            path = str(param_dir)
+
     if opts.OSDMSP:
         path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
         path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
@@ -828,7 +852,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         # Parse start_time into a double precision number specifying seconds since 1900.
         try:
             start_time_UTC = time.mktime(datetime.datetime.strptime(cmd_opts.start_time, '%Y-%m-%d-%H:%M').timetuple())
-        except Exception:
+        except ValueError:
             print("Incorrect start time format - require YYYY-MM-DD-HH:MM (given %s)" % cmd_opts.start_time)
             sys.exit(1)
 
@@ -873,6 +897,11 @@ def start_mavproxy(opts, stuff):
     else:
         cmd.append("mavproxy.py")
 
+    if opts.valgrind:
+        cmd.extend(['--retries', '10'])
+    else:
+        cmd.extend(['--retries', '5'])
+
     if opts.mcast:
         cmd.extend(["--master", "mcast:"])
 
@@ -905,7 +934,6 @@ def start_mavproxy(opts, stuff):
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
-        global tracker_serial0
         # tracker_serial0 is set when we start the tracker...
         extra_cmd += ("module load map;"
                       "tracker set port %s; "
@@ -928,7 +956,7 @@ def start_mavproxy(opts, stuff):
             if '=' in x:
                 mavargs[i] = x.split('=')[0]
                 mavargs.insert(i+1, x.split('=')[1])
-        # Use this flag to tell if parsing character inbetween a pair
+        # Use this flag to tell if parsing character in between a pair
         # of quotation marks
         inString = False
         beginStringIndex = []
@@ -964,6 +992,8 @@ def start_mavproxy(opts, stuff):
         cmd.extend(['--aircraft', opts.aircraft])
     if opts.moddebug:
         cmd.append('--moddebug=%u' % opts.moddebug)
+    if opts.mavcesium:
+        cmd.extend(["--load-module", "cesium"])
 
     if opts.fresh_params:
         # these were built earlier:
@@ -985,6 +1015,17 @@ def start_mavproxy(opts, stuff):
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
+
+    if opts.gdb:
+        # in the case that MAVProxy exits (as opposed to being
+        # killed), restart it if we are running under GDB.  This
+        # allows ArduPilot to stop (eg. via a very early panic call)
+        # and have you debugging session not be killed.
+        while True:
+            progress("Running under GDB; restarting MAVProxy")
+            run_cmd_blocking("Run MavProxy", cmd, env=env)
+            progress("MAVProxy exited; sleeping 10")
+            time.sleep(10)
 
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
@@ -1047,6 +1088,11 @@ parser.add_option("-C", "--sim_vehicle_sh_compatible",
                   default=False,
                   help="be compatible with the way sim_vehicle.sh works; "
                   "make this the first option")
+
+parser.add_option("-P", "--param",
+                  default=None,
+                  action='append',
+                  help="set some param with the format PARAM=VALUE")
 
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",
@@ -1161,7 +1207,8 @@ group_sim.add_option("", "--can-peripherals",
                      help="start a DroneCAN peripheral instance")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
-                     default=None,
+                     default=[],
+                     action="append",
                      help="pass arguments to SITL instance")
 group_sim.add_option("-G", "--gdb",
                      action='store_true',
@@ -1284,6 +1331,11 @@ group_sim.add_option("", "--no-extra-ports",
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
+group_sim.add_option("", "--no-wsl2-network",
+                     action='store_true',
+                     dest='no_wsl2_network',
+                     default=False,
+                     help="Disable setup of WSL2 network for output")
 group_sim.add_option("-Z", "--swarm",
                      type='string',
                      default=None,
@@ -1312,7 +1364,7 @@ group_sim.add_option("", "--start-time",
 group_sim.add_option("", "--sysid",
                      type='int',
                      default=None,
-                     help="Set SYSID_THISMAV")
+                     help="Set MAV_SYSID")
 group_sim.add_option("--postype-single",
                      action='store_true',
                      help="force single precision postype_t")
@@ -1329,12 +1381,12 @@ group_sim.add_option("", "--slave",
 group_sim.add_option("", "--auto-sysid",
                      default=False,
                      action='store_true',
-                     help="Set SYSID_THISMAV based upon instance number")
+                     help="Set MAV_SYSID based upon instance number")
 group_sim.add_option("", "--sim-address",
                      type=str,
                      default="127.0.0.1",
                      help="IP address of the simulator. Defaults to localhost")
-group_sim.add_option("--enable-dds", action='store_true',
+group_sim.add_option("--enable-DDS", action='store_true',
                      help="Enable the dds client to connect with ROS2/DDS")
 group_sim.add_option("--disable-networking", action='store_true',
                      help="Disable networking APIs")
@@ -1362,6 +1414,11 @@ group.add_option("", "--map",
                  default=False,
                  action='store_true',
                  help="load map module on startup")
+group.add_option("", "--mavcesium",
+                 default=False,
+                 action='store_true',
+                 help="load MAVCesium module on startup")
+
 group.add_option("", "--console",
                  default=False,
                  action='store_true',
@@ -1591,9 +1648,11 @@ if cmd_opts.delay_start:
 
 tmp = None
 if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
-    # import only here so as to avoid jinja dependency in whole script
-    from jinja2 import Environment, FileSystemLoader
     from tempfile import mkstemp
+
+    # import only here so as to avoid jinja dependency in whole script
+    from jinja2 import Environment
+    from jinja2 import FileSystemLoader
     entities = []
     config = {}
     config['plane'] = cmd_opts.vehicle == 'ArduPlane'

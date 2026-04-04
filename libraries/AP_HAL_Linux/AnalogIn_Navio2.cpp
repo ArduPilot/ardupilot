@@ -20,7 +20,7 @@ void AnalogSource_Navio2::set_channel(uint8_t pin)
     }
 
     if (asprintf(&channel_path, "%s/ch%d", ADC_BASE_PATH, pin) == -1) {
-        AP_HAL::panic("asprintf failed\n");
+        AP_HAL::panic("asprintf failed");
     }
 
     if (_fd >= 0) {

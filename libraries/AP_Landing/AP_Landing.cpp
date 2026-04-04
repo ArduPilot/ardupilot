@@ -21,6 +21,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Fence/AC_Fence.h>
+#include <AP_InternalError/AP_InternalError.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Landing::var_info[] = {
@@ -100,8 +101,8 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: THR_SLEW
     // @DisplayName: Landing throttle slew rate
     // @Description: This parameter sets the slew rate for the throttle during auto landing. When this is zero the THR_SLEWRATE parameter is used during landing. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on landing. Values below 50 are not recommended as it may cause a stall when airspeed is low and you can not throttle up fast enough.
-    // @Units: %
-    // @Range: 0 127
+    // @Units: %/s
+    // @Range: 0 500
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("THR_SLEW", 9, AP_Landing, throttle_slewrate, 0),
@@ -205,6 +206,28 @@ AP_Landing::AP_Landing(AP_Mission &_mission, AP_AHRS &_ahrs, AP_TECS *_tecs_Cont
 #endif
 {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+/*
+  return a location alt in cm as AMSL
+  assumes loc frame is either AMSL or ABOVE_TERRAIN
+*/
+int32_t AP_Landing::loc_alt_AMSL_cm(const Location &loc) const
+{
+    int32_t alt_cm;
+    // try first with full conversion
+    if (loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt_cm)) {
+        return alt_cm;
+    }
+    if (loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) {
+        // if we can't get true terrain then assume flat terrain
+        // around home
+        return loc.alt + ahrs.get_home().alt;
+    }
+
+    // this should not happen, but return a value
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    return loc.alt;
 }
 
 void AP_Landing::do_land(const AP_Mission::Mission_Command& cmd, const float relative_altitude)
@@ -347,6 +370,24 @@ bool AP_Landing::is_flaring(void) const
     }
 }
 
+// return true if the landing is at the pre-flare stage or later
+bool AP_Landing::is_on_final(void) const
+{
+    if (!flags.in_progress) {
+        return false;
+    }
+
+    switch (type) {
+    case TYPE_STANDARD_GLIDE_SLOPE:
+        return type_slope_is_on_final();
+#if HAL_LANDING_DEEPSTALL_ENABLED
+    case TYPE_DEEPSTALL:
+#endif
+    default:
+        return false;
+    }
+}
+
 // return true while the aircraft is performing a landing approach
 // when true the vehicle will:
 //   - disable ground steering
@@ -461,6 +502,18 @@ void AP_Landing::setup_landing_glide_slope(const Location &prev_WP_loc, const Lo
     default:
         break;
     }
+}
+
+/*
+  reset landing state
+ */
+void AP_Landing::reset(void)
+{
+    initial_slope = 0;
+    slope = 0;
+    type_slope_flags.post_stats = false;
+    type_slope_flags.has_aborted_due_to_slope_recalc = false;
+    type_slope_stage = SlopeStage::NORMAL;
 }
 
 /*
@@ -721,4 +774,8 @@ void AP_Landing::convert_parameters(void)
 {
     // added January 2024
     pitch_deg.convert_centi_parameter(AP_PARAM_INT16);
+
+    // PARAMETER_CONVERSION - Added: Mar-2026 for THR_SLEWRATE width change
+    // Convert throttle slewrate from int8 to int16 to support higher slew rates
+    throttle_slewrate.convert_parameter_width(AP_PARAM_INT8);
 }

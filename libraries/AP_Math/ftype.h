@@ -38,7 +38,7 @@ typedef float ftype;
 #define cosF(x) cosf(x)
 #define tanF(x) tanf(x)
 #define atanF(x) atanf(x)
-#define atan2F(x,y) atan2f(x,y)
+#define atan2F(y,x) atan2f(y,x)
 #define sqrtF(x) sqrtf(x)
 #define fmaxF(x,y) fmaxf(x,y)
 #define powF(x,y) powf(x,y)
@@ -68,7 +68,7 @@ inline bool is_zero(const float x) {
  * @brief: Check whether a double is zero
  */
 inline bool is_zero(const double x) {
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
   return fabs(x) < FLT_EPSILON;
 #else
   return fabsf(static_cast<float>(x)) < FLT_EPSILON;

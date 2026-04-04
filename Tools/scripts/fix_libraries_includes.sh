@@ -57,7 +57,7 @@ create_commits(){
             commit_base=$d
         fi
         cat >/tmp/commit_msg <<EOF
-$commit_base: standardize inclusion of libaries headers
+$commit_base: standardize inclusion of libraries headers
 
 This commit changes the way libraries headers are included in source files:
 

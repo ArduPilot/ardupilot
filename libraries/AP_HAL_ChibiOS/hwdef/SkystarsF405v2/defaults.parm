@@ -1,0 +1,5 @@
+# setup for Neopixel
+SERVO7_FUNCTION 120
+
+OSD_TYPE2 5
+

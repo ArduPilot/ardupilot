@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Parses a log file and shows how the power flags changed over time
@@ -6,8 +6,6 @@ Parses a log file and shows how the power flags changed over time
 AP_FLAKE8_CLEAN
 
 """
-
-from __future__ import print_function
 
 import optparse
 import sys
@@ -70,8 +68,6 @@ class POWRChange(object):
 
                     if new_acc_bit_set and not old_acc_bit_set:
                         line += " ACCFLAGS+%s" % self.bit_description(bit)
-                    elif not new_bit_set and old_bit_set:
-                        line += " ACCFLAGS-%s" % self.bit_description(bit)
 
             if len(line) == 0:
                 continue

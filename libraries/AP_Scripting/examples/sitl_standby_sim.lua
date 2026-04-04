@@ -20,17 +20,17 @@ if not JSON_MASTER:init('SIM_JSON_MASTER') then
   gcs:send_text(6, 'get SIM_JSON_MASTER failed')
 end
 
-local SYSID_THISMAV = Parameter()
-if not SYSID_THISMAV:init('SYSID_THISMAV') then
-  gcs:send_text(6, 'get SYSID_THISMAV failed')
+local MAV_SYSID = Parameter()
+if not MAV_SYSID:init('MAV_SYSID') then
+  gcs:send_text(6, 'get MAV_SYSID failed')
 end
 
-local sysid = SYSID_THISMAV:get()
+local sysid = MAV_SYSID:get()
 
 gcs:send_text(6, 'LUA: Standby LUA loaded')
 
 -- The loop check the value of the switch of the remote controller and switch the standby function of the simulated fcus.
--- FCU should have SYSID_THISMAV set to 1 or 2.
+-- FCU should have MAV_SYSID set to 1 or 2.
 -- The switch is on the channel 8 (default) of the remote controller.
 -- fcu1 and fcu2 have mirrored standby function, so only one is active at a time.
 -- As this is for simulation, the SIM_JSON_MASTER param is also update to select which fcu control the motors.

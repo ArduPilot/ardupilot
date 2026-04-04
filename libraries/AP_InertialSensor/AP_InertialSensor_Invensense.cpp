@@ -31,13 +31,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+// need the Linux GPIO header for BBB_P8_14
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-#define INVENSENSE_DRDY_PIN BBB_P8_14
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#define INVENSENSE_EXT_SYNC_ENABLE 1
-#endif
 #endif
 
 #ifdef INS_TIMING_DEBUG
@@ -467,7 +463,7 @@ bool AP_InertialSensor_Invensense::update() /* front end */
     if (fast_reset_count) {
         // check if we have reported in the last 1 seconds or
         // fast_reset_count changed
-#if HAL_GCS_ENABLED && BOARD_FLASH_SIZE > 1024
+#if HAL_GCS_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024
         const uint32_t now = AP_HAL::millis();
         if (now - last_fast_reset_count_report_ms > 5000U) {
             last_fast_reset_count_report_ms = now;
@@ -775,7 +771,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
                 goto check_registers;
             }
             memset(rx, 0, n * MPU_SAMPLE_SIZE);
-            if (!_dev->transfer(rx, n * MPU_SAMPLE_SIZE, rx, n * MPU_SAMPLE_SIZE)) {
+            if (!_dev->transfer_fullduplex(rx, n * MPU_SAMPLE_SIZE)) {
                 if (!hal.scheduler->in_expected_delay()) {
                     debug("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
                 }

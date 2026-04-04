@@ -2,7 +2,6 @@
 Script to control LED strips based on the roll of the aircraft. This is an example to demonstrate
 the LED interface for WS2812 LEDs
 --]]
--- luacheck: only 0
 
 
 --[[
@@ -57,7 +56,7 @@ local rainbow = {
 --[[
 Function to set a LED to a color on a classic rainbow spectrum, with v=0 giving red
 --]]
-function set_Rainbow(chan, led, v)
+local function set_Rainbow(channel, led, v)
   local num_rows = #rainbow
   local row = math.floor(constrain(v * (num_rows-1)+1, 1, num_rows-1))
   local v0 = (row-1) / (num_rows-1)
@@ -66,14 +65,14 @@ function set_Rainbow(chan, led, v)
   r = math.floor(rainbow[row][1] + p * (rainbow[row+1][1] - rainbow[row][1]))
   g = math.floor(rainbow[row][2] + p * (rainbow[row+1][2] - rainbow[row][2]))
   b = math.floor(rainbow[row][3] + p * (rainbow[row+1][3] - rainbow[row][3]))
-  serialLED:set_RGB(chan, led, r, g, b)
+  serialLED:set_RGB(channel, led, r, g, b)
 end
 
 --[[
 We will set the colour of the LEDs based on roll of the aircraft
 --]]
 function update_LEDs()
-  local roll = constrain(ahrs:get_roll(), math.rad(-60), math.rad(60))
+  local roll = constrain(ahrs:get_roll_rad(), math.rad(-60), math.rad(60))
 
   for led = 0, num_leds-1 do
     local v  = constrain(0.5 + 0.5 * math.sin(roll * (led - num_leds/2) / (num_leds/2)), 0, 1)

@@ -61,7 +61,7 @@ private:
     static const RegData init_data_3900[];
     static const RegData init_data_3901_1[];
     static const RegData init_data_3901_2[];
-    const float flow_pixel_scaling = 1.26e-3;
+    static constexpr float flow_pixel_scaling = 1.26e-3;
 
     // setup sensor
     bool setup_sensor(void);

@@ -1,0 +1,270 @@
+# =============================================================
+# STM32H753ZI Nucleo - IO Summary (Flight Controller Mapping, Board-Compliant)
+# =============================================================
+#
+# I2C Buses (per official tables):
+#   I2C1: PB8 (SCL), PB9 (SDA)
+#   (I2C2/I2C3/I2C4 not used - pins available for other functions)
+#
+#   Ethernet: Disabled - pins repurposed for UART4 and other functions
+#
+# PWM Outputs (14 total, all TIMx_CHy from tables):
+#   Motors (8):
+#     PE9  - MOTOR1  (TIM1_CH1)
+#     PE11 - MOTOR2  (TIM1_CH2)
+#     PE13 - MOTOR3  (TIM1_CH3)
+#     PE14 - MOTOR4  (TIM1_CH4)
+#     PD12 - MOTOR5  (TIM4_CH1)
+#     PD13 - MOTOR6  (TIM4_CH2)
+#     PB4  - MOTOR7  (TIM3_CH1)
+#     PB5  - MOTOR8  (TIM3_CH2)
+#   Servos (6):
+#     PB0   - SERVO1 (TIM3_CH3)
+#     PB1   - SERVO2 (TIM3_CH4)
+#     PB10  - SERVO4 (TIM2_CH3)
+#     PB14  - SERVO5 (TIM1_CH2N)
+#     PB15  - SERVO6 (TIM1_CH3N)
+#   Missing: SERVO7, SERVO8, PWM(11)
+#
+# UARTs (8 available, all from tables):
+#   USART2:  PA2 (TX), PA3 (RX)   # CHANGED from PD5/PD6
+#   USART3:  PD8 (TX), PD9 (RX)
+#   UART4:   PA0 (TX), PA1 (RX)   # Enabled by removing Ethernet
+#   UART5:   PB13 (TX), PB12 (RX)
+#   USART6:  PC6 (TX), PC7 (RX)
+#   UART7:   PE8 (TX), PE7 (RX)   # SAI pins, but support UART
+#   UART8:   PE1 (TX), PE0 (RX)   # SAI pins, but support UART
+#
+# CAN Buses (per tables):
+#   CAN1: PD0 (RX), PD1 (TX)
+#
+# SPI Buses (per tables):
+#   SPI1: PA5 (SCK), PA6 (MISO), PA7 (MOSI)  # Missing PA4 (NSS)
+#   (SPI2/SPI3 not used - pins available for other functions)
+#
+# Analog Inputs:
+#   PC4 (BAT_VOLTAGE), PC5 (BAT_CURRENT)  # CHANGED from PC15/PD4
+#   (Other ADC pins available if needed)
+#
+# SD Card Support:
+#   SDMMC1: PC8, PC9, PC10, PC11, PC12, PD2
+#
+# Free GPIOs (from tables, not reserved or assigned above):
+#   PC1, PC2, PC3, PC13, PC14, PD5, PD6, PD7, PE4, PE5, PE6, PF2, PF3, PF4, PF5, PF10
+#   PG0, PG1, PG2, PG4, PG5, PG8, PG9, PG10, PG12, PG13, PG14, PG15, PA4
+#   (Check datasheet for any additional restrictions)
+#
+# PIN CONFLICTS IDENTIFIED:
+#   - PA4: Used for both SPI1_NSS and USER_GPIO37
+#   - PD5/PD6: Listed as USART2 in summary but assigned as GPIO in actual config
+#   - Missing PWM(11) in sequence
+#
+# All assignments are board-compliant and avoid reserved/special pins.
+# =============================================================
+# hw definition file for processing by chibios_hwdef.py
+# for NUCLEO-H753ZI board
+
+# MCU class and specific type
+MCU STM32H7xx STM32H753xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_NUCLEO_H753ZI
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 12
+define CH_CFG_ST_RESOLUTION 16
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# reserve space for bootloader
+FLASH_RESERVE_START_KB 128
+
+# space to reserve for storage
+STORAGE_FLASH_PAGE 14
+define HAL_STORAGE_SIZE 32768
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# ST Zio connector configuration (CN7, CN8, CN9, CN10)
+# These connectors provide Arduino Uno V3 compatibility
+# and extended functionality through ST Zio extensions
+# Note: By default SB55 and SB62 are NOT soldered
+# For Arduino compatibility (required for ANY Arduino shields/pins):
+# - SB55 must be soldered ON
+# - SB62 must be soldered ON
+# - SB53/60/65 must be OFF for I2C on A4/A5 (CN9 pins 9/11)
+
+# ST Zio pins are available through CN7-CN10
+# Arduino pin mapping is possible but requires solder bridges
+# Pins are defined here in their native ST Zio configuration
+
+
+# Note: These pins can be mapped to Arduino A0-A5 pins if SB55/SB62 are soldered
+define HAL_ZCONFIG_COMMENTS "SB55 and SB62 must be soldered ON for Arduino compatibility"
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6 UART7 UART8
+
+# order of I2C buses
+I2C_ORDER I2C1
+
+# CN1 is ST-LINK/V3E for programming/debugging via USART3
+# CN13 is USB OTG_FS with VBUS sensing
+# PA9 VBUS INPUT OPENDRAIN
+# PA10 USB_FS_ID INPUT # USB OTG ID pin
+# PA11 OTG_FS_DM OTG1
+# PA12 OTG_FS_DP OTG1
+
+# Debug
+# PA13 JTMS-SWDIO SWD
+# PA14 JTCK-SWCLK SWD
+
+# LEDs
+# PB0 LED_1 OUTPUT LOW # green LED
+# PE1 LED_2 OUTPUT LOW # yellow LED
+# PB14 LED_3 OUTPUT LOW # red LED
+
+# Note that SB76 must be ON for USB OTG_FS to work
+define HAL_USB_ENABLE_COMMENTS "SB76 must be ON for USB OTG_FS to work"
+
+
+
+# I2C buses (board-compliant)
+PB8  I2C1_SCL I2C1
+PB9  I2C1_SDA I2C1
+
+define HAL_BLHELI_PASSTHROUGH_ENABLED 1
+define HAL_BLHELI_PASSTHROUGH_UART 3
+# UART ESC support (for ESC telemetry via UART)
+# UART1 can be used for ESC telemetry
+define HAL_ESC_TELEMETRY_UART_ENABLED 1
+define HAL_ESC_TELEMETRY_UART 1
+
+# UARTs 
+PB6  USART1_TX USART1
+PB7  USART1_RX USART1
+PA2  USART2_TX USART2
+PA3  USART2_RX USART2
+PD8  USART3_TX USART3
+PD9  USART3_RX USART3
+PA0  UART4_TX UART4
+PA1  UART4_RX UART4
+PB13 UART5_TX UART5
+PB12 UART5_RX UART5
+PC6  USART6_TX USART6
+PC7  USART6_RX USART6
+PE8  UART7_TX UART7
+PE7  UART7_RX UART7
+PE1  UART8_TX UART8
+PE0  UART8_RX UART8
+
+# PWM outputs
+PE9  TIM1_CH1 TIM1 PWM(1)
+PE11 TIM1_CH2 TIM1 PWM(2)
+PE13 TIM1_CH3 TIM1 PWM(3)
+PE14 TIM1_CH4 TIM1 PWM(4)
+PD12 TIM4_CH1 TIM4 PWM(5)
+PD13 TIM4_CH2 TIM4 PWM(6)
+PB4  TIM3_CH1 TIM3 PWM(7)
+PB5  TIM3_CH2 TIM3 PWM(8)
+PB0  TIM3_CH3 TIM3 PWM(9)
+PB1  TIM3_CH4 TIM3 PWM(10)
+PB10 TIM2_CH3 TIM2 PWM(13)
+PB14 TIM1_CH2N TIM1 PWM(14)
+PB15 TIM1_CH3N TIM1 PWM(15)
+
+
+# CAN bus
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+# SDMMC1 (SD card support)
+PC8  SDMMC1_D0 SDMMC1
+PC9  SDMMC1_D1 SDMMC1  
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+
+# SPI buses
+PA5  SPI1_SCK SPI1
+PA6  SPI1_MISO SPI1
+PA7  SPI1_MOSI SPI1
+
+
+
+
+
+
+# Free User GPIOs (Board-Compliant)
+# Freed up from I2C2/SPI2/ADC: PA3, PF3, PF5, PF10
+# (PB12, PB13 now used for UART5)
+# (PB10, PB14, PB15, PC0 now used for SERVO5-8)
+# (PA0, PA1 now used for UART4)
+# (PB12, PB13 now used for UART5)
+# (PA2, PA7, PC1, PC4, PC5, PB11 freed from Ethernet)
+# ADC inputs (battery monitoring) - repurposed from GPIO
+PC4  BAT_VOLTAGE ADC1_INP14 ADC1 SCALE(11)
+PC5  BAT_CURRENT ADC1_INP15 ADC1 SCALE(11)
+
+
+# ADC DMA stream definitions for STM32H753
+define STM32_ADC_ADC12_DMA_STREAM STM32_DMA_STREAM_ID(1, 0)
+
+# GPIO pins can be used for:
+# - RC Input/Output (RC7_FUNCTION, SERVO7_FUNCTION)
+# - Safety switches (arming, kill, mode switches)
+# - Sensors (rangefinder trigger, camera shutter, gripper)
+# - Status indicators (LEDs, buzzer, relay)
+# - Communication (serial telemetry, CAN, I2C, SPI)
+# - Payload control (camera gimbal, landing gear, parachute)
+# - Development (debug output, test points, custom functions)
+# - Scripting (Lua script control, external triggers)
+# - Special IO: SONAR_TRIGGER, SONAR_ECHO, BUZZER, RELAY, SAFETY_SWITCH, ARMING_SWITCH
+# - Special IO: CAMERA_SHUTTER, CAMERA_FEEDBACK, GRIPPER, LANDING_GEAR, PARACHUTE
+# - Special IO: RANGEFINDER_TRIGGER, RANGEFINDER_ECHO, EXTERNAL_LED, EXTERNAL_RELAY
+# - Special IO: USER_BUTTON, USER_LED, USER_SWITCH, USER_INPUT, USER_OUTPUT
+# - Special IO: RC_INPUT, WS2812_LED, ONEWIRE, BUZZER, SAFETY_SWITCH, SONAR_ECHO
+
+# Other available GPIOs
+PC1  USER_GPIO7  OUTPUT OPENDRAIN HIGH GPIO(7)  # PC1: I2S1_MCK, ETH_MII_RXD2, FMC_SDNE1, EVENT-OUT
+PB11 USER_GPIO10 OUTPUT OPENDRAIN HIGH GPIO(10) # PB11: I2S2_WS, ETH_MII_TX_EN, ETH_RMII_TX_EN, EVENT-OUT, FMC_SDNRAS, TIM2_CH4
+PC2  USER_GPIO11 OUTPUT OPENDRAIN HIGH GPIO(11) # PC2: I2S2_CK, ETH_MII_TXD2, FMC_SDNE0, EVENT-OUT
+PC3  USER_GPIO12 OUTPUT OPENDRAIN HIGH GPIO(12) # PC3: I2S2_SDI, ETH_MII_TX_CLK, ETH_RMII_TX_EN, EVENT-OUT, FMC_SDCLK
+PF3  USER_GPIO2  OUTPUT OPENDRAIN HIGH GPIO(2)  # PF3: EVENT-OUT, FMC_A3, SPI5_SCK
+PF5  USER_GPIO3  OUTPUT OPENDRAIN HIGH GPIO(3)  # PF5: EVENT-OUT, FMC_A5, SPI5_MISO
+PF10 USER_GPIO4  OUTPUT OPENDRAIN HIGH GPIO(4)  # PF10: EVENT-OUT, FMC_INTR, TIM15_CH1
+PF4  USER_GPIO15 OUTPUT OPENDRAIN HIGH GPIO(15) # PF4: EVENT-OUT, FMC_A4, SPI5_MOSI
+PG0  USER_GPIO16 OUTPUT OPENDRAIN HIGH GPIO(16) # PG0: EVENT-OUT, FMC_A10, LCD_R3
+PG1  USER_GPIO17 OUTPUT OPENDRAIN HIGH GPIO(17) # PG1: EVENT-OUT, FMC_A11, LCD_R4
+PG4  USER_GPIO18 OUTPUT OPENDRAIN HIGH GPIO(18) # PG4: EVENT-OUT, FMC_A14, LCD_B0
+PG5  USER_GPIO19 OUTPUT OPENDRAIN HIGH GPIO(19) # PG5: EVENT-OUT, FMC_A15, LCD_B1
+PG8  USER_GPIO20 OUTPUT OPENDRAIN HIGH GPIO(20) # PG8: EVENT-OUT, FMC_SDCLK, LCD_R6
+PG9  USER_GPIO21 OUTPUT OPENDRAIN HIGH GPIO(21) # PG9: EVENT-OUT, FMC_NE2, LCD_R7
+PG10 USER_GPIO22 OUTPUT OPENDRAIN HIGH GPIO(22) # PG10: EVENT-OUT, FMC_NE3, LCD_G4
+PG12 USER_GPIO23 OUTPUT OPENDRAIN HIGH GPIO(23) # PG12: EVENT-OUT, FMC_NE4, LCD_B4
+PG13 USER_GPIO24 OUTPUT OPENDRAIN HIGH GPIO(24) # PG13: EVENT-OUT, FMC_A24, LCD_VSYNC
+PG14 USER_GPIO25 OUTPUT OPENDRAIN HIGH GPIO(25) # PG14: EVENT-OUT, FMC_A25, LCD_CLK
+PG15 USER_GPIO26 OUTPUT OPENDRAIN HIGH GPIO(26) # PG15: EVENT-OUT, FMC_SDNCAS, LCD_R3
+PD5  USER_GPIO27 OUTPUT OPENDRAIN HIGH GPIO(27) # PD5: USART2_TX, CAN1_TX, FMC_NWE, HRTIM_EEV3, EVENT-OUT
+PD6  USER_GPIO28 OUTPUT OPENDRAIN HIGH GPIO(28) # PD6: SPI3_MOSI, USART2_RX, CAN2_RX, I2S3_SDO, SDMMC2_CK, EVENT-OUT
+PD7  USER_GPIO29 OUTPUT OPENDRAIN HIGH GPIO(29) # PD7: SPI1_MOSI, I2S1_SDO, USART2_CK, SDMMC2_CMD, EVENT-OUT
+PC13 USER_GPIO30 OUTPUT OPENDRAIN HIGH GPIO(30) # PC13: EVENT-OUT
+PF2  USER_GPIO31 OUTPUT OPENDRAIN HIGH GPIO(31) # PF2: EVENT-OUT, FMC_A2, I2C2_SMBA
+PC14 USER_GPIO32 OUTPUT OPENDRAIN HIGH GPIO(32) # PC14: EVENT-OUT
+PE5  USER_GPIO33 OUTPUT OPENDRAIN HIGH GPIO(33) # PE5: DCMI_D6, DFSDM_CKIN3, FMC_A21, LCD_G0, SAI1_CK2, SAI1_SCK_A, SAI4_CK2, SAI4_SCK_A, SPI4_MISO, TIM15_CH1, TRACED2, EVENT-OUT
+PE6  USER_GPIO34 OUTPUT OPENDRAIN HIGH GPIO(34) # PE6: DCMI_D7, FMC_A22, LCD_G1, SAI1_D1, SAI1_SD_A, SAI2_MCK_B, SAI4_D1, SAI4_SD_A, SPI4_MOSI, TIM15_CH2, TIM1_BKIN2, TRACED3, EVENT-OUT
+PG2  USER_GPIO35 OUTPUT OPENDRAIN HIGH GPIO(35) # PG2: EVENT-OUT, FMC_A12, TIM8_BKIN
+PE4  USER_GPIO36 OUTPUT OPENDRAIN HIGH GPIO(36) # PE4: ADC1_INP15, ADC2_INP15, DFSDM_DATIN3, FMC_A20, LCD_G2, SAI1_D2, SAI4_D2, SPI4_MOSI, TIM15_CH2, TIM1_BKIN, TRACED1, EVENT-OUT
+PA4  USER_GPIO37 OUTPUT OPENDRAIN HIGH GPIO(37) # PA4: DCMI_HSYNC, EVENT-OUT, I2S1_WS, I2S3_WS, LCD_VSYNC, OTG_HS_SOF, SPI1_NSS, SPI3_NSS, SPI6_NSS, TIM5_ETR, USART2_CK
+
+# USB OTG_FS configuration (CN13 connector)
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9  VBUS INPUT OPENDRAIN      # Now free for your other use
+PA10 USB_FS_ID INPUT          # Now free for your other use

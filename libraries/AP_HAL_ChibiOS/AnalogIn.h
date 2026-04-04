@@ -72,6 +72,7 @@ public:
 
     void init() override;
     AP_HAL::AnalogSource* channel(int16_t pin) override;
+    bool valid_analog_pin(uint16_t pin) const override;
     void _timer_tick(void);
     void timer_tick_adc(uint8_t index);
     float board_voltage(void) override { return _board_voltage; }

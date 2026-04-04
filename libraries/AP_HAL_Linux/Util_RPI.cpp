@@ -9,8 +9,10 @@
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR || \
     CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1 || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PILOTPI
 
+#include <dirent.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -42,6 +44,37 @@ void UtilRPI::_get_board_type_using_peripheral_base()
     unsigned char buf[32];
     _linux_board_version = LINUX_BOARD_TYPE::UNKNOWN_BOARD;
     fp = fopen("/proc/device-tree/soc/ranges" , "rb");
+
+    // If fp returns NULL (which means ranges file not found), begin second detection stage.
+    // This method successfully tested at RPi 5 and RPi Z2, which have different soc folder names. 
+    if (!fp) {
+        const char *base_path = "/proc/device-tree";
+        DIR *dir = opendir(base_path);
+        if (!dir) {
+            printf("device-tree directory not found \r\n");
+            return ;
+        }
+
+        struct dirent *entry;
+        char ranges_path[256] {};
+
+        while ((entry = readdir(dir)) != nullptr) {
+            if (strncmp(entry->d_name, "soc", 4) == 0) {
+                snprintf(ranges_path, sizeof(ranges_path), "%s/%s/ranges", base_path, entry->d_name);
+                break;
+            }
+        }
+        closedir(dir);
+
+        if (ranges_path[0] == 0) {
+            printf("\"ranges\" file not found \r\n");
+            return ;
+        }
+
+        fp = fopen(ranges_path, "rb");
+    }
+
+    
     if (fp) {
         const uint16_t len = fread(buf, 1, sizeof(buf), fp);
         if (len >= 8) {
@@ -96,3 +129,4 @@ LINUX_BOARD_TYPE UtilRPI::detect_linux_board_type() const
 }
 
 #endif
+

@@ -51,10 +51,10 @@ bool AP_SerialLED::set_num_profiled(uint8_t chan, uint8_t num_leds)
     if (chan >= 1 && chan <= 16 && num_leds <= AP_SERIALLED_MAX_LEDS - 2) {
         // must have a clock
         uint32_t Clock_mask = 0;
-        if (!SRV_Channels::function_assigned((SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_ProfiLED_Clock))) {
+        if (!SRV_Channels::function_assigned((SRV_Channel::Function)((uint8_t)SRV_Channel::k_ProfiLED_Clock))) {
             return false;
         }
-        Clock_mask = SRV_Channels::get_output_channel_mask((SRV_Channel::Aux_servo_function_t)((uint8_t)SRV_Channel::k_ProfiLED_Clock));
+        Clock_mask = SRV_Channels::get_output_channel_mask((SRV_Channel::Function)((uint8_t)SRV_Channel::k_ProfiLED_Clock));
 
         return hal.rcout->set_serial_led_num_LEDs(chan-1, num_leds, AP_HAL::RCOutput::MODE_PROFILED, Clock_mask);
     }

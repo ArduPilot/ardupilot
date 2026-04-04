@@ -59,7 +59,7 @@ public:
     // returns true if sailboat should take a indirect navigation route to go upwind
     bool use_indirect_route(float desired_heading_cd) const;
 
-    // calculate the heading to sail on if we cant go upwind
+    // calculate the heading to sail on if we can't go upwind
     float calc_heading(float desired_heading_cd);
 
     // states of USE_MOTOR parameter and motor_state variable

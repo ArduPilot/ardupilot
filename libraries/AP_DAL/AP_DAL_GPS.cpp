@@ -27,7 +27,7 @@ void AP_DAL_GPS::start_frame()
         const log_RGPI old_RGPI = RGPI;
         const log_RGPJ old_RGPJ = RGPJ;
 
-        RGPI.status = (GPS_Status)gps.status(i);
+        RGPI.status = (uint8_t)gps.status(i);
         RGPI.antenna_offset = gps.get_antenna_offset(i);
 
         const Location &loc = gps.location(i);
@@ -50,8 +50,11 @@ void AP_DAL_GPS::start_frame()
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);
 
-        tmp_location[i].lat = RGPJ.lat;
-        tmp_location[i].lng = RGPJ.lng;
-        tmp_location[i].alt = RGPJ.alt;
+        tmp_location[i] = {
+            RGPJ.lat,
+            RGPJ.lng,
+            RGPJ.alt,
+            Location::AltFrame::ABSOLUTE
+        };
     }
 }

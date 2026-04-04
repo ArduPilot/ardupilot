@@ -189,6 +189,21 @@ void AP_SBusOut::init() {
         return;
     }
     sbus1_uart = serial_manager->find_serial(AP_SerialManager::SerialProtocol_Sbus1,0);
+
+    if (sbus1_uart == nullptr) {
+        return;
+    }
+
+    // update baud param in case user looks at it
+    serial_manager->set_and_default_baud(AP_SerialManager::SerialProtocol_Sbus1, 0, 100000);
+
+    auto &uart = *sbus1_uart;
+
+    uart.begin(100000, 16, 32);
+    uart.configure_parity(2);    // enable even parity
+    uart.set_stop_bits(2);
+    uart.set_unbuffered_writes(true);
+    uart.set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
 }
 
 #endif  // AP_SBUSOUTPUT_ENABLED

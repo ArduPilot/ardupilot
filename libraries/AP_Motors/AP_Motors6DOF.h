@@ -41,6 +41,8 @@ public:
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
 
+    void set_max_throttle(float max_throttle) { _max_throttle = max_throttle; }
+
     // returns a vector with roll, pitch, and yaw contributions
     Vector3f get_motor_angular_factors(int motor_number);
 
@@ -70,6 +72,7 @@ protected:
     float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward/backward
     float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to lateral (left/right)
 
+    float _max_throttle = 1.0f;
     // current limiting
     float _output_limited = 1.0f;
     float _batt_current_last = 0.0f;

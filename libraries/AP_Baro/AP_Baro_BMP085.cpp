@@ -16,7 +16,6 @@
 
 #if AP_BARO_BMP085_ENABLED
 
-#include <utility>
 #include <stdio.h>
 
 #include <AP_Common/AP_Common.h>
@@ -36,19 +35,14 @@ extern const AP_HAL::HAL &hal;
 #define OVERSAMPLING BMP085_OVERSAMPLING_HIGHRES
 #endif
 
-AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_BMP085::AP_Baro_BMP085(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(&dev)
 { }
 
-AP_Baro_Backend * AP_Baro_BMP085::probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend * AP_Baro_BMP085::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_Baro_BMP085 *sensor = NEW_NOTHROW AP_Baro_BMP085(baro, std::move(dev));
+    AP_Baro_BMP085 *sensor = NEW_NOTHROW AP_Baro_BMP085(baro, dev);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

@@ -1,18 +1,20 @@
+# DroneCAN Sniffer
+
 This is a UAVCAN sniffer designed to run on an ArduPilot board. It can
 be used to watch traffic on a UAVCAN bus, showing exactly what would
 be received by another node.
 
 To build and upload for a Pixhawk style board run this:
 
-```
- ./waf configure --board fmuv3 
+```bash
+ ./waf configure --board fmuv3
  ./waf --target examples/UAVCAN_sniffer --upload
 ```
- 
+
 then connect on the USB console. You will see 1Hz packet stats like
 this:
 
-```
+```text
 uavcan.equipment.air_data.StaticPressure: 29
 uavcan.equipment.air_data.StaticTemperature: 29
 uavcan.equipment.ahrs.MagneticFieldStrength: 20

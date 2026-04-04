@@ -26,7 +26,7 @@ local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTI
 
 local PARAM_TABLE_KEY = 15
 local PARAM_TABLE_PREFIX = "RTUN_"
-local PARAM_TABLE_SIZE = 11
+local PARAM_TABLE_SIZE = 12
 
 -- bind a parameter to a variable
 function bind_param(name)
@@ -143,6 +143,16 @@ local RTUN_AUTO_SAVE = bind_add_param('AUTO_SAVE', 10, 5)
 --]]
 local RTUN_RC_FUNC = bind_add_param('RC_FUNC', 11, 300)
 
+--[[
+  // @Param: RTUN_SPEED_MIN
+  // @DisplayName: Rover Quicktune minimum speed for tuning
+  // @Description: The mimimum speed in m/s required for tuning to start
+  // @Units: m/s
+  // @Range: 0.1 0.5
+  // @User: Standard
+--]]
+local SPEED_FF_SPEED_MIN = bind_add_param('SPEED_MIN', 12, 0.5)
+
 -- other vehicle parameters used by this script
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 local GCS_PID_MASK     = bind_param("GCS_PID_MASK")
@@ -159,7 +169,6 @@ local FLTD_MUL = 0.5                -- ATC_STR_RAT_FLTD set to 0.5 * INS_GYRO_FI
 local FLTT_MUL = 0.5                -- ATC_STR_RAT_FLTT set to 0.5 * INS_GYRO_FILTER
 local STR_RAT_FF_TURNRATE_MIN = math.rad(10)    -- steering rate feedforward min vehicle turn rate (in radians/sec)
 local STR_RAT_FF_STEERING_MIN = 0.10            -- steering rate feedforward min steering output (in the range 0 to 1)
-local SPEED_FF_SPEED_MIN = 0.5      -- speed feedforward minimum vehicle speed (in m/s)
 local SPEED_FF_THROTTLE_MIN = 0.20  -- speed feedforward requires throttle output (in the range 0 to 1)
 
 -- get time in seconds since boot
@@ -458,7 +467,7 @@ function update_speed_ff(ff_pname)
 
   -- check throttle and speed
   local throttle_ok = throttle_out >= SPEED_FF_THROTTLE_MIN
-  local speed_ok = speed > SPEED_FF_SPEED_MIN
+  local speed_ok = speed > SPEED_FF_SPEED_MIN:get()
   if (throttle_ok and speed_ok) then
     ff_throttle_sum = ff_throttle_sum + throttle_out
     ff_speed_sum = ff_speed_sum + speed
@@ -471,7 +480,7 @@ function update_speed_ff(ff_pname)
       if not throttle_ok then
         gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase throttle (%d < %d)", math.floor(throttle_out * 100), math.floor(SPEED_FF_THROTTLE_MIN * 100)))
       elseif not speed_ok then
-        gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase speed (%3.1f < %3.1f)", speed, SPEED_FF_SPEED_MIN))
+        gcs:send_text(MAV_SEVERITY.WARNING, string.format("RTun: increase speed (%3.1f < %3.1f)", speed, SPEED_FF_SPEED_MIN:get()))
       end
     end
   end
@@ -636,8 +645,7 @@ function protected_wrapper()
     gcs:send_text(MAV_SEVERITY.CRITICAL, "RTun: Internal Error: " .. err)
     -- when we fault we run the update function again after 1s, slowing it
     -- down a bit so we don't flood the console with errors
-    --return protected_wrapper, 1000
-    return
+    return protected_wrapper, 1000
   end
   return protected_wrapper, 1000/UPDATE_RATE_HZ
 end

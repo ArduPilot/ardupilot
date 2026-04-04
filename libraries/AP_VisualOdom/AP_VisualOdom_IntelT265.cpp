@@ -90,7 +90,7 @@ void AP_VisualOdom_IntelT265::handle_pose_estimate(uint64_t remote_time_us, uint
 
 // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
 // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
-void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality)
+void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, int8_t quality)
 {
     // rotate velocity to align with vehicle
     Vector3f vel_corrected = vel;
@@ -110,17 +110,8 @@ void AP_VisualOdom_IntelT265::handle_vision_speed_estimate(uint64_t remote_time_
     _last_update_ms = AP_HAL::millis();
 
 #if HAL_LOGGING_ENABLED
-    Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, reset_counter, !consume, _quality);
+    Write_VisualVelocity(remote_time_us, time_ms, vel_corrected, _frontend.get_vel_noise(), reset_counter, !consume, _quality);
 #endif
-}
-
-// apply rotation and correction to position
-void AP_VisualOdom_IntelT265::rotate_and_correct_position(Vector3f &position) const
-{
-    if (_use_posvel_rotation) {
-        position = _posvel_rotation * position;
-    }
-    position += _pos_correction;
 }
 
 // apply rotation to velocity
@@ -163,7 +154,7 @@ bool AP_VisualOdom_IntelT265::align_yaw_to_ahrs(const Vector3f &position, const 
         return false;
     }
 
-    align_yaw(position, attitude, AP::ahrs().get_yaw());
+    align_yaw(position, attitude, AP::ahrs().get_yaw_rad());
     return true;
 }
 
@@ -216,39 +207,6 @@ void AP_VisualOdom_IntelT265::align_yaw(const Vector3f &position, const Quaterni
 
     // update position correction to remove change due to rotation
     _pos_correction += (pos_orig - pos_new);
-}
-
-// align position with ahrs position by updating _pos_correction
-// sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
-bool AP_VisualOdom_IntelT265::align_position_to_ahrs(const Vector3f &sensor_pos, bool align_xy, bool align_z)
-{
-    // fail immediately if ahrs cannot provide position
-    Vector3f ahrs_pos_ned;
-    if (!AP::ahrs().get_relative_position_NED_origin(ahrs_pos_ned)) {
-        return false;
-    }
-
-    align_position(sensor_pos, ahrs_pos_ned, align_xy, align_z);
-    return true;
-}
-
-// align position with a new position by updating _pos_correction
-// sensor_pos should be the position directly from the sensor with only scaling applied (i.e. no yaw or position corrections)
-// new_pos should be a NED position offset from the EKF origin
-void AP_VisualOdom_IntelT265::align_position(const Vector3f &sensor_pos, const Vector3f &new_pos, bool align_xy, bool align_z)
-{
-    // calculate position with current rotation and correction
-    Vector3f pos_orig = sensor_pos;
-    rotate_and_correct_position(pos_orig);
-
-    // update position correction
-    if (align_xy) {
-        _pos_correction.x += (new_pos.x - pos_orig.x);
-        _pos_correction.y += (new_pos.y - pos_orig.y);
-    }
-    if (align_z) {
-        _pos_correction.z += (new_pos.z - pos_orig.z);
-    }
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message

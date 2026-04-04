@@ -8,7 +8,9 @@
 
 void Rover::init_precland()
 {
-    rover.precland.init(400);
+    // scheduler table specifies 400Hz, but we can call it no faster
+    // than the scheduler loop rate:
+    rover.precland.init(MIN(400, scheduler.get_loop_rate_hz()));
 }
 
 void Rover::update_precland()

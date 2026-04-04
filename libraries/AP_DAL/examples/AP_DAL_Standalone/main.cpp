@@ -11,8 +11,8 @@
 void AP_Param::setup_object_defaults(void const*, AP_Param::GroupInfo const*) {}
 
 template<typename T, ap_var_type PT>
-void AP_ParamT<T, PT>::set_and_default(const T &v) {}
-template class AP_ParamT<int8_t, AP_PARAM_INT8>;
+void AP_ParamTBase<T, PT>::set_and_default(const T &v) {}
+template class AP_ParamTBase<int8_t, AP_PARAM_INT8>;
 
 
 int AP_HAL::Util::vsnprintf(char*, size_t, char const*, va_list) { return -1; }
@@ -27,6 +27,7 @@ class AP_HAL_DAL_Standalone : public AP_HAL::HAL {
 public:
     AP_HAL_DAL_Standalone() :
         AP_HAL::HAL(
+            nullptr,
             nullptr,
             nullptr,
             nullptr,

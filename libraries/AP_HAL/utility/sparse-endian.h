@@ -57,6 +57,12 @@ typedef uint64_t __ap_bitwise be64_t;
 #undef be64toh
 #undef le64toh
 
+#if !defined (__BYTE_ORDER) && defined (__OpenBSD__)
+#define __BYTE_ORDER __BYTE_ORDER__
+#define __LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#define __BIG_ENDIAN __ORDER_BIG_ENDIAN__
+#endif
+
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define bswap_16_on_le(x) __bswap_16(x)
 #define bswap_32_on_le(x) __bswap_32(x)
@@ -101,10 +107,10 @@ static inline uint64_t be64toh_ptr(const uint8_t *p) { return (uint64_t) p[7] | 
 
 static inline float be32tofloat_ptr(const uint8_t *p) { return int32_to_float_le(be32toh_ptr(p)); }
 static inline float be32tofloat_ptr(const uint8_t *p, const uint8_t offset) { return be32tofloat_ptr(&p[offset]); }
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 static inline double be64todouble_ptr(const uint8_t *p) { return uint64_to_double_le(be64toh_ptr(p)); }
 static inline double be64todouble_ptr(const uint8_t *p, const uint8_t offset) { return be64todouble_ptr(&p[offset]); }
-#endif
+#endif  // AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 
 static inline void put_le16_ptr(uint8_t *p, uint16_t v) { p[0] = (v&0xFF); p[1] = (v>>8); }
 static inline void put_le24_ptr(uint8_t *p, uint32_t v) { p[0] = (v&0xFF); p[1] = (v>>8)&0xFF; p[2] = (v>>16)&0xFF; }

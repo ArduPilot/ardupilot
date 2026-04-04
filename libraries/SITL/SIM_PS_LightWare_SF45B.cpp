@@ -16,9 +16,11 @@
   Simulator for the RPLidarA2 proximity sensor
 */
 
-#include "SIM_PS_LightWare_SF45B.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+#if AP_SIM_PS_LIGHTWARE_SF45B_ENABLED
+
+#include "SIM_PS_LightWare_SF45B.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
@@ -234,4 +236,4 @@ void PS_LightWare_SF45B::update_output_scan(const Location &location)
     }
 }
 
-#endif  // HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+#endif  // AP_SIM_PS_LIGHTWARE_SF45B_ENABLED

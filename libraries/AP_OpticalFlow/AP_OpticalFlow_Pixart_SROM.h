@@ -5,7 +5,7 @@
 const uint8_t AP_OpticalFlow_Pixart::srom_id = 0xED;
 
 // SROM data for 3900
-const uint8_t AP_OpticalFlow_Pixart::srom_data[] =
+__INITFUNC__ const uint8_t AP_OpticalFlow_Pixart::srom_data[] =
 {
     0x03, 0xed, 0xb5, 0x32, 0x26, 0xfc, 0x1e, 0xbe, 0xd8, 0x1d, 0xb8, 0xd3, 0x05, 0x88, 0x73, 0x45,
     0x08, 0x92, 0xa6, 0xce, 0x1e, 0xba, 0xfe, 0x71, 0x5f, 0x1d, 0xb8, 0xf2, 0x66, 0x2f, 0xdc, 0x1b,
@@ -205,7 +205,7 @@ const uint8_t AP_OpticalFlow_Pixart::srom_data[] =
 /*
   initialisation data (register config) for 3900
  */
-const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3900[] =
+__INITFUNC__ const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3900[] =
 {
    { 0x30, 0x44 },
 
@@ -280,7 +280,7 @@ const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3900[] =
 };
 
 // init data for 3901
-const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3901_1[] =
+__INITFUNC__ const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3901_1[] =
 {
     { 0x7F, 0x00 },
     { 0x61, 0xAD },
@@ -345,7 +345,7 @@ const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3901_1[] =
 
 
 // Delay 100 ms before resuming the below register writes
-const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3901_2[] =
+__INITFUNC__ const AP_OpticalFlow_Pixart::RegData AP_OpticalFlow_Pixart::init_data_3901_2[] =
 {
     { 0x32, 0x44 },
     { 0x7F, 0x07 },

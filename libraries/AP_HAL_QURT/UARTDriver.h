@@ -83,6 +83,8 @@ public:
 
     bool _write_pending_bytes(void) override;
 
+    void check_rx_seq(uint32_t seq);
+
     uint32_t bw_in_bytes_per_second() const override
     {
         return 250000 * 3;
@@ -95,7 +97,8 @@ public:
 private:
     static void _mavlink_data_cb(const struct qurt_rpc_msg *msg, void *p);
     uint8_t inst;
-    uint32_t seq;
+    uint32_t tx_seq;
+    uint32_t rx_seq;
 };
 
 /*

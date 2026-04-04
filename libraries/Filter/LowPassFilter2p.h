@@ -21,7 +21,7 @@
 
 /// @file   LowPassFilter2p.h
 /// @brief  A class to implement a second order low pass filter
-/// @authors: Leonard Hall <LeonardTHall@gmail.com>, template implmentation: Daniel Frenzel <dgdanielf@gmail.com>
+/// @authors: Leonard Hall <LeonardTHall@gmail.com>, template implementation: Daniel Frenzel <dgdanielf@gmail.com>
 template <class T>
 class DigitalBiquadFilter {
 public:

@@ -4,18 +4,18 @@ The Flywoo H743 Pro is a flight controller produced by [Flywoo](https://www.flyw
 
 ## Features
 
- - MCU - STM32H743 32-bit processor running at 480 MHz
- - IMU - Dual ICM42688
- - Barometer - SPL06
- - OSD - AT7456E
- - Onboard Flash: 500MByte
- - 7x UARTs
- - 13x PWM Outputs (12 Motor Output, 1 LED)
- - Battery input voltage: 2S-6S
- - BEC 3.3V 0.5A
- - BEC 5V 3A
- - BEC 10V 3A for video, gpio controlled
- - Dual switchable camera inputs
+- MCU - STM32H743 32-bit processor running at 480 MHz
+- IMU - Dual ICM42688
+- Barometer - SPL06
+- OSD - AT7456E
+- Onboard Flash: 500MByte
+- 7x UARTs
+- 13x PWM Outputs (12 Motor Output, 1 LED)
+- Battery input voltage: 2S-6S
+- BEC 3.3V 0.5A
+- BEC 5V 3A
+- BEC 10V 3A for video, gpio controlled
+- Dual switchable camera inputs
 
 ## Pinout
 
@@ -27,14 +27,14 @@ The Flywoo H743 Pro is a flight controller produced by [Flywoo](https://www.flyw
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (User, DMA-enabled)
- - SERIAL2 -> UART2 (RX, DMA-enabled)
- - SERIAL3 -> UART3 (User)
- - SERIAL4 -> UART4 (GPS, DMA-enabled)
- - SERIAL6 -> UART6 (ESC Telemetry)
- - SERIAL7 -> UART7 (User)
- - SERIAL8 -> UART8 (DisplayPort, DMA-enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (User, DMA-enabled)
+- SERIAL2 -> UART2 (RX, DMA-enabled)
+- SERIAL3 -> UART3 (User)
+- SERIAL4 -> UART4 (GPS, DMA-enabled)
+- SERIAL6 -> UART6 (ESC Telemetry)
+- SERIAL7 -> UART7 (User)
+- SERIAL8 -> UART8 (DisplayPort, DMA-enabled)
 
 ## RC Input
 
@@ -43,15 +43,15 @@ RC input is configured by default via the USART2 RX input. It supports all seria
 Note: If the receiver is FPort the receiver must be tied to the USART2 TX pin , RSSI_TYPE set to 3,
 and SERIAL2_OPTIONS must be set to 7 (invert TX/RX, half duplex). For full duplex like CRSF/ELRS use both
 RX1 and TX1 and set RSSI_TYPE also to 3.
- 
+
 ## FrSky Telemetry
- 
+
 FrSky Telemetry is supported using an unused UART, such as the T3 pin (UART3 transmit).
 You need to set the following parameters to enable support for FrSky S.PORT:
- 
-  - SERIAL3_PROTOCOL 10
-  - SERIAL3_OPTIONS 7
-  
+
+- SERIAL3_PROTOCOL 10
+- SERIAL3_OPTIONS 7
+
 ## OSD Support
 
 The Flywoo H743 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX8/RX8 on the HD VTX connector.
@@ -64,11 +64,11 @@ M9-13 on a separate pads for LED strip and other PWM outputs.
 
 The PWM is in 4 groups:
 
- - PWM 1-2   in group1
- - PWM 3-6   in group2
- - PWM 7-10  in group3
- - PWM 11-12 in group4
- - PWM 13    in group5
+- PWM 1-2   in group1
+- PWM 3-6   in group2
+- PWM 7-10  in group3
+- PWM 11-12 in group4
+- PWM 13    in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -82,11 +82,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 11
- - BATT_CURR_PIN 13
- - BATT_VOLT_MULT 11.1
- - BATT_AMP_PERVLT 40
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 11
+- BATT_CURR_PIN 13
+- BATT_VOLT_MULT 11.1
+- BATT_AMP_PERVLT 40
 
 ## Compass
 

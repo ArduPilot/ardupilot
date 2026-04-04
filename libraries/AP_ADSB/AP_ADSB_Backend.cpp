@@ -21,8 +21,8 @@
   base class constructor.
 */
 AP_ADSB_Backend::AP_ADSB_Backend(AP_ADSB &frontend, uint8_t instance) :
-    _frontend(frontend),
-    _instance(instance)
+    _instance(instance),
+    _frontend(frontend)
 {
 }
 

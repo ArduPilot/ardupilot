@@ -356,8 +356,8 @@ Vector3f AC_CustomControl_PID::update()
     attitude_target = _att_control->get_attitude_target_quat();
     // This vector represents the angular error to rotate the thrust vector using x and y and heading using z
     Vector3f attitude_error;
-    float _thrust_angle, _thrust_error_angle;
-    _att_control->thrust_heading_rotation_angles(attitude_target, attitude_body, attitude_error, _thrust_angle, _thrust_error_angle);
+    float _thrust_angle_rad, _thrust_error_angle_rad;
+    _att_control->thrust_heading_rotation_angles(attitude_target, attitude_body, attitude_error, _thrust_angle_rad, _thrust_error_angle_rad);
 
     // recalculate ang vel feedforward from attitude target model
     // rotation from the target frame to the body frame

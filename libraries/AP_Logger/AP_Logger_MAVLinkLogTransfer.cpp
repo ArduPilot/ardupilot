@@ -216,6 +216,15 @@ void AP_Logger::handle_log_sending()
 {
     WITH_SEMAPHORE(_log_send_sem);
 
+    // we can spend a *long* time sending data on the main thread.  We
+    // can spen more than 1.9 seconds doing this depending on what the
+    // SD card gets up to, moving us into the monitor thread's "you
+    // are going to watchdog" code.  Until we move all these
+    // operations into a thread we will ask the timer thread to pat
+    // the watchdog and have the monitor thread chill out by being in
+    // an expected delay:
+    EXPECT_DELAY_MS(5000);
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // assume USB speeds in SITL for the purposes of log download
     const uint8_t num_sends = 40;

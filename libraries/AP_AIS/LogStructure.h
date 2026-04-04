@@ -141,9 +141,7 @@ struct PACKED log_AIS_msg5 {
 // @Field: dst: Destination
 // @Field: dte: DTE
 
-#if !AP_AIS_ENABLED
-#define LOG_STRUCTURE_FROM_AIS
-#else
+#if AP_AIS_ENABLED
 #define LOG_STRUCTURE_FROM_AIS \
     { LOG_AIS_RAW_MSG, sizeof(log_AIS_raw), \
       "AISR",  "QBBBZ", "TimeUS,num,total,ID,payload", "s----", "F0000" }, \
@@ -153,4 +151,6 @@ struct PACKED log_AIS_msg5 {
       "AIS4",  "QBIHBBBBBBLLBBI", "US,rep,mmsi,year,mth,day,h,m,s,fix,lon,lat,epfd,raim,rad", "s--------------", "F00000000000000" }, \
     { LOG_AIS_MSG5, sizeof(log_AIS_msg5), \
       "AIS5",  "QBIBINZBHHBBBBZB", "US,rep,mmsi,ver,imo,cal,nam,typ,bow,stn,prt,str,fix,dght,dst,dte", "s-------mmmm-m--", "F------------A--" },
+#else
+#define LOG_STRUCTURE_FROM_AIS
 #endif

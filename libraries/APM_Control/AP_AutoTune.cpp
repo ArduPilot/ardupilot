@@ -153,7 +153,12 @@ void AP_AutoTune::stop(void)
 
 const char *AP_AutoTune::axis_string(void) const
 {
-    switch (type) {
+    return axis_string(type);
+}
+
+const char *AP_AutoTune::axis_string(ATType _type)
+{
+    switch (_type) {
     case AUTOTUNE_ROLL:
         return "Roll";
     case AUTOTUNE_PITCH:

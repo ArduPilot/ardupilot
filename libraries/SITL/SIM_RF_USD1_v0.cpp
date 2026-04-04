@@ -20,9 +20,9 @@
 
 using namespace SITL;
 
-uint32_t RF_USD1_v0::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_USD1_v0::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
-    const uint16_t reading = alt_cm / 2.5f;
+    const uint16_t reading = alt_m * 100 / 2.5f;
     buffer[0] = 0x48;
     buffer[1] = reading & 0x7f;
     buffer[2] = (reading >> 7) & 0xff;

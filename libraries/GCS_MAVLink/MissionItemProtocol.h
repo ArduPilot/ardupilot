@@ -102,9 +102,7 @@ private:
     bool mission_item_warning_sent = false;
 
     // support for GCS getting waypoints etc from us:
-    virtual MAV_MISSION_RESULT get_item(const GCS_MAVLINK &_link,
-                                        const mavlink_message_t &msg,
-                                        const mavlink_mission_request_int_t &packet,
+    virtual MAV_MISSION_RESULT get_item(uint16_t seq,
                                         mavlink_mission_item_int_t &ret_packet) = 0;
 
     void init_send_requests(GCS_MAVLINK &_link,
