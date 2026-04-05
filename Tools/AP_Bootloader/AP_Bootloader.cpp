@@ -272,6 +272,14 @@ int main(void)
             SCB_DisableICache();
 #endif
 
+            // reset clock tree to HSI — the system bootloader
+            // expects HSI as clock source. PLL settings vary by
+            // board (crystal frequency) and must be cleared.
+            RCC->CFGR = 0;
+            while ((RCC->CFGR & RCC_CFGR_SWS) != 0) {}
+            RCC->CR &= ~(RCC_CR_PLL1ON | RCC_CR_PLL2ON | RCC_CR_PLL3ON |
+                         RCC_CR_HSEON | RCC_CR_HSI48ON);
+
             // restore CPU state to power-on reset defaults
             __enable_irq();
             SCB->VTOR = 0;
