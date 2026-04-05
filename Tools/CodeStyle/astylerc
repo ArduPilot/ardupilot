@@ -4,7 +4,9 @@ add-braces
 indent=spaces=4
 indent-col1-comments
 min-conditional-indent=0
-suffix=none
-lineend=linux
 pad-header
 
+# The lineend and suffix options are not currently supported by astyle_py.
+# https://github.com/igrr/astyle_py?tab=readme-ov-file#formatting-options
+# lineend=linux
+# suffix=none
