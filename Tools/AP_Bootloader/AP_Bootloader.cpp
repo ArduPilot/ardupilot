@@ -263,10 +263,11 @@ int main(void)
             rccDisableOTG_FS();
 
 #if CORTEX_MODEL == 7
-            // flush dirty D-Cache lines to RAM and disable caches.
-            // on Cortex-M7 (F7/H7) the firmware's cached writes
-            // persist through NVIC_SystemReset and must be flushed.
-            SCB_CleanDCache();
+            // invalidate and disable D-Cache. we discard dirty lines
+            // rather than flushing them — the system bootloader
+            // re-initialises RAM and flushing could stall if dirty
+            // lines target peripherals with clocks disabled.
+            SCB_InvalidateDCache();
             SCB_DisableDCache();
             SCB_InvalidateICache();
             SCB_DisableICache();
