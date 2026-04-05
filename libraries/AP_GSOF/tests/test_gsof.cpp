@@ -41,7 +41,7 @@ TEST(AP_GSOF, packet1)
         c = fgetc (fp);
         parsed |= gsof.parse((uint8_t)c, expected);
     }
-    
+
     EXPECT_TRUE(parsed);
 
     fclose(fp);
