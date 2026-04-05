@@ -198,31 +198,39 @@ bool AP_PitchController::is_underspeed() const
  */
 float AP_PitchController::_get_coordination_rate_offset(bool &inverted) const
 {
-    float rate_offset;
     float bank_angle = AP::ahrs().get_roll_rad();
 
-    // limit bank angle between +- 80 deg if right way up
-    if (fabsf(bank_angle) < radians(90))	{
+    // limit bank angle between +- 80 deg if right way up and between 100 and 260 if inverted
+    if (fabsf(bank_angle) < radians(90)) {
         bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
         inverted = false;
     } else {
+        // Note that the wrap means we have a different range here, we could wrap it back but its only used in trigonometric functions so we don't need to.
         inverted = true;
-        if (bank_angle > 0.0f) {
-            bank_angle = constrain_float(bank_angle,radians(100),radians(180));
-        } else {
-            bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
-        }
+        bank_angle = constrain_float(wrap_2PI(bank_angle), radians(100), radians(260));
     }
     const AP_AHRS &_ahrs = AP::ahrs();
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
-        rate_offset = 0;
-    } else {
-        rate_offset = cosf(_ahrs.get_pitch_rad())*fabsf(degrees((GRAVITY_MSS / MAX((get_airspeed() * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        return 0.0;
     }
+
+    // Assume true airspeed is at least min airspeed, protect against zeros.
+    const float true_airspeed = MAX((get_airspeed() * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1));
+
+    // Lateral acceleration
+    const float lateral_accel = tanf(bank_angle) * GRAVITY_MSS * cosf(_ahrs.get_pitch_rad());
+
+    // Resultant turn rate in the pitch axis
+    const float turn_rate = (lateral_accel / true_airspeed) * sinf(bank_angle);
+
+    // Apply gain
+    float rate_offset = fabsf(degrees(turn_rate)) * _roll_ff;
+
     if (inverted) {
         rate_offset = -rate_offset;
     }
+
     return rate_offset;
 }
 
