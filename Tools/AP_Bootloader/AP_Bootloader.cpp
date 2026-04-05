@@ -263,14 +263,13 @@ int main(void)
             rccDisableOTG_FS();
 
 #if CORTEX_MODEL == 7
-            // invalidate and disable D-Cache. we discard dirty lines
-            // rather than flushing them — the system bootloader
-            // re-initialises RAM and flushing could stall if dirty
-            // lines target peripherals with clocks disabled.
-            SCB_InvalidateDCache();
-            SCB_DisableDCache();
-            SCB_InvalidateICache();
-            SCB_DisableICache();
+            // disable D-Cache and I-Cache by clearing CCR bits directly.
+            // we avoid SCB_CleanDCache/SCB_InvalidateDCache because
+            // set/way operations can hang if dirty cache lines target
+            // peripherals whose clocks have been disabled.
+            SCB->CCR &= ~(SCB_CCR_DC_Msk | SCB_CCR_IC_Msk);
+            __DSB();
+            __ISB();
 #endif
 
             // reset clock tree to HSI — the system bootloader
