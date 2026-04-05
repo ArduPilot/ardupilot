@@ -837,6 +837,11 @@ void Util::boot_to_dfu()
 {
     hal.util->persistent_data.boot_to_dfu = true;
     stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+    // set RTC_BOOT_HOLD before the shutdown sequence in reboot() —
+    // on boards with IOMCU the shutdown can take long enough for
+    // the watchdog to fire, and set_fast_reboot inside reboot()
+    // would never be reached
+    set_fast_reboot(RTC_BOOT_HOLD);
     hal.scheduler->reboot(true);
 }
 #endif
