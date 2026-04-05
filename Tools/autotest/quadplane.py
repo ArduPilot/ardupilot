@@ -92,6 +92,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
 
+    def start_flying_mission(self, filename: str) -> None:
+        self.progress(f"Flying mission {filename}")
+        self.load_mission(filename)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
     def AirMode(self):
         """Check that plane.air_mode turns on and off as required"""
         self.progress("########## Testing AirMode operation")
@@ -1494,10 +1501,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def MAV_CMD_NAV_LOITER_TO_ALT(self, target_system=1, target_component=1):
         '''ensure consecutive loiter to alts work'''
-        self.load_mission('mission.txt')
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.start_flying_mission('mission.txt')
         self.wait_current_waypoint(4, timeout=240)
         self.assert_altitude(120, accuracy=5, relative=True)
         self.delay_sim_time(30)
