@@ -245,6 +245,16 @@ int main(void)
             pd.boot_to_dfu = false;
             stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
 
+#if CORTEX_MODEL == 7
+            // flush and disable D-Cache and I-Cache BEFORE disabling
+            // peripheral clocks. set/way cache operations hang if
+            // dirty lines target peripherals with clocks disabled.
+            SCB_CleanDCache();
+            SCB_DisableDCache();
+            SCB_InvalidateICache();
+            SCB_DisableICache();
+#endif
+
             // ensure USB OTG FS clock is enabled so we can
             // access its registers for de-initialisation
             rccEnableOTG_FS(false);
@@ -261,16 +271,6 @@ int main(void)
             // reset the peripheral via RCC and disable its clock
             rccResetOTG_FS();
             rccDisableOTG_FS();
-
-#if CORTEX_MODEL == 7
-            // disable D-Cache and I-Cache by clearing CCR bits directly.
-            // we avoid SCB_CleanDCache/SCB_InvalidateDCache because
-            // set/way operations can hang if dirty cache lines target
-            // peripherals whose clocks have been disabled.
-            SCB->CCR &= ~(SCB_CCR_DC_Msk | SCB_CCR_IC_Msk);
-            __DSB();
-            __ISB();
-#endif
 
             // reset clock tree to HSI — the system bootloader
             // expects HSI as clock source. PLL settings vary by
