@@ -805,22 +805,20 @@ void NavEKF3_core::FuseMagnetometer()
                 }
             }
 
-            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-            ForceSymmetry();
-            ConstrainVariances();
-
             // correct the state vector
             for (uint8_t j= 0; j<=stateIndexLim; j++) {
                 statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
             }
+            stateStruct.quat.normalize();
+
+            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+            ForceSymmetry();
+            ConstrainVariances();
 
             // add table constraint here for faster convergence
             if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
                 MagTableConstrain();
             }
-
-            stateStruct.quat.normalize();
-
         } else {
             // record bad axis
             if (obsIndex == 0) {
