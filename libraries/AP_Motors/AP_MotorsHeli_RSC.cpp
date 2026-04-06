@@ -269,21 +269,18 @@ void AP_MotorsHeli_RSC::configure_armed()
 
     // set desired speed for each control mode
     switch (_rsc_control_mode) {
-    case ROTOR_CONTROL_MODE_PASSTHROUGH:
-        // passthrough mode uses the pilot's desired speed directly as the control output, so set the desired speed to the pilot's input
-        _desired_rotor_speed = _passthru_desired_rotor_speed;
-        break;
-    case ROTOR_CONTROL_MODE_SETPOINT:
-        _desired_rotor_speed = _rsc_setpoint.get() * 0.01f;
-        break;
-    case ROTOR_CONTROL_MODE_THROTTLECURVE:
-    case ROTOR_CONTROL_MODE_AUTOTHROTTLE:
-        // throttle curve and autothrottle both use the pilot's desired speed as the input to the throttle curve, so set the desired speed to the pilot's input
-        _desired_rotor_speed = 1.0f;
-        break;
-    default:
-        _desired_rotor_speed = 0.0f;
-        break;
+        case ROTOR_CONTROL_MODE_PASSTHROUGH:
+            // passthrough mode uses the pilot's desired speed directly as the control output, so set the desired speed to the pilot's input
+            _desired_rotor_speed = _passthru_desired_rotor_speed;
+            break;
+        case ROTOR_CONTROL_MODE_SETPOINT:
+            _desired_rotor_speed = _rsc_setpoint.get() * 0.01f;
+            break;
+        case ROTOR_CONTROL_MODE_THROTTLECURVE:
+        case ROTOR_CONTROL_MODE_AUTOTHROTTLE:
+            // throttle curve and autothrottle both use the pilot's desired speed as the input to the throttle curve, so set the desired speed to the pilot's input
+            _desired_rotor_speed = 1.0f;
+            break;
     }
 
     // Set rsc mode specific parameters
@@ -353,106 +350,106 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
         _last_update_us = now;
     }
 
-    switch (desired_spool_state) {
-    case DesiredRSCSpoolState::SHUT_DOWN:
-        // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
-        update_rotor_ramp(0.0f, dt);
+    switch (_desired_spool_state) {
+        case DesiredRSCSpoolState::SHUT_DOWN:
+            // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
+            update_rotor_ramp(0.0f, dt);
 
-        // control output forced to zero
-        _control_output = 0.0f;
+            // control output forced to zero
+            _control_output = 0.0f;
 
-        // governor is forced to disengage status and reset outputs
-        governor_reset();
-        _autothrottle = false;
-        _governor_fault = false;
-        //turbine start flag on
-        _starting = true;
+            // governor is forced to disengage status and reset outputs
+            governor_reset();
+            _autothrottle = false;
+            _governor_fault = false;
+            //turbine start flag on
+            _starting = true;
 
-        // ensure we always deactivate the autorotation state if we disarm
-        autorotation.set_active(false, true);
+            // ensure we always deactivate the autorotation state if we disarm
+            autorotation.set_active(false, true);
 
-        // ensure _idle_throttle not set to invalid value
-        _idle_throttle = get_idle_output();
-
-        // reset fast idle timer
-        _fast_idle_timer = 0.0;
-        break;
-
-    case DesiredRSCSpoolState::GROUND_IDLE:
-        // set rotor ramp to decrease speed to zero
-        update_rotor_ramp(0.0f, dt);
-
-        // set rotor control speed to engine idle and ensure governor is reset, if used
-        governor_reset();
-        _autothrottle = false;
-        _governor_fault = false;
-
-        // turbine start sequence
-        if (_turbine_start && _starting == true ) {
-            _idle_throttle += 0.001f;
-            if (_control_output >= 1.0f) {
-                _idle_throttle = get_idle_output();
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Turbine startup");
-                _starting = false;
-            }
-            _control_output = _idle_throttle;
-            break;
-        }
-
-        // all other idle throttle functions below this require idle throttle to be reset to H_RSC_IDLE on each call
-        _idle_throttle = get_idle_output();
-
-        // check if we need to use autorotation idle throttle
-        if (autorotation.get_idle_throttle(_idle_throttle)) {
-            // if we are here then we are autorotating
-            _control_output = _idle_throttle;
-            break;
-        }
-
-        // check if we need to use engine cooldown
-        if (_fast_idle_timer > 0.0) {
-            // running at fast idle for engine cool down
-            _idle_throttle *= 1.5;
-            _fast_idle_timer -= dt;
-        }
-
-        _control_output = _idle_throttle;
-
-        break;
-
-    case DesiredRSCSpoolState::THROTTLE_UNLIMITED:
-        // set main rotor ramp to increase to full speed
-        update_rotor_ramp(1.0f, dt);
-
-        // set fast idle timer so next time RSC goes to idle, the cooldown timer starts
-        if (_cooldown_time.get() > 0) {
-            _fast_idle_timer = _cooldown_time.get();
-        }
-
-        // ensure _idle_throttle not set to invalid value due to premature switch out of turbine start
-        if (_starting) {
+            // ensure _idle_throttle not set to invalid value
             _idle_throttle = get_idle_output();
-        }
-        // if turbine engine started without using start sequence, set starting flag just to be sure it can't be triggered when back in idle
-        _starting = false;
 
-        if ((_rsc_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_rsc_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
-            // set control rotor speed to ramp slewed value between idle and desired speed
-            _control_output = _idle_throttle + (_rotor_ramp_output * (_desired_rotor_speed - _idle_throttle));
-        } else if (_rsc_control_mode == ROTOR_CONTROL_MODE_THROTTLECURVE) {
-            // throttle output from throttle curve based on collective position
-            float throttlecurve = calculate_throttlecurve(_collective_in);
-            _control_output = _idle_throttle + (_rotor_ramp_output * (throttlecurve - _idle_throttle));
-        } else if (_rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
-            autothrottle_run();
-        }
-        break;
+            // reset fast idle timer
+            _fast_idle_timer = 0.0;
+            break;
+
+        case DesiredRSCSpoolState::GROUND_IDLE:
+            // set rotor ramp to decrease speed to zero
+            update_rotor_ramp(0.0f, dt);
+
+            // set rotor control speed to engine idle and ensure governor is reset, if used
+            governor_reset();
+            _autothrottle = false;
+            _governor_fault = false;
+
+            // turbine start sequence
+            if (_turbine_start && _starting == true ) {
+                _idle_throttle += 0.001f;
+                if (_control_output >= 1.0f) {
+                    _idle_throttle = get_idle_output();
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Turbine startup");
+                    _starting = false;
+                }
+                _control_output = _idle_throttle;
+                break;
+            }
+
+            // all other idle throttle functions below this require idle throttle to be reset to H_RSC_IDLE on each call
+            _idle_throttle = get_idle_output();
+
+            // check if we need to use autorotation idle throttle
+            if (autorotation.get_idle_throttle(_idle_throttle)) {
+                // if we are here then we are autorotating
+                _control_output = _idle_throttle;
+                break;
+            }
+
+            // check if we need to use engine cooldown
+            if (_fast_idle_timer > 0.0) {
+                // running at fast idle for engine cool down
+                _idle_throttle *= 1.5;
+                _fast_idle_timer -= dt;
+            }
+
+            _control_output = _idle_throttle;
+
+            break;
+
+        case DesiredRSCSpoolState::THROTTLE_UNLIMITED:
+            // set main rotor ramp to increase to full speed
+            update_rotor_ramp(1.0f, dt);
+
+            // set fast idle timer so next time RSC goes to idle, the cooldown timer starts
+            if (_cooldown_time.get() > 0) {
+                _fast_idle_timer = _cooldown_time.get();
+            }
+
+            // ensure _idle_throttle not set to invalid value due to premature switch out of turbine start
+            if (_starting) {
+                _idle_throttle = get_idle_output();
+            }
+            // if turbine engine started without using start sequence, set starting flag just to be sure it can't be triggered when back in idle
+            _starting = false;
+
+            if ((_rsc_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) || (_rsc_control_mode == ROTOR_CONTROL_MODE_SETPOINT)) {
+                // set control rotor speed to ramp slewed value between idle and desired speed
+                _control_output = _idle_throttle + (_rotor_ramp_output * (_desired_rotor_speed - _idle_throttle));
+            } else if (_rsc_control_mode == ROTOR_CONTROL_MODE_THROTTLECURVE) {
+                // throttle output from throttle curve based on collective position
+                float throttlecurve = calculate_throttlecurve(_collective_in);
+                _control_output = _idle_throttle + (_rotor_ramp_output * (throttlecurve - _idle_throttle));
+            } else if (_rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
+                autothrottle_run();
+            }
+            break;
     }
 
     // update rotor speed run-up estimate
     update_rotor_runup(dt);
 
-    update_spool_state(desired_spool_state);
+    update_spool_state();
 
     if (_power_slewrate > 0) {
         // implement slew rate for throttle
@@ -464,10 +461,10 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
 }
 
 // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
-void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
+void AP_MotorsHeli_RSC::update_spool_state()
 {
 
-    if (_spool_desired == DesiredRSCSpoolState::SHUT_DOWN) {
+    if (_desired_spool_state == DesiredRSCSpoolState::SHUT_DOWN) {
         // if we are shutting down, we want to immediately go to SHUT_DOWN state and not wait for spool down to complete
         _spool_state = RSCSpoolState::SHUT_DOWN;
         return;
@@ -476,7 +473,7 @@ void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
         case RSCSpoolState::SHUT_DOWN:
             // Motors should be stationary.
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DesiredRSCSpoolState::SHUT_DOWN) {
+            if (_desired_spool_state != DesiredRSCSpoolState::SHUT_DOWN) {
                 _spool_state = RSCSpoolState::GROUND_IDLE;
                 break;
             }
@@ -485,11 +482,11 @@ void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
 
         case RSCSpoolState::GROUND_IDLE: {
             // Motors should be stationary or at ground idle.
-            if (_spool_desired == DesiredRSCSpoolState::SHUT_DOWN){
+            if (_desired_spool_state == DesiredRSCSpoolState::SHUT_DOWN){
                 _spool_state = RSCSpoolState::SHUT_DOWN;
-            } else if(_spool_desired == DesiredRSCSpoolState::THROTTLE_UNLIMITED) {
+            } else if(_desired_spool_state == DesiredRSCSpoolState::THROTTLE_UNLIMITED) {
                 _spool_state = RSCSpoolState::SPOOLING_UP;
-            } else {    // _spool_desired == GROUND_IDLE
+            } else {    // _desired_spool_state == GROUND_IDLE
 
             }
 
@@ -498,7 +495,7 @@ void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
         case RSCSpoolState::SPOOLING_UP:
             // Maximum throttle should move from minimum to maximum.
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DesiredRSCSpoolState::THROTTLE_UNLIMITED ){
+            if (_desired_spool_state != DesiredRSCSpoolState::THROTTLE_UNLIMITED ){
                 _spool_state = RSCSpoolState::SPOOLING_DOWN;
                 break;
             }
@@ -511,7 +508,7 @@ void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
         case RSCSpoolState::THROTTLE_UNLIMITED:
             // Throttle should exhibit normal flight behavior.
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired != DesiredRSCSpoolState::THROTTLE_UNLIMITED && !rotor_speed_above_critical()) {
+            if (_desired_spool_state != DesiredRSCSpoolState::THROTTLE_UNLIMITED && !rotor_speed_above_critical()) {
                 _spool_state = RSCSpoolState::SPOOLING_DOWN;
                 break;
             }
@@ -520,7 +517,7 @@ void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
 
         case RSCSpoolState::SPOOLING_DOWN:
             // make sure the motors are spooling in the correct direction
-            if (_spool_desired == DesiredRSCSpoolState::THROTTLE_UNLIMITED) {
+            if (_desired_spool_state == DesiredRSCSpoolState::THROTTLE_UNLIMITED) {
                 _spool_state = RSCSpoolState::SPOOLING_UP;
                 break;
             }
