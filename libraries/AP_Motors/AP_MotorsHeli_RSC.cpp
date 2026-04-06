@@ -466,6 +466,12 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
 // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
 void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
 {
+
+    if (_spool_desired == DesiredRSCSpoolState::SHUT_DOWN) {
+        // if we are shutting down, we want to immediately go to SHUT_DOWN state and not wait for spool down to complete
+        _spool_state = RSCSpoolState::SHUT_DOWN;
+        return;
+    }
     switch (_spool_state) {
         case RSCSpoolState::SHUT_DOWN:
             // Motors should be stationary.
@@ -524,7 +530,6 @@ void AP_MotorsHeli_RSC::update_spool_state(DesiredRSCSpoolState _spool_desired)
             break;
     }
 }
-
 
 // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
 void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
