@@ -1151,15 +1151,15 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
-
         // correct the state vector
         for (uint8_t i=0; i<=stateIndexLim; i++) {
             statesArray[i] -= Kfusion[i] * constrain_ftype(innovYaw, -0.5f, 0.5f);
         }
         stateStruct.quat.normalize();
+
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
 
         // record fusion numerical health status
         faultStatus.bad_yaw = false;
