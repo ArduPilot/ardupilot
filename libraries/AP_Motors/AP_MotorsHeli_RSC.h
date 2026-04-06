@@ -100,7 +100,7 @@ public:
 private:
 
     // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
-    void            update_spool_state(DesiredRSCSpoolState desired_spool_state);
+    void            update_spool_state();
 
     // set_rsc_control_mode - sets RSC control mode
     void            set_rsc_control_mode(RotorControlMode mode) { _rsc_control_mode = mode; }
@@ -136,7 +136,7 @@ private:
     float           calculate_throttlecurve(float collective_in);
 
     // rotor_speed_above_critical - return true if rotor speed is above that critical for flight
-    bool        rotor_speed_above_critical(void) const { return _rotor_runup_output >= get_critical_speed(); }
+    bool            rotor_speed_above_critical(void) const { return _rotor_runup_output >= get_critical_speed(); }
 
     uint64_t        _last_update_us;
     const uint8_t   _instance;
