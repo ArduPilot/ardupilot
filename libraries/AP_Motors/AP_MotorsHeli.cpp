@@ -196,9 +196,9 @@ void AP_MotorsHeli::output_min()
     // move swash to mid
     move_actuators(0.0f,0.0f,0.5f,0.0f);
     
+    // _spool_state is enforced to SHUT_DOWN when _spool_desired is SHUT_DOWN.
     set_desired_spool_state(DesiredSpoolState::SHUT_DOWN);
-    _spool_state = SpoolState::SHUT_DOWN;
-    update_motor_control(_spool_desired);
+    _spool_state = update_motor_control(_spool_desired);
 
     output_to_motors();
 
@@ -353,13 +353,13 @@ void AP_MotorsHeli::output_logic()
         }
     } else {
         _heliflags.init_targets_on_arming = true;
-        _spool_desired = DesiredSpoolState::SHUT_DOWN;
-        _spool_state = SpoolState::SHUT_DOWN;
+        _spool_desired = DesiredSpoolState::SHUT_DOWN; // RSC will enforce _spool_state to SHUT_DOWN when spool_desired is SHUT_DOWN
     }
 
     // send desired spool state update to Heli RSC and update outputs
     // the Heli RSC will return the current spool state which is used to update _spool_state variable
-    _spool_state=update_motor_control(_spool_desired);
+    // _spool_state is enforced to SHUT_DOWN when _spool_desired is SHUT_DOWN.
+    _spool_state = update_motor_control(_spool_desired);
 
     // Always reset the collective limit flags, they get set in move_actuators() if collective reaches a limit
     limit.set_throttle(false);
