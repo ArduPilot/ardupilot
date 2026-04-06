@@ -145,10 +145,11 @@ void NavEKF3_core::FuseAirspeed()
                     P[i][j] = P[i][j] - KHP[i][j];
                 }
             }
+
+            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+            ForceSymmetry();
+            ConstrainVariances();
         }
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
     }
 }
 
