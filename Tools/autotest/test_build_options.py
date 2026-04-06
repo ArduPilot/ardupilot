@@ -324,7 +324,6 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('QAUTOTUNE_ENABLED')
             feature_define_whitelist.add('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED')
             feature_define_whitelist.add('HAL_QUADPLANE_ENABLED')
-            feature_define_whitelist.add('AP_BATTERY_WATT_MAX_ENABLED')
             feature_define_whitelist.add('MODE_AUTOLAND_ENABLED')
             feature_define_whitelist.add('AP_PLANE_GLIDER_PULLUP_ENABLED')
             feature_define_whitelist.add('AP_QUICKTUNE_ENABLED')
@@ -343,8 +342,12 @@ class TestBuildOptions(object):
             # required for these bindings:
             feature_define_whitelist.add('AP_SCRIPTING_BINDING_MOTORS_ENABLED')
 
+        if target.lower() not in ["plane", "rover"]:
+            # only Plane and Rover support battery watt limiting
+            feature_define_whitelist.add('AP_BATTERY_WATT_MAX_ENABLED')
+
         if target.lower() not in ["rover", "copter"]:
-            # only Plane and Copter instantiate Beacon
+            # only Rover and Copter instantiate Beacon
             feature_define_whitelist.add('AP_BEACON_ENABLED')
 
         if target.lower() != "rover":
