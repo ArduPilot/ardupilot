@@ -281,6 +281,10 @@ void AP_MotorsHeli_RSC::configure_armed()
             // throttle curve and autothrottle both use the pilot's desired speed as the input to the throttle curve, so set the desired speed to the pilot's input
             _desired_rotor_speed = 1.0f;
             break;
+        case ROTOR_CONTROL_MODE_DISABLED:
+            // in disabled mode the desired speed is not used, but set it to zero for safety
+            _desired_rotor_speed = 0.0f;
+            break;
     }
 
     // Set rsc mode specific parameters
@@ -317,6 +321,15 @@ void AP_MotorsHeli_RSC::set_throttle_curve()
 // update - ran each loop to update the RSC
 AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState desired_spool_state)
 {
+
+    // if control mode is disabled, then we should always be in SHUT_DOWN spool state and ignore any other desired spool state inputs
+    if (_rsc_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
+        _desired_spool_state = DesiredRSCSpoolState::SHUT_DOWN;
+        update_spool_state();
+        _control_output = 0.0f;
+        return _spool_state;
+    }
+
     // set desired spool state
     _desired_spool_state = desired_spool_state;
 
