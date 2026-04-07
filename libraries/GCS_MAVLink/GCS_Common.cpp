@@ -5038,7 +5038,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
     //       and changes mission state "completed" to be "active" or "paused".
     const bool reset_and_restart = is_equal(packet.param2, 1.0f);
     if (reset_and_restart) {
-        mission->reset();
+        // reset jump counters only
+        mission->reset_jump_counters();
     }
     if (packet.param1 >= 0) {
         const uint32_t seq = (uint32_t)packet.param1;
@@ -5046,7 +5047,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
             return MAV_RESULT_FAILED;
         }
     }
-    if (reset_and_restart) {
+    if (reset_and_restart && packet.param1 >= 0) {
         mission->resume();
     }
 
