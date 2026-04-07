@@ -208,19 +208,17 @@ void Topotek::handle_packet(uint8_t data_len)
     } else if (strncmp(id, "GIP", 3) == 0 && data_len >= 4) {
         // pitch angle command: data[0..3] = 4 uppercase hex chars for int16 centidegrees
         // Wire value is (uint16_t)(-degrees(pitch_rad)*100); store as-is for echo in send_attitude()
-        _commanded_pitch_cd = (int16_t)(
-            ((uint16_t)char_to_hex(_buf[10]) << 12) |
-            ((uint16_t)char_to_hex(_buf[11]) <<  8) |
-            ((uint16_t)char_to_hex(_buf[12]) <<  4) |
-             (uint16_t)char_to_hex(_buf[13]));
+        uint32_t tmp;
+        if (hex_chars_to_uint32((const char*)&_buf[10], 4, tmp)) {
+            _commanded_pitch_cd = (int16_t)tmp;
+        }
 
     } else if (strncmp(id, "GIY", 3) == 0 && data_len >= 4) {
         // body-frame yaw angle command
-        _commanded_yaw_cd = (int16_t)(
-            ((uint16_t)char_to_hex(_buf[10]) << 12) |
-            ((uint16_t)char_to_hex(_buf[11]) <<  8) |
-            ((uint16_t)char_to_hex(_buf[12]) <<  4) |
-             (uint16_t)char_to_hex(_buf[13]));
+        uint32_t tmp;
+        if (hex_chars_to_uint32((const char*)&_buf[10], 4, tmp)) {
+            _commanded_yaw_cd = (int16_t)tmp;
+        }
     }
     // all other commands (YPR, GIR, PTZ, LAT, LON, ALT, etc.) absorbed silently
 }
