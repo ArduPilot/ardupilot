@@ -5025,9 +5025,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    const uint32_t seq = (uint32_t)packet.param1;
-    if (!mission->is_valid_index(seq)) {
-        return MAV_RESULT_FAILED;
+    if (packet.param1 >= 0) {
+        const uint32_t seq = (uint32_t)packet.param1;
+        if (seq > INT16_MAX || !mission->is_valid_index(seq)) {
+            return MAV_RESULT_FAILED;
+        }
     }
 
     // From https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_MISSION_CURRENT:
@@ -5038,8 +5040,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
     if (reset_and_restart) {
         mission->reset();
     }
-    if (!mission->set_current_cmd(seq)) {
-        return MAV_RESULT_FAILED;
+    if (packet.param1 >= 0) {
+        const uint32_t seq = (uint32_t)packet.param1;
+        if (!mission->set_current_cmd(seq)) {
+            return MAV_RESULT_FAILED;
+        }
     }
     if (reset_and_restart) {
         mission->resume();
