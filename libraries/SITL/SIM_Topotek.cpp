@@ -17,6 +17,7 @@
 */
 
 #include "SIM_config.h"
+#include <AP_Common/AP_Common.h>
 
 #if AP_SIM_TOPOTEK_ENABLED
 
@@ -143,8 +144,8 @@ void Topotek::update_input()
         }
 
         // parse data length from ASCII hex char at [5]
-        const uint8_t data_len = char_to_hex(_buf[5]);
-        if (data_len == 255) {
+        uint8_t data_len;
+        if (!hex_char_to_nibble(_buf[5], data_len)) {
             // invalid data length — discard '#'
             move_preamble_in_buffer(1);
             continue;
