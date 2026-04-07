@@ -160,8 +160,6 @@ DMA_PRIORITY USART6* SPI*
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 
 
-undef AP_BATTERY_SMBUS_SOLO_ENABLED
-define AP_BATTERY_SMBUS_SOLO_ENABLED (AP_BATTERY_SMBUS_ENABLED && BOARD_FLASH_SIZE > 1024)
 
 define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use fmuv2"
 
