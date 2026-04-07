@@ -165,7 +165,6 @@ define AP_BATTERY_SMBUS_SOLO_ENABLED (AP_BATTERY_SMBUS_ENABLED && BOARD_FLASH_SI
 
 define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use fmuv2"
 
-define AP_COMPASS_IST8310_EXTERNAL_BUS_PROBING_ENABLED AP_COMPASS_IST8310_ENABLED
 
 # short board name override (13 chars) to match original max length; can't change because name is used for transmitter bind CRC
 define CHIBIOS_SHORT_BOARD_NAME "skyviper-v245"
