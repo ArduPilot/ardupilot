@@ -154,6 +154,13 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
 
+    // @Param: FIXTYPE
+    // @DisplayName: GPS Fix Type
+    // @Description: Allow setting which fix type (only some GPS's supported); matches AP_GPS_FixType
+    // @Values: 0:No GPS connected, 1:No Fix, 2:2D Fix, 3:3D Fix, 4:3D DGPS Fix, 5:3D RTK Float, 6:3D RTK Fixed
+    // @User: Advanced
+    AP_GROUPINFO("FIXTYPE", 19, GPSParms, fix_type, 6),
+
     AP_GROUPEND
 };
 }
@@ -489,6 +496,7 @@ void GPS::update()
     struct GPS_Data d {};
 
     d.num_sats = params.numsats;
+    d.fix_type = params.fix_type;
     d.latitude = latitude;
     d.longitude = longitude;
     d.yaw_deg = wrap_360(_sitl->state.yawDeg + params.heading_offset);
