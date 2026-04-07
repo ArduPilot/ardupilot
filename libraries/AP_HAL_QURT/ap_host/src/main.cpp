@@ -23,6 +23,7 @@ volatile bool _running = false;
 static bool enable_debug = false;
 static bool enable_remote_debug = false;
 
+
 static int gcs_socket_fd;
 static int obd_socket_fd;
 static bool gcs_connected;
@@ -88,17 +89,16 @@ static void receive_callback(const uint8_t *data, uint32_t length_in_bytes)
         printf("Invalid lengths %d %d\n", msg->data_length, length_in_bytes);
         return;
     }
-    if (msg->inst < MAX_MAVLINK_INSTANCES) {
-        if (msg->seq != expected_seq[msg->inst]) {
-            printf("Invalid seq %u %u\n", msg->seq, expected_seq[msg->inst]);
-        }
-    } else {
-        printf("Invalid instance %u\n", msg->inst);
-    }
-    expected_seq[msg->inst] = msg->seq + 1;
-
     switch (msg->msg_id) {
     case QURT_MSG_ID_MAVLINK_MSG: {
+        if (msg->inst < MAX_MAVLINK_INSTANCES) {
+            if (msg->seq != expected_seq[msg->inst]) {
+                printf("Invalid seq %u %u\n", msg->seq, expected_seq[msg->inst]);
+            }
+            expected_seq[msg->inst] = msg->seq + 1;
+        } else {
+            printf("Invalid instance %u\n", msg->inst);
+        }
         if (_running) {
             if (msg->inst == 0) {
                 const auto bytes_sent = sendto(gcs_socket_fd, msg->data, msg->data_length, 0, (struct sockaddr *)&gcs_addr, sizeof(gcs_addr));
@@ -112,6 +112,10 @@ static void receive_callback(const uint8_t *data, uint32_t length_in_bytes)
                 }
             }
         }
+        break;
+    }
+    case QURT_MSG_ID_PRINTF: {
+        printf("%.*s", msg->data_length, (const char *)msg->data);
         break;
     }
     case QURT_MSG_ID_REBOOT: {
