@@ -4576,7 +4576,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         num_wp = self.get_mission_count()
         accepted_indices = [0, 1, num_wp-1]
-        denied_indices = [-1, num_wp]
+        failed_indices = [-1, num_wp]
 
         for seq in accepted_indices:
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
@@ -4584,11 +4584,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                          timeout=1,
                          want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
 
-        for seq in denied_indices:
+        for seq in failed_indices:
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
                          p1=seq,
                          timeout=1,
-                         want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+                         want_result=mavutil.mavlink.MAV_RESULT_FAILED)
 
     def InvalidJumpTags(self):
         '''Verify the behaviour when selecting invalid jump tags.'''
