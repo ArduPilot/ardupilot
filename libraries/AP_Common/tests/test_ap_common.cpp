@@ -2,27 +2,27 @@
 
 #include <AP_Common/AP_Common.h>
 
-TEST(AP_Common, HexToUint8)
+TEST(AP_Common, HexCharToNibble)
 {
     uint8_t res;
     for (uint8_t test_value = '0', expected_res = 0; test_value < ':'; test_value++, expected_res++) {
-        EXPECT_TRUE(hex_to_uint8(test_value, res));
+        EXPECT_TRUE(hex_char_to_nibble(test_value, res));
         EXPECT_EQ(expected_res, res);
     }
     for (uint8_t test_value = 'A', expected_res = 10; test_value < 'G'; test_value++, expected_res++) {
-        EXPECT_TRUE(hex_to_uint8(test_value, res));
+        EXPECT_TRUE(hex_char_to_nibble(test_value, res));
         EXPECT_EQ(expected_res, res);
     }
     for (uint8_t test_value = 'a', expected_res = 10; test_value < 'g'; test_value++, expected_res++) {
-        EXPECT_TRUE(hex_to_uint8(test_value, res));
+        EXPECT_TRUE(hex_char_to_nibble(test_value, res));
         EXPECT_EQ(expected_res, res);
     }
-    EXPECT_FALSE(hex_to_uint8('G', res));
-    EXPECT_FALSE(hex_to_uint8('g', res));
-    EXPECT_FALSE(hex_to_uint8(';', res));
-    EXPECT_FALSE(hex_to_uint8('/', res));
-    EXPECT_FALSE(hex_to_uint8('@', res));
-    EXPECT_FALSE(hex_to_uint8('`', res));
+    EXPECT_FALSE(hex_char_to_nibble('G', res));
+    EXPECT_FALSE(hex_char_to_nibble('g', res));
+    EXPECT_FALSE(hex_char_to_nibble(';', res));
+    EXPECT_FALSE(hex_char_to_nibble('/', res));
+    EXPECT_FALSE(hex_char_to_nibble('@', res));
+    EXPECT_FALSE(hex_char_to_nibble('`', res));
 }
 
 TEST(AP_Common, BoundedInt32)
