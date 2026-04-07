@@ -725,7 +725,7 @@ float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float m
 float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, float max_z_pos)
 {
     // Reject invalid limits
-    if (!is_positive(max_xy) || !is_positive(max_z_pos) || !is_positive(max_z_neg)) {
+    if (is_negative(dir_xy) || !is_positive(max_xy) || !is_positive(max_z_pos) || !is_positive(max_z_neg)) {
         return 0.0;
     }
 
@@ -755,21 +755,21 @@ float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, 
 
     if (is_positive(slope)) {
         // Positive-Z: constrained by max_z_pos
-        if (fabsf(slope) < max_z_pos / max_xy) {
+        if (slope < max_z_pos / max_xy) {
             // Shallow direction: horizontal limit reached first
             return max_xy / dir_xy;
         }
         // Steep direction: vertical limit reached first
-        return fabsf(max_z_pos / dir_z);
+        return max_z_pos / dir_z;
     }
 
     // Negative-Z: constrained by max_z_neg
-    if (fabsf(slope) < max_z_neg / max_xy) {
+    if (-slope < max_z_neg / max_xy) {
         // Shallow direction: horizontal limit reached first
         return max_xy / dir_xy;
     }
     // Steep direction: vertical limit reached first
-    return fabsf(max_z_neg / dir_z);
+    return -max_z_neg / dir_z;
 }
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].
