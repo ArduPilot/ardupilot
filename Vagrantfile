@@ -9,7 +9,7 @@
 # sim_vehicle.py --debug --valgrind
 #
 # Make testing rather faster:
-# time rsync -aPH /vagrant/ $HOME/ardupilot  # real	50s
+# time rsync -aPH /vagrant/ $HOME/ardupilot --exclude=/build/ --delete-excluded # real	50s
 # time (cd $HOME/ardupilot && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~4 minutes
 # time (cd $HOME/ardupilot && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~4 minutes (after building fmuv2)
 # time (cd $HOME/ardupilot && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)  # ~6 minutes
