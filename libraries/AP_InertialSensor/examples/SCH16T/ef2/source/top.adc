@@ -1,0 +1,15 @@
+set_pin_assignment	{ debug[0] }	{ LOCATION = G7; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment	{ debug[1] }	{ LOCATION = G8; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment	{ debug[2] }	{ LOCATION = G5; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment	{ debug[3] }	{ LOCATION = F5; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment	{ inclk }	{ LOCATION = E7; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ led }	{ LOCATION = F8; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
+set_pin_assignment	{ sensor_rdy }	{ LOCATION = A1; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ sensor_spics }	{ LOCATION = B2; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; SLEWRATE = MED; }
+set_pin_assignment	{ sensor_spisck }	{ LOCATION = D3; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; SLEWRATE = MED; }
+set_pin_assignment	{ sensor_spisi }	{ LOCATION = D2; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 16; PULLTYPE = NONE; SLEWRATE = MED; }
+set_pin_assignment	{ sensor_spiso }	{ LOCATION = C1; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ spics }	{ LOCATION = D1; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ spisck }	{ LOCATION = E5; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ spisi }	{ LOCATION = D5; IOSTANDARD = LVCMOS33; PULLTYPE = PULLUP; }
+set_pin_assignment	{ spiso }	{ LOCATION = E3; IOSTANDARD = LVCMOS33; DRIVESTRENGTH = 8; PULLTYPE = NONE; }
