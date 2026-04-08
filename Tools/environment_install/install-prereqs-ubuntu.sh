@@ -97,16 +97,35 @@ esac
 PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default Python interpreter
 PIP=pip3
 
-if [ ${RELEASE_CODENAME} == 'bionic' ] ||
-      [ ${RELEASE_CODENAME} == 'buster' ] ||
-      [ ${RELEASE_CODENAME} == 'focal' ] ||
-      [ ${RELEASE_CODENAME} == 'groovy' ] ||
-      [ ${RELEASE_CODENAME} == 'lunar' ] ||
-      [ ${RELEASE_CODENAME} == 'mantic' ] ||
-      [ ${RELEASE_CODENAME} == 'oracular' ]; then
-    echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
-    exit 1
-elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+case "${RELEASE_CODENAME}" in
+    bionic)   ;&
+    buster)   ;&
+    focal)    ;&
+    groovy)   ;&
+    lunar)    ;&
+    mantic)   ;&
+    oracular)
+        echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
+        exit 1
+        ;;
+
+    bookworm) ;&
+    trixie)   ;&
+    bullseye) ;&
+    jammy)    ;&
+    noble)    ;&
+    plucky)   ;&
+    questing)
+        echo "${RELEASE_CODENAME} is supported"
+        ;;
+
+    *)
+        echo "This install script does not handle installation for ${RELEASE_CODENAME}"
+        exit 1
+        ;;
+esac
+
+if [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITLFML_VERSION="2.6"
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
