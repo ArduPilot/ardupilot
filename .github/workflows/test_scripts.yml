@@ -30,9 +30,9 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip' # caching pip dependencies
-          pip-install: flake8 lxml popen pexpect
+          pip-install: flake8 lxml pexpect
 
-      - name: Install checker stuffs
+      - name: Install astyle
         shell: bash
         run: |
           sudo apt-get update
