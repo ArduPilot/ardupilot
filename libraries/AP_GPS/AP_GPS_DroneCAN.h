@@ -125,7 +125,7 @@ private:
         uint8_t instance;
         uint32_t last_inject_ms;
         AP_GPS_DroneCAN* driver;
-    } _detected_modules[GPS_MAX_RECEIVERS];
+    } _detected_modules[GPS_MAX_INSTANCES];
 
     static HAL_Semaphore _sem_registry;
 

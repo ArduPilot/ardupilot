@@ -4,7 +4,6 @@ include ../MatekG474/hwdef.inc
 define AP_PERIPH_GPS_ENABLED 1
 define GPS_MAX_RATE_MS 200
 
-define GPS_MAX_RECEIVERS 1
 define GPS_MAX_INSTANCES 1
 
 # allow for F9P GPS modules with moving baseline

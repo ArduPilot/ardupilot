@@ -1206,6 +1206,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
         { MAVLINK_MSG_ID_UTM_GLOBAL_POSITION, MSG_UTM_GLOBAL_POSITION},
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_GPS_GNSS_SENDING_ENABLED
+        { MAVLINK_MSG_ID_GNSS, MSG_GNSS},
+#endif  // AP_GPS_GNSS_SENDING_ENABLED
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -6773,7 +6776,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         AP::gps().send_mavlink_gps_rtk(chan, 1);
         break;
 #endif  // AP_GPS_GPS2_RTK_SENDING_ENABLED
-
+#if AP_GPS_GNSS_SENDING_ENABLED
+    case MSG_GNSS:
+        CHECK_PAYLOAD_SIZE(GNSS);
+        AP::gps().send_mavlink_gnss(*this);
+        break;
+#endif
 #if AP_AHRS_ENABLED
     case MSG_LOCAL_POSITION:
         CHECK_PAYLOAD_SIZE(LOCAL_POSITION_NED);

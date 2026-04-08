@@ -74,6 +74,9 @@ public:
 #if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
     virtual void send_mavlink_gps_rtk(mavlink_channel_t chan);
 #endif
+
+    void send_mavlink_gnss(class GCS_MAVLINK &link);
+
     virtual void handle_msg(const mavlink_message_t &msg) { return ; }
 #endif
 
@@ -119,6 +122,10 @@ public:
 
     // Convert BCD date (DDMMYY) and time (MTK19 millisecond form) to GPS week and time
     static void BCD_to_gps_time(uint32_t bcd_date, uint32_t bcd_time_ms, uint16_t& gps_week, uint32_t& gps_time_ms);
+
+    virtual const Vector3f &get_antenna_offset() const {
+        return params.antenna_offset.get();
+    }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
