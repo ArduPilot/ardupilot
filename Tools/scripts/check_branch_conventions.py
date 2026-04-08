@@ -16,10 +16,13 @@ AP_FLAKE8_CLEAN
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 
 import build_script_base
 
@@ -162,6 +165,34 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 paths.add(parts[1])
         return paths
 
+    def get_submodule_urls(self) -> dict:
+        '''parse .gitmodules and return a mapping of submodule path to canonical url'''
+        root = self.run_git(['rev-parse', '--show-toplevel'], show_output=False).strip()
+        gitmodules = os.path.join(root, '.gitmodules')
+        path_out = self.run_git(
+            ['config', '--file', gitmodules, '--get-regexp', 'path'],
+            show_output=False,
+        )
+        name_to_path = {}
+        for line in path_out.splitlines():
+            # submodule.modules/mavlink.path modules/mavlink
+            parts = line.split()
+            if len(parts) == 2:
+                name = parts[0][len('submodule.'):-len('.path')]
+                name_to_path[name] = parts[1]
+        url_out = self.run_git(
+            ['config', '--file', gitmodules, '--get-regexp', 'url'],
+            show_output=False,
+        )
+        result = {}
+        for line in url_out.splitlines():
+            parts = line.split()
+            if len(parts) == 2:
+                name = parts[0][len('submodule.'):-len('.url')]
+                if name in name_to_path:
+                    result[name_to_path[name]] = parts[1]
+        return result
+
     def get_changed_paths_for_commit(self, commit: str) -> list:
         '''return the list of paths changed in a single commit'''
         output = self.run_git(
@@ -218,6 +249,129 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             print(f"{PASS} All submodule updates are isolated in their own commits.")
         return ok
 
+    def _base_branch_name(self) -> str | None:
+        '''extract bare branch name from self.base_branch; returns None for bare SHAs'''
+        if not self.base_branch:
+            return None
+        if re.match(r'^[0-9a-f]{40}$', self.base_branch):
+            return None
+        # "upstream/master" -> "master", "origin/stable-4.5" -> "stable-4.5"
+        return self.base_branch.split('/')[-1]
+
+    def _github_repo_from_url(self, url: str) -> str | None:
+        '''extract "owner/repo" from a GitHub HTTPS URL, or None if not a GitHub URL'''
+        m = re.match(r'https://github\.com/([^/]+/[^/]+?)(?:\.git)?$', url.strip())
+        return m.group(1) if m else None
+
+    def _github_api_compare(self, owner_repo: str, sha: str) -> tuple:
+        '''
+        Call the GitHub compare API to check whether sha is an ancestor of master
+        in the given canonical repo.
+
+        GET /repos/{owner_repo}/compare/master...{sha}
+
+        The REST API accesses the repository's own git database and is not subject
+        to GitHub's fork-network object sharing (a git-protocol-level feature), so
+        a commit that exists only in a personal fork will return HTTP 404/422 here.
+
+        Returns (ok, message):
+          True,  ""      — sha is reachable from master ("behind" or "identical")
+          False, reason  — sha not in master's history or not in the canonical repo
+          None,  reason  — unexpected API error; caller should treat as SKIP
+        '''
+        api_url = f'https://api.github.com/repos/{owner_repo}/compare/master...{sha}'
+        headers = {'Accept': 'application/vnd.github.v3+json'}
+        token = os.environ.get('GITHUB_TOKEN', '')
+        if token:
+            headers['Authorization'] = f'Bearer {token}'
+        req = urllib.request.Request(api_url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            if e.code in (404, 422):
+                return False, f"not found in canonical repo {owner_repo}"
+            return None, f"GitHub API returned HTTP {e.code} for {owner_repo}"
+        except urllib.error.URLError as e:
+            return None, f"GitHub API unreachable: {e.reason}"
+        status = data.get('status', '')
+        if status in ('behind', 'identical'):
+            return True, ""
+        if status == 'ahead':
+            return False, (f"exists in {owner_repo} but is not yet merged to master "
+                           f"(it is ahead of master)")
+        if status == 'diverged':
+            return False, f"not reachable from master in {owner_repo} (diverged)"
+        return None, f"unexpected GitHub compare status {status!r}"
+
+    def check_submodule_references_exist(self) -> bool:
+        '''
+        For PRs targeting master, verify that each submodule reference introduced
+        on this branch is reachable from master in the canonical submodule repo.
+
+        Uses the GitHub compare API (GET /repos/{owner}/compare/master...{sha})
+        which is repo-specific and is not affected by GitHub's fork-network object
+        sharing (a git-protocol-level behaviour that allows any SHA present in any
+        public fork to be fetched via the canonical URL).
+
+        Skips silently for non-master PRs.
+        '''
+        if self._base_branch_name() != 'master':
+            print(f"{SKIP} Submodule reference check only applies to master-targeting PRs.")
+            return True
+
+        submodule_paths = self.get_submodule_paths()
+        submodule_urls = self.get_submodule_urls()
+
+        commits_raw = self.run_git(
+            ['rev-list', '--reverse', f'{self.base_branch}..HEAD'],
+            show_output=False,
+        ).strip()
+        commits = [c.strip() for c in commits_raw.splitlines() if c.strip()]
+
+        ok = True
+        any_checked = False
+        for commit in commits:
+            changed = self.get_changed_paths_for_commit(commit)
+            submodule_changes = [p for p in changed if p in submodule_paths]
+
+            for submodule_path in submodule_changes:
+                ls_tree_out = self.run_git(
+                    ['ls-tree', commit, submodule_path],
+                    show_output=False,
+                ).strip()
+                # format: "160000 commit <sha> <path>"
+                parts = ls_tree_out.split()
+                if len(parts) < 3 or parts[1] != 'commit':
+                    continue
+                sha = parts[2]
+
+                url = submodule_urls.get(submodule_path)
+                owner_repo = self._github_repo_from_url(url) if url else None
+                label = f"{commit[:12]} references {submodule_path}@{sha[:12]}"
+
+                if not owner_repo:
+                    print(f"{SKIP} {label}: not a GitHub HTTPS URL, skipping")
+                    continue
+
+                any_checked = True
+                ok_sha, msg = self._github_api_compare(owner_repo, sha)
+                if ok_sha is None:
+                    print(f"{SKIP} {label}: {msg}")
+                elif ok_sha:
+                    print(f"{PASS} {label}: reachable from master in {owner_repo}")
+                else:
+                    print(f"{FAIL} {label}: {msg}")
+                    ok = False
+
+        if ok:
+            if any_checked:
+                print(f"{PASS} All submodule references are reachable from master "
+                      f"in their canonical repos.")
+            else:
+                print(f"{PASS} No submodule reference changes to check.")
+        return ok
+
     def check_markdown(self) -> bool:
         changed_md = self.run_git(
             ["diff", "--name-only", "--diff-filter=AM",
@@ -261,6 +415,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_commit_lengths(commits),
             self.check_author_emails(),
             self.check_submodule_isolation(),
+            self.check_submodule_references_exist(),
             self.check_markdown(),
         ]
 
