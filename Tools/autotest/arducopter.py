@@ -1720,6 +1720,142 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3_AccelBiasInhibitOnGroundMoving(self):
+        '''Test EKF3 inhibits accel bias learning when vehicle is moved on ground'''
+        # When a copter is on the ground and being moved (carried, on a ship),
+        # the EKF should not learn accel biases from the external motion.
+        # Without the fix (onGroundNotMoving check in dvelBiasAxisInhibit),
+        # the Z-axis bias is learnable on the ground (passes gravity alignment
+        # check), and GPS velocity innovations can drive incorrect bias learning
+        # during ground movement. With the fix, all bias learning is inhibited
+        # when onGround && !onGroundNotMoving.
+        self.context_push()
+
+        # Enable logging while disarmed so we capture ground-only EKF data
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # Phase 1: Positive control - verify bias learning works when stationary
+        self.start_subtest("Positive control: verify bias learning works when stationary")
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.delay_sim_time(30)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+        )
+
+        # Reset for next phase - reboot clears EKF state and starts a new log
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(5)
+
+        # Phase 2: Start ship movement, then inject bias - it should NOT be learned
+        self.start_subtest("Test: verify bias NOT learned during ground movement")
+        # Use a small circle to create sufficient centripetal acceleration and
+        # yaw rate so that onGroundNotMoving transitions to false.
+        # v=10 m/s, path_size=50m (r=25m) gives yaw_rate=0.4 rad/s which
+        # exceeds the gyro movement threshold.
+        self.set_parameters({
+            "SIM_SHIP_ENABLE": 1,
+            "SIM_SHIP_SPEED": 10,
+            "SIM_SHIP_PSIZE": 50,
+            "SIM_SHIP_DSIZE": 10,
+        })
+        # Wait for vehicle to be moving with the ship
+        self.wait_groundspeed(9, 11)
+        # Allow time for onGroundNotMoving to transition to false
+        self.delay_sim_time(5)
+
+        # Record timestamp, then inject Z-bias while vehicle is moving on ground
+        tstart_inject_us = self.get_sim_time() * 1.0e6
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+
+        # Wait for potential (unwanted) bias learning
+        self.delay_sim_time(30)
+
+        # Check that AZ stayed near 0 during the movement period.
+        # Skip the first 20s after injection to give time for any erroneous
+        # learning to manifest. Then require AZ near 0 for 5 consecutive seconds.
+        # With fix: AZ stays near 0 (learning inhibited) -> PASSES
+        # Without fix: AZ drifts toward 0.7 -> FAILS
+        tstart_check_us = tstart_inject_us + 20.0e6
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.0,
+            condition="XKF2.C==1",
+            maintain=5,
+            tolerance=0.15,
+            dfreader_start_timestamp=tstart_check_us,
+        )
+
+        # Phase 3: Stop ship, verify bias learning resumes when stationary.
+        # After inhibition ends, the saved (small) variance is restored, so
+        # reconvergence is slow. Allow extra time and accept partial convergence.
+        self.start_subtest("Verify bias learning resumes after movement stops")
+        self.set_parameters({
+            "SIM_SHIP_ENABLE": 0,
+        })
+        self.wait_groundspeed(0, 2)
+
+        self.delay_sim_time(60)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+            tolerance=0.3,
+        )
+
+        self.context_pop()
+        self.reboot_sitl()
+
+    def EK3_AccelBiasZeroVelOptFlow(self):
+        '''Test EKF3 zero velocity fusion learns bias with optical flow config'''
+        # When optical flow is configured (AID_RELATIVE) but the vehicle is
+        # stationary on the ground, optical flow provides no velocity data.
+        # Without zero velocity fusion, there are no velocity observations and
+        # accel biases cannot converge. This test verifies that synthetic zero
+        # velocity fusion fills the gap, allowing Z-axis bias learning even
+        # when the only velocity source (optical flow) has no data.
+        self.context_push()
+
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm(timeout=120, require_absolute=False)
+
+        # Inject Z-bias on IMU2 and wait for EKF to learn it via zero velocity
+        # fusion. In AID_RELATIVE with no flow data, only the synthetic zero
+        # velocity provides the observation needed to make Z-bias converge.
+        self.start_subtest("Verify Z-bias learned via zero velocity fusion with optical flow config")
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.delay_sim_time(30)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+        )
+
+        self.context_pop()
+        self.reboot_sitl()
+
     # StabilityPatch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
     def StabilityPatch(self,
@@ -12273,6 +12409,97 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
                                        (duration, want_lt))
 
+    def VibrationRectificationBiasLearning(self):
+        '''Test hover Z-bias learning for vibration rectification'''
+        self.context_push()
+        # ACC_ZBIAS_LEARN bitmask: 1=learn+save, 2=use, 4=inhibit EKF when disarmed
+        # Value 3 = learn+save + use
+        # Reset INS_ACC_VRFB_Z to 0 to ensure clean start (may have leftover from previous tests)
+        self.set_parameters({
+            "ACC_ZBIAS_LEARN": 3,
+            "SIM_ACC1_BIAS_Z": 0.15,
+            "LOG_FILE_DSRMROT": 1,
+            "INS_ACC_VRFB_Z": 0,
+        })
+        self.reboot_sitl()
+
+        # A: Verify learning during hover and save on disarm
+        self.start_subtest("Bias learned during hover and saved on disarm")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30)
+        self.land_and_disarm()
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z after learning: %f" % vrfb_z)
+        if abs(vrfb_z) < 0.01:
+            raise NotAchievedException("INS_ACC_VRFB_Z should be non-zero, got %f" % vrfb_z)
+
+        # B: Verify bias loads on reboot
+        self.start_subtest("Saved bias loaded on reboot with GCS message")
+        saved_vrfb_z = vrfb_z
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("Hover Z-bias", timeout=30, check_context=True)
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        if abs(vrfb_z - saved_vrfb_z) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z changed after reboot: was %f now %f" % (saved_vrfb_z, vrfb_z))
+
+        # C: Verify disabled learning doesn't save
+        self.start_subtest("Learning disabled - no bias saved")
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30)
+        self.land_and_disarm()
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z with learning disabled: %f" % vrfb_z)
+        if abs(vrfb_z) > 0.001:
+            raise NotAchievedException("INS_ACC_VRFB_Z should remain 0, got %f" % vrfb_z)
+
+        # D: Verify bit 2 (inhibit EKF ground learning) works with full bitmask
+        # Value 7 = learn+save + use + inhibit ground learning
+        self.start_subtest("Full bitmask (7) with ground learning inhibit")
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 7,
+            "SIM_ACC1_BIAS_Z": 0.15,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        # Fly and verify learning still works (bit 2 only affects disarmed state)
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30)
+        self.land_and_disarm()
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z with full bitmask (7): %f" % vrfb_z)
+        if abs(vrfb_z) < 0.01:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z should be non-zero with bitmask 7, got %f" % vrfb_z)
+
+        # E: Verify frozen correction survives flight (proxy for lane switch survival)
+        # After learning, fly again and verify the saved bias is still applied
+        self.start_subtest("Frozen correction persists across flights")
+        saved_vrfb_z = vrfb_z
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(10)
+        self.land_and_disarm()
+        vrfb_z = self.get_parameter("INS_ACC_VRFB_Z")
+        # The saved bias should persist (may drift slightly due to continued learning)
+        if abs(vrfb_z) < 0.01:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z should persist across flights, got %f" % vrfb_z)
+        self.progress("INS_ACC_VRFB_Z persisted: was %f, now %f" % (saved_vrfb_z, vrfb_z))
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
         self.takeoff(20, mode='GUIDED')
@@ -13216,6 +13443,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3_AccelBiasInhibitOnGroundMoving,
+             self.EK3_AccelBiasZeroVelOptFlow,
+             self.VibrationRectificationBiasLearning,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
