@@ -2980,6 +2980,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
+    def GPSFixTypes(self):
+        '''Test that SIM_GPS1_FIXTYPE maps correctly to GPS_RAW_INT.fix_type'''
+        self.change_mode('LOITER')
+
+        for fix_type in range(6, -1, -1):  # Only test up to RTK fixed, not PPP/Static
+            self.start_subtest("Testing fix type %u" % fix_type)
+            self.set_parameter("SIM_GPS1_FIXTYPE", fix_type)
+            self.wait_message_field_values('GPS_RAW_INT', {
+                "fix_type": fix_type,
+            }, timeout=10)
+            self.set_parameter("SIM_GPS1_FIXTYPE", 6)
+            self.wait_ready_to_arm()
+
     #   fly_simple - assumes the simple bearing is initialised to be
     #   directly north flies a box with 100m west, 15 seconds north,
     #   50 seconds east, 15 seconds south
@@ -13451,6 +13464,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.GPSGlitchLoiter,
              self.GPSGlitchLoiter2,
              self.GPSGlitchAuto,
+             self.GPSFixTypes,
              self.ModeAltHold,
              self.ModeLoiter,
              self.SimpleMode,
