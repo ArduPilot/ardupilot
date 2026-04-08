@@ -36,7 +36,6 @@ public:
         BATTERY     = (1U << 8),
         AIRSPEED    = (1U << 9),
         LOGGING     = (1U << 10),
-        SWITCH      = (1U << 11),
         GPS_CONFIG  = (1U << 12),
         SYSTEM      = (1U << 13),
         MISSION     = (1U << 14),
@@ -210,8 +209,6 @@ protected:
     virtual bool gps_checks(bool report);
 
     bool battery_checks(bool report);
-
-    bool hardware_safety_check(bool report);
 
     virtual bool board_voltage_checks(bool report);
 

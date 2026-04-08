@@ -195,8 +195,8 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @Param: SKIPCHK
     // @DisplayName: Arm Checks to Skip (bitmask)
     // @Description: Checks to skip prior to arming motor. This is a bitmask of checks before allowing arming that will be skipped. For most users it is recommended to leave this at the default of 0 (no checks skipped). In extreme circumstances, a value of -1 can be used to skip all non-mandatory current and future checks.
-    // @Bitmask: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
-    // @Bitmask{Plane}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
+    // @Bitmask: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
+    // @Bitmask{Plane}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
     // @User: Standard
     AP_GROUPINFO("SKIPCHK", 13, AP_Arming, checks_to_skip, 0),
 
@@ -247,6 +247,13 @@ __INITFUNC__ void AP_Arming::init(void)
                 uint32_t check_mask = ((1U << 21) - 1) & (~1); // remove ALL bit
                 // invert bits to get checks to skip
                 skipchk_new = (~checks_old) & check_mask;
+                // hardware safety switch (bit 11) consolidated into SYSTEM
+                // SYSTEM is skipped only if both bits were set
+                if (BIT_IS_SET(checks_old, 11)) {
+                    skipchk_new &= ~uint32_t(Check::SYSTEM);
+                }
+                // parameter conversion should never lead to bit 11 being set
+                BIT_CLEAR(skipchk_new, 11);
             } else {
                 skipchk_new = 0; // specifically enable all checks, ignoring param default
             }
@@ -792,20 +799,6 @@ bool AP_Arming::battery_checks(bool report)
 }
 #endif  // AP_BATTERY_ENABLED
 
-bool AP_Arming::hardware_safety_check(bool report) 
-{
-    if (check_enabled(Check::SWITCH)) {
-
-      // check if safety switch has been pushed
-      if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-          check_failed(Check::SWITCH, report, "Hardware safety switch");
-          return false;
-      }
-    }
-
-    return true;
-}
-
 #if AP_RC_CHANNEL_ENABLED
 bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
 {
@@ -1132,6 +1125,12 @@ bool AP_Arming::system_checks(bool report)
     char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
 
     if (check_enabled(Check::SYSTEM)) {
+        // check if safety switch has been pushed
+        if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+            check_failed(Check::SYSTEM, report, "Hardware safety switch");
+            return false;
+        }
+
         if (!hal.storage->healthy()) {
             check_failed(Check::SYSTEM, report, "Param storage failed");
             return false;
@@ -1682,7 +1681,7 @@ bool AP_Arming::pre_arm_checks(bool report)
     }
 #endif
 
-    bool checks_result = hardware_safety_check(report)
+    bool checks_result = true
 #if HAL_HAVE_IMU_HEATER
         &  heater_min_temperature_checks(report)
 #endif
