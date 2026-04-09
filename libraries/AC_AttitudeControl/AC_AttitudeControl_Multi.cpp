@@ -484,16 +484,6 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     _angle_P_scale_used = _angle_P_scale;
 }
 
-// reset the rate controller target loop updates
-void AC_AttitudeControl_Multi::rate_controller_target_reset()
-{
-    _sysid_ang_vel_body_rads.zero();
-    _actuator_sysid.zero();
-    _pd_scale = VECTORF_111;
-    _i_scale = VECTORF_111;
-    _angle_P_scale = VECTORF_111;
-}
-
 // run the rate controller using the configured _dt and latest gyro_rads
 void AC_AttitudeControl_Multi::rate_controller_run()
 {

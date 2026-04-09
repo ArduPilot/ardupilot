@@ -349,10 +349,6 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     // call rate controllers and send output to motors object
     rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
     _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
-
-    _sysid_ang_vel_body_rads.zero();
-    _actuator_sysid.zero();
-
 }
 
 // Update Alt_Hold angle maximum
