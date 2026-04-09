@@ -6521,6 +6521,34 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd)
         self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd_int)
 
+    def MAV_CMD_DO_FLIGHTTERMINATION_unterminate(self):
+        '''unterminate a terminated vehicle'''
+        self.set_parameters({
+            "AFS_ENABLE": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "AFS_TERM_ACTION": 42,
+        })
+        self.takeoff(50, mode='TAKEOFF', timeout=200)
+
+        # lock home to avoid alt messups
+        original_home = self.home_position_as_mav_location()
+        self.set_home(original_home)
+
+        self.context_collect('STATUSTEXT')
+
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, p1=1)
+        self.wait_disarmed()
+        self.wait_text('Terminating due to GCS request', check_context=True)
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, p1=0)
+        self.wait_disarmed()
+        self.wait_text('Aborting termination due to GCS request', check_context=True)
+        self.wait_ready_to_arm()  # please?
+        self.arm_vehicle()
+
+        self.fly_home_land_and_disarm()
+
+        self.reboot_sitl()
+
     def MAV_CMD_DO_LAND_START(self):
         '''test MAV_CMD_DO_LAND_START as mavlink command'''
         self.set_parameters({
@@ -8127,6 +8155,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
             self.MAV_CMD_DO_GO_AROUND,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
+            self.MAV_CMD_DO_FLIGHTTERMINATION_unterminate,
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_NAV_ALTITUDE_WAIT,
             self.InteractTest,
