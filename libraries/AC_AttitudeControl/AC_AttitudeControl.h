@@ -300,9 +300,8 @@ public:
     // Run angular velocity controller and send outputs to the motors
     virtual void rate_controller_run() = 0;
 
-    // Resets any internal state maintained by the rate controller (e.g., smoothing filters or integrators).
-    // This base function is a no-op and may be overridden by child classes.
-    virtual void rate_controller_target_reset() {}
+    // reset the rate controller target loop updates
+    void rate_controller_target_reset();
 
     // Run the angular velocity controller with a specified timestep. Must be implemented by derived class.
     virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };

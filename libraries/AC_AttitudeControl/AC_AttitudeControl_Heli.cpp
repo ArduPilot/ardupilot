@@ -436,10 +436,6 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     } else {
         _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
     }
-
-    _sysid_ang_vel_body_rads.zero();
-    _actuator_sysid.zero();
-
 }
 
 // Update Alt_Hold angle maximum
