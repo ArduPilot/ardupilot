@@ -32,7 +32,7 @@
 #include "spm_srxl.h"
 #endif
 
-
+#define THROTTLE_FAILSAFE_COUNTER_MAX 3
 
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend)
@@ -75,15 +75,57 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     _num_channels = num_values;
     rc_frame_count++;
     frontend.set_failsafe_active(in_failsafe);
-#if !AP_RC_CHANNEL_ENABLED
-    // failsafed is sorted out in AP_IOMCU.cpp
-    in_failsafe = false;
-#else
+
+    bool good_input = !in_failsafe;
+#if AP_RC_CHANNEL_ENABLED
     if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
-        in_failsafe = false;
+        good_input = true;  // ignore current value, just assert good input
     }
-#endif
-    if (!in_failsafe) {
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    if (good_input) {
+        // check for throttle channel outside range (for bind-value
+        // failsafe)
+        const auto channel_value = frontend.throttle_failsafe.channel_value;
+        const uint8_t offset = frontend.throttle_failsafe.channel - 1;
+        if (channel_value != UINT16_MAX && offset < ARRAY_SIZE(_pwm_values)) {
+            if (frontend.throttle_failsafe.channel_value_is_maximum) {
+                if (_pwm_values[offset] > channel_value) {
+                    // throttle is above where it should be, this is a
+                    // bind-time value
+                    good_input = false;
+                }
+            } else {
+                // this is the normal, non-throttle-reversed case:
+                if (_pwm_values[offset] < channel_value) {
+                    // throttle is below where it should be, this is a
+                    // bind-time value
+                    good_input = false;
+                }
+            }
+        }
+        // three bad throttle values in a row result in failsafe being
+        // declared.  Some hysteresis here so we don't start accepting
+        // RC again until it has been good for three samples:
+        if (good_input) {
+            if (frontend.throttle_failsafe.counter > 0) {
+                frontend.throttle_failsafe.counter--;
+            } else {
+                frontend.set_failsafe_active(false);
+            }
+        } else {
+            if (frontend.throttle_failsafe.counter < THROTTLE_FAILSAFE_COUNTER_MAX) {
+                frontend.throttle_failsafe.counter++;
+            } else {
+                frontend.set_failsafe_active(true);
+            }
+        }
+    }
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+#else
+    // AP_RC_CHANNEL_ENABLED is not set; failsafed is sorted out in AP_IOMCU.cpp
+    good_input = true;
+#endif  // AP_RC_CHANNEL_ENABLED
+    if (good_input) {
         rc_input_count++;
     }
     rssi = _rssi;
