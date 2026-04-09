@@ -557,7 +557,10 @@ void AC_PosControl::NE_init_controller()
     _pos_target_ned_m.xy() = _pos_estimate_ned_m.xy();
     _pos_desired_ned_m.xy() = _pos_target_ned_m.xy() - _pos_offset_ned_m.xy();
 
-    _vel_target_ned_ms.xy() = _vel_estimate_ned_ms.xy();
+    // Set velocity target so that P and FF sum to zero on the first cycle:
+    //   0 = (target - measurement) * kP + target * kFF
+    //   target = measurement * kP / (kP + kFF)
+    _vel_target_ned_ms.xy() = _vel_estimate_ned_ms.xy() * (_pid_vel_ne_m.kP() / (_pid_vel_ne_m.kP() + MAX(_pid_vel_ne_m.ff(), 0)));
     _vel_desired_ned_ms.xy() = _vel_target_ned_ms.xy() - _vel_offset_ned_ms.xy();
 
     // Set desired acceleration to zero because raw acceleration is prone to noise
@@ -574,9 +577,7 @@ void AC_PosControl::NE_init_controller()
 
     // initialise I terms from lean angles
     _pid_vel_ne_m.reset_filter();
-    // initialise the I term to (_accel_target_ned_mss - _accel_desired_ned_mss)
-    // _accel_desired_ned_mss is zero and can be removed from the equation
-    _pid_vel_ne_m.set_integrator((_accel_target_ned_mss.xy() - _vel_target_ned_ms.xy() * _pid_vel_ne_m.ff()));
+    _pid_vel_ne_m.set_integrator(_accel_target_ned_mss.xy());
 
     // initialise ekf xy reset handler
     NE_init_ekf_reset();
@@ -896,7 +897,10 @@ void AC_PosControl::D_init_controller()
     _pos_target_ned_m.z = _pos_estimate_ned_m.z;
     _pos_desired_ned_m.z = _pos_target_ned_m.z - _pos_offset_ned_m.z;
 
-    _vel_target_ned_ms.z = _vel_estimate_ned_ms.z;
+    // Set velocity target so that P and FF sum to zero on the first cycle:
+    //   0 = (target - measurement) * kP + target * kFF
+    //   target = measurement * kP / (kP + kFF)
+    _vel_target_ned_ms.z = _vel_estimate_ned_ms.z * (_pid_vel_d_m.kP() / (_pid_vel_d_m.kP() + MAX(_pid_vel_d_m.ff(), 0)));
     _vel_desired_ned_ms.z = _vel_target_ned_ms.z - _vel_offset_ned_ms.z;
 
     // Reset I term of velocity PID
