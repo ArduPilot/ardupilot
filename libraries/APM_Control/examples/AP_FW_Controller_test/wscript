@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 
+import os
+
+
 def build(bld):
 
     if bld.env.BOARD != 'sitl':
         return
+
+    lib_node = bld.bldnode.make_node(os.path.join('lib', 'libAP_FW_Controller_test_libs.a'))
+    if lib_node.exists():
+        lib_node.delete()
 
     bld.ap_stlib(
         name='AP_FW_Controller_test_libs',
