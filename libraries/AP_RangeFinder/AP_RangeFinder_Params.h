@@ -31,6 +31,7 @@ public:
     AP_Float ground_clearance;
     AP_Int8  address;
     AP_Int8  orientation;
+    AP_Int8  no_average;
 };
 
 #endif  // AP_RANGEFINDER_ENABLED

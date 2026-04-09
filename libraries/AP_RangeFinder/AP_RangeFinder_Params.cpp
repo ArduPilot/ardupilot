@@ -187,6 +187,13 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIENT", 53, AP_RangeFinder_Params, orientation, AP_RANGEFINDER_DEFAULT_ORIENTATION),
 
+    // @Param: NOAVG
+    // @DisplayName: Disable averaging
+    // @Description: When enabled, LightWareSerial rangefinders return the last valid reading from the buffer instead of the average of all valid readings. Only applies to the LightWareSerial driver.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("NOAVG", 54, AP_RangeFinder_Params, no_average, 0),
+
     AP_GROUPEND
 };
 
