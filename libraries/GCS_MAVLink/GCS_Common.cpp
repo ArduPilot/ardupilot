@@ -5662,7 +5662,100 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
 }
 #endif  // AP_MAVLINK_FOLLOW_HANDLING_ENABLED
 
+GCS_MAVLINK::RecentCommand *GCS_MAVLINK::recent_commands;
+
+uint32_t GCS_MAVLINK::command_idempotency_key(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    return msg.sysid << 24 | msg.compid << 16 || packet.command_opaque_id;
+}
+
+// returns true if we have recently processed a command just like this
+// one.  In that case prev_result will be the previously returned
+// result.  If this method returns false and recent_command is not
+// nullptr then recent_command is a filled-in structure which waits
+// only for a result code to be populated.
+bool GCS_MAVLINK::command_recently_processed(const mavlink_command_int_t &packet, const mavlink_message_t &msg, MAV_RESULT &prev_result, RecentCommand *&recent_command)
+{
+    ASSERT_STORAGE_SIZE(RecentCommand, 12);
+
+    const uint16_t now_ms = AP_HAL::millis16();
+
+    const auto key = command_idempotency_key(packet, msg);
+    uint32_t count = 0;
+    // n.b. pointer reference here; we can delete the memory pointed
+    // to by the recent_commands static pointer and set it to nullptr
+    for (auto *&recent = recent_commands; recent != nullptr; recent=recent->next) {
+        if (recent->key == key) {
+            // 20 second idempotency
+            if (now_ms - recent->commanded_time_ms <= 20000) {
+                // result is still good
+                prev_result = recent->result;
+                return true;
+            }
+            // result expired
+            break;
+        }
+        if (now_ms - recent->commanded_time_ms > 20000) {
+            // this entry, and all after it are expired... nuke them
+            // and quit the loop - note we are playing with the loop
+            // variable here.
+            RecentCommand *x;
+            while (recent != nullptr) {
+                x = recent->next;
+                delete recent;
+                recent = x;  // reference to stack variable
+            }
+            return false;
+        }
+        count++;
+    }
+
+    // limit list walk time.  Given a 20 second idempotency, this is
+    // 12 commands/second for all GCS on average.
+    if (count > 256) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+
+    // create new link and link it into the list:
+    recent_command = NEW_NOTHROW RecentCommand();
+    if (recent_command == nullptr) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    recent_command->key = key;
+    recent_command->commanded_time_ms = now_ms;
+    recent_command->next = recent_commands;
+    recent_commands = recent_command;
+
+    return false;
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    RecentCommand *recent_command;
+    {    // idempotency check
+
+        MAV_RESULT prev_result;
+        if (command_recently_processed(packet, msg, prev_result, recent_command)) {
+            return prev_result;
+        }
+    }
+    if (recent_command == nullptr) {
+        // no room to store the result from this command, so push back
+        // on the sender:
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+
+    const MAV_RESULT result = wrapped_handle_command_int_packet(packet, msg);
+
+    // idempotency storage
+    recent_command->result = result;
+
+    return result;
+}
+
+
+MAV_RESULT GCS_MAVLINK::wrapped_handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
 

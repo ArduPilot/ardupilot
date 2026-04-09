@@ -559,8 +559,23 @@ protected:
     void handle_set_mode(const mavlink_message_t &msg);
     void handle_command_int(const mavlink_message_t &msg);
 
+    struct RecentCommand {
+        uint32_t key;
+        uint16_t commanded_time_ms;  // time command was received; 0 means this entry is free to be re-used
+        MAV_RESULT result;
+        struct RecentCommand *next;
+    };
+
+    // linked list of recent commands.  More recent commands are at
+    // the start of the list (we do not re-use, and new commands
+    // always pushed to start of list)
+    static RecentCommand *recent_commands;
+    static uint32_t command_idempotency_key(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    static bool command_recently_processed(const mavlink_command_int_t &packet, const mavlink_message_t &msg, MAV_RESULT &prev_result, RecentCommand *&recent_command);
+
     MAV_RESULT handle_command_do_follow(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
-    virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    virtual MAV_RESULT wrapped_handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
 
