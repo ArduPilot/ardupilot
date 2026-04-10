@@ -55,7 +55,7 @@ void ModeTurtle::arm_motors()
     change_motor_direction(true);
 
     // disable throttle and gcs failsafe
-    g.failsafe_throttle.set(FS_THR_DISABLED);
+    g.failsafe_throttle.set(Copter::FS_THR_Action::DISABLED);
     g.failsafe_gcs.set(Copter::FS_GCS_Action::DISABLED);
     g.fs_ekf_action.set(FS_EKF_ACTION_REPORT_ONLY);
 
