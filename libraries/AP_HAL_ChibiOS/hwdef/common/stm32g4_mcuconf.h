@@ -232,10 +232,18 @@
 /*
  * I2C driver system settings.
  */
-#define STM32_I2C_USE_I2C1                  TRUE
-#define STM32_I2C_USE_I2C2                  TRUE
-#define STM32_I2C_USE_I2C3                  TRUE
-#define STM32_I2C_USE_I2C4                  TRUE
+#ifndef STM32_I2C_USE_I2C1
+#define STM32_I2C_USE_I2C1                  FALSE
+#endif
+#ifndef STM32_I2C_USE_I2C2
+#define STM32_I2C_USE_I2C2                  FALSE
+#endif
+#ifndef STM32_I2C_USE_I2C3
+#define STM32_I2C_USE_I2C3                  FALSE
+#endif
+#ifndef STM32_I2C_USE_I2C4
+#define STM32_I2C_USE_I2C4                  FALSE
+#endif
 #define STM32_I2C_BUSY_TIMEOUT              50
 #define STM32_IRQ_I2C1_PRIORITY             5
 #define STM32_IRQ_I2C2_PRIORITY             5
