@@ -665,6 +665,10 @@ def add_dynamic_boards_linux():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(LinuxBoard, 'libraries/AP_HAL_Linux/hwdef')
 
+def add_dynamic_boards_qurt():
+    '''add boards based on existence of hwdef.dat in subdirectories for '''
+    add_dynamic_boards_from_hwdef_dir(QURTBoard, 'libraries/AP_HAL_QURT/hwdef')
+
 def add_dynamic_boards_sitl():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(SITLBoard, 'libraries/AP_HAL_SITL/hwdef')
@@ -698,6 +702,7 @@ def get_boards_names():
     add_dynamic_boards_chibios()
     add_dynamic_boards_esp32()
     add_dynamic_boards_linux()
+    add_dynamic_boards_qurt()
     add_dynamic_boards_sitl()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
@@ -1479,7 +1484,7 @@ class LinuxBoard(Board):
         # get name of class
         return self.__class__.__name__
 
-class QURT(Board):
+class QURTBoard(Board):
     '''support for QURT based boards'''
     toolchain = 'custom'
 
@@ -1487,6 +1492,11 @@ class QURT(Board):
         super().__init__()
 
         self.with_can = False
+
+    def configure(self, cfg):
+        # load hwdef, extract toolchain from cfg.env:
+        cfg.load('qurt')
+        super().configure(cfg)
 
     def configure_toolchain(self, cfg):
         cfg.env.CXX_NAME = 'gcc'
@@ -1522,7 +1532,7 @@ class QURT(Board):
         ]
 
     def configure_env(self, cfg, env):
-        super(QURT, self).configure_env(cfg, env)
+        super().configure_env(cfg, env)
 
         env.BOARD_CLASS = "QURT"
         env.HEXAGON_APP = "libardupilot.so"
@@ -1568,7 +1578,7 @@ class QURT(Board):
         ]
 
     def build(self, bld):
-        super(QURT, self).build(bld)
+        super().build(bld)
         bld.load('qurt')
 
     def get_name(self):
