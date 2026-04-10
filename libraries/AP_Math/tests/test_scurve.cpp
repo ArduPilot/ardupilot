@@ -77,6 +77,63 @@ static const PathTest path_tests[] = {
     {"I4_lowAm",  62.8319, 10, 0,    3,  5,   100,    10.0f, 0.24999982f, 0.05000019f, 1.11666679f, 0.05000019f},
 };
 
+// Segment state used to integrate through the profile
+struct SegState {
+    float A, V, P;
+};
+
+// Integrate an increasing-jerk segment (raised cosine from 0 to Jm)
+static SegState seg_incr_jerk(SegState s, float tj, float Jm)
+{
+    if (tj <= 0) return s;
+    const float Alpha = Jm * 0.5f;
+    const float Beta = M_PI / tj;
+    const float AT = Alpha * tj;
+    const float VT = Alpha * (sq(tj) * 0.5f - 2.0f / sq(Beta));
+    const float PT = Alpha * ((-1.0f / sq(Beta)) * tj + (1.0f / 6.0f) * powf(tj, 3.0f));
+    return {s.A + AT,
+            s.V + s.A * tj + VT,
+            s.P + s.V * tj + 0.5f * s.A * sq(tj) + PT};
+}
+
+// Integrate a constant-jerk segment
+static SegState seg_const_jerk(SegState s, float t, float J)
+{
+    if (t <= 0) return s;
+    return {s.A + J * t,
+            s.V + s.A * t + 0.5f * J * sq(t),
+            s.P + s.V * t + 0.5f * s.A * sq(t) + (1.0f / 6.0f) * J * powf(t, 3.0f)};
+}
+
+// Integrate a decreasing-jerk segment (raised cosine from Jm to 0)
+static SegState seg_decr_jerk(SegState s, float tj, float Jm)
+{
+    if (tj <= 0) return s;
+    const float Alpha = Jm * 0.5f;
+    const float Beta = M_PI / tj;
+    const float AT = Alpha * tj;
+    const float VT = Alpha * (sq(tj) * 0.5f - 2.0f / sq(Beta));
+    const float PT = Alpha * ((-1.0f / sq(Beta)) * tj + (1.0f / 6.0f) * powf(tj, 3.0f));
+    const float A2T = Jm * tj;
+    const float V2T = Jm * sq(tj);
+    const float P2T = Alpha * ((-1.0f / sq(Beta)) * 2.0f * tj + (4.0f / 3.0f) * powf(tj, 3.0f));
+    return {(s.A - AT) + A2T,
+            (s.V - VT) + (s.A - AT) * tj + V2T,
+            (s.P - PT) + (s.V - VT) * tj + 0.5f * (s.A - AT) * sq(tj) + P2T};
+}
+
+// Integrate a 3-segment jerk block: incr, const, decr
+static SegState seg_jerk_block(SegState s, float tj, float Jm, float Tcj, float &peak_A)
+{
+    s = seg_incr_jerk(s, tj, Jm);
+    peak_A = MAX(peak_A, fabsf(s.A));
+    s = seg_const_jerk(s, Tcj, Jm);
+    peak_A = MAX(peak_A, fabsf(s.A));
+    s = seg_decr_jerk(s, tj, Jm);
+    peak_A = MAX(peak_A, fabsf(s.A));
+    return s;
+}
+
 TEST(SCurveCalcPath, coverage_and_outputs)
 {
     float Jm_out, tj_out, t2_out, t4_out, t6_out;
@@ -90,6 +147,100 @@ TEST(SCurveCalcPath, coverage_and_outputs)
         EXPECT_FLOAT_EQ(t2_out, t.exp_t2) << "t2 mismatch: " << t.name;
         EXPECT_FLOAT_EQ(t4_out, t.exp_t4) << "t4 mismatch: " << t.name;
         EXPECT_FLOAT_EQ(t6_out, t.exp_t6) << "t6 mismatch: " << t.name;
+    }
+}
+
+// Verify that calculate_path outputs, when applied through add_segments logic,
+// produce a full path that:
+// - total distance == 2*L (add_segments calls calculate_path with L*0.5)
+// - peak velocity <= Vm
+// - peak acceleration <= Am
+// - output jerk <= input Jm
+// - final velocity == V0 (returns to initial speed)
+// - final acceleration == 0
+//
+// add_segments builds:
+//   Accel half:  jerk_block(tj, +Jm, t2) + const(t4, 0) + jerk_block(tj, -Jm, t6)
+//   Coast:       const(t_coast, 0) where t_coast fills remaining distance at Vm
+//   Decel half:  jerk_block(tj, -Jm, t6) + const(t4, 0) + jerk_block(tj, +Jm, t2)
+TEST(SCurveCalcPath, constraints)
+{
+    const float tol = 1.0e-3f;
+    float Jm_out, tj_out, t2_out, t4_out, t6_out;
+
+    for (const auto &t : path_tests) {
+        SCurve::calculate_path(t.Sm, t.Jm, t.V0, t.Am, t.Vm, t.L,
+                               Jm_out, tj_out, t2_out, t4_out, t6_out);
+
+        // skip zero-output cases (paths B, C)
+        if (is_zero(Jm_out) && is_zero(tj_out)) {
+            continue;
+        }
+
+        // jerk limit: output Jm must not exceed input Jm
+        EXPECT_LE(Jm_out, t.Jm + tol) << "Jm exceeded: " << t.name;
+
+        // --- Accel half ---
+        float peak_A = 0.0f;
+        SegState s = {0.0f, t.V0, 0.0f};
+
+        // accel up: jerk_block(tj, +Jm, t2)
+        s = seg_jerk_block(s, tj_out, Jm_out, t2_out, peak_A);
+        float peak_V = s.V;
+
+        // coast within accel half: const(t4, 0)
+        s = seg_const_jerk(s, t4_out, 0.0f);
+        peak_V = MAX(peak_V, s.V);
+
+        // accel down: jerk_block(tj, -Jm, t6)
+        s = seg_jerk_block(s, tj_out, -Jm_out, t6_out, peak_A);
+
+        // end of accel half: acceleration should be ~0
+        EXPECT_NEAR(s.A, 0.0f, tol) << "accel half final A non-zero: " << t.name;
+
+        const float accel_half_P = s.P;
+        const float cruise_V = s.V;
+
+        // --- Coast segment (fill remaining distance at cruise velocity) ---
+        const float L_total = 2.0f * t.L;
+        const float coast_dist = MAX(0.0f, L_total - 2.0f * accel_half_P);
+        float t_coast = 0.0f;
+        if (cruise_V > 0.0f) {
+            t_coast = coast_dist / cruise_V;
+        }
+        s = seg_const_jerk(s, t_coast, 0.0f);
+        peak_V = MAX(peak_V, s.V);
+
+        // --- Decel half (mirror of accel) ---
+        // decel down: jerk_block(tj, -Jm, t6)
+        s = seg_jerk_block(s, tj_out, -Jm_out, t6_out, peak_A);
+
+        // coast within decel half: const(t4, 0)
+        s = seg_const_jerk(s, t4_out, 0.0f);
+
+        // decel up: jerk_block(tj, +Jm, t2)
+        s = seg_jerk_block(s, tj_out, Jm_out, t2_out, peak_A);
+
+        // --- Check constraints ---
+
+        // total distance must match 2*L
+        EXPECT_NEAR(s.P, L_total, tol) << "distance mismatch: " << t.name
+            << " P=" << s.P << " expected=" << L_total;
+
+        // final velocity must return to V0
+        EXPECT_NEAR(s.V, t.V0, tol) << "final velocity mismatch: " << t.name
+            << " V=" << s.V << " V0=" << t.V0;
+
+        // final acceleration must be zero
+        EXPECT_NEAR(s.A, 0.0f, tol) << "final accel non-zero: " << t.name;
+
+        // peak velocity must not exceed Vm
+        EXPECT_LE(peak_V, t.Vm + tol) << "velocity exceeded Vm: " << t.name
+            << " peak_V=" << peak_V << " Vm=" << t.Vm;
+
+        // peak acceleration must not exceed Am
+        EXPECT_LE(peak_A, t.Am + tol) << "accel exceeded Am: " << t.name
+            << " peak_A=" << peak_A << " Am=" << t.Am;
     }
 }
 
