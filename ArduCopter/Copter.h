@@ -421,6 +421,7 @@ private:
 
     using FS_GCS_Action = Parameters::FS_GCS_Action;
     using FS_THR_Action = Parameters::FS_THR_Action;
+    using FS_EKF_Action = Parameters::FS_EKF_Action;
 
     // dead reckoning state
     struct {
