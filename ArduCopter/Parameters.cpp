@@ -119,7 +119,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Determines how the autopilot controls the yaw during missions and RTL
     // @Values: 0:Never change yaw, 1:Face next waypoint, 2:Face next waypoint except RTL, 3:Face along GPS course
     // @User: Standard
-    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    WP_YAW_BEHAVIOR_DEFAULT),
+    GSCALAR(wp_yaw_behavior,  "WP_YAW_BEHAVIOR",    static_cast<float>(WP_YAW_BEHAVIOR_DEFAULT)),
 
     // @Param: FS_THR_ENABLE
     // @DisplayName: Throttle Failsafe Enable
