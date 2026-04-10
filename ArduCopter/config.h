@@ -56,7 +56,7 @@
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
+  # define WP_YAW_BEHAVIOR_DEFAULT              WPYawBehavior::LOOK_AHEAD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -452,7 +452,7 @@
 
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+ # define WP_YAW_BEHAVIOR_DEFAULT   WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS

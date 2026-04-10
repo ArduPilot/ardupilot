@@ -419,7 +419,15 @@ public:
 
     AP_Int8         super_simple;
 
-    AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
+    // Yaw behaviours during missions (WP_YAW_BEHAVIOR parameter)
+    enum class WPYawBehavior {
+        NONE                       = 0,
+        LOOK_AT_NEXT_WP            = 1,
+        LOOK_AT_NEXT_WP_EXCEPT_RTL = 2,
+        LOOK_AHEAD                 = 3,
+    };
+
+    AP_Enum<WPYawBehavior> wp_yaw_behavior;     // controls how the autopilot controls yaw during missions
 
 #if MODE_POSHOLD_ENABLED
     AP_Int16        poshold_brake_rate_degs;    // PosHold flight mode's rotation rate during braking in deg/sec
