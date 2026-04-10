@@ -294,7 +294,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 
         // add to constant velocity segment to end at the correct position
         const float dP = MAX(0.0f, Pend - segment[SEG_DECEL_END].end_pos);
-        const float t15 = dP / segment[SEG_CONST].end_vel;
+        const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
         for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
             segment[i].end_time += t15;
             segment[i].end_pos += dP;
@@ -321,7 +321,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         float t2 = 0;
         float t4 = 0;
         float t6 = 0;
-        float jerk_time = MIN(powf((fabsf(vel_max - segment[SEG_ACCEL_END].end_vel) * M_PI) / (4 * snap_max), 1/3), jerk_max * M_PI / (2 * snap_max));
+        float jerk_time = MIN(powf((fabsf(vel_max - segment[SEG_ACCEL_END].end_vel) * M_PI) / (4 * snap_max), 1.0f / 3.0f), jerk_max * M_PI / (2 * snap_max));
         if ((vel_max < segment[SEG_ACCEL_END].end_vel) && (jerk_time*12.0f < L/segment[SEG_ACCEL_END].end_vel)) {
             // we have a problem here with small segments.
             calculate_path(snap_max, jerk_max, vel_max, accel_max, segment[SEG_ACCEL_END].end_vel, L * 0.5f, Jm, tj, t6, t4, t2);
@@ -372,7 +372,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 
     // add to constant velocity segment to end at the correct position
     const float dP = MAX(0.0f, Pend - segment[SEG_DECEL_END].end_pos);
-    const float t15 = dP / segment[SEG_CONST].end_vel;
+    const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -454,7 +454,7 @@ float SCurve::set_origin_speed_max(float speed)
 
     // add to constant velocity segment to end at the correct position
     const float dP = MAX(0.0f, seg_length - segment[SEG_DECEL_END].end_pos);
-    const float t15 = dP / segment[SEG_CONST].end_vel;
+    const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -509,7 +509,7 @@ void SCurve::set_destination_speed_max(float speed)
 
     // add to constant velocity segment to end at the correct position
     const float dP = MAX(0.0f, seg_length - segment[SEG_DECEL_END].end_pos);
-    const float t15 = dP / segment[SEG_CONST].end_vel;
+    const float t15 = is_positive(segment[SEG_CONST].end_vel) ? dP / segment[SEG_CONST].end_vel : 0.0f;
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
@@ -912,9 +912,12 @@ void SCurve::calculate_path(float Sm, float Jm, float V0, float Am, float Vm, fl
     }
 
     float tj = Jm * M_PI / (2 * Sm);
-    float At = MIN(MIN(Am, 
-        (Vm - V0) / (2.0f * tj) ), 
-        (L + 4.0f * V0 * tj) / (4.0f * sq(tj)) );
+    float At = MIN(MIN(Am,
+        (Vm - V0) / (2.0f * tj) ),
+        (L - 4.0f * V0 * tj) / (4.0f * sq(tj)) );
+    if (!is_positive(At)) {
+        return;
+    }
     if (fabsf(At) < Jm * tj) {
         if (is_zero(V0)) {
             // we do not have a solution for non-zero initial velocity
