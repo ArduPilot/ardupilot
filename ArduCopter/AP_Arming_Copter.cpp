@@ -213,7 +213,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 return false;
             }
         }
-        if (copter.g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
+        if (copter.g.failsafe_gcs == Copter::FS_GCS_Action::CONTINUE_MISSION) {
             // FS_GCS_ENABLE == 2 has been removed
             check_failed(Check::PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
         }

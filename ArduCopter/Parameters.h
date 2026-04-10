@@ -402,7 +402,19 @@ public:
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
 
-    AP_Int8         failsafe_gcs;               // ground station failsafe behavior
+    // GCS failsafe definitions (FS_GCS_ENABLE parameter)
+    enum class FS_GCS_Action {
+        DISABLED                 = 0,
+        ALWAYS_RTL               = 1,
+        CONTINUE_MISSION         = 2,    // Removed in 4.0+, now use fs_options
+        ALWAYS_SMARTRTL_OR_RTL   = 3,
+        ALWAYS_SMARTRTL_OR_LAND  = 4,
+        ALWAYS_LAND              = 5,
+        AUTO_RTL_OR_RTL          = 6,
+        BRAKE_OR_LAND            = 7,
+    };
+
+    AP_Enum<FS_GCS_Action> failsafe_gcs;        // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         super_simple;
