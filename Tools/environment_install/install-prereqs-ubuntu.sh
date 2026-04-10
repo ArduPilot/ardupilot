@@ -291,7 +291,8 @@ function maybe_prompt_user() {
     if $ASSUME_YES; then
         return 0
     else
-        read -p "$1"
+        printf "%b" "$1"
+        read -r REPLY
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             return 0
         else
