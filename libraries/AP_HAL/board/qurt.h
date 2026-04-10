@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef.h>
+
 #include <AP_HAL_QURT/AP_HAL_QURT_Main.h>
 
 #define HAL_BOARD_NAME "QURT"
@@ -91,24 +93,6 @@
 #define HAL_BATT_CURR_SCALE 1
 
 #define AP_COMPASS_PROBING_ENABLED 1
-
-/*
-  compass list
- */
-#define PROBE_MAG_I2C(driver, bus, addr, args ...) add_backend(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args)); RETURN_IF_NO_SPACE;
-#define HAL_MAG_PROBE_LIST PROBE_MAG_I2C(QMC5883L, 0, 0x0d, true, ROTATION_NONE)
-
-/*
-  barometer list
- */
-#define HAL_BARO_PROBE_LIST \
-    probe_i2c_dev(AP_Baro_ICP101XX::probe, 2, 0x63);
-
-/*
-  IMU list
- */
-#define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
-#define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensensev3, "INV3", ROTATION_NONE)
 
 /*
   bring in missing standard library functions
