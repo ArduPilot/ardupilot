@@ -114,16 +114,6 @@ enum LoggingParameters {
 #define MASK_LOG_FTN_FAST               (1UL<<21)
 #define MASK_LOG_ANY                    0xFFFF
 
-// Radio failsafe definitions (FS_THR parameter)
-#define FS_THR_DISABLED                            0
-#define FS_THR_ENABLED_ALWAYS_RTL                  1
-#define FS_THR_ENABLED_CONTINUE_MISSION            2    // Removed in 4.0+, now use fs_options
-#define FS_THR_ENABLED_ALWAYS_LAND                 3
-#define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
-#define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
-#define FS_THR_ENABLED_AUTO_RTL_OR_RTL             6
-#define FS_THR_ENABLED_BRAKE_OR_LAND               7
-
 // EKF failsafe definitions (FS_EKF_ACTION parameter)
 #define FS_EKF_ACTION_REPORT_ONLY           0
 #define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe

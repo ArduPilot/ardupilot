@@ -126,7 +126,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: The throttle failsafe allows you to configure a software failsafe activated by a setting on the throttle input channel
     // @Values:  0:Disabled,1:Enabled always RTL,2:Enabled Continue with Mission in Auto Mode (Removed in 4.0+),3:Enabled always Land,4:Enabled always SmartRTL or RTL,5:Enabled always SmartRTL or Land,6:Enabled Auto DO_LAND_START/DO_RETURN_PATH_START or RTL,7:Enabled always Brake or Land
     // @User: Standard
-    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   FS_THR_ENABLED_ALWAYS_RTL),
+    GSCALAR(failsafe_throttle,  "FS_THR_ENABLE",   static_cast<float>(FS_THR_Action::ALWAYS_RTL)),
 
     // @Param: FS_THR_VALUE
     // @DisplayName: Throttle Failsafe Value

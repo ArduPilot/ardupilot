@@ -100,7 +100,7 @@ bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
     // likely to pass if the user is relying on no-pulses to detect RC
     // failure.  However, arming is precluded in that case by being in
     // RC failsafe.
-    if (copter.g.failsafe_throttle == FS_THR_DISABLED) {
+    if (copter.g.failsafe_throttle == Copter::FS_THR_Action::DISABLED) {
         return true;
     }
 

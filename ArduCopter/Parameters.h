@@ -425,9 +425,21 @@ public:
     AP_Int16        poshold_brake_rate_degs;    // PosHold flight mode's rotation rate during braking in deg/sec
 #endif
 
+    // Throttle failsafe definitions (FS_THR_ENABLE parameter)
+    enum class FS_THR_Action {
+        DISABLED                 = 0,
+        ALWAYS_RTL               = 1,
+        CONTINUE_MISSION         = 2,    // Removed in 4.0+, now use fs_options
+        ALWAYS_LAND              = 3,
+        ALWAYS_SMARTRTL_OR_RTL   = 4,
+        ALWAYS_SMARTRTL_OR_LAND  = 5,
+        AUTO_RTL_OR_RTL          = 6,
+        BRAKE_OR_LAND            = 7,
+    };
+
     // Throttle
     //
-    AP_Int8         failsafe_throttle;
+    AP_Enum<FS_THR_Action> failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
     AP_Int16        throttle_deadzone;
 

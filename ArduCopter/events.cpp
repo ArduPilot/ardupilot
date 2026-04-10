@@ -16,27 +16,27 @@ void Copter::failsafe_radio_on_event()
 
     // set desired action based on FS_THR_ENABLE parameter
     FailsafeAction desired_action;
-    switch (g.failsafe_throttle) {
-        case FS_THR_DISABLED:
+    switch ((FS_THR_Action)g.failsafe_throttle) {
+        case FS_THR_Action::DISABLED:
             desired_action = FailsafeAction::NONE;
             break;
-        case FS_THR_ENABLED_ALWAYS_RTL:
-        case FS_THR_ENABLED_CONTINUE_MISSION:
+        case FS_THR_Action::ALWAYS_RTL:
+        case FS_THR_Action::CONTINUE_MISSION:
             desired_action = FailsafeAction::RTL;
             break;
-        case FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL:
+        case FS_THR_Action::ALWAYS_SMARTRTL_OR_RTL:
             desired_action = FailsafeAction::SMARTRTL;
             break;
-        case FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND:
+        case FS_THR_Action::ALWAYS_SMARTRTL_OR_LAND:
             desired_action = FailsafeAction::SMARTRTL_LAND;
             break;
-        case FS_THR_ENABLED_ALWAYS_LAND:
+        case FS_THR_Action::ALWAYS_LAND:
             desired_action = FailsafeAction::LAND;
             break;
-        case FS_THR_ENABLED_AUTO_RTL_OR_RTL:
+        case FS_THR_Action::AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
-        case FS_THR_ENABLED_BRAKE_OR_LAND:
+        case FS_THR_Action::BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
         default:
