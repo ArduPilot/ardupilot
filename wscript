@@ -476,6 +476,16 @@ def _collect_autoconfig_files(cfg):
 def configure(cfg):
     if is_ci:
         print(f"::group::Waf Configure")
+
+    # Check if running inside the deprecated ~/venv-ardupilot venv
+    deprecated_venv = os.path.join(os.path.expanduser('~'), 'venv-ardupilot')
+    if sys.executable.startswith(os.path.realpath(deprecated_venv)):
+        cfg.fatal(
+            f'You are using the deprecated venv at {deprecated_venv}. '
+            'Please re-run Tools/environment_install/install-prereqs-ubuntu.sh '
+            'to update your environment to use the new .venv in the repository root.'
+        )
+
 	# we need to enable debug mode when building for gconv, and force it to sitl
     if cfg.options.board is None:
         cfg.options.board = 'sitl'
