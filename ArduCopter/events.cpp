@@ -126,7 +126,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 void Copter::failsafe_gcs_check()
 {
     // Bypass GCS failsafe checks if disabled or GCS never connected
-    if (g.failsafe_gcs == FS_GCS_DISABLED) {
+    if (g.failsafe_gcs == FS_GCS_Action::DISABLED) {
         return;
     }
 
@@ -167,27 +167,27 @@ void Copter::failsafe_gcs_on_event(void)
 
     // convert the desired failsafe response to the FailsafeAction enum
     FailsafeAction desired_action;
-    switch (g.failsafe_gcs) {
-        case FS_GCS_DISABLED:
+    switch ((FS_GCS_Action)g.failsafe_gcs) {
+        case FS_GCS_Action::DISABLED:
             desired_action = FailsafeAction::NONE;
             break;
-        case FS_GCS_ENABLED_ALWAYS_RTL:
-        case FS_GCS_ENABLED_CONTINUE_MISSION:
+        case FS_GCS_Action::ALWAYS_RTL:
+        case FS_GCS_Action::CONTINUE_MISSION:
             desired_action = FailsafeAction::RTL;
             break;
-        case FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL:
+        case FS_GCS_Action::ALWAYS_SMARTRTL_OR_RTL:
             desired_action = FailsafeAction::SMARTRTL;
             break;
-        case FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND:
+        case FS_GCS_Action::ALWAYS_SMARTRTL_OR_LAND:
             desired_action = FailsafeAction::SMARTRTL_LAND;
             break;
-        case FS_GCS_ENABLED_ALWAYS_LAND:
+        case FS_GCS_Action::ALWAYS_LAND:
             desired_action = FailsafeAction::LAND;
             break;
-        case FS_GCS_ENABLED_AUTO_RTL_OR_RTL:
+        case FS_GCS_Action::AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
-        case FS_GCS_ENABLED_BRAKE_OR_LAND:
+        case FS_GCS_Action::BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
         default: // if an invalid parameter value is set, the fallback is RTL
