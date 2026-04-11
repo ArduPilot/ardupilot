@@ -71,7 +71,7 @@ void ModeAcro::stabilize()
         plane.nav_roll_cd = ahrs.roll_sensor + roll_error_cd;
         // try to reduce the integrated angular error to zero. We set
         // 'stabilize' to true, which disables the roll integrator
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_servo_out(roll_error_cd,
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.run_angle_control(plane.nav_roll_cd,
                                                                                              speed_scaler,
                                                                                              true, false));
     } else {
@@ -80,7 +80,7 @@ void ModeAcro::stabilize()
           user releases the stick
          */
         acro_state.locked_roll = false;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_rate_out(roll_rate,  speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.run_rate_control(roll_rate,  speed_scaler));
     }
 
     if (plane.g.acro_locking && is_zero(pitch_rate)) {
@@ -95,7 +95,7 @@ void ModeAcro::stabilize()
         // try to hold the locked pitch. Note that we have the pitch
         // integrator enabled, which helps with inverted flight
         plane.nav_pitch_cd = acro_state.locked_pitch_cd;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.get_servo_out(plane.nav_pitch_cd - ahrs.pitch_sensor,
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.run_angle_control(plane.nav_pitch_cd,
                                                                                                speed_scaler,
                                                                                                false, false));
     } else {
@@ -103,7 +103,7 @@ void ModeAcro::stabilize()
           user has non-zero pitch input, use a pure rate controller
          */
         acro_state.locked_pitch = false;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.get_rate_out(pitch_rate, speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.run_rate_control(pitch_rate, speed_scaler));
     }
 
     float rudder_output;
@@ -217,8 +217,8 @@ void ModeAcro::stabilize_quaternion()
     }
 
     // call to rate controllers
-    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  plane.rollController.get_rate_out(desired_rates.x, speed_scaler));
-    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.get_rate_out(desired_rates.y, speed_scaler));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_aileron,  plane.rollController.run_rate_control(desired_rates.x, speed_scaler));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, plane.pitchController.run_rate_control(desired_rates.y, speed_scaler));
     output_rudder_and_steering(plane.yawController.get_rate_out(desired_rates.z,  speed_scaler, false));
 
     acro_state.roll_active_last = roll_active;
