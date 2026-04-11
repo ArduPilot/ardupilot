@@ -212,7 +212,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # -------------------------------------------------
 # No built-in compass; probe I2C for external
 # -------------------------------------------------
-define ALLOW_ARM_NO_COMPASS
 define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
