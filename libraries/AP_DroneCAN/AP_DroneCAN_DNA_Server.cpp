@@ -378,8 +378,8 @@ void AP_DroneCAN_DNA_Server::update_node_status(const uint8_t source_node_id, co
         // @Field: Driver: Driver index
         // @Field: NodeId: Node ID
         // @Field: UpTime: Time since node startup
-        // @Field: Health: 0: Ok, 2: Warning, 3: Error, 4:Critical
-        // @Field: Mode: 0: Operational, 2: Initialization, 3:Maintenance, 4:Software update, 5:Offline
+        // @Field: Health: 0:Ok, 1:Warning, 2:Error, 3:Critical
+        // @Field: Mode: 0:Operational, 1:Initialization, 2:Maintenance, 3:Software update, 7:Offline
         // @Field: SubMode: Expected to be 0
         // @Field: VendorCode: vendor specific code. In AP_Periph this is available memory in bytes.
 
