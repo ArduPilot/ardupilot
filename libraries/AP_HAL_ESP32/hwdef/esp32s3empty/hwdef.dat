@@ -9,7 +9,6 @@ define INS_MAX_INSTANCES 3  # only here for binary identicality
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 define AP_COMPASS_ENABLE_DEFAULT 0
-define ALLOW_ARM_NO_COMPASS
 define AP_AIRSPEED_ENABLED 0
 
 # no ADC
