@@ -21,6 +21,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Math/AP_Math.h>
 
 AP_FW_Controller::AP_FW_Controller(const AP_FixedWing &parms, const AC_PID::Defaults &defaults, AP_AutoTune::ATType _autotune_type)
     : aparm(parms),
@@ -30,10 +31,82 @@ AP_FW_Controller::AP_FW_Controller(const AP_FixedWing &parms, const AC_PID::Defa
     rate_pid.set_slew_limit_scale(45);
 }
 
+// Return true if input shaping should be used
+bool AP_FW_Controller::apply_input_shaping() const
+{
+    // Must be using rate limits
+    if (!apply_rate_limits()) {
+        return false;
+    }
+
+    // Accel and jerk limit must be set
+    if (!is_positive(accel_limit.get()) || !is_positive(jerk_limit.get())) {
+        return false;
+    }
+
+    // auto-tune must not be running
+    if ((autotune != nullptr) && autotune->running) {
+        return false;
+    }
+
+    return true;
+}
+
+// Run angle controller
+float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler, bool disable_integrator, bool ground_mode)
+{
+    // Ensure tau is valid
+    if (gains.tau < 0.05f) {
+        gains.tau.set(0.05f);
+    }
+    const float desired_angle_deg = desired_angle_cd * 0.01;
+
+    if (!apply_input_shaping()) {
+        // Calculate rate directly from angle error with no input shaping
+        angle_err_deg = desired_angle_deg - get_measured_angle();
+        float desired_rate = (angle_err_deg / gains.tau) + get_ff_rate_target();
+
+        // Apply rate limits if enabled
+        if (apply_rate_limits()) {
+            desired_rate = rate_limit(desired_rate);
+        }
+
+        // Reset input shaping set points
+        reset_input_shaping(desired_angle_deg, desired_rate);
+
+        // Run rate controller
+        return run_axis_rate_control(desired_rate, scaler, disable_integrator, ground_mode);
+    }
+
+    // Apply input shaping to desired angle
+    const float dt = AP::scheduler().get_loop_period_s();
+
+    // Apply input shaping updating the accel target
+    shape_pos_vel_accel(
+        desired_angle_deg, get_ff_rate_target(), 0.0,          // desired pos, vel and accel
+        angle_target_deg, rate_target_deg, accel_target_deg,   // current shaped target
+        -get_negative_rate_limit(), get_positive_rate_limit(), // velocity limits
+        -accel_limit.get(), accel_limit.get(), // accel limits
+        jerk_limit.get(), // jerk limit
+        dt, true
+    );
+
+    // Integrate pos and vel from updated accel target
+    rate_target_deg += accel_target_deg * dt;
+    angle_target_deg += rate_target_deg * dt;
+
+    // Calculate angle error and apply gain
+    angle_err_deg = angle_target_deg - get_measured_angle();
+    const float desired_rate = (angle_err_deg / gains.tau) + rate_target_deg;
+
+    // Run rate controller
+    return run_axis_rate_control(desired_rate, scaler, disable_integrator, ground_mode);
+}
+
 /*
   AC_PID based rate controller
 */
-float AP_FW_Controller::_get_rate_out(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
+float AP_FW_Controller::run_rate_control(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
 {
     const float dt = AP::scheduler().get_loop_period_s();
 
@@ -107,14 +180,19 @@ float AP_FW_Controller::_get_rate_out(float desired_rate, float scaler, bool dis
 /*
  Function returns an equivalent control surface deflection in centi-degrees in the range from -4500 to 4500
 */
-float AP_FW_Controller::get_rate_out(float desired_rate, float scaler)
+float AP_FW_Controller::run_rate_control(float desired_rate, float scaler)
 {
-    return _get_rate_out(desired_rate, scaler, false, false);
+    // Reset input shaping set points
+    reset_input_shaping(get_measured_angle(), desired_rate);
+
+    return run_rate_control(desired_rate, scaler, false, false);
 }
 
+// Reset I term
 void AP_FW_Controller::reset_I()
 {
     rate_pid.reset_I();
+    _last_out = 0.0;
 }
 
 /*
@@ -156,6 +234,7 @@ void AP_FW_Controller::autotune_start(void)
     }
 }
 
+// Return the airspeed in m/s
 float AP_FW_Controller::get_airspeed() const
 {
     float aspeed;
@@ -166,3 +245,51 @@ float AP_FW_Controller::get_airspeed() const
     return aspeed;
 }
 
+// Reset controller
+void AP_FW_Controller::reset()
+{
+    // Reset PID
+    rate_pid.reset_I();
+    rate_pid.reset_filter();
+    _last_out = 0.0;
+
+    // Reset input shaping
+    reset_input_shaping(get_measured_angle(), get_measured_rate());
+}
+
+// Apply positive and negative rate limits to passed in value
+float AP_FW_Controller::rate_limit(float rate) const
+{
+    const float pos_rate_limit = get_positive_rate_limit();
+    if (is_positive(pos_rate_limit)) {
+        rate = MIN(rate, pos_rate_limit);
+    }
+
+    const float neg_rate_limit = get_negative_rate_limit();
+    if (is_positive(neg_rate_limit)) {
+        rate = MAX(rate, -neg_rate_limit);
+    }
+
+    return rate;
+}
+
+// Reset input shaping applying rate limits
+void AP_FW_Controller::reset_input_shaping(const float angle, const float rate)
+{
+    // No angle limits at the controller level, reset to the passed in angle
+    angle_target_deg = angle;
+
+    // Reset to passed in rate and apply rate limits
+    rate_target_deg = rate_limit(rate);
+
+    // Reset accel to zero
+    accel_target_deg = 0.0;
+}
+
+// Get input shaping angle, rate and accel for logging
+void AP_FW_Controller::get_input_shaping(float &angle, float &rate, float &accel) const
+{
+    angle = angle_target_deg;
+    rate = rate_target_deg;
+    accel = accel_target_deg;
+}
