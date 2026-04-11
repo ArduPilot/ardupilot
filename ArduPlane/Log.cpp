@@ -2,6 +2,17 @@
 
 #if HAL_LOGGING_ENABLED
 
+struct PACKED log_ATIS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float roll_angle;
+    float roll_velocity;
+    float roll_acceleration;
+    float pitch_angle;
+    float pitch_velocity;
+    float pitch_acceleration;
+};
+
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
 {
@@ -53,6 +64,26 @@ void Plane::Log_Write_Attitude(void)
     if (steerController.active()) {
         logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
     }
+
+    // Log roll and pitch input shaping
+    float roll_angle, roll_velocity, roll_acceleration;
+    rollController.get_input_shaping(roll_angle, roll_velocity, roll_acceleration);
+
+    float pitch_angle, pitch_velocity, pitch_acceleration;
+    pitchController.get_input_shaping(pitch_angle, pitch_velocity, pitch_acceleration);
+
+    struct log_ATIS pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ATIS_MSG),
+        time_us: AP_HAL::micros64(),
+        roll_angle,
+        roll_velocity,
+        roll_acceleration,
+        pitch_angle,
+        pitch_velocity,
+        pitch_acceleration
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+
 }
 
 // do fast logging for plane
@@ -557,6 +588,18 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_RFNS_MSG, sizeof(log_RFNS),
         "RFNS", "QBBBBfffffIf", "TimeUS,InUse,InRng,IRCnt,Ms0OK,Ms0,Dst,Cor,Cor0,CorL,TimeCL,HE", "s----mmmmmsm", "F----00000C0", true },
 #endif  // AP_RANGEFINDER_ENABLED
+
+// @LoggerMessage: ATIS
+// @Description: Fixedwing attitude control input shaping
+// @Field: TimeUS: Time since system startup
+// @Field: rAng: Roll angle
+// @Field: rVel: Roll velocity
+// @Field: rAcc: Roll acceleration
+// @Field: pAng: Pitch angle
+// @Field: pVel: Pitch velocity
+// @Field: pAcc: Pitch acceleration
+    { LOG_ATIS_MSG, sizeof(log_ATIS),
+        "ATIS", "Qffffff", "TimeUS,rAng,rVel,rAcc,pAng,pVel,pAcc", "sdkedke", "F000000", true },
 };
 
 uint8_t Plane::get_num_log_structures() const
