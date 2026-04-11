@@ -295,6 +295,8 @@ class HWDef:
             'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE': 'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE is no longer used; try "define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0"',  # noqa:E501
             'BOARD_PWM_COUNT_DEFAULT': 'BOARD_PWM_COUNT_DEFAULT is no longer used; remove it from your hwdef files',
             'HAL_PICCOLO_CAN_ENABLE': 'HAL_PICCOLO_CAN_ENABLE was renamed to AP_PICCOLOCAN_ENABLED; fix your hwdef file',
+            'HAL_PERIPH_ENABLE_NETWORKING': 'HAL_PERIPH_ENABLE_NETWORKING is no longer used; try "define AP_PERIPH_NETWORKING_ENABLED 1"',  # noqa:E501
+            'HAL_PROBE_EXTERNAL_I2C_BAROS': 'HAL_PROBE_EXTERNAL_I2C_BAROS is no longer used; try "define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1"',  # noqa:E501
         }
 
     def assert_good_define(self, name):
