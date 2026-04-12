@@ -323,7 +323,7 @@ public:
         k_param_flight_modes4,
         k_param_flight_modes5,
         k_param_simple_modes,
-        k_param_flight_mode_chan,
+        k_param_flight_mode_chan_old,
         k_param_initial_mode,
 
         //
@@ -455,7 +455,6 @@ public:
     //
     AP_Int8         flight_modes[6];
     AP_Int8         simple_modes;
-    AP_Int8         flight_mode_chan;
     AP_Int8         initial_mode;
 
     // Misc
