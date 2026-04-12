@@ -39,9 +39,4 @@ public:
     void set_control_channel_defaults() override { init_channel_numbers(); }
     bool control_input_required(RC_Channel::AUX_FUNC func) const override { return false; }
 
-protected:
-
-    // note that these callbacks are not presently used on Tracker:
-    int8_t flight_mode_channel_number() const override;
-
 };
