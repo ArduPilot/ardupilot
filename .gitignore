@@ -173,4 +173,3 @@ env.bak/
 venv.bak/
 autotest_result_*_junit.xml
 .python-version
-
