@@ -885,10 +885,6 @@ bool AP_Arming::rc_option_checks(bool report)
         check_failed(Check::PARAMETERS, report, "Duplicate Aux Switch Options");
         check_passed = false;
     }
-    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
-        check_failed(Check::PARAMETERS, report, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
-        check_passed = false;
-    }
     const char *missing = rc().missing_control_channel();
     if (missing != nullptr) {
         check_failed(Check::PARAMETERS, report, "No RC channel for %s", missing);
