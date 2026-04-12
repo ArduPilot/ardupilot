@@ -268,6 +268,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Sub}: 221:Lateral Throttle
     // @Values{Rover}: 222:Walking Roll
     // @Values{Rover}: 223:Walking Pitch
+    // @Values{All-Vehicles}: 224:Mode selection
     // @Values{All-Vehicles}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @Values{All-Vehicles}: 316:Stop-Restart Scripting
     // @User: Standard
@@ -789,6 +790,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::LOWEHEISER_THROTTLE:
 #endif
+    case AUX_FUNC::MODE:  // init handled specially
         break;
 
     // not really aux functions:
@@ -1022,6 +1024,9 @@ bool RC_Channel::read_aux()
                _option == AUX_FUNC::FWD_THR ||
                _option == AUX_FUNC::LATERAL_THR) {
         // control inputs are not switches
+        return false;
+    } else if (_option == AUX_FUNC::MODE) {
+        // this is handled especially via read_mode_switch
         return false;
 #if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
