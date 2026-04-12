@@ -33,7 +33,7 @@ public:
 
     RC_Channel_PIDTest obj_channels[NUM_RC_CHANNELS];
 private:
-    int8_t flight_mode_channel_number() const override { return -1; };
+
 };
 
 #define RC_CHANNELS_SUBCLASS RC_Channels_PIDTest
