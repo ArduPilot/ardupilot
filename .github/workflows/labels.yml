@@ -15,7 +15,7 @@ jobs:
           script: |
             const filenames = (await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
-              repo: context.repo.repo,git,
+              repo: context.repo.repo,
               pull_number: context.issue.number,
               per_page: 100,
             })).map(file => file.filename);
