@@ -418,20 +418,13 @@ ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-PYTHON_VENV_PACKAGE=""
-if [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    PYTHON_VENV_PACKAGE=python3.11-venv
-elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    PYTHON_VENV_PACKAGE=python3.12-venv
-elif [ ${RELEASE_CODENAME} == 'trixie' ] ||
+if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+     [ ${RELEASE_CODENAME} == 'trixie' ] ||
+     [ ${RELEASE_CODENAME} == 'noble' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
      [ ${RELEASE_CODENAME} == 'questing' ] ||
      false; then
-    PYTHON_VENV_PACKAGE=python3-venv
-fi
-
-if [ -n "$PYTHON_VENV_PACKAGE" ]; then
-    $APT_GET install $PYTHON_VENV_PACKAGE
+    $APT_GET install python3-venv
 
     # Check if venv already exists in ARDUPILOT_ROOT (check both venv-ardupilot and venv)
     VENV_PATH=""
@@ -469,7 +462,7 @@ fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
 SETUPTOOLS="setuptools"
-$PIP install $PIP_USER_ARGUMENT -U pip packaging $SETUPTOOLS wheel
+$PIP install $PIP_USER_ARGUMENT --upgrade pip packaging $SETUPTOOLS wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
@@ -482,7 +475,7 @@ if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
    false; then
     # must do this ahead of wxPython pip3 run :-/
-    $PIP install $PIP_USER_ARGUMENT -U attrdict3
+    $PIP install $PIP_USER_ARGUMENT --upgrade attrdict3
 fi
 
 # install Python packages one-at-a-time so it is clear which package
@@ -495,20 +488,20 @@ for PACKAGE in $PYTHON_PKGS; do
             jammy)
                 echo "##### Adding wxpython wheel repository for faster installation"
                 WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04"
-                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
+                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
                 ;;
             noble)
                 echo "##### Adding wxpython wheel repository for faster installation"
                 WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04"
-                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
+                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
                 ;;
             *)
                 echo "##### Installing wxpython from PyPI (no specific wheel repository for this release)"
-                time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+                time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
                 ;;
         esac
     else
-        time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+        time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
     fi
 done
 
