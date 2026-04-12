@@ -219,7 +219,7 @@ public:
         k_param_flight_modes4,
         k_param_flight_modes5,
         k_param_simple_modes,
-        k_param_flight_mode_chan,
+        k_param_flight_mode_chan_old,
 #if AP_RSSI_ENABLED
         k_param_rssi,
 #endif 
@@ -364,7 +364,6 @@ public:
     //
     AP_Int8         flight_modes[6];
     AP_Int8         simple_modes;
-    AP_Int8         flight_mode_chan;
 #endif 
 
     AP_Float                surface_depth;
