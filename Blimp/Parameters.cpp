@@ -134,12 +134,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Flight mode when Channel 5 pwm is >=1750
     GARRAY(flight_modes, 5, "FLTMODE6", (uint8_t)FLIGHT_MODE_6),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
-    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8
-    // @User: Advanced
-    GSCALAR(flight_mode_chan, "FLTMODE_CH",         CH_MODE_DEFAULT),
+    // FLTMODE_CH was here
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
@@ -824,4 +819,7 @@ void Blimp::load_parameters(void)
     }
 #endif  // HAL_GCS_ENABLED
 
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    AP_Param::convert_old_fltmode_ch(Parameters::k_param_flight_mode_chan_old, CH_MODE_DEFAULT);
 }
