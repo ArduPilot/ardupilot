@@ -212,12 +212,12 @@ public:
         k_param_surface_max_throttle,
         k_param_surface_nobaro_thrust,
         // 200: flight modes
-        k_param_flight_mode1 = 200,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
+        k_param_flight_modes0 = 200,
+        k_param_flight_modes1,
+        k_param_flight_modes2,
+        k_param_flight_modes3,
+        k_param_flight_modes4,
+        k_param_flight_modes5,
         k_param_simple_modes,
         k_param_flight_mode_chan,
 #if AP_RSSI_ENABLED
@@ -362,12 +362,7 @@ public:
 
     // Flight modes
     //
-    AP_Int8         flight_mode1;
-    AP_Int8         flight_mode2;
-    AP_Int8         flight_mode3;
-    AP_Int8         flight_mode4;
-    AP_Int8         flight_mode5;
-    AP_Int8         flight_mode6;
+    AP_Int8         flight_modes[6];
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
 #endif 
