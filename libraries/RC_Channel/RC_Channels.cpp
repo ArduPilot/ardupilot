@@ -282,31 +282,60 @@ void RC_Channels::init_aux_all()
         }
         c->init_aux();
     }
+    // the mode channel is intentionally only looked up at boot;
+    // changing which RCn_OPTION is set to Mode requires a reboot
+    cached_flight_mode_channel = find_channel_for_option(RC_Channel::AUX_FUNC::MODE);
     reset_mode_switch();
+}
+
+// PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+// convert from e.g. FLTMODE_CH=5 to RC5_OPTION=Mode.  If the old
+// parameter was never saved then default_mode_channel is used; this
+// is what gives a fresh install its default mode channel.
+void RC_Channels::convert_old_fltmode_ch(uint16_t old_key, uint8_t default_mode_channel)
+{
+    const AP_Param::ConversionInfo mode_channel_info{
+        old_key,
+        0,  // old_group_element
+        AP_PARAM_INT8,
+        "UNUSED"
+    };
+    int8_t new_mode_channel = default_mode_channel;
+    AP_Int8 mode_channel_old;
+    if (AP_Param::find_old_parameter(&mode_channel_info, &mode_channel_old)) {
+        new_mode_channel = mode_channel_old.get();
+    } else if (find_channel_for_option(RC_Channel::AUX_FUNC::MODE) != nullptr) {
+        // not explicitly set and e.g. a defaults file has already
+        // nominated a mode channel
+        return;
+    }
+    if (new_mode_channel < 1) {
+        // no mode channel
+        return;
+    }
+
+    RC_Channel *c = channel(new_mode_channel - 1);
+    if (c == nullptr) {
+        // old parameter specified an invalid value
+        return;
+    }
+    if (c->option.configured()) {
+        // destination parameter is already configured to do something.
+        // Note that this means a user who had an RCn_OPTION set on
+        // their mode channel (or had set one and then set it back to
+        // zero) does not get a mode channel after upgrade.
+        return;
+    }
+
+    c->option.set_and_save(int16_t(RC_Channel::AUX_FUNC::MODE));
 }
 
 //
 // Support for mode switches
 //
-RC_Channel *RC_Channels::flight_mode_channel()
+RC_Channel *RC_Channels::flight_mode_channel() const
 {
-    const int8_t num = flight_mode_channel_number();
-    if (num <= 0) {
-        return nullptr;
-    }
-    if (num >= NUM_RC_CHANNELS) {
-        return nullptr;
-    }
-    return channel(num-1);
-}
-const RC_Channel *RC_Channels::flight_mode_channel() const
-{
-    const int8_t num = flight_mode_channel_number();
-    if (num <= 0) {
-        // avoid integer underflow on e.g. -1
-        return nullptr;
-    }
-    return channel(num-1);
+    return cached_flight_mode_channel;
 }
 
 void RC_Channels::reset_mode_switch()
@@ -329,17 +358,6 @@ void RC_Channels::read_mode_switch()
         return;
     }
     c->read_mode_switch();
-}
-
-// check if flight mode channel is assigned RC option
-// return true if assigned
-bool RC_Channels::flight_mode_channel_conflicts_with_rc_option() const
-{
-    const RC_Channel *chan = flight_mode_channel();
-    if (chan == nullptr) {
-        return false;
-    }
-    return (RC_Channel::AUX_FUNC)chan->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING;
 }
 
 /*

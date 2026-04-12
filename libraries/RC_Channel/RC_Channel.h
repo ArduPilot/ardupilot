@@ -404,6 +404,7 @@ public:
         WALKING_ROLL =       222, // walking robot roll input
         WALKING_PITCH =      223, // walking robot pitch input
         FORWARD_THR =        225, // RC throttle command for forward movement
+        MODE = 224,  // vehicle flight mode (drive mode on Rover)
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
@@ -662,6 +663,9 @@ public:
     void init_aux_all();
     void read_aux_all();
 
+    // convert from e.g. FLTMODE_CH=5 to RC5_OPTION=Mode
+    void convert_old_fltmode_ch(uint16_t old_key, uint8_t default_mode_channel);
+
     // mode switch handling
     void reset_mode_switch();
     virtual void read_mode_switch();
@@ -744,13 +748,6 @@ public:
     bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTrigger::Source source, uint16_t source_index) {
         return channel(0)->run_aux_function(ch_option, pos, source, source_index);
     }
-
-    // check if flight mode channel is assigned RC option
-    // return true if assigned
-    bool flight_mode_channel_conflicts_with_rc_option() const;
-
-    // flight_mode_channel_number must be overridden in vehicle specific code
-    virtual int8_t flight_mode_channel_number() const = 0;
 
     // set and get calibrating flag, stops arming if true
     void calibrating(bool b) { gcs_is_calibrating = b; }
@@ -851,8 +848,9 @@ private:
     // set to true if we see overrides or other RC input
     bool _has_ever_seen_rc_input;
 
-    RC_Channel *flight_mode_channel();
-    const RC_Channel *flight_mode_channel() const;
+    RC_Channel *flight_mode_channel() const;
+    // the mode channel is set once/boot
+    RC_Channel *cached_flight_mode_channel;
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
