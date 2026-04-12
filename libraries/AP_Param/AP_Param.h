@@ -510,6 +510,9 @@ public:
         return _convert_parameter_width(old_ptype, 1.0, true);
     }
 
+    // convert from e.g. FLTMODE_CH=5 to RC5_OPTION=250
+    static void convert_old_fltmode_ch(uint16_t old_key, uint8_t default_mode_channel);
+
     // convert a single parameter with scaling
     enum {
         CONVERT_FLAG_REVERSE=1, // handle _REV -> _REVERSED conversion

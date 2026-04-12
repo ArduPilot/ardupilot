@@ -2228,6 +2228,42 @@ bool AP_Param::_convert_parameter_width(ap_var_type old_ptype, float scale_facto
     return true;
 }
 
+void AP_Param::convert_old_fltmode_ch(uint16_t old_key, uint8_t default_mode_channel)
+{
+    const AP_Param::ConversionInfo mode_channel_info{
+        old_key,
+        0,  // old_group_element
+        AP_PARAM_INT8,
+        "UNUSED"
+    };
+    uint8_t new_mode_channel = default_mode_channel;
+    AP_Int8 mode_channel_old;
+    if (AP_Param::find_old_parameter(&mode_channel_info, &mode_channel_old)) {
+        new_mode_channel = mode_channel_old.get();
+    }
+    char name[20];
+    snprintf(name, ARRAY_SIZE(name), "RC%u_OPTION", new_mode_channel);
+
+    AP_Param::ParamToken token = AP_Param::ParamToken {};
+    ap_var_type var_type;
+    AP_Param *p = AP_Param::find_by_name(name, &var_type, &token);
+    if (p == nullptr) {
+        // old parameter specified an invalid value
+        return;
+    }
+    if (p->configured()) {
+        // destination parameter is already configured to do something
+        return;
+    }
+    if (var_type != AP_PARAM_INT16) {
+        // apologies if you did a convert-param-width and now staring at this
+        return;
+    }
+
+    // 250 here to avoid including RC_Channel.h
+    ((AP_Int16*)p)->set_and_save(float(250));  // RC_Channel::AUX_FUNC::MODE
+}
+
 /*
   set a parameter to a float value
  */
