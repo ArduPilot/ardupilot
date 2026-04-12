@@ -20,3 +20,9 @@ jobs:
     - run: python3 -m pip install --upgrade pip
     - run: python3 -m pip install pytest
     - run: PYTHONPATH="." pytest tests/test_pre_commit_copyright.py
+
+  luacheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: lunarmodules/luacheck@v1
