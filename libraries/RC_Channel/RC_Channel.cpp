@@ -262,6 +262,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Sub}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
+    // @Values{All-Vehicles}: 250:Mode selection
     // @Values{All-Vehicles}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @Values{All-Vehicles}: 316:Stop-Restart Scripting
     // @User: Standard
@@ -755,6 +756,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::LOWEHEISER_THROTTLE:
 #endif
+    case AUX_FUNC::MODE:  // init handled specially
         break;
 
     // these functions require explicit initialization
@@ -972,6 +974,9 @@ bool RC_Channel::read_aux()
     if (_option == AUX_FUNC::DO_NOTHING) {
         // may wish to add special cases for other "AUXSW" things
         // here e.g. RCMAP_ROLL etc once they become options
+        return false;
+    } else if (_option == AUX_FUNC::MODE) {
+        // this is handled especially via read_mode_switch
         return false;
 #if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {

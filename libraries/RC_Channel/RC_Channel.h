@@ -401,6 +401,8 @@ public:
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
 
+        MODE = 250,  // vehicle flight mode (drive mode on Rover)
+
 #if AP_SCRIPTING_ENABLED
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
@@ -727,13 +729,6 @@ public:
         return rc_channel(0)->run_aux_function(ch_option, pos, source, source_index);
     }
 
-    // check if flight mode channel is assigned RC option
-    // return true if assigned
-    bool flight_mode_channel_conflicts_with_rc_option() const;
-
-    // flight_mode_channel_number must be overridden in vehicle specific code
-    virtual int8_t flight_mode_channel_number() const = 0;
-
     // set and get calibrating flag, stops arming if true
     void calibrating(bool b) { gcs_is_calibrating = b; }
     bool calibrating() { return gcs_is_calibrating; }
@@ -788,6 +783,8 @@ private:
     bool _has_ever_seen_rc_input;
 
     RC_Channel *flight_mode_channel() const;
+    // the mode channel is set once/boot
+    RC_Channel *cached_flight_mode_channel;
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
