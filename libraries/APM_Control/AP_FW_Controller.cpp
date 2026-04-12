@@ -92,8 +92,8 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     );
 
     // Integrate pos and vel from updated accel target
+    angle_target_deg += rate_target_deg * dt + accel_target_deg * 0.5 * sq(dt);
     rate_target_deg += accel_target_deg * dt;
-    angle_target_deg += rate_target_deg * dt;
 
     // Calculate angle error and apply gain
     angle_err_deg = angle_target_deg - get_measured_angle();
