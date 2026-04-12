@@ -465,12 +465,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL", GCS_FAILSAFE_OFF),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
-    // @Values: 0:Disabled,1:Channel 1,2:Channel 2,3:Channel 3,4:Channel 4,5:Channel 5,6:Channel 6,7:Channel 7,8:Channel 8,9:Channel 9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15,16:Channel 16
-    // @User: Advanced
-    GSCALAR(flight_mode_channel,    "FLTMODE_CH",     FLIGHT_MODE_CHANNEL),
+    // FLTMODE_CH was here
 
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
@@ -1580,4 +1575,8 @@ void Plane::load_parameters(void)
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    AP_Param::convert_old_fltmode_ch(Parameters::k_param_flight_mode_channel_old, FLIGHT_MODE_CHANNEL);
 }
