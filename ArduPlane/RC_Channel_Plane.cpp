@@ -11,12 +11,6 @@
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
-// note that this callback is not presently used on Plane:
-int8_t RC_Channels_Plane::flight_mode_channel_number() const
-{
-    return plane.g.flight_mode_channel.get();
-}
-
 bool RC_Channels_Plane::in_rc_failsafe() const
 {
     return (plane.rc_failsafe_active() || plane.failsafe.rc_failsafe);
