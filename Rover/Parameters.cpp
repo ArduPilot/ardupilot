@@ -145,11 +145,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH", 0.8f),
 
-    // @Param: MODE_CH
-    // @DisplayName: Mode channel
-    // @Description: RC Channel to use for driving mode control
-    // @User: Advanced
-    GSCALAR(mode_channel,    "MODE_CH",       MODE_CHANNEL),
+    // MODE_CH was here
 
     // @Param: MODE1
     // @DisplayName: Mode1
@@ -817,4 +813,8 @@ void Rover::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
     rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
 #endif  // AP_RC_CHANNEL_ENABLED
+
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    rc().convert_old_fltmode_ch(Parameters::k_param_mode_channel_old, MODE_CHANNEL);
 }
