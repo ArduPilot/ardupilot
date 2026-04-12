@@ -59,9 +59,4 @@ public:
 
     bool control_input_required(RC_Channel::AUX_FUNC func) const override;
 
-protected:
-
-    // note that these callbacks are not presently used on Plane:
-    int8_t flight_mode_channel_number() const override;
-
 };
