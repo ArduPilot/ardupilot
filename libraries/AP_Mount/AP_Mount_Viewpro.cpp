@@ -236,10 +236,14 @@ void AP_Mount_Viewpro::process_packet()
             break;
         }
         case CommConfigCmd::QUERY_MODEL:
+            if (_parsed_msg.data_bytes_received == 0) {
+                break;
+            }
             // gimbal model, length is 10 bytes
-            strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
+            memset(_model_name, '\0', sizeof(_model_name));
+            memcpy(_model_name, &_msg_buff[_msg_buff_data_start+1], MIN(sizeof(_model_name)-1, (size_t)(_parsed_msg.data_bytes_received-1)));
             _got_model_name = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, _model_name);
             break;
         default:
             // unsupported control command
@@ -866,12 +870,12 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         return;
     }
 
-    static const uint8_t vendor_name[32] = "Viewpro";
-    uint8_t model_name[32] {};
+    static const uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN] { "Viewpro" };
+    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN] {};
     if (_got_model_name) {
-        strncpy((char *)model_name, (const char*)_model_name, MIN(sizeof(model_name), sizeof(_model_name)));
+        strncpy_noterm((char *)model_name, _model_name, sizeof(model_name));
     }
-    const char cam_definition_uri[140] {};
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
 
     // capability flags
     const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
@@ -886,7 +890,7 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         chan,
         AP_HAL::millis(),       // time_boot_ms
         vendor_name,            // vendor_name uint8_t[32]
-        _model_name,            // model_name uint8_t[32]
+        model_name,             // model_name uint8_t[32]
         _firmware_version,      // firmware version uint32_t
         NaNf,                   // sensor_size_h float (mm)
         NaNf,                   // sensor_size_v float (mm)

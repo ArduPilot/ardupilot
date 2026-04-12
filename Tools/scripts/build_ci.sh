@@ -524,6 +524,14 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "shellcheck" ]; then
+        echo "Running shellcheck on scripts"
+
+        # Ignore scripts in the modules directory
+        find . -path ./modules -prune -o -type f -name '*.sh' -exec shellcheck --severity=error '{}' +
+        continue
+    fi
+
     if [ "$t" == "param-file-validation" ]; then
         echo "Testing param check script"
         ./Tools/scripts/param_check_unittests.py

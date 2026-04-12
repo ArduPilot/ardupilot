@@ -408,6 +408,8 @@ public:
     AP_Float surface_nobaro_thrust;
     Actuators actuators;
 
+    // Used to track parameter conversions
+    AP_Int8 param_conversion_increment;
 };
 
 extern const AP_Param::Info        var_info[];

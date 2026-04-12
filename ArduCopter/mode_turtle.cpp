@@ -55,9 +55,9 @@ void ModeTurtle::arm_motors()
     change_motor_direction(true);
 
     // disable throttle and gcs failsafe
-    g.failsafe_throttle.set(FS_THR_DISABLED);
-    g.failsafe_gcs.set(FS_GCS_DISABLED);
-    g.fs_ekf_action.set(FS_EKF_ACTION_REPORT_ONLY);
+    g.failsafe_throttle.set(Copter::FS_THR_Action::DISABLED);
+    g.failsafe_gcs.set(Copter::FS_GCS_Action::DISABLED);
+    g.fs_ekf_action.set(Copter::FS_EKF_Action::REPORT_ONLY);
 
     // ensure the arming library is aware of our meddling
     // even if it fails we don't want to prevent people getting into turtle mode

@@ -770,6 +770,17 @@ void AP_Mount::set_attitude_euler(uint8_t instance, float roll_deg, float pitch_
     backend->set_attitude_euler(roll_deg, pitch_deg, yaw_bf_deg);
 }
 
+#if AP_SCRIPTING_ENABLED
+void AP_Mount::set_natively_supported_mount_target_types(uint8_t instance, uint8_t types_mask)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->set_natively_supported_mount_target_types(types_mask);
+}
+#endif  // AP_SCRIPTING_ENABLED
+
 #if HAL_LOGGING_ENABLED
 // write mount log packet for all backends
 void AP_Mount::write_log()

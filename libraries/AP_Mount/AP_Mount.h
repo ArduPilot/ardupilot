@@ -260,6 +260,13 @@ public:
     // accessors for scripting backends and logging
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
 
+ #if AP_SCRIPTING_ENABLED
+    // used by a script sending messages to a physical device to
+    // indicate what targets can be either natively sent to the device
+    // or internally handled by the script
+    void set_natively_supported_mount_target_types(uint8_t instance, uint8_t types_mask);
+#endif  // AP_SCRIPTING_ENABLED
+
     // write mount log packet for all backends
     void write_log();
 

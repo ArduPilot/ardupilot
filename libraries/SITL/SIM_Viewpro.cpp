@@ -311,6 +311,7 @@ void Viewpro::send_v_response(CommConfigCmd cmd)
         break;
 
     case CommConfigCmd::QUERY_MODEL:
+        // datasheet specifies a 10-byte model name field in the response
         databuff[1] = (uint8_t)cmd;
         databuff[2] = 'S';
         databuff[3] = 'I';
@@ -318,8 +319,10 @@ void Viewpro::send_v_response(CommConfigCmd cmd)
         databuff[5] = '_';
         databuff[6] = 'V';
         databuff[7] = 'P';
-        // pad to 10 name bytes so the driver's fixed-length copy does not
-        // reach the CRC byte; databuff is zero-initialised so bytes 8-11 = 0
+        databuff[8] = 0;
+        databuff[9] = 0;
+        databuff[10] = 0;
+        databuff[11] = 0;
         total_len = 12;
         break;
 

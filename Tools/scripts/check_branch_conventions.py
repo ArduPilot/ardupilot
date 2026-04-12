@@ -146,6 +146,78 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         print(f"{PASS} No unacceptable author emails.")
         return True
 
+    def get_submodule_paths(self) -> set:
+        '''parse .gitmodules and return the set of submodule paths'''
+        root = self.run_git(['rev-parse', '--show-toplevel'], show_output=False).strip()
+        gitmodules = os.path.join(root, '.gitmodules')
+        paths = set()
+        output = self.run_git(
+            ['config', '--file', gitmodules, '--get-regexp', 'path'],
+            show_output=False,
+        )
+        for line in output.splitlines():
+            # each line looks like: submodule.modules/mavlink.path modules/mavlink
+            parts = line.split()
+            if len(parts) == 2:
+                paths.add(parts[1])
+        return paths
+
+    def get_changed_paths_for_commit(self, commit: str) -> list:
+        '''return the list of paths changed in a single commit'''
+        output = self.run_git(
+            ['diff-tree', '--no-commit-id', '-r', '--name-only', commit],
+            show_output=False,
+        )
+        paths = []
+        for line in output.splitlines():
+            line = line.strip()
+            if line:
+                paths.append(line)
+        return paths
+
+    def check_submodule_isolation(self) -> bool:
+        '''check that each submodule update is isolated in its own commit'''
+        submodule_paths = self.get_submodule_paths()
+
+        commits_raw = self.run_git(
+            ['rev-list', '--reverse', f'{self.base_branch}..HEAD'],
+            show_output=False,
+        ).strip()
+        commits = [c.strip() for c in commits_raw.splitlines() if c.strip()]
+
+        ok = True
+        for commit in commits:
+            changed = self.get_changed_paths_for_commit(commit)
+            submodule_changes = [p for p in changed if p in submodule_paths]
+
+            if not submodule_changes:
+                continue
+
+            other_changes = [p for p in changed if p not in submodule_paths]
+            commit_ok = True
+
+            if len(submodule_changes) > 1:
+                print(
+                    f"{FAIL} {commit[:12]} updates multiple submodules in one commit: "
+                    f"{submodule_changes}"
+                )
+                commit_ok = False
+            if other_changes:
+                print(
+                    f"{FAIL} {commit[:12]} updates submodule(s) {submodule_changes} "
+                    f"but also modifies: {other_changes}"
+                )
+                commit_ok = False
+
+            if commit_ok:
+                print(f"{PASS} {commit[:12]} is a clean submodule update of {submodule_changes[0]}")
+            else:
+                ok = False
+
+        if ok:
+            print(f"{PASS} All submodule updates are isolated in their own commits.")
+        return ok
+
     def check_markdown(self) -> bool:
         changed_md = self.run_git(
             ["diff", "--name-only", "--diff-filter=AM",
@@ -188,6 +260,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_commit_messages(commits),
             self.check_commit_lengths(commits),
             self.check_author_emails(),
+            self.check_submodule_isolation(),
             self.check_markdown(),
         ]
 

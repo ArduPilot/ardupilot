@@ -5027,7 +5027,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
 
     const uint32_t seq = (uint32_t)packet.param1;
     if (!mission->is_valid_index(seq)) {
-        return MAV_RESULT_DENIED;
+        return MAV_RESULT_FAILED;
     }
 
     // From https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_MISSION_CURRENT:

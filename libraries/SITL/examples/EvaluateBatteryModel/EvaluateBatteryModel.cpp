@@ -64,18 +64,18 @@ void setup(void)
     battery.setup(amp_hour_capacity, resistance, max_voltage);
     battery.init_voltage(max_voltage);
 
-    uint64_t time = 0;
-    hal.scheduler->stop_clock(time);
-    const double time_step = 0.05;
+    uint64_t time_us = 0;
+    const double time_step_s = 0.05;
+    constexpr double seconds_to_us = 1.0e6;
+    constexpr double us_to_seconds = 1.0 / seconds_to_us;
 
     ::printf("time, voltage\n");
     while (battery.get_voltage() >= min_voltage) {
-        battery.set_current(current);
+        battery.set_current(current, time_us);
 
-        ::printf("%0.2f, %0.2f\n", time * 1.0e-6, battery.get_voltage());
+        ::printf("%0.2f, %0.2f\n", time_us * us_to_seconds, battery.get_voltage());
 
-        time += time_step*1e6;
-        hal.scheduler->stop_clock(time);
+        time_us += static_cast<uint64_t>(time_step_s * seconds_to_us);
     }
 }
 

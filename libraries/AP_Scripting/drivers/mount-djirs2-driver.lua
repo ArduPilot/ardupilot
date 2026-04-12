@@ -89,6 +89,7 @@ local SET_ATTITUDE_INTERVAL_MS = 100    -- set attitude at 10hz
 local SEND_FRAMEID = 0x223              -- send CAN messages with this frame id
 local RECEIVE_FRAMEID = 0x222           -- receive CAN messages with this frame id
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
+local MOUNT_TARGET_TYPE = {ANGLE=1, RATE=2, RETRACTED=4, NEUTRAL=8, LOCATION=16}
 
 -- parameters
 local PARAM_TABLE_KEY = 38
@@ -328,6 +329,8 @@ function init()
   else
     gcs:send_text(MAV_SEVERITY.CRITICAL, "DJIR: failed to connect to CAN bus")   
   end
+
+  mount:set_natively_supported_mount_target_types(MOUNT_INSTANCE, MOUNT_TARGET_TYPE.ANGLE | MOUNT_TARGET_TYPE.RATE)
 end
 
 -- send serial message over CAN bus

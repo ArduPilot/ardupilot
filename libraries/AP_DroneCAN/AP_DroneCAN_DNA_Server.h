@@ -140,6 +140,20 @@ class AP_DroneCAN_DNA_Server
     Canard::ObjCallback<AP_DroneCAN_DNA_Server, uavcan_protocol_GetNodeInfoResponse> node_info_cb{this, &AP_DroneCAN_DNA_Server::handleNodeInfo};
     Canard::Client<uavcan_protocol_GetNodeInfoResponse> node_info_client;
 
+#if HAL_LOGGING_ENABLED
+    // Linked list of node status timestamps used for logging
+    struct node_status_log_data {
+        node_status_log_data(const uint8_t _id):id(_id) {};
+        node_status_log_data *next;
+        uint32_t last_uptime_sec;
+        uint32_t last_log_ms;
+        const uint8_t id;
+    };
+    node_status_log_data *node_status_list;
+    node_status_log_data *find_node_status_item(const uint8_t source_node_id);
+    void update_node_status(const uint8_t source_node_id, const uavcan_protocol_NodeStatus& msg);
+#endif // #if HAL_LOGGING_ENABLED
+
 public:
     AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan, CanardInterface &canard_iface, uint8_t driver_index);
 

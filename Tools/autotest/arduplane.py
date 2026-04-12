@@ -92,6 +92,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
 
+    def start_flying_mission(self, filename: str) -> None:
+        self.progress(f"Flying mission {filename}")
+        self.load_mission(filename)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
     def takeoff(self, alt=150, alt_max=None, relative=True, mode=None, timeout=None):
         """Takeoff to altitude."""
 
@@ -740,10 +747,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LAND_DS_ELEV_PWM": deepstall_elevator_pwm,
             "RTL_AUTOLAND": 1,
         })
-        self.load_mission("plane-deepstall-mission.txt")
-        self.change_mode("AUTO")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.start_flying_mission("plane-deepstall-mission.txt")
         self.progress("Waiting for deepstall messages")
 
         # note that the following two don't necessarily happen in this
@@ -774,10 +778,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LAND_DS_ELEV_PWM": deepstall_elevator_pwm,
             "RTL_AUTOLAND": 1,
         })
-        self.load_mission("plane-deepstall-relative-mission.txt")
-        self.change_mode("AUTO")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.start_flying_mission("plane-deepstall-relative-mission.txt")
         self.wait_current_waypoint(4)
 
         # assume elevator is on channel 2:
@@ -1062,11 +1063,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(flaps_ch, flaps_ch_min)
         self.wait_servo_channel_value(servo_ch, servo_ch_min)
 
-        self.progress("Flying mission %s" % filename)
-        self.load_mission(filename)
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.start_flying_mission(filename)
         self.start_subtest("flaps should deploy for landing")  # (RC input value used for position?!)
         self.wait_servo_channel_value(servo_ch, flaps_ch_trim, timeout=300)
         self.start_subtest("flaps should undeploy at the end")
@@ -5326,11 +5323,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "TKOFF_THR_MINACC": 3.0,
         })
 
-        self.load_mission("flaps_tkoff_50.txt")
-        self.change_mode('AUTO')
-
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.start_flying_mission("flaps_tkoff_50.txt")
 
         # Throw the catapult.
         self.set_servo(7, 2000)
@@ -7091,10 +7084,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.set_servo(6, 1000)
 
-        self.load_mission("glider-pullup-mission.txt")
-        self.change_mode("AUTO")
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.start_flying_mission("glider-pullup-mission.txt")
         self.context_collect('STATUSTEXT')
 
         self.progress("Start balloon lift")

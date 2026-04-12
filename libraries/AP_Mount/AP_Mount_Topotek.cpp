@@ -453,13 +453,13 @@ void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
         return;
     }
 
-    static const uint8_t vendor_name[32] = "Topotek";
-    static uint8_t model_name[32] {};
-    const char cam_definition_uri[140] {};
+    static const uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN] { "Topotek" };
+    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN] {};
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
 
     // copy model name if available
     if (_got_gimbal_model_name) {
-        strncpy((char*)model_name, (const char*)_model_name, ARRAY_SIZE(model_name));
+        strncpy_noterm((char*)model_name, _model_name, ARRAY_SIZE(model_name));
     }
 
     // capability flags
@@ -991,7 +991,13 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 
     // extract firmware version
     // the version can be in the format "1.2.3" or "123"
+    // _msg_buff[5] holds the ASCII hex-encoded data length byte from the packet header;
+    // char_to_hex returns 255 for an invalid (non-hex) character, which we treat as a
+    // malformed packet rather than capping, since a valid length field is always a hex digit
     const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
+    if (data_buf_len == 255) {
+        return;
+    }
 
     // check for "."
     bool contains_period = false;
@@ -1040,7 +1046,13 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 // gimbal model name message analysis
 void AP_Mount_Topotek::gimbal_model_name_analyse()
 {
-    strncpy((char *)_model_name, (const char *)_msg_buff + 10, char_to_hex(_msg_buff[5]));
+    const auto len = char_to_hex(_msg_buff[5]);
+    if (len == 255) {
+        // flag value indicating invalid character
+        return;
+    }
+    memset(_model_name, 0, sizeof(_model_name));
+    memcpy(_model_name, _msg_buff + 10, MIN((uint8_t)(sizeof(_model_name)-1), len));
 
     // display gimbal model name to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_message_prefix, _model_name);

@@ -1720,6 +1720,201 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3_AccelBiasInhibitOnGroundMoving(self):
+        '''Test EKF3 inhibits accel bias learning when vehicle is moved on ground'''
+        # When a copter is on the ground and being moved (carried, on a ship),
+        # the EKF should not learn accel biases from the external motion.
+        # Without the fix (onGroundNotMoving check in dvelBiasAxisInhibit),
+        # the Z-axis bias is learnable on the ground (passes gravity alignment
+        # check), and GPS velocity innovations can drive incorrect bias learning
+        # during ground movement. With the fix, all bias learning is inhibited
+        # when onGround && !onGroundNotMoving.
+
+        # Enable logging while disarmed so we capture ground-only EKF data
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # Phase 1: Positive control - verify bias learning works when stationary
+        self.start_subtest("Positive control: verify bias learning works when stationary")
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.delay_sim_time(30)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+        )
+
+        # Reset for next phase - reboot clears EKF state and starts a new log
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(5)
+
+        # Phase 2: Start ship movement, then inject bias - it should NOT be learned
+        self.start_subtest("Test: verify bias NOT learned during ground movement")
+        # Use a small circle to create sufficient centripetal acceleration and
+        # yaw rate so that onGroundNotMoving transitions to false.
+        # v=10 m/s, path_size=50m (r=25m) gives yaw_rate=0.4 rad/s which
+        # exceeds the gyro movement threshold.
+        self.set_parameters({
+            "SIM_SHIP_ENABLE": 1,
+            "SIM_SHIP_SPEED": 10,
+            "SIM_SHIP_PSIZE": 50,
+            "SIM_SHIP_DSIZE": 10,
+        })
+        # Wait for vehicle to be moving with the ship
+        self.wait_groundspeed(9, 11)
+        # Allow time for onGroundNotMoving to transition to false
+        self.delay_sim_time(5)
+
+        # Record timestamp, then inject Z-bias while vehicle is moving on ground
+        tstart_inject_us = self.get_sim_time() * 1.0e6
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+
+        # Wait for potential (unwanted) bias learning
+        self.delay_sim_time(30)
+
+        # Check that AZ stayed near 0 during the movement period.
+        # Skip the first 20s after injection to give time for any erroneous
+        # learning to manifest. Then require AZ near 0 for 5 consecutive seconds.
+        # With fix: AZ stays near 0 (learning inhibited) -> PASSES
+        # Without fix: AZ drifts toward 0.7 -> FAILS
+        tstart_check_us = tstart_inject_us + 20.0e6
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.0,
+            condition="XKF2.C==1",
+            maintain=5,
+            tolerance=0.15,
+            dfreader_start_timestamp=tstart_check_us,
+        )
+
+        # Phase 3: Stop ship, verify bias learning resumes when stationary.
+        # After inhibition ends, the saved (small) variance is restored, so
+        # reconvergence is slow. Allow extra time and accept partial convergence.
+        self.start_subtest("Verify bias learning resumes after movement stops")
+        self.set_parameters({
+            "SIM_SHIP_ENABLE": 0,
+        })
+        self.wait_groundspeed(0, 2)
+
+        self.delay_sim_time(60)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+            tolerance=0.3,
+        )
+
+    def EK3_AccelBiasZeroVelOptFlow(self):
+        '''Test EKF3 zero velocity fusion learns bias with optical flow config'''
+        # When optical flow is configured (AID_RELATIVE) but the vehicle is
+        # stationary on the ground, optical flow provides no velocity data.
+        # Without zero velocity fusion, there are no velocity observations and
+        # accel biases cannot converge. This test verifies that synthetic zero
+        # velocity fusion fills the gap, allowing Z-axis bias learning even
+        # when the only velocity source (optical flow) has no data.
+        self.context_push()
+
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm(timeout=120, require_absolute=False)
+
+        # Inject Z-bias on IMU2 and wait for EKF to learn it via zero velocity
+        # fusion. In AID_RELATIVE with no flow data, only the synthetic zero
+        # velocity provides the observation needed to make Z-bias converge.
+        self.start_subtest("Verify Z-bias learned via zero velocity fusion with optical flow config")
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.delay_sim_time(30)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+        )
+
+        self.context_pop()
+        self.reboot_sitl()
+
+    def EK3_ZeroVelFusionNotUsedWithGPS(self):
+        '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
+        # Addresses review concern: does zero velocity fusion interfere
+        # with GPS-enabled configurations? This test places the vehicle on
+        # a fast-moving boat with GPS active and verifies:
+        # 1. EKF tracks GPS velocity (not pulled to zero)
+        # 2. Accel bias learning works via GPS velocity observations
+        #
+        # The ship uses a large circle (1000m diameter) at 15 m/s so
+        # motion is smooth enough that onGroundNotMoving stays TRUE once
+        # the ship reaches steady speed. Despite this, zero velocity
+        # fusion does NOT activate because GPS provides recent velocity
+        # data (haveRecentGpsVel is true in SelectVelPosFusion), so the
+        # condition for synthetic zero velocity injection is never met.
+
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # Start ship with large radius to keep IMU motion below the
+        # on-ground-not-moving detection thresholds. At 15 m/s on
+        # 1000m diameter (r=500m) with EK3_OGNM_TEST_SF=2.0 (default):
+        #   angular rate = 0.03 rad/s (1.7 deg/s) vs 6 deg/s threshold
+        #   centripetal accel = 0.45 m/s^2 vs 2.0 m/s^2 threshold
+        # So onGroundNotMoving remains TRUE at steady state.
+        self.start_subtest("Verify EKF tracks GPS velocity on moving boat")
+        self.set_parameters({
+            "SIM_SHIP_ENABLE": 1,
+            "SIM_SHIP_SPEED": 15,
+            "SIM_SHIP_PSIZE": 1000,
+            "SIM_SHIP_DSIZE": 10,
+        })
+
+        # Wait for ship to reach speed and movement filters to settle.
+        # During initial acceleration onGroundNotMoving briefly goes
+        # false, but recovers once at constant speed.
+        self.wait_groundspeed(13, 17)
+        self.delay_sim_time(10)
+
+        # Verify EKF velocity matches GPS, not zero. If zero velocity
+        # fusion were incorrectly active, groundspeed would drift to 0.
+        self.wait_groundspeed(13, 17, timeout=10)
+
+        # Inject Z-bias and verify bias learning via GPS velocity.
+        # With onGroundNotMoving TRUE and gravity-aligned Z axis, the
+        # bias is observable. GPS velocity provides the Kalman filter
+        # measurement needed to converge the bias estimate.
+        self.start_subtest("Verify accel bias learned via GPS velocity")
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.delay_sim_time(30)
+        self.assert_dataflash_message_field_level_at(
+            "XKF2", "AZ", 0.7,
+            condition="XKF2.C==1",
+            maintain=1,
+        )
+
+        # Confirm velocity still tracking GPS after bias convergence
+        self.wait_groundspeed(13, 17, timeout=10)
+
     # StabilityPatch - fly south, then hold loiter within 5m
     # position and altitude and reduce 1 motor to 60% efficiency
     def StabilityPatch(self,
@@ -2784,6 +2979,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
+
+    def GPSFixTypes(self):
+        '''Test that SIM_GPS1_FIXTYPE maps correctly to GPS_RAW_INT.fix_type'''
+        self.change_mode('LOITER')
+
+        for fix_type in range(6, -1, -1):  # Only test up to RTK fixed, not PPP/Static
+            self.start_subtest("Testing fix type %u" % fix_type)
+            self.set_parameter("SIM_GPS1_FIXTYPE", fix_type)
+            self.wait_message_field_values('GPS_RAW_INT', {
+                "fix_type": fix_type,
+            }, timeout=10)
+            self.set_parameter("SIM_GPS1_FIXTYPE", 6)
+            self.wait_ready_to_arm()
 
     #   fly_simple - assumes the simple bearing is initialised to be
     #   directly north flies a box with 100m west, 15 seconds north,
@@ -4576,7 +4784,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         num_wp = self.get_mission_count()
         accepted_indices = [0, 1, num_wp-1]
-        denied_indices = [-1, num_wp]
+        failed_indices = [-1, num_wp]
 
         for seq in accepted_indices:
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
@@ -4584,11 +4792,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                          timeout=1,
                          want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED)
 
-        for seq in denied_indices:
+        for seq in failed_indices:
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
                          p1=seq,
                          timeout=1,
-                         want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+                         want_result=mavutil.mavlink.MAV_RESULT_FAILED)
 
     def InvalidJumpTags(self):
         '''Verify the behaviour when selecting invalid jump tags.'''
@@ -13216,6 +13424,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3_AccelBiasInhibitOnGroundMoving,
+             self.EK3_AccelBiasZeroVelOptFlow,
+             self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
@@ -13253,6 +13464,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.GPSGlitchLoiter,
              self.GPSGlitchLoiter2,
              self.GPSGlitchAuto,
+             self.GPSFixTypes,
              self.ModeAltHold,
              self.ModeLoiter,
              self.SimpleMode,

@@ -49,6 +49,7 @@ struct GPS_Data {
     float vertical_acc;
     float speed_acc;
     uint8_t num_sats;
+    uint8_t fix_type;
 
     // Get course over ground [rad], where 0 = North in WGS-84 coordinate system.
     // Calculated from 2D velocity.

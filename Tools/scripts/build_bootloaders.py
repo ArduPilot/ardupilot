@@ -18,7 +18,8 @@ from argparse import ArgumentParser
 parser = ArgumentParser(description='This Program is used to build ArduPilot bootloaders for boards.')
 parser.add_argument("--signing-key", type=str, action='append', help="signing key for secure bootloader (can be used multiple times)")
 parser.add_argument("--omit-ardupilot-keys", action='store_true', default=False, help="omit ArduPilot signing keys")
-parser.add_argument("--debug", action='store_true', default=False, help="build with debug symbols")
+parser.add_argument("--debug", action='store_true', default=False, help="configure as debug variant")
+parser.add_argument("--debug-symbols", "-g", action='store_true', default=False, help="add debug symbols to build")
 parser.add_argument("--periph-only", action='store_true', default=False, help="only build AP_Periph boards")
 parser.add_argument("pattern", type=str, default='*', help="board wildcard pattern", nargs='?')
 args = parser.parse_args()
@@ -113,8 +114,11 @@ def build_board(board):
         print("Building secure bootloader")
         configure_args.append("--signed-fw")
     if args.debug:
-        print("Building with debug symbols")
+        print("Building debug variant")
         configure_args.append("--debug")
+    if args.debug_symbols:
+        print("Building with debug symbols")
+        configure_args.append("--debug-symbols")
     if not run_program(["./waf", "configure"] + configure_args):
         return False
     if not run_program(["./waf", "clean"]):

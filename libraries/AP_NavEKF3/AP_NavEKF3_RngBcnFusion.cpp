@@ -286,6 +286,7 @@ void NavEKF3_core::FuseRngBcn()
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
                     statesArray[j] = statesArray[j] - Kfusion[j] * rngBcn.innov;
                 }
+                stateStruct.quat.normalize();
 
                 // record healthy fusion
                 faultStatus.bad_rngbcn = false;

@@ -100,7 +100,7 @@ bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
     // likely to pass if the user is relying on no-pulses to detect RC
     // failure.  However, arming is precluded in that case by being in
     // RC failsafe.
-    if (copter.g.failsafe_throttle == FS_THR_DISABLED) {
+    if (copter.g.failsafe_throttle == Copter::FS_THR_Action::DISABLED) {
         return true;
     }
 
@@ -213,7 +213,7 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
                 return false;
             }
         }
-        if (copter.g.failsafe_gcs == FS_GCS_ENABLED_CONTINUE_MISSION) {
+        if (copter.g.failsafe_gcs == Copter::FS_GCS_Action::CONTINUE_MISSION) {
             // FS_GCS_ENABLE == 2 has been removed
             check_failed(Check::PARAMETERS, display_failure, "FS_GCS_ENABLE=2 removed, see FS_OPTIONS");
         }

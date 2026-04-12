@@ -145,10 +145,11 @@ void NavEKF3_core::FuseAirspeed()
                     P[i][j] = P[i][j] - KHP[i][j];
                 }
             }
+
+            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+            ForceSymmetry();
+            ConstrainVariances();
         }
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
     }
 }
 
@@ -391,11 +392,11 @@ void NavEKF3_core::FuseSideslip()
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
-    }
 
-    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-    ForceSymmetry();
-    ConstrainVariances();
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
+    }
 }
 
 #if EK3_FEATURE_DRAG_FUSION
@@ -656,6 +657,10 @@ void NavEKF3_core::FuseDragForces()
                 P[i][j] = P[i][j] - KHP[i][j];
             }
         }
+
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
     }
 
     // record time of successful fusion

@@ -229,7 +229,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
             if m is None:
                 break
             self.progress(f"{m.Message=}")
-            msg = m.Message.lstrip("SRC=250/250:")
+            msg = m.Message.removeprefix("SRC=250/250:")
             if phase == "short":
                 if msg != short_message_text:
                     continue

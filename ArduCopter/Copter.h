@@ -419,6 +419,11 @@ private:
         return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb || failsafe.deadreckon;
     }
 
+    using FS_GCS_Action = Parameters::FS_GCS_Action;
+    using FS_THR_Action = Parameters::FS_THR_Action;
+    using FS_EKF_Action = Parameters::FS_EKF_Action;
+    using WPYawBehavior = Parameters::WPYawBehavior;
+
     // dead reckoning state
     struct {
         bool active;        // true if dead reckoning (position estimate using estimated airspeed, no position or velocity source)

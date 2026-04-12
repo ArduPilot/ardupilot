@@ -854,12 +854,14 @@ singleton AR_AttitudeControl method get_srate void float'Ref float'Ref
 include AP_Mount/AP_Mount.h
 singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
 singleton AP_Mount rename mount
+
 singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t'skip_check
 singleton AP_Mount method set_mode void uint8_t'skip_check MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
 singleton AP_Mount method set_angle_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_rate_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_roi_target void uint8_t'skip_check Location
 singleton AP_Mount method get_attitude_euler boolean uint8_t'skip_check float'Null float'Null float'Null
+singleton AP_Mount method set_natively_supported_mount_target_types void uint8_t'skip_check uint8_t'skip_check
 singleton AP_Mount method get_rate_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null

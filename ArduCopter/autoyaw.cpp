@@ -35,22 +35,22 @@ void Mode::AutoYaw::set_mode_to_default(bool rtl)
 // set rtl parameter to true if this is during an RTL
 Mode::AutoYaw::Mode Mode::AutoYaw::default_mode(bool rtl) const
 {
-    switch (copter.g.wp_yaw_behavior) {
+    switch ((Copter::WPYawBehavior)copter.g.wp_yaw_behavior) {
 
-    case WP_YAW_BEHAVIOR_NONE:
+    case Copter::WPYawBehavior::NONE:
         return Mode::HOLD;
 
-    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
+    case Copter::WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL:
         if (rtl) {
             return Mode::HOLD;
         } else {
             return Mode::LOOK_AT_NEXT_WP;
         }
 
-    case WP_YAW_BEHAVIOR_LOOK_AHEAD:
+    case Copter::WPYawBehavior::LOOK_AHEAD:
         return Mode::LOOK_AHEAD;
 
-    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
+    case Copter::WPYawBehavior::LOOK_AT_NEXT_WP:
     default:
         return Mode::LOOK_AT_NEXT_WP;
     }

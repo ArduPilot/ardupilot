@@ -13,30 +13,9 @@ bool AP_Arming_Sub::rc_calibration_checks(bool display_failure)
 }
 
 bool AP_Arming_Sub::has_disarm_function() const {
-    bool has_shift_function = false;
-    // make sure the craft has a disarm button assigned before it is armed
-    // check all the standard btn functions
-    for (uint8_t i = 0; i < 16; i++) {
-        switch (sub.get_button(i)->function(false)) {
-            case JSButton::k_shift :
-                has_shift_function = true;
-                break;
-            case JSButton::k_arm_toggle :
-                return true;
-            case JSButton::k_disarm :
-                return true;
-        }
-    }
-
-    // check all the shift functions if there's shift assigned
-    if (has_shift_function) {
-        for (uint8_t i = 0; i < 16; i++) {
-            switch (sub.get_button(i)->function(true)) {
-                case JSButton::k_arm_toggle :
-                case JSButton::k_disarm :
-                    return true;
-            }
-        }
+    if (sub.jsbutton_function_is_assigned(JSButton::k_arm_toggle) ||
+        sub.jsbutton_function_is_assigned(JSButton::k_disarm)) {
+        return true;
     }
     // check if an AUX function that disarms or estops is setup
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
