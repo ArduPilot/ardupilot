@@ -4,7 +4,7 @@
 
 the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
-> **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See [Firmware Limitations](https://ardupilot.org/copter/docs/common-limited_firmware.html) for details.
+> **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See [Firmware Limitations](https://ardupilot.org/copter/docs/common-limited-firmware.html) for details.
 
 ## Specifications
 

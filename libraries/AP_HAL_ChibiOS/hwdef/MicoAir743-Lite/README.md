@@ -108,7 +108,7 @@ The MicoAir743-Lite has an on board BlueTooth module connected to UART8(SERIAL8)
 
 ## Loading Firmware
 
-Firmware can be found on the [firmware server](https://firmare.ardupilot.org) in folders marked "MicoAir743-Lite"
+Firmware can be found on the [firmware server](https://firmware.ardupilot.org) in folders marked "MicoAir743-Lite"
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "XXXX_with_bl.hex" firmware, using your favorite DFU loading tool.
 
