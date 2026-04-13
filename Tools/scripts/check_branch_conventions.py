@@ -372,6 +372,42 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 print(f"{PASS} No submodule reference changes to check.")
         return ok
 
+    def check_markdown_rst_underlines(self) -> bool:
+        '''flag setext/RST underline-style headings in changed markdown files'''
+        changed_md = self.run_git(
+            ["diff", "--name-only", "--diff-filter=AM",
+             f"{self.base_branch}...HEAD", "--", "*.md"],
+            show_output=False,
+        ).strip()
+        if not changed_md:
+            print(f"{PASS} No markdown files changed (underline heading check).")
+            return True
+
+        underline_re = re.compile(r'^([=\-~^#+*])\1{2,}$')
+        errors = []
+        for path in changed_md.splitlines():
+            path = path.strip()
+            if not path or not os.path.exists(path):
+                continue
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                prev_line = ""
+                for lineno, raw in enumerate(fh, 1):
+                    line = raw.rstrip("\n")
+                    if (underline_re.match(line)
+                            and len(line.strip()) == len(prev_line.strip())):
+                        errors.append((path, lineno, line.strip()))
+                    prev_line = line
+
+        if errors:
+            print(f"{FAIL} Setext/RST underline-style headings found in markdown file(s):")
+            for path, lineno, text in errors:
+                print(f"         {path}:{lineno}: {text!r}")
+            print("       Use ATX-style headings (# prefix) instead.")
+            return False
+
+        print(f"{PASS} No setext/RST underline headings in changed markdown files.")
+        return True
+
     def check_markdown(self) -> bool:
         changed_md = self.run_git(
             ["diff", "--name-only", "--diff-filter=AM",
@@ -417,6 +453,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_submodule_isolation(),
             self.check_submodule_references_exist(),
             self.check_markdown(),
+            self.check_markdown_rst_underlines(),
         ]
 
         failures = results.count(False)
