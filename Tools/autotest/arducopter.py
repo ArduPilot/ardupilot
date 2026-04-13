@@ -4322,7 +4322,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # set SIMPLE mode for FlightMode2 (AltHold)
         self.set_parameters({
-            "FLTMODE_CH": 5,
+            "RC5_OPTION": 224,  # AUX_FUNC::Mode
             "FLTMODE1": 5, # Loiter
             "FLTMODE2": 2, # AltHold
             "SIMPLE": 2,   # FLTMODE2 uses simple mode
@@ -4382,7 +4382,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "TMODE_MODE1": 2,   # start in ALT_HOLD, and stay there
             "TMODE_MODE2": 2,
             "TMODE_FLAGS": 0,   # no arming or disarming on throttle
-            "FLTMODE_CH": 0,    # toy mode chooses the mode
+            "RC5_OPTION": 0,    # no mode channel; toy mode chooses the mode
             "PILOT_SPD_DN": 3,
         })
         self.reboot_sitl()
@@ -4414,7 +4414,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.set_parameters({
-            "FLTMODE_CH": 5,
+            "RC5_OPTION": 224,  # Mode
             "FLTMODE1": 5,  # Loiter
             "FLTMODE2": 9,  # Land
             "LAND_SPD_HIGH_MS": 0.5,
@@ -8282,7 +8282,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def SetModesViaModeSwitch(self):
         '''Set modes via modeswitch'''
         fltmode_ch = 5
-        self.set_parameter("FLTMODE_CH", fltmode_ch)
+        self.set_parameter(f"RC{fltmode_ch}_OPTION", 224)
         self.set_rc(fltmode_ch, 1000) # PWM for mode1
         testmodes = [("FLTMODE1", 4, "GUIDED", 1165),
                      ("FLTMODE2", 2, "ALT_HOLD", 1295),
@@ -8312,7 +8312,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SetModesViaAuxSwitch(self):
         '''"Set modes via auxswitch"'''
-        fltmode_ch = int(self.get_parameter("FLTMODE_CH"))
+        fltmode_ch = self.find_rc_channel_for_option(224)  # 224 AUX_FUNC::Mode
         self.set_rc(fltmode_ch, 1000)
         self.wait_mode("CIRCLE")
         self.set_rc_from_map({9: 1000, 10: 1000})
