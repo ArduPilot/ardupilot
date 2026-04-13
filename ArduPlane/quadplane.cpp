@@ -4190,7 +4190,12 @@ void QuadPlane::update_throttle_mix(void)
           attitude control until LAND_FINAL
          */
         if (in_vtol_land_sequence()) {
-            use_mix_max = !in_vtol_land_final();
+            // during the descent phase we don't want to priortise
+            // attitude too much. Rapid descent on quadplanes often
+            // leads to very poor attitude control and putting more
+            // power into attitude doesn't tend to fix it, what we
+            // need to do is slow the descent.
+            use_mix_max = !in_vtol_land_descent() || poscontrol.get_state() == QPOS_LAND_ABORT;
         }
 
         if (use_mix_max) {
