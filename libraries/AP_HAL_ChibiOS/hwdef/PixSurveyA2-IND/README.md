@@ -145,9 +145,7 @@ support all normal PWM output formats. All outputs also support DShot. Outputs 9
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s `SERVOx_FUNCTION` to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
-.. raw:: html
-
-   | IO Pins |  | FMU Pins |
+| IO Pins |  | FMU Pins |
 | --- | --- | --- |
 | Name | Value | Option |
 |  | Name | Value |
@@ -187,7 +185,7 @@ Then reboot.
 - :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT__AP_BattMonitor>` 18.0
 - :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT__AP_BattMonitor>` 24.0
 
-.. note:: OSDs will by default display the first battery monitor unless the second battery monitor panel is setup in OSD parameters.
+> **Note:** OSDs will by default display the first battery monitor unless the second battery monitor panel is setup in OSD parameters.
 
 ## DroneCAN capability
 

@@ -20,12 +20,12 @@ int8_t RC_Channels_Sub::flight_mode_channel_number() const
 
 void RC_Channel_Sub::mode_switch_changed(modeswitch_pos_t new_pos)
 {
-    if (new_pos < 0 || new_pos > 6) {
+    if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(sub.g.flight_modes)) {
         // should not have been called
         return;
     }
 
-    if (!sub.set_mode((Mode::Number)sub.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
+    if (!sub.set_mode((Mode::Number)sub.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
         return;
     }
 }

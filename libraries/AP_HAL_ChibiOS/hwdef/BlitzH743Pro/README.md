@@ -66,7 +66,7 @@ The PWM are in in five groups:
 - PWM 11-12 in group4
 - PWM 13 in group5
 
-.. note:: for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
+> **Note:** for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
 - :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
 - :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
