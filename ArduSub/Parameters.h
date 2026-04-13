@@ -461,7 +461,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
 #if AP_BARO_PROBE_EXT_PARAMETER_ENABLED
     { "BARO_PROBE_EXT",      768},
 #endif
-    { "SERVO9_FUNCTION",     59},    // k_rcin9, lights 1
+    { "SERVO9_FUNCTION",     181},   // k_lights1
     { "SERVO10_FUNCTION",    7},     // k_mount_tilt
 #endif
 };
