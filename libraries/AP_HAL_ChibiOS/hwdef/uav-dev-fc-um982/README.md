@@ -150,7 +150,7 @@ Via DroneCAN by UAV-DEV-POWERMODULE
 
 ## Compass
 
-The autopilot includes an internal compass as well as GNSS-based heading, but GNSS-based heading is the recommended heading source. Proper setup and placement of the dual antennas is required as well as setup of the moving baseline parameters, see :ref:`common-gps-for-yaw` for more details.
+The autopilot includes an internal compass as well as GNSS-based heading, but GNSS-based heading is the recommended heading source. Proper setup and placement of the dual antennas is required as well as setup of the moving baseline parameters, see [GPS for yaw](https://ardupilot.org/copter/docs/common-gps-for-yaw.html) for more details.
 
 ## Motor Output
 

@@ -139,7 +139,7 @@ Channels within the same group need to use the same output rate. If any channel 
 
 ## RC Input
 
-Any of the serial ports can be used for a bidirectional RC connection. Change its `SERIALx_PROTOCOL` to "23" and follow the instructions in :ref:`common-rc-systems` to other setup info for the RC system being used.
+Any of the serial ports can be used for a bidirectional RC connection. Change its `SERIALx_PROTOCOL` to "23" and follow the instructions in [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) to other setup info for the RC system being used.
 
 ## Battery Monitor
 

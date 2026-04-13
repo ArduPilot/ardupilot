@@ -90,7 +90,7 @@ SBUS/DSM would connect to UART8 RX input.
  and connects only the TX pin.
 
 Any other UART can be used for RC system connections in ArduPilot also, see
-:ref:`common-rc-systems` for details.
+[RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
 ## PWM Outputs
 

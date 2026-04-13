@@ -33,7 +33,7 @@ The BROTHERHOBBYH743 is a flight controller produced by [BROTHERHOBBY](https://w
 
 The default RC input is configured on the UART2_RX inverted from the SBUS pin.  All unidirectional ArduPilot compatible protocols, except PPM, are supported. Receivers using bi-directional protocols such as CRSF/ELRS should be tied to the TX2 and RX2 pins.
 
-- FPort requires connection to TX2 . See :ref:`FPort Receivers<common-Fport-receivers>`.
+- FPort requires connection to TX2 . See [FPort Receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 - SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to "4".
 
@@ -46,7 +46,7 @@ FrSky Telemetry can be supported using the T1 pin (UART1 transmit). You need to 
 
 ## OSD Support
 
-The BROTHERHOBBYH743 supports using its internal OSD (MAX7456 driver). Simultaneous DisplayPort OSD operation  is also pre-configured on SERIAL 6. See :ref:`common-msp-osd-overview-4.2` for more info.
+The BROTHERHOBBYH743 supports using its internal OSD (MAX7456 driver). Simultaneous DisplayPort OSD operation  is also pre-configured on SERIAL 6. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## VTX Support
 

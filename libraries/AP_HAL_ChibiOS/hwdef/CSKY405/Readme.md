@@ -51,7 +51,7 @@ protocols except serial protocols such as CRSF, ELRS, etc. Instead, these device
 
 ## OSD Support
 
-The CSKY405 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such as DJI or DisplayPort is supported using USART6 or any other free Uaet. See :ref:`common-msp-osd-overview-4.2` for more info.
+The CSKY405 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such as DJI or DisplayPort is supported using USART6 or any other free Uaet. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 

@@ -47,7 +47,7 @@ USART6 supports RX and TX DMA.
 
 ## RC Input
 
-RC input is configured on UART6. It supports all RC protocols except PPM, FPort, and SBUS. See:ref:`[Radio Control Systems<common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
+RC input is configured on UART6. It supports all RC protocols except PPM, FPort, and SBUS. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
 
 - FPort requires an external bi-directional inverter and connects to TX 6 with :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "7".
 - CRSF requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
@@ -96,7 +96,7 @@ The SpeedyBee F405 AIO does not have a builtin compass but an external compass c
 
 ## Camera Control
 
-The CC pin is a GPIO (pin 70) and is assigned by default to RELAY2 functionality. This pin can be controlled via GCS or by RC transmitter using the :ref:`Auxiliary Function<common-auxiliary-functions>` feature.
+The CC pin is a GPIO (pin 70) and is assigned by default to RELAY2 functionality. This pin can be controlled via GCS or by RC transmitter using the [Auxiliary Function](https://ardupilot.org/copter/docs/common-auxiliary-functions.html) feature.
 
 ## NeoPixel LED
 
