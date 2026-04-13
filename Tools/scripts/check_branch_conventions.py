@@ -372,6 +372,35 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 print(f"{PASS} No submodule reference changes to check.")
         return ok
 
+    def check_markdown_rst_hyperlinks(self) -> bool:
+        '''flag RST-style external hyperlinks (`text <url>`__) in changed markdown files'''
+        changed_md = self.run_git(
+            ["diff", "--name-only", "--diff-filter=AM",
+             f"{self.base_branch}...HEAD", "--", "*.md"],
+            show_output=False,
+        ).strip()
+        if not changed_md:
+            print(f"{PASS} No markdown files changed (RST hyperlink check).")
+            return True
+
+        result = subprocess.run(
+            ["git", "grep", "-n", r"`[^`]*`__", "--"] + changed_md.splitlines(),
+            capture_output=True, text=True,
+        )
+        # git grep exits 1 for no matches, 0 for matches, >1 for errors
+        if result.returncode > 1:
+            print(f"{SKIP} git grep failed: {result.stderr.strip()}")
+            return True
+        if not result.stdout.strip():
+            print(f"{PASS} No RST-style hyperlinks in changed markdown files.")
+            return True
+
+        print(f"{FAIL} RST-style hyperlinks found in markdown file(s):")
+        for line in result.stdout.splitlines():
+            print(f"         {line}")
+        print("       Use markdown link syntax [text](url) instead.")
+        return False
+
     def check_markdown_rst_underlines(self) -> bool:
         '''flag setext/RST underline-style headings in changed markdown files'''
         changed_md = self.run_git(
@@ -453,6 +482,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_submodule_isolation(),
             self.check_submodule_references_exist(),
             self.check_markdown(),
+            self.check_markdown_rst_hyperlinks(),
             self.check_markdown_rst_underlines(),
         ]
 
