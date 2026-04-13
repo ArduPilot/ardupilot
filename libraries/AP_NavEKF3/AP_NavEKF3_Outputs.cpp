@@ -381,7 +381,14 @@ bool NavEKF3_core::getLLH(Location &loc) const
 bool NavEKF3_core::getGPSLLH(Location &loc) const
 {
     const auto &gps = dal.gps();
-    if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D)) {
+    // Only report a raw GPS location when GPS is the configured
+    // position source.  Otherwise getLLH() fallbacks would leak the
+    // GPS fix to callers (e.g. GLOBAL_POSITION_INT) despite the EKF
+    // being configured to ignore GPS for position this this ignores
+    // the source set configuration and causes vehicle code to follow
+    // GPS glitches/spoofing that the EKF has correctly rejected.
+    if (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS &&
+        gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D) {
         loc = gps.location(selected_gps);
         return true;
     }
