@@ -1,7 +1,7 @@
 # Onboard FMU on Airvolute DCS2.Pilot board
 
 DroneCore 2.0 is a modular AI-driven open architecture autopilot designed for complex use cases that combines high computational processing power, redundant connectivity, small size, and low weight.The autopilot represents a one-stop-solution for developers integrating the functionality of carrier board, companion computer, and power distribution board into a single compact form factor.
-This system usually uses a "CUBE" autopilot as its primary FMU, but can use an onboard STM32H743 as the FMU. This board definition and firmware on `the ArduPilot firmware server <https://firmware.ardupilot.org>`__ is for this secondary FMU
+This system usually uses a "CUBE" autopilot as its primary FMU, but can use an onboard STM32H743 as the FMU. This board definition and firmware on [the ArduPilot firmware server](https://firmware.ardupilot.org) is for this secondary FMU
 For more information on DCS2.Pilot board see:
 [Airvolute documentation](https://docs.airvolute.com/dronecore-autopilot/dcs2)
 

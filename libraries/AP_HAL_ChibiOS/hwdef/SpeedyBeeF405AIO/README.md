@@ -104,7 +104,7 @@ The board includes a NeoPixel LED pad.
 
 ## Firmware
 
-Firmware for this board can be found: `here <https://firmware.ardupilot.org>`__ in sub-folders labeled “SpeedyBeeF405AIO”.
+Firmware for this board can be found: [here](https://firmware.ardupilot.org) in sub-folders labeled “SpeedyBeeF405AIO”.
 
 ## Loading Firmware (you will need to compile your own firmware)
 

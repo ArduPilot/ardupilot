@@ -232,7 +232,7 @@ The power rail associated with this connector position is powered via USB or PMU
 
 This board comes with ArduPilot firmware pre-installed and other vehicle/revision ArduPilot firmware can be loaded using most Ground Control Stations.
 
-Firmware for these boards can be found `here  <https://firmware.ardupilot.org>`__ in sub-folders labeled “NarinFC-H7”.
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “NarinFC-H7”.
 
 The board comes pre-installed with an ArduPilot bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station, such as Mission Planner.
 

@@ -84,7 +84,7 @@ The AIRBRAINH743 has builtin compass. You can also attach an external compass us
 
 ## Loading Firmware
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "AIRBRAINH743".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "AIRBRAINH743".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

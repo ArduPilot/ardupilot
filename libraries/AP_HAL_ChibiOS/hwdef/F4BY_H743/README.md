@@ -1,13 +1,13 @@
 # F4BY_H743
 
-The F4BY_H743 autopilot is manufactured by `F4BY Team <https://f4by.com>`__
+The F4BY_H743 autopilot is manufactured by [F4BY Team](https://f4by.com)
 
 ![F4BY_H743](F4BY_H743_board_image.jpg)
 
 ## Where to Buy
 
-Shop `here https://f4by.com/en/?order/our_product`__
-The instructions, schematic, 3D model  are available `here https://f4by.com/en/?doc/fc_f4by_v3.0.1_h743`__
+Shop [here](https://f4by.com/en/?order/our_product)
+The instructions, schematic, 3D model  are available [here](https://f4by.com/en/?doc/fc_f4by_v3.0.1_h743)
 
 ## Specifications
 
