@@ -1045,6 +1045,24 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info[] = {
 	AP_SUBGROUPINFO(rrpm, "RPM", 62, AP_OSD_Screen, AP_OSD_Setting),
 #endif
 
+#if AP_MSP_RADAR_ENABLED
+    // @Param: RADAR_EN
+    // @DisplayName: RADAR_EN
+    // @Description: Displays iNav Radar info for peer aircraft
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: RADAR_X
+    // @DisplayName: RADAR_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: RADAR_Y
+    // @DisplayName: RADAR_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(radar, "RADAR", 63, AP_OSD_Screen, AP_OSD_Setting),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1779,26 +1797,68 @@ void AP_OSD_Screen::draw_distance(uint8_t x, uint8_t y, float distance)
     backend->write(x, y, false, fmt, (double)distance_scaled, unit_icon);
 }
 
+void AP_OSD_Screen::draw_location(uint8_t x, uint8_t y, char icon, const Location &loc)
+{
+    AP_AHRS &ahrs = AP::ahrs();
+    Location current_loc;
+    if (ahrs.get_location(current_loc)) {
+        float distance = current_loc.get_distance(loc);
+        int32_t angle_cd = current_loc.get_bearing_to(loc) - ahrs.yaw_sensor;
+        if (distance < 2.0f) {
+            angle_cd = 0;
+        }
+        char arrow = get_arrow_font_index(angle_cd);
+        backend->write(x, y, false, "%c%c", icon, arrow);
+        draw_distance(x + 2, y, distance);
+    }
+}
+
 void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
 {
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    Location loc;
-    if (ahrs.get_location(loc) && ahrs.home_is_set()) {
-        const Location &home_loc = ahrs.get_home();
-        float distance = home_loc.get_distance(loc);
-        int32_t angle_cd = loc.get_bearing_to(home_loc) - ahrs.yaw_sensor;
-        if (distance < 2.0f) {
-            //avoid fast rotating arrow at small distances
-            angle_cd = 0;
-        }
-        char arrow = get_arrow_font_index(angle_cd);
-        backend->write(x, y, false, "%c%c", SYMBOL(SYM_HOME), arrow);
-        draw_distance(x+2, y, distance);
+    const char homeicon = SYMBOL(SYM_HOME);
+    if (ahrs.home_is_set()) {
+        draw_location(x, y, homeicon, ahrs.get_home());
     } else {
-        backend->write(x, y, true, "%c", SYMBOL(SYM_HOME));
+        backend->write(x, y, true, "%c", homeicon);
     }
 }
+
+#if AP_MSP_RADAR_ENABLED
+void AP_OSD_Screen::draw_radar(uint8_t x, uint8_t y)
+{
+    AP_MSP *msp = AP::msp();
+    if (!msp) {
+        return;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+    if (now - _radar_last_peer_change > 2000) {
+        _radar_peer_id = msp->get_next_healthy_peer(_radar_peer_id);
+        _radar_last_peer_change = now;
+    }
+    const MSP_RadarPeer *peer = msp->get_radar_peer(_radar_peer_id);
+
+    Location loc;
+    if (peer && AP::ahrs().get_location(loc)) {
+        draw_location(x, y, _radar_peer_id + 'A', peer->location);
+
+        ftype vertical_distance;
+        UNUSED_RESULT(peer->location.get_height_above(loc, vertical_distance));
+        // Simple lightweight version: arrow + integer meters
+        const char sym = (vertical_distance >= 0) ? SYMBOL(SYM_UP) : SYMBOL(SYM_DOWN);
+        backend->write(x, y, false, "%c%dm", sym, (int)fabsf(vertical_distance));
+
+        const int32_t dt = now - peer->last_update_ms;
+        if (dt > RADAR_PEER_FRESH_TIME_MS) { // getting stale, show time
+            backend->write(x + 7, y + 1, false, "%ldS", dt/1000);
+        }
+    } else {
+        backend->write(x, y, true, "%c", _radar_peer_id + 65);
+    }
+}
+#endif // HAL_MSP_ENABLED
 
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
@@ -2646,6 +2706,9 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(rc_snr);
     DRAW_SETTING(rc_active_antenna);
     DRAW_SETTING(rc_lq);
+#endif
+#if AP_MSP_RADAR_ENABLED
+    DRAW_SETTING(radar);
 #endif
 }
 #endif
