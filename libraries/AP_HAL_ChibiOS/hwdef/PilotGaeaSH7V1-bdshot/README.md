@@ -32,10 +32,10 @@ The PilotGaeaSH7V1-bdshot is a flight controller designed and produced by PilotG
 
 ## Power supply
 
-The PilotGaeaSH7V1-bdshot supports 3-8s Li battery input. It has 2 ways of BEC, which result in 3 ways of power supplys. Please see the table below.
+The PilotGaeaSH7V1-bdshot supports 3-8s Li battery input. It has 2 ways of BEC, which result in 3 ways of power supplies. Please see the table below.
 
 | Power symbol | Power source | Max power (current) |
-|--------------|---------------------------------------------------|---------------------|
+| :--- | :--- | :--- |
 | BAT | directly from battery | |
 | 5V | from 5V BEC | 7.5W (1.5A) |
 | 8V | from 8V BEC, controlled by MCU | 12W (1.5A) |
@@ -45,26 +45,31 @@ The PilotGaeaSH7V1-bdshot supports 3-8s Li battery input. It has 2 ways of BEC, 
 
 The UARTs are marked RXn and TXn in the above pinouts. The RXn pin is the receive pin for UARTn. The TXn pin is the transmit pin for UARTn.
 
-| ArduPilot Serial | Hardware UART | Default Function | DMA Support | DMA Stream (Shared/Dedicated) |
-|------------------|----------------|------------------|-------------|------------------------------------------------|
-| SERIAL0 | OTG1 | USB | No | Handled by USB Controller |
-| SERIAL1 | UART7(CTS/RTS) | Telem 1 | Yes | Shared TX (Stream 7) / Dedicated RX (Stream 0) |
-| SERIAL2 | USART1 | GPS | Yes | Shared TX (Stream 7) / Dedicated RX (Stream 5) |
-| SERIAL3 | USART2 | Telem 2 | Yes | Shared TX (Stream 7) / Dedicated RX (Stream 6) |
-| SERIAL4 | USART3 | not available | Yes | Shared TX (Stream 7) / Dedicated RX (Stream 7) |
-| SERIAL5 | UART8 | ESC Telem | No (NODMA) | (CPU-based PIO) |
-| SERIAL6 | UART4 | User Port | No (NODMA) | (CPU-based PIO) |
-| SERIAL7 | USART6 | RCIN | Yes | Shared TX (Stream 7) / Dedicated RX (Stream 1) |
+| ArduPilot Serial | Hardware UART | Default Function | DMA Support |
+| :--- | :--- | :--- | :--- |
+| SERIAL0 | OTG1 | USB | No |
+| SERIAL1 | UART7(CTS/RTS) | Telem 1 | Yes |
+| SERIAL2 | USART1 | Telem 2 | Yes |
+| SERIAL3 | USART2 | GPS | Yes |
+| SERIAL4 | EMPTY | None | N/A |
+| SERIAL5 | UART8 | ESC Telem | No (NODMA) |
+| SERIAL6 | UART4 | MSP/DisplayPort | No (NODMA) |
+| SERIAL7 | USART6 | RCIN | Yes |
 
-Any UART can be re-tasked by changing its protocol parameter.
+> **NOTE:** Telem function is MAVLINK2 protocol. Any UART can be re-tasked by changing its protocol parameter.
 
 ## RC Input
 
-The default RC input is configured on the USART6 and supports all RC protocols except PPM. The SBUS pin is inverted and connected to RX6. RC can be attached to any UART port as long as the serial port protocol is set to `SERIALn_PROTOCOL=23` and SERIAL6_Protocol is changed to something other than '23'.
+The default RC input is configured on USART6 and supports all RC protocols except PPM. The SBUS pin is hardware-inverted and connected to the RX6 pin.
+
+RC input can be attached to any UART port. To reassign it:
+
+1. Set the target port protocol to RC input (e.g., `SERIALn_PROTOCOL` = 23).
+2. Change `SERIAL6_PROTOCOL` to a different protocol (e.g., -1 or 2) to avoid resource conflicts.
 
 ## OSD Support
 
-The PilotGaeaSH7V1-bdshot Supports onboard analog OSD using the AT7456 chip. The composited image is output via the VTX pin.
+The PilotGaeaSH7V1-bdshot Supports onboard analog OSD using the AT7456 chip. The composited image is output via the VTX pin.  Simultaneous HD VTX DisplayPort is supported via SERIAL6.
 
 ## PWM Output and DShot
 
@@ -78,19 +83,22 @@ The PilotGaeaSH7V1-bdshot supports up to **11 physical PWM outputs**, organized 
 | **2** | 3, 4 | TIM2 | **Full (DMA)** | Motors 3-4 (BDShot) |
 | **3** | 5, 6 | TIM5 | **Full (DMA)** | Motors 5-6 (BDShot) |
 | **4** | 7, 8 | TIM4 | **Full (DMA)** | Motors 7-8 (BDShot) |
-| **5** | 11, 12 | TIM15 | No (NODMA) | Auxiliary / Servos |
-| **6** | 13 | TIM1 | No (NODMA) | NeoPixel / LED |
+| **5** | 13 | TIM1 | **Yes (DMA)*** | NeoPixel / LED (Default) |
+| **6** | 11, 12 | TIM15 | No, only can be PWM | Auxiliary / Servos |
 
 ### Bi-directional DShot Configuration
 
 To use BDShot for RPM filtering, you must flash the `PilotGaeaSH7V1-bdshot` firmware.
 
-- **Outputs 1-8:** Fully optimized with dedicated DMA resources to ensure stable DShot600 performance and telemetry feedback.
-- **Outputs 11-13:** Configured with `NODMA`. While they support standard PWM/DShot, they do not support RPM telemetry.
+- **Outputs 1-8:** Fully optimized with dedicated DMA streams and `TIMx_UP` support for stable DShot600 and bi-directional RPM telemetry.
+- **Outputs 9-12:** Configured with `NODMA`. These can only be used for standard PWM (servos) or GPIOs; they do not support DShot or RPM telemetry.
+- **Output 13:** Supports DMA but is pre-configured for Serial LED.
 
-> **Note:** PWM 9 and 10 are defined in firmware but not physically broken out.
+> **Note:** PWM 9 and 10 are defined in firmware but not physically broken out on the board.
 >
-> **Important:** Every output within a timer group must use the same protocol (e.g., Output 3 & 4 must both be DShot).
+> **Note:** **PWM 13 (Group 5)** supports DMA, but is pre-configured for Serial LED ( `NTF_LED_TYPES` = **455** ) in default parameters to support onboard status lighting.
+>
+> **Important:** Every output within a timer group must use the same protocol (e.g., Output 3 & 4 must both be DShot or PWM).
 
 ## Battery Monitoring
 
@@ -98,30 +106,21 @@ The PilotGaeaSH7V1-bdshot features high-voltage monitoring capabilities, support
 
 ### Primary Battery (BATT)
 
-Enable Battery monitor with these parameter settings:
-
-- BATT_MONITOR 4 (Then reboot)
-- BATT_VOLT_PIN 10
-- BATT_CURR_PIN 11
-- BATT_VOLT_MULT 11.0
-- BATT_AMP_PERVLT 40.0
+- `BATT_MONITOR`: **4** (Analog Voltage and Current)
+- `BATT_VOLT_PIN`: **10**
+- `BATT_CURR_PIN`: **11**
+- `BATT_VOLT_MULT`: **11.0**
+- `BATT_AMP_PERVLT`: **40.0**
 
 ### Secondary Battery (BATT2)
 
-Enable Battery monitor with these parameter settings:
+To enable the second monitor, set the parameters below and **reboot** the flight controller:
 
-- BATT2_MONITOR 4 (Then reboot)
-- BATT2_VOLT_PIN 18
-- BATT2_CURR_PIN 7
-- BATT2_VOLT_MULT 21.0
-- BATT2_AMP_PERVLT 40.0
-
-### Battery Monitoring (BATT2) Setup
-
-The second battery monitor is **disabled** by default. To use it:
-
-1. Set `BATT2_MONITOR` = **4** (Analog Voltage and Current) and reboot.
-2. **Verification:** Confirm that `BATT2_VOLT_MULT` is set to **21.0**.
+- `BATT2_MONITOR`: **4**
+- `BATT2_VOLT_PIN`: **18**
+- `BATT2_CURR_PIN`: **7**
+- `BATT2_VOLT_MULT`: **21.0**
+- `BATT2_AMP_PERVLT`: **40.0**
 
 ## Compass
 
@@ -131,19 +130,33 @@ The PilotGaeaSH7V1-bdshot has no built-in compass, so if needed, you should use 
 
 The PilotGaeaSH7V1-bdshot supports up to 2 cameras, connected to pin C1 and C2. You can select the video signal to VTX from camera by an RC channel. Set the parameters below:
 
-- RELAY2_FUNCTION 1
-- RELAY_PIN2 82
-- RC8_OPTION 34
+- `RELAY2_FUNCTION`: **1**
+- `RELAY_PIN2`: **82** (PinIO 2)
+- `RC8_OPTION`: **34** (Relay2 On/Off)
 
 ## 8V switch
 
 The 8V power supply can be controlled by an RC channel. Set the parameters below:
 
-- RELAY1_FUNCTION 1
-- RELAY_PIN 81
-- RC7_OPTION 28
+- `RELAY1_FUNCTION`: **1**
+- `RELAY_PIN`: **81** (PinIO 1)
+- `RC7_OPTION`: **28** (Relay On/Off)
 
 ## Loading Firmware
 
-Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "*with_bl.hex" firmware, using your favourite DFU loading tool.
-Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the "*.apj" firmware files.
+The firmware target name is **`PilotGaeaSH7V1-bdshot`**.
+
+### Initial Flash (DFU Mode)
+
+If you are flashing this board for the first time or recovering from a corrupted bootloader, use DFU mode:
+
+1. Connect the USB cable to your PC while holding down the physical **bootloader button**.
+2. Use a DFU loading tool (such as **STM32CubeProgrammer** or **Betaflight Configurator**) to load the `PilotGaeaSH7V1-bdshot_with_bl.hex` file.
+3. Once the flashing process is complete, the board will reboot into ArduPilot.
+
+### Firmware Updates
+
+For subsequent updates once the bootloader is present:
+
+- **GCS Update:** Use Mission Planner or QGroundControl to upload the `PilotGaeaSH7V1-bdshot.apj` file.
+- **SD Card Update:** Alternatively, place the `latest.bin` or `firmware.bin` on the root of the MicroSD card to utilize the onboard auto-update feature.
