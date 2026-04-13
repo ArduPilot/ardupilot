@@ -376,8 +376,30 @@ bool NavEKF3_core::resetHeightDatum(void)
     ftype oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
     dal.baro().update_calibration();
-    // reset the height state
+
+    // clear the baro data buffer
+    storedBaro.reset();
+
+    // reset the vertical position and velocity states
     stateStruct.position.z = 0.0f;
+    stateStruct.velocity.z = 0.0f;
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
+        storedOutput[i].position.z = stateStruct.position.z;
+        storedOutput[i].velocity.z = stateStruct.velocity.z;
+    }
+    outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
+    outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+    vertCompFiltState.vel = outputDataNew.velocity.z;
+
+    // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
+    // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
+    // reads 0 and position.z is 0 so the steady-state offset is 0;
+    // without this, hgtMea = baroDataDelayed.hgt - baroHgtOffset
+    // would feed a non-zero observation into the EKF for the ~1 s
+    // the filter takes to relax, producing a post-reset altitude
+    // transient.
+    baroHgtOffset = 0.0f;
+
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
         if (!gpsGoodToAlign) {
