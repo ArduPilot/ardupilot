@@ -1,12 +1,12 @@
 # SparkNavi Blue
 
-The SparkNavi Blue autopilot is manufactured by `SparkNavi <https://www.sparknavi.com>`__
+The SparkNavi Blue autopilot is manufactured by [SparkNavi](https://www.sparknavi.com)
 
 ![SparkNavi Blue](sparknavi-blue.png)
 
 ## Where to Buy
 
-`SparkNavi Official <https://www.sparknavi.com>`__
+[SparkNavi Official](https://www.sparknavi.com)
 
 ## Specifications
 

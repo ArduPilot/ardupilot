@@ -86,7 +86,7 @@ The SCL/SDA pads are exposed as two tiny circles.
 
 ## Loading Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “JHEMCUF405PRO”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “JHEMCUF405PRO”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

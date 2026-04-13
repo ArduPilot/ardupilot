@@ -2,7 +2,7 @@
 
 ![ATOMRCF405NAVI-Deluxe](atomrcf405-navi-deluxe.jpg)
 
-the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
+the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
 > **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See :ref:`Firmware Limitations <common-limited_firmware>` for details.
 
@@ -112,7 +112,7 @@ An integrated BLE RF module is attached to UART1 and its power controlled by a p
 
 ## Loading Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “ATOMRCF405NAVI-Deluxe”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “ATOMRCF405NAVI-Deluxe”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "with_bl.hex"

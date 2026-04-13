@@ -161,7 +161,7 @@ All outputs are capable of PWM and DShot. Motors 1 through 4 are capable of Bidi
 
 ## Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “uav-dev-fc-um982”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “uav-dev-fc-um982”.
 
 ## Loading Firmware
 

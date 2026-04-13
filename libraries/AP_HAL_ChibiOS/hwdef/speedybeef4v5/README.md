@@ -108,7 +108,7 @@ By default, RELAY4 is configured to control this GPIO and keeps it low.This pin 
 
 ## Firmware
 
-Firmware for this board can be found: `here <https://firmware.ardupilot.org>`__ in sub-folders labeled “speedybeef4v5”.
+Firmware for this board can be found: [here](https://firmware.ardupilot.org) in sub-folders labeled “speedybeef4v5”.
 
 ## Loading Firmware (you will need to compile your own firmware)
 

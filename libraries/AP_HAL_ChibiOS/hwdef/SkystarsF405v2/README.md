@@ -97,7 +97,7 @@ from CAM1 to CAM2. By default RELAY2 is configured to control this pin and sets 
 
 ## Loading Firmware
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "SkystarsF405v2".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "SkystarsF405v2".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"
