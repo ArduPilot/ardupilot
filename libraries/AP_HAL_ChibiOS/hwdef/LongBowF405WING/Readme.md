@@ -57,7 +57,7 @@ Fport can be connected to USART1 TX also, but will require an external bi-direct
 
 ## OSD Support
 
-The LongBowF405WING supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such DisplayPor is setup by default using UART5. Simultaneous use of the internal OSD and Displayport is allowed. See :ref:`common-msp-osd-overview-4.2` for more info.
+The LongBowF405WING supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such DisplayPor is setup by default using UART5. Simultaneous use of the internal OSD and Displayport is allowed. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 

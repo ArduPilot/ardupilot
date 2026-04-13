@@ -144,7 +144,7 @@ Ports marked _Internal_ are connected directly to the Raspberry Pi.
 
 ## RC Input
 
-RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
+RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
 
 - SBUS/DSM/SRXL connects to the RX6 pin.
 - FPort requires connection to TX6 and :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to “7”.

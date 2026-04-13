@@ -63,19 +63,19 @@ To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receive
 
 - DSM/SRXL connects to the RX1  pin, but SBUS would still be connected to SBUS.
 
-- FPort requires connection to TX1 and RX1 via a bi-directional inverter. See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX1 and RX1 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 
 - CRSF also requires a TX1 connection, in addition to RX1 and automatically provides telemetry. ELRS is connected in the same way, but bit 13 of :ref:`RC_OPTIONS<RC_OPTIONS>` should be set.
 
 - SRXL2 requires a connection to TX1 and automatically provides telemetry.  Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
 
-> **Note:** UART1 is configured by default for serial receivers. You can also have more than one receiver in the system at a time (usually used for long range hand-offs to a remote TX). See :ref:`common-multiple-rx` for details.
+> **Note:** UART1 is configured by default for serial receivers. You can also have more than one receiver in the system at a time (usually used for long range hand-offs to a remote TX). See [multiple receivers](https://ardupilot.org/copter/docs/common-multiple-rx.html) for details.
 
-Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM (SBUS requires external inversion on other UARTs). See :ref:`common-rc-systems` for details.
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM (SBUS requires external inversion on other UARTs). See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
 ## OSD Support
 
-The JHEMCUF405Wing supports using its internal OSD using its MAX7456. Simultaneous external HD VTX OSD support such as DJI or DisplayPort is supported using UART5 and is configured by default. See :ref:`common-msp-osd-overview-4.2` for more info.
+The JHEMCUF405Wing supports using its internal OSD using its MAX7456. Simultaneous external HD VTX OSD support such as DJI or DisplayPort is supported using UART5 and is configured by default. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 

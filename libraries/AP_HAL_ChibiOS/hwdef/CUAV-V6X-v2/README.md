@@ -52,7 +52,7 @@ The USART3 connector is labelled debug, but is available as a general purpose UA
 
 ## RC Input
 
-RC input is configured on the port marked DSM/SBUS RC and PPM IN for all unidirectional protocols. For bi-directional or half duplex, a full UART should be used. See :ref:`common-rc-systems` for details for each protocol.
+RC input is configured on the port marked DSM/SBUS RC and PPM IN for all unidirectional protocols. For bi-directional or half duplex, a full UART should be used. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for each protocol.
 
 ## PWM Output
 

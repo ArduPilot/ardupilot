@@ -4,7 +4,7 @@
 
 the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
-> **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See :ref:`Firmware Limitations <common-limited_firmware>` for details.
+> **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See [Firmware Limitations](https://ardupilot.org/copter/docs/common-limited_firmware.html) for details.
 
 ## Specifications
 
@@ -79,7 +79,7 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 - DSM/SRXL connects to the RX2  pin, but SBUS would still be connected to SBUS.
 
-- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 
 - CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 

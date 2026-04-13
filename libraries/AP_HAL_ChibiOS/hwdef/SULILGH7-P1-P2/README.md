@@ -60,7 +60,7 @@ To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receive
 
 - The SBUS_IN pin is internally tied to the RCIN pin.
 
-Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details.
+Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
 ## PWM Output
 

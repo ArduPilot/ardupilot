@@ -25,7 +25,7 @@ The PixSurveyA2-IND flight controller is sold by a range of resellers listed at 
 
 ## Where to Buy
 
-`makeflyeasy <http://www.makeflyeasy.com>`_
+[makeflyeasy](http://www.makeflyeasy.com)
 
 ## Pinout
 
@@ -197,4 +197,4 @@ The board comes pre-installed with an ArduPilot compatible bootloader,
 allowing the loading of xxxxxx.apj firmware files with any ArduPilot
 compatible ground station.
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ in  sub-folders labeled "PixSurveyA2-IND".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in  sub-folders labeled "PixSurveyA2-IND".

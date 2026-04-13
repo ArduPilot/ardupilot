@@ -126,8 +126,8 @@ GPIO 82 controls the camera output to the connectors marked "C1" and "C2". Setti
 
 ## Loading Firmware
 
-The TBS Lucid H7 Wing AIO does not come with ArduPilot firmware pre-installed. Use the instructions here to load ArduPilot the first time :ref:`common-loading-firmware-onto-chibios-only-boards`.
-Firmware for the TBS Lucid H7 Wing AIO can be found `here <https://firmware.ardupilot.org>`_ in sub-folders labeled “TBS_LUCID_H7_WING_AIO".
+The TBS Lucid H7 Wing AIO does not come with ArduPilot firmware pre-installed. Use the instructions here to load ArduPilot the first time [loading firmware onto ChibiOS boards](https://ardupilot.org/copter/docs/common-loading-firmware-onto-chibios-only-boards.html).
+Firmware for the TBS Lucid H7 Wing AIO can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “TBS_LUCID_H7_WING_AIO".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"
