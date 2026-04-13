@@ -5782,6 +5782,16 @@ class TestSuite(abc.ABC):
         """Setup a simulated RC control to a PWM value"""
         self.set_rc_from_map({chan: pwm}, timeout=timeout)
 
+    def find_rc_channel_for_option(self, option_number):
+        '''returns an RC channel number (starting from 1, typically
+        ailerons) which as option set as its RCn_OPTION'''
+        for i in range(16):
+            rcx_option = self.get_parameter('RC{0}_OPTION'.format(i+1))
+            if rcx_option == option_number:
+                return i + 1
+
+        raise NotAchievedException(f"Did not find channel for option {option_number}")
+
     def set_servo(self, chan, pwm):
         """Replicate the functionality of MAVProxy: servo set <ch> <pwm>"""
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=chan, p2=pwm)
