@@ -1045,12 +1045,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     
     // @Param: HOME_RESET_ALT
     // @DisplayName: Home reset altitude threshold
-    // @Description: When the aircraft is within this altitude of the home waypoint, while disarmed it will automatically update the home position. Set to 0 to continuously reset it.
+    // @Description: How far the altitude above the EKF origin can change before the home position and EKF height datum stop being reset periodically while disarmed. A value of 0 will always reset; a value of -1 will never reset. When the altitude above origin exceeds this value the reset is skipped, preserving AMSL altitude accuracy after the vehicle has been moved or flown to a different elevation.
     // @Values: -1:Never reset,0:Always reset
     // @Range: -1 127
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 0),
+    AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 10),
 
     // 12 was AP_Gripper
 
