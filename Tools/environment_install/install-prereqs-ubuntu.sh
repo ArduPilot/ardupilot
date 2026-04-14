@@ -291,7 +291,8 @@ function maybe_prompt_user() {
     if $ASSUME_YES; then
         return 0
     else
-        read -p "$1"
+        printf "%b" "$1"
+        read -r REPLY
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             return 0
         else
@@ -419,19 +420,44 @@ PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
 PYTHON_VENV_PACKAGE=""
+# On Ubuntu 24.04 (noble) and later, use direnv to manage venv activation
+# instead of auto-loading in the shell login file.
+USE_DIRENV=false
 if [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     PYTHON_VENV_PACKAGE=python3.11-venv
+    USE_DIRENV=true
 elif [ ${RELEASE_CODENAME} == 'noble' ]; then
     PYTHON_VENV_PACKAGE=python3.12-venv
+    USE_DIRENV=true
 elif [ ${RELEASE_CODENAME} == 'trixie' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
      [ ${RELEASE_CODENAME} == 'questing' ] ||
      false; then
     PYTHON_VENV_PACKAGE=python3-venv
+    USE_DIRENV=true
+fi
+
+# In Docker, direnv is not needed: the entrypoint sources .ardupilot_env directly.
+if $IS_DOCKER; then
+    USE_DIRENV=false
 fi
 
 if [ -n "$PYTHON_VENV_PACKAGE" ]; then
     $APT_GET install $PYTHON_VENV_PACKAGE
+
+    # If switching to direnv-managed venv, offer to remove the old ~/venv-ardupilot
+    if $USE_DIRENV && [ -d "$HOME/venv-ardupilot" ]; then
+        echo "Found deprecated venv at $HOME/venv-ardupilot."
+        if [[ -z "${DO_REMOVE_OLD_VENV}" ]] && maybe_prompt_user "Remove deprecated venv at $HOME/venv-ardupilot [N/y]?\nThe new venv will be created at $ARDUPILOT_ROOT/.venv instead." ; then
+            DO_REMOVE_OLD_VENV=1
+        fi
+        if [[ $DO_REMOVE_OLD_VENV -eq 1 ]]; then
+            rm -rf "$HOME/venv-ardupilot"
+            echo "Removed $HOME/venv-ardupilot."
+        else
+            echo "Keeping $HOME/venv-ardupilot. Note: waf configure will warn you to update your environment."
+        fi
+    fi
 
     # Check if venv already exists in ARDUPILOT_ROOT (check both venv-ardupilot and venv)
     VENV_PATH=""
@@ -445,7 +471,11 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
         VENV_PATH="$ARDUPILOT_ROOT/.venv"
         echo "Found existing venv at $VENV_PATH"
     else
-        VENV_PATH="$HOME/venv-ardupilot"
+        if $USE_DIRENV; then
+            VENV_PATH="$ARDUPILOT_ROOT/.venv"
+        else
+            VENV_PATH="$HOME/venv-ardupilot"
+        fi
         echo "Creating new venv at $VENV_PATH"
         python3 -m venv --system-site-packages "$VENV_PATH"
     fi
@@ -456,14 +486,41 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
     $SOURCE_LINE
     PIP_USER_ARGUMENT=""
 
-    if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?\nThis means that any terminal will open and load ArduPilot venv" ; then
-        DO_PYTHON_VENV_ENV=1
-    fi
-
-    if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
-        echo $SOURCE_LINE >> ~/$SHELL_LOGIN
+    if $USE_DIRENV; then
+        # Install direnv and configure .envrc for automatic venv activation
+        $APT_GET install direnv
+        ENVRC_FILE="$ARDUPILOT_ROOT/.envrc"
+        ENVRC_LINE="source .venv/bin/activate"
+        if [ ! -f "$ENVRC_FILE" ] || ! grep -Fxq "$ENVRC_LINE" "$ENVRC_FILE"; then
+            echo "$ENVRC_LINE" >> "$ENVRC_FILE"
+        fi
+        # Allow the .envrc so direnv activates the venv automatically
+        direnv allow "$ARDUPILOT_ROOT"
+        # Prompt user to add the direnv hook to their shell rc file
+        DIRENV_HOOK_LINE='eval "$(direnv hook bash)"'
+        if [[ -z "${DO_DIRENV_HOOK}" ]] && maybe_prompt_user "Add direnv hook to ~/.bashrc [N/y]?\nThis enables automatic venv activation when entering $ARDUPILOT_ROOT" ; then
+            DO_DIRENV_HOOK=1
+        fi
+        if [[ $DO_DIRENV_HOOK -eq 1 ]]; then
+            grep -Fxq "$DIRENV_HOOK_LINE" ~/.bashrc 2>/dev/null || echo "$DIRENV_HOOK_LINE" >> ~/.bashrc
+            echo "direnv hook added to ~/.bashrc."
+            eval "$(direnv hook bash)"
+        else
+            echo "Skipping direnv hook. Add the following line to your shell rc file manually:"
+            echo "  $DIRENV_HOOK_LINE"
+            echo "  (or the equivalent for your shell: zsh, fish, etc.)"
+        fi
+        echo "direnv setup complete. The ArduPilot venv will activate automatically when entering $ARDUPILOT_ROOT."
     else
-        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
+        if [[ -z "${DO_PYTHON_VENV_ENV}" ]] && maybe_prompt_user "Make ArduPilot venv default for python [N/y]?\nThis means that any terminal will open and load ArduPilot venv" ; then
+            DO_PYTHON_VENV_ENV=1
+        fi
+
+        if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
+            echo $SOURCE_LINE >> ~/$SHELL_LOGIN
+        else
+            echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
+        fi
     fi
 fi
 

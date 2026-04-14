@@ -112,7 +112,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
-          source $HOME/venv-ardupilot/bin/activate || true
+          source $HOME/venv-ardupilot/bin/activate 2>/dev/null || source .venv/bin/activate 2>/dev/null || true
           git config --global --add safe.directory /__w/ardupilot/ardupilot
           ./waf configure
           ./waf rover
@@ -127,7 +127,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           source ~/.bashrc
-          source $HOME/venv-ardupilot/bin/activate || true
+          source $HOME/venv-ardupilot/bin/activate 2>/dev/null || source .venv/bin/activate 2>/dev/null || true
           case ${{matrix.os}} in
             *"archlinux"*)
               export PATH=/opt/gcc-arm-none-eabi-10-2020-q4-major/bin:$PATH
