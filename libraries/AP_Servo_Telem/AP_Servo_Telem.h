@@ -76,6 +76,9 @@ public:
     // Fill in telem structure if telem is available, return false if not
     bool get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile;
 
+    // return true if a servo with specific node id is currently sending servo telemetry data
+    bool is_active(const uint8_t servo_index) const volatile;
+
 private:
 
     // Log telem of each servo
