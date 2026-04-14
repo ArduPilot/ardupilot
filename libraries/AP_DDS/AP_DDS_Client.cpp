@@ -832,9 +832,9 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
                 } else {
                     const uint16_t mapped_data = static_cast<uint16_t>(
                                                      linear_interpolate(rc().channel(i)->get_radio_min(),
-                                                             rc().channel(i)->get_radio_max(),
-                                                             rx_joy_topic.axes[i],
-                                                             -1.0, 1.0));
+                                                         rc().channel(i)->get_radio_max(),
+                                                         rx_joy_topic.axes[i],
+                                                         -1.0, 1.0));
                     RC_Channels::set_override(i, mapped_data, t_now);
                 }
             }
