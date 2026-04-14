@@ -303,7 +303,7 @@ void AP_Doppler_Backend::parse_epd6_ts(const char *payload)
 {
     const char *p = payload + 3;
 
-    char *comma = strchr(p, ',');
+    const char *comma = strchr(p, ',');
     if (comma == nullptr) {
         return;
     }

@@ -418,6 +418,9 @@ private:
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
     void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void Log_Write_SensorData();
+    void Log_Write_ROVData();
+    void Log_Write_DVLData();
     void Log_Write_Vehicle_Startup_Messages();
 #endif
     void load_parameters(void) override;
