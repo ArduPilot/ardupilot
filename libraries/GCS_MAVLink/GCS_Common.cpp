@@ -5025,6 +5025,15 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
         return MAV_RESULT_UNSUPPORTED;
     }
 
+    if (is_equal(packet.param1, -1.0f) || packet.param1 >= 0) {
+        // these are the only values we handle - either -1 meaning do
+        // not reset waypoint (but reset counters) or a non-negative
+        // waypoint number
+    } else {
+        // invalid param1
+        return MAV_RESULT_DENIED;
+    }
+
     if (packet.param1 >= 0) {
         const uint32_t seq = (uint32_t)packet.param1;
         if (seq > INT16_MAX || !mission->is_valid_index(seq)) {
