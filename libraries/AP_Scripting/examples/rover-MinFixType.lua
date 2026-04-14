@@ -60,7 +60,17 @@ local USER_MODES = {
     param:get('MODE6')
 }
 
-local MODE_CH  = param:get('MODE_CH')
+-- return the RC channel number with RCn_OPTION set to Mode (224), or nil
+local function find_mode_channel()
+    for i = 1, 16 do
+        if param:get(string.format('RC%d_OPTION', i)) == 224 then
+            return i
+        end
+    end
+    return nil
+end
+
+local MODE_CH  = find_mode_channel()
 local THR_CH   = assert(rc:find_channel_for_option(203), "no throttle RC channel")  -- see RC_Channel.h
 
 -- wrapper for gcs:send_text()
@@ -78,6 +88,9 @@ end
 
 -- return RC transmitter selected mode
 local function get_user_mode()
+    if not MODE_CH then
+        return nil
+    end
     local pwm = rc:get_pwm(MODE_CH)
     local mode_num = 6
     for i, threshold in pairs(MODE_THRESHOLDS) do
