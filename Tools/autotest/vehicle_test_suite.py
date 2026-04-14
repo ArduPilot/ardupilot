@@ -14584,12 +14584,10 @@ switch value'''
             if distance > 1:
                 raise NotAchievedException(f"gps type {name} misbehaving")
 
-    def assert_gps_satellite_count(self, messagename, count):
+    def wait_gps_satellite_count(self, messagename, count, timeout):
+        """Wait for a GPS message to report a specific satellite count."""
         self.drain_mav()
-        m = self.assert_receive_message(messagename)
-        if m.satellites_visible != count:
-            raise NotAchievedException("Expected %u sats, got %u" %
-                                       (count, m.satellites_visible))
+        self.wait_message_field_values(messagename, {"satellites_visible": count}, timeout=timeout)
 
     def check_attitudes_match(self):
         '''make sure ahrs2 and simstate and ATTTIUDE_QUATERNION all match'''
@@ -14688,16 +14686,17 @@ switch value'''
         if m.fix_type != mavutil.mavlink.GPS_FIX_TYPE_RTK_FIXED:
             raise NotAchievedException("Incorrect fix type")
 
+        GPS_NSATS_TIMEOUT_SEC = 3.0
         self.start_subtest("Check parameters are per-GPS")
         self.assert_parameter_value("SIM_GPS1_NUMSATS", 10)
-        self.assert_gps_satellite_count("GPS_RAW_INT", 10)
+        self.wait_gps_satellite_count("GPS_RAW_INT", 10, GPS_NSATS_TIMEOUT_SEC)
         self.set_parameter("SIM_GPS1_NUMSATS", 13)
-        self.assert_gps_satellite_count("GPS_RAW_INT", 13)
+        self.wait_gps_satellite_count("GPS_RAW_INT", 13, GPS_NSATS_TIMEOUT_SEC)
 
         self.assert_parameter_value("SIM_GPS2_NUMSATS", 10)
-        self.assert_gps_satellite_count("GPS2_RAW", 10)
+        self.wait_gps_satellite_count("GPS2_RAW", 10, GPS_NSATS_TIMEOUT_SEC)
         self.set_parameter("SIM_GPS2_NUMSATS", 12)
-        self.assert_gps_satellite_count("GPS2_RAW", 12)
+        self.wait_gps_satellite_count("GPS2_RAW", 12, GPS_NSATS_TIMEOUT_SEC)
 
         self.start_subtest("check that GLOBAL_POSITION_INT fails over")
         m = self.assert_receive_message("GLOBAL_POSITION_INT")
