@@ -1,5 +1,6 @@
 #include "Copter.h"
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
+#include <AP_Motors/AP_MotorsHawk.h>
 
 /*****************************************************************************
 *   The init_ardupilot function processes everything we need for an in - air restart
@@ -383,6 +384,14 @@ void Copter::allocate_motors(void)
             AP_Param::set_frame_type_flags(AP_PARAM_FRAME_TRICOPTER);
             break;
 #endif  // AP_MOTORS_TRI_ENABLED
+
+#if AP_MOTORS_HAWK_ENABLED
+        case AP_Motors::MOTOR_FRAME_HAWK:
+            motors = NEW_NOTHROW AP_MotorsHawk(copter.scheduler.get_loop_rate_hz());
+            motors_var_info = AP_MotorsHawk::var_info;
+            break;
+#endif  // AP_MOTORS_HAWK_ENABLED
+
         case AP_Motors::MOTOR_FRAME_SINGLE:
             motors = NEW_NOTHROW AP_MotorsSingle(copter.scheduler.get_loop_rate_hz());
             motors_var_info = AP_MotorsSingle::var_info;
