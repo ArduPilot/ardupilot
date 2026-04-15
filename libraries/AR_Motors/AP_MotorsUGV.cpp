@@ -1024,8 +1024,8 @@ float AP_MotorsUGV::get_power_limit_max_throttle(float dt)
 
     _throttle_limit += (dt / (dt + _batt_power_time_constant)) * (1.0f - power_ratio);
 
-    // throttle limit drops to 5% minimum when over power limit
-    _throttle_limit = constrain_float(_throttle_limit, _throttle_min, _throttle_max);
+    // ensure throttle limit is within min and max throttle limits
+    _throttle_limit = constrain_float(_throttle_limit, _throttle_min * 0.01f, _throttle_max * 0.01f);
 
     return _throttle_limit;
 }
