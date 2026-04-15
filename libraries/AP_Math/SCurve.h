@@ -173,6 +173,9 @@ private:
     // generate decreasing jerk magnitude time segment based on a raised cosine profile
     void add_segment_decr_jerk(uint8_t &seg_pnt, float Jm, float tj);
 
+    // extend the constant velocity segment so the deceleration finishes at target_pos
+    void extend_const_vel_to(float target_pos);
+
     // set speed and acceleration limits for the path
     // origin and destination are offsets from EKF origin
     // speed and acceleration parameters are given in horizontal, up and down.
