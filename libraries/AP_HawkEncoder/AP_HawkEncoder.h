@@ -2,6 +2,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/Semaphores.h>
 #include <AP_Math/AP_Math.h>
 
 class AP_HawkEncoder
@@ -136,6 +137,8 @@ private:
             return false;
         }
 
+        WITH_SEMAPHORE(_mux->get_semaphore());
+
         uint8_t value = (1U << chan);
         return _mux->transfer(&value, 1, nullptr, 0);
     }
@@ -146,8 +149,19 @@ private:
             return false;
         }
 
-        if (!select_mux_channel(idx)) {
+        if (USE_TCA9548A && !(bool)_mux) {
             return false;
+        }
+
+        // Take ownership of the encoder device bus before any transfer.
+        // This prevents the "I2C: not owner ..." error from ArduPilot.
+        WITH_SEMAPHORE(_dev->get_semaphore());
+
+        if (USE_TCA9548A) {
+            uint8_t value = (1U << idx);
+            if (!_mux->transfer(&value, 1, nullptr, 0)) {
+                return false;
+            }
         }
 
         uint8_t reg = AS5600_RAW_ANGLE;
