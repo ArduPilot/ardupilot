@@ -3,6 +3,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -118,7 +120,11 @@ const AP_Param::GroupInfo AP_MotorsHawk::var_info[] = {
 
 AP_MotorsHawk::AP_MotorsHawk(uint16_t speed_hz) :
     AP_MotorsMulticopter(speed_hz),
-    _encoders_initialized(false)
+    _encoders_initialized(false),
+    _last_debug_ms(0),
+    _last_fault_ms(0),
+    _sent_init_msg(false),
+    _had_encoder_fault(false)
 {
     for (uint8_t i = 0; i < HAWK_NUM_MOTORS; i++) {
         _theta_rad[i] = 0.0f;
@@ -132,6 +138,17 @@ const char* AP_MotorsHawk::_get_frame_string() const
     return "HAWK";
 }
 
+void AP_MotorsHawk::send_debug_text(MAV_SEVERITY severity, const char *fmt, ...) const
+{
+    char msg[96];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    gcs().send_text(severity, "%s", msg);
+}
+
 void AP_MotorsHawk::init(motor_frame_class frame_class,
                          motor_frame_type frame_type)
 {
@@ -139,6 +156,14 @@ void AP_MotorsHawk::init(motor_frame_class frame_class,
 
     const bool ok = (frame_class == MOTOR_FRAME_HAWK) && _encoders_initialized;
     set_initialised_ok(ok);
+
+    if (!_sent_init_msg) {
+        send_debug_text(MAV_SEVERITY_INFO,
+                        "HAWK init frame=%u ok=%u",
+                        (unsigned)frame_class,
+                        (unsigned)ok);
+        _sent_init_msg = true;
+    }
 }
 
 void AP_MotorsHawk::set_frame_class_and_type(motor_frame_class frame_class,
@@ -146,7 +171,6 @@ void AP_MotorsHawk::set_frame_class_and_type(motor_frame_class frame_class,
 {
     (void)frame_type;
 
-    // clear state first
     _encoders_initialized = false;
 
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -154,6 +178,9 @@ void AP_MotorsHawk::set_frame_class_and_type(motor_frame_class frame_class,
     }
 
     if (frame_class != MOTOR_FRAME_HAWK) {
+        send_debug_text(MAV_SEVERITY_WARNING,
+                        "HAWK wrong frame class=%u",
+                        (unsigned)frame_class);
         return;
     }
 
@@ -167,6 +194,8 @@ void AP_MotorsHawk::set_frame_class_and_type(motor_frame_class frame_class,
 
     _encoders.init();
     _encoders_initialized = true;
+
+    send_debug_text(MAV_SEVERITY_INFO, "HAWK frame configured");
 }
 
 bool AP_MotorsHawk::arming_checks(size_t buflen, char *buffer) const
@@ -260,7 +289,6 @@ float AP_MotorsHawk::compute_cyclic_term(uint8_t motor_idx,
         _cyclic_pitch_gain *
         cosf(theta_rad - pitch_phase_rad);
 
-    // first-pass yaw model: mean torque bias, not harmonic
     const float yaw_term =
         constrain_float(yaw_in, -1.0f, 1.0f) *
         _yaw_gain *
@@ -282,9 +310,54 @@ void AP_MotorsHawk::set_actuator_safe()
     }
 }
 
+void AP_MotorsHawk::send_encoder_debug_if_due()
+{
+    const uint32_t now = AP_HAL::millis();
+    if (now - _last_debug_ms < 1000) {
+        return;
+    }
+    _last_debug_ms = now;
+
+    const float d1 = degrees(_theta_rad[0]);
+    const float d2 = degrees(_theta_rad[1]);
+    const float d3 = degrees(_theta_rad[2]);
+
+    send_debug_text(MAV_SEVERITY_INFO,
+                    "HAWK ENC h=%u%u%u a=%.1f/%.1f/%.1f",
+                    (unsigned)_encoder_healthy[0],
+                    (unsigned)_encoder_healthy[1],
+                    (unsigned)_encoder_healthy[2],
+                    (double)d1,
+                    (double)d2,
+                    (double)d3);
+}
+
+void AP_MotorsHawk::send_encoder_fault_if_needed()
+{
+    const bool bad = !encoders_healthy();
+    const uint32_t now = AP_HAL::millis();
+
+    if (bad) {
+        if (!_had_encoder_fault || (now - _last_fault_ms) > 2000) {
+            send_debug_text(MAV_SEVERITY_WARNING,
+                            "HAWK encoder fault h=%u%u%u",
+                            (unsigned)_encoder_healthy[0],
+                            (unsigned)_encoder_healthy[1],
+                            (unsigned)_encoder_healthy[2]);
+            _last_fault_ms = now;
+            _had_encoder_fault = true;
+        }
+    } else if (_had_encoder_fault) {
+        send_debug_text(MAV_SEVERITY_INFO, "HAWK encoder fault cleared");
+        _had_encoder_fault = false;
+    }
+}
+
 void AP_MotorsHawk::output_armed_stabilizing()
 {
     update_encoder_state();
+    send_encoder_fault_if_needed();
+    send_encoder_debug_if_due();
 
     if (!encoders_healthy()) {
         set_actuator_safe();

@@ -14,7 +14,6 @@ public:
 
     AP_MotorsHawk(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
-    // required virtuals from AP_Motors
     void init(motor_frame_class frame_class,
               motor_frame_type frame_type) override;
 
@@ -29,13 +28,11 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    // required virtuals from AP_Motors
     void output_to_motors() override;
     void output_armed_stabilizing() override;
     const char* _get_frame_string() const override;
     void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
-    // helpers
     void update_encoder_state();
     bool encoders_healthy() const;
     void set_actuator_safe();
@@ -47,6 +44,11 @@ protected:
                               float yaw_in) const;
     float apply_output_limits(float in) const;
 
+    // debug helpers
+    void send_debug_text(MAV_SEVERITY severity, const char *fmt, ...) const;
+    void send_encoder_debug_if_due();
+    void send_encoder_fault_if_needed();
+
 private:
     static constexpr uint8_t HAWK_NUM_MOTORS = 3;
     static constexpr uint32_t ENCODER_TIMEOUT_US = 20000U; // 20 ms
@@ -57,17 +59,12 @@ private:
         MOTOR_HAWK_3 = 2
     };
 
-    // encoder subsystem
     AP_HawkEncoder _encoders;
 
-    // cached encoder state
     float _theta_rad[HAWK_NUM_MOTORS];
     bool  _encoder_healthy[HAWK_NUM_MOTORS];
-
-    // commanded normalized actuator outputs [0,1]
     float _hawk_out[HAWK_NUM_MOTORS];
 
-    // tuning parameters
     AP_Float _cyclic_roll_gain;
     AP_Float _cyclic_pitch_gain;
     AP_Float _yaw_gain;
@@ -79,4 +76,10 @@ private:
     AP_Float _yaw_bias[HAWK_NUM_MOTORS];
 
     bool _encoders_initialized;
+
+    // debug state
+    uint32_t _last_debug_ms;
+    uint32_t _last_fault_ms;
+    bool _sent_init_msg;
+    bool _had_encoder_fault;
 };
