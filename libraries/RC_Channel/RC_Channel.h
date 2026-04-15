@@ -372,6 +372,7 @@ public:
 #if AP_MOUNT_POI_LOCK_ENABLED
         MOUNT_POI_LOCK =     186,  // Lock mount target to current ROI seen and switch mount to GPS Targeting mode
 #endif  // AP_MOUNT_POI_LOCK_ENABLED
+        WP_YAW_BEHAVIOR_0_2 = 187, // switch Copter WP_YAW_BEHAVIOR between 0 and 2
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
