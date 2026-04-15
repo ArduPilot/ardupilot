@@ -136,7 +136,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @Range: 0 10
     // @Units: s
     // @User: Advanced
-    AP_GROUPINFO("BAT_WATT_TC", 16, AP_MotorsUGV, _batt_power_time_constant, 5.0f),
+    AP_GROUPINFO("BAT_WATT_TC", 16, AP_MotorsUGV, _batt_power_time_constant, 2.0f),
 #endif
 
     AP_GROUPEND
