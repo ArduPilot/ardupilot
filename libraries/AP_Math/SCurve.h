@@ -176,6 +176,9 @@ private:
     // extend the constant velocity segment so the deceleration finishes at target_pos
     void extend_const_vel_to(float target_pos);
 
+    // fill segment[first..last] with zero-delta constant-jerk segments anchored to segment[src]
+    void fill_empty_segments(uint8_t first, uint8_t last, uint8_t src);
+
     // set speed and acceleration limits for the path
     // origin and destination are offsets from EKF origin
     // speed and acceleration parameters are given in horizontal, up and down.
