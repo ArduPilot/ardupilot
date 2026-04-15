@@ -136,7 +136,6 @@ void ModePosHold::run()
 
     // pilot desired climb rate (m/s)
     float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
