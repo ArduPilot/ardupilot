@@ -626,17 +626,30 @@ class WaitAndMaintainLocation(WaitAndMaintain):
 class WaitAndMaintainEKFFlags(WaitAndMaintain):
     '''Waits for EKF status flags to include required_flags and have
     error_bits *not* set.'''
-    def __init__(self, test_suite, required_flags, error_bits, **kwargs):
+    def __init__(self, test_suite, required_flags, error_bits, mav=None, **kwargs):
+        self.test_suite = test_suite
         super(WaitAndMaintainEKFFlags, self).__init__(test_suite, **kwargs)
+        # Set self.mav AFTER super().__init__() so parent doesn't overwrite it
+        self.mav = mav
         self.required_flags = required_flags
         self.error_bits = error_bits
         self.last_EKF_STATUS_REPORT = None
 
     def announce_start_text(self):
-        return f"Waiting for EKF value {self.required_flags}"
+        if self.mav is not None:
+            sysid = self.mav.target_system
+        else:
+            sysid = self.test_suite.sysid_thismav()
+        return f"Waiting for EKF value {self.required_flags} on SYSID {sysid}"
 
     def get_current_value(self):
-        self.last_EKF_STATUS_REPORT = self.test_suite.assert_receive_message('EKF_STATUS_REPORT', timeout=10)
+        # 2. Crucial: Pass self.mav to assert_receive_message
+        # This ensures we pull the message from the correct vehicle's buffer
+        self.last_EKF_STATUS_REPORT = self.test_suite.assert_receive_message(
+            'EKF_STATUS_REPORT',
+            timeout=10,
+            mav=self.mav
+        )
         return self.last_EKF_STATUS_REPORT.flags
 
     def validate_value(self, value):
@@ -2058,6 +2071,8 @@ class TestSuite(abc.ABC):
 
         self.last_sim_time_cached = 0
         self.last_sim_time_cached_wallclock = 0
+        self.last_sim_times = {}
+        self.last_sim_wall_times = {}
 
         # to autotest we do not want to go to the internet for tiles,
         # usually.  Set this to False to gather tiles from internet in
@@ -3555,6 +3570,45 @@ class TestSuite(abc.ABC):
         if freshen_sim_time:
             self.get_sim_time()
 
+    def get_messenger(self, mav):
+        """
+        Returns the MAVLink protocol encoder/decoder object.
+
+        This abstracts the difference between 'self' (the Test Suite, where
+        the encoder is self.mav.mav) and a raw mavutil connection like
+        target_mav (where the encoder is mav.mav).
+
+        Use this when you need to call raw MAVLink 'send' methods (e.g.
+        timesync_send, command_long_send). Mostly when running multiple SITL instances.
+        """
+        if mav == self:
+            return self.mav.mav
+        return mav.mav
+
+    def get_connection(self, mav):
+        """
+        Returns the MAVLink connection object (the one with recv_match).
+        """
+        # 1. Resolve the starting point
+        if mav is None or mav == self:
+            conn = self.mav
+        else:
+            conn = mav
+
+        # 2. Logic: We want the object that HAS recv_match.
+        # If 'conn' has it, we are done.
+        if hasattr(conn, 'recv_match'):
+            return conn
+
+        # 3. If 'conn' DOES NOT have recv_match, but has a '.mav' attribute
+        # (e.g., we were passed 'self' and it returned something weird), check that.
+        if hasattr(conn, 'mav') and hasattr(conn.mav, 'recv_match'):
+            return conn.mav
+
+        # 4. Final fallback: if we are at the protocol level (MAVLink object),
+        # it usually has no way back to the connection.
+        return conn
+
     def drain_mav(self, mav=None, unparsed=False, quiet=True):
         '''parse all data available on connection mav (defaulting to
         self.mav).  It is assumed that mav is connected to the normal
@@ -3607,48 +3661,45 @@ class TestSuite(abc.ABC):
 
         self.in_drain_mav = False
 
-    def do_timesync_roundtrip(self, quiet=False, timeout_in_wallclock=False):
+    def do_timesync_roundtrip(self, quiet=False, timeout_in_wallclock=False, mav=None):
         if not quiet:
             self.progress("Doing timesync roundtrip")
-        if timeout_in_wallclock:
-            tstart = time.time()
-        else:
-            tstart = self.get_sim_time()
-        self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
-        while True:
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
             if timeout_in_wallclock:
-                now = time.time()
+                tstart = time.time()
             else:
-                now = self.get_sim_time_cached()
-            if now - tstart > 5:
-                raise AutoTestTimeoutException("Did not get timesync response")
-            m = self.mav.recv_match(type='TIMESYNC', blocking=True, timeout=1)
-            if not quiet:
-                self.progress("Received: %s" % str(m))
-            if m is None:
-                continue
-            if m.ts1 % 1000 != self.mav.source_system:
-                self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
-                continue
-            if m.tc1 == 0:
-                # this should also not happen:
-                self.progress("this is a timesync request, which we don't answer")
-                continue
-            if int(m.ts1 / 1000) != self.timesync_number:
-                self.progress("this isn't the one we just sent")
-                continue
-            if m.get_srcSystem() != self.mav.target_system:
-                self.progress("response from system other than our target (want=%u got=%u" %
-                              (self.mav.target_system, m.get_srcSystem()))
-                continue
-            # no component check ATM because we send broadcast...
-#            if m.get_srcComponent() != self.mav.target_component:
-#                self.progress("response from component other than our target (got=%u want=%u)" % (m.get_srcComponent(), self.mav.target_component))  # noqa
-#                continue
-            if not quiet:
-                self.progress("Received TIMESYNC response after %fs" % (now - tstart))
-            self.timesync_number += 1
-            break
+                tstart = self.get_sim_time()
+            self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
+            while True:
+                if timeout_in_wallclock:
+                    now = time.time()
+                else:
+                    now = self.get_sim_time_cached()
+                if now - tstart > 5:
+                    raise AutoTestTimeoutException("Did not get timesync response")
+                m = self.mav.recv_match(type='TIMESYNC', blocking=True, timeout=1)
+                if not quiet:
+                    self.progress("Received: %s" % str(m))
+                if m is None:
+                    continue
+                if m.ts1 % 1000 != self.mav.source_system:
+                    self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
+                    continue
+                if m.tc1 == 0:
+                    continue
+                if int(m.ts1 / 1000) != self.timesync_number:
+                    self.progress("this isn't the one we just sent")
+                    continue
+                if m.get_srcSystem() != self.mav.target_system:
+                    self.progress("response from system other than our target (want=%u got=%u" %
+                                  (self.mav.target_system, m.get_srcSystem()))
+                    continue
+                if not quiet:
+                    self.progress("Received TIMESYNC response after %fs" % (now - tstart))
+                self.timesync_number += 1
+                break
+            return
 
     def log_filepath(self, lognum):
         '''return filepath to lognum (where lognum comes from LOG_ENTRY'''
@@ -4238,40 +4289,74 @@ class TestSuite(abc.ABC):
     #################################################
     # SIM UTILITIES
     #################################################
-    def get_sim_time(self, timeout=60, drain_mav=True):
-        """Get SITL time in seconds."""
+    def get_sim_time(self, timeout=60, drain_mav=True, mav=None):
+        """Get SITL time in seconds for a specific MAV."""
+        if mav is None or mav is self or mav is self.mav:
+            if drain_mav:
+                self.drain_mav()
+            tstart = time.time()
+            while True:
+                self.drain_all_pexpects()
+                if time.time() - tstart > timeout:
+                    raise AutoTestTimeoutException(
+                        "Did not get SYSTEM_TIME message after %f seconds" % timeout
+                    )
+                m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
+                if m is None:
+                    continue
+                if m.get_srcSystem() != self.sysid_thismav():
+                    continue
+                return m.time_boot_ms * 1.0e-3
+
+        # Multi-MAV path
+        connection = self.get_connection(mav)
+        if mav is self:
+            target_sysid = self.sysid_thismav()
+        else:
+            # Use the target_system property of the raw mavutil connection
+            target_sysid = connection.target_system
         if drain_mav:
-            self.drain_mav()
+            self.drain_mav(mav=mav)
         tstart = time.time()
         while True:
             self.drain_all_pexpects()
             if time.time() - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get SYSTEM_TIME message after %f seconds" % timeout)
-
-            m = self.mav.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
+                raise AutoTestTimeoutException(
+                    "Did not get SYSTEM_TIME message from SYSID %d after %f seconds" % (target_sysid, timeout)
+                )
+            # Listen specifically on the provided mav connection
+            m = connection.recv_match(type='SYSTEM_TIME', blocking=True, timeout=0.1)
             if m is None:
                 continue
-            if m.get_srcSystem() != self.sysid_thismav():
+            # Ensure the message actually came from the vehicle we are asking about
+            if m.get_srcSystem() != target_sysid:
                 continue
-
             return m.time_boot_ms * 1.0e-3
 
-    def get_sim_time_cached(self):
+    def get_sim_time_cached(self, mav=None):
         """Get SITL time in seconds."""
-        x = self.mav.messages.get("SYSTEM_TIME", None)
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            x = self.mav.messages.get("SYSTEM_TIME", None)
+            if x is None:
+                raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
+            ret = x.time_boot_ms * 1.0e-3
+            if ret != self.last_sim_time_cached:
+                self.last_sim_time_cached = ret
+                self.last_sim_time_cached_wallclock = time.time()
+            else:
+                timeout = 30
+                if self.valgrind:
+                    timeout *= 10
+                if time.time() - self.last_sim_time_cached_wallclock > timeout and not self.gdb:
+                    raise AutoTestTimeoutException("sim_time_cached is not updating!")
+            return ret
+        # Multi-MAV path for an external connection
+        connection = self.get_connection(mav)
+        x = connection.messages.get("SYSTEM_TIME", None)
         if x is None:
-            raise NotAchievedException("No cached time available (%s)" % (self.mav.sysid,))
-        ret = x.time_boot_ms * 1.0e-3
-        if ret != self.last_sim_time_cached:
-            self.last_sim_time_cached = ret
-            self.last_sim_time_cached_wallclock = time.time()
-        else:
-            timeout = 30
-            if self.valgrind:
-                timeout *= 10
-            if time.time() - self.last_sim_time_cached_wallclock > timeout and not self.gdb:
-                raise AutoTestTimeoutException("sim_time_cached is not updating!")
-        return ret
+            raise NotAchievedException("No cached time available for external mav")
+        return x.time_boot_ms * 1.0e-3
 
     def sim_location(self):
         """Return current simulator location."""
@@ -5540,18 +5625,30 @@ class TestSuite(abc.ABC):
                                    target_system=1,
                                    target_component=1,
                                    strict=True,
-                                   reset_current_wp=True):
+                                   reset_current_wp=True,
+                                   mav=None):
         wpoints_int = self.mission_from_filepath(
             filepath,
             target_system=target_system,
             target_component=target_component
         )
-        self.check_mission_upload_download(wpoints_int, strict=strict)
+        self.check_mission_upload_download(
+            wpoints_int,
+            strict=strict,
+            target_system=target_system,
+            target_component=target_component,
+            mav=mav,
+        )
         if reset_current_wp:
             # ArduPilot doesn't reset the current waypoint by default
             # we may be in auto mode and running waypoints, so we
             # can't check the current waypoint after resetting it.
-            self.set_current_waypoint(0, check_afterwards=False)
+            self.set_current_waypoint(
+                0,
+                target_sysid=target_system,
+                target_compid=target_component,
+                check_afterwards=False,
+            )
         return len(wpoints_int)
 
     def load_mission_using_mavproxy(self, mavproxy, filename):
@@ -5714,12 +5811,30 @@ class TestSuite(abc.ABC):
         check_atts = ['mission_type', 'command', 'x', 'y', 'z', 'seq', 'param1']
         return self.check_mission_items_same('waypoint', check_atts, want, got, skip_first_item=True, strict=strict)
 
-    def check_mission_item_upload_download(self, items, itype, mission_type, strict=True):
+    def check_mission_item_upload_download(self,
+                                           items,
+                                           itype,
+                                           mission_type,
+                                           strict=True,
+                                           target_system=1,
+                                           target_component=1,
+                                           mav=None):
         self.progress("check %s upload/download: upload %u items" %
                       (itype, len(items),))
-        self.upload_using_mission_protocol(mission_type, items)
+        self.upload_using_mission_protocol(
+            mission_type,
+            items,
+            target_system=target_system,
+            target_component=target_component,
+            mav=mav,
+        )
         self.progress("check %s upload/download: download items" % itype)
-        downloaded_items = self.download_using_mission_protocol(mission_type)
+        downloaded_items = self.download_using_mission_protocol(
+            mission_type,
+            target_system=target_system,
+            target_component=target_component,
+            mav=mav,
+        )
         if len(items) != len(downloaded_items):
             raise NotAchievedException("Did not download same number of items as uploaded want=%u got=%u" %
                                        (len(items), len(downloaded_items)))
@@ -5732,28 +5847,39 @@ class TestSuite(abc.ABC):
         else:
             raise NotAchievedException("Unhandled")
 
-    def check_fence_upload_download(self, items):
+    def check_fence_upload_download(self, items, mav=None):
         self.check_mission_item_upload_download(
             items,
             "fence",
-            mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
+            mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
+            mav=mav)
         if self.use_map and self.mavproxy is not None:
             self.mavproxy.send('fence list\n')
 
-    def check_mission_upload_download(self, items, strict=True):
+    def check_mission_upload_download(self,
+                                      items,
+                                      strict=True,
+                                      target_system=1,
+                                      target_component=1,
+                                      mav=None):
         self.check_mission_item_upload_download(
             items,
             "waypoints",
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
-            strict=strict)
+            strict=strict,
+            target_system=target_system,
+            target_component=target_component,
+            mav=mav,
+        )
         if self.use_map and self.mavproxy is not None:
             self.mavproxy.send('wp list\n')
 
-    def check_rally_upload_download(self, items):
+    def check_rally_upload_download(self, items, mav=None):
         self.check_mission_item_upload_download(
             items,
             "rally",
-            mavutil.mavlink.MAV_MISSION_TYPE_RALLY
+            mavutil.mavlink.MAV_MISSION_TYPE_RALLY,
+            mav=mav
         )
         if self.use_map and self.mavproxy is not None:
             self.mavproxy.send('rally list\n')
@@ -6121,51 +6247,68 @@ class TestSuite(abc.ABC):
                     target_compid=None,
                 ))
 
-    def arm_vehicle(self, timeout=20, force=False):
+    def arm_vehicle(self, timeout=20, force=False, mav=None, target_sysid=None):
         """Arm vehicle with mavlink arm message."""
-        self.progress("Arm motors with MAVLink cmd")
+        self.progress("Arming motors with MAVLink cmd")
         p2 = 0
         if force:
             p2 = 2989
         try:
             self.run_cmd(
                 mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                p1=1,  # ARM
+                p1=1,
                 p2=p2,
                 timeout=timeout,
+                mav=mav,
+                target_sysid=target_sysid,
             )
         except ValueError as e:
-            # statustexts are queued; give it a second to arrive:
             self.delay_sim_time(5, reason="statustext to arrive")
             raise e
         try:
-            self.wait_armed()
+            self.wait_armed(mav=mav)
         except AutoTestTimeoutException:
             raise AutoTestTimeoutException("Failed to ARM with mavlink")
         return True
 
-    def wait_armed(self, timeout=20):
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() - tstart < timeout:
-            if self.mav.motors_armed():
+    def wait_armed(self, timeout=20, mav=None):
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                if self.mav.motors_armed():
+                    self.progress("Motors ARMED")
+                    return
+                self.wait_heartbeat(drain_mav=False)
+            raise AutoTestTimeoutException("Did not become armed")
+        # Multi-MAV path
+        connection = self.get_connection(mav)
+        tstart = self.get_sim_time(mav=mav)
+        while self.get_sim_time_cached(mav=mav) - tstart < timeout:
+            self.wait_heartbeat(drain_mav=False, mav=mav)
+            if connection.motors_armed():
                 self.progress("Motors ARMED")
                 return
-            self.wait_heartbeat(drain_mav=False)
+            self.drain_mav(self)
         raise AutoTestTimeoutException("Did not become armed")
 
-    def disarm_vehicle(self, timeout=60, force=False):
+    def disarm_vehicle(self, timeout=60, force=False, mav=None, target_sysid=None):
         """Disarm vehicle with mavlink disarm message."""
-        self.progress("Disarm motors with MAVLink cmd")
-        p2 = 0
-        if force:
-            p2 = 21196 # magic force disarm value
+
+        self.progress("Disarming motors with MAVLink cmd")
+        p2 = 21196 if force else 0
+
+        # Pass 'mav' so the command goes to the correct IP/Port/SysID
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             p1=0,  # DISARM
             p2=p2,
             timeout=timeout,
+            target_sysid=target_sysid,
+            mav=mav
         )
-        self.wait_disarmed()
+        # Ensure wait_disarmed is also updated to accept 'mav'
+        self.wait_disarmed(mav=mav)
 
     def disarm_vehicle_expect_fail(self):
         '''disarm, checking first that non-forced disarm fails, then doing a forced disarm'''
@@ -6182,15 +6325,18 @@ class TestSuite(abc.ABC):
     def wait_disarmed_default_wait_time(self):
         return 30
 
-    def wait_disarmed(self, timeout=None, tstart=None):
+    def wait_disarmed(self, timeout=None, tstart=None, mav=None):
         if timeout is None:
             timeout = self.wait_disarmed_default_wait_time()
+
         self.progress("Waiting for DISARM")
+
         if tstart is None:
-            tstart = self.get_sim_time()
+            tstart = self.get_sim_time(mav=mav)
+
         last_print_time = 0
         while True:
-            now = self.get_sim_time_cached()
+            now = self.get_sim_time_cached(mav=mav)
             delta = now - tstart
             if delta > timeout:
                 raise AutoTestTimeoutException("Failed to DISARM within %fs" %
@@ -6198,10 +6344,17 @@ class TestSuite(abc.ABC):
             if now - last_print_time > 1:
                 self.progress("Waiting for disarm (%.2fs so far of allowed %.2f)" % (delta, timeout))
                 last_print_time = now
-            msg = self.wait_heartbeat(quiet=True)
+
+            # Use the specific mav to get the heartbeat
+            msg = self.wait_heartbeat(quiet=True, mav=mav)
+
+            # Check the armed bit on the specific message received
             if msg.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED:
-                # still armed
+                # Still armed - if we are waiting for Instance 2, keep Instance 1 alive
+                if mav is not None and mav is not self and mav is not self.mav:
+                    self.drain_mav(self)
                 continue
+
             self.progress("DISARMED after %.2f seconds (allowed=%.2f)" %
                           (delta, timeout))
             return
@@ -7072,17 +7225,14 @@ class TestSuite(abc.ABC):
                               p5,
                               p6,
                               p7))
-        mav.mav.command_long_send(target_sysid,
-                                  target_compid,
-                                  command,
-                                  1,  # confirmation
-                                  p1,
-                                  p2,
-                                  p3,
-                                  p4,
-                                  p5,
-                                  p6,
-                                  p7)
+
+        self.get_messenger(mav).command_long_send(
+            target_sysid,
+            target_compid,
+            command,
+            1,  # confirmation
+            p1, p2, p3, p4, p5, p6, p7
+        )
 
     def run_cmd(self,
                 command,
@@ -7099,22 +7249,21 @@ class TestSuite(abc.ABC):
                 timeout=10,
                 quiet=False,
                 mav=None):
-        self.drain_mav(mav=mav)
-        self.get_sim_time() # required for timeout in run_cmd_get_ack to work
-        self.send_cmd(
-            command,
-            p1,
-            p2,
-            p3,
-            p4,
-            p5,
-            p6,
-            p7,
-            target_sysid=target_sysid,
-            target_compid=target_compid,
-            mav=mav,
-            quiet=quiet,
-        )
+        if mav is None or mav is self or mav is self.mav:
+            self.drain_mav()
+        self.get_sim_time()  # required for timeout in run_cmd_get_ack to work
+        self.send_cmd(command,
+                      p1,
+                      p2,
+                      p3,
+                      p4,
+                      p5,
+                      p6,
+                      p7,
+                      target_sysid=target_sysid,
+                      target_compid=target_compid,
+                      mav=mav,
+                      quiet=quiet)
         self.run_cmd_get_ack(command, want_result, timeout, quiet=quiet, mav=mav)
 
     def run_cmd_get_ack(self, command, want_result, timeout, quiet=False, mav=None, ignore_in_progress=None):
@@ -7165,19 +7314,23 @@ class TestSuite(abc.ABC):
             seq,
             target_sysid=1,
             target_compid=1,
-            check_afterwards=True):
-        self.mav.mav.mission_set_current_send(target_sysid,
-                                              target_compid,
-                                              seq)
+            check_afterwards=True,
+            mav=None):
+        if mav is None:
+            mav = self.mav
+        mav.mav.mission_set_current_send(target_sysid,
+                                         target_compid,
+                                         seq)
         if check_afterwards:
             self.wait_current_waypoint(seq, timeout=10)
 
-    def set_current_waypoint(self, seq, target_sysid=1, target_compid=1, check_afterwards=True):
+    def set_current_waypoint(self, seq, target_sysid=1, target_compid=1, check_afterwards=True, mav=None):
         return self.set_current_waypoint_using_mission_set_current(
             seq,
             target_sysid,
             target_compid,
-            check_afterwards=check_afterwards
+            check_afterwards=check_afterwards,
+            mav=mav
         )
 
     def verify_parameter_values(self, parameter_stuff, max_delta=0.0):
@@ -7300,29 +7453,52 @@ class TestSuite(abc.ABC):
             bearing += 360.00
         return bearing
 
-    def send_cmd_do_set_mode(self, mode):
+    def send_cmd_do_set_mode(self, mode, mav=None, target_sysid=None):
         self.send_cmd(
             mavutil.mavlink.MAV_CMD_DO_SET_MODE,
             p1=mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-            p2=self.get_mode_from_mode_mapping(mode),
+            p2=self.get_mode_from_mode_mapping(mode, mav=mav),
+            mav=mav,
+            target_sysid=target_sysid,
         )
 
     def assert_mode(self, mode):
         self.wait_mode(mode, timeout=0)
 
-    def change_mode(self, mode, timeout=60):
-        '''change vehicle flightmode'''
-        self.progress("Changing mode to %s" % mode)
-        tstart = self.get_sim_time()
-        self.send_cmd_do_set_mode(mode)
-        while not self.mode_is(mode):
-            custom_num = self.mav.messages['HEARTBEAT'].custom_mode
-            self.progress("mav.flightmode=%s Want=%s custom=%u" % (
-                self.mav.flightmode, mode, custom_num))
-            if (timeout is not None and
-                    self.get_sim_time_cached() > tstart + timeout):
-                raise WaitModeTimeout("Did not change mode")
+    def change_mode(self, mode, timeout=60, mav=None, mav_sysid=None):
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            '''change vehicle flightmode'''
+            self.progress("Changing mode to %s" % mode)
             self.send_cmd_do_set_mode(mode)
+            tstart = self.get_sim_time()
+            while not self.mode_is(mode):
+                custom_num = self.mav.messages['HEARTBEAT'].custom_mode
+                self.progress("mav.flightmode=%s Want=%s custom=%u" % (
+                    self.mav.flightmode, mode, custom_num))
+                if (timeout is not None and
+                        self.get_sim_time_cached() > tstart + timeout):
+                    raise WaitModeTimeout("Did not change mode")
+                self.send_cmd_do_set_mode(mode)
+            self.progress("Got mode %s" % mode)
+            return
+
+        # Multi-MAV path
+        if mav_sysid is None:
+            mav_sysid = mav.target_system
+        '''change vehicle flightmode'''
+        self.wait_heartbeat(mav=mav, mav_sysid=mav_sysid)
+        self.progress("Changing mode to %s" % mode)
+        self.send_cmd_do_set_mode(mode, mav=mav, target_sysid=mav_sysid)
+        tstart = self.get_sim_time(mav=mav)
+        while not self.mode_is(mode, mav=mav):
+            custom_num = mav.messages['HEARTBEAT'].custom_mode
+            self.progress("mav.flightmode=%s Want=%s custom=%u" % (
+                mav.flightmode, mode, custom_num))
+            if (timeout is not None and
+                    self.get_sim_time_cached(mav=mav) > tstart + timeout):
+                raise WaitModeTimeout("Did not change mode")
+            self.send_cmd_do_set_mode(mode, mav=mav)
         self.progress("Got mode %s" % mode)
 
     def capable(self, capability):
@@ -7406,20 +7582,38 @@ class TestSuite(abc.ABC):
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT)
         self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION)
 
-    def get_mode_from_mode_mapping(self, mode) -> int:
+    def get_mode_from_mode_mapping(self, mode, mav=None) -> int:
         """Validate and return the mode number from a string or int."""
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            if isinstance(mode, int):
+                return mode
+            mode_map = self.mav.mode_mapping()
+            if mode_map is None:
+                mav_type = self.mav.messages['HEARTBEAT'].type
+                mav_autopilot = self.mav.messages['HEARTBEAT'].autopilot
+                raise ErrorException("No mode map for (mav_type=%s mav_autopilot=%s)" % (mav_type, mav_autopilot))
+            if isinstance(mode, str):
+                if mode in mode_map:
+                    return mode_map.get(mode)
+                if mode in mode_map.values():
+                    return mode
+            self.progress("No mode (%s); available modes '%s'" % (mode, mode_map))
+            raise ErrorException("Unknown mode '%s'" % mode)
+
+        # Multi-MAV path
         if isinstance(mode, int):
             return mode
-        mode_map = self.mav.mode_mapping()
+        mode_map = mav.mode_mapping()
         if mode_map is None:
-            mav_type = self.mav.messages['HEARTBEAT'].type
-            mav_autopilot = self.mav.messages['HEARTBEAT'].autopilot
+            mav_type = mav.messages['HEARTBEAT'].type
+            mav_autopilot = mav.messages['HEARTBEAT'].autopilot
             raise ErrorException("No mode map for (mav_type=%s mav_autopilot=%s)" % (mav_type, mav_autopilot))
         if isinstance(mode, str):
             if mode in mode_map:
                 return mode_map.get(mode)
-        if mode in mode_map.values():
-            return mode
+            if mode in mode_map.values():
+                return mode
         self.progress("No mode (%s); available modes '%s'" % (mode, mode_map))
         raise ErrorException("Unknown mode '%s'" % mode)
 
@@ -8746,10 +8940,17 @@ class TestSuite(abc.ABC):
         '''returns the most-recently received instance of message_type'''
         return self.mav.messages[message_type]
 
-    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
+    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True, mav=None):
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            if not cached:
+                self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
+            return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
+
+        # Multi-MAV path
         if not cached:
-            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
-        return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
+            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly, mav=mav)
+        return mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode, mav=mav)
 
     def wait_mode(self, mode, timeout=60):
         """Wait for mode to change."""
@@ -8775,14 +8976,41 @@ class TestSuite(abc.ABC):
             self.wait_heartbeat(drain_mav=drain_mav)
         return self.mav.messages['HEARTBEAT'].custom_mode
 
-    def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
+    def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30, mav=None):
         self.progress("Waiting for GPS health")
-        tstart = self.get_sim_time()
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            tstart = self.get_sim_time()
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > timeout:
+                    raise AutoTestTimeoutException("GPS status bits did not become good")
+                m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
+                if m is None:
+                    continue
+                if (not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
+                    self.progress("GPS not present")
+                    if now > 20:
+                        # it's had long enough to be detected....
+                        return
+                    continue
+                if (not (m.onboard_control_sensors_enabled & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
+                    self.progress("GPS not enabled")
+                    continue
+                if (not (m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
+                    self.progress("GPS not healthy")
+                    continue
+                self.progress("GPS healthy after %f/%f seconds" %
+                              ((now - tstart), timeout))
+                return
+
+        # Multi-MAV path
+        tstart = self.get_sim_time(mav=mav)
         while True:
-            now = self.get_sim_time_cached()
+            now = self.get_sim_time_cached(mav=mav)
             if now - tstart > timeout:
                 raise AutoTestTimeoutException("GPS status bits did not become good")
-            m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
+            m = mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
             if m is None:
                 continue
             if (not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
@@ -8854,11 +9082,11 @@ class TestSuite(abc.ABC):
     def wait_not_ready_to_arm(self):
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, False)
 
-    def wait_prearm_sys_status_healthy(self, timeout=60):
-        self.do_timesync_roundtrip()
-        tstart = self.get_sim_time()
+    def wait_prearm_sys_status_healthy(self, timeout=60, mav=None):
+        self.do_timesync_roundtrip(mav=mav)
+        tstart = self.get_sim_time(mav=mav)
         while True:
-            t2 = self.get_sim_time_cached()
+            t2 = self.get_sim_time_cached(mav=mav)
             if t2 - tstart > timeout:
                 self.progress("Prearm bit never went true.  Attempting arm to elicit reason from autopilot")
                 try:
@@ -8978,57 +9206,72 @@ class TestSuite(abc.ABC):
             if self.mav.motors_armed():
                 raise NotAchievedException("Armed when we shouldn't have")
 
-    def wait_ready_to_arm(self, timeout=120, require_absolute=True, check_prearm_bit=True):
-        # wait for EKF checks to pass
+    def wait_ready_to_arm(self, timeout=120, require_absolute=True, check_prearm_bit=True, mav=None, target_sysid=None):
         self.progress("Waiting for ready to arm")
-        start = self.get_sim_time()
-        self.wait_ekf_happy(timeout=timeout, require_absolute=require_absolute)
+        start = self.get_sim_time(mav=mav)
+        self.wait_ekf_happy(timeout=timeout, require_absolute=require_absolute, mav=mav)
         if require_absolute:
-            self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
-        if require_absolute:
-            self.poll_home_position()
+            self.wait_gps_sys_status_not_present_or_enabled_and_healthy(mav=mav)
+            self.poll_home_position(mav=mav, target_sysid=target_sysid)
         if check_prearm_bit:
-            self.wait_prearm_sys_status_healthy(timeout=timeout)
-        armable_time = self.get_sim_time() - start
+            self.wait_prearm_sys_status_healthy(timeout=timeout, mav=mav)
+        armable_time = self.get_sim_time(mav=mav) - start
         self.progress("Took %u seconds to become armable" % armable_time)
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, mav=None, mav_sysid=None, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
-Also, ignores heartbeats not from our target system'''
+           Also, ignores heartbeats not from our target system'''
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            if drain_mav:
+                self.drain_mav(quiet=quiet)
+            orig_timeout = x.get("timeout", 20)
+            x["timeout"] = 1
+            tstart = time.time()
+            while True:
+                if time.time() - tstart > orig_timeout and not self.gdb:
+                    if not self.sitl_is_running():
+                        self.progress("SITL is not running")
+                    raise AutoTestTimeoutException("Did not receive heartbeat")
+                m = self.mav.wait_heartbeat(*args, **x)
+                if m is None:
+                    continue
+                if m.get_srcSystem() == self.sysid_thismav():
+                    return m
+        # Multi-MAV path
+        if mav_sysid is None:
+            mav_sysid = mav.target_system
         if drain_mav:
-            self.drain_mav(quiet=quiet)
-        orig_timeout = x.get("timeout", 20)
-        x["timeout"] = 1
+            self.drain_mav(mav=mav, quiet=quiet)
+        timeout = x.get("timeout", 20)
         tstart = time.time()
         while True:
-            if time.time() - tstart > orig_timeout and not self.gdb:
+            if time.time() - tstart > timeout:
                 if not self.sitl_is_running():
                     self.progress("SITL is not running")
-                raise AutoTestTimeoutException("Did not receive heartbeat")
-            m = self.mav.wait_heartbeat(*args, **x)
+                raise AutoTestTimeoutException(
+                    "Did not receive heartbeat from SYSID %u" % mav_sysid)
+            self.drain_all_pexpects()
+            m = mav.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
             if m is None:
                 continue
-            if m.get_srcSystem() == self.sysid_thismav():
+            if m.get_srcSystem() == mav_sysid:
                 return m
 
-    def wait_ekf_happy(self, require_absolute=True, **kwargs):
+    def wait_ekf_happy(self, require_absolute=True, mav=None, **kwargs):
         """Wait for EKF to be happy"""
         if "timeout" not in kwargs:
             kwargs["timeout"] = 45
-
-        """ if using SITL estimates directly """
         if (int(self.get_parameter('AHRS_EKF_TYPE')) == 10):
             return True
 
-        # all of these must be set for arming to happen:
         required_value = (mavutil.mavlink.EKF_ATTITUDE |
                           mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
                           mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
                           mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL |
                           mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL)
-        # none of these bits must be set for arming to happen:
         error_bits = (mavutil.mavlink.ESTIMATOR_CONST_POS_MODE |
                       mavutil.mavlink.ESTIMATOR_ACCEL_ERROR)
         if require_absolute:
@@ -9036,10 +9279,10 @@ Also, ignores heartbeats not from our target system'''
                                mavutil.mavlink.ESTIMATOR_POS_VERT_ABS |
                                mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_ABS)
             error_bits |= mavutil.mavlink.ESTIMATOR_GPS_GLITCH
-        WaitAndMaintainEKFFlags(self, required_value, error_bits, **kwargs).run()
+        WaitAndMaintainEKFFlags(self, required_value, error_bits, mav=mav, **kwargs).run()
 
-    def wait_ekf_flags(self, required_value, error_bits, **kwargs):
-        WaitAndMaintainEKFFlags(self, required_value, error_bits, **kwargs).run()
+    def wait_ekf_flags(self, required_value, error_bits, mav=None, **kwargs):
+        WaitAndMaintainEKFFlags(self, required_value, error_bits, mav=mav, **kwargs).run()
 
     def wait_gps_disable(self, position_horizontal=True, position_vertical=False, timeout=30):
         """Disable GPS and wait for EKF to report the end of assistance from GPS."""
@@ -9798,28 +10041,35 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Ready to start testing!")
 
-    def upload_using_mission_protocol(self, mission_type, items, verbose=True):
+    def upload_using_mission_protocol(self,
+                                      mission_type,
+                                      items,
+                                      verbose=True,
+                                      target_system=1,
+                                      target_component=1,
+                                      mav=None):
         '''mavlink2 required'''
-        target_system = 1
-        target_component = 1
+        if mav is None:
+            mav = self.mav
         self.do_timesync_roundtrip()
         tstart = self.get_sim_time()
-        self.mav.mav.mission_count_send(target_system,
-                                        target_component,
-                                        len(items),
-                                        mission_type)
+        mav.mav.mission_count_send(target_system,
+                                   target_component,
+                                   len(items),
+                                   mission_type)
         remaining_to_send = set(range(0, len(items)))
         sent = set()
         timeout = (10 + len(items)/10.0)
         while True:
+            self.drain_all_pexpects()
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("timeout uploading %s" % str(mission_type))
             if len(remaining_to_send) == 0:
                 self.progress("All sent")
                 break
-            m = self.mav.recv_match(type=['MISSION_REQUEST', 'MISSION_ACK'],
-                                    blocking=True,
-                                    timeout=1)
+            m = mav.recv_match(type=['MISSION_REQUEST', 'MISSION_ACK'],
+                               blocking=True,
+                               timeout=1)
             if m is None:
                 continue
 
@@ -9848,21 +10098,27 @@ Also, ignores heartbeats not from our target system'''
             if items[m.seq].mission_type != mission_type:
                 raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={items[m.seq].mission_type}")  # noqa: E501
             if items[m.seq].target_system != target_system:
-                raise NotAchievedException("supplied item not of correct target system")
+                raise NotAchievedException("supplied item not of correct target system %d got %d" %
+                                           (target_system, items[m.seq].target_system))
             if items[m.seq].target_component != target_component:
-                raise NotAchievedException("supplied item not of correct target component")
+                raise NotAchievedException("supplied item not of correct target component %d got %d" %
+                                           (target_component, items[m.seq].target_component))
             if items[m.seq].seq != m.seq:
                 raise NotAchievedException("supplied item has incorrect sequence number (%u vs %u)" %
                                            (items[m.seq].seq, m.seq))
 
-            items[m.seq].pack(self.mav.mav)
-            self.mav.mav.send(items[m.seq])
+            items[m.seq].pack(mav.mav)
+            mav.mav.send(items[m.seq])
             remaining_to_send.discard(m.seq)
             sent.add(m.seq)
 
             timeout += 10  # we received a good request for item; be generous with our timeouts
 
-        m = self.assert_receive_message('MISSION_ACK')
+        m = self.assert_receive_message(
+            'MISSION_ACK',
+            mav=mav,
+            delay_fn=self.drain_all_pexpects,
+        )
         if m.mission_type != mission_type:
             raise NotAchievedException("Mission ack not of expected mission type")
         if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
@@ -9870,33 +10126,41 @@ Also, ignores heartbeats not from our target system'''
                                        (mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name),)
         self.progress("Upload of all %u items succeeded" % len(items))
 
-    def assert_fetch_mission_item_int(self, target_system, target_component, seq, mission_type):
-        self.mav.mav.mission_request_int_send(target_system,
-                                              target_component,
-                                              seq,
-                                              mission_type)
+    def assert_fetch_mission_item_int(self, target_system, target_component, seq, mission_type, mav=None):
+        if mav is None:
+            mav = self.mav
+        mav.mav.mission_request_int_send(target_system,
+                                         target_component,
+                                         seq,
+                                         mission_type)
         m = self.assert_receive_message(
             'MISSION_ITEM_INT',
             condition=f'MISSION_ITEM_INT.mission_type=={mission_type}',
+            mav=mav
         )
         if m is None:
             raise NotAchievedException("Did not receive MISSION_ITEM_INT")
         return m
 
-    def download_using_mission_protocol(self, mission_type, verbose=False, timeout=10):
+    def download_using_mission_protocol(self,
+                                        mission_type,
+                                        verbose=False,
+                                        timeout=10,
+                                        target_system=1,
+                                        target_component=1,
+                                        mav=None):
         '''mavlink2 required'''
-        target_system = 1
-        target_component = 1
+        if mav is None:
+            mav = self.mav
         self.progress("Sending mission_request_list")
         tstart = self.get_sim_time()
-        self.mav.mav.mission_request_list_send(target_system,
-                                               target_component,
-                                               mission_type)
-
+        mav.mav.mission_request_list_send(target_system,
+                                          target_component,
+                                          mission_type)
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
+            if self.get_sim_time_cached(mav=mav) - tstart > timeout:
                 raise NotAchievedException("Did not get MISSION_COUNT packet")
-            m = self.mav.recv_match(blocking=True, timeout=0.2)
+            m = mav.recv_match(blocking=True, timeout=0.2)
             if m is None:
                 raise NotAchievedException("Did not get MISSION_COUNT response")
             if verbose:
@@ -9909,21 +10173,21 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("Received MISSION_ACK while waiting for MISSION_COUNT")
             if m.get_type() != 'MISSION_COUNT':
                 continue
-            if m.target_component != self.mav.source_system:
+            if m.target_component != mav.source_system:
                 continue
             if m.mission_type != mission_type:
                 raise NotAchievedException("Mission count response of incorrect type")
             break
 
         items = []
-        tstart = self.get_sim_time_cached()
+        tstart = self.get_sim_time_cached(mav=mav)
         remaining_to_receive = set(range(0, m.count))
         next_to_request = 0
         timeout = m.count
         timeout *= self.speedup / 10.0
         timeout += 10
         while True:
-            delta_t = self.get_sim_time_cached() - tstart
+            delta_t = self.get_sim_time_cached(mav) - tstart
             if delta_t > timeout:
                 raise NotAchievedException(
                     "timeout downloading type=%s after %s seconds of %s allowed" %
@@ -9934,11 +10198,11 @@ Also, ignores heartbeats not from our target system'''
                 return items
             self.progress("Requesting item %u (remaining=%u)" %
                           (next_to_request, len(remaining_to_receive)))
-            m = self.assert_fetch_mission_item_int(target_system, target_component, next_to_request, mission_type)
-            if m.target_system != self.mav.source_system:
+            m = self.assert_fetch_mission_item_int(target_system, target_component, next_to_request, mission_type, mav=mav)
+            if m.target_system != mav.source_system:
                 raise NotAchievedException("Wrong target system (want=%u got=%u)" %
-                                           (self.mav.source_system, m.target_system))
-            if m.target_component != self.mav.source_component:
+                                           (mav.source_system, m.target_system))
+            if m.target_component != mav.source_component:
                 raise NotAchievedException("Wrong target component")
             self.progress("Got (%s)" % str(m))
             if m.mission_type != mission_type:
@@ -9958,22 +10222,54 @@ Also, ignores heartbeats not from our target system'''
         mavutil.dump_message_verbose(f, m)
         return f.getvalue()
 
-    def poll_home_position(self, quiet=True, timeout=30):
-        old = self.mav.messages.get("HOME_POSITION", None)
-        tstart = self.get_sim_time()
+    def poll_home_position(self, quiet=True, timeout=30, mav=None, target_sysid=None):
+        if mav is None or mav is self or mav is self.mav:
+            # Original single-MAV path
+            old = self.mav.messages.get("HOME_POSITION", None)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Failed to poll home position")
+                if not quiet:
+                    self.progress("Sending MAV_CMD_GET_HOME_POSITION")
+                try:
+                    self.run_cmd(
+                        mavutil.mavlink.MAV_CMD_GET_HOME_POSITION,
+                        quiet=quiet,
+                    )
+                except ValueError:
+                    continue
+                m = self.mav.messages.get("HOME_POSITION", None)
+                if m is None:
+                    continue
+                if old is None:
+                    break
+                if m._timestamp != old._timestamp:
+                    break
+            self.progress("Polled home position (%s)" % str(m))
+            return m
+
+        # Multi-MAV path
+        old = mav.messages.get("HOME_POSITION", None)
+        tstart = self.get_sim_time(mav=mav)
         while True:
-            if self.get_sim_time_cached() - tstart > timeout:
+            if self.get_sim_time_cached(mav=mav) - tstart > timeout:
                 raise NotAchievedException("Failed to poll home position")
             if not quiet:
                 self.progress("Sending MAV_CMD_GET_HOME_POSITION")
             try:
+                self.drain_mav(mav)
+                if target_sysid is None:
+                    target_sysid = mav.target_system
                 self.run_cmd(
                     mavutil.mavlink.MAV_CMD_GET_HOME_POSITION,
                     quiet=quiet,
+                    mav=mav,
+                    target_sysid=target_sysid,
                 )
             except ValueError:
                 continue
-            m = self.mav.messages.get("HOME_POSITION", None)
+            m = mav.messages.get("HOME_POSITION", None)
             if m is None:
                 continue
             if old is None:
