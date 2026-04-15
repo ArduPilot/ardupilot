@@ -216,14 +216,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         }
 
         // set change segments to last acceleration speed
-        for (uint8_t i = SEG_ACCEL_END+1; i <= SEG_SPEED_CHANGE_END; i++) {
-            segment[i].seg_type = SegmentType::CONSTANT_JERK;
-            segment[i].jerk_ref = 0.0f;
-            segment[i].end_time = segment[SEG_ACCEL_END].end_time;
-            segment[i].end_accel = 0.0f;
-            segment[i].end_vel = segment[SEG_ACCEL_END].end_vel;
-            segment[i].end_pos = segment[SEG_ACCEL_END].end_pos;
-        }
+        fill_empty_segments(SEG_ACCEL_END+1, SEG_SPEED_CHANGE_END, SEG_ACCEL_END);
 
     } else if ((time > segment[SEG_SPEED_CHANGE_END].end_time) && (time <= segment[SEG_CONST].end_time)) {
         // in the constant speed phase
@@ -272,14 +265,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         segment[SEG_ACCEL_END].end_accel = 0.0f;
 
         // add empty speed adjust segments
-        for (uint8_t i = SEG_ACCEL_END+1; i <= SEG_CONST; i++) {
-            segment[i].seg_type = SegmentType::CONSTANT_JERK;
-            segment[i].jerk_ref = 0.0f;
-            segment[i].end_time = segment[SEG_ACCEL_END].end_time;
-            segment[i].end_accel = 0.0f;
-            segment[i].end_vel = segment[SEG_ACCEL_END].end_vel;
-            segment[i].end_pos = segment[SEG_ACCEL_END].end_pos;
-        }
+        fill_empty_segments(SEG_ACCEL_END+1, SEG_CONST, SEG_ACCEL_END);
 
         calculate_path(snap_max, jerk_max, 0.0f, accel_max, MAX(Vmin, vel_max), Pend * 0.5f, Jm, tj, t2, t4, t6);
 
@@ -298,14 +284,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 
     // adjust the speed change segments (8 to 14) for new speed
     // start with empty speed adjust segments
-    for (uint8_t i = SEG_ACCEL_END+1; i <= SEG_SPEED_CHANGE_END; i++) {
-        segment[i].seg_type = SegmentType::CONSTANT_JERK;
-        segment[i].jerk_ref = 0.0f;
-        segment[i].end_time = segment[SEG_ACCEL_END].end_time;
-        segment[i].end_accel = 0.0f;
-        segment[i].end_vel = segment[SEG_ACCEL_END].end_vel;
-        segment[i].end_pos = segment[SEG_ACCEL_END].end_pos;
-    }
+    fill_empty_segments(SEG_ACCEL_END+1, SEG_SPEED_CHANGE_END, SEG_ACCEL_END);
     if (!is_equal(vel_max, segment[SEG_ACCEL_END].end_vel)) {
         // add velocity adjustment
         // check there is enough time to make velocity change
@@ -351,14 +330,7 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
         add_segments_jerk(seg, tj, Jm, t2);
     } else {
         // No deceleration is required
-        for (uint8_t i = SEG_CONST+1; i <= SEG_DECEL_END; i++) {
-            segment[i].seg_type = SegmentType::CONSTANT_JERK;
-            segment[i].jerk_ref = 0.0f;
-            segment[i].end_time = segment[SEG_CONST].end_time;
-            segment[i].end_accel = 0.0f;
-            segment[i].end_vel = segment[SEG_CONST].end_vel;
-            segment[i].end_pos = segment[SEG_CONST].end_pos;
-        }
+        fill_empty_segments(SEG_CONST+1, SEG_DECEL_END, SEG_CONST);
     }
 
     // remove numerical errors
@@ -420,14 +392,7 @@ float SCurve::set_origin_speed_max(float speed)
     }
 
     // add empty speed change segments and constant speed segment
-    for (uint8_t i = SEG_ACCEL_END+1; i <= SEG_SPEED_CHANGE_END; i++) {
-        segment[i].seg_type = SegmentType::CONSTANT_JERK;
-        segment[i].jerk_ref = 0.0f;
-        segment[i].end_time = segment[SEG_ACCEL_END].end_time;
-        segment[i].end_accel = 0.0f;
-        segment[i].end_vel = segment[SEG_ACCEL_END].end_vel;
-        segment[i].end_pos = segment[SEG_ACCEL_END].end_pos;
-    }
+    fill_empty_segments(SEG_ACCEL_END+1, SEG_SPEED_CHANGE_END, SEG_ACCEL_END);
 
     seg = SEG_CONST;
     add_segment_const_jerk(seg, 0.0f, 0.0f);
@@ -840,13 +805,9 @@ void SCurve::add_segments(float L)
     segment[SEG_ACCEL_END].end_accel = 0.0f;
 
     // add empty speed adjust segments
-    add_segment_const_jerk(num_segs, 0.0f, 0.0f);
-    add_segment_const_jerk(num_segs, 0.0f, 0.0f);
-    add_segment_const_jerk(num_segs, 0.0f, 0.0f);
-    add_segment_const_jerk(num_segs, 0.0f, 0.0f);
-    add_segment_const_jerk(num_segs, 0.0f, 0.0f);
-    add_segment_const_jerk(num_segs, 0.0f, 0.0f);
-    add_segment_const_jerk(num_segs, 0.0f, 0.0f);
+    for (uint8_t i = SEG_ACCEL_END + 1; i <= SEG_SPEED_CHANGE_END; i++) {
+        add_segment_const_jerk(num_segs, 0.0f, 0.0f);
+    }
 
     const float t15 = MAX(0.0f, (L - 2.0f * segment[SEG_SPEED_CHANGE_END].end_pos) / segment[SEG_SPEED_CHANGE_END].end_vel);
     add_segment_const_jerk(num_segs, t15, 0.0f);
@@ -1107,6 +1068,19 @@ void SCurve::extend_const_vel_to(float target_pos)
     for (uint8_t i = SEG_CONST; i <= SEG_DECEL_END; i++) {
         segment[i].end_time += t15;
         segment[i].end_pos += dP;
+    }
+}
+
+// fill segment[first..last] with zero-delta constant-jerk segments anchored to segment[src]
+void SCurve::fill_empty_segments(uint8_t first, uint8_t last, uint8_t src)
+{
+    for (uint8_t i = first; i <= last; i++) {
+        segment[i].seg_type = SegmentType::CONSTANT_JERK;
+        segment[i].jerk_ref = 0.0f;
+        segment[i].end_time = segment[src].end_time;
+        segment[i].end_accel = 0.0f;
+        segment[i].end_vel = segment[src].end_vel;
+        segment[i].end_pos = segment[src].end_pos;
     }
 }
 
