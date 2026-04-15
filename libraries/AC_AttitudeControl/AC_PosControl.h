@@ -449,6 +449,9 @@ public:
     // Returns the current terrain altitude (Down-positive, relative to EKF origin, in meters).
     float get_pos_terrain_D_m() const { return _pos_terrain_d_m; }
 
+    // Returns the current terrain correction velocity (Down-positive, m/s).
+    float get_vel_terrain_D_ms() const { return _vel_terrain_d_ms; }
+
 
     /// Offset
 
