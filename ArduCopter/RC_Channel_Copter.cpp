@@ -142,6 +142,7 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::FORCEFLYING:
     case AUX_FUNC::CUSTOM_CONTROLLER:
     case AUX_FUNC::WEATHER_VANE_ENABLE:
+    case AUX_FUNC::WP_YAW_BEHAVIOR_0_2:
 #if AP_RC_TRANSMITTER_TUNING_ENABLED
     case AUX_FUNC::TRANSMITTER_TUNING:
     case AUX_FUNC::TRANSMITTER_TUNING2:
@@ -583,6 +584,20 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             }
             break;
 #endif
+
+        case AUX_FUNC::WP_YAW_BEHAVIOR_0_2:
+            switch (ch_flag) {
+            case AuxSwitchPos::LOW:
+                copter.g.wp_yaw_behavior.set(Copter::WPYawBehavior::NONE);
+                break;
+            case AuxSwitchPos::MIDDLE:
+                // no change
+                break;
+            case AuxSwitchPos::HIGH:
+                copter.g.wp_yaw_behavior.set(Copter::WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL);
+                break;
+            }
+            break;
 
         case AUX_FUNC::FLIGHTMODE_PAUSE:
             switch (ch_flag) {
