@@ -126,6 +126,7 @@ public:
     friend class ModeSurface;
     friend class ModeMotordetect;
     friend class ModeDephold;
+    friend class ModeDamInspection;
 
     Sub(void);
 
@@ -596,6 +597,7 @@ private:
     ModeMotordetect mode_motordetect;
     ModeSurftrak mode_surftrak;
     ModeDephold mode_dephold;
+    ModeDamInspection mode_dam_inspection;
 
     // Auto
     AutoSubMode auto_mode;   // controls which auto controller is run

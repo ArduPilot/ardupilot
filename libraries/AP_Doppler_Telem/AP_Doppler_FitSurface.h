@@ -15,9 +15,13 @@
 #pragma once
 
 #include <AP_Math/AP_Math.h>
-#include "AP_Doppler_Telem.h"
 
-#define AP_DOPPLER_FITSURFACE_DISTANCEERROR 0.05f // 距离误差，单位 m
+class AP_Doppler_Telem;
+
+#define FITSURFACE_DISTANCEERROR 0.05f // 距离误差，单位 m
+#define FITSURFACE_RESIDUALERROR 0.1f // 束偏差，单位 m
+#define BEAM_BETA 0.436f // 方位角，单位 rad
+#define BEAM_GAMMA 0.785f // 与传感器主轴夹角，单位 rad
 
 class AP_Doppler_FitSurface
 {
@@ -27,20 +31,18 @@ public:
         float beta_rad;    // 围绕主轴的方位角
     };
 
-    AP_Doppler_FitSurface(AP_Doppler_Telem& doppler,
-                          const BeamGeometry& beam_a,
-                          const BeamGeometry& beam_b,
-                          const BeamGeometry& beam_c,
-                          const BeamGeometry& beam_d,
-                          float max_residual_m,
-                          enum Rotation sensor_to_body_rot = ROTATION_NONE);
+    AP_Doppler_FitSurface(AP_Doppler_Telem& doppler);
+    ~AP_Doppler_FitSurface() {}
 
     // 读取4束DVL并更新平面拟合结果
     bool update();
 
     // 结果接口
-    const Vector3f& get_plane_normal_body()   const { return _normal_body;   }
-    float get_plane_distance_m() const { return fabs(_plane_d_sensor); }
+    const Vector3f& get_normal_body()   const { return _normal_body;   }
+    float get_distance_m() const { return fabs(_plane_d_sensor); }
+
+    //方向改变接口
+    void set_sensor_to_body_rot(enum Rotation rot) { _sensor_to_body_rot = rot; }
 
 private:
     struct BeamSample {

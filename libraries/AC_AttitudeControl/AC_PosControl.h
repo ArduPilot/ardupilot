@@ -186,10 +186,14 @@ public:
     ///     This function decays the output acceleration by 95% every half second to achieve a smooth transition to zero requested acceleration.
     void relax_z_controller(float throttle_setting);
 
+    void relax_zz_controller(double zz_target_m);
+
     // init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
     ///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
     ///     This function is private and contains all the shared z axis initialisation functions
     void init_z_controller();
+
+    void init_zz_controller(double zz_target_cm);
 
     /// input_accel_z - calculate a jerk limited path from the current position, velocity and acceleration to an input acceleration.
     ///     The function takes the current position, velocity, and acceleration and calculates the required jerk limited adjustment to the acceleration for the next time dt.
@@ -234,6 +238,7 @@ public:
     ///     Desired velocity and accelerations are added to these corrections as they are calculated
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_z_controller();
+    void update_zz_controller(float z_distance_m, float z_vel_mps);
 
 
 

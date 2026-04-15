@@ -1,4 +1,5 @@
 #include "AP_Doppler_FitSurface.h"
+#include "AP_Doppler_Telem.h"
 
 #include <cmath>
 
@@ -32,21 +33,16 @@ void AP_Doppler_FitSurface::BeamSample::update_from_distance(float distance_m_in
     vec_sensor.z = distance_m * sin_gamma * sin_beta;
 }
 
-AP_Doppler_FitSurface::AP_Doppler_FitSurface(AP_Doppler_Telem& doppler,
-                                             const BeamGeometry& beam_a,
-                                             const BeamGeometry& beam_b,
-                                             const BeamGeometry& beam_c,
-                                             const BeamGeometry& beam_d,
-                                             float max_residual_m,
-                                             enum Rotation sensor_to_body_rot) :
-    _doppler(doppler),
-    _sensor_to_body_rot(sensor_to_body_rot),
-    _max_residual_m(max_residual_m)
+AP_Doppler_FitSurface::AP_Doppler_FitSurface(AP_Doppler_Telem& doppler) :
+    _doppler(doppler)
 {
-    _beam_a.init(beam_a.gamma_rad, beam_a.beta_rad);
-    _beam_b.init(beam_b.gamma_rad, beam_b.beta_rad);
-    _beam_c.init(beam_c.gamma_rad, beam_c.beta_rad);
-    _beam_d.init(beam_d.gamma_rad, beam_d.beta_rad);
+     _sensor_to_body_rot = ROTATION_NONE;
+     _max_residual_m = FITSURFACE_RESIDUALERROR;
+
+    _beam_a.init(BEAM_GAMMA, -BEAM_BETA);
+    _beam_b.init(BEAM_GAMMA, BEAM_BETA + M_PI);
+    _beam_c.init(BEAM_GAMMA, BEAM_BETA + M_PI_2);
+    _beam_d.init(BEAM_GAMMA, BEAM_BETA);
 
     reset_solution();
 }
@@ -152,7 +148,7 @@ bool AP_Doppler_FitSurface::fit_plane_3points(const Vector3f* pts, uint8_t count
     _plane_d_sensor = -(_normal_sensor * pts[0]);
     float d_error = fabs(_plane_d_sensor - _plane_d_last_sensor);
     _plane_d_last_sensor = _plane_d_sensor;
-    if (d_error > AP_DOPPLER_FITSURFACE_DISTANCEERROR) {
+    if (d_error > FITSURFACE_DISTANCEERROR) {
         return false;
     }
 
@@ -199,7 +195,7 @@ bool AP_Doppler_FitSurface::fit_plane_4points_ls(const Vector3f* pts)
     _plane_d_sensor = -(_normal_sensor * centroid);
     float d_error = fabs(_plane_d_sensor - _plane_d_last_sensor);
     _plane_d_last_sensor = _plane_d_sensor;
-    if (d_error > AP_DOPPLER_FITSURFACE_DISTANCEERROR) {
+    if (d_error > FITSURFACE_DISTANCEERROR) {
         return false;
     }
 

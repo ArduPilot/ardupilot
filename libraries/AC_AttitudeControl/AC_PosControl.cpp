@@ -773,6 +773,13 @@ void AC_PosControl::relax_z_controller(float throttle_setting)
     _pid_accel_z.relax_integrator((throttle_setting - _motors.get_throttle_hover()) * 1000.0f, _dt, POSCONTROL_RELAX_TC);
 }
 
+// relax_zz_controller - initialise the position controller to the current position and velocity with decaying acceleration.
+void AC_PosControl::relax_zz_controller(double zz_target_m)
+{
+    // Initialise the position controller to the current position, velocity and acceleration.
+    init_zz_controller(zz_target_m);
+}
+
 /// init_z_controller - initialise the position controller to the current position, velocity, acceleration and attitude.
 ///     This function is the default initialisation for any position control that provides position, velocity and acceleration.
 ///     This function is private and contains all the shared z axis initialisation functions
@@ -809,6 +816,27 @@ void AC_PosControl::init_z_controller()
 
     // initialise ekf z reset handler
     init_ekf_z_reset();
+
+    // initialise z_controller time out
+    _last_update_z_ticks = AP::scheduler().ticks32();
+}
+
+void AC_PosControl::init_zz_controller(double zz_target_m)
+{
+    _pos_target.z = zz_target_m;
+
+    _vel_desired.z = 0.0f;
+    // with zero position error _vel_target = _vel_desired
+    _vel_target.z = 0.0f;
+
+    // Reset I term of velocity PID
+    _pid_vel_z.reset_filter();
+    _pid_vel_z.set_integrator(0.0f);
+
+    // initialise vertical offsets
+    _pos_offset_target_z = 0.0;
+    _pos_offset_z = 0.0;
+    _vel_offset_z = 0.0;
 
     // initialise z_controller time out
     _last_update_z_ticks = AP::scheduler().ticks32();
@@ -1019,6 +1047,70 @@ void AC_PosControl::update_z_controller()
     }
 }
 
+/// update_zz_controller - runs the vertical position controller correcting position, velocity and acceleration errors.
+///     Position and velocity errors are converted to velocity and acceleration targets using PID objects
+///     Desired velocity and accelerations are added to these corrections as they are calculated
+///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
+void AC_PosControl::update_zz_controller(float z_distance_m, float z_vel_mps)
+{
+    // Check for z_controller time out
+    if (!is_active_z()) {
+        init_z_controller();
+        if (has_good_timing()) {
+            // call internal error because initialisation has not been done
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
+    }
+    _last_update_z_ticks = AP::scheduler().ticks32();
+
+    // calculate the target velocity correction
+    float pos_target_zf = _pos_target.z;
+
+    _vel_target.z = _p_pos_z.update_all(pos_target_zf, z_distance_m);
+
+    // add feed forward component
+    _vel_target.z += _vel_desired.z;
+
+    // Velocity Controller
+
+    const float curr_vel_z = z_vel_mps;
+    if (curr_vel_z == 0.0f) { return; }
+
+    // ensure imax is always large enough to overpower hover throttle
+    if (_motors.get_throttle_hover() * 1000.0f > _pid_vel_z.imax()) {
+        _pid_vel_z.imax(_motors.get_throttle_hover() * 1000.0f);
+    }
+
+    float thr_out;
+    if (_vibe_comp_enabled) {
+        thr_out = get_throttle_with_vibration_override();
+    } else {
+        thr_out = _pid_vel_z.update_all(_vel_target.z, curr_vel_z, _dt, _motors.limit.throttle_lower, _motors.limit.throttle_upper) * 0.001f;
+        thr_out += _pid_vel_z.get_ff() * 0.001f;
+    }
+    thr_out += _motors.get_throttle_hover();
+
+    // Actuator commands
+
+    // send throttle to attitude controller with angle boost
+    _attitude_control.set_throttle_out(thr_out, true, POSCONTROL_THROTTLE_CUTOFF_FREQ_HZ);
+
+    // Check for vertical controller health
+
+    // _speed_down_cms is checked to be non-zero when set
+    float error_ratio = _pid_vel_z.get_error() / _vel_max_down_cms;
+    _vel_z_control_ratio += _dt * 0.1f * (0.5 - error_ratio);
+    _vel_z_control_ratio = constrain_float(_vel_z_control_ratio, 0.0f, 2.0f);
+
+    // set vertical component of the limit vector
+    if (_motors.limit.throttle_upper) {
+        _limit_vector.z = 1.0f;
+    } else if (_motors.limit.throttle_lower) {
+        _limit_vector.z = -1.0f;
+    } else {
+        _limit_vector.z = 0.0f;
+    }
+}
 
 ///
 /// Accessors

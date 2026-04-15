@@ -17,6 +17,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/GCS.h>
 #include "AP_Doppler_Backend.h"
+#include "AP_Doppler_FitSurface.h"
 
 class AP_Doppler_Parameters;
 
@@ -48,6 +49,12 @@ public:
         return singleton;
     }
 
+    Vector3f get_normal_body()   const { if(!fit_health) return Vector3f(0,0,0); return _fitsurface->get_normal_body(); }
+    float get_distance_m() const { if(!fit_health) return 0; return _fitsurface->get_distance_m(); }
+    float get_z_vel_mps() const { Vector3f vel_mps {}; uint32_t t; float q; DVL_LockState l ; get_velocity_body(vel_mps, t, q, l); return vel_mps.z; }
+
+    void set_sensor_to_body_rot(enum Rotation rot) { _fitsurface->set_sensor_to_body_rot(rot); }
+
 protected:
     
 
@@ -57,6 +64,7 @@ private:
     AP_Doppler_Parameters *_doppler_parameters;
     AP_HAL::UARTDriver *port;
     AP_Doppler_Backend *_backend;
+    AP_Doppler_FitSurface *_fitsurface;
     mutable HAL_Semaphore _sim_sem;
     uint32_t _sim_last_update_ms = 0;
     DVL_BI_Msg _sim_bi_msg {};
@@ -67,6 +75,7 @@ private:
     DVL_U_Msg _sim_uc_msg {};
     DVL_U_Msg _sim_ud_msg {};
     static AP_Doppler_Telem *singleton;
+    bool fit_health = false;
 
 };
 

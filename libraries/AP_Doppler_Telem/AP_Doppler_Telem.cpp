@@ -23,6 +23,7 @@ AP_Doppler_Telem::AP_Doppler_Telem()
     singleton = this;
     _backend = nullptr;
     port = nullptr;
+    _fitsurface = new AP_Doppler_FitSurface(*this);
     _doppler_parameters = &AP::vehicle()->doppler_parameters;
 }
 
@@ -30,7 +31,16 @@ AP_Doppler_Telem::AP_Doppler_Telem()
 AP_Doppler_Telem::~AP_Doppler_Telem(void)
 {
     singleton = nullptr;
+    if (_backend!= nullptr) {
+        delete _backend;
+        _backend = nullptr;
+    }
+    delete _fitsurface;
+    _fitsurface = nullptr;
 }
+
+
+
 
 /*
  * init - perform required initialisation
@@ -63,7 +73,8 @@ bool AP_Doppler_Telem::init(const AP_SerialManager &serial_manager)
         _backend = nullptr;
         return false;
     }
-
+    
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "OK");
     return true;
 }
 
@@ -78,6 +89,8 @@ void AP_Doppler_Telem::update()
     if (_backend == nullptr) {
         return;
     }
+
+    fit_health = _fitsurface->update();
 }
 
 

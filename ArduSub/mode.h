@@ -51,7 +51,8 @@ public:
         MANUAL =       19,  // Pass-through input with no stabilization
         MOTOR_DETECT = 20,  // Automatically detect motors orientation
         SURFTRAK =     21,  // Track distance above seafloor (hold range)
-        DEPTH_HOLD =   22   // Hold current depth with manual horizontal control
+        DEPTH_HOLD =   22,   // Hold current depth with manual horizontal control
+        DAM_INSPECTION = 23  // Dam inspection mode
     };
 
     // constructor
@@ -296,6 +297,39 @@ protected:
     
     const char *name() const override { return "DEPTH_HOLD"; }
     const char *name4() const override { return "DEPH"; }
+};
+
+class ModeDamInspection : public Mode
+{
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+
+    virtual void run() override;
+
+    bool init(bool ignore_checks) override;
+    bool requires_GPS() const override { return false; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return true; }
+    bool is_autopilot() const override { return false; }
+    void control_depth();
+
+protected:
+
+    void run_pre();
+    void run_post();
+
+    const char *name() const override { return "DAM_INSPECTION"; }
+    const char *name4() const override { return "DAMI"; }
+
+private:
+    float last_roll;
+    float last_pitch;
+    float zz_desired_m;
+
+    bool get_desired_euler_angles_pitch_roll(float& roll_d, float& pitch_d);
+    void add_ROV_attitude_to_degrees(float& roll, float& pitch, float& yaw);
 };
 
 class ModeSurftrak : public ModeAlthold

@@ -389,6 +389,8 @@ public:
     AP_Float backup_origin_alt;
 
     AP_Float rov_depth_cm;
+
+    AP_Float zz_desired_m;
 };
 
 extern const AP_Param::Info        var_info[];

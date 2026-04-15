@@ -369,6 +369,7 @@ void AP_Doppler_Backend::parse_epd6_bi(const char *payload)
     bi_msg.vy_mps = y_velocity_mm_s * 0.001f;
     bi_msg.vz_mps = z_velocity_mm_s * 0.001f;
     bi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
+
 }
 
 void AP_Doppler_Backend::parse_epd6_bs(const char *payload)

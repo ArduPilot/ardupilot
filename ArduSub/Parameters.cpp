@@ -749,6 +749,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     AP_GROUPINFO("ROV_DEPTH_CM", 22, ParametersG2, rov_depth_cm, 10),
 
+    AP_GROUPINFO("ZZ_DESIRED_M", 23, ParametersG2, zz_desired_m, 1),
+
     AP_GROUPEND
 };
 

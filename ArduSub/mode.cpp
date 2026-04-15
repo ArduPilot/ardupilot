@@ -62,6 +62,9 @@ Mode *Sub::mode_from_mode_num(const Mode::Number mode)
     case Mode::Number::DEPTH_HOLD:
         ret = &mode_dephold;
         break;
+    case Mode::Number::DAM_INSPECTION:
+        ret = &mode_dam_inspection;
+        break;
     default:
         break;
     }
