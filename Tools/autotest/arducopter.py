@@ -11037,7 +11037,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("GSF reset failed, vehicle flew too far (%f > %f)" % (dist_m, dist_m_max))
 
     def EKFBootstrapReset(self):
-        '''test EKF bootstrap reset via aux switch'''
+        '''test EKF bootstrap reset via aux switch preserves origin and position hold'''
         self.set_parameters({
             "RC8_OPTION": 187,  # EKF_RESET
             "FS_EKF_THRESH": 0,  # disable EKF failsafe
@@ -11048,6 +11048,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.user_takeoff(alt_min=10)
+
+        # let the vehicle settle in GUIDED hover before capturing reference
+        self.delay_sim_time(3)
+        pre_reset_loc = self.mav.location()
 
         # collect STATUSTEXT after takeoff so boot messages aren't matched
         self.context_push()
@@ -11061,8 +11065,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.context_pop()
 
-        # verify vehicle is still stable - hover for a few seconds
-        self.delay_sim_time(5)
+        # hover for several seconds so any origin shift would translate
+        # into a position controller correction and the vehicle would
+        # fly away from the takeoff point
+        self.delay_sim_time(10)
 
         # check altitude didn't diverge wildly (should stay within ~5m of 10m)
         gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
@@ -11072,6 +11078,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(alt_m - 10.0) > 5.0:
             raise NotAchievedException(
                 "Altitude diverged after EKF reset: %.1f (expected ~10m)" % alt_m
+            )
+
+        # check vehicle is still near the pre-reset position - if the
+        # EKF origin shifted, the GUIDED position controller would have
+        # commanded a correction and the vehicle would have drifted
+        post_reset_loc = self.mav.location()
+        drift_m = self.get_distance(pre_reset_loc, post_reset_loc)
+        self.progress("Horizontal drift after EKF reset: %.2fm" % drift_m)
+        max_drift_m = 5.0
+        if drift_m > max_drift_m:
+            raise NotAchievedException(
+                "Vehicle drifted %.1fm after EKF reset (max %.1fm) - origin may not be preserved"
+                % (drift_m, max_drift_m)
             )
 
         self.do_RTL()
