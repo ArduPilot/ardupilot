@@ -400,21 +400,27 @@ bool NavEKF3_core::resetHeightDatum(void)
     // transient.
     baroHgtOffset = 0.0f;
 
-    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
+    // shift the WGS-84 reference height so that getLLH() reports the
+    // same AMSL before and after the reset.  EKF_origin.alt itself is
+    // left unchanged -- it is the NED reference frame anchor and must
+    // be immutable once set, otherwise a user-configured origin (set
+    // via AHRS_ORIGIN parameters or MAV_CMD_DO_SET_GLOBAL_ORIGIN) gets
+    // corrupted.
     if (validOrigin) {
         if (!gpsGoodToAlign) {
-            // if we don't have GPS lock then we shouldn't be doing a
-            // resetHeightDatum, but if we do then the best option is
-            // to maintain the old error
-            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
+            // without GPS (e.g. indoor / GPS-denied flight), preserve
+            // the pre-reset height estimate by carrying it into
+            // ekfGpsRefHgt.  Any baro drift that had accumulated in
+            // position.z is absorbed into the reference height; we
+            // have no independent truth source to correct it against.
+            ekfGpsRefHgt += (double)oldHgt;
         } else {
             // if we have a good GPS lock then reset to the GPS
             // altitude. This ensures the reported AMSL alt from
             // getLLH() is equal to GPS altitude, while also ensuring
             // that the relative alt is zero
-            EKF_origin.copy_alt_from(dal.gps().location());
+            ekfGpsRefHgt = (double)0.01 * (double)dal.gps().location().alt;
         }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
 
     // set the terrain state to zero (on ground). The adjustment for
