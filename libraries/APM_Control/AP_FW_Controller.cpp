@@ -39,8 +39,8 @@ bool AP_FW_Controller::apply_input_shaping() const
         return false;
     }
 
-    // Accel and jerk limit must be set
-    if (!is_positive(accel_limit.get()) || !is_positive(jerk_limit.get())) {
+    // Accel limit and time constant must be set
+    if (!is_positive(accel_limit.get()) || !is_positive(aparm.input_tc.get())) {
         return false;
     }
 
@@ -81,13 +81,17 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     // Apply input shaping to desired angle
     const float dt = AP::scheduler().get_loop_period_s();
 
+    const float accel_max = accel_limit.get();
+    const float tc = MAX(aparm.input_tc.get(), 0.1);
+    const float jerk_limit = accel_max / tc;
+
     // Apply input shaping updating the accel target
     shape_pos_vel_accel(
         desired_angle_deg, get_ff_rate_target(), 0.0,          // desired pos, vel and accel
         angle_target_deg, rate_target_deg, accel_target_deg,   // current shaped target
         -get_negative_rate_limit(), get_positive_rate_limit(), // velocity limits
-        -accel_limit.get(), accel_limit.get(), // accel limits
-        jerk_limit.get(), // jerk limit
+        -accel_max, accel_max, // accel limits
+        jerk_limit, // jerk limit
         dt, true
     );
 
