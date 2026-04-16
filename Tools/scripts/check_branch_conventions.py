@@ -373,33 +373,55 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         return ok
 
     def check_markdown_rst_hyperlinks(self) -> bool:
-        '''flag RST-style external hyperlinks (`text <url>`_ or `__) in changed markdown files'''
+        '''flag RST-style markup in changed markdown files:
+           - external hyperlinks: `text <url>`_ or `__
+           - cross-references:    :ref:`...`, :doc:`...`, etc.
+        '''
         changed_md = self.run_git(
             ["diff", "--name-only", "--diff-filter=AM",
              f"{self.base_branch}...HEAD", "--", "*.md"],
             show_output=False,
         ).strip()
         if not changed_md:
-            print(f"{PASS} No markdown files changed (RST hyperlink check).")
+            print(f"{PASS} No markdown files changed (RST markup check).")
             return True
 
+        files = changed_md.splitlines()
+        ok = True
+
+        # RST external hyperlinks: `text <url>`_ or `__
         result = subprocess.run(
-            ["git", "grep", "-n", r"`[^`]*<[^>]*>`__\?", "--"] + changed_md.splitlines(),
+            ["git", "grep", "-n", r"`[^`]*<[^>]*>`__\?", "--"] + files,
             capture_output=True, text=True,
         )
-        # git grep exits 1 for no matches, 0 for matches, >1 for errors
         if result.returncode > 1:
             print(f"{SKIP} git grep failed: {result.stderr.strip()}")
             return True
-        if not result.stdout.strip():
-            print(f"{PASS} No RST-style hyperlinks in changed markdown files.")
-            return True
+        if result.stdout.strip():
+            print(f"{FAIL} RST-style hyperlinks found in markdown file(s):")
+            for line in result.stdout.splitlines():
+                print(f"         {line}")
+            print("       Use markdown link syntax [text](url) instead.")
+            ok = False
 
-        print(f"{FAIL} RST-style hyperlinks found in markdown file(s):")
-        for line in result.stdout.splitlines():
-            print(f"         {line}")
-        print("       Use markdown link syntax [text](url) instead.")
-        return False
+        # RST cross-references: :ref:, :doc:, :class:, etc.
+        result = subprocess.run(
+            ["git", "grep", "-n", r":[a-z]\+:`", "--"] + files,
+            capture_output=True, text=True,
+        )
+        if result.returncode > 1:
+            print(f"{SKIP} git grep failed: {result.stderr.strip()}")
+            return True
+        if result.stdout.strip():
+            print(f"{FAIL} RST cross-references found in markdown file(s):")
+            for line in result.stdout.splitlines():
+                print(f"         {line}")
+            print("       Use markdown link syntax [text](url) instead.")
+            ok = False
+
+        if ok:
+            print(f"{PASS} No RST-style markup in changed markdown files.")
+        return ok
 
     def check_markdown_rst_underlines(self) -> bool:
         '''flag setext/RST underline-style headings in changed markdown files'''
