@@ -72,8 +72,8 @@ to use DShot. PWM 1-4 support bidirectional dshot.
 
 > **Note:** for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
-- :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
-- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
+- [FRAME_CLASS](https://ardupilot.org/copter/docs/parameters.html#frame-class-frame-class) = 1 (Quad)
+- [FRAME_TYPE](https://ardupilot.org/copter/docs/parameters.html#frame-type-frame-type-x-v-etc) = 12 (BetaFlightX)
 
 ## Battery Monitoring
 

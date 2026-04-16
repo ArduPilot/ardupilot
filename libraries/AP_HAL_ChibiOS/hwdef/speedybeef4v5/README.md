@@ -44,7 +44,7 @@ FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART
 
 ## OSD Support
 
-The SpeedyBee F405 v5 supports OSD using :ref:`OSD_TYPE<OSD_TYPE>` = 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation is also pre-configured via UART3. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
+The SpeedyBee F405 v5 supports OSD using [OSD_TYPE](https://ardupilot.org/copter/docs/parameters.html#osd-type-osd-type) = 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation is also pre-configured via UART3. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## VTX Support
 
