@@ -421,7 +421,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test WP Arc functionality'''
         _ = self.load_and_start_mission("ArcWPMissionTest.txt")
 
-        self.wait_waypoint(0, 15, max_dist=10, timeout=400)
+        self.wait_waypoint(0, 15, max_dist_to_final_wp_m=10, timeout=400)
         self.progress("Check that vehicle flys an arc between WP 15 and 16")
         # A crude check, if the arc waypoint doesn't work then the copter will fly directly south between wp 15 and 16
         # If the arc waypoint works then we expect the copter to arc 180 deg in a CW direction meaning it will travel east
@@ -15135,12 +15135,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(1, 1200)
         self.delay_sim_time(1)  # build up some pilot desired stuff
         self.change_mode('AUTO')
-        self.wait_waypoint(2, 2, max_dist=3)
+        self.wait_waypoint(2, 2, max_dist_to_final_wp_m=3)
         self.set_parameters({
             'SIM_RC_FAIL': 1,
         })
 #        self.set_rc(1, 1500)  # note we are still in RC fail!
-        self.wait_waypoint(3, 3, max_dist=3)
+        self.wait_waypoint(3, 3, max_dist_to_final_wp_m=3)
         self.assert_mode_is('AUTO')
         self.change_mode('LOITER')
         self.wait_groundspeed(0, 0.1, minimum_duration=30, timeout=450)

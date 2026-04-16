@@ -386,7 +386,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, wp_count-1, max_dist=5, ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
+        self.wait_waypoint(1, wp_count-1, max_dist_to_final_wp_m=5, ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
         self.wait_statustext("Mission Complete", timeout=600)
         self.disarm_vehicle()
         self.progress("Mission OK")

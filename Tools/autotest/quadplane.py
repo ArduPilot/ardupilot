@@ -714,7 +714,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_waypoint(1, 7, max_dist=60, timeout=1200)
+        self.wait_waypoint(1, 7, max_dist_to_final_wp_m=60, timeout=1200)
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
 
         # prevent update parameters from messing with the settings when we pop the context
@@ -1535,14 +1535,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
+        self.wait_waypoint(1, 19, max_dist_to_final_wp_m=60, timeout=1200)
 
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         # wait for blood sample here
         self.set_current_waypoint(20)
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
+        self.wait_waypoint(20, 34, max_dist_to_final_wp_m=60, timeout=1200)
 
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.progress("Mission OK")
@@ -2993,7 +2993,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.wait_text("TerrAvoid: close to home", check_context=True)
-        self.wait_waypoint(2, 4, max_dist=100)
+        self.wait_waypoint(2, 4, max_dist_to_final_wp_m=100)
         self.wait_text("TerrAvoid: away from home", check_context=True, regex=True)
         self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
         self.progress("CMTC alt #1 is %f" % self.get_altitude(relative=False, timeout=2))

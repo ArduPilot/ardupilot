@@ -654,7 +654,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.change_mode('AUTO')
 
-        self.wait_waypoint(1, 5, max_dist=5)
+        self.wait_waypoint(1, 5, max_dist_to_final_wp_m=5)
 
         self.disarm_vehicle()
 
@@ -666,11 +666,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, 2, max_dist=5)
+        self.wait_waypoint(1, 2, max_dist_to_final_wp_m=5)
         self.wait_statustext("Gripper Grabbed", timeout=60)
-        self.wait_waypoint(1, 4, max_dist=5)
+        self.wait_waypoint(1, 4, max_dist_to_final_wp_m=5)
         self.wait_statustext("Gripper Released", timeout=60)
-        self.wait_waypoint(1, 6, max_dist=5)
+        self.wait_waypoint(1, 6, max_dist_to_final_wp_m=5)
         self.disarm_vehicle()
 
     def SET_POSITION_TARGET_GLOBAL_INT(self):
@@ -924,7 +924,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc_default()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, 4, max_dist=5)
+        self.wait_waypoint(1, 4, max_dist_to_final_wp_m=5)
         self.delay_sim_time(3)
 
         # Expect sub to hover at final altitude
