@@ -769,6 +769,72 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed(timeout=600)
         self.context_pop()
 
+    # test circle speed - should be constant degrees/second:
+    def CircleSpeed(self):
+        '''test the consistent-ground-speed-circling works'''
+        self.takeoff(10, mode='LOITER')
+        self.hover()  # circle mode uses throttle input
+        self.change_mode('CIRCLE')
+        tests = [
+            (10, 20),
+            (20, 10),
+        ]
+        for (radius_m, rate_degs) in tests:
+            self.set_parameters({
+                "CIRCLE_RADIUS_M": radius_m,
+                "CIRCLE_RATE": rate_degs,
+            })
+            self.change_mode('LOITER')
+            self.change_mode('CIRCLE')
+            expected_groundspeed = math.pi * 2 * radius_m * (rate_degs/360)
+            self.wait_groundspeed(
+                expected_groundspeed-0.1,
+                expected_groundspeed+0.1,
+                minimum_duration=10,
+            )
+        self.do_RTL()
+
+    # test copter-circle-speed lua script:
+    def LuaCopterCircleSpeed(self):
+        '''test the consistent-ground-speed-circling works'''
+        self.install_example_script_context('copter-circle-speed.lua')
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "WP_ACC": 5,
+        })
+        self.reboot_sitl()
+
+        expected_groundspeed = 3
+        self.set_parameter("CSPD_SPEED", expected_groundspeed)
+        radius_m = self.get_parameter('CIRCLE_RADIUS_M')
+        circle_point = self.offset_location_heading_distance(
+            self.mav.location(),
+            270,  # see SITL_START_LOCATION, FIXME!
+            radius_m
+        )
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        self.takeoff(10, mode='LOITER')
+        self.hover()  # circle mode uses throttle input
+        self.change_mode('CIRCLE')
+
+        self.wait_groundspeed(
+            expected_groundspeed-0.2,
+            expected_groundspeed+0.2,
+            minimum_duration=10,
+        )
+        self.set_rc(2, 1550)  # pilot increases radius
+        self.wait_distance_to_location(circle_point, radius_m*2-1, radius_m*2+1)
+        self.set_rc(2, 1500)
+        self.wait_groundspeed(
+            expected_groundspeed-0.2,
+            expected_groundspeed+0.2,
+            minimum_duration=10,
+        )
+        self.do_RTL()
+
     # enter RTL mode and wait for the vehicle to disarm
     def do_RTL(self, distance_min=None, check_alt=True, distance_max=10, timeout=250, quiet=False):
         """Enter RTL mode and wait for the vehicle to disarm at Home."""
@@ -16568,6 +16634,8 @@ return update, 1000
             self.ScriptCopterPosOffsets,
             self.MountSolo,
             self.MountSiyiZT30,
+            self.CircleSpeed,
+            self.LuaCopterCircleSpeed,
             self.MountTopotek,
             self.MountViewPro,
             self.MountAVTCM62,
