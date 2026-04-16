@@ -373,7 +373,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         return ok
 
     def check_markdown_rst_hyperlinks(self) -> bool:
-        '''flag RST-style external hyperlinks (`text <url>`__) in changed markdown files'''
+        '''flag RST-style external hyperlinks (`text <url>`_ or `__) in changed markdown files'''
         changed_md = self.run_git(
             ["diff", "--name-only", "--diff-filter=AM",
              f"{self.base_branch}...HEAD", "--", "*.md"],
@@ -384,7 +384,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             return True
 
         result = subprocess.run(
-            ["git", "grep", "-n", r"`[^`]*`__", "--"] + changed_md.splitlines(),
+            ["git", "grep", "-n", r"`[^`]*<[^>]*>`__\?", "--"] + changed_md.splitlines(),
             capture_output=True, text=True,
         )
         # git grep exits 1 for no matches, 0 for matches, >1 for errors
