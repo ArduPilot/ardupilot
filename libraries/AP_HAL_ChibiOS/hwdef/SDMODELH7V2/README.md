@@ -36,7 +36,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 RC input is configured on the R6 (UART6_RX) pin. It supports all single wire unidirectional RC
 protocols. For protocols requiring half-duplex  or full duplex serial for operation
 select another UART with DMA and set its protocol to "23". To use this UART for other uses, set
-:ref:`BRD_ALT_CONFIG<BRD_ALT_CONFIG>` to "1"
+[BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) to "1"
 
 ## FrSky Telemetry
 
@@ -78,8 +78,8 @@ to use DShot.
 
 > **Note:** for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
-- :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
-- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
+- [FRAME_CLASS](https://ardupilot.org/copter/docs/parameters.html#frame-class-frame-class) = 1 (Quad)
+- [FRAME_TYPE](https://ardupilot.org/copter/docs/parameters.html#frame-type-frame-type-x-v-etc) = 12 (BetaFlightX)
 
 ## Battery Monitoring
 

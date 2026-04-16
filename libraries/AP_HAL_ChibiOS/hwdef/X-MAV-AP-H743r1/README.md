@@ -41,7 +41,7 @@ The SBUS-in pin supports all unidirectional RC protocols. For bi-directional RC 
 
 - Set SERIAL4_PROTOCOL to "23"
 - PPM is not supported.
-- FPort requires connection to TX4 and RX4 via a bi-directional inverter. See :ref:common-FPort-receivers.
+- FPort requires connection to TX4 and RX4 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html)
 - CRSF/ELRS also requires a TX4 connection, in addition to RX4, and automatically provides telemetry.
 - SRXL2 requires a connection to TX4 and automatically provides telemetry. Set SERIAL4_OPTIONS to "4".
 

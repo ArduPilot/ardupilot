@@ -40,11 +40,11 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART2 RX input. It supports all serial RC protocols except PPM.
 
-- FPort requires an external bi-directional inverter attached to T5 and :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` set to 4 (half-duplex).  See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
+- FPort requires an external bi-directional inverter attached to T5 and [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) set to 4 (half-duplex).  See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF/ELRS uses RX2/TX2.
-- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to "4".
+- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) to "4".
 
-If the user wishes to use the SBUS from a DJI air unit for RC control, it is suggested that the RX8 padd be used as shown in the wiring diagram and :ref:`SERIAL8_PROTOCOL <SERIAL8_PROTOCOL>` be set to "23" and :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>` be changed from "23" to something else.
+If the user wishes to use the SBUS from a DJI air unit for RC control, it is suggested that the RX8 padd be used as shown in the wiring diagram and [SERIAL8_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial8-protocol-serial8-protocol-selection) be set to "23" and [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) be changed from "23" to something else.
 
 ## PWM Output
 

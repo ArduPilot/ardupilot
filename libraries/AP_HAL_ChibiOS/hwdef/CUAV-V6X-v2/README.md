@@ -74,7 +74,7 @@ The 8 auxiliary PWM outputs are in 3 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
-All PWM outputs of CUAV-V6X-v2 flight controller support switching between 3.3V voltage and 5V voltage output. It can be switched to 5V by setting GPIO 81 high by setting up a Voltage-Level Translator to control it (set the :ref:`BRD_PWM_VOLT_SEL<BRD_PWM_VOLT_SEL>` parameter in ArduPilot).
+All PWM outputs of CUAV-V6X-v2 flight controller support switching between 3.3V voltage and 5V voltage output. It can be switched to 5V by setting GPIO 81 high by setting up a Voltage-Level Translator to control it (set the [BRD_PWM_VOLT_SEL](https://ardupilot.org/copter/docs/parameters.html#brd-pwm-volt-sel-set-pwm-out-voltage) parameter in ArduPilot).
 
 ## Battery Monitoring
 
@@ -117,7 +117,7 @@ The CUAV-V6X-v2 has 3 analog inputs
 
 - ADC Pin13 -> ADC 3.3V Sense
 - ADC Pin12 -> ADC 6.6V Sense
-- ADC Pin103 -> RSSI voltage monitoring. Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 103 to analog RSSI input.
+- ADC Pin103 -> RSSI voltage monitoring. Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 1 and [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 103 to analog RSSI input.
 
 ## CAN
 

@@ -48,13 +48,13 @@ The instructions, schematic, 3D model  are available [here](https://f4by.com/en/
 ## Analog Airspeed
 
 If the ARSPD pin is used for analog airspeed  input.
-Set :ref:`ARSPD_PIN<ARSPD_PIN>` to 10.
-Set :ref:`ARSPD_TYPE<ARSPD_TYPE>` to "1".
+Set [ARSPD_PIN](https://ardupilot.org/copter/docs/parameters.html#arspd-pin-airspeed-pin) to 10.
+Set [ARSPD_TYPE](https://ardupilot.org/copter/docs/parameters.html#arspd-type-airspeed-type) to "1".
 
 ## Analog RSSI
 
-If the RSSI pin is used for analog RSSI input. Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 11.
-Set :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" .
+If the RSSI pin is used for analog RSSI input. Set [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 11.
+Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) to "1" .
 
 ## UART Mapping
 

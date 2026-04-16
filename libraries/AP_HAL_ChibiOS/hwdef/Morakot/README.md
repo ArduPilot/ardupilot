@@ -184,10 +184,10 @@ RC input is via SERIAL7(UART8) on the RC connector. Unidirectional protocols can
 
 - PPM is not supported.
 - SBUS/DSM/SRXL connects to the RX8 pin.
-- FPort requires connection to TX8. Set :ref:`SERIAL7_OPTIONS<SERIAL7_OPTIONS>` = 7
+- FPort requires connection to TX8. Set [SERIAL7_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial7-options-serial7-options) = 7
 - CRSF/ELRS also requires both TX8 and RX8 connections and provides telemetry automatically.
 
-In order to use the SBUS pin on the HD VTX connector, you must change SERIAL7_PROTOCOL to something other than "23" and set :ref:`SERIAL3_PROTOCOL<SERIAL3_PROTOCOL> to "23".
+In order to use the SBUS pin on the HD VTX connector, you must change SERIAL7_PROTOCOL to something other than "23" and set [SERIAL3_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial3-protocol-serial-3-gps-protocol-selection) to "23".
 
 ## PWM Outputs
 
