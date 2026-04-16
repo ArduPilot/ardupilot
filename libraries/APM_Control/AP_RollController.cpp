@@ -149,15 +149,6 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2SRV_ACCEL", 10, AP_RollController, accel_limit, 500),
 
-    // @Param: 2SRV_JERK
-    // @DisplayName: Roll max jerk
-    // @Description: Roll max jerk. Setting to zero disables input shaping.
-    // @Range: 0 50000
-    // @Units: deg/s/s/s
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("2SRV_JERK", 11, AP_RollController, jerk_limit, 5000),
-
     AP_GROUPEND
 };
 

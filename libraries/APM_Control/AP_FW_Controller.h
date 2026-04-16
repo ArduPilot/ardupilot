@@ -109,7 +109,6 @@ protected:
 
     // input shaping accel and jerk limits
     AP_Float accel_limit;
-    AP_Float jerk_limit;
 
     const AP_AutoTune::ATType autotune_type;
 };

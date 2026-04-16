@@ -166,15 +166,6 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("2SRV_ACCEL", 12, AP_PitchController, accel_limit, 500),
 
-    // @Param: 2SRV_JERK
-    // @DisplayName: Pitch max jerk
-    // @Description: Pitch max jerk. Setting to zero disables input shaping.
-    // @Range: 0 50000
-    // @Units: deg/s/s/s
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("2SRV_JERK", 13, AP_PitchController, jerk_limit, 5000),
-
     AP_GROUPEND
 };
 
