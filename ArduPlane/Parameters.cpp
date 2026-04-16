@@ -987,6 +987,15 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+    // @Param: INPUT_TC
+    // @DisplayName: Input time constant for fixedwing roll and pitch.
+    // @Description: Fixed wing roll and pitch controler input shapeing time constant. This value is used to derive a jerk limit. Accel limits must be set to enable input shapeing.
+    // @Units: s
+    // @Range: 0.1 1
+    // @Increment: 0.01
+    // @User: Standard
+    ASCALAR(input_tc, "INPUT_TC", 0.1f),
+
     AP_VAREND
 };
 
