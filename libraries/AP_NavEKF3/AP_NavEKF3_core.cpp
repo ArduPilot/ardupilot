@@ -514,8 +514,22 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
         return false;
     }
 
+    // preserve origin across re-initialisation so a bootstrap reset
+    // does not shift the local NED frame.  On first boot validOrigin
+    // is false and the restore below is a no-op.
+    const bool hadValidOrigin = validOrigin;
+    const Location savedEKFOrigin = EKF_origin;
+
     // set re-used variables to zero
     InitialiseVariables();
+
+    // restore origin so per-core EKF_origin stays consistent with the
+    // shared frontend public_origin
+    if (hadValidOrigin) {
+        EKF_origin = savedEKFOrigin;
+        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+        validOrigin = true;
+    }
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3F initAccVec;
