@@ -21,39 +21,39 @@ public:
 
 private:
     // Total chirp length in seconds
-    float record;
+    float record{0.0f};
 
     // Chirp oscillation amplitude
-    float magnitude;
+    float magnitude{0.0f};
 
     // Chirp start frequency in rad/s
-    float wMin;
+    float wMin{0.0f};
 
     // Chirp end frequency in rad/s
-    float wMax;
+    float wMax{0.0f};
 
     // Amplitude fade in time in seconds
-    float fade_in;
+    float fade_in{0.0f};
 
     // Amplitude fade out time in seconds
-    float fade_out;
+    float fade_out{0.0f};
 
     // Time that chirp will remain at the min frequency before increasing to max frequency
-    float const_freq;
+    float const_freq{0.0f};
 
     // frequency ratio
-    float B;
+    float B{0.0f};
 
     // current waveform frequency in rad/s
-    float waveform_freq_rads;
+    float waveform_freq_rads{0.0f};
 
     // current amplitude of chirp
-    float window;
+    float window{0.0f};
 
     // output of chirp signal at the requested time
-    float output;
+    float output{0.0f};
 
     // True if chirp is complete, reset to false on init
-    bool complete;
+    bool complete{false};
 
 };

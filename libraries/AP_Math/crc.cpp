@@ -610,6 +610,7 @@ uint64_t crc_crc64(const uint32_t *data, uint16_t num_words)
     while (num_words--) {
         uint32_t value = *data++;
         for (uint8_t j = 0; j < 4; j++) {
+            // Safe: accessing individual bytes of uint32_t for CRC calculation
             uint8_t byte = ((uint8_t *)&value)[j];
             crc ^= (uint64_t)byte << 56u;
             for (uint8_t i = 0; i < 8; i++) {

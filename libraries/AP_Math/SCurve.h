@@ -199,12 +199,12 @@ private:
     void add_segment(uint8_t &seg_pnt, float end_time, SegmentType seg_type, float jerk_ref, float end_accel, float end_vel, float end_pos);
 
     // members
-    float snap_max;     // maximum snap magnitude
-    float jerk_max;     // maximum jerk magnitude
-    float accel_max;    // maximum acceleration magnitude
-    float accel_z_max;    // maximum acceleration magnitude
-    float vel_max;      // maximum velocity magnitude
-    float time;         // time that defines position on the path
+    float snap_max{0.0f};     // maximum snap magnitude
+    float jerk_max{0.0f};     // maximum jerk magnitude
+    float accel_max{0.0f};    // maximum acceleration magnitude
+    float accel_z_max{0.0f};    // maximum acceleration magnitude
+    float vel_max{0.0f};      // maximum velocity magnitude
+    float time{0.0f};         // time that defines position on the path
 
     // segment 0 is the initial segment and holds the vehicle's initial position and velocity
     // segments 1 to 7 are the acceleration segments
@@ -213,24 +213,24 @@ private:
     // segment 16 to 22 is the deceleration segment
     const static uint8_t segments_max = 23; // maximum number of time segments
 
-    uint8_t num_segs;       // number of time segments being used
+    uint8_t num_segs{0};       // number of time segments being used
     struct {
-        float jerk_ref;     // jerk reference value for time segment (the jerk at the beginning, middle or end depending upon the segment type)
-        SegmentType seg_type;   // segment type (jerk is constant, increasing or decreasing)
-        float end_time;     // final time value for segment
-        float end_accel;    // final acceleration value for segment
-        float end_vel;      // final velocity value for segment
-        float end_pos;      // final position value for segment
+        float jerk_ref{0.0f};     // jerk reference value for time segment (the jerk at the beginning, middle or end depending upon the segment type)
+        SegmentType seg_type{SegmentType::CONSTANT_JERK};   // segment type (jerk is constant, increasing or decreasing)
+        float end_time{0.0f};     // final time value for segment
+        float end_accel{0.0f};    // final acceleration value for segment
+        float end_vel{0.0f};      // final velocity value for segment
+        float end_pos{0.0f};      // final position value for segment
     } segment[segments_max];
 
-    bool is_arc_segment;    // true if this segment is a circular arc, false if straight line
+    bool is_arc_segment{false};    // true if this segment is a circular arc, false if straight line
     Vector3f seg_delta;     // total displacement vector from start to end point (NED frame)
-    float seg_length;       // 3D scalar length of the path (arc length + vertical component)
+    float seg_length{0.0f};       // 3D scalar length of the path (arc length + vertical component)
 
     struct {
-        float angle_rad;    // signed central angle of the arc [rad] (+CCW, -CW), 0 = straight
-        float length_ne;    // horizontal arc length along the circle (R * |theta|)
-        float radius_ne;    // arc radius
+        float angle_rad{0.0f};    // signed central angle of the arc [rad] (+CCW, -CW), 0 = straight
+        float length_ne{0.0f};    // horizontal arc length along the circle (R * |theta|)
+        float radius_ne{0.0f};    // arc radius
         Vector2f center_ne; // center of the circle in local NE plane, relative to start point
     } arc;
 };

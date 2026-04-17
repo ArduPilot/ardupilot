@@ -120,6 +120,7 @@ struct Vector2
     }
 
     // allow a vector2 to be used as an array, 0 indexed
+    // Safe: x and y are contiguous in memory, _v[i] accesses x (i=0) or y (i=1)
     T & operator[](uint8_t i) {
         T *_v = &x;
 #if MATH_CHECK_INDEXES

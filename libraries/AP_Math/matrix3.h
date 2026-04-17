@@ -134,6 +134,7 @@ public:
     }
 
     // allow a Matrix3 to be used as an array of vectors, 0 indexed
+    // Safe: Matrix3 layout is [a, b, c] where each is Vector3<T>, contiguous in memory
     Vector3<T> & operator[](uint8_t i) {
         Vector3<T> *_v = &a;
 #if MATH_CHECK_INDEXES

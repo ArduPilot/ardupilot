@@ -161,7 +161,8 @@ public:
     // reverse the rotation of this quaternion
     void invert();
 
-    // allow a quaternion to be used as an array, 0 indexed
+    // allow quaternion to be used as an array, 0 indexed
+    // Safe: Quaternion layout is [q1, q2, q3, q4], contiguous in memory
     T & operator[](uint8_t i)
     {
         T *_v = &q1;

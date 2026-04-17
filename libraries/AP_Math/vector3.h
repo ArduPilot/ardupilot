@@ -200,6 +200,7 @@ public:
 
     // return xy components of a vector3 as a vector2.
     // this returns a reference to the original vector3 xy data
+    // Safe: Vector3 layout is [x, y, z], Vector2 is [x, y], both same type T
     const Vector2<T> &xy() const {
         return *(const Vector2<T> *)this;
     }
