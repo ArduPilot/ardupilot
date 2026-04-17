@@ -59,11 +59,11 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     if (gains.tau < 0.05f) {
         gains.tau.set(0.05f);
     }
-    const float desired_angle_deg = desired_angle_cd * 0.01;
+    const float desired_angle_deg = wrap_180(desired_angle_cd * 0.01);
 
     if (!apply_input_shaping()) {
         // Calculate rate directly from angle error with no input shaping
-        angle_err_deg = desired_angle_deg - get_measured_angle();
+        angle_err_deg = wrap_180(desired_angle_deg - get_measured_angle());
         float desired_rate = (angle_err_deg / gains.tau) + get_ff_rate_target();
 
         // Apply rate limits if enabled
@@ -85,10 +85,13 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     const float tc = MAX(aparm.input_tc.get(), 0.1);
     const float jerk_limit = accel_max / tc;
 
+    // Ensure the shortest path is taken
+    const float angle_error = wrap_180(desired_angle_deg - angle_target_deg);
+
     // Apply input shaping updating the accel target
     shape_pos_vel_accel(
-        desired_angle_deg, get_ff_rate_target(), 0.0,          // desired pos, vel and accel
-        angle_target_deg, rate_target_deg, accel_target_deg,   // current shaped target
+        angle_error, get_ff_rate_target(), 0.0, // desired pos, vel and accel
+        0.0, rate_target_deg, accel_target_deg, // current shaped target
         -get_negative_rate_limit(), get_positive_rate_limit(), // velocity limits
         -accel_max, accel_max, // accel limits
         jerk_limit, // jerk limit
@@ -99,8 +102,11 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     angle_target_deg += rate_target_deg * dt + accel_target_deg * 0.5 * sq(dt);
     rate_target_deg += accel_target_deg * dt;
 
+    // Make sure target remains in the range +-180
+    angle_target_deg = wrap_180(angle_target_deg);
+
     // Calculate angle error and apply gain
-    angle_err_deg = angle_target_deg - get_measured_angle();
+    angle_err_deg = wrap_180(angle_target_deg - get_measured_angle());
     const float desired_rate = (angle_err_deg / gains.tau) + rate_target_deg;
 
     // Run rate controller
