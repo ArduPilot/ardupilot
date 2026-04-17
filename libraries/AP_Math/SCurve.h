@@ -162,16 +162,16 @@ private:
     void add_segments(float L);
 
     // generate three time segments forming the jerk profile
-    void add_segments_jerk(uint8_t &seg_pnt, float Jm, float tj, float Tcj);
+    void add_segments_jerk(uint8_t &seg_pnt, float tj, float Jm, float Tcj);
 
     // generate constant jerk time segment
-    void add_segment_const_jerk(uint8_t &seg_pnt, float J0, float tin);
+    void add_segment_const_jerk(uint8_t &seg_pnt, float tj, float J0);
 
     // generate increasing jerk magnitude time segment based on a raised cosine profile
-    void add_segment_incr_jerk(uint8_t &seg_pnt, float Jm, float tj);
+    void add_segment_incr_jerk(uint8_t &seg_pnt, float tj, float Jm);
 
     // generate decreasing jerk magnitude time segment based on a raised cosine profile
-    void add_segment_decr_jerk(uint8_t &seg_pnt, float Jm, float tj);
+    void add_segment_decr_jerk(uint8_t &seg_pnt, float tj, float Jm);
 
     // set speed and acceleration limits for the path
     // origin and destination are offsets from EKF origin

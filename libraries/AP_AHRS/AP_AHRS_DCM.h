@@ -176,18 +176,18 @@ private:
 
     // euler angles - used for recovering if the DCM
     // matrix becomes ill-conditioned and watchdog storage
-    float roll;
-    float pitch;
-    float yaw;
+    float roll{0.0f};
+    float pitch{0.0f};
+    float yaw{0.0f};
 
     Vector3f _omega_P;                          // accel Omega proportional correction
     Vector3f _omega_yaw_P;                      // proportional yaw correction
     Vector3f _omega_I;                          // Omega Integrator correction
     Vector3f _omega_I_sum;
-    float _omega_I_sum_time;
+    float _omega_I_sum_time{0.0f};
     Vector3f _omega;                            // Corrected Gyro_Vector data
 
-    bool have_initial_yaw; // true if the yaw value has been initialised with a reference
+    bool have_initial_yaw{false}; // true if the yaw value has been initialised with a reference
 
     // variables to cope with delaying the GA sum to match GPS lag
     Vector3f ra_delayed(uint8_t instance, const Vector3f &ra);
@@ -207,60 +207,60 @@ private:
     bool should_correct_centrifugal() const;
 
     // state to support status reporting
-    float _renorm_val_sum;
-    uint16_t _renorm_val_count;
+    float _renorm_val_sum{0.0f};
+    uint16_t _renorm_val_count{0};
     float _error_rp{1.0f};
     float _error_yaw{1.0f};
 
     // time in microseconds of last compass update
-    uint32_t _compass_last_update;
+    uint32_t _compass_last_update{0};
 
     // time in millis when we last got a GPS heading
-    uint32_t _gps_last_update;
+    uint32_t _gps_last_update{0};
 
     // state of accel drift correction
     Vector3f _ra_sum[INS_MAX_INSTANCES];
     Vector3f _last_velocity;
-    float _ra_deltat;
-    uint32_t _ra_sum_start;
+    float _ra_deltat{0.0f};
+    uint32_t _ra_sum_start{0};
 
     // which accelerometer instance is active
-    uint8_t _active_accel_instance;
+    uint8_t _active_accel_instance{0};
 
     // the earths magnetic field
-    float _last_declination;
+    float _last_declination{0.0f};
     Vector2f _mag_earth{1, 0};
 
     // whether we have GPS lock
-    bool _have_gps_lock;
+    bool _have_gps_lock{false};
 
     // the lat/lng where we last had GPS lock
-    int32_t _last_lat;
-    int32_t _last_lng;
-    uint32_t _last_pos_ms;
+    int32_t _last_lat{0};
+    int32_t _last_lng{0};
+    uint32_t _last_pos_ms{0};
 
     // position offset from last GPS lock
-    float _position_offset_north;
-    float _position_offset_east;
+    float _position_offset_north{0.0f};
+    float _position_offset_east{0.0f};
 
     // whether we have a position estimate
-    bool _have_position;
+    bool _have_position{false};
 
     // support for wind estimation
     Vector3f _last_fuse;
     Vector3f _last_vel;
-    uint32_t _last_wind_time;
-    float _last_airspeed_TAS;
-    uint32_t _last_consistent_heading;
+    uint32_t _last_wind_time{0};
+    float _last_airspeed_TAS{0.0f};
+    uint32_t _last_consistent_heading{0};
 
     // estimated wind in m/s
     Vector3f _wind;
 
     // last time AHRS failed in milliseconds
-    uint32_t _last_failure_ms;
+    uint32_t _last_failure_ms{0};
 
     // time when DCM was last reset
-    uint32_t _last_startup_ms;
+    uint32_t _last_startup_ms{0};
 
     // last origin we returned, for DCM fallback from EKF
     Location last_origin;
@@ -272,10 +272,10 @@ private:
     Vector2f _lastGndVelADS; // previous HPF input
 
     // pre-calculated trig cache:
-    float _sin_yaw;
-    float _cos_yaw;
+    float _sin_yaw{0.0f};
+    float _cos_yaw{1.0f};
 
-    uint32_t last_log_ms;
+    uint32_t last_log_ms{0};
 };
 
 #endif  // AP_AHRS_DCM_ENABLED

@@ -1179,19 +1179,22 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             switch (var_type) {
             case AP_PARAM_INT8: {
                 get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
-                get_parameters_response.values[i].integer_value = ((AP_Int8 *)vp)->get();
+                // Safe cast: var_type guarantees vp is an AP_Int8
+                get_parameters_response.values[i].integer_value = static_cast<AP_Int8*>(vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT16: {
                 get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
-                get_parameters_response.values[i].integer_value = ((AP_Int16 *)vp)->get();
+                // Safe cast: var_type guarantees vp is an AP_Int16
+                get_parameters_response.values[i].integer_value = static_cast<AP_Int16*>(vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT32: {
                 get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
-                get_parameters_response.values[i].integer_value = ((AP_Int32 *)vp)->get();
+                // Safe cast: var_type guarantees vp is an AP_Int32
+                get_parameters_response.values[i].integer_value = static_cast<AP_Int32*>(vp)->get();
                 successful_read &= true;
                 break;
             }

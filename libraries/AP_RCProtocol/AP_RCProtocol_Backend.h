@@ -28,7 +28,7 @@ class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
 
 public:
-    AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
+    explicit AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_Backend() {}
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
