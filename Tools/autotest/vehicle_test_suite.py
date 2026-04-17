@@ -8963,11 +8963,230 @@ Also, ignores heartbeats not from our target system'''
     def remove_installed_modules(self, modulename):
         dest = os.path.join("scripts", "modules", modulename)
         try:
-            shutil.rmtree(dest)
-        except IOError:
+            if os.path.isdir(dest):
+                shutil.rmtree(dest)
+            else:
+                os.unlink(dest)
+        except (IOError, OSError):
             pass
+
+    def install_lua_coverage_context(self):
+        """Install the luacov coverage tracker for the current context.
+
+        The tracker hooks all Lua line events and saves stats to
+        luacov.stats.out when the VM closes (triggered by reboot_sitl()).
+        Call reboot_sitl() after the test to flush the stats, then call
+        lua_coverage_stats() to read them.
+        """
+        try:
+            os.unlink("luacov.stats.out")
         except OSError:
             pass
+        autotest_lua = os.path.join(self.rootdir(), "Tools", "autotest", "lua")
+        self.install_script_module(
+            os.path.join(autotest_lua, "luacov.lua"), "luacov.lua"
+        )
+        self.install_script(
+            os.path.join(autotest_lua, "luacov_start.lua"), "luacov_start.lua"
+        )
+        self.context_get().installed_scripts.append("luacov_start.lua")
+        self.context_get().installed_modules.append("luacov.lua")
+
+    def lua_coverage_stats(self, stats_path="luacov.stats.out"):
+        """Parse luacov.stats.out; return dict mapping source name to list of hit counts.
+
+        The list is 1-indexed (index 0 is unused); list[n] is the hit count
+        for line n of that source file.
+        """
+        if not os.path.exists(stats_path):
+            raise NotAchievedException(
+                "%s not found - was reboot_sitl() called to flush stats?" % stats_path
+            )
+        result = {}
+        with open(stats_path) as f:
+            src = None
+            max_line = 0
+            line_idx = 0
+            for raw in f:
+                raw = raw.rstrip('\n')
+                if raw.startswith('# '):
+                    src = raw[2:]
+                    max_line = 0
+                    line_idx = 0
+                elif src is not None and max_line == 0:
+                    max_line = int(raw)
+                    result[src] = [0] * (max_line + 1)
+                elif src is not None:
+                    line_idx += 1
+                    if line_idx <= max_line:
+                        result[src][line_idx] = int(raw)
+        return result
+
+    def generate_lua_coverage_html(self, coverage, source_path, output_path):
+        """Write an HTML coverage report for a Lua script.
+
+        coverage  - dict from lua_coverage_stats() (key = Lua source name)
+        source_path - path to the .lua source file on disk
+        output_path - where to write the HTML file
+        """
+        with open(source_path) as f:
+            lines = f.readlines()
+
+        # find the matching coverage entry
+        hits = None
+        for src, counts in coverage.items():
+            if os.path.basename(source_path) in src:
+                hits = counts
+                break
+
+        script_name = os.path.basename(source_path)
+
+        hit_lines = 0
+        miss_lines = 0
+
+        def is_executable(line_text):
+            s = line_text.strip()
+            if not s:
+                return False
+            if s.startswith('--'):
+                return False
+            # bare 'end', 'else', 'until' are not instrumented by Lua
+            if s in ('end', 'else', 'until', 'end,', 'end;'):
+                return False
+            return True
+
+        rows = []
+        for i, text in enumerate(lines, start=1):
+            count = hits[i] if (hits and i < len(hits)) else 0
+            exe = is_executable(text)
+            if exe:
+                if count > 0:
+                    hit_lines += 1
+                    row_class = 'hit'
+                    count_class = 'count-hit'
+                    count_str = str(count)
+                else:
+                    miss_lines += 1
+                    row_class = 'miss'
+                    count_class = 'count-miss'
+                    count_str = '0'
+            else:
+                row_class = 'neutral'
+                count_class = 'count-neutral'
+                count_str = ''
+
+            import html as html_mod
+            rows.append(
+                '<tr class="%s">'
+                '<td class="lineno">%d</td>'
+                '<td class="%s">%s</td>'
+                '<td class="src">%s</td>'
+                '</tr>' % (
+                    row_class,
+                    i,
+                    count_class,
+                    count_str,
+                    html_mod.escape(text.rstrip('\n')),
+                )
+            )
+
+        total = hit_lines + miss_lines
+        pct = (100 * hit_lines // total) if total else 0
+
+        html_content = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lua Coverage: {script_name}</title>
+<style>
+  body {{ font-family: monospace; background: #1e1e1e; color: #d4d4d4; margin: 20px; }}
+  h1 {{ color: #569cd6; margin-bottom: 4px; }}
+  p  {{ margin-top: 4px; color: #9cdcfe; }}
+  table {{ border-collapse: collapse; width: 100%; }}
+  td {{ padding: 1px 8px; white-space: pre; }}
+  .lineno      {{ color: #858585; text-align: right; width: 3em; border-right: 1px solid #333; }}
+  .count-hit   {{ color: #4ec94e; text-align: right; width: 5em; border-right: 1px solid #333; }}
+  .count-miss  {{ color: #f44747; text-align: right; width: 5em; border-right: 1px solid #333; }}
+  .count-neutral {{ color: #555; text-align: right; width: 5em; border-right: 1px solid #333; }}
+  .src {{ padding-left: 12px; }}
+  .hit     {{ background: #1a2e1a; }}
+  .miss    {{ background: #2e1a1a; }}
+  .neutral {{ background: #1e1e1e; }}
+</style>
+</head>
+<body>
+<h1>Coverage: {script_name}</h1>
+<p>{hit_lines} / {total} executable lines hit ({pct}%)</p>
+<table>
+{rows}
+</table>
+</body>
+</html>
+""".format(
+            script_name=script_name,
+            hit_lines=hit_lines,
+            total=total,
+            pct=pct,
+            rows='\n'.join(rows),
+        )
+
+        with open(output_path, 'w') as f:
+            f.write(html_content)
+        self.progress("Coverage report written to %s (%d/%d lines, %d%%)" % (
+            output_path, hit_lines, total, pct))
+
+    def check_lua_coverage(self, coverage, source_path, min_pct=100):
+        """Assert that at least min_pct% of executable lines in source_path were hit.
+
+        Uses the same is_executable heuristic as generate_lua_coverage_html.
+        Raises NotAchievedException listing any missed lines.
+        """
+        with open(source_path) as f:
+            lines = f.readlines()
+
+        hits = None
+        for src, counts in coverage.items():
+            if os.path.basename(source_path) in src:
+                hits = counts
+                break
+
+        script_name = os.path.basename(source_path)
+
+        if hits is None:
+            raise NotAchievedException("No coverage data found for %s" % script_name)
+
+        def is_executable(line_text):
+            s = line_text.strip()
+            if not s:
+                return False
+            if s.startswith('--'):
+                return False
+            if s in ('end', 'else', 'until', 'end,', 'end;'):
+                return False
+            return True
+
+        missed = []
+        hit_count = 0
+        total = 0
+        for i, text in enumerate(lines, start=1):
+            if not is_executable(text):
+                continue
+            total += 1
+            count = hits[i] if i < len(hits) else 0
+            if count > 0:
+                hit_count += 1
+            else:
+                missed.append(i)
+
+        pct = (100 * hit_count // total) if total else 0
+        self.progress("%s coverage: %d/%d executable lines hit (%d%%)" % (
+            script_name, hit_count, total, pct))
+
+        if pct < min_pct:
+            raise NotAchievedException(
+                "%s coverage %d%% < required %d%%; missed lines: %s" % (
+                    script_name, pct, min_pct, missed)
+            )
 
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
