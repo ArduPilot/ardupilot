@@ -123,9 +123,12 @@ float Variometer::calculate_aircraft_sinkrate(float phi) const
     float C2;   // C2 = CDi0/CL0 = B*CL0
     CL0 = _polarParams.K / (_aspd_filt_constrained * _aspd_filt_constrained);
 
-    // Prevent division by zero if airspeed is very high or K is zero
+    // When K is zero or airspeed is extremely high, CL0 approaches zero.
+    // Returning 0 would mask a sensor failure.  Use a typical glider
+    // sinkrate as a safe fallback so the soaring logic correctly detects
+    // "not in a thermal" and exits.
     if (is_zero(CL0)) {
-        return 0.0f;
+        return -1.0f;  // ~1 m/s descent — conservative safe fallback
     }
 
     C1 = _polarParams.CD0 / CL0;  // constant describing expected angle to overcome zero-lift drag
@@ -146,11 +149,12 @@ float Variometer::calculate_circling_time_constant(float thermal_bank) const
     
     const float tan_bank = tanf(thermal_bank);
     
-    // Prevent division by zero if thermal_bank is zero or very small
+    // Prevent division by zero if thermal_bank is zero or very small.
+    // 60 s is long enough to make the circling filter negligible in
+    // level flight, effectively disabling it when not thermalling.
+    constexpr float LEVEL_FLIGHT_TAU_S = 60.0f;
     if (is_zero(tan_bank)) {
-        // Level flight: no circling, return maximum reasonable time constant
-        // This effectively disables the filter when not thermalling
-        return 60.0f;  // 60 seconds - large enough to be negligible
+        return LEVEL_FLIGHT_TAU_S;
     }
     
     return 2*M_PI*_aspd_filt_constrained/(GRAVITY_MSS*fabsf(tan_bank));
