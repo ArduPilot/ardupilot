@@ -194,8 +194,3 @@ void Battery::update_temperature(float current_amps, uint64_t now_us)
     const float temp_decrease = (temperature.kelvin - 273.15f) * 0.10 * temperature_dt * 0.000001;
     temperature.kelvin += (temp_increase - temp_decrease);
 }
-
-float Battery::get_voltage(void) const
-{
-    return voltage_filter.get();
-}

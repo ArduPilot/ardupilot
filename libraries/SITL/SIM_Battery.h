@@ -35,7 +35,7 @@ public:
     // Call this periodically to "step" the battery forward in time
     void consume_energy(float current_amps, uint64_t now_us);
 
-    float get_voltage(void) const;
+    float get_voltage(void) const { return voltage_filter.get(); }
     float get_capacity(void) const { return capacity_Ah; }
 
     // return battery temperature in Kelvin:
