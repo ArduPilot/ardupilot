@@ -433,7 +433,7 @@ if HYPOTHESIS_AVAILABLE:
         t_current = 10.0
         
         for i in range(num_faults):
-            fault_type = ALL_FAULTS.example()
+            fault_type = st.sampled_from(list(FaultType)).example()
             faults.append(Fault(
                 type=fault_type.value,
                 t_sec=t_current,
