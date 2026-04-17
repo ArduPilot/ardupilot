@@ -186,9 +186,37 @@ float AP_FW_Controller::run_rate_control(float desired_rate, float scaler, bool 
 */
 float AP_FW_Controller::run_rate_control(float desired_rate, float scaler)
 {
-    // Reset input shaping set points
-    reset_input_shaping(get_measured_angle(), desired_rate);
+    if (!apply_input_shaping()) {
+        // Reset input shaping set points
+        reset_input_shaping(get_measured_angle(), desired_rate);
 
+        // run rate control with no input shaping
+        return run_rate_control(desired_rate, scaler, false, false);
+    }
+
+    // Apply input shaping to desired rate
+    const float dt = AP::scheduler().get_loop_period_s();
+
+    // Rest the input shaping target angle
+    angle_target_deg = get_measured_angle();
+
+    const float accel_max = accel_limit.get();
+    const float tc = MAX(aparm.input_tc.get(), 0.1);
+    const float jerk_limit = accel_max / tc;
+
+    // Apply input shaping updating the accel target
+    shape_pos_vel_accel(
+        0.0, desired_rate, 0.0,                 // desired pos, vel and accel
+        0.0, rate_target_deg, accel_target_deg, // current shaped target
+        -get_negative_rate_limit(), get_positive_rate_limit(), // velocity limits
+        -accel_max, accel_max, // accel limits
+        jerk_limit, // jerk limit
+        dt, true
+    );
+
+    rate_target_deg += accel_target_deg * dt;
+
+    // Run rate controller
     return run_rate_control(desired_rate, scaler, false, false);
 }
 
