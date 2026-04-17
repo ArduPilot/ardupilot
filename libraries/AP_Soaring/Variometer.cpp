@@ -123,11 +123,16 @@ float Variometer::calculate_aircraft_sinkrate(float phi) const
     float C2;   // C2 = CDi0/CL0 = B*CL0
     CL0 = _polarParams.K / (_aspd_filt_constrained * _aspd_filt_constrained);
 
+    // Prevent division by zero if airspeed is very high or K is zero
+    if (is_zero(CL0)) {
+        return 0.0f;
+    }
+
     C1 = _polarParams.CD0 / CL0;  // constant describing expected angle to overcome zero-lift drag
     C2 = _polarParams.B * CL0;    // constant describing expected angle to overcome lift induced drag at zero bank
 
     float cosphi = (1 - phi * phi / 2); // first two terms of mclaurin series for cos(phi)
-    
+
     return _aspd_filt_constrained * (C1 + C2 / (cosphi * cosphi));
 }
 
@@ -138,5 +143,13 @@ float Variometer::calculate_circling_time_constant(float thermal_bank) const
     // potential, as the aircraft orbits the thermal.
     // Use the time to circle - variations at the circling frequency then have a gain of 25%
     // and the response to a step input will reach 64% of final value in three orbits.
-    return 2*M_PI*_aspd_filt_constrained/(GRAVITY_MSS*tanf(thermal_bank));
+    
+    const float tan_bank = tanf(thermal_bank);
+    
+    // Prevent division by zero if thermal_bank is zero or very small
+    if (is_zero(tan_bank)) {
+        return 0.0f;
+    }
+    
+    return 2*M_PI*_aspd_filt_constrained/(GRAVITY_MSS*tan_bank);
 }

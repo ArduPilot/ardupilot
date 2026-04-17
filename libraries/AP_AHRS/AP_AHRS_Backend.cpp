@@ -119,7 +119,12 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
         cr = 1.0f;
     } else {
         cp = safe_sqrt(1 - cx2);
-        cr = rot.c.z / cp;
+        // Prevent division by zero - check cp before using it
+        if (is_zero(cp)) {
+            cr = 1.0f;
+        } else {
+            cr = rot.c.z / cp;
+        }
     }
     cp = constrain_float(cp, 0.0f, 1.0f);
     cr = constrain_float(cr, -1.0f, 1.0f); // this relies on constrain_float() of infinity doing the right thing
