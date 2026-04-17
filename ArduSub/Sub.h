@@ -142,7 +142,9 @@ private:
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
 
+#if AP_LEAKDETECTOR_ENABLED
     AP_LeakDetector leak_detector;
+#endif
 
     struct {
         bool enabled;
