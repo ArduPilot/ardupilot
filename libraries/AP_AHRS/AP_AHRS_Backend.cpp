@@ -250,6 +250,10 @@ void AP_AHRS::update_AOA_SSA(void)
 // rotate a 2D vector from earth frame to body frame
 Vector2f AP_AHRS::earth_to_body2D(const Vector2f &ef) const
 {
+    // Hold the AHRS semaphore to get a consistent (_cos_yaw, _sin_yaw)
+    // pair from the same attitude update cycle.  The semaphore is
+    // recursive so this is safe even if the caller already holds it.
+    WITH_SEMAPHORE(_rsem);
     return Vector2f(ef.x * _cos_yaw + ef.y * _sin_yaw,
                     -ef.x * _sin_yaw + ef.y * _cos_yaw);
 }
@@ -257,6 +261,7 @@ Vector2f AP_AHRS::earth_to_body2D(const Vector2f &ef) const
 // rotate a 2D vector from body frame to earth frame
 Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
 {
+    WITH_SEMAPHORE(_rsem);
     return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
@@ -264,6 +269,7 @@ Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
 // rotate a 2D vector from body frame to earth frame
 Vector2p AP_AHRS::body_to_earth2D_p(const Vector2p &bf) const
 {
+    WITH_SEMAPHORE(_rsem);
     return Vector2p(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }

@@ -754,7 +754,9 @@ private:
     VehicleClass _vehicle_class{VehicleClass::UNKNOWN};
 
     // multi-thread access support
-    HAL_Semaphore _rsem;
+    // mutable so const getter functions can hold the semaphore for
+    // a consistent pair/matrix snapshot (semaphores are recursive).
+    mutable HAL_Semaphore _rsem;
 
     /*
      * Parameters
