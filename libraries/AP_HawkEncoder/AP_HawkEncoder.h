@@ -11,7 +11,8 @@ public:
     static constexpr uint8_t NUM_ENCODERS = 3;
 
     AP_HawkEncoder() :
-        _initialized(false)
+        _initialized(false),
+        _use_mux(false)
     {
         for (uint8_t i = 0; i < NUM_ENCODERS; i++) {
             _state[i].raw_angle = 0;
@@ -37,7 +38,8 @@ public:
             }
         }
 
-        _initialized = (bool)_dev && (!USE_TCA9548A || (bool)_mux);
+        _use_mux = USE_TCA9548A && (bool)_mux;
+        _initialized = (bool)_dev;
 
         if (!_initialized) {
             for (uint8_t i = 0; i < NUM_ENCODERS; i++) {
@@ -51,6 +53,16 @@ public:
         if (!_initialized) {
             for (uint8_t i = 0; i < NUM_ENCODERS; i++) {
                 _state[i].is_healthy = false;
+            }
+            return;
+        }
+
+        if (!_use_mux) {
+            if (!read_one(0)) {
+                mark_unhealthy(0);
+            }
+            for (uint8_t i = 1; i < NUM_ENCODERS; i++) {
+                mark_unhealthy(i);
             }
             return;
         }
@@ -126,10 +138,11 @@ private:
 
     EncoderState _state[NUM_ENCODERS];
     bool _initialized;
+    bool _use_mux;
 
     bool select_mux_channel(uint8_t chan)
     {
-        if (!USE_TCA9548A) {
+        if (!_use_mux) {
             return true;
         }
 
@@ -149,23 +162,24 @@ private:
             return false;
         }
 
-        if (USE_TCA9548A && !(bool)_mux) {
+        if (!_use_mux && idx > 0) {
             return false;
         }
 
-        // Take ownership of the encoder device bus before any transfer.
-        // This prevents the "I2C: not owner ..." error from ArduPilot.
-        WITH_SEMAPHORE(_dev->get_semaphore());
+        if (_use_mux && !(bool)_mux) {
+            return false;
+        }
 
-        if (USE_TCA9548A) {
-            uint8_t value = (1U << idx);
-            if (!_mux->transfer(&value, 1, nullptr, 0)) {
-                return false;
-            }
+        if (!select_mux_channel(idx)) {
+            return false;
         }
 
         uint8_t reg = AS5600_RAW_ANGLE;
         uint8_t buf[2] = {0, 0};
+
+        // Take ownership of the encoder device bus before any transfer.
+        // This prevents the "I2C: not owner ..." error from ArduPilot.
+        WITH_SEMAPHORE(_dev->get_semaphore());
 
         if (!_dev->transfer(&reg, 1, buf, 2)) {
             return false;

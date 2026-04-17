@@ -76,6 +76,7 @@ private:
     AP_Float _yaw_bias[HAWK_NUM_MOTORS];
 
     bool _encoders_initialized;
+    bool _frame_configured;
 
     // debug state
     uint32_t _last_debug_ms;
