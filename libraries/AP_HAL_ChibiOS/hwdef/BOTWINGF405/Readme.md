@@ -60,7 +60,7 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 
 ## UART Mapping
 
-The UARTs default protocol and serial port assigments are:
+The UARTs default protocol and serial port assignments are:
 
 * SERIAL0 -> USB
 * SERIAL1 -> USART1 (DMA capable,RX tied to SBUS RC input and pin used as an interrupt input, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) = 1)

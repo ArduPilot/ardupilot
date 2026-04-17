@@ -81,7 +81,7 @@ The 7 FMU PWM outputs are in 3 groups:
 
 - A1 - A4 are in one group.
 - A5, A6 are in a 2nd group.
-- A7 is in a 3nd group.
+- A7 is in a 3rd group.
 
 Channels within the same group need to use the same output rate.
 If any channel in a group uses DShot then all channels in the group need to use DShot.
