@@ -71,7 +71,7 @@ void setup(void)
 
     ::printf("time, voltage\n");
     while (battery.get_voltage() >= min_voltage) {
-        battery.set_current(current_amps, time_us);
+        battery.consume_energy(current_amps, time_us);
 
         ::printf("%0.2f, %0.2f\n", time_us * us_to_seconds, battery.get_voltage());
 
