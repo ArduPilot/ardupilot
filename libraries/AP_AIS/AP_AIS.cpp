@@ -155,6 +155,12 @@ void AP_AIS::update()
                 }
                 const uint8_t parts = _incoming.num - 1;
 
+                // Clamp to array size — there can never be more preceding
+                // fragments than buffer slots.
+                if (parts > AIVDM_BUFFER_SIZE - 1) {
+                    break;
+                }
+
                 // Use fixed-size array to avoid VLA with potential zero/overflow size
                 uint8_t msg_parts[AIVDM_BUFFER_SIZE - 1];
                 for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE && index < parts; i++) {
@@ -891,14 +897,16 @@ uint32_t AP_AIS::get_bits(const char *payload, uint16_t low, uint16_t high)
     }
 
     uint32_t val = 0;
-    for (uint8_t index = 0; index <= char_high - char_low; index++) {
+    // Use uint16_t for the span to prevent uint8_t underflow wrapping
+    const uint16_t char_span = (uint16_t)char_high - (uint16_t)char_low;
+    for (uint16_t index = 0; index <= char_span; index++) {
         uint8_t value = payload_char_decode(payload[char_low + index]);
         uint8_t mask = 0b111111;
         if (index == 0) {
             mask = mask >> bit_low;
         }
         value &= mask;
-        if (index == char_high - char_low) {
+        if (index == char_span) {
             value = value >> (6 - bit_high);
             val = val << bit_high;
         } else {
