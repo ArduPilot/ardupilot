@@ -55,7 +55,7 @@ RC input is configured by default via the USART5 RX input. It supports all seria
 - CRSF/ELRS uses RX5/TX5.
 - SRXL2 requires a connection to T5 and automatically provides telemetry.  Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) to "4".
 
-If the user wishes to use the SBUS from a DJI air unit for RC control, it is suggested that the RX8 padd be used as shown in the wiring diagram and [SERIAL8_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial8-protocol-serial8-protocol-selection) be set to "23" and [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) be changed from "23" to something else.
+If the user wishes to use the SBUS from a DJI air unit for RC control, it is suggested that the RX8 pad be used as shown in the wiring diagram and [SERIAL8_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial8-protocol-serial8-protocol-selection) be set to "23" and [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) be changed from "23" to something else.
 
 ## FrSky Telemetry
 
