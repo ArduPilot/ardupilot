@@ -3528,8 +3528,8 @@ void AP_AHRS::Log_Write()
     Write_AHRS2();
     Write_POS();
 
-#if AP_AHRS_SIM_ENABLED
-    AP::sitl()->Log_Write_SIMSTATE();
+#if AP_AHRS_SIM_ENABLED && HAL_LOGGING_ENABLED
+    AP::sitl()->log();
 #endif
 }
 
