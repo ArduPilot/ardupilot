@@ -705,7 +705,7 @@ void AP_Radio_cc2500::setup_hopping_table_SRT(void)
             if (have_channel(bindHopData[i], i, 0)) {
                 uint8_t c;
                 for (c = 0; c<MAX_CHANNEL_NUMBER; c++) {
-                    if ((channel <= cc_wifi_low || channel >= cc_wifi_high) && !have_channel(c, i, 0)) {
+                    if ((c <= cc_wifi_low || c >= cc_wifi_high) && !have_channel(c, i, 0)) {
                         bindHopData[i] = c;
                         break;
                     }

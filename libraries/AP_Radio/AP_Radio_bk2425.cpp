@@ -729,8 +729,8 @@ uint8_t AP_Radio_beken::ProcessPacket(const uint8_t* packet, uint8_t rxaddr)
             }
             break;
             case BK_INFO_FW_CRC_LO:
-                break;
             case BK_INFO_FW_CRC_HI:
+                // Intentionally empty - CRC values are not used
                 break;
             case BK_INFO_FW_YM:
                 tx_date.firmware_year = rx->u.ctrl.data_value_hi;
@@ -740,6 +740,7 @@ uint8_t AP_Radio_beken::ProcessPacket(const uint8_t* packet, uint8_t rxaddr)
                 tx_date.firmware_day = rx->u.ctrl.data_value_hi;
                 break;
             case BK_INFO_MODEL:
+                // Model information - currently not used
                 break;
             case BK_INFO_PPS:
                 tx_pps = rx->u.ctrl.data_value_lo; // Remember pps from tx
