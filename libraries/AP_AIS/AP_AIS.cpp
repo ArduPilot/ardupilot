@@ -149,10 +149,15 @@ void AP_AIS::update()
                 uint8_t index = 0;
 
                 // We have the last part, need to find preceding fragments
+                // Validate multi-part message: must have at least 2 parts
+                if (_incoming.num < 2) {
+                    break;
+                }
                 const uint8_t parts = _incoming.num - 1;
 
-                uint8_t msg_parts[parts];
-                for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE; i++) {
+                // Use fixed-size array to avoid VLA with potential zero/overflow size
+                uint8_t msg_parts[AIVDM_BUFFER_SIZE - 1];
+                for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE && index < parts; i++) {
                     // look for the rest of the message from the start of the buffer
                     // we assume the message has be received in the correct order
                     if (_AIVDM_buffer[i].num == (index + 1) && _AIVDM_buffer[i].total == _incoming.total && _AIVDM_buffer[i].ID == _incoming.ID) {
@@ -366,7 +371,8 @@ void AP_AIS::buffer_shift(uint8_t i)
         _AIVDM_buffer[n].ID = _AIVDM_buffer[n+1].ID;
         _AIVDM_buffer[n].num = _AIVDM_buffer[n+1].num;
         _AIVDM_buffer[n].total = _AIVDM_buffer[n+1].total;
-        strncpy(_AIVDM_buffer[n].payload,_AIVDM_buffer[n+1].payload,AIVDM_PAYLOAD_SIZE);
+        strncpy(_AIVDM_buffer[n].payload, _AIVDM_buffer[n+1].payload, AIVDM_PAYLOAD_SIZE - 1);
+        _AIVDM_buffer[n].payload[AIVDM_PAYLOAD_SIZE - 1] = '\0';
     }
     _AIVDM_buffer[AIVDM_BUFFER_SIZE - 1].ID = 0;
     _AIVDM_buffer[AIVDM_BUFFER_SIZE - 1].num = 0;
@@ -846,6 +852,11 @@ void AP_AIS::get_char(const char *payload, char *array, uint16_t low, uint16_t h
 // read the specified bits from the char array each char giving 6 bits
 uint32_t AP_AIS::get_bits(const char *payload, uint16_t low, uint16_t high)
 {
+    // Validate inputs to prevent null pointer dereference and invalid access
+    if (payload == nullptr || high < low) {
+        return 0;
+    }
+    
     uint8_t char_low = low / 6;
     uint8_t bit_low = low % 6;
 
@@ -1015,7 +1026,8 @@ bool AP_AIS::decode_latest_term()
             if (strlen(_term) == 0) {
                 _sentence_valid = false;
             } else {
-                strcpy(_incoming.payload,_term);
+                strncpy(_incoming.payload, _term, AIVDM_PAYLOAD_SIZE - 1);
+                _incoming.payload[AIVDM_PAYLOAD_SIZE - 1] = '\0';
             }
             break;
 
