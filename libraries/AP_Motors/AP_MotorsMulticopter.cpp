@@ -446,6 +446,12 @@ void AP_MotorsMulticopter::Log_Write()
 // in all other states: map [0..1] linearly between pwm_min and pwm_max
 int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
 {
+    // NaN or Inf in the actuator value (from upstream thrust/mixing
+    // calculations) would produce an undefined int16_t cast.  Clamp to
+    // the safe minimum so the motor outputs a known-safe value.
+    if (!isfinite(actuator)) {
+        actuator = 0.0f;
+    }
     float pwm_output;
     if (_spool_state == SpoolState::SHUT_DOWN) {
         // in shutdown mode, use PWM 0 or minimum PWM
