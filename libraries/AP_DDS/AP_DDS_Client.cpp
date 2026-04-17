@@ -549,13 +549,13 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
     update_topic(msg.header.stamp);
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     auto rc = RC_Channels::get_singleton();
-    static int16_t counter = 0;
+    static uint16_t counter = 0;
 
     // Is connected if not in failsafe.
     // This is only valid if the RC has been connected at least once
     msg.is_connected = !rc->in_rc_failsafe();
     // Receiver RSSI is reported between 0.0 and 1.0.
-    msg.receiver_rssi = static_cast<uint8_t>(ap_rssi->read_receiver_rssi()*100.f);
+    msg.receiver_rssi = (ap_rssi != nullptr) ? static_cast<uint8_t>(ap_rssi->read_receiver_rssi()*100.f) : 0;
 
     // Limit the max number of available channels to 8
     msg.channels_size = MIN(static_cast<uint32_t>(rc->get_valid_channel_count()), 32U);
