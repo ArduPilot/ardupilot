@@ -140,8 +140,11 @@ bool AP_ONVIF::start(const char *user, const char *pass, const char *hostname)
         return false;
     }
 
-    strcpy(username, user);
-    strcpy(password, pass);
+    // Use strncpy with allocated size to prevent buffer overflow
+    strncpy(username, user, username_len);
+    username[username_len] = '\0';
+    strncpy(password, pass, password_len);
+    password[password_len] = '\0';
     snprintf(device_endpoint, hostname_len + strlen(DEVICE_ENDPOINT_LOC) + 1, "%s" DEVICE_ENDPOINT_LOC, hostname);
     snprintf(media_endpoint, hostname_len + strlen(MEDIA_ENDPOINT_LOC) + 1, "%s" MEDIA_ENDPOINT_LOC, hostname);
     snprintf(ptz_endpoint, hostname_len + strlen(PTZ_ENDPOINT_LOC) + 1, "%s" PTZ_ENDPOINT_LOC, hostname);
