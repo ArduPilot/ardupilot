@@ -148,7 +148,9 @@ float Variometer::calculate_circling_time_constant(float thermal_bank) const
     
     // Prevent division by zero if thermal_bank is zero or very small
     if (is_zero(tan_bank)) {
-        return 0.0f;
+        // Level flight: no circling, return maximum reasonable time constant
+        // This effectively disables the filter when not thermalling
+        return 60.0f;  // 60 seconds - large enough to be negligible
     }
     
     return 2*M_PI*_aspd_filt_constrained/(GRAVITY_MSS*tan_bank);

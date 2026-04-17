@@ -140,6 +140,13 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
         rot.to_euler(&r, &p, &y);
         cr = cosf(r);
         sr = sinf(r);
+        // Validate recalculated values - to_euler() can produce NaN/Inf for edge cases
+        if (isnan(cr) || isinf(cr)) {
+            cr = 1.0f;
+        }
+        if (isnan(sr) || isinf(sr)) {
+            sr = 0.0f;
+        }
     }
 }
 

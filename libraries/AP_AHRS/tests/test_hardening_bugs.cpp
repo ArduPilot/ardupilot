@@ -90,13 +90,13 @@ TEST(VariometerBugFixTest, CalculateCirclingTimeConstantDivisionByZero)
     Variometer variometer(aparm, polarParams);
     
     // Test with thermal_bank = 0, which would cause tan(0) = 0
-    // The fix adds a check for is_zero(tan_bank)
+    // The fix adds a check for is_zero(tan_bank) and returns 60.0f
     float time_constant = variometer.calculate_circling_time_constant(0.0f);
     
-    // Verify result is valid (should be 0.0 due to the fix)
+    // Verify result is valid (should be 60.0f - large time constant for level flight)
     EXPECT_FALSE(isnan(time_constant));
     EXPECT_FALSE(isinf(time_constant));
-    EXPECT_FLOAT_EQ(0.0f, time_constant);
+    EXPECT_FLOAT_EQ(60.0f, time_constant);
 }
 
 // Test 4: AP_Math/control division by zero (accel_lim)
