@@ -589,12 +589,22 @@ class Board:
         # GCC and Clang, and on any host architecture.
         if cfg.env.BOARD_CLASS == 'Linux' or cfg.env.BOARD == 'sitl':
             _fragment = 'int main() { return 0; }\n'
-            for _flag in ['-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-fPIE']:
+            for _flag in ['-fstack-protector-strong', '-fPIE']:
                 if cfg.check_cxx(cxxflags=[_flag],
                                  fragment=_fragment,
                                  msg='Checking for %s' % _flag,
                                  mandatory=False):
                     env.CXXFLAGS += [_flag]
+            # _FORTIFY_SOURCE=2 requires at least -O1 to have any effect;
+            # skip it for debug (no-optimisation) builds where it is silently
+            # a no-op and can produce confusing compiler warnings.
+            _has_opt = any(f in env.CXXFLAGS for f in ['-O1', '-O2', '-O3', '-Os', '-Og'])
+            if _has_opt:
+                if cfg.check_cxx(cxxflags=['-D_FORTIFY_SOURCE=2'],
+                                 fragment=_fragment,
+                                 msg='Checking for -D_FORTIFY_SOURCE=2',
+                                 mandatory=False):
+                    env.CXXFLAGS += ['-D_FORTIFY_SOURCE=2']
             # -fstack-clash-protection is not supported on all platforms/compilers
             if cfg.check_cxx(cxxflags=['-fstack-clash-protection'],
                              fragment=_fragment,
