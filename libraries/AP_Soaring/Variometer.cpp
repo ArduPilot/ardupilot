@@ -153,5 +153,5 @@ float Variometer::calculate_circling_time_constant(float thermal_bank) const
         return 60.0f;  // 60 seconds - large enough to be negligible
     }
     
-    return 2*M_PI*_aspd_filt_constrained/(GRAVITY_MSS*tan_bank);
+    return 2*M_PI*_aspd_filt_constrained/(GRAVITY_MSS*fabsf(tan_bank));
 }
