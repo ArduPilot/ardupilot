@@ -27,9 +27,14 @@ static int feed_sumd_packet(uint8_t num_channels,
     sumd_decode(0x00, rssi, rx_count, channel_count, channels, max_chan_count);
 
     // Packet: header(1) + status(1) + length(1) + channel_data(num_channels*2) + crc16(2)
+    // Maximum possible packet: 3 + 32*2 + 2 = 69 bytes (SUMD_MAX_CHANNELS = 32)
     const size_t data_len = 3U + num_channels * 2U;
     const size_t pkt_len  = data_len + 2U;
-    uint8_t pkt[pkt_len];
+    // Fixed-size buffer avoids a C99 VLA in C++ code; sized for max 32 channels.
+    uint8_t pkt[3U + 32U * 2U + 2U];
+    if (pkt_len > sizeof(pkt)) {
+        return -1;
+    }
 
     pkt[0] = SUMD_HEADER_ID;
     pkt[1] = SUMD_ID_SUMD;
