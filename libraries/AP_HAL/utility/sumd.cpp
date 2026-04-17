@@ -347,7 +347,7 @@ int sumd_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 			/* we start at channel 5(index 4) */
 			unsigned chan_index = 4;
 
-			for (i = 4; i < _rxpacket.length; i++) {
+			for (i = 4; i < _rxpacket.length && chan_index < max_chan_count; i++) {
 				if (_debug) {
 					printf("ch[%u] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
 					       ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,

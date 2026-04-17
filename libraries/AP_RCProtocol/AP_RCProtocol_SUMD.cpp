@@ -178,7 +178,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
             values[3] = (uint16_t)((_rxpacket.sumd_data[3 * 2 + 1] << 8) | _rxpacket.sumd_data[3 * 2 + 2]) >> 3;
 
             /* we start at channel 5(index 4) */
-            for (uint8_t i = 4; i < _rxpacket.length; i++) {
+            for (uint8_t i = 4; i < _rxpacket.length && i < SUMD_MAX_CHANNELS; i++) {
 #ifdef SUMD_DEBUG
                 hal.console->printf("ch[%u] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
                                     ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,
