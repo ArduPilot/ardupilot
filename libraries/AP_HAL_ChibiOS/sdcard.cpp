@@ -42,6 +42,7 @@ static SDCConfig sdcconfig = {
 #elif HAL_USE_MMC_SPI
 MMCDriver MMCD1;
 static AP_HAL::SPIDevice *device;
+static bool sd_semaphore_held;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
@@ -261,8 +262,10 @@ __RAMFUNC__ void spiSelectHook(SPIDriver *spip)
         // skip the chip-select if the semaphore is not immediately
         // available; the SD stack will propagate the error upward.
         if (!device->get_semaphore()->take_nonblocking()) {
+            sd_semaphore_held = false;
             return;
         }
+        sd_semaphore_held = true;
         device->set_chip_select(true);
     }
 }
@@ -271,7 +274,10 @@ __RAMFUNC__ void spiUnselectHook(SPIDriver *spip)
 {
     if (sdcard_running) {
         device->set_chip_select(false);
-        device->get_semaphore()->give();
+        if (sd_semaphore_held) {
+            device->get_semaphore()->give();
+            sd_semaphore_held = false;
+        }
     }
 }
 
