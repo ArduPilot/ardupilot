@@ -41,6 +41,14 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
     bool ret = false;
     uint8_t regstart = packet.regstart;
 
+    // Refuse hardware register access while the vehicle is armed.
+    // Reading/writing I2C or SPI devices from GCS during flight can
+    // corrupt sensor state and cause loss of control.
+    if (hal.util->get_soft_armed()) {
+        retcode = 6;  // locally-defined: refused while armed
+        goto fail;
+    }
+
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
         dev = hal.i2c_mgr->get_device_ptr(packet.bus, packet.address);
     } else if (packet.bustype == DEVICE_OP_BUSTYPE_SPI) {
@@ -106,7 +114,13 @@ void GCS_MAVLINK::handle_device_op_write(const mavlink_message_t &msg)
     mavlink_msg_device_op_write_decode(&msg, &packet);
     AP_HAL::Device *dev = nullptr;
     uint8_t retcode = 0;
-    
+
+    // Same armed-state guard as handle_device_op_read().
+    if (hal.util->get_soft_armed()) {
+        retcode = 6;  // locally-defined: refused while armed
+        goto fail;
+    }
+
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
         dev = hal.i2c_mgr->get_device_ptr(packet.bus, packet.address);
     } else if (packet.bustype == DEVICE_OP_BUSTYPE_SPI) {

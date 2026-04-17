@@ -45,6 +45,13 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
 
     bool exclusive = (packet.flags & SERIAL_CONTROL_FLAG_EXCLUSIVE) != 0;
 
+    // Disallow exclusive serial port takeover while the vehicle is armed:
+    // locking a telemetry channel during flight could prevent safety-critical
+    // GCS commands from reaching the autopilot.
+    if (exclusive && hal.util->get_soft_armed()) {
+        return;
+    }
+
     switch (packet.device) {
     case SERIAL_CONTROL_DEV_TELEM1: {
         GCS_MAVLINK *link = gcs().chan(1);
