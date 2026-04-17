@@ -155,7 +155,7 @@ void Battery::init_capacity(float capacity)
     set_initial_SoC(voltage_set);
 }
 
-void Battery::set_current(float current_amps, uint64_t now_us)
+void Battery::consume_energy(float current_amps, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
     float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
