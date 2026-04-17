@@ -180,7 +180,17 @@ void AP_AIS::update()
                         log_raw(&_incoming);
                     }
 #endif
-                    // remove
+                    // Sort indices descending before shifting so that each
+                    // buffer_shift() call does not invalidate later indices.
+                    for (uint8_t a = 0; a < index; a++) {
+                        for (uint8_t b = a + 1; b < index; b++) {
+                            if (msg_parts[b] > msg_parts[a]) {
+                                uint8_t tmp = msg_parts[a];
+                                msg_parts[a] = msg_parts[b];
+                                msg_parts[b] = tmp;
+                            }
+                        }
+                    }
                     for (uint8_t i = 0; i < index; i++) {
                         buffer_shift(msg_parts[i]);
                     }
@@ -197,6 +207,17 @@ void AP_AIS::update()
 #if HAL_LOGGING_ENABLED
                 const bool decoded = payload_decode(s.get_string());
 #endif
+                // Sort indices descending before shifting so that each
+                // buffer_shift() call does not invalidate later indices.
+                for (uint8_t a = 0; a < index; a++) {
+                    for (uint8_t b = a + 1; b < index; b++) {
+                        if (msg_parts[b] > msg_parts[a]) {
+                            uint8_t tmp = msg_parts[a];
+                            msg_parts[a] = msg_parts[b];
+                            msg_parts[b] = tmp;
+                        }
+                    }
+                }
                 for (uint8_t i = 0; i < index; i++) {
 #if HAL_LOGGING_ENABLED
                     // unsupported type, log and discard
@@ -856,12 +877,18 @@ uint32_t AP_AIS::get_bits(const char *payload, uint16_t low, uint16_t high)
     if (payload == nullptr || high < low) {
         return 0;
     }
-    
+
     uint8_t char_low = low / 6;
     uint8_t bit_low = low % 6;
 
     uint8_t char_high = high / 6;
     uint8_t bit_high = (high % 6) + 1;
+
+    // Ensure the payload is long enough to satisfy the requested bit range
+    const size_t payload_len = strlen(payload);
+    if (char_high >= payload_len) {
+        return 0;
+    }
 
     uint32_t val = 0;
     for (uint8_t index = 0; index <= char_high - char_low; index++) {
