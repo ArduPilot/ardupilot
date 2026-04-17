@@ -151,6 +151,14 @@ class Board:
         else:
             cfg.msg("Enabled OpenDroneID", 'no', color='YELLOW')
 
+        # allow enable of fuzzing harness for security testing
+        if cfg.options.enable_fuzzer:
+            env.ENABLE_FUZZER = True
+            cfg.msg("Enabled fuzzing harness", 'yes')
+        else:
+            env.ENABLE_FUZZER = False
+            cfg.msg("Enabled fuzzing harness", 'no', color='YELLOW')
+
         # allow enable of firmware ID checking for any board
         if cfg.options.enable_check_firmware:
             env.CHECK_FIRMWARE_ENABLED = True

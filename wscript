@@ -214,6 +214,11 @@ def options(opt):
         default=False,
         help='enable OS level thread statistics.')
 
+    g.add_option('--enable-fuzzer',
+        action='store_true',
+        default=False,
+        help='enable fuzzing harness build.')
+
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -879,6 +884,9 @@ def _build_recursion(bld):
     if bld.env.ENABLE_ONVIF:
         dirs_to_recurse.append('libraries/AP_ONVIF')
 
+    if bld.env.ENABLE_FUZZER:
+        dirs_to_recurse.append('libraries/AP_Fuzzing/tests')
+
     for p in hal_dirs_patterns:
         dirs_to_recurse += collect_dirs_to_recurse(
             bld,
@@ -950,6 +958,10 @@ def build(bld):
     _build_common_taskgens(bld)
 
     _build_recursion(bld)
+
+    # Build fuzzing harness if enabled
+    if bld.env.ENABLE_FUZZER:
+        bld.recurse('libraries/AP_Fuzzing')
 
     _build_post_funs(bld)
     if is_ci:

@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+'''waf build script for ArduPilot fuzzing tests'''
+
+def build(bld):
+    bld.ap_find_tests(
+        use='ap',
+    )
