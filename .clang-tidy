@@ -1,0 +1,108 @@
+---
+# ArduPilot clang-tidy Configuration
+# 
+# This configuration enforces coding standards and catches common bugs
+# in ArduPilot codebase.
+#
+# Usage:
+#   run-clang-tidy -p build -config-file=.clang-tidy
+#
+# For more info: https://clang.llvm.org/extra/clang-tidy/
+
+Checks: >-
+  -*,
+  
+  # Bugprone checks - catch common bugs
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-implicit-widening-of-multiplication-result,
+  
+  # CERT C++ Secure Coding Standard
+  cert-*,
+  -cert-err58-cpp,
+  
+  # Clang Static Analyzer
+  clang-analyzer-*,
+  -clang-analyzer-cplusplus.NewDeleteLeaks,
+  
+  # C++ Core Guidelines
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-special-member-functions,
+  
+  # Misc checks
+  misc-*,
+  -misc-non-private-member-variables-in-classes,
+  -misc-include-cleaner,
+  
+  # Performance
+  performance-*,
+  -performance-unnecessary-value-param,
+  
+  # Portability
+  portability-*,
+  
+  # Readability
+  readability-*,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-size,
+  -readability-cognitive-complexity,
+
+# Treat all warnings as errors for critical checks
+WarningsAsErrors: '*'
+
+# Apply to all headers
+HeaderFilterRegex: '.*'
+
+# Analyze temporary destructors
+AnalyzeTemporaryDtors: false
+
+# Format style (use project style)
+FormatStyle: none
+
+# Check-specific options
+CheckOptions:
+  # CERT OOP54-C: Warn on functions that throw exceptions
+  - key: cert-oop54-cpp.WarningThreshold
+    value: '4'
+  
+  # Naming conventions for ArduPilot
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: ''
+  
+  # Function size limits (advisory for critical code)
+  - key: readability-function-size.LineThreshold
+    value: '100'
+  - key: readability-function-size.StatementThreshold
+    value: '50'
+  - key: readability-function-size.ParameterThreshold
+    value: '6'
+  
+  # Cognitive complexity limit
+  - key: readability-cognitive-complexity.Threshold
+    value: '25'
+
+# Ignore specific paths
+IgnoreDerivedHeaders:
+  - 'modules/*'
+  - 'build/*'
