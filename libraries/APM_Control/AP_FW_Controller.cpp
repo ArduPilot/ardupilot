@@ -192,6 +192,9 @@ float AP_FW_Controller::run_rate_control(float desired_rate, float scaler, bool 
 */
 float AP_FW_Controller::run_rate_control(float desired_rate, float scaler)
 {
+    // Zero angle error in pure rate control
+    angle_err_deg = 0.0;
+
     if (!apply_input_shaping()) {
         // Reset input shaping set points
         reset_input_shaping(get_measured_angle(), desired_rate);
