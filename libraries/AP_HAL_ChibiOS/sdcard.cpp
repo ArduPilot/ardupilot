@@ -255,7 +255,14 @@ __RAMFUNC__ void spiReleaseBusHook(SPIDriver *spip)
 __RAMFUNC__ void spiSelectHook(SPIDriver *spip)
 {
     if (sdcard_running) {
-        device->get_semaphore()->take_blocking();
+        // take_blocking() must not be used here: spiSelectHook is
+        // invoked from the ChibiOS SPI DMA callback (ISR context) where
+        // sleeping or blocking is forbidden.  Use take_nonblocking() and
+        // skip the chip-select if the semaphore is not immediately
+        // available; the SD stack will propagate the error upward.
+        if (!device->get_semaphore()->take_nonblocking()) {
+            return;
+        }
         device->set_chip_select(true);
     }
 }
