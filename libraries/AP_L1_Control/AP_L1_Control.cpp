@@ -335,7 +335,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 
     // Limit Nu to +-(pi/2)
     Nu = constrain_float(Nu, -1.5708f, +1.5708f);
-    _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
+    _latAccDem = K_L1 * groundSpeed * groundSpeed / MAX(_L1_dist, 0.1f) * sinf(Nu);
 
     // Waypoint capture status is always false during waypoint following
     _WPcircle = false;

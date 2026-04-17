@@ -361,7 +361,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     if (rpy_high - rpy_low > 1.0f) {
         rpy_scale = 1.0f / (rpy_high - rpy_low);
     }
-    if (throttle_avg_max + rpy_low < 0) {
+    if (throttle_avg_max + rpy_low < 0 && rpy_low < 0) {
         rpy_scale = MIN(rpy_scale, -throttle_avg_max / rpy_low);
     }
 
