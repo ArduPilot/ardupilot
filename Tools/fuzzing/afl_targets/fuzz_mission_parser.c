@@ -1,5 +1,5 @@
 /*
- * AFL++ Fuzzing Target for Mission File Parser
+ * AFL++ Fuzzing Target for ArduPilot Mission File Parser
  * 
  * Usage:
  *   export CC=afl-clang-fast
@@ -15,11 +15,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#include <AP_Mission/AP_Mission.h>
-#include <AP_HAL/AP_HAL.h>
-
-const AP_HAL::HAL& hal = AP_HAL::get_HAL();
-
 // Maximum mission file size for fuzzing (1MB)
 #define MAX_MISSION_SIZE (1024 * 1024)
 
@@ -32,7 +27,7 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
  */
 static int parse_mission_data(const uint8_t *data, size_t size)
 {
-    if (data == nullptr || size == 0) {
+    if (data == NULL || size == 0) {
         return -1;
     }
     
@@ -43,7 +38,7 @@ static int parse_mission_data(const uint8_t *data, size_t size)
     
     // Create null-terminated string for parsing
     char *mission_str = (char *)malloc(size + 1);
-    if (mission_str == nullptr) {
+    if (mission_str == NULL) {
         return -1;
     }
     
@@ -58,7 +53,7 @@ static int parse_mission_data(const uint8_t *data, size_t size)
     int line_num = 0;
     int waypoint_count = 0;
     
-    while (line != nullptr && line_num < 1000) {
+    while (line != NULL && line_num < 1000) {
         line_num++;
         
         // Skip header line
@@ -68,13 +63,13 @@ static int parse_mission_data(const uint8_t *data, size_t size)
                 free(mission_str);
                 return -1;
             }
-            line = strtok(nullptr, "\n");
+            line = strtok(NULL, "\n");
             continue;
         }
         
         // Skip empty lines
         if (strlen(line) < 10) {
-            line = strtok(nullptr, "\n");
+            line = strtok(NULL, "\n");
             continue;
         }
         
@@ -102,20 +97,26 @@ static int parse_mission_data(const uint8_t *data, size_t size)
             }
             
             // Check for NaN/Inf in coordinates
-            if (isnan(x) || isnan(y) || isnan(z) ||
-                isinf(x) || isinf(y) || isinf(z)) {
+            if (x != x || y != y || z != z ||  // NaN check
+                x == 1e38f || y == 1e38f || z == 1e38f) {  // Inf check
                 free(mission_str);
                 return -1;
             }
             
             // Check for extreme values
-            if (fabsf(x) > 90.0f || fabsf(y) > 180.0f) {
+            if (x < -90.0f || x > 90.0f || y < -180.0f || y > 180.0f) {
+                free(mission_str);
+                return -1;
+            }
+            
+            // Check altitude
+            if (z < -1000.0f || z > 100000.0f) {
                 free(mission_str);
                 return -1;
             }
         }
         
-        line = strtok(nullptr, "\n");
+        line = strtok(NULL, "\n");
     }
     
     free(mission_str);

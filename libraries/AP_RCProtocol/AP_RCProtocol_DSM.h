@@ -46,12 +46,12 @@ private:
                     uint16_t *values, uint16_t *num_values, uint16_t max_values);
 
     /**< Channel resolution, 0=unknown, 10=10 bit, 11=11 bit */
-    uint8_t channel_shift;
+    uint8_t channel_shift{0};
 
     // format guessing state
-    uint32_t	cs10;
-    uint32_t	cs11;
-    uint32_t samples;
+    uint32_t	cs10{0};
+    uint32_t	cs11{0};
+    uint32_t samples{0};
 
     // bind state machine
     enum {
@@ -60,25 +60,25 @@ private:
         BIND_STATE2,
         BIND_STATE3,
         BIND_STATE4,
-    } bind_state;
-    uint32_t bind_last_ms;
-    uint32_t bind_mode_saved;
+    } bind_state{BIND_STATE_NONE};
+    uint32_t bind_last_ms{0};
+    uint32_t bind_mode_saved{0};
 
-    uint16_t last_values[AP_DSM_MAX_CHANNELS];
+    uint16_t last_values[AP_DSM_MAX_CHANNELS] = {};
 
     struct {
         uint8_t buf[16];
-        uint8_t ofs;
+        uint8_t ofs{0};
     } byte_input;
 
     enum DSM_DECODE_STATE {
         DSM_DECODE_STATE_DESYNC = 0,
         DSM_DECODE_STATE_SYNC
-    } dsm_decode_state;
+    } dsm_decode_state{DSM_DECODE_STATE_DESYNC};
 
-    uint32_t last_frame_time_ms;
-    uint32_t last_rx_time_ms;
-    uint16_t chan_count;
+    uint32_t last_frame_time_ms{0};
+    uint32_t last_rx_time_ms{0};
+    uint16_t chan_count{0};
 
     SoftSerial ss{115200, SoftSerial::SERIAL_CONFIG_8N1};
 };
