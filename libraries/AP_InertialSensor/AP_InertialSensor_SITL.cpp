@@ -449,7 +449,8 @@ void AP_InertialSensor_SITL::read_gyro_from_file()
         }
     }
 
-    float buf[8 * 3 * sizeof(float)];
+    // Buffer for nsamples of 3-axis gyro data (floats)
+    float buf[8 * 3];
 
     uint8_t nsamples = enable_fast_sampling(gyro_instance) ? 8 : 1;
     ssize_t ret = ::read(gyro_fd, buf, nsamples * 3 * sizeof(float));
@@ -517,7 +518,8 @@ void AP_InertialSensor_SITL::read_accel_from_file()
         }
     }
 
-    float buf[4*3*sizeof(float)];
+    // Buffer for nsamples of 3-axis accel data (floats)
+    float buf[4 * 3];
 
     uint8_t nsamples = enable_fast_sampling(accel_instance) ? 4 : 1;
     ssize_t ret = ::read(accel_fd, buf, nsamples * 3 * sizeof(float));

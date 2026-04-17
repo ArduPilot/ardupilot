@@ -363,6 +363,10 @@ bool AP_Beacon::get_next_boundary_point(const Vector2f* boundary_pts, uint8_t nu
     uint8_t lowest_index = 0;
     for (uint8_t i=0; i < num_points; i++) {
         if (i != current_index) {
+            // Check for NaN or invalid points to prevent bad calculations
+            if (boundary_pts[i].is_nan() || !isfinite(boundary_pts[i].x) || !isfinite(boundary_pts[i].y)) {
+                continue;
+            }
             Vector2f vec = boundary_pts[i] - curr_point;
             if (!vec.is_zero()) {
                 float angle = wrap_2PI(atan2f(vec.y, vec.x));

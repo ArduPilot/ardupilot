@@ -331,7 +331,8 @@ int16_t RC_Channel::get_control_mid() const
 
         int16_t radio_trim_low  = radio_min + dead_zone;
 
-        return (((int32_t)(high_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
+        // Use floating-point division to preserve precision
+        return (int16_t)((float)high_in * (float)(r_in - radio_trim_low) / (float)(radio_max - radio_trim_low));
     } else {
         return 0;
     }

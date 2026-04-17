@@ -204,8 +204,9 @@ bool Polygon_closest_distance_point(const Vector2f *V, unsigned N,
                                     const Vector2f &p, Vector2f &closest_vec)
 {
     float closest_sq = FLT_MAX;
+    // For a closed polygon, the last point equals the first, so we skip it
     if (Polygon_complete(V, N) && N > 0) {
-        N--;   // not a polygon
+        N--;   // Skip the duplicate closing point
     }
     if (N < 3) {
         return false;

@@ -446,7 +446,7 @@ void AP_OSD_ParamScreen::update_state_machine()
     // if we were armed then there is no selected parameter - so find one
     if (_selected_param == 0) {
         _selected_param = 1;
-        for (uint8_t i = 0; i < NUM_PARAMS && !params[_selected_param-1].enabled; i++) {
+        for (uint8_t i = 0; i < NUM_PARAMS && _selected_param <= NUM_PARAMS && !params[_selected_param-1].enabled; i++) {
             _selected_param++;
         }
     }
@@ -483,7 +483,7 @@ void AP_OSD_ParamScreen::update_state_machine()
                 _selected_param = SAVE_PARAM;
             }
             // skip over parameters that are not enabled
-            for (uint8_t i = 0; i < NUM_PARAMS + 1 && (_selected_param != SAVE_PARAM && !params[_selected_param-1].enabled); i++) {
+            for (uint8_t i = 0; i < NUM_PARAMS + 1 && _selected_param > 0 && _selected_param <= NUM_PARAMS && !params[_selected_param-1].enabled; i++) {
                 _selected_param--;
                 if (_selected_param < 1) {
                     _selected_param = SAVE_PARAM;
@@ -508,7 +508,7 @@ void AP_OSD_ParamScreen::update_state_machine()
                 _selected_param = 1;
             }
             // skip over parameters that are not enabled
-            for (uint8_t i = 0; i < NUM_PARAMS + 1 && (_selected_param != SAVE_PARAM && !params[_selected_param-1].enabled); i++) {
+            for (uint8_t i = 0; i < NUM_PARAMS + 1 && _selected_param > 0 && _selected_param <= NUM_PARAMS && !params[_selected_param-1].enabled; i++) {
                 _selected_param++;
                 if (_selected_param > SAVE_PARAM) {
                     _selected_param = 1;
