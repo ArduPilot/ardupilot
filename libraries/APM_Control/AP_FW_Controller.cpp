@@ -107,7 +107,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
 
     // Calculate angle error and apply gain
     angle_err_deg = wrap_180(angle_target_deg - get_measured_angle());
-    const float desired_rate = (angle_err_deg / gains.tau) + rate_target_deg;
+    const float desired_rate = angle_err_deg / gains.tau;
 
     // Run rate controller
     return run_axis_rate_control(desired_rate, scaler, disable_integrator, ground_mode);
