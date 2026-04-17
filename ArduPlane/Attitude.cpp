@@ -130,13 +130,7 @@ bool Plane::stick_mixing_enabled(void)
 void Plane::stabilize_roll()
 {
     if (fly_inverted()) {
-        // we want to fly upside down. We need to cope with wrap of
-        // the roll_sensor interfering with wrap of nav_roll, which
-        // would really confuse the PID code. The easiest way to
-        // handle this is to ensure both go in the same direction from
-        // zero
         nav_roll_cd += 18000;
-        if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
     float roll_out = stabilize_roll_get_roll_out();
 
