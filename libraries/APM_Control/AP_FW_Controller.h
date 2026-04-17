@@ -53,6 +53,9 @@ public:
     // Get input shaping angle, rate, and accel for logging
     void get_input_shaping(float &angle, float &rate, float &accel) const;
 
+    // Get the angle error in degrees
+    float get_angle_error_deg() const { return angle_err_deg; }
+
 protected:
     const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;
