@@ -779,13 +779,13 @@ float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, 
 float input_expo(float input, float expo)
 {
     // Clamp input to normalized stick range
-    input = constrain_float(input, -1.0, 1.0);
-    if (expo < 0.95) {
-        // Expo shaping: increases control around center stick
-        return (1 - expo) * input / (1 - expo * fabsf(input));
-    }
-    // If expo is too close to 1, return input unchanged
-    return input;
+    input = constrain_float(input, -1.0f, 1.0f);
+    // Clamp expo to prevent extreme gain at full deflection.
+    // At expo=0.95, input=±1 the denominator is only 0.05 (20× gain).
+    // Constraining to 0.9 keeps worst-case gain at 10× (denominator 0.1).
+    expo = constrain_float(expo, 0.0f, 0.9f);
+    const float denom = 1.0f - expo * fabsf(input);
+    return (1.0f - expo) * input / MAX(denom, 0.01f);
 }
 
 // Converts a lean angle (radians) to horizontal acceleration in m/s².

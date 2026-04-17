@@ -5263,6 +5263,14 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_int_t &packet
 #if AP_ARMING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
+    // Rate-limit arm/disarm attempts to prevent GCS flooding
+    static uint32_t last_arm_disarm_attempt_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_arm_disarm_attempt_ms < 200) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    last_arm_disarm_attempt_ms = now_ms;
+
     if (is_equal(packet.param1,1.0f)) {
         if (AP::arming().is_armed()) {
             return MAV_RESULT_ACCEPTED;
