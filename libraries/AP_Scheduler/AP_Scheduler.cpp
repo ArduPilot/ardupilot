@@ -132,7 +132,11 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
 
     _num_tasks = _num_vehicle_tasks + _num_common_tasks;
 
-   _last_run = NEW_NOTHROW uint16_t[_num_tasks];
+    _last_run = NEW_NOTHROW uint16_t[_num_tasks]{};
+    if (_last_run == nullptr) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+    }
     _tick_counter = 0;
 
     // setup initial performance counters

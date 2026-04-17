@@ -136,7 +136,8 @@ void AP_DAL_RangeFinder::handle_message(const log_RRNH &msg)
     _RRNH = msg;
     if (_RRNH.num_sensors > 0 && _RRNI == nullptr) {
         _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
-        _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
+        _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors]{};
+
     }
 }
 
