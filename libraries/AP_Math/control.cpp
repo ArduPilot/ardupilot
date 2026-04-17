@@ -277,13 +277,6 @@ void shape_pos_vel_accel(postype_t pos_desired, float vel_desired, float accel_d
     float k_v;
     if (is_positive(pos_error)) {
         accel_lim = -accel_min;         // acceleration limit magnitude (positive)
-        // Prevent division by zero if accel_min is exactly 0
-        if (is_zero(accel_lim)) {
-            // Use minimum non-zero acceleration to prevent division by zero
-            // This represents 0.001 m/s² - small enough to be negligible
-            // but large enough to avoid numerical instability
-            accel_lim = 0.001f;
-        }
         k_v = jerk_max / accel_lim;     // inner velocity-loop gain derived from jerk/accel limits (1/s)
     } else {
         accel_lim = accel_max;          // acceleration limit magnitude (positive)

@@ -140,12 +140,7 @@ struct FwUpload {
     // Helper functions
     uint8_t pending_length()
     {
-        // Use safe circular buffer arithmetic to prevent underflow
-        if (pending_head >= pending_tail) {
-            return pending_head - pending_tail;
-        } else {
-            return SZ_BUFFER - (pending_tail - pending_head);
-        }
+        return (pending_head - pending_tail) & (SZ_BUFFER - 1);
     }
     uint8_t free_length()
     {

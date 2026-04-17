@@ -584,40 +584,33 @@ class Board:
         if cfg.options.ekf_single:
             env.CXXFLAGS += ['-DHAL_WITH_EKF_DOUBLE=0']
 
-        # Security hardening flags
-        # These flags provide protection against common vulnerabilities
-        # Note: Some flags are platform-specific
+        # Security hardening flags for Linux/SITL builds.
+        # Each flag is probed via the configured compiler so this works for both
+        # GCC and Clang, and on any host architecture.
         if cfg.env.BOARD_CLASS == 'Linux' or cfg.env.BOARD == 'sitl':
-            # Only apply hardening flags to Linux/SITL builds where they are supported
-            env.CXXFLAGS += [
-                '-fstack-protector-strong',      # Stack overflow protection
-                '-D_FORTIFY_SOURCE=2',           # Safer libc calls (buffer overflow protection)
-                '-fPIE',                         # Position-independent code (for ASLR)
-            ]
-            # Position-independent executable (for ASLR support) - linker flag
-            env.LINKFLAGS += [
-                '-pie',
-            ]
-            # Stack clash protection - not supported on all platforms (e.g., macOS)
-            # Only add if the compiler supports it without warnings
-            import subprocess
-            try:
-                result = subprocess.run(['clang++', '-c', '-x', 'c++', '-fstack-clash-protection', '-Werror=unused-command-line-argument', '-fsyntax-only', '/dev/null'], 
-                                       capture_output=True, timeout=5)
-                if result.returncode == 0:
-                    env.CXXFLAGS += ['-fstack-clash-protection']
-            except Exception:
-                pass
-            # Control-flow protection - only on x86_64 with Intel CET support
-            import platform
-            if platform.machine() == 'x86_64':
-                try:
-                    result = subprocess.run(['clang++', '-c', '-x', 'c++', '-fcf-protection', '-Werror=unused-command-line-argument', '-fsyntax-only', '/dev/null'],
-                                           capture_output=True, timeout=5)
-                    if result.returncode == 0:
-                        env.CXXFLAGS += ['-fcf-protection']
-                except Exception:
-                    pass
+            _fragment = 'int main() { return 0; }\n'
+            for _flag in ['-fstack-protector-strong', '-D_FORTIFY_SOURCE=2', '-fPIE']:
+                if cfg.check_cxx(cxxflags=[_flag],
+                                 fragment=_fragment,
+                                 msg='Checking for %s' % _flag,
+                                 mandatory=False):
+                    env.CXXFLAGS += [_flag]
+            # -fstack-clash-protection is not supported on all platforms/compilers
+            if cfg.check_cxx(cxxflags=['-fstack-clash-protection'],
+                             fragment=_fragment,
+                             msg='Checking for -fstack-clash-protection',
+                             mandatory=False):
+                env.CXXFLAGS += ['-fstack-clash-protection']
+            # -fcf-protection (Intel CET) is only useful on x86_64
+            if cfg.env.DEST_CPU == 'x86_64':
+                if cfg.check_cxx(cxxflags=['-fcf-protection'],
+                                 fragment=_fragment,
+                                 msg='Checking for -fcf-protection',
+                                 mandatory=False):
+                    env.CXXFLAGS += ['-fcf-protection']
+            # -pie pairs with -fPIE
+            if '-fPIE' in env.CXXFLAGS:
+                env.LINKFLAGS += ['-pie']
 
         if cfg.env.CONSISTENT_BUILDS:
             # if symbols are renamed we don't want them to affect the output:
