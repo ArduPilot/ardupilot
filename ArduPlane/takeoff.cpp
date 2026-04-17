@@ -238,18 +238,7 @@ void Plane::takeoff_calc_pitch(void)
         // increase the robustness of hand launches, particularly
         // in cross-winds. If we start to roll over then we reduce
         // pitch demand until the roll recovers
-
-        // Handle target roll for inverted flight with a local variable,
-        // so internal state is still updated once by Plane::stabilize_roll
-        int32_t local_nav_roll_cd = nav_roll_cd;
-        if (fly_inverted()) {
-            local_nav_roll_cd += 18000;
-            if (ahrs.roll_sensor < 0) {
-                local_nav_roll_cd -= 36000;
-            }
-        }
-        float roll_error_rad = cd_to_rad(constrain_float(labs(local_nav_roll_cd - ahrs.roll_sensor), 0, 9000));
-        float reduction = sq(cosf(roll_error_rad));
+        float reduction = sq(cosf(radians(rollController.get_angle_error_deg())));
         nav_pitch_cd *= reduction;
 
         if (nav_pitch_cd < pitch_min_cd) {
