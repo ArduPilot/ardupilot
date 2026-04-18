@@ -198,9 +198,8 @@ void AR_WPNav::set_nudge_speed_max(float nudge_speed_max)
     _nudge_speed_max = nudge_speed_max;
 }
 
-// set desired location and (optionally) next_destination
-// next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav::set_desired_location(const Location& destination, Location next_destination)
+// (See declaration for documentation)
+bool AR_WPNav::set_destination(const Location& destination, Location next_destination)
 {
     // re-initialise if inactive, previous destination has been interrupted or different controller was used
     if (!is_active() || !_reached_destination || (_nav_control_type != NavControllerType::NAV_SCURVE)) {
@@ -301,18 +300,18 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     return true;
 }
 
-// set desired location to a reasonable stopping point, return true on success
-bool AR_WPNav::set_desired_location_to_stopping_location()
+// (See declaration for documentation)
+bool AR_WPNav::set_destination_to_stopping_location()
 {
     Location stopping_loc;
     if (!get_stopping_location(stopping_loc)) {
         return false;
     }
-    return set_desired_location(stopping_loc);
+    return set_destination(stopping_loc);
 }
 
-// set desired location as offset from the EKF origin, return true on success
-bool AR_WPNav::set_desired_location_NED(const Vector3f& destination)
+// (See declaration for documentation)
+bool AR_WPNav::set_destination_NED(const Vector3f& destination)
 {
     // initialise destination to ekf origin
     Location destination_ned;
@@ -322,10 +321,10 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f& destination)
 
     // apply offset
     destination_ned.offset(destination.x, destination.y);
-    return set_desired_location(destination_ned);
+    return set_destination(destination_ned);
 }
 
-bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination)
+bool AR_WPNav::set_destination_NED(const Vector3f &destination, const Vector3f &next_destination)
 {
     // initialise destination to ekf origin
     Location dest_loc, next_dest_loc;
@@ -337,13 +336,11 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vecto
     // apply offsets
     dest_loc.offset(destination.x, destination.y);
     next_dest_loc.offset(next_destination.x, next_destination.y);
-    return set_desired_location(dest_loc, next_dest_loc);
+    return set_destination(dest_loc, next_dest_loc);
 }
 
-// set desired location but expect the destination to be updated again in the near future
-// position controller input shaping will be used for navigation instead of scurves
-// Note: object avoidance is not supported if this method is used
-bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destination)
+// (See declaration for documentation)
+bool AR_WPNav::set_destination_expect_fast_update(const Location &destination)
 {
     // initialise if not active
     if (!is_active() || (_nav_control_type != NavControllerType::NAV_PSC_INPUT_SHAPING)) {
