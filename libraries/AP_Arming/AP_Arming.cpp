@@ -1477,14 +1477,6 @@ bool AP_Arming::get_aux_auth_id(uint8_t& auth_id)
         return false;
     }
 
-    // allocate buffer for failure message
-    if (aux_auth_fail_msg == nullptr) {
-        aux_auth_fail_msg = (char *)calloc(aux_auth_str_len, sizeof(char));
-        if (aux_auth_fail_msg == nullptr) {
-            aux_auth_error = true;
-            return false;
-        }
-    }
     auth_id = aux_auth_count;
     aux_auth_count++;
     return true;
@@ -1522,14 +1514,14 @@ void AP_Arming::set_aux_auth_failed(uint8_t auth_id, const char* fail_msg)
             return;
         }
     }
-    if (aux_auth_fail_msg != nullptr) {
-        if (fail_msg == nullptr) {
-            strncpy(aux_auth_fail_msg, "Auxiliary authorisation refused", aux_auth_str_len);
-        } else {
-            strncpy(aux_auth_fail_msg, fail_msg, aux_auth_str_len);
-        }
-        aux_auth_fail_msg_source = auth_id;
+    if (fail_msg == nullptr) {
+        strncpy(aux_auth_fail_msg, "Auxiliary authorisation refused", aux_auth_str_len);
+    } else {
+        strncpy(aux_auth_fail_msg, fail_msg, aux_auth_str_len);
     }
+    // guarantee null termination: strncpy does not terminate when src >= aux_auth_str_len
+    aux_auth_fail_msg[aux_auth_str_len - 1] = '\0';
+    aux_auth_fail_msg_source = auth_id;
 }
 
 void AP_Arming::reset_all_aux_auths()
@@ -1546,22 +1538,15 @@ void AP_Arming::reset_all_aux_auths()
         aux_auth_state[i] = AuxAuthStates::NO_RESPONSE;
     }
 
-    // free up the failure message buffer
-    if (aux_auth_fail_msg != nullptr) {
-        free(aux_auth_fail_msg);
-        aux_auth_fail_msg = nullptr;
-    }
+    // clear failure message buffer
+    aux_auth_fail_msg[0] = 0;
 }
 
 bool AP_Arming::aux_auth_checks(bool display_failure)
 {
     // handle error cases
     if (aux_auth_error) {
-        if (aux_auth_fail_msg == nullptr) {
-            check_failed(Check::AUX_AUTH, display_failure, "memory low for auxiliary authorisation");
-        } else {
-            check_failed(Check::AUX_AUTH, display_failure, "Too many auxiliary authorisers");
-        }
+        check_failed(Check::AUX_AUTH, display_failure, "Too many auxiliary authorisers");
         return false;
     }
 

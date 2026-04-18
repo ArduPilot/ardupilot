@@ -323,8 +323,8 @@ private:
         AUTH_PASSED
     } aux_auth_state[aux_auth_count_max] = {};  // state of each auxiliary authorisation
     uint8_t aux_auth_count;     // number of auxiliary authorisers
-    uint8_t aux_auth_fail_msg_source;   // authorisation id who set aux_auth_fail_msg
-    char* aux_auth_fail_msg;    // buffer for holding failure messages
+    uint8_t aux_auth_fail_msg_source;           // authorisation id who set aux_auth_fail_msg
+    char aux_auth_fail_msg[aux_auth_str_len] {}; // pre-allocated buffer for failure messages
     bool aux_auth_error;        // true if too many auxiliary authorisers
     HAL_Semaphore aux_auth_sem; // semaphore for accessing the aux_auth_state and aux_auth_fail_msg
 #endif
