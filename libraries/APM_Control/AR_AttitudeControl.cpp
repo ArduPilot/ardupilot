@@ -986,26 +986,27 @@ void AR_AttitudeControl::get_srate(float &steering_srate, float &speed_srate)
     speed_srate = _throttle_speed_pid_info.slew_rate;
 }
 
-// get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
-bool AR_AttitudeControl::get_forward_speed(float &speed) const
+// get forward velocity in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
+// FIXME: rename this as get_forward_velocity, since speed is always a positive quantity.
+bool AR_AttitudeControl::get_forward_speed(float &forward_velocity) const
 {
-    Vector3f velocity;
+    Vector3f velocity_NED;
     const AP_AHRS &_ahrs = AP::ahrs();
-    if (!_ahrs.get_velocity_NED(velocity)) {
+    if (!_ahrs.get_velocity_NED(velocity_NED)) {
         // use less accurate GPS, assuming entire length is along forward/back axis of vehicle
         if (AP::gps().status() >= AP_GPS_FixType::FIX_3D) {
             if (abs(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
-                speed = AP::gps().ground_speed();
+                forward_velocity = AP::gps().ground_speed();
             } else {
-                speed = -AP::gps().ground_speed();
+                forward_velocity = -AP::gps().ground_speed();
             }
             return true;
         } else {
             return false;
         }
     }
-    // calculate forward speed velocity into body frame
-    speed = velocity.x*_ahrs.cos_yaw() + velocity.y*_ahrs.sin_yaw();
+    // transform into body frame
+    forward_velocity = velocity_NED.x*_ahrs.cos_yaw() + velocity_NED.y*_ahrs.sin_yaw();
     return true;
 }
 
