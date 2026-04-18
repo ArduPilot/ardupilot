@@ -49,6 +49,12 @@ AP_ONVIF::AP_ONVIF()
         AP_HAL::panic("AP_ONVIF must be singleton");
     }
     _singleton = this;
+    // Initialise length trackers so the first call to start() performs
+    // correct comparison and allocation.
+    username_len = 0;
+    password_len = 0;
+    hostname_len = 0;
+    profile_token_size = 0;
 }
 
 // Start ONVIF client with username, password and service host url
@@ -140,8 +146,11 @@ bool AP_ONVIF::start(const char *user, const char *pass, const char *hostname)
         return false;
     }
 
-    strcpy(username, user);
-    strcpy(password, pass);
+    // Use strncpy with allocated size to prevent buffer overflow
+    strncpy(username, user, username_len);
+    username[username_len] = '\0';
+    strncpy(password, pass, password_len);
+    password[password_len] = '\0';
     snprintf(device_endpoint, hostname_len + strlen(DEVICE_ENDPOINT_LOC) + 1, "%s" DEVICE_ENDPOINT_LOC, hostname);
     snprintf(media_endpoint, hostname_len + strlen(MEDIA_ENDPOINT_LOC) + 1, "%s" MEDIA_ENDPOINT_LOC, hostname);
     snprintf(ptz_endpoint, hostname_len + strlen(PTZ_ENDPOINT_LOC) + 1, "%s" PTZ_ENDPOINT_LOC, hostname);
@@ -278,7 +287,8 @@ bool AP_ONVIF::probe_onvif_server()
             }
         }
 
-        strcpy(profile_token, GetProfilesResponse.Profiles[0]->token);
+        strncpy(profile_token, GetProfilesResponse.Profiles[0]->token, profile_token_size - 1);
+        profile_token[profile_token_size - 1] = '\0';
 
         proxy_ptz->soap_endpoint = ptz_endpoint;
     }
@@ -308,12 +318,26 @@ bool AP_ONVIF::probe_onvif_server()
             DEBUG_PRINT("PTZ: %s", GetConfigurationsResponse.PTZConfiguration[i]->Name);
         }
         //GetConfigurationsResponse.PTZConfiguration[0]->token
-        pan_tilt_limit_max = Vector2f(GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->XRange->Max,
-                            GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->YRange->Max);
-        pan_tilt_limit_min = Vector2f(GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->XRange->Min,
-                            GetConfigurationsResponse.PTZConfiguration[0]->PanTiltLimits->Range->YRange->Min);
-        zoom_min = GetConfigurationsResponse.PTZConfiguration[0]->ZoomLimits->Range->XRange->Min;
-        zoom_max = GetConfigurationsResponse.PTZConfiguration[0]->ZoomLimits->Range->XRange->Max;
+        {
+            auto *ptz0 = GetConfigurationsResponse.PTZConfiguration[0];
+            if (ptz0 == nullptr ||
+                ptz0->PanTiltLimits == nullptr || ptz0->PanTiltLimits->Range == nullptr ||
+                ptz0->PanTiltLimits->Range->XRange == nullptr || ptz0->PanTiltLimits->Range->YRange == nullptr) {
+                ERROR_PRINT("PTZ configuration missing pan/tilt limit fields");
+                goto err;
+            }
+            pan_tilt_limit_max = Vector2f(ptz0->PanTiltLimits->Range->XRange->Max,
+                                          ptz0->PanTiltLimits->Range->YRange->Max);
+            pan_tilt_limit_min = Vector2f(ptz0->PanTiltLimits->Range->XRange->Min,
+                                          ptz0->PanTiltLimits->Range->YRange->Min);
+            if (ptz0->ZoomLimits == nullptr || ptz0->ZoomLimits->Range == nullptr ||
+                ptz0->ZoomLimits->Range->XRange == nullptr) {
+                ERROR_PRINT("PTZ configuration missing zoom limit fields");
+                goto err;
+            }
+            zoom_min = ptz0->ZoomLimits->Range->XRange->Min;
+            zoom_max = ptz0->ZoomLimits->Range->XRange->Max;
+        }
 
         DEBUG_PRINT("Pan: %f %f Tilt: %f %f", pan_tilt_limit_min.x, pan_tilt_limit_max.x,
                                         pan_tilt_limit_min.y, pan_tilt_limit_max.y);
@@ -334,18 +358,30 @@ bool AP_ONVIF::probe_onvif_server()
             goto err;
         }
 
+        if (GetStatusResponse.PTZStatus == nullptr) {
+            ERROR_PRINT("PTZ status response is null");
+            goto err;
+        }
         if (GetStatusResponse.PTZStatus->Error) {
             DEBUG_PRINT("ErrorStatus: %s", GetStatusResponse.PTZStatus->Error);
         }
-        if (GetStatusResponse.PTZStatus->MoveStatus->PanTilt) {
-            DEBUG_PRINT("PTStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->PanTilt);
+        if (GetStatusResponse.PTZStatus->MoveStatus != nullptr) {
+            if (GetStatusResponse.PTZStatus->MoveStatus->PanTilt) {
+                DEBUG_PRINT("PTStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->PanTilt);
+            }
+            if (GetStatusResponse.PTZStatus->MoveStatus->Zoom) {
+                DEBUG_PRINT("ZoomStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->Zoom);
+            }
         }
-        if (GetStatusResponse.PTZStatus->MoveStatus->Zoom) {
-            DEBUG_PRINT("ZoomStatus:  %d", *GetStatusResponse.PTZStatus->MoveStatus->Zoom);
+        if (GetStatusResponse.PTZStatus->Position != nullptr) {
+            if (GetStatusResponse.PTZStatus->Position->PanTilt != nullptr) {
+                DEBUG_PRINT("Pan: %f Tilt: %f", GetStatusResponse.PTZStatus->Position->PanTilt->x,
+                                        GetStatusResponse.PTZStatus->Position->PanTilt->y);
+            }
+            if (GetStatusResponse.PTZStatus->Position->Zoom != nullptr) {
+                DEBUG_PRINT("Zoom: %f", GetStatusResponse.PTZStatus->Position->Zoom->x);
+            }
         }
-        DEBUG_PRINT("Pan: %f Tilt: %f", GetStatusResponse.PTZStatus->Position->PanTilt->x,
-                                GetStatusResponse.PTZStatus->Position->PanTilt->y);
-        DEBUG_PRINT("Zoom: %f", GetStatusResponse.PTZStatus->Position->Zoom->x);
     }
 
     soap_destroy(soap);
