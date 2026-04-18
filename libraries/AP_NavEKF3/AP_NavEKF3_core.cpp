@@ -2011,17 +2011,16 @@ bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
 
     // update the covariance matrix as P = P - KHP (KHP was filled by caller)
     for (auto r=0; r<=stateIndexLim; r++) {
-        for (auto c=0; c<=stateIndexLim; c++) {
-            P[r][c] -= KHP[r][c];
-        }
-    }
-
-    // force the covariance matrix to be symmetrical
-    for (auto r=1; r<=stateIndexLim; r++) {
-        for (auto c=0; c<=r-1; c++) {
-            const ftype temp = 0.5f*(P[r][c] + P[c][r]);
-            P[r][c] = temp;
-            P[c][r] = temp;
+        for (auto c=0; c<=r; c++) {
+            // P must end up symmetric, so average the upper and lower
+            // differences, then store that result in both positions. it would
+            // be faster and more numerically stable to average the KHP entries
+            // instead, but we have no good proof P was symmetric before!
+            const ftype lower = P[r][c] - KHP[r][c];
+            const ftype upper = P[c][r] - KHP[c][r];
+            const ftype res = 0.5f*(lower + upper);
+            P[r][c] = res;
+            P[c][r] = res;
         }
     }
 
