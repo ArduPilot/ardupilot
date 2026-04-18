@@ -454,11 +454,17 @@ void Copter::enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates&
 // disable the fast rate thread and record the new output rates
 void Copter::disable_fast_rate_loop(RateControllerRates& rates)
 {
-    using_rate_thread = false;
+    // Perform all teardown BEFORE clearing using_rate_thread.
+    // The main thread checks using_rate_thread in motors_output_main() and
+    // run_rate_controller_main(); if we clear the flag first, the main thread
+    // resumes motor output while rcout is still at the fast DShot rate and
+    // the fast buffer is still active, producing incorrect motor output.
+    // Mirror enable_fast_rate_loop which correctly does setup-before-set.
     uint8_t rate_decimation = calc_gyro_decimation(1, AP::scheduler().get_filtered_loop_rate_hz());
     rate_controller_set_rates(rate_decimation, rates, false);
     hal.rcout->force_trigger_groups(false);
     ins.disable_fast_rate_buffer();
+    using_rate_thread = false;
 }
 
 /*

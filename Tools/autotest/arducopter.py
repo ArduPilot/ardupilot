@@ -7745,6 +7745,113 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
                 (esc_peakdb2, esc_peakdb1))
 
+    def RateThreadFixedDivParamRefresh(self):
+        """FSTRATE_DIV changes must take effect in FAST_RATE_FIXED mode.
+
+        Regression guard: target_rate_decimation must be refreshed from the
+        parameter at 100 ms cadence regardless of the current FastRateType.
+        If the refresh is placed inside the FastRateType guard (which is always
+        false for FIXED mode when at target), runtime FSTRATE_DIV changes are
+        silently ignored.
+
+        Observable: changing FSTRATE_DIV while FSTRATE_ENABLE=3 must produce
+        a "Rate CPU … rate set to Nhz" GCS notification within ~200 ms.
+        """
+        self.progress("RateThread PR1: FSTRATE_DIV param refresh in FIXED mode")
+        self.context_push()
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            "FSTRATE_ENABLE": 3,    # FAST_RATE_FIXED: always honour FSTRATE_DIV
+            "FSTRATE_DIV": 1,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode="ALT_HOLD")
+
+        try:
+            self.wait_statustext("Rate CPU", timeout=5)
+        except AutoTestTimeoutException:
+            self.progress("FSTRATE not supported in this build – skipping")
+            self.do_RTL()
+            self.context_pop()
+            self.reboot_sitl()
+            return
+
+        self.context_collect("STATUSTEXT")
+        self.set_parameter("FSTRATE_DIV", 2)
+
+        try:
+            self.wait_statustext("Rate CPU", timeout=2, check_context=True)
+        except AutoTestTimeoutException:
+            raise NotAchievedException(
+                "No rate-change GCS notification after FSTRATE_DIV change "
+                "(target_rate_decimation refresh may be inside FastRateType guard)"
+            )
+
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def RateThreadEnableDisableCycle(self):
+        """Rate thread enable/disable cycle must not corrupt rcout state.
+
+        Regression guard: disable_fast_rate_loop() must complete all teardown
+        (rate_controller_set_rates, force_trigger_groups(false),
+        disable_fast_rate_buffer) before clearing using_rate_thread.  If
+        using_rate_thread is cleared first, the main thread resumes motor output
+        while rcout is still at the fast DShot rate.
+
+        Observable: performing an enable→disable→re-enable cycle while hovering
+        must not cause the vehicle to crash or lose significant altitude.
+        """
+        self.progress("RateThread PR1: enable/disable cycle ordering")
+        self.context_push()
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            "FSTRATE_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode="ALT_HOLD")
+
+        try:
+            self.wait_statustext("Rate CPU", timeout=5)
+        except AutoTestTimeoutException:
+            self.progress("FSTRATE not supported in this build – skipping")
+            self.do_RTL()
+            self.context_pop()
+            self.reboot_sitl()
+            return
+
+        # disable
+        self.set_parameter("FSTRATE_ENABLE", 0)
+        self.delay_sim_time(2)
+        m = self.mav.recv_match(type="GLOBAL_POSITION_INT", blocking=True, timeout=5)
+        if m is None:
+            raise NotAchievedException("Lost telemetry after rate thread disable")
+        if m.relative_alt / 1000.0 < 3.0:
+            raise NotAchievedException(
+                "Altitude dropped after rate thread disable: %.1f m" % (m.relative_alt / 1000.0)
+            )
+
+        # re-enable
+        self.set_parameter("FSTRATE_ENABLE", 1)
+        try:
+            self.wait_statustext("Rate CPU", timeout=5)
+        except AutoTestTimeoutException:
+            raise NotAchievedException("Rate thread did not restart after re-enable")
+
+        self.delay_sim_time(2)
+        m = self.mav.recv_match(type="GLOBAL_POSITION_INT", blocking=True, timeout=5)
+        if m is None:
+            raise NotAchievedException("Lost telemetry after rate thread re-enable")
+        if m.relative_alt / 1000.0 < 3.0:
+            raise NotAchievedException(
+                "Altitude dropped after rate thread re-enable: %.1f m" % (m.relative_alt / 1000.0)
+            )
+
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
     def DynamicRpmNotchesRateThread(self):
         """Use dynamic harmonic notch to control motor noise via ESC telemetry."""
         self.progress("Flying with ESC telemetry driven dynamic notches")
@@ -16524,6 +16631,8 @@ return update, 1000
             self.PositionWhenGPSIsZero,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
+            self.RateThreadFixedDivParamRefresh,
+            self.RateThreadEnableDisableCycle,
             self.PIDNotches,
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_off_center,

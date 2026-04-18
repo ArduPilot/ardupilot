@@ -118,6 +118,11 @@ bool FastRateBuffer::get_next_gyro_sample(Vector3f& gyro)
 void FastRateBuffer::reset()
 {
     _rate_loop_gyro_window.clear();
+    // Reset the push counter so the first sample after re-enable is not
+    // pushed at a stale offset within the decimation cycle.  Without this,
+    // a re-enable after disable_fast_rate_buffer() inherits a non-zero count
+    // and may push (or skip) the first sample at the wrong position.
+    rate_decimation_count = 0;
 }
 
 bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
