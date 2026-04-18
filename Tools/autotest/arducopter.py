@@ -106,6 +106,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def default_frame(self):
         return "+"
 
+    def callisto_sitl_kwargs(self):
+        """Returns kwargs for a SITL commandline to fly the Callisto. Wipes params."""
+        return {
+            "defaults_filepath": self.model_defaults_filepath('Callisto'),
+            "model": "octa-quad:@ROMFS/models/Callisto.json",
+            "wipe": True
+        }
+
     def apply_defaultfile_parameters(self):
         # Copter passes in a defaults_filepath in place of applying
         # parameters afterwards.
@@ -9650,9 +9658,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test wind estimation and baro position error compensation'''
         self.customise_SITL_commandline(
             [],
-            defaults_filepath=self.model_defaults_filepath('Callisto'),
-            model="octa-quad:@ROMFS/models/Callisto.json",
-            wipe=True,
+            **self.callisto_sitl_kwargs()
         )
         wind_spd_truth = 8.0
         wind_dir_truth = 90.0
@@ -12138,9 +12144,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test Callisto'''
         self.customise_SITL_commandline(
             [],
-            defaults_filepath=self.model_defaults_filepath('Callisto'),
-            model="octa-quad:@ROMFS/models/Callisto.json",
-            wipe=True,
+            **self.callisto_sitl_kwargs()
         )
         self.takeoff(10)
         self.do_RTL()
@@ -16204,9 +16208,7 @@ RTL_ALT_M 111
             self.customise_SITL_commandline([
                 "--serial5=mcast:",
             ],
-                model="octa-quad:@ROMFS/models/Callisto.json",
-                defaults_filepath=self.model_defaults_filepath('Callisto'),
-                wipe=True,
+                **self.callisto_sitl_kwargs()
             )
 
             self.set_parameters({
@@ -16297,9 +16299,7 @@ RTL_ALT_M 111
         '''test the config_profiles.lua example script'''
         self.customise_SITL_commandline(
             [],
-            defaults_filepath=self.model_defaults_filepath('Callisto'),
-            model="octa-quad:@ROMFS/models/Callisto.json",
-            wipe=True,
+            **self.callisto_sitl_kwargs()
         )
         self.install_example_script_context("config_profiles.lua")
         self.set_parameters({
