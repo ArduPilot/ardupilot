@@ -82,8 +82,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     const float dt = AP::scheduler().get_loop_period_s();
 
     const float accel_max = accel_limit.get();
-    const float tc = MAX(aparm.input_tc.get(), 0.1);
-    const float jerk_limit = accel_max / tc;
+    const float jerk_limit = accel_max / aparm.input_tc.get();
 
     // Ensure the shortest path is taken
     const float angle_error = wrap_180(desired_angle_deg - angle_target_deg);
@@ -105,9 +104,14 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     // Make sure target remains in the range +-180
     angle_target_deg = wrap_180(angle_target_deg);
 
-    // Calculate angle error and apply gain
+    // Calculate angle error
     angle_err_deg = wrap_180(angle_target_deg - get_measured_angle());
-    const float desired_rate = angle_err_deg / gains.tau;
+
+    // Apply gain using sqrt controller
+    float desired_rate = sqrt_controller(angle_err_deg, 1.0 / gains.tau.get(), accel_max * 0.5, dt);
+
+    // Add feed forward rate demand and constrain to rate limit
+    desired_rate = rate_limit(desired_rate + rate_target_deg);
 
     // Run rate controller
     return run_axis_rate_control(desired_rate, scaler, disable_integrator, ground_mode);
