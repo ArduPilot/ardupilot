@@ -636,7 +636,12 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    const Matrix3f &get_rotation_body_to_ned(void) const { return state.dcm_matrix; }
+    // Return a snapshot copy of dcm_matrix under _rsem to prevent
+    // torn 36-byte reads from concurrent updates.
+    const Matrix3f get_rotation_body_to_ned(void) const {
+        WITH_SEMAPHORE(_rsem);
+        return state.dcm_matrix;
+    }
 
     // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const;
@@ -754,7 +759,9 @@ private:
     VehicleClass _vehicle_class{VehicleClass::UNKNOWN};
 
     // multi-thread access support
-    HAL_Semaphore _rsem;
+    // mutable so const getter functions can hold the semaphore for
+    // a consistent pair/matrix snapshot (semaphores are recursive).
+    mutable HAL_Semaphore _rsem;
 
     /*
      * Parameters

@@ -119,7 +119,12 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
         cr = 1.0f;
     } else {
         cp = safe_sqrt(1 - cx2);
-        cr = rot.c.z / cp;
+        // Prevent division by zero - check cp before using it
+        if (is_zero(cp)) {
+            cr = 1.0f;
+        } else {
+            cr = rot.c.z / cp;
+        }
     }
     cp = constrain_float(cp, 0.0f, 1.0f);
     cr = constrain_float(cr, -1.0f, 1.0f); // this relies on constrain_float() of infinity doing the right thing
@@ -135,6 +140,13 @@ void AP_AHRS::calc_trig(const Matrix3f &rot,
         rot.to_euler(&r, &p, &y);
         cr = cosf(r);
         sr = sinf(r);
+        // Validate recalculated values - to_euler() can produce NaN/Inf for edge cases
+        if (isnan(cr) || isinf(cr)) {
+            cr = 1.0f;
+        }
+        if (isnan(sr) || isinf(sr)) {
+            sr = 0.0f;
+        }
     }
 }
 
@@ -238,6 +250,10 @@ void AP_AHRS::update_AOA_SSA(void)
 // rotate a 2D vector from earth frame to body frame
 Vector2f AP_AHRS::earth_to_body2D(const Vector2f &ef) const
 {
+    // Hold the AHRS semaphore to get a consistent (_cos_yaw, _sin_yaw)
+    // pair from the same attitude update cycle.  The semaphore is
+    // recursive so this is safe even if the caller already holds it.
+    WITH_SEMAPHORE(_rsem);
     return Vector2f(ef.x * _cos_yaw + ef.y * _sin_yaw,
                     -ef.x * _sin_yaw + ef.y * _cos_yaw);
 }
@@ -245,6 +261,7 @@ Vector2f AP_AHRS::earth_to_body2D(const Vector2f &ef) const
 // rotate a 2D vector from body frame to earth frame
 Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
 {
+    WITH_SEMAPHORE(_rsem);
     return Vector2f(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }
@@ -252,6 +269,7 @@ Vector2f AP_AHRS::body_to_earth2D(const Vector2f &bf) const
 // rotate a 2D vector from body frame to earth frame
 Vector2p AP_AHRS::body_to_earth2D_p(const Vector2p &bf) const
 {
+    WITH_SEMAPHORE(_rsem);
     return Vector2p(bf.x * _cos_yaw - bf.y * _sin_yaw,
                     bf.x * _sin_yaw + bf.y * _cos_yaw);
 }

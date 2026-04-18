@@ -113,8 +113,8 @@ private:
     NavEKF3 &EKF3;
 #endif
 
-    class SITL::SIM *_sitl;
-    uint32_t _last_body_odm_update_ms;
+    class SITL::SIM *_sitl{nullptr};
+    uint32_t _last_body_odm_update_ms{0};
 };
 
 #endif  // AP_AHRS_SIM_ENABLED

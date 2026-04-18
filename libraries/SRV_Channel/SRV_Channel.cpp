@@ -246,6 +246,11 @@ void SRV_Channel::calc_pwm(float output_scaled)
 
 void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
 {
+    // Even when force is true, never bypass an active emergency stop
+    // on channels that should be E-stopped.
+    if (SRV_Channel::should_e_stop(get_function()) && SRV_Channels::emergency_stop) {
+        return;
+    }
     if (!override_active || force) {
         output_pwm = pwm;
         have_pwm_mask |= (1U<<ch_num);
