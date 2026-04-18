@@ -34,7 +34,10 @@ public:
     ~HarmonicNotchFilter();
     // allocate a bank of notch filters for this harmonic notch filter
     void allocate_filters(uint8_t num_notches, uint32_t harmonics, uint8_t composite_notches);
-    // expand filter bank with new filters
+    // assert that the pre-allocated capacity is sufficient for total_notches.
+    // Since allocate_filters() always reserves HAL_HNF_MAX_FILTERS, this is
+    // a no-op for all valid inputs; it sets _alloc_has_failed if called with
+    // an out-of-range value (which should never happen).
     void expand_filter_count(uint16_t total_notches);
     // initialize the underlying filters using the provided filter parameters
     void init(float sample_freq_hz, HarmonicNotchFilterParams &params);

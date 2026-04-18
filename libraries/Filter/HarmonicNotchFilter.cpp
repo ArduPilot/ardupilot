@@ -205,53 +205,48 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
 }
 
 /*
-  allocate a collection of, at most HAL_HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
+  allocate a collection of notch filters to be managed by this harmonic notch filter.
+  Always allocates HAL_HNF_MAX_FILTERS upfront to avoid any runtime reallocation on the
+  hot filter-update path.
  */
 template <class T>
 void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint32_t harmonics, uint8_t composite_notches)
 {
     _composite_notches = MIN(composite_notches, 3);
     _num_harmonics = __builtin_popcount(harmonics);
-    _num_filters = MIN(_num_harmonics * num_notches * _composite_notches, HAL_HNF_MAX_FILTERS);
     _harmonics = harmonics;
 
-    if (_num_filters > 0) {
-        _filters = NEW_NOTHROW NotchFilter<T>[_num_filters];
-        if (_filters == nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Failed to allocate %u bytes for notch filter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
-            _num_filters = 0;
-        }
+    // Always allocate the maximum possible count so expand_filter_count() never
+    // needs to heap-allocate on the real-time update path.
+    // Skip allocation entirely when no harmonics are enabled (harmonics=0)
+    // to preserve the old behaviour of zero allocation for disabled notches.
+    if (_num_harmonics == 0) {
+        _num_filters = 0;
+        return;
+    }
+    _num_filters = HAL_HNF_MAX_FILTERS;
+    _filters = NEW_NOTHROW NotchFilter<T>[HAL_HNF_MAX_FILTERS];
+    if (_filters == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Failed to allocate %u bytes for notch filter", (unsigned int)(HAL_HNF_MAX_FILTERS * sizeof(NotchFilter<T>)));
+        _num_filters = 0;
     }
 }
 
 /*
-  expand the number of filters at runtime, allowing for RPM sources such as lua scripts
+  expand the in-use filter count up to total_notches.
+  Because allocate_filters() pre-allocates HAL_HNF_MAX_FILTERS, this never
+  needs to allocate memory – it only updates the bookkeeping counter.
  */
 template <class T>
 void HarmonicNotchFilter<T>::expand_filter_count(uint16_t total_notches)
 {
     if (total_notches <= _num_filters) {
-        // enough already
+        // already have enough capacity
         return;
     }
-    if (_alloc_has_failed) {
-        // we've failed to allocate before, don't try again
-        return;
-    }
-    /*
-      note that we rely on the semaphore in
-      AP_InertialSensor_Backend.cpp to make this thread safe
-     */
-    auto filters = NEW_NOTHROW NotchFilter<T>[total_notches];
-    if (filters == nullptr) {
-        _alloc_has_failed = true;
-        return;
-    }
-    memcpy(filters, _filters, sizeof(filters[0])*_num_filters);
-    auto _old_filters = _filters;
-    _filters = filters;
-    _num_filters = total_notches;
-    delete[] _old_filters;
+    // Should never be reached: total_notches is always capped at HAL_HNF_MAX_FILTERS
+    // (see update()) and _num_filters == HAL_HNF_MAX_FILTERS after allocate_filters().
+    _alloc_has_failed = true;
 }
 
 /*
@@ -487,7 +482,11 @@ void HarmonicNotchFilter<T>::log_notch_centers(uint8_t instance, uint64_t now_us
     if (_num_filters == 0 || filters_per_source == 0) {
         return;
     }
-    const uint8_t num_sources = MIN(6, _num_filters / filters_per_source);
+    // Use _num_enabled_filters (updated each update() call) not _num_filters
+    // (which is now permanently HAL_HNF_MAX_FILTERS after our pre-alloc change).
+    // Using _num_filters would cause the logger to access uninitialized filter
+    // slots and record garbage center frequencies.
+    const uint8_t num_sources = MIN(6, _num_enabled_filters / filters_per_source);
     float centers[6] {};
     float first_harmonic[6] {};
 
