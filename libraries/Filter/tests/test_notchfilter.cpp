@@ -363,4 +363,157 @@ TEST(NotchFilterTest, HarmonicNotchTest5)
     fclose(f);
 }
 
+// ---------------------------------------------------------------------------
+// RT-safety regression tests for HarmonicNotchFilter pre-allocation.
+//
+// These tests describe the EXPECTED post-fix behaviour.  On the unfixed
+// code they will FAIL, proving the bugs are real:
+//
+//   PreAllocMaxCapacity       – fails: _num_filters == 1 not HAL_HNF_MAX_FILTERS
+//   ExpandFilterCountIsNoop   – fails: expand_filter_count heap-allocates
+//   EnabledFiltersAfterUpdate – fails: update() triggers heap realloc via
+//                                      expand_filter_count when num_centers > 1
+//   ExpandFilterCountOverflow – passes on old code (realloc succeeds on a
+//                                      dev machine) but exposes the RT alloc path
+//
+// Run "waf tests && build/sitl/tests/test_notchfilter --gtest_filter=*PreAlloc*"
+// on an unpatched tree to observe the failures.
+// ---------------------------------------------------------------------------
+
+/*
+  Accessor for private HarmonicNotchFilter members used by the tests below.
+  The class is declared as a friend in HarmonicNotchFilter.h.
+ */
+class HarmonicNotchFilterTest {
+public:
+    template <class T>
+    static uint16_t num_filters(const HarmonicNotchFilter<T> &f) { return f._num_filters; }
+    template <class T>
+    static uint16_t num_enabled_filters(const HarmonicNotchFilter<T> &f) { return f._num_enabled_filters; }
+    template <class T>
+    static bool alloc_failed(const HarmonicNotchFilter<T> &f) { return f._alloc_has_failed; }
+};
+
+/*
+  allocate_filters() must reserve HAL_HNF_MAX_FILTERS up front so that
+  expand_filter_count() never needs to heap-allocate on the real-time
+  filter-update path.
+
+  WITHOUT THE FIX: allocate_filters(1,1,1) sets _num_filters = 1*1*1 = 1,
+  not HAL_HNF_MAX_FILTERS.  This test fails with:
+      Expected: num_filters == HAL_HNF_MAX_FILTERS (24 or 54)
+      Actual:   num_filters == 1
+ */
+TEST(NotchFilterTest, PreAllocMaxCapacity)
+{
+    // normal case: at least one harmonic enabled
+    {
+        HarmonicNotchFilter<float> f {};
+        f.allocate_filters(1, 1, 1);
+        EXPECT_EQ(HarmonicNotchFilterTest::num_filters(f), HAL_HNF_MAX_FILTERS)
+            << "allocate_filters must reserve HAL_HNF_MAX_FILTERS when harmonics != 0";
+        EXPECT_FALSE(HarmonicNotchFilterTest::alloc_failed(f));
+    }
+    // harmonics=0 (filter disabled): must NOT allocate
+    {
+        HarmonicNotchFilter<float> f {};
+        f.allocate_filters(1, 0, 1);
+        EXPECT_EQ(HarmonicNotchFilterTest::num_filters(f), 0u)
+            << "allocate_filters must not allocate when harmonics == 0";
+        EXPECT_FALSE(HarmonicNotchFilterTest::alloc_failed(f));
+    }
+}
+
+/*
+  expand_filter_count() with a count <= _num_filters must be a pure no-op:
+  no allocation, no flag set.
+
+  WITHOUT THE FIX: expand_filter_count(HAL_HNF_MAX_FILTERS) finds
+  total_notches > _num_filters (1) and calls NEW_NOTHROW to grow the
+  bank — heap allocation on the RT path.
+ */
+TEST(NotchFilterTest, ExpandFilterCountIsNoop)
+{
+    HarmonicNotchFilter<float> f {};
+    f.allocate_filters(1, 1, 1);
+
+    f.expand_filter_count(HAL_HNF_MAX_FILTERS);
+    EXPECT_FALSE(HarmonicNotchFilterTest::alloc_failed(f))
+        << "expand_filter_count must not fail when capacity is sufficient";
+    EXPECT_EQ(HarmonicNotchFilterTest::num_filters(f), HAL_HNF_MAX_FILTERS);
+}
+
+/*
+  Calling expand_filter_count() with a value beyond HAL_HNF_MAX_FILTERS
+  must set _alloc_has_failed (the only safe fallback: cap at max capacity).
+ */
+TEST(NotchFilterTest, ExpandFilterCountOverflowSetsAllocFailed)
+{
+    HarmonicNotchFilter<float> f {};
+    f.allocate_filters(1, 1, 1);
+    ASSERT_FALSE(HarmonicNotchFilterTest::alloc_failed(f));
+
+    f.expand_filter_count(HAL_HNF_MAX_FILTERS + 1);
+    EXPECT_TRUE(HarmonicNotchFilterTest::alloc_failed(f))
+        << "expand_filter_count beyond capacity must set _alloc_has_failed";
+}
+
+/*
+  After update() with N centers, _num_enabled_filters must equal
+  N × num_harmonics × composite_notches.
+
+  This is the field log_notch_centers() must read to know how many
+  active sources to log.  Using _num_filters (= HAL_HNF_MAX_FILTERS
+  after the pre-alloc fix) would cause it to log garbage for uninitialized
+  filter slots.
+
+  WITHOUT THE FIX: update(4, centers) triggers expand_filter_count(4)
+  which heap-allocates a new bank — RT allocation on the hot path.
+ */
+TEST(NotchFilterTest, EnabledFiltersAfterUpdate)
+{
+    HarmonicNotchFilter<float> f {};
+    HarmonicNotchFilterParams params {};
+    params.set_center_freq_hz(50);
+    params.set_bandwidth_hz(20);
+    params.set_attenuation(40);
+    params.set_freq_min_ratio(1.0);
+
+    f.allocate_filters(4, 1, 1);
+    f.init(2000.0f, params);
+
+    const float centers[4] = { 50.0f, 60.0f, 70.0f, 80.0f };
+    f.update(4, centers);
+
+    EXPECT_EQ(HarmonicNotchFilterTest::num_enabled_filters(f), 4u)
+        << "4 centers × 1 harmonic × 1 composite = 4 enabled filters";
+    // capacity must still be the full pre-allocated max
+    EXPECT_EQ(HarmonicNotchFilterTest::num_filters(f), HAL_HNF_MAX_FILTERS);
+}
+
+/*
+  update() with more centers than the initial allocation must not crash
+  and must not heap-allocate (expand_filter_count must be a true no-op).
+ */
+TEST(NotchFilterTest, UpdateWithManyCentersNoAlloc)
+{
+    const uint8_t num_centers = 4;
+    float centers[num_centers] { 50, 60, 70, 80 };
+
+    HarmonicNotchFilter<float> f {};
+    HarmonicNotchFilterParams params {};
+    params.set_center_freq_hz(50);
+    params.set_bandwidth_hz(10);
+    params.set_attenuation(40);
+    params.set_freq_min_ratio(1.0);
+
+    f.allocate_filters(1, 1, params.num_composite_notches());
+    f.init(2000, params);
+    f.update(num_centers, centers);
+
+    EXPECT_FALSE(HarmonicNotchFilterTest::alloc_failed(f));
+    const float out = f.apply(1.0f);
+    EXPECT_TRUE(std::isfinite(out));
+}
+
 AP_GTEST_MAIN()

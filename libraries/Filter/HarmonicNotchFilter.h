@@ -29,6 +29,7 @@ class HarmonicNotchFilterParams;
  */
 template <class T>
 class HarmonicNotchFilter {
+    friend class HarmonicNotchFilterTest;
 public:
     ~HarmonicNotchFilter();
     // allocate a bank of notch filters for this harmonic notch filter
