@@ -1865,20 +1865,6 @@ void NavEKF3_core::StoreQuatRotate(const QuaternionF &deltaQuat)
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
 }
 
-// force symmetry on the covariance matrix to prevent ill-conditioning
-void NavEKF3_core::ForceSymmetry()
-{
-    for (uint8_t i=1; i<=stateIndexLim; i++)
-    {
-        for (uint8_t j=0; j<=i-1; j++)
-        {
-            ftype temp = 0.5f*(P[i][j] + P[j][i]);
-            P[i][j] = temp;
-            P[j][i] = temp;
-        }
-    }
-}
-
 // constrain variances (diagonal terms) in the state covariance matrix to  prevent ill-conditioning
 // if states are inactive, zero the corresponding off-diagonals
 void NavEKF3_core::ConstrainVariances()
@@ -2030,8 +2016,16 @@ bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
         }
     }
 
-    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning
-    ForceSymmetry();
+    // force the covariance matrix to be symmetrical
+    for (auto r=1; r<=stateIndexLim; r++) {
+        for (auto c=0; c<=r-1; c++) {
+            const ftype temp = 0.5f*(P[r][c] + P[c][r]);
+            P[r][c] = temp;
+            P[c][r] = temp;
+        }
+    }
+
+    // limit the variances to prevent ill-conditioning
     ConstrainVariances(); // can change statesArray!!
 
     return false;
