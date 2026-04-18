@@ -132,7 +132,11 @@ void AP_Scheduler::init(const AP_Scheduler::Task *tasks, uint8_t num_tasks, uint
 
     _num_tasks = _num_vehicle_tasks + _num_common_tasks;
 
-   _last_run = NEW_NOTHROW uint16_t[_num_tasks];
+    _last_run = NEW_NOTHROW uint16_t[_num_tasks]{};
+    if (_last_run == nullptr) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        return;
+    }
     _tick_counter = 0;
 
     // setup initial performance counters
@@ -280,12 +284,12 @@ void AP_Scheduler::run(uint32_t time_available)
         bool overrun = false;
         if (time_taken > _task_time_allowed) {
             overrun = true;
-            // the event overran!
-            debug(3, "Scheduler overrun task[%u-%s] (%u/%u)\n",
-                  (unsigned)i,
-                  task.name,
-                  (unsigned)time_taken,
-                  (unsigned)_task_time_allowed);
+#if !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+            // Log the overrun via INTERNAL_ERROR which is non-blocking,
+            // rather than debug() which calls hal.console->printf() and
+            // can itself cause a recursive scheduler overrun.
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+#endif
         }
 
         perf_info.update_task_info(i, time_taken, overrun);
