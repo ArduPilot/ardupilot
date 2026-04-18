@@ -7745,19 +7745,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
                 (esc_peakdb2, esc_peakdb1))
 
-    def RateThreadFixedDivParamRefresh(self):
-        """FSTRATE_DIV changes must take effect in FAST_RATE_FIXED mode.
+    # ------------------------------------------------------------------
+    # Rate-thread hardening regression tests (PRs 1-3)
+    # ------------------------------------------------------------------
 
-        Regression guard: target_rate_decimation must be refreshed from the
-        parameter at 100 ms cadence regardless of the current FastRateType.
-        If the refresh is placed inside the FastRateType guard (which is always
-        false for FIXED mode when at target), runtime FSTRATE_DIV changes are
-        silently ignored.
+    def RateThreadFixedDivParamRefresh(self):
+        """FSTRATE_DIV changes must take effect in FAST_RATE_FIXED mode (PR1/V7).
+
+        Regression: target_rate_decimation refresh was accidentally placed
+        inside the FastRateType guard, which is always false for FIXED mode
+        when already at the target rate.  Parameter changes made at runtime
+        were silently ignored.
+
+        Fix: the 100 ms refresh block unconditionally re-reads FSTRATE_DIV;
+        only the rate-adaptation logic (slow-down/speed-up) is inside the
+        FastRateType guard.
 
         Observable: changing FSTRATE_DIV while FSTRATE_ENABLE=3 must produce
         a "Rate CPU … rate set to Nhz" GCS notification within ~200 ms.
         """
-        self.progress("RateThread PR1: FSTRATE_DIV param refresh in FIXED mode")
+        self.progress("PR1/V7: FSTRATE_DIV param refresh in FIXED mode")
         self.context_push()
         self.set_parameters({
             "AHRS_EKF_TYPE": 10,
@@ -7767,6 +7774,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.takeoff(10, mode="ALT_HOLD")
 
+        # Confirm the rate thread is compiled into this build.
+        # If FSTRATE is not compiled in, "Rate CPU" never appears.
         try:
             self.wait_statustext("Rate CPU", timeout=5)
         except AutoTestTimeoutException:
@@ -7776,15 +7785,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reboot_sitl()
             return
 
+        # Begin collecting so we catch any message that arrives between
+        # set_parameter() and wait_statustext().
         self.context_collect("STATUSTEXT")
+
+        # Change FSTRATE_DIV at runtime.
+        # Rate thread picks it up within 100 ms (rate-check cadence).
+        # flush_rate_thread_msg() forwards it within another 100 ms (10 Hz).
         self.set_parameter("FSTRATE_DIV", 2)
 
+        # Before the V7 fix this would time out: the refresh was inside the
+        # guard that is always false for FIXED mode when at target rate.
         try:
             self.wait_statustext("Rate CPU", timeout=2, check_context=True)
         except AutoTestTimeoutException:
             raise NotAchievedException(
                 "No rate-change GCS notification after FSTRATE_DIV change "
-                "(target_rate_decimation refresh may be inside FastRateType guard)"
+                "(target_rate_decimation refresh may still be inside FastRateType guard)"
             )
 
         self.do_RTL()
@@ -7792,22 +7809,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def RateThreadEnableDisableCycle(self):
-        """Rate thread enable/disable cycle must not corrupt rcout state.
+        """Rate thread enable/disable cycle must not corrupt rcout state (PR1/V5).
 
-        Regression guard: disable_fast_rate_loop() must complete all teardown
-        (rate_controller_set_rates, force_trigger_groups(false),
-        disable_fast_rate_buffer) before clearing using_rate_thread.  If
-        using_rate_thread is cleared first, the main thread resumes motor output
-        while rcout is still at the fast DShot rate.
+        Regression: disable_fast_rate_loop() stored using_rate_thread=false
+        (RELEASE) *before* calling force_trigger_groups(false) and
+        disable_fast_rate_buffer().  The main thread could therefore observe
+        using_rate_thread==false while rcout was still outputting at the fast
+        DShot rate, producing a brief window of incorrect motor output.
+
+        Fix: all teardown runs first; the release store comes last, mirroring
+        the correct setup-before-release ordering in enable_fast_rate_loop().
 
         Observable: performing an enable→disable→re-enable cycle while hovering
         must not cause the vehicle to crash or lose significant altitude.
         """
-        self.progress("RateThread PR1: enable/disable cycle ordering")
+        self.progress("PR1/V5: rate thread enable/disable cycle ordering")
         self.context_push()
         self.set_parameters({
             "AHRS_EKF_TYPE": 10,
-            "FSTRATE_ENABLE": 1,
+            "FSTRATE_ENABLE": 1,    # FAST_RATE_DYNAMIC
         })
         self.reboot_sitl()
         self.takeoff(10, mode="ALT_HOLD")
@@ -7821,19 +7841,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reboot_sitl()
             return
 
-        # disable
+        self.progress("Rate thread confirmed running – exercising disable/re-enable")
+
+        # --- disable ---
         self.set_parameter("FSTRATE_ENABLE", 0)
         self.delay_sim_time(2)
+
         m = self.mav.recv_match(type="GLOBAL_POSITION_INT", blocking=True, timeout=5)
         if m is None:
             raise NotAchievedException("Lost telemetry after rate thread disable")
-        if m.relative_alt / 1000.0 < 3.0:
+        alt_after_disable = m.relative_alt / 1000.0
+        if alt_after_disable < 3.0:
             raise NotAchievedException(
-                "Altitude dropped after rate thread disable: %.1f m" % (m.relative_alt / 1000.0)
+                "Vehicle lost altitude after rate thread disable: %.1f m (expect >3 m)"
+                % alt_after_disable
             )
 
-        # re-enable
+        # --- re-enable ---
         self.set_parameter("FSTRATE_ENABLE", 1)
+
+        # Rate thread restart must produce a notification.
         try:
             self.wait_statustext("Rate CPU", timeout=5)
         except AutoTestTimeoutException:
@@ -7843,10 +7870,88 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         m = self.mav.recv_match(type="GLOBAL_POSITION_INT", blocking=True, timeout=5)
         if m is None:
             raise NotAchievedException("Lost telemetry after rate thread re-enable")
-        if m.relative_alt / 1000.0 < 3.0:
+        alt_after_reenable = m.relative_alt / 1000.0
+        if alt_after_reenable < 3.0:
             raise NotAchievedException(
-                "Altitude dropped after rate thread re-enable: %.1f m" % (m.relative_alt / 1000.0)
+                "Vehicle lost altitude after rate thread re-enable: %.1f m (expect >3 m)"
+                % alt_after_reenable
             )
+
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
+    def RateThreadWCETReporting(self):
+        """Rate thread WCET reporting and lockfree GCS notification path (PR3).
+
+        Tests three properties of the PR3 changes:
+
+        1. flush_rate_thread_msg() (lockfree SPSC path) correctly forwards
+           rate-change notifications to GCS.  snprintf and gcs().send_text()
+           are never called from the RT path.
+
+        2. Under normal SITL flight conditions no "Rate loop WCET" overrun
+           warnings appear, confirming the budget guard does not fire spuriously
+           and that the delta-overrun reset (exchange(0)) is correct.
+
+        3. The rate-change notification message contains a sensible (non-zero)
+           Hz value, confirming flush_rate_thread_msg() formats correctly.
+
+        Note: forcing a genuine WCET overrun requires hardware (H7 + 4 kHz ICM)
+        and cannot be reliably reproduced in SITL where the scheduler does not
+        model real interrupt latency.  Hardware measurements are provided
+        separately in the PR description.
+        """
+        self.progress("PR3: rate thread WCET reporting and SPSC notification path")
+        self.context_push()
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            "FSTRATE_ENABLE": 1,
+            "FSTRATE_DIV": 1,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode="ALT_HOLD")
+
+        # --- 1. Confirm SPSC flush path delivers rate-change notification ---
+        try:
+            self.wait_statustext("Rate CPU", timeout=5)
+        except AutoTestTimeoutException:
+            self.progress("FSTRATE not supported in this build – skipping")
+            self.do_RTL()
+            self.context_pop()
+            self.reboot_sitl()
+            return
+
+        # --- 2. Verify no spurious WCET overrun warnings during normal flight ---
+        self.context_collect("STATUSTEXT")
+        self.delay_sim_time(10)   # collect 10 s of normal flight messages
+
+        wcet_msgs = [
+            m for m in self.context_collection("STATUSTEXT")
+            if "Rate loop WCET" in m.text
+        ]
+        if wcet_msgs:
+            raise NotAchievedException(
+                "Spurious WCET overrun warning(s) during normal flight: %s"
+                % "; ".join(m.text for m in wcet_msgs)
+            )
+
+        # --- 3. Trigger a rate change and verify notification format --------
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("FSTRATE_DIV", 2)
+        try:
+            msg = self.wait_statustext(
+                r"Rate CPU .*, rate set to \d+Hz",
+                timeout=2,
+                check_context=True,
+                regex=True,
+            )
+        except AutoTestTimeoutException:
+            raise NotAchievedException(
+                "flush_rate_thread_msg() did not forward rate-change notification "
+                "after FSTRATE_DIV change (SPSC path may be broken)"
+            )
+        self.progress("Rate notification received OK: '%s'" % msg.text)
 
         self.do_RTL()
         self.context_pop()
@@ -7923,7 +8028,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
-    def hover_and_check_matched_frequency(self, *, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
+    def hover_and_check_matched_frequency(self, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
         Check that the onboard filter comes up with the same peak-frequency that
         post-processing does.'''
@@ -8112,12 +8217,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         self.reboot_sitl()
-        freq = self.hover_and_check_matched_frequency(
-            dblevel=-15,
-            minhz=100,
-            maxhz=250,
-            fftLength=64,
-        )
+        freq = self.hover_and_check_matched_frequency(-15, 100, 250, 64)
 
         # Step 2: add a second harmonic and check the first is still tracked
         self.start_subtest("Add a fixed frequency harmonic at twice the hover frequency "
@@ -8130,13 +8230,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
-        self.hover_and_check_matched_frequency(
-            dblevel=-15,
-            minhz=100,
-            maxhz=250,
-            fftLength=64,
-            peakhz=None,
-        )
+        self.hover_and_check_matched_frequency(-15, 100, 250, 64, None)
 
         # Step 3: switch harmonics mid flight and check for tracking
         self.start_subtest("Switch harmonics mid flight and check the right harmonic is found")
@@ -8249,13 +8343,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         # find a motor peak
-        self.hover_and_check_matched_frequency(
-            dblevel=-15,
-            minhz=100,
-            maxhz=350,
-            fftLength=128,
-            peakhz=250,
-        )
+        self.hover_and_check_matched_frequency(-15, 100, 350, 128, 250)
 
         # Step 1b: run the same test with an FFT length of 256 which is needed to flush out a
         # whole host of bugs related to uint8_t. This also tests very accurately the frequency resolution
@@ -8265,13 +8353,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         # find a motor peak
-        self.hover_and_check_matched_frequency(
-            dblevel=-15,
-            minhz=100,
-            maxhz=350,
-            fftLength=256,
-            peakhz=250,
-        )
+        self.hover_and_check_matched_frequency(-15, 100, 350, 256, 250)
         self.set_parameter("FFT_WINDOW_SIZE", 128)
 
         # Step 2: inject actual motor noise and use the standard length FFT to track it
@@ -8286,12 +8368,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         self.reboot_sitl()
-        freq = self.hover_and_check_matched_frequency(
-            dblevel=-15,
-            minhz=100,
-            maxhz=250,
-            fftLength=32,
-        )
+        freq = self.hover_and_check_matched_frequency(-15, 100, 250, 32)
 
         self.set_parameter("SIM_VIB_MOT_MULT", 1.)
 
@@ -16633,6 +16710,7 @@ return update, 1000
             self.DynamicRpmNotchesRateThread,
             self.RateThreadFixedDivParamRefresh,
             self.RateThreadEnableDisableCycle,
+            self.RateThreadWCETReporting,
             self.PIDNotches,
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_off_center,

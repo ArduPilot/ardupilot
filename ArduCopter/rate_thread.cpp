@@ -177,6 +177,23 @@ void Copter::rate_controller_thread()
     uint32_t rate_loop_count = 0;
     uint32_t prev_loop_count = 0;
 
+    // Track last decimation written to INS so we skip redundant set_rate_decimation() calls.
+    uint8_t last_set_decimation = 0;
+    // Cache sensor_dt (= rate_decimation / gyro_rate_hz).  Both inputs are constant
+    // between rate changes, so recomputing the float division on every gyro sample is
+    // wasteful and obscures the invariant.  Invalidated in the decimation-change guard.
+    float cached_sensor_dt = 1.0f * rate_decimation / MAX(ins.get_raw_gyro_rate_hz(), 1U);
+
+    // Cache gyro drift (written by AHRS/EKF on the main thread, read here at 4 kHz).
+    // ahrs.get_gyro_drift() returns a const ref into state.gyro_drift — a 12-byte
+    // Vector3f written by the EKF.  Reading it by reference on every hot-path sample
+    // is a data race under the C++ memory model; a component-by-component torn read
+    // could mix values from two consecutive EKF updates.
+    // Fix: snapshot the drift into a local copy.  Refreshed at 1 Hz (see notch-sample
+    // block below) — gyro bias changes on the order of µrad/s per EKF cycle, so one
+    // second of staleness is completely negligible for control quality.
+    Vector3f cached_gyro_drift = ahrs.get_gyro_drift();
+
     uint32_t last_run_us = AP_HAL::micros();
     float max_dt = 0.0;
     float min_dt = 1.0;
@@ -226,11 +243,18 @@ void Copter::rate_controller_thread()
         }
 
         // set up rate thread requirements
-        // Relaxed: self-read — the rate thread sees its own RELEASE store in program order.
+        // Relaxed: self-read — the rate thread sees its own release store in program order.
         if (!using_rate_thread.load(std::memory_order_relaxed)) {
             enable_fast_rate_loop(rate_decimation, rates);
         }
-        ins.set_rate_decimation(rate_decimation);
+        // Only push decimation to the buffer when it actually changes; calling
+        // set_rate_decimation() unconditionally on every sample is redundant.
+        if (rate_decimation != last_set_decimation) {
+            ins.set_rate_decimation(rate_decimation);
+            last_set_decimation    = rate_decimation;
+            // Recompute the cached constant whenever decimation changes.
+            cached_sensor_dt = 1.0f * rate_decimation / MAX(ins.get_raw_gyro_rate_hz(), 1U);
+        }
 
         // wait for an IMU sample
         Vector3f gyro;
@@ -243,8 +267,8 @@ void Copter::rate_controller_thread()
         rate_now_us = AP_HAL::micros();
 #endif
 
-        // we must use multiples of the actual sensor rate
-        const float sensor_dt = 1.0f * rate_decimation / ins.get_raw_gyro_rate_hz();
+        // sensor_dt is constant between rate changes; use the cached value.
+        const float sensor_dt = cached_sensor_dt;
         const uint32_t now_us = AP_HAL::micros();
         const uint32_t dt_us = now_us - last_run_us;
         const float dt = dt_us * 1.0e-6;
@@ -263,7 +287,7 @@ void Copter::rate_controller_thread()
         // run the rate controller on all available samples
         // it is important not to drop samples otherwise the filtering will be fubar
         // there is no need to output to the motors more than once for every batch of samples
-        attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt);
+        attitude_control->rate_controller_run_dt(gyro + cached_gyro_drift, sensor_dt);
 
 #ifdef RATE_LOOP_TIMING_DEBUG
         rate_controller_time_us += AP_HAL::micros() - rate_now_us;
@@ -275,6 +299,33 @@ void Copter::rate_controller_thread()
             main_loop_count = 0;
         }
         motors_output(main_loop_count == 0);
+
+        // --- End of critical path: gyro received → PID → motor output ---
+        // Measure WCET of this segment.  Budget = one gyro period.
+        // Only plain integer arithmetic and relaxed atomics here to avoid
+        // re-introducing any latency into the measurement itself.
+        {
+            const uint32_t critical_us = AP_HAL::micros() - now_us;
+            // Update max with load+compare+store rather than a CAS loop.  The rate
+            // thread is the only writer of new maximums; the main thread only resets
+            // max_us to 0 via exchange() after reporting.  The worst-case interleave
+            // is: rate thread loads X, main thread exchanges X→0, rate thread stores
+            // critical_us (> X from the stale load).  This is benign: critical_us is
+            // captured in max_us and will appear in the next report interval.
+            if (critical_us > _rate_loop_budget.max_us.load(std::memory_order_relaxed)) {
+                _rate_loop_budget.max_us.store(critical_us, std::memory_order_relaxed);
+            }
+            // One gyro period in µs — pure integer arithmetic; guard against zero gyro rate
+            // (should never happen in practice, but a divide-by-zero in the hot path would
+            // be catastrophic).
+            const uint32_t gyro_rate_hz = ins.get_raw_gyro_rate_hz();
+            if (gyro_rate_hz > 0) {
+                const uint32_t budget_us = (uint32_t)rate_decimation * 1000000U / gyro_rate_hz;
+                if (critical_us > budget_us) {
+                    _rate_loop_budget.overruns.fetch_add(1, std::memory_order_relaxed);
+                }
+            }
+        }
 
         // process filter updates
         if (run_decimated_callback(rates.filter_rate, filter_loop_count)) {
@@ -322,15 +373,15 @@ void Copter::rate_controller_thread()
 #endif
 
         now_ms = AP_HAL::millis();
-
-        // make sure we have the latest target rate
-        target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
-                                                 DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
         if (now_ms - last_notch_sample_ms >= 1000 || !was_using_rate_thread) {
             // update the PID notch sample rate at 1Hz if we are
             // enabled at runtime
             last_notch_sample_ms = now_ms;
             attitude_control->set_notch_sample_rate(1.0 / sensor_dt);
+            // Refresh gyro-drift snapshot.  EKF bias corrections are tiny per cycle
+            // (µrad/s); 1 s staleness is negligible.  This is the only place the rate
+            // thread reads state.gyro_drift — all hot-path uses go through cached_gyro_drift.
+            cached_gyro_drift = ahrs.get_gyro_drift();
 #ifdef RATE_LOOP_TIMING_DEBUG
             hal.console->printf("Sample rate %.1f, main loop %u, fast rate %u, med rate %u\n", 1.0 / sensor_dt,
                                  rates.main_loop_rate, rates.fast_logging_rate, rates.medium_logging_rate);
@@ -353,36 +404,46 @@ void Copter::rate_controller_thread()
         }
 
         // check that the CPU is not pegged, if it is drop the attitude rate
-        if (now_ms - last_rate_check_ms >= 100
-            && (get_fast_rate_type() == FastRateType::FAST_RATE_DYNAMIC
-                || (get_fast_rate_type() == FastRateType::FAST_RATE_FIXED_ARMED && !motors->armed())
-                || target_rate_decimation > rate_decimation)) {
+        if (now_ms - last_rate_check_ms >= 100) {
             last_rate_check_ms = now_ms;
-            const uint32_t att_rate = ins.get_raw_gyro_rate_hz()/rate_decimation;
-            if (running_slow > 5 || AP::scheduler().get_extra_loop_us() > 0
-#if HAL_LOGGING_ENABLED
-                || AP::logger().in_log_download()
-#endif
+            // Refresh target decimation from the parameter at 100ms cadence — avoids a
+            // param read on the hot path.  Must be OUTSIDE the FastRateType guard below:
+            // the original code refreshed unconditionally on every gyro sample; our hot-path
+            // optimisation inadvertently moved this inside the mode guard, preventing
+            // FAST_RATE_FIXED (and FAST_RATE_FIXED_ARMED while armed and at target rate)
+            // from ever picking up a parameter change made at runtime.
+            target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
+                                                     DIV_ROUND_INT(ins.get_raw_gyro_rate_hz(), AP::scheduler().get_loop_rate_hz()));
+            // Rate adaptation: only in dynamic / unarmed-fixed modes, or when a slower
+            // target is requested.  FAST_RATE_FIXED uses the fixed-rate block above.
+            if (get_fast_rate_type() == FastRateType::FAST_RATE_DYNAMIC
+                || (get_fast_rate_type() == FastRateType::FAST_RATE_FIXED_ARMED && !motors->armed())
                 || target_rate_decimation > rate_decimation) {
-                const uint8_t new_rate_decimation = MAX(rate_decimation + 1, target_rate_decimation);
-                const uint32_t new_attitude_rate = ins.get_raw_gyro_rate_hz() / new_rate_decimation;
-                if (new_attitude_rate > AP::scheduler().get_filtered_loop_rate_hz()) {
-                    rate_decimation = new_rate_decimation;
-                    rate_controller_set_rates(rate_decimation, rates, true);
-                    prev_loop_count = rate_loop_count;
+                const uint32_t att_rate = ins.get_raw_gyro_rate_hz()/rate_decimation;
+                if (running_slow > 5 || AP::scheduler().get_extra_loop_us() > 0
+#if HAL_LOGGING_ENABLED
+                    || AP::logger().in_log_download()
+#endif
+                    || target_rate_decimation > rate_decimation) {
+                    const uint8_t new_rate_decimation = MAX(rate_decimation + 1, target_rate_decimation);
+                    const uint32_t new_attitude_rate = ins.get_raw_gyro_rate_hz() / new_rate_decimation;
+                    if (new_attitude_rate > AP::scheduler().get_filtered_loop_rate_hz()) {
+                        rate_decimation = new_rate_decimation;
+                        rate_controller_set_rates(rate_decimation, rates, true);
+                        prev_loop_count = rate_loop_count;
+                        rate_loop_count = 0;
+                        running_slow = 0;
+                    }
+                } else if (rate_decimation > target_rate_decimation && rate_loop_count > att_rate/10 // ensure 100ms worth of good readings
+                    && (prev_loop_count > att_rate/10   // ensure there was 100ms worth of good readings at the higher rate
+                        || prev_loop_count == 0         // last rate was actually a lower rate so keep going quickly
+                        || now_ms - last_rate_increase_ms >= 10000)) { // every 10s retry
+                    rate_decimation = rate_decimation - 1;
+                    rate_controller_set_rates(rate_decimation, rates, false);
+                    prev_loop_count = 0;
                     rate_loop_count = 0;
-                    running_slow = 0;
+                    last_rate_increase_ms = now_ms;
                 }
-            } else if (rate_decimation > target_rate_decimation && rate_loop_count > att_rate/10 // ensure 100ms worth of good readings
-                && (prev_loop_count > att_rate/10   // ensure there was 100ms worth of good readings at the higher rate
-                    || prev_loop_count == 0         // last rate was actually a lower rate so keep going quickly
-                    || now_ms - last_rate_increase_ms >= 10000)) { // every 10s retry
-                rate_decimation = rate_decimation - 1;
-
-                rate_controller_set_rates(rate_decimation, rates, false);
-                prev_loop_count = 0;
-                rate_loop_count = 0;
-                last_rate_increase_ms = now_ms;
             }
         }
 
@@ -428,9 +489,18 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     attitude_control->set_notch_sample_rate(attitude_rate);
     hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), attitude_rate);
     motors->set_dt_s(1.0f / attitude_rate);
-    gcs().send_text(warn_cpu_high ? MAV_SEVERITY_WARNING : MAV_SEVERITY_INFO,
-                    "Rate CPU %s, rate set to %uHz",
-                    warn_cpu_high ? "high" : "normal", (unsigned) attitude_rate);
+    // Post a rate-change notification for the main thread to forward to GCS.
+    // RT rules enforced here:
+    //   • gcs().send_text() takes a semaphore → never called from this path.
+    //   • snprintf may take libc-internal locale/fp locks → never called here.
+    //   • Only plain integer stores before the release fence.
+    // ACQUIRE on the pending check synchronises with the main thread's
+    // pending=false RELEASE store, preventing a write-read race on the fields.
+    if (!_rate_thread_msg.pending.load(std::memory_order_acquire)) {
+        _rate_thread_msg.attitude_rate_hz = (uint32_t)attitude_rate;
+        _rate_thread_msg.warn_cpu_high    = warn_cpu_high;
+        _rate_thread_msg.pending.store(true, std::memory_order_release);
+    }
 #if HAL_LOGGING_ENABLED
     if (attitude_rate > 1000) {
         rates.fast_logging_rate = calc_gyro_decimation(rate_decimation, 1000);   // 1Khz
@@ -447,6 +517,16 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
 void Copter::enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates)
 {
     ins.enable_fast_rate_buffer();
+    // rate_controller_set_rates() calls attitude_control->set_notch_sample_rate(), which
+    // lazily allocates NotchFilterFloat objects the first time it is called.  We call it
+    // here — before using_rate_thread becomes true — so that all dynamic allocation for
+    // the PID notch filters happens in this setup phase, never in the steady-state RT loop.
+    //
+    // NOTE: set_notch_sample_rate() can still deallocate+reallocate if setup_notch_filter()
+    // fails (e.g. filter ID changes at runtime).  That path hits NEW_NOTHROW in the rate
+    // adaptation blocks (rate_controller_set_rates calls at lines ~354/378/389).  The
+    // correct fix is to separate allocation from configuration in AC_PID, but that is
+    // a larger AC_PID refactor tracked separately.
     rate_controller_set_rates(rate_decimation, rates, false);
     hal.rcout->force_trigger_groups(true);
     // RELEASE: all setup writes above are visible to any thread that subsequently
@@ -457,12 +537,13 @@ void Copter::enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates&
 // disable the fast rate thread and record the new output rates
 void Copter::disable_fast_rate_loop(RateControllerRates& rates)
 {
-    // Perform all teardown BEFORE clearing using_rate_thread.
-    // The main thread checks using_rate_thread in motors_output_main() and
-    // run_rate_controller_main(); if we clear the flag first, the main thread
-    // resumes motor output while rcout is still at the fast DShot rate and
-    // the fast buffer is still active, producing incorrect motor output.
-    // Mirror enable_fast_rate_loop which correctly does setup-before-set.
+    // Perform all teardown BEFORE the release store.  std::memory_order_release
+    // guarantees that all stores preceding this one are visible to any thread that
+    // subsequently acquires the flag — but it says nothing about stores that follow
+    // the release.  Placing the store first (as the original code did) allowed the
+    // main thread to observe using_rate_thread==false while rcout was still at the
+    // fast DShot rate and the fast buffer was still active.  Mirror enable_fast_rate_loop
+    // which correctly does all setup before its release store.
     uint8_t rate_decimation = calc_gyro_decimation(1, AP::scheduler().get_filtered_loop_rate_hz());
     rate_controller_set_rates(rate_decimation, rates, false);
     hal.rcout->force_trigger_groups(false);
@@ -498,6 +579,59 @@ void Copter::update_dynamic_notch_at_specified_rate_main()
     }
 
     update_dynamic_notch_at_specified_rate();
+}
+
+/*
+  Forward a pending rate-thread notification to the GCS (called from main thread at 10 Hz).
+
+  The rate thread posts raw integer fields; we format the string here so that snprintf
+  never runs in the RT context.
+
+  Ordering:
+    • ACQUIRE load of pending synchronises with the rate thread's RELEASE store, making
+      the attitude_rate_hz and warn_cpu_high fields visible.
+    • We copy both fields into locals, then RELEASE-clear pending *before* calling
+      gcs().send_text().  Clearing first lets the rate thread reuse the slot immediately
+      rather than waiting for the (potentially slow) GCS path to complete.
+*/
+void Copter::flush_rate_thread_msg()
+{
+    // --- Forward any pending rate-change notification ---
+    if (_rate_thread_msg.pending.load(std::memory_order_acquire)) {
+        const uint32_t rate_hz = _rate_thread_msg.attitude_rate_hz;
+        const bool     warn    = _rate_thread_msg.warn_cpu_high;
+        // Release the slot before entering the GCS (semaphore) path so the rate
+        // thread can post the next message without waiting for us.
+        _rate_thread_msg.pending.store(false, std::memory_order_release);
+        gcs().send_text(warn ? MAV_SEVERITY_WARNING : MAV_SEVERITY_INFO,
+                        "Rate CPU %s, rate set to %uHz",
+                        warn ? "high" : "normal", (unsigned)rate_hz);
+    }
+
+    // --- Report WCET budget overruns (at most once per second) ---
+    // Report new overruns since the last check rather than the cumulative total;
+    // once the cumulative total is > 0 a monotonically-growing count would fire
+    // every second for the rest of the flight and operators cannot tell whether
+    // the problem is current or historical.
+    // max_us is exchanged (reset to 0) after each report so it reflects the
+    // worst-case time in the most recent reporting interval, not all time.
+    static uint32_t last_wcet_report_ms = 0;
+    static uint32_t last_reported_overruns = 0;
+    const uint32_t cur_overruns = _rate_loop_budget.overruns.load(std::memory_order_relaxed);
+    const uint32_t new_overruns = cur_overruns - last_reported_overruns;
+    if (new_overruns > 0) {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_wcet_report_ms >= 1000) {
+            last_wcet_report_ms = now_ms;
+            last_reported_overruns = cur_overruns;
+            // exchange(0) atomically reads and clears max_us so the next interval
+            // accumulates a fresh worst-case rather than a lifetime worst-case.
+            const uint32_t max_us = _rate_loop_budget.max_us.exchange(0, std::memory_order_relaxed);
+            gcs().send_text(MAV_SEVERITY_WARNING,
+                            "Rate loop WCET: %uus max, %u new overruns",
+                            (unsigned)max_us, (unsigned)new_overruns);
+        }
+    }
 }
 
 #endif // AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED

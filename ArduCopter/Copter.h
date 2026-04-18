@@ -750,6 +750,55 @@ private:
     void enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates& rates);
     void disable_fast_rate_loop(RateControllerRates& rates);
     void update_dynamic_notch_at_specified_rate_main();
+
+    // Lockfree single-slot notification: rate thread posts raw data here; the main
+    // thread formats and forwards to GCS via flush_rate_thread_msg().
+    //
+    // Protocol (single-producer / single-consumer):
+    //   Writer (rate thread):
+    //     1. Load pending with ACQUIRE.  If true, a prior message is unread — drop silently.
+    //     2. Write attitude_rate_hz and warn_cpu_high.
+    //     3. Store pending=true with RELEASE.  The release fence makes the field writes
+    //        visible to any thread that subsequently acquires pending==true.
+    //   Reader (main thread, flush_rate_thread_msg):
+    //     1. Load pending with ACQUIRE.  If false, nothing to do.
+    //     2. Copy the two fields locally.
+    //     3. Store pending=false with RELEASE so the rate thread can reuse the slot.
+    //     4. Call gcs().send_text() *after* releasing the slot.
+    //
+    // Why ACQUIRE on the writer's check (not just RELAXED):
+    //   The writer must synchronise with the reader's pending=false RELEASE store.
+    //   Without ACQUIRE here the compiler/CPU may hoist the field writes above the
+    //   check, creating a write-read race with the still-in-progress reader.
+    //
+    // Why no snprintf in the rate thread:
+    //   snprintf touches locale / floating-point state and may take libc-internal locks
+    //   on some embedded C runtimes (newlib, picolibc).  Only plain integer stores are
+    //   safe in this RT context.
+    struct RateThreadMsg {
+        uint32_t attitude_rate_hz;   // raw value; main thread formats the log string
+        bool warn_cpu_high;
+        std::atomic<bool> pending{false};
+    } _rate_thread_msg;
+    void flush_rate_thread_msg();
+
+    // Always-on WCET (Worst-Case Execution Time) monitoring for the critical path:
+    // gyro-sample-received → rate_controller_run_dt() → motors_output().
+    //
+    // Writers:
+    //   • rate thread: increments overruns via fetch_add; updates max_us via
+    //     load+compare+store (single hot-path writer — no CAS loop needed here).
+    //   • main thread: resets max_us via exchange(0) after each GCS report so the
+    //     next interval reflects current WCET rather than a lifetime worst-case.
+    //
+    // Because both max_us writers use relaxed atomics and there is no ordering
+    // requirement between them (these are telemetry values, not control signals),
+    // the only property required is torn-write prevention, which relaxed atomics
+    // provide on all supported platforms.
+    struct RateLoopBudget {
+        std::atomic<uint32_t> max_us{0};    // worst critical-path time since last report (µs)
+        std::atomic<uint32_t> overruns{0};  // total cycles that exceeded one gyro period
+    } _rate_loop_budget;
     // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED

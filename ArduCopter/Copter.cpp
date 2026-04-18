@@ -159,6 +159,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(update_batt_compass,   10,    120, 15),
     SCHED_TASK_CLASS(RC_Channels, (RC_Channels*)&copter.g2.rc_channels, read_aux_all,    10,  50,  18),
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // Forward rate-thread GCS messages to main thread; rate thread must not call gcs().send_text() directly.
+    SCHED_TASK(flush_rate_thread_msg,        10,     50,  20),
+#endif
 #if TOY_MODE_ENABLED
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50,  24),
 #endif
