@@ -1517,23 +1517,14 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
         return;
     }
 
-    // see if we need to allocate re-assembly buffer
-    if (rtcm_buffer == nullptr) {
-        rtcm_buffer = (struct rtcm_buffer *)calloc(1, sizeof(*rtcm_buffer));
-        if (rtcm_buffer == nullptr) {
-            // nothing to do but discard the data
-            return;
-        }
-    }
-
     const uint8_t fragment = (flags >> 1U) & 0x03;
     const uint8_t sequence = (flags >> 3U) & 0x1F;
-    uint8_t* start_of_fragment_in_buffer = &rtcm_buffer->buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN * (uint16_t)fragment];
+    uint8_t* start_of_fragment_in_buffer = &_rtcm_buffer.buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN * (uint16_t)fragment];
     bool should_clear_previous_fragments = false;
 
-    if (rtcm_buffer->fragments_received) {
-        const bool sequence_nr_changed = rtcm_buffer->sequence != sequence;
-        const bool seen_this_fragment_index = rtcm_buffer->fragments_received & (1U << fragment);
+    if (_rtcm_buffer.fragments_received) {
+        const bool sequence_nr_changed = _rtcm_buffer.sequence != sequence;
+        const bool seen_this_fragment_index = _rtcm_buffer.fragments_received & (1U << fragment);
 
         // check whether this is a duplicate fragment. If it is, we can
         // return early.
@@ -1548,14 +1539,14 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
     if (should_clear_previous_fragments) {
         // we have one or more partial fragments already received
         // which conflict with the new fragment, discard previous fragments
-        rtcm_buffer->fragment_count = 0;
-        rtcm_stats.fragments_discarded += __builtin_popcount(rtcm_buffer->fragments_received);
-        rtcm_buffer->fragments_received = 0;
+        _rtcm_buffer.fragment_count = 0;
+        rtcm_stats.fragments_discarded += __builtin_popcount(_rtcm_buffer.fragments_received);
+        _rtcm_buffer.fragments_received = 0;
     }
 
     // add this fragment
-    rtcm_buffer->sequence = sequence;
-    rtcm_buffer->fragments_received |= (1U << fragment);
+    _rtcm_buffer.sequence = sequence;
+    _rtcm_buffer.fragments_received |= (1U << fragment);
 
     // copy the data
     memcpy(start_of_fragment_in_buffer, data, len);
@@ -1565,23 +1556,23 @@ void AP_GPS::handle_gps_rtcm_fragment(uint8_t flags, const uint8_t *data, uint8_
     // block of RTCM data of an exact multiple of the buffer size you
     // need to send a final packet of zero length
     if (len < MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN) {
-        rtcm_buffer->fragment_count = fragment+1;
-        rtcm_buffer->total_length = (MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*fragment) + len;
-    } else if (rtcm_buffer->fragments_received == 0x0F) {
+        _rtcm_buffer.fragment_count = fragment+1;
+        _rtcm_buffer.total_length = (MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*fragment) + len;
+    } else if (_rtcm_buffer.fragments_received == 0x0F) {
         // special case of 4 full fragments
-        rtcm_buffer->fragment_count = 4;
-        rtcm_buffer->total_length = MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4;
+        _rtcm_buffer.fragment_count = 4;
+        _rtcm_buffer.total_length = MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4;
     }
 
 
     // see if we have all fragments
-    if (rtcm_buffer->fragment_count != 0 &&
-        rtcm_buffer->fragments_received == (1U << rtcm_buffer->fragment_count) - 1) {
+    if (_rtcm_buffer.fragment_count != 0 &&
+        _rtcm_buffer.fragments_received == (1U << _rtcm_buffer.fragment_count) - 1) {
         // we have them all, inject
-        rtcm_stats.fragments_used += __builtin_popcount(rtcm_buffer->fragments_received);
-        inject_data(rtcm_buffer->buffer, rtcm_buffer->total_length);
-        rtcm_buffer->fragment_count = 0;
-        rtcm_buffer->fragments_received = 0;
+        rtcm_stats.fragments_used += __builtin_popcount(_rtcm_buffer.fragments_received);
+        inject_data(_rtcm_buffer.buffer, _rtcm_buffer.total_length);
+        _rtcm_buffer.fragment_count = 0;
+        _rtcm_buffer.fragments_received = 0;
     }
 }
 

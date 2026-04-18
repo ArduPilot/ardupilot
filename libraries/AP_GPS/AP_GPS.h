@@ -729,10 +729,9 @@ private:
               2 bits for fragment number
               5 bits for sequence number
 
-      The rtcm_buffer is allocated on first use. Once a block of data
-      is successfully reassembled it is injected into all active GPS
-      backends. This assumes we don't want more than 4*180=720 bytes
-      in a RTCM data block
+      Pre-allocated as a value member (not a pointer) to avoid any heap
+      allocation on the MAVLink receive path.  Size: 4*180=720 bytes max
+      per RTCM block.
      */
     struct rtcm_buffer {
         uint8_t fragments_received;
@@ -740,7 +739,7 @@ private:
         uint8_t fragment_count;
         uint16_t total_length;
         uint8_t buffer[MAVLINK_MSG_GPS_RTCM_DATA_FIELD_DATA_LEN*4];
-    } *rtcm_buffer;
+    } _rtcm_buffer {};
 
     struct {
         uint16_t fragments_used;
