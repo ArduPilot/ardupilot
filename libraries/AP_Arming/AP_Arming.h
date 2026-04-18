@@ -11,6 +11,7 @@
 #include "AP_Proximity/AP_Proximity_config.h"
 
 class AP_Arming {
+    friend class AP_Arming_AuxAuthTest;
 public:
 
     AP_Arming();
