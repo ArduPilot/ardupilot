@@ -308,13 +308,13 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
 {
     if (use_scurves_for_navigation()) {
         // use scurves for navigation
-        if (!g2.wp_nav.set_desired_location(destination, next_destination)) {
+        if (!g2.wp_nav.set_destination(destination, next_destination)) {
             return false;
         }
     } else {
         // use position controller input shaping for navigation
         // this does not support object avoidance but does allow faster updates of the target
-        if (!g2.wp_nav.set_desired_location_expect_fast_update(destination)) {
+        if (!g2.wp_nav.set_destination_expect_fast_update(destination)) {
             return false;
         }
     }
