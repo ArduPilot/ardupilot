@@ -99,7 +99,10 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
             a++;
             const uint8_t output_length = msg.data[a];
             a++;
-            // TODO handle corruption on output_length causing buffer overrun?
+            // Validate that the record fits within the packet before parsing.
+            if (a + output_length > msg.length) {
+                return false;
+            }
 
             switch (output_type) {
             case POS_TIME:
