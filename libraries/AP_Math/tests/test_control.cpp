@@ -522,5 +522,46 @@ TEST(Control, test_limit_accel)
     sigaction(SIGFPE, &old_sa_fpe, nullptr);
 }
 
+// Test that shape_pos_vel_accel rejects invalid inputs without dividing by zero.
+// accel_min must be strictly negative; zero is rejected by the sanity check,
+// triggering INTERNAL_ERROR and an early return, leaving accel unchanged.
+TEST(Control, shape_pos_vel_accel_invalid_accel_min)
+{
+    struct sigaction old_sa_fpe = {};
+    struct sigaction sa_fpe = {};
+    sigemptyset(&sa_fpe.sa_mask);
+    sa_fpe.sa_handler = _tc_sig_fpe;
+    if (sigaction(SIGFPE, &sa_fpe, &old_sa_fpe) == -1) {
+        abort();
+    }
+    const int excepts = FE_UNDERFLOW | FE_OVERFLOW | FE_INVALID | FE_DIVBYZERO;
+    fexcept_t old_except_flags;
+    if (fegetexceptflag(&old_except_flags, excepts) == -1) {
+        abort();
+    }
+    feenableexcept(excepts);
+
+    bool signal_caught = false;
+    if (sigsetjmp(avert_your_eyes_children, 1)) {
+        signal_caught = true;
+    } else {
+        postype_t pos = 0.0f, pos_desired = 10.0f;
+        float vel = 0.0f, accel = 0.0f;
+        // accel_min=0 is invalid; the function must return early, not divide by zero
+        shape_pos_vel_accel(pos_desired, 0.0f, 0.0f,
+                            pos, vel, accel,
+                            -5.0f, 5.0f,
+                            0.0f, 5.0f,   // accel_min=0: invalid
+                            10.0f, 0.01f, false);
+    }
+
+    EXPECT_FALSE(signal_caught);
+
+    if (fesetexceptflag(&old_except_flags, excepts) == -1) {
+        abort();
+    }
+    sigaction(SIGFPE, &old_sa_fpe, nullptr);
+}
+
 AP_GTEST_MAIN()
 int hal = 0;

@@ -335,7 +335,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 
     // Limit Nu to +-(pi/2)
     Nu = constrain_float(Nu, -1.5708f, +1.5708f);
-    _latAccDem = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
+    _latAccDem = K_L1 * groundSpeed * groundSpeed / MAX(_L1_dist, 0.1f) * sinf(Nu);
 
     // Waypoint capture status is always false during waypoint following
     _WPcircle = false;
@@ -416,7 +416,7 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     Nu = constrain_float(Nu, -M_PI_2, M_PI_2); // Limit Nu to +- Pi/2
 
     // Calculate lat accln demand to capture center_WP (use L1 guidance law)
-    float latAccDemCap = K_L1 * groundSpeed * groundSpeed / _L1_dist * sinf(Nu);
+    float latAccDemCap = K_L1 * groundSpeed * groundSpeed / MAX(_L1_dist, 0.1f) * sinf(Nu);
 
     // Calculate radial position and velocity errors
     float xtrackVelCirc = -ltrackVelCap; // Radial outbound velocity - reuse previous radial inbound velocity
