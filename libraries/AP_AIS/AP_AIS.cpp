@@ -149,10 +149,21 @@ void AP_AIS::update()
                 uint8_t index = 0;
 
                 // We have the last part, need to find preceding fragments
+                // Validate multi-part message: must have at least 2 parts
+                if (_incoming.num < 2) {
+                    break;
+                }
                 const uint8_t parts = _incoming.num - 1;
 
-                uint8_t msg_parts[parts];
-                for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE; i++) {
+                // Clamp to array size — there can never be more preceding
+                // fragments than buffer slots.
+                if (parts > AIVDM_BUFFER_SIZE - 1) {
+                    break;
+                }
+
+                // Use fixed-size array to avoid VLA with potential zero/overflow size
+                uint8_t msg_parts[AIVDM_BUFFER_SIZE - 1];
+                for  (uint8_t i = 0; i < AIVDM_BUFFER_SIZE && index < parts; i++) {
                     // look for the rest of the message from the start of the buffer
                     // we assume the message has be received in the correct order
                     if (_AIVDM_buffer[i].num == (index + 1) && _AIVDM_buffer[i].total == _incoming.total && _AIVDM_buffer[i].ID == _incoming.ID) {
@@ -175,7 +186,17 @@ void AP_AIS::update()
                         log_raw(&_incoming);
                     }
 #endif
-                    // remove
+                    // Sort indices descending before shifting so that each
+                    // buffer_shift() call does not invalidate later indices.
+                    for (uint8_t a = 0; a < index; a++) {
+                        for (uint8_t b = a + 1; b < index; b++) {
+                            if (msg_parts[b] > msg_parts[a]) {
+                                uint8_t tmp = msg_parts[a];
+                                msg_parts[a] = msg_parts[b];
+                                msg_parts[b] = tmp;
+                            }
+                        }
+                    }
                     for (uint8_t i = 0; i < index; i++) {
                         buffer_shift(msg_parts[i]);
                     }
@@ -192,6 +213,17 @@ void AP_AIS::update()
 #if HAL_LOGGING_ENABLED
                 const bool decoded = payload_decode(s.get_string());
 #endif
+                // Sort indices descending before shifting so that each
+                // buffer_shift() call does not invalidate later indices.
+                for (uint8_t a = 0; a < index; a++) {
+                    for (uint8_t b = a + 1; b < index; b++) {
+                        if (msg_parts[b] > msg_parts[a]) {
+                            uint8_t tmp = msg_parts[a];
+                            msg_parts[a] = msg_parts[b];
+                            msg_parts[b] = tmp;
+                        }
+                    }
+                }
                 for (uint8_t i = 0; i < index; i++) {
 #if HAL_LOGGING_ENABLED
                     // unsupported type, log and discard
@@ -366,7 +398,8 @@ void AP_AIS::buffer_shift(uint8_t i)
         _AIVDM_buffer[n].ID = _AIVDM_buffer[n+1].ID;
         _AIVDM_buffer[n].num = _AIVDM_buffer[n+1].num;
         _AIVDM_buffer[n].total = _AIVDM_buffer[n+1].total;
-        strncpy(_AIVDM_buffer[n].payload,_AIVDM_buffer[n+1].payload,AIVDM_PAYLOAD_SIZE);
+        strncpy(_AIVDM_buffer[n].payload, _AIVDM_buffer[n+1].payload, AIVDM_PAYLOAD_SIZE - 1);
+        _AIVDM_buffer[n].payload[AIVDM_PAYLOAD_SIZE - 1] = '\0';
     }
     _AIVDM_buffer[AIVDM_BUFFER_SIZE - 1].ID = 0;
     _AIVDM_buffer[AIVDM_BUFFER_SIZE - 1].num = 0;
@@ -846,21 +879,34 @@ void AP_AIS::get_char(const char *payload, char *array, uint16_t low, uint16_t h
 // read the specified bits from the char array each char giving 6 bits
 uint32_t AP_AIS::get_bits(const char *payload, uint16_t low, uint16_t high)
 {
+    // Validate inputs to prevent null pointer dereference and invalid access
+    if (payload == nullptr || high < low) {
+        return 0;
+    }
+
     uint8_t char_low = low / 6;
     uint8_t bit_low = low % 6;
 
     uint8_t char_high = high / 6;
     uint8_t bit_high = (high % 6) + 1;
 
+    // Ensure the payload is long enough to satisfy the requested bit range
+    const size_t payload_len = strlen(payload);
+    if (char_high >= payload_len) {
+        return 0;
+    }
+
     uint32_t val = 0;
-    for (uint8_t index = 0; index <= char_high - char_low; index++) {
+    // Use uint16_t for the span to prevent uint8_t underflow wrapping
+    const uint16_t char_span = (uint16_t)char_high - (uint16_t)char_low;
+    for (uint16_t index = 0; index <= char_span; index++) {
         uint8_t value = payload_char_decode(payload[char_low + index]);
         uint8_t mask = 0b111111;
         if (index == 0) {
             mask = mask >> bit_low;
         }
         value &= mask;
-        if (index == char_high - char_low) {
+        if (index == char_span) {
             value = value >> (6 - bit_high);
             val = val << bit_high;
         } else {
@@ -1015,7 +1061,8 @@ bool AP_AIS::decode_latest_term()
             if (strlen(_term) == 0) {
                 _sentence_valid = false;
             } else {
-                strcpy(_incoming.payload,_term);
+                strncpy(_incoming.payload, _term, AIVDM_PAYLOAD_SIZE - 1);
+                _incoming.payload[AIVDM_PAYLOAD_SIZE - 1] = '\0';
             }
             break;
 
