@@ -16,13 +16,13 @@ class Variometer {
     const AP_FixedWing &_aparm;
 
     // store time of last update
-    uint64_t _prev_update_time;
+    uint64_t _prev_update_time{0};
 
-    float _raw_climb_rate;
+    float _raw_climb_rate{0.0f};
 
-    float _aspd_filt_constrained;
+    float _aspd_filt_constrained{0.0f};
 
-    float _expected_thermalling_sink;
+    float _expected_thermalling_sink{0.0f};
 
     // declares a 5point average filter using floats
     AverageFilterFloat_Size5 _vdot_filter;
@@ -56,9 +56,9 @@ public:
 
     Variometer(const AP_FixedWing &parms, const PolarParams &polarParams);
 
-    float alt;
-    float reading;
-    float tau;
+    float alt{0.0f};
+    float reading{0.0f};
+    float tau{0.0f};
 
     void update(const float thermal_bank);
     float calculate_aircraft_sinkrate(float phi) const;
