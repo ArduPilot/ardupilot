@@ -549,21 +549,27 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
     update_topic(msg.header.stamp);
     AP_RSSI *ap_rssi = AP_RSSI::get_singleton();
     auto rc = RC_Channels::get_singleton();
-    static int16_t counter = 0;
+    static uint16_t counter = 0;
 
     // Is connected if not in failsafe.
     // This is only valid if the RC has been connected at least once
     msg.is_connected = !rc->in_rc_failsafe();
     // Receiver RSSI is reported between 0.0 and 1.0.
-    msg.receiver_rssi = static_cast<uint8_t>(ap_rssi->read_receiver_rssi()*100.f);
+    msg.receiver_rssi = (ap_rssi != nullptr) ? static_cast<uint8_t>(ap_rssi->read_receiver_rssi()*100.f) : 0;
 
     // Limit the max number of available channels to 8
     msg.channels_size = MIN(static_cast<uint32_t>(rc->get_valid_channel_count()), 32U);
     msg.active_overrides_size = msg.channels_size;
     if (msg.channels_size) {
         for (uint8_t i = 0; i < static_cast<uint8_t>(msg.channels_size); i++) {
-            msg.channels[i] = rc->rc_channel(i)->get_radio_in();
-            msg.active_overrides[i] = rc->rc_channel(i)->has_override();
+            RC_Channel *chan = rc->rc_channel(i);
+            if (chan != nullptr) {
+                msg.channels[i] = chan->get_radio_in();
+                msg.active_overrides[i] = chan->has_override();
+            } else {
+                msg.channels[i] = 0;
+                msg.active_overrides[i] = false;
+            }
         }
     } else {
         // If no channels are available, the RC is disconnected.
@@ -1173,19 +1179,22 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             switch (var_type) {
             case AP_PARAM_INT8: {
                 get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
-                get_parameters_response.values[i].integer_value = ((AP_Int8 *)vp)->get();
+                // Safe cast: var_type guarantees vp is an AP_Int8
+                get_parameters_response.values[i].integer_value = static_cast<AP_Int8*>(vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT16: {
                 get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
-                get_parameters_response.values[i].integer_value = ((AP_Int16 *)vp)->get();
+                // Safe cast: var_type guarantees vp is an AP_Int16
+                get_parameters_response.values[i].integer_value = static_cast<AP_Int16*>(vp)->get();
                 successful_read &= true;
                 break;
             }
             case AP_PARAM_INT32: {
                 get_parameters_response.values[i].type = ParameterType::PARAMETER_INTEGER;
-                get_parameters_response.values[i].integer_value = ((AP_Int32 *)vp)->get();
+                // Safe cast: var_type guarantees vp is an AP_Int32
+                get_parameters_response.values[i].integer_value = static_cast<AP_Int32*>(vp)->get();
                 successful_read &= true;
                 break;
             }
