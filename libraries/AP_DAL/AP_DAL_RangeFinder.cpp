@@ -82,7 +82,7 @@ void AP_DAL_RangeFinder::start_frame()
 
     for (uint8_t i=0; i<_RRNH.num_sensors; i++) {
         auto *backend = rangefinder->get_backend(i);
-        if (backend == nullptr) {
+        if (backend == nullptr || _backend[i] == nullptr) {
             continue;
         }
         _backend[i]->start_frame(backend);
@@ -136,7 +136,8 @@ void AP_DAL_RangeFinder::handle_message(const log_RRNH &msg)
     _RRNH = msg;
     if (_RRNH.num_sensors > 0 && _RRNI == nullptr) {
         _RRNI = NEW_NOTHROW log_RRNI[_RRNH.num_sensors];
-        _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors];
+        _backend = NEW_NOTHROW AP_DAL_RangeFinder_Backend *[_RRNH.num_sensors]{};
+
     }
 }
 
