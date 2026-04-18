@@ -144,7 +144,9 @@ int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
 {
     char *endptr = nullptr;
     long ret = 100 * strtol(p, &endptr, 10);
-    int sign = ret < 0 ? -1 : 1;
+    // Use the input character to determine sign; strtol("-0") == 0, which
+    // is non-negative, so `ret < 0` would wrongly set sign = +1 for "-0.x".
+    int sign = (*p == '-') ? -1 : 1;
 
     if (ret >= (long)INT32_MAX) {
         return INT32_MAX;
@@ -164,6 +166,14 @@ int32_t AP_GPS_NMEA::_parse_decimal_100(const char *p)
                 ret += sign * (DIGIT_TO_VAL(endptr[3]) >= 5);
             }
         }
+    }
+    // Re-check after fractional addition: e.g. "21474836.9" passes the integer
+    // guard (2147483600 < INT32_MAX) but the +90 pushes it over the limit.
+    if (ret >= (long)INT32_MAX) {
+        return INT32_MAX;
+    }
+    if (ret <= (long)INT32_MIN) {
+        return INT32_MIN;
     }
     return ret;
 }
