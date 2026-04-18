@@ -359,4 +359,37 @@ TEST(Vector3Test, point_on_segmentx)
 
 }
 */
+// angle() between two Vector3f values.
+// The Vector2 implementation correctly returns M_PI for antiparallel vectors;
+// Vector3 had a combined guard `if (cosv >= 1 || cosv <= -1) return 0.0f`
+// that returned 0 for both the parallel (cosv==1) AND antiparallel (cosv==-1)
+// cases.  This test covers all cases including antiparallel.
+TEST(Vector3Test, AngleBetween)
+{
+    // Parallel: angle = 0
+    EXPECT_FLOAT_EQ(Vector3f(1,0,0).angle(Vector3f(1,0,0)), 0.0f);
+    EXPECT_FLOAT_EQ(Vector3f(1,0,0).angle(Vector3f(5,0,0)), 0.0f);  // scale invariant
+
+    // Orthogonal: angle = π/2
+    EXPECT_FLOAT_EQ(Vector3f(1,0,0).angle(Vector3f(0,1,0)), float(M_PI/2));
+    EXPECT_FLOAT_EQ(Vector3f(1,0,0).angle(Vector3f(0,0,1)), float(M_PI/2));
+
+    // 45° and 60°
+    EXPECT_NEAR(Vector3f(1,0,0).angle(Vector3f(1,1,0)),                   float(M_PI/4), 1e-6f);
+    EXPECT_NEAR(Vector3f(1,0,0).angle(Vector3f(0.5f,sqrtf(3)/2.0f,0.0f)), float(M_PI/3), 1e-6f);
+
+    // Antiparallel: angle = π  (was returning 0 before this fix)
+    EXPECT_NEAR(Vector3f(1,0,0).angle(Vector3f(-1,0,0)),    float(M_PI), 1e-6f);
+    EXPECT_NEAR(Vector3f(0,1,0).angle(Vector3f(0,-1,0)),    float(M_PI), 1e-6f);
+    EXPECT_NEAR(Vector3f(1,1,1).angle(Vector3f(-1,-1,-1)),  float(M_PI), 1e-6f);
+
+    // Zero vector: guarded, returns 0
+    EXPECT_FLOAT_EQ(Vector3f(0,0,0).angle(Vector3f(1,0,0)), 0.0f);
+    EXPECT_FLOAT_EQ(Vector3f(1,0,0).angle(Vector3f(0,0,0)), 0.0f);
+
+    // Symmetry: angle(a,b) == angle(b,a)
+    EXPECT_FLOAT_EQ(Vector3f(1,0,0).angle(Vector3f(0,1,0)),
+                    Vector3f(0,1,0).angle(Vector3f(1,0,0)));
+}
+
 AP_GTEST_MAIN()
