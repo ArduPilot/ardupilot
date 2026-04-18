@@ -1,0 +1,29 @@
+# ThreadSanitizer suppressions for ArduPilot SITL
+#
+# These suppress known-benign or third-party races so that TSan output
+# highlights only the application-level races we care about.
+#
+# Format: <type>:<symbol/file glob>
+#   race     — data race on a variable/function
+#   mutex    — lock-ordering problem
+#   thread   — thread leak
+
+# ── Known-benign SITL infrastructure ──────────────────────────────────────────
+
+# AP_HAL_SITL uses a global simulation clock that is updated from the main
+# thread and read from bus-emulation threads without synchronisation.
+# This is intentional SITL-only behaviour (no shared clock on real hardware).
+race:HALSITL::Scheduler::_run_timer_procs
+race:HALSITL::Scheduler::stop_clock
+
+# ── Third-party / system library races (not our code) ─────────────────────────
+race:libstdc++
+race:__cxa_guard_acquire
+race:pthread_create
+
+# ── Logging infrastructure ────────────────────────────────────────────────────
+# AP_Logger uses a ring-buffer with its own internal locking that TSan cannot
+# see through because the locks are in a different compilation unit.
+race:AP_Logger
+
+# ── End of suppressions ───────────────────────────────────────────────────────

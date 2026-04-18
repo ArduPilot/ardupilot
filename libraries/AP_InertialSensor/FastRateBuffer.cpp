@@ -110,6 +110,9 @@ bool FastRateBuffer::get_next_gyro_sample(Vector3f& gyro)
         _notifier.wait_blocking();
     }
 
+    // _mutex is held only for the pop() — a single pointer/index update in ObjectBuffer.
+    // The competing thread (push_next_gyro_sample) holds it for an equally short push().
+    // Both critical sections are O(1), bounded, and allocation-free.
     WITH_SEMAPHORE(_mutex);
 
     return _rate_loop_gyro_window.pop(gyro);
@@ -118,10 +121,10 @@ bool FastRateBuffer::get_next_gyro_sample(Vector3f& gyro)
 void FastRateBuffer::reset()
 {
     _rate_loop_gyro_window.clear();
-    // Reset the push counter so the first sample after re-enable is not
-    // pushed at a stale offset within the decimation cycle.  Without this,
-    // a re-enable after disable_fast_rate_buffer() inherits a non-zero count
-    // and may push (or skip) the first sample at the wrong position.
+    // Reset the push counter so the first sample after re-enable is not pushed at an
+    // offset position within the decimation cycle.  Without this, a re-enable after
+    // disable_fast_rate_buffer() would inherit a stale count, producing a one-cycle
+    // phase error in the decimation pattern.
     rate_decimation_count = 0;
 }
 
@@ -131,7 +134,11 @@ bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
         return false;
     }
 
-    if (++fast_rate_buffer->rate_decimation_count < fast_rate_buffer->rate_decimation) {
+    // Read rate_decimation with ACQUIRE to pair with the rate thread's RELEASE store in
+    // set_rate_decimation().  Without this the backend thread may see a stale value and
+    // push at the wrong rate.
+    if (++fast_rate_buffer->rate_decimation_count <
+            fast_rate_buffer->rate_decimation.load(std::memory_order_acquire)) {
         return false;
     }
     /*

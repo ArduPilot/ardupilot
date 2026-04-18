@@ -853,6 +853,14 @@ class SITLBoard(Board):
                 "-fno-sanitize-recover"
             ]
 
+        if cfg.options.tsan:
+            env.CXXFLAGS += [
+                '-fsanitize=thread',
+                '-fno-omit-frame-pointer',
+                '-DTSAN_ENABLED',
+            ]
+            env.LINKFLAGS += ['-fsanitize=thread']
+
         if not cfg.env.DEBUG:
             env.CXXFLAGS += [
                 '-O3',

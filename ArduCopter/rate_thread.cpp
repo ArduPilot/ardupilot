@@ -226,7 +226,8 @@ void Copter::rate_controller_thread()
         }
 
         // set up rate thread requirements
-        if (!using_rate_thread) {
+        // Relaxed: self-read — the rate thread sees its own RELEASE store in program order.
+        if (!using_rate_thread.load(std::memory_order_relaxed)) {
             enable_fast_rate_loop(rate_decimation, rates);
         }
         ins.set_rate_decimation(rate_decimation);
@@ -448,7 +449,9 @@ void Copter::enable_fast_rate_loop(uint8_t rate_decimation, RateControllerRates&
     ins.enable_fast_rate_buffer();
     rate_controller_set_rates(rate_decimation, rates, false);
     hal.rcout->force_trigger_groups(true);
-    using_rate_thread = true;
+    // RELEASE: all setup writes above are visible to any thread that subsequently
+    // acquires using_rate_thread == true (e.g. run_rate_controller_main).
+    using_rate_thread.store(true, std::memory_order_release);
 }
 
 // disable the fast rate thread and record the new output rates
@@ -464,7 +467,9 @@ void Copter::disable_fast_rate_loop(RateControllerRates& rates)
     rate_controller_set_rates(rate_decimation, rates, false);
     hal.rcout->force_trigger_groups(false);
     ins.disable_fast_rate_buffer();
-    using_rate_thread = false;
+    // RELEASE: all teardown writes above are now visible to any thread that
+    // subsequently acquires using_rate_thread == false (e.g. run_rate_controller_main).
+    using_rate_thread.store(false, std::memory_order_release);
 }
 
 /*
@@ -488,7 +493,7 @@ void Copter::rate_controller_log_update()
 // run notch update at either loop rate or 200Hz
 void Copter::update_dynamic_notch_at_specified_rate_main()
 {
-    if (using_rate_thread) {
+    if (rate_thread_active()) {
         return;
     }
 

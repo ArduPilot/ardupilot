@@ -24,6 +24,7 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/Semaphores.h>
+#include <atomic>
 
 class FastRateBuffer
 {
@@ -31,9 +32,14 @@ class FastRateBuffer
 public:
     bool get_next_gyro_sample(Vector3f& gyro);
     uint32_t get_num_gyro_samples() { return _rate_loop_gyro_window.available(); }
-    void set_rate_decimation(uint8_t rdec) { rate_decimation = rdec; }
+    void set_rate_decimation(uint8_t rdec) {
+        // RELEASE so the backend thread sees the new value before the next push.
+        rate_decimation.store(rdec, std::memory_order_release);
+    }
     // whether or not to push the current gyro sample
-    bool use_rate_loop_gyro_samples() const { return rate_decimation > 0; }
+    bool use_rate_loop_gyro_samples() const {
+        return rate_decimation.load(std::memory_order_acquire) > 0;
+    }
     bool gyro_samples_available() { return  _rate_loop_gyro_window.available() > 0; }
     void reset();
 
@@ -43,8 +49,12 @@ private:
       we hav finished filtering the primary IMU
      */
     ObjectBuffer<Vector3f> _rate_loop_gyro_window{AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE};
-    uint8_t rate_decimation; // 0 means off
-    uint8_t rate_decimation_count;
+    // rate_decimation is written by the rate thread (set_rate_decimation) and read
+    // by the SPI/backend thread (push_next_gyro_sample / use_rate_loop_gyro_samples).
+    // Must be atomic to prevent a data race between these two threads.
+    // RELEASE on write, ACQUIRE on read — ensures the reader always sees a coherent value.
+    std::atomic<uint8_t> rate_decimation{0};
+    uint8_t rate_decimation_count{0}; // only touched by the backend/push thread; no atomic needed
     HAL_BinarySemaphore _notifier;
     HAL_Semaphore _mutex;
 };

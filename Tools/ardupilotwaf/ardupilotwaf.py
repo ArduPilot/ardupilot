@@ -731,6 +731,18 @@ This option is only supported on macOS versions of clang.
     g.add_option('--ubsan-abort',
         action='store_true',
         help='''Build using the gcc undefined behaviour sanitizer and abort on error''')
+
+    g.add_option('--tsan',
+        action='store_true',
+        default=False,
+        help='''Build using ThreadSanitizer to detect data races.
+Requires GCC or Clang with TSan support (Linux/macOS).
+Use with SITL to find cross-thread races in the rate-loop code:
+  ./waf configure --board sitl --tsan
+  ./waf copter
+  TSAN_OPTIONS="halt_on_error=1 suppressions=Tools/scripts/tsan_suppressions.txt" \\
+      build/sitl/bin/arducopter -S --speedup 5
+''')
     
 def build(bld):
     bld.add_pre_fun(_process_build_command)

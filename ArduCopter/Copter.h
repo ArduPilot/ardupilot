@@ -21,6 +21,7 @@
 // Header includes
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <atomic>
 #include <cmath>
 #include <stdio.h>
 #include <stdarg.h>
@@ -1110,7 +1111,19 @@ private:
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 
     bool started_rate_thread;
-    bool using_rate_thread;
+
+    // using_rate_thread is written by the rate thread (enable/disable_fast_rate_loop)
+    // and read by multiple main-thread functions.  Must be atomic to prevent a data race.
+    // Writes use RELEASE (all setup/teardown visible to readers); main-thread reads use
+    // ACQUIRE (see enable_fast_rate_loop comment); the rate thread's own self-read uses RELAXED.
+    // Use rate_thread_active() for main-thread reads; access .load(relaxed) directly in the
+    // rate thread.
+    std::atomic<bool> using_rate_thread{false};
+
+    // Acquire-ordered read for all main-thread callers of using_rate_thread.
+    bool rate_thread_active() const {
+        return using_rate_thread.load(std::memory_order_acquire);
+    }
 
 public:
     void failsafe_check();      // failsafe.cpp

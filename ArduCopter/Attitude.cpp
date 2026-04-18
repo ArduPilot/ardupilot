@@ -14,7 +14,7 @@ void Copter::run_rate_controller_main()
     pos_control->set_dt_s(last_loop_time_s);
     attitude_control->set_dt_s(last_loop_time_s);
 
-    if (!using_rate_thread) {
+    if (!rate_thread_active()) {
         motors->set_dt_s(last_loop_time_s);
         // only run the rate controller if we are not using the rate thread
         attitude_control->rate_controller_run();

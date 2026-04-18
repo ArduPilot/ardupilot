@@ -121,7 +121,7 @@ void Copter::motors_output(bool full_push)
 // motors_output from main thread at main loop rate
 void Copter::motors_output_main()
 {
-    if (!using_rate_thread) {
+    if (!rate_thread_active()) {
         motors_output();
     }
 }
