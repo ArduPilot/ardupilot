@@ -49,6 +49,7 @@ class RTCM3_Parser;
 /// GPS driver main class
 class AP_GPS
 {
+    friend class AP_GPS_RTCMTest;
     friend class AP_GPS_Blended;
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
