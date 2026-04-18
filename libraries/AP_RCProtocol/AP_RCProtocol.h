@@ -293,27 +293,27 @@ private:
     bool detect_async_protocol(rcprotocol_t protocol);
 
     enum rcprotocol_t _detected_protocol = NONE;
-    uint16_t _disabled_for_pulses;
-    bool _detected_with_bytes;
-    AP_RCProtocol_Backend *backend[NONE];
-    bool _new_input;
-    uint32_t _last_input_ms;
-    bool _failsafe_active;
-    bool _valid_serial_prot;
+    uint16_t _disabled_for_pulses{0};
+    bool _detected_with_bytes{false};
+    AP_RCProtocol_Backend *backend[NONE] = {};
+    bool _new_input{false};
+    uint32_t _last_input_ms{0};
+    bool _failsafe_active{false};
+    bool _valid_serial_prot{false};
 
     // optional additional uart
     struct {
-        AP_HAL::UARTDriver *uart;
-        bool opened;
-        uint32_t last_config_change_ms;
-        uint8_t config_num;
+        AP_HAL::UARTDriver *uart{nullptr};
+        bool opened{false};
+        uint32_t last_config_change_ms{0};
+        uint8_t config_num{0};
     } added;
 
     // allowed RC protocols mask (first bit means "all")
-    uint32_t rc_protocols_mask;
+    uint32_t rc_protocols_mask{0};
 
-    rcprotocol_t _last_detected_protocol;
-    bool _last_detected_using_uart;
+    rcprotocol_t _last_detected_protocol{NONE};
+    bool _last_detected_using_uart{false};
     void announce_detected();
 
 #endif  // AP_RCPROTCOL_ENABLED

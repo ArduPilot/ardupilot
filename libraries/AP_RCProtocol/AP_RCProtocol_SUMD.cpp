@@ -166,19 +166,27 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
             }
 
             /* decode the actual packet */
-            /* reorder first 4 channels */
+            /* reorder first 4 channels - only write if packet actually contains them */
 
             /* ch1 = roll -> sumd = ch2 */
-            values[0] = (uint16_t)((_rxpacket.sumd_data[1 * 2 + 1] << 8) | _rxpacket.sumd_data[1 * 2 + 2]) >> 3;
+            if (_rxpacket.length > 0) {
+                values[0] = (uint16_t)((_rxpacket.sumd_data[1 * 2 + 1] << 8) | _rxpacket.sumd_data[1 * 2 + 2]) >> 3;
+            }
             /* ch2 = pitch -> sumd = ch2 */
-            values[1] = (uint16_t)((_rxpacket.sumd_data[2 * 2 + 1] << 8) | _rxpacket.sumd_data[2 * 2 + 2]) >> 3;
+            if (_rxpacket.length > 1) {
+                values[1] = (uint16_t)((_rxpacket.sumd_data[2 * 2 + 1] << 8) | _rxpacket.sumd_data[2 * 2 + 2]) >> 3;
+            }
             /* ch3 = throttle -> sumd = ch2 */
-            values[2] = (uint16_t)((_rxpacket.sumd_data[0 * 2 + 1] << 8) | _rxpacket.sumd_data[0 * 2 + 2]) >> 3;
+            if (_rxpacket.length > 2) {
+                values[2] = (uint16_t)((_rxpacket.sumd_data[0 * 2 + 1] << 8) | _rxpacket.sumd_data[0 * 2 + 2]) >> 3;
+            }
             /* ch4 = yaw -> sumd = ch2 */
-            values[3] = (uint16_t)((_rxpacket.sumd_data[3 * 2 + 1] << 8) | _rxpacket.sumd_data[3 * 2 + 2]) >> 3;
+            if (_rxpacket.length > 3) {
+                values[3] = (uint16_t)((_rxpacket.sumd_data[3 * 2 + 1] << 8) | _rxpacket.sumd_data[3 * 2 + 2]) >> 3;
+            }
 
             /* we start at channel 5(index 4) */
-            for (uint8_t i = 4; i < _rxpacket.length; i++) {
+            for (uint8_t i = 4; i < _rxpacket.length && i < SUMD_MAX_CHANNELS; i++) {
 #ifdef SUMD_DEBUG
                 hal.console->printf("ch[%u] : %x %x [ %x    %d ]\n", i + 1, _rxpacket.sumd_data[i * 2 + 1], _rxpacket.sumd_data[i * 2 + 2],
                                     ((_rxpacket.sumd_data[i * 2 + 1] << 8) | _rxpacket.sumd_data[i * 2 + 2]) >> 3,

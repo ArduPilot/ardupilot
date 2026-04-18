@@ -28,7 +28,7 @@ class AP_RCProtocol_Backend {
     friend class AP_RCProtcol;
 
 public:
-    AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
+    explicit AP_RCProtocol_Backend(AP_RCProtocol &_frontend);
     virtual ~AP_RCProtocol_Backend() {}
     virtual void process_pulse(uint32_t width_s0, uint32_t width_s1) {}
     virtual void process_byte(uint8_t byte, uint32_t baudrate) {}
@@ -134,12 +134,12 @@ protected:
     static void decode_11bit_channels(const uint8_t* data, uint8_t nchannels, uint16_t *values, uint16_t mult, uint16_t div, uint16_t offset);
 
 private:
-    uint32_t rc_input_count;
-    uint32_t last_rc_input_count;
-    uint32_t rc_frame_count;
+    uint32_t rc_input_count{0};
+    uint32_t last_rc_input_count{0};
+    uint32_t rc_frame_count{0};
 
-    uint16_t _pwm_values[MAX_RCIN_CHANNELS];
-    uint8_t  _num_channels;
+    uint16_t _pwm_values[MAX_RCIN_CHANNELS] = {};
+    uint8_t  _num_channels{0};
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
 };

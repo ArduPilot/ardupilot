@@ -206,7 +206,7 @@ private:
     Frame _frame;
     uint8_t *_frame_bytes = (uint8_t*)&_frame;
     Frame _telemetry_frame;
-    uint8_t _frame_ofs;
+    uint8_t _frame_ofs{0};
 
     const uint8_t MAX_CHANNELS = MIN((uint8_t)CRSF_MAX_CHANNELS, (uint8_t)MAX_RCIN_CHANNELS);
 
@@ -227,25 +227,25 @@ private:
     void start_uart();
     AP_HAL::UARTDriver* get_current_UART() { return (_uart ? _uart : get_available_UART()); }
 
-    uint16_t _channels[CRSF_MAX_CHANNELS];    /* buffer for extracted RC channel data as pulsewidth in microseconds */
+    uint16_t _channels[CRSF_MAX_CHANNELS] = {};    /* buffer for extracted RC channel data as pulsewidth in microseconds */
 
-    uint32_t _last_frame_time_us;
-    uint32_t _last_tx_frame_time_us;
-    uint32_t _last_uart_start_time_ms;
-    uint32_t _last_rx_frame_time_us;
-    uint32_t _start_frame_time_us;
-    bool telem_available;
-    uint32_t _new_baud_rate;
-    bool _crsf_v3_active;
+    uint32_t _last_frame_time_us{0};
+    uint32_t _last_tx_frame_time_us{0};
+    uint32_t _last_uart_start_time_ms{0};
+    uint32_t _last_rx_frame_time_us{0};
+    uint32_t _start_frame_time_us{0};
+    bool telem_available{false};
+    uint32_t _new_baud_rate{0};
+    bool _crsf_v3_active{false};
 
-    bool _use_lq_for_rssi;
+    bool _use_lq_for_rssi{false};
     int16_t derive_scaled_lq_value(uint8_t uplink_lq);
 
     volatile struct LinkStatus _link_status;
 
     static const uint16_t RF_MODE_RATES[RFMode::RF_MODE_MAX_MODES];
 
-    AP_HAL::UARTDriver *_uart;
+    AP_HAL::UARTDriver *_uart{nullptr};
 };
 
 namespace AP {

@@ -229,6 +229,10 @@ bool AP_RCProtocol_GHST::write_frame(Frame* frame)
         return false;
     }
 
+    // length encodes (type + payload + crc), so minimum valid value is 2
+    if (frame->length < 2) {
+        return false;
+    }
     // calculate crc
     uint8_t crc = crc8_dvb_s2(0, frame->type);
     for (uint8_t i = 0; i < frame->length - 2; i++) {
