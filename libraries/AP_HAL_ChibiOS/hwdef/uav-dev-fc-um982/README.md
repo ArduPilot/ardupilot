@@ -141,8 +141,8 @@ All UARTs except USART3 TX have DMA capability. Any UART can be re-tasked by cha
 RC input is configured on connector S1 / SERIAL4 / UART6. It supports all RC protocols.
 
 - PPM not supported
-- CRSF would require  :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>`  set to "0".
-- SRXL2 would require :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>` set to "4". And only connect the TX pin.
+- CRSF would require [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "0".
+- SRXL2 would require [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "4". And only connect the TX pin.
 
 ## Battery Monitoring
 

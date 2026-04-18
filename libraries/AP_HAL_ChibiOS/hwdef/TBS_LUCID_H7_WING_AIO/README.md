@@ -48,18 +48,18 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART4 RX input. It supports all serial RC protocols except PPM.
 
-- For FPort the receiver must be tied to the USART4 TX pin , :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3, :ref:`SERIAL4_OPTIONS <SERIAL4_OPTIONS>` = "7" (invert TX/RX, half duplex).
-- For full duplex CRSF/ELRS use both TX4 and RX4, and :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3 and provides telemetry.
+- For FPort the receiver must be tied to the USART4 TX pin , [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) set to 3, [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) = "7" (invert TX/RX, half duplex).
+- For full duplex CRSF/ELRS use both TX4 and RX4, and [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) set to 3 and provides telemetry.
 
-If SBUS is used on HD VTX connector (DJI TX), then :ref:`SERIAL1_PROTOCOl<SERIAL1_PROTOCOl>` should be set to "23" and :ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
+If SBUS is used on HD VTX connector (DJI TX), then [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) should be set to "23" and [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
 
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using an unused UART, such as the T2 pin (UART2 transmit).
 Using UART2 you would need to set the following parameters to enable support for FrSky S.PORT:
 
-- :ref:`SERIAL2_PROTOCOL<SERIAL1_PROTOCOL>` 10
-- :ref:`SERIAL2_OPTIONS<SERIAL1_OPTIONS>` 7
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
+- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
 
 ## OSD Support
 

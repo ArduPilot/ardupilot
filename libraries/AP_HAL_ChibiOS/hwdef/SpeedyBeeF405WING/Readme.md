@@ -39,7 +39,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 - SERIAL0 -> USB
 - SERIAL1 -> USART1 (Serial RC input) (DMA capable)
-- SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<>` =1)
+- SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) =1)
 - SERIAL3 -> UART3 (GPS) (TX DMA capable)
 - SERIAL4 -> UART4 (User) (TX DMA capable)
 - SERIAL5 -> UART5 (User, available on DJI air unit connector) (TX DMA capable)

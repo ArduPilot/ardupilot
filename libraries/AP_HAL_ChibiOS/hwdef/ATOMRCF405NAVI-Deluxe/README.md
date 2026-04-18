@@ -83,7 +83,7 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 - CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 
-- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to "4".
+- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to "4".
 
 > **Note:** the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
 

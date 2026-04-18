@@ -68,7 +68,7 @@ RC input is configured by default on `SERIAL5` (UART5). The 4V5 pin is powered b
 
 - PPM is supported.  
 - SBUS/DSM/SRXL connects to the RX5 pin.  
-- FPort requires connection to TX5. Set :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` = 7  
+- FPort requires connection to TX5. Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) = 7  
 - CRSF also requires both TX5 and RX5 connections and provides telemetry automatically.
 
 Any UART can be used for RC system connections in ArduPilot. See the [common RC systems](https://ardupilot.org) documentation for details.
@@ -79,7 +79,7 @@ Analog inputs are supported.
 
 - RSSI reference pin number: **8**
 
-> **Note:** Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 for analog RSSI, or = 3 for RSSI provided by RC protocols like CRSF.
+> **Note:** Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 1 for analog RSSI, or = 3 for RSSI provided by RC protocols like CRSF.
 
 ## OSD Support
 
@@ -133,9 +133,9 @@ Setting GPIO 81 **low** disables voltage to the pins.
 
 Example (using Channel 10 to toggle VTX BEC using Relay 2, as an example):
 
-- :ref:`RELAY2_FUNCTION<RELAY2_FUNCTION>` = 1 (already set as default)
-- :ref:`RELAY2_PIN<RELAY2_PIN>` = 81  (already set as default)
-- :ref:`RC10_OPTION<RC10_OPTION>` = 34  ; Relay2 Control
+- [RELAY2_FUNCTION](https://ardupilot.org/copter/docs/parameters.html#relay2-function-relay-function) = 1 (already set as default)
+- [RELAY2_PIN](https://ardupilot.org/copter/docs/parameters.html#relay2-pin-relay-pin) = 81  (already set as default)
+- [RC10_OPTION](https://ardupilot.org/copter/docs/parameters.html#rc10-option-rc-input-option) = 34  ; Relay2 Control
 
 > ⚠️ **Warning:** GPIO81 controls the 10V DC-DC converter (HIGH = on, LOW = off). Default: ON. Always install an antenna on the VTX when battery-powered.
 
@@ -145,9 +145,9 @@ GPIO 82 controls camera switching via PINIO2. Set high or low to toggle between 
 
 Example (using Channel 11 to control camera switch via Relay 3):
 
-- :ref:`RELAY3_FUNCTION<RELAY3_FUNCTION>` = 1 (already set as default)
-- :ref:`RELAY3_PIN<RELAY3_PIN>` = 82  (already set as default)
-- :ref:`RC11_OPTION<RC10_OPTION>` = 35  ; Relay3 Control
+- [RELAY3_FUNCTION](https://ardupilot.org/copter/docs/parameters.html#relay3-function-relay-function) = 1 (already set as default)
+- [RELAY3_PIN](https://ardupilot.org/copter/docs/parameters.html#relay3-pin-relay-pin) = 82  (already set as default)
+- [RC11_OPTION](https://ardupilot.org/copter/docs/parameters.html#rc11-option-rc-input-option) = 35  ; Relay3 Control
 
 > ⚠️ **Warning:** GPIO82 toggles camera input (HIGH/LOW). Ensure wiring matches desired switching behavior.
 
