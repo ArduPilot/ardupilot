@@ -59,7 +59,7 @@ void ModeGuided::update()
             if (have_attitude_target) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
+                calc_throttle(calc_speed_nudge(_desired_velocity, is_negative(_desired_velocity)), true);
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
@@ -87,7 +87,7 @@ void ModeGuided::update()
                                                                             g2.motors.limit.steer_right,
                                                                             rover.G_Dt);
                 set_steering(steering_out * 4500.0f);
-                calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
+                calc_throttle(calc_speed_nudge(_desired_velocity, is_negative(_desired_velocity)), true);
             } else {
                 // we have reached the destination so stay here
                 if (rover.is_boat()) {
@@ -329,7 +329,7 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
 }
 
 // set desired attitude
-void ModeGuided::set_desired_heading_and_speed(float yaw_angle_cd, float target_speed)
+void ModeGuided::set_desired_heading_and_velocity(float yaw_angle_cd, float target_velocity)
 {
     // initialisation and logging
     _guided_mode = SubMode::HeadingAndSpeed;
@@ -337,27 +337,27 @@ void ModeGuided::set_desired_heading_and_speed(float yaw_angle_cd, float target_
 
     // record targets
     _desired_yaw_cd = yaw_angle_cd;
-    _desired_speed = target_speed;
+    _desired_velocity = target_velocity;
     have_attitude_target = true;
 
 #if HAL_LOGGING_ENABLED
     // log new target
-    rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_cd, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+    rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_cd, 0.0f, 0.0f), Vector3f(_desired_velocity, 0.0f, 0.0f));
 #endif
 }
 
-void ModeGuided::set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed)
+void ModeGuided::set_desired_heading_delta_and_velocity(float yaw_delta_cd, float target_velocity)
 {
     // handle initialisation
     if (_guided_mode != SubMode::HeadingAndSpeed) {
         _guided_mode = SubMode::HeadingAndSpeed;
         _desired_yaw_cd = ahrs.yaw_sensor;
     }
-    set_desired_heading_and_speed(wrap_180_cd(_desired_yaw_cd + yaw_delta_cd), target_speed);
+    set_desired_heading_and_velocity(wrap_180_cd(_desired_yaw_cd + yaw_delta_cd), target_velocity);
 }
 
-// set desired velocity
-void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed)
+// set desired velocity (angular & linear)
+void ModeGuided::set_desired_turn_rate_and_velocity(float turn_rate_cds, float target_velocity)
 {
     // handle initialisation
     _guided_mode = SubMode::TurnRateAndSpeed;
@@ -365,12 +365,12 @@ void ModeGuided::set_desired_turn_rate_and_speed(float turn_rate_cds, float targ
 
     // record targets
     _desired_yaw_rate_cds = turn_rate_cds;
-    _desired_speed = target_speed;
+    _desired_velocity = target_velocity;
     have_attitude_target = true;
 
 #if HAL_LOGGING_ENABLED
     // log new target
-    rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_speed, 0.0f, 0.0f));
+    rover.Log_Write_GuidedTarget((uint8_t)_guided_mode, Vector3f(_desired_yaw_rate_cds, 0.0f, 0.0f), Vector3f(_desired_velocity, 0.0f, 0.0f));
 #endif
 }
 
