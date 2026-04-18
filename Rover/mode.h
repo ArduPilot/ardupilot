@@ -367,8 +367,7 @@ private:
     bool waiting_to_start;  // true if waiting for EKF origin before starting mission
     bool auto_triggered;        // true when auto has been triggered to start
 
-    // HeadingAndSpeed sub mode variables
-    float _desired_speed;   // desired speed in HeadingAndSpeed submode
+    float _desired_velocity;
     bool _reached_heading;  // true when vehicle has reached desired heading in TurnToHeading sub mode
 
     // Loiter control
