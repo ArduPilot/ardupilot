@@ -12,7 +12,7 @@ Any Arduino compatible nRF52 Bluetooth board should work, this guide is written 
 
 Follow the instructions from the manufacturer to setup the Arduino envoroment for your board. Install the [Adafruit nRF52](https://github.com/adafruit/Adafruit_nRF52_Arduino/tree/master/libraries/Bluefruit52Lib) library as outlined here: https://github.com/adafruit/Adafruit_nRF52_Arduino#bsp-installation.
 
-Use a smartphone and blue tooth tool to find the adress of your windvane. On Android [BLE Scanner](https://play.google.com/store/apps/details?id=com.macdom.ble.blescanner&hl=en_GB&gl=US) can be used, although there are many equivalent apps.
+Use a smartphone and Bluetooth tool to find the address of your windvane. On Android [BLE Scanner](https://play.google.com/store/apps/details?id=com.macdom.ble.blescanner&hl=en_GB&gl=US) can be used, although there are many equivalent apps.
 
 Locate the wind-vane and note down its address, in this case `DD:B7:BE:B4:56:38`.
 
