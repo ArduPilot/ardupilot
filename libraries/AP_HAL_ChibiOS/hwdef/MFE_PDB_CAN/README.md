@@ -59,4 +59,4 @@ BATT_AMP_PERVLT 22.0
 
 ## Where to Buy
 
-[www.makeflyeasy.com](www.makeflyeasy.com)
+[www.makeflyeasy.com](https://www.makeflyeasy.com)

@@ -53,7 +53,7 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 ## Where to Buy
 
 - [Accton-IoT Godwit](https://www.accton-iot.com/godwit/)
-- [sales@accton-iot.com](sales@accton-iot.com)
+- [sales@accton-iot.com](mailto:sales@accton-iot.com)
 
 ## Pinout
 
@@ -156,5 +156,5 @@ To upgrade firmware use any ArduPilot GCS.  Firmware for the Godwit G-A1 is loca
 ## More Information and Support
 
 - [Accton-IoT Godwit](https://www.accton-iot.com/godwit/)
-- [sales@accton-iot.com](sales@accton-iot.com)
-- [support@accton-iot.com](support@accton-iot.com)
+- [sales@accton-iot.com](mailto:sales@accton-iot.com)
+- [support@accton-iot.com](mailto:support@accton-iot.com)
