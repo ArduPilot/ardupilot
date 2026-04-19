@@ -26,6 +26,8 @@
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
+extern const AP_HAL::HAL &hal;
+
 // Register addresses
 #define ADDR_WHO_AM_I       0x4F
 #define ADDR_CFG_REG_A      0x60
@@ -102,7 +104,7 @@ bool AP_Compass_LIS2MDL::init()
         return false;
     }
 
-    printf("Found a LIS2MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
+    DEV_PRINTF("Found a LIS2MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
 
     set_rotation(rotation);
 

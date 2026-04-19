@@ -162,7 +162,7 @@ bool AP_Compass_MAG3110::_hardware_init()
 
     _dev->set_retries(3);
     
-    printf("MAG3110 found on bus 0x%x\n", (uint16_t)_dev->get_bus_id());
+    DEV_PRINTF("MAG3110 found on bus 0x%x\n", (uint16_t)_dev->get_bus_id());
 
 exit:
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);

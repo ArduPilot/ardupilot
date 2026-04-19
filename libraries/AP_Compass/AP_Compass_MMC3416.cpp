@@ -101,7 +101,7 @@ bool AP_Compass_MMC3416::init()
         return false;
     }
 
-    printf("Found a MMC3416 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
+    DEV_PRINTF("Found a MMC3416 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
 
     set_rotation(rotation);
 

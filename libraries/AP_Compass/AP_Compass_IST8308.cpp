@@ -139,7 +139,7 @@ bool AP_Compass_IST8308::init()
     }
 
     if (reset_count == 5) {
-        printf("IST8308: failed to reset device\n");
+        DEV_PRINTF("IST8308: failed to reset device\n");
         goto fail;
     }
 
@@ -151,7 +151,7 @@ bool AP_Compass_IST8308::init()
         !_dev->write_register(CNTL4_REG, CNTL4_VAL_DYNAMIC_RANGE_500) ||
         !_dev->write_register(OSRCNTL_REG, OSRCNTL_VAL_Y_16 | OSRCNTL_VAL_XZ_16) ||
         !_dev->write_register(CNTL2_REG, CNTL2_VAL_CONT_ODR100_MODE)) {
-        printf("IST8308: found device but could not set it up\n");
+        DEV_PRINTF("IST8308: found device but could not set it up\n");
         goto fail;
     }
 
@@ -166,7 +166,7 @@ bool AP_Compass_IST8308::init()
         return false;
     }
 
-    printf("%s found on bus %u id %u address 0x%02x\n", name,
+    DEV_PRINTF("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
     set_rotation(_rotation);

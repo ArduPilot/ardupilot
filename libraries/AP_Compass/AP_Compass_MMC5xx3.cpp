@@ -113,7 +113,7 @@ bool AP_Compass_MMC5XX3::init()
         return false;
     }
 
-    printf("Found a MMC5983 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
+    DEV_PRINTF("Found a MMC5983 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
 
     set_rotation(rotation);
 
@@ -251,7 +251,7 @@ void AP_Compass_MMC5XX3::timer()
         accumulate_sample(field);
 
         if (!dev->write_register(REG_CONTROL0, REG_CONTROL0_TMM)) {
-            printf("failed to initiate measurement\n");
+            DEV_PRINTF("MMC5983: failed to initiate measurement\n");
             state = MMCState::STATE_SET;
         } else {
             state = MMCState::STATE_MEASURE;
@@ -276,7 +276,7 @@ void AP_Compass_MMC5XX3::timer()
 
         uint8_t data1[6];
         if (!dev->read_registers(REG_XOUT_L, (uint8_t *)&data1[0], 6)) {
-            printf("cant read data\n");
+            DEV_PRINTF("MMC5983: cant read data\n");
             state = MMCState::STATE_SET;
             break;
         }

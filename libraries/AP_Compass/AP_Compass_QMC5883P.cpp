@@ -23,6 +23,8 @@
 
 #if AP_COMPASS_QMC5883P_ENABLED
 
+extern const AP_HAL::HAL &hal;
+
 //Register Address
 #define QMC5883P_REG_ID                 0x00
 #define QMC5883P_REG_DATA_OUTPUT_X      0x01
@@ -130,7 +132,7 @@ bool AP_Compass_QMC5883P::init()
         return false;
     }
 
-    printf("%s found on bus %u id %u address 0x%02x\n", name,
+    DEV_PRINTF("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
     set_rotation(_rotation);

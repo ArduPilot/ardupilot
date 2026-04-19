@@ -152,13 +152,13 @@ bool AP_Compass_IST8310::init()
     }
 
     if (reset_count == 5) {
-        printf("IST8310: failed to reset device\n");
+        DEV_PRINTF("IST8310: failed to reset device\n");
         goto fail;
     }
 
     if (!_dev->write_register(AVGCNTL_REG, AVGCNTL_VAL_Y_16 | AVGCNTL_VAL_XZ_16) ||
         !_dev->write_register(PDCNTL_REG, PDCNTL_VAL_PULSE_DURATION_NORMAL)) {
-        printf("IST8310: found device but could not set it up\n");
+        DEV_PRINTF("IST8310: found device but could not set it up\n");
         goto fail;
     }
 
@@ -176,7 +176,7 @@ bool AP_Compass_IST8310::init()
         return false;
     }
 
-    printf("%s found on bus %u id %u address 0x%02x\n", name,
+    DEV_PRINTF("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
     set_rotation(_rotation);

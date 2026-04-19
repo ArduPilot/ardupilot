@@ -26,6 +26,8 @@
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
 
+extern const AP_HAL::HAL &hal;
+
 #define ADDR_CTRL_REG1      0x20
 #define ADDR_CTRL_REG2      0x21
 #define ADDR_CTRL_REG3      0x22
@@ -110,7 +112,7 @@ bool AP_Compass_LIS3MDL::init()
         return false;
     }
 
-    printf("Found a LIS3MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
+    DEV_PRINTF("Found a LIS3MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
 
     set_rotation(rotation);
 

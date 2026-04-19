@@ -28,6 +28,8 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 
+extern const AP_HAL::HAL &hal;
+
 #define QMC5883L_REG_CONF1 0x09
 #define QMC5883L_REG_CONF2 0x0A
 
@@ -119,7 +121,7 @@ bool AP_Compass_QMC5883L::init()
         return false;
     }
 
-    printf("%s found on bus %u id %u address 0x%02x\n", name,
+    DEV_PRINTF("%s found on bus %u id %u address 0x%02x\n", name,
            _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
     set_rotation(_rotation);
