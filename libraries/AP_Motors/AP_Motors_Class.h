@@ -290,7 +290,7 @@ public:
     enum MotorOptions : uint8_t {
         BATT_RAW_VOLTAGE = (1 << 0U)
     };
-    bool has_option(MotorOptions option) { return _options.get() & uint8_t(option); }
+    virtual bool has_option(MotorOptions option) { return _options.get() & uint8_t(option); }
 
 protected:
     // output functions that should be overloaded by child classes
