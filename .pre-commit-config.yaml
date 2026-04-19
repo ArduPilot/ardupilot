@@ -51,6 +51,12 @@ repos:
               Tools/ros2/.*\.py
             )$
 
+  - repo: https://github.com/cpplint/cpplint
+    rev: 2.0.2
+    hooks:  # See CPPLINT.cfg for configuration
+      - id: cpplint
+        args: [--quiet]  # Do not print the path of every file checked
+
   -   repo: https://github.com/pycqa/flake8
       rev: 7.3.0
       hooks:
