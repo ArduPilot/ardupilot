@@ -22,7 +22,7 @@ _A clear and concise description of what you want to happen._
 **Describe alternatives you've considered**
 _A clear and concise description of any alternative solutions or features you've considered._
 
-**Platform**
+### Platform
 
 - [ ] All
 - [ ] AntennaTracker
@@ -31,5 +31,6 @@ _A clear and concise description of any alternative solutions or features you've
 - [ ] Rover
 - [ ] Submarine
 
-**Additional context**
+### Additional context
+
 _Add any other context or screenshots about the feature request here._
