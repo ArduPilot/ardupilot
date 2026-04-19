@@ -6,7 +6,7 @@ The MicoAir743-Lite is a flight controller designed and produced by [MicoAir Tec
 
 - STM32H743 microcontroller
 - ICM45686 IMU
-- Integrated BlueTooth module for telemetry
+- Integrated Bluetooth module for telemetry
 - SPA06 barometer
 - 9V 2A BEC; 5V 2A BEC
 - MicroSD Card Slot
@@ -26,7 +26,7 @@ The MicoAir743-Lite is a flight controller designed and produced by [MicoAir Tec
 - SERIAL5 -> UART5 (User, DMA-enabled)
 - SERIAL6 -> UART6 (RCIN, DMA-enabled)
 - SERIAL7 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
-- SERIAL8 -> UART8 (MAVLink2, connected to on board BlueTooth module)
+- SERIAL8 -> UART8 (MAVLink2, connected to on board Bluetooth module)
 
 ## RC Input
 
@@ -90,9 +90,9 @@ The default battery parameters are:
 
 The MicoAir743-Lite doesn’t have a built-in compass sensor, but you can attach an external compass using I2C on the SDA and SCL connector.
 
-## BlueTooth
+## Bluetooth
 
-The MicoAir743-Lite has an on board BlueTooth module connected to UART8(SERIAL8). The BlueTooth id is MicoAir743-Lite-xxxxxx and you can connect to it without pairing id.
+The MicoAir743-Lite has an on board Bluetooth module connected to UART8(SERIAL8). The Bluetooth id is MicoAir743-Lite-xxxxxx and you can connect to it without pairing id.
 
 ## Mechanical
 
