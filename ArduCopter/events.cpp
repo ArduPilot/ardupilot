@@ -102,6 +102,13 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 
     FailsafeAction desired_action = (FailsafeAction)action;
 
+#if HAL_SPRAYER_ENABLED
+    if (type_str != nullptr && strcmp(type_str, "critical") == 0) {
+        // Battery failsafe callbacks are edge-triggered, not state based, so do a one-shot stop here instead of latching a persistent sprayer failsafe flag.
+        sprayer.run(false);
+    }
+#endif
+
     // Conditions to deviate from BATT_FS_XXX_ACT parameter setting
     if (should_disarm_on_failsafe()) {
         // should immediately disarm when we're on the ground
@@ -483,6 +490,13 @@ bool Copter::should_disarm_on_failsafe() {
 
 
 void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
+
+#if HAL_SPRAYER_ENABLED
+    // Any failsafe that results in an actual action should stop spraying, the pilot can manually re-enable later.
+    if (action != FailsafeAction::NONE) {
+        sprayer.run(false);
+    }
+#endif
 
     // Execute the specified desired_action
     switch (action) {
