@@ -1021,7 +1021,10 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
     return 0;
 #elif defined(__APPLE__) && defined(__MACH__)
-    return 0;
+    int n;
+    socklen_t len = sizeof(n);
+    getsockopt(_fd, SOL_SOCKET, SO_NWRITE, &n, &len);
+    return n;
 #else
     int size;
     if (ioctl(_fd, TIOCOUTQ, &size) == -1) {
