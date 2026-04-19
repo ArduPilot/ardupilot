@@ -57,8 +57,14 @@ private:
         UNKNOWN = 0,            // Unknown board type
         ESC = 1,                // ESC
         IO = 2,                 // IO board
+        DISABLED = 3,           // No hardware detected after retries
     };
     HWType hw_type = HWType::UNKNOWN;
+
+    static const uint8_t MAX_SCAN_ATTEMPTS = 10;
+    static const uint32_t SCAN_INTERVAL_MS = 500;
+    uint8_t scan_attempts;
+    uint32_t last_scan_ms;
 
     void scan_for_hardware(void);
     void send_receive(void);
