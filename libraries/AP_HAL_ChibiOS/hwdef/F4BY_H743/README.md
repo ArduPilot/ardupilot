@@ -74,7 +74,7 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 - RCin  PB0
 Using the RCin pin will support all unidirectional RC protocols. (PPM, SBUS, iBus, PPM-Sum, DSM,DSM2,DSM-X,SRXL and SUM-D)
 
-- USART2 for Bi-directional protocols (CRSF/ELRS,SRXL2,IRC Ghost, and FPort) see `here <https://ardupilot.org/sub/docs/common-rc-systems.html#common-rc-systems>`
+- USART2 for Bi-directional protocols (CRSF/ELRS,SRXL2,IRC Ghost, and FPort) see [here](https://ardupilot.org/sub/docs/common-rc-systems.html#common-rc-systems)
 
 ## PWM Output
 
@@ -159,7 +159,7 @@ The F4BY_H743 has a built-in compass. Due to potential interference, the autopil
 
 ## Firmware
 
-for F4BY_H743 can be found `here <https://firmware.ardupilot.org>`  in sub-folders labeled “F4BY_H743”.
+for F4BY_H743 can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “F4BY_H743”.
 
 ## Loading Firmware
 
