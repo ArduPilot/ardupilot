@@ -435,6 +435,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             return True
 
         underline_re = re.compile(r'^([=\-~^#+*])\1{2,}$')
+        fence_re = re.compile(r'^(`{3,}|~{3,})')
         errors = []
         for path in changed_md.splitlines():
             path = path.strip()
@@ -442,9 +443,13 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 continue
             with open(path, encoding="utf-8", errors="replace") as fh:
                 prev_line = ""
+                in_fence = False
                 for lineno, raw in enumerate(fh, 1):
                     line = raw.rstrip("\n")
-                    if (underline_re.match(line)
+                    if fence_re.match(line):
+                        in_fence = not in_fence
+                    if (not in_fence
+                            and underline_re.match(line)
                             and len(line.strip()) == len(prev_line.strip())):
                         errors.append((path, lineno, line.strip()))
                     prev_line = line
