@@ -49,7 +49,18 @@ void NavEKF3_core::FuseAirspeed()
         H_TAS[22] = -SH_TAS[2];
         H_TAS[23] = -SH_TAS[1];
         // calculate Kalman gains
-        ftype temp = (tasDataDelayed.tasVariance + SH_TAS[2]*(P[4][4]*SH_TAS[2] + P[5][4]*SH_TAS[1] - P[22][4]*SH_TAS[2] - P[23][4]*SH_TAS[1] + P[6][4]*vd*SH_TAS[0]) + SH_TAS[1]*(P[4][5]*SH_TAS[2] + P[5][5]*SH_TAS[1] - P[22][5]*SH_TAS[2] - P[23][5]*SH_TAS[1] + P[6][5]*vd*SH_TAS[0]) - SH_TAS[2]*(P[4][22]*SH_TAS[2] + P[5][22]*SH_TAS[1] - P[22][22]*SH_TAS[2] - P[23][22]*SH_TAS[1] + P[6][22]*vd*SH_TAS[0]) - SH_TAS[1]*(P[4][23]*SH_TAS[2] + P[5][23]*SH_TAS[1] - P[22][23]*SH_TAS[2] - P[23][23]*SH_TAS[1] + P[6][23]*vd*SH_TAS[0]) + vd*SH_TAS[0]*(P[4][6]*SH_TAS[2] + P[5][6]*SH_TAS[1] - P[22][6]*SH_TAS[2] - P[23][6]*SH_TAS[1] + P[6][6]*vd*SH_TAS[0]));
+        ftype temp = (tasDataDelayed.tasVariance +
+                      SH_TAS[2] * (P[4][4] * SH_TAS[2] + P[5][4] * SH_TAS[1] - P[22][4] * SH_TAS[2] -
+                                   P[23][4] * SH_TAS[1] + P[6][4] * vd * SH_TAS[0]) +
+                      SH_TAS[1] * (P[4][5] * SH_TAS[2] + P[5][5] * SH_TAS[1] - P[22][5] * SH_TAS[2] -
+                                   P[23][5] * SH_TAS[1] + P[6][5] * vd * SH_TAS[0]) -
+                      SH_TAS[2] * (P[4][22] * SH_TAS[2] + P[5][22] * SH_TAS[1] - P[22][22] * SH_TAS[2] -
+                                   P[23][22] * SH_TAS[1] + P[6][22] * vd * SH_TAS[0]) -
+                      SH_TAS[1] * (P[4][23] * SH_TAS[2] + P[5][23] * SH_TAS[1] - P[22][23] * SH_TAS[2] -
+                                   P[23][23] * SH_TAS[1] + P[6][23] * vd * SH_TAS[0]) +
+                      vd * SH_TAS[0] *
+                          (P[4][6] * SH_TAS[2] + P[5][6] * SH_TAS[1] - P[22][6] * SH_TAS[2] - P[23][6] * SH_TAS[1] +
+                           P[6][6] * vd * SH_TAS[0]));
         if (temp >= tasDataDelayed.tasVariance) {
             SK_TAS[0] = 1.0f / temp;
             faultStatus.bad_airspeed = false;
@@ -93,7 +104,8 @@ void NavEKF3_core::FuseAirspeed()
         for (auto i=0; i<24; i++) {
             ftype res = 0;
             if (kalman_mask & (1<<i)) {
-                res = SK_TAS[0]*(P[i][4]*SH_TAS[2] - P[i][22]*SH_TAS[2] + P[i][5]*SK_TAS[1] - P[i][23]*SK_TAS[1] + P[i][6]*vd*SH_TAS[0]);
+              res = SK_TAS[0] * (P[i][4] * SH_TAS[2] - P[i][22] * SH_TAS[2] + P[i][5] * SK_TAS[1] -
+                                 P[i][23] * SK_TAS[1] + P[i][6] * vd * SH_TAS[0]);
             }
             Kfusion[i] = res;
         }
@@ -113,7 +125,8 @@ void NavEKF3_core::FuseAirspeed()
             lastTasFailTime_ms = 0;
         }
 
-        // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
+        // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice
+        // but to try and use airspeed to constrain error growth
         if (tasDataDelayed.allowFusion && (isConsistent || (tasTimeout && posTimeout))) {
 
             // restart the counter
@@ -198,7 +211,8 @@ void NavEKF3_core::SelectBetaDragFusion()
     // set true when the fusion time interval has triggered
     bool f_timeTrigger = ((imuSampleTime_ms - prevBetaDragStep_ms) >= frontend->betaAvg_ms);
 
-    // use of air data to constrain drift is necessary if we have limited sensor data or are doing inertial dead reckoning
+    // use of air data to constrain drift is necessary if we have limited sensor data or are doing inertial dead
+    // reckoning
     bool is_dead_reckoning = ((imuSampleTime_ms - lastGpsPosPassTime_ms) > frontend->deadReckonDeclare_ms) &&
                              ((imuSampleTime_ms - lastVelPassTime_ms) > frontend->deadReckonDeclare_ms);
     const bool noYawSensor = !use_compass() && !using_noncompass_for_yaw();
@@ -222,7 +236,8 @@ void NavEKF3_core::SelectBetaDragFusion()
     }
 
 #if EK3_FEATURE_DRAG_FUSION
-    // fusion of XY body frame aero specific forces is done at a slower rate and only if alternative methods of wind estimation are not available
+    // fusion of XY body frame aero specific forces is done at a slower rate and only if alternative methods of wind
+    // estimation are not available
     if (!inhibitWindStates && storedDrag.recall(dragSampleDelayed,imuDataDelayed.time_ms)) {
         FuseDragForces();
     }
@@ -267,14 +282,16 @@ void NavEKF3_core::FuseSideslip()
     if (vel_rel_wind.x > 5.0f)
     {
         // Calculate observation jacobians
-        SH_BETA[0] = (vn - vwn)*(sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd*(2*q0*q2 - 2*q1*q3) + (ve - vwe)*(2*q0*q3 + 2*q1*q2);
+        SH_BETA[0] = (vn - vwn) * (sq(q0) + sq(q1) - sq(q2) - sq(q3)) - vd * (2 * q0 * q2 - 2 * q1 * q3) +
+                     (ve - vwe) * (2 * q0 * q3 + 2 * q1 * q2);
         if (fabsF(SH_BETA[0]) <= 1e-9f) {
             faultStatus.bad_sideslip = true;
             return;
         } else {
             faultStatus.bad_sideslip = false;
         }
-        SH_BETA[1] = (ve - vwe)*(sq(q0) - sq(q1) + sq(q2) - sq(q3)) + vd*(2*q0*q1 + 2*q2*q3) - (vn - vwn)*(2*q0*q3 - 2*q1*q2);
+        SH_BETA[1] = (ve - vwe) * (sq(q0) - sq(q1) + sq(q2) - sq(q3)) + vd * (2 * q0 * q1 + 2 * q2 * q3) -
+                     (vn - vwn) * (2 * q0 * q3 - 2 * q1 * q2);
         SH_BETA[2] = vn - vwn;
         SH_BETA[3] = ve - vwe;
         SH_BETA[4] = 1/sq(SH_BETA[0]);
@@ -301,7 +318,107 @@ void NavEKF3_core::FuseSideslip()
         H_BETA[23] = SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2) - SH_BETA[6];
 
         // Calculate Kalman gains
-        ftype temp = (R_BETA - (SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7])*(P[22][4]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][4]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][4]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][4]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][4]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][4]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][4]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][4]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][4]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7])*(P[22][22]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][22]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][22]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][22]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][22]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][22]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][22]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][22]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][22]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2))*(P[22][5]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][5]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][5]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][5]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][5]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][5]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][5]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][5]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][5]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) - (SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2))*(P[22][23]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][23]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][23]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][23]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][23]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][23]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][23]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][23]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][23]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9])*(P[22][0]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][0]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][0]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][0]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][0]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][0]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][0]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][0]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][0]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11])*(P[22][1]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][1]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][1]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][1]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][1]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][1]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][1]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][1]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][1]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10])*(P[22][2]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][2]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][2]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][2]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][2]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][2]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][2]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][2]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][2]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) - (SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8])*(P[22][3]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][3]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][3]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][3]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][3]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][3]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][3]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][3]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][3]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))) + (SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))*(P[22][6]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) - P[4][6]*(SH_BETA[5]*(SH_BETA[12] - 2*q1*q2) + SH_BETA[1]*SH_BETA[4]*SH_BETA[7]) + P[5][6]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) - P[23][6]*(SH_BETA[6] - SH_BETA[1]*SH_BETA[4]*(SH_BETA[12] + 2*q1*q2)) + P[0][6]*(SH_BETA[5]*SH_BETA[8] - SH_BETA[1]*SH_BETA[4]*SH_BETA[9]) + P[1][6]*(SH_BETA[5]*SH_BETA[10] - SH_BETA[1]*SH_BETA[4]*SH_BETA[11]) + P[2][6]*(SH_BETA[5]*SH_BETA[11] + SH_BETA[1]*SH_BETA[4]*SH_BETA[10]) - P[3][6]*(SH_BETA[5]*SH_BETA[9] + SH_BETA[1]*SH_BETA[4]*SH_BETA[8]) + P[6][6]*(SH_BETA[5]*(2*q0*q1 + 2*q2*q3) + SH_BETA[1]*SH_BETA[4]*(2*q0*q2 - 2*q1*q3))));
+        ftype temp =
+            (R_BETA -
+             (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) *
+                 (P[22][4] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][4] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][4] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][4] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][4] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][4] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][4] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][4] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][4] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                             SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) +
+             (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) *
+                 (P[22][22] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][22] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][22] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][22] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][22] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][22] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][22] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][22] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][22] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                              SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) +
+             (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) *
+                 (P[22][5] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][5] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][5] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][5] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][5] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][5] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][5] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][5] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][5] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                             SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) -
+             (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) *
+                 (P[22][23] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][23] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][23] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][23] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][23] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][23] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][23] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][23] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][23] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                              SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) +
+             (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) *
+                 (P[22][0] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][0] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][0] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][0] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][0] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][0] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][0] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][0] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][0] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                             SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) +
+             (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) *
+                 (P[22][1] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][1] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][1] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][1] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][1] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][1] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][1] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][1] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][1] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                             SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) +
+             (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) *
+                 (P[22][2] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][2] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][2] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][2] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][2] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][2] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][2] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][2] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][2] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                             SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) -
+             (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) *
+                 (P[22][3] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][3] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][3] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][3] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][3] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][3] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][3] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][3] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][3] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                             SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))) +
+             (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) + SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3)) *
+                 (P[22][6] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) -
+                  P[4][6] * (SH_BETA[5] * (SH_BETA[12] - 2 * q1 * q2) + SH_BETA[1] * SH_BETA[4] * SH_BETA[7]) +
+                  P[5][6] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) -
+                  P[23][6] * (SH_BETA[6] - SH_BETA[1] * SH_BETA[4] * (SH_BETA[12] + 2 * q1 * q2)) +
+                  P[0][6] * (SH_BETA[5] * SH_BETA[8] - SH_BETA[1] * SH_BETA[4] * SH_BETA[9]) +
+                  P[1][6] * (SH_BETA[5] * SH_BETA[10] - SH_BETA[1] * SH_BETA[4] * SH_BETA[11]) +
+                  P[2][6] * (SH_BETA[5] * SH_BETA[11] + SH_BETA[1] * SH_BETA[4] * SH_BETA[10]) -
+                  P[3][6] * (SH_BETA[5] * SH_BETA[9] + SH_BETA[1] * SH_BETA[4] * SH_BETA[8]) +
+                  P[6][6] * (SH_BETA[5] * (2 * q0 * q1 + 2 * q2 * q3) +
+                             SH_BETA[1] * SH_BETA[4] * (2 * q0 * q2 - 2 * q1 * q3))));
         if (temp >= R_BETA) {
             SK_BETA[0] = 1.0f / temp;
             faultStatus.bad_sideslip = false;
@@ -354,7 +471,9 @@ void NavEKF3_core::FuseSideslip()
         for (auto i=0; i<24; i++) {
             ftype res = 0;
             if (kalman_mask & (1<<i)) {
-                res = SK_BETA[0]*(P[i][0]*SK_BETA[5] + P[i][1]*SK_BETA[4] - P[i][4]*SK_BETA[1] + P[i][5]*SK_BETA[2] + P[i][2]*SK_BETA[6] + P[i][6]*SK_BETA[3] - P[i][3]*SK_BETA[7] + P[i][22]*SK_BETA[1] - P[i][23]*SK_BETA[2]);
+              res = SK_BETA[0] * (P[i][0] * SK_BETA[5] + P[i][1] * SK_BETA[4] - P[i][4] * SK_BETA[1] +
+                                  P[i][5] * SK_BETA[2] + P[i][2] * SK_BETA[6] + P[i][6] * SK_BETA[3] -
+                                  P[i][3] * SK_BETA[7] + P[i][22] * SK_BETA[1] - P[i][23] * SK_BETA[2]);
             }
             Kfusion[i] = res;
         }
@@ -459,9 +578,11 @@ void NavEKF3_core::FuseDragForces()
             ftype Kaccx; // Derivative of specific force wrt airspeed
             if (using_mcoef && using_bcoef_x) {
                 // mixed bluff body and propeller momentum drag
-                const ftype airSpd = (bcoef_x / rho) * (- mcoef + sqrtF(sq(mcoef) + 2.0f * (rho / bcoef_x) * fabsF(mea_acc)));
+                const ftype airSpd =
+                    (bcoef_x / rho) * (-mcoef + sqrtF(sq(mcoef) + 2.0f * (rho / bcoef_x) * fabsF(mea_acc)));
                 Kaccx = fmaxF(1e-1f, (rho / bcoef_x) * airSpd + mcoef * density_ratio);
-                predAccel = (0.5f / bcoef_x) * rho * sq(rel_wind_body[0]) * dragForceSign - rel_wind_body[0] * mcoef * density_ratio;
+                predAccel = (0.5f / bcoef_x) * rho * sq(rel_wind_body[0]) * dragForceSign -
+                            rel_wind_body[0] * mcoef * density_ratio;
             } else if (using_mcoef) {
                 // propeller momentum drag only
                 Kaccx = fmaxF(1e-1f, mcoef * density_ratio);
@@ -495,24 +616,35 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK15 = 2*HK2;
             const ftype HK16 = 2*HK5;
             const ftype HK17 = 2*HK6;
-            const ftype HK18 = -HK12*P[0][23] + HK12*P[0][5] - HK13*P[0][6] + HK14*P[0][1] + HK15*P[0][0] - HK16*P[0][2] + HK17*P[0][3] - HK7*P[0][22] + HK7*P[0][4];
-            const ftype HK19 = HK12*P[5][23];
-            const ftype HK20 = -HK12*P[23][23] - HK13*P[6][23] + HK14*P[1][23] + HK15*P[0][23] - HK16*P[2][23] + HK17*P[3][23] + HK19 - HK7*P[22][23] + HK7*P[4][23];
+            const ftype HK18 = -HK12 * P[0][23] + HK12 * P[0][5] - HK13 * P[0][6] + HK14 * P[0][1] + HK15 * P[0][0] -
+                               HK16 * P[0][2] + HK17 * P[0][3] - HK7 * P[0][22] + HK7 * P[0][4];
+            const ftype HK19 = HK12 * P[5][23];
+            const ftype HK20 = -HK12 * P[23][23] - HK13 * P[6][23] + HK14 * P[1][23] + HK15 * P[0][23] -
+                               HK16 * P[2][23] + HK17 * P[3][23] + HK19 - HK7 * P[22][23] + HK7 * P[4][23];
             const ftype HK21 = sq(Kaccx);
-            const ftype HK22 = HK12*HK21;
-            const ftype HK23 = HK12*P[5][5] - HK13*P[5][6] + HK14*P[1][5] + HK15*P[0][5] - HK16*P[2][5] + HK17*P[3][5] - HK19 + HK7*P[4][5] - HK7*P[5][22];
-            const ftype HK24 = HK12*P[5][6] - HK12*P[6][23] - HK13*P[6][6] + HK14*P[1][6] + HK15*P[0][6] - HK16*P[2][6] + HK17*P[3][6] + HK7*P[4][6] - HK7*P[6][22];
-            const ftype HK25 = HK7*P[4][22];
-            const ftype HK26 = -HK12*P[4][23] + HK12*P[4][5] - HK13*P[4][6] + HK14*P[1][4] + HK15*P[0][4] - HK16*P[2][4] + HK17*P[3][4] - HK25 + HK7*P[4][4];
-            const ftype HK27 = HK21*HK7;
-            const ftype HK28 = -HK12*P[22][23] + HK12*P[5][22] - HK13*P[6][22] + HK14*P[1][22] + HK15*P[0][22] - HK16*P[2][22] + HK17*P[3][22] + HK25 - HK7*P[22][22];
-            const ftype HK29 = -HK12*P[1][23] + HK12*P[1][5] - HK13*P[1][6] + HK14*P[1][1] + HK15*P[0][1] - HK16*P[1][2] + HK17*P[1][3] - HK7*P[1][22] + HK7*P[1][4];
-            const ftype HK30 = -HK12*P[2][23] + HK12*P[2][5] - HK13*P[2][6] + HK14*P[1][2] + HK15*P[0][2] - HK16*P[2][2] + HK17*P[2][3] - HK7*P[2][22] + HK7*P[2][4];
-            const ftype HK31 = -HK12*P[3][23] + HK12*P[3][5] - HK13*P[3][6] + HK14*P[1][3] + HK15*P[0][3] - HK16*P[2][3] + HK17*P[3][3] - HK7*P[3][22] + HK7*P[3][4];
-            // const ftype HK32 = Kaccx/(-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
+            const ftype HK22 = HK12 * HK21;
+            const ftype HK23 = HK12 * P[5][5] - HK13 * P[5][6] + HK14 * P[1][5] + HK15 * P[0][5] - HK16 * P[2][5] +
+                               HK17 * P[3][5] - HK19 + HK7 * P[4][5] - HK7 * P[5][22];
+            const ftype HK24 = HK12 * P[5][6] - HK12 * P[6][23] - HK13 * P[6][6] + HK14 * P[1][6] + HK15 * P[0][6] -
+                               HK16 * P[2][6] + HK17 * P[3][6] + HK7 * P[4][6] - HK7 * P[6][22];
+            const ftype HK25 = HK7 * P[4][22];
+            const ftype HK26 = -HK12 * P[4][23] + HK12 * P[4][5] - HK13 * P[4][6] + HK14 * P[1][4] + HK15 * P[0][4] -
+                               HK16 * P[2][4] + HK17 * P[3][4] - HK25 + HK7 * P[4][4];
+            const ftype HK27 = HK21 * HK7;
+            const ftype HK28 = -HK12 * P[22][23] + HK12 * P[5][22] - HK13 * P[6][22] + HK14 * P[1][22] +
+                               HK15 * P[0][22] - HK16 * P[2][22] + HK17 * P[3][22] + HK25 - HK7 * P[22][22];
+            const ftype HK29 = -HK12 * P[1][23] + HK12 * P[1][5] - HK13 * P[1][6] + HK14 * P[1][1] + HK15 * P[0][1] -
+                               HK16 * P[1][2] + HK17 * P[1][3] - HK7 * P[1][22] + HK7 * P[1][4];
+            const ftype HK30 = -HK12 * P[2][23] + HK12 * P[2][5] - HK13 * P[2][6] + HK14 * P[1][2] + HK15 * P[0][2] -
+                               HK16 * P[2][2] + HK17 * P[2][3] - HK7 * P[2][22] + HK7 * P[2][4];
+            const ftype HK31 = -HK12 * P[3][23] + HK12 * P[3][5] - HK13 * P[3][6] + HK14 * P[1][3] + HK15 * P[0][3] -
+                               HK16 * P[2][3] + HK17 * P[3][3] - HK7 * P[3][22] + HK7 * P[3][4];
+            // const ftype HK32 = Kaccx/(-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 +
+            // HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
 
             // calculate innovation variance and exit if badly conditioned
-            innovDragVar.x = (-HK13*HK21*HK24 + HK14*HK21*HK29 + HK15*HK18*HK21 - HK16*HK21*HK30 + HK17*HK21*HK31 - HK20*HK22 + HK22*HK23 + HK26*HK27 - HK27*HK28 + R_ACC);
+            innovDragVar.x = (-HK13 * HK21 * HK24 + HK14 * HK21 * HK29 + HK15 * HK18 * HK21 - HK16 * HK21 * HK30 +
+                              HK17 * HK21 * HK31 - HK20 * HK22 + HK22 * HK23 + HK26 * HK27 - HK27 * HK28 + R_ACC);
             if (innovDragVar.x < R_ACC) {
                 return;
             }
@@ -542,9 +674,11 @@ void NavEKF3_core::FuseDragForces()
             ftype Kaccy; // Derivative of specific force wrt airspeed
             if (using_mcoef && using_bcoef_y) {
                 // mixed bluff body and propeller momentum drag
-                const ftype airSpd = (bcoef_y / rho) * (- mcoef + sqrtF(sq(mcoef) + 2.0f * (rho / bcoef_y) * fabsF(mea_acc)));
+                const ftype airSpd =
+                    (bcoef_y / rho) * (-mcoef + sqrtF(sq(mcoef) + 2.0f * (rho / bcoef_y) * fabsF(mea_acc)));
                 Kaccy = fmaxF(1e-1f, (rho / bcoef_y) * airSpd + mcoef * density_ratio);
-                predAccel = (0.5f / bcoef_y) * rho * sq(rel_wind_body[1]) * dragForceSign - rel_wind_body[1] * mcoef * density_ratio;
+                predAccel = (0.5f / bcoef_y) * rho * sq(rel_wind_body[1]) * dragForceSign -
+                            rel_wind_body[1] * mcoef * density_ratio;
             } else if (using_mcoef) {
                 // propeller momentum drag only
                 Kaccy = fmaxF(1e-1f, mcoef * density_ratio);
@@ -578,23 +712,34 @@ void NavEKF3_core::FuseDragForces()
             const ftype HK15 = 2*HK2;
             const ftype HK16 = 2*HK4;
             const ftype HK17 = 2*HK6;
-            const ftype HK18 = HK12*P[0][6] + HK13*P[0][22] - HK13*P[0][4] + HK14*P[0][2] + HK15*P[0][0] + HK16*P[0][1] - HK17*P[0][3] - HK9*P[0][23] + HK9*P[0][5];
+            const ftype HK18 = HK12 * P[0][6] + HK13 * P[0][22] - HK13 * P[0][4] + HK14 * P[0][2] + HK15 * P[0][0] +
+                               HK16 * P[0][1] - HK17 * P[0][3] - HK9 * P[0][23] + HK9 * P[0][5];
             const ftype HK19 = sq(Kaccy);
-            const ftype HK20 = HK12*P[6][6] - HK13*P[4][6] + HK13*P[6][22] + HK14*P[2][6] + HK15*P[0][6] + HK16*P[1][6] - HK17*P[3][6] + HK9*P[5][6] - HK9*P[6][23];
-            const ftype HK21 = HK13*P[4][22];
-            const ftype HK22 = HK12*P[6][22] + HK13*P[22][22] + HK14*P[2][22] + HK15*P[0][22] + HK16*P[1][22] - HK17*P[3][22] - HK21 - HK9*P[22][23] + HK9*P[5][22];
-            const ftype HK23 = HK13*HK19;
-            const ftype HK24 = HK12*P[4][6] - HK13*P[4][4] + HK14*P[2][4] + HK15*P[0][4] + HK16*P[1][4] - HK17*P[3][4] + HK21 - HK9*P[4][23] + HK9*P[4][5];
-            const ftype HK25 = HK9*P[5][23];
-            const ftype HK26 = HK12*P[5][6] - HK13*P[4][5] + HK13*P[5][22] + HK14*P[2][5] + HK15*P[0][5] + HK16*P[1][5] - HK17*P[3][5] - HK25 + HK9*P[5][5];
-            const ftype HK27 = HK19*HK9;
-            const ftype HK28 = HK12*P[6][23] + HK13*P[22][23] - HK13*P[4][23] + HK14*P[2][23] + HK15*P[0][23] + HK16*P[1][23] - HK17*P[3][23] + HK25 - HK9*P[23][23];
-            const ftype HK29 = HK12*P[2][6] + HK13*P[2][22] - HK13*P[2][4] + HK14*P[2][2] + HK15*P[0][2] + HK16*P[1][2] - HK17*P[2][3] - HK9*P[2][23] + HK9*P[2][5];
-            const ftype HK30 = HK12*P[1][6] + HK13*P[1][22] - HK13*P[1][4] + HK14*P[1][2] + HK15*P[0][1] + HK16*P[1][1] - HK17*P[1][3] - HK9*P[1][23] + HK9*P[1][5];
-            const ftype HK31 = HK12*P[3][6] + HK13*P[3][22] - HK13*P[3][4] + HK14*P[2][3] + HK15*P[0][3] + HK16*P[1][3] - HK17*P[3][3] - HK9*P[3][23] + HK9*P[3][5];
-            // const ftype HK32 = Kaccy/(HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 - HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
+            const ftype HK20 = HK12 * P[6][6] - HK13 * P[4][6] + HK13 * P[6][22] + HK14 * P[2][6] + HK15 * P[0][6] +
+                               HK16 * P[1][6] - HK17 * P[3][6] + HK9 * P[5][6] - HK9 * P[6][23];
+            const ftype HK21 = HK13 * P[4][22];
+            const ftype HK22 = HK12 * P[6][22] + HK13 * P[22][22] + HK14 * P[2][22] + HK15 * P[0][22] +
+                               HK16 * P[1][22] - HK17 * P[3][22] - HK21 - HK9 * P[22][23] + HK9 * P[5][22];
+            const ftype HK23 = HK13 * HK19;
+            const ftype HK24 = HK12 * P[4][6] - HK13 * P[4][4] + HK14 * P[2][4] + HK15 * P[0][4] + HK16 * P[1][4] -
+                               HK17 * P[3][4] + HK21 - HK9 * P[4][23] + HK9 * P[4][5];
+            const ftype HK25 = HK9 * P[5][23];
+            const ftype HK26 = HK12 * P[5][6] - HK13 * P[4][5] + HK13 * P[5][22] + HK14 * P[2][5] + HK15 * P[0][5] +
+                               HK16 * P[1][5] - HK17 * P[3][5] - HK25 + HK9 * P[5][5];
+            const ftype HK27 = HK19 * HK9;
+            const ftype HK28 = HK12 * P[6][23] + HK13 * P[22][23] - HK13 * P[4][23] + HK14 * P[2][23] +
+                               HK15 * P[0][23] + HK16 * P[1][23] - HK17 * P[3][23] + HK25 - HK9 * P[23][23];
+            const ftype HK29 = HK12 * P[2][6] + HK13 * P[2][22] - HK13 * P[2][4] + HK14 * P[2][2] + HK15 * P[0][2] +
+                               HK16 * P[1][2] - HK17 * P[2][3] - HK9 * P[2][23] + HK9 * P[2][5];
+            const ftype HK30 = HK12 * P[1][6] + HK13 * P[1][22] - HK13 * P[1][4] + HK14 * P[1][2] + HK15 * P[0][1] +
+                               HK16 * P[1][1] - HK17 * P[1][3] - HK9 * P[1][23] + HK9 * P[1][5];
+            const ftype HK31 = HK12 * P[3][6] + HK13 * P[3][22] - HK13 * P[3][4] + HK14 * P[2][3] + HK15 * P[0][3] +
+                               HK16 * P[1][3] - HK17 * P[3][3] - HK9 * P[3][23] + HK9 * P[3][5];
+            // const ftype HK32 = Kaccy/(HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 -
+            // HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
 
-            innovDragVar.y = (HK12*HK19*HK20 + HK14*HK19*HK29 + HK15*HK18*HK19 + HK16*HK19*HK30 - HK17*HK19*HK31 + HK22*HK23 - HK23*HK24 + HK26*HK27 - HK27*HK28 + R_ACC);
+            innovDragVar.y = (HK12 * HK19 * HK20 + HK14 * HK19 * HK29 + HK15 * HK18 * HK19 + HK16 * HK19 * HK30 -
+                              HK17 * HK19 * HK31 + HK22 * HK23 - HK23 * HK24 + HK26 * HK27 - HK27 * HK28 + R_ACC);
             if (innovDragVar.y < R_ACC) {
                 // calculation is badly conditioned
                 return;
@@ -613,8 +758,9 @@ void NavEKF3_core::FuseDragForces()
             Hfusion[23] = HK10;
 
             // Kalman gains
-            // Don't allow modification of any states other than wind velocity at this stage of development - we only need a wind estimate.
-            // See derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain equations.
+            // Don't allow modification of any states other than wind velocity at this stage of development - we only
+            // need a wind estimate. See derivation/generated/acc_bf_generated.cpp for un-implemented Kalman gain
+            // equations.
             Kfusion[22] = -HK22*HK32;
             Kfusion[23] = -HK28*HK32;
         }
