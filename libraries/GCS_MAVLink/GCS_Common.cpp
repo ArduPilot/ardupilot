@@ -7764,7 +7764,7 @@ void GCS_MAVLINK::send_high_latency2() const
         high_latency_target_altitude(), // [m] Altitude setpoint
         uint16_t(ahrs.get_yaw_deg()) / 2, // [deg/2] Heading
         high_latency_tgt_heading(), // [deg/2] Heading setpoint
-        high_latency_tgt_dist(), // [dam] Distance to target waypoint or position
+        high_latency_tgt_dist_dam(), // [dam] Distance to target waypoint or position
         abs(vfr_hud_throttle()), // [%] Throttle
         MIN(vfr_hud_airspeed() * 5, UINT8_MAX), // [m/s*5] Airspeed
         high_latency_tgt_airspeed(), // [m/s*5] Airspeed setpoint
