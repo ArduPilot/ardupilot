@@ -6100,6 +6100,34 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if abs(m.distance - want_range) > 0.5:
             raise NotAchievedException("Expected %fm got %fm" % (want_range, m.distance))
 
+    def SimpleAvoidance(self):
+        '''test AVOID_ENABLE=7 simple avoidance'''
+        # the following magic numbers correspond to the post locations in SITL
+        home_string = "%s,%s,%s,%s" % (51.8752066, 14.6487840, 54.15, 231)
+
+        params = {
+            "SIM_SONAR_ROT": 0,
+            "AVOID_ENABLE": 7,
+            "PRX1_TYPE": 4,
+        }
+        params.update(self.analog_rangefinder_parameters())
+        self.set_parameters(params)
+
+        self.customise_SITL_commandline([
+            "--home", home_string,
+        ])
+        self.wait_ready_to_arm()
+        if self.mavproxy is not None:
+            self.mavproxy.send('script /tmp/post-locations.scr\n')
+
+        self.change_mode('STEERING')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.delay_sim_time(10)
+        self.set_rc(3, 1000)
+        self.disarm_vehicle()
+
     def AIS(self):
         '''Test AIS receiver'''
         self.customise_SITL_commandline([
@@ -7602,6 +7630,7 @@ return update()
             self.REQUIRE_LOCATION_FOR_ARMING,
             self.GetMessageInterval,
             self.SafetySwitch,
+            self.SimpleAvoidance,
             self.ThrottleFailsafe,
             self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
