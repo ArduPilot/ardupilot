@@ -184,6 +184,9 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 #if AP_PLANE_SYSTEMID_ENABLED
     case AUX_FUNC::SYSTEMID:
 #endif
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    case AUX_FUNC::BALLOON_RELEASE:
+#endif
         break;
     case AUX_FUNC::SOARING:
 #if HAL_QUADPLANE_ENABLED
@@ -493,7 +496,20 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
     case AUX_FUNC::AUTOLAND:
         do_aux_function_change_mode(Mode::Number::AUTOLAND, ch_flag);
         break;
+#endif
 
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    case AUX_FUNC::BALLOON_RELEASE:
+        if (plane.control_mode == &plane.mode_auto) {
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                plane.mode_auto.pullup.pullup_start();
+            } else {
+                plane.mode_auto.pullup.reset();
+            }
+            return true;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "BALLOON_RELEASE only in AUTO");
+        return false;
 #endif
 
     default:
