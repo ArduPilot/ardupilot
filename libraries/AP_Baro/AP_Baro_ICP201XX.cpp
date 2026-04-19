@@ -123,6 +123,8 @@ bool AP_Baro_ICP201XX::init()
         goto failed;
     }
 
+    DEV_PRINTF("ICP201XX found on bus %u address 0x%02x\n", dev->bus_num(), dev->get_bus_address());
+
     wait_read();
 
     dev->set_retries(0);

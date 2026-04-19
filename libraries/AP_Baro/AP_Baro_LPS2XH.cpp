@@ -169,6 +169,10 @@ bool AP_Baro_LPS2XH::_init()
         CallTime = 1000000/75;
     }
 
+    DEV_PRINTF("%s found on bus %u address 0x%02x\n",
+               (_lps2xh_type == BARO_LPS22H) ? "LPS22H" : "LPS25H",
+               _dev->bus_num(), _dev->get_bus_address());
+
     _instance = _frontend.register_sensor();
 
     _dev->set_device_type(DEVTYPE_BARO_LPS2XH);

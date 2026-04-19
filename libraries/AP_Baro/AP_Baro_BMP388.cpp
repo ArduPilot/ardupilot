@@ -101,6 +101,10 @@ bool AP_Baro_BMP388::init()
         return false;
     }
 
+    DEV_PRINTF("%s found on bus %u address 0x%02x\n",
+               (whoami == BMP388_ID) ? "BMP388" : "BMP390",
+               dev->bus_num(), dev->get_bus_address());
+
     // read the calibration data
     read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p));
     read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t));

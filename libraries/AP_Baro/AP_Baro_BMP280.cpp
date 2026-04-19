@@ -78,6 +78,10 @@ bool AP_Baro_BMP280::_init()
         return false;
     }
 
+    DEV_PRINTF("%s found on bus %u address 0x%02x\n",
+               (whoami == BME280_ID) ? "BME280" : "BMP280",
+               _dev->bus_num(), _dev->get_bus_address());
+
     // read the calibration data
     uint8_t buf[24];
     if (!_dev->read_registers(BMP280_REG_CALIB, buf, sizeof(buf))) {

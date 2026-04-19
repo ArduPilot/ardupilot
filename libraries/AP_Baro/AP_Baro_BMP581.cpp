@@ -103,6 +103,8 @@ bool AP_Baro_BMP581::init()
         return false;
     }
 
+    DEV_PRINTF("BMP581 found on bus %u address 0x%02x\n", _dev->bus_num(), _dev->get_bus_address());
+
     uint8_t status;
     if (!_dev->read_registers(BMP581_REG_STATUS, &status, 1)) {
         return false;

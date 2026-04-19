@@ -183,6 +183,10 @@ bool AP_Baro_DPS280::init()
         return false;
     }
 
+    DEV_PRINTF("%s found on bus %u address 0x%02x\n",
+               (device_type() == DEVTYPE_BARO_DPS310) ? "DPS310" : "DPS280",
+               dev->bus_num(), dev->get_bus_address());
+
     dev->setup_checked_registers(4, 20);
 
     set_config_registers();

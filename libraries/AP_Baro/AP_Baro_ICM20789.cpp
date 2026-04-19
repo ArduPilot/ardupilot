@@ -198,6 +198,8 @@ bool AP_Baro_ICM20789::init()
         goto failed;
     }
 
+    DEV_PRINTF("ICM20789 found on bus %u address 0x%02x\n", dev->bus_num(), dev->get_bus_address());
+
     dev->set_retries(0);
 
     instance = _frontend.register_sensor();

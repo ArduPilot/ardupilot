@@ -138,6 +138,10 @@ bool AP_Baro_SPL06::_init()
         return false;
     }
 
+    DEV_PRINTF("%s found on bus %u address 0x%02x\n",
+               (type == Type::SPA06) ? "SPA06" : "SPL06",
+               _dev->bus_num(), _dev->get_bus_address());
+
     // read the calibration data
     uint8_t SPL06_CALIB_COEFFS_LEN = 18;
 	switch(type) {

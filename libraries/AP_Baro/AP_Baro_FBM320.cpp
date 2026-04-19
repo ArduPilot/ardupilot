@@ -111,7 +111,7 @@ bool AP_Baro_FBM320::init()
         dev->get_semaphore()->give();
         return false;
     }
-    printf("FBM320 ID 0x%x\n", whoami);
+    DEV_PRINTF("FBM320 ID 0x%x\n", whoami);
 
     if (!read_calibration()) {
         dev->get_semaphore()->give();

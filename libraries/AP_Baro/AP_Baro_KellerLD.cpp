@@ -192,7 +192,7 @@ bool AP_Baro_KellerLD::_init()
         return false;
     }
 
-    printf("Keller LD found on bus %u address 0x%02x\n", _dev->bus_num(), _dev->get_bus_address());
+    DEV_PRINTF("Keller LD found on bus %u address 0x%02x\n", _dev->bus_num(), _dev->get_bus_address());
 
     // Send a command to take a measurement
     _dev->transfer(&CMD_REQUEST_MEASUREMENT, 1, nullptr, 0);

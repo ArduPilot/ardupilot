@@ -105,6 +105,8 @@ bool AP_Baro_BMP085::_init()
         return false;
     }
 
+    DEV_PRINTF("BMP085 found on bus %u address 0x%02x\n", _dev->bus_num(), _dev->get_bus_address());
+
     ac1 = ((int16_t)bb.buff[0] << 8) | bb.buff[1];
     ac2 = ((int16_t)bb.buff[2] << 8) | bb.buff[3];
     ac3 = ((int16_t)bb.buff[4] << 8) | bb.buff[5];

@@ -149,7 +149,7 @@ bool AP_Baro_MS56XX::_init()
         return false;
     }
 
-    printf("%s found on bus %u address 0x%02x\n", name(), _dev->bus_num(), _dev->get_bus_address());
+    DEV_PRINTF("%s found on bus %u address 0x%02x\n", name(), _dev->bus_num(), _dev->get_bus_address());
 
     // Save factory calibration coefficients
     _cal_reg.c1 = prom[1];
