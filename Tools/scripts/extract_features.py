@@ -302,6 +302,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
+            ('AP_ZENOH_ENABLED', r'AP_Zenoh::init\b'),
             ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
             ('AP_CPU_IDLE_STATS_ENABLED', r'AP_BoardConfig::use_idle_stats'),
 

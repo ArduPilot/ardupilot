@@ -516,6 +516,8 @@ BUILD_OPTIONS = [
 
     Feature('DDS', 'DDS', 'AP_DDS_ENABLED', 'Enable MicroXRCE DDS support for ROS 2', 0, None),
 
+    Feature('Zenoh', 'Zenoh', 'AP_ZENOH_ENABLED', 'Enable Zenoh support', 0, None),
+
 ]
 
 BUILD_OPTIONS.sort(key=lambda x: (x.category + x.label))
