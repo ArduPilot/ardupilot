@@ -130,7 +130,7 @@ private:
     struct {
         bool active;
         uint8_t term[20];
-        AP_CSVReader csvreader{term, sizeof(term), ','};
+        AP_CSVReader csvreader{term, sizeof(term), ',', false};
         struct {
             uint32_t timestamp_us;
             uint8_t b;  // the byte
@@ -140,6 +140,7 @@ private:
         uint8_t terms_seen;
         uint32_t first_timestamp_us;
         uint32_t first_emit_micros_us;
+        uint32_t line;
     } logic_async_csv;
     uint16_t read_from_async_csv(uint8_t *buffer, uint16_t space);
 
