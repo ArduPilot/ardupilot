@@ -5292,6 +5292,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
 
 bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Location &out)
 {
+    // sanity check location
+    if (!check_latlng(in.x, in.y)) {
+        return false;
+    }
+
     if (!command_long_stores_location((MAV_CMD)in.command)) {
         return false;
     }
