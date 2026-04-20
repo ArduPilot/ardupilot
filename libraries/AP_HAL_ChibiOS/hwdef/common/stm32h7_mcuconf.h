@@ -619,12 +619,12 @@
 #ifndef STM32_SPI_USE_SPI6
 #define STM32_SPI_USE_SPI6                  FALSE
 #endif
-#define STM32_SPI_SPI1_DMA_PRIORITY         1
-#define STM32_SPI_SPI2_DMA_PRIORITY         1
-#define STM32_SPI_SPI3_DMA_PRIORITY         1
-#define STM32_SPI_SPI4_DMA_PRIORITY         1
-#define STM32_SPI_SPI5_DMA_PRIORITY         1
-#define STM32_SPI_SPI6_DMA_PRIORITY         1
+#define STM32_SPI_SPI1_DMA_PRIORITY         0
+#define STM32_SPI_SPI2_DMA_PRIORITY         0
+#define STM32_SPI_SPI3_DMA_PRIORITY         0
+#define STM32_SPI_SPI4_DMA_PRIORITY         0
+#define STM32_SPI_SPI5_DMA_PRIORITY         0
+#define STM32_SPI_SPI6_DMA_PRIORITY         0
 #define STM32_SPI_SPI1_IRQ_PRIORITY         10
 #define STM32_SPI_SPI2_IRQ_PRIORITY         10
 #define STM32_SPI_SPI3_IRQ_PRIORITY         10

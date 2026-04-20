@@ -1,0 +1,45 @@
+Continuing.
+
+Catchpoint 5 (signal SIGTRAP), 0x080202e0 in __init_array_end__ ()
+#0  0x080202e0 in __init_array_end__ ()
+No symbol table info available.
+r0             0x0                 0
+r1             0x0                 0
+r2             0x0                 0
+r3             0x0                 0
+r4             0x0                 0
+r5             0x0                 0
+r6             0x0                 0
+r7             0x0                 0
+r8             0x0                 0
+r9             0x0                 0
+r10            0x0                 0
+r11            0x0                 0
+r12            0x0                 0
+sp             0x20000600          0x20000600
+lr             0xffffffff          -1
+pc             0x80202e0           0x80202e0 <__init_array_end__>
+xPSR           0x1000000           16777216
+fpscr          0x0                 0
+msp            0x20000600          0x20000600
+psp            0x0                 0x0
+primask        0x0                 0
+basepri        0x0                 0
+faultmask      0x0                 0
+control        0x0                 0
+0x20000600:	0x11874a92	0x6dac49d9	0x46fb9fce	0xc28e93bf
+0x20000610:	0x73820fec	0x900dcb64	0xfeb29cc3	0xc447d33a
+0x20000620:	0xf90c2367	0x580a5866	0x32f9556e	0xcd1eda7c
+0x20000630:	0xb90f072a	0x55aa2403	0x1258a29e	0xd8eee886
+0x20000640:	0x18268019	0x3b6c3751	0x66017a2f	0xeec69bba
+0x20000650:	0x3c3549ac	0x1c963340	0x46470d2b	0x7155f222
+0x20000660:	0xca410954	0x4d6ca88d	0xa8bf2a75	0xb136fcc8
+0x20000670:	0x24ffb908	0xb7fa369e	0x70bca520	0xbe2cf466
+0xe000ed28:	0x00000000
+0xe000ed2c:	0x00000000
+0xe000ed30:	0x00000000
+0xe000ed34:	0x00000000
+Please answer y or n.
+Detaching from program: /home/jacob/AutoFly/code/ardupilot/Tools/bootloaders/AutoFly_bl.elf, Remote target
+Ending remote debugging.
+[Inferior 1 (Remote target) detached]
