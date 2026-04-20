@@ -162,7 +162,7 @@ bool AP_Compass_AK8963::init()
 
     /* register the compass instance in the frontend */
     _bus->set_device_type(DEVTYPE_AK8963);
-    if (!register_compass(_bus->get_bus_id())) {
+    if (!register_compass(_bus->get_bus_id(), name)) {
         goto fail;
     }
 

@@ -162,12 +162,9 @@ bool AP_Compass_IST8308::init()
 
     //register compass instance
     _dev->set_device_type(DEVTYPE_IST8308);
-    if (!register_compass(_dev->get_bus_id())) {
+    if (!register_compass(_dev->get_bus_id(), name)) {
         return false;
     }
-
-    printf("%s found on bus %u id %u address 0x%02x\n", name,
-           _dev->bus_num(), unsigned(_dev->get_bus_id()), _dev->get_bus_address());
 
     set_rotation(_rotation);
 

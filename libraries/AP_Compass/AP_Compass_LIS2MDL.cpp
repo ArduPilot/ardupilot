@@ -98,11 +98,9 @@ bool AP_Compass_LIS2MDL::init()
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_LIS2MDL);
-    if (!register_compass(dev->get_bus_id())) {
+    if (!register_compass(dev->get_bus_id(), name)) {
         return false;
     }
-
-    printf("Found a LIS2MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
 
     set_rotation(rotation);
 

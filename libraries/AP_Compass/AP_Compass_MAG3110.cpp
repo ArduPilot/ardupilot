@@ -119,7 +119,7 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
     
     /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_MAG3110);
-    if (!register_compass(_dev->get_bus_id())) {
+    if (!register_compass(_dev->get_bus_id(), name)) {
         return false;
     }
 
@@ -161,8 +161,6 @@ bool AP_Compass_MAG3110::_hardware_init()
     ret = true;
 
     _dev->set_retries(3);
-    
-    printf("MAG3110 found on bus 0x%x\n", (uint16_t)_dev->get_bus_id());
 
 exit:
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);

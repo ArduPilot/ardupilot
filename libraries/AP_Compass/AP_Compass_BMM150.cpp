@@ -214,7 +214,7 @@ bool AP_Compass_BMM150::init()
 
     /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_BMM150);
-    if (!register_compass(_dev->get_bus_id())) {
+    if (!register_compass(_dev->get_bus_id(), name)) {
         return false;
     }
 

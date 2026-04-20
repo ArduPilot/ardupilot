@@ -98,7 +98,7 @@ bool AP_Compass_IIS2MDC::init()
     // register compass instance
     _dev->set_device_type(DEVTYPE_IIS2MDC);
 
-    if (!register_compass(_dev->get_bus_id())) {
+    if (!register_compass(_dev->get_bus_id(), name)) {
         return false;
     }
 

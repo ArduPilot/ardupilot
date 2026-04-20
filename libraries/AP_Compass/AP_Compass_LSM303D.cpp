@@ -270,7 +270,7 @@ bool AP_Compass_LSM303D::init(enum Rotation rotation)
 
     /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_LSM303D);
-    if (!register_compass(_dev->get_bus_id())) {
+    if (!register_compass(_dev->get_bus_id(), name)) {
         return false;
     }
 

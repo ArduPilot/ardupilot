@@ -117,8 +117,10 @@ protected:
                            uint32_t max_samples = 10);
     void drain_accumulated_samples(const Vector3f *scale = NULL);
 
-    // register compass instance with the frontend
-    bool register_compass(int32_t dev_id) WARN_IF_UNUSED;
+    // register compass instance with the frontend. If name is non-null,
+    // prints a "<name> found on bus N id N address 0xN" discovery message
+    // on success.
+    bool register_compass(int32_t dev_id, const char *name = nullptr) WARN_IF_UNUSED;
 
     // set dev_id for an instance
     void set_dev_id(uint32_t dev_id);
