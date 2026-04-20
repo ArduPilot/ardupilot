@@ -151,6 +151,10 @@ public:
     // get_singleton for scripting
     static AP_Filesystem *get_singleton(void);
 
+    // return the on-disk backend, so virtual backends can delegate to
+    // the underlying storage without going back through the dispatcher
+    AP_Filesystem_Backend &local_backend();
+
 private:
     struct Backend {
         const char *prefix;
