@@ -132,7 +132,7 @@ bool AP_Baro_BMP581::init()
     // ORD 50Hz | Normal Mode
     _dev->write_register(BMP581_REG_ODR_CONFIG, 0b0111101, true);
 
-    instance = _frontend.register_sensor();
+    instance = _frontend.register_sensor(_dev->get_bus_id(), "BMP581");
 
     set_bus_id(instance, _dev->get_bus_id());
 

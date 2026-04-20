@@ -59,7 +59,7 @@ bool AP_Baro_AUAV::init()
     }
 
     // Register sensor and set dev-id
-    instance = _frontend.register_sensor();
+    instance = _frontend.register_sensor(dev->get_bus_id(), "AUAV");
     dev->set_device_type(DEVTYPE_BARO_AUAV);
     set_bus_id(instance, dev->get_bus_id());
 

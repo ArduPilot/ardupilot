@@ -187,7 +187,8 @@ bool AP_Baro_DPS280::init()
 
     set_config_registers();
 
-    instance = _frontend.register_sensor();
+    instance = _frontend.register_sensor(dev->get_bus_id(),
+                                          device_type() == DEVTYPE_BARO_DPS310 ? "DPS310" : "DPS280");
 
     dev->set_device_type(device_type());
     set_bus_id(instance, dev->get_bus_id());
