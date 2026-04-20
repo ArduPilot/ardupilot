@@ -251,7 +251,7 @@ bool AP_InertialSensor_L3G4200D::_init_sensor(void)
 void AP_InertialSensor_L3G4200D::start(void)
 {
     if (!_imu.register_gyro(gyro_instance, 800, _dev_gyro->get_bus_id_devtype(DEVTYPE_L3G4200D)) ||
-        !_imu.register_accel(accel_instance, 800, _dev_accel->get_bus_id_devtype(DEVTYPE_L3G4200D))) {
+        !_imu.register_accel(accel_instance, 800, _dev_accel->get_bus_id_devtype(DEVTYPE_L3G4200D), "L3G4200D")) {
         return;
     }
 

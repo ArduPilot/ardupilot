@@ -240,7 +240,7 @@ void AP_InertialSensor_LSM6DSV::start()
     }
     _backend_period_us = 1000000UL / _backend_rate_hz;
 
-    if (!_imu.register_accel(accel_instance, _backend_rate_hz, _dev->get_bus_id_devtype(DEVTYPE_INS_LSM6DSV)) ||
+    if (!_imu.register_accel(accel_instance, _backend_rate_hz, _dev->get_bus_id_devtype(DEVTYPE_INS_LSM6DSV), "LSM6DSV") ||
         !_imu.register_gyro(gyro_instance, _backend_rate_hz, _dev->get_bus_id_devtype(DEVTYPE_INS_LSM6DSV))) {
         return;
     }

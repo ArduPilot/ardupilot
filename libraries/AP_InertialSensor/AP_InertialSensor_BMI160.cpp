@@ -206,7 +206,7 @@ void AP_InertialSensor_BMI160::start()
 
     _dev->get_semaphore()->give();
 
-    if (!_imu.register_accel(accel_instance, BMI160_ODR_TO_HZ(BMI160_ODR), _dev->get_bus_id_devtype(DEVTYPE_BMI160)) ||
+    if (!_imu.register_accel(accel_instance, BMI160_ODR_TO_HZ(BMI160_ODR), _dev->get_bus_id_devtype(DEVTYPE_BMI160), "BMI160") ||
         !_imu.register_gyro(gyro_instance, BMI160_ODR_TO_HZ(BMI160_ODR),   _dev->get_bus_id_devtype(DEVTYPE_BMI160))) {
         return;
     }

@@ -513,7 +513,7 @@ fail_whoami:
 void AP_InertialSensor_LSM9DS0::start(void)
 {
     if (!_imu.register_gyro(gyro_instance, 760, _dev_gyro->get_bus_id_devtype(DEVTYPE_GYR_L3GD20)) ||
-        !_imu.register_accel(accel_instance, 1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D))) {
+        !_imu.register_accel(accel_instance, 1000, _dev_accel->get_bus_id_devtype(DEVTYPE_ACC_LSM303D), "LSM9DS0")) {
         return;
     }
 

@@ -268,44 +268,53 @@ void AP_InertialSensor_Invensensev3::start()
     dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
     enum DevTypes devtype = DEVTYPE_INS_ICM42688;
+    const char *name = "ICM42688";
     fifo_config1 = 0x07;
 
     switch (inv3_type) {
     case Invensensev3_Type::IIM42652:
         devtype = DEVTYPE_INS_IIM42652;
+        name = "IIM42652";
         temp_sensitivity = 1.0 / 2.07;
         break;
     case Invensensev3_Type::IIM42653:
         devtype = DEVTYPE_INS_IIM42653;
+        name = "IIM42653";
         temp_sensitivity = 1.0 / 2.07;
         gyro_scale = GYRO_SCALE_4000DPS;
         accel_scale = ACCEL_SCALE_32G;
         break;
     case Invensensev3_Type::ICM42688:
         devtype = DEVTYPE_INS_ICM42688;
+        name = "ICM42688";
         temp_sensitivity = 1.0 / 2.07;
         break;
     case Invensensev3_Type::ICM42605:
         devtype = DEVTYPE_INS_ICM42605;
+        name = "ICM42605";
         temp_sensitivity = 1.0 / 2.07;
         break;
     case Invensensev3_Type::ICM40605:
         devtype = DEVTYPE_INS_ICM40605;
+        name = "ICM40605";
         fifo_config1 = 0x0F;
         temp_sensitivity = 1.0 * 128 / 115.49;
         break;
     case Invensensev3_Type::ICM42670:
         devtype = DEVTYPE_INS_ICM42670;
+        name = "ICM42670";
         temp_sensitivity = 1.0 / 2.0;
         break;
     case Invensensev3_Type::ICM45686:
         devtype = DEVTYPE_INS_ICM45686;
+        name = "ICM45686";
         temp_sensitivity = 1.0 / 2.0;
         gyro_scale = GYRO_SCALE_4000DPS;
         accel_scale = ACCEL_SCALE_32G;
         break;
     case Invensensev3_Type::ICM40609:
         devtype = DEVTYPE_INS_ICM40609;
+        name = "ICM40609";
         temp_sensitivity = 1.0 / 2.07;
         accel_scale = ACCEL_SCALE_32G;
         break;
@@ -364,7 +373,7 @@ void AP_InertialSensor_Invensensev3::start()
     backend_period_us = 1000000UL / backend_rate_hz;
 
     if (!_imu.register_gyro(gyro_instance, sampling_rate_hz, dev->get_bus_id_devtype(devtype)) ||
-        !_imu.register_accel(accel_instance, sampling_rate_hz, dev->get_bus_id_devtype(devtype))) {
+        !_imu.register_accel(accel_instance, sampling_rate_hz, dev->get_bus_id_devtype(devtype), name)) {
         return;
     }
 
