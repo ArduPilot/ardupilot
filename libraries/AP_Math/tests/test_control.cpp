@@ -469,6 +469,53 @@ TEST(Control, test_control)
     EXPECT_FLOAT_EQ(velxy.y, 0.0);
 }
 
+// This test demonstrates the intended behavior when any of the 3 limits are zero.
+TEST(KinematicLimit, zero_max_limit)
+{
+    // If you can select any values here which cause this test to fail,
+    // that indicates the code has a problem.
+    constexpr float arbitrary1 = 1.11f;
+    constexpr float arbitrary2 = 2.22f;
+    constexpr float arbitrary3 = 3.33f;
+    constexpr float arbitrary4 = 4.44f;
+
+    constexpr float expected_limit = 0.0f;
+
+    for (const auto dir_xy : {0.0f, arbitrary1}) {
+        for (const auto dir_z : {0.0f, arbitrary2, -arbitrary2}) {
+            // Test 1: max_xy==0 constrains all cases.
+            // (The case likely to surprise users who don't read the
+            //  documentation is the pure-vertical case.)
+            float observed_limit = kinematic_limit(dir_xy,
+                                                   dir_z,
+                                                   0.0f,
+                                                   arbitrary3,
+                                                   arbitrary4);
+            EXPECT_FLOAT_EQ(observed_limit, expected_limit);
+
+            // Test 2: max_z_neg==0 constrains all cases.
+            // (The cases likely to surprise users who don't read the
+            //  documentation are when the z-component is non-negative.)
+            observed_limit = kinematic_limit(dir_xy,
+                                                   dir_z,
+                                                   arbitrary3,
+                                                   0.0f,
+                                                   arbitrary4);
+            EXPECT_FLOAT_EQ(observed_limit, expected_limit);
+
+            // Test 3: max_z_pos==0 constrains all cases.
+            // (The cases likely to surprise users who don't read the
+            //  documentation are when the z-component is non-positive.)
+            observed_limit = kinematic_limit(dir_xy,
+                                                   dir_z,
+                                                   arbitrary3,
+                                                   arbitrary4,
+                                                   0.0f);
+            EXPECT_FLOAT_EQ(observed_limit, expected_limit);
+        }
+    }
+}
+
 // catch floating point exceptions
 sigjmp_buf avert_your_eyes_children;
 static void _tc_sig_fpe(int signum)
