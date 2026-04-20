@@ -1011,7 +1011,7 @@ AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(uint8_t gimbal_d
     if (gimbal_device_id == 0) {
         return get_primary();
     }
-    return get_instance(gimbal_device_id - 1);
+    return get_instance(get_specified_instance(gimbal_device_id));
 }
 
 // pass a GIMBAL_REPORT message to the backend

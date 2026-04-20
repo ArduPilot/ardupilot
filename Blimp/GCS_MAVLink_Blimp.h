@@ -22,7 +22,7 @@ protected:
 
     bool get_target_location(Location &loc) const override;
 
-    MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
+    MAV_RESULT handle_command_do_set_roi_location(const uint8_t instance, const Location &roi_loc) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
 

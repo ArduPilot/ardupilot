@@ -1009,6 +1009,11 @@ private:
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
     bool do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
+#if HAL_MOUNT_ENABLED
+    void do_set_roi(const AP_Mission::Mission_Command& cmd); // MAV_CMD_DO_SET_ROI (201)
+    void do_set_roi_location(const AP_Mission::Mission_Command& cmd); // MAV_CMD_DO_SET_ROI_LOCATION (195)
+    void do_set_roi(const uint8_t instance, const Location &loc); // (shared implementation details)
+#endif // HAL_MOUNT_ENABLED
     bool start_command_callback(const AP_Mission::Mission_Command &cmd);
     bool verify_command_callback(const AP_Mission::Mission_Command& cmd);
     float get_wp_radius() const;

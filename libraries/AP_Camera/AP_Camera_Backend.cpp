@@ -11,6 +11,9 @@
 
 extern const AP_HAL::HAL& hal;
 
+// Per MAVLink CAMERA_INFORMATION (259) specification
+constexpr uint8_t CAMERA_HAS_NO_GIMBAL = 0;
+
 // Constructor
 AP_Camera_Backend::AP_Camera_Backend(AP_Camera &frontend, AP_Camera_Params &params, uint8_t instance) :
     _frontend(frontend),
@@ -118,7 +121,7 @@ uint8_t AP_Camera_Backend::get_mount_instance() const
     return _params.mount_instance.get() - 1;
 }
 
-// get mavlink gimbal device id which is normally mount_instance+1
+// get mavlink gimbal device id (normally the instance's index + 1), or 0 if no gimbal is associated with this camera
 uint8_t AP_Camera_Backend::get_gimbal_device_id() const
 {
 #if HAL_MOUNT_ENABLED
@@ -130,7 +133,7 @@ uint8_t AP_Camera_Backend::get_gimbal_device_id() const
         }
     }
 #endif
-    return 0;
+    return CAMERA_HAS_NO_GIMBAL;
 }
 
 

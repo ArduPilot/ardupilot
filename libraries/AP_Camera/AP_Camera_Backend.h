@@ -188,7 +188,7 @@ protected:
     // get corresponding mount instance for the camera
     uint8_t get_mount_instance() const;
 
-    // get mavlink gimbal device id which is normally mount_instance+1
+    // get mavlink gimbal device id (normally the instance's index + 1), or 0 if no gimbal is associated with this camera
     uint8_t get_gimbal_device_id() const;
 
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
