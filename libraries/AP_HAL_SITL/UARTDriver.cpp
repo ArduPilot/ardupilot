@@ -801,7 +801,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
             case AP_CSVReader::RetCode::OK:
                 continue;
             case AP_CSVReader::RetCode::ERROR:
-                AP_HAL::panic("Malformed CSV?");
+                AP_HAL::panic("Malformed CSV? (line %u)", logic_async_csv.line);
             case AP_CSVReader::RetCode::TERM_DONE:
             case AP_CSVReader::RetCode::VECTOR_DONE:
                 switch (logic_async_csv.terms_seen) {
@@ -836,6 +836,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
                 if (logic_async_csv.terms_seen != 4) {
                     AP_HAL::panic("Incorrect number off terms in CSV, want (Time [s],Value,Parity Error,Framing Error)");
                 }
+                logic_async_csv.line++;
                 logic_async_csv.terms_seen = 0;
                 if (!logic_async_csv.done_first_line) {
                     // skip the headers
