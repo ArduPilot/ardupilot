@@ -19,10 +19,11 @@
 
 #include <AP_Math/crc.h>
 
-// CRC8 using polynomial 0x25 (spec notation: 0x125, the leading 1 is implicit).
+// CRC8 using polynomial 0x25 (spec notation: 0x125, the leading 1 is implicit),
+// initial value 0xFF (confirmed from capture analysis).
 uint8_t ibus2_crc8(const uint8_t *buf, uint16_t len)
 {
-    return crc8_generic(buf, len, 0x25);
+    return crc8_generic(buf, len, 0x25, 0xFF);
 }
 
 bool ibus2_crc8_ok(const uint8_t *buf, uint16_t len)
