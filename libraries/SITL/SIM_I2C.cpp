@@ -33,6 +33,7 @@
 #include "SIM_IS31FL3195.h"
 #include "SIM_RF_LightWareI2C_Legacy16Bit.h"
 #include "SIM_RF_TOFSenseF_I2C.h"
+#include "SIM_RF_LightWare_GRF_I2C.h"
 #include "SIM_LM2755.h"
 #include "SIM_LP5562.h"
 #include "SIM_MaxSonarI2CXL.h"
@@ -140,6 +141,10 @@ static TFS20L tfs20l;  // Benewake TFS20L rangefinder
 static TOFSenseF_I2C tofsensef;
 #endif  // AP_SIM_RF_TOFSENSEF_I2C_ENABLED
 
+#if AP_SIM_RF_LIGHTWARE_GRF_I2C_ENABLED
+static LightWareGRF_I2C lightware_grf_i2c;
+#endif  // AP_SIM_RF_LIGHTWARE_GRF_I2C_ENABLED
+
 struct i2c_device_at_address {
     uint8_t bus;
     uint8_t addr;
@@ -221,6 +226,9 @@ struct i2c_device_at_address {
 #if AP_SIM_RF_TOFSENSEF_I2C_ENABLED
     { 0, 0x08, tofsensef },          // RNGFNDx_TYPE = 40, RNGFNDx_ADDR = 0x08
 #endif  // AP_SIM_RF_TOFSENSEF_I2C_ENABLED
+#if AP_SIM_RF_LIGHTWARE_GRF_I2C_ENABLED
+    { 2, 0x66, lightware_grf_i2c },  // RNGFNDx_TYPE = 48, RNGFNDx_ADDR = 0x66
+#endif  // AP_SIM_RF_LIGHTWARE_GRF_I2C_ENABLED
 };
 
 void I2C::init()
