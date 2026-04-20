@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AnalogIn_config.h"
+
+#if AP_HAL_LINUX_ANALOGIN_ADS1115_ENABLED
+
 #include "AP_HAL_Linux.h"
 #include <AP_ADC/AP_ADC_ADS1115.h>
 
@@ -39,3 +43,5 @@ private:
     uint32_t _last_update_timestamp;
     HAL_Semaphore _semaphore;
 };
+
+#endif  // AP_HAL_LINUX_ANALOGIN_ADS1115_ENABLED
