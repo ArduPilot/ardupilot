@@ -51,9 +51,8 @@ private:
 
     struct {
         float kelvin = 273;
-        uint64_t last_update_us;
     } temperature;
-    void update_temperature(float current_amp, uint64_t now_us);
+    void update_temperature(float current_amp, float dt);
 
     // 10Hz filter for battery voltage
     LowPassFilterFloat voltage_filter{10};

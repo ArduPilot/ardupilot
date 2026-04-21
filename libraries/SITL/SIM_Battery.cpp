@@ -178,19 +178,17 @@ void Battery::consume_energy(float current_amp, uint64_t now_us)
 
     voltage_filter.apply(voltage, dt);
 
-    update_temperature(current_amp, now_us);
+    update_temperature(current_amp, dt);
 }
 
-void Battery::update_temperature(float current_amp, uint64_t now_us)
+void Battery::update_temperature(float current_amp, float dt)
 {
-    const uint64_t temperature_dt = now_us - temperature.last_update_us;
-    temperature.last_update_us = now_us;
     // thermal_capacity value chosen to match previous steady-state behavior at 28amps
     // (reminder: thermal_capacity = mass * specific_heat)
     constexpr float thermal_capacity = 2.8f;  // watt*seconds/degC
     constexpr float inverse_of_thermal_capacity = 1 / thermal_capacity;  // use inverse so we can multiply, not divide
-    const float temp_increase = (current_amp * current_amp) * resistance_ohm * inverse_of_thermal_capacity * (temperature_dt * 0.000001);
+    const float temp_increase = (current_amp * current_amp) * resistance_ohm * inverse_of_thermal_capacity * dt;
     // decay temperature at some %second towards ambient
-    const float temp_decrease = (temperature.kelvin - 273.15f) * 0.10 * temperature_dt * 0.000001;
+    const float temp_decrease = (temperature.kelvin - 273.15f) * 0.10 * dt;
     temperature.kelvin += (temp_increase - temp_decrease);
 }
