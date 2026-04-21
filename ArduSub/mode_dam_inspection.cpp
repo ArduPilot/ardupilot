@@ -67,7 +67,7 @@ void ModeDamInspection::run_pre()
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // get pilot desired yaw
-    float target_roll, target_pitch, target_yaw;
+    float target_roll = 0.0f, target_pitch = 0.0f, target_yaw = 0.0f;
 
     if (!get_desired_euler_angles_pitch_roll(target_roll, target_pitch))
     {
@@ -115,11 +115,11 @@ void ModeDamInspection::run_pre()
             target_yaw_rate = 0; // Stop rotation on yaw axis
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
-            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(TEST_ROLL_D, target_pitch, target_yaw_rate);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(TEST_ROLL_D * 1e2f, target_pitch * 1e2f, target_yaw_rate);
             sub.last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
 
         } else { // call attitude controller holding absolute bearing
-            attitude_control->input_euler_angle_roll_pitch_yaw(TEST_ROLL_D, target_pitch, sub.last_pilot_heading, true);
+            attitude_control->input_euler_angle_roll_pitch_yaw(TEST_ROLL_D * 1e2f, target_pitch * 1e2f, sub.last_pilot_heading, true);
         }
     }
 }
