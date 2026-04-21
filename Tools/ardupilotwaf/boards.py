@@ -433,6 +433,7 @@ class Board:
 
                 '-Werror=address-of-packed-member',
 
+                '-Werror=unknown-warning-option',
                 '-Werror=inconsistent-missing-override',
                 '-Werror=overloaded-virtual',
 
