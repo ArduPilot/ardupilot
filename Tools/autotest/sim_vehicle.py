@@ -333,6 +333,187 @@ def wait_unlimited():
 vinfo = vehicleinfo.VehicleInfo()
 
 
+def run_gui(default_vehicle=None, initial_states=None):
+    try:
+        import wx
+    except ImportError:
+        progress("Error: wxPython could not be imported. GUI cannot start.")
+        sys.exit(1)
+
+    if initial_states is None:
+        initial_states = {}
+
+    app = wx.App(False)
+    config = wx.Config("ArduPilotSITL")
+
+    locations = []
+    default_location = "CMAC"
+    loc_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'locations.txt')
+
+    if os.path.exists(loc_file):
+        with open(loc_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    parts = line.split('=')
+                    if len(parts) > 0:
+                        locations.append(parts[0].strip())
+
+    locations.sort()
+    if default_location not in locations:
+        locations.insert(0, default_location)
+
+    target_location = initial_states.get('location', config.Read("last_location", default_location))
+
+    if default_vehicle and default_vehicle in vinfo.options:
+        available_vehicles = [default_vehicle]
+        if default_vehicle == 'ArduCopter' and 'Helicopter' in vinfo.options:
+            available_vehicles.append('Helicopter')
+    else:
+        available_vehicles = list(vinfo.options.keys())
+
+    frame = wx.Frame(None, title="ArduPilot SITL Launcher")
+    panel = wx.Panel(frame)
+    vbox = wx.BoxSizer(wx.VERTICAL)
+
+    vbox.Add(wx.StaticText(panel, label="Select Vehicle:"), flag=wx.LEFT | wx.TOP, border=10)
+    vehicle_combo = wx.ComboBox(panel, choices=available_vehicles, style=wx.CB_READONLY)
+    if available_vehicles:
+        if len(available_vehicles) == 1:
+            vehicle_combo.SetSelection(0)
+        else:
+            saved_vehicle = config.Read("last_vehicle", "")
+            if saved_vehicle and saved_vehicle in available_vehicles:
+                vehicle_combo.SetStringSelection(saved_vehicle)
+            else:
+                vehicle_combo.SetSelection(0)
+
+    vbox.Add(vehicle_combo, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+
+    vbox.Add(wx.StaticText(panel, label="Starting Location (-L):"), flag=wx.LEFT | wx.TOP, border=10)
+    location_combo = wx.ComboBox(panel, choices=locations, style=wx.CB_DROPDOWN)
+    location_combo.AutoComplete(locations)
+
+    if target_location in locations:
+        location_combo.SetSelection(locations.index(target_location))
+    else:
+        location_combo.SetValue(target_location)
+
+    vbox.Add(location_combo, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+
+    vbox.Add(wx.StaticText(panel, label="Aircraft Scenario (--aircraft):"), flag=wx.LEFT | wx.TOP, border=10)
+    history_str = config.Read("aircraft_history", "")
+    aircraft_history = [h for h in history_str.split(',') if h]
+
+    aircraft_combo = wx.ComboBox(panel, choices=aircraft_history, style=wx.CB_DROPDOWN)
+    aircraft_combo.AutoComplete(aircraft_history)
+    if 'aircraft' in initial_states:
+        aircraft_combo.SetValue(initial_states['aircraft'])
+    elif aircraft_history:
+        aircraft_combo.SetValue(aircraft_history[0])
+
+    vbox.Add(aircraft_combo, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+
+    options_sizer = wx.BoxSizer(wx.VERTICAL)
+
+    chk_mavproxy = wx.CheckBox(panel, label="Enable MAVProxy")
+    chk_mavproxy.SetValue(not initial_states.get('no_mavproxy', config.ReadBool("no_mavproxy", False)))
+
+    chk_map = wx.CheckBox(panel, label="Enable MAVProxy map")
+    chk_map.SetValue(initial_states.get('map', config.ReadBool("map", True)))
+
+    chk_console = wx.CheckBox(panel, label="Enable MAVProxy console")
+    chk_console.SetValue(initial_states.get('console', config.ReadBool("console", True)))
+
+    chk_osd = wx.CheckBox(panel, label="Enable OSD")
+    chk_osd.SetValue(initial_states.get('osd', config.ReadBool("osd", False)))
+
+    chk_wipe = wx.CheckBox(panel, label="Reset to Default Parameters (-w)")
+    chk_wipe.SetValue(initial_states.get('wipe', config.ReadBool("wipe", False)))
+
+    def on_mavproxy(event):
+        enabled = chk_mavproxy.GetValue()
+        chk_map.Enable(enabled)
+        chk_console.Enable(enabled)
+        if not enabled:
+            chk_map.SetValue(False)
+            chk_console.SetValue(False)
+        if event:
+            event.Skip()
+
+    chk_mavproxy.Bind(wx.EVT_CHECKBOX, on_mavproxy)
+    on_mavproxy(None)
+
+    options_sizer.Add(chk_mavproxy, flag=wx.ALL, border=5)
+    options_sizer.Add(chk_map, flag=wx.LEFT, border=25)
+    options_sizer.Add(chk_console, flag=wx.LEFT, border=25)
+    options_sizer.Add(chk_osd, flag=wx.ALL, border=5)
+    options_sizer.Add(wx.StaticLine(panel), flag=wx.EXPAND | wx.TOP | wx.BOTTOM, border=10)
+    options_sizer.Add(chk_wipe, flag=wx.ALL, border=5)
+
+    vbox.Add(options_sizer, flag=wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, border=10)
+
+    generated_args = []
+    is_cancelled = True
+
+    def on_launch(event):
+        nonlocal is_cancelled
+        is_cancelled = False
+
+        config.WriteBool("console", chk_console.GetValue())
+        config.WriteBool("map", chk_map.GetValue())
+        config.WriteBool("osd", chk_osd.GetValue())
+        config.WriteBool("no_mavproxy", not chk_mavproxy.GetValue())
+        config.WriteBool("wipe", chk_wipe.GetValue())
+        config.Write("last_location", location_combo.GetValue())
+        config.Write("last_vehicle", vehicle_combo.GetStringSelection())
+
+        new_aircraft = aircraft_combo.GetValue().strip()
+        if new_aircraft:
+            if new_aircraft in aircraft_history:
+                aircraft_history.remove(new_aircraft)
+            aircraft_history.insert(0, new_aircraft)
+            config.Write("aircraft_history", ",".join(aircraft_history[:10]))
+
+        config.Flush()
+
+        if available_vehicles:
+            generated_args.extend(['-v', vehicle_combo.GetStringSelection()])
+
+        selected_loc = location_combo.GetValue()
+        if selected_loc:
+            generated_args.extend(['-L', selected_loc])
+
+        if new_aircraft:
+            generated_args.extend(['--aircraft', new_aircraft])
+
+        if chk_wipe.GetValue():
+            generated_args.append('-w')
+        if chk_console.GetValue():
+            generated_args.append('--console')
+        if chk_map.GetValue():
+            generated_args.append('--map')
+        if chk_osd.GetValue():
+            generated_args.append('--osd')
+        if not chk_mavproxy.GetValue():
+            generated_args.append('--no-mavproxy')
+
+        frame.Close()
+
+    btn_launch = wx.Button(panel, label="Launch SITL")
+    btn_launch.Bind(wx.EVT_BUTTON, on_launch)
+    vbox.Add(btn_launch, flag=wx.EXPAND | wx.ALL, border=15)
+
+    panel.SetSizer(vbox)
+    vbox.Fit(frame)
+
+    frame.Centre()
+    frame.Show()
+    app.MainLoop()
+
+    return [] if is_cancelled else generated_args
+
+
 def do_build(opts, frame_options):
     """Build sitl using waf"""
     progress("WAF build")
@@ -1094,6 +1275,11 @@ parser.add_option("-P", "--param",
                   action='append',
                   help="set some param with the format PARAM=VALUE")
 
+parser.add_option("--gui",
+                  action='store_true',
+                  default=False,
+                  help="start GUI launcher")
+
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",
                        action='store_true',
@@ -1445,16 +1631,88 @@ group_completion.add_option("", "--list-frame",
                             help="List the vehicle frames")
 parser.add_option_group(group_completion)
 
-cmd_opts, cmd_args = parser.parse_args()
+gui_argv = sys.argv[:]
+
+use_gui = '--gui' in gui_argv
+if use_gui:
+    gui_argv.remove('--gui')
+
+cwd = os.getcwd()
+vehicle_dir_name = os.path.basename(cwd)
+in_vehicle_dir = vehicle_dir_name in vinfo.options
+
+if len(gui_argv) == 1 and not in_vehicle_dir:
+    use_gui = True
+
+cmd_opts, cmd_args = parser.parse_args(gui_argv[1:])
+
+if use_gui:
+    if cmd_opts.vehicle is None:
+        cwd = os.getcwd()
+        while cwd:
+            bname = os.path.basename(cwd)
+            if not bname:
+                break
+            if bname in vinfo.options:
+                cmd_opts.vehicle = bname
+                break
+            cwd = os.path.dirname(cwd)
+
+    initial_states = {}
+
+    if cmd_opts.console:
+        initial_states['console'] = True
+    if cmd_opts.map:
+        initial_states['map'] = True
+    if getattr(cmd_opts, 'OSD', False):
+        initial_states['osd'] = True
+    if cmd_opts.no_mavproxy:
+        initial_states['no_mavproxy'] = True
+    if cmd_opts.wipe_eeprom:
+        initial_states['wipe'] = True
+
+    if cmd_opts.location is not None:
+        initial_states['location'] = cmd_opts.location
+    if cmd_opts.aircraft is not None:
+        initial_states['aircraft'] = cmd_opts.aircraft
+
+    gui_args_out = run_gui(default_vehicle=cmd_opts.vehicle, initial_states=initial_states)
+
+    if not gui_args_out:
+        progress("Launch cancelled by user.")
+        sys.exit(0)
+
+    if '-v' in gui_args_out:
+        vehicle_idx = gui_args_out.index('-v') + 1
+        selected_vehicle = gui_args_out[vehicle_idx]
+
+        if selected_vehicle == 'Helicopter':
+            cmd_opts.vehicle = 'ArduCopter'
+            cmd_opts.frame = 'heli'
+        else:
+            cmd_opts.vehicle = selected_vehicle
+
+    if '-L' in gui_args_out:
+        cmd_opts.location = gui_args_out[gui_args_out.index('-L') + 1]
+
+    if '--aircraft' in gui_args_out:
+        cmd_opts.aircraft = gui_args_out[gui_args_out.index('--aircraft') + 1]
+
+    cmd_opts.wipe_eeprom = '-w' in gui_args_out
+    cmd_opts.console = '--console' in gui_args_out
+    cmd_opts.map = '--map' in gui_args_out
+    cmd_opts.OSD = '--osd' in gui_args_out
+    cmd_opts.no_mavproxy = '--no-mavproxy' in gui_args_out
 
 if cmd_opts.list_vehicle:
     print(' '.join(vinfo.options.keys()))
-    sys.exit(1)
+    sys.exit(0)
+
 if cmd_opts.list_frame:
     frame_options = sorted(vinfo.options[cmd_opts.list_frame]["frames"].keys())
     frame_options_string = ' '.join(frame_options)
     print(frame_options_string)
-    sys.exit(1)
+    sys.exit(0)
 
 # clean up processes at exit:
 atexit.register(kill_tasks)
