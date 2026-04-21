@@ -411,7 +411,7 @@ void AP_Periph_FW::show_stack_free()
             // above the stack top
             total_stack = uint32_t(tp) - uint32_t(tp->wabase);
         }
-        can_printf("%s STACK=%u/%u\n", tp->name, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+        can_printf("%s STACK=%u/%u", tp->name, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
     }
 }
 #endif

@@ -140,12 +140,12 @@ void AP_Networking::test_TCP_discard(void)
             continue;
         }
         total_sent += sock->send(buf, bufsize);
-        const uint32_t now = AP_HAL::millis();
-        if (now - last_report_ms >= 1000) {
-            float dt = (now - last_report_ms)*0.001;
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_report_ms >= 1000) {
+            float dt = (now_ms - last_report_ms)*0.001;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Discard throughput %.3f kbyte/sec", (total_sent/dt)*1.0e-3);
             total_sent = 0;
-            last_report_ms = now;
+            last_report_ms = now_ms;
         }
     }
 }
@@ -158,7 +158,7 @@ void AP_Networking::test_TCP_reflect(void)
     startup_wait();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_reflect: starting");
     const char *dest = param.test_ipaddr.get_str();
-    auto *sock = new SocketAPM(false);
+    auto *sock = NEW_NOTHROW SocketAPM(false);
     if (sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TCP_reflect: failed to create socket");
         return;
@@ -194,13 +194,13 @@ void AP_Networking::test_TCP_reflect(void)
             }
             total_recv += n;
         }
-        const uint32_t now = AP_HAL::millis();
+        const uint32_t now_ms = AP_HAL::millis();
 
-        if (now - last_report_ms >= 1000) {
-            float dt = (now - last_report_ms)*0.001;
+        if (now_ms - last_report_ms >= 1000) {
+            float dt = (now_ms - last_report_ms)*0.001;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reflect throughput %.3f kbyte/sec (disparity %u)", ((total_recv-last_recv)/dt)*1.0e-3, unsigned(total_sent-total_recv));
             last_recv = total_recv;
-            last_report_ms = now;
+            last_report_ms = now_ms;
         }
     }
 }
@@ -211,7 +211,7 @@ void AP_Networking::test_connector_loopback(void)
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Connector Loopback: starting");
 
     // start tcp discard server
-    auto *listen_sock = new SocketAPM(false);
+    auto *listen_sock = NEW_NOTHROW SocketAPM(false);
     if (listen_sock == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "connector_loopback: failed to create socket");
         return;
@@ -233,7 +233,7 @@ void AP_Networking::test_connector_loopback(void)
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "connector_loopback: listening");
     // create discard client
-    auto *client = new SocketAPM(false);
+    auto *client = NEW_NOTHROW SocketAPM(false);
     if (client == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "connector_loopback: failed to create client");
         return;

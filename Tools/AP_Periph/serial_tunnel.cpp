@@ -32,7 +32,7 @@ extern const AP_HAL::HAL &hal;
 #endif
 
 #if TUNNEL_DEBUG
-# define debug(fmt, args...) can_printf(fmt "\n", ##args)
+# define debug(fmt, args...) can_printf(fmt, ##args)
 #else
 # define debug(fmt, args...)
 #endif
