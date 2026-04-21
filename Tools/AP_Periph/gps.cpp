@@ -269,6 +269,7 @@ void AP_Periph_FW::send_moving_baseline_msg()
 #endif
 
     // get the data from the moving base and send as MovingBaselineData message
+    bool all_sent = true;
     while (len > 0) {
         ardupilot_gnss_MovingBaselineData mbldata {};
 
@@ -280,17 +281,22 @@ void AP_Periph_FW::send_moving_baseline_msg()
         uint8_t buffer[ARDUPILOT_GNSS_MOVINGBASELINEDATA_MAX_SIZE];
         const uint16_t total_size = ardupilot_gnss_MovingBaselineData_encode(&mbldata, buffer, !canfdout());
 
-        canard_broadcast(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
-                         ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
-                         CANARD_TRANSFER_PRIORITY_LOW,
-                         &buffer[0],
-                         total_size,
-                         iface_mask);
+        if (!canard_broadcast(ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE,
+                              ARDUPILOT_GNSS_MOVINGBASELINEDATA_ID,
+                              CANARD_TRANSFER_PRIORITY_LOW,
+                              &buffer[0],
+                              total_size,
+                              iface_mask)) {
+            all_sent = false;
+            break;
+        }
         len -= n;
         data += n;
     }
 
-    gps.clear_RTCMV3();
+    if (all_sent) {
+        gps.clear_RTCMV3();
+    }
 #endif // GPS_MOVING_BASELINE
 }
 
