@@ -52,7 +52,7 @@ repos:
             )$
 
   - repo: https://github.com/cpplint/cpplint
-    rev: 2.0.2
+    rev: 1.5.5  # Corresponds to apt install cpplint on Ubuntu 22.04
     hooks:  # See CPPLINT.cfg for configuration
       - id: cpplint
         args: [--quiet]  # Do not print the path of every file checked
