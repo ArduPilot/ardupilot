@@ -247,6 +247,10 @@ bool AP_BoardConfig::check_ms5611(const char* devname) {
 #define INV3_WHOAMI_ICM45686  0xE9
 #define INV3_WHOAMI_IIM42652  0x6f
 
+#define LSM6REG_WHOAMI              0x0F
+#define LSM6_WHOAMI_LSM6DSV         0x70  // shared by LSM6DSV16X and LSM6DSV32X
+#define LSM6_WHOAMI_LSM6DSK320X     0x75
+
 /*
   validation of the board type
  */
@@ -455,6 +459,28 @@ void AP_BoardConfig::board_setup()
 #define BMI088REG_CHIPID 0x00
 #define CHIPID_BMI088_G 0x0F
 
+bool AP_BoardConfig::probe_lsm6dsv_family(const char *devname)
+{
+    static const uint8_t lsm6dsv_whoami[] {
+        LSM6_WHOAMI_LSM6DSV,
+        LSM6_WHOAMI_LSM6DSK320X,
+    };
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(lsm6dsv_whoami); i++) {
+        if (spi_check_register(devname, LSM6REG_WHOAMI, lsm6dsv_whoami[i])) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool AP_BoardConfig::probe_holybro_6x_imu_slot(const char *icm_devname, const char *lsm6_devname)
+{
+    return spi_check_register(icm_devname, INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686) ||
+           probe_lsm6dsv_family(lsm6_devname);
+}
+
 /*
   detect which FMUV6 variant we are running on
  */
@@ -472,9 +498,9 @@ void AP_BoardConfig::detect_fmuv6_variant()
         state.board_type.set_and_notify(FMUV6_BOARD_CUAV_6X);
         DEV_PRINTF("Detected CUAV 6X\n");
         AP_Param::load_defaults_file("@ROMFS/param/CUAV_V6X_defaults.parm", false);
-    } else if (spi_check_register("icm45686-1", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686) &&
-               spi_check_register("icm45686-2", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686) &&
-               spi_check_register("icm45686-3", INV3REG_456_WHOAMI, INV3_WHOAMI_ICM45686)) {
+    } else if (probe_holybro_6x_imu_slot("icm45686-1", "lsm6dsv-1") &&
+               probe_holybro_6x_imu_slot("icm45686-2", "lsm6dsv-2") &&
+               probe_holybro_6x_imu_slot("icm45686-3", "lsm6dsv-3")) {
         state.board_type.set_and_notify(FMUV6_BOARD_HOLYBRO_6X_45686);
         DEV_PRINTF("Detected Holybro 6X_45686\n");
     } else if (spi_check_register("iim42652", INV3REG_WHOAMI, INV3_WHOAMI_IIM42652) &&
