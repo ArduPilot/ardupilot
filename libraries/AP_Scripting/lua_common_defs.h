@@ -10,7 +10,7 @@
   #endif //HAL_OS_FATFS_IO
 #endif // SCRIPTING_DIRECTORY
 
-int lua_get_current_ref();
+int lua_get_current_env_ref();
 const char* lua_get_modules_path();
 void lua_abort(void) __attribute__((noreturn));
 

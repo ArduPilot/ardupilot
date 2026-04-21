@@ -47,12 +47,12 @@ struct Vector2
     T x, y;
 
     // trivial ctor
-    constexpr Vector2<T>()
+    constexpr Vector2()
         : x(0)
         , y(0) {}
 
     // setting ctor
-    constexpr Vector2<T>(const T x0, const T y0)
+    constexpr Vector2(const T x0, const T y0)
         : x(x0)
         , y(y0) {}
 

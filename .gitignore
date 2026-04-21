@@ -171,3 +171,7 @@ ENV/
 env.bak/
 venv.bak/
 autotest_result_*_junit.xml
+
+# Ignore ESP-IDF SDK defines
+/libraries/AP_HAL_ESP32/targets/esp32/esp-idf/sdkconfig
+/libraries/AP_HAL_ESP32/targets/esp32s3/esp-idf/sdkconfig

@@ -4,6 +4,8 @@
 
 #include "Location.h"
 
+#ifndef HAL_BOOTLOADER_BUILD
+
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Terrain/AP_Terrain.h>
 
@@ -94,6 +96,11 @@ bool Location::change_alt_frame(AltFrame desired_frame)
 Location::AltFrame Location::get_alt_frame() const
 {
     if (terrain_alt) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (!relative_alt) {
+            AP_HAL::panic("terrain loc must be relative_alt1");
+        }
+#endif
         return AltFrame::ABOVE_TERRAIN;
     }
     if (origin_alt) {
@@ -111,6 +118,9 @@ bool Location::get_alt_cm(AltFrame desired_frame, int32_t &ret_alt_cm) const
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!initialised()) {
         AP_HAL::panic("Should not be called on invalid location: Location cannot be (0, 0, 0)");
+    }
+    if (terrain_alt && !relative_alt) {
+        AP_HAL::panic("terrain loc must be relative_alt2");
     }
 #endif
     Location::AltFrame frame = get_alt_frame();
@@ -220,7 +230,10 @@ bool Location::get_alt_m(AltFrame desired_frame, float &ret_alt) const
 }
 
 #if AP_AHRS_ENABLED
-bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
+// converts location to a vector from origin; if this method returns
+// false then vec_ne is unmodified
+template<typename T>
+bool Location::get_vector_xy_from_origin_NE(T &vec_ne) const
 {
     Location ekf_origin;
     if (!AP::ahrs().get_origin(ekf_origin)) {
@@ -231,22 +244,39 @@ bool Location::get_vector_xy_from_origin_NE(Vector2f &vec_ne) const
     return true;
 }
 
-bool Location::get_vector_from_origin_NEU(Vector3f &vec_neu) const
-{
-    // convert lat, lon
-    if (!get_vector_xy_from_origin_NE(vec_neu.xy())) {
-        return false;
-    }
+// define for float and position vectors
+template bool Location::get_vector_xy_from_origin_NE<Vector2f>(Vector2f &vec_ne) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_xy_from_origin_NE<Vector2p>(Vector2p &vec_ne) const;
+#endif
 
+// converts location to a vector from origin; if this method returns
+// false then vec_neu is unmodified
+template<typename T>
+bool Location::get_vector_from_origin_NEU(T &vec_neu) const
+{
     // convert altitude
     int32_t alt_above_origin_cm = 0;
     if (!get_alt_cm(AltFrame::ABOVE_ORIGIN, alt_above_origin_cm)) {
         return false;
     }
+
+    // convert lat, lon
+    if (!get_vector_xy_from_origin_NE(vec_neu.xy())) {
+        return false;
+    }
+
     vec_neu.z = alt_above_origin_cm;
 
     return true;
 }
+
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NEU<Vector3f>(Vector3f &vec_neu) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NEU<Vector3p>(Vector3p &vec_neu) const;
+#endif
+
 #endif  // AP_AHRS_ENABLED
 
 // return horizontal distance in meters between two locations
@@ -527,3 +557,5 @@ void Location::linearly_interpolate_alt(const Location &point1, const Location &
     // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
     set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
 }
+
+#endif // HAL_BOOTLOADER_BUILD

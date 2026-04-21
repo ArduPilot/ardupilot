@@ -63,7 +63,7 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
     if (!_detected_modules[index].driver && _detected_modules[index].ap_dronecan) {
         WITH_SEMAPHORE(_sem_registry);
         // Register new Compass mode to a backend
-        driver = new AP_Compass_DroneCAN(_detected_modules[index].ap_dronecan, _detected_modules[index].devid);
+        driver = NEW_NOTHROW AP_Compass_DroneCAN(_detected_modules[index].ap_dronecan, _detected_modules[index].devid);
         if (driver) {
             if (!driver->init()) {
                 delete driver;
@@ -222,8 +222,9 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
 // @Field: My: y axis field
 // @Field: Mz: z axis field
 
+#if HAL_LOGGING_ENABLED
     // just log it for now
-    AP::logger().WriteStreaming("MAGH", "TimeUS,Node,Sensor,Bus,Mx,My,Mz", "s#-----", "F-----", "QBBBfff",
+    AP::logger().WriteStreaming("MAGH", "TimeUS,Node,Sensor,Bus,Mx,My,Mz", "s#-----", "F------", "QBBBfff",
                                 transfer.timestamp_usec,
                                 transfer.source_node_id,
                                 ap_dronecan->get_driver_index(),
@@ -231,8 +232,9 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
                                 msg.magnetic_field_ga[0]*1000,
                                 msg.magnetic_field_ga[1]*1000,
                                 msg.magnetic_field_ga[2]*1000);
+#endif  // HAL_LOGGING_ENABLED
 }
-#endif
+#endif  // AP_COMPASS_DRONECAN_HIRES_ENABLED
 
 void AP_Compass_DroneCAN::read(void)
 {

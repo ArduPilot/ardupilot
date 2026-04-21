@@ -14,6 +14,13 @@
 #include <lwip/tcpip.h>
 #include <stdio.h>
 
+// PPP protocol
+#ifndef PPP_BUFSIZE_RX
+#define PPP_BUFSIZE_RX 4096
+#endif
+#ifndef PPP_BUFSIZE_TX
+#define PPP_BUFSIZE_TX 8192
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -25,6 +32,14 @@ extern const AP_HAL::HAL& hal;
 #define LWIP_TCPIP_UNLOCK()
 #endif
 
+#define PPP_DEBUG_TX 0
+#define PPP_DEBUG_RX 0
+
+// timeout for PPP link, if no packets in this time then restart the link
+#ifndef PPP_LINK_TIMEOUT_MS
+#define PPP_LINK_TIMEOUT_MS 15000U
+#endif
+
 /*
   output some data to the uart
  */
@@ -34,16 +49,59 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
     LWIP_UNUSED_ARG(pcb);
     uint32_t remaining = len;
     const uint8_t *ptr = (const uint8_t *)data;
-    while (remaining > 0) {
-        const auto n = driver.uart->write(ptr, remaining);
-        if (n > 0) {
-            remaining -= n;
-            ptr += n;
-        } else {
-            hal.scheduler->delay_microseconds(100);
-        }
+
+    if (pcb->phase == PPP_PHASE_TERMINATE) {
+        // don't output while terminating
+        return 0;
     }
-    return len;
+
+#if PPP_DEBUG_TX
+    bool flag_end = false;
+    if (ptr[len-1] == 0x7E) {
+        flag_end = true;
+        remaining--;
+    }
+    if (ptr[0] == 0x7E) {
+        // send byte size
+        if (pkt_size > 0) {
+            printf("PPP: tx[%lu] %u\n", tx_index++,  pkt_size);
+        }
+        // dump the packet
+        if (!(tx_index % 10)) {
+            for (uint32_t i = 0; i < pkt_size; i++) {
+                printf(" %02X", tx_bytes[i]);
+            }
+            printf("\n");
+        }
+        pkt_size = 0;
+    }
+#endif
+    if (driver.uart->txspace() < remaining) {
+        /*
+          if we can't send the whole frame then don't send any of it. This
+          minimises issues with the PPP state machine
+         */
+        return 0;
+    }
+    auto ret = driver.uart->write(ptr, remaining);
+
+#if PPP_DEBUG_TX
+    memcpy(&tx_bytes[pkt_size], data, len);
+    pkt_size += len;
+    if (flag_end) {
+        driver.uart->write(0x7E);
+        printf("PPP: tx[%lu] %u\n", tx_index++,  pkt_size);
+        // dump the packet
+        if (!(tx_index % 10)) {
+            for (uint32_t i = 0; i < pkt_size; i++) {
+                printf(" %02X", tx_bytes[i]);
+            }
+            printf("\n");
+        }
+        pkt_size = 0;
+    }
+#endif
+    return ret;
 }
 
 /*
@@ -78,6 +136,10 @@ void AP_Networking_PPP::ppp_status_callback(struct ppp_pcb_s *pcb, int code, voi
         driver.need_restart = true;
         break;
 
+    case PPPERR_USER:
+        // this happens on reconnect
+        break;
+
     default:
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: error %d", code);
         break;
@@ -96,7 +158,7 @@ bool AP_Networking_PPP::init()
         return false;
     }
 
-    pppif = new netif;
+    pppif = NEW_NOTHROW netif;
     if (pppif == nullptr) {
         return false;
     }
@@ -129,6 +191,31 @@ bool AP_Networking_PPP::init()
     return true;
 }
 
+#if AP_NETWORKING_PPP_GATEWAY_ENABLED
+/*
+  promote a network interface to the front of the list
+ */
+static void netif_promote(struct netif *iface)
+{
+    extern struct netif *netif_list;
+    if (netif_list == nullptr || netif_list == iface) {
+        // already first in the list
+        return;
+    }
+    for (struct netif *prev = netif_list;
+         prev != nullptr;
+         prev = prev->next) {
+        if (prev->next == iface) {
+            // found it, move it to the front
+            prev->next = iface->next;
+            iface->next = netif_list;
+            netif_list = iface;
+            break;
+        }
+    }
+}
+#endif
+
 /*
   main loop for PPP
  */
@@ -144,7 +231,8 @@ void AP_Networking_PPP::ppp_loop(void)
     }
 
     // ensure this thread owns the uart
-    uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, 0));
+    // use a larger buffer space for TX to allow for large downloads (eg. MAVFTP)
+    uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, 0), PPP_BUFSIZE_RX, PPP_BUFSIZE_TX);
     uart->set_unbuffered_writes(true);
 
     while (true) {
@@ -186,19 +274,12 @@ void AP_Networking_PPP::ppp_loop(void)
         ppp_connect(ppp, 0);
 
         if (ppp_gateway) {
-            extern struct netif *netif_list;
             /*
               when we are setup as a PPP gateway we want the pppif to be
               first in the list so routing works if it is on the same
               subnet
             */
-            if (netif_list != nullptr &&
-                netif_list->next != nullptr &&
-                netif_list->next->next == pppif) {
-                netif_list->next->next = nullptr;
-                pppif->next = netif_list;
-                netif_list = pppif;
-            }
+            netif_promote(pppif);
         } else {
             netif_set_default(pppif);
         }
@@ -213,18 +294,69 @@ void AP_Networking_PPP::ppp_loop(void)
 
         need_restart = false;
 
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: connected");
+        uint32_t last_read_ms = AP_HAL::millis();
 
         while (!need_restart) {
+            const uint32_t now_ms = AP_HAL::millis();
             auto n = uart->read(buf, sizeof(buf));
             if (n > 0) {
                 LWIP_TCPIP_LOCK();
                 pppos_input(ppp, buf, n);
                 LWIP_TCPIP_UNLOCK();
+                if (ppp->if4_up) {
+                    // only consider the link active if IPv4 is up
+                    // so we will restart PPP negotiation if we
+                    // are out of sync with the other side
+                    last_read_ms = now_ms;
+                }
+#if PPP_LINK_TIMEOUT_MS
+            } else if (!frontend.option_is_set(AP_Networking::OPTION::PPP_TIMEOUT_DISABLE) &&
+                       now_ms - last_read_ms > PPP_LINK_TIMEOUT_MS) {
+                break;
+#endif
             } else {
                 hal.scheduler->delay_microseconds(200);
             }
+            if (ppp->err_code == PPPERR_PEERDEAD ||
+                ppp->phase == PPP_PHASE_TERMINATE) {
+                // reached LCP echo failure threshold LCP_MAXECHOFAILS
+                break;
+            }
+#if PPP_DEBUG_RX
+            auto pppos = (pppos_pcb *)ppp->link_ctx_cb;
+            for (uint32_t i = 0; i < n; i++) {
+                if (buf[i] == 0x7E && last_ppp_frame_size != 1) {
+                    // dump the packet
+                    if (pppos->bad_pkt) {
+                        printf("PPP: rx[%lu] %u\n", rx_index, last_ppp_frame_size);
+                        for (uint32_t j = 0; j < last_ppp_frame_size; j++) {
+                            printf("0x%02X,", rx_bytes[j]);
+                        }
+                        printf("\n");
+                        hal.scheduler->delay(1);
+                    }
+                    rx_index++;
+                    last_ppp_frame_size = 0;
+                }
+                rx_bytes[last_ppp_frame_size++] = buf[i];
+            }
+#endif
+
+            // allow the echo timeout to be disabled
+            if (frontend.option_is_set(AP_Networking::OPTION::PPP_ECHO_LIMIT_DISABLE)) {
+                ppp->settings.lcp_echo_fails = 0;
+            } else {
+                ppp->settings.lcp_echo_fails = LCP_MAXECHOFAILS;
+            }
         }
+
+        // close with carrier loss, tear down the interface and
+        // re-create to restart link
+        LWIP_TCPIP_LOCK();
+        ppp->phase = 0;
+        ppp_close(ppp, 1);
+        LWIP_TCPIP_UNLOCK();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP: reconnecting");
     }
 }
 

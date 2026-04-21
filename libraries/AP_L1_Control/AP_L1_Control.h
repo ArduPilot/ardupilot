@@ -14,7 +14,6 @@
  */
 
 #include <AP_Math/AP_Math.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_TECS/AP_TECS.h>
@@ -124,6 +123,14 @@ private:
     bool _data_is_stale = true;
 
     AP_Float _loiter_bank_limit;
+
+    // remember reached_loiter_target decision
+    struct {
+        uint32_t reached_loiter_target_ms;
+        float radius;
+        int8_t direction;
+        Location center_WP;
+    } _last_loiter;
 
     bool _reverse = false;
     float get_yaw() const;

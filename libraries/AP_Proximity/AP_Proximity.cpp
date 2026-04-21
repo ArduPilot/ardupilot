@@ -117,6 +117,16 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[3], "4_",  29, AP_Proximity, backend_var_info[3]),
 #endif
 
+#if PROXIMITY_MAX_INSTANCES > 4
+    // @Group: 5
+    // @Path: AP_Proximity_Params.cpp
+    AP_SUBGROUPINFO(params[4], "5", 30, AP_Proximity, AP_Proximity_Params),
+
+    // @Group: 5_
+    // @Path: AP_Proximity_MR72_CAN.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_",  31, AP_Proximity, backend_var_info[4]),
+#endif
+
     AP_GROUPEND
 };
 
@@ -153,7 +163,7 @@ void AP_Proximity::init()
         case Type::RPLidarA2:
             if (AP_Proximity_RPLidarA2::detect(serial_instance)) {
                 state[instance].instance = instance;
-                drivers[instance] = new AP_Proximity_RPLidarA2(*this, state[instance], params[instance], serial_instance);
+                drivers[instance] = NEW_NOTHROW AP_Proximity_RPLidarA2(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
@@ -161,14 +171,14 @@ void AP_Proximity::init()
 #if AP_PROXIMITY_MAV_ENABLED
         case Type::MAV:
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_MAV(*this, state[instance], params[instance]);
+            drivers[instance] = NEW_NOTHROW AP_Proximity_MAV(*this, state[instance], params[instance]);
             break;
 #endif
 #if AP_PROXIMITY_TERARANGERTOWER_ENABLED
         case Type::TRTOWER:
             if (AP_Proximity_TeraRangerTower::detect(serial_instance)) {
                 state[instance].instance = instance;
-                drivers[instance] = new AP_Proximity_TeraRangerTower(*this, state[instance], params[instance], serial_instance);
+                drivers[instance] = NEW_NOTHROW AP_Proximity_TeraRangerTower(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
@@ -177,7 +187,7 @@ void AP_Proximity::init()
         case Type::TRTOWEREVO:
             if (AP_Proximity_TeraRangerTowerEvo::detect(serial_instance)) {
                 state[instance].instance = instance;
-                drivers[instance] = new AP_Proximity_TeraRangerTowerEvo(*this, state[instance], params[instance], serial_instance);
+                drivers[instance] = NEW_NOTHROW AP_Proximity_TeraRangerTowerEvo(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
@@ -185,14 +195,14 @@ void AP_Proximity::init()
 #if AP_PROXIMITY_RANGEFINDER_ENABLED
         case Type::RangeFinder:
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_RangeFinder(*this, state[instance], params[instance]);
+            drivers[instance] = NEW_NOTHROW AP_Proximity_RangeFinder(*this, state[instance], params[instance]);
             break;
 #endif
 #if AP_PROXIMITY_LIGHTWARE_SF40C_ENABLED
         case Type::SF40C:
             if (AP_Proximity_LightWareSF40C::detect(serial_instance)) {
                 state[instance].instance = instance;
-                drivers[instance] = new AP_Proximity_LightWareSF40C(*this, state[instance], params[instance], serial_instance);
+                drivers[instance] = NEW_NOTHROW AP_Proximity_LightWareSF40C(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
@@ -201,7 +211,7 @@ void AP_Proximity::init()
         case Type::SF45B:
             if (AP_Proximity_LightWareSF45B::detect(serial_instance)) {
                 state[instance].instance = instance;
-                drivers[instance] = new AP_Proximity_LightWareSF45B(*this, state[instance], params[instance], serial_instance);
+                drivers[instance] = NEW_NOTHROW AP_Proximity_LightWareSF45B(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
@@ -210,7 +220,7 @@ void AP_Proximity::init()
         case Type::CYGBOT_D1:
         if (AP_Proximity_Cygbot_D1::detect(serial_instance)) {
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_Cygbot_D1(*this, state[instance], params[instance], serial_instance);
+            drivers[instance] = NEW_NOTHROW AP_Proximity_Cygbot_D1(*this, state[instance], params[instance], serial_instance);
             serial_instance++;
         }
             break;
@@ -223,32 +233,37 @@ void AP_Proximity::init()
 #if AP_PROXIMITY_SCRIPTING_ENABLED
         case Type::Scripting:
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_Scripting(*this, state[instance], params[instance]);
+            drivers[instance] = NEW_NOTHROW AP_Proximity_Scripting(*this, state[instance], params[instance]);
         break;
 #endif
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_MR72_ENABLED
         case Type::MR72:
+#endif  // AP_PROXIMITY_MR72_ENABLED
+#if AP_PROXIMITY_HEXSOONRADAR_ENABLED
+        case Type::Hexsoon_Radar:
+#endif  // AP_PROXIMITY_HEXSOONRADAR_ENABLED
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_MR72_CAN(*this, state[instance], params[instance]);
+            drivers[instance] = NEW_NOTHROW AP_Proximity_MR72_CAN(*this, state[instance], params[instance]);
             break;
-# endif
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_SITL_ENABLED
         case Type::SITL:
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_SITL(*this, state[instance], params[instance]);
+            drivers[instance] = NEW_NOTHROW AP_Proximity_SITL(*this, state[instance], params[instance]);
             break;
 #endif
 #if AP_PROXIMITY_AIRSIMSITL_ENABLED
         case Type::AirSimSITL:
             state[instance].instance = instance;
-            drivers[instance] = new AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
+            drivers[instance] = NEW_NOTHROW AP_Proximity_AirSimSITL(*this, state[instance], params[instance]);
             break;
 #endif
 #if AP_PROXIMITY_LD06_ENABLED
         case Type::LD06:
             if (AP_Proximity_LD06::detect(serial_instance)) {
                 state[instance].instance = instance;
-                drivers[instance] = new AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
+                drivers[instance] = NEW_NOTHROW AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;

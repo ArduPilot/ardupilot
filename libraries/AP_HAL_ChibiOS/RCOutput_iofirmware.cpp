@@ -135,6 +135,22 @@ void RCOutput::rcout_thread() {
     }
 }
 
+#if defined(STM32F1)
+void RCOutput::bdshot_disable_pwm_f1(pwm_group& group)
+{
+    stm32_tim_t* TIMx = group.pwm_drv->tim;
+    // pwmStop sets these
+    TIMx->CR1  = 0;                    /* Timer disabled.              */
+    TIMx->DIER = 0;                    /* All IRQs disabled.           */
+    TIMx->SR   = 0;                    /* Clear eventual pending IRQs. */
+    TIMx->CNT  = 0;
+    TIMx->CCR[0] = 0;                  /* Comparator 1 disabled.       */
+    TIMx->CCR[1] = 0;                  /* Comparator 2 disabled.       */
+    TIMx->CCR[2] = 0;                  /* Comparator 3 disabled.       */
+    TIMx->CCR[3] = 0;                  /* Comparator 4 disabled.       */
+}
+#endif
+
 #if defined(HAL_WITH_BIDIR_DSHOT) && defined(STM32F1)
 // reset pwm driver to output mode without resetting the clock or the peripheral
 // the code here is the equivalent of pwmStart()/pwmStop()
@@ -143,15 +159,8 @@ void RCOutput::bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel)
     osalSysLock();
 
     stm32_tim_t* TIMx = group.pwm_drv->tim;
-    // pwmStop sets these
-    TIMx->CR1  = 0;                    /* Timer disabled.              */
-    TIMx->DIER = 0;                    /* All IRQs disabled.           */
-    TIMx->SR   = 0;                    /* Clear eventual pending IRQs. */
-    TIMx->CNT = 0;
-    TIMx->CCR[0] = 0;                  /* Comparator 1 disabled.       */
-    TIMx->CCR[1] = 0;                  /* Comparator 2 disabled.       */
-    TIMx->CCR[2] = 0;                  /* Comparator 3 disabled.       */
-    TIMx->CCR[3] = 0;                  /* Comparator 4 disabled.       */
+    bdshot_disable_pwm_f1(group);
+
     // at the point this is called we will have done input capture on two CC channels
     // we need to switch those channels back to output and the default settings
     // all other channels will not have been modified
@@ -195,7 +204,7 @@ void RCOutput::bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel)
     // we need to switch every output on the same input channel to avoid
     // spurious line changes
     for (uint8_t i = 0; i<4; i++) {
-        if (group.chan[i] == CHAN_DISABLED) {
+        if (!group.is_chan_enabled(i)) {
             continue;
         }
         if (group.bdshot.telem_tim_ch[telem_channel] == group.bdshot.telem_tim_ch[i]) {
@@ -241,7 +250,7 @@ void RCOutput::bdshot_receive_pulses_DMAR_f1(pwm_group* group)
     // we need to switch every input on the same input channel to allow
     // the ESCs to drive the lines
     for (uint8_t i = 0; i<4; i++) {
-        if (group->chan[i] == CHAN_DISABLED) {
+        if (!group->is_chan_enabled(i)) {
             continue;
         }
         if (group->bdshot.telem_tim_ch[curr_ch] == group->bdshot.telem_tim_ch[i]) {

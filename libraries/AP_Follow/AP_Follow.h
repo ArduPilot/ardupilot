@@ -118,6 +118,9 @@ public:
 private:
     static AP_Follow *_singleton;
 
+    // returns true if we should extract information from msg
+    bool should_handle_message(const mavlink_message_t &msg) const;
+
     // get velocity estimate in m/s in NED frame using dt since last update
     bool get_velocity_ned(Vector3f &vel_ned, float dt) const;
 
@@ -132,6 +135,13 @@ private:
 
     // set recorded distance and bearing to target to zero
     void clear_dist_and_bearing_to_target();
+
+    // handle various mavlink messages supplying position:
+    bool handle_global_position_int_message(const mavlink_message_t &msg);
+    bool handle_follow_target_message(const mavlink_message_t &msg);
+
+    // write out an onboard-log message to help diagnose follow problems:
+    void Log_Write_FOLL();
 
     // parameters
     AP_Int8     _enabled;           // 1 if this subsystem is enabled

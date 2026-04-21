@@ -27,6 +27,7 @@
 #include <AP_Winch/AP_Winch_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Arming/AP_Arming_config.h>
+#include <AP_Airspeed/AP_Airspeed_config.h>
 
 #include "ap_message.h"
 
@@ -266,6 +267,9 @@ public:
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
+    // cap the MAVLink message rate. It can't be greater than 0.8 * SCHED_LOOP_RATE
+    uint16_t cap_message_interval(uint16_t interval_ms) const;
+
     virtual uint8_t sysid_my_gcs() const = 0;
     virtual bool sysid_enforce() const { return false; }
 
@@ -354,11 +358,18 @@ public:
     void send_rc_channels() const;
     void send_rc_channels_raw() const;
     void send_raw_imu();
+    void send_highres_imu();
 
     void send_scaled_pressure_instance(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_boot_ms, float press_abs, float press_diff, int16_t temperature, int16_t temperature_press_diff));
     void send_scaled_pressure();
     void send_scaled_pressure2();
     virtual void send_scaled_pressure3(); // allow sub to override this
+#if AP_AIRSPEED_ENABLED
+    // Send per instance airspeed message
+    // last index is used to rotate through sensors
+    void send_airspeed();
+    uint8_t last_airspeed_idx;
+#endif
     void send_simstate() const;
     void send_sim_state() const;
     void send_ahrs();
@@ -392,7 +403,6 @@ public:
 #if AP_WINCH_ENABLED
     virtual void send_winch_status() const {};
 #endif
-    void send_water_depth() const;
     int8_t battery_remaining_pct(const uint8_t instance) const;
 
 #if HAL_HIGH_LATENCY2_ENABLED
@@ -524,6 +534,7 @@ protected:
 
     virtual MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     MAV_RESULT handle_command_int_external_position_estimate(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
 
 #if AP_HOME_ENABLED
     MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
@@ -731,7 +742,7 @@ protected:
 #endif // HAL_HIGH_LATENCY2_ENABLED
     
     static constexpr const float magic_force_arm_value = 2989.0f;
-    static constexpr const float magic_force_disarm_value = 21196.0f;
+    static constexpr const float magic_force_arm_disarm_value = 21196.0f;
 
     void manual_override(class RC_Channel *c, int16_t value_in, uint16_t offset, float scaler, const uint32_t tnow, bool reversed = false);
 
@@ -1027,7 +1038,7 @@ private:
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) { return false; };
-    virtual void handle_change_alt_request(AP_Mission::Mission_Command &cmd) {};
+    virtual void handle_change_alt_request(Location &location) {};
     void handle_common_mission_message(const mavlink_message_t &msg);
 
     virtual void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) {};
@@ -1270,11 +1281,17 @@ public:
 
     virtual uint8_t sysid_this_mav() const = 0;
 
+#if AP_SCRIPTING_ENABLED
+    // lua access to command_int
+    MAV_RESULT lua_command_int_packet(const mavlink_command_int_t &packet);
+#endif
+
 protected:
 
     virtual GCS_MAVLINK *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                  AP_HAL::UARTDriver &uart) = 0;
 
+    HAL_Semaphore control_sensors_sem; // protects the three bitmasks
     uint32_t control_sensors_present;
     uint32_t control_sensors_enabled;
     uint32_t control_sensors_health;
@@ -1333,6 +1350,8 @@ private:
         uint32_t last_port1_data_ms;
         uint32_t baud1;
         uint32_t baud2;
+        uint8_t parity1;
+        uint8_t parity2;
         uint8_t timeout_s;
         HAL_Semaphore sem;
     } _passthru;
@@ -1399,4 +1418,3 @@ enum MAV_SEVERITY
 #define AP_HAVE_GCS_SEND_TEXT 0
 
 #endif // HAL_GCS_ENABLED
-

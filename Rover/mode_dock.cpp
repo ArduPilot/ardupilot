@@ -1,6 +1,6 @@
 #include "Rover.h"
 
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
 
 const AP_Param::GroupInfo ModeDock::var_info[] = {
     // @Param: _SPEED

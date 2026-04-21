@@ -186,8 +186,8 @@ static void test_one_filter(float base_freq, float attenuation_dB,
         double last_in;
         double last_out;
         double v_max;
-        uint32_t last_crossing;
-        uint32_t total_lag_samples;
+        double last_crossing;
+        double total_lag_samples;
         uint32_t lag_count;
         float get_lag_degrees(const float freq) const {
             const float lag_avg = total_lag_samples/float(lag_count);
@@ -218,10 +218,16 @@ static void test_one_filter(float base_freq, float attenuation_dB,
             integral.v_max = MAX(integral.v_max, v);
         }
         if (sample >= 0 && integral.last_in < 0) {
-            integral.last_crossing = s;
+            // Always interpolating the value at 0.0
+            // crossing happened some fraction before the current sample
+            // result in the range -1.0 to 0.0
+            // linear interpolation: ((0.0 - last_in) / (sample - last_in)) - 1.0 is the same as:
+            // sample / (last_in - sample)
+            integral.last_crossing = (double)s + (sample / (integral.last_in - sample));
         }
-        if (v >= 0 && integral.last_out < 0 && integral.last_crossing != 0) {
-            integral.total_lag_samples += s - integral.last_crossing;
+        if (v >= 0 && integral.last_out < 0 && integral.last_crossing > 0) {
+            const double crossing = (double)s + (v / (integral.last_out - v));
+            integral.total_lag_samples += crossing - integral.last_crossing;
             integral.lag_count++;
         }
         integral.last_in = sample;
@@ -321,6 +327,38 @@ TEST(NotchFilterTest, HarmonicNotchTest4)
                 attenuations[0], attenuations[1], attenuations[2],
                 attenuations[3], attenuations[4], attenuations[5],
                 attenuations[6]);
+    }
+    fclose(f);
+}
+
+/*
+  show phase lag versus attenuation
+ */
+TEST(NotchFilterTest, HarmonicNotchTest5)
+{
+    const float min_attenuation = 0;
+    const float max_attenuation = 50;
+    const uint16_t steps = 200;
+
+    const char *csv_file = "harmonicnotch_test5.csv";
+    FILE *f = fopen(csv_file, "w");
+    fprintf(f, "Attenuation(dB),Lag(10Hz),Lag(20Hz),Lag(30Hz),Lag(40Hz),Lag(50Hz),Lag(60Hz),Lag(70Hz)\n");
+
+    for (uint16_t i=0; i<steps; i++) {
+        const float test_freq[7] { 10, 20, 30, 40, 50, 60, 70 };
+        float phase_lags[7];
+        float attenuations[7];
+        const float test_attenuation = min_attenuation + i*(max_attenuation-min_attenuation)/steps;
+        for (uint8_t F = 0; F < ARRAY_SIZE(test_freq); F++) {
+            test_one_filter(60, test_attenuation, 60, test_freq[F], 50, 1, 0,
+                            phase_lags[F],
+                            attenuations[F]);
+        }
+        fprintf(f, "%.3f,%f,%f,%f,%f,%f,%f,%f\n",
+                test_attenuation,
+                phase_lags[0], phase_lags[1], phase_lags[2],
+                phase_lags[3], phase_lags[4], phase_lags[5],
+                phase_lags[6]);
     }
     fclose(f);
 }

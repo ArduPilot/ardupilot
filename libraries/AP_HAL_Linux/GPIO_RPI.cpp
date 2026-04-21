@@ -30,11 +30,11 @@ void GPIO_RPI::init()
         case LINUX_BOARD_TYPE::RPI_ZERO_1:
         case LINUX_BOARD_TYPE::RPI_2_3_ZERO2:
         case LINUX_BOARD_TYPE::RPI_4:
-            gpioDriver = new GPIO_RPI_BCM();
+            gpioDriver = NEW_NOTHROW GPIO_RPI_BCM();
             gpioDriver->init();
             break;
         case LINUX_BOARD_TYPE::RPI_5:
-            gpioDriver = new GPIO_RPI_RP1();
+            gpioDriver = NEW_NOTHROW GPIO_RPI_RP1();
             gpioDriver->init();
             break;
         default:
@@ -71,7 +71,7 @@ void GPIO_RPI::toggle(uint8_t pin)
 /* Alternative interface: */
 AP_HAL::DigitalSource* GPIO_RPI::channel(uint16_t n)
 {
-    return new DigitalSource(n);
+    return NEW_NOTHROW DigitalSource(n);
 }
 
 bool GPIO_RPI::usb_connected(void)

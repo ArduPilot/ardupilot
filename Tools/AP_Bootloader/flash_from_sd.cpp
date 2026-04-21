@@ -30,7 +30,7 @@ static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOA
  * @param[in] a Hexadecimal character 
  * @return  Returns a binary value
  */
-int16_t char_to_hex(char a)
+uint8_t char_to_hex(char a)
 {
     if (a >= 'A' && a <= 'F')
         return a - 'A' + 10;
@@ -342,7 +342,7 @@ bool flash_from_sd()
         return false;
     }
 
-    verifier = new ABinVerifier{verify_abin_path};
+    verifier = NEW_NOTHROW ABinVerifier{verify_abin_path};
     if (!verifier->run()) {
         goto out;
     }
@@ -354,7 +354,7 @@ bool flash_from_sd()
         return false;
     }
 
-    flasher = new ABinFlasher{flash_abin_path};
+    flasher = NEW_NOTHROW ABinFlasher{flash_abin_path};
     if (!flasher->run()) {
         goto out;
     }

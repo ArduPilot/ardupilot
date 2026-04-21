@@ -78,6 +78,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_gcs, "FS_GCS_ENABLE", FS_GCS_DISARM),
 
+    // @Param: FS_GCS_TIMEOUT
+    // @DisplayName: GCS failsafe timeout
+    // @Description: Timeout before triggering the GCS failsafe
+    // @Units: s
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(failsafe_gcs_timeout, "FS_GCS_TIMEOUT", FS_GCS_TIMEOUT_S),
+
     // @Param: FS_LEAK_ENABLE
     // @DisplayName: Leak Failsafe Enable
     // @Description: Controls what action to take if a leak is detected.
@@ -153,7 +161,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Pilot maximum vertical ascending speed
     // @Description: The maximum vertical ascending velocity the pilot may request in cm/s
     // @Units: cm/s
-    // @Range: 50 500
+    // @Range: 20 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_speed_up,     "PILOT_SPEED_UP",   PILOT_VELZ_MAX),
@@ -162,7 +170,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @DisplayName: Pilot maximum vertical descending speed
     // @Description: The maximum vertical descending velocity the pilot may request in cm/s
     // @Units: cm/s
-    // @Range: 50 500
+    // @Range: 20 500
     // @Increment: 10
     // @User: Standard
     GSCALAR(pilot_speed_dn,     "PILOT_SPEED_DN",   0),
@@ -484,7 +492,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
     GOBJECT(loiter_nav, "LOIT_", AC_Loiter),
 
-#if CIRCLE_NAV_ENABLED == ENABLED
+#if CIRCLE_NAV_ENABLED
     // @Group: CIRCLE_
     // @Path: ../libraries/AC_WPNav/AC_Circle.cpp
     GOBJECT(circle_nav, "CIRCLE_",  AC_Circle),
@@ -590,7 +598,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
-#if AVOIDANCE_ENABLED == ENABLED
+#if AVOIDANCE_ENABLED
     // @Group: AVOID_
     // @Path: ../libraries/AC_Avoidance/AC_Avoid.cpp
     GOBJECT(avoid,      "AVOID_",   AC_Avoid),
@@ -606,7 +614,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
     GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
-#if RCMAP_ENABLED == ENABLED
+#if RCMAP_ENABLED
     // @Group: RCMAP_
     // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
     GOBJECT(rcmap, "RCMAP_",        RCMapper),
@@ -628,7 +636,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Mission/AP_Mission.cpp
     GOBJECT(mission, "MIS_",       AP_Mission),
 
-#if RANGEFINDER_ENABLED == ENABLED
+#if AP_RANGEFINDER_ENABLED
     // @Group: RNGFND
     // @Path: ../libraries/AP_RangeFinder/AP_RangeFinder.cpp
     GOBJECT(rangefinder,   "RNGFND", RangeFinder),
@@ -706,7 +714,26 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // 18 was scripting
 
-    // 19 was airspeed
+    // @Param: ORIGIN_LAT
+    // @DisplayName: Backup latitude for EKF origin
+    // @Description:  Backup EKF origin latitude used when not using a positioning system.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_LAT", 19, ParametersG2, backup_origin_lat, 0),
+
+    // @Param: ORIGIN_LON
+    // @DisplayName: Backup longitude for EKF origin
+    // @Description:  Backup EKF origin longitude used when not using a positioning system.
+    // @Units: deg
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_LON", 20, ParametersG2, backup_origin_lon, 0),
+
+    // @Param: ORIGIN_ALT
+    // @DisplayName: Backup altitude (MSL) for EKF origin
+    // @Description:  Backup EKF origin altitude (MSL) used when not using a positioning system.
+    // @Units: m
+    // @User: Standard
+    AP_GROUPINFO("ORIGIN_ALT", 21, ParametersG2, backup_origin_alt, 0),
 
     AP_GROUPEND
 };

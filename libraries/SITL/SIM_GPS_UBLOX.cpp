@@ -195,8 +195,8 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pos.latitude  = d->latitude * 1.0e7;
     pos.altitude_ellipsoid = d->altitude * 1000.0f;
     pos.altitude_msl = d->altitude * 1000.0f;
-    pos.horizontal_accuracy = _sitl->gps_accuracy[instance]*1000;
-    pos.vertical_accuracy = _sitl->gps_accuracy[instance]*1000;
+    pos.horizontal_accuracy = d->horizontal_acc*1000;
+    pos.vertical_accuracy = d->vertical_acc*1000;
 
     status.time = gps_tow.ms;
     status.fix_type = d->have_lock?3:0;
@@ -216,13 +216,13 @@ void GPS_UBlox::publish(const GPS_Data *d)
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
     }
-    velned.speed_accuracy = _sitl->gps_vel_err[instance].get().xy().length() * 100;  // m/s -> cm/s
+    velned.speed_accuracy = d->speed_acc * 100;  // m/s -> cm/s
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
     sol.fix_type = d->have_lock?3:0;
     sol.fix_status = 221;
-    sol.satellites = d->have_lock ? _sitl->gps_numsats[instance] : 3;
+    sol.satellites = d->have_lock ? d->num_sats : 3;
     sol.time = gps_tow.ms;
     sol.week = gps_tow.week;
 
@@ -248,13 +248,13 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.fix_type = d->have_lock? 0x3 : 0;
     pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
     pvt.flags2 =0;
-    pvt.num_sv = d->have_lock ? _sitl->gps_numsats[instance] : 3;
+    pvt.num_sv = d->have_lock ? d->num_sats : 3;
     pvt.lon = d->longitude * 1.0e7;
     pvt.lat  = d->latitude * 1.0e7;
     pvt.height = d->altitude * 1000.0f;
     pvt.h_msl = d->altitude * 1000.0f;
-    pvt.h_acc = _sitl->gps_accuracy[instance] * 1000;
-    pvt.v_acc = _sitl->gps_accuracy[instance] * 1000;
+    pvt.h_acc = d->horizontal_acc * 1000;
+    pvt.v_acc = d->vertical_acc * 1000;
     pvt.velN = 1000.0f * d->speedN;
     pvt.velE = 1000.0f * d->speedE;
     pvt.velD = 1000.0f * d->speedD;
@@ -309,7 +309,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
         for (uint8_t i = 0; i < SV_COUNT; i++) {
             svinfo.sv[i].chn = i;
             svinfo.sv[i].svid = i;
-            svinfo.sv[i].flags = (i < _sitl->gps_numsats[instance]) ? 0x7 : 0x6; // sv used, diff correction data, orbit information
+            svinfo.sv[i].flags = (i < d->num_sats) ? 0x7 : 0x6; // sv used, diff correction data, orbit information
             svinfo.sv[i].quality = 7; // code and carrier lock and time synchronized
             svinfo.sv[i].cno = MAX(20, 30 - i);
             svinfo.sv[i].elev = MAX(30, 90 - i);

@@ -28,3 +28,7 @@ define AP_TRAMP_ENABLED AP_VIDEOTX_ENABLED && OSD_ENABLED
 
 # force CRSF Telem text support even in face of normal 1MB limit:
 define HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED OSD_ENABLED && OSD_PARAM_ENABLED && HAL_CRSF_TELEM_ENABLED
+
+# disable SMBUS battery monitors to save flash
+undef AP_BATTERY_SMBUS_ENABLED
+define AP_BATTERY_SMBUS_ENABLED 0

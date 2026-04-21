@@ -349,7 +349,7 @@ void AP_InertialSensor_TCal::update_accel_learning(const Vector3f &accel, float 
         return;
     }
     if (learn == nullptr && hal.scheduler->is_system_initialized()) {
-        learn = new Learn(*this, temperature);
+        learn = NEW_NOTHROW Learn(*this, temperature);
         if (learn) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "TCAL[%u]: started calibration t=%.1fC tmax=%.1fC",
                           instance()+1,
@@ -526,6 +526,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
             str.printf("INS%u_ACCOFFS_Z=%f\n", imu, aoff.z);
             str.printf("INS%u_ACCSCAL_X=%f\n", imu, ascl.x);
             str.printf("INS%u_ACCSCAL_Y=%f\n", imu, ascl.y);
+            str.printf("INS%u_ACCSCAL_Z=%f\n", imu, ascl.z);
             str.printf("INS%u_ACC_CALTEMP=%.2f\n", imu, params[i].caltemp_accel.get());
         }
 #endif

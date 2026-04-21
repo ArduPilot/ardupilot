@@ -2,7 +2,7 @@
 -- this script is intended to help vehicles automatically switch between ExternalNav and optical flow
 --
 -- configure a downward facing lidar with a range of at least 5m
--- setup RCx_OPTION = 90 (EKF Pos Source) to select the source (low=external nav, middle=opticalflow, high=Not Used)
+-- setup RCx_OPTION = 90 (EKF Source Set) to select the source (low=external nav, middle=opticalflow, high=Not Used)
 -- setup RCx_OPTION = 300 (Scripting1).  When this switch is pulled high, the source will be automatically selected
 -- SRC_ENABLE = 1 (enable scripting)
 -- setup EK3_SRCn_ parameters so that ExternalNav is the primary source, opticalflow is secondary
@@ -135,7 +135,7 @@ end
 function update()
 
   -- check for EKF Source Select switch position change
-  local rc_ekfsrc_pos = rc:get_aux_cached(90)  -- RCx_OPTION = 90 (EKF Pos Source)
+  local rc_ekfsrc_pos = rc:get_aux_cached(90)  -- RCx_OPTION = 90 (EKF Source Set)
   if rc_ekfsrc_pos == nil then
     rc_ekfsrc_pos = 0
   end

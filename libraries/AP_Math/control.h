@@ -4,10 +4,6 @@
 #include "vector2.h"
 #include "vector3.h"
 
-#ifndef HAL_WITH_POSTYPE_DOUBLE
-#define HAL_WITH_POSTYPE_DOUBLE BOARD_FLASH_SIZE > 1024
-#endif
-
 #if HAL_WITH_POSTYPE_DOUBLE
 typedef double postype_t;
 typedef Vector2d Vector2p;

@@ -6,6 +6,7 @@
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 // Write a Camera packet.  Also writes a Mount packet if available
 void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestamp_us)

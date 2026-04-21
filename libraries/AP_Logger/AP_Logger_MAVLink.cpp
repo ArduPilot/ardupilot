@@ -136,11 +136,6 @@ bool AP_Logger_MAVLink::_WritePrioritisedBlock(const void *pBuffer, uint16_t siz
         return false;
     }
 
-    if (! WriteBlockCheckStartupMessages()) {
-        semaphore.give();
-        return false;
-    }
-
     if (bufferspace_available() < size) {
         if (_startup_messagewriter->finished()) {
             // do not count the startup packets as being dropped...
@@ -545,7 +540,7 @@ void AP_Logger_MAVLink::periodic_1Hz()
          _front._params.disarm_ratemax > 0 ||
          _front._log_pause)) {
         // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
-        rate_limiter = new AP_Logger_RateLimiter(_front, _front._params.mav_ratemax, _front._params.disarm_ratemax);
+        rate_limiter = NEW_NOTHROW AP_Logger_RateLimiter(_front, _front._params.mav_ratemax, _front._params.disarm_ratemax);
     }
 
     if (_sending_to_client &&

@@ -105,8 +105,8 @@ SECTIONS
         . = ALIGN(4);
         __ram3_init_text__ = LOADADDR(.fastramfunc);
         __ram3_init__ = .;
-        /* ChibiOS won't boot unless these are excluded */
-        EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o *board.o)
+        /* ChibiOS won't boot unless some of these are excluded */
+        EXCLUDE_FILE (*vectors.o *crt0_v7m.o *crt1.o *board.o *chprintf.o)
         /* performance critical sections of ChibiOS */
         *libch.a:ch*.*(.text*)
         *libch.a:nvic.*(.text*)

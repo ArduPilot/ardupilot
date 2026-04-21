@@ -41,11 +41,6 @@ bool ModeLand::init(bool ignore_checks)
     copter.landinggear.deploy_for_landing();
 #endif
 
-#if AP_FENCE_ENABLED
-    // disable the fence on landing
-    copter.fence.auto_disable_fence_for_landing();
-#endif
-
 #if AC_PRECLAND_ENABLED
     // initialise precland state machine
     copter.precland_statemachine.init();

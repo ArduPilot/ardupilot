@@ -1,12 +1,12 @@
 # ArduPilot ROS 2 packages
 
- This directory contains ROS 2 packages and configuration files for running
- ROS 2 processes and nodes that communicate with the ArduPilot DDS client
- library using the microROS agent. It contains the following packages:
+This directory contains ROS 2 packages and configuration files for running
+ROS 2 processes and nodes that communicate with the ArduPilot DDS client
+library using the microROS agent. It contains the following packages:
  
 #### `ardupilot_sitl`
 
-A `colcon` package for building and running ArduPilot SITL using the ROS 2 CLI.
+This is a `colcon` package for building and running ArduPilot SITL using the ROS 2 CLI.
 For example `ardurover` SITL may be launched with:
 
 ```bash
@@ -21,7 +21,15 @@ For example, MAVProxy can be launched, and you can enable the `console` and `map
 ros2 launch ardupilot_sitl sitl_mavproxy.launch.py map:=True console:=True 
 ```
 
-#### `ardupilot_dds_test`
+ArduPilot SITL does not yet expose all arguments from the underlying binary.
+See [#27714](https://github.com/ArduPilot/ardupilot/issues/27714) for context.
+
+To see all current options, use the `-s` argument:
+```bash
+ros2 launch ardupilot_sitl sitl.launch.py -s
+```
+
+#### `ardupilot_dds_tests`
 
 A `colcon` package for testing communication between `micro_ros_agent` and the
 ArduPilot `AP_DDS` client library.
@@ -38,7 +46,7 @@ The packages depend on:
 #### 1. Create a workspace folder
 
 ```bash
-mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
 The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/humble/Tutorials/Workspace/Creating-A-Workspace.html).
@@ -54,7 +62,7 @@ vcs import --recursive < ros2.repos
 #### 3. Update dependencies
 
 ```bash
-cd ~/ros_ws
+cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
 sudo apt update
 rosdep update
@@ -72,7 +80,7 @@ ROS_DISTRO=humble
 ```
 
 ```bash
-cd ~/ros_ws
+cd ~/ros2_ws
 colcon build --cmake-args -DBUILD_TESTING=ON
 ```
 
@@ -84,6 +92,11 @@ colcon test --packages-select ardupilot_dds_tests
 colcon test-result --all --verbose
 ```
 
+To debug a specific test, you can do the following:
+```
+colcon --log-level DEBUG test --packages-select ardupilot_dds_tests --event-handlers=console_direct+ --pytest-args -k test_dds_udp_geopose_msg_recv -s
+```
+
 ## Install macOS
 
 The install procedure on macOS is similar, except that all dependencies
@@ -92,7 +105,7 @@ must be built from source and additional compiler flags are needed.
 #### 1. Create a workspace folder
 
 ```bash
-mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
+mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
 #### 2. Get the `ros2_macos.repos` file
@@ -108,7 +121,7 @@ vcs import --recursive < ros2_macos.repos
 #### 3. Update dependencies
 
 ```bash
-cd ~/ros_ws
+cd ~/ros2_ws
 source /{path_to_your_ros_distro_workspace}/install/setup.zsh
 ```
 

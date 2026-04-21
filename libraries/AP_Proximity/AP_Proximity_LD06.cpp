@@ -33,15 +33,16 @@
 
 // Indices in data array where each value starts being recorded
 // See comment below about data payload for more info about formatting
-#define START_BEGIN_CHARACTER       0
 #define START_DATA_LENGTH           1
-#define START_RADAR_SPEED           2
 #define START_BEGIN_ANGLE           4
 #define START_PAYLOAD               6
 #define START_END_ANGLE             42
 #define START_CHECK_SUM             46
 #define MEASUREMENT_PAYLOAD_LENGTH  3
 #define PAYLOAD_COUNT               12
+
+// confidence for each measurement must be this value or higher
+#define CONFIDENCE_THRESHOLD 20
 
  /* ------------------------------------------
     Data Packet Structure:
@@ -92,36 +93,44 @@ void AP_Proximity_LD06::get_readings()
     // Loops through all bytes that were received
     while (nbytes-- > 0) {
 
-        // Gets and logs the current byte being read
-        const uint8_t c = _uart->read();
+        uint8_t c;
+        if (!_uart->read(c)) {
+            break;
+        }
 
         // Stores the byte in an array if the byte is a start byte or we have already read a start byte
-        if (c == LD_START_CHAR || _response_data) {
-
-            // Sets to true if a start byte has been read, default false otherwise
-            _response_data = true;
-
+        if (c == LD_START_CHAR || _byte_count) {
             // Stores the next byte in an array
             _response[_byte_count] = c;
+            if (_byte_count < START_DATA_LENGTH) {
+                _byte_count++;
+                continue;
+            }
+
+            // total_packet_length = sizeof(header) + datalength + sizeof(footer):
+            const uint32_t total_packet_length = 6 + 3*(_response[START_DATA_LENGTH] & 0x1F) + 5;
+            if ((_response[START_DATA_LENGTH] & 0x1F) != PAYLOAD_COUNT ||
+                total_packet_length > ARRAY_SIZE(_response)) {
+                // invalid packet received; throw away all data and
+                // start again.
+                _byte_count = 0;
+                _uart->discard_input();
+                break;
+            }
+
             _byte_count++;
 
-            if (_byte_count == _response[START_DATA_LENGTH] + 3) {
-                
+            if (_byte_count == total_packet_length) {
+
                 const uint32_t current_ms = AP_HAL::millis();
 
-                // Stores the last distance taken, used to reduce number of readings taken
-                if (_last_distance_received_ms != current_ms) {
-                    _last_distance_received_ms =  current_ms;
-                }
+                _last_distance_received_ms =  current_ms;
 
                 // Updates the temporary boundary and passes off the completed data
                 parse_response_data();
-                _temp_boundary.update_3D_boundary(state.instance, frontend.boundary);
-                _temp_boundary.reset();
 
                 // Resets the bytes read and whether or not we are reading data to accept a new payload
                 _byte_count = 0;
-                _response_data = false;
             }
         }
     }
@@ -137,12 +146,6 @@ void AP_Proximity_LD06::parse_response_data()
     // Second byte in array stores length of data - not used but stored for debugging
     // const uint8_t data_length = _response[START_DATA_LENGTH];
 
-    // Respective bits store the radar speed, start/end angles
-    // Use bitwise operations to correctly obtain correct angles
-    // Divide angles by 100 as per manual
-    const float start_angle = float(UINT16_VALUE(_response[START_BEGIN_ANGLE + 1], _response[START_BEGIN_ANGLE])) * 0.01;
-    const float end_angle = float(UINT16_VALUE(_response[START_END_ANGLE + 1], _response[START_END_ANGLE])) * 0.01;
-
     // Verify the checksum that is stored in the last element of the response array
     // Return if checksum is incorrect - i.e. bad data, bad readings, etc.
     const uint8_t check_sum = _response[START_CHECK_SUM];
@@ -150,49 +153,75 @@ void AP_Proximity_LD06::parse_response_data()
         return;
     }
 
-    // Calculates the angle that this point was sampled at
-    float sampled_counts = 0;
-    const float angle_step = (end_angle - start_angle) /  (PAYLOAD_COUNT - 1);
-    float uncorrected_angle = start_angle + (end_angle - start_angle) * 0.5;
+    // Respective bits store the radar speed, start/end angles
+    // Use bitwise operations to correctly obtain correct angles
+    // Divide angles by 100 as per manual
+    const float start_angle = float(UINT16_VALUE(_response[START_BEGIN_ANGLE + 1], _response[START_BEGIN_ANGLE])) * 0.01;
+    const float end_angle = float(UINT16_VALUE(_response[START_END_ANGLE + 1], _response[START_END_ANGLE])) * 0.01;
 
-    // Handles the case that the angles read went from 360 to 0 (jumped)
-    if (angle_step < 0) {
-        uncorrected_angle = wrap_360(start_angle + (end_angle + 360 - start_angle) * 0.5);
+    float angle_step;
+    if (start_angle < end_angle) {
+        angle_step = (end_angle - start_angle) / (PAYLOAD_COUNT - 1);
+    } else {
+        angle_step = (end_angle + 360 - start_angle) / (PAYLOAD_COUNT - 1);
     }
-
-    // Takes the angle in the middle of the readings to be pushed to the database
-    const float push_angle = correct_angle_for_orientation(uncorrected_angle);
-
-    float distance_avg = 0.0;
-
     // Each recording point is three bytes long, goes through all of that and updates database
     for (uint16_t i = START_PAYLOAD; i < START_PAYLOAD + MEASUREMENT_PAYLOAD_LENGTH * PAYLOAD_COUNT; i += MEASUREMENT_PAYLOAD_LENGTH) {
 
         // Gets the distance recorded and converts to meters
-        const float distance_meas = UINT16_VALUE(_response[i + 1], _response[i]) * 0.001;
+        const float angle_deg = correct_angle_for_orientation(start_angle + angle_step * (i / MEASUREMENT_PAYLOAD_LENGTH));
+        const float distance_m = _dist_filt_mm.apply(UINT16_VALUE(_response[i + 1], _response[i])) * 0.001;
+        const float confidence = _response[i + 2];
 
-        // Validates data and checks if it should be included
-        if (distance_meas > distance_min() && distance_meas < distance_max()) {
-            if (ignore_reading(push_angle, distance_meas)) {
-                continue;
+        // ignore distance that are out-of-range or have low confidence
+        if (distance_m < distance_min() || distance_m > distance_max() || confidence < CONFIDENCE_THRESHOLD) {
+            continue;
+        }
+
+        // ignore distances that are out-of-range (based on user parameters) or within ignore areas
+        if (ignore_reading(angle_deg, distance_m)) {
+            continue;
+        }
+
+        // use the shortest distance within 2 degree sectors
+        const uint16_t a2d = (int)(angle_deg / 2.0) * 2;
+        if (_angle_2deg == a2d) {
+            if (distance_m < _dist_2deg_m) {
+                _dist_2deg_m = distance_m;
+            }
+        } else {
+            // new 2 degree sector, process the old one
+
+            // check if new sector is also a new face
+            const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face((float)_angle_2deg);
+            if (face != _last_face) {
+                // distance is for a new face, the previous one can be updated now
+                if (_last_distance_valid) {
+                    frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
+                } else {
+                    // reset distance from last face
+                    frontend.boundary.reset_face(face, state.instance);
+                }
+
+                // initialize the new face
+                _last_face = face;
+                _last_distance_valid = false;
             }
 
-            sampled_counts ++;
-            distance_avg += distance_meas;
+            // update face's shortest distance
+            if (!_last_distance_valid || (_dist_2deg_m < _last_distance_m)) {
+                _last_distance_m = _dist_2deg_m;
+                _last_distance_valid = true;
+                _last_angle_deg = (float)_angle_2deg;
+            }
+
+            // update OA database with the 2 degree sectors distance
+            database_push(_angle_2deg, _dist_2deg_m);
+
+            // advance to the next 2 degree sector
+            _angle_2deg = a2d;
+            _dist_2deg_m = distance_m;
         }
-    }
-
-    // Convert angle to appropriate face and adds to database
-    // Since angle increments are only about 3 degrees, ignore readings if there were only 1 or 2 measurements
-    //    (likely outliers) recorded in the range
-    if (sampled_counts > 2) {
-        // Gets the average distance read
-        distance_avg /= sampled_counts;
-
-        // Pushes the average distance and angle to the obstacle avoidance database
-        const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(push_angle);
-        _temp_boundary.add_distance(face, push_angle, distance_avg);
-        database_push(push_angle, distance_avg);
     }
 }
 #endif // AP_PROXIMITY_LD06_ENABLED

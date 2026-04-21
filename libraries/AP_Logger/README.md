@@ -23,6 +23,7 @@ and how the content should be interpreted.
 |M   | uint8_t flight mode|
 |q   | int64_t|
 |Q   | uint64_t|
+|g   | float16_t|
 
 Legacy field types - do not use.  These have been replaced by using  the base C type and an appropriate multiplier column entry.
 

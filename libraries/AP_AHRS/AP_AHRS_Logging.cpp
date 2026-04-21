@@ -48,20 +48,18 @@ void AP_AHRS::Write_AOA_SSA(void) const
     AP::logger().WriteBlock(&aoa_ssa, sizeof(aoa_ssa));
 }
 
-// Write an attitude packet
+// Write an attitude packet, targets in degrees
 void AP_AHRS::Write_Attitude(const Vector3f &targets) const
 {
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_us         : AP_HAL::micros64(),
-        control_roll    : (int16_t)targets.x,
-        roll            : (int16_t)roll_sensor,
-        control_pitch   : (int16_t)targets.y,
-        pitch           : (int16_t)pitch_sensor,
-        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
-        yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
-        error_rp        : (uint16_t)(get_error_rp() * 100),
-        error_yaw       : (uint16_t)(get_error_yaw() * 100),
+        control_roll    : targets.x,
+        roll            : degrees(roll),
+        control_pitch   : targets.y,
+        pitch           : degrees(pitch),
+        control_yaw     : wrap_360(targets.z),
+        yaw             : wrap_360(degrees(yaw)),
         active          : uint8_t(active_EKF_type()),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
@@ -124,69 +122,21 @@ void AP_AHRS::write_video_stabilisation() const
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 
-// Write an attitude view packet
+// Write an attitude view packet, targets in degrees
 void AP_AHRS_View::Write_AttitudeView(const Vector3f &targets) const
 {
     const struct log_Attitude pkt{
         LOG_PACKET_HEADER_INIT(LOG_ATTITUDE_MSG),
         time_us         : AP_HAL::micros64(),
-        control_roll    : (int16_t)targets.x,
-        roll            : (int16_t)roll_sensor,
-        control_pitch   : (int16_t)targets.y,
-        pitch           : (int16_t)pitch_sensor,
-        control_yaw     : (uint16_t)wrap_360_cd(targets.z),
-        yaw             : (uint16_t)wrap_360_cd(yaw_sensor),
-        error_rp        : (uint16_t)(get_error_rp() * 100),
-        error_yaw       : (uint16_t)(get_error_yaw() * 100),
+        control_roll    : targets.x,
+        roll            : degrees(roll),
+        control_pitch   : targets.y,
+        pitch           : degrees(pitch),
+        control_yaw     : wrap_360(targets.z),
+        yaw             : wrap_360(degrees(yaw)),
         active          : uint8_t(AP::ahrs().active_EKF_type()),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
-}
-
-// Write a rate packet
-void AP_AHRS_View::Write_Rate(const AP_Motors &motors, const AC_AttitudeControl &attitude_control,
-                                const AC_PosControl &pos_control) const
-{
-    const Vector3f &rate_targets = attitude_control.rate_bf_targets();
-    const Vector3f &accel_target = pos_control.get_accel_target_cmss();
-    const auto timeus = AP_HAL::micros64();
-    const struct log_Rate pkt_rate{
-        LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
-        time_us         : timeus,
-        control_roll    : degrees(rate_targets.x),
-        roll            : degrees(get_gyro().x),
-        roll_out        : motors.get_roll()+motors.get_roll_ff(),
-        control_pitch   : degrees(rate_targets.y),
-        pitch           : degrees(get_gyro().y),
-        pitch_out       : motors.get_pitch()+motors.get_pitch_ff(),
-        control_yaw     : degrees(rate_targets.z),
-        yaw             : degrees(get_gyro().z),
-        yaw_out         : motors.get_yaw()+motors.get_yaw_ff(),
-        control_accel   : (float)accel_target.z,
-        accel           : (float)(-(get_accel_ef().z + GRAVITY_MSS) * 100.0f),
-        accel_out       : motors.get_throttle(),
-        throttle_slew   : motors.get_throttle_slew_rate()
-    };
-    AP::logger().WriteBlock(&pkt_rate, sizeof(pkt_rate));
-
-    /*
-      log P/PD gain scale if not == 1.0
-     */
-    const Vector3f &scale = attitude_control.get_last_angle_P_scale();
-    const Vector3f &pd_scale = attitude_control.get_PD_scale_logging();
-    if (scale != AC_AttitudeControl::VECTORF_111 || pd_scale != AC_AttitudeControl::VECTORF_111) {
-        const struct log_ATSC pkt_ATSC {
-            LOG_PACKET_HEADER_INIT(LOG_ATSC_MSG),
-            time_us  : timeus,
-            scaleP_x : scale.x,
-            scaleP_y : scale.y,
-            scaleP_z : scale.z,
-            scalePD_x : pd_scale.x,
-            scalePD_y : pd_scale.y,
-            scalePD_z : pd_scale.z,
-        };
-        AP::logger().WriteBlock(&pkt_ATSC, sizeof(pkt_ATSC));
-    }
 }
 
 #endif  // HAL_LOGGING_ENABLED

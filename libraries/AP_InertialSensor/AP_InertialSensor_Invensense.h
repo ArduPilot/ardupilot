@@ -58,6 +58,11 @@ public:
     // get a startup banner to output to the GCS
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
+    // get the gyro backend rate in Hz at which the FIFO is being read
+    uint16_t get_gyro_backend_rate_hz() const override {
+        return _gyro_backend_rate_hz;
+    }
+
     enum Invensense_Type {
         Invensense_MPU6000=0,
         Invensense_MPU6500,
@@ -115,10 +120,6 @@ private:
 
     int16_t _raw_temp;
     
-    // instance numbers of accel and gyro data
-    uint8_t _gyro_instance;
-    uint8_t _accel_instance;
-
     float temp_sensitivity = 1.0f/340; // degC/LSB
     float temp_zero = 36.53f; // degC
     
@@ -186,7 +187,7 @@ private:
         Vector3f gyro;
         uint8_t accel_count;
         uint8_t gyro_count;
-        LowPassFilterVector3f accel_filter{4000, 188};
+        LowPassFilterConstDtVector3f accel_filter{4000, 188};
     } _accum;
 };
 

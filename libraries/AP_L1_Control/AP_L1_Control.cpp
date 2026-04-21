@@ -7,7 +7,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @Param: PERIOD
     // @DisplayName: L1 control period
-    // @Description: Period in seconds of L1 tracking loop. This parameter is the primary control for agressiveness of turns in auto mode. This needs to be larger for less responsive airframes. The default of 20 is quite conservative, but for most RC aircraft will lead to reasonable flight. For smaller more agile aircraft a value closer to 15 is appropriate, or even as low as 10 for some very agile aircraft. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
+    // @Description: Period in seconds of L1 tracking loop. This parameter is the primary control for agressiveness of turns in auto mode. This needs to be larger for less responsive airframes. The default is quite conservative, but for most RC aircraft will lead to reasonable flight. For smaller more agile aircraft a value closer to 15 is appropriate, or even as low as 10 for some very agile aircraft. When tuning, change this value in small increments, as a value that is much too small (say 5 or 10 below the right value) can lead to very radical turns, and a risk of stalling.
     // @Units: s
     // @Range: 1 60
     // @Increment: 1
@@ -339,6 +339,7 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 
     // Waypoint capture status is always false during waypoint following
     _WPcircle = false;
+    _last_loiter.reached_loiter_target_ms = 0;
 
     _bearing_error = Nu; // bearing error angle (radians), +ve to left of track
 
@@ -348,6 +349,8 @@ void AP_L1_Control::update_waypoint(const Location &prev_WP, const Location &nex
 // update L1 control for loitering
 void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_t loiter_direction)
 {
+    const float radius_unscaled = radius;
+
     Location _current_loc;
 
     // scale loiter radius with square of EAS2TAS to allow us to stay
@@ -442,17 +445,42 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     // Perform switchover between 'capture' and 'circle' modes at the
     // point where the commands cross over to achieve a seamless transfer
     // Only fly 'capture' mode if outside the circle
+    const uint32_t now_ms = AP_HAL::millis();
     if (xtrackErrCirc > 0.0f && loiter_direction * latAccDemCap < loiter_direction * latAccDemCirc) {
         _latAccDem = latAccDemCap;
-        _WPcircle = false;
+
+        /*
+          if we were previously on the circle and the target has not
+          changed then keep _WPcircle true. This prevents
+          reached_loiter_target() from going false due to a gust of
+          wind or an unachievable loiter radius
+         */
+        if (_WPcircle &&
+            _last_loiter.reached_loiter_target_ms != 0 &&
+            now_ms - _last_loiter.reached_loiter_target_ms < 200U &&
+            loiter_direction == _last_loiter.direction &&
+            is_equal(radius_unscaled, _last_loiter.radius) &&
+            center_WP.same_loc_as(_last_loiter.center_WP)) {
+            // same location, within 200ms, keep the _WPcircle status as true
+            _last_loiter.reached_loiter_target_ms = now_ms;
+        } else {
+            _WPcircle = false;
+            _last_loiter.reached_loiter_target_ms = 0;
+        }
+
         _bearing_error = Nu; // angle between demanded and achieved velocity vector, +ve to left of track
         _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians) from AC to L1 point
     } else {
         _latAccDem = latAccDemCirc;
         _WPcircle = true;
+        _last_loiter.reached_loiter_target_ms = now_ms;
         _bearing_error = 0.0f; // bearing error (radians), +ve to left of track
         _nav_bearing = atan2f(-A_air_unit.y , -A_air_unit.x); // bearing (radians)from AC to L1 point
     }
+
+    _last_loiter.radius = radius_unscaled;
+    _last_loiter.direction = loiter_direction;
+    _last_loiter.center_WP = center_WP;
 
     _data_is_stale = false; // status are correctly updated with current waypoint data
 }
@@ -487,6 +515,7 @@ void AP_L1_Control::update_heading_hold(int32_t navigation_heading_cd)
 
     // Waypoint capture status is always false during heading hold
     _WPcircle = false;
+    _last_loiter.reached_loiter_target_ms = 0;
 
     _crosstrack_error = 0;
 
@@ -510,6 +539,7 @@ void AP_L1_Control::update_level_flight(void)
 
     // Waypoint capture status is always false during heading hold
     _WPcircle = false;
+    _last_loiter.reached_loiter_target_ms = 0;
 
     _latAccDem = 0;
 

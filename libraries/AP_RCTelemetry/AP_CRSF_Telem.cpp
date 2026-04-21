@@ -13,6 +13,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "AP_RCTelemetry_config.h"
+
+#if HAL_CRSF_TELEM_ENABLED
+
 #include "AP_CRSF_Telem.h"
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -30,7 +34,7 @@
 #include <stdio.h>
 #include <AP_HAL/AP_HAL.h>
 
-#if HAL_CRSF_TELEM_ENABLED
+#include <AP_VideoTX/AP_VideoTX.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -66,10 +70,12 @@ bool AP_CRSF_Telem::init(void)
         return false;
     }
 
+#if AP_VIDEOTX_ENABLED
     // Someone explicitly configure CRSF control for VTX
     if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         AP::vtx().set_provider_enabled(AP_VideoTX::VTXType::CRSF);
     }
+#endif
 
     return AP_RCTelemetry::init();
 }
@@ -87,6 +93,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(50, 100);   // heartbeat        10Hz
     add_scheduler_entry(5, 20);     // parameters       50Hz (generally not active unless requested by the TX)
     add_scheduler_entry(50, 200);   // baro_vario        5Hz
+    add_scheduler_entry(50, 200);   // vario             5Hz
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
@@ -106,7 +113,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         return;
     }
 
+    // we need crossfire firmware version
+    if (_crsf_version.pending) {
+        return;
+    }
+
     if (!rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY)) {
+       _custom_telem.init_done = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: bootstrap complete, fw %d.%02d", get_protocol_string(), _crsf_version.major, _crsf_version.minor);
         return;
     }
 
@@ -116,11 +130,6 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: passthrough telemetry conflict on SERIAL%d", get_protocol_string(), frsky_port);
        _custom_telem.init_done = true;
        return;
-    }
-
-    // we need crossfire firmware version
-    if (_crsf_version.pending) {
-        return;
     }
 
     AP_Frsky_SPort_Passthrough* passthrough = AP::frsky_passthrough_telem();
@@ -969,7 +978,7 @@ int8_t AP_CRSF_Telem::get_vertical_speed_packed()
 // prepare vario data
 void AP_CRSF_Telem::calc_baro_vario()
 {
-    _telem.bcast.baro_vario.altitude_packed = get_altitude_packed();
+    _telem.bcast.baro_vario.altitude_packed = htobe16(get_altitude_packed());
     _telem.bcast.baro_vario.vertical_speed_packed = get_vertical_speed_packed();
 
     _telem_size = sizeof(BaroVarioFrame);
@@ -981,7 +990,7 @@ void AP_CRSF_Telem::calc_baro_vario()
 // prepare vario data
 void AP_CRSF_Telem::calc_vario()
 {
-    _telem.bcast.vario.v_speed = int16_t(get_vspeed_ms() * 100.0f);
+    _telem.bcast.vario.v_speed = htobe16(int16_t(get_vspeed_ms() * 100.0f));
     _telem_size = sizeof(VarioFrame);
     _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
 
@@ -995,7 +1004,7 @@ void AP_CRSF_Telem::calc_gps()
 
     _telem.bcast.gps.latitude = htobe32(loc.lat);
     _telem.bcast.gps.longitude = htobe32(loc.lng);
-    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 100000 / 3600));
+    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 36.0f));
     _telem.bcast.gps.altitude = htobe16(constrain_int16(loc.alt / 100, 0, 5000) + 1000);
     _telem.bcast.gps.gps_heading = htobe16(roundf(AP::gps().ground_course() * 100.0f));
     _telem.bcast.gps.satellites = AP::gps().num_sats();
@@ -1270,7 +1279,7 @@ void AP_CRSF_Telem::calc_parameter() {
 
     _pending_request.frame_type = 0;
     _telem_pending = true;
-#endif
+#endif  // OSD_PARAM_ENABLED
 }
 
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
@@ -1282,8 +1291,13 @@ void AP_CRSF_Telem::calc_parameter() {
 class BufferChunker {
 public:
     BufferChunker(uint8_t* buf, uint16_t chunk_size, uint16_t start_chunk) :
-        _buf(buf), _idx(0), _start_chunk(start_chunk), _chunk_size(chunk_size), _chunk(0), _bytes(0) {
-    }
+        _buf(buf),
+        _idx(0),
+        _bytes(0),
+        _chunk(0),
+        _start_chunk(start_chunk),
+        _chunk_size(chunk_size)
+    { }
 
     // accumulate a string, writing to the underlying buffer as required
     void put_string(const char* str, uint16_t str_len) {
@@ -1420,7 +1434,7 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
     _pending_request.frame_type = 0;
     _telem_pending = true;
 }
-#endif
+#endif  // HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
 
 // write parameter information back into AP - assumes we already know the encoding for floats
 void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write_frame)
@@ -1490,7 +1504,7 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
     default:
         break;
     }
-#endif
+#endif  // OSD_PARAM_ENABLED
 }
 
 // get status text data
@@ -1634,7 +1648,7 @@ AP_CRSF_Telem *AP_CRSF_Telem::get_singleton(void) {
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_CRSF_Telem object then try to allocate one
-        new AP_CRSF_Telem();
+        NEW_NOTHROW AP_CRSF_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init();
@@ -1649,4 +1663,4 @@ namespace AP {
     }
 };
 
-#endif
+#endif  // HAL_CRSF_TELEM_ENABLED

@@ -52,7 +52,7 @@ void AP_DroneCAN_Serial::init(AP_DroneCAN *_dronecan)
         if (Canard::allocate_sub_arg_callback(dronecan, &handle_tunnel_targetted, dronecan->get_driver_index()) == nullptr) {
             AP_BoardConfig::allocation_error("serial_tunnel_sub");
         }
-        targetted = new Canard::Publisher<uavcan_tunnel_Targetted>(dronecan->get_canard_iface());
+        targetted = NEW_NOTHROW Canard::Publisher<uavcan_tunnel_Targetted>(dronecan->get_canard_iface());
         if (targetted == nullptr) {
             AP_BoardConfig::allocation_error("serial_tunnel_pub");
         }
@@ -86,7 +86,20 @@ void AP_DroneCAN_Serial::update(void)
             }
             n = MIN(avail, sizeof(pkt.buffer.data));
             pkt.target_node = p.node;
-            pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_UNDEFINED;
+            switch (p.state.protocol) {
+                case AP_SerialManager::SerialProtocol_MAVLink:
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_MAVLINK;
+                    break;
+                case AP_SerialManager::SerialProtocol_MAVLink2:
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_MAVLINK2;
+                    break;
+                case AP_SerialManager::SerialProtocol_GPS:
+                case AP_SerialManager::SerialProtocol_GPS2: // is not in SERIAL1_PROTOCOL option list, but could be entered by user
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_GPS_GENERIC;
+                    break;
+                default:
+                    pkt.protocol.protocol = UAVCAN_TUNNEL_PROTOCOL_UNDEFINED;
+            }
             pkt.buffer.len = n;
             pkt.baudrate = p.baudrate;
             pkt.serial_id = p.idx;
@@ -194,12 +207,12 @@ bool AP_DroneCAN_Serial::Port::init_buffers(const uint32_t size_rx, const uint32
     }
     WITH_SEMAPHORE(sem);
     if (readbuffer == nullptr) {
-        readbuffer = new ByteBuffer(size_rx);
+        readbuffer = NEW_NOTHROW ByteBuffer(size_rx);
     } else {
         readbuffer->set_size_best(size_rx);
     }
     if (writebuffer == nullptr) {
-        writebuffer = new ByteBuffer(size_tx);
+        writebuffer = NEW_NOTHROW ByteBuffer(size_tx);
     } else {
         writebuffer->set_size_best(size_tx);
     }

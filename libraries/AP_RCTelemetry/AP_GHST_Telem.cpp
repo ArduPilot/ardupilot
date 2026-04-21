@@ -373,7 +373,7 @@ AP_GHST_Telem *AP_GHST_Telem::get_singleton(void) {
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_GHST_Telem object then try to allocate one
-        new AP_GHST_Telem();
+        NEW_NOTHROW AP_GHST_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
             singleton->init();

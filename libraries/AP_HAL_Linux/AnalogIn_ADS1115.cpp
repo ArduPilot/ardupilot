@@ -44,7 +44,7 @@ extern const AP_HAL::HAL &hal;
 
 AnalogIn_ADS1115::AnalogIn_ADS1115()
 {
-    _adc = new AP_ADC_ADS1115();
+    _adc = NEW_NOTHROW AP_ADC_ADS1115();
     _channels_number = _adc->get_channels_number();
 }
 
@@ -53,7 +53,7 @@ AP_HAL::AnalogSource* AnalogIn_ADS1115::channel(int16_t pin)
     WITH_SEMAPHORE(_semaphore);
     for (uint8_t j = 0; j < _channels_number; j++) {
         if (_channels[j] == nullptr) {
-            _channels[j] = new AnalogSource_ADS1115(pin);
+            _channels[j] = NEW_NOTHROW AnalogSource_ADS1115(pin);
             return _channels[j];
         }
     }

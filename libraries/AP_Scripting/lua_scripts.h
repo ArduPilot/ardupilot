@@ -26,7 +26,7 @@
 #include <AP_Scripting/AP_Scripting.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/Semaphores.h>
-#include <AP_Common/MultiHeap.h>
+#include <AP_MultiHeap/AP_MultiHeap.h>
 #include "lua_common_defs.h"
 
 #include "lua/src/lua.hpp"
@@ -34,7 +34,7 @@
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_Int8 &debug_options);
 
     ~lua_scripts();
 
@@ -48,21 +48,13 @@ public:
 
     static bool overtime; // script exceeded it's execution slot, and we are bailing out
 
-    enum class DebugLevel {
-        NO_SCRIPTS_TO_RUN = 1U << 0,
-        RUNTIME_MSG = 1U << 1,
-        SUPPRESS_SCRIPT_LOG = 1U << 2,
-        LOG_RUNTIME = 1U << 3,
-        DISABLE_PRE_ARM = 1U << 4,
-        SAVE_CHECKSUM = 1U << 5,
-    };
-
 private:
 
     void create_sandbox(lua_State *L);
 
     typedef struct script_info {
-       int lua_ref;          // reference to the loaded script object
+       int env_ref;          // reference to the script's environment table
+       int run_ref;          // reference to the function to run
        uint64_t next_run_ms; // time (in milliseconds) the script should next be run at
        uint32_t crc;         // crc32 checksum
        char *name;           // filename for the script // FIXME: This information should be available from Lua
@@ -95,7 +87,11 @@ private:
     lua_State *lua_state;
 
     const AP_Int32 & _vm_steps;
-    const AP_Int8 & _debug_options;
+    AP_Int8 & _debug_options;
+
+    bool option_is_set(AP_Scripting::DebugOption option) const {
+        return (uint8_t(_debug_options.get()) & uint8_t(option)) != 0;
+    }
 
     static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
 
@@ -110,7 +106,6 @@ private:
     static HAL_Semaphore error_msg_buf_sem;
     static uint8_t print_error_count;
     static uint32_t last_print_ms;
-    int current_ref;
 
     // XOR of crc32 of running scripts
     static uint32_t loaded_checksum;

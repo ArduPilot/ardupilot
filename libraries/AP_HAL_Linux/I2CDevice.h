@@ -94,9 +94,6 @@ public:
 
     I2CDeviceManager();
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(
-            std::vector<const char *> devpaths, uint8_t address) override;
-
     /* AP_HAL::I2CDeviceManager implementation */
     AP_HAL::OwnPtr<AP_HAL::I2CDevice> get_device(uint8_t bus, uint8_t address,
                                                  uint32_t bus_clock=400000,

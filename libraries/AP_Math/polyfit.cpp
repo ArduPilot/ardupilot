@@ -31,7 +31,7 @@ template <uint8_t order, typename xtype, typename vtype>
 bool PolyFit<order,xtype,vtype>::get_polynomial(vtype res[order]) const
 {
     // we dynamically allocate the inverse matrix to keep stack usage low
-    xtype *inv_mat = new xtype[order*order];
+    xtype *inv_mat = NEW_NOTHROW xtype[order*order];
     if (inv_mat == nullptr) {
         return false;
     }

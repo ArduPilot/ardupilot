@@ -1,26 +1,40 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#include "AP_DDS_config.h"
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
 
 #include <AP_GPS/AP_GPS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <RC_Channel/RC_Channel.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
+#if AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
+# endif // AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
 
+#if AP_DDS_ARM_SERVER_ENABLED
 #include "ardupilot_msgs/srv/ArmMotors.h"
+#endif // AP_DDS_ARM_SERVER_ENABLED
+#if AP_DDS_MODE_SWITCH_SERVER_ENABLED
 #include "ardupilot_msgs/srv/ModeSwitch.h"
+#endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
+#if AP_DDS_ARM_CHECK_SERVER_ENABLED
+#include "std_srvs/srv/Trigger.h"
+#endif // AP_DDS_ARM_CHECK_SERVER_ENABLED
+#if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#include "ardupilot_msgs/srv/Takeoff.h"
+#endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
-#endif
+#endif // AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_Frames.h"
 
 #include "AP_DDS_Client.h"
@@ -28,26 +42,63 @@
 #include "AP_DDS_Service_Table.h"
 #include "AP_DDS_External_Odom.h"
 
+#define STRCPY(D,S) strncpy(D, S, ARRAY_SIZE(D))
+
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
-static constexpr uint16_t DELAY_TIME_TOPIC_MS = 10;
-static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = 1000;
-static constexpr uint16_t DELAY_IMU_TOPIC_MS = 5;
-static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = 33;
-static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = 33;
-static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = 33;
-static constexpr uint16_t DELAY_CLOCK_TOPIC_MS = 10;
-static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = 1000;
+#if AP_DDS_TIME_PUB_ENABLED
+static constexpr uint16_t DELAY_TIME_TOPIC_MS = AP_DDS_DELAY_TIME_TOPIC_MS;
+#endif // AP_DDS_TIME_PUB_ENABLED
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
+static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS;
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
+#if AP_DDS_IMU_PUB_ENABLED
+static constexpr uint16_t DELAY_IMU_TOPIC_MS = AP_DDS_DELAY_IMU_TOPIC_MS;
+#endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
+static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS;
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
+static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS;
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+#if AP_DDS_AIRSPEED_PUB_ENABLED
+static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_MS;
+#endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_GEOPOSE_PUB_ENABLED
+static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_CLOCK_PUB_ENABLED
+static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
+#endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 static constexpr uint16_t DELAY_PING_MS = 500;
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
 // the AP_DDS_Client::on_topic frame size is exceeded.
+#if AP_DDS_JOY_SUB_ENABLED
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
+#endif // AP_DDS_JOY_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
+#if AP_DDS_VEL_CTRL_ENABLED
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
+#endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
+#endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
 
+// Define the parameter server data members, which are static class scope.
+// If these are created on the stack, then the AP_DDS_Client::on_request
+// frame size is exceeded.
+#if AP_DDS_PARAMETER_SERVER_ENABLED
+rcl_interfaces_srv_SetParameters_Request AP_DDS_Client::set_parameter_request {};
+rcl_interfaces_srv_SetParameters_Response AP_DDS_Client::set_parameter_response {};
+rcl_interfaces_srv_GetParameters_Request AP_DDS_Client::get_parameters_request {};
+rcl_interfaces_srv_GetParameters_Response AP_DDS_Client::get_parameters_response {};
+rcl_interfaces_msg_Parameter AP_DDS_Client::param {};
+#endif
 
 const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
@@ -74,8 +125,43 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
 
 #endif
 
+    // @Param: _DOMAIN_ID
+    // @DisplayName: DDS DOMAIN ID
+    // @Description: Set the ROS_DOMAIN_ID
+    // @Range: 0 232
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_DOMAIN_ID", 4, AP_DDS_Client, domain_id, 0),
+
+    // @Param: _TIMEOUT_MS
+    // @DisplayName: DDS ping timeout
+    // @Description: The time in milliseconds the DDS client will wait for a response from the XRCE agent before reattempting.
+    // @Units: ms
+    // @Range: 1 10000
+    // @RebootRequired: True
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_TIMEOUT_MS", 5, AP_DDS_Client, ping_timeout_ms, 1000),
+
+    // @Param: _MAX_RETRY
+    // @DisplayName: DDS ping max attempts
+    // @Description: The maximum number of times the DDS client will attempt to ping the XRCE agent before exiting. Set to 0 to allow unlimited retries.
+    // @Range: 0 100
+    // @RebootRequired: True
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("_MAX_RETRY", 6, AP_DDS_Client, ping_max_retry, 10),
+
     AP_GROUPEND
 };
+
+static void initialize(geometry_msgs_msg_Quaternion& q)
+{
+    q.x = 0.0;
+    q.y = 0.0;
+    q.z = 0.0;
+    q.w = 1.0;
+}
 
 AP_DDS_Client::~AP_DDS_Client()
 {
@@ -89,6 +175,7 @@ AP_DDS_Client::~AP_DDS_Client()
     }
 }
 
+#if AP_DDS_TIME_PUB_ENABLED
 void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 {
     uint64_t utc_usec;
@@ -99,18 +186,15 @@ void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
     msg.nanosec = (utc_usec % 1000000ULL) * 1000UL;
 
 }
+#endif // AP_DDS_TIME_PUB_ENABLED
 
+#if AP_DDS_NAVSATFIX_PUB_ENABLED
 bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t instance)
 {
     // Add a lambda that takes in navsatfix msg and populates the cov
     // Make it constexpr if possible
     // https://www.fluentcpp.com/2021/12/13/the-evolutions-of-lambdas-in-c14-c17-and-c20/
     // constexpr auto times2 = [] (sensor_msgs_msg_NavSatFix* msg) { return n * 2; };
-
-    // assert(instance >= GPS_MAX_RECEIVERS);
-    if (instance >= GPS_MAX_RECEIVERS) {
-        return false;
-    }
 
     auto &gps = AP::gps();
     WITH_SEMAPHORE(gps.get_semaphore());
@@ -132,7 +216,8 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
 
     update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, WGS_84_FRAME_ID);
+    static_assert(GPS_MAX_RECEIVERS <= 9, "GPS_MAX_RECEIVERS is greater than 9");
+    hal.util->snprintf(msg.header.frame_id, 2, "%u", instance);
     msg.status.service = 0; // SERVICE_GPS
     msg.status.status = -1; // STATUS_NO_FIX
 
@@ -191,7 +276,9 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     return true;
 }
+#endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED
 void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
 {
     msg.transforms_size = 0;
@@ -206,8 +293,8 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         char gps_frame_id[16];
         //! @todo should GPS frame ID's be 0 or 1 indexed in ROS?
         hal.util->snprintf(gps_frame_id, sizeof(gps_frame_id), "GPS_%u", i);
-        strcpy(msg.transforms[i].header.frame_id, BASE_LINK_FRAME_ID);
-        strcpy(msg.transforms[i].child_frame_id, gps_frame_id);
+        STRCPY(msg.transforms[i].header.frame_id, BASE_LINK_FRAME_ID);
+        STRCPY(msg.transforms[i].child_frame_id, gps_frame_id);
         // The body-frame offsets
         // X - Forward
         // Y - Right
@@ -226,24 +313,26 @@ void AP_DDS_Client::populate_static_transforms(tf2_msgs_msg_TFMessage& msg)
         msg.transforms[i].transform.translation.y = -1 * offset[1];
         msg.transforms[i].transform.translation.z = -1 * offset[2];
 
-        // Ensure rotation is normalised
-        msg.transforms[i].transform.rotation.x = 0.0;
-        msg.transforms[i].transform.rotation.y = 0.0;
-        msg.transforms[i].transform.rotation.z = 0.0;
-        msg.transforms[i].transform.rotation.w = 1.0;
+        // Ensure rotation is initialized.
+        initialize(msg.transforms[i].transform.rotation);
 
         msg.transforms_size++;
     }
 
 }
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED
 
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_t instance)
 {
     if (instance >= AP_BATT_MONITOR_MAX_INSTANCES) {
         return;
     }
+    static_assert(AP_BATT_MONITOR_MAX_INSTANCES <= 99, "AP_BATT_MONITOR_MAX_INSTANCES is greater than 99");
 
     update_topic(msg.header.stamp);
+    hal.util->snprintf(msg.header.frame_id, 2, "%u", instance);
+
     auto &battery = AP::battery();
 
     if (!battery.healthy(instance)) {
@@ -294,15 +383,20 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_BatteryState& msg, const uint8_
     msg.power_supply_technology = 0; //POWER_SUPPLY_TECHNOLOGY_UNKNOWN
 
     if (battery.has_cell_voltages(instance)) {
-        const uint16_t* cellVoltages = battery.get_cell_voltages(instance).cells;
-        std::copy(cellVoltages, cellVoltages + AP_BATT_MONITOR_CELLS_MAX, msg.cell_voltage);
+        const auto &cells = battery.get_cell_voltages(instance);
+        const uint8_t ncells_max = MIN(ARRAY_SIZE(msg.cell_voltage), ARRAY_SIZE(cells.cells));
+        for (uint8_t i=0; i< ncells_max; i++) {
+            msg.cell_voltage[i] = cells.cells[i] * 0.001;
+        }
     }
 }
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
 {
     update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
 
     auto &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -344,17 +438,16 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
     } else {
-        msg.pose.orientation.x = 0.0;
-        msg.pose.orientation.y = 0.0;
-        msg.pose.orientation.z = 0.0;
-        msg.pose.orientation.w = 1.0;
+        initialize(msg.pose.orientation);
     }
 }
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
 void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
 {
     update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
 
     auto &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -392,11 +485,41 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_TwistStamped& msg)
     msg.twist.angular.y = -angular_velocity[1];
     msg.twist.angular.z = -angular_velocity[2];
 }
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+#if AP_DDS_AIRSPEED_PUB_ENABLED
+bool AP_DDS_Client::update_topic(geometry_msgs_msg_Vector3Stamped& msg)
+{
+    update_topic(msg.header.stamp);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // The true airspeed data is received from AP_AHRS in body-frame
+    // X - Forward
+    // Y - Right
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
+    Vector3f true_airspeed_vec_bf;
+    bool is_airspeed_available {false};
+    if (ahrs.airspeed_vector_true(true_airspeed_vec_bf)) {
+        msg.vector.x = true_airspeed_vec_bf[0];
+        msg.vector.y = -true_airspeed_vec_bf[1];
+        msg.vector.z = -true_airspeed_vec_bf[2];
+        is_airspeed_available = true;
+    }
+    return is_airspeed_available;
+}
+#endif // AP_DDS_AIRSPEED_PUB_ENABLED
 
+#if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
 {
     update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
 
     auto &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -428,17 +551,16 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
         msg.pose.orientation.y = orientation[2];
         msg.pose.orientation.z = orientation[3];
     } else {
-        msg.pose.orientation.x = 0.0;
-        msg.pose.orientation.y = 0.0;
-        msg.pose.orientation.z = 0.0;
-        msg.pose.orientation.w = 1.0;
+        initialize(msg.pose.orientation);
     }
 }
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
 
+#if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
 {
     update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, BASE_LINK_NED_FRAME_ID);
+    STRCPY(msg.header.frame_id, BASE_LINK_NED_FRAME_ID);
 
     auto &imu = AP::ins();
     auto &ahrs = AP::ahrs();
@@ -452,10 +574,7 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
         msg.orientation.z = orientation[2];
         msg.orientation.w = orientation[3];
     } else {
-        msg.orientation.x = 0.0;
-        msg.orientation.y = 0.0;
-        msg.orientation.z = 0.0;
-        msg.orientation.w = 1.0;
+        initialize(msg.orientation);
     }
     msg.orientation_covariance[0] = -1;
 
@@ -475,16 +594,20 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
     msg.angular_velocity_covariance[0] = -1;
     msg.linear_acceleration_covariance[0] = -1;
 }
+#endif // AP_DDS_IMU_PUB_ENABLED
 
+#if AP_DDS_CLOCK_PUB_ENABLED
 void AP_DDS_Client::update_topic(rosgraph_msgs_msg_Clock& msg)
 {
     update_topic(msg.clock);
 }
+#endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
 {
     update_topic(msg.header.stamp);
-    strcpy(msg.header.frame_id, BASE_LINK_FRAME_ID);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
 
     auto &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
@@ -498,6 +621,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPointStamped& msg)
         msg.position.altitude = ekf_origin.alt * 0.01;
     }
 }
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
 /*
   start the DDS thread
@@ -540,6 +664,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
     (void) stream_id;
     (void) length;
     switch (object_id.id) {
+#if AP_DDS_JOY_SUB_ENABLED
     case topics[to_underlying(TopicIndex::JOY_SUB)].dr_id.id: {
         const bool success = sensor_msgs_msg_Joy_deserialize_topic(ub, &rx_joy_topic);
 
@@ -548,14 +673,28 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 
         if (rx_joy_topic.axes_size >= 4) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/Joy: %f, %f, %f, %f",
-                          msg_prefix, rx_joy_topic.axes[0], rx_joy_topic.axes[1], rx_joy_topic.axes[2], rx_joy_topic.axes[3]);
-            // TODO implement joystick RC control to AP
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received sensor_msgs/Joy. Axes size must be >= 4", msg_prefix);
+            const uint32_t t_now = AP_HAL::millis();
+
+            for (uint8_t i = 0; i < MIN(8U, rx_joy_topic.axes_size); i++) {
+                // Ignore channel override if NaN.
+                if (std::isnan(rx_joy_topic.axes[i])) {
+                    // Setting the RC override to 0U releases the channel back to the RC.
+                    RC_Channels::set_override(i, 0U, t_now);
+                } else {
+                    const uint16_t mapped_data = static_cast<uint16_t>(
+                                                     linear_interpolate(rc().channel(i)->get_radio_min(),
+                                                             rc().channel(i)->get_radio_max(),
+                                                             rx_joy_topic.axes[i],
+                                                             -1.0, 1.0));
+                    RC_Channels::set_override(i, mapped_data, t_now);
+                }
+            }
+
         }
         break;
     }
+#endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_DYNAMIC_TF_SUB_ENABLED
     case topics[to_underlying(TopicIndex::DYNAMIC_TRANSFORMS_SUB)].dr_id.id: {
         const bool success = tf2_msgs_msg_TFMessage_deserialize_topic(ub, &rx_dynamic_transforms_topic);
         if (success == false) {
@@ -572,12 +711,13 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
         break;
     }
+#endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_VEL_CTRL_ENABLED
     case topics[to_underlying(TopicIndex::VELOCITY_CONTROL_SUB)].dr_id.id: {
         const bool success = geometry_msgs_msg_TwistStamped_deserialize_topic(ub, &rx_velocity_control_topic);
         if (success == false) {
             break;
         }
-
 #if AP_EXTERNAL_CONTROL_ENABLED
         if (!AP_DDS_External_Control::handle_velocity_control(rx_velocity_control_topic)) {
             // TODO #23430 handle velocity control failure through rosout, throttled.
@@ -585,6 +725,8 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+#endif // AP_DDS_VEL_CTRL_ENABLED
+#if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     case topics[to_underlying(TopicIndex::GLOBAL_POSITION_SUB)].dr_id.id: {
         const bool success = ardupilot_msgs_msg_GlobalPosition_deserialize_topic(ub, &rx_global_position_control_topic);
         if (success == false) {
@@ -598,6 +740,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
     }
+#endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
     }
 
 }
@@ -616,6 +759,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
     (void) request_id;
     (void) length;
     switch (object_id.id) {
+#if AP_DDS_ARM_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::ARMING_MOTORS)].rep_id: {
         ardupilot_msgs_srv_ArmMotors_Request arm_motors_request;
         ardupilot_msgs_srv_ArmMotors_Response arm_motors_response;
@@ -645,6 +789,8 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : %s", msg_prefix, arm_motors_response.result ? "SUCCESS" : "FAIL");
         break;
     }
+#endif // AP_DDS_ARM_SERVER_ENABLED
+#if AP_DDS_MODE_SWITCH_SERVER_ENABLED
     case services[to_underlying(ServiceIndex::MODE_SWITCH)].rep_id: {
         ardupilot_msgs_srv_ModeSwitch_Request mode_switch_request;
         ardupilot_msgs_srv_ModeSwitch_Response mode_switch_response;
@@ -673,6 +819,255 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
         break;
     }
+#endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
+#if AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+    case services[to_underlying(ServiceIndex::TAKEOFF)].rep_id: {
+        ardupilot_msgs_srv_Takeoff_Request takeoff_request;
+        ardupilot_msgs_srv_Takeoff_Response takeoff_response;
+        const bool deserialize_success = ardupilot_msgs_srv_Takeoff_Request_deserialize_topic(ub, &takeoff_request);
+        if (deserialize_success == false) {
+            break;
+        }
+        takeoff_response.status = AP::vehicle()->start_takeoff(takeoff_request.alt);
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::TAKEOFF)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[8] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = ardupilot_msgs_srv_Takeoff_Response_serialize_topic(&reply_ub, &takeoff_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Takeoff : %s", msg_prefix, takeoff_response.status ? "SUCCESS" : "FAIL");
+        break;
+    }
+#endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
+#if AP_DDS_ARM_CHECK_SERVER_ENABLED
+    case services[to_underlying(ServiceIndex::PREARM_CHECK)].rep_id: {
+        std_srvs_srv_Trigger_Request prearm_check_request;
+        std_srvs_srv_Trigger_Response prearm_check_response;
+        const bool deserialize_success = std_srvs_srv_Trigger_Request_deserialize_topic(ub, &prearm_check_request);
+        if (deserialize_success == false) {
+            break;
+        }
+        prearm_check_response.success = AP::arming().pre_arm_checks(false);
+        STRCPY(prearm_check_response.message, prearm_check_response.success ? "Vehicle is Armable" : "Vehicle is Not Armable");
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::PREARM_CHECK)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint8_t reply_buffer[sizeof(prearm_check_response.message) + 1] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, sizeof(reply_buffer));
+        const bool serialize_success = std_srvs_srv_Trigger_Response_serialize_topic(&reply_ub, &prearm_check_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        break;
+    }
+#endif //AP_DDS_ARM_CHECK_SERVER_ENABLED
+#if AP_DDS_PARAMETER_SERVER_ENABLED
+    case services[to_underlying(ServiceIndex::SET_PARAMETERS)].rep_id: {
+        const bool deserialize_success = rcl_interfaces_srv_SetParameters_Request_deserialize_topic(ub, &set_parameter_request);
+        if (deserialize_success == false) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Set Parameters Request : Failed to deserialize request.", msg_prefix);
+            break;
+        }
+
+        if (set_parameter_request.parameters_size > 8U) {
+            break;
+        }
+
+        // Set parameters and responses for each one requested
+        set_parameter_response.results_size = set_parameter_request.parameters_size;
+        for (size_t i = 0; i < set_parameter_request.parameters_size; i++) {
+            param = set_parameter_request.parameters[i];
+
+            enum ap_var_type var_type;
+
+            // set parameter
+            AP_Param *vp;
+            char param_key[AP_MAX_NAME_SIZE + 1];
+            strncpy(param_key, (char *)param.name, AP_MAX_NAME_SIZE);
+            param_key[AP_MAX_NAME_SIZE] = 0;
+
+            // Currently only integer and double value types can be set.
+            // The following parameter value types are not handled:
+            // bool, string, byte_array, bool_array, integer_array, double_array and string_array
+            bool param_isnan = true;
+            bool param_isinf = true;
+            float param_value;
+            switch (param.value.type) {
+            case PARAMETER_INTEGER: {
+                param_isnan = isnan(param.value.integer_value);
+                param_isinf = isinf(param.value.integer_value);
+                param_value = float(param.value.integer_value);
+                break;
+            }
+            case PARAMETER_DOUBLE: {
+                param_isnan = isnan(param.value.double_value);
+                param_isinf = isinf(param.value.double_value);
+                param_value = float(param.value.double_value);
+                break;
+            }
+            default: {
+                break;
+            }
+            }
+
+            // find existing param to get the old value
+            uint16_t parameter_flags = 0;
+            vp = AP_Param::find(param_key, &var_type, &parameter_flags);
+            if (vp == nullptr || param_isnan || param_isinf) {
+                set_parameter_response.results[i].successful = false;
+                strncpy(set_parameter_response.results[i].reason, "Parameter not found", sizeof(set_parameter_response.results[i].reason));
+                continue;
+            }
+
+            // Add existing parameter checks used in GCS_Param.cpp
+            if (parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) {
+                // The user can set BRD_OPTIONS to enable set of internal
+                // parameters, for developer testing or unusual use cases
+                if (AP_BoardConfig::allow_set_internal_parameters()) {
+                    parameter_flags &= ~AP_PARAM_FLAG_INTERNAL_USE_ONLY;
+                }
+            }
+
+            if ((parameter_flags & AP_PARAM_FLAG_INTERNAL_USE_ONLY) || vp->is_read_only()) {
+                set_parameter_response.results[i].successful = false;
+                strncpy(set_parameter_response.results[i].reason, "Parameter is read only",sizeof(set_parameter_response.results[i].reason));
+                continue;
+            }
+
+            // Set and save the value if it changed
+            bool force_save = vp->set_and_save_by_name_ifchanged(param_key, param_value);
+
+            if (force_save && (parameter_flags & AP_PARAM_FLAG_ENABLE)) {
+                AP_Param::invalidate_count();
+            }
+
+            set_parameter_response.results[i].successful = true;
+            strncpy(set_parameter_response.results[i].reason, "Parameter accepted", sizeof(set_parameter_response.results[i].reason));
+        }
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::SET_PARAMETERS)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint32_t reply_size = rcl_interfaces_srv_SetParameters_Response_size_of_topic(&set_parameter_response, 0U);
+        uint8_t reply_buffer[reply_size] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
+        const bool serialize_success = rcl_interfaces_srv_SetParameters_Response_serialize_topic(&reply_ub, &set_parameter_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+        bool successful_params = true;
+        for (size_t i = 0; i < set_parameter_response.results_size; i++) {
+            // Check that all the parameters were set successfully
+            successful_params &= set_parameter_response.results[i].successful;
+        }
+        GCS_SEND_TEXT(successful_params ? MAV_SEVERITY_INFO : MAV_SEVERITY_WARNING, "%s Set Parameters Request : %s", msg_prefix, successful_params ? "SUCCESSFUL" : "ONE OR MORE PARAMS FAILED" );
+        break;
+    }
+    case services[to_underlying(ServiceIndex::GET_PARAMETERS)].rep_id: {
+        const bool deserialize_success = rcl_interfaces_srv_GetParameters_Request_deserialize_topic(ub, &get_parameters_request);
+        if (deserialize_success == false) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Get Parameters Request : Failed to deserialize request.", msg_prefix);
+            break;
+        }
+
+        if (get_parameters_request.names_size > 8U) {
+            break;
+        }
+
+        bool successful_read = true;
+        get_parameters_response.values_size = get_parameters_request.names_size;
+        for (size_t i = 0; i < get_parameters_request.names_size; i++) {
+            enum ap_var_type var_type;
+
+            AP_Param *vp;
+            char param_key[AP_MAX_NAME_SIZE + 1];
+            strncpy(param_key, (char *)get_parameters_request.names[i], AP_MAX_NAME_SIZE);
+            param_key[AP_MAX_NAME_SIZE] = 0;
+
+            vp = AP_Param::find(param_key, &var_type);
+            if (vp == nullptr) {
+                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                successful_read &= false;
+                continue;
+            }
+
+            switch (var_type) {
+            case AP_PARAM_INT8: {
+                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].integer_value = ((AP_Int8 *)vp)->get();
+                successful_read &= true;
+                break;
+            }
+            case AP_PARAM_INT16: {
+                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].integer_value = ((AP_Int16 *)vp)->get();
+                successful_read &= true;
+                break;
+            }
+            case AP_PARAM_INT32: {
+                get_parameters_response.values[i].type = PARAMETER_INTEGER;
+                get_parameters_response.values[i].integer_value = ((AP_Int32 *)vp)->get();
+                successful_read &= true;
+                break;
+            }
+            case AP_PARAM_FLOAT: {
+                get_parameters_response.values[i].type = PARAMETER_DOUBLE;
+                get_parameters_response.values[i].double_value = vp->cast_to_float(var_type);
+                successful_read &= true;
+                break;
+            }
+            default: {
+                get_parameters_response.values[i].type = PARAMETER_NOT_SET;
+                successful_read &= false;
+                break;
+            }
+            }
+        }
+
+        const uxrObjectId replier_id = {
+            .id = services[to_underlying(ServiceIndex::GET_PARAMETERS)].rep_id,
+            .type = UXR_REPLIER_ID
+        };
+
+        uint32_t reply_size = rcl_interfaces_srv_GetParameters_Response_size_of_topic(&get_parameters_response, 0U);
+        uint8_t reply_buffer[reply_size] {};
+        ucdrBuffer reply_ub;
+
+        ucdr_init_buffer(&reply_ub, reply_buffer, reply_size);
+        const bool serialize_success = rcl_interfaces_srv_GetParameters_Response_serialize_topic(&reply_ub, &get_parameters_response);
+        if (serialize_success == false) {
+            break;
+        }
+
+        uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
+
+        GCS_SEND_TEXT(successful_read ? MAV_SEVERITY_INFO : MAV_SEVERITY_WARNING, "%s Get Parameters Request : %s", msg_prefix, successful_read ? "SUCCESSFUL" : "ONE OR MORE PARAM NOT FOUND");
+        break;
+    }
+#endif // AP_DDS_PARAMETER_SERVER_ENABLED
     }
 }
 
@@ -681,6 +1076,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
  */
 void AP_DDS_Client::main_loop(void)
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s initializing...", msg_prefix);
     if (!init_transport()) {
         return;
     }
@@ -693,11 +1089,16 @@ void AP_DDS_Client::main_loop(void)
         }
 
         // check ping
-        const uint64_t ping_timeout_ms{1000};
-        const uint8_t ping_max_attempts{10};
-        if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_attempts)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s No ping response, exiting", msg_prefix);
-            return;
+        if (ping_max_retry == 0) {
+            if (!uxr_ping_agent(comm, ping_timeout_ms)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s No ping response, retrying", msg_prefix);
+                continue;
+            }
+        } else {
+            if (!uxr_ping_agent_attempts(comm, ping_timeout_ms, ping_max_retry)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s No ping response, exiting", msg_prefix);
+                continue;
+            }
         }
 
         // create session
@@ -708,8 +1109,10 @@ void AP_DDS_Client::main_loop(void)
         connected = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED
         populate_static_transforms(tx_static_transforms_topic);
         write_static_transforms();
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED
 
         uint64_t last_ping_ms{0};
         uint8_t num_pings_missed{0};
@@ -795,8 +1198,8 @@ bool AP_DDS_Client::init_session()
     }
 
     // setup reliable stream buffers
-    input_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
-    output_reliable_stream = new uint8_t[DDS_BUFFER_SIZE];
+    input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
     if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
@@ -819,10 +1222,9 @@ bool AP_DDS_Client::create()
         .id = 0x01,
         .type = UXR_PARTICIPANT_ID
     };
-    const char* participant_name = "ardupilot_dds";
-    const uint16_t domain_id = 0;
+    const char* participant_name = AP_DDS_PARTICIPANT_NAME;
     const auto participant_req_id = uxr_buffer_create_participant_bin(&session, reliable_out, participant_id,
-                                    domain_id, participant_name, UXR_REPLACE);
+                                    static_cast<uint16_t>(domain_id), participant_name, UXR_REPLACE);
 
     //Participant requests
     constexpr uint8_t nRequestsParticipant = 1;
@@ -963,6 +1365,7 @@ void AP_DDS_Client::write_time_topic()
     }
 }
 
+#if AP_DDS_NAVSATFIX_PUB_ENABLED
 void AP_DDS_Client::write_nav_sat_fix_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -977,7 +1380,9 @@ void AP_DDS_Client::write_nav_sat_fix_topic()
         }
     }
 }
+#endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 
+#if AP_DDS_STATIC_TF_PUB_ENABLED
 void AP_DDS_Client::write_static_transforms()
 {
     WITH_SEMAPHORE(csem);
@@ -992,7 +1397,9 @@ void AP_DDS_Client::write_static_transforms()
         }
     }
 }
+#endif // AP_DDS_STATIC_TF_PUB_ENABLED
 
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
 void AP_DDS_Client::write_battery_state_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1007,7 +1414,9 @@ void AP_DDS_Client::write_battery_state_topic()
         }
     }
 }
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
 void AP_DDS_Client::write_local_pose_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1022,7 +1431,9 @@ void AP_DDS_Client::write_local_pose_topic()
         }
     }
 }
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
 void AP_DDS_Client::write_tx_local_velocity_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1037,7 +1448,24 @@ void AP_DDS_Client::write_tx_local_velocity_topic()
         }
     }
 }
-
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+#if AP_DDS_AIRSPEED_PUB_ENABLED
+void AP_DDS_Client::write_tx_local_airspeed_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = geometry_msgs_msg_Vector3Stamped_size_of_topic(&tx_local_airspeed_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::LOCAL_AIRSPEED_PUB)].dw_id, &ub, topic_size);
+        const bool success = geometry_msgs_msg_Vector3Stamped_serialize_topic(&ub, &tx_local_airspeed_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1052,7 +1480,9 @@ void AP_DDS_Client::write_imu_topic()
         }
     }
 }
+#endif // AP_DDS_IMU_PUB_ENABLED
 
+#if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::write_geo_pose_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1067,7 +1497,9 @@ void AP_DDS_Client::write_geo_pose_topic()
         }
     }
 }
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
 
+#if AP_DDS_CLOCK_PUB_ENABLED
 void AP_DDS_Client::write_clock_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1082,7 +1514,9 @@ void AP_DDS_Client::write_clock_topic()
         }
     }
 }
+#endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 void AP_DDS_Client::write_gps_global_origin_topic()
 {
     WITH_SEMAPHORE(csem);
@@ -1096,70 +1530,92 @@ void AP_DDS_Client::write_gps_global_origin_topic()
         }
     }
 }
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
     const auto cur_time_ms = AP_HAL::millis64();
 
+#if AP_DDS_TIME_PUB_ENABLED
     if (cur_time_ms - last_time_time_ms > DELAY_TIME_TOPIC_MS) {
         update_topic(time_topic);
         last_time_time_ms = cur_time_ms;
         write_time_topic();
     }
-
+#endif // AP_DDS_TIME_PUB_ENABLED
+#if AP_DDS_NAVSATFIX_PUB_ENABLED
     constexpr uint8_t gps_instance = 0;
     if (update_topic(nav_sat_fix_topic, gps_instance)) {
         write_nav_sat_fix_topic();
     }
-
+#endif // AP_DDS_NAVSATFIX_PUB_ENABLED
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
     if (cur_time_ms - last_battery_state_time_ms > DELAY_BATTERY_STATE_TOPIC_MS) {
-        constexpr uint8_t battery_instance = 0;
-        update_topic(battery_state_topic, battery_instance);
+        for (uint8_t battery_instance = 0; battery_instance < AP_BATT_MONITOR_MAX_INSTANCES; battery_instance++) {
+            update_topic(battery_state_topic, battery_instance);
+            if (battery_state_topic.present) {
+                write_battery_state_topic();
+            }
+        }
         last_battery_state_time_ms = cur_time_ms;
-        write_battery_state_topic();
     }
-
+#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
     if (cur_time_ms - last_local_pose_time_ms > DELAY_LOCAL_POSE_TOPIC_MS) {
         update_topic(local_pose_topic);
         last_local_pose_time_ms = cur_time_ms;
         write_local_pose_topic();
     }
-
+#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
     if (cur_time_ms - last_local_velocity_time_ms > DELAY_LOCAL_VELOCITY_TOPIC_MS) {
         update_topic(tx_local_velocity_topic);
         last_local_velocity_time_ms = cur_time_ms;
         write_tx_local_velocity_topic();
     }
-
+#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
+#if AP_DDS_AIRSPEED_PUB_ENABLED
+    if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_MS) {
+        last_airspeed_time_ms = cur_time_ms;
+        if (update_topic(tx_local_airspeed_topic)) {
+            write_tx_local_airspeed_topic();
+        }
+    }
+#endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_IMU_PUB_ENABLED
     if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
         update_topic(imu_topic);
         last_imu_time_ms = cur_time_ms;
         write_imu_topic();
     }
-
+#endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_GEOPOSE_PUB_ENABLED
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);
         last_geo_pose_time_ms = cur_time_ms;
         write_geo_pose_topic();
     }
-
+#endif // AP_DDS_GEOPOSE_PUB_ENABLED
+#if AP_DDS_CLOCK_PUB_ENABLED
     if (cur_time_ms - last_clock_time_ms > DELAY_CLOCK_TOPIC_MS) {
         update_topic(clock_topic);
         last_clock_time_ms = cur_time_ms;
         write_clock_topic();
     }
-
+#endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
     if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
         update_topic(gps_global_origin_topic);
         last_gps_global_origin_time_ms = cur_time_ms;
         write_gps_global_origin_topic();
     }
+#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 extern "C" {
     int clock_gettime(clockid_t clockid, struct timespec *ts);
 }
@@ -1176,6 +1632,6 @@ int clock_gettime(clockid_t clockid, struct timespec *ts)
     ts->tv_nsec = (utc_usec % 1000000ULL) * 1000UL;
     return 0;
 }
-#endif // CONFIG_HAL_BOARD != HAL_BOARD_SITL
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #endif // AP_DDS_ENABLED

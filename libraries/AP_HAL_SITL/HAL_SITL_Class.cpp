@@ -206,6 +206,11 @@ bool HAL_SITL::run_in_maintenance_mode() const
 }
 #endif
 
+uint32_t HAL_SITL::get_uart_output_full_queue_count() const
+{
+    return _sitl_state->_serial_0_outqueue_full_count;
+}
+
 void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
     assert(callbacks);

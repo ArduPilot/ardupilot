@@ -59,13 +59,13 @@ public:
     float get_filt_D_alpha(float dt) const;
 
     // set accessors
-    void kP(float v) { _kp.set(v); }
-    void kI(float v) { _ki.set(v); }
-    void kD(float v) { _kd.set(v); }
-    void ff(float v) { _kff.set(v); }
-    void imax(float v) { _kimax.set(fabsf(v)); }
-    void filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }
-    void filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }
+    void set_kP(float v) { _kp.set(v); }
+    void set_kI(float v) { _ki.set(v); }
+    void set_kD(float v) { _kd.set(v); }
+    void set_ff(float v) { _kff.set(v); }
+    void set_imax(float v) { _kimax.set(fabsf(v)); }
+    void set_filt_E_hz(float hz) { _filt_E_hz.set(fabsf(hz)); }
+    void set_filt_D_hz(float hz) { _filt_D_hz.set(fabsf(hz)); }
 
     // integrator setting functions
     void set_integrator(const Vector2f& target, const Vector2f& measurement, const Vector2f& i);

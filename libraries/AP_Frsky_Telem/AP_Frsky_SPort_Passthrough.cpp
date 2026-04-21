@@ -20,8 +20,8 @@
 
 #if HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 #include "AP_Frsky_MAVlite.h"
-#include "AP_Frsky_Parameters.h"
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+#include "AP_Frsky_Parameters.h"
 
 /*
 for FrSky SPort Passthrough
@@ -77,7 +77,7 @@ for FrSky SPort Passthrough
 #define WIND_ANGLE_LIMIT            0x7F
 #define WIND_SPEED_OFFSET           7
 #define WIND_APPARENT_ANGLE_OFFSET  15
-#define WIND_APPARENT_SPEED_OFFSET  23
+#define WIND_APPARENT_SPEED_OFFSET  22
 // for waypoint data
 #define WP_NUMBER_LIMIT             2047
 #define WP_DISTANCE_LIMIT           1023000
@@ -683,7 +683,9 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_velandyaw(void)
  */
 uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 {
+#if AP_RANGEFINDER_ENABLED
     const RangeFinder *_rng = RangeFinder::get_singleton();
+#endif
 
     float roll;
     float pitch;
@@ -693,7 +695,11 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
     // pitch from [-9000;9000] centidegrees to unsigned .2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
     attiandrng |= ((uint16_t)roundf((pitch * RAD_TO_DEG * 100 + 9000) * 0.05f) & ATTIANDRNG_PITCH_LIMIT)<<ATTIANDRNG_PITCH_OFFSET;
     // rangefinder measurement in cm
+#if AP_RANGEFINDER_ENABLED
     attiandrng |= prep_number(_rng ? _rng->distance_cm_orient(ROTATION_PITCH_270) : 0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+#else
+    attiandrng |= prep_number(0, 3, 1)<<ATTIANDRNG_RNGFND_OFFSET;
+#endif
     return attiandrng;
 }
 
@@ -775,7 +781,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
         // true wind speed in dm/s
         value |= prep_number(roundf(windvane->get_true_wind_speed() * 10), 2, 1) << WIND_SPEED_OFFSET;
         // apparent wind angle in 3 degree increments -180,180 (signed)
-        value |= prep_number(roundf(degrees(windvane->get_apparent_wind_direction_rad()) * (1.0f/3.0f)), 2, 0);
+        value |= prep_number(roundf(degrees(windvane->get_apparent_wind_direction_rad()) * (1.0f/3.0f)), 2, 0) << WIND_APPARENT_ANGLE_OFFSET;
         // apparent wind speed in dm/s
         value |= prep_number(roundf(windvane->get_apparent_wind_speed() * 10), 2, 1) << WIND_APPARENT_SPEED_OFFSET;
     }
@@ -935,6 +941,16 @@ void AP_Frsky_SPort_Passthrough::process_tx_queue()
 }
 
 /*
+ * Send a mavlite message
+ * Message is chunked in sport packets pushed in the tx queue
+ * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
+ */
+bool AP_Frsky_SPort_Passthrough::send_message(const AP_Frsky_MAVlite_Message &txmsg)
+{
+    return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
+}
+#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
+/*
  * Utility method to apply constraints in changing sensor id values
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
@@ -949,17 +965,6 @@ void AP_Frsky_SPort_Passthrough::set_sensor_id(AP_Int8 param_idx, uint8_t &senso
     }
     sensor = calc_sensor_id(idx);
 }
-
-/*
- * Send a mavlite message
- * Message is chunked in sport packets pushed in the tx queue
- * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
- */
-bool AP_Frsky_SPort_Passthrough::send_message(const AP_Frsky_MAVlite_Message &txmsg)
-{
-    return mavlite_to_sport.process(_SPort_bidir.tx_packet_queue, txmsg);
-}
-#endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
 
 namespace AP
 {

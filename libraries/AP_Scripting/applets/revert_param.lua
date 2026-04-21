@@ -64,6 +64,10 @@ local rate_limit_axes = { "R", "P", "Y"}
 local PSC_types = { "ACCZ", "VELZ", "POSZ", "VELXY", "POSXY" }
 local OTHER_PARAMS = { "INS_GYRO_FILTER", "INS_ACCEL_FILTER", "PTCH2SRV_TCONST", "RLL2SRV_TCONST" }
 
+-- TECS params
+TECS_PARAMS = { "TECS_APPR_SMAX", "TECS_CLMB_MAX", "TECS_FLARE_HGT", "TECS_HDEM_TCONST", "TECS_HGT_OMEGA", "TECS_INTEG_GAIN", "TECS_LAND_ARSPD", "TECS_LAND_DAMP", "TECS_LAND_IGAIN", "TECS_LAND_PDAMP", "TECS_LAND_PMAX", "TECS_LAND_SINK", "TECS_LAND_SPDWGT", "TECS_LAND_SRC", "TECS_LAND_TCONST", "TECS_LAND_TDAMP", "TECS_LAND_THR", "TECS_OPTIONS", "TECS_PITCH_MAX", "TECS_PITCH_MIN", "TECS_PTCH_DAMP", "TECS_PTCH_FF_K", "TECS_PTCH_FF_V0", "TECS_RLL2THR", "TECS_SINK_MAX", "TECS_SINK_MIN", "TECS_SPDWEIGHT", "TECS_SPD_OMEGA", "TECS_SYNAIRSPEED", "TECS_THR_DAMP", "TECS_TIME_CONST", "TECS_TKOFF_IGAIN", "TECS_VERT_ACC" }
+
+
 if PREV_ENABLE:get() == 0 then
    return
 end
@@ -115,6 +119,11 @@ for _, psc in ipairs(PSC_prefixes) do
          add_param(psc .. "_" .. ptype .. "_" .. suffix)
       end
    end
+end
+
+-- add in TECS parameters
+for _, p in ipairs(TECS_PARAMS) do
+   add_param(p)
 end
 
 -- add in other parameters

@@ -5,10 +5,11 @@
 // Write an attitude packet
 void Plane::Log_Write_Attitude(void)
 {
-    Vector3f targets;       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
-    targets.x = nav_roll_cd;
-    targets.y = nav_pitch_cd;
-    targets.z = 0; //Plane does not have the concept of navyaw. This is a placeholder.
+    Vector3f targets {       // Package up the targets into a vector for commonality with Copter usage of Log_Wrote_Attitude
+        nav_roll_cd * 0.01f,
+        nav_pitch_cd * 0.01f,
+        0 //Plane does not have the concept of navyaw. This is a placeholder.
+    };
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.show_vtol_view()) {
@@ -18,8 +19,7 @@ void Plane::Log_Write_Attitude(void)
         // since Euler angles are not used and it is a waste of cpu to compute them at the loop rate.
         // Get them from the quaternion instead:
         quadplane.attitude_control->get_attitude_target_quat().to_euler(targets.x, targets.y, targets.z);
-        targets *= degrees(100.0f);
-        quadplane.ahrs_view->Write_AttitudeView(targets);
+        quadplane.ahrs_view->Write_AttitudeView(targets * RAD_TO_DEG);
     } else
 #endif
             {
@@ -121,17 +121,18 @@ void Plane::Log_Write_Control_Tuning()
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 struct PACKED log_OFG_Guided {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     float target_airspeed_cm;
     float target_airspeed_accel;
     float target_alt;
-    float target_alt_accel;
-    uint8_t target_alt_frame;
+    float target_alt_rate;
+    uint8_t target_mav_frame;   // received MavLink frame
     float target_heading;
     float target_heading_limit;
+    uint8_t target_alt_frame;   // internal AltFrame
 };
 
 // Write a OFG Guided packet.
@@ -142,11 +143,12 @@ void Plane::Log_Write_OFG_Guided()
         time_us                : AP_HAL::micros64(),
         target_airspeed_cm     : (float)guided_state.target_airspeed_cm*(float)0.01,
         target_airspeed_accel  : guided_state.target_airspeed_accel,
-        target_alt             : guided_state.target_alt,
-        target_alt_accel       : guided_state.target_alt_accel,
-        target_alt_frame       : guided_state.target_alt_frame,
+        target_alt             : guided_state.target_location.alt * 0.01,
+        target_alt_rate        : guided_state.target_alt_rate,
+        target_mav_frame       : guided_state.target_mav_frame,
         target_heading         : guided_state.target_heading,
-        target_heading_limit   : guided_state.target_heading_accel_limit
+        target_heading_limit   : guided_state.target_heading_accel_limit,
+        target_alt_frame       : static_cast<uint8_t>(guided_state.target_location.get_alt_frame()),
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -255,15 +257,17 @@ void Plane::Log_Write_RC(void)
 {
     logger.Write_RCIN();
     logger.Write_RCOUT();
+#if AP_RSSI_ENABLED
     if (rssi.enabled()) {
         logger.Write_RSSI();
     }
+#endif
     Log_Write_AETR();
 }
 
 void Plane::Log_Write_Guided(void)
 {
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     if (control_mode != &mode_guided) {
         return;
     }
@@ -272,10 +276,10 @@ void Plane::Log_Write_Guided(void)
         logger.Write_PID(LOG_PIDG_MSG, g2.guidedHeading.get_pid_info());
     }
 
-    if ( is_positive(guided_state.target_alt) || is_positive(guided_state.target_airspeed_cm) ) {
+    if ( guided_state.target_location.alt != -1 || is_positive(guided_state.target_airspeed_cm) ) {
         Log_Write_OFG_Guided();
     }
-#endif // OFFBOARD_GUIDED == ENABLED
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 }
 
 // incoming-to-vehicle mavlink COMMAND_INT can be logged
@@ -314,9 +318,9 @@ const struct LogStructure Plane::log_structure[] = {
 // @Field: RdO: scaled output rudder
 // @Field: ThD: demanded speed-height-controller throttle
 // @Field: As: airspeed estimate (or measurement if airspeed sensor healthy and ARSPD_USE>0)
-// @Field: SAs: DCM's airspeed estimate, NaN if not available
 // @Field: AsT: airspeed type ( old estimate or source of new estimate)
 // @FieldValueEnum: AsT: AP_AHRS::AirspeedEstimateType
+// @Field: SAs: DCM's airspeed estimate, NaN if not available
 // @Field: E2T: equivalent to true airspeed ratio
 // @Field: GU: groundspeed undershoot when flying with minimum groundspeed
 
@@ -431,7 +435,7 @@ const struct LogStructure Plane::log_structure[] = {
 // @LoggerMessage: TSIT
 // @Description: tailsitter speed scailing values
 // @Field: TimeUS: Time since system startup
-// @Field: Ts: throttle scailing used for tilt motors
+// @Field: Ts: throttle scaling used for tilt motors
 // @Field: Ss: speed scailing used for control surfaces method from Q_TAILSIT_GSCMSK
 // @Field: Tmin: minimum output throttle caculated from disk thoery gain scale with Q_TAILSIT_MIN_VO
 #if HAL_QUADPLANE_ENABLED
@@ -481,19 +485,20 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_AETR_MSG, sizeof(log_AETR),
       "AETR", "Qfffffff",  "TimeUS,Ail,Elev,Thr,Rudd,Flap,Steer,SS", "s-------", "F-------" , true },
 
-#if OFFBOARD_GUIDED == ENABLED
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 // @LoggerMessage: OFG
 // @Description: OFfboard-Guided - an advanced version of GUIDED for companion computers that includes rate/s.  
 // @Field: TimeUS: Time since system startup
 // @Field: Arsp:  target airspeed cm
 // @Field: ArspA:  target airspeed accel
 // @Field: Alt:  target alt
-// @Field: AltA: target alt accel
-// @Field: AltF: target alt frame
+// @Field: AltA: target alt velocity (rate of change)
+// @Field: AltF: target alt frame (MAVLink)
 // @Field: Hdg:  target heading
 // @Field: HdgA: target heading lim
+// @Field: AltL: target alt frame (Location)
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
-      "OFG", "QffffBff",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA", "s-------", "F-------" , true }, 
+      "OFG", "QffffBffB",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA,AltL", "snnmo-d--", "F--------" , true }, 
 #endif
 };
 

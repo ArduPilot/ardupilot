@@ -50,6 +50,7 @@ define HAL_BATT_CURR_SCALE 40.0  # This depends on the ESC's V/mA output ratio.
 # LED
 PC13 LED0 OUTPUT LOW GPIO(90) # Amber; System status.
 PC0 LED1 OUTPUT LOW GPIO(91) # Not connected; GPS Status. (Required, or the system status LED won't work.)
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 91
 

@@ -21,9 +21,7 @@ public:
     float distance_max() const override;
     float distance_min() const override;
 
-
-   static AP_Proximity_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new);
-
+    static AP_Proximity_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t address, bool create_new);
 
     static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
 

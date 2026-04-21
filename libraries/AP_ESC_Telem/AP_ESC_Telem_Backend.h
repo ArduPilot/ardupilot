@@ -23,9 +23,18 @@ public:
         uint16_t edt2_status;       // status reported by Extended DShot Telemetry v2
         uint16_t edt2_stress;       // stress reported in dedicated messages by Extended DShot Telemetry v2
 #endif
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+        uint8_t input_duty;         // input duty cycle
+        uint8_t output_duty;        // output duty cycle
+        uint32_t flags;             // Status flags
+        uint8_t power_percentage;   // Percentage of output power
+#endif // AP_EXTENDED_ESC_TELEM_ENABLED
 
         // return true if the data is stale
-        bool stale(uint32_t now_ms=0) const volatile;
+        bool stale(uint32_t now_ms) const volatile;
+
+        //  return true if the requested type of data is available and not stale
+        bool valid(const uint16_t type_mask) const volatile;
     };
 
     struct RpmData {
@@ -50,6 +59,12 @@ public:
         EDT2_STATUS = 1 << 8,
         EDT2_STRESS = 1 << 9,
 #endif
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+        INPUT_DUTY  = 1 << 10,
+        OUTPUT_DUTY = 1 << 11,
+        FLAGS       = 1 << 12,
+        POWER_PERCENTAGE = 1 << 13,
+#endif // AP_EXTENDED_ESC_TELEM_ENABLED
     };
 
 

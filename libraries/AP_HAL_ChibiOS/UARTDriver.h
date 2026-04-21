@@ -28,6 +28,10 @@
 // enough for serial0 to serial9, plus IOMCU
 #define UART_MAX_DRIVERS 11
 
+#ifndef HAL_HAVE_LOW_NOISE_UART
+#define HAL_HAVE_LOW_NOISE_UART 0
+#endif
+
 class ChibiOS::UARTDriver : public AP_HAL::UARTDriver {
 public:
     UARTDriver(uint8_t serial_num);
@@ -38,6 +42,7 @@ public:
     bool is_initialized() override;
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
+    uint8_t get_usb_parity() const override;
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
@@ -78,6 +83,10 @@ public:
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
+
+#if HAL_HAVE_LOW_NOISE_UART
+        bool low_noise_line;
+#endif
     };
 
     bool wait_timeout(uint16_t n, uint32_t timeout_ms) override;
@@ -181,13 +190,14 @@ private:
 #endif
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
+    uint32_t _rts_threshold;
     HAL_Semaphore _write_mutex;
 #ifndef HAL_UART_NODMA
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
 #endif
-    volatile bool _in_rx_timer;
-    volatile bool _in_tx_timer;
+    HAL_Semaphore tx_sem;
+    HAL_Semaphore rx_sem;
     volatile bool _rx_initialised;
     volatile bool _tx_initialised;
     volatile bool _device_initialised;
@@ -280,6 +290,13 @@ protected:
     // Getters for cumulative tx and rx counts
     uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
     uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+#if CH_CFG_USE_EVENTS == TRUE
+    uint32_t _rx_stats_framing_errors;
+    uint32_t _rx_stats_overrun_errors;
+    uint32_t _rx_stats_noise_errors;
+    event_listener_t err_listener;
+    bool err_listener_initialised;
+#endif
 #endif
 };
 

@@ -79,9 +79,11 @@ void SITL_State::_sitl_setup()
     if (_sitl != nullptr) {
         // setup some initial values
         _update_airspeed(0);
+#if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
-            gimbal = new SITL::Gimbal(_sitl->state);
+            gimbal = NEW_NOTHROW SITL::SoloGimbal();
         }
+#endif
 
         sitl_model->set_buzzer(&_sitl->buzzer_sim);
         sitl_model->set_sprayer(&_sitl->sprayer_sim);
@@ -188,6 +190,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             if (queue_length < 1024) {
                 break;
             }
+            _serial_0_outqueue_full_count++;
             usleep(1000);
         }
     }

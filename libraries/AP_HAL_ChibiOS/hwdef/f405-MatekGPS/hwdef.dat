@@ -43,8 +43,6 @@ define HAL_USE_RTC FALSE
 
 define DMA_RESERVE_SIZE 0
 
-define HAL_NO_MONITOR_THREAD
-
 define HAL_DEVICE_THREAD_STACK 768
 
 # we setup a small defaults.parm

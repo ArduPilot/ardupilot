@@ -143,6 +143,7 @@ bool MissionItemProtocol_Rally::get_item_as_mission_item(uint16_t seq,
     ret_packet.x = rallypoint.lat;
     ret_packet.y = rallypoint.lng;
     ret_packet.z = rallypoint.alt;
+    ret_packet.mission_type = MAV_MISSION_TYPE_RALLY;
 
     return true;
 }

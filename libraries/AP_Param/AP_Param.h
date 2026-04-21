@@ -177,12 +177,12 @@
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
-    AP_PARAM_INT8,
-    AP_PARAM_INT16,
-    AP_PARAM_INT32,
-    AP_PARAM_FLOAT,
-    AP_PARAM_VECTOR3F,
-    AP_PARAM_GROUP
+    AP_PARAM_INT8    = 1,
+    AP_PARAM_INT16   = 2,
+    AP_PARAM_INT32   = 3,
+    AP_PARAM_FLOAT   = 4,
+    AP_PARAM_VECTOR3F= 5,
+    AP_PARAM_GROUP   = 6,
 };
 
 
@@ -430,6 +430,11 @@ public:
     ///
     static bool load_all();
 
+    // return true if eeprom is full, used for arming check
+    static bool get_eeprom_full(void) {
+        return eeprom_full;
+    }
+
     // returns storage space used:
     static uint16_t storage_used() { return sentinal_offset; }
 
@@ -563,7 +568,11 @@ public:
 
     // return the persistent top level key for the ParamToken key
     static uint16_t get_persistent_key(uint16_t key) { return var_info(key).key; }
-    
+
+    // returns true if this parameter should be settable via the
+    // MAVLink interface:
+    bool allow_set_via_mavlink(uint16_t flags) const;
+
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
@@ -865,6 +874,8 @@ private:
     };
     static defaults_list *default_list;
     static void check_default(AP_Param *ap, float *default_value);
+
+    static bool eeprom_full;
 };
 
 namespace AP {

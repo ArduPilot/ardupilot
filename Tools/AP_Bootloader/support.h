@@ -1,7 +1,13 @@
 #pragma once
 
+#include <AP_HAL_ChibiOS/AP_HAL_ChibiOS.h>
+
 #define LED_ACTIVITY	1
 #define LED_BOOTLOADER	2
+
+#ifndef AP_FLASH_ECC_CHECK_ENABLED
+#define AP_FLASH_ECC_CHECK_ENABLED defined(STM32H7) && CH_CFG_USE_HEAP
+#endif
 
 /* board info forwarded from board-specific code to booloader */
 struct boardinfo {
@@ -18,7 +24,9 @@ int16_t cin(unsigned timeout_ms);
 int cin_word(uint32_t *wp, unsigned timeout_ms);
 void cout(uint8_t *data, uint32_t len);
 void port_setbaud(uint32_t baudrate);
-
+#if defined(BOOTLOADER_FORWARD_OTG2_SERIAL)
+bool update_otg2_serial_forward(void);
+#endif
 void flash_init();
 
 uint32_t flash_func_read_word(uint32_t offset);
@@ -46,10 +54,13 @@ void led_off(unsigned led);
 void led_toggle(unsigned led);
 
 void thread_sleep_ms(uint32_t ms);
+void thread_sleep_us(uint32_t us);
 
 void custom_startup(void);
 
+#if AP_FLASH_ECC_CHECK_ENABLED
 void check_ecc_errors(void);
+#endif
 
 // printf to debug uart (or USB)
 extern "C" {

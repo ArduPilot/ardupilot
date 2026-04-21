@@ -60,6 +60,8 @@ If you move the switch to the low position at any time in the tune before gains 
 
 If the pilot gives steering or throttle input during tuning then tuning is paused for 4 seconds.  Tuning restarts once the pilot returns to the input to the neutral position.
 
+If the vehicle is not able to turn correctly to enter or track the circle, the ``PSC`` parameters may be to be increased. For example ``PSC_VEL_P`` to 20 for very slow (<0.4m/s) vehicles.
+
 # Parameters
 
 The script has the following parameters to configure its behaviour
@@ -120,3 +122,8 @@ completes unless the pilot move the RC switch low to revert the tune.
 Setting this to a non-zero value allows you to use quicktune with a 2-position
 switch, with the switch settings as low and mid positions. A zero
 value disables auto-save and you need to have a 3 position switch.
+
+## RTUN_SPEED_MIN
+
+The minimum speed at which tuning will occur. The vehicle must be able to
+run in Circle mode at this speed or greater.

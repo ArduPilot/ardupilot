@@ -59,9 +59,7 @@ void Sub::Log_Write_Control_Tuning()
 // Write an attitude packet
 void Sub::Log_Write_Attitude()
 {
-    Vector3f targets = attitude_control.get_att_target_euler_cd();
-    targets.z = wrap_360_cd(targets.z);
-    ahrs.Write_Attitude(targets);
+    ahrs.Write_Attitude(attitude_control.get_att_target_euler_rad() * RAD_TO_DEG);
 
     AP::ahrs().Log_Write();
 }

@@ -86,9 +86,9 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(format_version,         "FORMAT_VERSION", 0),
 
     // @Param: CAN_NODE
-    // @DisplayName: UAVCAN node that is used for this network
-    // @Description: UAVCAN node should be set implicitly or 0 for dynamic node allocation
-    // @Range: 0 250
+    // @DisplayName: DroneCAN node ID used by this node on all networks
+    // @Description: Value of 0 requests any ID from a DNA server, any other value sets that ID ignoring DNA
+    // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
     GSCALAR(can_node,         "CAN_NODE", HAL_CAN_DEFAULT_NODE_ID),
@@ -407,6 +407,15 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/SRV_Channel/SRV_Channels.cpp
     GOBJECT(servo_channels, "OUT",     SRV_Channels),
 
+    // @Param: ESC_RATE
+    // @DisplayName: ESC Update Rate
+    // @Description: Rate in Hz that ESC PWM outputs (function is MotorN) will update at
+    // @Units: Hz
+    // @Range: 50 400
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(esc_rate, "ESC_RATE", 400), // effective Copter and QuadPlane default after clamping
+
     // @Param: ESC_PWM_TYPE
     // @DisplayName: Output PWM type
     // @Description: This selects the output PWM type, allowing for normal PWM continuous output, OneShot, brushed or DShot motor output
@@ -701,6 +710,31 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(rpm_msg_rate, "RPM_MSG_RATE", 0),
+#endif
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED && HAL_WITH_ESC_TELEM
+    // @Param: ESC_EXT_TLM_RATE
+    // @DisplayName: ESC Extended telemetry message rate
+    // @Description: This is the rate at which extended ESC Telemetry will be sent across the CAN bus for each ESC
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    GSCALAR(esc_extended_telem_rate, "ESC_EXT_TLM_RATE", AP_PERIPH_ESC_TELEM_RATE_DEFAULT / 10),
+#endif
+
+
+#ifdef HAL_PERIPH_ENABLE_IMU
+    // @Param: IMU_SAMPLE_RATE
+    // @DisplayName: IMU Sample Rate
+    // @Description: IMU Sample Rate
+    // @Range: 0 1000
+    // @User: Standard
+    GSCALAR(imu_sample_rate, "INS_SAMPLE_RATE", 0),
+
+    // @Group: INS
+    // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
+    GOBJECT(imu, "INS", AP_InertialSensor),
 #endif
 
     AP_VAREND

@@ -106,6 +106,8 @@ void Tiltrotor::setup()
         return;
     }
 
+    quadplane.thrust_type = QuadPlane::ThrustType::TILTROTOR;
+
     _is_vectored = tilt_mask != 0 && type == TILT_TYPE_VECTORED_YAW;
 
     // true if a fixed forward motor is configured, either throttle, throttle left  or throttle right.
@@ -117,7 +119,7 @@ void Tiltrotor::setup()
 
     // check if there are any permanent VTOL motors
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; ++i) {
-        if (motors->is_motor_enabled(i) && ((tilt_mask & (1U<<1)) == 0)) {
+        if (motors->is_motor_enabled(i) && !is_motor_tilting(i)) {
             // enabled motor not set in tilt mask
             _have_vtol_motor = true;
             break;
@@ -142,7 +144,7 @@ void Tiltrotor::setup()
         }
     }
 
-    transition = new Tiltrotor_Transition(quadplane, motors, *this);
+    transition = NEW_NOTHROW Tiltrotor_Transition(quadplane, motors, *this);
     if (!transition) {
         AP_BoardConfig::allocation_error("tiltrotor transition");
     }
@@ -398,6 +400,11 @@ void Tiltrotor::update(void)
 // Write tiltrotor specific log
 void Tiltrotor::write_log()
 {
+    // Only valid on a tiltrotor
+    if (!enabled()) {
+        return;
+    }
+
     struct log_tiltrotor pkt {
         LOG_PACKET_HEADER_INIT(LOG_TILT_MSG),
         time_us      : AP_HAL::micros64(),
@@ -735,10 +742,18 @@ void Tiltrotor::update_yaw_target(void)
     transition_yaw_set_ms = now;
 }
 
+
+/*
+  control use of multirotor rate control in forward transition
+ */
+bool Tiltrotor_Transition::use_multirotor_control_in_fwd_transition() const
+{
+    return tiltrotor.is_vectored() && transition_state <= TRANSITION_TIMER;
+}
+
 bool Tiltrotor_Transition::update_yaw_target(float& yaw_target_cd)
 {
-    if (!(tiltrotor.is_vectored() &&
-        transition_state <= TRANSITION_TIMER)) {
+    if (!use_multirotor_control_in_fwd_transition()) {
         return false;
     }
     tiltrotor.update_yaw_target();

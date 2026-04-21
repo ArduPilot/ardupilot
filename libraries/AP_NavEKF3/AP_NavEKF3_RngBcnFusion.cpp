@@ -3,6 +3,8 @@
 
 #if EK3_FEATURE_BEACON_FUSION
 
+#include <AP_DAL/AP_DAL.h>
+
 // initialise state:
 void NavEKF3_core::BeaconFusion::InitialiseVariables()
 {
@@ -40,10 +42,10 @@ void NavEKF3_core::BeaconFusion::InitialiseVariables()
     delete[] fusionReport;
     fusionReport = nullptr;
     numFusionReports = 0;
-    auto *beacon = AP::dal().beacon();
+    auto *beacon = dal.beacon();
     if (beacon != nullptr) {
         const uint8_t count = beacon->count();
-        fusionReport = new BeaconFusion::FusionReport[count];
+        fusionReport = NEW_NOTHROW BeaconFusion::FusionReport[count];
         if (fusionReport != nullptr) {
             numFusionReports = count;
         }
@@ -234,7 +236,7 @@ void NavEKF3_core::FuseRngBcn()
             zero_range(&Kfusion[0], 16, 21);
         }
 
-        if (!inhibitWindStates) {
+        if (!inhibitWindStates && !treatWindStatesAsTruth) {
             Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
             Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
         } else {

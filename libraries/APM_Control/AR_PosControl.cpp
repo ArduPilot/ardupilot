@@ -389,7 +389,8 @@ void AR_PosControl::write_log()
     Vector2f pos_target_2d_cm = get_pos_target().tofloat() * 100.0;
 
     // reuse logging from AC_PosControl:
-    AC_PosControl::Write_PSCN(pos_target_2d_cm.x,     // position target
+    AC_PosControl::Write_PSCN(0.0,                  // position desired
+                            pos_target_2d_cm.x,     // position target
                             curr_pos_NED.x * 100.0, // position
                             _vel_desired.x * 100.0, // desired velocity
                             _vel_target.x * 100.0,  // target velocity
@@ -397,7 +398,8 @@ void AR_PosControl::write_log()
                             _accel_desired.x * 100.0,   // desired accel
                             _accel_target.x * 100.0,    // target accel
                             curr_accel_NED.x);      // accel
-    AC_PosControl::Write_PSCE(pos_target_2d_cm.y,     // position target
+    AC_PosControl::Write_PSCE(0.0,                  // position desired
+                            pos_target_2d_cm.y,     // position target
                             curr_pos_NED.y * 100.0, // position
                             _vel_desired.y * 100.0, // desired velocity
                             _vel_target.y * 100.0,  // target velocity

@@ -22,8 +22,6 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 
-#define HNF_MAX_FILTERS HAL_HNF_MAX_FILTERS // must be even for double-notch filters
-
 /*
   optional logging for SITL only of all notch frequencies
  */
@@ -125,7 +123,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
     // @Param: OPTS
     // @DisplayName: Harmonic Notch Filter options
     // @Description: Harmonic Notch Filter options. Triple and double-notches can provide deeper attenuation across a wider bandwidth with reduced latency than single notches and are suitable for larger aircraft. Multi-Source attaches a harmonic notch to each detected noise frequency instead of simply being multiples of the base frequency, in the case of FFT it will attach notches to each of three detected noise peaks, in the case of ESC it will attach notches to each of four motor RPM values. Loop rate update changes the notch center frequency at the scheduler loop rate rather than at the default of 200Hz. If both double and triple notches are specified only double notches will take effect.
-    // @Bitmask: 0:Double notch,1:Multi-Source,2:Update at loop rate,3:EnableOnAllIMUs,4:Triple notch, 5:Use min freq on RPM failure
+    // @Bitmask: 0:Double notch,1:Multi-Source,2:Update at loop rate,3:EnableOnAllIMUs,4:Triple notch, 5:Use min freq on RPM source failure
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("OPTS", 8, HarmonicNotchFilterParams, _options, 0),
@@ -191,21 +189,26 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
     NotchFilter<T>::calculate_A_and_Q(center_freq_hz, bandwidth_hz / _composite_notches, attenuation_dB, _A, _Q);
 
     _initialised = true;
+
+    // ensure static notches are allocated and working
+    if (params->tracking_mode() == HarmonicNotchDynamicMode::Fixed) {
+        update(center_freq_hz);
+    }
 }
 
 /*
-  allocate a collection of, at most HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
+  allocate a collection of, at most HAL_HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
  */
 template <class T>
 void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint32_t harmonics, uint8_t composite_notches)
 {
     _composite_notches = MIN(composite_notches, 3);
     _num_harmonics = __builtin_popcount(harmonics);
-    _num_filters = _num_harmonics * num_notches * _composite_notches;
+    _num_filters = MIN(_num_harmonics * num_notches * _composite_notches, HAL_HNF_MAX_FILTERS);
     _harmonics = harmonics;
 
     if (_num_filters > 0) {
-        _filters = new NotchFilter<T>[_num_filters];
+        _filters = NEW_NOTHROW NotchFilter<T>[_num_filters];
         if (_filters == nullptr) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Failed to allocate %u bytes for notch filter", (unsigned int)(_num_filters * sizeof(NotchFilter<T>)));
             _num_filters = 0;
@@ -231,7 +234,7 @@ void HarmonicNotchFilter<T>::expand_filter_count(uint16_t total_notches)
       note that we rely on the semaphore in
       AP_InertialSensor_Backend.cpp to make this thread safe
      */
-    auto filters = new NotchFilter<T>[total_notches];
+    auto filters = NEW_NOTHROW NotchFilter<T>[total_notches];
     if (filters == nullptr) {
         _alloc_has_failed = true;
         return;
@@ -346,7 +349,7 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
     // adjust the frequencies to be in the allowable range
     const float nyquist_limit = _sample_freq_hz * HARMONIC_NYQUIST_CUTOFF;
 
-    const uint16_t total_notches = num_centers * _num_harmonics * _composite_notches;
+    const uint16_t total_notches = MIN(num_centers * _num_harmonics * _composite_notches, HAL_HNF_MAX_FILTERS);
     if (total_notches > _num_filters) {
         // alloc realloc of filters
         expand_filter_count(total_notches);

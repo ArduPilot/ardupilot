@@ -1058,15 +1058,14 @@ float AR_AttitudeControl::get_desired_speed_accel_limited(float desired_speed, f
 float AR_AttitudeControl::get_stopping_distance(float speed) const
 {
     // get maximum vehicle deceleration
-    const float accel_max = get_accel_max();
+    const float decel_max = get_decel_max();
 
-    // avoid divide by zero
-    if ((accel_max <= 0.0f) || is_zero(speed)) {
+    if ((decel_max <= 0.0f) || is_zero(speed)) {
         return 0.0f;
     }
 
     // assume linear deceleration
-    return 0.5f * sq(speed) / accel_max;
+    return 0.5f * sq(speed) / decel_max;
 }
 
 // relax I terms of throttle and steering controllers

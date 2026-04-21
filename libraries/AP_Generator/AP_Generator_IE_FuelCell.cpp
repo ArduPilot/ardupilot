@@ -33,7 +33,7 @@ void AP_Generator_IE_FuelCell::init()
     _health_warn_last_ms = AP_HAL::millis();
 }
 
-// Update fuelcell, expected to be called at 20hz
+// Update fuelcell, expected to be called at 10hz
 void AP_Generator_IE_FuelCell::update()
 {
     if (_uart == nullptr) {
@@ -42,12 +42,10 @@ void AP_Generator_IE_FuelCell::update()
 
     const uint32_t now = AP_HAL::millis();
 
-   // Read any available data
-    uint32_t nbytes = MIN(_uart->available(),30u);
-    while (nbytes-- > 0) {
-        const int16_t c = _uart->read();
-        if (c < 0) {
-            // Nothing to decode
+    // Read any available data
+    for (uint8_t i = 0; i < UINT8_MAX; i++) {  // process at most n bytes
+        uint8_t c;
+        if (!_uart->read(c)) {
             break;
         }
 

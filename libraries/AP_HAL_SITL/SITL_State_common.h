@@ -9,7 +9,7 @@
 #define SITL_SERVO_PORT 20722
 
 #include <AP_HAL/utility/Socket_native.h>
-#include <SITL/SIM_Gimbal.h>
+#include <SITL/SIM_SoloGimbal.h>
 #include <SITL/SIM_ADSB.h>
 #include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_EFI_Hirth.h>
@@ -44,6 +44,7 @@
 #include <SITL/SIM_CRSF.h>
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
+#include <SITL/SIM_PS_LD06.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 #include <SITL/SIM_PS_RPLidarA1.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
@@ -104,11 +105,11 @@ public:
     bool new_rc_input;
     uint16_t pwm_output[SITL_NUM_CHANNELS];
     bool output_ready = false;
-    
-#if HAL_SIM_GIMBAL_ENABLED
+
+#if AP_SIM_SOLOGIMBAL_ENABLED
     // simulated gimbal
     bool enable_gimbal;
-    SITL::Gimbal *gimbal;
+    SITL::SoloGimbal *gimbal;
 #endif
 
 #if HAL_SIM_ADSB_ENABLED
@@ -171,6 +172,11 @@ public:
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
+
+#if AP_SIM_PS_LD06_ENABLED
+    // simulated LD06:
+    SITL::PS_LD06 *ld06;
+#endif  // AP_SIM_PS_LD06_ENABLED
 
 #if HAL_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
@@ -246,6 +252,10 @@ public:
     // send out SITL state as UDP multicast
     void multicast_state_open(void);
     void multicast_state_send(void);
+
+    // number of times we have paused the simulation for 1ms because
+    // the TCP queue is full:
+    uint32_t _serial_0_outqueue_full_count;
 
 protected:
     enum vehicle_type _vehicle;

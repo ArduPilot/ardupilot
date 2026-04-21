@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 '''
 These are the unit tests for the python script that fetches online ArduPilot

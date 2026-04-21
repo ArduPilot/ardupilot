@@ -81,7 +81,7 @@ float ServoModel::apply_filter(float v, float dt)
     if (sitl->servo.servo_delay > 0) {
         uint32_t delay_len = MAX(1,sitl->servo.servo_delay * sitl->loop_rate_hz);
         if (!delay) {
-            delay = new ObjectBuffer<float>();
+            delay = NEW_NOTHROW ObjectBuffer<float>();
         }
         if (delay->get_size() != delay_len) {
             delay->set_size(delay_len);

@@ -47,9 +47,6 @@ private:
     float _gyro_scale;
     float _accel_scale;
 
-    // gyro and accel instances
-    uint8_t _gyro_instance;
-    uint8_t _accel_instance;
     enum Rotation _rotation_g;
     enum Rotation _rotation_a;
 };

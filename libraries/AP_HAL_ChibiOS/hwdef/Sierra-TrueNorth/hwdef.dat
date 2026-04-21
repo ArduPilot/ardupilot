@@ -36,7 +36,6 @@ MAIN_STACK 0x300
 PROCESS_STACK 0xA00
 
 # save memory
-define HAL_NO_MONITOR_THREAD
 define HAL_USE_ADC FALSE
 
 # we setup a small defaults.parm

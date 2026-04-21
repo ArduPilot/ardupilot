@@ -14,6 +14,26 @@
  */
 /*
   glider model for high altitude balloon drop
+
+  controls:
+    - servo6: balloon lift, 1000 for no lift, 2000 for maximum lift
+    - servo10: balloon cut, this cuts away the balloon when high
+
+  Note that the glider starts off in a lifted by tail pose, with pitch
+  -80 degrees. The balloon then lifts the glider above the ground. The
+  balloon automatically bursts at a height of SIM_GLD_BLN_BRST meters,
+  or can be cut away early with servo10.
+
+  The maximum rate of the balloon lift is in SIM_GLD_BLN_RATE, in m/s
+
+  To perform a takeoff first arm on the ground then use
+    servo set 6 2000
+  to release the ground hold. Use this to cut away the balloon:
+    servo set 10 2000
+
+  For an automatic mission, NAV_ALTITUDE_WAIT should be used to wait
+  for a desired altitude under balloon lift. Then a DO_SET_SERVO with
+  servo 10 and a value of 2000 to cut away the balloon.
  */
 
 #include "SIM_Glider.h"
@@ -211,7 +231,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
     float aileron  = 0.5*(filtered_servo_angle(input, 1) + filtered_servo_angle(input, 4));
     float elevator = filtered_servo_angle(input, 2);
     float rudder   = filtered_servo_angle(input, 3);
-    float balloon  = filtered_servo_range(input, 5);
+    float balloon  = MAX(0.0f, filtered_servo_range(input, 5)); // Don't let the balloon receive downwards commands.
     float balloon_cut = filtered_servo_range(input, 9);
 
     // Move balloon upwards using balloon velocity from channel 6
@@ -221,7 +241,7 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
         balloon_velocity = Vector3f(-wind_ef.x, -wind_ef.y, -wind_ef.z -balloon_rate * balloon);
         balloon_position += balloon_velocity * (1.0e-6 * (float)frame_time_us);
         const float height_AMSL = 0.01f * (float)home.alt - position.z;
-        // release at burst height or when channel 9 goes high
+        // release at burst height or when balloon cut output goes high
         if (hal.scheduler->is_system_initialized() &&
             (height_AMSL > balloon_burst_amsl || balloon_cut > 0.8)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "pre-release at %i m AMSL\n", (int)height_AMSL);
@@ -360,7 +380,7 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     // NED unit vector pointing from tether attachment on plane to attachment on balloon
     Vector3f tether_unit_vec_ef = relative_position.normalized();
 
-    // NED velocity of attahment point on plane
+    // NED velocity of attachment point on plane
     Vector3f attachment_velocity_ef = velocity_ef + dcm * (gyro % tether_pos_bf);
 
     // NED velocity of attachment point on balloon as seen by observer on attachemnt point on plane

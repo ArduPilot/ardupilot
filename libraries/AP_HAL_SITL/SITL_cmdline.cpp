@@ -106,6 +106,7 @@ void SITL_State::_usage(void)
            "\t--serial7 device         set device string for SERIAL7\n"
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
+           "\t--uartA device           alias for --serial0 (do not use)\n"
            "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
@@ -305,7 +306,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"enable-fgview",   false,  0, CMDLINE_FGVIEW},
         {"autotest-dir",    true,   0, CMDLINE_AUTOTESTDIR},
         {"defaults",        true,   0, CMDLINE_DEFAULTS},
-        {"uartA",           true,   0, CMDLINE_UARTA},
+        // {"uartA",           true,   0, CMDLINE_UARTA}, // alias for serial0
         {"uartB",           true,   0, CMDLINE_UARTB},
         {"uartC",           true,   0, CMDLINE_UARTC},
         {"uartD",           true,   0, CMDLINE_UARTD},
@@ -316,6 +317,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"uartI",           true,   0, CMDLINE_UARTI},
         {"uartJ",           true,   0, CMDLINE_UARTJ},
         {"serial0",         true,   0, CMDLINE_SERIAL0},
+        {"uartA",           true,   0, CMDLINE_SERIAL0}, // for MissionPlanner compatibility
         {"serial1",         true,   0, CMDLINE_SERIAL1},
         {"serial2",         true,   0, CMDLINE_SERIAL2},
         {"serial3",         true,   0, CMDLINE_SERIAL3},
@@ -382,13 +384,13 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 's':
             speedup = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_SPEEDUP", speedup};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_SPEEDUP=%f\n", speedup);
             break;
         case 'r':
             sim_rate_hz = strtof(gopt.optarg, nullptr);
             temp_cmdline_param = {"SIM_RATE_HZ", sim_rate_hz};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SIM_RATE_HZ=%f\n", sim_rate_hz);
             break;
         case 'C':
@@ -437,9 +439,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case 'v':
             vehicle_str = gopt.optarg;
             break;
+#if AP_SIM_SOLOGIMBAL_ENABLED
         case CMDLINE_GIMBAL:
             enable_gimbal = true;
             break;
+#endif
         case CMDLINE_FGVIEW:
             _use_fg_view = true;
             break;
@@ -511,7 +515,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 exit(1);
             }
             temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
-            cmdline_param.push_back(temp_cmdline_param);
+            cmdline_param.push(temp_cmdline_param);
             printf("Setting SYSID_THISMAV=%d\n", sysid);
             break;
         }

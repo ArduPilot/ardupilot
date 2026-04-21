@@ -55,17 +55,6 @@ public:
         AP_HAL::CANIface** _can_ifaces)
 #endif
         :
-        serial_array{
-            _serial0,
-            _serial1,
-            _serial2,
-            _serial3,
-            _serial4,
-            _serial5,
-            _serial6,
-            _serial7,
-            _serial8,
-            _serial9},
         i2c_mgr(_i2c_mgr),
         spi(_spi),
         wspi(_wspi),
@@ -78,13 +67,24 @@ public:
         scheduler(_scheduler),
         util(_util),
         opticalflow(_opticalflow),
-#if HAL_WITH_DSP
-        dsp(_dsp),
-#endif
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
         simstate(_simstate),
 #endif
-        flash(_flash)
+        flash(_flash),
+#if HAL_WITH_DSP
+        dsp(_dsp),
+#endif
+        serial_array{
+            _serial0,
+            _serial1,
+            _serial2,
+            _serial3,
+            _serial4,
+            _serial5,
+            _serial6,
+            _serial7,
+            _serial8,
+            _serial9}
     {
 #if HAL_NUM_CAN_IFACES > 0
         if (_can_ifaces == nullptr) {

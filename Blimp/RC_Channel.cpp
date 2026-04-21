@@ -79,7 +79,7 @@ void RC_Channel_Blimp::do_aux_function_change_mode(const Mode::Number mode,
     switch (ch_flag) {
     case AuxSwitchPos::HIGH: {
         // engage mode (if not possible we remain in current flight mode)
-        const bool success = blimp.set_mode(mode, ModeReason::RC_COMMAND);
+        const bool success = blimp.set_mode(mode, ModeReason::AUX_FUNCTION);
         if (blimp.ap.initialised) {
             if (success) {
                 AP_Notify::events.user_mode_change = 1;

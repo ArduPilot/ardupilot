@@ -1,0 +1,95 @@
+# parameters for the autonomy dev kit
+# https://www.modalai.com/products/px4-autonomy-developer-kit
+
+# flight modes
+FLTMODE1         5
+FLTMODE4         2
+FLTMODE_CH       6
+
+# motor ordering
+SERVO1_FUNCTION 34
+SERVO2_FUNCTION 35
+SERVO3_FUNCTION 33
+SERVO4_FUNCTION 36
+
+# enable PID logging
+LOG_BITMASK      65535
+
+# mag field varies quite a lot between batteries
+ARMING_MAGTHRESH 200
+
+# IMU orientation
+AHRS_ORIENTATION 8
+
+# compass orientation
+COMPASS_ORIENT 8
+
+# filtering
+INS_GYRO_FILTER  40
+INS_HNTCH_ENABLE 1
+INS_HNTCH_FREQ   100
+INS_HNTCH_BW     50
+INS_HNTCH_HMNCS  7
+INS_HNTCH_REF    1
+INS_HNTCH_MODE   3
+INS_HNTCH_OPTS   2
+
+# run IMU at 2kHz
+INS_GYRO_RATE    1
+
+# a bit more agressive loiter
+PILOT_SPEED_UP   500
+LOIT_BRK_ACCEL   500
+LOIT_BRK_JERK    1000
+LOIT_BRK_DELAY   0.200000
+
+# tuning from autotune
+ATC_ACCEL_Y_MAX  46813.816406
+ATC_ACCEL_R_MAX  218565.890625
+ATC_ACCEL_P_MAX  220962
+ATC_ANG_RLL_P    15.120497
+ATC_ANG_PIT_P    15.393054
+ATC_ANG_YAW_P    7.636879
+ATC_RAT_RLL_P    0.038459
+ATC_RAT_RLL_I    0.038459
+ATC_RAT_RLL_D    0.000927
+ATC_RAT_PIT_P    0.043496
+ATC_RAT_PIT_I    0.043496
+ATC_RAT_PIT_D    0.000934
+ATC_RAT_YAW_P    0.376548
+ATC_RAT_YAW_I    0.037655
+ATC_RAT_YAW_FLTE 2.090602
+
+# battery setup
+BATT_LOW_VOLT    7
+BATT_OPTIONS     64
+BATT_VOLT_PIN    1
+BATT_CURR_PIN    2
+BATT_VOLT_MULT   1
+BATT_AMP_PERVLT  1
+# on the test board we have a current offset of -16.8A
+# we need to check if this applies to all versions of this vehicle
+BATT_AMP_OFFSET -16.8
+
+# 2S battery range
+MOT_BAT_VOLT_MAX 8.400000
+MOT_BAT_VOLT_MIN 6.600000
+
+# quad-X
+FRAME_CLASS      1
+
+# tweak R/C inputs
+RC1_MIN          1000
+RC1_MAX          2000
+RC1_DZ           40
+RC2_MIN          1000
+RC2_MAX          2000
+RC2_REVERSED     1
+RC3_MIN          1000
+RC3_MAX          2000
+RC4_MIN          1000
+RC4_MAX          2000
+RC4_DZ           40
+
+# add arming on right switch
+RC7_OPTION       153

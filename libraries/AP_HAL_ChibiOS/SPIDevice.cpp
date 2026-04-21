@@ -82,7 +82,7 @@ SPIBus::SPIBus(uint8_t _bus) :
     chMtxObjectInit(&dma_lock);
 
     // allow for sharing of DMA channels with other peripherals
-    dma_handle = new Shared_DMA(spi_devices[bus].dma_channel_rx,
+    dma_handle = NEW_NOTHROW Shared_DMA(spi_devices[bus].dma_channel_rx,
                                 spi_devices[bus].dma_channel_tx,
                                 FUNCTOR_BIND_MEMBER(&SPIBus::dma_allocate, void, Shared_DMA *),
                                 FUNCTOR_BIND_MEMBER(&SPIBus::dma_deallocate, void, Shared_DMA *));
@@ -470,7 +470,7 @@ SPIDeviceManager::get_device(const char *name)
     }
     if (busp == nullptr) {
         // create a new one
-        busp = new SPIBus(desc.bus);
+        busp = NEW_NOTHROW SPIBus(desc.bus);
         if (busp == nullptr) {
             return nullptr;
         }
@@ -480,7 +480,7 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(new SPIDevice(*busp, desc));
+    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
 }
 
 void SPIDeviceManager::set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb)

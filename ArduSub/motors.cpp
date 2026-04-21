@@ -18,7 +18,12 @@ void Sub::motors_output()
         verify_motor_test();
     } else {
         motors.set_interlock(true);
+        auto &srv = AP::srv();
+        srv.cork();
+        SRV_Channels::calc_pwm();
+        SRV_Channels::output_ch_all();
         motors.output();
+        srv.push();
     }
 }
 

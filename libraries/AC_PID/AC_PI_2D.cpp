@@ -151,18 +151,6 @@ void AC_PI_2D::save_gains()
     _filt_hz.save();
 }
 
-/// Overload the function call operator to permit easy initialisation
-void AC_PI_2D::operator() (float p, float i, float imaxval, float input_filt_hz, float dt)
-{
-    _kp.set(p);
-    _ki.set(i);
-    _imax.set(fabsf(imaxval));
-    _filt_hz.set(input_filt_hz);
-    _dt = dt;
-    // calculate the input filter alpha
-    calc_filt_alpha();
-}
-
 // calc_filt_alpha - recalculate the input filter alpha
 void AC_PI_2D::calc_filt_alpha()
 {

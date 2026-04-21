@@ -53,7 +53,7 @@ AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeF
         return nullptr;
     }
 
-    AP_RangeFinder_TeraRangerI2C *sensor = new AP_RangeFinder_TeraRangerI2C(_state, _params, std::move(i2c_dev));
+    AP_RangeFinder_TeraRangerI2C *sensor = NEW_NOTHROW AP_RangeFinder_TeraRangerI2C(_state, _params, std::move(i2c_dev));
     if (!sensor) {
         return nullptr;
     }

@@ -47,7 +47,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Webots(frame_str);
+        return NEW_NOTHROW Webots(frame_str);
     }
 
     

@@ -1,4 +1,4 @@
--- move a servo in a sinisoidal fashion, with settable limits and frequency
+-- move a servo in a sinusoidal fashion, with settable limits and frequency
 
 local PARAM_TABLE_KEY = 135
 local PARAM_TABLE_PREFIX = "STEST_"

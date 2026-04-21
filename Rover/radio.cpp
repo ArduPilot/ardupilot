@@ -6,9 +6,10 @@
 void Rover::set_control_channels(void)
 {
     // check change on RCMAP
-    channel_steer    = rc().channel(rcmap.roll()-1);
-    channel_throttle = rc().channel(rcmap.throttle()-1);
-    channel_lateral  = rc().channel(rcmap.yaw()-1);
+    // the library gaurantees that these are non-nullptr:
+    channel_steer    = &rc().get_roll_channel();
+    channel_throttle = &rc().get_throttle_channel();
+    channel_lateral  = &rc().get_yaw_channel();
 
     // set rc channel ranges
     channel_steer->set_angle(SERVO_MAX);

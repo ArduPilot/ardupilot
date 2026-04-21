@@ -85,6 +85,7 @@ public:
         SerialProtocol_IMUOUT = 46,
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
         SerialProtocol_PPP = 48,
+        SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -174,6 +175,8 @@ public:
      */
     class RegisteredPort : public AP_HAL::UARTDriver {
     public:
+        uint32_t bw_in_bytes_per_second() const override { return state.baudrate()/10; }
+        uint32_t get_baud_rate() const override { return state.baudrate(); }
         RegisteredPort *next;
         UARTState state;
     };

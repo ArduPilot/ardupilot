@@ -252,7 +252,7 @@ AP_OSD_Backend *AP_OSD_MAX7456::probe(AP_OSD &osd, AP_HAL::OwnPtr<AP_HAL::Device
         return nullptr;
     }
 
-    AP_OSD_MAX7456 *backend = new AP_OSD_MAX7456(osd, std::move(dev));
+    AP_OSD_MAX7456 *backend = NEW_NOTHROW AP_OSD_MAX7456(osd, std::move(dev));
     if (!backend) {
         return nullptr;
     }

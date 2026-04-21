@@ -1,0 +1,6 @@
+# setup for LEDs on chan13
+SERVO13_FUNCTION 120
+# Default VTX power to on
+RELAY4_DEFAULT 1
+# Enable DisplayPort OSD
+OSD_TYPE2 5

@@ -27,6 +27,7 @@
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
+#include "SIM_SlungPayload.h"
 #include "SIM_GPS.h"
 #include "SIM_DroneCANDevice.h"
 #include "SIM_ADSB_Sagetech_MXS.h"
@@ -50,6 +51,7 @@ struct float_array {
 
 class StratoBlimp;
 class Glider;
+class FlightAxis;
 
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
@@ -229,8 +231,9 @@ public:
 
 #if HAL_NUM_CAN_IFACES
     enum class CANTransport : uint8_t {
-      MulticastUDP = 0,
-      SocketCAN = 1
+      None = 0,
+      MulticastUDP = 1,
+      SocketCAN = 2,
     };
     AP_Enum<CANTransport> can_transport[HAL_NUM_CAN_IFACES];
 #endif
@@ -321,6 +324,12 @@ public:
 #endif
 #if AP_SIM_GLIDER_ENABLED
         Glider *glider_ptr;
+#endif
+#if AP_SIM_SLUNGPAYLOAD_ENABLED
+        SlungPayloadSim slung_payload_sim;
+#endif
+#if AP_SIM_FLIGHTAXIS_ENABLED
+        FlightAxis *flightaxis_ptr;
 #endif
     };
     ModelParm models;
@@ -424,6 +433,8 @@ public:
     } twist;
 
     AP_Int8 gnd_behav;
+
+    AP_Enum<Rotation> imu_orientation;
 
     struct {
         AP_Int8 enable;     // 0: disabled, 1: roll and pitch, 2: roll, pitch and heave
@@ -554,6 +565,9 @@ public:
     // Master instance to use servos from with slave instances
     AP_Int8 ride_along_master;
 
+    // clamp simulation - servo channel starting at offset 1 (usually ailerons)
+    AP_Int8 clamp_ch;
+
 #if AP_SIM_INS_FILE_ENABLED
     enum INSFileMode {
         INS_FILE_NONE = 0,
@@ -574,6 +588,12 @@ public:
     // This gives more realistic data rates for testing links
     void set_stop_MAVLink_sim_state() { stop_MAVLink_sim_state = true; }
     bool stop_MAVLink_sim_state;
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                  const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 };
 
 } // namespace SITL

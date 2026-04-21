@@ -158,10 +158,7 @@ void Sub::fifty_hz_loop()
 
     failsafe_sensors_check();
 
-    // Update rc input/output
     rc().read_input();
-    SRV_Channels::calc_pwm();
-    SRV_Channels::output_ch_all();
 }
 
 // update_batt_compass - read battery and compass
@@ -186,7 +183,8 @@ void Sub::ten_hz_logging_loop()
     // log attitude data if we're not already logging at the higher rate
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        ahrs_view.Write_Rate(motors, attitude_control, pos_control);
+        attitude_control.Write_ANG();
+        attitude_control.Write_Rate(pos_control);
         if (should_log(MASK_LOG_PID)) {
             logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
@@ -225,7 +223,8 @@ void Sub::twentyfive_hz_logging()
 {
     if (should_log(MASK_LOG_ATTITUDE_FAST)) {
         Log_Write_Attitude();
-        ahrs_view.Write_Rate(motors, attitude_control, pos_control);
+        attitude_control.Write_ANG();
+        attitude_control.Write_Rate(pos_control);
         if (should_log(MASK_LOG_PID)) {
             logger.Write_PID(LOG_PIDR_MSG, attitude_control.get_rate_roll_pid().get_pid_info());
             logger.Write_PID(LOG_PIDP_MSG, attitude_control.get_rate_pitch_pid().get_pid_info());
@@ -271,6 +270,9 @@ void Sub::three_hz_loop()
 // one_hz_loop - runs at 1Hz
 void Sub::one_hz_loop()
 {
+    // sync MAVLink system ID
+    mavlink_system.sysid = g.sysid_this_mav;
+
     bool arm_check = arming.pre_arm_checks(false);
     ap.pre_arm_check = arm_check;
     AP_Notify::flags.pre_arm_check = arm_check;
@@ -288,7 +290,7 @@ void Sub::one_hz_loop()
     }
 
     // update assigned functions and enable auxiliary servos
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
 #if HAL_LOGGING_ENABLED
     // log terrain data
@@ -427,6 +429,53 @@ float Sub::get_alt_msl() const
 
     // convert down to up
     return -posD;
+}
+
+bool Sub::ensure_ekf_origin()
+{
+    Location ekf_origin;
+    if (ahrs.get_origin(ekf_origin)) {
+        // ekf origin is set
+        return true;
+    }
+
+    if (gps.num_sensors() > 0) {
+        // wait for the gps sensor to set the origin
+        // alert the pilot to poor compass performance
+        return false;
+    }
+
+    auto backup_origin = Location(static_cast<int32_t>(sub.g2.backup_origin_lat * 1e7),
+                                  static_cast<int32_t>(sub.g2.backup_origin_lon * 1e7),
+                                  static_cast<int32_t>(sub.g2.backup_origin_alt * 100),
+                                  Location::AltFrame::ABSOLUTE);
+
+    if (backup_origin.lat == 0 || backup_origin.lng == 0) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Backup location parameters are missing or zero");
+        return false;
+    }
+
+    if (!check_latlng(backup_origin.lat, backup_origin.lng)) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Backup location parameters are not valid");
+        return false;
+    }
+
+    if (!ahrs.set_origin(backup_origin)) {
+        // a possible problem is that ek3_srcn_posxy is set to 3 (gps)
+        gcs().send_text(MAV_SEVERITY_WARNING, "Failed to set origin, check EK3_SRC parameters");
+        return false;
+    }
+
+    gcs().send_text(MAV_SEVERITY_INFO, "Using backup location");
+
+#if HAL_LOGGING_ENABLED
+    ahrs.Log_Write_Home_And_Origin();
+#endif
+
+    // send ekf origin to GCS
+    gcs().send_message(MSG_ORIGIN);
+
+    return true;
 }
 
 AP_HAL_MAIN_CALLBACKS(&sub);

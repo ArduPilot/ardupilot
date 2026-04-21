@@ -65,6 +65,8 @@ public:
         BAND_1G3_A,
         BAND_1G3_B,
         BAND_X,
+        BAND_3G3_A,
+        BAND_3G3_B,
         MAX_BANDS
     };
 

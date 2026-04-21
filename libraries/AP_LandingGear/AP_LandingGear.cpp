@@ -86,7 +86,8 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Landing gear auto retract/deploy options
-    // @Description: Options to retract or deploy landing gear in Auto or Guided mode
+    // @Description{Copter}: Options to retract or deploy landing gear in Auto or Guided mode
+    // @Description{Plane}: Options to retract or deploy landing gear in Auto, Takeoff and Autoland modes
     // @Bitmask: 0:Retract after Takeoff,1:Deploy during Land
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 9, AP_LandingGear, _options, 3),
@@ -168,7 +169,7 @@ void AP_LandingGear::deploy()
     // send message only if output has been configured
     if (!_deployed &&
         SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
     }
 
     // set deployed flag
@@ -194,7 +195,7 @@ void AP_LandingGear::retract()
 
     // send message only if output has been configured
     if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
     }
 }
 

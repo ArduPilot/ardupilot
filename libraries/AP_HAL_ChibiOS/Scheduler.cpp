@@ -64,6 +64,10 @@ using namespace ChibiOS;
 #define HAL_RCIN_THREAD_ENABLED 1
 #endif
 
+#ifndef HAL_MONITOR_THREAD_ENABLED
+#define HAL_MONITOR_THREAD_ENABLED 1
+#endif
+
 extern const AP_HAL::HAL& hal;
 #ifndef HAL_NO_TIMER_THREAD
 THD_WORKING_AREA(_timer_thread_wa, TIMER_THD_WA_SIZE);
@@ -80,7 +84,7 @@ THD_WORKING_AREA(_io_thread_wa, IO_THD_WA_SIZE);
 #ifndef HAL_USE_EMPTY_STORAGE
 THD_WORKING_AREA(_storage_thread_wa, STORAGE_THD_WA_SIZE);
 #endif
-#ifndef HAL_NO_MONITOR_THREAD
+#if HAL_MONITOR_THREAD_ENABLED
 THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
 #endif
 
@@ -100,7 +104,7 @@ void Scheduler::init()
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
 
-#ifndef HAL_NO_MONITOR_THREAD
+#if HAL_MONITOR_THREAD_ENABLED
     // setup the monitor thread - this is used to detect software lockups
     _monitor_thread_ctx = chThdCreateStatic(_monitor_thread_wa,
                      sizeof(_monitor_thread_wa),
@@ -407,7 +411,7 @@ bool Scheduler::in_expected_delay(void) const
     return false;
 }
 
-#ifndef HAL_NO_MONITOR_THREAD
+#if HAL_MONITOR_THREAD_ENABLED
 void Scheduler::_monitor_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -513,7 +517,7 @@ void Scheduler::_monitor_thread(void *arg)
 #endif
     }
 }
-#endif // HAL_NO_MONITOR_THREAD
+#endif  // HAL_MONITOR_THREAD_ENABLED
 
 void Scheduler::_rcin_thread(void *arg)
 {

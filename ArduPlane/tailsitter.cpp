@@ -208,6 +208,8 @@ void Tailsitter::setup()
         return;
     }
 
+    quadplane.thrust_type = QuadPlane::ThrustType::TAILSITTER;
+
     // Set tailsitter transition rate to match old calculation
     if (!transition_rate_fw.configured()) {
         transition_rate_fw.set_and_save(transition_angle_fw / (quadplane.transition_time_ms/2000.0f));
@@ -241,7 +243,7 @@ void Tailsitter::setup()
         quadplane.options.set(quadplane.options.get() | int32_t(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO));
     }
 
-    transition = new Tailsitter_Transition(quadplane, motors, *this);
+    transition = NEW_NOTHROW Tailsitter_Transition(quadplane, motors, *this);
     if (!transition) {
         AP_BoardConfig::allocation_error("tailsitter transition");
     }
@@ -285,6 +287,12 @@ void Tailsitter::output(void)
     if (!enabled() || quadplane.motor_test.running || !quadplane.initialised) {
         // if motor test is running we don't want to overwrite it with output_motor_mask or motors_output
         return;
+    }
+
+    if (!hal.util->get_soft_armed() ||
+        SRV_Channels::get_emergency_stop()) {
+        // Ensure motors stop on disarm
+        motors->output_min();
     }
 
     float tilt_left = 0.0f;
@@ -894,6 +902,10 @@ void Tailsitter_Transition::VTOL_update()
             vtol_limit_start_ms = now;
             vtol_limit_initial_pitch = quadplane.ahrs_view->pitch_sensor;
         }
+
+        // clear inverted flight flag to make behaviour consistent
+        // with other quadplane types
+        plane.inverted_flight = false;
     } else {
         // Keep assistance reset while not checking
         quadplane.assist.reset();

@@ -632,7 +632,7 @@ bool AP_Mount_Viewpro::send_tracking_command(TrackingCommand cmd, uint8_t value)
 }
 
 // send camera command2 and corresponding parameter values
-bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, uint16_t param1, uint16_t param2)
+bool AP_Mount_Viewpro::send_tracking_command2(TrackingCommand2 cmd, int16_t param1, int16_t param2)
 {
     // fill in packet
     const E2Packet e2_packet {
@@ -816,13 +816,13 @@ bool AP_Mount_Viewpro::set_tracking(TrackingType tracking_type, const Vector2f& 
         break;
     case TrackingType::TRK_POINT: {
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_POINT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_POINT, (p1.x - 0.5) * 2.0 * 960, (p1.y - 0.5) * 2.0 * 540));
         break;
     }
     case TrackingType::TRK_RECTANGLE:
         return (send_tracking_command(TrackingCommand::START, 0) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (p1.x - 0.5) * 960, (p1.y - 0.5) * 540) &&
-                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (p2.x - 0.5) * 960, (p2.y - 0.5) * 540));
+                send_tracking_command2(TrackingCommand2::SET_RECT_TOPLEFT, (p1.x - 0.5) * 2.0 * 960, (p1.y - 0.5) * 2.0 * 540) &&
+                send_tracking_command2(TrackingCommand2::SET_RECT_BOTTOMRIGHT, (p2.x - 0.5) * 2.0 * 960, (p2.y - 0.5) * 2.0 * 540));
         break;
     }
 
@@ -920,8 +920,8 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         vendor_name,            // vendor_name uint8_t[32]
         _model_name,            // model_name uint8_t[32]
         _firmware_version,      // firmware version uint32_t
-        0,                      // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_h float (mm)
+        NaNf,                   // sensor_size_v float (mm)
         0,                      // sensor_size_v float (mm)
         0,                      // resolution_h uint16_t (pix)
         0,                      // resolution_v uint16_t (pix)
@@ -940,8 +940,6 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
         return;
     }
 
-    const float NaN = nanf("0x4152");
-
     // convert zoom times (e.g. 1x ~ 20x) to target zoom level (e.g. 0 to 100)
     const float zoom_level = linear_interpolate(0, 100, _zoom_times, 1, AP_MOUNT_VIEWPRO_ZOOM_MAX);
 
@@ -951,7 +949,7 @@ void AP_Mount_Viewpro::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         _recording ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         zoom_level,         // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 // get rangefinder distance.  Returns true on success

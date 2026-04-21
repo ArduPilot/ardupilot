@@ -32,6 +32,13 @@ void ModeQLoiter::update()
 // run quadplane loiter controller
 void ModeQLoiter::run()
 {
+    if (quadplane.assist.check_VTOL_recovery()) {
+        // use QHover to recover from extreme attitudes, this allows
+        // for the fixed wing controller to handle the recovery
+        plane.mode_qhover.run();
+        return;
+    }
+
     const uint32_t now = AP_HAL::millis();
 
 #if AC_PRECLAND_ENABLED
@@ -48,7 +55,7 @@ void ModeQLoiter::run()
         // we have an active landing target override
         Vector2f rel_origin;
         if (plane.next_WP_loc.get_vector_xy_from_origin_NE(rel_origin)) {
-            quadplane.pos_control->set_pos_target_xy_cm(rel_origin.x, rel_origin.y);
+            quadplane.pos_control->set_pos_desired_xy_cm(rel_origin);
             last_target_loc_set_ms = 0;
         }
     }
@@ -126,10 +133,18 @@ void ModeQLoiter::run()
     // Pilot input, use yaw rate time constant
     quadplane.set_pilot_yaw_rate_time_constant();
 
+    Vector3f target { plane.nav_roll_cd*0.01, plane.nav_pitch_cd*0.01, quadplane.get_desired_yaw_rate_cds() * 0.01 };
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    auto &systemid = plane.g2.systemid;
+    systemid.update();
+    target += systemid.get_attitude_offset_deg();
+#endif
+
     // call attitude controller with conservative smoothing gain of 4.0f
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(plane.nav_roll_cd,
-                                                                  plane.nav_pitch_cd,
-                                                                  quadplane.get_desired_yaw_rate_cds());
+    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target.x*100,
+                                                                  target.y*100,
+                                                                  target.z*100);
 
     if (plane.control_mode == &plane.mode_qland) {
         if (poscontrol.get_state() < QuadPlane::QPOS_LAND_FINAL && quadplane.check_land_final()) {
@@ -142,7 +157,7 @@ void ModeQLoiter::run()
             }
 #endif  // AP_ICENGINE_ENABLED
         }
-        float height_above_ground = plane.relative_ground_altitude(plane.g.rangefinder_landing);
+        float height_above_ground = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
         float descent_rate_cms = quadplane.landing_descent_rate_cms(height_above_ground);
 
         if (poscontrol.get_state() == QuadPlane::QPOS_LAND_FINAL && !quadplane.option_is_set(QuadPlane::OPTION::DISABLE_GROUND_EFFECT_COMP)) {
@@ -162,6 +177,9 @@ void ModeQLoiter::run()
     // Stabilize with fixed wing surfaces
     plane.stabilize_roll();
     plane.stabilize_pitch();
+
+    // Center rudder
+    output_rudder_and_steering(0.0);
 }
 
 #endif

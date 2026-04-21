@@ -102,7 +102,7 @@ I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(I2CD)];
 void I2CBus::dma_init(void)
 {
     chMtxObjectInit(&dma_lock);
-    dma_handle = new Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx,
+    dma_handle = NEW_NOTHROW Shared_DMA(I2CD[busnum].dma_channel_tx, I2CD[busnum].dma_channel_rx,
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_allocate, void, Shared_DMA *),
                                 FUNCTOR_BIND_MEMBER(&I2CBus::dma_deallocate, void, Shared_DMA *));
 }
@@ -261,11 +261,11 @@ I2CDeviceManager::I2CDeviceManager(void)
 }
 
 I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool use_smbus, uint32_t timeout_ms) :
+    bus(I2CDeviceManager::businfo[busnum]),
     _retries(2),
     _address(address),
     _use_smbus(use_smbus),
-    _timeout_ms(timeout_ms),
-    bus(I2CDeviceManager::businfo[busnum])
+    _timeout_ms(timeout_ms)
 {
     set_device_bus(busnum+HAL_I2C_BUS_BASE);
     set_device_address(address);
@@ -459,7 +459,7 @@ I2CDeviceManager::get_device(uint8_t bus, uint8_t address,
     if (bus >= ARRAY_SIZE(I2CD)) {
         return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(new I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
+    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(bus, address, bus_clock, use_smbus, timeout_ms));
     return dev;
 }
 

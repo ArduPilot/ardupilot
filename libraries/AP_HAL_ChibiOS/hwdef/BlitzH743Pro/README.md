@@ -8,7 +8,7 @@ The Blitz H7 Pro is a flight controller produced by [iFlight](https://shop.iflig
  - Gyro: ICM42688
  - 32Gb SDCard for logging
  - BEC output: 5V 2.5A,  switch controlled 12v 2A
- - Barometer: DPS310
+ - Barometer: DPS310 (SPA06 on v2)
  - OSD: AT7456E
  - 7x UARTs
  - 13x PWM Outputs (12 Motor Output, 1 LED)

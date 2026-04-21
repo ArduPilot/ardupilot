@@ -11,6 +11,7 @@
 #if HAL_SIM_GPS_ENABLED
 
 #include <time.h>
+#include <sys/time.h>
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/AP_HAL.h>
@@ -25,6 +26,7 @@
 #include "SIM_GPS_SBP2.h"
 #include "SIM_GPS_SBP.h"
 #include "SIM_GPS_UBLOX.h"
+#include "SIM_GPS_SBF.h"
 
 #include <GCS_MAVLink/GCS.h>
 
@@ -36,9 +38,9 @@ extern const AP_HAL::HAL& hal;
 using namespace SITL;
 
 // ensure the backend we have allocated matches the one that's configured:
-GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance)
-    : front{_front},
-      instance{_instance}
+GPS_Backend::GPS_Backend(GPS &_front, uint8_t _instance) :
+    instance{_instance},
+    front{_front}
 {
     _sitl = AP::sitl();
 }
@@ -234,49 +236,55 @@ void GPS::check_backend_allocation()
 
 #if AP_SIM_GPS_UBLOX_ENABLED
     case Type::UBLOX:
-        backend = new GPS_UBlox(*this, instance);
+        backend = NEW_NOTHROW GPS_UBlox(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_NMEA_ENABLED
     case Type::NMEA:
-        backend = new GPS_NMEA(*this, instance);
+        backend = NEW_NOTHROW GPS_NMEA(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_SBP_ENABLED
     case Type::SBP:
-        backend = new GPS_SBP(*this, instance);
+        backend = NEW_NOTHROW GPS_SBP(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_SBP2_ENABLED
     case Type::SBP2:
-        backend = new GPS_SBP2(*this, instance);
+        backend = NEW_NOTHROW GPS_SBP2(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_NOVA_ENABLED
     case Type::NOVA:
-        backend = new GPS_NOVA(*this, instance);
+        backend = NEW_NOTHROW GPS_NOVA(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_MSP_ENABLED
     case Type::MSP:
-        backend = new GPS_MSP(*this, instance);
+        backend = NEW_NOTHROW GPS_MSP(*this, instance);
+        break;
+#endif
+
+#if AP_SIM_GPS_SBF_ENABLED
+    case Type::SBF:
+        backend = NEW_NOTHROW GPS_SBF(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_TRIMBLE_ENABLED
     case Type::TRIMBLE:
-        backend = new GPS_Trimble(*this, instance);
+        backend = NEW_NOTHROW GPS_Trimble(*this, instance);
         break;
 #endif
 
 #if AP_SIM_GPS_FILE_ENABLED
     case Type::FILE:
-        backend = new GPS_FILE(*this, instance);
+        backend = NEW_NOTHROW GPS_FILE(*this, instance);
         break;
 #endif
     };
@@ -348,6 +356,7 @@ void GPS::update()
 
     last_write_update_ms = now_ms;
 
+    d.num_sats = _sitl->gps_numsats[idx];
     d.latitude = latitude;
     d.longitude = longitude;
     d.yaw_deg = _sitl->state.yawDeg;
@@ -362,7 +371,13 @@ void GPS::update()
     d.speedN = speedN + (velErrorNED.x * rand_float());
     d.speedE = speedE + (velErrorNED.y * rand_float());
     d.speedD = speedD + (velErrorNED.z * rand_float());
+
     d.have_lock = have_lock;
+
+    // fill in accuracies
+    d.horizontal_acc = _sitl->gps_accuracy[idx];
+    d.vertical_acc = _sitl->gps_accuracy[idx];
+    d.speed_acc = _sitl->gps_vel_err[instance].get().xy().length();
 
     if (_sitl->gps_drift_alt[idx] > 0) {
         // add slow altitude drift controlled by a slow sine wave

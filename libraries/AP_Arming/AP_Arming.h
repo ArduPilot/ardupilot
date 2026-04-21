@@ -96,6 +96,7 @@ public:
     // these functions should not be used by Copter which holds the armed state in the motors library
     Required arming_required() const;
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks=true);
+    virtual bool arm_force(AP_Arming::Method method) { return arm(method, false); }
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
@@ -144,6 +145,7 @@ public:
     enum class Option : int32_t {
         DISABLE_PREARM_DISPLAY             = (1U << 0),
         DISABLE_STATUSTEXT_ON_STATE_CHANGE = (1U << 1),
+        SKIP_IMU_CONSISTENCY_ICE_RUNNING   = (1U << 2),
     };
     bool option_enabled(Option option) const {
         return (_arming_options & uint32_t(option)) != 0;
@@ -154,6 +156,12 @@ public:
     static bool method_is_GCS(Method method) {
         return (method == Method::MAVLINK || method == Method::DDS);
     }
+
+    enum class RequireLocation : uint8_t {
+        NO = 0,
+        YES = 1,
+    };
+
 protected:
 
     // Parameters
@@ -164,6 +172,7 @@ protected:
     AP_Int32                _required_mission_items;
     AP_Int32                _arming_options;
     AP_Int16                magfield_error_threshold;
+    AP_Enum<RequireLocation> require_location;
 
     // internal members
     bool                    armed;

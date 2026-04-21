@@ -74,7 +74,7 @@ int main(void)
 
     flash_init();
 
-#ifdef STM32H7
+#if AP_FLASH_ECC_CHECK_ENABLED
     check_ecc_errors();
 #endif
     

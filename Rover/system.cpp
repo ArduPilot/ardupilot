@@ -18,7 +18,9 @@ void Rover::init_ardupilot()
     rpm_sensor.init();
 #endif
 
+#if AP_RSSI_ENABLED
     rssi.init();
+#endif
 
     g2.windvane.init(serial_manager);
 
@@ -28,7 +30,7 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
-#if OSD_ENABLED == ENABLED
+#if OSD_ENABLED
     osd.init();
 #endif
 
@@ -40,9 +42,11 @@ void Rover::init_ardupilot()
     airspeed.set_log_bit(MASK_LOG_IMU);
 #endif
 
+#if AP_RANGEFINDER_ENABLED
     // initialise rangefinder
     rangefinder.set_log_rfnd_bit(MASK_LOG_RANGEFINDER);
     rangefinder.init(ROTATION_NONE);
+#endif
 
 #if HAL_PROXIMITY_ENABLED
     // init proximity sensor
@@ -66,7 +70,7 @@ void Rover::init_ardupilot()
 
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init(get_frame_type());        // init motors including setting servo out channels ranges
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // init wheel encoders
     g2.wheel_encoder.init();
@@ -121,6 +125,9 @@ void Rover::init_ardupilot()
 #if AP_MISSION_ENABLED
     // initialise mission library
     mode_auto.mission.init();
+#if HAL_LOGGING_ENABLED
+    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 #endif
 
     // initialise AP_Logger library
@@ -145,7 +152,7 @@ void Rover::init_ardupilot()
 
     // boat should loiter after completing a mission to avoid drifting off
     if (is_boat()) {
-        rover.g2.mis_done_behave.set_default(ModeAuto::Mis_Done_Behave::MIS_DONE_BEHAVE_LOITER);
+        rover.g2.mis_done_behave.set_default(uint8_t(ModeAuto::DoneBehaviour::LOITER));
     }
 
     // flag that initialisation has completed
@@ -197,7 +204,7 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::RTL,
         (uint8_t)Mode::Number::SMART_RTL,
         (uint8_t)Mode::Number::GUIDED,
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
         (uint8_t)Mode::Number::DOCK
 #endif
     };

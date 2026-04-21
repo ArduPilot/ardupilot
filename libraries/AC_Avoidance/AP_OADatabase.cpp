@@ -190,7 +190,7 @@ void AP_OADatabase::init_queue()
         return;
     }
 
-    _queue.items = new ObjectBuffer<OA_DbItem>(_queue.size);
+    _queue.items = NEW_NOTHROW ObjectBuffer<OA_DbItem>(_queue.size);
     if (_queue.items != nullptr && _queue.items->get_size() == 0) {
         // allocation failed
         delete _queue.items;
@@ -205,7 +205,7 @@ void AP_OADatabase::init_database()
         return;
     }
 
-    _database.items = new OA_DbItem[_database.size];
+    _database.items = NEW_NOTHROW OA_DbItem[_database.size];
 }
 
 // get bitmask of gcs channels item should be sent to based on its importance

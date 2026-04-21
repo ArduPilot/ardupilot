@@ -178,7 +178,7 @@ AP_RCProtocol_CRSF::AP_RCProtocol_CRSF(AP_RCProtocol &_frontend) : AP_RCProtocol
         _singleton = this;
     }
 #endif
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware) && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_CRSF, 0);
     if (_uart) {
         start_uart();
@@ -561,7 +561,7 @@ bool AP_RCProtocol_CRSF::process_telemetry(bool check_constraint)
     }
 
     if (!telem_available) {
-#if HAL_CRSF_TELEM_ENABLED && !APM_BUILD_TYPE(APM_BUILD_iofirmware)
+#if HAL_CRSF_TELEM_ENABLED
         if (AP_CRSF_Telem::get_telem_data(&_telemetry_frame, is_tx_active())) {
             telem_available = true;
         } else {

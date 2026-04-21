@@ -40,7 +40,6 @@ define HAL_PERIPH_ADSB_PORT_DEFAULT 3
 # default ADSB off by setting 0 baudrate
 define HAL_PERIPH_ADSB_BAUD_DEFAULT 0
 
-define HAL_NO_MONITOR_THREAD
 define HAL_USE_RTC FALSE
 
 define AP_SCRIPTING_ENABLED 0

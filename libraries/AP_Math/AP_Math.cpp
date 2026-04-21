@@ -339,14 +339,13 @@ uint16_t get_random16(void)
 }
 
 
-#if AP_SIM_ENABLED
-// generate a random float between -1 and 1, for use in SITL
+// generate a random float between -1 and 1
 float rand_float(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
 #else
-    return get_random16() / 65535.0;
+    return (get_random16() / 65535.0) * 2 - 1;
 #endif
 }
 
@@ -359,7 +358,6 @@ Vector3f rand_vec3f(void)
         rand_float()
     };
 }
-#endif
 
 /*
   return true if two rotations are equivalent
@@ -564,4 +562,16 @@ double uint64_to_double_le(const uint64_t& value)
     // At least it's defined behavior in both c and c++.
     memcpy(&out, &value, sizeof(out));
     return out;
+}
+
+/*
+  get a twos-complement value from the first 'length' bits of a uint32_t
+  With thanks to betaflight
+ */
+int32_t get_twos_complement(uint32_t raw, uint8_t length)
+{
+    if (raw & ((int)1 << (length - 1))) {
+        return ((int32_t)raw) - ((int32_t)1 << length);
+    }
+    return raw;
 }

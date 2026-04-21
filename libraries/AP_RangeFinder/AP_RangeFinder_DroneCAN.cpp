@@ -60,7 +60,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
                     //it up as UAVCAN type
                     return nullptr;
                 }
-                frontend.drivers[i] = new AP_RangeFinder_DroneCAN(frontend.state[i], frontend.params[i]);
+                frontend.drivers[i] = NEW_NOTHROW AP_RangeFinder_DroneCAN(frontend.state[i], frontend.params[i]);
                 driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
                 if (driver == nullptr) {
                     break;

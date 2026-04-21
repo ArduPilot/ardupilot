@@ -1,0 +1,51 @@
+# hw definition file for processing by chibios_hwdef.py
+# for MFT-SEMA100 board
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# board ID for firmware load
+APJ_BOARD_ID 2000
+
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 2
+
+
+
+PC13 LED_BOOTLOADER OUTPUT HIGH GPIO(0)
+PC6 LED_ACTIVITY OUTPUT HIGH GPIO(1) # optional
+
+
+define HAL_LED_ON 1
+
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PB3 SPI1_SCK SPI1
+PB4 SPI1_MISO SPI1
+PD7 SPI1_MOSI SPI1
+PC4 SDCARD_DETECT INPUT
+
+# Add CS pins to ensure they are high in bootloader
+PE3  BMI088_A_CS CS
+PE4  BMI088_G_CS CS
+PA15 SDCARD_CS CS

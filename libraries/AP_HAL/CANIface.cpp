@@ -54,44 +54,86 @@ bool AP_HAL::CANFrame::priorityHigherThan(const CANFrame& rhs) const
 }
 
 /*
-  parent class receive handling for MAVCAN
+  parent class receive handling for forwarding received frames to registered callbacks
  */
 int16_t AP_HAL::CANIface::receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags)
 {
-    auto cb = frame_callback;
-    if (cb && (out_flags & IsMAVCAN)==0) {
-        cb(get_iface_num(), out_frame);
+    if ((out_flags & IsForwardedFrame) != 0) {
+        // this frame was forwarded from another interface to this one, so we should not forward it back
+        return 1;
     }
-    return 1;
-}
-
-/*
-  parent class send handling for MAVCAN
- */
-int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
-{
-    auto cb = frame_callback;
-    if (cb) {
-        if ((flags & IsMAVCAN) == 0) {
-            cb(get_iface_num(), frame);
-        } else {
-            CanRxItem rx_item;
-            rx_item.frame = frame;
-            rx_item.timestamp_us = AP_HAL::micros64();
-            rx_item.flags = AP_HAL::CANIface::IsMAVCAN;
-            add_to_rx_queue(rx_item);
+#ifndef HAL_BOOTLOADER_BUILD
+    WITH_SEMAPHORE(callbacks.sem);
+#endif
+    for (auto &cb : callbacks.cb) {
+        if (cb != nullptr) {
+            // forward the frame to the registered callbacks and mark it as forwarded
+            cb(get_iface_num(), out_frame, out_flags | IsForwardedFrame);
         }
     }
     return 1;
 }
 
 /*
-  register a callback for for sending CAN_FRAME messages
+  parent class send handling for Forwarded frames
  */
-bool AP_HAL::CANIface::register_frame_callback(FrameCb cb)
+int16_t AP_HAL::CANIface::send(const CANFrame& frame, uint64_t tx_deadline, CanIOFlags flags)
 {
-    frame_callback = cb;
-    return true;
+#ifndef HAL_BOOTLOADER_BUILD
+    WITH_SEMAPHORE(callbacks.sem);
+#endif
+    bool added_to_rx_queue = false;
+    for (auto &cb : callbacks.cb) {
+        if (cb == nullptr) {
+            continue;
+        }
+        if ((flags & IsForwardedFrame) == 0) {
+            // call the frame callback from send only if the frame originated from this node
+            cb(get_iface_num(), frame, flags);
+        } else if (!added_to_rx_queue) {
+            // the frame was forwarded from another interface, so add it to the receive queue
+            CanRxItem rx_item;
+            rx_item.frame = frame;
+            rx_item.timestamp_us = AP_HAL::micros64();
+            rx_item.flags = AP_HAL::CANIface::IsForwardedFrame;
+            add_to_rx_queue(rx_item);
+            added_to_rx_queue = true;
+        }
+    }
+    return 1;
+}
+
+/*
+  register a callback for for sending CAN_FRAME messages.
+  On success the returned callback_id can be used to unregister the callback
+ */
+bool AP_HAL::CANIface::register_frame_callback(FrameCb cb, uint8_t &callback_id)
+{
+#ifndef HAL_BOOTLOADER_BUILD
+    WITH_SEMAPHORE(callbacks.sem);
+#endif
+    for (uint8_t i=0; i<ARRAY_SIZE(callbacks.cb); i++) {
+        if (callbacks.cb[i] == nullptr) {
+            callbacks.cb[i] = cb;
+            callback_id = i+1;
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+  unregister a callback for for sending CAN_FRAME messages
+ */
+void AP_HAL::CANIface::unregister_frame_callback(uint8_t callback_id)
+{
+#ifndef HAL_BOOTLOADER_BUILD
+    WITH_SEMAPHORE(callbacks.sem);
+#endif
+    const uint8_t idx = callback_id - 1;
+    if (idx < ARRAY_SIZE(callbacks.cb)) {
+        callbacks.cb[idx] = nullptr;
+    }
 }
 
 AP_HAL::CANFrame::CANFrame(uint32_t can_id, const uint8_t* can_data, uint8_t data_len, bool canfd_frame) :

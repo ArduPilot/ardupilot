@@ -149,7 +149,7 @@ void Battery::set_current(float current)
         voltage = get_resting_voltage(100 * remaining_Ah / capacity_Ah) - voltage_delta;
     }
 
-    voltage_filter.apply(voltage);
+    voltage_filter.apply(voltage, dt);
 
     {
         const uint64_t temperature_dt = now - temperature.last_update_micros;

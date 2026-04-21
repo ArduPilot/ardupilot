@@ -444,7 +444,7 @@ def clean_param(param):
         for i in valueList:
             (start, sep, end) = i.partition(":")
             if sep != ":":
-                raise ValueError("Expected a colon seperator in (%s)" % (i,))
+                raise ValueError("Expected a colon separator in (%s)" % (i,))
             if len(end) == 0:
                 raise ValueError("Expected a colon-separated string, got (%s)" % i)
             end = end.strip()

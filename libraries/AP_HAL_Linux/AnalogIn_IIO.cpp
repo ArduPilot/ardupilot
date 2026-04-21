@@ -16,11 +16,11 @@ const char* AnalogSource_IIO::analog_sources[] = {
 };
 
 AnalogSource_IIO::AnalogSource_IIO(int16_t pin, float initial_value, float voltage_scaling) :
-    _pin(pin),
     _value(initial_value),
-    _voltage_scaling(voltage_scaling),
     _sum_value(0),
+    _voltage_scaling(voltage_scaling),
     _sum_count(0),
+    _pin(pin),
     _pin_fd(-1)
 {
     init_pins();
@@ -129,5 +129,5 @@ void AnalogIn_IIO::init()
 
 
 AP_HAL::AnalogSource* AnalogIn_IIO::channel(int16_t pin) {
-    return new AnalogSource_IIO(pin, 0.0f, IIO_VOLTAGE_SCALING);
+    return NEW_NOTHROW AnalogSource_IIO(pin, 0.0f, IIO_VOLTAGE_SCALING);
 }

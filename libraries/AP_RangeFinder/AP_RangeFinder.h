@@ -16,6 +16,8 @@
 
 #include "AP_RangeFinder_config.h"
 
+#if AP_RANGEFINDER_ENABLED
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
@@ -180,6 +182,9 @@ public:
 #if AP_RANGEFINDER_RDS02UF_ENABLED
         RDS02UF = 43,
 #endif
+#if AP_RANGEFINDER_HEXSOONRADAR_ENABLED
+        HEXSOON_RADAR = 44,
+#endif
 #if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,
 #endif
@@ -192,11 +197,11 @@ public:
     };
 
     enum class Status {
-        NotConnected = 0,
-        NoData,
-        OutOfRangeLow,
-        OutOfRangeHigh,
-        Good
+        NotConnected   = 0,
+        NoData         = 1,
+        OutOfRangeLow  = 2,
+        OutOfRangeHigh = 3,
+        Good           = 4,
     };
 
     static constexpr int8_t SIGNAL_QUALITY_MIN = 0;
@@ -319,3 +324,5 @@ private:
 namespace AP {
     RangeFinder *rangefinder();
 };
+
+#endif  // AP_RANGEFINDER_ENABLED

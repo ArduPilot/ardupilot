@@ -4,7 +4,7 @@
 
   // set 0 in 4.6, remove feature in 4.7:
 #ifndef AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
-#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 1
+#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 0
 #endif
 
 #include "defines.h"
@@ -40,6 +40,9 @@ protected:
     uint32_t log_radio_bit() const override { return MASK_LOG_PM; }
 #endif
 
+    // send WATER_DEPTH - metres and temperature
+    void send_water_depth() const;
+
 private:
 
     void handle_message(const mavlink_message_t &msg) override;
@@ -64,6 +67,13 @@ private:
 
 #if AP_RANGEFINDER_ENABLED
     void send_rangefinder() const override;
+
+    // send WATER_DEPTH - metres and temperature
+    void send_water_depth();
+    // state variable for the last rangefinder we sent a WATER_DEPTH
+    // message for.  We cycle through the rangefinder backends to
+    // limit the amount of telemetry bandwidth we consume.
+    uint8_t last_WATER_DEPTH_index;
 #endif
 
 #if HAL_HIGH_LATENCY2_ENABLED

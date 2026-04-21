@@ -35,6 +35,7 @@ private:
         INA226,
         INA228,
         INA238,
+        INA231,
     };
 
     static const uint8_t i2c_probe_addresses[];

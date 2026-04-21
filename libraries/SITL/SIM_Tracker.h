@@ -33,7 +33,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Tracker(frame_str);
+        return NEW_NOTHROW Tracker(frame_str);
     }
 
 private:

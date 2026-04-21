@@ -139,7 +139,7 @@ AP_CustomRotation* AP_CustomRotations::get_rotation(Rotation r)
     }
     const uint8_t index = r - ROTATION_CUSTOM_1;
     if (rotations[index] == nullptr) {
-        rotations[index] = new AP_CustomRotation(params[index]);
+        rotations[index] = NEW_NOTHROW AP_CustomRotation(params[index]);
          // make sure param is enabled if custom rotation is used
         enable.set_and_save_ifchanged(1);
     }

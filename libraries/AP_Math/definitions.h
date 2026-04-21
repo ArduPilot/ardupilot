@@ -42,6 +42,7 @@ static const double RAD_TO_DEG_DOUBLE = 1 / DEG_TO_RAD_DOUBLE;
 #endif
 
 #define RadiansToCentiDegrees(x) (static_cast<float>(x) * RAD_TO_DEG * static_cast<float>(100))
+#define CentiDegreesToRadians(x) (static_cast<float>(x) * DEG_TO_RAD * 0.01f)
 
 // acceleration due to gravity in m/s/s
 #define GRAVITY_MSS     9.80665f

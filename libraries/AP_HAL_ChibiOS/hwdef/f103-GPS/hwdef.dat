@@ -1,10 +1,18 @@
 include ../f103-periph/hwdef.inc
 
 
-# and support all external compass types
 define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-# .... except BMM150:
-define AP_COMPASS_BMM150_ENABLED 0
+
+# support an expliclty defined set of compasses:
+define AP_COMPASS_BACKEND_DEFAULT_ENABLED 0
+define AP_COMPASS_AK09916_ENABLED 1
+define AP_COMPASS_HMC5843_ENABLED 1
+define AP_COMPASS_IST8308_ENABLED 1
+define AP_COMPASS_IST8310_ENABLED 1
+define AP_COMPASS_LIS3MDL_ENABLED 1
+define AP_COMPASS_MMC3416_ENABLED 1
+define AP_COMPASS_QMC5883L_ENABLED 1
+define AP_COMPASS_RM3100_ENABLED 1
 
 # increase TX size for RTCM
 undef HAL_UART_MIN_TX_SIZE

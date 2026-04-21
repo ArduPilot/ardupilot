@@ -147,4 +147,6 @@ DMA_NOSHARE USART1* USART2* CAN1*
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 
+define HAL_MONITOR_THREAD_ENABLED 1
+
 AUTOBUILD_TARGETS None

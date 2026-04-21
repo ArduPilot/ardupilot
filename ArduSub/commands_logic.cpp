@@ -7,13 +7,6 @@ static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCAT
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
-#if HAL_LOGGING_ENABLED
-    // To-Do: logging when new commands start/end
-    if (should_log(MASK_LOG_CMD)) {
-        logger.Write_Mission_Cmd(mission, cmd);
-    }
-#endif
-
     const Location &target_loc = cmd.content.location;
     auto alt_frame = target_loc.get_alt_frame();
 
@@ -61,7 +54,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_loiter_time(cmd);
         break;
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     case MAV_CMD_NAV_GUIDED_ENABLE:             // 92  accept navigation commands from external nav computer
         do_nav_guided_enable(cmd);
         break;
@@ -97,8 +90,11 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_set_home(cmd);
         break;
 
+    case MAV_CMD_DO_SET_ROI_LOCATION:       // 195
+    case MAV_CMD_DO_SET_ROI_NONE:           // 197
     case MAV_CMD_DO_SET_ROI:                // 201
         // point the vehicle and camera at a region of interest (ROI)
+        // ROI_NONE can be handled by the regular ROI handler because lat, lon, alt are always zero
         do_roi(cmd);
         break;
 
@@ -107,7 +103,7 @@ bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
         do_mount_control(cmd);
         break;
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     case MAV_CMD_DO_GUIDED_LIMITS:                      // 222  accept guided mode limits
         do_guided_limits(cmd);
         break;
@@ -170,7 +166,7 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_LOITER_TIME:
         return verify_loiter_time();
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
     case MAV_CMD_NAV_GUIDED_ENABLE:
         return verify_nav_guided_enable(cmd);
 #endif
@@ -193,6 +189,8 @@ bool Sub::verify_command(const AP_Mission::Mission_Command& cmd)
         // do commands (always return true)
     case MAV_CMD_DO_CHANGE_SPEED:
     case MAV_CMD_DO_SET_HOME:
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+    case MAV_CMD_DO_SET_ROI_NONE:
     case MAV_CMD_DO_SET_ROI:
     case MAV_CMD_DO_MOUNT_CONTROL:
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
@@ -384,7 +382,7 @@ void Sub::do_loiter_time(const AP_Mission::Mission_Command& cmd)
     loiter_time_max = cmd.p1;     // units are (seconds)
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // do_nav_guided_enable - initiate accepting commands from external nav computer
 void Sub::do_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {
@@ -417,7 +415,7 @@ void Sub::do_nav_delay(const AP_Mission::Mission_Command& cmd)
     gcs().send_text(MAV_SEVERITY_INFO, "Delaying %u sec", (unsigned)(nav_delay_time_max_ms/1000));
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // do_guided_limits - pass guided limits to guided controller
 void Sub::do_guided_limits(const AP_Mission::Mission_Command& cmd)
 {
@@ -550,7 +548,7 @@ bool Sub::verify_circle(const AP_Mission::Mission_Command& cmd)
     return fabsf(sub.circle_nav.get_angle_total()/M_2PI) >= turns;
 }
 
-#if NAV_GUIDED == ENABLED
+#if NAV_GUIDED
 // verify_nav_guided - check if we have breached any limits
 bool Sub::verify_nav_guided_enable(const AP_Mission::Mission_Command& cmd)
 {

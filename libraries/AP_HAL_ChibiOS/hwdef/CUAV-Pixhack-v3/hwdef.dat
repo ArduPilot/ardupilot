@@ -1,0 +1,3 @@
+include ../fmuv3/hwdef.dat
+
+USE_BOOTLOADER_FROM_BOARD fmuv3

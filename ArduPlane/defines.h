@@ -61,8 +61,8 @@ enum class RtlAutoland {
     RTL_THEN_DO_LAND_START = 1,
     RTL_IMMEDIATE_DO_LAND_START = 2,
     NO_RTL_GO_AROUND = 3,
+    DO_RETURN_PATH_START = 4,
 };
-    
 
 enum ChannelMixing {
     MIXING_DISABLED = 0,
@@ -168,6 +168,7 @@ enum FlightOptions {
     DISABLE_GROUND_PID_SUPPRESSION = (1<<11),
     ENABLE_LOITER_ALT_CONTROL = (1<<12),
     INDICATE_WAITING_FOR_RUDDER_NEUTRAL = (1<<13),
+    IMMEDIATE_CLIMB_IN_AUTO = (1<<14),
 };
 
 enum CrowFlapOptions {
@@ -196,3 +197,15 @@ enum class FenceAutoEnable : uint8_t {
     AutoDisableFloorOnly=2,
     WhenArmed=3
 };
+
+/*
+  bitmask of options for RGFND_LANDING
+ */
+enum class RangeFinderUse : uint8_t {
+    NONE    = 0U,
+    ALL     = (1U<<0),
+    TAKEOFF_LANDING = (1U<<1),
+    ASSIST  = (1U<<2),
+    CLIMB   = (1U<<3),
+};
+

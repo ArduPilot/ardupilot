@@ -87,7 +87,7 @@ AP_Baro_Backend *AP_Baro_ICP201XX::probe(AP_Baro &baro,
     if (!dev) {
         return nullptr;
     }
-    AP_Baro_ICP201XX *sensor = new AP_Baro_ICP201XX(baro, std::move(dev));
+    AP_Baro_ICP201XX *sensor = NEW_NOTHROW AP_Baro_ICP201XX(baro, std::move(dev));
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

@@ -75,7 +75,7 @@ ProfiLED_SPI::ProfiLED_SPI() :
 bool ProfiLED_SPI::init()
 {
     num_leds = pNotify->get_led_len() + 1; // for some reason we have to send an additional LED data
-    rgb = new ProfiLED_SPI::RGB[num_leds];
+    rgb = NEW_NOTHROW ProfiLED_SPI::RGB[num_leds];
     if (!rgb) {
         return false;
     }

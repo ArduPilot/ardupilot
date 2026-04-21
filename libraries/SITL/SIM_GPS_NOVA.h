@@ -21,8 +21,6 @@ public:
 private:
 
     void nova_send_message(uint8_t *header, uint8_t headerlength, uint8_t *payload, uint8_t payloadlen);
-    uint32_t CRC32Value(uint32_t icrc);
-    uint32_t CalculateBlockCRC32(uint32_t length, uint8_t *buffer, uint32_t crc);
 };
 
 };

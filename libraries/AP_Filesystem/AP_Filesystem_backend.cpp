@@ -29,7 +29,7 @@ FileData *AP_Filesystem_Backend::load_file(const char *filename)
     if (stat(filename, &st) != 0) {
         return nullptr;
     }
-    FileData *fd = new FileData(this);
+    FileData *fd = NEW_NOTHROW FileData(this);
     if (fd == nullptr) {
         return nullptr;
     }

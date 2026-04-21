@@ -76,6 +76,7 @@ private:
         Blob,
         SBAS,
         SGA,
+        Constellation,
         Complete
     };
     Config_State config_step;

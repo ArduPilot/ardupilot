@@ -150,7 +150,7 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
 
     // @Param: LIST_ALT
     // @DisplayName: ADSB vehicle list altitude filter
-    // @Description: ADSB vehicle list altitude filter. Vehicles detected above this altitude will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
+    // @Description: ADSB vehicle list altitude filter. Vehicles detected more than this altitude above our own altitude will be completely ignored. They will not show up in the SRx_ADSB stream to the GCS and will not be considered in any avoidance calculations. A value of 0 will disable this filter.
     // @Range: 0 32767
     // @User: Advanced
     // @Units: m
@@ -204,7 +204,7 @@ void AP_ADSB::init(void)
         // sanity check param
         in_state.list_size_param.set(constrain_int16(in_state.list_size_param, 1, INT16_MAX));
 
-        in_state.vehicle_list = new adsb_vehicle_t[in_state.list_size_param];
+        in_state.vehicle_list = NEW_NOTHROW adsb_vehicle_t[in_state.list_size_param];
 
         if (in_state.vehicle_list == nullptr) {
             // dynamic RAM allocation of in_state.vehicle_list[] failed
@@ -272,7 +272,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::uAvionix_MAVLink:
 #if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
         if (AP_ADSB_uAvionix_MAVLink::detect()) {
-            _backend[instance] = new AP_ADSB_uAvionix_MAVLink(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_uAvionix_MAVLink(*this, instance);
         }
 #endif
         break;
@@ -280,7 +280,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::uAvionix_UCP:
 #if HAL_ADSB_UCP_ENABLED
         if (AP_ADSB_uAvionix_UCP::detect()) {
-            _backend[instance] = new AP_ADSB_uAvionix_UCP(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_uAvionix_UCP(*this, instance);
         }
 #endif
         break;
@@ -288,7 +288,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::Sagetech:
 #if HAL_ADSB_SAGETECH_ENABLED
         if (AP_ADSB_Sagetech::detect()) {
-            _backend[instance] = new AP_ADSB_Sagetech(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_Sagetech(*this, instance);
         }
 #endif
         break;
@@ -296,7 +296,7 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::Sagetech_MXS:
 #if HAL_ADSB_SAGETECH_MXS_ENABLED
         if (AP_ADSB_Sagetech_MXS::detect()) {
-            _backend[instance] = new AP_ADSB_Sagetech_MXS(*this, instance);
+            _backend[instance] = NEW_NOTHROW AP_ADSB_Sagetech_MXS(*this, instance);
         }
 #endif
         break;

@@ -102,7 +102,7 @@ bool Copter::mavlink_motor_control_check(const GCS_MAVLINK &gcs_chan, bool check
     }
 
     // Check Motor test is allowed
-    char failure_msg[50] {};
+    char failure_msg[100] {};
     if (!motors->motor_test_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL,"%s: %s", mode, failure_msg);
         return false;

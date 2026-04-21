@@ -1,4 +1,4 @@
--- This script runs a custom arming check for index == 1 and it must be a takeoff missionn item
+-- This script runs a custom arming check for index == 1 and it must be a takeoff mission item
 
 local auth_id = arming:get_aux_auth_id()
 

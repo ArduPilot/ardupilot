@@ -63,7 +63,7 @@ AP_InertialSensor_Backend* AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &i
     if (!dev_uno || !dev_due) {
         return nullptr;
     }
-    auto sensor = new AP_InertialSensor_SCHA63T(imu, std::move(dev_uno), std::move(dev_due), rotation);
+    auto sensor = NEW_NOTHROW AP_InertialSensor_SCHA63T(imu, std::move(dev_uno), std::move(dev_due), rotation);
 
     if (!sensor) {
         return nullptr;
@@ -381,7 +381,7 @@ void AP_InertialSensor_SCHA63T::read_gyro()
         return;
     }
     due_temp = combine(rsp_due_temper[1], rsp_due_temper[2]);
-    set_temperature(gyro_instance, (uno_temp + due_temp) * 0.5);
+    set_temperature(gyro_instance, (int16_t)((uno_temp + due_temp) * 0.5f));
 
     // change coordinate system from left hand too right hand
     gyro_z = (gyro_z == INT16_MIN) ? INT16_MAX : -gyro_z;
@@ -399,9 +399,9 @@ void AP_InertialSensor_SCHA63T::read_gyro()
     }
 }
 
-void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, uint16_t temper)
+void AP_InertialSensor_SCHA63T::set_temperature(uint8_t instance, int16_t temper)
 {
-    const float temperature = 25.0f + ( temper / 30 );
+    const float temperature = 25.0f + ((float)temper / 30.0f);
     const float temp_degc = (0.5f * temperature) + 23.0f;
     _publish_temperature(instance, temp_degc);
 }

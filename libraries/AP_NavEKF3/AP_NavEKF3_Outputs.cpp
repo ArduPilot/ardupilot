@@ -32,6 +32,31 @@ bool NavEKF3_core::healthy(void) const
     return true;
 }
 
+/*
+  per-core pre-arm checks. returns false if we fail arming checks, in
+  which case the buffer will be populated with a failure message
+  requires_position should be true if horizontal position configuration should be checked
+*/
+bool NavEKF3_core::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
+{
+    if (requires_position) {
+        // additional checks when position is required, used by pre-arm checks
+        const float max_vel_innovation = 2.0;
+        const float hvel_innovation = sqrtf(sq(innovVelPos[0])+sq(innovVelPos[1]));
+        if (onGround && PV_AidingMode == AID_ABSOLUTE &&
+            frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS) &&
+            hvel_innovation > max_vel_innovation) {
+            // more than 2 m/s horizontal velocity innovation on the ground
+            dal.snprintf(failure_msg, failure_msg_len,
+                         "EKF3[%u] vel error %.1f", unsigned(core_index)+1, hvel_innovation);
+            return false;
+        }
+    }
+
+    // all OK
+    return true;
+}
+
 // Return a consolidated error score where higher numbers represent larger errors
 // Intended to be used by the front-end to determine which is the primary EKF
 float NavEKF3_core::errorScore() const
@@ -68,12 +93,16 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
+#if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
         if (_rng == nullptr) {
             // we really, really shouldn't be here.
             return false;
         }
         height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
+#else
+        return false;
+#endif
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
         if (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
             height -= terrainState;
@@ -483,7 +512,7 @@ bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::Sour
     switch (source) {
     case AP_NavEKF_Source::SourceXY::GPS:
         // check for timeouts
-        if (dal.millis() - gpsVelInnovTime_ms > 500) {
+        if (dal.millis() - gpsRetrieveTime_ms > 500) {
             return false;
         }
         innovations = gpsVelInnov.tofloat();

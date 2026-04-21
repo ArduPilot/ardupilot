@@ -176,6 +176,11 @@ public:
         return _last_loop_time_s;
     }
 
+    // get the time in microseconds that the current loop started
+    uint64_t get_loop_start_time_us(void) const {
+        return _loop_sample_time_us;
+    }
+
     // get the amount of extra time being added on each loop
     uint32_t get_extra_loop_us(void) const {
         return extra_loop_us;
@@ -240,12 +245,15 @@ private:
     // number of ticks that _spare_micros is counted over
     uint8_t _spare_ticks;
 
-    // start of loop timing
+    // start of previous loop
     uint32_t _loop_timer_start_us;
 
     // time of last loop in seconds
     float _last_loop_time_s;
-    
+
+    // start of current loop
+    uint64_t _loop_sample_time_us;
+
     // bitmask bit which indicates if we should log PERF message
     uint32_t _log_performance_bit;
 

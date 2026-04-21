@@ -6,6 +6,7 @@
 
 #include <SITL/SITL.h>
 #include "SIM_SerialDevice.h"
+#include <sys/time.h>
 
 namespace SITL
 {

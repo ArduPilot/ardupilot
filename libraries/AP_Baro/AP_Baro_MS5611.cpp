@@ -71,7 +71,7 @@ AP_Baro_Backend *AP_Baro_MS56XX::probe(AP_Baro &baro,
     if (!dev) {
         return nullptr;
     }
-    AP_Baro_MS56XX *sensor = new AP_Baro_MS56XX(baro, std::move(dev), ms56xx_type);
+    AP_Baro_MS56XX *sensor = NEW_NOTHROW AP_Baro_MS56XX(baro, std::move(dev), ms56xx_type);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;

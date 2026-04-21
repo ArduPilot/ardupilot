@@ -82,24 +82,7 @@ static uint8_t nibble2hex(uint8_t x)
 
 static uint8_t hex2nibble(char c)
 {
-    // Must go into RAM, not flash, because flash is slow
-    static uint8_t NumConversionTable[] = {
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    };
-
-    static uint8_t AlphaConversionTable[] = {
-        10, 11, 12, 13, 14, 15
-    };
-
-    uint8_t out = 255;
-
-    if (c >= '0' && c <= '9') {
-        out = NumConversionTable[int(c) - int('0')];
-    } else if (c >= 'a' && c <= 'f') {
-        out = AlphaConversionTable[int(c) - int('a')];
-    } else if (c >= 'A' && c <= 'F') {
-        out = AlphaConversionTable[int(c) - int('A')];
-    }
+    uint8_t out = char_to_hex(c);
 
     if (out == 255) {
         hex2nibble_error = true;
@@ -304,7 +287,7 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
  */
 int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t timestamp_usec)
 {
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return -1;
     }
 #if HAL_CANFD_SUPPORTED
@@ -394,7 +377,7 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
 const char* SLCAN::CANIface::processCommand(char* cmd)
 {
 
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return nullptr;
     }
 
@@ -478,7 +461,7 @@ const char* SLCAN::CANIface::processCommand(char* cmd)
 // add bytes to parse the received SLCAN Data stream
 inline void SLCAN::CANIface::addByte(const uint8_t byte)
 {
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return;
     }
     if ((byte >= 32 && byte <= 126)) {  // Normal printable ASCII character
@@ -514,18 +497,20 @@ void SLCAN::CANIface::update_slcan_port()
 {
     const bool armed = hal.util->get_soft_armed();
     if (_set_by_sermgr) {
-        if (armed && _port != nullptr) {
+        if (armed && is_enabled()) {
             // auto-disable when armed
             _port->lock_port(0, 0);
-            _port = nullptr;
+            _enabled = false;
             _set_by_sermgr = false;
         }
         return;
     }
-    if (_port == nullptr && !armed) {
-         _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
-        if (_port != nullptr) {
+    if (!is_enabled() && !armed) {
+        auto new_port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+        if (new_port != nullptr) {
+            _port = new_port;
             _port->lock_port(_serial_lock_key, _serial_lock_key);
+            _enabled = true;
             _set_by_sermgr = true;
             return;
         }
@@ -538,23 +523,25 @@ void SLCAN::CANIface::update_slcan_port()
         if (((AP_HAL::millis() - _slcan_start_req_time) < ((uint32_t)_slcan_start_delay*1000))) {
             return;
         }
-        _port = AP::serialmanager().get_serial_by_id(_slcan_ser_port);
-        if (_port == nullptr) {
+        auto new_port = AP::serialmanager().get_serial_by_id(_slcan_ser_port);
+        if (new_port == nullptr) {
             _slcan_ser_port.set_and_save(-1);
             return;
         }
+        _port = new_port;
         _port->lock_port(_serial_lock_key, _serial_lock_key);
+        _enabled = true;
         _prev_ser_port = _slcan_ser_port;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
         _last_had_activity = AP_HAL::millis();
     }
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return;
     }
     if (((AP_HAL::millis() - _last_had_activity) > ((uint32_t)_slcan_timeout*1000)) &&
         (uint32_t)_slcan_timeout != 0) {
         _port->lock_port(0, 0);
-        _port = nullptr;
+        _enabled = false;
         _slcan_ser_port.set_and_save(-1);
         _prev_ser_port = -1;
         _slcan_start_req = false;
@@ -654,7 +641,7 @@ bool SLCAN::CANIface::select(bool &read, bool &write, const AP_HAL::CANFrame* co
         ret = _can_iface->select(read, write, pending_tx, blocking_deadline);
     }
 
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return ret;
     }
 
@@ -682,7 +669,7 @@ int16_t SLCAN::CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadlin
         ret = _can_iface->send(frame, tx_deadline, flags);
     }
 
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return ret;
     }
 
@@ -716,7 +703,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
     }
 
     // We found nothing in HAL's CANIface receive, so look in SLCANIface
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return 0;
     }
 

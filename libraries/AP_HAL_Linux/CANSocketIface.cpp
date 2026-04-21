@@ -34,6 +34,7 @@
 
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <net/if.h>
 #include <linux/can/raw.h>
 #include <cstring>
@@ -269,6 +270,9 @@ void CANIface::_pollWrite()
 {
     while (_hasReadyTx()) {
         WITH_SEMAPHORE(sem);
+        if (!_hasReadyTx()) {
+            break;
+        }
         const CanTxItem tx = _tx_queue.top();
         uint64_t curr_time = AP_HAL::micros64();
         if (tx.deadline >= curr_time) {

@@ -8,7 +8,7 @@
 void Tracker::init_servos()
 {
     // update assigned functions and enable auxiliary servos
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     SRV_Channels::set_default_function(CH_YAW, SRV_Channel::k_tracker_yaw);
     SRV_Channels::set_default_function(CH_PITCH, SRV_Channel::k_tracker_pitch);

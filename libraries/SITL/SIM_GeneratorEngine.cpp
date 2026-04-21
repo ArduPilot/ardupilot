@@ -42,7 +42,7 @@ void SIM_GeneratorEngine::update()
     temperature = MIN(temperature, 150);
     // now lose some heat to the environment
     const float heat_loss = ((temperature * heat_environment_loss_factor * (time_delta_ms * (1/1000.0f))));  // lose some % of heat per second
-    // gcs().send_text(MAV_SEVERITY_INFO, "heat=%f loss=%f", temperature, heat_loss);
+    // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "heat=%f loss=%f", temperature, heat_loss);
     temperature -= heat_loss;
 
 }

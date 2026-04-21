@@ -29,7 +29,7 @@ using namespace MSP;
 AP_OpticalFlow_MSP *AP_OpticalFlow_MSP::detect(AP_OpticalFlow &_frontend)
 {
     // we assume msp messages will be sent into this driver
-    return new AP_OpticalFlow_MSP(_frontend);
+    return NEW_NOTHROW AP_OpticalFlow_MSP(_frontend);
 }
 
 // read latest values from sensor and fill in x,y and totals.

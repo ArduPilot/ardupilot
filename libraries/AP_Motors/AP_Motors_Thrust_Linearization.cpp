@@ -85,8 +85,8 @@ const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
 };
 
 Thrust_Linearization::Thrust_Linearization(AP_Motors& _motors) :
-    motors(_motors),
-    lift_max(1.0)
+    lift_max(1.0),
+    motors(_motors)
 {
     // setup battery voltage filtering
     batt_voltage_filt.set_cutoff_frequency(AP_MOTORS_BATT_VOLT_FILT_HZ);

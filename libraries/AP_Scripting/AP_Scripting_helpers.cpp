@@ -20,9 +20,7 @@ int lua_new_Parameter(lua_State *L) {
     }
 
     // This chunk is the same as the auto generated constructor
-    luaL_checkstack(L, 2, "Out of stack");
     void *ud = lua_newuserdata(L, sizeof(Parameter));
-    memset(ud, 0, sizeof(Parameter));
     new (ud) Parameter();
     luaL_getmetatable(L, "Parameter");
     lua_setmetatable(L, -2);
@@ -54,16 +52,16 @@ bool Parameter::init_by_info(uint16_t key, uint32_t group_element, enum ap_var_t
 {
     switch (type) {
     case AP_PARAM_INT8:
-        vp = new AP_Int8;
+        vp = NEW_NOTHROW AP_Int8;
         break;
     case AP_PARAM_INT16:
-        vp = new AP_Int16;
+        vp = NEW_NOTHROW AP_Int16;
         break;
     case AP_PARAM_INT32:
-        vp = new AP_Int32;
+        vp = NEW_NOTHROW AP_Int32;
         break;
     case AP_PARAM_FLOAT:
-        vp = new AP_Float;
+        vp = NEW_NOTHROW AP_Float;
         break;
     default:
         return false;

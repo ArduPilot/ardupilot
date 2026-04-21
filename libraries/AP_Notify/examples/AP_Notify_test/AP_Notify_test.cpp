@@ -12,15 +12,19 @@ void loop();
 
 const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
+#if AP_NOTIFY_GPIO_LED_3_ENABLED
 // create board led object
 AP_BoardLED board_led;
+#endif
 
 void setup()
 {
     hal.console->printf("AP_Notify library test\n");
 
+#if AP_NOTIFY_GPIO_LED_3_ENABLED
     // initialise the board leds
     board_led.init();
+#endif
 
     // turn on initialising notification
     AP_Notify::flags.initialising = true;

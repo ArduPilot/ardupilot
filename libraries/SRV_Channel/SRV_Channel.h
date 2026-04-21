@@ -188,6 +188,7 @@ public:
         k_rcin14_mapped         = 153,
         k_rcin15_mapped         = 154,
         k_rcin16_mapped         = 155,
+        k_lift_release          = 156,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 
@@ -372,6 +373,9 @@ public:
     // set output value for a specific function channel as a pwm value
     static void set_output_pwm_chan(uint8_t chan, uint16_t value);
 
+    // get output value for a specific channel as a pwm value
+    static bool get_output_pwm_chan(uint8_t chan, uint16_t &value);
+    
     // set output value for a specific function channel as a pwm value for specified override time in ms
     static void set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uint16_t timeout_ms);
 
@@ -415,7 +419,13 @@ public:
 
     // set MIN/MAX parameters for a function
     static void set_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
-    
+
+    // set MIN/MAX parameter defaults for a function
+    static void set_output_min_max_defaults(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
+    // Save MIN/MAX/REVERSED parameters for a function
+    static void save_output_min_max(SRV_Channel::Aux_servo_function_t function, uint16_t min_pwm, uint16_t max_pwm);
+
     // save trims
     void save_trim(void);
 
@@ -466,7 +476,7 @@ public:
                            int16_t value, int16_t angle_min, int16_t angle_max);
 
     // assign and enable auxiliary channels
-    static void enable_aux_servos(void);
+    void enable_aux_servos(void);
 
     // enable channels by mask
     static void enable_by_mask(uint32_t mask);
@@ -531,10 +541,9 @@ public:
         }
         return SRV_Channel::Aux_servo_function_t((SRV_Channel::k_motor9+(channel-8)));
     }
-    
-    static void cork();
 
-    static void push();
+    void cork();
+    void push();
 
     // disable PWM output to a set of channels given by a mask. This is used by the AP_BLHeli code
     static void set_disabled_channel_mask(uint32_t mask) { disabled_mask = mask; }
@@ -563,7 +572,7 @@ public:
     static void zero_rc_outputs();
 
     // initialize before any call to push
-    static void init(uint32_t motor_mask = 0, AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE);
+    void init(uint32_t motor_mask = 0, AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE);
 
     // return true if a channel is set to type GPIO
     static bool is_GPIO(uint8_t channel);
@@ -603,30 +612,25 @@ private:
 #if AP_VOLZ_ENABLED
     // support for Volz protocol
     AP_Volz_Protocol volz;
-    static AP_Volz_Protocol *volz_ptr;
 #endif
 
 #if AP_SBUSOUTPUT_ENABLED
     // support for SBUS protocol
     AP_SBusOut sbus;
-    static AP_SBusOut *sbus_ptr;
 #endif
 
 #if AP_ROBOTISSERVO_ENABLED
     // support for Robotis servo protocol
     AP_RobotisServo robotis;
-    static AP_RobotisServo *robotis_ptr;
 #endif
 
 #if HAL_SUPPORT_RCOUT_SERIAL
     // support for BLHeli protocol
     AP_BLHeli blheli;
-    static AP_BLHeli *blheli_ptr;
 #endif
 
 #if AP_FETTEC_ONEWIRE_ENABLED
     AP_FETtecOneWire fetteconwire;
-    static AP_FETtecOneWire *fetteconwire_ptr;
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
 
     // mask of disabled channels
@@ -684,4 +688,8 @@ private:
 
     // semaphore for multi-thread use of override_counter array
     HAL_Semaphore override_counter_sem;
+};
+
+namespace AP {
+    SRV_Channels &srv();
 };

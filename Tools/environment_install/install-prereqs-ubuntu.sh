@@ -69,6 +69,9 @@ RELEASE_CODENAME=$(lsb_release -c -s)
 
 # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
 case ${RELEASE_CODENAME} in
+    wilma)
+        RELEASE_CODENAME='noble'
+        ;;
     vanessa)
         RELEASE_CODENAME='jammy'
         ;;
@@ -86,17 +89,11 @@ esac
 PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
 PIP=pip3
 
-if [ ${RELEASE_CODENAME} == 'bionic' ] ; then
-    SITLFML_VERSION="2.4"
-    SITLCFML_VERSION="2.4"
-    PYTHON_V="python3"
-    PIP=pip3
+if [ ${RELEASE_CODENAME} == 'bionic' ] ||
+      [ ${RELEASE_CODENAME} == 'buster' ]; then
+    echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
+    exit 1
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'buster' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -168,9 +165,9 @@ else
 fi
 
 # Lists of packages to install
-BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen"
+BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect"
 # CHANGED: Don't install MAVProxy - we have our own version installed through `eagle_cmd`.
-PYTHON_PKGS="future lxml pymavlink pyserial pexpect geocoder empy==3.3.4 ptyprocess dronecan"
+PYTHON_PKGS="future lxml pymavlink pyserial geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
@@ -287,8 +284,6 @@ elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'buster' ]; then
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} != 'mantic' ] &&
      [ ${RELEASE_CODENAME} != 'noble' ]; then
   SITL_PKGS+=" python-argparse"
@@ -296,8 +291,7 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'buster' ]; then
+  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITL_PKGS+=" libjpeg62-turbo-dev"
   elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
            [ ${RELEASE_CODENAME} == 'focal' ]; then
@@ -338,7 +332,6 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'buster' ] ||
          [ ${RELEASE_CODENAME} == 'focal' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
@@ -391,7 +384,7 @@ fi
 
 if [ -n "$PYTHON_VENV_PACKAGE" ]; then
     $APT_GET install $PYTHON_VENV_PACKAGE
-    python3 -m venv $HOME/venv-ardupilot
+    python3 -m venv --system-site-packages $HOME/venv-ardupilot
 
     # activate it:
     SOURCE_LINE="source $HOME/venv-ardupilot/bin/activate"
@@ -404,11 +397,17 @@ if [ -n "$PYTHON_VENV_PACKAGE" ]; then
 
     if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
         echo $SOURCE_LINE >> ~/$SHELL_LOGIN
+    else
+        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
     fi
 fi
 
-# try update setuptools and wheel before installing pip package that may need compilation
-$PIP install $PIP_USER_ARGUMENT -U pip setuptools wheel
+# try update packaging, setuptools and wheel before installing pip package that may need compilation
+SETUPTOOLS="setuptools"
+if [ ${RELEASE_CODENAME} == 'focal' ]; then
+    SETUPTOOLS=setuptools==70.3.0
+fi
+$PIP install $PIP_USER_ARGUMENT -U pip packaging $SETUPTOOLS wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
@@ -422,7 +421,11 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
     $PIP install $PIP_USER_ARGUMENT -U attrdict3
 fi
 
-$PIP install $PIP_USER_ARGUMENT -U $PYTHON_PKGS -c $PIP_CONSTRAINTS_FILE
+# install Python packages one-at-a-time so it is clear which package
+# is causing problems:
+for PACKAGE in $PYTHON_PKGS; do
+    $PIP install $PIP_USER_ARGUMENT -U $PACKAGE -c $PIP_CONSTRAINTS_FILE
+done
 
 if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 toolchain [N/y]?" ; then
     DO_AP_STM_ENV=1

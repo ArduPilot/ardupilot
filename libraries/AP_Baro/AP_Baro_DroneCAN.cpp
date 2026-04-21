@@ -42,7 +42,7 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
     AP_Baro_DroneCAN* backend = nullptr;
     for (uint8_t i = 0; i < BARO_MAX_DRIVERS; i++) {
         if (_detected_modules[i].driver == nullptr && _detected_modules[i].ap_dronecan != nullptr) {
-            backend = new AP_Baro_DroneCAN(baro);
+            backend = NEW_NOTHROW AP_Baro_DroneCAN(baro);
             if (backend == nullptr) {
                 AP::can().log_text(AP_CANManager::LOG_ERROR,
                             LOG_TAG,

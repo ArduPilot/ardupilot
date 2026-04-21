@@ -110,11 +110,13 @@ SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
 ''' % (n, bus, n))
 
     c = 0
+    found_imu = False
     for define in defines:
         for imudefine in ['USE_GYRO_SPI_', 'USE_ACCGYRO_']:
             if define.startswith(imudefine):
                 imu = define[len(imudefine):]
                 c = c + 1
+                found_imu = True
                 if c == int(n):
                     if imu == 'ICM42688P':
                         imudriver = 'Invensensev3'
@@ -125,6 +127,11 @@ SPIDEV imu%s   SPI%s DEVID1 GYRO%s_CS   MODE3   1*MHZ   8*MHZ
                     f.write('''
 IMU %s SPI:imu%s %s
 ''' % (imudriver, n, alignment[align]))
+    # no driver found, pick v3 by default
+    if not found_imu:
+        f.write('''
+IMU %s SPI:imu%s %s
+''' % ('Invensensev3', n, alignment[align]))
 
     dma = "SPI" + bus + "*"
     dma_noshare[dma] = dma
@@ -255,14 +262,20 @@ define STORAGE_FLASH_PAGE 1
         if (spin != int(spi[0])):
             spin = int(spi[0])
             f.write("\n# SPI%s\n" % spin)
-        f.write("%s SPI%s_%s SPI%s\n" % (spi[1], spin, spi[3].split('_')[1], spin))
+        fn = spi[3].split('_')[1]
+        if fn == "SDI":
+            fn = "MISO"
+        elif fn == "SDO":
+            fn = "MOSI"
+        f.write("%s SPI%s_%s SPI%s\n" % (spi[1], spin, fn, spin))
 
     f.write("\n# Chip select pins\n")
     for cs in chip_select.values():
         f.write("%s %s%s_CS CS\n" % (cs[1], cs[2], int(cs[0])))
 
-    beeper = list(functions["BEEPER"].values())[0]
-    f.write('''\n# Beeper
+    if len(functions["BEEPER"].values()) > 0:
+        beeper = list(functions["BEEPER"].values())[0]
+        f.write('''\n# Beeper
 %s BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
 ''' % beeper[1])

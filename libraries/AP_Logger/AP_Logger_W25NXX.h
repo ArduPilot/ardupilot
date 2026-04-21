@@ -3,11 +3,13 @@
  */
 #pragma once
 
+#include "AP_Logger_config.h"
+
+#if HAL_LOGGING_FLASH_W25NXX_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
 #include "AP_Logger_Block.h"
-
-#if HAL_LOGGING_DATAFLASH_ENABLED
 
 class AP_Logger_W25NXX : public AP_Logger_Block {
 public:
@@ -15,7 +17,7 @@ public:
         AP_Logger_Block(front, writer) {}
     static AP_Logger_Backend  *probe(AP_Logger &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
-        return new AP_Logger_W25NXX(front, ls);
+        return NEW_NOTHROW AP_Logger_W25NXX(front, ls);
     }
     void              Init(void) override;
     bool              CardInserted() const override { return !flash_died && df_NumPages > 0; }
@@ -47,4 +49,4 @@ private:
     bool read_cache_valid;
 };
 
-#endif // HAL_LOGGING_DATAFLASH_ENABLED
+#endif // HAL_LOGGING_FLASH_W25NXX_ENABLED

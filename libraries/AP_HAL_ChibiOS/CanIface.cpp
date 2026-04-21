@@ -140,9 +140,9 @@ const uint32_t CANIface::TSR_ABRQx[CANIface::NumTxMailboxes] = {
 
 
 CANIface::CANIface(uint8_t index) :
-    self_index_(index),
     rx_bytebuffer_((uint8_t*)rx_buffer, sizeof(rx_buffer)),
-    rx_queue_(&rx_bytebuffer_)
+    rx_queue_(&rx_bytebuffer_),
+    self_index_(index)
 {
     if (index >= HAL_NUM_CAN_IFACES) {
         AP_HAL::panic("Bad CANIface index.");
@@ -325,6 +325,19 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
             txmailbox = 2;
         } else {
             PERF_STATS(stats.tx_overflow);
+#if !defined(HAL_BOOTLOADER_BUILD)
+            if (stats.tx_success == 0) {
+                /*
+                  if we have never successfully transmitted a frame
+                  then we may be operating with just MAVCAN or UDP
+                  MCAST. Consider the frame sent if the send
+                  succeeds. This allows for UDP MCAST and MAVCAN to
+                  operate fully when the CAN bus has no cable plugged
+                  in
+                 */
+                return AP_HAL::CANIface::send(frame, tx_deadline, flags);
+            }
+#endif
             return 0;       // No transmission for you.
         }
 
@@ -847,7 +860,7 @@ bool CANIface::init(const uint32_t bitrate, const CANIface::OperatingMode mode)
     mode_ = mode;
 
     if (can_ifaces[0] == nullptr) {
-        can_ifaces[0] = new CANIface(0);
+        can_ifaces[0] = NEW_NOTHROW CANIface(0);
         Debug("Failed to allocate CAN iface 0");
         if (can_ifaces[0] == nullptr) {
             return false;

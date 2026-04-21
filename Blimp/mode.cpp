@@ -102,9 +102,6 @@ bool Blimp::set_mode(Mode::Number mode, ModeReason reason)
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
 
-    // store previous flight mode (only used by tradeheli's autorotation)
-    prev_control_mode = control_mode;
-
     // update flight mode
     flightmode = new_flightmode;
     control_mode = mode;

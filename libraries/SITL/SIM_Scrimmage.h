@@ -46,7 +46,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Scrimmage(frame_str);
+        return NEW_NOTHROW Scrimmage(frame_str);
     }
 
     /*  Create and set in/out socket for extenal simulator */

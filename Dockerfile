@@ -39,6 +39,9 @@ RUN SKIP_AP_EXT_ENV=$SKIP_AP_EXT_ENV SKIP_AP_GRAPHIC_ENV=$SKIP_AP_GRAPHIC_ENV SK
     USER=${USER_NAME} \
     Tools/environment_install/install-prereqs-ubuntu.sh -y
 
+# Rectify git perms issue that seems to crop up only on OSX
+RUN git config --global --add safe.directory $PWD
+
 # Check that local/bin are in PATH for pip --user installed package
 RUN echo "if [ -d \"\$HOME/.local/bin\" ] ; then\nPATH=\"\$HOME/.local/bin:\$PATH\"\nfi" >> ~/.ardupilot_env
 

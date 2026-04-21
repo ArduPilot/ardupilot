@@ -71,13 +71,13 @@ pushd MAVProxy
 git fetch origin
 git reset --hard origin/master
 git show
-python setup.py build install --user
+python3 -m pip install --user .
 popd
 
 echo "Updating pymavlink"
 pushd APM/modules/mavlink/pymavlink
 git show
-python setup.py build install --user
+python3 -m pip install --user .
 popd
 
 githash=$(cd APM && git rev-parse HEAD)
@@ -100,7 +100,7 @@ export BUILD_BINARIES_PATH=$HOME/build/tmp
 # exit on panic so we don't waste time waiting around
 export SITL_PANIC_EXIT=1
 
-timelimit 72000 python3 APM/Tools/autotest/autotest.py --autotest-server --timeout=70000 > buildlogs/autotest-output.txt 2>&1
+timelimit 144000 python3 APM/Tools/autotest/autotest.py --autotest-server --timeout=143000 > buildlogs/autotest-output.txt 2>&1
 
 mkdir -p "buildlogs/history/$hdate"
 

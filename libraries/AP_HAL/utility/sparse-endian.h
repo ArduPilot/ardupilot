@@ -57,6 +57,12 @@ typedef uint64_t __ap_bitwise be64_t;
 #undef be64toh
 #undef le64toh
 
+#if !defined (__BYTE_ORDER) && defined (__OpenBSD__)
+#define __BYTE_ORDER __BYTE_ORDER__
+#define __LITTLE_ENDIAN __ORDER_LITTLE_ENDIAN__
+#define __BIG_ENDIAN __ORDER_BIG_ENDIAN__
+#endif
+
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define bswap_16_on_le(x) __bswap_16(x)
 #define bswap_32_on_le(x) __bswap_32(x)

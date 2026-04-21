@@ -13,20 +13,22 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_GPIO_LED_RGB_ENABLED
+
 #include "PixRacerLED.h"
 
 #include <AP_HAL/HAL.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-
-#ifndef HAL_GPIO_A_LED_PIN
-#define HAL_GPIO_A_LED_PIN        -1
+#ifndef AP_NOTIFY_GPIO_LED_RGB_RED_PIN
+#error "define AP_NOTIFY_GPIO_LED_RGB_RED_PIN"
 #endif
-#ifndef HAL_GPIO_B_LED_PIN
-#define HAL_GPIO_B_LED_PIN        -1
+#ifndef AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN
+#error "define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN"
 #endif
-#ifndef HAL_GPIO_C_LED_PIN
-#define HAL_GPIO_C_LED_PIN        -1
+#ifndef AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN
+#error "define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN"
 #endif
 
 extern const AP_HAL::HAL& hal;
@@ -41,25 +43,22 @@ bool PixRacerLED::init(void)
     // when HAL_GPIO_LED_ON is 0 then we must not use pinMode()
     // as it could remove the OPENDRAIN attribute on the pin
 #if HAL_GPIO_LED_ON != 0
-    hal.gpio->pinMode(HAL_GPIO_A_LED_PIN, HAL_GPIO_OUTPUT);
-    hal.gpio->pinMode(HAL_GPIO_B_LED_PIN, HAL_GPIO_OUTPUT);
-    hal.gpio->pinMode(HAL_GPIO_C_LED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(AP_NOTIFY_GPIO_LED_RGB_RED_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN, HAL_GPIO_OUTPUT);
+    hal.gpio->pinMode(AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN, HAL_GPIO_OUTPUT);
 #endif
-    hal.gpio->write(HAL_GPIO_A_LED_PIN, HAL_GPIO_LED_OFF);
-    hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
-    hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_RGB_RED_PIN, HAL_GPIO_LED_OFF);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN, HAL_GPIO_LED_OFF);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN, HAL_GPIO_LED_OFF);
     return true;
 }
 
 bool PixRacerLED::hw_set_rgb(uint8_t r, uint8_t g, uint8_t b)
 {
-    hal.gpio->write(HAL_GPIO_A_LED_PIN, (r > 0)?HAL_GPIO_LED_ON:HAL_GPIO_LED_OFF);
-    hal.gpio->write(HAL_GPIO_B_LED_PIN, (g > 0)?HAL_GPIO_LED_ON:HAL_GPIO_LED_OFF);
-    hal.gpio->write(HAL_GPIO_C_LED_PIN, (b > 0)?HAL_GPIO_LED_ON:HAL_GPIO_LED_OFF);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_RGB_RED_PIN, (r > 0)?HAL_GPIO_LED_ON:HAL_GPIO_LED_OFF);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN, (g > 0)?HAL_GPIO_LED_ON:HAL_GPIO_LED_OFF);
+    hal.gpio->write(AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN, (b > 0)?HAL_GPIO_LED_ON:HAL_GPIO_LED_OFF);
     return true;
 }
 
-#else
-bool PixRacerLED::init(void) { return true; }
-bool PixRacerLED::hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) { return true; }
-#endif
+#endif  // AP_NOTIFY_GPIO_LED_RGB_ENABLED

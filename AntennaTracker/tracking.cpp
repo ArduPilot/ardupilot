@@ -131,6 +131,11 @@ void Tracker::update_tracking(void)
  */
 void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
 {
+    // reject (0;0) coordinates
+    if (!msg.lat && !msg.lon) {
+        return;
+    }
+
     vehicle.location.lat = msg.lat;
     vehicle.location.lng = msg.lon;
     vehicle.location.alt = msg.alt/10;
@@ -139,7 +144,7 @@ void Tracker::tracking_update_position(const mavlink_global_position_int_t &msg)
     vehicle.last_update_us = AP_HAL::micros();
     vehicle.last_update_ms = AP_HAL::millis();
 #if HAL_LOGGING_ENABLED
-    // log vehicle as GPS2
+    // log vehicle as VPOS
     if (should_log(MASK_LOG_GPS)) {
         Log_Write_Vehicle_Pos(vehicle.location.lat, vehicle.location.lng, vehicle.location.alt, vehicle.vel);
     }

@@ -55,40 +55,7 @@ graph LR
 
 While DDS support in Ardupilot is mostly through git submodules, another tool needs to be available on your system: Micro XRCE DDS Gen.
 
-- Go to a directory on your system to clone the repo (perhaps next to `ardupilot`)
-- Install java
-  ```console
-  sudo apt install default-jre
-  ````
-- Follow instructions [here](https://micro-xrce-dds.docs.eprosima.com/en/latest/installation.html#installing-the-micro-xrce-dds-gen-tool) to install the latest version of the generator using Ardupilot's mirror
-  ```console
-  git clone --recurse-submodules https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
-  cd Micro-XRCE-DDS-Gen
-  ./gradlew assemble
-  ```
-
-- Add the generator directory to $PATH.
-  ```console
-  # Add this to ~/.bashrc
-
-  export PATH=$PATH:/your/path/to/Micro-XRCE-DDS-Gen/scripts
-  ```
-- Test it
-  ```console
-  cd /path/to/ardupilot
-  microxrceddsgen -version
-  # openjdk version "11.0.18" 2023-01-17
-  # OpenJDK Runtime Environment (build 11.0.18+10-post-Ubuntu-0ubuntu122.04)
-  # OpenJDK 64-Bit Server VM (build 11.0.18+10-post-Ubuntu-0ubuntu122.04, mixed mode, sharing)
-  # microxrceddsgen version: 1.0.0beta2
-  ```
-
-> :warning: **If you have installed FastDDS or FastDDSGen globally on your system**:
-eProsima's libraries and the packaging system in Ardupilot are not deterministic in this scenario.
-You may experience the wrong version of a library brought in, or runtime segfaults.
-For now, avoid having simultaneous local and global installs.
-If you followed the [global install](https://fast-dds.docs.eprosima.com/en/latest/installation/sources/sources_linux.html#global-installation)
-section, you should remove it and switch to local install.
+Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html#installation-ubuntu) to set up your environment.
 
 ### Serial Only: Set up serial for SITL with DDS
 
@@ -109,6 +76,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 | DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
 | SERIAL1_BAUD | The serial baud rate for DDS | 57 |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
+
 ```console
 # Wipe params till you see "AP: ArduPilot Ready"
 # Select your favorite vehicle type
@@ -204,12 +172,13 @@ $ ros2 node list
 ```bash
 $ ros2 topic list -v
 Published topics:
- * /ap/battery/battery0 [sensor_msgs/msg/BatteryState] 1 publisher
+ * /ap/airspeed [geometry_msgs/msg/Vector3] 1 publisher
+ * /ap/battery [sensor_msgs/msg/BatteryState] 1 publisher
  * /ap/clock [rosgraph_msgs/msg/Clock] 1 publisher
  * /ap/geopose/filtered [geographic_msgs/msg/GeoPoseStamped] 1 publisher
  * /ap/gps_global_origin/filtered [geographic_msgs/msg/GeoPointStamped] 1 publisher
  * /ap/imu/experimental/data [sensor_msgs/msg/Imu] 1 publisher
- * /ap/navsat/navsat0 [sensor_msgs/msg/NavSatFix] 1 publisher
+ * /ap/navsat [sensor_msgs/msg/NavSatFix] 1 publisher
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
@@ -240,6 +209,8 @@ nanosec: 729410000
 $ ros2 service list
 /ap/arm_motors
 /ap/mode_switch
+/ap/prearm_check
+/ap/experimental/takeoff
 ---
 ```
 
@@ -253,7 +224,7 @@ In order to consume the transforms, it's highly recommended to [create and run a
 
 ## Using ROS 2 services
 
-The `AP_DDS` library exposes services which are automatically mapped to ROS 2 
+The `AP_DDS` library exposes services which are automatically mapped to ROS 2
 services using appropriate naming conventions for topics and message and service
 types. An earlier version of `AP_DDS` required the use of the eProsima
 [Integration Service](https://github.com/eProsima/Integration-Service) to map
@@ -265,6 +236,8 @@ List the available services:
 $ ros2 service list -t
 /ap/arm_motors [ardupilot_msgs/srv/ArmMotors]
 /ap/mode_switch [ardupilot_msgs/srv/ModeSwitch]
+/ap/prearm_check [std_srvs/srv/Trigger]
+/ap/experimental/takeoff [ardupilot_msgs/srv/Takeoff]
 ```
 
 Call the arm motors service:
@@ -285,6 +258,55 @@ requester: making request: ardupilot_msgs.srv.ModeSwitch_Request(mode=4)
 
 response:
 ardupilot_msgs.srv.ModeSwitch_Response(status=True, curr_mode=4)
+```
+
+Call the prearm check service:
+
+```bash
+$ ros2 service call /ap/prearm_check std_srvs/srv/Trigger
+requester: making request: std_srvs.srv.Trigger_Request()
+
+response:
+std_srvs.srv.Trigger_Response(success=False, message='Vehicle is Not Armable')
+
+or
+
+std_srvs.srv.Trigger_Response(success=True, message='Vehicle is Armable')
+```
+
+Call the takeoff service:
+
+```bash
+$ ros2 service call /ap/experimental/takeoff ardupilot_msgs/srv/Takeoff "{alt: 10.5}"
+requester: making request: ardupilot_msgs.srv.Takeoff_Request(alt=10.5)
+
+response:
+ardupilot_msgs.srv.Takeoff_Response(status=True)
+```
+
+## Commanding using ROS 2 Topics
+
+The following topic can be used to control the vehicle.
+
+- `/ap/joy` (type `sensor_msgs/msg/Joy`): overrides a maximum of 8 RC channels,
+at least 4 axes must be sent. Values are clamped between -1.0 and 1.0.
+Use `NaN` to disable the override of a single channel.
+A channel defaults back to RC after 1 second of not receiving commands.
+
+```bash
+ros2 topic pub /ap/joy sensor_msgs/msg/Joy "{axes: [0.0, 0.0, 0.0, 0.0]}"
+
+publisher: beginning loop
+publishing #1: sensor_msgs.msg.Joy(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), axes=[0.0, 0.0, 0.0, 0.0], buttons=[])
+```
+- `/ap/cmd_gps_pose` (type `ardupilot_msgs/msg/GlobalPosition`): sends
+a waypoint to head to when the selected mode is GUIDED.
+
+```bash
+ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34, longitude: 118, altitude: 1000}"
+
+publisher: beginning loop
+publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
  
 ## Contributing to `AP_DDS` library
@@ -329,7 +351,7 @@ topic and service tables.
 ROS 2 message and interface definitions are mangled by the `rosidl_adapter` when
 mapping from ROS 2 to DDS to avoid naming conflicts in the C/C++ libraries.
 The ROS 2 object `namespace::Struct` is mangled to `namespace::dds_::Struct_`
-for DDS. The table below provides some example mappings: 
+for DDS. The table below provides some example mappings:
 
 | ROS 2 | DDS |
 | --- | --- |
@@ -355,12 +377,12 @@ The request / response pair for services require an additional suffix.
 | parameter | rp/ | |
 | action | ra/ | |
 
-The table below provides example mappings for topics and services 
+The table below provides example mappings for topics and services
 
 | ROS 2 | DDS |
 | --- | --- |
 | ap/clock | rt/ap/clock |
-| ap/navsat/navsat0 | rt/ap/navsat/navsat0 |
+| ap/navsat | rt/ap/navsat |
 | ap/arm_motors | rq/ap/arm_motorsRequest, rr/ap/arm_motorsReply |
 
 Refer to existing mappings in [`AP_DDS_Topic_Table`](https://github.com/ArduPilot/ardupilot/blob/master/libraries/AP_DDS/AP_DDS_Topic_Table.h)

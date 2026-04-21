@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 # if you have modules/esp_idf setup as a submodule, then leave it as a submodule and switch branches
+
+COMMIT="cc3203dc4f087ab41b434afff1ed7520c6d90993"
+
 if [ ! -d modules ]; then
 echo "this script needs to be run from the root of your repo, sorry, giving up."
 exit 1
@@ -13,6 +16,7 @@ if [ ! -d esp_idf ]; then
 else
     echo 'found modules/esp_idf folder' ; 
 fi
+
 echo "looking for submodule or repo..."
 if [ `git submodule | grep esp_idf | wc | cut -c1-7` == '1'  ]; then 
     echo "found real submodule, syncing"
@@ -23,40 +27,44 @@ else
     if  [ ! `ls  esp_idf/install.sh 2>/dev/null` ]; then
         echo "found empty IDF, cloning"
         # add esp_idf as almost submodule, depths  uses less space
-        #git clone -b v4.4 --single-branch --depth 10 https://github.com/espressif/esp-idf.git esp_idf
-        git clone -b 'release/v4.4'  https://github.com/espressif/esp-idf.git esp_idf
-        git checkout 6d853f
-        # check if we've got v4.4 checked out, only this version of esp_idf is tested and works?
-        
+        git clone -b 'release/v5.3'  https://github.com/espressif/esp-idf.git esp_idf
+        git checkout $COMMIT
     fi
 fi
-
-
 
 echo "inspecting possible IDF... "
 cd esp_idf
 echo `git rev-parse HEAD`
-# these are a selection of possible specific commit/s that represent v4.4 branch of the esp_idf 
-if [ `git rev-parse HEAD` == '6d853f0525b003afaeaed4fb59a265c8522c2da9' ]; then 
-    echo "IDF version 'release/4.4' found OK, great."; 
+# these are a selection of possible specific commit/s that represent v5.3 branch of the esp_idf 
+if [ `git rev-parse HEAD` == '$COMMIT' ]; then 
+    echo "IDF version 'release/5.3' found OK, great."; 
 else
-    echo "looks like an idf, but not v4.4 branch, or wrong commit , trying to switch branch and reflect upstream";
+    echo "looks like an idf, but not v5.3 branch, or wrong commit , trying to switch branch and reflect upstream";
     ../../Tools/gittools/submodule-sync.sh >/dev/null
-    git fetch ; git checkout -f release/v4.4 
-    git checkout 6d853f
+    git fetch ; git checkout -f release/v5.3 
+    git checkout $COMMIT
 
     # retry same as above
     echo `git rev-parse HEAD`
-    if [ `git rev-parse HEAD` == '6d853f0525b003afaeaed4fb59a265c8522c2da9' ]; then 
-        echo "IDF version 'release/4.4' found OK, great."; 
-        git checkout 6d853f
+    if [ `git rev-parse HEAD` == '$COMMIT' ]; then 
+        echo "IDF version 'release/5.3' found OK, great."; 
+        git checkout $COMMIT
     fi
 fi
 cd ../..
 
-cd modules/esp_idf 
+cd modules/esp_idf
 git submodule update --init --recursive
+
+echo
+echo "installing missing python modules"
+python -m pip install empy==3.3.4
+python -m pip install pexpect
+python -m pip install future
+
 cd ../..
-echo "after changing IDF versions [ such as between 4.2 and 4.4 ] you should re-run these in your console:"
+
+echo
+echo "after changing IDF versions [ such as between 4.4 and 5.3 ] you should re-run these in your console:"
 echo "./modules/esp_idf/install.sh"
 echo "source ./modules/esp_idf/export.sh"

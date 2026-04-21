@@ -10,7 +10,7 @@ Mode::Mode() :
     channel_roll(rover.channel_roll),
     channel_pitch(rover.channel_pitch),
     channel_walking_height(rover.channel_walking_height),
-    attitude_control(rover.g2.attitude_control)
+    attitude_control(g2.attitude_control)
 { }
 
 void Mode::exit()
@@ -44,10 +44,11 @@ bool Mode::enter()
 
     // initialisation common to all modes
     if (ret) {
-        set_reversed(false);
+        // init reversed flag
+        init_reversed_flag();
 
         // clear sailboat tacking flags
-        rover.g2.sailboat.clear_tack();
+        g2.sailboat.clear_tack();
     }
 
     return ret;
@@ -66,10 +67,10 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
     }
 
     // apply RC skid steer mixing
-    switch ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get())
+    switch ((PilotSteerType)g.pilot_steer_type.get())
     {
-        case PILOT_STEER_TYPE_DEFAULT:
-        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
+        case PilotSteerType::DEFAULT:
+        case PilotSteerType::DIR_REVERSED_WHEN_REVERSING:
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
             throttle_out = rover.channel_throttle->get_control_in();
@@ -78,7 +79,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
             break;
         }
 
-        case PILOT_STEER_TYPE_TWO_PADDLES: {
+        case PilotSteerType::TWO_PADDLES: {
             // convert the two radio_in values from skid steering values
             // left paddle from steering input channel, right paddle from throttle input channel
             // steering = left-paddle - right-paddle
@@ -91,7 +92,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
             break;
         }
 
-        case PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING: {
+        case PilotSteerType::DIR_UNCHANGED_WHEN_REVERSING: {
             throttle_out = rover.channel_throttle->get_control_in();
             steering_out = rover.channel_steer->get_control_in();
             break;
@@ -122,8 +123,8 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     // check for special case of input and output throttle being in opposite directions
     float throttle_out_limited = g2.motors.get_slew_limited_throttle(throttle_out, rover.G_Dt);
     if ((is_negative(throttle_out) != is_negative(throttle_out_limited)) &&
-        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
-         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        (g.pilot_steer_type == PilotSteerType::DEFAULT ||
+         g.pilot_steer_type == PilotSteerType::DIR_REVERSED_WHEN_REVERSING)) {
         steering_out *= -1;
     }
     throttle_out = throttle_out_limited;
@@ -138,8 +139,8 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
     // check for special case of input and output throttle being in opposite directions
     float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out, rover.G_Dt);
     if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
-        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
-         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        (g.pilot_steer_type == PilotSteerType::DEFAULT ||
+         g.pilot_steer_type == PilotSteerType::DIR_REVERSED_WHEN_REVERSING)) {
         steering_out *= -1;
     }
     speed_out = speed_out_limited;
@@ -166,7 +167,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
 
     // handle two paddle input
-    if ((enum pilot_steer_type_t)rover.g.pilot_steer_type.get() == PILOT_STEER_TYPE_TWO_PADDLES) {
+    if (g.pilot_steer_type == PilotSteerType::TWO_PADDLES) {
         const float left_paddle = desired_steering;
         const float right_paddle = desired_throttle;
         desired_steering = (left_paddle - right_paddle) * 0.5f;
@@ -279,7 +280,7 @@ void Mode::handle_tack_request()
 {
     // autopilot modes handle tacking
     if (is_autopilot_mode()) {
-        rover.g2.sailboat.handle_tack_request_auto();
+        g2.sailboat.handle_tack_request_auto();
     }
 }
 
@@ -304,9 +305,9 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
     // call throttle controller and convert output to -100 to +100 range
     float throttle_out = 0.0f;
 
-    if (rover.g2.sailboat.sail_enabled()) {
+    if (g2.sailboat.sail_enabled()) {
         // sailboats use special throttle and mainsail controller
-        rover.g2.sailboat.get_throttle_and_set_mainsail(target_speed, throttle_out);
+        g2.sailboat.get_throttle_and_set_mainsail(target_speed, throttle_out);
     } else {
         // call speed or stop controller
         if (is_zero(target_speed) && !rover.is_balancebot()) {
@@ -530,7 +531,7 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::LOITER:
         ret = &mode_loiter;
         break;
-#if MODE_FOLLOW_ENABLED == ENABLED
+#if MODE_FOLLOW_ENABLED
     case Mode::Number::FOLLOW:
         ret = &mode_follow;
         break;
@@ -556,7 +557,7 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
     case Mode::Number::INITIALISING:
         ret = &mode_initializing;
         break;
-#if MODE_DOCK_ENABLED == ENABLED
+#if MODE_DOCK_ENABLED
     case Mode::Number::DOCK:
         ret = (Mode *)g2.mode_dock_ptr;
         break;

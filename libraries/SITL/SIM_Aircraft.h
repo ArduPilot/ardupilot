@@ -38,6 +38,12 @@
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
 #include "ServoModel.h"
+#include "SIM_GPIO_LED_1.h"
+#include "SIM_GPIO_LED_2.h"
+#include "SIM_GPIO_LED_3.h"
+#include "SIM_GPIO_LED_RGB.h"
+
+#define MAX_SIM_INSTANCES 16
 
 namespace SITL {
 
@@ -62,6 +68,9 @@ public:
      */
     void set_instance(uint8_t _instance) {
         instance = _instance;
+        if (instance < MAX_SIM_INSTANCES) {
+            instances[instance] = this;
+        }
     }
 
     /*
@@ -164,6 +173,12 @@ public:
     float get_battery_temperature() const { return battery.get_temperature(); }
 
     ADSB *adsb;
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    static bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                         const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 
 protected:
     SIM *sitl;
@@ -318,11 +333,25 @@ protected:
     void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
     void add_twist_forces(Vector3f &rot_accel);
 
+#if AP_SIM_SLUNGPAYLOAD_ENABLED
+    // add body-frame force due to slung payload
+    void add_slungpayload_forces(Vector3f &body_accel);
+#endif
+
     // get local thermal updraft
     float get_local_updraft(const Vector3d &currentPos);
 
     // update EAS speeds
     void update_eas_airspeed();
+
+    // clamp support
+    class Clamp {
+    public:
+        bool clamped(class Aircraft&, const struct sitl_input &input);  // true if the vehicle is currently clamped down
+    private:
+        bool currently_clamped;
+        bool grab_attempted;  // avoid warning multiple times about missed grab
+    } clamp;
 
 private:
     uint64_t last_time_us;
@@ -363,6 +392,23 @@ private:
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice *dronecan;
 #endif
+
+
+#if AP_SIM_GPIO_LED_1_ENABLED
+    GPIO_LED_1 sim_led1{8};  // pin to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_2_ENABLED
+    GPIO_LED_2 sim_led2{13, 14};  // pins to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_3_ENABLED
+    GPIO_LED_3 sim_led3{13, 14, 15};  // pins to match sitl.h
+#endif
+#if AP_SIM_GPIO_LED_RGB_ENABLED
+    GPIO_LED_RGB sim_ledrgb{8, 9, 10};  // pins to match sitl.h
+#endif
+
+    static Aircraft *instances[MAX_SIM_INSTANCES];
+    HAL_Semaphore pose_sem;
 };
 
 } // namespace SITL

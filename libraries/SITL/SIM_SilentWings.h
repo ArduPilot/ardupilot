@@ -41,7 +41,7 @@ public:
 
     /* Static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new SilentWings(frame_str);
+        return NEW_NOTHROW SilentWings(frame_str);
     }
 
 private:

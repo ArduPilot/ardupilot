@@ -43,7 +43,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #if RP_DEBUG_LEVEL
-  #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
+  #define Debug(level, fmt, args ...)  do { if (level <= RP_DEBUG_LEVEL) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); } } while (0)
 #else
   #define Debug(level, fmt, args ...)
 #endif
@@ -252,7 +252,7 @@ void AP_Proximity_RPLidarA2::get_readings()
             Debug(1, "Got RPLidar Information");
             char xbuffer[64]{};
             memcpy((void*)xbuffer, (void*)&_payload.information, 63);
-            gcs().send_text(MAV_SEVERITY_INFO, "RPLidar: (%s)", xbuffer);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RPLidar: (%s)", xbuffer);
 #endif
             // 63 is the magic number of bytes in the spewed-out
             // reset data ... so now we'll just drop that stuff on

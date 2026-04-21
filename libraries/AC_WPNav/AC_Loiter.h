@@ -33,7 +33,9 @@ public:
     Vector2f get_pilot_desired_acceleration() const { return Vector2f{_desired_accel.x, _desired_accel.y}; }
 
     /// clear pilot desired acceleration
-    void clear_pilot_desired_acceleration() { _desired_accel.zero(); }
+    void clear_pilot_desired_acceleration() {
+        set_pilot_desired_acceleration(0, 0);
+    }
 
     /// get vector to stopping point based on a horizontal position and velocity
     void get_stopping_point_xy(Vector2f& stopping_point) const;

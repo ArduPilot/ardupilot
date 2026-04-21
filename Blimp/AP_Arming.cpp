@@ -16,6 +16,11 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
         return true;
     }
 
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(display_failure, "System not initialised");
+        return false;
+    }
+
     // check if motor interlock and Emergency Stop aux switches are used
     // at the same time.  This cannot be allowed.
     if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&

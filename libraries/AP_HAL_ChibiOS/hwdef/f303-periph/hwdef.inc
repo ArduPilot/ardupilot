@@ -122,3 +122,5 @@ env ROMFS_UNCOMPRESSED True
 
 # reduce the number of CAN RX Buffer
 define HAL_CAN_RX_QUEUE_SIZE 64
+
+define HAL_MONITOR_THREAD_ENABLED 1

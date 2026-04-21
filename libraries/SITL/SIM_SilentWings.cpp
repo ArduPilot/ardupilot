@@ -57,10 +57,10 @@ SilentWings::SilentWings(const char *frame_str) :
     Aircraft(frame_str),
     last_data_time_ms(0),
     first_pkt_timestamp_ms(0),
+    inited_first_pkt_timestamp(false),
     time_base_us(0),
     sock(true),
-    home_initialized(false),
-    inited_first_pkt_timestamp(false)
+    home_initialized(false)
 {
     // Force ArduPlane to use sensor data from SilentWings as the actual state,
     // without using EKF, i.e., using "fake EKF (type 10)". Disable gyro calibration.

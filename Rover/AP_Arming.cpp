@@ -76,6 +76,11 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
         return true;
     }
 
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(report, "System not initialised");
+        return false;
+    }
+
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return mandatory_checks(report);
@@ -168,12 +173,7 @@ bool AP_Arming_Rover::oa_check(bool report)
         return true;
     }
 
-    // display failure
-    if (strlen(failure_msg) == 0) {
-        check_failed(report, "Check Object Avoidance");
-    } else {
-        check_failed(report, "%s", failure_msg);
-    }
+    check_failed(report, "%s", failure_msg);
     return false;
 }
 #endif  // AP_OAPATHPLANNER_ENABLED

@@ -98,7 +98,7 @@ void AP_TempCalibration::setup_learning(void)
     learn_count = 200;
     learn_i = 0;
     delete [] learn_values;
-    learn_values = new float[learn_count];
+    learn_values = NEW_NOTHROW float[learn_count];
     if (learn_values == nullptr) {
         return;
     }

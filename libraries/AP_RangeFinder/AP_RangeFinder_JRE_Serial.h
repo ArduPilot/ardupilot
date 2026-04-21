@@ -70,7 +70,7 @@ public:
         RangeFinder::RangeFinder_State &_state,
         AP_RangeFinder_Params &_params)
     {
-        return new AP_RangeFinder_JRE_Serial(_state, _params);
+        return NEW_NOTHROW AP_RangeFinder_JRE_Serial(_state, _params);
     }
 
 protected:

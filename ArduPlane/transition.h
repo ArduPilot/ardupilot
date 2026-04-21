@@ -36,7 +36,7 @@ public:
 
     virtual uint8_t get_log_transition_state() const = 0;
 
-    virtual bool active() const = 0;
+    virtual bool active_frwd() const = 0;
 
     virtual bool show_vtol_view() const = 0;
 
@@ -57,6 +57,8 @@ public:
     virtual void set_last_fw_pitch(void) {}
 
     virtual bool allow_stick_mixing() const { return true; }
+
+    virtual bool use_multirotor_control_in_fwd_transition() const { return false; }
 
 protected:
 
@@ -85,7 +87,7 @@ public:
 
     uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
 
-    bool active() const override;
+    bool active_frwd() const override;
 
     bool show_vtol_view() const override;
 

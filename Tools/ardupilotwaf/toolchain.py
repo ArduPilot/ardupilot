@@ -133,6 +133,8 @@ def configure(cfg):
     _filter_supported_cxx_compilers('g++', 'clang++')
 
     cfg.msg('Using toolchain', cfg.env.TOOLCHAIN)
+    if cfg.env.TOOLCHAIN == "custom":
+        return
 
     if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c')
@@ -149,6 +151,11 @@ def configure(cfg):
     else:
         cfg.find_program('%s-ar' % cfg.env.TOOLCHAIN, var='AR', quiet=True)
     cfg.load('compiler_cxx compiler_c')
+
+    if sys.platform.startswith("cygwin"):
+        cfg.find_program('nm', var='NM')
+    else:
+        cfg.find_program('%s-nm' % cfg.env.TOOLCHAIN, var='NM')
 
     if not cfg.options.disable_gccdeps:
         cfg.load('gccdeps')

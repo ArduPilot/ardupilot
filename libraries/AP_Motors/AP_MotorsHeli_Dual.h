@@ -57,7 +57,7 @@ public:
     bool arming_checks(size_t buflen, char *buffer) const override;
 
 #if HAL_LOGGING_ENABLED
-    // Blade angle logging - called at 10 Hz
+    // heli motors logging - called at 10 Hz
     void Log_Write(void) override;
 #endif
 

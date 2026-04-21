@@ -278,6 +278,9 @@ __bin_names = {
     "CopterTests2b": "arducopter",
 
     "Plane": "arduplane",
+    "PlaneTests1a": "arduplane",
+    "PlaneTests1b": "arduplane",
+
     "Rover": "ardurover",
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
@@ -287,7 +290,9 @@ __bin_names = {
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
     "SITLPeriphUniversal": ("sitl_periph_universal", "AP_Periph"),
+    "SITLPeriphBattMon": ("sitl_periph_battmon", "AP_Periph"),
     "CAN": "arducopter",
+    "BattCAN": "arducopter",
 }
 
 
@@ -350,6 +355,8 @@ tester_class_map = {
     "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
     "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
     "test.Plane": arduplane.AutoTestPlane,
+    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
+    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
@@ -358,11 +365,15 @@ tester_class_map = {
     "test.Sub": ardusub.AutoTestSub,
     "test.Tracker": antennatracker.AutoTestTracker,
     "test.CAN": arducopter.AutoTestCAN,
+    "test.BattCAN": arducopter.AutoTestBattCAN,
 }
 
 supplementary_test_binary_map = {
     "test.CAN": ["sitl_periph_universal:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
                  "sitl_periph_universal:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
+    "test.BattCAN": [
+        "sitl_periph_battmon:AP_Periph:0:Tools/autotest/default_params/periph-battmon.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
+    ],
 }
 
 
@@ -445,6 +456,10 @@ def run_step(step):
         vehicle_binary = 'bin/AP_Periph'
         board = 'sitl_periph_universal'
 
+    if step == 'build.SITLPeriphBattMon':
+        vehicle_binary = 'bin/AP_Periph'
+        board = 'sitl_periph_battmon'
+
     if step == 'build.Replay':
         return util.build_replay(board='SITL')
 
@@ -506,6 +521,7 @@ def run_step(step):
         "reset_after_every_test": opts.reset_after_every_test,
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
+        "enable_fgview": opts.enable_fgview,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -852,6 +868,9 @@ if __name__ == "__main__":
     parser.add_option("--viewerip",
                       default=None,
                       help='IP address to send MAVLink and fg packets to')
+    parser.add_option("--enable-fgview",
+                      action='store_true',
+                      help="Enable FlightGear output")
     parser.add_option("--map",
                       action='store_true',
                       default=False,
@@ -1081,6 +1100,9 @@ if __name__ == "__main__":
         'build.SITLPeriphUniversal',
         'test.CAN',
 
+        'build.SITLPeriphBattMon',
+        'test.BattCAN',
+
         # convertgps disabled as it takes 5 hours
         # 'convertgpx',
     ]
@@ -1094,6 +1116,9 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+
+        'test.PlaneTests1a',
+        'test.PlaneTests1b',
 
         'clang-scan-build',
     ]

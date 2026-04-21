@@ -259,7 +259,7 @@ void AP_GyroFFT::init(uint16_t loop_rate_hz)
     }
     _current_sample_mode = _sample_mode;
 
-    _ref_energy = new Vector3f[_window_size];
+    _ref_energy = NEW_NOTHROW Vector3f[_window_size];
     if (_ref_energy == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to allocate window for AP_GyroFFT");
         return;

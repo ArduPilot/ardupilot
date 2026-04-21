@@ -1,0 +1,4 @@
+# hw definition file for processing by chibios_pins.py
+# for SkystarsH7HD-bdshot bootloader
+
+include ../SkystarsH7HD-bdshot/hwdef-bl.dat

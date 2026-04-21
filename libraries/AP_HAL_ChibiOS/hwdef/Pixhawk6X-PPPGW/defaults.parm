@@ -1,5 +1,5 @@
 NET_ENABLED 1
-NET_OPTIONS 1
+NET_OPTIONS 3
 
 # enable hw flow control
 UART1_RTSCTS 1

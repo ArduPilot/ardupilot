@@ -217,6 +217,13 @@ default:
             return;
 }
 ```
+Add the following lines in the `AC_CustomControl_config.h` file.
+
+```
+#ifndef AP_CUSTOMCONTROL_XYZ_ENABLED
+#define AP_CUSTOMCONTROL_XYZ_ENABLED AP_CUSTOMCONTROL_BACKEND_DEFAULT_ENABLED
+#endif
+```
 
 8. This is the bare minimum to compile and run your custom controller. You can add controller related code to `AC_CustomControl_XYZ` file without changing  anything else. 
 

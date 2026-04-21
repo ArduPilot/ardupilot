@@ -51,6 +51,10 @@ bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
         // then skip the checks
         return true;
     }
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(display_failure, "System not initialised");
+        return false;
+    }
     //are arming checks disabled?
     if (checks_to_perform == 0) {
         return mandatory_checks(display_failure);
@@ -370,12 +374,8 @@ bool AP_Arming_Plane::disarm(const AP_Arming::Method method, bool do_disarm_chec
     change_arm_state();
 
 #if QAUTOTUNE_ENABLED
-    //save qautotune gains if enabled and success
-    if (plane.control_mode == &plane.mode_qautotune) {
-        plane.quadplane.qautotune.save_tuning_gains();
-    } else {
-        plane.quadplane.qautotune.reset();
-    }
+    // Possibly save auto tuned parameters
+    plane.quadplane.qautotune.disarmed(plane.control_mode == &plane.mode_qautotune);
 #endif
 
     // re-initialize speed variable used in AUTO and GUIDED for
@@ -437,9 +437,15 @@ bool AP_Arming_Plane::mission_checks(bool report)
 {
     // base checks
     bool ret = AP_Arming::mission_checks(report);
-    if (plane.mission.contains_item(MAV_CMD_DO_LAND_START) && plane.g.rtl_autoland == RtlAutoland::RTL_DISABLE) {
-        ret = false;
-        check_failed(ARMING_CHECK_MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
+    if (plane.g.rtl_autoland == RtlAutoland::RTL_DISABLE) {
+        if (plane.mission.contains_item(MAV_CMD_DO_LAND_START)) {
+            ret = false;
+            check_failed(ARMING_CHECK_MISSION, report, "DO_LAND_START set and RTL_AUTOLAND disabled");
+        }
+        if (plane.mission.contains_item(MAV_CMD_DO_RETURN_PATH_START)) {
+            ret = false;
+            check_failed(ARMING_CHECK_MISSION, report, "DO_RETURN_PATH_START set and RTL_AUTOLAND disabled");
+        }
     }
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available()) {

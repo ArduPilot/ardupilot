@@ -25,7 +25,7 @@ MAV_COLLISION_ACTION AP_Avoidance_Copter::handle_avoidance(const AP_Avoidance::O
 
     // take no action in some flight modes
     if (copter.flightmode->mode_number() == Mode::Number::LAND ||
-#if MODE_THROW_ENABLED == ENABLED
+#if MODE_THROW_ENABLED
         copter.flightmode->mode_number() == Mode::Number::THROW ||
 #endif
         copter.flightmode->mode_number() == Mode::Number::FLIP) {
@@ -148,7 +148,7 @@ void AP_Avoidance_Copter::set_mode_else_try_RTL_else_LAND(Mode::Number mode)
 
 int32_t AP_Avoidance_Copter::get_altitude_minimum() const
 {
-#if MODE_RTL_ENABLED == ENABLED
+#if MODE_RTL_ENABLED
     // do not descend if below RTL alt
     return copter.g.rtl_altitude;
 #else

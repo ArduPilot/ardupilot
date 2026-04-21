@@ -423,12 +423,16 @@ bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
         // unused
         break;
 
-    case MSG_TERRAIN:
 #if AP_TERRAIN_AVAILABLE
+    case MSG_TERRAIN_REQUEST:
         CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
         plane.terrain.send_request(chan);
-#endif
         break;
+    case MSG_TERRAIN_REPORT:
+        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
+        plane.terrain.send_report(chan);
+        break;
+#endif
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
@@ -508,7 +512,7 @@ void GCS_MAVLINK_Plane::send_hygrometer()
 const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
     // @Param: RAW_SENS
     // @DisplayName: Raw sensor stream rate
-    // @Description: MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, and SCALED_PRESSURE3
+    // @Description: MAVLink Stream rate of RAW_IMU, SCALED_IMU2, SCALED_IMU3, SCALED_PRESSURE, SCALED_PRESSURE2, SCALED_PRESSURE3 and AIRSPEED
     // @Units: Hz
     // @Range: 0 50
     // @Increment: 1
@@ -577,7 +581,7 @@ const AP_Param::GroupInfo GCS_MAVLINK_Parameters::var_info[] = {
 
     // @Param: EXTRA3
     // @DisplayName: Extra data type 3 stream rate
-    // @Description: MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, BATTERY2, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, and BATTERY_STATUS
+    // @Description: MAVLink Stream rate of AHRS, SYSTEM_TIME, WIND, RANGEFINDER, DISTANCE_SENSOR, TERRAIN_REQUEST, TERRAIN_REPORT, BATTERY2, GIMBAL_DEVICE_ATTITUDE_STATUS, OPTICAL_FLOW, MAG_CAL_REPORT, MAG_CAL_PROGRESS, EKF_STATUS_REPORT, VIBRATION, and BATTERY_STATUS
     // @Units: Hz
     // @Range: 0 50
     // @Increment: 1
@@ -614,6 +618,9 @@ static const ap_message STREAM_RAW_SENSORS_msgs[] = {
     MSG_SCALED_PRESSURE,
     MSG_SCALED_PRESSURE2,
     MSG_SCALED_PRESSURE3,
+#if AP_AIRSPEED_ENABLED
+    MSG_AIRSPEED,
+#endif
 };
 static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
     MSG_SYS_STATUS,
@@ -645,7 +652,9 @@ static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
     MSG_SERVO_OUTPUT_RAW,
     MSG_RC_CHANNELS,
+#if AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
     MSG_RC_CHANNELS_RAW, // only sent on a mavlink1 connection
+#endif
 };
 static const ap_message STREAM_EXTRA1_msgs[] = {
     MSG_ATTITUDE,
@@ -681,7 +690,8 @@ static const ap_message STREAM_EXTRA3_msgs[] = {
     MSG_DISTANCE_SENSOR,
     MSG_SYSTEM_TIME,
 #if AP_TERRAIN_AVAILABLE
-    MSG_TERRAIN,
+    MSG_TERRAIN_REPORT,
+    MSG_TERRAIN_REQUEST,
 #endif
 #if AP_BATTERY_ENABLED
     MSG_BATTERY_STATUS,
@@ -736,14 +746,19 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
   handle a request to change current WP altitude. This happens via a
   callback from handle_mission_item()
  */
-void GCS_MAVLINK_Plane::handle_change_alt_request(AP_Mission::Mission_Command &cmd)
+void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
 {
-    plane.next_WP_loc.alt = cmd.content.location.alt;
-    if (cmd.content.location.relative_alt) {
-        plane.next_WP_loc.alt += plane.home.alt;
+    plane.fix_terrain_WP(location, __LINE__);
+
+    if (location.terrain_alt) {
+        plane.next_WP_loc.set_alt_cm(location.alt, Location::AltFrame::ABOVE_TERRAIN);
+    } else {
+        // convert to absolute alt
+        float abs_alt_m;
+        if (location.get_alt_m(Location::AltFrame::ABSOLUTE, abs_alt_m)) {
+            plane.next_WP_loc.set_alt_m(abs_alt_m, Location::AltFrame::ABSOLUTE);
+        }
     }
-    plane.next_WP_loc.relative_alt = false;
-    plane.next_WP_loc.terrain_alt = cmd.content.location.terrain_alt;
     plane.reset_offset_altitude();
 }
 
@@ -829,6 +844,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     if (!location_from_command_t(packet, requested_position)) {
         return MAV_RESULT_DENIED;
     }
+    plane.fix_terrain_WP(requested_position, __LINE__);
 
     if (isnan(packet.param4) || is_zero(packet.param4)) {
         requested_position.loiter_ccw = 0;
@@ -841,15 +857,22 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
         return MAV_RESULT_DENIED;
     }
 
+#if AP_FENCE_ENABLED
+    // reject destination if outside the fence
+    if (!plane.fence.check_destination_within_fence(requested_position)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        return MAV_RESULT_DENIED;
+    }
+#endif
+
     // location is valid load and set
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
         plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
 
-        // add home alt if needed
-        if (requested_position.relative_alt) {
-            requested_position.alt += plane.home.alt;
-            requested_position.relative_alt = 0;
+        // convert to absolute alt
+        if (!requested_position.terrain_alt) {
+            requested_position.change_alt_frame(Location::AltFrame::ABSOLUTE);
         }
 
         plane.set_guided_WP(requested_position);
@@ -864,12 +887,29 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     return MAV_RESULT_FAILED;
 }
 
+MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_DO_CHANGE_ALTITUDE(const mavlink_command_int_t &packet)
+{
+    const float alt = packet.param1;
+    MAV_FRAME mav_frame = (MAV_FRAME)packet.param2;
+    Location::AltFrame alt_frame;
+    if (!mavlink_coordinate_frame_to_location_alt_frame(mav_frame, alt_frame)) {
+        return MAV_RESULT_DENIED;
+    }
+    Location loc {
+        0,
+        0,
+        int32_t(alt * 100),  // m -> cm
+        alt_frame,
+    };
+    handle_change_alt_request(loc);
+    return MAV_RESULT_ACCEPTED;
+}
+
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 // these are GUIDED mode commands that are RATE or slew enabled, so you can have more powerful control than default controls.
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavlink_command_int_t &packet)
 {
   switch(packet.command) {
-    
-#if OFFBOARD_GUIDED == ENABLED
     case MAV_CMD_GUIDED_CHANGE_SPEED: {
         // command is only valid in guided mode
         if (plane.control_mode != &plane.mode_guided) {
@@ -920,48 +960,25 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
             return MAV_RESULT_DENIED;
         }
 
-         // the requested alt data might be relative or absolute
-        float new_target_alt = packet.z * 100;
-        float new_target_alt_rel = packet.z * 100 + plane.home.alt;
-
-         // only global/relative/terrain frames are supported
-        switch(packet.frame) {
-            case MAV_FRAME_GLOBAL_RELATIVE_ALT: {
-                if   (is_equal(plane.guided_state.target_alt,new_target_alt_rel) ) { // compare two floats as near-enough
-                    // no need to process any new packet/s with the same ALT any further, if we are already doing it.
-                    return MAV_RESULT_ACCEPTED;
-                }
-                plane.guided_state.target_alt = new_target_alt_rel;
-                break;
-            }
-            case MAV_FRAME_GLOBAL: {
-                if   (is_equal(plane.guided_state.target_alt,new_target_alt) ) {  // compare two floats as near-enough
-                    // no need to process any new packet/s with the same ALT any further, if we are already doing it.
-                    return MAV_RESULT_ACCEPTED;
-                }
-                plane.guided_state.target_alt = new_target_alt;
-                break;
-            }
-            default:
-                //  MAV_RESULT_DENIED  means Command is invalid (is supported but has invalid parameters).
-                return MAV_RESULT_DENIED;
+        Location::AltFrame new_target_alt_frame;
+        if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, new_target_alt_frame)) {
+            return MAV_RESULT_DENIED;
         }
+        // keep a copy of what came in via MAVLink - this is needed for logging, but not for anything else
+        plane.guided_state.target_mav_frame = packet.frame;
 
-        plane.guided_state.target_alt_frame = packet.frame;
-        plane.guided_state.last_target_alt = plane.current_loc.alt; // FIXME: Reference frame is not corrected for here
+        const int32_t new_target_alt_cm = packet.z * 100;
+        plane.guided_state.target_location.set_alt_cm(new_target_alt_cm, new_target_alt_frame); 
         plane.guided_state.target_alt_time_ms = AP_HAL::millis();
 
+        // param3 contains the desired vertical velocity (not acceleration)
         if (is_zero(packet.param3)) {
-            // the user wanted /maximum acceleration, pick a large value as close enough
-            plane.guided_state.target_alt_accel = 1000.0;
+            // the user wanted /maximum altitude change rate, pick a large value as close enough
+            plane.guided_state.target_alt_rate = 1000.0;
         } else {
-            plane.guided_state.target_alt_accel = fabsf(packet.param3);
+            plane.guided_state.target_alt_rate = fabsf(packet.param3);
         }
 
-         // assign an acceleration direction
-        if (plane.guided_state.target_alt < plane.current_loc.alt) {
-            plane.guided_state.target_alt_accel *= -1.0f;
-        }
         return MAV_RESULT_ACCEPTED;
     }
 
@@ -998,14 +1015,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         plane.guided_state.target_heading_time_ms = AP_HAL::millis();
         return MAV_RESULT_ACCEPTED;
     }
-#endif // OFFBOARD_GUIDED == ENABLED
-
-
   }
   // anything else ...
   return MAV_RESULT_UNSUPPORTED;
-
 }
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
@@ -1017,11 +1031,16 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
 
+    case MAV_CMD_DO_CHANGE_ALTITUDE:
+        return handle_command_int_DO_CHANGE_ALTITUDE(packet);
+
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     // special 'slew-enabled' guided commands here... for speed,alt, and direction commands
     case MAV_CMD_GUIDED_CHANGE_SPEED:
     case MAV_CMD_GUIDED_CHANGE_ALTITUDE:
     case MAV_CMD_GUIDED_CHANGE_HEADING:
         return handle_command_int_guided_slew_commands(packet);
+#endif
 
 #if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
     case MAV_CMD_DO_FOLLOW:
@@ -1044,7 +1063,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
     case MAV_CMD_DO_CHANGE_SPEED:
         return handle_command_DO_CHANGE_SPEED(packet);
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
     case MAV_CMD_DO_PARACHUTE:
         return handle_MAV_CMD_DO_PARACHUTE(packet);
 #endif
@@ -1063,15 +1082,35 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
     case MAV_CMD_DO_GO_AROUND:
         return plane.trigger_land_abort(packet.param1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
 
+    case MAV_CMD_DO_RETURN_PATH_START:
+        // attempt to rejoin after the next DO_RETURN_PATH_START command in the mission
+        if (plane.have_position && plane.mission.jump_to_closest_mission_leg(plane.current_loc)) {
+            plane.mission.set_force_resume(true);
+            if (plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            // mode change failed, revert force resume flag
+            plane.mission.set_force_resume(false);
+        }
+        return MAV_RESULT_FAILED;
+
     case MAV_CMD_DO_LAND_START:
         // attempt to switch to next DO_LAND_START command in the mission
         if (plane.have_position && plane.mission.jump_to_landing_sequence(plane.current_loc)) {
-            plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
-            return MAV_RESULT_ACCEPTED;
+            plane.mission.set_force_resume(true);
+            if (plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+                return MAV_RESULT_ACCEPTED;
+            }
+            // mode change failed, revert force resume flag
+            plane.mission.set_force_resume(false);
         }
         return MAV_RESULT_FAILED;
 
     case MAV_CMD_MISSION_START:
+        if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
+            // first-item/last item not supported
+            return MAV_RESULT_DENIED;
+        }
         plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
@@ -1083,6 +1122,12 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
         plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 
+#if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+    case MAV_CMD_SET_HAGL:
+        plane.handle_external_hagl(packet);
+        return MAV_RESULT_ACCEPTED;
+#endif
+        
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
@@ -1166,7 +1211,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_MAV_CMD_DO_AUTOTUNE_ENABLE(const mavlink_co
         return MAV_RESULT_ACCEPTED;
 }
 
-#if PARACHUTE == ENABLED
+#if HAL_PARACHUTE_ENABLED
 MAV_RESULT GCS_MAVLINK_Plane::handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet)
 {
         // configure or release parachute
@@ -1369,43 +1414,28 @@ void GCS_MAVLINK_Plane::handle_set_position_target_global_int(const mavlink_mess
 
         mavlink_set_position_target_global_int_t pos_target;
         mavlink_msg_set_position_target_global_int_decode(&msg, &pos_target);
+
+        Location::AltFrame frame;
+        if (!mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)pos_target.coordinate_frame, frame)) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
+            // Even though other parts of the command may be valid, reject the whole thing.
+            return;
+        }
+
         // Unexpectedly, the mask is expecting "ones" for dimensions that should
         // be IGNORNED rather than INCLUDED.  See mavlink documentation of the
         // SET_POSITION_TARGET_GLOBAL_INT message, type_mask field.
         const uint16_t alt_mask = 0b1111111111111011; // (z mask at bit 3)
-            
-        bool msg_valid = true;
-        AP_Mission::Mission_Command cmd = {0};
-        
         if (pos_target.type_mask & alt_mask)
         {
-            cmd.content.location.alt = pos_target.alt * 100;
-            cmd.content.location.relative_alt = false;
-            cmd.content.location.terrain_alt = false;
-            switch (pos_target.coordinate_frame) 
-            {
-                case MAV_FRAME_GLOBAL:
-                case MAV_FRAME_GLOBAL_INT:
-                    break; //default to MSL altitude
-                case MAV_FRAME_GLOBAL_RELATIVE_ALT:
-                case MAV_FRAME_GLOBAL_RELATIVE_ALT_INT:
-                    cmd.content.location.relative_alt = true;
-                    break;
-                case MAV_FRAME_GLOBAL_TERRAIN_ALT:
-                case MAV_FRAME_GLOBAL_TERRAIN_ALT_INT:
-                    cmd.content.location.relative_alt = true;
-                    cmd.content.location.terrain_alt = true;
-                    break;
-                default:
-                    gcs().send_text(MAV_SEVERITY_WARNING, "Invalid coord frame in SET_POSTION_TARGET_GLOBAL_INT");
-                    msg_valid = false;
-                    break;
-            }    
-
-            if (msg_valid) {
-                handle_change_alt_request(cmd);
-            }
-        } // end if alt_mask       
+            Location loc {
+                0,  // lat
+                0,  // lng
+                int32_t(pos_target.alt * 100),  // m -> cm
+                frame,
+            };
+            handle_change_alt_request(loc);
+        }
     }
 
 MAV_RESULT GCS_MAVLINK_Plane::handle_command_do_set_mission_current(const mavlink_command_int_t &packet)

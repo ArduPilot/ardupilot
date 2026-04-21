@@ -36,7 +36,7 @@ void AP_Periph_FW::temperature_sensor_update(void)
             // Use source ID from temperature lib
             pkt.device_id = temperature_sensor.get_source_id(index);
 
-            uint8_t buffer[UAVCAN_EQUIPMENT_DEVICE_TEMPERATURE_MAX_SIZE] {};
+            uint8_t buffer[UAVCAN_EQUIPMENT_DEVICE_TEMPERATURE_MAX_SIZE];
             const uint16_t total_size = uavcan_equipment_device_Temperature_encode(&pkt, buffer, !canfdout());
 
             canard_broadcast(UAVCAN_EQUIPMENT_DEVICE_TEMPERATURE_SIGNATURE,

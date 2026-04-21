@@ -60,7 +60,7 @@ AP_Baro_Backend *AP_Baro_BMP280::probe(AP_Baro &baro,
         return nullptr;
     }
 
-    AP_Baro_BMP280 *sensor = new AP_Baro_BMP280(baro, std::move(dev));
+    AP_Baro_BMP280 *sensor = NEW_NOTHROW AP_Baro_BMP280(baro, std::move(dev));
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -86,7 +86,9 @@ bool AP_Baro_BMP280::_init()
 
     // read the calibration data
     uint8_t buf[24];
-    _dev->read_registers(BMP280_REG_CALIB, buf, sizeof(buf));
+    if (!_dev->read_registers(BMP280_REG_CALIB, buf, sizeof(buf))) {
+        return false;
+    }
 
     _t1 = ((int16_t)buf[1] << 8) | buf[0];
     _t2 = ((int16_t)buf[3] << 8) | buf[2];
@@ -132,10 +134,10 @@ void AP_Baro_BMP280::_timer(void)
 {
     uint8_t buf[6];
 
-    _dev->read_registers(BMP280_REG_DATA, buf, sizeof(buf));
-
-    _update_temperature((buf[3] << 12) | (buf[4] << 4) | (buf[5] >> 4));
-    _update_pressure((buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4));
+    if (_dev->read_registers(BMP280_REG_DATA, buf, sizeof(buf))) {
+        _update_temperature((buf[3] << 12) | (buf[4] << 4) | (buf[5] >> 4));
+        _update_pressure((buf[0] << 12) | (buf[1] << 4) | (buf[2] >> 4));
+    }
 
     _dev->check_next_register();
 }

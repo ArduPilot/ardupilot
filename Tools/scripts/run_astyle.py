@@ -23,6 +23,7 @@ class AStyleChecker(object):
         self.directories_to_check = [
             'libraries/AP_DDS',
             'libraries/AP_ExternalControl',
+            'libraries/AP_GSOF',
         ]
         self.files_to_check = [
             pathlib.Path(s) for s in [

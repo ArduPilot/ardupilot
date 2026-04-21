@@ -55,7 +55,7 @@ protected:
 
     GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
                                                AP_HAL::UARTDriver &uart) override {
-        return new GCS_MAVLINK_Dummy(params, uart);
+        return NEW_NOTHROW GCS_MAVLINK_Dummy(params, uart);
     }
 
 private:

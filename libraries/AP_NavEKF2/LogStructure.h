@@ -1,7 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
-#include <AP_AHRS/AP_AHRS.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #define LOG_IDS_FROM_NAVEKF2 \
     LOG_NKF0_MSG,  \
@@ -100,8 +100,8 @@ struct PACKED log_NKF1 {
 // @Field: GSX: Gyro Scale Factor (X-axis)
 // @Field: GSY: Gyro Scale Factor (Y-axis)
 // @Field: GSZ: Gyro Scale Factor (Z-axis)
-// @Field: VWN: Estimated wind velocity (North component)
-// @Field: VWE: Estimated wind velocity (East component)
+// @Field: VWN: Estimated wind velocity (moving-to-North component)
+// @Field: VWE: Estimated wind velocity (moving-to-East component)
 // @Field: MN: Magnetic field strength (North component)
 // @Field: ME: Magnetic field strength (East component)
 // @Field: MD: Magnetic field strength (Down component)

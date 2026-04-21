@@ -45,8 +45,6 @@ private:
     const uint16_t gyro_sample_hz;
     const uint16_t accel_sample_hz;
 
-    uint8_t gyro_instance;
-    uint8_t accel_instance;
     uint64_t next_gyro_sample;
     uint64_t next_accel_sample;
     float gyro_time;

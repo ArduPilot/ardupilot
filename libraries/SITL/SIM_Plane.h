@@ -36,7 +36,7 @@ public:
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
-        return new Plane(frame_str);
+        return NEW_NOTHROW Plane(frame_str);
     }
 
 protected:
@@ -101,6 +101,7 @@ protected:
     bool aerobatic;
     bool copter_tailsitter;
     bool have_launcher;
+    bool have_steering;
     float launch_accel;
     float launch_time;
     uint64_t launch_start_ms;

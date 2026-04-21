@@ -70,21 +70,21 @@ void print_vprintf(AP_HAL::BetterStream *s, const char *fmt, va_list ap) {
 TEST(ExpandingString, Tests)
 {
     // Test print_vprintf failure.
-    ExpandingString *test_string = new ExpandingString();
+    ExpandingString *test_string = NEW_NOTHROW ExpandingString();
     test_string->printf("Test\n");
     EXPECT_STREQ("", test_string->get_string());
     EXPECT_STREQ("", test_string->get_writeable_string());
     EXPECT_EQ(0u, test_string->get_length());
     EXPECT_FALSE(test_string->has_failed_allocation());
     // test failure on second printf expand()
-    test_string = new ExpandingString();
+    test_string = NEW_NOTHROW ExpandingString();
     test_string->printf("Test\n");
     EXPECT_STREQ("", test_string->get_string());
     EXPECT_STREQ("", test_string->get_writeable_string());
     EXPECT_EQ(0u, test_string->get_length());
     EXPECT_TRUE(test_string->has_failed_allocation());
     // Test realloc failure
-    test_string = new ExpandingString();
+    test_string = NEW_NOTHROW ExpandingString();
     test_string->printf("Test\n");
     EXPECT_STREQ(nullptr, test_string->get_string());
     EXPECT_STREQ(nullptr, test_string->get_writeable_string());
@@ -99,7 +99,7 @@ TEST(ExpandingString, Tests)
     EXPECT_EQ(0u, test_string->get_length());
     EXPECT_TRUE(test_string->has_failed_allocation());
     // test failure on append realloc
-    test_string = new ExpandingString();
+    test_string = NEW_NOTHROW ExpandingString();
     EXPECT_FALSE(test_string->append("Test2\n", 6));
     EXPECT_TRUE(test_string->has_failed_allocation());
     EXPECT_STREQ(nullptr, test_string->get_string());

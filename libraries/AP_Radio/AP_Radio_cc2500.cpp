@@ -30,7 +30,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { gcs().send_text(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
+#define Debug(level, fmt, args...)   do { if ((level) <= get_debug_level()) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ##args); }} while (0)
 
 // object instance for trampoline
 AP_Radio_cc2500 *AP_Radio_cc2500::radio_singleton;

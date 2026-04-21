@@ -166,6 +166,7 @@ class SizeCompareBranches(object):
             'SITL_arm_linux_gnueabihf',
             'RADIX2HD',
             'canzero',
+            'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
         ])
 
         # blacklist all linux boards for bootloader build:
@@ -178,6 +179,7 @@ class SizeCompareBranches(object):
         # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
         return [
             'navigator',
+            'navigator64',
             'erleboard',
             'navio',
             'navio2',

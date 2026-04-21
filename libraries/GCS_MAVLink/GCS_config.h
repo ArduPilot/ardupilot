@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Relay/AP_Relay_config.h>
 #include <AP_Mission/AP_Mission_config.h>
+#include <AP_InertialSensor/AP_InertialSensor_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
@@ -12,7 +13,10 @@
 #define HAL_MAVLINK_BINDINGS_ENABLED HAL_GCS_ENABLED
 #endif
 
+// CODE_REMOVAL
 // BATTERY2 is slated to be removed:
+// ArduPilot 4.6 stops compiling support in
+// ArduPilot 4.7 removes the code entirely
 #ifndef AP_MAVLINK_BATTERY2_ENABLED
 #define AP_MAVLINK_BATTERY2_ENABLED 0
 #endif
@@ -36,6 +40,10 @@
 #define AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED 1
 #endif
 
+#ifndef AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
+#define AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED 1
+#endif
+
 // handling of MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES is slated to be
 // removed; the message can be requested with MAV_CMD_REQUEST_MESSAGE
 #ifndef AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
@@ -55,22 +63,33 @@
 #define AP_MAVLINK_FAILURE_CREATION_ENABLED 1
 #endif
 
+// CODE_REMOVAL
+// ArduPilot 4.6 sends deprecation warnings for RALLY_POINT/RALLY_FETCH_POINT
+// ArduPilot 4.7 stops compiling them in by default
+// ArduPilot 4.8 removes the code entirely
 #ifndef AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
 #define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED HAL_GCS_ENABLED && HAL_RALLY_ENABLED
 #endif
 
+// CODE_REMOVAL
 // handling of HIL_GPS is slated to be removed in 4.7; GPS_INPUT can be used
 // in its place
+// ArduPilot 4.6 stops compiling support in
+// ArduPilot 4.7 removes the code entirely
 #ifndef AP_MAVLINK_MSG_HIL_GPS_ENABLED
 #define AP_MAVLINK_MSG_HIL_GPS_ENABLED 0
 #endif
 
+// CODE_REMOVAL
+// ArduPilot 4.5 sends deprecation warnings for MOUNT_CONTROL/MOUNT_CONFIGURE
+// ArduPilot 4.6 stops compiling them in
+// ArduPilot 4.7 removes the code entirely
 #ifndef AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED HAL_GCS_ENABLED
+#define AP_MAVLINK_MSG_MOUNT_CONFIGURE_ENABLED 0
 #endif
 
 #ifndef AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED
-#define AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED HAL_GCS_ENABLED
+#define AP_MAVLINK_MSG_MOUNT_CONTROL_ENABLED 0
 #endif
 
 // this is for both read and write messages:
@@ -107,4 +126,16 @@
 // left in place.
 #ifndef AP_MAVLINK_COMMAND_LONG_ENABLED
 #define AP_MAVLINK_COMMAND_LONG_ENABLED 1
+#endif
+
+#ifndef AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED
+#define AP_MAVLINK_MSG_HIGHRES_IMU_ENABLED (BOARD_FLASH_SIZE > 1024) && AP_INERTIALSENSOR_ENABLED
+#endif
+
+#ifndef AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED
+#define AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED (BOARD_FLASH_SIZE > 1024)
+#endif
+
+#ifndef AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+#define AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED HAL_GCS_ENABLED
 #endif

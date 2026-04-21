@@ -1,6 +1,6 @@
 #include "Copter.h"
 
-#if MODE_GUIDED_ENABLED == ENABLED
+#if MODE_GUIDED_ENABLED
 
 /*
  * Init and run calls for guided flight mode
@@ -15,7 +15,7 @@ static uint32_t update_time_ms;             // system time of last target update
 struct {
     uint32_t update_time_ms;
     Quaternion attitude_quat;
-    Vector3f ang_vel;
+    Vector3f ang_vel_body;
     float yaw_rate_cds;
     float climb_rate_cms;   // climb rate in cms.  Used if use_thrust is false
     float thrust;           // thrust from -1 to 1.  Used if use_thrust is true
@@ -114,7 +114,7 @@ bool ModeGuided::allows_arming(AP_Arming::Method method) const
     return option_is_enabled(Option::AllowArmingFromTX);
 };
 
-#if WEATHERVANE_ENABLED == ENABLED
+#if WEATHERVANE_ENABLED
 bool ModeGuided::allows_weathervaning() const
 {
     return option_is_enabled(Option::AllowWeatherVaning);
@@ -128,6 +128,7 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
     // calculate target altitude and frame (either alt-above-ekf-origin or alt-above-terrain)
     int32_t alt_target_cm;
     bool alt_target_terrain = false;
+#if AP_RANGEFINDER_ENABLED
     if (wp_nav->rangefinder_used_and_healthy() &&
         wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER &&
         takeoff_alt_cm < copter.rangefinder.max_distance_cm_orient(ROTATION_PITCH_270)) {
@@ -138,7 +139,9 @@ bool ModeGuided::do_user_takeoff_start(float takeoff_alt_cm)
         // provide target altitude as alt-above-terrain
         alt_target_cm = takeoff_alt_cm;
         alt_target_terrain = true;
-    } else {
+    } else
+#endif
+    {
         // interpret altitude as alt-above-home
         Location target_loc = copter.current_loc;
         target_loc.set_alt_cm(takeoff_alt_cm, Location::AltFrame::ABOVE_HOME);
@@ -243,10 +246,10 @@ void ModeGuided::pos_control_start()
     pva_control_start();
 }
 
-// initialise guided mode's velocity controller
+// initialise guided mode's acceleration controller
 void ModeGuided::accel_control_start()
 {
-    // set guided_mode to velocity controller
+    // set guided_mode to acceleration controller
     guided_mode = SubMode::Accel;
 
     // initialise position controller
@@ -256,7 +259,7 @@ void ModeGuided::accel_control_start()
 // initialise guided mode's velocity and acceleration controller
 void ModeGuided::velaccel_control_start()
 {
-    // set guided_mode to velocity controller
+    // set guided_mode to velocity and acceleration controller
     guided_mode = SubMode::VelAccel;
 
     // initialise position controller
@@ -266,7 +269,7 @@ void ModeGuided::velaccel_control_start()
 // initialise guided mode's position, velocity and acceleration controller
 void ModeGuided::posvelaccel_control_start()
 {
-    // set guided_mode to velocity controller
+    // set guided_mode to position, velocity and acceleration controller
     guided_mode = SubMode::PosVelAccel;
 
     // initialise position controller
@@ -320,7 +323,7 @@ void ModeGuided::angle_control_start()
     // initialise targets
     guided_angle_state.update_time_ms = millis();
     guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
-    guided_angle_state.ang_vel.zero();
+    guided_angle_state.ang_vel_body.zero();
     guided_angle_state.climb_rate_cms = 0.0f;
     guided_angle_state.yaw_rate_cds = 0.0f;
     guided_angle_state.use_yaw_rate = false;
@@ -380,10 +383,10 @@ bool ModeGuided::set_destination(const Vector3f& destination, bool use_yaw, floa
         // convert origin to alt-above-terrain if necessary
         if (!guided_pos_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->set_pos_offset_z_cm(origin_terr_offset);
+            pos_control->init_pos_terrain_cm(origin_terr_offset);
         }
     } else {
-        pos_control->set_pos_offset_z_cm(0.0);
+        pos_control->init_pos_terrain_cm(0.0);
     }
 
     // set yaw state
@@ -414,11 +417,14 @@ bool ModeGuided::get_wp(Location& destination) const
     case SubMode::Pos:
         destination = Location(guided_pos_target_cm.tofloat(), guided_pos_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
         return true;
-    default:
-        return false;
+    case SubMode::Angle:
+    case SubMode::TakeOff:
+    case SubMode::Accel:
+    case SubMode::VelAccel:
+    case SubMode::PosVelAccel:
+        break;
     }
 
-    // should never get here but just in case
     return false;
 }
 
@@ -490,10 +496,10 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         // convert origin to alt-above-terrain if necessary
         if (!guided_pos_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->set_pos_offset_z_cm(origin_terr_offset);
+            pos_control->init_pos_terrain_cm(origin_terr_offset);
         }
     } else {
-        pos_control->set_pos_offset_z_cm(0.0);
+        pos_control->init_pos_terrain_cm(0.0);
     }
 
     guided_pos_target_cm = pos_target_f.topostype();
@@ -515,7 +521,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 // set_velaccel - sets guided mode's target velocity and acceleration
 void ModeGuided::set_accel(const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
-    // check we are in velocity control mode
+    // check we are in acceleration control mode
     if (guided_mode != SubMode::Accel) {
         accel_control_start();
     }
@@ -547,7 +553,7 @@ void ModeGuided::set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_
 // set_velaccel - sets guided mode's target velocity and acceleration
 void ModeGuided::set_velaccel(const Vector3f& velocity, const Vector3f& acceleration, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw, bool log_request)
 {
-    // check we are in velocity control mode
+    // check we are in velocity and acceleration control mode
     if (guided_mode != SubMode::VelAccel) {
         velaccel_control_start();
     }
@@ -589,7 +595,7 @@ bool ModeGuided::set_destination_posvelaccel(const Vector3f& destination, const 
     }
 #endif
 
-    // check we are in velocity control mode
+    // check we are in position, velocity and acceleration control mode
     if (guided_mode != SubMode::PosVelAccel) {
         posvelaccel_control_start();
     }
@@ -635,21 +641,24 @@ bool ModeGuided::use_wpnav_for_position_control() const
 }
 
 // Sets guided's angular target submode: Using a rotation quaternion, angular velocity, and climbrate or thrust (depends on user option)
-// attitude_quat: IF zero: ang_vel (angular velocity) must be provided even if all zeroes
-//                IF non-zero: attitude_control is performed using both the attitude quaternion and angular velocity
-// ang_vel: angular velocity (rad/s)
+// attitude_quat: IF zero: ang_vel_body (body frame angular velocity) must be provided even if all zeroes
+//                IF non-zero: attitude_control is performed using both the attitude quaternion and body frame angular velocity
+// ang_vel_body: body frame angular velocity (rad/s)
 // climb_rate_cms_or_thrust: represents either the climb_rate (cm/s) or thrust scaled from [0, 1], unitless
 // use_thrust: IF true: climb_rate_cms_or_thrust represents thrust
 //             IF false: climb_rate_cms_or_thrust represents climb_rate (cm/s)
-void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel, float climb_rate_cms_or_thrust, bool use_thrust)
+void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_vel_body, float climb_rate_cms_or_thrust, bool use_thrust)
 {
     // check we are in velocity control mode
     if (guided_mode != SubMode::Angle) {
         angle_control_start();
+    } else if (!use_thrust && guided_angle_state.use_thrust) {
+        // Already angle control but changing from thrust to climb rate
+        pos_control->init_z_controller();
     }
 
     guided_angle_state.attitude_quat = attitude_quat;
-    guided_angle_state.ang_vel = ang_vel;
+    guided_angle_state.ang_vel_body = ang_vel_body;
 
     guided_angle_state.use_thrust = use_thrust;
     if (use_thrust) {
@@ -668,7 +677,7 @@ void ModeGuided::set_angle(const Quaternion &attitude_quat, const Vector3f &ang_
 
 #if HAL_LOGGING_ENABLED
     // log target
-    copter.Log_Write_Guided_Attitude_Target(guided_mode, roll_rad, pitch_rad, yaw_rad, ang_vel, guided_angle_state.thrust, guided_angle_state.climb_rate_cms * 0.01);
+    copter.Log_Write_Guided_Attitude_Target(guided_mode, roll_rad, pitch_rad, yaw_rad, ang_vel_body, guided_angle_state.thrust, guided_angle_state.climb_rate_cms * 0.01);
 #endif
 }
 
@@ -679,6 +688,9 @@ void ModeGuided::takeoff_run()
     auto_takeoff.run();
     if (auto_takeoff.complete && !takeoff_complete) {
         takeoff_complete = true;
+#if AP_FENCE_ENABLED
+        copter.fence.auto_enable_fence_after_takeoff();
+#endif
 #if AP_LANDINGGEAR_ENABLED
         // optionally retract landing gear
         copter.landinggear.retract_after_takeoff();
@@ -813,8 +825,7 @@ void ModeGuided::velaccel_control_run()
 
     if (!stabilizing_vel_xy() && !do_avoid) {
         // set the current commanded xy vel to the desired vel
-        guided_vel_target_cms.x = pos_control->get_vel_desired_cms().x;
-        guided_vel_target_cms.y = pos_control->get_vel_desired_cms().y;
+        guided_vel_target_cms.xy() = pos_control->get_vel_desired_cms().xy();
     }
     pos_control->input_vel_accel_xy(guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
     if (!stabilizing_vel_xy() && !do_avoid) {
@@ -891,14 +902,11 @@ void ModeGuided::posvelaccel_control_run()
     // send position and velocity targets to position controller
     if (!stabilizing_vel_xy()) {
         // set the current commanded xy pos to the target pos and xy vel to the desired vel
-        guided_pos_target_cm.x = pos_control->get_pos_target_cm().x;
-        guided_pos_target_cm.y = pos_control->get_pos_target_cm().y;
-        guided_vel_target_cms.x = pos_control->get_vel_desired_cms().x;
-        guided_vel_target_cms.y = pos_control->get_vel_desired_cms().y;
+        guided_pos_target_cm.xy() = pos_control->get_pos_desired_cm().xy();
+        guided_vel_target_cms.xy() = pos_control->get_vel_desired_cms().xy();
     } else if (!stabilizing_pos_xy()) {
         // set the current commanded xy pos to the target pos
-        guided_pos_target_cm.x = pos_control->get_pos_target_cm().x;
-        guided_pos_target_cm.y = pos_control->get_pos_target_cm().y;
+        guided_pos_target_cm.xy() = pos_control->get_pos_desired_cm().xy();
     }
     pos_control->input_pos_vel_accel_xy(guided_pos_target_cm.xy(), guided_vel_target_cms.xy(), guided_accel_target_cmss.xy(), false);
     if (!stabilizing_vel_xy()) {
@@ -943,7 +951,7 @@ void ModeGuided::angle_control_run()
     uint32_t tnow = millis();
     if (tnow - guided_angle_state.update_time_ms > get_timeout_ms()) {
         guided_angle_state.attitude_quat.from_euler(Vector3f(0.0, 0.0, attitude_control->get_att_target_euler_rad().z));
-        guided_angle_state.ang_vel.zero();
+        guided_angle_state.ang_vel_body.zero();
         climb_rate_cms = 0.0f;
         if (guided_angle_state.use_thrust) {
             // initialise vertical velocity controller
@@ -982,9 +990,9 @@ void ModeGuided::angle_control_run()
 
     // call attitude controller
     if (guided_angle_state.attitude_quat.is_zero()) {
-        attitude_control->input_rate_bf_roll_pitch_yaw(ToDeg(guided_angle_state.ang_vel.x) * 100.0f, ToDeg(guided_angle_state.ang_vel.y) * 100.0f, ToDeg(guided_angle_state.ang_vel.z) * 100.0f);
+        attitude_control->input_rate_bf_roll_pitch_yaw(ToDeg(guided_angle_state.ang_vel_body.x) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.y) * 100.0f, ToDeg(guided_angle_state.ang_vel_body.z) * 100.0f);
     } else {
-        attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel);
+        attitude_control->input_quaternion(guided_angle_state.attitude_quat, guided_angle_state.ang_vel_body);
     }
 
     // call position controller

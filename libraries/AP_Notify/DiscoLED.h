@@ -16,9 +16,12 @@
 */
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_DISCO_LED_ENABLED
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/Led_Sysfs.h>
 #include <AP_HAL_Linux/PWM_Sysfs.h>
 
@@ -53,4 +56,4 @@ private:
 
     enum led_backend backend;
 };
-#endif
+#endif  // AP_NOTIFY_DISCO_LED_ENABLED

@@ -370,6 +370,19 @@ void AC_Avoid::adjust_speed(float kP, float accel, float heading, float &speed, 
 }
 
 // adjust vertical climb rate so vehicle does not break the vertical fence
+void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float dt) {
+    float backup_speed = 0.0f;
+    adjust_velocity_z(kP, accel_cmss, climb_rate_cms, backup_speed, dt);
+    if (!is_zero(backup_speed)) {
+        if (is_negative(backup_speed)) {
+            climb_rate_cms = MIN(climb_rate_cms, backup_speed);
+        } else {
+            climb_rate_cms = MAX(climb_rate_cms, backup_speed);
+        }
+    }
+}
+
+// adjust vertical climb rate so vehicle does not break the vertical fence
 void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_cms, float& backup_speed, float dt)
 {
 #ifdef AP_AVOID_ENABLE_Z
@@ -379,29 +392,36 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         return;
     }
     
-    // do not adjust climb_rate if level or descending
-    if (climb_rate_cms <= 0.0f) {
+    // do not adjust climb_rate if level
+    if (is_zero(climb_rate_cms)) {
         return;
     }
 
+    const AP_AHRS &_ahrs = AP::ahrs();
     // limit acceleration
     const float accel_cmss_limited = MIN(accel_cmss, AC_AVOID_ACCEL_CMSS_MAX);
 
-    bool limit_alt = false;
-    float alt_diff = 0.0f;   // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
-
-    const AP_AHRS &_ahrs = AP::ahrs();
-
+    bool limit_min_alt = false;
+    bool limit_max_alt = false;
+    float max_alt_diff = 0.0f; // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
+    float min_alt_diff = 0.0f;
 #if AP_FENCE_ENABLED
     // calculate distance below fence
     AC_Fence *fence = AP::fence();
-    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence && (fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+    if ((_enabled & AC_AVOID_STOP_AT_FENCE) > 0 && fence) {
         // calculate distance from vehicle to safe altitude
         float veh_alt;
         _ahrs.get_relative_position_D_home(veh_alt);
-        // _fence.get_safe_alt_max() is UP, veh_alt is DOWN:
-        alt_diff = fence->get_safe_alt_max() + veh_alt;
-        limit_alt = true;
+        if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MIN) > 0) {
+            // fence.get_safe_alt_max() is UP, veh_alt is DOWN:
+            min_alt_diff = -(fence->get_safe_alt_min() + veh_alt);
+            limit_min_alt = true;
+        }
+        if ((fence->get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) > 0) {
+            // fence.get_safe_alt_max() is UP, veh_alt is DOWN:
+            max_alt_diff = fence->get_safe_alt_max() + veh_alt;
+            limit_max_alt = true;
+        }
     }
 #endif
 
@@ -413,9 +433,9 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         _ahrs.get_relative_position_D_origin(curr_alt)) {
         // alt_limit is UP, curr_alt is DOWN:
         const float ctrl_alt_diff = alt_limit + curr_alt;
-        if (!limit_alt || ctrl_alt_diff < alt_diff) {
-            alt_diff = ctrl_alt_diff;
-            limit_alt = true;
+        if (!limit_max_alt || ctrl_alt_diff < max_alt_diff) {
+            max_alt_diff = ctrl_alt_diff;
+            limit_max_alt = true;
         }
     }
 
@@ -425,34 +445,52 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     AP_Proximity *proximity = AP::proximity();
     if (proximity && proximity_avoidance_enabled() && proximity->get_upward_distance(proximity_alt_diff)) {
         proximity_alt_diff -= _margin;
-        if (!limit_alt || proximity_alt_diff < alt_diff) {
-            alt_diff = proximity_alt_diff;
-            limit_alt = true;
+        if (!limit_max_alt || proximity_alt_diff < max_alt_diff) {
+            max_alt_diff = proximity_alt_diff;
+            limit_max_alt = true;
         }
     }
 #endif
 
     // limit climb rate
-    if (limit_alt) {
+    if (limit_max_alt || limit_min_alt) {
+        const float max_back_spd_cms = _backup_speed_z_max * 100.0;
         // do not allow climbing if we've breached the safe altitude
-        if (alt_diff <= 0.0f) {
+        if (max_alt_diff <= 0.0f && limit_max_alt) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             // also calculate backup speed that will get us back to safe altitude
-            const float max_back_spd_cms = _backup_speed_z_max * 100.0;
             if (is_positive(max_back_spd_cms)) {
-                backup_speed = -1*(get_max_speed(kP, accel_cmss_limited, -alt_diff*100.0f, dt));
+                backup_speed = -1*(get_max_speed(kP, accel_cmss_limited, -max_alt_diff*100.0f, dt));
 
                 // Constrain to max backup speed
                 backup_speed = MAX(backup_speed, -max_back_spd_cms);
             }
             return;
+        // do not allow descending if we've breached the safe altitude
+        } else if (min_alt_diff <= 0.0f && limit_min_alt) {
+            climb_rate_cms =  MAX(climb_rate_cms, 0.0f);
+            // also calculate backup speed that will get us back to safe altitude
+            if (is_positive(max_back_spd_cms)) {
+                backup_speed = get_max_speed(kP, accel_cmss_limited, -min_alt_diff*100.0f, dt);
+
+                // Constrain to max backup speed
+                backup_speed = MIN(backup_speed, max_back_spd_cms);
+            }
+            return;
         }
 
         // limit climb rate
-        const float max_speed = get_max_speed(kP, accel_cmss_limited, alt_diff*100.0f, dt);
-        climb_rate_cms = MIN(max_speed, climb_rate_cms);
+        if (limit_max_alt) {
+            const float max_alt_max_speed = get_max_speed(kP, accel_cmss_limited, max_alt_diff*100.0f, dt);
+            climb_rate_cms = MIN(max_alt_max_speed, climb_rate_cms);
+        }
+
+        if (limit_min_alt) {
+            const float max_alt_min_speed = get_max_speed(kP, accel_cmss_limited, min_alt_diff*100.0f, dt);
+            climb_rate_cms = MAX(-max_alt_min_speed, climb_rate_cms);
+        }
     }
-# endif
+#endif
 }
 
 // adjust roll-pitch to push vehicle away from objects

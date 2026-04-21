@@ -80,6 +80,9 @@ Plane::Plane(const char *frame_str) :
         ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
         thrust_scale *= 1.5;
     }
+    if (strstr(frame_str, "-steering")) {
+        have_steering = true;
+    }
 
 #if AP_FILESYSTEM_FILE_READING_ENABLED
     if (strstr(frame_str, "-3d")) {
@@ -395,6 +398,18 @@ void Plane::update(const struct sitl_input &input)
     calculate_forces(input, rot_accel);
     
     update_dynamics(rot_accel);
+
+    /*
+      add in ground steering, this should be replaced with a proper
+      calculation of a nose wheel effect
+    */
+    if (have_steering && on_ground()) {
+        const float steering = filtered_servo_angle(input, 4);
+        const Vector3f velocity_bf = dcm.transposed() * velocity_ef;
+        const float steer_scale = radians(5);
+        gyro.z += steering * velocity_bf.x * steer_scale;
+    }
+
     update_external_payload(input);
 
     // update lat/lon/altitude

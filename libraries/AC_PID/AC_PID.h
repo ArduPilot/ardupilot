@@ -92,9 +92,6 @@ public:
     // save gain to eeprom
     void save_gains();
 
-    /// operator function call for easy initialisation
-    void operator()(float p_val, float i_val, float d_val, float ff_val, float imax_val, float input_filt_T_hz, float input_filt_E_hz, float input_filt_D_hz, float dff_val=0);
-
     // get accessors
     const AP_Float &kP() const { return _kp; }
     AP_Float &kP() { return _kp; }
@@ -117,17 +114,17 @@ public:
     float get_filt_D_alpha(float dt) const;
 
     // set accessors
-    void kP(const float v) { _kp.set(v); }
-    void kI(const float v) { _ki.set(v); }
-    void kD(const float v) { _kd.set(v); }
-    void ff(const float v) { _kff.set(v); }
-    void imax(const float v) { _kimax.set(fabsf(v)); }
-    void pdmax(const float v) { _kpdmax.set(fabsf(v)); }
-    void filt_T_hz(const float v);
-    void filt_E_hz(const float v);
-    void filt_D_hz(const float v);
-    void slew_limit(const float v);
-    void kDff(const float v) { _kdff.set(v); }
+    void set_kP(const float v) { _kp.set(v); }
+    void set_kI(const float v) { _ki.set(v); }
+    void set_kD(const float v) { _kd.set(v); }
+    void set_ff(const float v) { _kff.set(v); }
+    void set_imax(const float v) { _kimax.set(fabsf(v)); }
+    void set_pdmax(const float v) { _kpdmax.set(fabsf(v)); }
+    void set_filt_T_hz(const float v);
+    void set_filt_E_hz(const float v);
+    void set_filt_D_hz(const float v);
+    void set_slew_limit(const float v);
+    void set_kDff(const float v) { _kdff.set(v); }
 
     // set the desired and actual rates (for logging purposes)
     void set_target_rate(float target) { _pid_info.target = target; }

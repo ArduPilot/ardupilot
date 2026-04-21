@@ -2,6 +2,8 @@
 /*
   float16 implementation
 
+  Note that this is IEEE half-precision 16-bit float, *not* bfloat16
+
   algorithm with thanks to libcanard:
   https://github.com/dronecan/libcanard
 */

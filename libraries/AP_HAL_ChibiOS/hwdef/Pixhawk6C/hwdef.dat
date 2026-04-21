@@ -177,7 +177,7 @@ define HAL_SPEKTRUM_PWR_ENABLED 1
 
 # power sensing
 PE3 VDD_5V_PERIPH_nOC INPUT PULLUP
-PF13 VDD_5V_HIPOWER_nOC INPUT PULLUP
+PC11 VDD_5V_HIPOWER_nOC INPUT PULLUP
 
 PA15 VDD_BRICK_nVALID INPUT PULLUP
 PB12 VDD_BRICK2_nVALID INPUT PULLUP
@@ -196,9 +196,9 @@ PD10 LED_RED OUTPUT OPENDRAIN GPIO(90) HIGH
 PD11 LED_BLUE OUTPUT OPENDRAIN GPIO(92) HIGH
 
 # setup for BoardLED2
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 define HAL_GPIO_A_LED_PIN 90
 define HAL_GPIO_B_LED_PIN 92
-define HAL_GPIO_LED_ON 0
 
 # ID pins
 PE12 HW_VER_REV_DRIVE OUTPUT LOW
@@ -256,6 +256,10 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 define HAL_OS_FATFS_IO 1
 
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+
+# build ABIN for flash-from-bootloader support:
+env BUILD_ABIN True
+
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_BIDIR_DSHOT 1
