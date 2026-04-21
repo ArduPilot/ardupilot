@@ -15,8 +15,8 @@ constexpr float small_capacity_Ah = 1.0f;
 constexpr float large_capacity_Ah = 8.0f;
 
 // These values are arbitrary, need only be 'low' and 'high' compared to each other.
-constexpr float low_resistance_Ohm = 0.005f;
-constexpr float high_resistance_Ohm = 0.04f;
+constexpr float low_resistance_ohm = 0.005f;
+constexpr float high_resistance_ohm = 0.04f;
 
 // This can be any value, in operation it would come from AP_HAL::micros64().
 constexpr uint64_t initial_us = 0;
@@ -24,22 +24,22 @@ constexpr uint64_t initial_us = 0;
 class BatteryTest : public testing::Test {
 protected:
     BatteryTest() {
-        small_battery.setup(small_capacity_Ah, low_resistance_Ohm, max_voltage);
+        small_battery.setup(small_capacity_Ah, low_resistance_ohm, max_voltage);
         small_battery.init_voltage(max_voltage);
         small_battery.init_capacity(small_capacity_Ah);
-        large_battery.setup(large_capacity_Ah, low_resistance_Ohm, max_voltage);
+        large_battery.setup(large_capacity_Ah, low_resistance_ohm, max_voltage);
         large_battery.init_voltage(max_voltage);
         large_battery.init_capacity(large_capacity_Ah);
         // Recall that capacity==0 means unlimited.
-        infinite_battery.setup(0.0f, low_resistance_Ohm, max_voltage);
+        infinite_battery.setup(0.0f, low_resistance_ohm, max_voltage);
         infinite_battery.init_voltage(max_voltage);
         infinite_battery.init_capacity(0.0f);
 
-        small_high_resistance_battery.setup(small_capacity_Ah, high_resistance_Ohm, max_voltage);
+        small_high_resistance_battery.setup(small_capacity_Ah, high_resistance_ohm, max_voltage);
         small_high_resistance_battery.init_voltage(max_voltage);
         small_high_resistance_battery.init_capacity(small_capacity_Ah);
         // Recall that capacity==0 means unlimited.
-        infinite_high_resistance_battery.setup(0.0f, high_resistance_Ohm, max_voltage);
+        infinite_high_resistance_battery.setup(0.0f, high_resistance_ohm, max_voltage);
         infinite_high_resistance_battery.init_voltage(max_voltage);
         infinite_high_resistance_battery.init_capacity(0.0f);
     }

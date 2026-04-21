@@ -24,7 +24,7 @@ namespace SITL {
 
 class Battery {
 public:
-    void setup(float _capacity_Ah, float _resistance, float _max_voltage);
+    void setup(float _capacity_Ah, float _resistance_ohm, float _max_voltage);
 
     // Resets the battery state if the configuration (e.g. from SIM_BATT_* parameters) has changed.
     void maybe_reset(float desired_voltage, float desired_capacity_Ah);
@@ -43,7 +43,7 @@ public:
 
 private:
     float capacity_Ah;
-    float resistance;
+    float resistance_ohm;
     float max_voltage;
     float voltage_set;
     float remaining_Ah;
