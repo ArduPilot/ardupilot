@@ -82,7 +82,7 @@ protected:
 
 TEST_F(BatteryTest, EnergyConsumption)
 {
-    constexpr float current_amps = 25.0f;
+    constexpr float current_amp = 25.0f;
     constexpr float test_duration_sec = 60.0f;
     constexpr float first_half = test_duration_sec / 2.0f;
     constexpr float dt_sec = 0.01f;
@@ -101,7 +101,7 @@ TEST_F(BatteryTest, EnergyConsumption)
 
             // Consume battery energy (or not)
             if (t > 0.0f && t < first_half) {
-                battery.consume_energy(current_amps, now_us);
+                battery.consume_energy(current_amp, now_us);
             } else {
                 battery.consume_energy(0.0f, now_us);
             }
@@ -193,12 +193,12 @@ TEST_F(BatteryTest, EnergyConsumption)
 
 namespace {
 void use_some_energy(SITL::Battery& battery) {
-    constexpr float current_amps = 25.0f;
+    constexpr float current_amp = 25.0f;
     constexpr float current_duration_sec = 60.0f;
     constexpr float dt_sec = 0.01f;
 
     for (float t = 0.0f; t <= current_duration_sec; t+=dt_sec) {
-        battery.consume_energy(current_amps, initial_us + static_cast<uint64_t>(t * 1e6));
+        battery.consume_energy(current_amp, initial_us + static_cast<uint64_t>(t * 1e6));
     }
 };
 } // namespace
