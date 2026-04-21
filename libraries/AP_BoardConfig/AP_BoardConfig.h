@@ -281,6 +281,8 @@ private:
     void validate_board_type(void);
     void board_autodetect(void);
     void detect_fmuv6_variant(void);
+    bool probe_lsm6dsv_family(const char *devname);
+    bool probe_holybro_6x_imu_slot(const char *icm_devname, const char *lsm6_devname);
     bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT
