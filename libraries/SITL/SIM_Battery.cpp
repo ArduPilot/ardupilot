@@ -183,12 +183,15 @@ void Battery::consume_energy(float current_amp, uint64_t now_us)
 
 void Battery::update_temperature(float current_amp, float dt)
 {
+    // In the (near) future, this value will instead come from Aircraft::ambient_outside_temperature_degC()
+    constexpr float ambient_temperature_degC = 0.0f;
+
     // thermal_capacity value chosen to match previous steady-state behavior at 28amps
     // (reminder: thermal_capacity = mass * specific_heat)
     constexpr float thermal_capacity = 2.8f;  // watt*seconds/degC
     constexpr float inverse_of_thermal_capacity = 1 / thermal_capacity;  // use inverse so we can multiply, not divide
     const float temp_increase = (current_amp * current_amp) * resistance_ohm * inverse_of_thermal_capacity * dt;
     // decay temperature at some %second towards ambient
-    const float temp_decrease = (temperature.kelvin - 273.15f) * 0.10 * dt;
-    temperature.kelvin += (temp_increase - temp_decrease);
+    const float temp_decrease = (temperature_degC - ambient_temperature_degC) * 0.10 * dt;
+    temperature_degC += (temp_increase - temp_decrease);
 }
