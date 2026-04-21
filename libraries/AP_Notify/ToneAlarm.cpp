@@ -143,6 +143,9 @@ void AP_ToneAlarm::play_tone(const uint8_t tone_index)
 {
     uint32_t tnow_ms = AP_HAL::millis();
     const Tone &tone_requested = _tones[tone_index];
+    
+    // Notification of alarm patterns to GCS
+    mavlink_msg_play_tune_send(mavlink_channel_t(0), 0, 0, nullptr, tone_requested.str);
 
     if (tone_requested.continuous) {
         _cont_tone_playing = tone_index;
