@@ -33,7 +33,7 @@ public:
     void init_capacity(float capacity);
 
     // Call this periodically to "step" the battery forward in time
-    void consume_energy(float current_amps, uint64_t now_us);
+    void consume_energy(float current_amp, uint64_t now_us);
 
     float get_voltage(void) const { return voltage_filter.get(); }
     float get_capacity(void) const { return capacity_Ah; }
@@ -53,7 +53,7 @@ private:
         float kelvin = 273;
         uint64_t last_update_us;
     } temperature;
-    void update_temperature(float current_amps, uint64_t now_us);
+    void update_temperature(float current_amp, uint64_t now_us);
 
     // 10Hz filter for battery voltage
     LowPassFilterFloat voltage_filter{10};
