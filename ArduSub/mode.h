@@ -324,8 +324,8 @@ protected:
     const char *name4() const override { return "DAMI"; }
 
 private:
-    float last_roll;
-    float last_pitch;
+    float last_roll = 0.0f;
+    float last_pitch = 0.0f;
     float zz_desired_m;
 
     bool get_desired_euler_angles_pitch_roll(float& roll_d, float& pitch_d);

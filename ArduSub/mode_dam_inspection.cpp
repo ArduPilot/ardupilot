@@ -103,7 +103,7 @@ void ModeDamInspection::run_pre()
 
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(TEST_ROLL_D, target_pitch, target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(TEST_ROLL_D * 1e2f, target_pitch * 1e2f, target_yaw_rate);
         sub.last_pilot_heading = ahrs.yaw_sensor;
         sub.last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 

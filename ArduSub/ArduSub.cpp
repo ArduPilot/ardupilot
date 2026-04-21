@@ -202,8 +202,7 @@ void Sub::doppler_update()
     const Vector3f vel_ned = rot_bn * vel_body_corr;
 
     ahrs.writeExtNavVelData(vel_ned, 0, t_ms, 0);
-//    gcs().send_text(MAV_SEVERITY_CRITICAL, "distance: %.3f", sub.inertial_doppler.get_distance_m());
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "OKOK");
+//    gcs().send_text(MAV_SEVERITY_INFO, "vei_body_corr: %.3f %.3f %.3f", vel_body_corr.x, vel_body_corr.y, vel_body_corr.z);
     inertial_doppler.send(); 
 }
 

@@ -370,6 +370,7 @@ void AP_Doppler_Backend::parse_epd6_bi(const char *payload)
     bi_msg.vz_mps = z_velocity_mm_s * 0.001f;
     bi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
 
+//    gcs().send_text(MAV_SEVERITY_CRITICAL, "Doppler Telemetry: BI: %f %f %f", bi_msg.vx_mps, bi_msg.vy_mps, bi_msg.vz_mps);
 }
 
 void AP_Doppler_Backend::parse_epd6_bs(const char *payload)
