@@ -72,8 +72,7 @@ void ModeLoiter::update()
     calc_throttle(_desired_speed, true);
 }
 
-// get desired location
-bool ModeLoiter::get_desired_location(Location& destination) const
+bool ModeLoiter::get_destination(Location& destination) const
 {
     destination = _destination;
     return true;

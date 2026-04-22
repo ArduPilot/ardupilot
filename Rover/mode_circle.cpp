@@ -287,8 +287,7 @@ bool ModeCircle::set_desired_speed(float speed_ms)
     return false;
 }
 
-// return desired location
-bool ModeCircle::get_desired_location(Location& destination) const
+bool ModeCircle::get_destination(Location& destination) const
 {
     destination = config.center_loc;
     destination.offset_bearing(degrees(target.yaw_rad), config.radius);
