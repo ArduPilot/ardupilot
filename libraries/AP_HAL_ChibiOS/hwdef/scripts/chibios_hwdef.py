@@ -1317,9 +1317,9 @@ class ChibiOSHWDef(hwdef.HWDef):
         flash_base = 0x08000000 + flash_reserve_start * 1024
         ext_flash_base = 0x90000000 + ext_flash_reserve_start * 1024
         if instruction_ram is not None:
-            instruction_ram_base = instruction_ram[0]
+            instruction_ram_base = 1024
             instruction_ram_length = instruction_ram[1]
-
+        #print(instruction_ram_length)
         ram1_start = 0
         ram1_len = 0
         flash_ram = self.get_mcu_config('FLASH_RAM', False)
@@ -1395,7 +1395,7 @@ MEMORY
 }
 
 INCLUDE common.ld
-''' % (ext_flash_base, ext_flash_length, instruction_ram_base, instruction_ram_length, ram0_start, ram0_len, ram1_start, ram1_len, ram2_start, ram2_len))  # noqa
+''' % (ext_flash_base, ext_flash_length, 1024, 63, ram0_start, ram0_len, ram1_start, ram1_len, ram2_start, ram2_len))  # noqa
         f.close()
 
     def copy_common_linkerscript(self, outpath):
