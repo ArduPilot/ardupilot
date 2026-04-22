@@ -46,8 +46,9 @@ public:
     // set desired location to a reasonable stopping point, return true on success
     bool set_desired_location_to_stopping_location()  WARN_IF_UNUSED;
 
-    // set desired location as offset from the EKF origin, return true on success
-    bool set_desired_location_NED(const Vector3f& destination) WARN_IF_UNUSED;
+    // set destination as North, East offset from the EKF origin, return true on success
+    // (offset_D component is neglected, origin_D is used.)
+    bool set_wp_destination_NED_m(const Vector3f& offset_from_origin_NE) WARN_IF_UNUSED;
     bool set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination) WARN_IF_UNUSED;
 
     // set desired location but expect the destination to be updated again in the near future

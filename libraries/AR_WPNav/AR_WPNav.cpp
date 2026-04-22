@@ -311,18 +311,18 @@ bool AR_WPNav::set_desired_location_to_stopping_location()
     return set_desired_location(stopping_loc);
 }
 
-// set desired location as offset from the EKF origin, return true on success
-bool AR_WPNav::set_desired_location_NED(const Vector3f& destination)
+// (See declaration for documentation.)
+bool AR_WPNav::set_wp_destination_NED_m(const Vector3f& offset_from_origin)
 {
     // initialise destination to ekf origin
-    Location destination_ned;
-    if (!AP::ahrs().get_origin(destination_ned)) {
+    Location destination;
+    if (!AP::ahrs().get_origin(destination)) {
         return false;
     }
 
     // apply offset
-    destination_ned.offset(destination.x, destination.y);
-    return set_desired_location(destination_ned);
+    destination.offset(offset_from_origin.x, offset_from_origin.y);
+    return set_desired_location(destination);
 }
 
 bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination)
