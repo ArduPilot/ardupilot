@@ -340,10 +340,7 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vecto
     return set_desired_location(dest_loc, next_dest_loc);
 }
 
-// set desired location but expect the destination to be updated again in the near future
-// position controller input shaping will be used for navigation instead of scurves
-// Note: object avoidance is not supported if this method is used
-bool AR_WPNav::set_desired_location_expect_fast_update(const Location &destination)
+bool AR_WPNav::set_destination_expect_fast_update(const Location &destination)
 {
     // initialise if not active
     if (!is_active() || (_nav_control_type != NavControllerType::NAV_PSC_INPUT_SHAPING)) {
