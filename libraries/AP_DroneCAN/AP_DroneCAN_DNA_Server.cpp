@@ -332,6 +332,80 @@ void AP_DroneCAN_DNA_Server::verify_nodes()
     }
 }
 
+#if HAL_LOGGING_ENABLED
+// Find the node status item for the given node id, will add new item if no existing item can be found
+AP_DroneCAN_DNA_Server::node_status_log_data * AP_DroneCAN_DNA_Server::find_node_status_item(const uint8_t source_node_id)
+{
+    // Search exiting items
+    for (auto *node = node_status_list; node != nullptr; node = node->next) {
+        if (node->id == source_node_id) {
+            // Return match
+            return node;
+        }
+    }
+
+    // Add new item
+    auto *node = NEW_NOTHROW node_status_log_data(source_node_id);
+    if (node == nullptr) {
+        return nullptr;
+    }
+
+    // link into the list
+    node->next = node_status_list;
+    node_status_list = node;
+
+    // Return item
+    return node;
+}
+
+// Update node status linked list and log
+void AP_DroneCAN_DNA_Server::update_node_status(const uint8_t source_node_id, const uavcan_protocol_NodeStatus& msg)
+{
+    AP_DroneCAN_DNA_Server::node_status_log_data *node = find_node_status_item(source_node_id);
+    if (node == nullptr) {
+        return;
+    }
+
+    // Rate limit logs to no more than 1.1Hz. AP_Periph sends at 1Hz, the head room is to
+    // make sure that timing jitter does not result in skipping every other message
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - node->last_log_ms) >= 900) {
+        node->last_log_ms = now_ms;
+
+        // @LoggerMessage: CANH
+        // @Description: DroneCAN heartbeat status
+        // @Field: TimeUS: Time since system startup
+        // @Field: Driver: Driver index
+        // @Field: NodeId: Node ID
+        // @Field: UpTime: Time since node startup
+        // @Field: Health: 0:Ok, 1:Warning, 2:Error, 3:Critical
+        // @Field: Mode: 0:Operational, 1:Initialization, 2:Maintenance, 3:Software update, 7:Offline
+        // @Field: SubMode: Expected to be 0
+        // @Field: VendorCode: vendor specific code. In AP_Periph this is available memory in bytes.
+
+        AP::logger().WriteStreaming("CANH",
+                                    "TimeUS,Driver,NodeId,UpTime,Health,Mode,SubMode,VendorCode",
+                                    "s-#s----",
+                                    "F-------",
+                                    "QBBIBBBH",
+                                    AP_HAL::micros64(),
+                                    _ap_dronecan._driver_index,
+                                    source_node_id,
+                                    msg.uptime_sec,
+                                    msg.health,
+                                    msg.mode,
+                                    msg.sub_mode,
+                                    msg.vendor_specific_status_code);
+    }
+
+    // If uptime goes backwards re-trigger node info log
+    if (node->last_uptime_sec > msg.uptime_sec) {
+        node_logged.clear(source_node_id);
+    }
+    node->last_uptime_sec = msg.uptime_sec;
+}
+#endif // HAL_LOGGING_ENABLED
+
 /* Handles Node Status Message, adds to the Seen Node list
 Also starts the Service call for Node Info to complete the
 Verification process. */
@@ -360,6 +434,11 @@ void AP_DroneCAN_DNA_Server::handleNodeStatus(const CanardRxTransfer& transfer, 
     }
     //Add node to seen list if not seen before
     node_seen.set(transfer.source_node_id);
+
+#if HAL_LOGGING_ENABLED
+    // Update status data for logging
+    update_node_status(transfer.source_node_id, msg);
+#endif // HAL_LOGGING_ENABLED
 }
 
 /* Node Info message handler
@@ -402,7 +481,10 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
                            rsp.software_version.minor,
                            rsp.software_version.vcs_commit);
     }
-#endif
+
+    // Update status data for logging
+    update_node_status(transfer.source_node_id, rsp.status);
+#endif // HAL_LOGGING_ENABLED
 
     bool duplicate = db.handle_node_info(transfer.source_node_id, rsp.hardware_version.unique_id);
     if (duplicate) {

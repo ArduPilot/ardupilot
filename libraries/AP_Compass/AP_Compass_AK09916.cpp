@@ -72,7 +72,7 @@ AP_Compass_AK09916::~AP_Compass_AK09916()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                              bool force_external,
                                              enum Rotation rotation)
 {
@@ -94,8 +94,8 @@ AP_Compass_Backend *AP_Compass_AK09916::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> 
 }
 
 #if AP_COMPASS_ICM20948_ENABLED
-AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
-                                                     AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev_icm,
+AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+                                                     AP_HAL::OwnPtr<AP_HAL::Device> dev_icm,
                                                      bool force_external,
                                                      enum Rotation rotation)
 {
@@ -362,8 +362,8 @@ bool AP_Compass_AK09916::_reset()
     return _bus->register_write(REG_CNTL3, 0x01); //Soft Reset
 }
 
-/* AP_HAL::I2CDevice implementation of the AK09916 */
-AP_AK09916_BusDriver_HALDevice::AP_AK09916_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+/* AP_HAL::Device implementation of the AK09916 */
+AP_AK09916_BusDriver_HALDevice::AP_AK09916_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : _dev(std::move(dev))
 {
 }

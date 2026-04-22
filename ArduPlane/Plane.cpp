@@ -268,16 +268,31 @@ void Plane::update_compass(void)
  */
 void Plane::update_logging10(void)
 {
-    bool log_faster = (should_log(MASK_LOG_ATTITUDE_FULLRATE) || should_log(MASK_LOG_ATTITUDE_FAST));
-    if (should_log(MASK_LOG_ATTITUDE_MED) && !log_faster) {
+    const bool attitude_med = should_log(MASK_LOG_ATTITUDE_MED);
+    const bool attitude_faster = should_log(MASK_LOG_ATTITUDE_FULLRATE) || should_log(MASK_LOG_ATTITUDE_FAST);
+
+    // Log attitude only if no faster logging is selected
+    if (attitude_med && !attitude_faster) {
         Log_Write_Attitude();
-        ahrs.Write_AOA_SSA();
-    } else if (log_faster) {
+        AP::ahrs().Log_Write();
+    }
+
+    // If any attitude logging is enabled log AOA and SSA
+    if (attitude_med || attitude_faster) {
         ahrs.Write_AOA_SSA();
     }
+
 #if HAL_MOUNT_ENABLED
     if (should_log(MASK_LOG_CAMERA)) {
         camera_mount.write_log();
+    }
+#endif
+#if AP_RANGEFINDER_ENABLED
+    if (should_log(MASK_LOG_NTUN)) {
+        if (rangefinder.has_orientation(rangefinder_orientation()) &&
+            (g.rangefinder_landing.get() > 0)) {
+            Log_Write_RFNS();
+        }
     }
 #endif
 }
@@ -287,11 +302,17 @@ void Plane::update_logging10(void)
  */
 void Plane::update_logging25(void)
 {
-    // MASK_LOG_ATTITUDE_FULLRATE logs at 400Hz, MASK_LOG_ATTITUDE_FAST at 25Hz, MASK_LOG_ATTIUDE_MED logs at 10Hz
-    // highest rate selected wins
-    bool log_faster = should_log(MASK_LOG_ATTITUDE_FULLRATE);
-    if (should_log(MASK_LOG_ATTITUDE_FAST) && !log_faster) {
+    const bool attitude_fast = should_log(MASK_LOG_ATTITUDE_FAST);
+    const bool attitude_full_rate = should_log(MASK_LOG_ATTITUDE_FULLRATE);
+
+    // Log at fast rate if fast logging is the fastest enabled
+    if (attitude_fast && !attitude_full_rate) {
         Log_Write_Attitude();
+    }
+
+    // Log AHRS at fast rate if either fast or full rate is selected
+    if (attitude_fast || attitude_full_rate) {
+        AP::ahrs().Log_Write();
     }
 
     if (should_log(MASK_LOG_CTUN)) {
@@ -375,7 +396,7 @@ void Plane::one_second_loop()
     // changed. Update every 5s at most
     if (!arming.is_armed() &&
         gps.last_message_time_ms() - last_home_update_ms > 5000 &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        gps.status() >= AP_GPS_FixType::FIX_3D) {
             last_home_update_ms = gps.last_message_time_ms();
             update_home();
             
@@ -411,7 +432,7 @@ void Plane::airspeed_ratio_update(void)
         !ahrs.get_fly_forward() ||
         !is_flying() ||
         !airspeed.enabled() ||
-        gps.status() < AP_GPS::GPS_OK_FIX_3D ||
+        gps.status() < AP_GPS_FixType::FIX_3D ||
         gps.ground_speed() < 4) {
         // don't calibrate when not moving
         return;        
@@ -451,7 +472,7 @@ void Plane::update_GPS_50Hz(void)
 void Plane::update_GPS_10Hz(void)
 {
     static uint32_t last_gps_msg_ms;
-    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.last_message_time_ms() != last_gps_msg_ms && gps.status() >= AP_GPS_FixType::FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
 
         if (ground_start_count > 1) {
@@ -476,7 +497,7 @@ void Plane::update_GPS_10Hz(void)
 
         // update wind estimate
         ahrs.estimate_wind();
-    } else if (gps.status() < AP_GPS::GPS_OK_FIX_3D && ground_start_count != 0) {
+    } else if (gps.status() < AP_GPS_FixType::FIX_3D && ground_start_count != 0) {
         // lost 3D fix, start again
         ground_start_count = 5;
     }
@@ -593,7 +614,7 @@ void Plane::update_alt()
     Vector3f vel;
     if (ahrs.get_velocity_NED(vel)) {
         sink_rate = vel.z;
-    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && gps.have_vertical_velocity()) {
+    } else if (gps.status() >= AP_GPS_FixType::FIX_3D && gps.have_vertical_velocity()) {
         sink_rate = gps.velocity().z;
     } else {
         sink_rate = -barometer.get_climb_rate();        
@@ -873,7 +894,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
         return true;
     }
 #endif
-    xtrack_error = nav_controller->crosstrack_error();
+    xtrack_error = nav_controller->crosstrack_error_m();
     return true;
 }
 
@@ -882,7 +903,7 @@ bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
 bool Plane::set_target_location(const Location &target_loc)
 {
     Location loc{target_loc};
-    fix_terrain_WP(loc, __LINE__);
+    fix_terrain_WP(loc, __AP_LINE__);
 
     if (plane.control_mode != &plane.mode_guided) {
         // only accept position updates when in GUIDED mode
@@ -938,7 +959,7 @@ bool Plane::update_target_location(const Location &old_loc, const Location &new_
     }
     next_WP_loc = new_loc;
 
-    fix_terrain_WP(next_WP_loc, __LINE__);
+    fix_terrain_WP(next_WP_loc, __AP_LINE__);
 
 #if HAL_QUADPLANE_ENABLED
     if (control_mode == &mode_qland || control_mode == &mode_qloiter) {
@@ -950,11 +971,11 @@ bool Plane::update_target_location(const Location &old_loc, const Location &new_
 }
 
 // allow for velocity matching in VTOL
-bool Plane::set_velocity_match(const Vector2f &velocity)
+bool Plane::set_velocity_match(const Vector2f &velocity_ne_ms)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_mode() || quadplane.in_vtol_land_sequence()) {
-        quadplane.poscontrol.velocity_match_ms = velocity;
+        quadplane.poscontrol.velocity_match_ms = velocity_ne_ms;
         quadplane.poscontrol.last_velocity_match_ms = AP_HAL::millis();
         return true;
     }
@@ -963,12 +984,12 @@ bool Plane::set_velocity_match(const Vector2f &velocity)
 }
 
 // allow for override of land descent rate
-bool Plane::set_land_descent_rate(float descent_rate)
+bool Plane::set_land_descent_rate(float descent_rate_ms)
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.in_vtol_land_descent() ||
         control_mode == &mode_qland) {
-        quadplane.poscontrol.override_descent_rate_ms = descent_rate;
+        quadplane.poscontrol.override_descent_rate_ms = descent_rate_ms;
         quadplane.poscontrol.last_override_descent_ms = AP_HAL::millis();
         return true;
     }

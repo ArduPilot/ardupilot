@@ -32,6 +32,7 @@
 #include "SIM_INA3221.h"
 #include "SIM_IS31FL3195.h"
 #include "SIM_RF_LightWareI2C_Legacy16Bit.h"
+#include "SIM_RF_TOFSenseF_I2C.h"
 #include "SIM_LM2755.h"
 #include "SIM_LP5562.h"
 #include "SIM_MaxSonarI2CXL.h"
@@ -135,6 +136,9 @@ static AS5600 as5600;  // AoA sensor
 static TFS20L tfs20l;  // Benewake TFS20L rangefinder
 #endif  // AP_SIM_TFS20L_ENABLED
 
+#if AP_SIM_RF_TOFSENSEF_I2C_ENABLED
+static TOFSenseF_I2C tofsensef;
+#endif  // AP_SIM_RF_TOFSENSEF_I2C_ENABLED
 
 struct i2c_device_at_address {
     uint8_t bus;
@@ -214,6 +218,9 @@ struct i2c_device_at_address {
 #if AP_SIM_TFS20L_ENABLED
     { 0, 0x10, tfs20l },          // RNGFNDx_TYPE = 46, RNGFNDx_ADDR = 0x10
 #endif  // AP_SIM_TFS20L_ENABLED
+#if AP_SIM_RF_TOFSENSEF_I2C_ENABLED
+    { 0, 0x08, tofsensef },          // RNGFNDx_TYPE = 40, RNGFNDx_ADDR = 0x08
+#endif  // AP_SIM_RF_TOFSENSEF_I2C_ENABLED
 };
 
 void I2C::init()

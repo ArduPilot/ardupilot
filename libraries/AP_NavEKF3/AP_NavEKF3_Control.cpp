@@ -113,11 +113,13 @@ void NavEKF3_core::setWindMagStateLearningMode()
         ((effectiveMagCal == MagCal::WHEN_FLYING) && inFlight) || // when flying
         ((effectiveMagCal == MagCal::WHEN_MANOEUVRING) && manoeuvring)  || // when manoeuvring
         ((effectiveMagCal == MagCal::AFTER_FIRST_CLIMB) && finalInflightYawInit && finalInflightMagInit) || // when initial in-air yaw and mag field reset is complete
-        (effectiveMagCal == MagCal::ALWAYS); // all the time
+        (effectiveMagCal == MagCal::ALWAYS) || // all the time
+        ((effectiveMagCal == MagCal::GROUND_AND_INFLIGHT) && (!inFlight || (finalInflightYawInit && finalInflightMagInit))); // on ground and after initial in-air yaw and mag field reset
 
     // Deny mag calibration request if we aren't using the compass, it has been inhibited by the user,
     // we do not have an absolute position reference or are on the ground (unless explicitly requested by the user)
-    bool magCalDenied = !use_compass() || (effectiveMagCal == MagCal::NEVER) || (onGround && effectiveMagCal != MagCal::ALWAYS);
+    bool magCalDenied = !use_compass() || (effectiveMagCal == MagCal::NEVER) ||
+        (onGround && effectiveMagCal != MagCal::ALWAYS && effectiveMagCal != MagCal::GROUND_AND_INFLIGHT);
 
     // Inhibit the magnetic field calibration if not requested or denied
     bool setMagInhibit = !magCalRequested || magCalDenied;
@@ -243,12 +245,13 @@ void NavEKF3_core::setAidingMode()
     checkGyroCalStatus();
 
     // Handle the special case where we are on ground and disarmed without a yaw measurement
-    // and navigating. This can occur if not using a magnetometer and yaw was aligned using GPS
-    // during the previous flight.
+    // and in AID_ABSOLUTE mode. This can occur if not using a magnetometer and yaw was aligned
+    // using GPS during the previous flight. AID_RELATIVE is excluded because optical flow and
+    // body odometry are body-frame sensors that do not require yaw alignment.
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
         !motorsArmed &&
         onGround &&
-        PV_AidingMode != AID_NONE)
+        PV_AidingMode == AID_ABSOLUTE)
     {
         PV_AidingMode = AID_NONE;
         yawAlignComplete = false;
@@ -477,9 +480,11 @@ void NavEKF3_core::setAidingMode()
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
                 }
                 // handle height reset as special case
-                hgtMea = -extNavDataDelayed.pos.z;
-                posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
-                ResetHeight();
+                if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
+                    hgtMea = -extNavDataDelayed.pos.z;
+                    posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    ResetHeight();
+                }
 #endif // EK3_FEATURE_EXTERNAL_NAV
             }
 
@@ -659,6 +664,12 @@ bool NavEKF3_core::using_extnav_for_yaw() const
     return false;
 }
 
+// are we using a gps
+bool NavEKF3_core::using_gps() const
+{
+    return frontend->sources.usingGPS(core_index);
+}
+
 /*
   should we assume zero sideslip?
  */
@@ -674,6 +685,13 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 // returns false if the origin is already set
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
+    // reject external origin setting until the filter has finished
+    // bootstrap initialisation.  InitialiseVariables() resets
+    // validOrigin, so an origin set before that point is lost.
+    // Callers (e.g. AHRS use_recorded_origin_maybe) will retry.
+    if (!statesInitialised) {
+        return false;
+    }
     return setOrigin(loc);
 }
 

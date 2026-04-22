@@ -41,7 +41,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     }
 
     const AP_GPS &gps = AP::gps();
-    if (gps.status() < AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
+    if (gps.status() < AP_GPS_FixType::FIX_3D) {
         // GPS speed can't be trusted, re-enable airspeed as a fallback
         if ((param[i].use == 0) && (state[i].failures.param_use_backup == 1)) {
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed sensor %d, Re-enabled as GPS fall-back", i+1);
@@ -54,7 +54,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     // check for airspeed consistent with wind and vehicle velocity using the EKF
     uint32_t age_ms;
     float innovation, innovationVariance;
-    if (AP::ahrs().airspeed_health_data(innovation, innovationVariance, age_ms) && age_ms < 1000 && is_positive(innovationVariance)) {
+    if (AP::ahrs().airspeed_health_data(i, innovation, innovationVariance, age_ms) && age_ms < 1000 && is_positive(innovationVariance)) {
         state[i].failures.test_ratio = fabsf(innovation) / safe_sqrt(innovationVariance);
     } else {
         state[i].failures.test_ratio = 0.0f;

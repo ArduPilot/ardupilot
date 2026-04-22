@@ -28,9 +28,18 @@ class Feature:
         return "enable-" + self.label.replace(" ", "-")
 
 
-# list of build options to offer NOTE: the dependencies must be
-# written as a single string with commas and no spaces,
-# eg. 'dependency1,dependency2'
+# list of build options to offer
+
+# Feature(category, label, macro, description, default, dependencies)
+#
+# category      : The category/group this feature belongs to
+# label         : Globally unique identifier for the feature (max 30 chars)
+# macro         : The macro which enables/disables the feature at compile-time.
+#                 e.g., "AP_AIRSPEED_ENABLED".
+# description   : User visible description shown on Custom build server.
+# default       : Default state (1 = enabled, 0 = disabled)
+# dependencies  : Comma-separated list of feature labels that this feature depends on
+#                 (a single string with commas and no spaces). e.g., 'dependency1,dependency2'.
 BUILD_OPTIONS = [
     Feature('AHRS', 'EKF3', 'HAL_NAVEKF3_AVAILABLE', 'Enable EKF3', 1, None),
     Feature('AHRS', 'EKF2', 'HAL_NAVEKF2_AVAILABLE', 'Enable EKF2', 0, None),
@@ -40,6 +49,8 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'AHRS_EXT_VECTORNAV', 'AP_EXTERNAL_AHRS_VECTORNAV_ENABLED', 'Enable VectorNav external AHRS', 0, "AHRS_EXT"),  # noqa
     Feature('AHRS', 'InertialLabs', 'AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED', 'Enable InertialLabs external AHRS', 0, "AHRS_EXT"),  # noqa
     Feature('AHRS', 'SBG', 'AP_EXTERNAL_AHRS_SBG_ENABLED', 'Enable SBG external AHRS', 0, "AHRS_EXT"),
+    Feature('AHRS', 'AHRS_EXT_SENSAITION', 'AP_EXTERNAL_AHRS_SENSAITION_ENABLED',
+            'Enable SensAItion external AHRS', 0, "AHRS_EXT"),
     Feature('AHRS', 'VISUALODOM', 'HAL_VISUALODOM_ENABLED', 'Enable Visual Odometry', 0, None),
     Feature('AHRS', 'EKF3_EXTNAV', 'EK3_FEATURE_EXTERNAL_NAV', 'Enable External navigation for EKF3', 0, 'EKF3'),
     Feature('AHRS', 'EKF3_WINDEST', 'EK3_FEATURE_DRAG_FUSION', 'Enable Wind estimation for EKF3', 0, 'EKF3'),
@@ -52,6 +63,7 @@ BUILD_OPTIONS = [
     Feature('Safety', 'RALLY', 'HAL_RALLY_ENABLED', 'Enable Rally points', 0, None),  # noqa
     Feature('Safety', 'AC_AVOID', 'AP_AVOIDANCE_ENABLED', 'Enable Object Avoidance', 0, 'FENCE'),
     Feature('Safety', 'AC_OAPATHPLANNER', 'AP_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, 'FENCE'),
+    Feature('Safety', 'AC_AVOID_ALTHOLD', 'AP_AVOIDANCE_ALTHOLD_ENABLED', 'Enable angle based avoidance in AltHold', 0, 'AC_AVOID,PROXIMITY'),  # noqa: E501
 
     Feature('Battery', 'BATTERY_FUELFLOW', 'AP_BATTERY_FUELFLOW_ENABLED', 'Enable Fuel flow battery monitor', 0, None),
     Feature('Battery', 'BATTERY_FUELLEVEL_PWM', 'AP_BATTERY_FUELLEVEL_PWM_ENABLED', 'Enable PWM Fuel level battery monitor', 0, None),  # noqa: E501
@@ -134,7 +146,7 @@ BUILD_OPTIONS = [
     Feature('VTX', 'SMARTAUDIO', 'AP_SMARTAUDIO_ENABLED', 'Enable SmartAudio VTX contol', 0, "VIDEO_TX"),
     Feature('VTX', 'TRAMP', 'AP_TRAMP_ENABLED', 'Enable IRC Tramp VTX control', 0, "VIDEO_TX"),
 
-    Feature('ESC', 'PICCOLOCAN', 'HAL_PICCOLO_CAN_ENABLE', 'Enable PiccoloCAN', 0, 'DroneCAN'),
+    Feature('ESC', 'PICCOLOCAN', 'AP_PICCOLOCAN_ENABLED', 'Enable PiccoloCAN', 0, 'DroneCAN'),
     Feature('ESC', 'TORQEEDO', 'HAL_TORQEEDO_ENABLED', 'Enable Torqeedo motors', 0, None),
 
     Feature('ESC', 'ESC_EXTENDED_TELM', 'AP_EXTENDED_ESC_TELEM_ENABLED', 'Enable Extended ESC telemetry', 0, 'DroneCAN'),
@@ -148,6 +160,7 @@ BUILD_OPTIONS = [
     Feature('AP_Periph', 'PERIPH_RELAY', 'AP_PERIPH_RELAY_ENABLED', 'Handle DroneCAN hardpoint command', 0, 'RELAY'),
     Feature('AP_Periph', 'PERIPH_BATTERY_BALANCE', 'AP_PERIPH_BATTERY_BALANCE_ENABLED', 'Emit DroneCAN BatteryInfoAux messages for monitoring Battery Balance', 0, None), # noqa
     Feature('AP_Periph', 'PERIPH_BATTERY_TAG', 'AP_PERIPH_BATTERY_TAG_ENABLED', 'Emit DroneCAN BatteryTag messages', 0, None), # noqa
+    Feature('AP_Periph', 'PERIPH_BATTERY_BMS', 'AP_PERIPH_BATTERY_BMS_ENABLED', 'Enable Battery BMS button and LED support', 0, None), # noqa
     Feature('AP_Periph', 'PERIPH_PROXIMITY', 'AP_PERIPH_PROXIMITY_ENABLED', 'Emit DroneCAN Proximity Messages for AP_Proximity sensors', 0, 'PROXIMITY'), # noqa
     Feature('AP_Periph', 'PERIPH_GPS', 'AP_PERIPH_GPS_ENABLED', 'Emit DroneCAN GNSS Messages for AP_GPS sensors', 0, None), # noqa
     Feature('AP_Periph', 'PERIPH_ADSB', 'AP_PERIPH_ADSB_ENABLED', 'Emit DroneCAN TrafficReport Messages for ADSB_VEHICLE MAVLink messages', 0, None), # noqa
@@ -183,11 +196,12 @@ BUILD_OPTIONS = [
     Feature('Copter', 'MODE_FLOWHOLD', 'MODE_FLOWHOLD_ENABLED', 'Enable Mode Flowhold', 0, "OPTICALFLOW"),
     Feature('Copter', 'MODE_FLIP', 'MODE_FLIP_ENABLED', 'Enable Mode Flip', 0, None),
     Feature('Copter', 'MODE_BRAKE', 'MODE_BRAKE_ENABLED', 'Enable Mode Brake', 0, None),
-    Feature('Copter', 'COPTER_ADVANCED_FAILSAFE', 'AP_COPTER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: 501
-    Feature('Copter', 'COPTER_AHRS_AUTO_TRIM', 'AP_COPTER_AHRS_AUTO_TRIM_ENABLED', 'Enable Copter AHRS AutoTrim', 0, None),  # noqa
+    Feature('Copter', 'MODE_THROW', 'MODE_THROW_ENABLED', 'Enable Mode Throw', 0, None),
+    Feature('Copter', 'COPTER_ADVANCED_FAILSAFE', 'AP_COPTER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: E501
+    Feature('Copter', 'COPTER_AHRS_AUTO_TRIM', 'AP_COPTER_AHRS_AUTO_TRIM_ENABLED', 'Enable Copter AHRS AutoTrim', 0, None),  # NOQA: E501
 
-    Feature('Rover', 'ROVER_ADVANCED_FAILSAFE', 'AP_ROVER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: 501
-    Feature('Rover', 'ROVER_AUTO_ARM_ONCE', 'AP_ROVER_AUTO_ARM_ONCE_ENABLED', 'Make Auto-Arm-Once functionality available', 0, None),  # NOQA: 501
+    Feature('Rover', 'ROVER_ADVANCED_FAILSAFE', 'AP_ROVER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: E501
+    Feature('Rover', 'ROVER_AUTO_ARM_ONCE', 'AP_ROVER_AUTO_ARM_ONCE_ENABLED', 'Make Auto-Arm-Once functionality available', 0, None),  # NOQA: E501
 
     Feature('Mission', 'MISSION_NAV_PAYLOAD_PLACE', 'AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', 'Enable NAV_PAYLOAD_PLACE', 0, None),  # noqa
     Feature('Copter', 'AC_PAYLOAD_PLACE_ENABLED', 'AC_PAYLOAD_PLACE_ENABLED', 'Enable Copter Payload Place', 0, 'MISSION_NAV_PAYLOAD_PLACE'),  # noqa
@@ -230,6 +244,7 @@ BUILD_OPTIONS = [
     Feature('Gimbal', 'XACTI', 'HAL_MOUNT_XACTI_ENABLED', 'Enable Xacti gimbal', 0, "MOUNT,DroneCAN"),
     Feature('Gimbal', 'XFROBOT', 'HAL_MOUNT_XFROBOT_ENABLED', 'Enable XFRobot gimbal', 0, "MOUNT"),
     Feature('Gimbal', 'VIEWPRO', 'HAL_MOUNT_VIEWPRO_ENABLED', 'Enable Viewpro gimbal', 0, "MOUNT"),
+    Feature('Gimbal', 'POILOCK', 'AP_MOUNT_POI_LOCK_ENABLED', 'Enable Aux Switch POI lock', 0, "MOUNT"),
 
     Feature('VTOL Frame', 'TRI', 'AP_MOTORS_TRI_ENABLED', 'TriCopters', 0, None),
     Feature('VTOL Frame', 'QUAD', 'AP_MOTORS_FRAME_QUAD_ENABLED', 'QUAD', 1, None),
@@ -257,11 +272,11 @@ BUILD_OPTIONS = [
     Feature('Plane', 'QAUTOTUNE', 'QAUTOTUNE_ENABLED', 'Enable QuadPlane AUTOTUNE', 0, "QUADPLANE"),
     Feature('Plane', 'PLANE_BLACKBOX', 'AP_PLANE_BLACKBOX_LOGGING', 'Enable Blackbox logging', 0, None),
     Feature('Plane', 'AP_TX_TUNING', 'AP_TUNING_ENABLED', 'Enable TX-based tuning parameter adjustments', 0, None),
-    Feature('Plane', 'PLANE_GUIDED_SLEW', 'AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', 'Enable Offboard-guided slew commands', 0, None),  # noqa:401
+    Feature('Plane', 'PLANE_GUIDED_SLEW', 'AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', 'Enable Offboard-guided slew commands', 0, None),  # NOQA: E501
     Feature('Plane', 'PLANE_GLIDER_PULLUP', 'AP_PLANE_GLIDER_PULLUP_ENABLED', 'Enable Glider pullup support', 0, None),
     Feature('Plane', 'QUICKTUNE', 'AP_QUICKTUNE_ENABLED', 'Enable VTOL quicktune', 0, None),
     Feature('Plane', 'AUTOLAND_MODE', 'MODE_AUTOLAND_ENABLED', 'Enable Fixed Wing Autolanding mode', 0, None),
-    Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA:E501
+    Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA: E501
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocols", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF", 0, "RC_Protocol"),   # NOQA: E501
@@ -276,7 +291,7 @@ BUILD_OPTIONS = [
     Feature('RC', 'RC_MAVLINK_RADIO', 'AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED', "Enable MAVLink", 0, "RC_Protocol"),   # NOQA: E501
     Feature('RC', 'RSSI', 'AP_RSSI_ENABLED', 'RSSI', 0, None),
 
-    Feature('RC', 'RC_TRANSMITTER_TUNING', 'AP_RC_TRANSMITTER_TUNING_ENABLED', "Enable knob-based transmitter tuning", 0, None),  # NOQA:E501
+    Feature('RC', 'RC_TRANSMITTER_TUNING', 'AP_RC_TRANSMITTER_TUNING_ENABLED', "Enable knob-based transmitter tuning", 0, None),  # NOQA: E501
 
     Feature('Rangefinder', 'RANGEFINDER', 'AP_RANGEFINDER_ENABLED', "Enable Rangefinders", 0, None),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_ANALOG', 'AP_RANGEFINDER_ANALOG_ENABLED', "Enable Rangefinder - Analog", 0, "RANGEFINDER"),   # NOQA: E501
@@ -287,13 +302,16 @@ BUILD_OPTIONS = [
     Feature('Rangefinder', 'RANGEFINDER_BENEWAKE_TF03', 'AP_RANGEFINDER_BENEWAKE_TF03_ENABLED', "Enable Rangefinder - Benewake - TF03", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RFND_BENEWAKE_TFMINI', 'AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED', "Enable Rangefinder - Benewake - TFMini", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RFND_BENEWAKE_TFMINIPLUS', 'AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED', "Enable Rangefinder - Benewake - TFMiniPlus", 0, "RANGEFINDER"),   # NOQA: E501
+    Feature('Rangefinder', 'RFND_BENEWAKE_TFS20L', 'AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED', "Enable Rangefinder - Benewake - TFS20L", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_BLPING', 'AP_RANGEFINDER_BLPING_ENABLED', "Enable Rangefinder - BLPing", 0, "RANGEFINDER"),   # NOQA: E501
+    Feature('Rangefinder', 'RANGEFINDER_DTS6012M', 'AP_RANGEFINDER_DTS6012M_ENABLED', "Enable Rangefinder - DTS6012M", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_GYUS42V2', 'AP_RANGEFINDER_GYUS42V2_ENABLED', "Enable Rangefinder - GYUS42V2", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_HC_SR04', 'AP_RANGEFINDER_HC_SR04_ENABLED', "Enable Rangefinder - HC_SR04", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_JRE_SERIAL', 'AP_RANGEFINDER_JRE_SERIAL_ENABLED', "Enable Rangefinder - JRE_SERIAL", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_LANBAO', 'AP_RANGEFINDER_LANBAO_ENABLED', "Enable Rangefinder - Lanbao", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_LEDDARONE', 'AP_RANGEFINDER_LEDDARONE_ENABLED', "Enable Rangefinder - LeddarOne", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_LEDDARVU8', 'AP_RANGEFINDER_LEDDARVU8_ENABLED', "Enable Rangefinder - LeddarVU8", 0, "RANGEFINDER"),   # NOQA: E501
+    Feature('Rangefinder', 'RANGEFINDER_LIGHTWARE_GRF', 'AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED', "Enable Rangefinder - Lightware GRF", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_LIGHTWARE_SERIAL', 'AP_RANGEFINDER_LIGHTWARE_SERIAL_ENABLED', "Enable Rangefinder - Lightware (serial)", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_LUA', 'AP_RANGEFINDER_LUA_ENABLED', "Enable Rangefinder - Lua Scripting", 0, "RANGEFINDER,SCRIPTING"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_LWI2C', 'AP_RANGEFINDER_LWI2C_ENABLED', "Enable Rangefinder - Lightware (i2c)", 0, "RANGEFINDER"),   # NOQA: E501
@@ -354,7 +372,7 @@ BUILD_OPTIONS = [
     Feature('Baro', 'KELLERLD', 'AP_BARO_KELLERLD_ENABLED', 'Enable KELLERLD Barometric Sensor', 1, None),
     Feature('Baro', 'LPS2XH', 'AP_BARO_LPS2XH_ENABLED', 'Enable LPS2XH Barometric Sensor', 1, None),
     Feature('Baro', 'MS5607', 'AP_BARO_MS5607_ENABLED', 'Enable MS5607 Barometric Sensor', 1, None),
-    Feature('Baro', 'MS5611', 'AP_BARO_MS5611_ENABLED', 'Enable MS5611 Barometric Sensor', 1, 'MS5607'),  # MS5611 has an option to be treated as 5607  # NOQA:E501
+    Feature('Baro', 'MS5611', 'AP_BARO_MS5611_ENABLED', 'Enable MS5611 Barometric Sensor', 1, 'MS5607'),  # MS5611 has an option to be treated as 5607  # NOQA: E501
     Feature('Baro', 'MS5637', 'AP_BARO_MS5637_ENABLED', 'Enable MS5637 Barometric Sensor', 1, None),
     Feature('Baro', 'MS5837', 'AP_BARO_MS5837_ENABLED', 'Enable MS5837 Barometric Sensor', 1, None),
     Feature('Baro', 'MSP_BARO', 'AP_BARO_MSP_ENABLED', 'Enable MSP Barometric Sensor', 0, 'MSP'),
@@ -410,9 +428,9 @@ BUILD_OPTIONS = [
     Feature('Other', 'Logging', 'HAL_LOGGING_ENABLED', 'Enable Logging', 0, None),
     Feature('Other', 'CUSTOM_ROTATIONS', 'AP_CUSTOMROTATIONS_ENABLED', 'Enable Custom  sensor rotations', 0, None),
     Feature('Other', 'PID_FILTERING', 'AP_FILTER_ENABLED', 'Enable PID filtering', 0, None),
-    Feature('Other', 'POLYFENCE_CIRCLE_INT_SUPPORT', 'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED', 'Fence circle compatability', 0, None),  # NOQA:E501
+    Feature('Other', 'POLYFENCE_CIRCLE_INT_SUPPORT', 'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED', 'Fence circle compatability', 0, None),  # NOQA: E501
     Feature('Other', 'AP_AVOIDANCE', 'AP_ADSB_AVOIDANCE_ENABLED', 'Enable "ADSB" Avoidance', 0, 'ADSB'),
-    Feature('Other', 'CPU_IDLE_STATS', 'AP_CPU_IDLE_STATS_ENABLED', 'Enable CPU idle stats', 0, None), # NOQA:E501
+    Feature('Other', 'CPU_IDLE_STATS', 'AP_CPU_IDLE_STATS_ENABLED', 'Enable CPU idle stats', 0, None), # NOQA: E501
 
     # MAVLink section for mavlink features and/or message handling,
     # rather than for e.g. mavlink-based sensor drivers
@@ -449,8 +467,9 @@ BUILD_OPTIONS = [
     Feature('GPS Drivers', 'NOVA', 'AP_GPS_NOVA_ENABLED', 'Enable NOVA GPS', 0, None),
     Feature('GPS Drivers', 'SBF', 'AP_GPS_SBF_ENABLED', 'Enable SBF GPS', 0, None),
     Feature('GPS Drivers', 'SIRF', 'AP_GPS_SIRF_ENABLED', 'Enable SiRF GPS', 0, None),
-    Feature('GPS Drivers', 'DroneCAN_GPS_Out', 'AP_DRONECAN_SEND_GPS', 'Enable Sending GPS data from Autopilot', 0, "DroneCAN"),  # noqa:401
+    Feature('GPS Drivers', 'DroneCAN_GPS_Out', 'AP_DRONECAN_SEND_GPS', 'Enable Sending GPS data from Autopilot', 0, "DroneCAN"),  # noqa: E501
     Feature('GPS Drivers', 'GPS_Blending', 'AP_GPS_BLENDED_ENABLED', 'Enable GPS Blending', 0, None),
+    Feature('GPS Drivers', 'GPS Debug Logging', 'AP_GPS_DEBUG_LOGGING_ENABLED', 'Enable GPS Debug logging', 0, None),
 
 
     Feature('Airspeed Drivers', 'Analog', 'AP_AIRSPEED_ANALOG_ENABLED', 'Enable Analog Airspeed', 0, 'AIRSPEED'),

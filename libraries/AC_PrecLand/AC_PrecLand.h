@@ -105,7 +105,7 @@ public:
     // return the last known landing position in Earth Frame NED meters.
     void get_last_detected_landing_pos_NED_m(Vector3p &pos) const { pos = _last_target_pos_rel_origin_ned_m; }
 
-    // return the last known postion of the vehicle when the target was detected in Earth Frame NED meters.
+    // return the last known position of the vehicle when the target was detected in Earth Frame NED meters.
     void get_last_vehicle_pos_when_target_detected_NED_m(Vector3p &pos) const { pos = _last_vehicle_pos_ned_m; }
 
     // Parameter getters

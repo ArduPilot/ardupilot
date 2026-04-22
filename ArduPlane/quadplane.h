@@ -198,9 +198,6 @@ public:
 private:
     AP_AHRS &ahrs;
 
-    // key aircraft parameters passed to multiple libraries
-    AP_MultiCopter aparm;
-
     AP_InertialNav inertial_nav{ahrs};
 
     AP_Enum<AP_Motors::motor_frame_class> frame_class;
@@ -515,7 +512,7 @@ private:
         uint32_t time_since_state_start_ms() const {
             return AP_HAL::millis() - last_state_change_ms;
         }
-        Vector3p target_neu_m;
+        Vector3p target_ned_m;
         Vector2f correction_ne_m;
         Vector3f target_vel_ms;
         bool slow_descent;
@@ -727,7 +724,7 @@ private:
     void assign_tilt_to_fwd_thr(void);
 
     /*
-      get a scaled Q_WP_SPEED based on direction of movement
+      get a scaled Q_WP_SPD based on direction of movement
      */
     float get_scaled_wp_speed(float target_bearing_deg) const;
 
@@ -748,6 +745,25 @@ public:
                                         uint8_t motor_count);
 private:
     void motor_test_stop();
+
+    // check for loss of thrust and trigger thrust boost in motors library
+    void thrust_loss_check(bool reset);
+
+    // Thrust loss variables
+    struct ThrustLoss {
+        // number of iterations vehicle may have lost thrust
+        uint16_t counter;
+
+        // Options parameter and helper
+        AP_Int32 options;
+        enum class Option {
+            DISABLED = (1<<0),
+            VTOL_ONLY = (1<<1),
+        };
+        bool option_is_set(Option option) const {
+            return (options.get() & int32_t(option)) != 0;
+        }
+    } thrust_loss;
 
     static QuadPlane *_singleton;
 };

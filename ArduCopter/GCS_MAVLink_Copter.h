@@ -25,7 +25,7 @@ protected:
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
 
     void send_attitude_target() override;
-    void send_position_target_global_int() override;
+    bool get_target_location(Location &loc) const override;
     void send_position_target_local_ned() override;
 
     MAV_RESULT handle_command_do_set_roi(const Location &roi_loc) override;
@@ -36,10 +36,6 @@ protected:
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_pause_continue(const mavlink_command_int_t &packet);
-
-#if HAL_MOUNT_ENABLED
-    void handle_mount_message(const mavlink_message_t &msg) override;
-#endif
 
     void handle_message_set_attitude_target(const mavlink_message_t &msg);
     void handle_message_set_position_target_global_int(const mavlink_message_t &msg);

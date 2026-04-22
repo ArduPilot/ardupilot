@@ -20,63 +20,13 @@ void AP_Mount_Scripting::update()
 {
     AP_Mount_Backend::update();
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
+    // reset script target type so get_angle_target / get_rate_target return
+    // false until send_target_to_gimbal() writes a fresh target this cycle
+    _script_target_type = ScriptTargetType::NONE;
 
-    // update based on mount mode
-    switch (get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            mnt_target.target_type = MountTargetType::ANGLE;
-            break;
-        }
+    update_mnt_target();
 
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            mnt_target.target_type = MountTargetType::ANGLE;
-            break;
-        }
-
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // mavlink targets should have been already stored while handling the message
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -93,6 +43,48 @@ void AP_Mount_Scripting::set_attitude_euler(float roll_deg, float pitch_deg, flo
     current_angle_deg.x = roll_deg;
     current_angle_deg.y = pitch_deg;
     current_angle_deg.z = yaw_bf_deg;
+}
+
+// called by send_target_to_gimbal() with the angle target for this cycle.
+// Store it so get_angle_target() can return it to the Lua script.
+void AP_Mount_Scripting::send_target_angles(const MountAngleTarget &angle_rad)
+{
+    _angle_target = angle_rad;
+    _script_target_type = ScriptTargetType::ANGLE;
+}
+
+// called by send_target_to_gimbal() with the rate target for this cycle.
+// Store it so get_rate_target() can return it to the Lua script.
+void AP_Mount_Scripting::send_target_rates(const MountRateTarget &rate_rads)
+{
+    _rate_target = rate_rads;
+    _script_target_type = ScriptTargetType::RATE;
+}
+
+// get target angle in deg. returns true on success
+bool AP_Mount_Scripting::get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame)
+{
+    if (_script_target_type != ScriptTargetType::ANGLE) {
+        return false;
+    }
+    roll_deg = degrees(_angle_target.roll);
+    pitch_deg = degrees(_angle_target.pitch);
+    yaw_deg = degrees(_angle_target.yaw);
+    yaw_is_earth_frame = _angle_target.yaw_is_ef;
+    return true;
+}
+
+// get target rate in deg/sec. returns true on success
+bool AP_Mount_Scripting::get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
+{
+    if (_script_target_type != ScriptTargetType::RATE) {
+        return false;
+    }
+    roll_degs = degrees(_rate_target.roll);
+    pitch_degs = degrees(_rate_target.pitch);
+    yaw_degs = degrees(_rate_target.yaw);
+    yaw_is_earth_frame = _rate_target.yaw_is_ef;
+    return true;
 }
 
 // get attitude as a quaternion.  returns true on success

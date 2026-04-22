@@ -137,14 +137,7 @@ void AP_Mount_Topotek::update()
     update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_angle_target(mnt_target.angle_rad);
-            break;
-        case MountTargetType::RATE:
-            send_rate_target(mnt_target.rate_rads);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -460,13 +453,13 @@ void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
         return;
     }
 
-    static const uint8_t vendor_name[32] = "Topotek";
-    static uint8_t model_name[32] {};
-    const char cam_definition_uri[140] {};
+    static const uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN] { "Topotek" };
+    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN] {};
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
 
     // copy model name if available
     if (_got_gimbal_model_name) {
-        strncpy((char*)model_name, (const char*)_model_name, ARRAY_SIZE(model_name));
+        strncpy_noterm((char*)model_name, _model_name, ARRAY_SIZE(model_name));
     }
 
     // capability flags
@@ -739,7 +732,7 @@ void AP_Mount_Topotek::request_gimbal_model_name()
 }
 
 // send angle target in radians to gimbal
-void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
+void AP_Mount_Topotek::send_target_angles(const MountAngleTarget& angle_rad)
 {
     // gimbal's earth-frame angle control drifts so always use body frame
     // set gimbal's lock state if it has changed
@@ -783,7 +776,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
 }
 
 // send rate target in rad/s to gimbal
-void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
+void AP_Mount_Topotek::send_target_rates(const MountRateTarget& rate_rads)
 {
     // set gimbal's lock state if it has changed
     if (!set_gimbal_lock(rate_rads.yaw_is_ef)) {
@@ -967,6 +960,9 @@ void AP_Mount_Topotek::gimbal_track_analyse()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s started", send_message_prefix, tracking_str);
         _is_tracking = true;
         break;
+    case TrackingStatus::LENS_UNSUPPORT_TRACK:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s unsupported lens", send_message_prefix, tracking_str);
+        break;
     }
 }
 
@@ -995,7 +991,13 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 
     // extract firmware version
     // the version can be in the format "1.2.3" or "123"
+    // _msg_buff[5] holds the ASCII hex-encoded data length byte from the packet header;
+    // char_to_hex returns 255 for an invalid (non-hex) character, which we treat as a
+    // malformed packet rather than capping, since a valid length field is always a hex digit
     const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
+    if (data_buf_len == 255) {
+        return;
+    }
 
     // check for "."
     bool contains_period = false;
@@ -1044,7 +1046,13 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 // gimbal model name message analysis
 void AP_Mount_Topotek::gimbal_model_name_analyse()
 {
-    strncpy((char *)_model_name, (const char *)_msg_buff + 10, char_to_hex(_msg_buff[5]));
+    const auto len = char_to_hex(_msg_buff[5]);
+    if (len == 255) {
+        // flag value indicating invalid character
+        return;
+    }
+    memset(_model_name, 0, sizeof(_model_name));
+    memcpy(_model_name, _msg_buff + 10, MIN((uint8_t)(sizeof(_model_name)-1), len));
 
     // display gimbal model name to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_message_prefix, _model_name);

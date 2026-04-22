@@ -248,8 +248,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: MAG_CAL
     // @DisplayName: Magnetometer default fusion mode
-    // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states and when it will use a simpler magnetic heading fusion model that does not use magnetic field states. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK3_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK3_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK3_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK3_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK3_MAG_CAL = 4 uses 3-axis fusion at all times. EK3_MAG_CAL = 5 uses an external yaw sensor with simple heading fusion. NOTE : Use of simple heading magnetometer fusion makes vehicle compass calibration and alignment errors harder for the EKF to detect which reduces the sensitivity of the Copter EKF failsafe algorithm. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK3_MAG_MASK parameter. EK3_MAG_CAL = 6 uses an external yaw sensor with fallback to compass when the external sensor is not available if we are flying. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK3_MAG_MASK parameter. NOTE: limited operation without a magnetometer or any other yaw sensor is possible by setting all COMPASS_USE, COMPASS_USE2, COMPASS_USE3, etc parameters to 0 and setting COMPASS_ENABLE to 0. If this is done, the EK3_GSF_RUN and EK3_GSF_USE masks must be set to the same as EK3_IMU_MASK. A yaw angle derived from IMU and GPS velocity data using a Gaussian Sum Filter (GSF) will then be used to align the yaw when flight commences and there is sufficient movement.
-    // @Values: 0:When flying,1:When manoeuvring,2:Never,3:After first climb yaw reset,4:Always,5:Use external yaw sensor (Deprecated in 4.1+ see EK3_SRCn_YAW),6:External yaw sensor with compass fallback (Deprecated in 4.1+ see EK3_SRCn_YAW)
+    // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states and when it will use a simpler magnetic heading fusion model that does not use magnetic field states. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK3_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK3_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK3_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK3_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK3_MAG_CAL = 4 uses 3-axis fusion at all times. EK3_MAG_CAL = 7 uses 3-axis fusion on the ground and after the first in-air field and yaw reset has completed. This allows the magnetic field to be learned on the ground before takeoff (useful when swapping batteries with different magnetic signatures) while inhibiting learning during the initial climb when motor magnetic interference is strongest. NOTE : Use of simple heading magnetometer fusion makes vehicle compass calibration and alignment errors harder for the EKF to detect which reduces the sensitivity of the Copter EKF failsafe algorithm. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK3_MAG_MASK parameter. NOTE: limited operation without a magnetometer or any other yaw sensor is possible by setting all COMPASS_USE, COMPASS_USE2, COMPASS_USE3, etc parameters to 0 and setting COMPASS_ENABLE to 0. If this is done, the EK3_GSF_RUN and EK3_GSF_USE masks must be set to the same as EK3_IMU_MASK. A yaw angle derived from IMU and GPS velocity data using a Gaussian Sum Filter (GSF) will then be used to align the yaw when flight commences and there is sufficient movement.
+    // @Values: 0:When flying,1:When manoeuvring,2:Never,3:After first climb yaw reset,4:Always,5:Use external yaw sensor (Deprecated in 4.1+ see EK3_SRCn_YAW),6:External yaw sensor with compass fallback (Deprecated in 4.1+ see EK3_SRCn_YAW),7:On ground and after first climb yaw reset
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("MAG_CAL", 14, NavEKF3, _magCal, MAG_CAL_DEFAULT),
@@ -1245,12 +1245,25 @@ bool NavEKF3::getAirSpdVec(Vector3f &vel) const
     return false;
 }
 
-// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-bool NavEKF3::getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const
+// return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
+bool NavEKF3::getAirSpdHealthData(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const
 {
-    if (core) {
+    if (core == nullptr) {
+        return false;
+    }
+
+    // Return primary if it is configured to use the given instance
+    if (core[primary].getActiveAirspeed() == instance) {
         return core[primary].getAirSpdHealthData(innovation, innovationVariance, age_ms);
     }
+
+    // See if another core is using the given instance
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (core[i].getActiveAirspeed() == instance) {
+            return core[i].getAirSpdHealthData(innovation, innovationVariance, age_ms);
+        }
+    }
+
     return false;
 }
 
@@ -1526,6 +1539,15 @@ bool NavEKF3::getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f
     return core[primary].getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
 }
 
+// return 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
+bool NavEKF3::getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
+{
+    if (core == nullptr) {
+        return false;
+    }
+    return core[primary].getPosVelUncertainty(pos_horiz_m, pos_vert_m, vel_m_s);
+}
+
 // get a source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
 bool NavEKF3::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
@@ -1564,11 +1586,29 @@ bool NavEKF3::using_extnav_for_yaw() const
     return core[primary].using_extnav_for_yaw();
 }
 
+// are we using a gps?
+bool NavEKF3::using_gps(void) const
+{
+    if (!core) {
+        return false;
+    }
+    return core[primary].using_gps();
+}
+
 // check if configured to use GPS for horizontal position estimation
 bool NavEKF3::configuredToUseGPSForPosXY(void) const
 {
     // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
     if (sources.getPosXYSource(primary) == AP_NavEKF_Source::SourceXY::GPS) {
+        return true;
+    }
+    return false;
+}
+
+// check if configured to use GPS for horizontal position estimation
+bool NavEKF3::configuredToUseGPSForPos(void) const
+{
+    if (configuredToUseGPSForPosXY() || sources.getPosZSource(primary) == AP_NavEKF_Source::SourceZ::GPS) {
         return true;
     }
     return false;

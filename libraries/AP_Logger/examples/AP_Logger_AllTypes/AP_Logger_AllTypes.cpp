@@ -80,13 +80,9 @@ static const struct LogStructure log_structure[] = {
       "s---------",
       "F---------"
     },
-    { LOG_MESSAGE_MSG,
-      sizeof(log_Message),
-      "MSG",
-      "QZ",
-      "TimeUS,Message",
-      "s-",
-      "F-"}
+    // copied from LogStructure.h; this is important
+    { LOG_MSG_MSG, sizeof(log_MSG),
+      "MSG",  "QBBZ",     "TimeUS,ID,Seq,Message", "s---", "F---"},
 };
 
 // these are identical to the entries in the above log-structure.  Not

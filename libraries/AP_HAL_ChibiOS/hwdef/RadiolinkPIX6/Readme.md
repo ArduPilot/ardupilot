@@ -7,79 +7,79 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 ## Specifications
 
 - Processor
-  - 32-bit ARM Cortex M7 core with DPFPU - STM32F765VIT6 
-  - 216 MHz/512 KB RAM/2 MB Flash
-  - 32-bit IOMCU co-processor - STM32F100
-  - 32KB FRAM - FM25V02A
-  - AT7456E OSD
+- 32-bit ARM Cortex M7 core with DPFPU - STM32F765VIT6
+- 216 MHz/512 KB RAM/2 MB Flash
+- 32-bit IOMCU co-processor - STM32F100
+- 32KB FRAM - FM25V02A
+- AT7456E OSD
 - Sensors
-  - Bosh BMI088 IMU (accel, gyro)
-  - InvenSense ICM-42688 IMU (accel, gyro)
-  - SPA06 barometer
-  - IST8310 magnetometer
+- Bosh BMI088 IMU (accel, gyro)
+- InvenSense ICM-42688 IMU (accel, gyro)
+- SPA06 barometer
+- IST8310 magnetometer
 - Power
-  - SMBUS/I2C Power Module Inputs(I2C)
-  - voltage and current monitor inputs(Analog)
+- SMBUS/I2C Power Module Inputs(I2C)
+- voltage and current monitor inputs(Analog)
 - Interfaces
-  - 16 PWM Outputs with independent power rail for external power source
-  - 5x UART serial ports, 2 with HW flow control
-  - Camera Input and Video Output
-  - PPM/SBUS input, DSM/SBUS input
-  - RSSI (PWM or voltage) input
-  - I2C, SPI, 2x CAN, USB
-  - 3.3V and 6.6V ADC inputs
-  - Buzzer and Safety Switch
-  - microSD card
+- 16 PWM Outputs with independent power rail for external power source
+- 5x UART serial ports, 2 with HW flow control
+- Camera Input and Video Output
+- PPM/SBUS input, DSM/SBUS input
+- RSSI (PWM or voltage) input
+- I2C, SPI, 2x CAN, USB
+- 3.3V and 6.6V ADC inputs
+- Buzzer and Safety Switch
+- microSD card
 - Dimensions
-  - Weight 80g
-  - Size 94mm x 51.5mm x 14.5mm
+- Weight 80g
+- Size 94mm x 51.5mm x 14.5mm
 
 ## Connector assignments
 
 ### Top View
 
- <img src="http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Top_View.png" alt="Top_View" style="zoom: 50%;" />
+![Top View](http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Top_View.png)
 
 ### Left View
 
- <img src="http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Left_View.png" alt="Right_View" style="zoom: 67%;" />
+![Left View](http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Left_View.png)
 
- ### Right View
+### Right View
 
- <img src="http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Right_View.png" alt="Left_View" style="zoom: 67%;" />
+![Right View](http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Right_View.png)
 
 ### Rear View
 
- <img src="http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Rear_View.png" alt="Rear" style="zoom: 50%;" />
+![Rear View](http://www.radiolink.com.cn/firmware/wiki/RadiolinkPIX6/Rear_View.png)
 
 ## Pinouts
 
 ### TELEM1, TELEM2 ports
 
-| Pin  | Signal  | Volt  |
-| ---- | ------- | ----- |
-| <span style="display:inline-block;width:30px"> 1 </span> | <span style="display:inline-block;width:120px"> VCC </span> | <span style="display:inline-block;width:600px"> +5V </span> |
-| 2    | TX(OUT) | +3.3V |
-| 3    | RX(IN)  | +3.3V |
-| 4    | CTS     | +3.3V |
-| 5    | RTS     | +3.3V |
-| 6    | GND     | GND   |
+| Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | VCC | +5V |
+| 2 | TX(OUT) | +3.3V |
+| 3 | RX(IN) | +3.3V |
+| 4 | CTS | +3.3V |
+| 5 | RTS | +3.3V |
+| 6 | GND | GND |
 
 ### OSD
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 1                                                          | GND                                                          | GND                                                          |
-| 2                                                          | VOUT                                                         | +3.3V                                                        |
-| 3                                                          | VCC                                                          | +5V                                                          |
-| 4                                                          | GND                                                          | GND                                                          |
-| 5                                                          | VCC                                                          | +5V                                                          |
-| 6                                                          | VIN                                                          | +3.3V                                                        |
+| Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 | GND | GND |
+| 2 | VOUT | +3.3V |
+| 3 | VCC | +5V |
+| 4 | GND | GND |
+| 5 | VCC | +5V |
+| 6 | VIN | +3.3V |
 
 ### I2C port
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | SCL                                                          | +3.3V (pullups)                                              |
 | 3                                                          | SDA                                                          | +3.3V (pullups)                                              |
@@ -87,8 +87,8 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### CAN1, CAN2 ports
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | CAN_H                                                        | +12V                                                         |
 | 3                                                          | CAN_L                                                        | +12V                                                         |
@@ -96,8 +96,8 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### GPS1 port
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | TX(OUT)                                                      | +3.3V                                                        |
 | 3                                                          | RX(IN)                                                       | +3.3V                                                        |
@@ -107,8 +107,8 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### GPS2 Port
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | TX(OUT)                                                      | +3.3V                                                        |
 | 3                                                          | RX(IN)                                                       | +3.3V                                                        |
@@ -118,8 +118,8 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### SPI
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | SPI_SCK                                                      | +3.3V                                                        |
 | 3                                                          | SPI_MISO                                                     | +3.3V                                                        |
@@ -131,8 +131,8 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### POWER1
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | VCC                                                          | +5V                                                          |
 | 3                                                          | CURRENT                                                      | up to +3.3V                                                  |
@@ -142,8 +142,8 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### POWER2
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | VCC                                                          | +5V                                                          |
 | 3                                                          | SCL                                                          | +3.3V                                                        |
@@ -153,8 +153,8 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### ADC 3.3V
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | ADC IN1                                                      | up to +3.3V                                                  |
 | 3                                                          | GND                                                          | GND                                                          |
@@ -163,16 +163,16 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### ADC 6.6V
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | ADC IN                                                       | up to 6.6V                                                   |
 | 3                                                          | GND                                                          | GND                                                          |
 
 ### USB remote port
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | USB VDD                                                      | +5V                                                          |
 | 2                                                          | DM                                                           | +3.3V                                                        |
 | 3                                                          | DP                                                           | +3.3V                                                        |
@@ -180,31 +180,31 @@ Featuring STM32F7 cpu, vibration isolation of IMUs, redundant IMUs,  integrated 
 
 ### SWITCH
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +3.3V                                                        |
 | 2                                                          | !IO_LED_SAFETY                                               | GND                                                          |
 | 3                                                          | SAFETY                                                       | GND                                                          |
 
 ### Buzzer port
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | BUZZER-                                                      | +5V                                                          |
 
 ### Spektrum/DSM Port
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +3.3V                                                        |
 | 2                                                          | GND                                                          | GND                                                          |
 | 3                                                          | Signal                                                       | +3.3V                                                        |
 
 ### Debug port
 
-| <span style="display:inline-block;width:30px"> Pin </span> | <span style="display:inline-block;width:120px"> Signal </span> | <span style="display:inline-block;width:600px"> Volt </span> |
-| ---------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Pin | Signal | Volt |
+| --- | --- | --- |
 | 1                                                          | VCC                                                          | +5V                                                          |
 | 2                                                          | FMU_SWCLK                                                    | +3.3V                                                        |
 | 3                                                          | FMU_SWDIO                                                    | +3.3V                                                        |
@@ -286,10 +286,10 @@ The RadiolinkPIX6 has a built-in compass. Due to potential interference, the aut
 
 The RadiolinkPIX6 has 3 analog inputs, one 6V tolerant and two 3.3V tolerant
 
- - ADC Pin12 -> ADC 6.6V Sense
- - ADC Pin4   -> ADC IN1 3.3V Sense
- - ADC Pin13 -> ADC IN2 3.3V Sense
- - Analog 3.3V RSSI input pin = 103
+- ADC Pin12 -> ADC 6.6V Sense
+- ADC Pin4   -> ADC IN1 3.3V Sense
+- ADC Pin13 -> ADC IN2 3.3V Sense
+- Analog 3.3V RSSI input pin = 103
 
 ## Connectors
 

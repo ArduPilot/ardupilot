@@ -136,10 +136,6 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
 
-    // flight modes convenience array
-    AP_Int8 *modes;
-    const uint8_t num_modes = 6;
-
     // Arming/Disarming management class
     AP_Arming_Rover arming;
 
@@ -268,12 +264,12 @@ private:
 #endif
 
 #if AP_SCRIPTING_ENABLED
-    bool set_target_velocity_NED(const Vector3f& vel_ned) override;
+    bool set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target) override;
     bool set_steering_and_throttle(float steering, float throttle) override;
     bool get_steering_and_throttle(float& steering, float& throttle) override;
     // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
-    bool set_desired_turn_rate_and_speed(float turn_rate, float speed) override;
-    bool set_desired_speed(float speed) override;
+    bool set_desired_turn_rate_and_speed(float turn_rate_degs, float speed_ms) override;
+    bool set_desired_speed(float speed_ms) override;
     bool get_control_output(AP_Vehicle::ControlOutput control_output, float &control_value) override;
     bool nav_scripting_enable(uint8_t mode) override;
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
@@ -389,6 +385,9 @@ private:
     bool current_mode_requires_mission() const override {
         return control_mode == &mode_auto;
     }
+
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    uint32_t get_available_mode_enabled_mask() const override;
 
     void startup_INS(void);
     void notify_mode(const Mode *new_mode);

@@ -37,6 +37,9 @@ public:
     // output_min - sends minimum values out to the motors
     void                output_min() override;
 
+    // set_desired_spool_state - set desired spool state with safety constraints
+    void                set_desired_spool_state(DesiredSpoolState spool) override;
+
     // set_yaw_headroom - set yaw headroom (yaw is given at least this amount of pwm)
     void                set_yaw_headroom(int16_t pwm) { _yaw_headroom.set(pwm); }
 
@@ -195,6 +198,7 @@ protected:
     // time to spool motors to min throttle
     AP_Float            _spool_up_time;
     AP_Float            _spool_down_time;
+    AP_Float            _idle_time_delay_s;
 
     // scaling for booster motor throttle
     AP_Float            _boost_scale;
@@ -204,6 +208,7 @@ protected:
 
     // spool variables
     float               _spin_up_ratio;         // normalized spin scalar [0..1] between 0 and spin_min (used for ground-idle ramp)
+    float               _idle_time;             // idle delay elapsed time at/above ground-idle spin [s]
 
     // battery voltage, current and air pressure compensation variables
     float               _throttle_limit;        // ratio of throttle limit between hover and maximum

@@ -192,27 +192,20 @@ void NavEKF3_core::FuseRngBcn()
         Kfusion[7] = -t26*(t22+P[7][8]*t3*t9+P[7][9]*t2*t9);
         Kfusion[8] = -t26*(t16+P[8][7]*t4*t9+P[8][9]*t2*t9);
 
+        // values to calculate in Kfusion (others are set to zero, indices 0-9 ignored)
+        uint32_t kalman_mask = 0;
+
         if (!inhibitDelAngBiasStates) {
-            Kfusion[10] = -t26*(P[10][7]*t4*t9+P[10][8]*t3*t9+P[10][9]*t2*t9);
-            Kfusion[11] = -t26*(P[11][7]*t4*t9+P[11][8]*t3*t9+P[11][9]*t2*t9);
-            Kfusion[12] = -t26*(P[12][7]*t4*t9+P[12][8]*t3*t9+P[12][9]*t2*t9);
-        } else {
-            // zero indexes 10 to 12
-            zero_range(&Kfusion[0], 10, 12);
+            kalman_mask |= (1<<10) | (1<<11) | (1<<12);
         }
 
         if (!inhibitDelVelBiasStates && !badIMUdata) {
             for (uint8_t index = 0; index < 3; index++) {
                 const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
-                    Kfusion[stateIndex] = -t26*(P[stateIndex][7]*t4*t9+P[stateIndex][8]*t3*t9+P[stateIndex][9]*t2*t9);
-                } else {
-                    Kfusion[stateIndex] = 0.0f;
+                    kalman_mask |= (1<<stateIndex);
                 }
             }
-        } else {
-            // zero indexes 13 to 15
-            zero_range(&Kfusion[0], 13, 15);
         }
 
         // only allow the range observations to modify the vertical states if we are using it as a height reference
@@ -225,23 +218,19 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         if (!inhibitMagStates) {
-            Kfusion[16] = -t26*(P[16][7]*t4*t9+P[16][8]*t3*t9+P[16][9]*t2*t9);
-            Kfusion[17] = -t26*(P[17][7]*t4*t9+P[17][8]*t3*t9+P[17][9]*t2*t9);
-            Kfusion[18] = -t26*(P[18][7]*t4*t9+P[18][8]*t3*t9+P[18][9]*t2*t9);
-            Kfusion[19] = -t26*(P[19][7]*t4*t9+P[19][8]*t3*t9+P[19][9]*t2*t9);
-            Kfusion[20] = -t26*(P[20][7]*t4*t9+P[20][8]*t3*t9+P[20][9]*t2*t9);
-            Kfusion[21] = -t26*(P[21][7]*t4*t9+P[21][8]*t3*t9+P[21][9]*t2*t9);
-        } else {
-            // zero indexes 16 to 21
-            zero_range(&Kfusion[0], 16, 21);
+            kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
         }
 
         if (!inhibitWindStates && !treatWindStatesAsTruth) {
-            Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
-            Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
-        } else {
-            // zero indexes 22 to 23
-            zero_range(&Kfusion[0], 22, 23);
+            kalman_mask |= (1<<22) | (1<<23);
+        }
+
+        for (auto i=10; i<24; i++) { // 0-9 are already computed
+            ftype res = 0;
+            if (kalman_mask & (1<<i)) {
+                res = -t26*(P[i][7]*t4*t9+P[i][8]*t3*t9+P[i][9]*t2*t9);
+            }
+            Kfusion[i] = res;
         }
 
         // Calculate innovation using the selected offset value
@@ -260,29 +249,20 @@ void NavEKF3_core::FuseRngBcn()
             // restart the counter
             rngBcn.lastPassTime_ms = imuSampleTime_ms;
 
-            // correct the covariance P = (I - K*H)*P
-            // take advantage of the empty columns in KH to reduce the
-            // number of operations
+            // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+            // the zero elements of H to reduce the number of operations.
             for (unsigned i = 0; i<=stateIndexLim; i++) {
-                for (unsigned j = 0; j<=6; j++) {
-                    KH[i][j] = 0.0f;
-                }
-                for (unsigned j = 7; j<=9; j++) {
-                    KH[i][j] = Kfusion[i] * H_BCN[j];
-                }
-                for (unsigned j = 10; j<=23; j++) {
-                    KH[i][j] = 0.0f;
-                }
-            }
-            for (unsigned j = 0; j<=stateIndexLim; j++) {
-                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                // j as the inner loop allows the compiler to hoist the KH product
+                // to save computation, and do the inner indexing more efficiently.
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     ftype res = 0;
-                    res += KH[i][7] * P[7][j];
-                    res += KH[i][8] * P[8][j];
-                    res += KH[i][9] * P[9][j];
+                    res += (Kfusion[i] * H_BCN[7]) * P[7][j];
+                    res += (Kfusion[i] * H_BCN[8]) * P[8][j];
+                    res += (Kfusion[i] * H_BCN[9]) * P[9][j];
                     KHP[i][j] = res;
                 }
             }
+
             // Check that we are not going to drive any variances negative and skip the update if so
             bool healthyFusion = true;
             for (uint8_t i= 0; i<=stateIndexLim; i++) {
@@ -298,14 +278,15 @@ void NavEKF3_core::FuseRngBcn()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
                 // correct the state vector
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
                     statesArray[j] = statesArray[j] - Kfusion[j] * rngBcn.innov;
                 }
+                stateStruct.quat.normalize();
+
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+                ForceSymmetry();
+                ConstrainVariances();
 
                 // record healthy fusion
                 faultStatus.bad_rngbcn = false;
@@ -507,18 +488,16 @@ void NavEKF3_core::FuseRngBcnStatic()
             rngBcn.receiverPos.y -= K_RNG[1] * rngBcn.innov;
             rngBcn.receiverPos.z -= K_RNG[2] * rngBcn.innov;
 
-            // calculate the covariance correction
+            // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+            // the zero elements of H to reduce the number of operations.
             for (unsigned i = 0; i<=2; i++) {
+                // j as the inner loop allows the compiler to hoist the KH product
+                // to save computation, and do the inner indexing more efficiently.
                 for (unsigned j = 0; j<=2; j++) {
-                    KH[i][j] = K_RNG[i] * H_RNG[j];
-                }
-            }
-            for (unsigned j = 0; j<=2; j++) {
-                for (unsigned i = 0; i<=2; i++) {
                     ftype res = 0;
-                    res += KH[i][0] * rngBcn.receiverPosCov[0][j];
-                    res += KH[i][1] * rngBcn.receiverPosCov[1][j];
-                    res += KH[i][2] * rngBcn.receiverPosCov[2][j];
+                    res += (K_RNG[i] * H_RNG[0]) * rngBcn.receiverPosCov[0][j];
+                    res += (K_RNG[i] * H_RNG[1]) * rngBcn.receiverPosCov[1][j];
+                    res += (K_RNG[i] * H_RNG[2]) * rngBcn.receiverPosCov[2][j];
                     KHP[i][j] = res;
                 }
             }

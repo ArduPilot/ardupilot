@@ -36,6 +36,9 @@ private:
     // offset between multicast timestamp and local timestamp
     uint64_t base_time_us;
 
+    // multicast timestamp at first connection, used to make sure we start at zero
+    uint64_t boot_time_us;
+
     void multicast_open();
     void multicast_read();
 

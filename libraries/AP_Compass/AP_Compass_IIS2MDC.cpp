@@ -43,7 +43,7 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_IIS2MDC::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_IIS2MDC::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
         bool force_external,
         enum Rotation rotation)
 {
@@ -159,11 +159,6 @@ void AP_Compass_IIS2MDC::timer()
     Vector3f field{ x * range_scale, y * range_scale, z * range_scale };
 
     accumulate_sample(field);
-}
-
-void AP_Compass_IIS2MDC::read()
-{
-    drain_accumulated_samples();
 }
 
 #endif //AP_COMPASS_IIS2MDC_ENABLED

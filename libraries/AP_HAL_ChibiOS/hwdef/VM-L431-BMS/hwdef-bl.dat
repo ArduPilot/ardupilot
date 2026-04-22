@@ -1,0 +1,7 @@
+include ../VM-L431/hwdef-bl.inc
+
+undef CAN_APP_NODE_NAME
+define CAN_APP_NODE_NAME "com.vimdrones.bms_bl"
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_VIMDRONES_BMS

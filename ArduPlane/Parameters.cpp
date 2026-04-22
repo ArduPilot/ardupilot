@@ -187,7 +187,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Takeoff throttle slew rate
     // @Description: This parameter sets the slew rate for the throttle during auto takeoff. When this is zero the THR_SLEWRATE parameter is used during takeoff. For rolling takeoffs it can be a good idea to set a lower slewrate for takeoff to give a slower acceleration which can improve ground steering control. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on takeoff. Values below 20 are not recommended as they may cause the plane to try to climb out with too little throttle. A value of -1 means no limit on slew rate in takeoff.
     // @Units: %/s
-    // @Range: -1 127
+    // @Range: -1 500
     // @Increment: 1
     // @User: Standard
     GSCALAR(takeoff_throttle_slewrate, "TKOFF_THR_SLEW",  0),
@@ -375,7 +375,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Throttle slew rate
     // @Description: Maximum change in throttle percentage per second. Lower limit  based on 1 microsend of servo increase per loop. Divide SCHED_LOOP_RATE by approximately 10 to determine minimum achievable value.
     // @Units: %/s
-    // @Range: 0 127
+    // @Range: 0 500
     // @Increment: 1
     // @User: Standard
     ASCALAR(throttle_slewrate,      "THR_SLEWRATE",   100),
@@ -477,37 +477,37 @@ const AP_Param::Info Plane::var_info[] = {
     // @Description: Flight mode for switch position 1 (910 to 1230 and above 2049)
     // @Values: 0:Manual,1:CIRCLE,2:STABILIZE,3:TRAINING,4:ACRO,5:FBWA,6:FBWB,7:CRUISE,8:AUTOTUNE,10:Auto,11:RTL,12:Loiter,13:TAKEOFF,14:AVOID_ADSB,15:Guided,17:QSTABILIZE,18:QHOVER,19:QLOITER,20:QLAND,21:QRTL,22:QAUTOTUNE,23:QACRO,24:THERMAL,25:Loiter to QLand,26:AUTOLAND
     // @User: Standard
-    GSCALAR(flight_mode1,           "FLTMODE1",       FLIGHT_MODE_1),
+    GARRAY(flight_modes, 0,         "FLTMODE1",       FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode2
     // @Description: Flight mode for switch position 2 (1231 to 1360)
-    GSCALAR(flight_mode2,           "FLTMODE2",       FLIGHT_MODE_2),
+    GARRAY(flight_modes, 1,         "FLTMODE2",       FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode3
     // @Description: Flight mode for switch position 3 (1361 to 1490)
-    GSCALAR(flight_mode3,           "FLTMODE3",       FLIGHT_MODE_3),
+    GARRAY(flight_modes, 2,         "FLTMODE3",       FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode4
     // @Description: Flight mode for switch position 4 (1491 to 1620)
-    GSCALAR(flight_mode4,           "FLTMODE4",       FLIGHT_MODE_4),
+    GARRAY(flight_modes, 3,         "FLTMODE4",       FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode5
     // @Description: Flight mode for switch position 5 (1621 to 1749)
-    GSCALAR(flight_mode5,           "FLTMODE5",       FLIGHT_MODE_5),
+    GARRAY(flight_modes, 4,         "FLTMODE5",       FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: FlightMode6
     // @Description: Flight mode for switch position 6 (1750 to 2049)
-    GSCALAR(flight_mode6,           "FLTMODE6",       FLIGHT_MODE_6),
+    GARRAY(flight_modes, 5,         "FLTMODE6",       FLIGHT_MODE_6),
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
@@ -1279,6 +1279,17 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("GUIDED_TIMEOUT", 40, ParametersG2, guided_timeout, 3.0f),
 
+#if AP_RANGEFINDER_ENABLED
+    // @Param: RNGFND_LND_DIST
+    // @DisplayName: Rangefinder landing engagement distance
+    // @Description: The horizontal distance to the landing point at which the rangefinder engages when RNGFND_LANDING is enabled. This is useful for landing on platforms or small plateaus, and to avoid interference from uneven terrain or obstacles on approach. A value of 0 engages the rangefinder as soon as it reports valid readings within its range limits. Very small values are not recommended unless required by the landing scenario, as they can force large slope corrections near the ground, increase auto-abort frequency if LAND_ABORT_DEG is set, and provide no slope-correction benefit if the rangefinder is engaged after flare.
+    // @Range: 0 500
+    // @Units: m
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RNGFND_LND_DIST", 41, ParametersG2, rangefinder_land_engage_dist_m, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1512,6 +1523,11 @@ void Plane::load_parameters(void)
     g.cruise_alt_floor.convert_centi_parameter(AP_PARAM_INT16);
     aparm.pitch_limit_max.convert_centi_parameter(AP_PARAM_INT16);
     aparm.pitch_limit_min.convert_centi_parameter(AP_PARAM_INT16);
+
+    // PARAMETER_CONVERSION - Added: Mar-2026 for THR_SLEWRATE width change
+    // Convert throttle slewrate parameters from int8 to int16 to support higher slew rates
+    aparm.throttle_slewrate.convert_parameter_width(AP_PARAM_INT8);
+    g.takeoff_throttle_slewrate.convert_parameter_width(AP_PARAM_INT8);
     aparm.roll_limit.convert_centi_parameter(AP_PARAM_INT16);
 
     landing.convert_parameters();

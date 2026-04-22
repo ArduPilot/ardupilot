@@ -3,22 +3,32 @@
 The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://shop.uav-dev.com/)
 
 ## Features
-#### Processor
+
+### Processor
+
 - STM32H743
 - 480MHz
 - 2MB Flash
 - 1MB RAM
-#### Sensors
+
+### Sensors
+
 - IMU TDK Invensense ICM-45686
 - Barometer Infineon DPS310
 - Magnetometer Bosch BMM150
 - GNSS Unicore UM982 L1/L2/L5 RTK GNSS with GNSS Heading
-#### Dimensions
+
+### Dimensions
+
 - Size: 50mm x 50mm (without SMA connector) x 15mm
 - Weight: 22g with microSD card
-#### Power
+
+### Power
+
 - 5.2V input via JST-GH
-#### Interfaces
+
+### Interfaces
+
 - **USB-C**
 - **Ethernet**
   - 100 MBit/s
@@ -34,11 +44,12 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 - **DEBUG**
   - Tag-Connect
 
-
 ## Pinout
+
 ![top](uav-dev-fc-um982.png)
 
-#### S1 - SERIAL4 & SERIAL5 - 6 Pin JST-GH
+### S1 - SERIAL4 & SERIAL5 - 6 Pin JST-GH
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | +5V             | 5V           |
@@ -48,7 +59,8 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 5   | UART7_RX        | 3.3V         |
 | 6   | GND             | GND          |
 
-#### PWM - PWM / DShot / Telemetry - 8 Pin JST-GH
+### PWM - PWM / DShot / Telemetry - 8 Pin JST-GH
+
 | Pin | Signal Name           | Voltage      |
 |-----|-----------------------|--------------|
 | 1   | PWM / DShot 1 BIDIR   | 3.3V         |
@@ -60,7 +72,8 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 7   | USART3_RX / TELEM     | 3.3V         |
 | 8   | GND                   | GND          |
 
-#### C1 - CAN FD 1 - 4 Pin JST-GH
+### C1 - CAN FD 1 - 4 Pin JST-GH
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | +5V             | 5V           |
@@ -68,7 +81,8 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 3   | CAN_L           |              |
 | 4   | GND             | GND          |
 
-#### C2 - CAN FD 2 - 4 Pin JST-GH
+### C2 - CAN FD 2 - 4 Pin JST-GH
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | +5V             | 5V           |
@@ -76,7 +90,8 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 3   | CAN_L           |              |
 | 4   | GND             | GND          |
 
-#### Debug - 6 Pin Tag-Connect
+### Debug - 6 Pin Tag-Connect
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | +3.3V           | 3.3V         |
@@ -86,7 +101,8 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 5   | GND             | GND          |
 | 6   | not connected   |              |
 
-#### S2 - SERIAL1 & GNSS - 6 Pin JST-GH
+### S2 - SERIAL1 & GNSS - 6 Pin JST-GH
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | +5V             | 5V           |
@@ -96,7 +112,8 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 | 5   | GNSS_EVENT      | 3.3V         |
 | 6   | GND             | GND          |
 
-#### ETH - Ethernet - 4 Pin JST-GH
+### ETH - Ethernet - 4 Pin JST-GH
+
 | Pin | Signal Name       |
 |-----|-------------------|
 | 1   | RX-               |
@@ -122,27 +139,31 @@ All UARTs except USART3 TX have DMA capability. Any UART can be re-tasked by cha
 ## RC Input
 
 RC input is configured on connector S1 / SERIAL4 / UART6. It supports all RC protocols.
-* PPM not supported
-* CRSF would require  :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>`  set to “0”.
-* SRXL2 would require :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>` set to “4”. And only connect the TX pin.
+
+- PPM not supported
+- CRSF would require [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "0".
+- SRXL2 would require [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "4". And only connect the TX pin.
 
 ## Battery Monitoring
 
 Via DroneCAN by UAV-DEV-POWERMODULE
 
 ## Compass
-The autopilot includes an internal compass as well as GNSS-based heading, but GNSS-based heading is the recommended heading source. Proper setup and placement of the dual antennas is required as well as setup of the moving baseline parameters, see :ref:`common-gps-for-yaw` for more details.
+
+The autopilot includes an internal compass as well as GNSS-based heading, but GNSS-based heading is the recommended heading source. Proper setup and placement of the dual antennas is required as well as setup of the moving baseline parameters, see [GPS for yaw](https://ardupilot.org/copter/docs/common-gps-for-yaw.html) for more details.
 
 ## Motor Output
 
 All outputs are capable of PWM and DShot. Motors 1 through 4 are capable of Bidirectional-DShot. All outputs in the motor groups below must be either PWM or DShot:
+
 - Motors 1-4  Group1 (TIM4)
 - Motors 5-6  Group2 (TIM3)
 
 ## Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “uav-dev-fc-um982”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “uav-dev-fc-um982”.
 
 ## Loading Firmware
+
 This autopilot comes with ArduPilot compatible bootloader.
 You can update the firmware using any ArduPilot ground station software. Later updates should be done with the \*.apj firmware files.

@@ -33,7 +33,16 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // servo only natively supports angles:
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+
 private:
+    // allow removing lean angles for pitch and roll locks
+    bool apply_bf_roll_pitch_adjustments_in_rc_targeting() const override {
+        return true;
+    }
 
     // get_angles -
     void get_angles();
@@ -45,7 +54,7 @@ private:
     void get_boardinfo();
 
     // send new angles to the gimbal at a fixed speed of 30 deg/s
-    void control_axis(const MountTarget& angle_target_rad);
+    void send_target_angles(const MountAngleTarget& angle_rad) override;
 
     // read_params - read current profile profile_id and global parameters from the gimbal settings
     void read_params(uint8_t profile_id);

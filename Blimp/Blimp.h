@@ -49,7 +49,6 @@
 #include <AC_PID/AC_PID_2D.h>
 #include <AC_PID/AC_PID_Basic.h>
 #include <AC_PID/AC_PID.h>
-#include <AP_Vehicle/AP_MultiCopter.h>
 
 #include <Filter/NotchFilter.h>
 
@@ -100,9 +99,6 @@ public:
 
 private:
 
-    // key aircraft parameters passed to multiple libraries
-    AP_MultiCopter aparm;
-
     // Global parameters are all contained within the 'g' class.
     Parameters g;
     ParametersG2 g2;
@@ -112,10 +108,6 @@ private:
     RC_Channel *channel_front;
     RC_Channel *channel_up;
     RC_Channel *channel_yaw;
-
-    // flight modes convenience array
-    AP_Int8 *flight_modes;
-    const uint8_t num_flight_modes = 6;
 
     // Arming/Disarming management class
     AP_Arming_Blimp arming;

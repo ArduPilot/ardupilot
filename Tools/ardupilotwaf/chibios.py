@@ -103,7 +103,7 @@ class upload_fw(Task.Task):
         #
         # Solution: simply call "python.exe" instead of 'python' which magically calls it from the windows
         #   system using the same absolute path back into the WSL2's user's directory
-        # Requirements: Windows must have Python3.9.x (NTO 3.10.x) installed and a few packages.
+        # Requirements: Windows must have Python 3.12.x installed and a few packages.
         import subprocess
         try:
             where_python = subprocess.check_output('where.exe python.exe', shell=True, text=True)
@@ -122,11 +122,11 @@ class upload_fw(Task.Task):
         WSL2 firmware uploads use the host's Windows Python.exe so it has access to the COM ports.
 
         %s
-        Please download Windows Installer 3.9.x (not 3.10) from https://www.python.org/downloads/
+        Please download Windows Installer 3.12.x from https://www.python.org/downloads/
         and make sure to add it to your path during the installation. Once installed, run this
         command in Powershell or Command Prompt to install some packages:
         
-        pip.exe install empy==3.3.4 pyserial
+        python.exe -m pip install empy==3.3.4 pyserial
         ****************************************
         ****************************************
         """ % error_msg)
@@ -378,6 +378,9 @@ class generate_apj(Task.Task):
             # we omit build_time when we don't have build_dates so that apj
             # file is identical for same git hash and compiler
             d["build_time"] = int(time.time())
+        if self.env.AP_SIGNED_FIRMWARE and self.env.PRIVATE_KEY:
+            # The firmware file was signed during the build process, so set the flag
+            d['signed_firmware'] = True
         apj_file = self.outputs[0].abspath()
         f = open(apj_file, "w")
         f.write(json.dumps(d, indent=4))
@@ -723,7 +726,8 @@ def build(bld):
                  'fopen', 'fflush', 'fwrite', 'fread', 'fputs', 'fgets',
                  'clearerr', 'fseek', 'ferror', 'fclose', 'tmpfile', 'getc', 'ungetc', 'feof',
                 'ftell', 'freopen', 'remove', 'vfprintf', 'vfprintf_r', 'fscanf',
-                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock']
+                '_gettimeofday', '_times', '_times_r', '_gettimeofday_r', 'time', 'clock',
+                'setjmp']
 
     # these functions use global state that is not thread safe
     blacklist += ['gmtime']

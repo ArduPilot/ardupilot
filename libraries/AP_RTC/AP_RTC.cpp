@@ -8,12 +8,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/time.h>
-
-#define DEBUG_RTC_SHIFT 0
-
-#if DEBUG_RTC_SHIFT
 #include <AP_Logger/AP_Logger.h>
-#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -84,12 +79,14 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
         // can't allow time to go backwards, ever
         return;
     }
-    WITH_SEMAPHORE(rsem);
 
-#if DEBUG_RTC_SHIFT
-    uint64_t old_utc = 0;
-    UNUSED_RESULT(get_utc_usec(old_utc));
-#endif
+#if AP_RTC_LOGGING_ENABLED
+    if (rtc_source_type != type || tmp != rtc_shift) {
+        AP::logger().Write_RTC();
+    }
+#endif  // AP_RTC_LOGGING_ENABLED
+
+    WITH_SEMAPHORE(rsem);
 
     rtc_shift = tmp;
 
@@ -104,31 +101,6 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
     // update signing timestamp
     GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
 #endif  // AP_MAVLINK_SIGNING_ENABLED
-
-#if DEBUG_RTC_SHIFT
-    uint64_t new_utc = 0;
-    UNUSED_RESULT(get_utc_usec(new_utc));
-    if (old_utc != new_utc) {
-        if (AP::logger().should_log(0xFFFF)){
-            // log to AP_Logger
-            // @LoggerMessage: RTC
-            // @Description: Information about RTC clock resets
-            // @Field: TimeUS: Time since system startup
-            // @Field: old_utc: old time
-            // @Field: new_utc: new time
-            AP::logger().WriteStreaming(
-                "RTC",
-                "TimeUS,old_utc,new_utc",
-                "sss",
-                "FFF",
-                "QQQ",
-                AP_HAL::micros64(),
-                old_utc,
-                new_utc
-                );
-        }
-    }
-#endif
 }
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const

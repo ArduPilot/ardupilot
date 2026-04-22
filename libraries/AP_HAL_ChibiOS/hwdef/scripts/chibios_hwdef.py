@@ -7,13 +7,14 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
-import sys
 import fnmatch
 import os
-import dma_resolver
-import shlex
 import re
+import shlex
 import shutil
+import sys
+
+import dma_resolver
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../libraries/AP_HAL/hwdef/scripts'))
 import hwdef  # noqa:E402
@@ -595,9 +596,9 @@ class ChibiOSHWDef(hwdef.HWDef):
                 'I2C*SCL' : 'PERIPH_TYPE::I2C_SCL',
                 'EXTERN_GPIO*' : 'PERIPH_TYPE::GPIO',
             }
-            for k in patterns.keys():
-                if fnmatch.fnmatch(self.label, k):
-                    return patterns[k]
+            for key, value in patterns.items():
+                if fnmatch.fnmatch(self.label, key):
+                    return value
             return 'PERIPH_TYPE::OTHER'
 
         def periph_instance(self):
@@ -644,7 +645,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             ret = self.config[name][column]
 
         if type is not None:
-            if type == int and ret.startswith('0x'):
+            if type is int and ret.startswith('0x'):
                 try:
                     ret = int(ret, 16)
                 except Exception:

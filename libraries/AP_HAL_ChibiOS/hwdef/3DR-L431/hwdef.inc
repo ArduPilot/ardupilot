@@ -1,0 +1,86 @@
+# HW definition file for 3DR CAN Nodes (STM32L431)
+
+# MCU class and specific type
+MCU STM32L431 STM32L431xx
+
+# bootloader occupies 64k (48k + 16k, bootloader + STORAGE_FLASH)
+FLASH_RESERVE_START_KB 64
+FLASH_SIZE_KB 256
+
+# store parameters in pages 24 and 25
+STORAGE_FLASH_PAGE 24
+define HAL_STORAGE_SIZE 1800
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 15
+define CH_CFG_ST_RESOLUTION 16
+
+# Board ID: Inheriting boards will set their own ID. 
+
+# use LSE clock source
+OSCILLATOR_HZ 32768
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+
+define SERIAL_BUFFERS_SIZE 512
+define PORT_INT_REQUIRED_STACK 64
+
+define DMA_RESERVE_SIZE 0
+
+# MAIN_STACK is stack for ISR handlers
+MAIN_STACK 0x300
+
+# PROCESS_STACK controls stack for main thread
+PROCESS_STACK 0xA00
+
+# we setup a small defaults.parm
+define AP_PARAM_MAX_EMBEDDED_PARAM 512
+
+# LED0 marked as ACT
+PB1 LED OUTPUT HIGH
+define HAL_LED_ON 1
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CAN
+CAN_ORDER 1
+
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+define HAL_CAN_POOL_SIZE 6000
+
+# UARTs
+SERIAL_ORDER USART1 USART2
+
+# USART1 for debug
+PB6 USART1_TX USART1 SPEED_HIGH
+PB7 USART1_RX USART1 SPEED_HIGH
+
+# USART2
+PA2 USART2_TX USART2 SPEED_HIGH
+PA3 USART2_RX USART2 SPEED_HIGH
+PA0 USART2_CTS USART2 SPEED_HIGH
+PA1 USART2_RTS USART2 SPEED_HIGH
+
+I2C_ORDER I2C1
+PA9 I2C1_SCL I2C1
+PA10 I2C1_SDA I2C1
+
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+define HAL_I2C_INTERNAL_MASK 1
+
+# allow for reboot command for faster development
+define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+#define HAL_RCIN_THREAD_ENABLED 1

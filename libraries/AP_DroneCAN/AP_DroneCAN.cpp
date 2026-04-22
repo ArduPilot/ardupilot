@@ -1114,36 +1114,42 @@ void AP_DroneCAN::gnss_send_fix()
     }
     pkt.sats_used = gps.num_sats();
     switch (gps.status()) {
-    case AP_GPS::GPS_Status::NO_GPS:
-    case AP_GPS::GPS_Status::NO_FIX:
+    case AP_GPS_FixType::NO_GPS:
+    case AP_GPS_FixType::NONE:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_NO_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_SINGLE;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_OTHER;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_2D:
+    case AP_GPS_FixType::FIX_2D:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_2D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_SINGLE;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_OTHER;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D:
+    case AP_GPS_FixType::FIX_3D:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_SINGLE;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_OTHER;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS:
+    case AP_GPS_FixType::DGPS:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_DGPS;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_SBAS;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT:
+    case AP_GPS_FixType::RTK_FLOAT:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_RTK;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FLOAT;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED:
+    case AP_GPS_FixType::RTK_FIXED:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_RTK;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED;
+        break;
+    case AP_GPS_FixType::STATIC:
+    case AP_GPS_FixType::PPP:
+        pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
+        pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_PPP; // Static is not representable in DroneCAN.
+        pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED; // There is no submode for static or PPP
         break;
     }
 
@@ -1408,7 +1414,7 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
                          AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
     };
 
-    servo_telem->update_telem_data(msg.actuator_id, telem_data);
+    servo_telem->update_telem_data(msg.actuator_id - 1, telem_data);
 }
 #endif
 
@@ -1440,7 +1446,7 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
                          AP_Servo_Telem::TelemetryData::Types::STATUS
     };
 
-    servo_telem->update_telem_data(msg.servo_id, telem_data);
+    servo_telem->update_telem_data(msg.servo_id - 1, telem_data);
 }
 #endif // AP_DRONECAN_HIMARK_SERVO_SUPPORT
 
@@ -1465,7 +1471,7 @@ void AP_DroneCAN::handle_actuator_status_Volz(const CanardRxTransfer& transfer, 
                          AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
     };
 
-    servo_telem->update_telem_data(msg.actuator_id, telem_data);
+    servo_telem->update_telem_data(msg.actuator_id - 1, telem_data);
 }
 #endif
 

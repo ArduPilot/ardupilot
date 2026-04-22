@@ -15,7 +15,7 @@ public:
       Velocity is in earth frame, NED [m/s].
       Yaw is in earth frame, NED [rad/s].
      */
-    bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity, float yaw_rate_rads)override WARN_IF_UNUSED;
+    bool set_linear_velocity_and_yaw_rate(const Vector3f &linear_velocity_ned_ms, float yaw_rate_rads) override WARN_IF_UNUSED;
 
     /*
       Sets the global position for loiter point

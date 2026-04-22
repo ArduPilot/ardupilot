@@ -6,6 +6,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/DerivativeFilter.h>
+#include <Filter/LowPassFilter.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
@@ -86,6 +87,7 @@ public:
     float get_pressure_correction(void) const { return get_pressure_correction(_primary); }
     float get_pressure_correction(uint8_t instance) const { return sensors[instance].p_correction; }
 
+#if AP_BARO_CALIBRATION_ENABLED
     // calibrate the barometer. This must be called on startup if the
     // altitude/climb_rate/acceleration interfaces are ever used
     void calibrate(bool save=true);
@@ -93,6 +95,7 @@ public:
     // update the barometer calibration to the current pressure. Can
     // be used for incremental preflight update of baro
     void update_calibration(void);
+#endif  // AP_BARO_CALIBRATION_ENABLED
 
     // get current altitude in meters relative to altitude at the time
     // of the last calibrate() call
@@ -327,8 +330,8 @@ private:
     // when did we last notify the GCS of new pressure reference?
     uint32_t                            _last_notify_ms;
 
-    // see if we already have probed a i2c driver by bus number and address
-    bool _have_i2c_driver(uint8_t bus_num, uint8_t address) const;
+    // see if we already have probed a i2c sensor by bus number and address
+    bool _i2c_sensor_is_registered(uint8_t bus_num, uint8_t address) const;
     bool _add_backend(AP_Baro_Backend *backend);
     void _probe_i2c_barometers(void);
 
@@ -367,6 +370,11 @@ private:
 #endif
 #if AP_BARO_THST_COMP_ENABLED
     float thrust_pressure_correction(uint8_t instance);
+    void update_thrust_filter(void);        // update filtered throttle once per update cycle
+    LowPassFilterFloat _thrust_filter;      // low-pass filter for thrust compensation
+    uint32_t _thrust_filter_last_update_us; // last update time for filter dt calculation
+    AP_Float _thst_filt_cutoff;             // thrust filter cutoff frequency in Hz
+    float _filtered_throttle;               // filtered throttle value for thrust compensation
 #endif
     // Logging function
     void Write_Baro(void);

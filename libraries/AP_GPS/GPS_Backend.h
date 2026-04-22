@@ -62,7 +62,7 @@ public:
 
     // Highest status supported by this GPS. 
     // Allows external system to identify type of receiver connected.
-    virtual AP_GPS::GPS_Status highest_supported_status(void) { return AP_GPS::GPS_OK_FIX_3D; }
+    virtual AP_GPS_FixType highest_supported_status(void) { return AP_GPS_FixType::FIX_3D; }
 
     virtual bool is_configured(void) const { return true; }
 
@@ -117,6 +117,9 @@ public:
         return gps.option_set(option);
     }
 
+    // Convert BCD date (DDMMYY) and time (MTK19 millisecond form) to GPS week and time
+    static void BCD_to_gps_time(uint32_t bcd_date, uint32_t bcd_time_ms, uint16_t& gps_week, uint32_t& gps_time_ms);
+
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
     AP_GPS &gps;                        ///< access to frontend (for parameters)
@@ -142,7 +145,10 @@ protected:
        fill in time_week_ms and time_week from BCD date and time components
        assumes MTK19 millisecond form of bcd_time
     */
-    void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds);
+    void make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
+    {
+        BCD_to_gps_time(bcd_date, bcd_milliseconds, state.time_week, state.time_week_ms);
+    }
 
     void _detection_message(char *buffer, uint8_t buflen) const;
 

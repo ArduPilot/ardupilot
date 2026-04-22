@@ -1,19 +1,19 @@
 # iFlight Beast H7 55A AIO Flight Controller
 
-https://shop.iflight-rc.com/index.php?route=product/product&product_id=1376
+[iFlight store](https://shop.iflight-rc.com/index.php?route=product/product&product_id=1376)
 
 The Beast H7 AIO is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 
 ## Features
 
- - MCU: BGA-STM32H743
- - Gyro: MPU6000
- - 16Mb Onboard Flash
- - BEC output: 5V 2.5A 
- - Barometer: DPS310
- - OSD: AT7456E
- - 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
- - 5 PWM outputs (4 motors and 1 LED)
+- MCU: BGA-STM32H743
+- Gyro: MPU6000
+- 16Mb Onboard Flash
+- BEC output: 5V 2.5A
+- Barometer: DPS310
+- OSD: AT7456E
+- 5 UARTS: (UART1, UART2, UART3, UART4, UART7)
+- 5 PWM outputs (4 motors and 1 LED)
 
 ## Pinout
 
@@ -35,10 +35,10 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 All UARTS support DMA.
 
 ## RC Input
- 
+
 RC input is configured on the (UART3_RX) pin which forms part of the DJI connector. It supports all RC protocols.
 For RC input/output use UART1 with SERIAL1_PROTOCOL as 23 and set SERIAL3_PROTOCOL set to -1
-  
+
 ## OSD Support
 
 The Beast H7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -60,11 +60,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT around 10.9
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT around 28.5
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT around 10.9
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT around 28.5
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

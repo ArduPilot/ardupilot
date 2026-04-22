@@ -52,6 +52,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Values: 29:Scripting
     // @Values: 30:INA3221
     // @Values: 31:Analog Current Only
+    // @Values: 32:TIBQ76952-I2C (Periph only)
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, int8_t(AP_BattMonitor::Type::NONE), AP_PARAM_FLAG_ENABLE),
@@ -142,24 +143,24 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Param: FS_LOW_ACT
     // @DisplayName: Low battery failsafe action
     // @Description: What action the vehicle should perform if it hits a low battery failsafe
-    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START/DO_RETURN_PATH_START or RTL,7:Brake or Land
-    // @Values{Plane}: 0:None,1:RTL,2:Land,3:Terminate,4:QLand,5:Parachute release,6:Loiter to QLand,7:AUTOLAND or RTL
-    // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
-    // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
-    // @Values{Tracker}: 0:None
-    // @Values{Blimp}: 0:None,1:Land
+    // @Values{Copter}: 0:Warn only,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START/DO_RETURN_PATH_START or RTL,7:Brake or Land
+    // @Values{Plane}: 0:Warn only,1:RTL,2:Land,3:Terminate,4:QLand,5:Parachute release,6:Loiter to QLand,7:AUTOLAND or RTL
+    // @Values{Sub}: 0:Warn only,2:Disarm,3:Enter surface mode
+    // @Values{Rover}: 0:Warn only,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
+    // @Values{Tracker}: 0:Warn only
+    // @Values{Blimp}: 0:Warn only,1:Land
     // @User: Standard
     AP_GROUPINFO("FS_LOW_ACT", 16, AP_BattMonitor_Params, _failsafe_low_action, 0),
 
     // @Param: FS_CRT_ACT
     // @DisplayName: Critical battery failsafe action
     // @Description: What action the vehicle should perform if it hits a critical battery failsafe
-    // @Values{Copter}: 0:None,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START/DO_RETURN_PATH_START or RTL,7:Brake or Land
-    // @Values{Plane}: 0:None,1:RTL,2:Land,3:Terminate,4:QLand,5:Parachute,6:Loiter to QLand,7:AUTOLAND or RTL
-    // @Values{Sub}: 0:None,2:Disarm,3:Enter surface mode
-    // @Values{Rover}: 0:None,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
-    // @Values{Tracker}: 0:None
-    // @Values{Blimp}: 0:None,1:Land
+    // @Values{Copter}: 0:Warn only,1:Land,2:RTL,3:SmartRTL or RTL,4:SmartRTL or Land,5:Terminate,6:Auto DO_LAND_START/DO_RETURN_PATH_START or RTL,7:Brake or Land
+    // @Values{Plane}: 0:Warn only,1:RTL,2:Land,3:Terminate,4:QLand,5:Parachute,6:Loiter to QLand,7:AUTOLAND or RTL
+    // @Values{Sub}: 0:Warn only,2:Disarm,3:Enter surface mode
+    // @Values{Rover}: 0:Warn only,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
+    // @Values{Tracker}: 0:Warn only
+    // @Values{Blimp}: 0:Warn only,1:Land
     // @User: Standard
     AP_GROUPINFO("FS_CRT_ACT", 17, AP_BattMonitor_Params, _failsafe_critical_action, 0),
 

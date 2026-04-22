@@ -158,9 +158,9 @@ bool VTOL_Assist::check_VTOL_recovery(void)
         return false;
     }
 
-    // see if the attitude is outside twice the Q_ANGLE_MAX
+    // see if the attitude is outside twice the Q_A_ANGLE_MAX
     const auto &ahrs = plane.ahrs;
-    const int16_t angle_max_cd = quadplane.aparm.angle_max;
+    const float angle_max_cd = quadplane.attitude_control->lean_angle_max_cd();
     const float abs_angle_cd = fabsf(Vector2f{float(ahrs.roll_sensor), float(ahrs.pitch_sensor)}.length());
 
     if (abs_angle_cd > 2*angle_max_cd) {
@@ -169,7 +169,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
     }
 
     if (quadplane.force_fw_control_recovery) {
-        // stop fixed wing recovery if inside Q_ANGLE_MAX
+        // stop fixed wing recovery if inside Q_A_ANGLE_MAX
         if (abs_angle_cd <= angle_max_cd) {
             quadplane.force_fw_control_recovery = false;
             quadplane.attitude_control->reset_target_and_rate(false);
@@ -182,8 +182,8 @@ bool VTOL_Assist::check_VTOL_recovery(void)
                    controller may limit pitch after a strong
                    acceleration event
                 */
-                quadplane.pos_control->init_U_controller();
-                quadplane.pos_control->init_NE_controller();
+                quadplane.pos_control->D_init_controller();
+                quadplane.pos_control->NE_init_controller();
             }
         }
     }

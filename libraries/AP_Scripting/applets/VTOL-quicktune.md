@@ -8,7 +8,7 @@ The script is designed to be used in QLOITER mode for quadplanes or
 LOITER mode in multicopters, although it can also be used in other
 VTOL modes.
 
-# Parameters
+## Parameters
 
 The script adds 7 parameters to control it's behaviour. The parameters
 are:
@@ -110,7 +110,7 @@ happening if quicktune gets a false positive oscillation at a low
 gain, which can result in very low rate gains and a dangerous angle P
 oscillation.
 
-# Operation
+## Operation
 
 First you should setup harmonic notch filtering using the guide in the
 ArduPilot wiki. This tuning system relies on you already having
@@ -146,18 +146,18 @@ parameter.
 
 With default settings the parameters to be tuned will be:
 
- - RLL_D
- - RLL_P
- - PIT_D
- - PIT_P
- - YAW_D
- - YAW_P
+- RLL_D
+- RLL_P
+- PIT_D
+- PIT_P
+- YAW_D
+- YAW_P
 
 The script will also adjust filter settings using the following rules
 if QUIK_AUTO_FILTER is set to 1 (which is the default):
 
- - the FLTD and FLTT settings will be set to half of the INS_GYRO_FILTER value
- - the YAW_FLTE filter will be set to a maximum of 8Hz
+- the FLTD and FLTT settings will be set to half of the INS_GYRO_FILTER value
+- the YAW_FLTE filter will be set to a maximum of 8Hz
 
 Additionally, if no SMAX is set for a rate controller than the SMAX will be set to 50Hz.
 
@@ -171,18 +171,15 @@ values. Parameters will also be reverted if you disarm before saving.
 If the pilot gives roll, pitch or yaw input while tuning then the tune
 is paused until 4 seconds after the pilot input stops.
 
-# Using a Two Position Switch
+## Using a Two Position Switch
 
 Some transitters only have 2 position switches, with no 3 position
 switches available. To support quicktune with a 2 position switch
 please set the following:
 
- - set QUIK_OPTIONS to 1 to indicate the use of a 2 position switch
- - set QUIK_AUTO_SAVE to 10 to automatically save the tune 10 seconds after tuning is done
+- set QUIK_OPTIONS to 1 to indicate the use of a 2 position switch
+- set QUIK_AUTO_SAVE to 10 to automatically save the tune 10 seconds after tuning is done
 
 with these two options the tuning will start when the switch gives a
 PWM value of over 1800. Ten seconds after tuning is complete the tune
 will automatically save.
-
-
-

@@ -1,5 +1,63 @@
 #include "Copter.h"
 
+// table of user settable parameters
+const AP_Param::GroupInfo ModeLand::var_info[] = {
+
+    // @Param: SPD_MS
+    // @DisplayName: Land speed
+    // @Description: The descent speed for the final stage of landing in m/s
+    // @Units: m/s
+    // @Range: 0.3 2
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("SPD_MS", 1, ModeLand, land_speed_ms, LAND_SPD_MS_DEFAULT),
+
+    // @Param: SPD_HIGH_MS
+    // @DisplayName: Land speed high
+    // @Description: The descent speed for the first stage of landing in m/s. If this is zero then WP_SPD_DN is used
+    // @Units: m/s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("SPD_HIGH_MS", 2, ModeLand, land_speed_high_ms, 0),
+
+    // @Param: ALT_LOW_M
+    // @DisplayName: Land alt low
+    // @Description: Altitude during Landing at which vehicle slows to LAND_SPD_MS
+    // @Units: m
+    // @Range: 1 100
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("ALT_LOW_M", 3, ModeLand, land_alt_low_m, 10),
+
+    AP_GROUPEND
+};
+
+// constructor
+ModeLand::ModeLand() : Mode()
+{
+    // load parameter defaults
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
+// convert parameters
+void ModeLand::convert_params()
+{
+    // PARAMETER_CONVERSION - Added: Jan 2026
+
+    // return immediately if parameter conversion has already been performed
+    if (land_speed_ms.configured() || land_speed_high_ms.configured() || land_alt_low_m.configured()) {
+        return;
+    }
+
+    static const AP_Param::ConversionInfo conversion_info[] = {
+        { Parameters::k_param_land_speed_cms, 0, AP_PARAM_INT16, "LAND_SPD_MS" },     // LAND_SPEED moved to LAND_SPD_MS
+        { Parameters::k_param_land_speed_high_cms, 0, AP_PARAM_INT16, "LAND_SPD_HIGH_MS" },   // LAND_SPEED_HIGH moved to LAND_SPD_HIGH_MS
+        { Parameters::k_param_g2, 25, AP_PARAM_INT16, "LAND_ALT_LOW_M" },  // LAND_ALT_LOW moved to LAND_ALT_LOW_M
+    };
+    AP_Param::convert_old_parameters_scaled(conversion_info, ARRAY_SIZE(conversion_info), 0.01, 0);
+}
+
 // land_init - initialise land controller
 bool ModeLand::init(bool ignore_checks)
 {
@@ -7,21 +65,21 @@ bool ModeLand::init(bool ignore_checks)
     control_position = copter.position_ok();
 
     // set horizontal speed and acceleration limits
-    pos_control->set_max_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
-    pos_control->set_correction_speed_accel_NE_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
+    pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
     // initialise the horizontal position controller
-    if (control_position && !pos_control->is_active_NE()) {
-        pos_control->init_NE_controller();
+    if (control_position && !pos_control->NE_is_active()) {
+        pos_control->NE_init_controller();
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_U_mss());
+    pos_control->D_set_max_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
 
     // initialise the vertical position controller
-    if (!pos_control->is_active_U()) {
-        pos_control->init_U_controller();
+    if (!pos_control->D_is_active()) {
+        pos_control->D_init_controller();
     }
 
     land_start_time = millis();

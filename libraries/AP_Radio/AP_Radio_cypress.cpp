@@ -1541,7 +1541,7 @@ void AP_Radio_cypress::send_telem_packet(void)
     struct telem_packet_cypress pkt;
 
     t_status.flags = 0;
-    t_status.flags |= AP_Notify::flags.gps_status >= 3?TELEM_FLAG_GPS_OK:0;
+    t_status.flags |= AP_Notify::flags.gps_status >= AP_GPS_FixType::FIX_3D?TELEM_FLAG_GPS_OK:0;
     t_status.flags |= AP_Notify::flags.pre_arm_check?TELEM_FLAG_ARM_OK:0;
     t_status.flags |= AP_Notify::flags.failsafe_battery?0:TELEM_FLAG_BATT_OK;
     t_status.flags |= hal.util->get_soft_armed()?TELEM_FLAG_ARMED:0;

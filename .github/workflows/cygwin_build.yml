@@ -160,7 +160,7 @@ jobs:
 
       - uses: cygwin/cygwin-install-action@v6
         with:
-          packages: cygwin64 gcc-g++=10.2.0-1 ccache python39 python39-future python39-lxml python39-pip python39-setuptools python39-wheel git procps gettext
+          packages: cygwin64 gcc-g++=13.4.0-1 ccache python312 python312-pip git procps gettext
           add-to-path: false
       # Put ccache into github cache for faster build
       - name: setup ccache
@@ -180,7 +180,7 @@ jobs:
           source ~/ccache.conf &&
           ccache -s
       - name: ccache cache files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: D:/a/ardupilot/ardupilot/ccache
           key: ${{ steps.ccache_cache_timestamp.outputs.cache-key }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -220,7 +220,7 @@ jobs:
           fail: true
 
       - name: Archive build
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: binaries
           path: artifacts

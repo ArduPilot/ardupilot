@@ -720,7 +720,7 @@ bool AP_Arming::gps_checks(bool report)
             }
 
             //GPS OK?
-            if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
+            if (gps.status(i) < AP_GPS_FixType::FIX_3D) {
                 check_failed(Check::GPS, report, "GPS %i: Bad fix", i+1);
                 return false;
             }
@@ -1227,11 +1227,13 @@ bool AP_Arming::terrain_database_required() const
 {
 #if AP_MISSION_ENABLED
     AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        // no mission support?
-        return false;
+    if (mission != nullptr && mission->contains_terrain_alt_items()) {
+        return true;
     }
-    if (mission->contains_terrain_alt_items()) {
+#endif
+#if AP_FENCE_ENABLED
+    const AC_Fence* fence = AP::fence();
+    if (fence != nullptr && fence->terrain_database_required()) {
         return true;
     }
 #endif
@@ -1306,7 +1308,7 @@ bool AP_Arming::can_checks(bool report)
         for (uint8_t i = 0; i < num_drivers; i++) {
             switch (AP::can().get_driver_type(i)) {
                 case AP_CAN::Protocol::PiccoloCAN: {
-#if HAL_PICCOLO_CAN_ENABLE
+#if AP_PICCOLOCAN_ENABLED
                     AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
 
                     if (ap_pcan != nullptr && !ap_pcan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
@@ -1774,6 +1776,13 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 #endif
+
+    // Run estop check again, here in the arm checks there is no need
+    // bypass the check if arm emergency stop aux function is setup
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(true, "Motors Emergency Stopped");
+        return false;
+    }
 
     // ensure the GPS drivers are ready on any final changes
     if (check_enabled(Check::GPS_CONFIG)) {

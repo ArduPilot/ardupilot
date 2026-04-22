@@ -58,6 +58,10 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_CYPRESS_S25FL064L     0x016017
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 #define JEDEC_ID_GIGA_GD25Q16E         0xC84015
+#define JEDEC_ID_ZBIT_ZB25VQ128        0x5E4018
+#define JEDEC_ID_FMSH_FM25Q64          0xA14017
+#define JEDEC_ID_FMSH_FM25Q128A        0xA14018
+#define JEDEC_ID_FMSH_FM25Q256         0xA14019
 
 void AP_Logger_Flash_JEDEC::Init()
 {
@@ -137,6 +141,7 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
         break;
     case JEDEC_ID_MICRON_N25Q064:
     case JEDEC_ID_WINBOND_W25Q64:
+    case JEDEC_ID_FMSH_FM25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
     case JEDEC_ID_CYPRESS_S25FL064L:
         blocks = 128;
@@ -146,12 +151,15 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
     case JEDEC_ID_MICRON_N25Q128:
     case JEDEC_ID_WINBOND_W25Q128:
     case JEDEC_ID_WINBOND_W25Q128_2:
+    case JEDEC_ID_FMSH_FM25Q128A:
     case JEDEC_ID_CYPRESS_S25FL128L:
+    case JEDEC_ID_ZBIT_ZB25VQ128:   
         blocks = 256;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
         break;
     case JEDEC_ID_WINBOND_W25Q256:
+    case JEDEC_ID_FMSH_FM25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
         blocks = 512;
         df_PagePerBlock = 256;

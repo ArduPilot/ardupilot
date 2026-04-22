@@ -13,10 +13,11 @@ import sys
 import emit_html
 import emit_rst
 import emit_xml
-import emit_md
-
 import enum_parse
+
 from enum_parse import EnumDocco
+
+import emit_md
 
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
@@ -152,6 +153,11 @@ class LoggerDocco(object):
                                  (field, self.name))
             self.ensure_field(field)
             self.fields[field]["description"] = description
+
+        def get_field_description(self, field):
+            if field not in self.fields:
+                return None
+            return self.fields[field].get('description', None)
 
         def set_field_bits(self, field, bits):
             bits = bits.split(",")
@@ -512,6 +518,14 @@ class LoggerDocco(object):
                 docco.set_units(units, mults)
             elif units is not None or mults is not None:
                 print(f"Cannot find matching units/mults for message {docco.name}")
+
+        # every field must have a description.  Things like
+        # FieldBitmaskEnum can create the field object but not fill
+        # description in.
+        for docco in new_doccos:
+            for field in docco.fields:
+                if docco.get_field_description(field) is None:
+                    raise ValueError(f"{docco.name}.{field} missing description")
 
         enums_by_name = {}
         for enum in self.enumerations:

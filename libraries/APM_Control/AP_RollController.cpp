@@ -168,19 +168,9 @@ float AP_RollController::get_measured_rate() const
     return AP::ahrs().get_gyro().x;
 }
 
-float AP_RollController::get_airspeed() const
+bool AP_RollController::is_underspeed() const
 {
-    float aspeed;
-    if (!AP::ahrs().airspeed_EAS(aspeed)) {
-        // If no airspeed available use 0
-        aspeed = 0.0;
-    }
-    return aspeed;
-}
-
-bool AP_RollController::is_underspeed(const float aspeed) const
-{
-    return aspeed <= float(aparm.airspeed_min);
+    return get_airspeed() <= float(aparm.airspeed_min);
 }
 
 /*
@@ -233,7 +223,7 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     // the in_recovery flag is single loop only
     in_recovery = false;
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, get_airspeed(), ground_mode);
+    return _get_rate_out(desired_rate, scaler, disable_integrator, ground_mode);
 }
 
 /*

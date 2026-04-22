@@ -77,14 +77,7 @@ void AP_Mount_Viewpro::update()
     update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -243,10 +236,14 @@ void AP_Mount_Viewpro::process_packet()
             break;
         }
         case CommConfigCmd::QUERY_MODEL:
+            if (_parsed_msg.data_bytes_received == 0) {
+                break;
+            }
             // gimbal model, length is 10 bytes
-            strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
+            memset(_model_name, '\0', sizeof(_model_name));
+            memcpy(_model_name, &_msg_buff[_msg_buff_data_start+1], MIN(sizeof(_model_name)-1, (size_t)(_parsed_msg.data_bytes_received-1)));
             _got_model_name = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, _model_name);
             break;
         default:
             // unsupported control command
@@ -444,12 +441,15 @@ bool AP_Mount_Viewpro::send_comm_config_cmd(CommConfigCmd cmd)
 }
 
 // send target pitch and yaw rates to gimbal
-// yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-bool AP_Mount_Viewpro::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
+void AP_Mount_Viewpro::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+    const bool yaw_is_ef = rate_rads.yaw_is_ef;
+
     // set lock value
     if (!set_lock(yaw_is_ef)) {
-        return false;
+        return;
     }
 
     // scale pitch and yaw to values gimbal understands
@@ -467,16 +467,19 @@ bool AP_Mount_Viewpro::send_target_rates(float pitch_rads, float yaw_rads, bool 
     };
 
     // send targets to gimbal
-    return send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
+    send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
 }
 
 // send target pitch and yaw angles to gimbal
-// yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef)
+void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    bool yaw_is_ef = angle_rad.yaw_is_ef;
+
     // gimbal does not support lock in angle control mode
     if (!set_lock(false)) {
-        return false;
+        return;
     }
 
     // convert yaw angle to body-frame
@@ -505,7 +508,7 @@ bool AP_Mount_Viewpro::send_target_angles(float pitch_rad, float yaw_rad, bool y
     };
 
     // send targets to gimbal
-    return send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
+    send_packet(a1_packet.bytes, sizeof(a1_packet.bytes));
 }
 
 // send camera command, affected image sensor and value (e.g. zoom speed)
@@ -867,12 +870,12 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         return;
     }
 
-    static const uint8_t vendor_name[32] = "Viewpro";
-    uint8_t model_name[32] {};
+    static const uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN] { "Viewpro" };
+    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN] {};
     if (_got_model_name) {
-        strncpy((char *)model_name, (const char*)_model_name, MIN(sizeof(model_name), sizeof(_model_name)));
+        strncpy_noterm((char *)model_name, _model_name, sizeof(model_name));
     }
-    const char cam_definition_uri[140] {};
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
 
     // capability flags
     const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
@@ -887,7 +890,7 @@ void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
         chan,
         AP_HAL::millis(),       // time_boot_ms
         vendor_name,            // vendor_name uint8_t[32]
-        _model_name,            // model_name uint8_t[32]
+        model_name,             // model_name uint8_t[32]
         _firmware_version,      // firmware version uint32_t
         NaNf,                   // sensor_size_h float (mm)
         NaNf,                   // sensor_size_v float (mm)

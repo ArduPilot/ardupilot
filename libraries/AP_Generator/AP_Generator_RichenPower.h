@@ -105,11 +105,11 @@ private:
     struct Reading last_reading;
     uint32_t last_reading_ms;
 
-    const uint8_t HEADER_MAGIC1 = 0xAA;
-    const uint8_t HEADER_MAGIC2 = 0x55;
+    static constexpr uint8_t HEADER_MAGIC1 = 0xAA;
+    static constexpr uint8_t HEADER_MAGIC2 = 0x55;
 
-    const uint8_t FOOTER_MAGIC1 = 0x55;
-    const uint8_t FOOTER_MAGIC2 = 0xAA;
+    static constexpr uint8_t FOOTER_MAGIC1 = 0x55;
+    static constexpr uint8_t FOOTER_MAGIC2 = 0xAA;
 
     // reported errors from the generator:
     enum class Errors { // bitmask

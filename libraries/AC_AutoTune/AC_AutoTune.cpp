@@ -153,7 +153,7 @@ bool AC_AutoTune::init_position_controller(void)
     init_z_limits();
 
     // initialise the vertical position controller
-    pos_control->init_U_controller();
+    pos_control->D_init_controller();
 
     return true;
 }
@@ -236,7 +236,7 @@ void AC_AutoTune::run()
     if (!motors->armed() || !motors->get_interlock()) {
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         attitude_control->set_throttle_out(0.0f, true, 0.0f);
-        pos_control->relax_U_controller(0.0f);
+        pos_control->D_relax_controller(0.0f);
         return;
     }
 
@@ -319,8 +319,8 @@ void AC_AutoTune::run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // Update vertical position controller with pilot climb rate input
-    pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
-    pos_control->update_U_controller();
+    pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
+    pos_control->D_update_controller();
 }
 
 // return true if vehicle is close to level
@@ -328,6 +328,10 @@ bool AC_AutoTune::currently_level()
 {
     // abort AutoTune if we pass 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
     const uint32_t now_ms = AP_HAL::millis();
+    if (fabsf(attitude_control->get_rate_ef_target_rads().z) > 0.5 * attitude_control->get_slew_yaw_max_rads()) {
+        // reset if the target yaw rate is above half the slew rate
+        level_start_time_ms = now_ms;
+    }
     if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
         mode = TuneMode::FAILED;
@@ -706,7 +710,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
 
     if (!have_position) {
         have_position = true;
-        start_position_neu_m = pos_control->get_pos_estimate_NEU_m();
+        start_position_ned_m = pos_control->get_pos_estimate_NED_m();
     }
 
     // don't go past 10 degrees, as autotune result would deteriorate too much
@@ -719,9 +723,9 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
     // target position. That corresponds to a lean angle of 2.5 degrees
     const float yaw_dist_limit_m = 5.0;
 
-    Vector3f pos_error_neu_m = (pos_control->get_pos_estimate_NEU_m() - start_position_neu_m).tofloat();
-    pos_error_neu_m.z = 0;
-    float dist_m = pos_error_neu_m.length();
+    Vector3f pos_error_ned_m = (pos_control->get_pos_estimate_NED_m() - start_position_ned_m).tofloat();
+    pos_error_ned_m.z = 0;
+    float dist_m = pos_error_ned_m.length();
     if (dist_m < 0.10) {
         // don't do anything within 10cm
         return;
@@ -731,7 +735,7 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
       very simple linear controller
      */
     float scaling = constrain_float(angle_max_rad * dist_m / dist_limit_m, 0, angle_max_rad);
-    Vector2f angle_ne(pos_error_neu_m.x, pos_error_neu_m.y);
+    Vector2f angle_ne(pos_error_ned_m.x, pos_error_ned_m.y);
     angle_ne *= scaling / dist_m;
 
     // rotate into body frame
@@ -749,14 +753,14 @@ void AC_AutoTune::get_poshold_attitude_rad(float &roll_out_rad, float &pitch_out
       position. This ensures that autotune doesn't have to deal with
       more than 2.5 degrees of attitude on the axis it is tuning
      */
-    float target_yaw_rad = atan2f(pos_error_neu_m.y, pos_error_neu_m.x);
+    float target_yaw_rad = atan2f(pos_error_ned_m.y, pos_error_ned_m.x);
     if (axis == AxisType::PITCH) {
         // for roll and yaw tuning we point along the wind, for pitch
         // we point across the wind
         target_yaw_rad += radians(90);
     }
     // go to the nearest 180 degree mark, with 5 degree slop to prevent oscillation
-    if (fabsf(yaw_out_rad - target_yaw_rad) > radians(95.0)) {
+    if (fabsf(wrap_PI(yaw_out_rad - target_yaw_rad)) > radians(95.0)) {
         target_yaw_rad += radians(180.0);
     }
 

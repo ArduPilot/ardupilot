@@ -95,7 +95,7 @@ class HWDef:
         '''check if a string is an integer'''
         try:
             int(str)
-        except Exception:
+        except ValueError:
             return False
         return True
 
@@ -294,6 +294,9 @@ class HWDef:
             'HAL_SKIP_AUTO_INTERNAL_I2C_PROBE': 'HAL_SKIP_AUTO_INTERNAL_I2C_PROBE is no longer used; try "define AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED 0',  # noqa:E501
             'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE': 'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE is no longer used; try "define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0"',  # noqa:E501
             'BOARD_PWM_COUNT_DEFAULT': 'BOARD_PWM_COUNT_DEFAULT is no longer used; remove it from your hwdef files',
+            'HAL_PICCOLO_CAN_ENABLE': 'HAL_PICCOLO_CAN_ENABLE was renamed to AP_PICCOLOCAN_ENABLED; fix your hwdef file',
+            'HAL_PERIPH_ENABLE_NETWORKING': 'HAL_PERIPH_ENABLE_NETWORKING is no longer used; try "define AP_PERIPH_NETWORKING_ENABLED 1"',  # noqa:E501
+            'HAL_PROBE_EXTERNAL_I2C_BAROS': 'HAL_PROBE_EXTERNAL_I2C_BAROS is no longer used; try "define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1"',  # noqa:E501
         }
 
     def assert_good_define(self, name):
@@ -580,11 +583,6 @@ class HWDef:
             probe = baro.probe
 
             n = len(devlist)+1
-
-            if driver == "DPS280":
-                # special handling for DPS280; use a probe method of
-                # the correct signature to pass into probe_spi_dev:
-                probe = "probe_280"
 
             backend_probe_method = f"AP_Baro_{driver}::{probe}"
 

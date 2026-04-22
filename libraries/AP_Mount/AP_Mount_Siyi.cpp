@@ -106,14 +106,7 @@ void AP_Mount_Siyi::update()
     update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -638,18 +631,24 @@ bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool forc
 }
 
 // send target pitch and yaw rates to gimbal
-// yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-void AP_Mount_Siyi::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
+void AP_Mount_Siyi::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+    const bool yaw_is_ef = rate_rads.yaw_is_ef;
+
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
     rotate_gimbal(pitch_rate_scalar, yaw_rate_scalar, yaw_is_ef);
 }
 
 // send target pitch and yaw angles to gimbal
-// yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef)
+void AP_Mount_Siyi::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    bool yaw_is_ef = angle_rad.yaw_is_ef;
+
     // stop gimbal if no recent actual angles
     uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_current_angle_rad_ms >= 200) {
@@ -994,13 +993,13 @@ void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
         return;
     }
 
-    static const uint8_t vendor_name[32] = "Siyi";
-    static uint8_t model_name[32] {};
+    static const uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN] { "Siyi" };
+    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN] {};
     const uint32_t fw_version = _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
-    const char cam_definition_uri[140] {};
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
 
     // copy model name
-    strncpy((char *)model_name, get_model_name(), sizeof(model_name)-1);
+    strncpy_noterm((char *)model_name, get_model_name(), sizeof(model_name));
 
     // focal length
     // To-Do: check these values are correct for A2, ZR30, ZT30

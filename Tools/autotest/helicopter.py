@@ -4,16 +4,17 @@ Fly Helicopter in SITL
 AP_FLAKE8_CLEAN
 '''
 
-from arducopter import AutoTestCopter
-
-import vehicle_test_suite
-from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException
-
-from pymavlink import mavutil
-from pysim import vehicleinfo
-
 import copy
 import operator
+
+from pymavlink import mavutil
+
+import vehicle_test_suite
+
+from arducopter import AutoTestCopter
+from pysim import vehicleinfo
+from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import NotAchievedException
 
 
 class AutoTestHelicopter(AutoTestCopter):
@@ -38,6 +39,12 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def is_heli(self):
         return True
+
+    def subgroupvarptr_activation_params(self):
+        ret = super(AutoTestHelicopter, self).subgroupvarptr_activation_params()
+        # AC_CustomControl is disabled on heli (AC_CUSTOMCONTROL_MULTI_ENABLED is false)
+        ret.pop("CC_TYPE", None)
+        return ret
 
     def rc_defaults(self):
         ret = super(AutoTestHelicopter, self).rc_defaults()
@@ -157,7 +164,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("wait for rotor runup to complete")
         if self.get_parameter("H_RSC_MODE") == 4:
             self.context_collect('STATUSTEXT')
-            self.wait_statustext("Governor Engaged", check_context=True)
+            self.wait_statustext("Runup Complete", check_context=True)
         elif self.get_parameter("H_RSC_MODE") == 3:
             self.wait_rpm(1, 1300, 1400)
         else:
@@ -226,7 +233,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
     def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
-        self.set_parameter("PILOT_TKOFF_ALT", 700)
+        self.set_parameter("PILOT_TKO_ALT_M", 7.0)
         self.change_mode('POSHOLD')
         self.zero_throttle()
         self.set_rc(8, 1000)

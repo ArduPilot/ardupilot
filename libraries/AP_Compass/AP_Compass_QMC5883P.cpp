@@ -73,7 +73,7 @@
 #define DEBUG 0
 #endif
 
-AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_QMC5883P::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
         bool force_external,
         enum Rotation rotation)
 {
@@ -195,11 +195,6 @@ void AP_Compass_QMC5883P::timer()
     Vector3f field = Vector3f{x * range_scale, y * range_scale, z * range_scale };
 
     accumulate_sample(field, 20);
-}
-
-void AP_Compass_QMC5883P::read()
-{
-    drain_accumulated_samples();
 }
 
 void AP_Compass_QMC5883P::_dump_registers()

@@ -2,7 +2,7 @@
 
 Allows changing some camera settings that are not normallly used by the autopilot
 
-# Parameters
+## Parameters
 
 ## CAM1_THERM_PAL
 
@@ -40,7 +40,7 @@ Supported values are
 0: Disabled (30fps)
 1: Enabled (25 fps)
 
-# Operation
+## Operation
 
 Install the lua script in the APM/SCRIPTS directory on the flight
 controllers microSD card. Review the above parameter descriptions and

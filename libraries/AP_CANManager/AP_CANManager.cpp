@@ -213,7 +213,7 @@ void AP_CANManager::init()
             AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
             break;
 #endif
-#if HAL_PICCOLO_CAN_ENABLE
+#if AP_PICCOLOCAN_ENABLED
         case AP_CAN::Protocol::PiccoloCAN:
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = NEW_NOTHROW AP_PiccoloCAN;
 

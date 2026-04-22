@@ -45,10 +45,18 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // servo only natively supports angles:
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+
 private:
 
+    // called by the backend to set the servo angles:
+    void send_target_angles(const MountAngleTarget& angle_rad) override;
+
     // update body-frame angle outputs from earth-frame targets
-    void update_angle_outputs(const MountTarget& angle_rad);
+    void update_angle_outputs(const MountAngleTarget& angle_rad);
 
     ///  moves servo with the given function id to the specified angle.  all angles are in body-frame and degrees * 10
     void move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);

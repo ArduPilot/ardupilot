@@ -8,7 +8,7 @@ The CUAV-V6X-v2 is based on the Pixhawk​​® Autopilot FMUv6X Standard, Autop
 
 The CUAV-V6X-v2 is an upgraded version of CUAV-V6X flight controller. It has the following differences:
 
-- First 8 PWM outputs support switching between 3.3V voltage and 5V voltage.
+- All PWM outputs support switching between 3.3V voltage and 5V voltage.
 - Replace one of the ICP20100 barometer with BMP581.
 - Replace ICM42688P with IIM42652 and ICM20649 with ICM45686.
 
@@ -19,7 +19,7 @@ The CUAV-V6X-v2 is an upgraded version of CUAV-V6X flight controller. It has the
 ## Features
 
 - STM32H753 microcontroller
-- 3 IMUs: IIM42652 and BMI088 and ICM45686
+- 3 IMUs: one IIM42652 with an external crystal oscillator, BMI088 and ICM45686
 - builtin RM3100 magnetometer
 - 2 barometers: BMP581 and ICP20100
 - microSD card slot
@@ -52,19 +52,19 @@ The USART3 connector is labelled debug, but is available as a general purpose UA
 
 ## RC Input
 
-RC input is configured on the port marked DSM/SBUS RC and PPM IN for all unidirectional protocols. For bi-directional or half duplex, a full UART should be used. See :ref:`common-rc-systems` for details for each protocol.
+RC input is configured on the port marked DSM/SBUS RC and PPM IN for all unidirectional protocols. For bi-directional or half duplex, a full UART should be used. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for each protocol.
 
 ## PWM Output
 
-The CUAV-V6X-v2 supports up to 16 PWM outputs. First 8 outputs (labelled M1 to M8) are the "main" outputs. It controlled by a dedicated STM32F103 IO controller. All support Bi-Directional DShot.
+The CUAV-V6X-v2 supports up to 16 PWM outputs. First 8 outputs (labelled M1 to M8) are the "main" outputs. It controlled by a dedicated STM32F103 IO controller.
 
-The remaining 8 outputs (labelled A1 to A8) are the "auxiliary" outputs. These are directly attached to the STM32H753 and support all PWM protocols. The first 6 of the auxiliary PWM outputs support BDShot.
+The remaining 8 outputs (labelled A1 to A8) are the "auxiliary" outputs. These are directly attached to the STM32H753. A1 to A6 support all PWM protocols and Bi-Directional DShot. A7 and A8 only support PWM.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1 (TIM2)
- - PWM 3 and 4 in group2 (TIM4)
- - PWM 5, 6, 7 and 8 in group3 (TIM3)
+- PWM 1 and 2 in group1 (TIM2)
+- PWM 3 and 4 in group2 (TIM4)
+- PWM 5, 6, 7 and 8 in group3 (TIM3)
 
 The 8 auxiliary PWM outputs are in 3 groups:
 
@@ -74,7 +74,7 @@ The 8 auxiliary PWM outputs are in 3 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
-The 8 main PWM outputs of CUAV-V6X-v2 flight controller support switching between 3.3V voltage and 5V voltage output. It can be switched to 5V by setting GPIO 81 high by setting up a Voltage-Level Translator to control it (set the :ref:`BRD_PWM_VOLT_SEL<BRD_PWM_VOLT_SEL>` parameter in ArduPilot).
+All PWM outputs of CUAV-V6X-v2 flight controller support switching between 3.3V voltage and 5V voltage output. It can be switched to 5V by setting GPIO 81 high by setting up a Voltage-Level Translator to control it (set the [BRD_PWM_VOLT_SEL](https://ardupilot.org/copter/docs/parameters.html#brd-pwm-volt-sel-set-pwm-out-voltage) parameter in ArduPilot).
 
 ## Battery Monitoring
 
@@ -88,7 +88,7 @@ The CUAV-V6X-v2 has a RM3100 builtin compass, you can also attach external compa
 
 ## GPIOs
 
-The auxiliary PWM ports and some pin can be used as GPIOs (relays, buttons, RPM etc). 
+The auxiliary PWM ports and some pin can be used as GPIOs (relays, buttons, RPM etc).
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
@@ -117,7 +117,7 @@ The CUAV-V6X-v2 has 3 analog inputs
 
 - ADC Pin13 -> ADC 3.3V Sense
 - ADC Pin12 -> ADC 6.6V Sense
-- ADC Pin103 -> RSSI voltage monitoring. Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 103 to analog RSSI input.
+- ADC Pin103 -> RSSI voltage monitoring. Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 1 and [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 103 to analog RSSI input.
 
 ## CAN
 
@@ -125,7 +125,7 @@ The CUAV-V6X-v2 has two independent CAN buses.
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "CUAV-V6X-v2".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "CUAV-V6X-v2".
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station.
 

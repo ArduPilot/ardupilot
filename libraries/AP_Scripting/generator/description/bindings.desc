@@ -362,9 +362,10 @@ singleton AP_Vehicle method set_target_pos_NED boolean Vector3f boolean float -3
 singleton AP_Vehicle method set_target_posvel_NED boolean Vector3f Vector3f
 singleton AP_Vehicle method set_target_posvelaccel_NED boolean Vector3f Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
 singleton AP_Vehicle method set_target_velaccel_NED boolean Vector3f Vector3f boolean float -360 +360 boolean float'skip_check boolean
-singleton AP_Vehicle method set_target_velocity_NED boolean Vector3f
+singleton AP_Vehicle manual set_target_velocity_NED lua_AP_Vehicle_set_target_velocity_NED 2 1
 singleton AP_Vehicle method set_target_angle_and_climbrate boolean float -180 180 float -90 90 float -360 360 float'skip_check boolean float'skip_check
 singleton AP_Vehicle method set_target_rate_and_throttle boolean float'skip_check float'skip_check float'skip_check float'skip_check
+singleton AP_Vehicle method set_target_angle_and_rate_and_throttle boolean float -180 180 float -90 90 float -360 360 float'skip_check float'skip_check float'skip_check float'skip_check
 singleton AP_Vehicle method get_circle_radius boolean float'Null
 singleton AP_Vehicle method set_circle_rate boolean float'skip_check
 singleton AP_Vehicle method set_steering_and_throttle boolean float -1 1 float -1 1
@@ -793,6 +794,7 @@ singleton AP::motors() method get_pitch_ff float
 singleton AP::motors() method get_yaw float
 singleton AP::motors() method get_yaw_ff float
 singleton AP::motors() method get_throttle float
+singleton AP::motors() method get_throttle_in float
 singleton AP::motors() method get_forward float
 singleton AP::motors() method get_lateral float
 singleton AP::motors() method get_spool_state uint8_t
@@ -852,12 +854,14 @@ singleton AR_AttitudeControl method get_srate void float'Ref float'Ref
 include AP_Mount/AP_Mount.h
 singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
 singleton AP_Mount rename mount
+
 singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t'skip_check
 singleton AP_Mount method set_mode void uint8_t'skip_check MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
 singleton AP_Mount method set_angle_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_rate_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_roi_target void uint8_t'skip_check Location
 singleton AP_Mount method get_attitude_euler boolean uint8_t'skip_check float'Null float'Null float'Null
+singleton AP_Mount method set_natively_supported_mount_target_types void uint8_t'skip_check uint8_t'skip_check
 singleton AP_Mount method get_rate_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
@@ -1062,10 +1066,10 @@ singleton AC_Fence method get_margin_breaches uint8_t
 singleton AC_Fence method get_margin_breach_time uint32_t
 singleton AC_Fence method get_breach_distance float uint8_t'skip_check
 singleton AC_Fence method get_breach_direction_NED boolean uint8_t'skip_check Vector3f'Null Location'Null
-singleton AC_Fence method get_safe_alt_min_m float
-singleton AC_Fence method get_safe_alt_min_m rename get_safe_alt_min
-singleton AC_Fence method get_safe_alt_max_m float
-singleton AC_Fence method get_safe_alt_max_m rename get_safe_alt_max
+singleton AC_Fence method get_safe_alt_min_m_and_frame void float'Ref uint8_t'Ref
+singleton AC_Fence method get_safe_alt_min_m_and_frame rename get_safe_alt_min
+singleton AC_Fence method get_safe_alt_max_m_and_frame void float'Ref uint8_t'Ref
+singleton AC_Fence method get_safe_alt_max_m_and_frame rename get_safe_alt_max
 singleton AC_Fence method present uint8_t
 singleton AC_Fence method get_enabled_fences uint8_t
 
@@ -1129,19 +1133,20 @@ include AP_Servo_Telem/AP_Servo_Telem_config.h
 singleton AP_Servo_Telem depends AP_SERVO_TELEM_ENABLED
 singleton AP_Servo_Telem rename servo_telem
 singleton AP_Servo_Telem method get_telem boolean uint8_t'skip_check AP_Servo_Telem::TelemetryData'Null
+singleton AP_Servo_Telem method update_telem_data void uint8_t'skip_check AP_Servo_Telem::TelemetryData
 
 userdata AP_Servo_Telem::TelemetryData depends AP_SERVO_TELEM_ENABLED
-userdata AP_Servo_Telem::TelemetryData rename AP_Servo_Telem_Data
-userdata AP_Servo_Telem::TelemetryData field command_position float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION
-userdata AP_Servo_Telem::TelemetryData field measured_position float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION
-userdata AP_Servo_Telem::TelemetryData field force float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::FORCE
-userdata AP_Servo_Telem::TelemetryData field speed float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::SPEED
-userdata AP_Servo_Telem::TelemetryData field voltage float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::VOLTAGE
-userdata AP_Servo_Telem::TelemetryData field current float'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::CURRENT
-userdata AP_Servo_Telem::TelemetryData field duty_cycle uint8_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
-userdata AP_Servo_Telem::TelemetryData field motor_temperature_cdeg int16_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
-userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
-userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
+userdata AP_Servo_Telem::TelemetryData rename ServoTelemetryData
+userdata AP_Servo_Telem::TelemetryData field command_position float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::COMMANDED_POSITION
+userdata AP_Servo_Telem::TelemetryData field measured_position float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MEASURED_POSITION
+userdata AP_Servo_Telem::TelemetryData field force float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::FORCE
+userdata AP_Servo_Telem::TelemetryData field speed float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::SPEED
+userdata AP_Servo_Telem::TelemetryData field voltage float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::VOLTAGE
+userdata AP_Servo_Telem::TelemetryData field current float'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::CURRENT
+userdata AP_Servo_Telem::TelemetryData field duty_cycle uint8_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE
+userdata AP_Servo_Telem::TelemetryData field motor_temperature_cdeg int16_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
+userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::PCB_TEMP
+userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
 userdata AP_Servo_Telem::TelemetryData field last_update_ms uint32_t'skip_check read
 
 -- simulator only bindings

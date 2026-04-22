@@ -267,7 +267,7 @@ bool NavEKF3_core::getPosNE(Vector2p &posNE) const
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
             auto &gps = dal.gps();
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = gps.location(selected_gps);
                 posNE = public_origin.get_distance_NE_postype(gpsloc);
@@ -381,7 +381,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
 bool NavEKF3_core::getGPSLLH(Location &loc) const
 {
     const auto &gps = dal.gps();
-    if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+    if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D)) {
         loc = gps.location(selected_gps);
         return true;
     }
@@ -510,6 +510,23 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     tasVar   = sqrtF(tasTestRatio);
     offset   = posResetNE.tofloat();
 
+    return true;
+}
+
+// return 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
+bool NavEKF3_core::getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
+{
+    if (!statesInitialised) {
+        return false;
+    }
+    // Horizontal position: 2D RMS from the N and E position state variances P[7][7] and P[8][8].
+    // sqrt(P[7][7] + P[8][8]) is the 2D (circular) RMS, matching the convention used by GPS
+    // receivers when reporting horizontal accuracy (hAcc).
+    pos_horiz_m = sqrtF(P[7][7] + P[8][8]);
+    // Vertical position: 1-sigma from the D position state variance P[9][9]
+    pos_vert_m  = sqrtF(P[9][9]);
+    // Velocity: worst-case 1-sigma across NED components
+    vel_m_s     = sqrtF(MAX(MAX(P[4][4], P[5][5]), P[6][6]));
     return true;
 }
 

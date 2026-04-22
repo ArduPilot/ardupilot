@@ -83,9 +83,9 @@ public:
     // returns false if estimate is unavailable
     bool getAirSpdVec(Vector3f &vel) const;
 
-    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-    // returns false if the data is unavilable
-    bool getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
+    // returns false if the data is unavailable
+    bool getAirSpdHealthData(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
@@ -178,6 +178,9 @@ public:
 
     // return the innovation consistency test ratios
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
+
+    // return 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
+    bool getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const;
 
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
@@ -355,9 +358,15 @@ public:
     // are we using (aka fusing) external nav for yaw?
     bool using_extnav_for_yaw() const;
 
+    // are we using a gps
+    bool using_gps() const;
+
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
     
+    // check if configured to use GPS for position estimation
+    bool configuredToUseGPSForPos(void) const;
+
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
 

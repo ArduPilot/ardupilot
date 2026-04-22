@@ -20,15 +20,15 @@ Run takeoff test on Copter.
 Warning - This is NOT production code; it's a simple demo of capability.
 """
 
-import rclpy
 import time
 
-from rclpy.node import Node
-from geographic_msgs.msg import GeoPoseStamped
+import rclpy
+
 from ardupilot_msgs.srv import ArmMotors
 from ardupilot_msgs.srv import ModeSwitch
 from ardupilot_msgs.srv import Takeoff
-
+from geographic_msgs.msg import GeoPoseStamped
+from rclpy.node import Node
 
 COPTER_MODE_GUIDED = 4
 

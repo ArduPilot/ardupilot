@@ -582,6 +582,8 @@ void NavEKF3_core::FuseMagnetometer()
     }
 
     Vector24 H_MAG;
+    // index of H_MAG which is exactly 1, for more efficient computation below
+    int H_MAG_unit_index;
     for (uint8_t obsIndex = 0; obsIndex <= 2; obsIndex++) {
 
         if (obsIndex == 0) {
@@ -597,6 +599,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 1.0f;
             H_MAG[20] = 0.0f;
             H_MAG[21] = 0.0f;
+            H_MAG_unit_index = 19;
 
             // calculate Kalman gain
             const Vector5 SK_MX {
@@ -607,59 +610,37 @@ void NavEKF3_core::FuseMagnetometer()
                 2.0f*q0*q3 + 2.0f*q1*q2
             };
 
-            Kfusion[0] = SK_MX[0]*(P[0][19] + P[0][1]*SH_MAG[0] - P[0][2]*SH_MAG[1] + P[0][3]*SH_MAG[2] + P[0][0]*SK_MX[2] - P[0][16]*SK_MX[1] + P[0][17]*SK_MX[4] - P[0][18]*SK_MX[3]);
-            Kfusion[1] = SK_MX[0]*(P[1][19] + P[1][1]*SH_MAG[0] - P[1][2]*SH_MAG[1] + P[1][3]*SH_MAG[2] + P[1][0]*SK_MX[2] - P[1][16]*SK_MX[1] + P[1][17]*SK_MX[4] - P[1][18]*SK_MX[3]);
-            Kfusion[2] = SK_MX[0]*(P[2][19] + P[2][1]*SH_MAG[0] - P[2][2]*SH_MAG[1] + P[2][3]*SH_MAG[2] + P[2][0]*SK_MX[2] - P[2][16]*SK_MX[1] + P[2][17]*SK_MX[4] - P[2][18]*SK_MX[3]);
-            Kfusion[3] = SK_MX[0]*(P[3][19] + P[3][1]*SH_MAG[0] - P[3][2]*SH_MAG[1] + P[3][3]*SH_MAG[2] + P[3][0]*SK_MX[2] - P[3][16]*SK_MX[1] + P[3][17]*SK_MX[4] - P[3][18]*SK_MX[3]);
-            Kfusion[4] = SK_MX[0]*(P[4][19] + P[4][1]*SH_MAG[0] - P[4][2]*SH_MAG[1] + P[4][3]*SH_MAG[2] + P[4][0]*SK_MX[2] - P[4][16]*SK_MX[1] + P[4][17]*SK_MX[4] - P[4][18]*SK_MX[3]);
-            Kfusion[5] = SK_MX[0]*(P[5][19] + P[5][1]*SH_MAG[0] - P[5][2]*SH_MAG[1] + P[5][3]*SH_MAG[2] + P[5][0]*SK_MX[2] - P[5][16]*SK_MX[1] + P[5][17]*SK_MX[4] - P[5][18]*SK_MX[3]);
-            Kfusion[6] = SK_MX[0]*(P[6][19] + P[6][1]*SH_MAG[0] - P[6][2]*SH_MAG[1] + P[6][3]*SH_MAG[2] + P[6][0]*SK_MX[2] - P[6][16]*SK_MX[1] + P[6][17]*SK_MX[4] - P[6][18]*SK_MX[3]);
-            Kfusion[7] = SK_MX[0]*(P[7][19] + P[7][1]*SH_MAG[0] - P[7][2]*SH_MAG[1] + P[7][3]*SH_MAG[2] + P[7][0]*SK_MX[2] - P[7][16]*SK_MX[1] + P[7][17]*SK_MX[4] - P[7][18]*SK_MX[3]);
-            Kfusion[8] = SK_MX[0]*(P[8][19] + P[8][1]*SH_MAG[0] - P[8][2]*SH_MAG[1] + P[8][3]*SH_MAG[2] + P[8][0]*SK_MX[2] - P[8][16]*SK_MX[1] + P[8][17]*SK_MX[4] - P[8][18]*SK_MX[3]);
-            Kfusion[9] = SK_MX[0]*(P[9][19] + P[9][1]*SH_MAG[0] - P[9][2]*SH_MAG[1] + P[9][3]*SH_MAG[2] + P[9][0]*SK_MX[2] - P[9][16]*SK_MX[1] + P[9][17]*SK_MX[4] - P[9][18]*SK_MX[3]);
+            uint32_t kalman_mask = (1<<10)-1; // values to calculate in Kfusion (others are set to zero)
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = SK_MX[0]*(P[10][19] + P[10][1]*SH_MAG[0] - P[10][2]*SH_MAG[1] + P[10][3]*SH_MAG[2] + P[10][0]*SK_MX[2] - P[10][16]*SK_MX[1] + P[10][17]*SK_MX[4] - P[10][18]*SK_MX[3]);
-                Kfusion[11] = SK_MX[0]*(P[11][19] + P[11][1]*SH_MAG[0] - P[11][2]*SH_MAG[1] + P[11][3]*SH_MAG[2] + P[11][0]*SK_MX[2] - P[11][16]*SK_MX[1] + P[11][17]*SK_MX[4] - P[11][18]*SK_MX[3]);
-                Kfusion[12] = SK_MX[0]*(P[12][19] + P[12][1]*SH_MAG[0] - P[12][2]*SH_MAG[1] + P[12][3]*SH_MAG[2] + P[12][0]*SK_MX[2] - P[12][16]*SK_MX[1] + P[12][17]*SK_MX[4] - P[12][18]*SK_MX[3]);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = SK_MX[0]*(P[stateIndex][19] + P[stateIndex][1]*SH_MAG[0] - P[stateIndex][2]*SH_MAG[1] + P[stateIndex][3]*SH_MAG[2] + P[stateIndex][0]*SK_MX[2] - P[stateIndex][16]*SK_MX[1] + P[stateIndex][17]*SK_MX[4] - P[stateIndex][18]*SK_MX[3]);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
+
             // zero Kalman gains to inhibit magnetic field state estimation
             if (!inhibitMagStates) {
-                Kfusion[16] = SK_MX[0]*(P[16][19] + P[16][1]*SH_MAG[0] - P[16][2]*SH_MAG[1] + P[16][3]*SH_MAG[2] + P[16][0]*SK_MX[2] - P[16][16]*SK_MX[1] + P[16][17]*SK_MX[4] - P[16][18]*SK_MX[3]);
-                Kfusion[17] = SK_MX[0]*(P[17][19] + P[17][1]*SH_MAG[0] - P[17][2]*SH_MAG[1] + P[17][3]*SH_MAG[2] + P[17][0]*SK_MX[2] - P[17][16]*SK_MX[1] + P[17][17]*SK_MX[4] - P[17][18]*SK_MX[3]);
-                Kfusion[18] = SK_MX[0]*(P[18][19] + P[18][1]*SH_MAG[0] - P[18][2]*SH_MAG[1] + P[18][3]*SH_MAG[2] + P[18][0]*SK_MX[2] - P[18][16]*SK_MX[1] + P[18][17]*SK_MX[4] - P[18][18]*SK_MX[3]);
-                Kfusion[19] = SK_MX[0]*(P[19][19] + P[19][1]*SH_MAG[0] - P[19][2]*SH_MAG[1] + P[19][3]*SH_MAG[2] + P[19][0]*SK_MX[2] - P[19][16]*SK_MX[1] + P[19][17]*SK_MX[4] - P[19][18]*SK_MX[3]);
-                Kfusion[20] = SK_MX[0]*(P[20][19] + P[20][1]*SH_MAG[0] - P[20][2]*SH_MAG[1] + P[20][3]*SH_MAG[2] + P[20][0]*SK_MX[2] - P[20][16]*SK_MX[1] + P[20][17]*SK_MX[4] - P[20][18]*SK_MX[3]);
-                Kfusion[21] = SK_MX[0]*(P[21][19] + P[21][1]*SH_MAG[0] - P[21][2]*SH_MAG[1] + P[21][3]*SH_MAG[2] + P[21][0]*SK_MX[2] - P[21][16]*SK_MX[1] + P[21][17]*SK_MX[4] - P[21][18]*SK_MX[3]);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             // zero Kalman gains to inhibit wind state estimation
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = SK_MX[0]*(P[22][19] + P[22][1]*SH_MAG[0] - P[22][2]*SH_MAG[1] + P[22][3]*SH_MAG[2] + P[22][0]*SK_MX[2] - P[22][16]*SK_MX[1] + P[22][17]*SK_MX[4] - P[22][18]*SK_MX[3]);
-                Kfusion[23] = SK_MX[0]*(P[23][19] + P[23][1]*SH_MAG[0] - P[23][2]*SH_MAG[1] + P[23][3]*SH_MAG[2] + P[23][0]*SK_MX[2] - P[23][16]*SK_MX[1] + P[23][17]*SK_MX[4] - P[23][18]*SK_MX[3]);
-            } else {
-                // zero indexes 22 to 23 = 2
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=0; i<24; i++) {
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = SK_MX[0]*(P[i][19] + P[i][1]*SH_MAG[0] - P[i][2]*SH_MAG[1] + P[i][3]*SH_MAG[2] + P[i][0]*SK_MX[2] - P[i][16]*SK_MX[1] + P[i][17]*SK_MX[4] - P[i][18]*SK_MX[3]);
+                }
+                Kfusion[i] = res;
             }
 
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
@@ -679,6 +660,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 0.0f;
             H_MAG[20] = 1.0f;
             H_MAG[21] = 0.0f;
+            H_MAG_unit_index = 20;
 
             // calculate Kalman gain
             const Vector5 SK_MY {
@@ -689,60 +671,37 @@ void NavEKF3_core::FuseMagnetometer()
                 2.0f*q0*q1 + 2.0f*q2*q3
             };
 
-            Kfusion[0] = SK_MY[0]*(P[0][20] + P[0][0]*SH_MAG[2] + P[0][1]*SH_MAG[1] + P[0][2]*SH_MAG[0] - P[0][3]*SK_MY[2] - P[0][17]*SK_MY[1] - P[0][16]*SK_MY[3] + P[0][18]*SK_MY[4]);
-            Kfusion[1] = SK_MY[0]*(P[1][20] + P[1][0]*SH_MAG[2] + P[1][1]*SH_MAG[1] + P[1][2]*SH_MAG[0] - P[1][3]*SK_MY[2] - P[1][17]*SK_MY[1] - P[1][16]*SK_MY[3] + P[1][18]*SK_MY[4]);
-            Kfusion[2] = SK_MY[0]*(P[2][20] + P[2][0]*SH_MAG[2] + P[2][1]*SH_MAG[1] + P[2][2]*SH_MAG[0] - P[2][3]*SK_MY[2] - P[2][17]*SK_MY[1] - P[2][16]*SK_MY[3] + P[2][18]*SK_MY[4]);
-            Kfusion[3] = SK_MY[0]*(P[3][20] + P[3][0]*SH_MAG[2] + P[3][1]*SH_MAG[1] + P[3][2]*SH_MAG[0] - P[3][3]*SK_MY[2] - P[3][17]*SK_MY[1] - P[3][16]*SK_MY[3] + P[3][18]*SK_MY[4]);
-            Kfusion[4] = SK_MY[0]*(P[4][20] + P[4][0]*SH_MAG[2] + P[4][1]*SH_MAG[1] + P[4][2]*SH_MAG[0] - P[4][3]*SK_MY[2] - P[4][17]*SK_MY[1] - P[4][16]*SK_MY[3] + P[4][18]*SK_MY[4]);
-            Kfusion[5] = SK_MY[0]*(P[5][20] + P[5][0]*SH_MAG[2] + P[5][1]*SH_MAG[1] + P[5][2]*SH_MAG[0] - P[5][3]*SK_MY[2] - P[5][17]*SK_MY[1] - P[5][16]*SK_MY[3] + P[5][18]*SK_MY[4]);
-            Kfusion[6] = SK_MY[0]*(P[6][20] + P[6][0]*SH_MAG[2] + P[6][1]*SH_MAG[1] + P[6][2]*SH_MAG[0] - P[6][3]*SK_MY[2] - P[6][17]*SK_MY[1] - P[6][16]*SK_MY[3] + P[6][18]*SK_MY[4]);
-            Kfusion[7] = SK_MY[0]*(P[7][20] + P[7][0]*SH_MAG[2] + P[7][1]*SH_MAG[1] + P[7][2]*SH_MAG[0] - P[7][3]*SK_MY[2] - P[7][17]*SK_MY[1] - P[7][16]*SK_MY[3] + P[7][18]*SK_MY[4]);
-            Kfusion[8] = SK_MY[0]*(P[8][20] + P[8][0]*SH_MAG[2] + P[8][1]*SH_MAG[1] + P[8][2]*SH_MAG[0] - P[8][3]*SK_MY[2] - P[8][17]*SK_MY[1] - P[8][16]*SK_MY[3] + P[8][18]*SK_MY[4]);
-            Kfusion[9] = SK_MY[0]*(P[9][20] + P[9][0]*SH_MAG[2] + P[9][1]*SH_MAG[1] + P[9][2]*SH_MAG[0] - P[9][3]*SK_MY[2] - P[9][17]*SK_MY[1] - P[9][16]*SK_MY[3] + P[9][18]*SK_MY[4]);
+            uint32_t kalman_mask = (1<<10)-1; // values to calculate in Kfusion (others are set to zero)
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = SK_MY[0]*(P[10][20] + P[10][0]*SH_MAG[2] + P[10][1]*SH_MAG[1] + P[10][2]*SH_MAG[0] - P[10][3]*SK_MY[2] - P[10][17]*SK_MY[1] - P[10][16]*SK_MY[3] + P[10][18]*SK_MY[4]);
-                Kfusion[11] = SK_MY[0]*(P[11][20] + P[11][0]*SH_MAG[2] + P[11][1]*SH_MAG[1] + P[11][2]*SH_MAG[0] - P[11][3]*SK_MY[2] - P[11][17]*SK_MY[1] - P[11][16]*SK_MY[3] + P[11][18]*SK_MY[4]);
-                Kfusion[12] = SK_MY[0]*(P[12][20] + P[12][0]*SH_MAG[2] + P[12][1]*SH_MAG[1] + P[12][2]*SH_MAG[0] - P[12][3]*SK_MY[2] - P[12][17]*SK_MY[1] - P[12][16]*SK_MY[3] + P[12][18]*SK_MY[4]);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = SK_MY[0]*(P[stateIndex][20] + P[stateIndex][0]*SH_MAG[2] + P[stateIndex][1]*SH_MAG[1] + P[stateIndex][2]*SH_MAG[0] - P[stateIndex][3]*SK_MY[2] - P[stateIndex][17]*SK_MY[1] - P[stateIndex][16]*SK_MY[3] + P[stateIndex][18]*SK_MY[4]);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             // zero Kalman gains to inhibit magnetic field state estimation
             if (!inhibitMagStates) {
-                Kfusion[16] = SK_MY[0]*(P[16][20] + P[16][0]*SH_MAG[2] + P[16][1]*SH_MAG[1] + P[16][2]*SH_MAG[0] - P[16][3]*SK_MY[2] - P[16][17]*SK_MY[1] - P[16][16]*SK_MY[3] + P[16][18]*SK_MY[4]);
-                Kfusion[17] = SK_MY[0]*(P[17][20] + P[17][0]*SH_MAG[2] + P[17][1]*SH_MAG[1] + P[17][2]*SH_MAG[0] - P[17][3]*SK_MY[2] - P[17][17]*SK_MY[1] - P[17][16]*SK_MY[3] + P[17][18]*SK_MY[4]);
-                Kfusion[18] = SK_MY[0]*(P[18][20] + P[18][0]*SH_MAG[2] + P[18][1]*SH_MAG[1] + P[18][2]*SH_MAG[0] - P[18][3]*SK_MY[2] - P[18][17]*SK_MY[1] - P[18][16]*SK_MY[3] + P[18][18]*SK_MY[4]);
-                Kfusion[19] = SK_MY[0]*(P[19][20] + P[19][0]*SH_MAG[2] + P[19][1]*SH_MAG[1] + P[19][2]*SH_MAG[0] - P[19][3]*SK_MY[2] - P[19][17]*SK_MY[1] - P[19][16]*SK_MY[3] + P[19][18]*SK_MY[4]);
-                Kfusion[20] = SK_MY[0]*(P[20][20] + P[20][0]*SH_MAG[2] + P[20][1]*SH_MAG[1] + P[20][2]*SH_MAG[0] - P[20][3]*SK_MY[2] - P[20][17]*SK_MY[1] - P[20][16]*SK_MY[3] + P[20][18]*SK_MY[4]);
-                Kfusion[21] = SK_MY[0]*(P[21][20] + P[21][0]*SH_MAG[2] + P[21][1]*SH_MAG[1] + P[21][2]*SH_MAG[0] - P[21][3]*SK_MY[2] - P[21][17]*SK_MY[1] - P[21][16]*SK_MY[3] + P[21][18]*SK_MY[4]);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             // zero Kalman gains to inhibit wind state estimation
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = SK_MY[0]*(P[22][20] + P[22][0]*SH_MAG[2] + P[22][1]*SH_MAG[1] + P[22][2]*SH_MAG[0] - P[22][3]*SK_MY[2] - P[22][17]*SK_MY[1] - P[22][16]*SK_MY[3] + P[22][18]*SK_MY[4]);
-                Kfusion[23] = SK_MY[0]*(P[23][20] + P[23][0]*SH_MAG[2] + P[23][1]*SH_MAG[1] + P[23][2]*SH_MAG[0] - P[23][3]*SK_MY[2] - P[23][17]*SK_MY[1] - P[23][16]*SK_MY[3] + P[23][18]*SK_MY[4]);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=0; i<24; i++) {
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = SK_MY[0]*(P[i][20] + P[i][0]*SH_MAG[2] + P[i][1]*SH_MAG[1] + P[i][2]*SH_MAG[0] - P[i][3]*SK_MY[2] - P[i][17]*SK_MY[1] - P[i][16]*SK_MY[3] + P[i][18]*SK_MY[4]);
+                }
+                Kfusion[i] = res;
             }
 
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
@@ -763,6 +722,7 @@ void NavEKF3_core::FuseMagnetometer()
             H_MAG[19] = 0.0f;
             H_MAG[20] = 0.0f;
             H_MAG[21] = 1.0f;
+            H_MAG_unit_index = 21;
 
             // calculate Kalman gain
             const Vector5 SK_MZ {
@@ -773,96 +733,60 @@ void NavEKF3_core::FuseMagnetometer()
                 2.0f*q0*q2 + 2.0f*q1*q3
             };
 
-            Kfusion[0] = SK_MZ[0]*(P[0][21] + P[0][0]*SH_MAG[1] - P[0][1]*SH_MAG[2] + P[0][3]*SH_MAG[0] + P[0][2]*SK_MZ[2] + P[0][18]*SK_MZ[1] + P[0][16]*SK_MZ[4] - P[0][17]*SK_MZ[3]);
-            Kfusion[1] = SK_MZ[0]*(P[1][21] + P[1][0]*SH_MAG[1] - P[1][1]*SH_MAG[2] + P[1][3]*SH_MAG[0] + P[1][2]*SK_MZ[2] + P[1][18]*SK_MZ[1] + P[1][16]*SK_MZ[4] - P[1][17]*SK_MZ[3]);
-            Kfusion[2] = SK_MZ[0]*(P[2][21] + P[2][0]*SH_MAG[1] - P[2][1]*SH_MAG[2] + P[2][3]*SH_MAG[0] + P[2][2]*SK_MZ[2] + P[2][18]*SK_MZ[1] + P[2][16]*SK_MZ[4] - P[2][17]*SK_MZ[3]);
-            Kfusion[3] = SK_MZ[0]*(P[3][21] + P[3][0]*SH_MAG[1] - P[3][1]*SH_MAG[2] + P[3][3]*SH_MAG[0] + P[3][2]*SK_MZ[2] + P[3][18]*SK_MZ[1] + P[3][16]*SK_MZ[4] - P[3][17]*SK_MZ[3]);
-            Kfusion[4] = SK_MZ[0]*(P[4][21] + P[4][0]*SH_MAG[1] - P[4][1]*SH_MAG[2] + P[4][3]*SH_MAG[0] + P[4][2]*SK_MZ[2] + P[4][18]*SK_MZ[1] + P[4][16]*SK_MZ[4] - P[4][17]*SK_MZ[3]);
-            Kfusion[5] = SK_MZ[0]*(P[5][21] + P[5][0]*SH_MAG[1] - P[5][1]*SH_MAG[2] + P[5][3]*SH_MAG[0] + P[5][2]*SK_MZ[2] + P[5][18]*SK_MZ[1] + P[5][16]*SK_MZ[4] - P[5][17]*SK_MZ[3]);
-            Kfusion[6] = SK_MZ[0]*(P[6][21] + P[6][0]*SH_MAG[1] - P[6][1]*SH_MAG[2] + P[6][3]*SH_MAG[0] + P[6][2]*SK_MZ[2] + P[6][18]*SK_MZ[1] + P[6][16]*SK_MZ[4] - P[6][17]*SK_MZ[3]);
-            Kfusion[7] = SK_MZ[0]*(P[7][21] + P[7][0]*SH_MAG[1] - P[7][1]*SH_MAG[2] + P[7][3]*SH_MAG[0] + P[7][2]*SK_MZ[2] + P[7][18]*SK_MZ[1] + P[7][16]*SK_MZ[4] - P[7][17]*SK_MZ[3]);
-            Kfusion[8] = SK_MZ[0]*(P[8][21] + P[8][0]*SH_MAG[1] - P[8][1]*SH_MAG[2] + P[8][3]*SH_MAG[0] + P[8][2]*SK_MZ[2] + P[8][18]*SK_MZ[1] + P[8][16]*SK_MZ[4] - P[8][17]*SK_MZ[3]);
-            Kfusion[9] = SK_MZ[0]*(P[9][21] + P[9][0]*SH_MAG[1] - P[9][1]*SH_MAG[2] + P[9][3]*SH_MAG[0] + P[9][2]*SK_MZ[2] + P[9][18]*SK_MZ[1] + P[9][16]*SK_MZ[4] - P[9][17]*SK_MZ[3]);
+            uint32_t kalman_mask = (1<<10)-1; // values to calculate in Kfusion (others are set to zero)
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = SK_MZ[0]*(P[10][21] + P[10][0]*SH_MAG[1] - P[10][1]*SH_MAG[2] + P[10][3]*SH_MAG[0] + P[10][2]*SK_MZ[2] + P[10][18]*SK_MZ[1] + P[10][16]*SK_MZ[4] - P[10][17]*SK_MZ[3]);
-                Kfusion[11] = SK_MZ[0]*(P[11][21] + P[11][0]*SH_MAG[1] - P[11][1]*SH_MAG[2] + P[11][3]*SH_MAG[0] + P[11][2]*SK_MZ[2] + P[11][18]*SK_MZ[1] + P[11][16]*SK_MZ[4] - P[11][17]*SK_MZ[3]);
-                Kfusion[12] = SK_MZ[0]*(P[12][21] + P[12][0]*SH_MAG[1] - P[12][1]*SH_MAG[2] + P[12][3]*SH_MAG[0] + P[12][2]*SK_MZ[2] + P[12][18]*SK_MZ[1] + P[12][16]*SK_MZ[4] - P[12][17]*SK_MZ[3]);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = SK_MZ[0]*(P[stateIndex][21] + P[stateIndex][0]*SH_MAG[1] - P[stateIndex][1]*SH_MAG[2] + P[stateIndex][3]*SH_MAG[0] + P[stateIndex][2]*SK_MZ[2] + P[stateIndex][18]*SK_MZ[1] + P[stateIndex][16]*SK_MZ[4] - P[stateIndex][17]*SK_MZ[3]);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             // zero Kalman gains to inhibit magnetic field state estimation
             if (!inhibitMagStates) {
-                Kfusion[16] = SK_MZ[0]*(P[16][21] + P[16][0]*SH_MAG[1] - P[16][1]*SH_MAG[2] + P[16][3]*SH_MAG[0] + P[16][2]*SK_MZ[2] + P[16][18]*SK_MZ[1] + P[16][16]*SK_MZ[4] - P[16][17]*SK_MZ[3]);
-                Kfusion[17] = SK_MZ[0]*(P[17][21] + P[17][0]*SH_MAG[1] - P[17][1]*SH_MAG[2] + P[17][3]*SH_MAG[0] + P[17][2]*SK_MZ[2] + P[17][18]*SK_MZ[1] + P[17][16]*SK_MZ[4] - P[17][17]*SK_MZ[3]);
-                Kfusion[18] = SK_MZ[0]*(P[18][21] + P[18][0]*SH_MAG[1] - P[18][1]*SH_MAG[2] + P[18][3]*SH_MAG[0] + P[18][2]*SK_MZ[2] + P[18][18]*SK_MZ[1] + P[18][16]*SK_MZ[4] - P[18][17]*SK_MZ[3]);
-                Kfusion[19] = SK_MZ[0]*(P[19][21] + P[19][0]*SH_MAG[1] - P[19][1]*SH_MAG[2] + P[19][3]*SH_MAG[0] + P[19][2]*SK_MZ[2] + P[19][18]*SK_MZ[1] + P[19][16]*SK_MZ[4] - P[19][17]*SK_MZ[3]);
-                Kfusion[20] = SK_MZ[0]*(P[20][21] + P[20][0]*SH_MAG[1] - P[20][1]*SH_MAG[2] + P[20][3]*SH_MAG[0] + P[20][2]*SK_MZ[2] + P[20][18]*SK_MZ[1] + P[20][16]*SK_MZ[4] - P[20][17]*SK_MZ[3]);
-                Kfusion[21] = SK_MZ[0]*(P[21][21] + P[21][0]*SH_MAG[1] - P[21][1]*SH_MAG[2] + P[21][3]*SH_MAG[0] + P[21][2]*SK_MZ[2] + P[21][18]*SK_MZ[1] + P[21][16]*SK_MZ[4] - P[21][17]*SK_MZ[3]);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             // zero Kalman gains to inhibit wind state estimation
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = SK_MZ[0]*(P[22][21] + P[22][0]*SH_MAG[1] - P[22][1]*SH_MAG[2] + P[22][3]*SH_MAG[0] + P[22][2]*SK_MZ[2] + P[22][18]*SK_MZ[1] + P[22][16]*SK_MZ[4] - P[22][17]*SK_MZ[3]);
-                Kfusion[23] = SK_MZ[0]*(P[23][21] + P[23][0]*SH_MAG[1] - P[23][1]*SH_MAG[2] + P[23][3]*SH_MAG[0] + P[23][2]*SK_MZ[2] + P[23][18]*SK_MZ[1] + P[23][16]*SK_MZ[4] - P[23][17]*SK_MZ[3]);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=0; i<24; i++) {
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = SK_MZ[0]*(P[i][21] + P[i][0]*SH_MAG[1] - P[i][1]*SH_MAG[2] + P[i][3]*SH_MAG[0] + P[i][2]*SK_MZ[2] + P[i][18]*SK_MZ[1] + P[i][16]*SK_MZ[4] - P[i][17]*SK_MZ[3]);
+                }
+                Kfusion[i] = res;
             }
 
             // set flags to indicate to other processes that fusion has been performed and is required on the next frame
             // this can be used by other fusion processes to avoid fusing on the same frame as this expensive step
             magFusePerformed = true;
         }
-        // correct the covariance P = (I - K*H)*P
-        // take advantage of the empty columns in KH to reduce the
-        // number of operations
+        // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+        // the zero elements of H to reduce the number of operations.
         for (unsigned i = 0; i<=stateIndexLim; i++) {
-            for (unsigned j = 0; j<=3; j++) {
-                KH[i][j] = Kfusion[i] * H_MAG[j];
-            }
-            for (unsigned j = 4; j<=15; j++) {
-                KH[i][j] = 0.0f;
-            }
-            for (unsigned j = 16; j<=21; j++) {
-                KH[i][j] = Kfusion[i] * H_MAG[j];
-            }
-            for (unsigned j = 22; j<=23; j++) {
-                KH[i][j] = 0.0f;
-            }
-        }
-        for (unsigned j = 0; j<=stateIndexLim; j++) {
-            for (unsigned i = 0; i<=stateIndexLim; i++) {
+            // j as the inner loop allows the compiler to hoist the KH product
+            // to save computation, and do the inner indexing more efficiently.
+            for (unsigned j = 0; j<=stateIndexLim; j++) {
                 ftype res = 0;
-                res += KH[i][0] * P[0][j];
-                res += KH[i][1] * P[1][j];
-                res += KH[i][2] * P[2][j];
-                res += KH[i][3] * P[3][j];
-                res += KH[i][16] * P[16][j];
-                res += KH[i][17] * P[17][j];
-                res += KH[i][18] * P[18][j];
-                res += KH[i][19] * P[19][j];
-                res += KH[i][20] * P[20][j];
-                res += KH[i][21] * P[21][j];
+                res += (Kfusion[i] * H_MAG[0]) * P[0][j];
+                res += (Kfusion[i] * H_MAG[1]) * P[1][j];
+                res += (Kfusion[i] * H_MAG[2]) * P[2][j];
+                res += (Kfusion[i] * H_MAG[3]) * P[3][j];
+                res += (Kfusion[i] * H_MAG[16]) * P[16][j];
+                res += (Kfusion[i] * H_MAG[17]) * P[17][j];
+                res += (Kfusion[i] * H_MAG[18]) * P[18][j];
+                // one value in H is always 1, and the others not mentioned here
+                // are zero, so we can skip that H product to save an operation.
+                res += Kfusion[i] * P[H_MAG_unit_index][j];
                 KHP[i][j] = res;
             }
         }
@@ -881,22 +805,20 @@ void NavEKF3_core::FuseMagnetometer()
                 }
             }
 
-            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-            ForceSymmetry();
-            ConstrainVariances();
-
             // correct the state vector
             for (uint8_t j= 0; j<=stateIndexLim; j++) {
                 statesArray[j] = statesArray[j] - Kfusion[j] * innovMag[obsIndex];
             }
+            stateStruct.quat.normalize();
+
+            // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+            ForceSymmetry();
+            ConstrainVariances();
 
             // add table constraint here for faster convergence
             if (have_table_earth_field && frontend->_mag_ef_limit > 0) {
                 MagTableConstrain();
             }
-
-            stateStruct.quat.normalize();
-
         } else {
             // record bad axis
             if (obsIndex == 0) {
@@ -1197,20 +1119,18 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         magHealth = true;
     }
 
-    // correct the covariance using P = P - K*H*P taking advantage of the fact that only the first 3 elements in H are non zero
-    // calculate K*H*P
-    for (uint8_t row = 0; row <= stateIndexLim; row++) {
-        for (uint8_t column = 0; column <= 3; column++) {
-            KH[row][column] = Kfusion[row] * H_YAW[column];
-        }
-    }
-    for (uint8_t row = 0; row <= stateIndexLim; row++) {
-        for (uint8_t column = 0; column <= stateIndexLim; column++) {
-            ftype tmp = KH[row][0] * P[0][column];
-            tmp += KH[row][1] * P[1][column];
-            tmp += KH[row][2] * P[2][column];
-            tmp += KH[row][3] * P[3][column];
-            KHP[row][column] = tmp;
+    // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+    // the zero elements of H to reduce the number of operations.
+    for (unsigned i = 0; i<=stateIndexLim; i++) {
+        // j as the inner loop allows the compiler to hoist the KH product
+        // to save computation, and do the inner indexing more efficiently.
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
+            ftype res = 0;
+            res += (Kfusion[i] * H_YAW[0]) * P[0][j];
+            res += (Kfusion[i] * H_YAW[1]) * P[1][j];
+            res += (Kfusion[i] * H_YAW[2]) * P[2][j];
+            res += (Kfusion[i] * H_YAW[3]) * P[3][j];
+            KHP[i][j] = res;
         }
     }
 
@@ -1229,15 +1149,15 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
-
         // correct the state vector
         for (uint8_t i=0; i<=stateIndexLim; i++) {
             statesArray[i] -= Kfusion[i] * constrain_ftype(innovYaw, -0.5f, 0.5f);
         }
         stateStruct.quat.normalize();
+
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
 
         // record fusion numerical health status
         faultStatus.bad_yaw = false;
@@ -1250,11 +1170,8 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 }
 
 /*
- * Fuse declination angle using explicit algebraic equations generated with Matlab symbolic toolbox.
- * The script file used to generate these and other equations in this filter can be found here:
- * https://github.com/PX4/ecl/blob/master/matlab/scripts/Inertial%20Nav%20EKF/GenerateNavFilterEquations.m
- * This is used to prevent the declination of the EKF earth field states from drifting during operation without GPS
- * or some other absolute position or velocity reference
+ * Fuse declination angle using explicit algebraic equations generated in
+ * derivation/generate_2.py with output recorded in derivation/generated/yaw_generated.cpp
 */
 void NavEKF3_core::FuseDeclination(ftype declErr)
 {
@@ -1272,97 +1189,57 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
 
     // Calculate observation Jacobian and Kalman gains
     // Calculate intermediate variables
-    ftype t2 = magE*magE;
-    ftype t3 = magN*magN;
-    ftype t4 = t2+t3;
+    const ftype HK0 = sq(magE) + sq(magN);
     // if the horizontal magnetic field is too small, this calculation will be badly conditioned
-    if (t4 < 1e-4f) {
+    if (HK0 < 1e-4f) {
         return;
     }
-    ftype t5 = P[16][16]*t2;
-    ftype t6 = P[17][17]*t3;
-    ftype t7 = t2*t2;
-    ftype t8 = R_DECL*t7;
-    ftype t9 = t3*t3;
-    ftype t10 = R_DECL*t9;
-    ftype t11 = R_DECL*t2*t3*2.0f;
-    ftype t14 = P[16][17]*magE*magN;
-    ftype t15 = P[17][16]*magE*magN;
-    ftype t12 = t5+t6+t8+t10+t11-t14-t15;
-    ftype t13;
-    if (fabsF(t12) > 1e-6f) {
-        t13 = 1.0f / t12;
-    } else {
-        return;
-    }
-    ftype t18 = magE*magE;
-    ftype t19 = magN*magN;
-    ftype t20 = t18+t19;
-    ftype t21;
-    if (fabsF(t20) > 1e-6f) {
-        t21 = 1.0f/t20;
+    const ftype HK1 = 1.0F/(HK0);
+    const ftype HK2 = P[16][16]*magE - P[16][17]*magN;
+    const ftype HK3 = P[16][17]*magE - P[17][17]*magN;
+    const ftype HK4_denom = (sq(HK0)*R_DECL + HK2*magE - HK3*magN);
+    ftype HK4;
+    if (fabsF(HK4_denom) > 1e-6f) {
+        HK4 = HK0/HK4_denom;
     } else {
         return;
     }
 
     // Calculate the observation Jacobian
     // Note only 2 terms are non-zero which can be used in matrix operations for calculation of Kalman gains and covariance update to significantly reduce cost
-    ftype H_DECL[24] = {};
-    H_DECL[16] = -magE*t21;
-    H_DECL[17] = magN*t21;
+    ftype Hfusion[24] = {};
+    Hfusion[16] = -HK1*magE;
+    Hfusion[17] = HK1*magN;
 
-    Kfusion[0] = -t4*t13*(P[0][16]*magE-P[0][17]*magN);
-    Kfusion[1] = -t4*t13*(P[1][16]*magE-P[1][17]*magN);
-    Kfusion[2] = -t4*t13*(P[2][16]*magE-P[2][17]*magN);
-    Kfusion[3] = -t4*t13*(P[3][16]*magE-P[3][17]*magN);
-    Kfusion[4] = -t4*t13*(P[4][16]*magE-P[4][17]*magN);
-    Kfusion[5] = -t4*t13*(P[5][16]*magE-P[5][17]*magN);
-    Kfusion[6] = -t4*t13*(P[6][16]*magE-P[6][17]*magN);
-    Kfusion[7] = -t4*t13*(P[7][16]*magE-P[7][17]*magN);
-    Kfusion[8] = -t4*t13*(P[8][16]*magE-P[8][17]*magN);
-    Kfusion[9] = -t4*t13*(P[9][16]*magE-P[9][17]*magN);
+    uint32_t kalman_mask = (1<<10)-1; // values to calculate in Kfusion (others are set to zero)
 
     if (!inhibitDelAngBiasStates) {
-        Kfusion[10] = -t4*t13*(P[10][16]*magE-P[10][17]*magN);
-        Kfusion[11] = -t4*t13*(P[11][16]*magE-P[11][17]*magN);
-        Kfusion[12] = -t4*t13*(P[12][16]*magE-P[12][17]*magN);
-    } else {
-        // zero indexes 10 to 12
-        zero_range(&Kfusion[0], 10, 12);
+        kalman_mask |= (1<<10) | (1<<11) | (1<<12);
     }
 
     if (!inhibitDelVelBiasStates) {
         for (uint8_t index = 0; index < 3; index++) {
             const uint8_t stateIndex = index + 13;
             if (!dvelBiasAxisInhibit[index]) {
-                Kfusion[stateIndex] = -t4*t13*(P[stateIndex][16]*magE-P[stateIndex][17]*magN);
-            } else {
-                Kfusion[stateIndex] = 0.0f;
+                kalman_mask |= (1<<stateIndex);
             }
         }
-    } else {
-        // zero indexes 13 to 15
-        zero_range(&Kfusion[0], 13, 15);
     }
 
     if (!inhibitMagStates) {
-        Kfusion[16] = -t4*t13*(P[16][16]*magE-P[16][17]*magN);
-        Kfusion[17] = -t4*t13*(P[17][16]*magE-P[17][17]*magN);
-        Kfusion[18] = -t4*t13*(P[18][16]*magE-P[18][17]*magN);
-        Kfusion[19] = -t4*t13*(P[19][16]*magE-P[19][17]*magN);
-        Kfusion[20] = -t4*t13*(P[20][16]*magE-P[20][17]*magN);
-        Kfusion[21] = -t4*t13*(P[21][16]*magE-P[21][17]*magN);
-    } else {
-        // zero indexes 16 to 21
-        zero_range(&Kfusion[0], 16, 21);
+        kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
     }
 
     if (!inhibitWindStates && !treatWindStatesAsTruth) {
-        Kfusion[22] = -t4*t13*(P[22][16]*magE-P[22][17]*magN);
-        Kfusion[23] = -t4*t13*(P[23][16]*magE-P[23][17]*magN);
-    } else {
-        // zero indexes 22 to 23
-        zero_range(&Kfusion[0], 22, 23);
+        kalman_mask |= (1<<22) | (1<<23);
+    }
+
+    for (auto i=0; i<24; i++) {
+        ftype res = 0;
+        if (kalman_mask & (1<<i)) {
+            res = -HK4*(P[i][16]*magE-P[i][17]*magN);
+        }
+        Kfusion[i] = res;
     }
 
     // get the magnetic declination
@@ -1378,22 +1255,16 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
         innovation = -0.5f;
     }
 
-    // correct the covariance P = (I - K*H)*P
-    // take advantage of the empty columns in KH to reduce the
-    // number of operations
+    // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+    // the zero elements of H to reduce the number of operations.
     for (unsigned i = 0; i<=stateIndexLim; i++) {
-        for (unsigned j = 0; j<=15; j++) {
-            KH[i][j] = 0.0f;
-        }
-        KH[i][16] = Kfusion[i] * H_DECL[16];
-        KH[i][17] = Kfusion[i] * H_DECL[17];
-        for (unsigned j = 18; j<=23; j++) {
-            KH[i][j] = 0.0f;
-        }
-    }
-    for (unsigned j = 0; j<=stateIndexLim; j++) {
-        for (unsigned i = 0; i<=stateIndexLim; i++) {
-            KHP[i][j] = KH[i][16] * P[16][j] + KH[i][17] * P[17][j];
+        // j as the inner loop allows the compiler to hoist the KH product
+        // to save computation, and do the inner indexing more efficiently.
+        for (unsigned j = 0; j<=stateIndexLim; j++) {
+            ftype res = 0;
+            res += (Kfusion[i] * Hfusion[16]) * P[16][j];
+            res += (Kfusion[i] * Hfusion[17]) * P[17][j];
+            KHP[i][j] = res;
         }
     }
 
@@ -1413,15 +1284,15 @@ void NavEKF3_core::FuseDeclination(ftype declErr)
             }
         }
 
-        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-        ForceSymmetry();
-        ConstrainVariances();
-
         // correct the state vector
         for (uint8_t j= 0; j<=stateIndexLim; j++) {
             statesArray[j] = statesArray[j] - Kfusion[j] * innovation;
         }
         stateStruct.quat.normalize();
+
+        // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+        ForceSymmetry();
+        ConstrainVariances();
 
         // record fusion health status
         faultStatus.bad_decl = false;

@@ -26,6 +26,7 @@
 #include "AP_InertialSensor_BMI270.h"
 #include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_L3G4200D.h"
+#include "AP_InertialSensor_LSM6DSV.h"
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_LSM9DS1.h"
 #include "AP_InertialSensor_Invensense.h"
@@ -38,6 +39,7 @@
 #include "AP_InertialSensor_Invensensev3.h"
 #include "AP_InertialSensor_NONE.h"
 #include "AP_InertialSensor_SCHA63T.h"
+#include "AP_InertialSensor_ASM330.h"
 #include <AP_Scheduler/AP_Scheduler.h>
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
@@ -1253,7 +1255,6 @@ AP_InertialSensor::detect_backends(void)
         ADD_BACKEND(AP_InertialSensor_Invensensev2::probe(*this, hal.spi->get_device("icm20948"), ROTATION_YAW_270));
         break;
 
-    case AP_BoardConfig::PX4_BOARD_FMUV5:
     case AP_BoardConfig::PX4_BOARD_FMUV6:
         _fast_sampling_mask.set_default(1);
         ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20689"), ROTATION_NONE));

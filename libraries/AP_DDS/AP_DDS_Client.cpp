@@ -1,5 +1,8 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#include <stdio.h>
+#include <cstdio>
+
 #include "AP_DDS_config.h"
 #if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
@@ -169,6 +172,14 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @User: Standard
     AP_GROUPINFO("_MAX_RETRY", 6, AP_DDS_Client, ping_max_retry, 10),
 
+    // @Param: _USE_NS
+    // @DisplayName: DDS namespace
+    // @Description: When enabled, ROS 2 topic and service names include a v<MAV_SYSID> segment
+    // @Values: 0:Disabled,1:Enabled
+    // @RebootRequired: True
+    // @User: Standard
+    AP_GROUPINFO("_USE_NS", 7, AP_DDS_Client, use_ns, 0),
+
     AP_GROUPEND
 };
 
@@ -245,20 +256,20 @@ bool AP_DDS_Client::update_topic(sensor_msgs_msg_NavSatFix& msg, const uint8_t i
 
     const auto status = gps.status(instance);
     switch (status) {
-    case AP_GPS::NO_GPS:
-    case AP_GPS::NO_FIX:
+    case AP_GPS_FixType::NO_GPS:
+    case AP_GPS_FixType::NONE:
         msg.status.status = -1; // STATUS_NO_FIX
         msg.position_covariance_type = 0; // COVARIANCE_TYPE_UNKNOWN
         return true;
-    case AP_GPS::GPS_OK_FIX_2D:
-    case AP_GPS::GPS_OK_FIX_3D:
+    case AP_GPS_FixType::FIX_2D:
+    case AP_GPS_FixType::FIX_3D:
         msg.status.status = 0; // STATUS_FIX
         break;
-    case AP_GPS::GPS_OK_FIX_3D_DGPS:
+    case AP_GPS_FixType::DGPS:
         msg.status.status = 1; // STATUS_SBAS_FIX
         break;
-    case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
-    case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+    case AP_GPS_FixType::RTK_FLOAT:
+    case AP_GPS_FixType::RTK_FIXED:
         msg.status.status = 2; // STATUS_SBAS_FIX
         break;
     default:
@@ -1325,10 +1336,15 @@ bool AP_DDS_Client::init_transport()
     bool initTransportStatus = ddsSerialInit();
     is_using_serial = initTransportStatus;
 
+    if (is_using_serial) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Using Serial", msg_prefix);
+    }
+
 #if AP_DDS_UDP_ENABLED
     // fallback to UDP if available
     if (!initTransportStatus) {
         initTransportStatus = ddsUdpInit();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Using UDP", msg_prefix);
     }
 #endif
 
@@ -1343,7 +1359,8 @@ bool AP_DDS_Client::init_transport()
 bool AP_DDS_Client::init_session()
 {
     // init session
-    uxr_init_session(&session, comm, key);
+    const uint32_t client_key = key_base | (uint32_t)gcs().sysid_this_mav(); // unique client key based on MAV_SYSID
+    uxr_init_session(&session, comm, client_key);
 
     // Register topic callbacks
     uxr_set_topic_callback(&session, AP_DDS_Client::on_topic_trampoline, this);
@@ -1372,16 +1389,33 @@ bool AP_DDS_Client::init_session()
     return true;
 }
 
+void AP_DDS_Client::dds_format_name(char* buf, const char* dds_prefix, const uint8_t sysid, const char* name, bool use_sysid_ns)
+{
+    if (use_sysid_ns) {
+        snprintf(buf, AP_DDS_MAX_NAME_LEN, "%s/%s/v%u/%s", dds_prefix, participant_name_prefix, sysid, name);
+    } else {
+        snprintf(buf, AP_DDS_MAX_NAME_LEN, "%s/%s/%s", dds_prefix, participant_name_prefix, name);
+    }
+}
+
 bool AP_DDS_Client::create()
 {
     WITH_SEMAPHORE(csem);
+
+    const uint8_t sysid = gcs().sysid_this_mav();
+    const bool use_sysid_ns = use_ns.get() != 0;
 
     // Participant
     const uxrObjectId participant_id = {
         .id = 0x01,
         .type = UXR_PARTICIPANT_ID
     };
-    const char* participant_name = AP_DDS_PARTICIPANT_NAME;
+    char participant_name[AP_DDS_MAX_NAME_LEN];
+    if (use_sysid_ns) {
+        snprintf(participant_name, sizeof(participant_name), "%s_v%u", participant_name_prefix, sysid);
+    } else {
+        snprintf(participant_name, sizeof(participant_name), "%s", participant_name_prefix);
+    }
     const auto participant_req_id = uxr_buffer_create_participant_bin(&session, reliable_out, participant_id,
                                     static_cast<uint16_t>(domain_id), participant_name, UXR_REPLACE);
 
@@ -1399,13 +1433,15 @@ bool AP_DDS_Client::create()
     }
 
     for (uint16_t i = 0 ; i < ARRAY_SIZE(topics); i++) {
+        char topic_name_buf[AP_DDS_MAX_NAME_LEN];
+        dds_format_name(topic_name_buf, dds_pubsub_prefix, sysid, topics[i].topic_name, use_sysid_ns);
         // Topic
         const uxrObjectId topic_id = {
             .id = topics[i].topic_id,
             .type = UXR_TOPIC_ID
         };
         const auto topic_req_id = uxr_buffer_create_topic_bin(&session, reliable_out, topic_id,
-                                  participant_id, topics[i].topic_name, topics[i].type_name, UXR_REPLACE);
+                                  participant_id, topic_name_buf, topics[i].type_name, UXR_REPLACE);
 
         // Status requests
         constexpr uint8_t nRequests = 3;
@@ -1431,7 +1467,15 @@ bool AP_DDS_Client::create()
             requests[1] = pub_req_id;
             requests[2] = dwriter_req_id;
 
-            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+            bool success = false;
+            for (uint8_t retry = 0; retry < 3; retry++) {
+                success = uxr_run_session_until_all_status(&session, requestTimeoutMs * (retry + 1), requests, status, nRequests);
+                if (success) {
+                    break;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Topic/Pub/Writer session request retry for index '%u'", msg_prefix, i);
+            }
+            if (!success) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Pub/Writer session request failure for index '%u'", msg_prefix, i);
                 for (uint8_t s = 0 ; s < nRequests; s++) {
                     GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
@@ -1459,7 +1503,15 @@ bool AP_DDS_Client::create()
             requests[1] = sub_req_id;
             requests[2] = dreader_req_id;
 
-            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, requests, status, nRequests)) {
+            bool success = false;
+            for (uint8_t retry = 0; retry < 3; retry++) {
+                success = uxr_run_session_until_all_status(&session, requestTimeoutMs * (retry + 1), requests, status, nRequests);
+                if (success) {
+                    break;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Topic/Sub/Reader session request retry for index '%u'", msg_prefix, i);
+            }
+            if (!success) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
                 for (uint8_t s = 0 ; s < nRequests; s++) {
                     GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
@@ -1480,18 +1532,32 @@ bool AP_DDS_Client::create()
         constexpr uint16_t requestTimeoutMs = maxTimeMsPerRequestMs;
 
         if (services[i].service_rr == Service_rr::Replier) {
+            char service_name_buf[AP_DDS_MAX_NAME_LEN];
+            char rq_name_buf[AP_DDS_MAX_NAME_LEN];
+            char rr_name_buf[AP_DDS_MAX_NAME_LEN];
+            dds_format_name(service_name_buf, dds_service_prefix, sysid, services[i].service_name, use_sysid_ns);
+            dds_format_name(rq_name_buf, dds_service_request_prefix, sysid, services[i].request_topic_name, use_sysid_ns);
+            dds_format_name(rr_name_buf, dds_service_reply_prefix, sysid, services[i].reply_topic_name, use_sysid_ns);
             const uxrObjectId rep_id = {
                 .id = services[i].rep_id,
                 .type = UXR_REPLIER_ID
             };
             const auto replier_req_id = uxr_buffer_create_replier_bin(&session, reliable_out, rep_id,
-                                        participant_id, services[i].service_name, services[i].request_type, services[i].reply_type,
-                                        services[i].request_topic_name, services[i].reply_topic_name, services[i].qos, UXR_REPLACE);
+                                        participant_id, service_name_buf, services[i].request_type, services[i].reply_type,
+                                        rq_name_buf, rr_name_buf, services[i].qos, UXR_REPLACE);
 
             uint16_t request = replier_req_id;
             uint8_t status;
 
-            if (!uxr_run_session_until_all_status(&session, requestTimeoutMs, &request, &status, 1)) {
+            bool success = false;
+            for (uint8_t retry = 0; retry < 3; retry++) {
+                success = uxr_run_session_until_all_status(&session, requestTimeoutMs * (retry + 1), &request, &status, 1);
+                if (success) {
+                    break;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Service/Replier session request retry for index '%u'", msg_prefix, i);
+            }
+            if (!success) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Service/Replier session request failure for index '%u'", msg_prefix, i);
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status result '%u'", msg_prefix, status);
                 // TODO add a failure log message sharing the status results

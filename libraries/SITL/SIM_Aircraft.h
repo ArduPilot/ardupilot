@@ -43,6 +43,10 @@
 #include "SIM_GPIO_LED_2.h"
 #include "SIM_GPIO_LED_3.h"
 #include "SIM_GPIO_LED_RGB.h"
+#include "SIM_Siyi.h"
+#include "SIM_Topotek.h"
+#include "SIM_Viewpro.h"
+#include "SIM_Mount.h"
 
 #define MAX_SIM_INSTANCES 16
 
@@ -176,7 +180,21 @@ public:
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature() const { return battery.get_temperature(); }
 
-    float ambient_temperature_degC() const;
+    float ambient_outside_temperature_degC() const;
+    float ambient_outside_pressure_Pascal() const;
+    float baro_temperature_degC() const;
+
+#if AP_SIM_MOUNT_ENABLED
+    void add_gimbal_sim(Mount &sim) {
+        for (uint8_t i = 0; i < GIMBAL_SIM_MAX; i++) {
+            if (gimbal_sims[i] == nullptr) {
+                gimbal_sims[i] = &sim;
+                return;
+            }
+        }
+        AP_HAL::panic("Too many gimbal simulators");
+    }
+#endif  // AP_SIM_MOUNT_ENABLED
 
     ADSB *adsb;
 
@@ -224,6 +242,7 @@ protected:
     float battery_current;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;
+    bool flightaxis_sync_imus_to_frames; // causes the frame counter to be incremented on each timestep, IMUs will then update at the same rate
     uint32_t last_one_hz_ms;
 
     // battery model
@@ -273,7 +292,6 @@ protected:
     uint32_t last_frame_count;
     uint8_t instance;
     const char *autotest_dir;
-    const char *frame;
     bool use_time_sync = true;
     float last_speedup = -1.0f;
     const char *config_ = "";
@@ -424,6 +442,11 @@ private:
 
     static Aircraft *instances[MAX_SIM_INSTANCES];
     HAL_Semaphore pose_sem;
+
+#if AP_SIM_MOUNT_ENABLED
+    static constexpr uint8_t GIMBAL_SIM_MAX = 8;
+    Mount *gimbal_sims[GIMBAL_SIM_MAX];
+#endif
 };
 
 } // namespace SITL

@@ -18,6 +18,7 @@
 #include "AP_Logger_File.h"
 #include "AP_Logger_MAVLink.h"
 #include "LoggerMessageWriter.h"
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -339,13 +340,37 @@ bool AP_Logger_Backend::Write_EntireMission()
 // Write a text message to the log
 bool AP_Logger_Backend::Write_Message(const char *message)
 {
-    struct log_Message pkt{
-        LOG_PACKET_HEADER_INIT(LOG_MESSAGE_MSG),
+    // i==0 here means we log an empty string if it is passed in:
+    const uint8_t id = AP::logger().get_MSG_id();  // there is a race condition on this ID; if a thread logs a message at the same time as the main thread then we can re-use this
+
+    uint8_t chunk_seq = 0;
+    for (uint8_t i=0; i == 0 || i<strlen(message); i += 64, chunk_seq++) {
+        const bool success = Write_MessageChunk(id, &message[i], chunk_seq);
+        if (i == 0 && !success) {
+            return false;
+        }
+    }
+    return true;
+}
+bool AP_Logger_Backend::Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq)
+{
+    struct log_MSG pkt{
+        LOG_PACKET_HEADER_INIT(LOG_MSG_MSG),
         time_us : AP_HAL::micros64(),
+        id           : id,
+        chunk_seq : chunk_seq,
         msg  : {}
     };
-    strncpy_noterm(pkt.msg, message, sizeof(pkt.msg));
-    return WriteCriticalBlock(&pkt, sizeof(pkt));
+    const uint16_t remaining = strlen(messagechunk);
+    strncpy_noterm(pkt.msg, messagechunk, MIN(sizeof(pkt.msg), remaining));
+    // result comes from success writing the first chunk; this
+    // prevents trying to write out the front of a message
+    // repeatedly.
+    const bool success = WriteCriticalBlock(&pkt, sizeof(pkt));
+    if (chunk_seq == 0) {
+        return success;
+    }
+    return true;
 }
 
 void AP_Logger::Write_Power(void)
@@ -456,6 +481,24 @@ bool AP_Logger_Backend::Write_Mode(uint8_t mode, const ModeReason reason)
     };
     return WriteCriticalBlock(&pkt, sizeof(pkt));
 }
+
+
+// emit an RTC message to the onboard logs
+#if AP_RTC_LOGGING_ENABLED
+bool AP_Logger_Backend::Write_RTC()
+{
+    uint64_t time_unix = 0;
+    AP::rtc().get_utc_usec(time_unix); // may fail, leaving time_unix at 0
+
+    const struct log_RTC pkt{
+        LOG_PACKET_HEADER_INIT(LOG_RTC_MSG),
+        time_us  : AP_HAL::micros64(),
+        epoch_us : time_unix,
+        source_type: uint8_t(AP::rtc().get_source_type()),
+    };
+    return WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+#endif  // AP_RTC_LOGGING_ENABLED
 
 // Write a Yaw PID packet
 void AP_Logger::Write_PID(uint8_t msg_type, const AP_PIDInfo &info)

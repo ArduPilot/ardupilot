@@ -2,6 +2,8 @@
 
 #include "GCS_MAVLink_Sub.h"
 #include <AP_RPM/AP_RPM_config.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 
 MAV_TYPE GCS_Sub::frame_type() const
 {
@@ -91,6 +93,13 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         0);
 }
 
+// returns a Location to which the vehicle is currently heading, or
+// would head in an autonomous mode
+bool GCS_MAVLINK_Sub::get_target_location(Location &loc) const
+{
+    return sub.wp_nav.is_active() && sub.wp_nav.get_wp_destination_loc(loc);
+}
+
 int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
 {
     return (int16_t)(sub.motors.get_throttle() * 100);
@@ -146,7 +155,7 @@ bool GCS_MAVLINK_Sub::send_info()
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("Lights2",
-                     SRV_Channels::get_output_norm(SRV_Channel::k_rcin10) / 2.0f + 0.5f);
+                     SRV_Channels::get_output_norm(SRV_Channel::k_lights2) / 2.0f + 0.5f);
 
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("PilotGain", sub.gain);
@@ -162,6 +171,68 @@ bool GCS_MAVLINK_Sub::send_info()
 
     return true;
 }
+
+#if AP_RANGEFINDER_ENABLED
+void GCS_MAVLINK_Sub::send_water_depth()
+{
+    if (!HAVE_PAYLOAD_SPACE(chan, WATER_DEPTH)) {
+        return;
+    }
+
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr) {
+        return;
+    }
+
+    // depth can only be measured by a downward-facing rangefinder:
+    if (!rangefinder->has_orientation(ROTATION_PITCH_270)) {
+        return;
+    }
+
+    // get position
+    const AP_AHRS &ahrs = AP::ahrs();
+    Location loc;
+    IGNORE_RETURN(ahrs.get_location(loc));
+
+    const auto num_sensors = rangefinder->num_sensors();
+    for (uint8_t i=0; i<num_sensors; i++) {
+        last_WATER_DEPTH_index += 1;
+        if (last_WATER_DEPTH_index >= num_sensors) {
+            last_WATER_DEPTH_index = 0;
+        }
+
+        const AP_RangeFinder_Backend *s = rangefinder->get_backend(last_WATER_DEPTH_index);
+        if (s == nullptr || s->orientation() != ROTATION_PITCH_270 || !s->has_data()) {
+            continue;
+        }
+
+        // get temperature
+        float temp_C;
+        if (!s->get_temp(temp_C)) {
+            // TODO: check known water temperature sources (temp sensor, external baro)
+            temp_C = 0.0f;
+        }
+
+        const bool sensor_healthy = (s->status() == RangeFinder::Status::Good);
+
+        mavlink_msg_water_depth_send(
+            chan,
+            AP_HAL::millis(),   // time since system boot TODO: take time of measurement
+            last_WATER_DEPTH_index, // rangefinder instance
+            sensor_healthy,     // sensor healthy
+            loc.lat,            // latitude of vehicle
+            loc.lng,            // longitude of vehicle
+            loc.alt * 0.01f,    // altitude of vehicle (MSL)
+            ahrs.get_roll_rad(),    // roll in radians
+            ahrs.get_pitch_rad(),   // pitch in radians
+            ahrs.get_yaw_rad(),     // yaw in radians
+            s->distance(),    // distance in meters
+            temp_C);            // temperature in degC
+
+        break;  // only send one WATER_DEPTH message per loop
+    }
+}
+#endif  // AP_RANGEFINDER_ENABLED
 
 /*
   send PID tuning message
@@ -219,7 +290,7 @@ void GCS_MAVLINK_Sub::send_pid_tuning()
         }
     }
     if (g.gcs_pid_mask & 8) {
-        const AP_PIDInfo &pid_info = sub.pos_control.get_accel_U_pid().get_pid_info();
+        const AP_PIDInfo &pid_info = sub.pos_control.D_get_accel_pid().get_pid_info();
         mavlink_msg_pid_tuning_send(chan, PID_TUNING_ACCZ,
                                     pid_info.target*0.01f,
                                     -(ahrs.get_accel_ef().z + GRAVITY_MSS),
@@ -248,19 +319,15 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         send_info();
         break;
 
-#if AP_TERRAIN_AVAILABLE
-    case MSG_TERRAIN_REQUEST:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
-        sub.terrain.send_request(chan);
-        break;
-    case MSG_TERRAIN_REPORT:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
-        sub.terrain.send_report(chan);
-        break;
-#endif
-
     case MSG_WIND: // other vehicles do something custom with wind:
         return true;
+
+#if AP_RANGEFINDER_ENABLED
+    case MSG_WATER_DEPTH:
+        CHECK_PAYLOAD_SIZE(WATER_DEPTH);
+        send_water_depth();
+        break;
+#endif  // AP_RANGEFINDER_ENABLED
 
     default:
         return GCS_MAVLINK::try_send_message(id);
@@ -457,21 +524,11 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_i
         return MAV_RESULT_ACCEPTED;
 }
 
-void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
+// this is called on receipt of a MANUAL_CONTROL packet and is
+// expected to call manual_override to override RC input on desired
+// axes.
+void GCS_MAVLINK_Sub::handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow)
 {
-    switch (msg.msgid) {
-
-    case MAVLINK_MSG_ID_MANUAL_CONTROL: {     // MAV ID: 69
-        if (!gcs().sysid_is_gcs(msg.sysid)) {
-            break;    // Only accept control from our gcs
-        }
-        mavlink_manual_control_t packet;
-        mavlink_msg_manual_control_decode(&msg, &packet);
-
-        if (packet.target != gcs().sysid_this_mav()) {
-            break; // only accept control aimed at us
-        }
-
         sub.transform_manual_control_to_rc_override(
             packet.x,
             packet.y,
@@ -491,11 +548,11 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         );
 
         sub.failsafe.last_pilot_input_ms = AP_HAL::millis();
-        // a RC override message is considered to be a 'heartbeat'
-        // from the ground station for failsafe purposes
-        sysid_mygcs_seen(AP_HAL::millis());
-        break;
-    }
+}
+
+void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
+{
+    switch (msg.msgid) {
 
     case MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE: {     // MAV ID: 70
         if (!gcs().sysid_is_gcs(msg.sysid)) {
@@ -533,10 +590,10 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         if (is_equal(packet.thrust, 0.5f)) {
             climb_rate_cms = 0.0f;
         } else if (packet.thrust > 0.5f) {
-            // climb at up to WPNAV_SPEED_UP
+            // climb at up to WP_SPD_UP
             climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_up_cms();
         } else {
-            // descend at up to WPNAV_SPEED_DN
+            // descend at up to WP_SPD_DN
             climb_rate_cms = (packet.thrust - 0.5f) * 2.0f * sub.wp_nav.get_default_speed_down_cms();
         }
         sub.mode_guided.guided_set_angle(Quaternion(packet.q[0],packet.q[1],packet.q[2],packet.q[3]), climb_rate_cms);
@@ -686,24 +743,18 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         break;
     }
 
-    case MAVLINK_MSG_ID_TERRAIN_DATA:
-    case MAVLINK_MSG_ID_TERRAIN_CHECK:
-#if AP_TERRAIN_AVAILABLE
-        sub.terrain.handle_data(chan, msg);
-#endif
-        break;
-
-    // This adds support for leak detectors in a separate enclosure
-    // connected to a mavlink enabled subsystem
+    // Remote leak sensor support (e.g. in a separate enclosure), via MAVLink status messages.
     case MAVLINK_MSG_ID_SYS_STATUS: {
-        uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
         mavlink_msg_sys_status_decode(&msg, &packet);
-        if ((packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) && !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)) {
+        if ((msg.sysid == gcs().sysid_this_mav()) &&
+            (packet.onboard_control_sensors_present & MAV_SYS_STATUS_EXTENSION_USED) &&
+            (packet.onboard_control_sensors_enabled_extended & MAV_SYS_STATUS_SENSOR_LEAK) &&
+            !(packet.onboard_control_sensors_health_extended & MAV_SYS_STATUS_SENSOR_LEAK)) {
             sub.leak_detector.set_detect();
         }
-    }
         break;
+    }
 
     default:
         GCS_MAVLINK::handle_message(msg);

@@ -180,16 +180,16 @@ float ModeGuided::nav_bearing() const
     return 0.0f;
 }
 
-float ModeGuided::crosstrack_error() const
+float ModeGuided::crosstrack_error_m() const
 {
     switch (_guided_mode) {
     case SubMode::WP:
-        return g2.wp_nav.crosstrack_error();
+        return g2.wp_nav.crosstrack_error_m();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
     case SubMode::Loiter:
-        return rover.mode_loiter.crosstrack_error();
+        return rover.mode_loiter.crosstrack_error_m();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -218,7 +218,7 @@ float ModeGuided::get_desired_lat_accel() const
     return 0.0f;
 }
 
-// return distance (in meters) to destination
+// return straight-line distance (in meters) to destination
 float ModeGuided::get_distance_to_destination() const
 {
     switch (_guided_mode) {
@@ -257,17 +257,17 @@ bool ModeGuided::reached_destination() const
 }
 
 // set desired speed in m/s
-bool ModeGuided::set_desired_speed(float speed)
+bool ModeGuided::set_desired_speed(float speed_ms)
 {
     switch (_guided_mode) {
     case SubMode::WP:
-        return g2.wp_nav.set_speed_max(speed);
+        return g2.wp_nav.set_speed_max(speed_ms);
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         // speed is set from mavlink message
         return false;
     case SubMode::Loiter:
-        return rover.mode_loiter.set_desired_speed(speed);
+        return rover.mode_loiter.set_desired_speed(speed_ms);
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         // no speed control

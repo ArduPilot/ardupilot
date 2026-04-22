@@ -9,13 +9,13 @@ bool ModeAlthold::init(bool ignore_checks) {
     // initialize vertical maximum speeds and acceleration
     // sets the maximum speed up and down returned by position controller
     // All limits must be positive
-    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
-    position_control->init_U_controller();
+    position_control->D_init_controller();
 
-    sub.last_pilot_heading = ahrs.yaw_sensor;
+    sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
 
     return true;
 }
@@ -35,15 +35,15 @@ void ModeAlthold::run_pre()
 
     // initialize vertical speeds and acceleration
     // All limits must be positive
-    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control->set_throttle_out(0.5,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        position_control->relax_U_controller(motors.get_throttle_hover());
-        sub.last_pilot_heading = ahrs.yaw_sensor;
+        position_control->D_relax_controller(motors.get_throttle_hover());
+        sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
         return;
     }
 
@@ -79,7 +79,7 @@ void ModeAlthold::run_pre()
     // call attitude controller
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
-        sub.last_pilot_heading = ahrs.yaw_sensor;
+        sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
         sub.last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
     } else { // hold current heading
@@ -91,10 +91,10 @@ void ModeAlthold::run_pre()
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
-            sub.last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
+            sub.last_pilot_heading_rad = ahrs.get_yaw_rad(); // update heading to hold
 
         } else { // call attitude controller holding absolute bearing
-            attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, sub.last_pilot_heading, true);
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, rad_to_cd(sub.last_pilot_heading_rad), true);
         }
     }
 }
@@ -125,6 +125,6 @@ void ModeAlthold::control_depth() {
         }
     }
 
-    position_control->set_pos_target_U_from_climb_rate_cms(target_climb_rate_cms);
-    position_control->update_U_controller();
+    position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate_cms);
+    position_control->D_update_controller();
 }

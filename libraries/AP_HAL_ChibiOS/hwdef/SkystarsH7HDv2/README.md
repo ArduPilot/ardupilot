@@ -4,32 +4,32 @@ The Skystars H7HDv2 is a flight controller produced by [Skystars](http://www.sky
 
 ## Features
 
- - STM32H743 microcontroller
- - ICM42688 IMU x2
- - BMP280 barometer
- - AT7456E OSD
- - 8 UARTs
- - 9 PWM outputs
+- STM32H743 microcontroller
+- ICM42688 IMU x2
+- BMP280 barometer
+- AT7456E OSD
+- 8 UARTs
+- 9 PWM outputs
 
 ## Pinout
 
-![Skystars H7HDv2 Board](SkystarsH43v2.png "Skystars H7HDv2")
-![Skystars H7HDv2 Wiring](SkystarsWiring.png "Skystars H7HDv2 Wiring")
+![Skystars H7HDv2 Board](SkystarsH743v2.png "Skystars H7HDv2")
+![Skystars H7HDv2 Wiring](SkystarsWiring.jpg "Skystars H7HDv2 Wiring")
 
 ## UART Mapping
 
 The UARTs are marked RX and TX in the above pinouts. The RX pin is the
 receive pin for UARTn. The TX pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (RCin, DMA-enabled)
- - SERIAL2 -> UART2 (MAVLink2 DMA-enabled)
- - SERIAL3 -> UART3 (ESC Telem)
- - SERIAL4 -> UART4 (GPS, DMA-enabled)
- - SERIAL5 -> UART5 (SmartAudio)
- - SERIAL6 -> UART6 (DisplayPort, DMA-enabled)
- - SERIAL7 -> UART7 (USER DMA-enabled)
- - SERIAL8 -> UART8 (USER)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (RCin, DMA-enabled)
+- SERIAL2 -> UART2 (MAVLink2 DMA-enabled)
+- SERIAL3 -> UART3 (ESC Telem)
+- SERIAL4 -> UART4 (GPS, DMA-enabled)
+- SERIAL5 -> UART5 (SmartAudio)
+- SERIAL6 -> UART6 (DisplayPort, DMA-enabled)
+- SERIAL7 -> UART7 (USER DMA-enabled)
+- SERIAL8 -> UART8 (USER)
 
 ## RC Input
 
@@ -51,10 +51,10 @@ PWM output.
 
 The PWM is in 5 groups:
 
- - PWM 1, 2 in group1
- - PWM 3, 4 in group2
- - PWM 5-8  in group3
- - PWM 9    in group4
+- PWM 1, 2 in group1
+- PWM 3, 4 in group2
+- PWM 5-8  in group3
+- PWM 9    in group4
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -68,11 +68,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - :ref:BATT_MONITOR<BATT_MONITOR> = 4
- - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
- - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
- - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 10.1
- - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 17.0
+- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) = 4
+- [BATT_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) = 10
+- [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11 (CURR pin)
+- [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 10.1
+- [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 17.0
 
 ## Compass
 
@@ -90,7 +90,7 @@ GPIO 83 is marked as "OSD". It can be used as a general GPIO pin. By default REL
 
 ## Loading Firmware
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "SkystarsH7HDv2".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "SkystarsH7HDv2".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

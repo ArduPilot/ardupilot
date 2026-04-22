@@ -78,7 +78,7 @@ static const int16_t IST8310_MIN_VAL_Z  = -IST8310_MAX_VAL_Z;
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_IST8310::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_IST8310::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
@@ -247,11 +247,6 @@ void AP_Compass_IST8310::timer()
     Vector3f field = Vector3f{x * 3.0f, y * 3.0f, z * 3.0f};
 
     accumulate_sample(field);
-}
-
-void AP_Compass_IST8310::read()
-{
-    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_IST8310_ENABLED

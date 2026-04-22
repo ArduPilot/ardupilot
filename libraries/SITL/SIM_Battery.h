@@ -22,18 +22,20 @@
 
 namespace SITL {
 
-/*
-  class to describe a motor position
- */
 class Battery {
 public:
     void setup(float _capacity_Ah, float _resistance, float _max_voltage);
 
+    // Resets the battery state if the configuration (e.g. from SIM_BATT_* parameters) has changed.
+    void maybe_reset(float desired_voltage, float desired_capacity_Ah);
+
     void init_voltage(float voltage);
     void init_capacity(float capacity);
 
-    void set_current(float current_amps);
-    float get_voltage(void) const;
+    // Call this periodically to "step" the battery forward in time
+    void consume_energy(float current_amps, uint64_t now_us);
+
+    float get_voltage(void) const { return voltage_filter.get(); }
     float get_capacity(void) const { return capacity_Ah; }
 
     // return battery temperature in Kelvin:
@@ -49,8 +51,9 @@ private:
 
     struct {
         float kelvin = 273;
-        uint64_t last_update_micros;
+        uint64_t last_update_us;
     } temperature;
+    void update_temperature(float current_amps, uint64_t now_us);
 
     // 10Hz filter for battery voltage
     LowPassFilterFloat voltage_filter{10};

@@ -32,14 +32,14 @@ void Plane::Log_Write_Attitude(void)
         logger.Write_PID(LOG_PIQR_MSG, quadplane.attitude_control->get_rate_roll_pid().get_pid_info());
         logger.Write_PID(LOG_PIQP_MSG, quadplane.attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIQY_MSG, quadplane.attitude_control->get_rate_yaw_pid().get_pid_info());
-        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->get_accel_U_pid().get_pid_info() );
+        logger.Write_PID(LOG_PIQA_MSG, quadplane.pos_control->D_get_accel_pid().get_pid_info() );
 
         // Write tailsitter specific log at same rate as PIDs
         quadplane.tailsitter.write_log();
     }
-    if (quadplane.in_vtol_mode() && quadplane.pos_control->is_active_NE()) {
-        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_x());
-        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->get_vel_NE_pid().get_pid_info_y());
+    if (quadplane.in_vtol_mode() && quadplane.pos_control->NE_is_active()) {
+        logger.Write_PID(LOG_PIDN_MSG, quadplane.pos_control->NE_get_vel_pid().get_pid_info_x());
+        logger.Write_PID(LOG_PIDE_MSG, quadplane.pos_control->NE_get_vel_pid().get_pid_info_y());
     }
 #endif
 
@@ -53,8 +53,6 @@ void Plane::Log_Write_Attitude(void)
     if (steerController.active()) {
         logger.Write_PID(LOG_PIDS_MSG, steerController.get_pid_info());
     }
-
-    AP::ahrs().Log_Write();
 }
 
 // do fast logging for plane
@@ -180,7 +178,7 @@ void Plane::Log_Write_Nav_Tuning()
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
         altitude_error_cm   : (int16_t)plane.calc_altitude_error_cm(),
-        xtrack_error        : nav_controller->crosstrack_error(),
+        xtrack_error        : nav_controller->crosstrack_error_m(),
         xtrack_error_i      : nav_controller->crosstrack_error_integrator(),
         airspeed_error      : airspeed_error,
         target_lat          : next_WP_loc.lat,
@@ -191,6 +189,45 @@ void Plane::Log_Write_Nav_Tuning()
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
+
+#if AP_RANGEFINDER_ENABLED
+struct PACKED log_RFNS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    bool in_use;
+    bool in_range;
+    uint8_t in_range_count;
+    bool have_initial_reading;
+    float initial_range;
+    float last_distance;
+    float correction;
+    float initial_correction;
+    float last_stable_correction;
+    uint32_t last_correction_time_ms;
+    float height_estimate;
+};
+
+// Write a Rangefinder State packet
+void Plane::Log_Write_RFNS()
+{
+    const struct log_RFNS pkt {
+        LOG_PACKET_HEADER_INIT(LOG_RFNS_MSG),
+        time_us                 : AP_HAL::micros64(),
+        in_use                  : rangefinder_state.in_use,
+        in_range                : rangefinder_state.in_range,
+        in_range_count          : rangefinder_state.in_range_count,
+        have_initial_reading    : rangefinder_state.have_initial_reading,
+        initial_range           : rangefinder_state.initial_range,
+        last_distance           : rangefinder_state.last_distance,
+        correction              : rangefinder_state.correction,
+        initial_correction      : rangefinder_state.initial_correction,
+        last_stable_correction  : rangefinder_state.last_stable_correction,
+        last_correction_time_ms : rangefinder_state.last_correction_time_ms,
+        height_estimate         : rangefinder_state.height_estimate
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+#endif  // AP_RANGEFINDER_ENABLED
 
 struct PACKED log_Status {
     LOG_PACKET_HEADER;
@@ -501,6 +538,25 @@ const struct LogStructure Plane::log_structure[] = {
     { LOG_OFG_MSG, sizeof(log_OFG_Guided),     
       "OFG", "QffffBffB",    "TimeUS,Arsp,ArspA,Alt,AltA,AltF,Hdg,HdgA,AltL", "snnmo-d--", "F--------" , true }, 
 #endif
+
+#if AP_RANGEFINDER_ENABLED
+// @LoggerMessage: RFNS
+// @Description: Rangefinder state
+// @Field: TimeUS: Time since system startup
+// @Field: InUse: Whether the rangefinder is in use.
+// @Field: InRng: Whether the rangefinder is in range.
+// @Field: IRCnt: Count of in-range measurements
+// @Field: Ms0OK: Whether there has been an initial measurement.
+// @Field: Ms0: The initial measured range
+// @Field: Dst: The last recorded distance
+// @Field: Cor: The rangefinder correction
+// @Field: Cor0: The initial rangefinder correction
+// @Field: CorL: The last stable correction
+// @Field: TimeCL: The last correction time
+// @Field: HE: Height estimate
+    { LOG_RFNS_MSG, sizeof(log_RFNS),
+        "RFNS", "QBBBBfffffIf", "TimeUS,InUse,InRng,IRCnt,Ms0OK,Ms0,Dst,Cor,Cor0,CorL,TimeCL,HE", "s----mmmmmsm", "F----00000C0", true },
+#endif  // AP_RANGEFINDER_ENABLED
 };
 
 uint8_t Plane::get_num_log_structures() const

@@ -211,6 +211,9 @@ void AP_Camera::init()
 
     // perform any required parameter conversion
     convert_params();
+#if AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+    convert_runcam_params();
+#endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
 
     // create each instance
     for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
@@ -472,7 +475,13 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
         break;
     case MSG_CAMERA_INFORMATION:
         CHECK_PAYLOAD_SIZE2(CAMERA_INFORMATION);
-        send_camera_information(chan);
+        if (_camera_information_send_instance >= 0) {
+            const int16_t instance = _camera_information_send_instance;
+            _camera_information_send_instance = -1;
+            send_camera_information((uint8_t)instance, chan);
+        } else {
+            send_camera_information(chan);
+        }
         break;
     case MSG_CAMERA_SETTINGS:
         CHECK_PAYLOAD_SIZE2(CAMERA_SETTINGS);
@@ -611,6 +620,18 @@ void AP_Camera::send_camera_information(mavlink_channel_t chan)
             _backends[instance]->send_camera_information(chan);
         }
     }
+}
+
+// send camera information for a specific instance to GCS
+void AP_Camera::send_camera_information(uint8_t instance, mavlink_channel_t chan)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return;
+    }
+    backend->send_camera_information(chan);
 }
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
@@ -922,35 +943,15 @@ AP_Camera_Backend *AP_Camera::get_instance(uint8_t instance) const
     return _backends[instance];
 }
 
-// perform any required parameter conversion
-void AP_Camera::convert_params()
+#if AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+// Convert to runcam specific backend
+void AP_Camera::convert_runcam_params()
 {
-    // exit immediately if CAM1_TYPE has already been configured
-    if (_params[0].type.configured()
-#if AP_CAMERA_RUNCAM_ENABLED
-        && _params[1].type.configured()
-#endif
-       ) {
+    // exit immediately if CAM2_TYPE has already been configured
+    if (_params[1].type.configured()) {
         return;
     }
 
-    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
-
-    // convert CAM_TRIGG_TYPE to CAM1_TYPE
-    int8_t cam_trigg_type = 0;
-    int8_t cam1_type = 0;
-    IGNORE_RETURN(AP_Param::get_param_by_index(this, 0, AP_PARAM_INT8, &cam_trigg_type));
-    if ((cam_trigg_type == 0) && SRV_Channels::function_assigned(SRV_Channel::k_cam_trigger)) {
-        // CAM_TRIGG_TYPE was 0 (Servo) and camera trigger servo function was assigned so set CAM1_TYPE = 1 (Servo)
-        cam1_type = 1;
-    }
-    if ((cam_trigg_type >= 1) && (cam_trigg_type <= 3)) {
-        // CAM_TRIGG_TYPE was set to Relay, GoPro or Mount
-        cam1_type = cam_trigg_type + 1;
-    }
-    _params[0].type.set_and_save(cam1_type);
-
-#if AP_CAMERA_RUNCAM_ENABLED
     // RunCam PARAMETER_CONVERSION - Added: Nov-2024 ahead of 4.7 release
 
     // Since slot 1 is essentially used by the trigger type, we will use slot 2 for runcam
@@ -984,7 +985,33 @@ void AP_Camera::convert_params()
     }
 
     _params[1].type.set_and_save(rc_type);
-#endif // AP_CAMERA_RUNCAM_ENABLED
+
+}
+#endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+
+// perform any required parameter conversion
+void AP_Camera::convert_params()
+{
+    // exit immediately if CAM1_TYPE has already been configured
+    if (_params[0].type.configured()) {
+        return;
+    }
+
+    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
+
+    // convert CAM_TRIGG_TYPE to CAM1_TYPE
+    int8_t cam_trigg_type = 0;
+    int8_t cam1_type = 0;
+    IGNORE_RETURN(AP_Param::get_param_by_index(this, 0, AP_PARAM_INT8, &cam_trigg_type));
+    if ((cam_trigg_type == 0) && SRV_Channels::function_assigned(SRV_Channel::k_cam_trigger)) {
+        // CAM_TRIGG_TYPE was 0 (Servo) and camera trigger servo function was assigned so set CAM1_TYPE = 1 (Servo)
+        cam1_type = 1;
+    }
+    if ((cam_trigg_type >= 1) && (cam_trigg_type <= 3)) {
+        // CAM_TRIGG_TYPE was set to Relay, GoPro or Mount
+        cam1_type = cam_trigg_type + 1;
+    }
+    _params[0].type.set_and_save(cam1_type);
 
     // convert CAM_DURATION (in deci-seconds) to CAM1_DURATION (in seconds)
     int8_t cam_duration = 0;

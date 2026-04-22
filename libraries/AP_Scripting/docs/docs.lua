@@ -1732,74 +1732,108 @@ function mavlink_video_stream_information_t_ud:encoding(value) end
 ---@param stream_info mavlink_video_stream_information_t_ud
 function camera:set_stream_information(instance, stream_info) end
 
--- desc
+-- Mount/gimbal control and driver interface
 mount = {}
 
--- desc
----@param instance integer
+-- methods to interact with ArduPilot's mount/gimbal frontend
+
+-- Returns the current mount mode
+---@param instance integer -- mount instance (0 or 1)
+---@return integer
+---| '0' # Retract
+---| '1' # Neutral
+---| '2' # MAVLink targeting
+---| '3' # RC targeting
+---| '4' # GPS point
+---| '5' # SysID target
+---| '6' # Home location
+function mount:get_mode(instance) end
+
+-- Set mount operating mode
+---@param instance integer -- mount instance (0 or 1)
+---@param mode integer
+---| '0' # Retract
+---| '1' # Neutral
+---| '2' # MAVLink targeting
+---| '3' # RC targeting
+---| '4' # GPS point
+---| '5' # SysID target
+---| '6' # Home location
+function mount:set_mode(instance, mode) end
+
+-- Set target angles for the gimbal. Roll and pitch are always earth-frame, yaw frame is selectable
+---@param instance integer -- mount instance (0 or 1)
 ---@param roll_deg number
 ---@param pitch_deg number
 ---@param yaw_deg number
-function mount:set_attitude_euler(instance, roll_deg, pitch_deg, yaw_deg) end
+---@param yaw_is_earth_frame boolean -- true for earth-frame yaw, false for body-frame
+function mount:set_angle_target(instance, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame) end
 
--- desc
----@param instance integer
----@return Location_ud|nil
-function mount:get_location_target(instance) end
+-- Set target angular rates for the gimbal in degrees per second
+---@param instance integer -- mount instance (0 or 1)
+---@param roll_degs number
+---@param pitch_degs number
+---@param yaw_degs number
+---@param yaw_is_earth_frame boolean -- true for earth-frame yaw rate, false for body-frame
+function mount:set_rate_target(instance, roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame) end
 
--- desc
----@param instance integer
+-- Point the gimbal at a Location (Region of Interest)
+---@param instance integer -- mount instance (0 or 1)
+---@param target_loc Location_ud
+function mount:set_roi_target(instance, target_loc) end
+
+-- Returns the gimbal's current attitude as Euler angles in degrees. Yaw is in body-frame
+---@param instance integer -- mount instance (0 or 1)
+---@return number|nil -- roll_deg
+---@return number|nil -- pitch_deg
+---@return number|nil -- yaw_bf_deg
+function mount:get_attitude_euler(instance) end
+
+-- methods used to implement a gimbal driver in Lua (MNTn_TYPE = 9):
+
+-- Declare which target types the gimbal driver natively supports as a bitmask of MountTargetType
+-- bit values. The mount frontend uses this to decide what to pass through and what to convert.
+-- e.g., if your gimbal only supports setting the angle targets, then the frontend will convert
+-- location and rate commands to an angle for you.
+---@param instance integer -- mount instance (0 or 1)
+---@param types_mask integer -- bitmask of supported MountTargetType values, combine with bitwise OR
+---| '1' # angle (1 << 0)
+---| '2' # rate (1 << 1)
+---| '4' # retracted (1 << 2)
+---| '8' # neutral (1 << 3)
+---| '16' # location (1 << 4)
+function mount:set_natively_supported_mount_target_types(instance, types_mask) end
+
+-- Get the angle target that the frontend has requested, in degrees. Returns nil if angles are not the active target type
+---@param instance integer -- mount instance (0 or 1)
 ---@return number|nil   -- roll_deg
 ---@return number|nil   -- pitch_deg
 ---@return number|nil   -- yaw_deg
 ---@return boolean|nil  -- yaw_is_earth_frame
 function mount:get_angle_target(instance) end
 
--- desc
----@param instance integer
+-- Get the rate target that the frontend has requested, in degrees per second. Returns nil if rates are not the active target type
+---@param instance integer -- mount instance (0 or 1)
 ---@return number|nil   -- roll_degs
 ---@return number|nil   -- pitch_degs
 ---@return number|nil   -- yaw_degs
 ---@return boolean|nil  -- yaw_is_earth_frame
 function mount:get_rate_target(instance) end
 
--- desc
----@param instance integer
----@param target_loc Location_ud
-function mount:set_roi_target(instance, target_loc) end
+-- Get the location the mount should be pointing at, if any. Returns a target when the mount mode
+-- implies a location (GPS_POINT, HOME_LOCATION, SYSID_TARGET), nil otherwise.
+-- Unlike get_angle_target/get_rate_target this is not affected by natively supported types
+---@param instance integer -- mount instance (0 or 1)
+---@return Location_ud|nil
+function mount:get_location_target(instance) end
 
--- desc
----@param instance integer
----@param roll_degs number
----@param pitch_degs number
----@param yaw_degs number
----@param yaw_is_earth_frame boolean
-function mount:set_rate_target(instance, roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame) end
-
--- desc
----@param instance integer
+-- Report the gimbal's current attitude back to ArduPilot. Must be called regularly to indicate
+-- the mount is healthy; stop calling when the gimbal is unhealthy to signal the failure
+---@param instance integer -- mount instance (0 or 1)
 ---@param roll_deg number
 ---@param pitch_deg number
 ---@param yaw_deg number
----@param yaw_is_earth_frame boolean
-function mount:set_angle_target(instance, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame) end
-
--- desc
----@param instance integer
----@param mode integer
-function mount:set_mode(instance, mode) end
-
--- desc
----@param instance integer
----@return integer
-function mount:get_mode(instance) end
-
--- desc
----@param instance integer
----@return number|nil -- roll_deg
----@return number|nil -- pitch_deg
----@return number|nil -- yaw_bf_deg
-function mount:get_attitude_euler(instance) end
+function mount:set_attitude_euler(instance, roll_deg, pitch_deg, yaw_deg) end
 
 -- desc
 motors = {}
@@ -1829,6 +1863,10 @@ function motors:get_forward() end
 -- get throttle motor output
 ---@return number
 function motors:get_throttle() end
+
+-- get thrust motor input
+---@return number
+function motors:get_throttle_in() end
 
 -- get throttle motor output
 ---@return integer
@@ -2718,10 +2756,22 @@ function vehicle:set_target_angle_and_climbrate(roll_deg, pitch_deg, yaw_deg, cl
 ---@return boolean -- true if successful
 function vehicle:set_target_rate_and_throttle(roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
 
+-- Set vehicle's roll, pitch, and yaw angles and rates with throttle in guided mode
+---@param roll_deg number -- roll angle in degrees from -180 to 180
+---@param pitch_deg number -- pitch angle in degrees from -90 to 90
+---@param yaw_deg number -- yaw angle in degrees from -360 to 360
+---@param roll_rate_dps number -- roll rate in degrees per second
+---@param pitch_rate_dps number -- pitch rate in degrees per second
+---@param yaw_rate_dps number -- yaw rate in degrees per second
+---@param throttle number -- throttle demand 0.0 to 1.0
+---@return boolean -- true on success
+function vehicle:set_target_angle_and_rate_and_throttle(roll_deg, pitch_deg, yaw_deg, roll_rate_dps, pitch_rate_dps, yaw_rate_dps, throttle) end
+
 -- Sets the target velocity using a Vector3f object in a guided mode.
 ---@param vel_ned Vector3f_ud -- North, East, Down meters / second
+---@param align_yaw_to_target? boolean -- optionally align the yaw to the target, defaults to false: yaw is not changed. Only used on Copter.
 ---@return boolean -- true on success
-function vehicle:set_target_velocity_NED(vel_ned) end
+function vehicle:set_target_velocity_NED(vel_ned, align_yaw_to_target) end
 
 -- desc
 ---@param target_vel Vector3f_ud
@@ -4028,12 +4078,14 @@ function fence:get_margin_breach_time() end
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
 
--- Returns minimum safe altitude in meters above home alt frame (i.e. alt_min + margin)
----@return number 
+-- Returns minimum safe altitude in meters and its altitude frame (i.e. alt_min + margin)
+---@return number altitude_m
+---@return integer frame -- 0:Above sea level, 1:Above Home, 2:Above Origin, 3:Above Terrain
 function fence:get_safe_alt_min() end
 
--- Returns maximum safe altitude in meters above home alt frame (i.e. alt_max - margin)
----@return number 
+-- Returns maximum safe altitude in meters and its altitude frame (i.e. alt_max - margin)
+---@return number altitude_m
+---@return integer frame -- 0:Above sea level, 1:Above Home, 2:Above Origin, 3:Above Terrain
 function fence:get_safe_alt_max() end
 
 -- Returns configured fences
@@ -4206,56 +4258,105 @@ servo_telem = {}
 
 -- get servo telem for the given servo number
 ---@param servo_index integer -- 0 indexed servo number
----@return AP_Servo_Telem_Data_ud|nil
+---@return ServoTelemetryData_ud|nil
 function servo_telem:get_telem(servo_index) end
 
+-- update telemetry data for an servo instance
+---@param instance integer -- servo instance, 0 indexed
+---@param telemdata ServoTelemetryData_ud -- Data to update
+function servo_telem:update_telem_data(instance, telemdata) end
+
 -- Servo telemetry userdata object
----@class AP_Servo_Telem_Data_ud
-local AP_Servo_Telem_Data_ud = {}
+---@class ServoTelemetryData_ud
+local ServoTelemetryData_ud = {}
+
+-- Create new instance of ServoTelemetryData userdata object
+---@return ServoTelemetryData_ud
+function ServoTelemetryData() end
 
 -- Get timestamp of last telem update
 ---@return uint32_t_ud -- milliseconds since boot
-function AP_Servo_Telem_Data_ud:last_update_ms() end
+function ServoTelemetryData_ud:last_update_ms() end
 
 -- Get type spesfic status flags
 ---@return integer|nil -- flags or nil if not available
-function AP_Servo_Telem_Data_ud:status_flags() end
+function ServoTelemetryData_ud:status_flags() end
+
+-- Set type spesfic status flags
+---@param value integer
+function ServoTelemetryData_ud:status_flags(value) end
 
 -- Get pcb temperature in centidegrees
 ---@return integer|nil -- temperature in centidegrees or nil if not available
-function AP_Servo_Telem_Data_ud:pcb_temperature_cdeg() end
+function ServoTelemetryData_ud:pcb_temperature_cdeg() end
+
+-- Set pcb temperature in centidegrees
+---@param value integer -- temperature in centidegrees
+function ServoTelemetryData_ud:pcb_temperature_cdeg(value) end
 
 -- Get motor temperature in centidegrees
 ---@return integer|nil -- temperature in centidegrees or nil if not available
-function AP_Servo_Telem_Data_ud:motor_temperature_cdeg() end
+function ServoTelemetryData_ud:motor_temperature_cdeg() end
+
+-- Set motor temperature in centidegrees
+---@param value integer -- temperature in centidegrees
+function ServoTelemetryData_ud:motor_temperature_cdeg(value) end
 
 -- Get duty cycle
 ---@return integer|nil -- duty cycle 0% to 100% or nil if not available
-function AP_Servo_Telem_Data_ud:duty_cycle() end
+function ServoTelemetryData_ud:duty_cycle() end
+
+-- Set duty cycle
+---@param value integer -- duty cycle 0% to 100%
+function ServoTelemetryData_ud:duty_cycle(value) end
 
 -- get current
 ---@return number|nil -- current in amps or nil if not available
-function AP_Servo_Telem_Data_ud:current() end
+function ServoTelemetryData_ud:current() end
+
+-- Set current
+---@param value number -- current in amps
+function ServoTelemetryData_ud:current(value) end
 
 -- get voltage
 ---@return number|nil -- voltage in volts or nil if not available
-function AP_Servo_Telem_Data_ud:voltage() end
+function ServoTelemetryData_ud:voltage() end
+
+-- Set voltage
+---@param value number -- voltage in volts
+function ServoTelemetryData_ud:voltage(value) end
 
 -- get speed
 ---@return number|nil -- speed in degrees per second or nil if not available
-function AP_Servo_Telem_Data_ud:speed() end
+function ServoTelemetryData_ud:speed() end
+
+-- Set speed
+---@param value number -- speed in degrees per second
+function ServoTelemetryData_ud:speed(value) end
 
 -- get force
 ---@return number|nil -- force in newton meters or nil if not available
-function AP_Servo_Telem_Data_ud:force() end
+function ServoTelemetryData_ud:force() end
+
+-- Set force
+---@param value number -- force in newton meters
+function ServoTelemetryData_ud:force(value) end
 
 -- get measured position
 ---@return number|nil -- measured position in degrees or nil if not available
-function AP_Servo_Telem_Data_ud:measured_position() end
+function ServoTelemetryData_ud:measured_position() end
+
+-- Set measured position
+---@param value number -- measured position in degrees
+function ServoTelemetryData_ud:measured_position(value) end
 
 -- get commanded position
 ---@return number|nil -- comanded position in degrees or nil if not available
-function AP_Servo_Telem_Data_ud:command_position() end
+function ServoTelemetryData_ud:command_position() end
+
+-- Set commanded position
+---@param value number -- comanded position in degrees
+function ServoTelemetryData_ud:command_position(value) end
 
 -- simulator specific bindings
 sim = {}

@@ -25,7 +25,7 @@
    FOLLP_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.7.0-073"
+SCRIPT_VERSION = "4.7.0-075"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -221,7 +221,7 @@ FOLLP_LKAHD = bind_add_param("LKAHD", 16, 3)
     // @Description: Set this switch to simulate losing telemetry from the other vehicle
     // @Range: 300 307
 --]]
-FOLLP_SIM_TLF_FN = bind_add_param("SIM_TlF_FN", 17, 302)
+FOLLP_SIM_TLF_FN = bind_add_param("SIM_TLF_FN", 17, 302)
 
 --[[
     // @Param: FOLLP_XT_P
@@ -564,14 +564,13 @@ local follow_mode = {
       else
          if reported_target then -- i.e. if we previously reported a target but lost it
             if (now_ms - lost_target_now_ms) > 5000 then
-               gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": lost prior target: " .. follow:get_target_sysid())
+               gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": lost prior SYSID: " .. tostring(follow:get_target_sysid()))
                lost_target_now_ms = now_ms
             end
          end
          reported_target = false
-         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": no target: " .. follow:get_target_sysid())
+         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": no target SYSID: " .. tostring(follow:get_target_sysid()))
       end
-
       return reported_target
    end
    function follow_mode.enable()
@@ -920,8 +919,10 @@ function Update()
       mechanism = 1  -- position/location - for logging
    end
 
-   -- The desired heading needs a PID controller, especially when it gets close.
-   desired_heading = xt_pid:compute(desired_heading, cross_track_distance, (now_ms - now_heading_ms):tofloat() * 0.001)
+   -- The desired heading needs a PID controller for crosstrack, but only when it gets close.
+   if close or too_close_follow_up > 0 then
+      desired_heading = xt_pid:compute(desired_heading, cross_track_distance, (now_ms - now_heading_ms):tofloat() * 0.001)
+   end
 
    -- dv = interim delta velocity based on the pid controller using projected_distance per loop as the error (we want distance == 0)
    local dv_error = along_track_distance * refresh_rate * 2.0

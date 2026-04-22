@@ -43,13 +43,13 @@ void GCS_Copter::update_vehicle_sensor_status_flags(void)
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
 
         // XY position controller
-        if (copter.pos_control->is_active_NE()) {
+        if (copter.pos_control->NE_is_active()) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL;
         }
 
         // Z altitude controller
-        if (copter.pos_control->is_active_U()) {
+        if (copter.pos_control->D_is_active()) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_Z_ALTITUDE_CONTROL;
         }

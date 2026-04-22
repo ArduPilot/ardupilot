@@ -85,15 +85,7 @@ void AP_Mount_Alexmos::update()
     update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::RATE:
-            update_angle_target_from_rate(mnt_target.rate_rads, mnt_target.angle_rad);
-            FALLTHROUGH;
-        case MountTargetType::ANGLE:
-            // send latest angle targets to gimbal
-            control_axis(mnt_target.angle_rad);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // has_pan_control - returns true if this mount can control its pan (required for multicopters)
@@ -155,7 +147,7 @@ void AP_Mount_Alexmos::get_boardinfo()
 /*
   control_axis : send new angle target to the gimbal at a fixed speed of 30 deg/s
 */
-void AP_Mount_Alexmos::control_axis(const MountTarget& angle_target_rad)
+void AP_Mount_Alexmos::send_target_angles(const MountAngleTarget& angle_target_rad)
 {
     alexmos_parameters outgoing_buffer;
     outgoing_buffer.angle_speed.mode = AP_MOUNT_ALEXMOS_MODE_ANGLE;

@@ -31,7 +31,7 @@ void AC_AttitudeControl::Write_ANG() const
 void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
 {
     const Vector3f rate_targets_degs = rate_bf_targets() * RAD_TO_DEG;
-    const Vector3f &accel_target_neu_cmss = pos_control.get_accel_target_NEU_mss() * 100.0;
+    const Vector3f &accel_target_ned_mss = pos_control.get_accel_target_NED_mss();
     const Vector3f gyro_rate = _rate_gyro_rads * RAD_TO_DEG;
     const struct log_Rate pkt_rate{
         LOG_PACKET_HEADER_INIT(LOG_RATE_MSG),
@@ -45,8 +45,8 @@ void AC_AttitudeControl::Write_Rate(const AC_PosControl &pos_control) const
         control_yaw     : rate_targets_degs.z,
         yaw             : gyro_rate.z,
         yaw_out         : _motors.get_yaw()+_motors.get_yaw_ff(),
-        control_accel   : (float)accel_target_neu_cmss.z,
-        accel           : (float)(-(_ahrs.get_accel_ef().z + GRAVITY_MSS) * 100.0f),
+        control_accel   : (float)(-accel_target_ned_mss.z),
+        accel           : (float)(-(_ahrs.get_accel_ef().z + GRAVITY_MSS)),
         accel_out       : _motors.get_throttle(),
         throttle_slew   : _motors.get_throttle_slew_rate()
     };

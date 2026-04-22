@@ -6,29 +6,21 @@ script to determine what features have been built into an ArduPilot binary
 AP_FLAKE8_CLEAN
 """
 import argparse
-import os
 import re
-import string
-import subprocess
-import sys
-import time
+
 import build_options
-import select
+
+from build_script_base import BuildScriptBase
 
 
-if sys.version_info[0] < 3:
-    running_python3 = False
-else:
-    running_python3 = True
-
-
-class ExtractFeatures(object):
+class ExtractFeatures(BuildScriptBase):
 
     class FindString(object):
         def __init__(self, string):
             self.string = string
 
     def __init__(self, filename, nm="arm-none-eabi-nm", strings="strings"):
+        super().__init__()
         self.filename = filename
         self.nm = nm
         self.strings = strings
@@ -53,8 +45,10 @@ class ExtractFeatures(object):
             ('HAL_ADSB_{type}_ENABLED', r'AP_ADSB_(?P<type>.*)::update',),
             ('HAL_ADSB_UCP_ENABLED', 'AP_ADSB_uAvionix_UCP::update',),
 
-            ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::read\b',),
+            ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::probe\b',),
             ('AP_COMPASS_ICM20948_ENABLED', r'AP_Compass_AK09916::probe_ICM20948',),
+            ('AP_COMPASS_AK8963_ENABLED', r'AP_Compass_AK8963::probe_mpu9250',),
+            ('AP_COMPASS_HMC5843_ENABLED', r'AP_Compass_HMC5843::probe_mpu6000',),
             ('AP_COMPASS_DRONECAN_HIRES_ENABLED', r'AP_Compass_DroneCAN::handle_magnetic_field_hires',),
 
             ('AP_AIS_ENABLED', 'AP_AIS::decode_position_report',),
@@ -89,6 +83,7 @@ class ExtractFeatures(object):
             ('AP_RANGEFINDER_JRE_SERIAL_ENABLED', r'AP_RangeFinder_JRE_Serial::get_reading\b',),
             ('AP_RANGEFINDER_RDS02UF_ENABLED', r'AP_RangeFinder_RDS02UF::get_reading\b',),
             ('AP_RANGEFINDER_HEXSOONRADAR_ENABLED', r'AP_RangeFinder_NRA24_CAN::handle_frame'),
+            ('AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED', 'AP_RangeFinder_LightWareGRF::get_reading'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
@@ -110,13 +105,14 @@ class ExtractFeatures(object):
 
             ('AP_BATTERY_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
             ('AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', r'AP_BattMonitor_Backend::update_esc_telem_outbound\b',),
-            ('AP_BATTERY_WATT_MAX_ENABLED', 'Plane::throttle_watt_limiter',),
+            ('AP_BATTERY_WATT_MAX_ENABLED', r'Plane::throttle_watt_limiter|AP_MotorsUGV::get_power_limit_max_throttle',),
 
             ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
             ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
             ('HAL_SOLO_GIMBAL_ENABLED', 'AP_Mount_SoloGimbal::init',),
             ('HAL_MOUNT_STORM32SERIAL_ENABLED', 'AP_Mount_SToRM32_serial::update',),
             ('HAL_MOUNT_STORM32MAVLINK_ENABLED', 'AP_Mount_SToRM32::update',),
+            ('AP_MOUNT_POI_LOCK_ENABLED', 'AP_Mount::set_poi_lock'),
 
             ('HAL_SPEKTRUM_TELEM_ENABLED', r'AP::spektrum_telem',),
             ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
@@ -156,6 +152,7 @@ class ExtractFeatures(object):
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
             ('HAL_RALLY_ENABLED', 'AP_Rally::find_nearest_rally_point',),
             ('AP_AVOIDANCE_ENABLED', 'AC_Avoid::AC_Avoid',),
+            ('AP_AVOIDANCE_ALTHOLD_ENABLED', 'AC_Avoid::adjust_roll_pitch',),
             ('AP_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
             ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
             ('AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', ExtractFeatures.FindString('PayloadPlace')),
@@ -213,6 +210,7 @@ class ExtractFeatures(object):
             ('GPS_MOVING_BASELINE', r'MovingBase::var_info',),
             ('AP_DRONECAN_SEND_GPS', r'AP_GPS_DroneCAN::instance_exists\b',),
             ('AP_GPS_BLENDED_ENABLED', r'AP_GPS::calc_blend_weights\b',),
+            ('AP_GPS_DEBUG_LOGGING_ENABLED', 'AP_GPS_Backend::log_data',),
 
             ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
             ('AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED', r'AP_InertialSensor::HarmonicNotch::update_params\b',),
@@ -225,7 +223,7 @@ class ExtractFeatures(object):
             ('AP_BARO_THST_COMP_ENABLED', r'AP_Baro::thrust_pressure_correction\b',),
             ('AP_TEMPCALIBRATION_ENABLED', r'AP_TempCalibration::apply_calibration',),
 
-            ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
+            ('AP_PICCOLOCAN_ENABLED', r'AP_PiccoloCAN::update',),
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3_core::CorrectExtNavVelForSensorOffset'),
             ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
@@ -315,6 +313,7 @@ class ExtractFeatures(object):
             ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
             ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
             ('AP_PERIPH_BATTERY_TAG_ENABLED', r'BatteryTag::update'),
+            ('AP_PERIPH_BATTERY_BMS_ENABLED', r'BatteryBMS::update'),
             ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
             ('AP_PERIPH_GPS_ENABLED', r'AP_Periph_FW::can_gps_update'),
             ('AP_PERIPH_ADSB_ENABLED', r'AP_Periph_FW::adsb_update'),
@@ -332,9 +331,9 @@ class ExtractFeatures(object):
             ('AP_SCRIPTING_BINDING_MOTORS_ENABLED', 'AP__motors___index'),
         ]
 
-    def progress(self, msg):
-        """Pretty-print progress."""
-        print("EF: %s" % msg)
+    def progress_prefix(self):
+        """Return prefix for progress messages."""
+        return 'EF'
 
     def validate_features_list(self):
         '''ensures that every define present in build_options.py could be
@@ -359,59 +358,6 @@ class ExtractFeatures(object):
             if not matched:
                 raise ValueError("feature (%s) is not matched in extract_features" %
                                  (option.define))
-
-    def run_program(self, prefix, cmd_list, show_output=True, env=None):
-        """Swiped from build_binaries.py."""
-        if show_output:
-            self.progress("Running (%s)" % " ".join(cmd_list))
-        p = subprocess.Popen(
-            cmd_list,
-            stdin=None,
-            stdout=subprocess.PIPE,
-            close_fds=True,
-            stderr=subprocess.PIPE,
-            env=env)
-        stderr = bytearray()
-        output = ""
-        while True:
-            # read all of stderr:
-            while True:
-                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
-                if p.stderr.fileno() not in rin:
-                    break
-                new = p.stderr.read()
-                if len(new) == 0:
-                    break
-                stderr += new
-
-            x = p.stdout.readline()
-            if len(x) == 0:
-                (rin, _, _) = select.select([p.stderr.fileno()], [], [], 0)
-                if p.stderr.fileno() in rin:
-                    stderr += p.stderr.read()
-
-                returncode = os.waitpid(p.pid, 0)
-                if returncode:
-                    break
-                    # select not available on Windows... probably...
-                time.sleep(0.1)
-                continue
-            if running_python3:
-                x = bytearray(x)
-                x = filter(lambda x: chr(x) in string.printable, x)
-                x = "".join([chr(c) for c in x])
-            output += x
-            x = x.rstrip()
-            if show_output:
-                print("%s: %s" % (prefix, x))
-        (_, status) = returncode
-        if status != 0:
-            stderr = stderr.decode('utf-8')
-            self.progress("Process failed (%s) (%s)" %
-                          (str(returncode), stderr))
-            raise subprocess.CalledProcessError(
-                status, cmd_list, output=str(output), stderr=str(stderr))
-        return output
 
     class Symbols(object):
         def __init__(self):
@@ -449,7 +395,7 @@ class ExtractFeatures(object):
             '--demangle',
             '--print-size',
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         ret = ExtractFeatures.Symbols()
         for line in text_output.split("\n"):
             m = re.match("^([^ ]+) ([^ ]+) ([^ ]) (.*)", line.rstrip())
@@ -476,7 +422,7 @@ class ExtractFeatures(object):
         text_output = self.run_program('EF', [
             self.strings,
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         return text_output.split("\n")
 
     def extract(self):

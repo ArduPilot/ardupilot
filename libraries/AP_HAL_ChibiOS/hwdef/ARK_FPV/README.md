@@ -1,23 +1,30 @@
 # ARK FPV Flight Controller
 
-https://arkelectron.com/product/ark-fpv-flight-controller/
-
+[ARK Electronics](https://arkelectron.com/product/ark-fpv-flight-controller/)
 
 ## Features
-#### Processor
+
+### Processor
+
 - STM32H743 32-bit processor
 - 480MHz
 - 2MB Flash
 - 1MB RAM
-#### Sensors
+
+### Sensors
+
 - Invensense IIM-42653 Industrial IMU with heater resistor
 - Bosch BMP390 Barometer
 - ST IIS2MDC Magnetometer
-#### Power
+
+### Power
+
 - 5.5V - 54V (2S - 12S) input
 - 12V, 2A output
 - 5V, 2A output. 300ma for main system, 200ma for heater
-#### Interfaces
+
+### Interfaces
+
 - **Micro SD**
 - **USB-C**
   - VBUS In, USB
@@ -52,15 +59,18 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
   - 3.3V Out, UART, SWD
   - JST-SH 6 Pin
 
-##### Dimensions
-- Size: 3.6 × 3.6 × 0.8 cm
+### Dimensions
+
+- Size: 3.6 x 3.6 x 0.8 cm
 - Weight: 7.5g with MicroSD card
 
 ## Pinout
+
 ![top](ark_fpv_top.png)
 ![bottom](ark_fpv_bottom.png)
 
-#### PWM UART4 - 8 Pin JST-GH
+### PWM UART4 - 8 Pin JST-GH
+
 | Pin | Signal Name     | Voltage      |
 |-----|-----------------|--------------|
 | 1   | VBAT IN         | 5.5V-54V     |
@@ -72,7 +82,8 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 | 7   | FMU_CH4_EXT     | 3.3V         |
 | 8   | GND             | GND          |
 
-#### RC - 4 Pin JST-GH
+### RC - 4 Pin JST-GH
+
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
 | 1   | 5.0V               | 5.0V    |
@@ -80,7 +91,8 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 | 3   | USART6_TX_OUTPUT_EXT| 3.3V    |
 | 4   | GND                | GND     |
 
-#### PWM AUX - 6 Pin JST-SH
+### PWM AUX - 6 Pin JST-SH
+
 | Pin | Signal Name     | Voltage |
 |-----|-----------------|---------|
 | 1   | FMU_CH5_EXT     | 3.3V    |
@@ -90,14 +102,16 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 | 5   | FMU_CH9_EXT     | 3.3V    |
 | 6   | GND             | GND     |
 
-#### POWER AUX - 3 Pin JST-GH
+### POWER AUX - 3 Pin JST-GH
+
 | Pin | Signal Name | Voltage      |
 |-----|-------------|--------------|
 | 1   | 12.0V       | 12.0V        |
 | 2   | GND         | GND          |
 | 3   | VBAT IN/OUT | 5.5V-54V     |
 
-#### CAN - 4 Pin JST-GH
+### CAN - 4 Pin JST-GH
+
 | Pin | Signal Name | Voltage |
 |-----|-------------|---------|
 | 1   | 5.0V        | 5.0V    |
@@ -105,7 +119,8 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 | 3   | CAN1_N      | 5.0V    |
 | 4   | GND         | GND     |
 
-#### GPS - 6 Pin JST-GH
+### GPS - 6 Pin JST-GH
+
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
 | 1   | 5.0V                | 5.0V    |
@@ -115,7 +130,8 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 | 5   | I2C1_SDA_GPS1_EXT   | 3.3V    |
 | 6   | GND                 | GND     |
 
-#### TELEM - 6 Pin JST-GH
+### TELEM - 6 Pin JST-GH
+
 | Pin | Signal Name           | Voltage |
 |-----|-----------------------|---------|
 | 1   | 5.0V                 | 5.0V    |
@@ -125,7 +141,8 @@ https://arkelectron.com/product/ark-fpv-flight-controller/
 | 5   | UART7_RTS_TELEM1_EXT | 3.3V    |
 | 6   | GND                  | GND     |
 
-#### VTX - 6 Pin JST-GH
+### VTX - 6 Pin JST-GH
+
 Note: connector pinout not in same order as standard HD VTX cabling
 | Pin | Signal Name           | Voltage |
 |-----|-----------------------|---------|
@@ -136,7 +153,8 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 5   | USART2_RX_TELEM3_EXT | 3.3V    |
 | 6   | GND                  | GND     |
 
-#### SPI (OSD or IMU) - 8 Pin JST-SH
+### SPI (OSD or IMU) - 8 Pin JST-SH
+
 | Pin | Signal Name         | Voltage |
 |-----|---------------------|---------|
 | 1   | 5.0V                | 5.0V    |
@@ -148,16 +166,16 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 7   | SPI6_nRESET_EXT     | 3.3V    |
 | 8   | GND                 | GND     |
 
-#### Flight Controller Debug - 6 Pin JST-SH
+### Flight Controller Debug - 6 Pin JST-SH
+
 | Pin | Signal Name     | Voltage |
 |-----|-----------------|---------|
 | 1   | 3V3_FMU        | 3.3V    |
-| 2   | USART4_TX_DEBUG | 3.3V    |
-| 3   | USART4_RX_DEBUG | 3.3V    |
+| 2   | USART3_TX_DEBUG | 3.3V    |
+| 3   | USART3_RX_DEBUG | 3.3V    |
 | 4   | FMU_SWDIO      | 3.3V    |
 | 5   | FMU_SWCLK      | 3.3V    |
 | 6   | GND            | GND     |
-
 
 ## UART Mapping
 
@@ -174,14 +192,31 @@ Note: connector pinout not in same order as standard HD VTX cabling
 
 All UARTS support DMA. Any UART may be re-tasked by changing its protocol parameter.
 
+### Using the Debug Port as a Serial Port
+
+The debug connector includes USART3, which is configured as a debug console by default. To use it as a regular serial port (SERIAL8), modify `hwdef.dat` to add USART3 to the end of the SERIAL_ORDER list:
+
+```text
+SERIAL_ORDER OTG1 UART7 UART5 USART1 USART2 UART4 USART6 OTG2 USART3
+```
+
+And remove the debug console lines:
+
+```text
+STDOUT_SERIAL SD3
+STDOUT_BAUDRATE 57600
+```
+
+This requires building custom firmware. See the [Loading Firmware](#loading-firmware) section for build instructions.
+
 ## RC Input
 
-RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
+RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for a specific RC system. [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) is set to “23”, by default, to enable this.
 
 - SBUS/DSM/SRXL connects to the RX6 pin.
-- FPort requires connection to TX6 and :ref:`SERIAL6_OPTIONS<SERIAL2_OPTIONS>` be set to “7”.
-- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>`
-- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to “4”. =3.
+- FPort requires connection to TX6 and [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “7”.
+- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options)
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to “4”. =3.
 
 ## Battery Monitoring
 
@@ -196,6 +231,7 @@ The default battery parameters are:
 - BATT_AMP_PERVLT 120
 
 ## Compass
+
 This autopilot has a built-in compass. The compass is the IIS2MDC
 
 ## OSD Support
@@ -205,6 +241,7 @@ This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible J
 ## Motor Output
 
 All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectional-DSHOT. All outputs in the motor groups below must be either PWM or DShot:
+
 - Motors 1-4  Group1 (TIM5)
 - Motors 5-8  Group2 (TIM8)
 - Motor 9     Group3 (TIM4)
@@ -213,20 +250,23 @@ All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectiona
 
 Initial firmware load can be done with DFU by plugging in USB with the
 BOOT button pressed. You can then load the bootloader using your favorite DFU tool.
-The bootloader can be found at https://firmware.ardupilot.org/Tools/Bootloaders/
+The bootloader can be found at [ArduPilot firmware server](https://firmware.ardupilot.org/Tools/Bootloaders/)
 
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 *.apj firmware files*.
 
 Alternatively you can build the firmware from source
-```
+
+```bash
 ./waf configure --board ARK_FPV --bootloader
 ./waf bootloader
 ```
+
 And flash the bootloader with your st-link to 0x08000000.
 Then build the firmware and upload it via USB-C
-```
+
+```bash
 ./waf configure --board ARK_FPV
 ./waf copter --upload
 ```

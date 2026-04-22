@@ -443,7 +443,7 @@ void AP_TECS::_update_speed(float DT)
     // Equivalent airspeed
     float _EAS;
     if (!should_use_airspeed || !_ahrs.airspeed_EAS(_EAS)) {
-        // If no airspeed available use average of min and max
+        // If no airspeed available, assume we are at cruise speed.
         _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
@@ -794,9 +794,9 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
         // Rate limit PD + FF throttle
         // Calculate the throttle increment from the specified slew time
-        int8_t throttle_slewrate = aparm.throttle_slewrate;
+        int16_t throttle_slewrate = aparm.throttle_slewrate;
         if (_landing.is_on_approach()) {
-            const int8_t land_slewrate = _landing.get_throttle_slewrate();
+            const int16_t land_slewrate = _landing.get_throttle_slewrate();
             if (land_slewrate > 0) {
                 throttle_slewrate = land_slewrate;
             }
@@ -836,41 +836,50 @@ void AP_TECS::_update_throttle_with_airspeed(void)
             AP::logger().WriteStreaming(
                 "TEC3",
                 "TimeUS," "KED," "PED," "KEDD," "PEDD," "TEE," "TEDE," "FFT," "Imin," "Imax," "I," "Emin," "Emax",
+                "s"       "?"    "?"    "?"     "?"     "?"    "?"     "-"    "-"     "-"     "-"  "?"     "?",
+                "F"       "0"    "0"    "0"     "0"     "0"    "0"     "0"    "0"     "0"     "0"  "0"     "0",
                 "Q"       "f"    "f"    "f"     "f"     "f"    "f"     "f"    "f"     "f"     "f"  "f"     "f",
                 AP_HAL::micros64(),
-                (double)_SKEdot,
-                (double)_SPEdot,
-                (double)_SKEdot_dem,
-                (double)_SPEdot_dem,
-                (double)_STE_error,
-                (double)STEdot_error,
-                (double)ff_throttle,
-                (double)integ_min,
-                (double)integ_max,
-                (double)_integTHR_state,
-                (double)SPE_err_min,
-                (double)SPE_err_max
+                _SKEdot,
+                _SPEdot,
+                _SKEdot_dem,
+                _SPEdot_dem,
+                _STE_error,
+                STEdot_error,
+                ff_throttle,
+                integ_min,
+                integ_max,
+                _integTHR_state,
+                SPE_err_min,
+                SPE_err_max
+            );
+
+            // @LoggerMessage: TEC4
+            // @Vehicles: Plane
+            // @Description: Additional additional additional information about the Total Energy Control System
+            // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+            // @Field: TimeUS: Time since system startup
+            // @Field: P: estimate of potential energy
+            // @Field: K: estimate of kinetic energy
+            // @Field: Pdem: demanded potential energy
+            // @Field: Kdem: demanded kinetic energy
+            // @Field: ClimbMax: Climb rate upper limit
+            // @Field: ClimbMin: Climb rate lower limit
+            AP::logger().WriteStreaming(
+                "TEC4",
+                "TimeUS," "P," "K," "Pdem," "Kdem," "ClimbMax," "ClimbMin",
+                "s"       "?"  "?"  "?"     "?"     "n"         "n",
+                "F"       "0"  "0"  "0"     "0"     "0"         "0",
+                "Q"       "f"  "f"  "f"     "f"     "f"         "f",
+                AP_HAL::micros64(),
+                _SPE_est,
+                _SKE_est,
+                _SPE_dem,
+                _SKE_dem,
+                _climb_rate_limit,
+                -_sink_rate_limit
             );
         }
-        // @LoggerMessage: TEC4
-        // @Vehicles: Plane
-        // @Description: Additional additional additional information about the Total Energy Control System
-        // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
-        // @Field: TimeUS: Time since system startup
-        // @Field: P: estimate of potential energy
-        // @Field: K: estimate of kinetic energy
-        // @Field: Pdem: demanded potential energy
-        // @Field: Kdem: demanded kinetic energy
-        AP::logger().WriteStreaming(
-            "TEC4",
-            "TimeUS," "P," "K," "Pdem," "Kdem",
-            "Q"       "f"  "f"  "f"     "f",
-            AP_HAL::micros64(),
-            (double)_SPE_est,
-            (double)_SKE_est,
-            (double)_SPE_dem,
-            (double)_SKE_dem
-            );
 #endif
     }
 
@@ -1139,22 +1148,27 @@ void AP_TECS::_update_pitch(void)
         // @Field: KI: Pitch demand kinetic energy integral
         // @Field: tmin: Throttle min
         // @Field: tmax: Throttle max
-        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,tmin,tmax",
-                                    "Qfffffffffffff",
-                                    AP_HAL::micros64(),
-                                    (double)SPE_weighting,
-                                    (double)_SKE_weighting,
-                                    (double)SEB_dem,
-                                    (double)SEB_est,
-                                    (double)SEBdot_dem,
-                                    (double)SEBdot_est,
-                                    (double)SEBdot_dem_total,
-                                    (double)integSEBdot_min,
-                                    (double)integSEBdot_max,
-                                    (double)_integSEBdot,
-                                    (double)_integKE,
-                                    (double)_THRminf,
-                                    (double)_THRmaxf);
+        AP::logger().WriteStreaming(
+            "TEC2",
+            "TimeUS," "PEW," "KEW," "EBD," "EBE," "EBDD," "EBDE," "EBDDT," "Imin," "Imax," "I," "KI," "tmin," "tmax",
+            "s"       "-"    "-"    "?"    "?"    "?"     "?"     "-"      "-"     "-"     "-"  "-"   "-"     "-",
+            "F"       "0"    "0"    "0"    "0"    "0"     "0"     "0"      "0"     "0"     "0"  "0"   "0"     "0",
+            "Q"       "f"    "f"    "f"    "f"    "f"     "f"     "f"      "f"     "f"     "f"  "f"   "f"     "f",
+            AP_HAL::micros64(),
+            SPE_weighting,
+            _SKE_weighting,
+            SEB_dem,
+            SEB_est,
+            SEBdot_dem,
+            SEBdot_est,
+            SEBdot_dem_total,
+            integSEBdot_min,
+            integSEBdot_max,
+            _integSEBdot,
+            _integKE,
+            _THRminf,
+            _THRmaxf
+        );
     }
 #endif
 }
@@ -1376,26 +1390,29 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         // @Field: pmax: pitch upper limit
         // @Field: dspdem: demanded acceleration output ("delta-speed demand")
         // @Field: f: flags
-        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd
-        AP::logger().WriteStreaming("TECS", "TimeUS,h,dh,hin,hdem,dhdem,spdem,sp,dsp,th,ph,pmin,pmax,dspdem,f",
-                                    "smnmmnnnn------",
-                                    "F00000000------",
-                                    "QfffffffffffffB",
-                                    now,
-                                    (double)_height,
-                                    (double)_climb_rate,
-                                    (double)_hgt_dem_in_raw,
-                                    (double)_hgt_dem,
-                                    (double)_hgt_rate_dem,
-                                    (double)_TAS_dem_adj,
-                                    (double)_TAS_state,
-                                    (double)_vel_dot,
-                                    (double)_throttle_dem,
-                                    (double)_pitch_dem,
-                                    (double)_PITCHminf,
-                                    (double)_PITCHmaxf,
-                                    (double)_TAS_rate_dem,
-                                    _flags_byte);
+        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd,GlidingRequested,isGliding,PropulsionFailed,Reset
+        AP::logger().WriteStreaming(
+            "TECS",
+            "TimeUS," "h," "dh," "hin," "hdem," "dhdem," "spdem," "sp," "dsp," "th," "ph," "pmin," "pmax," "dspdem," "f",
+            "s"       "m"  "n"   "m"    "m"     "n"      "n"      "n"   "n"    "-"   "-"   "-"     "-"     "-"       "-",
+            "F"       "0"  "0"   "0"    "0"     "0"      "0"      "0"   "0"    "-"   "-"   "-"     "-"     "-"       "-",
+            "Q"       "f"  "f"   "f"    "f"     "f"      "f"      "f"   "f"    "f"   "f"   "f"     "f"     "f"       "B",
+            now,
+            _height,
+            _climb_rate,
+            _hgt_dem_in_raw,
+            _hgt_dem,
+            _hgt_rate_dem,
+            _TAS_dem_adj,
+            _TAS_state,
+            _vel_dot,
+            _throttle_dem,
+            _pitch_dem,
+            _PITCHminf,
+            _PITCHmaxf,
+            _TAS_rate_dem,
+            _flags_byte
+        );
     }
 #endif
 }

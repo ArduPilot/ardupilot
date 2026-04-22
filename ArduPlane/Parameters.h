@@ -299,12 +299,12 @@ public:
         // 210: flight modes
         //
         k_param_flight_mode_channel = 210,
-        k_param_flight_mode1,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
+        k_param_flight_modes0,
+        k_param_flight_modes1,
+        k_param_flight_modes2,
+        k_param_flight_modes3,
+        k_param_flight_modes4,
+        k_param_flight_modes5,
         k_param_initial_mode,
         k_param_land_slope_recalc_shallow_threshold,    // unused - moved to AP_Landing
         k_param_land_slope_recalc_steep_threshold_to_abort, // unused - moved to AP_Landing
@@ -420,12 +420,7 @@ public:
     // Flight modes
     //
     AP_Int8 flight_mode_channel;
-    AP_Int8 flight_mode1;
-    AP_Int8 flight_mode2;
-    AP_Int8 flight_mode3;
-    AP_Int8 flight_mode4;
-    AP_Int8 flight_mode5;
-    AP_Int8 flight_mode6;
+    AP_Int8 flight_modes[6];
     AP_Int8 initial_mode;
 
     // Navigational manoeuvring limits
@@ -459,7 +454,7 @@ public:
     AP_Int8 takeoff_tdrag_elevator;
     AP_Float takeoff_tdrag_speed1;
     AP_Float takeoff_rotate_speed;
-    AP_Int8 takeoff_throttle_slewrate;
+    AP_Int16 takeoff_throttle_slewrate;
     AP_Float takeoff_pitch_limit_reduction_sec;
     AP_Int8 level_roll_limit;
 #if AP_TERRAIN_AVAILABLE
@@ -590,6 +585,9 @@ public:
 #if AP_RANGEFINDER_ENABLED
     // orientation of rangefinder to use for landing
     AP_Int8 rangefinder_land_orient;
+
+    // distance to the landing point to engage the rangefinder for landing
+    AP_Int16 rangefinder_land_engage_dist_m;
 #endif
 
 #if AP_PLANE_SYSTEMID_ENABLED

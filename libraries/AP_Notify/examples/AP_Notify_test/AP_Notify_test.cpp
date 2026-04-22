@@ -28,7 +28,7 @@ void setup()
 
     // turn on initialising notification
     AP_Notify::flags.initialising = true;
-    AP_Notify::flags.gps_status = 1;
+    AP_Notify::flags.gps_status = AP_GPS_FixType::NONE;
     AP_Notify::flags.armed = 1;
     AP_Notify::flags.pre_arm_check = 1;
 }

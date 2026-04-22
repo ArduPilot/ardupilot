@@ -85,7 +85,7 @@ def generate_observation_vector_innovation_variances(P,state,observation,varianc
     return IV_simple
 
 # generate equations for observation Jacobian and Kalman gain
-def generate_observation_equations(P,state,observation,variance,varname="HK"):
+def generate_observation_equations(P,state,observation,variance,varname="HK", simp=False):
     H = Matrix([observation]).jacobian(state)
     innov_var = H * P * H.T + Matrix([variance])
     assert(innov_var.shape[0] == 1)
@@ -93,7 +93,11 @@ def generate_observation_equations(P,state,observation,variance,varname="HK"):
     K = P * H.T / innov_var[0,0]
     extension="0:1000"
     var_string = varname+extension
-    HK_simple = cse(Matrix([H.transpose(), K]), symbols(var_string), optimizations='basic')
+    if simp:
+        exp = [simplify(H.transpose()), simplify(K)]
+    else:
+        exp = [H.transpose(), K]
+    HK_simple = cse(Matrix(exp), symbols(var_string), optimizations='basic')
 
     return HK_simple
 
@@ -237,13 +241,11 @@ def declination_observation(P,state,ix,iy):
     # component of the measured field
     observation = atan(iy/ix)
 
-    equations = generate_observation_equations(P,state,observation,obs_var)
+    equations = generate_observation_equations(P,state,observation,obs_var, simp=True)
 
     mag_decl_code_generator = CodeGenerator("./generated/mag_decl_generated.cpp")
     write_equations_to_file(equations,mag_decl_code_generator,1)
     mag_decl_code_generator.close()
-
-    return
 
 # derive equations for fusion of lateral body acceleration (multirotors only)
 def body_frame_accel_observation(P,state,R_to_body,vx,vy,vz,wx,wy):
@@ -532,10 +534,10 @@ def quaternion_error_propagation():
 
     # remove second order terms
     # we don't want the error deltas to appear in the final result
-    J.subs(dq0,0)
-    J.subs(dq1,0)
-    J.subs(dq2,0)
-    J.subs(dq3,0)
+    J = J.subs(dq0,0)
+    J = J.subs(dq1,0)
+    J = J.subs(dq2,0)
+    J = J.subs(dq3,0)
 
     # define covaraince matrix for quaternion states
     P = create_symmetric_cov_matrix(4)
@@ -545,6 +547,11 @@ def quaternion_error_propagation():
 
     # rotate quaternion covariances into rotation vector state space
     P_rot_vec = J * P_diag * J.transpose()
+    # zero off diagonals
+    for i in range(P_rot_vec.shape[0]):
+        for j in range(P_rot_vec.shape[1]):
+            if i != j:
+                P_rot_vec[i, j] = 0
     P_rot_vec_simple = cse(P_rot_vec, symbols("PS0:400"), optimizations='basic')
 
     quat_code_generator = CodeGenerator("./generated/tilt_error_cov_mat_generated.cpp")
@@ -676,8 +683,8 @@ def generate_code():
     # print('Generating mag observation code ...')
     # mag_observation_variance(P,state,R_to_body,i,ib)
     # mag_observation(P,state,R_to_body,i,ib)
-    # print('Generating declination observation code ...')
-    # declination_observation(P,state,ix,iy)
+    print('Generating declination observation code ...')
+    declination_observation(P,state,ix,iy)
     # print('Generating airspeed observation code ...')
     # tas_observation(P,state,vx,vy,vz,wx,wy)
     # print('Generating sideslip observation code ...')

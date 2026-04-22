@@ -381,7 +381,10 @@ public:
     void send_home_position() const;
     void send_gps_global_origin() const;
     virtual void send_attitude_target() {};
-    virtual void send_position_target_global_int() { };
+    void send_position_target_global_int();
+    // returns a Location to which the vehicle is currently heading,
+    // or would head to in an autonomous mode
+    virtual bool get_target_location(Location &loc) const { return false; }
     virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
     void send_accelcal_vehicle_position(uint32_t position);
@@ -610,7 +613,7 @@ protected:
     void handle_rally_fetch_point(const mavlink_message_t &msg);
     void handle_rally_point(const mavlink_message_t &msg) const;
 #if HAL_MOUNT_ENABLED
-    virtual void handle_mount_message(const mavlink_message_t &msg);
+    void handle_mount_message(const mavlink_message_t &msg);
 #endif
     void handle_fence_message(const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
@@ -675,7 +678,13 @@ protected:
         const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
-    void handle_statustext(const mavlink_message_t &msg) const;
+    void handle_statustext(const mavlink_message_t &msg);
+    struct {
+        uint8_t last_src_system;
+        uint8_t last_src_component;
+        uint8_t last_id; // ID from the mavlink packet
+        uint8_t msg_id;  // ID used in our logs
+    } statustext_chunking;
     void handle_named_value(const mavlink_message_t &msg) const;
 
     bool telemetry_delayed() const;
@@ -736,6 +745,10 @@ protected:
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
     virtual void send_global_position_int();
+
+#if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+    void send_utm_global_position() const;
+#endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
 
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
@@ -1328,9 +1341,9 @@ private:
     char statustext_printf_buffer[256+1];
 
 #if AP_GPS_ENABLED
-    virtual AP_GPS::GPS_Status min_status_for_gps_healthy() const {
+    virtual AP_GPS_FixType min_status_for_gps_healthy() const {
         // NO_FIX simply excludes NO_GPS
-        return AP_GPS::GPS_Status::NO_FIX;
+        return AP_GPS_FixType::NONE;
     }
 #endif
 
@@ -1342,8 +1355,8 @@ private:
     uint32_t _sysid_gcs_last_seen_time_ms;
 
     void service_statustext(void);
-#if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    static const uint8_t _status_capacity = 7;
+#if HAL_MEM_CLASS <= HAL_MEM_CLASS_192
+    static const uint8_t _status_capacity = 10;
 #else
     static const uint8_t _status_capacity = 30;
 #endif

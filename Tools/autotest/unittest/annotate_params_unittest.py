@@ -10,16 +10,26 @@ AP_FLAKE8_CLEAN
 Author: Amilcar do Carmo Lucas, IAV GmbH
 '''
 
-import tempfile
-from unittest.mock import patch, mock_open
 import os
+import pathlib
+import tempfile
 import unittest
 import xml.etree.ElementTree as ET
-import requests
+
+from unittest.mock import patch
+
 import mock
-from annotate_params import get_xml_data, remove_prefix, split_into_lines, create_doc_dict, \
-                            format_columns, update_parameter_documentation, print_read_only_params, \
-                            BASE_URL, PARAM_DEFINITION_XML_FILE
+import requests
+
+from annotate_params import BASE_URL
+from annotate_params import PARAM_DEFINITION_XML_FILE
+from annotate_params import create_doc_dict
+from annotate_params import format_columns
+from annotate_params import get_xml_data
+from annotate_params import print_read_only_params
+from annotate_params import remove_prefix
+from annotate_params import split_into_lines
+from annotate_params import update_parameter_documentation
 
 
 class TestParamDocsUpdate(unittest.TestCase):
@@ -53,9 +63,9 @@ class TestParamDocsUpdate(unittest.TestCase):
             },
         }
 
-    @patch('builtins.open', new_callable=mock_open, read_data='<root></root>')
+    @patch('pathlib.Path.read_text', return_value='<root></root>')
     @patch('os.path.isfile')
-    def test_get_xml_data_local_file(self, mock_isfile, mock_open):
+    def test_get_xml_data_local_file(self, mock_isfile, mock_read_text):
         # Mock the isfile function to return True
         mock_isfile.return_value = True
 
@@ -65,8 +75,8 @@ class TestParamDocsUpdate(unittest.TestCase):
         # Check the result
         self.assertIsInstance(result, ET.Element)
 
-        # Assert that the file was opened correctly
-        mock_open.assert_called_once_with('./test.xml', 'r', encoding='utf-8')
+        # Assert that read_text was called correctly
+        mock_read_text.assert_called_once_with(encoding="utf-8")
 
     @patch('requests.get')
     def test_get_xml_data_remote_file(self, mock_get):
@@ -89,24 +99,20 @@ class TestParamDocsUpdate(unittest.TestCase):
         # Assert that the requests.get function was called once
         mock_get.assert_called_once_with("http://example.com/test.xml", timeout=5)
 
+    @patch('pathlib.Path.read_text', return_value='<root></root>')
     @patch('os.path.isfile')
-    def test_get_xml_data_script_dir_file(self, mock_isfile):
-        # Mock the isfile function to return False for the current directory and True for the script directory
-        def side_effect(filename):
-            return True
-        mock_isfile.side_effect = side_effect
+    def test_get_xml_data_script_dir_file(self, mock_isfile, mock_read_text):
+        # Mock the isfile function to return True for the script directory
+        mock_isfile.return_value = True
 
-        # Mock the open function to return a dummy XML string
-        mock_open = mock.mock_open(read_data='<root></root>')
-        with patch('builtins.open', mock_open):
-            # Call the function with a filename that exists in the script directory
-            result = get_xml_data(BASE_URL, ".", PARAM_DEFINITION_XML_FILE)
+        # Call the function with a filename that exists in the script directory
+        result = get_xml_data(BASE_URL, ".", PARAM_DEFINITION_XML_FILE)
 
         # Check the result
         self.assertIsInstance(result, ET.Element)
 
-        # Assert that the file was opened correctly
-        mock_open.assert_called_once_with(os.path.join('.', PARAM_DEFINITION_XML_FILE), 'r', encoding='utf-8')
+        # Assert that read_text was called correctly
+        mock_read_text.assert_called_once_with(encoding="utf-8")
 
     def test_get_xml_data_no_requests_package(self):
         # Temporarily remove the requests module
@@ -311,8 +317,7 @@ class TestParamDocsUpdate(unittest.TestCase):
         update_parameter_documentation(self.doc_dict, self.temp_file.name)
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         # Check if the file has been updated correctly
         self.assertIn("Param 1", updated_content)
@@ -332,8 +337,7 @@ class TestParamDocsUpdate(unittest.TestCase):
         update_parameter_documentation(self.doc_dict, self.temp_file.name)
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         expected_content = '''# Param 2
 # Documentation for Param 2
@@ -373,8 +377,7 @@ PARAM1 100
         update_parameter_documentation(self.doc_dict, self.temp_file.name, "missionplanner")
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         expected_content = '''# Param _ 1
 # Documentation for Param_1
@@ -411,8 +414,7 @@ PARAM2 100 # ignore, me
         update_parameter_documentation(self.doc_dict, self.temp_file.name, "mavproxy")
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         expected_content = '''# Param 1
 # Documentation for Param 1
@@ -528,8 +530,7 @@ PARAM_1\t100
         update_parameter_documentation(self.doc_dict, self.temp_file.name)
 
         # Read the updated content from the temporary file
-        with open(self.temp_file.name, "r", encoding="utf-8") as file:
-            updated_content = file.read()
+        updated_content = pathlib.Path(self.temp_file.name).read_text(encoding="utf-8")
 
         # Check if the file is still empty
         self.assertEqual(updated_content, "")

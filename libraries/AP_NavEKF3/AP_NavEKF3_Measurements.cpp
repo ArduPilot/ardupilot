@@ -567,7 +567,7 @@ void NavEKF3_core::readGpsData()
         return;
     }
 
-    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+    if (gps.status(selected_gps) < AP_GPS_FixType::FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
         dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
@@ -739,7 +739,7 @@ void NavEKF3_core::readGpsYawData()
     // if the GPS has yaw data then fuse it as an Euler yaw angle
     float yaw_deg, yaw_accuracy_deg;
     uint32_t yaw_time_ms;
-    if (gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D &&
+    if (gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D &&
         dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg, yaw_time_ms) &&
         yaw_time_ms != yawMeasTime_ms) {
         // GPS modules are rather too optimistic about their
@@ -1183,7 +1183,7 @@ void NavEKF3_core::update_gps_selection(void)
             // many GPS sensors available
             preferred_gps = core_index;
         }
-        if (gps.status(preferred_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) {
+        if (gps.status(preferred_gps) >= AP_GPS_FixType::FIX_3D) {
             // select our preferred_gps if it has a 3D fix, otherwise
             // use the primary GPS
             selected_gps = preferred_gps;
@@ -1388,13 +1388,12 @@ ftype NavEKF3_core::MagDeclination(void) const
 /*
   Update the on ground and not moving check.
   Should be called once per IMU update.
-  Only updates when on ground and when operating without a magnetometer
+  Used for yaw fusion strategy selection, zero velocity fusion gating,
+  and accel bias learning inhibition during ground movement.
 */
 void NavEKF3_core::updateMovementCheck(void)
 {
-    const bool runCheck = onGround && (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
-                                       yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
-    if (!runCheck)
+    if (!onGround)
     {
         onGroundNotMoving = false;
         return;

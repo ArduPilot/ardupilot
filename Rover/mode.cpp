@@ -228,12 +228,12 @@ float Mode::nav_bearing() const
 }
 
 // return cross track error (i.e. vehicle's distance from the line between waypoints)
-float Mode::crosstrack_error() const
+float Mode::crosstrack_error_m() const
 {
     if (!is_autopilot_mode()) {
         return 0.0f;
     }
-    return g2.wp_nav.crosstrack_error();
+    return g2.wp_nav.crosstrack_error_m();
 }
 
 // return desired lateral acceleration
@@ -377,8 +377,8 @@ float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
         speed_max = (1.0f / cruise_throttle) * cruise_speed;
     }
 
-    // constrain to 30m/s (108km/h) and return
-    return constrain_float(speed_max, 0.0f, 30.0f);
+    // constrain to 100m/s and return
+    return constrain_float(speed_max, 0.0f, 100.0f);
 }
 
 // calculate pilot input to nudge speed up or down

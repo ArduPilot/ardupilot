@@ -25,8 +25,7 @@ public:
     }
 
 private:
-    float get_airspeed() const override;
-    bool is_underspeed(const float aspeed) const override;
+    bool is_underspeed() const override;
     float get_measured_rate() const override;
 
     bool in_recovery;

@@ -30,6 +30,7 @@
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 
+
 #define CRSF_SUBSET_RC_STARTING_CHANNEL_BITS        5
 #define CRSF_SUBSET_RC_STARTING_CHANNEL_MASK        0x1F
 #define CRSF_SUBSET_RC_RES_CONFIGURATION_BITS       2
@@ -89,61 +90,7 @@ extern const AP_HAL::HAL& hal;
 //#define CRSF_DEBUG_PARAMS
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
-static const char* get_frame_type(uint8_t byte, uint8_t subtype = 0)
-{
-    switch(byte) {
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_GPS:
-        return "GPS";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR:
-        return "BATTERY";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_HEARTBEAT:
-        return "HEARTBEAT";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX:
-        return "VTX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX_TELEM:
-        return "VTX_TELEM";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
-        return "PING";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND:
-        return "COMMAND";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE:
-        return "ATTITUDE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_FLIGHT_MODE:
-        return "FLIGHT_MODE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
-        return "DEVICE_INFO";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
-        return "PARAM_READ";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-        return "SETTINGS_ENTRY";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS:
-        return "LINK_STATS";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-        return "RC";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-        return "RCv3";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED_11BIT:
-        return "RCv3_11BIT";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
-        return "LINK_STATSv3_RX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
-        return "LINK_STATSv3_TX";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
-        return "PARAM_WRITE";
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY:
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM:
-        switch (subtype) {
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_SINGLE_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_SINGLE";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_STATUS_TEXT:
-            return "AP_CUSTOM_TEXT";
-        case AP_RCProtocol_CRSF::CRSF_AP_CUSTOM_TELEM_MULTI_PACKET_PASSTHROUGH:
-            return "AP_CUSTOM_MULTI";
-        }
-        return "AP_CUSTOM";
-    }
-    return "UNKNOWN";
-}
+# define get_frame_type(byte, subtype) AP_CRSF_Protocol::get_frame_type(byte, subtype)
 #else
 # define debug(fmt, args...)	do {} while(0)
 #endif
@@ -268,7 +215,7 @@ bool AP_RCProtocol_CRSF::check_frame(uint32_t timestamp_us)
         return true;
     }
 
-    if (_frame.device_address != DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+    if (_frame.device_address != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return false;
     }
 
@@ -327,7 +274,7 @@ void AP_RCProtocol_CRSF::skip_to_next_frame(uint32_t timestamp_us)
     /*
       look for a frame header in the remaining bytes
      */
-    const uint8_t *new_header = (const uint8_t *)memchr(&_frame_bytes[1], DeviceAddress::CRSF_ADDRESS_FLIGHT_CONTROLLER, _frame_ofs - 1);
+    const uint8_t *new_header = (const uint8_t *)memchr(&_frame_bytes[1], AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER, _frame_ofs - 1);
     if (new_header == nullptr) {
         _frame_ofs = 0;
         return;
@@ -410,10 +357,10 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS)
 #ifdef CRSF_DEBUG_PARAMS
     switch (frame->type) {
-        case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-        case CRSF_FRAMETYPE_PARAMETER_READ:
-        case CRSF_FRAMETYPE_PARAMETER_WRITE:
-        case CRSF_FRAMETYPE_COMMAND:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
 #endif
 
         hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
@@ -458,24 +405,24 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     bool rc_active = false;
 
     switch (_frame.type) {
-        case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
             // scale factors defined by TBS - TICKS_TO_US(x) ((x - 992) * 5 / 8 + 1500)
             decode_11bit_channels((const uint8_t*)(&_frame.payload), CRSF_MAX_CHANNELS, _channels, 5U, 8U, 880U);
             _crsf_v3_active = false;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS:
             process_link_stats_frame((uint8_t*)&_frame.payload);
             break;
-        case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
             decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, CRSF_MAX_CHANNELS, _channels);
             _crsf_v3_active = true;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
             process_link_stats_rx_frame((uint8_t*)&_frame.payload);
             break;
-        case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
             process_link_stats_tx_frame((uint8_t*)&_frame.payload);
             break;
         default:
@@ -485,17 +432,17 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     if (AP_CRSF_Telem::process_frame(FrameType(_frame.type), (uint8_t*)&_frame.payload, _frame.length - 2U)) {
 #if defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
         switch (_frame.type) {
-            case CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
-            case CRSF_FRAMETYPE_LINK_STATISTICS:
-            case CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-            case CRSF_FRAMETYPE_LINK_STATISTICS_RX:
-            case CRSF_FRAMETYPE_LINK_STATISTICS_TX:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_RX:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS_TX:
                 break;
 #ifdef CRSF_DEBUG_PARAMS
-            case CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
-            case CRSF_FRAMETYPE_PARAMETER_READ:
-            case CRSF_FRAMETYPE_PARAMETER_WRITE:
-            case CRSF_FRAMETYPE_COMMAND:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
+            case AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
 #else
             default:
 #endif
@@ -676,6 +623,15 @@ void AP_RCProtocol_CRSF::process_link_stats_frame(const void* data)
         _link_status.snr = INT8_MIN;
         _link_status.active_antenna = -1;
     }
+#endif
+
+    // Report to frontend
+    frontend._rc_link_status.link_quality = _link_status.link_quality;
+#if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
+    frontend._rc_link_status.rssi_dbm = _link_status.rssi_dbm;
+    frontend._rc_link_status.snr = _link_status.snr;
+    frontend._rc_link_status.tx_power = _link_status.tx_power;
+    frontend._rc_link_status.active_antenna = _link_status.active_antenna;
 #endif
 }
 

@@ -212,7 +212,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
         const Vector3f &targets = quadplane.attitude_control->get_att_target_euler_cd();
 
         const Vector2f& curr_pos_m = quadplane.inertial_nav.get_position_xy_cm() * 0.01;
-        const Vector2f& target_pos_m = quadplane.pos_control->get_pos_target_NEU_m().xy().tofloat();
+        const Vector2f& target_pos_m = quadplane.pos_control->get_pos_target_NED_m().xy().tofloat();
         const Vector2f error_m = (target_pos_m - curr_pos_m);
 
         mavlink_msg_nav_controller_output_send(
@@ -222,7 +222,7 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             targets.z * 0.01,
             degrees(error_m.angle()),
             MIN(error_m.length(), UINT16_MAX),
-            (plane.control_mode != &plane.mode_qstabilize) ? quadplane.pos_control->get_pos_error_U_m() : 0,
+            (plane.control_mode != &plane.mode_qstabilize) ? -quadplane.pos_control->get_pos_error_D_m() : 0,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
             quadplane.wp_nav->crosstrack_error_m());
         return;
@@ -239,41 +239,17 @@ void GCS_MAVLINK_Plane::send_nav_controller_output() const
             MIN(plane.auto_state.wp_distance, UINT16_MAX),
             plane.calc_altitude_error_cm() * 0.01,
             plane.airspeed_error * 100,  // incorrect units; see PR#7933
-            nav_controller->crosstrack_error());
+            nav_controller->crosstrack_error_m());
     }
 }
 
-void GCS_MAVLINK_Plane::send_position_target_global_int()
+bool GCS_MAVLINK_Plane::get_target_location(Location &loc) const
 {
     if (plane.control_mode == &plane.mode_manual) {
-        return;
+        return false;
     }
-    Location &next_WP_loc = plane.next_WP_loc;
-    static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
-    static constexpr uint16_t TYPE_MASK = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-                                          POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE | POSITION_TARGET_TYPEMASK_LAST_BYTE;
-    int32_t alt = 0;
-    if (!next_WP_loc.is_zero()) {
-        UNUSED_RESULT(next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, alt));
-    }
-
-    mavlink_msg_position_target_global_int_send(
-        chan,
-        AP_HAL::millis(), // time_boot_ms
-        MAV_FRAME_GLOBAL, // targets are always global altitude
-        TYPE_MASK, // ignore everything except the x/y/z components
-        next_WP_loc.lat, // latitude as 1e7
-        next_WP_loc.lng, // longitude as 1e7
-        alt * 0.01, // altitude is sent as a float
-        0.0f, // vx
-        0.0f, // vy
-        0.0f, // vz
-        0.0f, // afx
-        0.0f, // afy
-        0.0f, // afz
-        0.0f, // yaw
-        0.0f); // yaw_rate
+    loc = plane.next_WP_loc;
+    return true;
 }
 
 
@@ -321,7 +297,7 @@ void GCS_MAVLINK_Plane::send_wind() const
         chan,
         degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
                                           // direction wind is coming from
-        wind.length(),
+        wind.xy().length(),               // ground-plane (horizontal) speed only
         wind.z);
 }
 
@@ -397,7 +373,7 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
     }
 #if HAL_QUADPLANE_ENABLED
     if (g.gcs_pid_mask & TUNING_BITS_ACCZ && plane.quadplane.in_vtol_mode()) {
-        pid_info = &plane.quadplane.pos_control->get_accel_U_pid().get_pid_info();
+        pid_info = &plane.quadplane.pos_control->D_get_accel_pid().get_pid_info();
         send_pid_info(pid_info, PID_TUNING_ACCZ, pid_info->actual);
     }
 #endif
@@ -407,17 +383,6 @@ void GCS_MAVLINK_Plane::send_pid_tuning()
 bool GCS_MAVLINK_Plane::try_send_message(enum ap_message id)
 {
     switch (id) {
-
-#if AP_TERRAIN_AVAILABLE
-    case MSG_TERRAIN_REQUEST:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REQUEST);
-        plane.terrain.send_request(chan);
-        break;
-    case MSG_TERRAIN_REPORT:
-        CHECK_PAYLOAD_SIZE(TERRAIN_REPORT);
-        plane.terrain.send_report(chan);
-        break;
-#endif
 
     case MSG_WIND:
         CHECK_PAYLOAD_SIZE(WIND);
@@ -508,7 +473,7 @@ bool GCS_MAVLINK_Plane::handle_guided_request(AP_Mission::Mission_Command &cmd)
  */
 void GCS_MAVLINK_Plane::handle_change_alt_request(Location &location)
 {
-    plane.fix_terrain_WP(location, __LINE__);
+    plane.fix_terrain_WP(location, __AP_LINE__);
 
     if (location.terrain_alt) {
         plane.next_WP_loc.copy_alt_from(location);
@@ -600,7 +565,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     if (!location_from_command_t(packet, requested_position)) {
         return MAV_RESULT_DENIED;
     }
-    plane.fix_terrain_WP(requested_position, __LINE__);
+    plane.fix_terrain_WP(requested_position, __AP_LINE__);
 
     if (isnan(packet.param4) || is_zero(packet.param4)) {
         requested_position.loiter_ccw = 0;
@@ -1027,13 +992,6 @@ void GCS_MAVLINK_Plane::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
 
-    case MAVLINK_MSG_ID_TERRAIN_DATA:
-    case MAVLINK_MSG_ID_TERRAIN_CHECK:
-#if AP_TERRAIN_AVAILABLE
-        plane.terrain.handle_data(chan, msg);
-#endif
-        break;
-
     case MAVLINK_MSG_ID_SET_ATTITUDE_TARGET:
         handle_set_attitude_target(msg);
         break;
@@ -1232,7 +1190,7 @@ int16_t GCS_MAVLINK_Plane::high_latency_target_altitude() const
     const QuadPlane &quadplane = plane.quadplane;
     //return units are m
     if (quadplane.show_vtol_view()) {
-        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.alt * 0.01 + quadplane.pos_control->get_pos_error_U_m()) : 0;
+        return (plane.control_mode != &plane.mode_qstabilize) ? (global_position_current.alt * 0.01 - quadplane.pos_control->get_pos_error_D_m()) : 0;
     }
 #endif
     return 0.01 * (global_position_current.alt + plane.calc_altitude_error_cm());
@@ -1279,7 +1237,7 @@ uint8_t GCS_MAVLINK_Plane::high_latency_wind_speed() const
     wind = AP::ahrs().wind_estimate();
 
     // return units are m/s*5
-    return MIN(wind.length() * 5, UINT8_MAX);
+    return MIN(wind.xy().length() * 5, UINT8_MAX);
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_wind_direction() const
@@ -1390,32 +1348,36 @@ uint8_t GCS_MAVLINK_Plane::send_available_mode(uint8_t index) const
 
     // Ask the mode for its name and number
     const char* name;
-    uint8_t mode_number;
+    Mode::Number mode_number;
 
     if (index_zero < fw_mode_count) {
         // A fixedwing mode
         name = fw_modes[index_zero]->name();
-        mode_number = (uint8_t)fw_modes[index_zero]->mode_number();
+        mode_number = fw_modes[index_zero]->mode_number();
 
     } else {
 #if HAL_QUADPLANE_ENABLED
         // A Quadplane mode
         const uint8_t q_index = index_zero - fw_mode_count;
         name = q_modes[q_index]->name();
-        mode_number = (uint8_t)q_modes[q_index]->mode_number();
+        mode_number = q_modes[q_index]->mode_number();
 #else
         // Should not endup here
         return mode_count;
 #endif
     }
 
+    // All modes can be selected except Initialising and those disabled by FLTMODE_GCSBLOCK param
+    const bool user_selectable = (mode_number != Mode::Number::INITIALISING) && plane.gcs_mode_enabled(mode_number);
+
     mavlink_msg_available_modes_send(
         chan,
         mode_count,
         index,
         MAV_STANDARD_MODE::MAV_STANDARD_MODE_NON_STANDARD,
-        mode_number,
-        0, // MAV_MODE_PROPERTY bitmask
+        (uint8_t)mode_number,
+        // MAV_MODE_PROPERTY bitmask,
+        user_selectable ? 0 : MAV_MODE_PROPERTY_NOT_USER_SELECTABLE,
         name
     );
 

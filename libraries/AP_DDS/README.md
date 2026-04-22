@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Ardupilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS 2 node, an eProsima Integration Service, and the MicroXRCE Agent. The two systems communicate over serial or UDP.
+ArduPilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS 2 node, an eProsima Integration Service, and the MicroXRCE Agent. The two systems communicate over serial or UDP.
 
 ```mermaid
 ---
@@ -12,7 +12,7 @@ graph LR
 
   subgraph Linux Computer
 
-    subgraph Ardupilot SITL
+    subgraph ArduPilot SITL
       veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
       xrceClient <--> port1[udp:2019]
     end
@@ -35,7 +35,7 @@ graph LR
 
   subgraph Linux Computer
 
-    subgraph Ardupilot SITL
+    subgraph ArduPilot SITL
       veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
       xrceClient <--> port1[devUSB1]
     end
@@ -50,10 +50,9 @@ graph LR
   end
 ```
 
-
 ## Installation
 
-While DDS support in Ardupilot is mostly through git submodules,
+While DDS support in ArduPilot is mostly through git submodules,
 you must install Micro XRCE DDS Gen and create a workspace.
 
 Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html)
@@ -63,7 +62,7 @@ to set up your environment.
 
 On Linux, creating a virtual serial port will be necessary to use serial in SITL, because of that install socat.
 
-```
+```bash
 sudo apt-get update
 sudo apt-get install socat
 ```
@@ -76,6 +75,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 | Name | Description | Default |
 | - | - | - |
 | DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
+| DDS_USE_NS | Set to 1 to include `v<MAV_SYSID>` in topic/service names | 0 |
 | SERIAL1_BAUD | The serial baud rate for DDS | 57 |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
 
@@ -91,15 +91,18 @@ param set SERIAL1_PROTOCOL 45
 ```
 
 DDS is currently enabled by default, if it's part of the build. To disable it, run the following and reboot the simulator.
-```
+
+```text
 param set DDS_ENABLE 0
 REBOOT
 ```
 
-## Using the ROS 2 CLI to Read Ardupilot Data
+## Using the ROS 2 CLI to Read ArduPilot Data
 
 After your setup is complete, do the following:
+
 - Source the ROS 2 installation
+
   ```console
   source install/setup.bash
   ```
@@ -109,11 +112,14 @@ Next, follow the associated section for your chosen transport, and finally you c
 ### UDP (recommended for SITL)
 
 - Run the microROS agent
+
   ```console
   cd ardupilot/libraries/AP_DDS
   ros2 run micro_ros_agent micro_ros_agent udp4 -p 2019
   ```
+
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
+
   ```console
   sim_vehicle.py -v ArduPlane -DG --console --enable-DDS
   ```
@@ -121,21 +127,26 @@ Next, follow the associated section for your chosen transport, and finally you c
 ### Serial
 
 - Start a virtual serial port with socat. Take note of the two `/dev/pts/*` ports. If yours are different, substitute as needed.
+
   ```console
   socat -d -d pty,raw,echo=0 pty,raw,echo=0
   >>> 2023/02/21 05:26:06 socat[334] N PTY is /dev/pts/1
   >>> 2023/02/21 05:26:06 socat[334] N PTY is /dev/pts/2
   >>> 2023/02/21 05:26:06 socat[334] N starting data transfer loop with FDs [5,5] and [7,7]
   ```
+
 - Run the microROS agent
+
   ```console
   cd ardupilot/libraries/AP_DDS
   # assuming we are using tty/pts/2 for DDS Application
   ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/pts/2
   ```
+
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
+
   ```console
-  # assuming we are using /dev/pts/1 for Ardupilot SITL
+  # assuming we are using /dev/pts/1 for ArduPilot SITL
   sim_vehicle.py -v ArduPlane -DG --console --enable-DDS -A "--serial1=uart:/dev/pts/1"
   ```
 
@@ -274,6 +285,7 @@ ardupilot_msgs.srv.Takeoff_Response(status=True)
 The following topic can be used to control the vehicle.
 
 - `/ap/joy` (type `sensor_msgs/msg/Joy`): overrides a maximum of 8 RC channels,
+
 at least 4 axes must be sent. Values are clamped between -1.0 and 1.0.
 Use `NaN` to disable the override of a single channel.
 A channel defaults back to RC after 1 second of not receiving commands.
@@ -284,7 +296,9 @@ ros2 topic pub /ap/joy sensor_msgs/msg/Joy "{axes: [0.0, 0.0, 0.0, 0.0]}"
 publisher: beginning loop
 publishing #1: sensor_msgs.msg.Joy(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), axes=[0.0, 0.0, 0.0, 0.0], buttons=[])
 ```
+
 - `/ap/cmd_gps_pose` (type `ardupilot_msgs/msg/GlobalPosition`): sends
+
 a waypoint to head to when the selected mode is GUIDED.
 
 ```bash
@@ -293,12 +307,12 @@ ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
- 
+
 ## Contributing to `AP_DDS` library
 
-### Adding DDS messages to Ardupilot
+### Adding DDS messages to ArduPilot
 
-Unlike the use of ROS 2 `.msg` files, since Ardupilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
+Unlike the use of ROS 2 `.msg` files, since ArduPilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
 This package is intended to work with any `.idl` file complying with those extensions.
 
 Over time, these restrictions will ideally go away.
@@ -388,6 +402,7 @@ This will run the tools automatically when you commit. If there are changes, jus
 
 1. Install [pre-commit](https://pre-commit.com/#installation) python package.
 1. Install ArduPilot's hooks in the root of the repo, then commit like normal
+
   ```bash
   cd ardupilot
   pre-commit install
@@ -400,11 +415,13 @@ This will run the tools automatically when you commit. If there are changes, jus
 
 The easiest way to test DDS is to make use of some boards providing two serial interfaces over USB such as the Pixhawk 6X.
 The [Pixhawk6X/hwdef.dat](../AP_HAL_ChibiOS/hwdef/Pixhawk6X/hwdef.dat) file has this info.
-```
+
+```text
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 ```
 
 For example, build, flash, and set up OTG2 for DDS
+
 ```bash
 ./waf configure --board Pixhawk6X --enable-DDS
 ./waf plane --upload
@@ -417,6 +434,7 @@ reboot
 ```
 
 Then run the Micro ROS agent
+
 ```bash
 cd /path/to/ros2_ws
 source install/setup.bash
@@ -425,6 +443,7 @@ ros2 run micro_ros_agent micro_ros_agent serial -b 115200 -D /dev/serial/by-id/u
 ```
 
 If connection fails, instead of running the Micro ROS agent, debug the stream
+
 ```bash
 python3 -m serial.tools.miniterm /dev/serial/by-id/usb-ArduPilot_Pixhawk6X_210028000151323131373139-if02  115200 --echo --encoding hexlify
 ```

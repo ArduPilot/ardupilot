@@ -459,6 +459,7 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
     // if rotor ramp and runup are both at full speed, then run-up has been completed
     if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
         _runup_complete = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Complete");
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed
@@ -572,7 +573,6 @@ void AP_MotorsHeli_RSC::autothrottle_run()
             if (_rotor_rpm >= ((float)_governor_rpm - torque_ref_error_rpm)) {
                 _governor_engage = true;
                 _autothrottle = true;
-                GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Governor Engaged");
             }
         } else {
             // temporary use of throttle curve and ramp timer to accelerate rotor to governor min torque rise speed

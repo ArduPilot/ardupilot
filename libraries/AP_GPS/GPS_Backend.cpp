@@ -52,11 +52,18 @@ AP_GPS_Backend::AP_GPS_Backend(AP_GPS &_gps, AP_GPS::Params &_params, AP_GPS::GP
     state.have_vertical_accuracy = false;
 }
 
-/**
-   fill in time_week_ms and time_week from BCD date and time components
-   assumes MTK19 millisecond form of bcd_time
+/*
+  get the last time of week in ms
  */
-void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
+uint32_t AP_GPS_Backend::get_last_itow_ms(void) const
+{
+    if (!_have_itow) {
+        return state.time_week_ms;
+    }
+    return (_pseudo_itow_delta_ms == 0)?(_last_itow_ms):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
+}
+
+void AP_GPS_Backend::BCD_to_gps_time(uint32_t bcd_date, uint32_t bcd_time_ms, uint16_t& gps_week, uint32_t& gps_time_ms)
 {
     struct tm tm {};
 
@@ -64,7 +71,7 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     tm.tm_mon  = ((bcd_date / 100U) % 100U)-1;
     tm.tm_mday = bcd_date / 10000U;
 
-    uint32_t v = bcd_milliseconds;
+    uint32_t v = bcd_time_ms;
     uint16_t msec = v % 1000U; v /= 1000U;
     tm.tm_sec = v % 100U; v /= 100U;
     tm.tm_min = v % 100U; v /= 100U;
@@ -79,20 +86,9 @@ void AP_GPS_Backend::make_gps_time(uint32_t bcd_date, uint32_t bcd_milliseconds)
     uint32_t ret = unix_time + leap_seconds_unix - unix_to_GPS_secs;
 
     // get GPS week and time
-    state.time_week = ret / AP_SEC_PER_WEEK;
-    state.time_week_ms = (ret % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC;
-    state.time_week_ms += msec;
-}
-
-/*
-  get the last time of week in ms
- */
-uint32_t AP_GPS_Backend::get_last_itow_ms(void) const
-{
-    if (!_have_itow) {
-        return state.time_week_ms;
-    }
-    return (_pseudo_itow_delta_ms == 0)?(_last_itow_ms):((_pseudo_itow/1000ULL) + _pseudo_itow_delta_ms);
+    gps_week = ret / AP_SEC_PER_WEEK;
+    gps_time_ms = (ret % AP_SEC_PER_WEEK) * AP_MSEC_PER_SEC;
+    gps_time_ms += msec;
 }
 
 /*
@@ -247,7 +243,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // get the time the packet arrived on the UART
         uint64_t uart_us;
-        if (_last_pps_time_us != 0 && (state.status >= AP_GPS::GPS_OK_FIX_2D)) {
+        if (_last_pps_time_us != 0 && (state.status >= AP_GPS_FixType::FIX_2D)) {
             // pps is only reliable when we have some sort of GPS fix
             uart_us = _last_pps_time_us;
             _last_pps_time_us = 0;
@@ -313,7 +309,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         }
 #endif // HAL_BUILD_AP_PERIPH
 
-        if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
+        if (state.status >= AP_GPS_FixType::FIX_2D) {
             // we must have a decent fix to calculate difference between itow and pseudo-itow
             _pseudo_itow_delta_ms = itow - (_pseudo_itow/1000ULL);
         }

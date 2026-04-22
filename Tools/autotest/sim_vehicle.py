@@ -11,25 +11,24 @@ AP_FLAKE8_CLEAN
 """
 
 import atexit
+import binascii
 import datetime
 import errno
+import math
 import optparse
 import os
 import os.path
 import re
+import shlex
 import signal
 import subprocess
 import sys
 import tempfile
 import textwrap
 import time
-import shlex
-import binascii
-import math
 
 from pysim import util
 from pysim import vehicleinfo
-
 
 # List of open terminal windows for macosx
 windowID = []
@@ -174,7 +173,7 @@ def cygwin_pidof(proc_name):
         if cmd == proc_name:
             try:
                 pid = int(line_split[0].strip())
-            except Exception:
+            except ValueError:
                 pid = int(line_split[1].strip())
             if pid not in pids:
                 pids.append(pid)
@@ -316,7 +315,7 @@ def kill_tasks():
             kill_tasks_psutil(victim_names)
         except ImportError:
             kill_tasks_pkill(victim_names)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         progress("kill_tasks failed: {}".format(str(e)))
 
 
@@ -514,12 +513,29 @@ def find_geocoder_location(locname):
     except ImportError:
         print("geocoder not installed")
         return None
-    j = geocoder.osm(locname)
-    if j is None or not hasattr(j, 'lat') or j.lat is None:
-        print("geocoder failed to find '%s'" % locname)
+    # Step 1: Attempt the lookup
+    try:
+        j = geocoder.osm(locname)
+    except Exception as e:  # noqa: BLE001
+        # Handle network/blocked errors (like 403)
+        err_msg = str(e)
+        if '403' in err_msg:
+            print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        else:
+            print(f"geocoder error: {err_msg}")
         return None
-    lat = j.lat
-    lon = j.lng
+    # Step 2: Validate the response object (Handles status_code 403 if no exception was raised)
+    status_code = getattr(j, 'status_code', None)
+    if status_code == 403:
+        print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        return None
+
+    if j is None or not hasattr(j, 'lat') or j.lat is None:
+        print(f"geocoder failed to find '{locname}'")
+        return None
+    # Step 3: Success logic
+    lat, lon = j.lat, j.lng
+
     from MAVProxy.modules.mavproxy_map import srtm
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
@@ -531,7 +547,7 @@ def find_geocoder_location(locname):
             alt = tile.getAltitudeFromLatLon(lat, lon)
             break
     if alt is None:
-        print("timed out getting altitude for '%s'" % locname)
+        print(f"timed out getting altitude for '{locname}'")
         return None
     return [lat, lon, alt, 0.0]
 
@@ -588,7 +604,7 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     try:
         p = subprocess.Popen(cmd, **kw)
         ret = os.waitpid(p.pid, 0)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print("[%s] An exception has occurred with command: '%s'" % (what, (' ').join(cmd)))
         print(e)
         sys.exit(1)
@@ -771,7 +787,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--enable-fgview"])
     if opts.sitl_instance_args:
         # this could be a lot better:
-        cmd.extend(opts.sitl_instance_args.split(" "))
+        cmd.extend(opts.sitl_instance_args)
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
     path = None
@@ -836,7 +852,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         # Parse start_time into a double precision number specifying seconds since 1900.
         try:
             start_time_UTC = time.mktime(datetime.datetime.strptime(cmd_opts.start_time, '%Y-%m-%d-%H:%M').timetuple())
-        except Exception:
+        except ValueError:
             print("Incorrect start time format - require YYYY-MM-DD-HH:MM (given %s)" % cmd_opts.start_time)
             sys.exit(1)
 
@@ -1191,7 +1207,8 @@ group_sim.add_option("", "--can-peripherals",
                      help="start a DroneCAN peripheral instance")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
-                     default=None,
+                     default=[],
+                     action="append",
                      help="pass arguments to SITL instance")
 group_sim.add_option("-G", "--gdb",
                      action='store_true',
@@ -1631,9 +1648,11 @@ if cmd_opts.delay_start:
 
 tmp = None
 if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
-    # import only here so as to avoid jinja dependency in whole script
-    from jinja2 import Environment, FileSystemLoader
     from tempfile import mkstemp
+
+    # import only here so as to avoid jinja dependency in whole script
+    from jinja2 import Environment
+    from jinja2 import FileSystemLoader
     entities = []
     config = {}
     config['plane'] = cmd_opts.vehicle == 'ArduPlane'

@@ -465,53 +465,38 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             Kfusion[4] = t78*(-t90+P[4][0]*t2*t5+P[4][1]*t2*t15+P[4][6]*t2*t10+P[4][2]*t2*t19-P[4][3]*t2*t22+P[4][5]*t2*t27);
             Kfusion[5] = t78*(t61+P[5][0]*t2*t5-P[5][4]*t2*t7+P[5][1]*t2*t15+P[5][6]*t2*t10+P[5][2]*t2*t19-P[5][3]*t2*t22);
             Kfusion[6] = t78*(t70+P[6][0]*t2*t5-P[6][4]*t2*t7+P[6][1]*t2*t15+P[6][2]*t2*t19-P[6][3]*t2*t22+P[6][5]*t2*t27);
-            Kfusion[7] = t78*(P[7][0]*t2*t5-P[7][4]*t2*t7+P[7][1]*t2*t15+P[7][6]*t2*t10+P[7][2]*t2*t19-P[7][3]*t2*t22+P[7][5]*t2*t27);
-            Kfusion[8] = t78*(P[8][0]*t2*t5-P[8][4]*t2*t7+P[8][1]*t2*t15+P[8][6]*t2*t10+P[8][2]*t2*t19-P[8][3]*t2*t22+P[8][5]*t2*t27);
-            Kfusion[9] = t78*(P[9][0]*t2*t5-P[9][4]*t2*t7+P[9][1]*t2*t15+P[9][6]*t2*t10+P[9][2]*t2*t19-P[9][3]*t2*t22+P[9][5]*t2*t27);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t78*(P[10][0]*t2*t5-P[10][4]*t2*t7+P[10][1]*t2*t15+P[10][6]*t2*t10+P[10][2]*t2*t19-P[10][3]*t2*t22+P[10][5]*t2*t27);
-                Kfusion[11] = t78*(P[11][0]*t2*t5-P[11][4]*t2*t7+P[11][1]*t2*t15+P[11][6]*t2*t10+P[11][2]*t2*t19-P[11][3]*t2*t22+P[11][5]*t2*t27);
-                Kfusion[12] = t78*(P[12][0]*t2*t5-P[12][4]*t2*t7+P[12][1]*t2*t15+P[12][6]*t2*t10+P[12][2]*t2*t19-P[12][3]*t2*t22+P[12][5]*t2*t27);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t78*(P[stateIndex][0]*t2*t5-P[stateIndex][4]*t2*t7+P[stateIndex][1]*t2*t15+P[stateIndex][6]*t2*t10+P[stateIndex][2]*t2*t19-P[stateIndex][3]*t2*t22+P[stateIndex][5]*t2*t27);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t78*(P[16][0]*t2*t5-P[16][4]*t2*t7+P[16][1]*t2*t15+P[16][6]*t2*t10+P[16][2]*t2*t19-P[16][3]*t2*t22+P[16][5]*t2*t27);
-                Kfusion[17] = t78*(P[17][0]*t2*t5-P[17][4]*t2*t7+P[17][1]*t2*t15+P[17][6]*t2*t10+P[17][2]*t2*t19-P[17][3]*t2*t22+P[17][5]*t2*t27);
-                Kfusion[18] = t78*(P[18][0]*t2*t5-P[18][4]*t2*t7+P[18][1]*t2*t15+P[18][6]*t2*t10+P[18][2]*t2*t19-P[18][3]*t2*t22+P[18][5]*t2*t27);
-                Kfusion[19] = t78*(P[19][0]*t2*t5-P[19][4]*t2*t7+P[19][1]*t2*t15+P[19][6]*t2*t10+P[19][2]*t2*t19-P[19][3]*t2*t22+P[19][5]*t2*t27);
-                Kfusion[20] = t78*(P[20][0]*t2*t5-P[20][4]*t2*t7+P[20][1]*t2*t15+P[20][6]*t2*t10+P[20][2]*t2*t19-P[20][3]*t2*t22+P[20][5]*t2*t27);
-                Kfusion[21] = t78*(P[21][0]*t2*t5-P[21][4]*t2*t7+P[21][1]*t2*t15+P[21][6]*t2*t10+P[21][2]*t2*t19-P[21][3]*t2*t22+P[21][5]*t2*t27);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t78*(P[22][0]*t2*t5-P[22][4]*t2*t7+P[22][1]*t2*t15+P[22][6]*t2*t10+P[22][2]*t2*t19-P[22][3]*t2*t22+P[22][5]*t2*t27);
-                Kfusion[23] = t78*(P[23][0]*t2*t5-P[23][4]*t2*t7+P[23][1]*t2*t15+P[23][6]*t2*t10+P[23][2]*t2*t19-P[23][3]*t2*t22+P[23][5]*t2*t27);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
             }
 
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t78*(P[i][0]*t2*t5-P[i][4]*t2*t7+P[i][1]*t2*t15+P[i][6]*t2*t10+P[i][2]*t2*t19-P[i][3]*t2*t22+P[i][5]*t2*t27);
+                }
+                Kfusion[i] = res;
+            }
         } else {
 
             // calculate Y axis observation Jacobian
@@ -642,51 +627,37 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             Kfusion[4] = -t78*(t61+P[4][0]*t2*t5+P[4][5]*t2*t8-P[4][6]*t2*t10+P[4][1]*t2*t16-P[4][2]*t2*t19+P[4][3]*t2*t22);
             Kfusion[5] = -t78*(t64+P[5][0]*t2*t5-P[5][6]*t2*t10+P[5][1]*t2*t16-P[5][2]*t2*t19+P[5][3]*t2*t22+P[5][4]*t2*t27);
             Kfusion[6] = -t78*(-t92+P[6][0]*t2*t5+P[6][5]*t2*t8+P[6][1]*t2*t16-P[6][2]*t2*t19+P[6][3]*t2*t22+P[6][4]*t2*t27);
-            Kfusion[7] = -t78*(P[7][0]*t2*t5+P[7][5]*t2*t8-P[7][6]*t2*t10+P[7][1]*t2*t16-P[7][2]*t2*t19+P[7][3]*t2*t22+P[7][4]*t2*t27);
-            Kfusion[8] = -t78*(P[8][0]*t2*t5+P[8][5]*t2*t8-P[8][6]*t2*t10+P[8][1]*t2*t16-P[8][2]*t2*t19+P[8][3]*t2*t22+P[8][4]*t2*t27);
-            Kfusion[9] = -t78*(P[9][0]*t2*t5+P[9][5]*t2*t8-P[9][6]*t2*t10+P[9][1]*t2*t16-P[9][2]*t2*t19+P[9][3]*t2*t22+P[9][4]*t2*t27);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = -t78*(P[10][0]*t2*t5+P[10][5]*t2*t8-P[10][6]*t2*t10+P[10][1]*t2*t16-P[10][2]*t2*t19+P[10][3]*t2*t22+P[10][4]*t2*t27);
-                Kfusion[11] = -t78*(P[11][0]*t2*t5+P[11][5]*t2*t8-P[11][6]*t2*t10+P[11][1]*t2*t16-P[11][2]*t2*t19+P[11][3]*t2*t22+P[11][4]*t2*t27);
-                Kfusion[12] = -t78*(P[12][0]*t2*t5+P[12][5]*t2*t8-P[12][6]*t2*t10+P[12][1]*t2*t16-P[12][2]*t2*t19+P[12][3]*t2*t22+P[12][4]*t2*t27);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = -t78*(P[stateIndex][0]*t2*t5+P[stateIndex][5]*t2*t8-P[stateIndex][6]*t2*t10+P[stateIndex][1]*t2*t16-P[stateIndex][2]*t2*t19+P[stateIndex][3]*t2*t22+P[stateIndex][4]*t2*t27);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = -t78*(P[16][0]*t2*t5+P[16][5]*t2*t8-P[16][6]*t2*t10+P[16][1]*t2*t16-P[16][2]*t2*t19+P[16][3]*t2*t22+P[16][4]*t2*t27);
-                Kfusion[17] = -t78*(P[17][0]*t2*t5+P[17][5]*t2*t8-P[17][6]*t2*t10+P[17][1]*t2*t16-P[17][2]*t2*t19+P[17][3]*t2*t22+P[17][4]*t2*t27);
-                Kfusion[18] = -t78*(P[18][0]*t2*t5+P[18][5]*t2*t8-P[18][6]*t2*t10+P[18][1]*t2*t16-P[18][2]*t2*t19+P[18][3]*t2*t22+P[18][4]*t2*t27);
-                Kfusion[19] = -t78*(P[19][0]*t2*t5+P[19][5]*t2*t8-P[19][6]*t2*t10+P[19][1]*t2*t16-P[19][2]*t2*t19+P[19][3]*t2*t22+P[19][4]*t2*t27);
-                Kfusion[20] = -t78*(P[20][0]*t2*t5+P[20][5]*t2*t8-P[20][6]*t2*t10+P[20][1]*t2*t16-P[20][2]*t2*t19+P[20][3]*t2*t22+P[20][4]*t2*t27);
-                Kfusion[21] = -t78*(P[21][0]*t2*t5+P[21][5]*t2*t8-P[21][6]*t2*t10+P[21][1]*t2*t16-P[21][2]*t2*t19+P[21][3]*t2*t22+P[21][4]*t2*t27);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = -t78*(P[22][0]*t2*t5+P[22][5]*t2*t8-P[22][6]*t2*t10+P[22][1]*t2*t16-P[22][2]*t2*t19+P[22][3]*t2*t22+P[22][4]*t2*t27);
-                Kfusion[23] = -t78*(P[23][0]*t2*t5+P[23][5]*t2*t8-P[23][6]*t2*t10+P[23][1]*t2*t16-P[23][2]*t2*t19+P[23][3]*t2*t22+P[23][4]*t2*t27);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = -t78*(P[i][0]*t2*t5+P[i][5]*t2*t8-P[i][6]*t2*t10+P[i][1]*t2*t16-P[i][2]*t2*t19+P[i][3]*t2*t22+P[i][4]*t2*t27);
+                }
+                Kfusion[i] = res;
             }
         }
 
@@ -702,27 +673,21 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 flowFusionActive = true;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
             }
-            // correct the covariance P = (I - K*H)*P
-            // take advantage of the empty columns in KH to reduce the
-            // number of operations
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=6; j++) {
-                    KH[i][j] = Kfusion[i] * H_LOS[j];
-                }
-                for (uint8_t j = 7; j<=stateIndexLim; j++) {
-                    KH[i][j] = 0.0f;
-                }
-            }
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                for (uint8_t i = 0; i<=stateIndexLim; i++) {
+
+            // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+            // the zero elements of H to reduce the number of operations.
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                // j as the inner loop allows the compiler to hoist the KH product
+                // to save computation, and do the inner indexing more efficiently.
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     ftype res = 0;
-                    res += KH[i][0] * P[0][j];
-                    res += KH[i][1] * P[1][j];
-                    res += KH[i][2] * P[2][j];
-                    res += KH[i][3] * P[3][j];
-                    res += KH[i][4] * P[4][j];
-                    res += KH[i][5] * P[5][j];
-                    res += KH[i][6] * P[6][j];
+                    res += (Kfusion[i] * H_LOS[0]) * P[0][j];
+                    res += (Kfusion[i] * H_LOS[1]) * P[1][j];
+                    res += (Kfusion[i] * H_LOS[2]) * P[2][j];
+                    res += (Kfusion[i] * H_LOS[3]) * P[3][j];
+                    res += (Kfusion[i] * H_LOS[4]) * P[4][j];
+                    res += (Kfusion[i] * H_LOS[5]) * P[5][j];
+                    res += (Kfusion[i] * H_LOS[6]) * P[6][j];
                     KHP[i][j] = res;
                 }
             }
@@ -743,16 +708,15 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
                 // correct the state vector
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
                     statesArray[j] = statesArray[j] - Kfusion[j] * flowInnov[obsIndex];
                 }
                 stateStruct.quat.normalize();
 
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+                ForceSymmetry();
+                ConstrainVariances();
             } else {
                 // record bad axis
                 if (obsIndex == 0) {

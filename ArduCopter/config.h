@@ -56,7 +56,7 @@
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
+  # define WP_YAW_BEHAVIOR_DEFAULT              WPYawBehavior::LOOK_AHEAD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
- # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_LAND  // EKF failsafe triggers land by default
+ # define FS_EKF_ACTION_DEFAULT         FS_EKF_Action::LAND  // EKF failsafe triggers land by default
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
@@ -211,7 +211,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Sport - fly vehicle in rate-controlled (earth-frame) mode
 #ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED 0
+# define MODE_SPORT_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -310,16 +310,16 @@
 //////////////////////////////////////////////////////////////////////////////
 // Takeoff
 //
-#ifndef PILOT_TKOFF_ALT_DEFAULT
- # define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
+#ifndef PILOT_TKO_ALT_M_DEFAULT
+ # define PILOT_TKO_ALT_M_DEFAULT 0     // default final alt above home for pilot initiated takeoff
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////
 // Landing
 //
-#ifndef LAND_SPEED
- # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
+#ifndef LAND_SPD_MS_DEFAULT
+ # define LAND_SPD_MS_DEFAULT    0.5f   // the descent speed for the final stage of landing in m/s
 #endif
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
@@ -332,6 +332,11 @@
 #endif
 #ifndef LAND_RANGEFINDER_MIN_ALT_M
 #define LAND_RANGEFINDER_MIN_ALT_M  2.0
+#endif
+
+// error if old LAND parameter default definitions are used
+#ifdef LAND_SPEED
+ #error "LAND_SPEED definition replaced with LAND_SPD_MS_DEFAULT"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -406,20 +411,20 @@
 #endif
 
 // RTL Mode
-#ifndef RTL_ALT_FINAL
- # define RTL_ALT_FINAL             0       // the altitude, in cm, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+#ifndef RTL_ALT_FINAL_M_DEFAULT
+ # define RTL_ALT_FINAL_M_DEFAULT   0       // the altitude, in meters, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
-#ifndef RTL_ALT
- # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
+#ifndef RTL_ALT_M_DEFAULT
+ # define RTL_ALT_M_DEFAULT         15      // default alt to return to home in meters, 0 = Maintain current altitude
 #endif
 
 #ifndef RTL_ALT_MIN_M
- # define RTL_ALT_MIN_M             0.30     // min height above ground for RTL (i.e 0.3 m)
+ # define RTL_ALT_MIN_M             0.30    // min height above ground for RTL (i.e 0.3 m)
 #endif
 
-#ifndef RTL_CLIMB_MIN_DEFAULT
- # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
+#ifndef RTL_CLIMB_MIN_M_DEFAULT
+ # define RTL_CLIMB_MIN_M_DEFAULT   0       // vehicle will always climb this many meters during the first stage of RTL
 #endif
 
 #ifndef RTL_CONE_SLOPE_DEFAULT
@@ -434,9 +439,20 @@
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
 #endif
 
+// error if old RTL parameter default definitions are used
+#ifdef RTL_ALT_FINAL
+  #error "RTL_ALT_FINAL definition replaced with RTL_ALT_FINAL_M_DEFAULT"
+#endif
+#ifdef RTL_ALT
+  #error "RTL_ALT definition replaced with RTL_ALT_M_DEFAULT"
+#endif
+#ifdef RTL_CLIMB_MIN_DEFAULT
+  #error "RTL_CLIMB_MIN_DEFAULT definition replaced with RTL_CLIMB_MIN_M_DEFAULT"
+#endif
+
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+ # define WP_YAW_BEHAVIOR_DEFAULT   WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS
@@ -454,8 +470,9 @@
 #ifndef ROLL_PITCH_YAW_INPUT_MAX
  # define ROLL_PITCH_YAW_INPUT_MAX      4500        // roll, pitch and yaw input range
 #endif
-#ifndef DEFAULT_ANGLE_MAX
- # define DEFAULT_ANGLE_MAX         3000            // ANGLE_MAX parameters default value
+
+#ifdef DEFAULT_ANGLE_MAX
+ #error "DEFAULT_ANGLE_MAX definition replaced with AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT (in degrees)"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -472,11 +489,16 @@
 // PosHold parameter defaults
 //
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
- # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
- # define POSHOLD_BRAKE_RATE_MIN        4       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+ #if FRAME_CONFIG == HELI_FRAME
+  # define POSHOLD_BRAKE_RATE_DEFAULT    4       // default POSHOLD_BRAKE_RATE param value for tradheli.  Rotation rate during braking in deg/sec
+  # define POSHOLD_BRAKE_RATE_MIN        4       // minimum POSHOLD_BRK_RATE param value
+ #else
+  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+  # define POSHOLD_BRAKE_RATE_MIN        4       // minimum POSHOLD_BRK_RATE param value
+ #endif
 #endif
-#ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
- # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+#ifdef POSHOLD_BRAKE_ANGLE_DEFAULT
+ #error "POSHOLD_BRAKE_ANGLE_DEFAULT definition replaced with POSHOLD_BRAKE_ANGLE_DEG_DEFAULT (in degrees)"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -488,11 +510,11 @@
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
-#ifndef PILOT_VELZ_MAX
- # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#ifndef PILOT_SPD_UP_DEFAULT
+ # define PILOT_SPD_UP_DEFAULT  2.5f    // maximum vertical velocity in m/s
 #endif
-#ifndef PILOT_ACCEL_Z_DEFAULT
- # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+#ifndef PILOT_ACC_Z_DEFAULT
+ # define PILOT_ACC_Z_DEFAULT   2.5f    // vertical acceleration in m/s/s while altitude is under pilot control
 #endif
 
 #ifndef PILOT_Y_RATE_DEFAULT
