@@ -57,14 +57,22 @@ void AP_Baro_SITL::_timer()
     if ((now - _last_sample_time) < 10) {
         return;
     }
-    _last_sample_time = now;
 
     float sim_alt = _sitl->state.altitude;
 
     if (_sitl->baro[_instance].disable) {
         // barometer is disabled
+        _last_sample_time = now;
         return;
     }
+
+    // simulate slow-starting sensor
+    const float start_delay_s = _sitl->baro[_instance].start_delay;
+    if (start_delay_s > 0 && now < (uint32_t)(start_delay_s * 1000)) {
+        return;
+    }
+
+    _last_sample_time = now;
 
     const auto drift_delta_t_ms = now - last_drift_delta_t_ms;
     last_drift_delta_t_ms = now;

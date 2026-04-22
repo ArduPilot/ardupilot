@@ -319,74 +319,35 @@ void AP_Baro::calibrate(bool save)
             return;
     }
     #endif
-    
+
+    _cal_save = save;
+
+    if (_num_sensors == 0) {
+        AP_BoardConfig::config_error("Baro: unable to calibrate");
+        return;
+    }
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Calibrating barometer");
 
     // reset the altitude offset when we calibrate. The altitude
     // offset is supposed to be for within a flight
     _alt_offset.set_and_save(0);
 
-    // let the barometer settle for a full second after startup
-    // the MS5611 reads quite a long way off for the first second,
-    // leading to about 1m of error if we don't wait
-    for (uint8_t i = 0; i < 10; i++) {
-        uint32_t tstart = AP_HAL::millis();
-        do {
-            update();
-            if (AP_HAL::millis() - tstart > 500) {
-                AP_BoardConfig::config_error("Baro: unable to calibrate");
-            }
-            hal.scheduler->delay(10);
-        } while (!healthy());
-        hal.scheduler->delay(100);
-    }
-
-    // now average over 5 values for the ground pressure settings
-    float sum_pressure[BARO_MAX_INSTANCES] = {0};
-    uint8_t count[BARO_MAX_INSTANCES] = {0};
-    const uint8_t num_samples = 5;
-
-    for (uint8_t c = 0; c < num_samples; c++) {
-        uint32_t tstart = AP_HAL::millis();
-        do {
-            update();
-            if (AP_HAL::millis() - tstart > 500) {
-                AP_BoardConfig::config_error("Baro: unable to calibrate");
-            }
-        } while (!healthy());
-        for (uint8_t i=0; i<_num_sensors; i++) {
-            if (healthy(i)) {
-                sum_pressure[i] += sensors[i].pressure;
-                count[i] += 1;
-            }
-        }
-        hal.scheduler->delay(100);
-    }
+    // all calibration is deferred to update() to avoid blocking
+    // startup.  Sensors will be calibrated as data arrives with
+    // settling and sampling handled in the deferred path.
+    // A pre-arm check ensures calibration is complete before arming.
+    // Start the settling timer now so that sensors already producing
+    // data complete calibration sooner once the scheduler starts
+    // calling update().  Sensors not yet healthy will have
+    // cal.start_ms reset to 0 in the deferred path.
+    const uint32_t now = AP_HAL::millis();
     for (uint8_t i=0; i<_num_sensors; i++) {
-        if (count[i] == 0) {
-            sensors[i].calibrated = false;
-        } else {
-            if (save) {
-                float p0_sealevel = get_sealevel_pressure(sum_pressure[i] / count[i], _field_elevation_active);
-                sensors[i].ground_pressure.set_and_save(p0_sealevel);
-            }
-        }
+        sensors[i].calibrated = false;
+        sensors[i].cal.start_ms = now;
+        sensors[i].cal.sum = 0;
+        sensors[i].cal.count = 0;
     }
-
-    _guessed_ground_temperature = get_external_temperature();
-
-    // panic if all sensors are not calibrated
-    uint8_t num_calibrated = 0;
-    for (uint8_t i=0; i<_num_sensors; i++) {
-        if (sensors[i].calibrated) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
-            num_calibrated++;
-        }
-    }
-    if (num_calibrated) {
-        return;
-    }
-    AP_BoardConfig::config_error("Baro: all sensors uncalibrated");
 }
 
 /*
@@ -915,9 +876,44 @@ void AP_Baro::update(void)
         drivers[i]->backend_update(i);
     }
 
-#if AP_BARO_THST_COMP_ENABLED
-    update_thrust_filter();
-#endif
+    // run-time calibration for sensors
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (sensors[i].calibrated) {
+            continue;
+        }
+        if (!sensors[i].healthy) {
+            // sensor not yet producing data, reset state
+            sensors[i].cal.start_ms = 0;
+            sensors[i].cal.count = 0;
+            sensors[i].cal.sum = 0;
+            continue;
+        }
+        const uint32_t now = AP_HAL::millis();
+        if (sensors[i].cal.start_ms == 0) {
+            // first time seeing sensor healthy, start settling
+            sensors[i].cal.start_ms = now;
+            continue;
+        }
+        // collect samples after 1s settling, spaced 100ms apart
+        const uint32_t sample_time_ms = 1000 + (uint32_t)sensors[i].cal.count * 100;
+        if (now - sensors[i].cal.start_ms < sample_time_ms) {
+            continue;
+        }
+        sensors[i].cal.sum += sensors[i].pressure;
+        sensors[i].cal.count++;
+        if (sensors[i].cal.count >= 5) {
+            const float avg = sensors[i].cal.sum / sensors[i].cal.count;
+            const float p0_sealevel = get_sealevel_pressure(avg, _field_elevation_active);
+            if (_cal_save) {
+                sensors[i].ground_pressure.set_and_save(p0_sealevel);
+            } else {
+                sensors[i].ground_pressure.set(p0_sealevel);
+            }
+            sensors[i].calibrated = true;
+            _guessed_ground_temperature = get_external_temperature();
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Barometer %u calibration complete", i+1);
+        }
+    }
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
@@ -954,6 +950,10 @@ void AP_Baro::update(void)
             }
         }
     }
+
+#if AP_BARO_THST_COMP_ENABLED
+    update_thrust_filter();
+#endif
 
     // ensure the climb rate filter is updated
     if (healthy()) {
@@ -1009,7 +1009,7 @@ bool AP_Baro::healthy(uint8_t instance) const {
     if (instance >= BARO_MAX_INSTANCES) {
         return false;
     }
-    return sensors[instance].healthy && sensors[instance].alt_ok && sensors[instance].calibrated;
+    return sensors[instance].healthy && sensors[instance].alt_ok;
 }
 #endif
 
@@ -1156,6 +1156,15 @@ void AP_Baro::handle_external(const AP_ExternalAHRS::baro_data_message_t &pkt)
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
 bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
 {
+    // check calibration first — gives a more specific message than
+    // "not healthy" when deferred calibration hasn't completed
+    for (uint8_t i=0; i<_num_sensors; i++) {
+        if (!sensors[i].calibrated) {
+            hal.util->snprintf(buffer, buflen, "#%u not calibrated", i+1);
+            return false;
+        }
+    }
+
     if (!all_healthy()) {
         hal.util->snprintf(buffer, buflen, "not healthy");
         return false;

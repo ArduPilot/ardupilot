@@ -15351,7 +15351,8 @@ SERIAL5_BAUD 128
         fence_alt_min = 5   # m above home = 25 m above origin
         params = copy.copy(self.FenceRelativeToHome_params())
         params.update({
-            "FENCE_TYPE": 8,   # ALT_MIN only
+            "FENCE_ENABLE": 0,  # defer enable until after takeoff
+            "FENCE_TYPE": 8,    # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
@@ -15362,6 +15363,7 @@ SERIAL5_BAUD 128
         offset_home = self.offset_location_up(original_home, home_ofs)
         self.set_home(offset_home)
         self.takeoff(10, mode=self.FenceRelative_TakeoffMode())
+        self.set_parameter("FENCE_ENABLE", 1)
         self.do_fence_enable()
         self.set_rc(3, 1200)
         self.wait_mode('RTL', timeout=120)
@@ -15400,7 +15402,8 @@ SERIAL5_BAUD 128
         fence_alt_min = 26
         params = self.FenceRelativeToHome_params()
         params.update({
-            "FENCE_TYPE": 8,   # ALT_MIN only
+            "FENCE_ENABLE": 0,  # defer enable until after takeoff
+            "FENCE_TYPE": 8,    # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
@@ -15411,6 +15414,7 @@ SERIAL5_BAUD 128
         offset_home = self.offset_location_up(original_home, home_ofs)
         self.set_home(offset_home)
         self.takeoff(30, mode=self.FenceRelative_TakeoffMode())
+        self.set_parameter("FENCE_ENABLE", 1)
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
         self.set_rc(3, 1200)
@@ -15476,7 +15480,8 @@ SERIAL5_BAUD 128
         fence_alt_min = 3   # m above origin = 23 m above home
         params = self.FenceRelativeToOrigin_params()
         params.update({
-            "FENCE_TYPE": 8,   # ALT_MIN only
+            "FENCE_ENABLE": 0,  # defer enable until after takeoff
+            "FENCE_TYPE": 8,    # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 50,  # generous ceiling
         })
@@ -15486,6 +15491,7 @@ SERIAL5_BAUD 128
         original_home = self.home_position_as_mav_location()
         self.set_home(self.offset_location_up(original_home, -20))
         self.takeoff(25, mode=self.FenceRelative_TakeoffMode())
+        self.set_parameter("FENCE_ENABLE", 1)
         self.do_fence_enable()
         self.set_rc(3, 1200)
         self.wait_mode('RTL', timeout=120)
@@ -15529,7 +15535,8 @@ SERIAL5_BAUD 128
         fence_alt_min = 15
         params = self.FenceRelativeToOrigin_params()
         params.update({
-            "FENCE_TYPE": 8,   # ALT_MIN only
+            "FENCE_ENABLE": 0,  # defer enable until after takeoff
+            "FENCE_TYPE": 8,    # ALT_MIN only
             "FENCE_ALT_MIN": fence_alt_min,
             "FENCE_ALT_MAX": 80,  # generous ceiling
         })
@@ -15543,6 +15550,7 @@ SERIAL5_BAUD 128
         # is safely above the fence min at 15 m above origin
         original_home = self.mav.location()
         self.set_home(self.offset_location_up(original_home, -10))
+        self.set_parameter("FENCE_ENABLE", 1)
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
         self.set_rc(3, 1200)
