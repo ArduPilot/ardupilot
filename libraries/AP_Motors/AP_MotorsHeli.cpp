@@ -234,6 +234,8 @@ void AP_MotorsHeli::output()
 // sends commands to the motors
 void AP_MotorsHeli::output_armed_stabilizing()
 {
+    _main_rotor.configure_armed();
+
     // if manual override active after arming, deactivate it and reinitialize servos
     if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {
         reset_flight_controls();
