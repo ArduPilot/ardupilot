@@ -11,11 +11,11 @@ public:
     // update navigation
     void update(float dt) override;
 
-    // set desired location and (optionally) next_destination
+    // set destination and (optionally) next_destination
     // next_destination should be provided if known to allow smooth cornering
-    bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
+    bool set_destination(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
 
-    // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
+    // true if vehicle has reached destination. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     bool reached_destination() const override;
 
     // get object avoidance adjusted origin. Note: this is not guaranteed to be valid (i.e. _orig_and_dest_valid is not checked)
