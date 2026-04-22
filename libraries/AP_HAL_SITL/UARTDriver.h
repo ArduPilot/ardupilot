@@ -41,6 +41,7 @@ public:
 
     bool _unbuffered_writes;
 
+    void set_flow_control(enum flow_control flow_control_setting) override;
     enum flow_control get_flow_control(void) override;
 
     void configure_parity(uint8_t v) override;
@@ -95,6 +96,9 @@ private:
 
     const char *_uart_path;
     uint32_t _uart_baudrate;
+    enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
+    uint32_t _auto_flow_start_ms;   // time AUTO mode first had pending data to write
+    bool _auto_flow_detected;   // true once CTS confirmed active in AUTO mode
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
     void _uart_start_connection(void);
