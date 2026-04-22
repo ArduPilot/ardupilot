@@ -19,24 +19,7 @@ bool Rover::set_home_to_current_location(bool lock)
 // returns true if home location set successfully
 bool Rover::set_home(const Location& loc, bool lock)
 {
-    // set ahrs home
-    if (!ahrs.set_home(loc)) {
-        return false;
-    }
-
-    // lock home position
-    if (lock) {
-        ahrs.lock_home();
-    }
-
-    // send text of home position to ground stations
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Set HOME to %.6f %.6f at %.2fm",
-            static_cast<double>(loc.lat * 1.0e-7f),
-            static_cast<double>(loc.lng * 1.0e-7f),
-            static_cast<double>(loc.alt * 0.01f));
-
-    // return success
-    return true;
+    return ahrs.set_home(loc, lock);
 }
 
 // called periodically while disarmed to update our home position to
