@@ -29,6 +29,9 @@ public:
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     uint32_t get_motor_mask() override;
 
+    // output_motor_mask is not supported by the tailsitter backend, override to ensure no action.
+    void output_motor_mask(float thrust, uint32_t mask, float rudder_dt) override {};
+
     // Set by tailsitters using diskloading minumum outflow velocity limit
     void set_min_throttle(float val) {_external_min_throttle = val;}
 

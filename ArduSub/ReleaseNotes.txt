@@ -1,5 +1,67 @@
 ArduPilot Sub Release Notes:
 ------------------------------------------------------------------
+Release 4.7.0-beta3 10-Apr-2026
+
+Changes from 4.7.0-beta2
+
+1) Board specific changes
+
+- Atlas-Control has updated hwdef.dat file (@AltasFlight, PR:32268)
+- HWH7 flight controller added to supported boards (@Arwayday, PR:32248)
+- TBS_LUCID_H7 now has an MPU6000 version (@andyp1per, PR:32512)
+
+2) Driver changes
+
+- ZB25VQ128D flash chip now supported for onboard logging (@LoyalLinjy, PR:32408)
+- Kebni SensAItion as External AHRS now supported in IMU and INS modes (@magnus-lindhe-kebni, PR:31775)
+- IST8310 compass probing corrected on fmuv3-based boards (@peterbarker, PR:32462)
+
+3) AHRS specific changes
+
+- EKF3 flash space requirements reduced (@tpwrules, PRs:32213, 32618)
+- EKF3 is fixed to no longer reset to external altitude when it is configured to another source (@snktshrma, PR:32508)
+- AHRS recorded origin check will correctly use the GPS (@andyp1per, PR: 32469)
+- AHRS external origin setting will be delayed until filter is initialised (@andyp1per, PR: 32505)
+- EKF3 missing constraints to FuseDragForces added (@tpwrules, PR:32128)
+- Fix replay involving body odometry data (@twprules, PR:32598)
+
+4) Camera and mount specific changes
+
+- Camera servo driver's CAMERA_INFORMATION flags fixed (@Davidsastresas, PR:32564)
+- RunCam param metadata names are fixed to match code (@tpwrules, PR:32601)
+- Mount fix to angular rates when using FPV mode (@KSimeonAVTA, PR:32540)
+- Mount scripting driver accepts rate targets (@peterbarker, PR:32626)
+- Fix wire data issues with various Mount backends (@peterbarker, PR:32630)
+
+5) Other libraries changes
+
+- Fence for Plane and Copter supports alt above terrain (@andyp1per, PR:31619)
+- Ignore-receiver in RC_OPTIONS is now respected during RC loss (@peterbarker, PR:32488)
+- ATC_INPUT_TC and Q_A_INPUT_TC param defaults reduced (@rmackay9, PR:32643)
+
+6) Copter/Tradheli specific changes
+
+- Spool state is logged (@Georacer, PR:31668)
+
+7) Plane specific changes
+
+- Rangefinder state is logged (@Georacer, PR:31579)
+- AHRS log message rate not affected by full rate attitude logging (@IamPete1, PR:32623)
+
+8) Sub specific changes
+
+- Automatically deal with misconfigured lights/actuators (@Williangalvani, PR:31109)
+
+9) Rover specific changes
+
+- Battery watt limiter feature added to custom build server (@mackay9, PR:32687)
+
+10) Scripting changes
+
+- plane_follow.lua messages will no longer crash the script if there is no target vehicle (@timtuxworth, PR:32567)
+- plane_follow.lua has a fix for crosstrack oscillation (@timtuxworth, PR:32575)
+
+------------------------------------------------------------------
 Release 4.7.0-beta2 21-Mar-2026
 
 Changes from 4.7.0-beta1

@@ -5025,9 +5025,20 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
         return MAV_RESULT_UNSUPPORTED;
     }
 
-    const uint32_t seq = (uint32_t)packet.param1;
-    if (!mission->is_valid_index(seq)) {
-        return MAV_RESULT_FAILED;
+    if (is_equal(packet.param1, -1.0f) || packet.param1 >= 0) {
+        // these are the only values we handle - either -1 meaning do
+        // not reset waypoint (but reset counters) or a non-negative
+        // waypoint number
+    } else {
+        // invalid param1
+        return MAV_RESULT_DENIED;
+    }
+
+    if (packet.param1 >= 0) {
+        const uint32_t seq = (uint32_t)packet.param1;
+        if (seq > INT16_MAX || !mission->is_valid_index(seq)) {
+            return MAV_RESULT_FAILED;
+        }
     }
 
     // From https://mavlink.io/en/messages/common.html#MAV_CMD_DO_SET_MISSION_CURRENT:
@@ -5036,12 +5047,16 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mission_current(const mavlink_comm
     //       and changes mission state "completed" to be "active" or "paused".
     const bool reset_and_restart = is_equal(packet.param2, 1.0f);
     if (reset_and_restart) {
-        mission->reset();
+        // reset jump counters only
+        mission->reset_jump_counters();
     }
-    if (!mission->set_current_cmd(seq)) {
-        return MAV_RESULT_FAILED;
+    if (packet.param1 >= 0) {
+        const uint32_t seq = (uint32_t)packet.param1;
+        if (!mission->set_current_cmd(seq)) {
+            return MAV_RESULT_FAILED;
+        }
     }
-    if (reset_and_restart) {
+    if (reset_and_restart && packet.param1 >= 0) {
         mission->resume();
     }
 

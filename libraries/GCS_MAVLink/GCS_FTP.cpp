@@ -592,10 +592,12 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
 
         // this transfer size is enough for a full parameter file with max parameters
         const uint32_t transfer_size = 2000;
+        reply.offset = request.offset;
         for (uint32_t i = 0; (i < transfer_size); i++) {
             // fill the buffer
             const ssize_t read_bytes = AP::FS().read(fd, reply.data, MIN(sizeof(reply.data), max_read));
             if (read_bytes == -1) {
+                reply.burst_complete = true;
                 GCS_FTP::error(reply, FTP_ERROR::FailErrno);
                 break;
             }
@@ -606,21 +608,20 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             }
 
             if (read_bytes == 0) {
+                reply.burst_complete = true;
                 GCS_FTP::error(reply, FTP_ERROR::EndOfFile);
                 break;
             }
 
             reply.opcode = FTP_OP::Ack;
-            reply.offset = request.offset + i * max_read;
-            reply.burst_complete = ((read_bytes < max_read) || (i == (transfer_size - 1)));
+            // Signal to the client that they need to request another burst read to get more data
+            reply.burst_complete = (i == (transfer_size - 1));
             reply.size = (uint8_t)read_bytes;
 
             push_reply(reply);
 
-            if (read_bytes < max_read) {
-                // ensure the NACK which we send next is at the right offset
-                reply.offset += read_bytes;
-            }
+            // update the offset for the next read
+            reply.offset += read_bytes;
 
             // prep the reply to be used again
             reply.seq_number++;

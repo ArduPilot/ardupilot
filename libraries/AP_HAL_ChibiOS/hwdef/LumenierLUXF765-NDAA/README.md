@@ -187,7 +187,7 @@ Firmware for the LUX F765 - NDAA can be found [here](https://firmware.ardupilot.
 
 ## Loading Firmware
 
-The LUX F765 - NDAA does not come with ArduPilot firmware pre-installed. Use instructions here to load ArduPilot the first time :ref:`common-loading-firmware-onto-chibios-only-boards`.
+The LUX F765 - NDAA does not come with ArduPilot firmware pre-installed. Use instructions here to load ArduPilot the first time [loading firmware onto ChibiOS boards](https://ardupilot.org/copter/docs/common-loading-firmware-onto-chibios-only-boards.html).
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

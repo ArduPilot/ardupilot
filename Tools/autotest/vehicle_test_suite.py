@@ -46,11 +46,16 @@ from MAVProxy.modules.lib import mp_elevation
 from MAVProxy.modules.lib import mp_util
 from pymavlink import DFReader
 from pymavlink import mavextra
+from pymavlink import mavftp_op
 from pymavlink import mavparm
 from pymavlink import mavutil
 from pymavlink import mavwp
 from pymavlink import quaternion
 from pymavlink.generator import mavgen
+from pymavlink.mavftp import MAVFTP as MavFTP
+from pymavlink.mavftp import FtpError
+from pymavlink.mavftp import MAX_Payload as FTP_MAX_PAYLOAD
+from pymavlink.mavftp_op import FTP_OP
 from pymavlink.rotmat import Vector3
 
 from pysim import util
@@ -2601,6 +2606,23 @@ class TestSuite(abc.ABC):
             17 # squawk
         )
 
+    def subgroupvarptr_activation_params(self):
+        '''Return parameters to set (before restarting SITL) to activate
+        AP_SUBGROUPVARPTR backends, making their parameters visible in the
+        parameter download.  Only entries whose key appears in the htree will
+        be applied.  Subclasses may call super() and pop entries that are not
+        compiled in for their vehicle type.'''
+        return {
+            "CAM1_TYPE": 8,       # AP_Camera: RunCam backend
+            "PRX1_TYPE": 10,      # AP_Proximity: SITL backend
+            "RNGFND1_TYPE": 100,  # AP_RangeFinder: SIM backend
+            "BATT2_MONITOR": 4,   # AP_BattMonitor: instance 1 (Analog V+I)
+            "FILT1_TYPE": 1,      # AP_Filter: NotchFilter backend
+            "TEMP1_TYPE": 8,      # AP_TemperatureSensor: SHT3X (simulated in SITL)
+            "GEN_TYPE": 1,        # AP_Generator: IE_650_800 backend
+            "CC_TYPE": 2,         # AC_CustomControl: PID backend (ArduCopter)
+        }
+
     def test_parameter_documentation_get_all_parameters(self):
 
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
@@ -2623,6 +2645,14 @@ class TestSuite(abc.ABC):
 
         target_system = self.sysid_thismav()
         target_component = 1
+
+        # Activate AP_SUBGROUPVARPTR backends whose type params appear in the
+        # documented parameter set, so their params are visible in the download.
+        # customise_SITL_commandline() below restarts SITL without wiping
+        # EEPROM, so these settings persist into the restarted instance.
+        for name, value in self.subgroupvarptr_activation_params().items():
+            if name in htree:
+                self.set_parameter(name, value)
 
         self.customise_SITL_commandline([
             "--unhide-groups"
@@ -8362,7 +8392,7 @@ class TestSuite(abc.ABC):
                       wpnum_start,
                       wpnum_end,
                       allow_skip=True,
-                      max_dist=2,
+                      max_dist_to_final_wp_m=2,
                       timeout=400,
                       ignore_RTL_mode_change=False,
                       ignore_MANUAL_mode_change=False,
@@ -8396,7 +8426,7 @@ class TestSuite(abc.ABC):
 
             seq = self.mav.waypoint_current()
 
-            wp_dist = m.wp_dist
+            wp_dist_m = m.wp_dist
 
             # if we changed mode, fail
             if not self.mode_is('AUTO'):
@@ -8410,9 +8440,9 @@ class TestSuite(abc.ABC):
                     raise WaitWaypointTimeout(f'Exited {mode} mode to {new_mode_str} ignore={ignore_RTL_mode_change}')
 
             if self.get_sim_time_cached() - last_wp_msg > 1:
-                self.progress("WP %u (wp_dist=%u Alt=%.02f), current_wp: %u,"
+                self.progress("WP %u (wp_dist_m=%u Alt=%.02f), current_wp: %u,"
                               "wpnum_end: %u" %
-                              (seq, wp_dist, vfr_hud_alt, current_wp, wpnum_end))
+                              (seq, wp_dist_m, vfr_hud_alt, current_wp, wpnum_end))
                 last_wp_msg = self.get_sim_time_cached()
             if seq == current_wp+1 or (seq > current_wp+1 and allow_skip):
                 self.progress("WW: Starting new waypoint %u" % seq)
@@ -8422,7 +8452,7 @@ class TestSuite(abc.ABC):
                 # the right seqnum for end of mission
             # if current_wp == wpnum_end or (current_wp == wpnum_end-1 and
             #                                wp_dist < 2):
-            if current_wp == wpnum_end and wp_dist < max_dist:
+            if current_wp == wpnum_end and wp_dist_m < max_dist_to_final_wp_m:
                 self.progress("Reached final waypoint %u" % seq)
                 return True
             if seq >= 255:
@@ -9488,7 +9518,7 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Ready to start testing!")
 
-    def upload_using_mission_protocol(self, mission_type, items):
+    def upload_using_mission_protocol(self, mission_type, items, verbose=True):
         '''mavlink2 required'''
         target_system = 1
         target_component = 1
@@ -9522,8 +9552,9 @@ Also, ignores heartbeats not from our target system'''
                     continue
                 raise NotAchievedException(f"Received unexpected mission ack {self.dump_message_verbose(m)}")
 
-            self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
-            self.progress("Item (%s)" % str(items[m.seq]))
+            if verbose:
+                self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
+                self.progress("Item (%s)" % str(items[m.seq]))
             if m.seq in sent:
                 self.progress("received duplicate request for item %u" % m.seq)
                 continue
@@ -12814,10 +12845,48 @@ switch value'''
             raise NotAchievedException("MAVProxy failed to get parameter")
         self.stop_mavproxy(mavproxy)
 
+    def test_subgroupvarptr_annotated(self):
+        '''Check that every AP_SUBGROUPVARPTR entry in the source tree has
+        @Group: and @Path: annotations immediately preceding it.  Without
+        these annotations param_parse.py cannot discover the backend
+        parameters, so documentation mismatches would never be caught.'''
+        failures = []
+        skip_dirs = {'modules', 'build', '.git', 'docs'}
+        for dirpath, dirnames, filenames in os.walk(self.rootdir()):
+            dirnames[:] = [d for d in dirnames if d not in skip_dirs]
+            for filename in filenames:
+                if not filename.endswith('.cpp'):
+                    continue
+                filepath = os.path.join(dirpath, filename)
+                lines = pathlib.Path(filepath).read_text().splitlines()
+                for i, line in enumerate(lines):
+                    if not line.strip().startswith('AP_SUBGROUPVARPTR'):
+                        continue
+                    has_group = False
+                    has_path = False
+                    for j in range(i - 1, max(i - 5, -1), -1):
+                        prev = lines[j].strip()
+                        if not prev:
+                            continue
+                        if '@Group:' in prev:
+                            has_group = True
+                        elif '@Path:' in prev:
+                            has_path = True
+                        if not prev.startswith('//'):
+                            break
+                    if not (has_group and has_path):
+                        failures.append("%s:%d" % (os.path.relpath(filepath, self.rootdir()), i + 1))
+        for f in failures:
+            self.progress("AP_SUBGROUPVARPTR missing @Group:/@Path: at %s" % f)
+        if failures:
+            raise NotAchievedException("AP_SUBGROUPVARPTR entries missing @Group:/@Path: annotations")
+
     def test_parameter_documentation(self):
         '''ensure parameter documentation is valid'''
         self.start_subsubtest("Check all parameters are documented")
         self.test_parameter_documentation_get_all_parameters()
+        self.start_subsubtest("Check AP_SUBGROUPVARPTR entries have documentation annotations")
+        self.test_subgroupvarptr_annotated()
 
     def Parameters(self):
         '''general small tests for parameter system'''
@@ -14578,12 +14647,10 @@ switch value'''
             if distance > 1:
                 raise NotAchievedException(f"gps type {name} misbehaving")
 
-    def assert_gps_satellite_count(self, messagename, count):
+    def wait_gps_satellite_count(self, messagename, count, timeout):
+        """Wait for a GPS message to report a specific satellite count."""
         self.drain_mav()
-        m = self.assert_receive_message(messagename)
-        if m.satellites_visible != count:
-            raise NotAchievedException("Expected %u sats, got %u" %
-                                       (count, m.satellites_visible))
+        self.wait_message_field_values(messagename, {"satellites_visible": count}, timeout=timeout)
 
     def check_attitudes_match(self):
         '''make sure ahrs2 and simstate and ATTTIUDE_QUATERNION all match'''
@@ -14682,16 +14749,17 @@ switch value'''
         if m.fix_type != mavutil.mavlink.GPS_FIX_TYPE_RTK_FIXED:
             raise NotAchievedException("Incorrect fix type")
 
+        GPS_NSATS_TIMEOUT_SEC = 3.0
         self.start_subtest("Check parameters are per-GPS")
         self.assert_parameter_value("SIM_GPS1_NUMSATS", 10)
-        self.assert_gps_satellite_count("GPS_RAW_INT", 10)
+        self.wait_gps_satellite_count("GPS_RAW_INT", 10, GPS_NSATS_TIMEOUT_SEC)
         self.set_parameter("SIM_GPS1_NUMSATS", 13)
-        self.assert_gps_satellite_count("GPS_RAW_INT", 13)
+        self.wait_gps_satellite_count("GPS_RAW_INT", 13, GPS_NSATS_TIMEOUT_SEC)
 
         self.assert_parameter_value("SIM_GPS2_NUMSATS", 10)
-        self.assert_gps_satellite_count("GPS2_RAW", 10)
+        self.wait_gps_satellite_count("GPS2_RAW", 10, GPS_NSATS_TIMEOUT_SEC)
         self.set_parameter("SIM_GPS2_NUMSATS", 12)
-        self.assert_gps_satellite_count("GPS2_RAW", 12)
+        self.wait_gps_satellite_count("GPS2_RAW", 12, GPS_NSATS_TIMEOUT_SEC)
 
         self.start_subtest("check that GLOBAL_POSITION_INT fails over")
         m = self.assert_receive_message("GLOBAL_POSITION_INT")
@@ -14786,6 +14854,244 @@ switch value'''
 
         if ex is not None:
             raise ex
+
+    # build opcode value->name lookup from pymavlink constants
+    _ftp_opcode_names = {
+        v: k[3:]  # strip "OP_" prefix
+        for k, v in vars(mavftp_op).items()
+        if k.startswith('OP_')
+    }
+
+    def ftp_op_to_str(self, op):
+        '''format an FTP_OP as a human-readable string'''
+        opcode = op.opcode
+        op_name = self._ftp_opcode_names.get(opcode, str(opcode))
+        req_opcode = op.req_opcode
+        req_name = self._ftp_opcode_names.get(req_opcode, str(req_opcode))
+        payload = op.payload if op.payload else bytearray()
+        parts = [
+            f"seq={op.seq}",
+            f"op={op_name}",
+            f"sz={op.size}",
+            f"ofs={op.offset}",
+            f"bc={op.burst_complete}",
+        ]
+        if opcode in (mavftp_op.OP_Ack, mavftp_op.OP_Nack):
+            parts.append(f"req={req_name}")
+        if opcode == mavftp_op.OP_Ack \
+           and req_opcode in (mavftp_op.OP_OpenFileRO, mavftp_op.OP_OpenFileWO) \
+           and len(payload) >= 4:
+            file_sz = struct.unpack("<I", payload[:4])[0]
+            parts.append(f"fileSz={file_sz}")
+        if opcode == mavftp_op.OP_Ack \
+           and req_opcode == mavftp_op.OP_CalcFileCRC32 \
+           and len(payload) >= 4:
+            crc = struct.unpack("<I", payload[:4])[0]
+            parts.append(f"crc=0x{crc:08x}")
+        if opcode == mavftp_op.OP_Nack and len(payload) > 0:
+            err = payload[0]
+            try:
+                err_name = FtpError(err).name
+            except ValueError:
+                err_name = str(err)
+            parts.append(f"err={err_name}")
+            if len(payload) > 1:
+                parts.append(f"errNo={payload[1:].hex()}")
+        return " ".join(parts)
+
+    def ftp_send(self, op):
+        '''send an FTP operation via raw FILE_TRANSFER_PROTOCOL message'''
+        self.progress(f"FTP TX: {self.ftp_op_to_str(op)}")
+        payload = op.pack()
+        plen = len(payload)
+        if plen < 251:
+            payload.extend(bytearray([0] * (251 - plen)))
+        self.mav.mav.file_transfer_protocol_send(
+            0,  # target_network
+            self.sysid_thismav(),  # target_system
+            1,  # target_component
+            payload,
+        )
+
+    def ftp_recv(self, timeout=2):
+        '''receive an FTP response, return parsed FTP_OP or None'''
+        m = self.mav.recv_match(
+            type='FILE_TRANSFER_PROTOCOL',
+            blocking=True,
+            timeout=timeout,
+        )
+        if m is None:
+            self.progress("FTP RX: timeout")
+            return None
+        hdr = bytearray(m.payload[0:12])
+        (seq, session, opcode, size, req_opcode,
+         burst_complete, _pad, offset) = struct.unpack("<HBBBBBBI", hdr)
+        payload = bytearray(m.payload[12:])[:size]
+        op = FTP_OP(seq, session, opcode, size, req_opcode,
+                    burst_complete, offset, payload)
+        self.progress(f"FTP RX: {self.ftp_op_to_str(op)}")
+        return op
+
+    def ftp_burst_read(self, path):
+        '''burst-read a file via raw FTP, return (data, eof_nack)
+        where data is the received file content'''
+
+        # reset sessions
+        op = FTP_OP(
+            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to ResetSessions")
+        seq = reply.seq
+
+        # open file read-only
+        path_bytes = bytearray(path.encode('utf-8')) + bytearray([0])
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_OpenFileRO,
+            size=len(path_bytes), req_opcode=0, burst_complete=0,
+            offset=0, payload=path_bytes,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to OpenFileRO")
+        if reply.opcode != mavftp_op.OP_Ack:
+            raise NotAchievedException(f"OpenFileRO failed: opcode={reply.opcode}")
+        seq = reply.seq
+
+        # send burst read request
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_BurstReadFile,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+
+        # collect all burst responses until we get the EOF NAK
+        data = bytearray()
+        eof_nack = None
+        while True:
+            reply = self.ftp_recv(timeout=10)
+            if reply is None:
+                raise NotAchievedException("Timeout waiting for burst response")
+            if reply.opcode == mavftp_op.OP_Ack:
+                data.extend(reply.payload)
+            elif reply.opcode == mavftp_op.OP_Nack:
+                if reply.payload is not None and \
+                   len(reply.payload) > 0 and \
+                   reply.payload[0] == FtpError.EndOfFile:
+                    eof_nack = reply
+                    break
+                raise NotAchievedException(f"Unexpected NACK error: {reply.payload[0]}")
+
+        # terminate session
+        op = FTP_OP(
+            seq=eof_nack.seq, session=0,
+            opcode=mavftp_op.OP_TerminateSession,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+        self.ftp_recv(timeout=5)
+
+        return data, eof_nack
+
+    def verify_ftp_burst_eof(self, data, eof_nack, expected_size, label):
+        '''verify burst read EOF NAK is correct'''
+        if len(data) != expected_size:
+            raise NotAchievedException(f"{label}: data size mismatch: got {len(data)} expected {expected_size}")
+
+        if eof_nack.offset != expected_size:
+            raise NotAchievedException(f"{label}: EOF NACK offset wrong: got {eof_nack.offset} expected {expected_size}")
+
+        if eof_nack.burst_complete != 1:
+            raise NotAchievedException(f"{label}: EOF NACK burst_complete not set")
+
+        self.progress(f"{label}: OK ofs={eof_nack.offset} bc={eof_nack.burst_complete}")
+
+    def MAVFTPBurstEOFOffset(self):
+        '''test that FTP burst read EOF NAK has correct offset'''
+
+        burst_size = FTP_MAX_PAYLOAD
+
+        # Test cases around a file size which is an exact multiple of the
+        # burst size, as this is where off-by-one errors are most likely.
+        nominal_file_size = burst_size * 3
+        for file_size in [nominal_file_size - 1,
+                          nominal_file_size,
+                          nominal_file_size + 1]:
+            self.progress(f"Testing burst EOF offset with file_size={file_size}")
+
+            # create test file
+            test_path = "ftp_burst_test.dat"
+            test_data = (bytes(range(256)) * (file_size // 256) + bytes(range(file_size % 256)))
+            with open(test_path, "wb") as f:
+                f.write(test_data)
+
+            data, eof_nack = self.ftp_burst_read(test_path)
+            self.verify_ftp_burst_eof(data, eof_nack, file_size, f"file_size={file_size}")
+
+            if data != test_data:
+                raise NotAchievedException(f"file_size={file_size}: content mismatch")
+
+            os.unlink(test_path)
+
+    def MAVFTPBurstMissionDat(self):
+        '''test FTP burst read of mission.dat with exact-multiple file sizes'''
+
+        ITEM_SIZE = 38  # MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN
+        HEADER_SIZE = 10  # sizeof(struct header): 5 x uint16_t
+
+        burst_size = FTP_MAX_PAYLOAD
+
+        # 201 items gives file_size = 10 + 201*38 = 7648 = 32*239 exactly
+        exact_items = 201
+
+        for num_items in [exact_items - 1, exact_items, exact_items + 1]:
+            file_size = HEADER_SIZE + num_items * ITEM_SIZE
+            self.progress(
+                f"Testing mission.dat burst with {num_items} items "
+                f"(file_size={file_size}, mod {burst_size}={file_size % burst_size})")
+
+            items = []
+            for i in range(num_items):
+                items.append(
+                    mavutil.mavlink.MAVLink_mission_item_int_message(
+                        1, 1, i,
+                        mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                        mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                        0, 1,
+                        0, 0, 0, 0,
+                        int(-35.363262 * 1e7),
+                        int(149.165237 * 1e7),
+                        100,
+                        mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                    ))
+
+            self.upload_using_mission_protocol(
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                items,
+                verbose=False)
+
+            data, eof_nack = self.ftp_burst_read("@MISSION/mission.dat")
+            self.verify_ftp_burst_eof(data, eof_nack, file_size, f"mission.dat ({num_items} items)")
+
+    def MAVFTPParamPck(self):
+        '''download param.pck via FTP and verify burst mechanics and param count'''
+
+        self.progress("Downloading @PARAM/param.pck via FTP burst read")
+        data, eof_nack = self.ftp_burst_read("@PARAM/param.pck")
+        self.verify_ftp_burst_eof(data, eof_nack, len(data), "param.pck")
+
+        pdata = MavFTP.ftp_param_decode(bytes(data))
+        if pdata is None:
+            raise NotAchievedException("param.pck failed to decode")
+
+        self.progress(f"param.pck: {len(pdata.params)} params OK")
 
     def write_content_to_filepath(self, content, filepath):
         '''write biunary content to filepath'''

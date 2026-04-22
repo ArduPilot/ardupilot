@@ -22,13 +22,15 @@ _A clear and concise description of what you want to happen._
 **Describe alternatives you've considered**
 _A clear and concise description of any alternative solutions or features you've considered._
 
-**Platform**
-[  ] All
-[  ] AntennaTracker
-[  ] Copter
-[  ] Plane
-[  ] Rover
-[  ] Submarine
+### Platform
 
-**Additional context**
+- [ ] All
+- [ ] AntennaTracker
+- [ ] Copter
+- [ ] Plane
+- [ ] Rover
+- [ ] Submarine
+
+### Additional context
+
 _Add any other context or screenshots about the feature request here._

@@ -438,6 +438,7 @@ AP_HW_KRSHKF7_MINI                   4000
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
+AP_HW_HAKRC_H743                     4203
 
 # IDs 4300-4309 reserved for AeroCogito
 AP_HW_AeroCogito-H7Digital           4300

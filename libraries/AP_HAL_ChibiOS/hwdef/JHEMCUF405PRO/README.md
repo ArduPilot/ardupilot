@@ -47,11 +47,11 @@ These statements are based on the current implementation of the dma_resolver.py 
 RC input is best configured on the RX1/TX1 (USART1_RX/USART1_TX) pins due to having full DMA capability and being mostly easy to access for desoldering to enable DFU mode.
 
 - PPM is not supported.
-- FPort requires connection to T1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to "7".
-- CRSF also requires a T1 connection, in addition to R1, and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "0".
-- SRXL2 requires a connection to T1 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- FPort requires connection to T1 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to "7".
+- CRSF also requires a T1 connection, in addition to R1, and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "0".
+- SRXL2 requires a connection to T1 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
-Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details.
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
 ## OSD Support
 
@@ -86,7 +86,7 @@ The SCL/SDA pads are exposed as two tiny circles.
 
 ## Loading Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “JHEMCUF405PRO”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “JHEMCUF405PRO”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

@@ -34,17 +34,11 @@ jobs:
           pip-install: flake8 lxml pexpect
 
       - name: Install astyle
+        if: matrix.config == 'astyle-cleanliness'
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y astyle
-
-      - name: Install shellcheck
-        if: matrix.config == 'shellcheck'
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes shellcheck
+          sudo apt-get install --yes astyle
 
       - name: test ${{matrix.config}}
         env:

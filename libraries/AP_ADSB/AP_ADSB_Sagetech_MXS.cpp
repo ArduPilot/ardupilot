@@ -279,6 +279,12 @@ bool AP_ADSB_Sagetech_MXS::parse_byte(const uint8_t data)
         case ParseState::WaitingFor_PayloadLen: 
             message_in.checksum += data;
             message_in.packet.payload_length = data;
+            // the checksum is also appended to the payload array, so
+            // we only allow a 254 byte payload here:
+            if (message_in.packet.payload_length >= ARRAY_SIZE(message_in.packet.payload)) {
+                message_in.state = ParseState::WaitingFor_Start;
+                break;
+            }
             message_in.index = 0;
             message_in.state = (data == 0) ? ParseState::WaitingFor_Checksum : ParseState::WaitingFor_PayloadContents;
             break;

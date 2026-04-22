@@ -518,9 +518,6 @@ for t in $CI_BUILD_TARGET; do
         echo "Checking AStyle code cleanliness"
 
         ./Tools/scripts/run_astyle.py --dry-run
-        if [ $? -ne 0 ]; then
-            echo The code failed astyle cleanliness checks. Please run ./Tools/scripts/run_astyle.py
-        fi
         continue
     fi
 

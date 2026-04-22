@@ -590,15 +590,11 @@ AP_GPS_SBF::process_message(void)
 
             check_new_itow(temp.TOW, sbf_msg.length);
 
-            constexpr double floatDNU = -2e-10f;
             constexpr uint8_t errorBits = 0x8F; // Bits 0-1 are aux 1 baseline
                                                 // Bits 2-3 are aux 2 baseline
                                                 // Bit 7 is attitude not requested
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
             if (((temp.Error & errorBits) == 0)
-                && (temp.Cov_HeadHead != floatDNU)) {
-#pragma GCC diagnostic pop
+                && !is_DNU(temp.Cov_HeadHead)) {
                 state.gps_yaw_accuracy = sqrtf(temp.Cov_HeadHead);
                 state.have_gps_yaw_accuracy = true;
             } else {
@@ -628,12 +624,9 @@ AP_GPS_SBF::process_message(void)
     }
     case BaseVectorGeod:
     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
         const msg4028 &temp = sbf_msg.data.msg4028u;
 
         // just breakout any consts we need for Do Not Use (DNU) reasons
-        constexpr double doubleDNU = -2e-10;
         constexpr uint16_t uint16DNU = 65535;
 
         check_new_itow(temp.TOW, sbf_msg.length);
@@ -652,7 +645,7 @@ AP_GPS_SBF::process_message(void)
         state.rtk_age_ms = (temp.info.CorrAge != 65535) ? ((uint32_t)temp.info.CorrAge) * 10 : 0;
 
         // copy the position as long as the data isn't DNU, we require NED, and heading before accepting any of it
-        if ((temp.info.DeltaEast != doubleDNU) && (temp.info.DeltaNorth != doubleDNU) && (temp.info.DeltaUp != doubleDNU) &&
+        if (!is_DNU(temp.info.DeltaEast) && !is_DNU(temp.info.DeltaNorth) && !is_DNU(temp.info.DeltaUp) &&
             (temp.info.Azimuth != uint16DNU)) {
 
             state.rtk_baseline_y_mm = temp.info.DeltaEast * 1e3;
@@ -675,7 +668,6 @@ AP_GPS_SBF::process_message(void)
             state.have_gps_yaw = false;
         }
 
-#pragma GCC diagnostic pop
         break;
     }
     }

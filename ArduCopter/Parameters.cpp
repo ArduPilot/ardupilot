@@ -151,37 +151,37 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
     // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL,28:Turtle
     // @User: Standard
-    GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
+    GARRAY(flight_modes, 0, "FLTMODE1", (uint8_t)FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 2
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1230, <= 1360
-    GSCALAR(flight_mode2, "FLTMODE2",               (uint8_t)FLIGHT_MODE_2),
+    GARRAY(flight_modes, 1, "FLTMODE2", (uint8_t)FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 3
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1360, <= 1490
-    GSCALAR(flight_mode3, "FLTMODE3",               (uint8_t)FLIGHT_MODE_3),
+    GARRAY(flight_modes, 2, "FLTMODE3", (uint8_t)FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 4
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1490, <= 1620
-    GSCALAR(flight_mode4, "FLTMODE4",               (uint8_t)FLIGHT_MODE_4),
+    GARRAY(flight_modes, 3, "FLTMODE4", (uint8_t)FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 5
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1620, <= 1749
-    GSCALAR(flight_mode5, "FLTMODE5",               (uint8_t)FLIGHT_MODE_5),
+    GARRAY(flight_modes, 4, "FLTMODE5", (uint8_t)FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 6
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
-    GSCALAR(flight_mode6, "FLTMODE6",               (uint8_t)FLIGHT_MODE_6),
+    GARRAY(flight_modes, 5, "FLTMODE6", (uint8_t)FLIGHT_MODE_6),
 
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
@@ -784,7 +784,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe options bitmask
-    // @Description: Bitmask of additional options for battery, radio, & GCS failsafes. 0 (default) disables all options.
+    // @Description: Bitmask of additional options for battery, radio, & GCS failsafes. 0 disables all options.
     // @Bitmask: 0:Continue if in Auto on RC failsafe, 1:Continue if in Auto on GCS failsafe, 2:Continue if in Guided on RC failsafe, 3:Continue if landing on any failsafe, 4:Continue if in pilot controlled modes on GCS failsafe, 5:Release Gripper
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, (float)Copter::FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL),

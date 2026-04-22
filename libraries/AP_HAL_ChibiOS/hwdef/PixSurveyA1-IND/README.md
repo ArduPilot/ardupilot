@@ -174,6 +174,6 @@ There are 2 CAN ports that allow connecting two independent CAN bus outputs. Eac
 
 ## Where to Buy
 
-`makeflyeasy <http://www.makeflyeasy.com>`_
+[makeflyeasy](http://www.makeflyeasy.com)
 
 [copywiki destination="plane,copter,rover,blimp"]

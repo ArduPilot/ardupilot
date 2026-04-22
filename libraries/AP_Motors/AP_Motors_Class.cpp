@@ -330,7 +330,23 @@ bool AP_Motors::motor_test_checks(size_t buflen, char *buffer) const
     // Must pass base class arming checks (the function above)
     // Do not run frame specific arming checks as motor test is less strict
     // For example not all the outputs have to be assigned
-    return AP_Motors::arming_checks(buflen, buffer);
+    if (!AP_Motors::arming_checks(buflen, buffer)) {
+        return false;
+    }
+
+    // check if safety switch has been pushed
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        hal.util->snprintf(buffer, buflen, "Safety switch");
+        return false;
+    }
+
+    // check E-Stop is not active
+    if (SRV_Channels::get_emergency_stop()) {
+        hal.util->snprintf(buffer, buflen, "Motor Emergency Stopped");
+        return false;
+    }
+
+    return true;
 }
 
 // set all limits

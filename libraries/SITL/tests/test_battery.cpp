@@ -101,9 +101,9 @@ TEST_F(BatteryTest, EnergyConsumption)
 
             // Consume battery energy (or not)
             if (t > 0.0f && t < first_half) {
-                battery.set_current(current_amps, now_us);
+                battery.consume_energy(current_amps, now_us);
             } else {
-                battery.set_current(0.0f, now_us);
+                battery.consume_energy(0.0f, now_us);
             }
 
             // Confirm temperature rise
@@ -198,7 +198,7 @@ void use_some_energy(SITL::Battery& battery) {
     constexpr float dt_sec = 0.01f;
 
     for (float t = 0.0f; t <= current_duration_sec; t+=dt_sec) {
-        battery.set_current(current_amps, initial_us + static_cast<uint64_t>(t * 1e6));
+        battery.consume_energy(current_amps, initial_us + static_cast<uint64_t>(t * 1e6));
     }
 };
 } // namespace

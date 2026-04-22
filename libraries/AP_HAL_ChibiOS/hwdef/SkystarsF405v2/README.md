@@ -32,13 +32,13 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 The default RC input is configured on USART2. RC could  be applied instead to a different UART port such as  and set
-the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change :ref:`SERIAL2 _PROTOCOL <SERIAL2 _PROTOCOL>`
+the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection)
 to something other than '23'. For rc protocols other than unidirectional, the USART2_TX pin will need to be used:
 
-- :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` should be set to "23".
-- FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".
-- CRSF would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "0".
-- SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "4" and connects only the TX pin.
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) should be set to "23".
+- FPort would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "15".
+- CRSF would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "0".
+- SRXL2 would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "4" and connects only the TX pin.
 
 SBUS is supported via hardware inversion connected to USART_RX2 and is available on both a solder pad and in the DJI HD connector.
 
@@ -84,7 +84,7 @@ BATT_AMP_PERVLT=25.0
 
 ## Analog RSSI input
 
-Analog RSSI uses :ref:`RSSI_PIN<RSSI_PIN>` 12
+Analog RSSI uses [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) 12
 
 ## Compass
 
@@ -97,7 +97,7 @@ from CAM1 to CAM2. By default RELAY2 is configured to control this pin and sets 
 
 ## Loading Firmware
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "SkystarsF405v2".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "SkystarsF405v2".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

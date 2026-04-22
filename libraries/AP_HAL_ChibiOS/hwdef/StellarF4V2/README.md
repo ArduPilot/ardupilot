@@ -56,13 +56,13 @@ The default RC input is configured on the UART2(SERIAL1) RX2 input and can be us
 
 - SBUS/DSM/SRXL/PPM connects to the SBUS pad or pin on the HD VTX connector. SBUS pad connected to RX2 via inverter.
 - CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-- FPort requires connection to TX2 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
-- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- FPort requires connection to TX2 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
 ## OSD Support
 
 StellarF4V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver).
-External OSD support such as DJI or DisplayPort is preconfigured on SERIAL3 but supported on any spare UART. See :ref:`common-msp-osd-overview-4.2` for more info.
+External OSD support such as DJI or DisplayPort is preconfigured on SERIAL3 but supported on any spare UART. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 

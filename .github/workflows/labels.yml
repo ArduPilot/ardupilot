@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  pull_request_target:  # pull_request_target, NOT pull_request
+    types: [opened, synchronize, reopened]
+
+jobs:
+  labels-by-language:
+    runs-on: ubuntu-slim
+    permissions:
+      pull-requests: write  # So we can add labels to the pull request
+    steps:  # Do NOT "uses: actions/checkout" here!
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const filenames = (await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 100,
+            })).map(file => file.filename);
+            console.log(filenames);
+
+            const labels = new Set();
+            for (const filename of filenames) {
+              if (filename.endsWith('.lua')) labels.add('Scripting');
+              else if (filename.endsWith('.py')) labels.add('Python');
+            }
+            console.log(labels);
+
+            if (labels.size > 0) {
+              github.rest.issues.addLabels({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: Array.from(labels),
+              })
+            }

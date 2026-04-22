@@ -10,16 +10,17 @@ Any Arduino compatible nRF52 Bluetooth board should work, this guide is written 
 
 ## Script setup
 
-Follow the instructions from the manufacturer to setup the Arduino envoroment for your board. Install the [Adafruit nRF52](https://github.com/adafruit/Adafruit_nRF52_Arduino/tree/master/libraries/Bluefruit52Lib) library as outlined here: https://github.com/adafruit/Adafruit_nRF52_Arduino#bsp-installation.
+Follow the instructions from the manufacturer to setup the Arduino envoroment for your board. Install the [Adafruit nRF52](https://github.com/adafruit/Adafruit_nRF52_Arduino/tree/master/libraries/Bluefruit52Lib) library as outlined here: <https://github.com/adafruit/Adafruit_nRF52_Arduino#bsp-installation>.
 
-Use a smartphone and blue tooth tool to find the adress of your windvane. On Android [BLE Scanner](https://play.google.com/store/apps/details?id=com.macdom.ble.blescanner&hl=en_GB&gl=US) can be used, although there are many equivalent apps.
+Use a smartphone and Bluetooth tool to find the address of your windvane. On Android [BLE Scanner](https://play.google.com/store/apps/details?id=com.macdom.ble.blescanner&hl=en_GB&gl=US) can be used, although there are many equivalent apps.
 
 Locate the wind-vane and note down its address, in this case `DD:B7:BE:B4:56:38`.
 
 ![Wind-vane address](BLE_Scanner.jpg)
 
 Take your the address and replace the one at the top of the script, removing colons and pre-fixing `0x` to denote a hexadecimal value. For example:
-```
+
+```cpp
 #define WIND_VANE_ADDRESS 0xDDB7BEB45638
 ```
 
@@ -32,12 +33,15 @@ Note! The wind-vane can only accept one connection at a time, if you cann't conn
 The Arduino script is setup to output NMEA 0183 messages as they are already supported by ArduPilot.
 
 Enable NMEA wind-vane with:
-```
+
+```text
 WNDVN_TYPE 4
 WNDVN_SPEED_TYPE 4
 ```
+
 Setup the serial port you have connected the nRF52 to with:
-```
+
+```text
 SERIALx_PROTOCOL 21
 SERIALx_BAUD 57
 ```
@@ -49,9 +53,3 @@ After a re-boot you should see wind messages reported to the GCS. For example `M
 ## Future work
 
 The script does send back the battery level of the wind-vane formatted as a NMEA `XDR` message. Some ArduPilot changes are required to allow this value to be parsed and displayed.
-
-
-
-
-
-

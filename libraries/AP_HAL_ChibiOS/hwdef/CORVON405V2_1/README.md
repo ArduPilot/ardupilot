@@ -32,15 +32,15 @@ The CORVON405V2.1 is a flight controller produced by CORVON.
 
 ## RC Input
 
-The default RC input is configured on the UART6_RX input which is inverted from the SBUS pin. Other RC  protocols  should be applied at UART1 which has DMA, and set the :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` ='23' and change :ref:`SERIAL6_PROTOCOL<>SERIAL6_PROTOCOL` to something other than '23'.
+The default RC input is configured on the UART6_RX input which is inverted from the SBUS pin. Other RC  protocols  should be applied at UART1 which has DMA, and set the [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) ='23' and change [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) to something other than '23'.
 
 - CRSF/ELRS also requires a TX1 connection, in addition to RX1, and automatically provides telemetry.
-- FPort requires connection to TX1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to "7". See :ref:common-FPort-receivers.
-- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- FPort requires connection to TX1 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html)
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
 ## OSD Support
 
-The CORVON405V2.1 supports  internal analog OSD MAX7456. Simultaneous external HD OSD support is preconfigured on SERIAL6. See :ref:`common-msp-osd-overview-4.2` for more info.
+The CORVON405V2.1 supports  internal analog OSD MAX7456. Simultaneous external HD OSD support is preconfigured on SERIAL6. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## VTX Support
 

@@ -211,12 +211,12 @@ This requires building custom firmware. See the [Loading Firmware](#loading-firm
 
 ## RC Input
 
-RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
+RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for a specific RC system. [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) is set to “23”, by default, to enable this.
 
 - SBUS/DSM/SRXL connects to the RX6 pin.
-- FPort requires connection to TX6 and :ref:`SERIAL6_OPTIONS<SERIAL2_OPTIONS>` be set to “7”.
-- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>`
-- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to “4”. =3.
+- FPort requires connection to TX6 and [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “7”.
+- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options)
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to “4”. =3.
 
 ## Battery Monitoring
 

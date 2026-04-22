@@ -220,19 +220,19 @@ The RCIN pin, which by default is mapped to a timer input, can be used for all A
 
 To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART7) would need to be used for receiver connections. Below are setups using Serial6.
 
-- :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` should be set to "23".
-- FPort would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to "15".
-- CRSF would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to "0".
-- SRXL2 would require :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` be set to "4" and connects only the TX pin.
+- [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) should be set to "23".
+- FPort would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "15".
+- CRSF would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "0".
+- SRXL2 would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "4" and connects only the TX pin.
 
-Any UART can also be used for RC system connections in ArduPilot, and is compatible with all protocols except PPM. See :ref:`common-rc-systems` for details.
+Any UART can also be used for RC system connections in ArduPilot, and is compatible with all protocols except PPM. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 The power rail associated with this connector position is powered via USB or PMU.
 
 ## Loading Firmware
 
 This board comes with ArduPilot firmware pre-installed and other vehicle/revision ArduPilot firmware can be loaded using most Ground Control Stations.
 
-Firmware for these boards can be found `here  <https://firmware.ardupilot.org>`__ in sub-folders labeled “NarinFC-H7”.
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “NarinFC-H7”.
 
 The board comes pre-installed with an ArduPilot bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station, such as Mission Planner.
 

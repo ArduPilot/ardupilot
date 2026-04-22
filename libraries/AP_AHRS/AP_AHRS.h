@@ -99,7 +99,7 @@ public:
     void            reset();
 
     // get current location estimate
-    bool get_location(Location &loc) const;
+    bool get_location(Location &loc) const WARN_IF_UNUSED;
 
     // get latest altitude estimate above ground level in meters and validity flag
     bool get_hagl(float &hagl) const WARN_IF_UNUSED;

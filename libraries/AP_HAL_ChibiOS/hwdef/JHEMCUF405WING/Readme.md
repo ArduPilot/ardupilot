@@ -47,7 +47,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 - SERIAL0 -> USB
 - SERIAL1 -> USART1 (Serial RC input) (DMA capable)
-- SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<BRD_ALT_CONFIG>` =1)
+- SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) =1)
 - SERIAL3 -> UART3 (GPS) (TX DMA capable)
 - SERIAL4 -> UART4 (MAVLink2) (TX DMA capable)
 - SERIAL5 -> UART5 (DisplayPort, available on HD VTX connector) (TX DMA capable)
@@ -57,25 +57,25 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 The SBUS pin, is passed by an inverter to RX2 (UART2 RX), which by default is mapped to a timer input instead of the UART, and can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection. However, FPort, when connected in this manner, can provide RC without telemetry.
 
-To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, the UART1 should be used. With this option, :ref:`SERIAL11_PROTOCOL<SERIAL1_PROTOCOL>` must be set to "23" (already set by default), and:
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, the UART1 should be used. With this option, [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) must be set to "23" (already set by default), and:
 
 - PPM is not supported.
 
 - DSM/SRXL connects to the RX1  pin, but SBUS would still be connected to SBUS.
 
-- FPort requires connection to TX1 and RX1 via a bi-directional inverter. See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX1 and RX1 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 
-- CRSF also requires a TX1 connection, in addition to RX1 and automatically provides telemetry. ELRS is connected in the same way, but bit 13 of :ref:`RC_OPTIONS<RC_OPTIONS>` should be set.
+- CRSF also requires a TX1 connection, in addition to RX1 and automatically provides telemetry. ELRS is connected in the same way, but bit 13 of [RC_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#rc-options-rc-options) should be set.
 
-- SRXL2 requires a connection to TX1 and automatically provides telemetry.  Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- SRXL2 requires a connection to TX1 and automatically provides telemetry.  Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
-.. note:: UART1 is configured by default for serial receivers. You can also have more than one receiver in the system at a time (usually used for long range hand-offs to a remote TX). See :ref:`common-multiple-rx` for details.
+> **Note:** UART1 is configured by default for serial receivers. You can also have more than one receiver in the system at a time (usually used for long range hand-offs to a remote TX). See [multiple receivers](https://ardupilot.org/copter/docs/common-multiple-rx.html) for details.
 
-Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM (SBUS requires external inversion on other UARTs). See :ref:`common-rc-systems` for details.
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM (SBUS requires external inversion on other UARTs). See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
 ## OSD Support
 
-The JHEMCUF405Wing supports using its internal OSD using its MAX7456. Simultaneous external HD VTX OSD support such as DJI or DisplayPort is supported using UART5 and is configured by default. See :ref:`common-msp-osd-overview-4.2` for more info.
+The JHEMCUF405Wing supports using its internal OSD using its MAX7456. Simultaneous external HD VTX OSD support such as DJI or DisplayPort is supported using UART5 and is configured by default. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -95,8 +95,8 @@ to use DShot.
 
 ## Battery Monitoring
 
-The board has a builting voltage and current sensor. The current
-sensor can read up to 90A continuosly, 215 Amps peak. The voltage sensor can handle up to 6S
+The board has a built-in voltage and current sensor. The current
+sensor can read up to 90A continuously, 215 Amps peak. The voltage sensor can handle up to 6S
 LiPo batteries.
 
 The correct battery setting parameters are set by default and are:

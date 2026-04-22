@@ -1,12 +1,12 @@
 # SparkNavi Blue
 
-The SparkNavi Blue autopilot is manufactured by `SparkNavi <https://www.sparknavi.com>`__
+The SparkNavi Blue autopilot is manufactured by [SparkNavi](https://www.sparknavi.com)
 
 ![SparkNavi Blue](sparknavi-blue.png)
 
 ## Where to Buy
 
-`SparkNavi Official <https://www.sparknavi.com>`__
+[SparkNavi Official](https://www.sparknavi.com)
 
 ## Specifications
 
@@ -70,12 +70,12 @@ RC input is configured on the RC IN/SBUS IN pin on the MAIN OUT connector. This 
 
 For CRSF/ELRS, SRXL2, and bidirectional FPort with telemetry, a full UART such as SERIAL2 (USART3/TELEM2) must be used. Below are setups using SERIAL2.
 
-- :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` should be set to "23".
-- FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".
-- CRSF/ELRS would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "0".
-- SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "4" and connects only the TX pin.
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) should be set to "23".
+- FPort would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "15".
+- CRSF/ELRS would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "0".
+- SRXL2 would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "4" and connects only the TX pin.
 
-Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See :ref:`common-rc-systems` for details.
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
 ## PWM Outputs
 
@@ -105,11 +105,11 @@ An on-board HMC5883L compass is provided. However, users often will disable this
 
 ## RSSI
 
-If the RSSI pin is used for analog RSSI input. Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 103. Set :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" if the RC protocol provides rssi data.
+If the RSSI pin is used for analog RSSI input. Set [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 103. Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) to "1" if the RC protocol provides rssi data.
 
 ## Analog Airspeed
 
-If the ARSPD pin is used for analog airspeed  input. Set :ref:`ARSPD_PIN<ARSPD_PIN>` to 18. Set :ref:`ARSPD_TYPE<ARSPD_TYPE>` to "2".
+If the ARSPD pin is used for analog airspeed  input. Set [ARSPD_PIN](https://ardupilot.org/copter/docs/parameters.html#arspd-pin-airspeed-pin) to 18. Set [ARSPD_TYPE](https://ardupilot.org/copter/docs/parameters.html#arspd-type-airspeed-type) to "2".
 
 ## GPIOs
 
