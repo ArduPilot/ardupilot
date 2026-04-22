@@ -165,7 +165,7 @@ bool Rover::set_target_location(const Location& target_loc)
         return false;
     }
 
-    return mode_guided.set_desired_location(target_loc);
+    return mode_guided.set_destination(target_loc);
 }
 #endif //AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 
