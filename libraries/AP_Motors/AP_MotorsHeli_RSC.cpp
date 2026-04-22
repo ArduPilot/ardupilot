@@ -242,7 +242,7 @@ void AP_MotorsHeli_RSC::initialize()
 void AP_MotorsHeli_RSC::configure()
 {
 
-    set_rsc_control_mode(static_cast<RotorControlMode>(_rsc_mode.get()));
+    set_rsc_control_mode((RotorControlMode)(_rsc_mode.get()));
     set_ramp_time(_ramp_time.get());
     set_runup_time(_runup_time.get());
     set_critical_speed(_critical_speed.get());
@@ -291,13 +291,15 @@ void AP_MotorsHeli_RSC::configure_armed()
     if (_rsc_mode.get() == ROTOR_CONTROL_MODE_THROTTLECURVE || _rsc_mode.get() == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
         set_throttle_curve();
     }
+
     // keeps user from changing RSC mode while armed
     if (_rsc_mode.get() != get_rsc_control_mode()) {
         reset_rsc_mode_param();
         _save_rsc_mode = true;
     }
+
     // saves rsc mode parameter when disarmed if it had been reset while armed
-    if (_save_rsc_mode && _desired_spool_state != DesiredRSCSpoolState::SHUT_DOWN) {
+    if (_save_rsc_mode && _desired_spool_state == DesiredRSCSpoolState::SHUT_DOWN) {
         _rsc_mode.save();
         _save_rsc_mode = false;
     }
@@ -332,8 +334,6 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
 
     // set desired spool state
     _desired_spool_state = desired_spool_state;
-
-    configure_armed();
 
     // _rotor_RPM available to the RSC output
 #if AP_RPM_ENABLED
