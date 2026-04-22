@@ -321,7 +321,11 @@ static void test_random(void)
 }
 
 //Main loop where the action takes place
+#if defined(__clang_major__)
+// clang doesn't understand -Wframe-larger-than=
+#else
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
+#endif
 void loop()
 {
     const uint8_t srxl_bytes[] = { 0xa5, 0x03, 0x0c, 0x04, 0x2f, 0x6c, 0x10, 0xb4, 0x26,
