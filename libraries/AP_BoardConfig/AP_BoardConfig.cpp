@@ -35,9 +35,58 @@
 #define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#ifndef BOARD_SER1_RTSCTS_DEFAULT
+# define BOARD_SER1_RTSCTS_DEFAULT 0
+#endif
+#ifndef BOARD_SER2_RTSCTS_DEFAULT
+# define BOARD_SER2_RTSCTS_DEFAULT 0
+#endif
+#ifndef BOARD_SER3_RTSCTS_DEFAULT
+# define BOARD_SER3_RTSCTS_DEFAULT 0
+#endif
+#ifndef BOARD_SER4_RTSCTS_DEFAULT
+# define BOARD_SER4_RTSCTS_DEFAULT 0
+#endif
+#ifndef BOARD_SER5_RTSCTS_DEFAULT
+# define BOARD_SER5_RTSCTS_DEFAULT 0
+#endif
+#ifndef BOARD_SER6_RTSCTS_DEFAULT
+# define BOARD_SER6_RTSCTS_DEFAULT 0
+#endif
+#ifndef BOARD_SER7_RTSCTS_DEFAULT
+# define BOARD_SER7_RTSCTS_DEFAULT 0
+#endif
+#ifndef BOARD_SER8_RTSCTS_DEFAULT
+# define BOARD_SER8_RTSCTS_DEFAULT 0
+#endif
+#endif
+
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #ifndef BOARD_SER1_RTSCTS_DEFAULT
 # define BOARD_SER1_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_SER2_RTSCTS_DEFAULT
+# define BOARD_SER2_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_SER3_RTSCTS_DEFAULT
+# define BOARD_SER3_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_SER4_RTSCTS_DEFAULT
+# define BOARD_SER4_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_SER5_RTSCTS_DEFAULT
+# define BOARD_SER5_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_SER6_RTSCTS_DEFAULT
+# define BOARD_SER6_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_SER7_RTSCTS_DEFAULT
+# define BOARD_SER7_RTSCTS_DEFAULT 2
+#endif
+#ifndef BOARD_SER8_RTSCTS_DEFAULT
+# define BOARD_SER8_RTSCTS_DEFAULT 2
 #endif
 #ifndef BOARD_TYPE_DEFAULT
 # define BOARD_TYPE_DEFAULT PX4_BOARD_AUTO
@@ -127,7 +176,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 2 flow control
     // @Description: Enable flow control on serial 2 (telemetry 2). You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser_rtscts[2], 2),
+    AP_GROUPINFO("SER2_RTSCTS",    2, AP_BoardConfig, state.ser_rtscts[2], BOARD_SER2_RTSCTS_DEFAULT),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL3
@@ -135,7 +184,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 3 flow control
     // @Description: Enable flow control on serial 3. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    AP_GROUPINFO("SER3_RTSCTS",    26, AP_BoardConfig, state.ser_rtscts[3], 2),
+    AP_GROUPINFO("SER3_RTSCTS",    26, AP_BoardConfig, state.ser_rtscts[3], BOARD_SER3_RTSCTS_DEFAULT),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL4
@@ -143,7 +192,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 4 flow control
     // @Description: Enable flow control on serial 4. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    AP_GROUPINFO("SER4_RTSCTS",    27, AP_BoardConfig, state.ser_rtscts[4], 2),
+    AP_GROUPINFO("SER4_RTSCTS",    27, AP_BoardConfig, state.ser_rtscts[4], BOARD_SER4_RTSCTS_DEFAULT),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL5
@@ -151,7 +200,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 5 flow control
     // @Description: Enable flow control on serial 5. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    AP_GROUPINFO("SER5_RTSCTS",    25, AP_BoardConfig, state.ser_rtscts[5], 2),
+    AP_GROUPINFO("SER5_RTSCTS",    25, AP_BoardConfig, state.ser_rtscts[5], BOARD_SER5_RTSCTS_DEFAULT),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL6
@@ -159,7 +208,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 6 flow control
     // @Description: Enable flow control on serial 6. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    AP_GROUPINFO("SER6_RTSCTS",    30, AP_BoardConfig, state.ser_rtscts[6], 2),
+    AP_GROUPINFO("SER6_RTSCTS",    30, AP_BoardConfig, state.ser_rtscts[6], BOARD_SER6_RTSCTS_DEFAULT),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL7
@@ -167,7 +216,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @CopyFieldsFrom: BRD_SER1_RTSCTS
     // @DisplayName: Serial 7 flow control
     // @Description: Enable flow control on serial 7. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    AP_GROUPINFO("SER7_RTSCTS",    31, AP_BoardConfig, state.ser_rtscts[7], 2),
+    AP_GROUPINFO("SER7_RTSCTS",    31, AP_BoardConfig, state.ser_rtscts[7], BOARD_SER7_RTSCTS_DEFAULT),
 #endif
 
 #ifdef HAL_HAVE_RTSCTS_SERIAL8
@@ -175,7 +224,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @CopyFieldsFrom: BRD_SER8_RTSCTS
     // @DisplayName: Serial 8 flow control
     // @Description: Enable flow control on serial 8. You must have the RTS and CTS pins connected to your radio. The standard DF13 6 pin connector for a 3DR radio does have those pins connected. If this is set to 2 then flow control will be auto-detected by checking for the output buffer filling on startup.
-    AP_GROUPINFO("SER8_RTSCTS",    32, AP_BoardConfig, state.ser_rtscts[8], 2),
+    AP_GROUPINFO("SER8_RTSCTS",    32, AP_BoardConfig, state.ser_rtscts[8], BOARD_SER8_RTSCTS_DEFAULT),
 #endif
 #endif
 
