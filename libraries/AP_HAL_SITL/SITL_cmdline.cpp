@@ -106,7 +106,6 @@ void SITL_State::_usage(void)
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
            "\t--uartA device           alias for --serial0 (do not use)\n"
-           "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
            "\t--sim-address ADDR       set address string for simulator\n"
@@ -292,7 +291,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SERIAL7,
         CMDLINE_SERIAL8,
         CMDLINE_SERIAL9,
-        CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
         CMDLINE_SIM_ADDRESS,
@@ -351,7 +349,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"serial7",         true,   0, CMDLINE_SERIAL7},
         {"serial8",         true,   0, CMDLINE_SERIAL8},
         {"serial9",         true,   0, CMDLINE_SERIAL9},
-        {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
         {"sim-address",     true,   0, CMDLINE_SIM_ADDRESS},
@@ -504,9 +501,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL8:
         case CMDLINE_SERIAL9:
             _serial_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
-            break;
-        case CMDLINE_RTSCTS:
-            _use_rtscts = true;
             break;
         case CMDLINE_BASE_PORT:
             _base_port = atoi(gopt.optarg);
