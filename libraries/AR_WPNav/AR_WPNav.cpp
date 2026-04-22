@@ -311,7 +311,6 @@ bool AR_WPNav::set_desired_location_to_stopping_location()
     return set_desired_location(stopping_loc);
 }
 
-// (See declaration for documentation.)
 bool AR_WPNav::set_wp_destination_NED_m(const Vector3f& offset_from_origin)
 {
     // initialise destination to ekf origin
