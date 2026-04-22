@@ -2,11 +2,9 @@
 
 ![ATOMRCF405NAVI-Deluxe](atomrcf405-navi-deluxe.jpg)
 
-the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
+the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
-.. note::
-
-    Due to flash memory limitations, this board does not include all ArduPilot features. See :ref:`Firmware Limitations <common-limited_firmware>` for details.
+> **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See [Firmware Limitations](https://ardupilot.org/copter/docs/common-limited-firmware.html) for details.
 
 ## Specifications
 
@@ -71,7 +69,7 @@ All motor/servo outputs are Dshot and PWM capable. Outputs 1/2 and 6/7 are Bi-Di
 
 Mixing Dshot and normal PWM operation for outputs is restricted into groups, ie. enabling Dshot for an output in a group requires that ALL outputs in that group be configured and used as Dshot, rather than PWM outputs. The output groups that must be the same (PWM rate or Dshot, when configured as a normal servo/motor output) are: 1/2, 3/4, 5/6/7, 8/9/10, and 11/12(LED).
 
-.. note:: PWM12 is marked as "LED" and defaulted to serial led protocol, so output 11 must also be used for serial LED unless output 12 function is changed.
+> **Note:** PWM12 is marked as "LED" and defaulted to serial led protocol, so output 11 must also be used for serial LED unless output 12 function is changed.
 
 ## RC Input
 
@@ -81,13 +79,13 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 - DSM/SRXL connects to the RX2  pin, but SBUS would still be connected to SBUS.
 
-- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 
 - CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 
-- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to "4".
+- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to "4".
 
-.. note:: the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
+> **Note:** the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
 
 ## Battery Monitor Configuration
 
@@ -114,7 +112,7 @@ An integrated BLE RF module is attached to UART1 and its power controlled by a p
 
 ## Loading Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “ATOMRCF405NAVI-Deluxe”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “ATOMRCF405NAVI-Deluxe”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "with_bl.hex"

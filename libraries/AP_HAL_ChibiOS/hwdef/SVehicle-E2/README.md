@@ -50,7 +50,7 @@ All UARTs have full DMA capability. TELEM3 can be used as an RS422 interface, th
 
 ## RC Input
 
-RC input is configured on the RCIN pin, at one end of the servo rail, marked PPM in the above diagram. All ArduPilot supported unidirectional RC protocols can be input here including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used. See :ref:`common-rc-systems` for details on USRT setup for other protocols.
+RC input is configured on the RCIN pin, at one end of the servo rail, marked PPM in the above diagram. All ArduPilot supported unidirectional RC protocols can be input here including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details on USRT setup for other protocols.
 
 ## PWM Output
 

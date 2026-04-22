@@ -179,7 +179,6 @@ BARO DPS280      SPI:dps310
 
 # ICP baro over SPI not supported yet
 #BARO ICP201XX    SPI:icp201
-define HAL_PROBE_EXTERNAL_I2C_BAROS
 
 
 define HAL_OS_FATFS_IO 1

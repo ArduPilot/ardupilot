@@ -83,7 +83,7 @@ AP_ExternalAHRS_GSOF::AP_ExternalAHRS_GSOF(AP_ExternalAHRS *_frontend,
         AP_BoardConfig::allocation_error("GSOF ExternalAHRS failed to allocate ExternalAHRS update thread");
     }
 
-    // Offer GPS even through it's a tightly coupled EKF.
+    // Offer GPS even though it's a tightly coupled EKF.
     set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS));
 }
 
@@ -100,10 +100,10 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
 {
     // TODO configure receiver to output expected data.
 
-#if AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
+#if AP_EXTERNAL_AHRS_GSOF_DEBUG_ENABLED
     auto last_debug = AP_HAL::millis();
     uint32_t pps = 0;
-#endif // AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
+#endif // AP_EXTERNAL_AHRS_GSOF_DEBUG_ENABLED
 
     uart->begin(baudrate);
     
@@ -119,14 +119,14 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
                 continue;
         }
 
-        AP_GSOF::MsgTypes parsed;
+        AP_GSOF::MsgTypes parsed {};
         const auto parse_res = parse(c, parsed);
         if (parse_res != PARSED_GSOF_DATA) {
             continue;
         }
 
         auto const now = AP_HAL::millis();
-#if AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
+#if AP_EXTERNAL_AHRS_GSOF_DEBUG_ENABLED
         pps++;
 
         if (now - last_debug > 1000) {
@@ -137,7 +137,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
             last_debug = now;
             pps = 0;
         }
-#endif // AP_EXTERNALAHRS_GSOF_DEBUG_ENABLED
+#endif // AP_EXTERNAL_AHRS_GSOF_DEBUG_ENABLED
         if (parsed.get(AP_GSOF::POS_TIME)) {
             last_pos_time_ms = now;
 
@@ -207,7 +207,7 @@ void AP_ExternalAHRS_GSOF::update_thread(void)
             undulation = ins_full_nav.altitude - llh_msl.altitude_msl;
         }
 
-        AP_GSOF::MsgTypes expected_gps;
+        AP_GSOF::MsgTypes expected_gps {};
         expected_gps.set(AP_GSOF::POS_TIME);
         expected_gps.set(AP_GSOF::INS_FULL_NAV);
         expected_gps.set(AP_GSOF::INS_RMS);
@@ -339,11 +339,11 @@ bool AP_ExternalAHRS_GSOF::times_healthy() const
 
     // 5Hz = 200mS.
     auto const GSOF_50_EXPECTED_DELAY_MS = 200;
-    auto const ins_rms_healthy = now - last_ins_rms_ms < TIMES_FOS * GSOF_50_EXPECTED_DELAY_MS;
+    auto const ins_rms_healthy = now - last_ins_rms_ms <= TIMES_FOS * GSOF_50_EXPECTED_DELAY_MS;
 
     // 5Hz = 200mS.
     auto const GSOF_70_EXPECTED_DELAY_MS = 200;
-    auto const llh_msl_healthy = now - last_llh_msl_ms < TIMES_FOS * GSOF_70_EXPECTED_DELAY_MS;
+    auto const llh_msl_healthy = now - last_llh_msl_ms <= TIMES_FOS * GSOF_70_EXPECTED_DELAY_MS;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!pos_time_healthy) {
@@ -366,7 +366,7 @@ bool AP_ExternalAHRS_GSOF::times_healthy() const
 bool AP_ExternalAHRS_GSOF::filter_healthy() const
 {
     // TODO get the right threshold from Trimble for arming vs in flight.
-    // Fow now, assume an aligned IMU is sufficient for flight.
+    // For now, assume an aligned IMU is sufficient for flight.
     auto const imu_alignment_healthy = (
         ins_rms.imu_alignment_status == ImuAlignmentStatus::DEGRADED ||
         ins_rms.imu_alignment_status == ImuAlignmentStatus::ALIGNED ||

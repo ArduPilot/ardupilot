@@ -13,13 +13,14 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         config: [
-            check_autotest_options,
-            param_parse,
-            python-cleanliness,
             astyle-cleanliness,
-            validate_board_list,
+            check_autotest_options,
             logger_metadata,
+            param_parse,
             param-file-validation,
+            python-cleanliness,
+            shellcheck,
+            validate_board_list,
           ]
     steps:
       # git checkout the PR
@@ -28,15 +29,16 @@ jobs:
           submodules: 'recursive'
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
-          cache: 'pip' # caching pip dependencies
-          pip-install: flake8 lxml popen pexpect
+          python-version: 3.x
+          cache: pip  # caching pip dependencies
+          pip-install: flake8 lxml pexpect
 
-      - name: Install checker stuffs
+      - name: Install astyle
+        if: matrix.config == 'astyle-cleanliness'
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y astyle
+          sudo apt-get install --yes astyle
 
       - name: test ${{matrix.config}}
         env:

@@ -60,10 +60,10 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 
 ## UART Mapping
 
-The UARTs default protocol and serial port assigments are:
+The UARTs default protocol and serial port assignments are:
 
 * SERIAL0 -> USB
-* SERIAL1 -> USART1 (DMA capable,RX tied to SBUS RC input and pin used as an interrupt input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG =1` )
+* SERIAL1 -> USART1 (DMA capable,RX tied to SBUS RC input and pin used as an interrupt input, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) = 1)
 * SERIAL2 -> USART2 (ESC Telemetry)
 * SERIAL3 -> USART3 (DisplayPort, TX DMA Capable)
 * SERIAL4 -> UART4  (USER, TX DMA Capable)
@@ -74,16 +74,16 @@ The UARTs default protocol and serial port assigments are:
 
 The RX1 input by default is mapped to a timer input instead of UART`1, and can be used for all ArduPilot supported unidirectional receiver protocols. The SBUS pads are inverted and tied to this input and should not be connected to anything if the RX1 is used. Bi-directional procols such as CRSF/ELRS and SRXL2 which require a true UART connection to both R1 and TX1 (see below). FPort with tlemetery also requires a full UART AND an external bi-directional inverter.
 
-To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, the RX1 pin must be configured to be used as true UART RX pin for use with bi-directional systems by setting the :ref:`BRD_ALT_CONFIG<BRD_ALT_CONFIG>` to “1” so it becomes the SERIAL1 port’s RX input pin.ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` is alreaddy set by deault to “23” to allow RC reciever connection to UART1.
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, the RX1 pin must be configured to be used as true UART RX pin for use with bi-directional systems by setting the [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) to “1” so it becomes the SERIAL1 port’s RX input pin. [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) is already set by default to “23” to allow RC receiver connection to UART1.
 
 With this option:
 
 * PPM is not supported.
-* FPort requires connection to TX1 via an external bi-directional and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to “7”.
-* CRSF also requires a TX1 connection, in addition to R6, and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “0”.
-* SRXL2 requires a connection to T1 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to “4”.
+* FPort requires connection to TX1 via an external bi-directional and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to “7”.
+* CRSF also requires a TX1 connection, in addition to R6, and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to “0”.
+* SRXL2 requires a connection to T1 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to “4”.
 
-Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See :ref:`common-rc-systems` for more details.
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for more details.
 
 ## OSD Support
 
@@ -125,7 +125,7 @@ The PIO pad is setup as a user GPIO (GPIO82) by default, controlled by RELAY2.
 
 ## RSSI
 
-Analog RSSI input is via pin 12.  Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to "12" and :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" to enable its use.
+Analog RSSI input is via pin 12.  Set [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to "12" and [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) to "1" to enable its use.
 
 ## LEDs and Buzzer
 
@@ -140,7 +140,7 @@ Analog RSSI input is via pin 12.  Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to "12" 
 
 ## Loading Firmware
 
-Firmware for the autopilot can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "BOTWINGF405".
+Firmware for the autopilot can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "BOTWINGF405".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

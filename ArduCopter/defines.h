@@ -54,13 +54,6 @@ enum tuning_func {
     TUNING_WP_SPEED_MS =                61, // maximum speed to next waypoint in m/s
 };
 
-// Yaw behaviours during missions - possible values for WP_YAW_BEHAVIOR parameter
-#define WP_YAW_BEHAVIOR_NONE                          0   // auto pilot will never control yaw during missions or rtl (except for DO_CONDITIONAL_YAW command received)
-#define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP               1   // auto pilot will face next waypoint or home during rtl
-#define WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL    2   // auto pilot will face next waypoint except when doing RTL at which time it will stay in it's last
-#define WP_YAW_BEHAVIOR_LOOK_AHEAD                    3   // auto pilot will look ahead during missions and rtl (primarily meant for traditional helicopters)
-
-
 // Airmode
 enum class AirMode {
     AIRMODE_NONE,
@@ -113,32 +106,6 @@ enum LoggingParameters {
 #define MASK_LOG_VIDEO_STABILISATION    (1UL<<20)
 #define MASK_LOG_FTN_FAST               (1UL<<21)
 #define MASK_LOG_ANY                    0xFFFF
-
-// Radio failsafe definitions (FS_THR parameter)
-#define FS_THR_DISABLED                            0
-#define FS_THR_ENABLED_ALWAYS_RTL                  1
-#define FS_THR_ENABLED_CONTINUE_MISSION            2    // Removed in 4.0+, now use fs_options
-#define FS_THR_ENABLED_ALWAYS_LAND                 3
-#define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL      4
-#define FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND     5
-#define FS_THR_ENABLED_AUTO_RTL_OR_RTL             6
-#define FS_THR_ENABLED_BRAKE_OR_LAND               7
-
-// GCS failsafe definitions (FS_GCS_ENABLE parameter)
-#define FS_GCS_DISABLED                        0
-#define FS_GCS_ENABLED_ALWAYS_RTL              1
-#define FS_GCS_ENABLED_CONTINUE_MISSION        2    // Removed in 4.0+, now use fs_options
-#define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL  3
-#define FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND 4
-#define FS_GCS_ENABLED_ALWAYS_LAND             5
-#define FS_GCS_ENABLED_AUTO_RTL_OR_RTL         6
-#define FS_GCS_ENABLED_BRAKE_OR_LAND           7
-
-// EKF failsafe definitions (FS_EKF_ACTION parameter)
-#define FS_EKF_ACTION_REPORT_ONLY           0
-#define FS_EKF_ACTION_LAND                  1       // switch to LAND mode on EKF failsafe
-#define FS_EKF_ACTION_ALTHOLD               2       // switch to ALTHOLD mode on EKF failsafe
-#define FS_EKF_ACTION_LAND_EVEN_STABILIZE   3       // switch to Land mode on EKF failsafe even if in a manual flight mode like stabilize
 
 // for PILOT_THR_BHV parameter
 #define THR_BEHAVE_FEEDBACK_FROM_MID_STICK (1<<0)

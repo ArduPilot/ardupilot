@@ -178,7 +178,7 @@ void Copter::failsafe_ekf_event()
     AP_Notify::flags.failsafe_ekf = true;
 
     // True if no action should be taken
-    const bool report_only = g.fs_ekf_action == FS_EKF_ACTION_REPORT_ONLY;
+    const bool report_only = g.fs_ekf_action == FS_EKF_Action::REPORT_ONLY;
 
     // sometimes LAND *does* require GPS so ensure we are in non-GPS land
     const bool landing_with_position = landing_with_GPS();
@@ -187,7 +187,7 @@ void Copter::failsafe_ekf_event()
     }
 
     // does this mode require position?
-    const bool no_action_in_current_mode = !copter.flightmode->requires_position() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE);
+    const bool no_action_in_current_mode = !copter.flightmode->requires_position() && (g.fs_ekf_action != FS_EKF_Action::LAND_EVEN_STABILIZE);
 
     if (report_only || landing_with_position || no_action_in_current_mode) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe");
@@ -195,18 +195,18 @@ void Copter::failsafe_ekf_event()
     }
 
     // take action based on fs_ekf_action parameter
-    switch (g.fs_ekf_action) {
-        case FS_EKF_ACTION_REPORT_ONLY:
+    switch ((FS_EKF_Action)g.fs_ekf_action) {
+        case FS_EKF_Action::REPORT_ONLY:
             // Should have early returned above
             break;
-        case FS_EKF_ACTION_ALTHOLD:
+        case FS_EKF_Action::ALTHOLD:
             // AltHold
             if (failsafe.radio || !set_mode(Mode::Number::ALT_HOLD, ModeReason::EKF_FAILSAFE)) {
                 set_mode_land_with_pause(ModeReason::EKF_FAILSAFE);
             }
             break;
-        case FS_EKF_ACTION_LAND:
-        case FS_EKF_ACTION_LAND_EVEN_STABILIZE:
+        case FS_EKF_Action::LAND:
+        case FS_EKF_Action::LAND_EVEN_STABILIZE:
         default:
             set_mode_land_with_pause(ModeReason::EKF_FAILSAFE);
             break;

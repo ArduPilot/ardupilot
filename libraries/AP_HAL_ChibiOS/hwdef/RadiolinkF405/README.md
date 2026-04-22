@@ -32,7 +32,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
-For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required. See :ref:`common-rc-systems` for more info
+For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for more info
 
 ## OSD Support
 

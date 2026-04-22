@@ -44,7 +44,7 @@ FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART
 
 ## OSD Support
 
-The SpeedyBee F405 v5 supports OSD using :ref:`OSD_TYPE<OSD_TYPE>` = 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation is also pre-configured via UART3. See :ref:`common-msp-osd-overview-4.2` for more info.
+The SpeedyBee F405 v5 supports OSD using [OSD_TYPE](https://ardupilot.org/copter/docs/parameters.html#osd-type-osd-type) = 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation is also pre-configured via UART3. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## VTX Support
 
@@ -92,23 +92,23 @@ The SpeedyBee F405 v5 does not have a builtin compass, but you can attach an ext
 
 ## Camera Control
 
-The CC pin is a GPIO (pin 70) and is assigned by default to RELAY2 functionality. This pin can be controlled via GCS or by RC transmitter using the :ref:`Auxiliary Function<common-auxiliary-functions>` feature.
+The CC pin is a GPIO (pin 70) and is assigned by default to RELAY2 functionality. This pin can be controlled via GCS or by RC transmitter using the [Auxiliary Function](https://ardupilot.org/copter/docs/common-auxiliary-functions.html) feature.
 
 ## VTX power control
 
 GPIO 71 controls the VTX BEC output to pins marked "9V". Setting this GPIO high removes voltage supply to pins.
 
-By default RELAY3 is configured to control this pin and sets the GPIO low. This pin can be controlled via GCS or by RC transmitter using the :ref:`Auxiliary Function<common-auxiliary-functions>` feature.
+By default RELAY3 is configured to control this pin and sets the GPIO low. This pin can be controlled via GCS or by RC transmitter using the [Auxiliary Function](https://ardupilot.org/copter/docs/common-auxiliary-functions.html) feature.
 
 ## Programmable Power Switch
 
 GPIO 72 controls the programmable switch labeled “P+ / P−”, P- is connected to GND. P+ outputs 5V. Setting this GPIO low disables the voltage supply to the P+ pin.
 
-By default, RELAY4 is configured to control this GPIO and keeps it low.This pin can be controlled via GCS or by RC transmitter using the :ref:`Auxiliary Function<common-auxiliary-functions>` feature.
+By default, RELAY4 is configured to control this GPIO and keeps it low.This pin can be controlled via GCS or by RC transmitter using the [Auxiliary Function](https://ardupilot.org/copter/docs/common-auxiliary-functions.html) feature.
 
 ## Firmware
 
-Firmware for this board can be found: `here <https://firmware.ardupilot.org>`__ in sub-folders labeled “speedybeef4v5”.
+Firmware for this board can be found: [here](https://firmware.ardupilot.org) in sub-folders labeled “speedybeef4v5”.
 
 ## Loading Firmware (you will need to compile your own firmware)
 

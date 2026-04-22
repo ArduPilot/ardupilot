@@ -56,7 +56,7 @@
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
+  # define WP_YAW_BEHAVIOR_DEFAULT              WPYawBehavior::LOOK_AHEAD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
- # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_LAND  // EKF failsafe triggers land by default
+ # define FS_EKF_ACTION_DEFAULT         FS_EKF_Action::LAND  // EKF failsafe triggers land by default
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
@@ -452,7 +452,7 @@
 
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+ # define WP_YAW_BEHAVIOR_DEFAULT   WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS

@@ -50,7 +50,7 @@ bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound)
  * @Note Input character is 0-9, A-F, a-f
  *  A 0x41, a 0x61, 0 0x30
  */
-bool hex_to_uint8(uint8_t a, uint8_t &res)
+bool hex_char_to_nibble(uint8_t a, uint8_t &res)
 {
     uint8_t nibble_low  = a & 0xf;
 
@@ -75,6 +75,50 @@ bool hex_to_uint8(uint8_t a, uint8_t &res)
 }
 
 /*
+  decode two hex characters into a byte.
+  e.g. hex_twochars_to_uint8("3F", res) -> res = 0x3F
+ */
+bool hex_twochars_to_uint8(const char s[2], uint8_t &res)
+{
+    uint8_t hi, lo;
+    if (!hex_char_to_nibble(s[0], hi) || !hex_char_to_nibble(s[1], lo)) {
+        return false;
+    }
+    res = (hi << 4) | lo;
+    return true;
+}
+
+bool hex_charpairs_to_uint8s(const char *s, uint8_t num_pairs, uint8_t *out)
+{
+    for (uint8_t i = 0; i < num_pairs; i++) {
+        uint8_t hi, lo;
+        if (!hex_char_to_nibble(s[i*2], hi) || !hex_char_to_nibble(s[i*2+1], lo)) {
+            return false;
+        }
+        out[i] = (hi << 4) | lo;
+    }
+    return true;
+}
+
+/*
+  decode len hex characters into a uint32_t, treating each character
+  as a nibble (most-significant first).
+  e.g. hex_chars_to_uint32("1A2B", 4, out) -> out = 0x1A2B
+ */
+bool hex_chars_to_uint32(const char *s, uint8_t len, uint32_t &out)
+{
+    out = 0;
+    for (uint8_t i = 0; i < len; i++) {
+        uint8_t nibble;
+        if (!hex_char_to_nibble(s[i], nibble)) {
+            return false;
+        }
+        out = (out << 4) | nibble;
+    }
+    return true;
+}
+
+/*
   strncpy without the warning for not leaving room for nul termination
  */
 size_t strncpy_noterm(char *dest, const char *src, size_t n)
@@ -87,22 +131,4 @@ size_t strncpy_noterm(char *dest, const char *src, size_t n)
     }
     memcpy(dest, src, len);
     return ret;
-}
-
-/**
- * return the numeric value of an ascii hex character
- * 
- * @param[in] a Hexadecimal character 
- * @return  Returns a binary value.  If 'a' is not a valid hex character 255 (AKA -1) is returned
- */
-uint8_t char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F') {
-        return a - 'A' + 10;
-    } else if (a >= 'a' && a <= 'f') {
-        return a - 'a' + 10;
-    } else if (a >= '0' && a <= '9') {
-        return a - '0';
-    }
-    return 255;
 }

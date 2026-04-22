@@ -116,7 +116,7 @@ The bootloader hwdef enables flashing firmware from microSD (`AP_BOOTLOADER_FLAS
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed.
 
-Firmware can be found on the `firmware server <https://firmare.ardupilot.org>`__ in folders marked "HWH7"
+Firmware can be found on the [firmware server](https://firmware.ardupilot.org) in folders marked "HWH7"
 
 Then load the `*_with_bl.hex` firmware using a DFU tool.
 

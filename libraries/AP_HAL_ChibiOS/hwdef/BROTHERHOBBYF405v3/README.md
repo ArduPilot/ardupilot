@@ -31,20 +31,20 @@ The BROTHERHOBBYF405v3 is a flight controller produced by [BROTHERHOBBY](https:/
 
 ## RC Input
 
-The default RC input is configured on UART2, all ArduPilot compatible protocols, except PPM and SBUS, are supported. SBUS support is provided via the HD VTX connector on SERIAL1 and requires the protocol be set to :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` = "23" and change SERIAL2 _Protocol to something other than '23'.
+The default RC input is configured on UART2, all ArduPilot compatible protocols, except PPM and SBUS, are supported. SBUS support is provided via the HD VTX connector on SERIAL1 and requires the protocol be set to [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) = "23" and change SERIAL2 _Protocol to something other than '23'.
 
 - PPM is not supported
-- FPort requires an external bi-directional inverter (see :ref:`common-fport-receivers`)
+- FPort requires an external bi-directional inverter (see [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html))
 - CRSF requires connection to TX2 and automatically supports telemetry
 - DSM/SRXL connects to the RX2 pin, but SBUS would still be connected to SBUS.
-- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` to "4".
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) to "4".
 
 ## FrSky Telemetry
 
 FrSky Telemetry can be supported using a spare UART transmit pin. You need to set the following parameters to enable support for FrSky S.PORT on SERIAL4
 
-- :ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` 10
-- :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>` 7
+- [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) 10
+- [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) 7
 
 ## OSD Support
 
@@ -77,11 +77,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
-- :ref:BATT_MONITOR<BATT_MONITOR> = 4
-- :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
-- :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11
-- :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11
-- :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 25.9 (will need to be adjusted for whichever current sensor is attached)
+- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) = 4
+- [BATT_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) = 10
+- [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11
+- [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11
+- [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 25.9 (will need to be adjusted for whichever current sensor is attached)
 
 ## RSSI
 
@@ -93,7 +93,7 @@ The BROTHERHOBBYF405v3 does not have a built-in compass, but you can attach an e
 
 ## Firmware
 
-Firmware for the BROTHERHOBBYF405v3 can be found `here <https://firmware.ardupilot.org>`_ in sub-folders labeled “BROTHERHOBBYF405v3".
+Firmware for the BROTHERHOBBYF405v3 can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “BROTHERHOBBYF405v3".
 
 ## Loading Firmware
 

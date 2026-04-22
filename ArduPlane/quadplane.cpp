@@ -2844,7 +2844,9 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         if (plane.control_mode == &plane.mode_guided || vtol_loiter_auto) {
-            plane.ahrs.get_location(plane.current_loc);
+            // FIXME: we have updated current_loc without updating the
+            // health flag.  And why are we doing this here?!
+            UNUSED_RESULT(plane.ahrs.get_location(plane.current_loc));
             int32_t target_altitude_cm;
             if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN,target_altitude_cm)) {
                 break;
@@ -4188,7 +4190,12 @@ void QuadPlane::update_throttle_mix(void)
           attitude control until LAND_FINAL
          */
         if (in_vtol_land_sequence()) {
-            use_mix_max = !in_vtol_land_final();
+            // during the descent phase we don't want to priortise
+            // attitude too much. Rapid descent on quadplanes often
+            // leads to very poor attitude control and putting more
+            // power into attitude doesn't tend to fix it, what we
+            // need to do is slow the descent.
+            use_mix_max = !in_vtol_land_descent() || poscontrol.get_state() == QPOS_LAND_ABORT;
         }
 
         if (use_mix_max) {

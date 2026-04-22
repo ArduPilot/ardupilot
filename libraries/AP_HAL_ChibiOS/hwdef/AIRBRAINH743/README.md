@@ -38,15 +38,15 @@ receive pin. The TX pin is the transmit pin .
 ## RC Input
 
 The default RC input is configured on USART2. RC could  be applied instead to a different UART port,  and set
-the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change :ref:`SERIAL2 _PROTOCOL <SERIAL2 _PROTOCOL>`
+the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection)
 to something other than '23'. For rc protocols other than unidirectional, the USART2_TX pin will need to be used:
 
-- FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".
-- CRSF would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "0".
-- SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "4" and connects only the TX pin.
+- FPort would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "15".
+- CRSF would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "0".
+- SRXL2 would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "4" and connects only the TX pin.
 
-The HD VTX connector contains UART5 RX for SBUS. To use this connector for SBUS set :ref:`SERIAL2 _PROTOCOL <SERIAL2 _PROTOCOL>`
-to something other than '23' and set :ref:`SERIAL5 _PROTOCOL <SERIAL5 _PROTOCOL>` to '23'
+The HD VTX connector contains UART5 RX for SBUS. To use this connector for SBUS set [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection)
+to something other than '23' and set [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) to '23'
 
 ## PWM Output
 
@@ -84,7 +84,7 @@ The AIRBRAINH743 has builtin compass. You can also attach an external compass us
 
 ## Loading Firmware
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "AIRBRAINH743".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "AIRBRAINH743".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

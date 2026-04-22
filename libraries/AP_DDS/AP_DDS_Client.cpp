@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#include <stdio.h>
 #include <cstdio>
 
 #include "AP_DDS_config.h"

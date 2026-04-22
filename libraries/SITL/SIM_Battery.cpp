@@ -120,6 +120,25 @@ void Battery::setup(float _capacity_Ah, float _resistance, float _max_voltage)
     capacity_Ah = _capacity_Ah;
     resistance = _resistance;
     max_voltage = _max_voltage;
+
+    voltage_set = max_voltage;
+    voltage_filter.reset(voltage_set);
+    set_initial_SoC(voltage_set);
+}
+
+void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
+{
+    const bool reset_not_needed = (is_equal(voltage_set, desired_voltage)
+                                   && is_equal(capacity_Ah, desired_capacity_Ah));
+    if (reset_not_needed) {
+        return;
+    }
+
+    capacity_Ah = desired_capacity_Ah;
+    // a negative desired voltage is unexpected, but not problematic
+    voltage_set = MIN(desired_voltage, max_voltage);
+    voltage_filter.reset(voltage_set);
+    set_initial_SoC(voltage_set);
 }
 
 void Battery::init_voltage(float voltage)
@@ -136,13 +155,7 @@ void Battery::init_capacity(float capacity)
     set_initial_SoC(voltage_set);
 }
 
-void Battery::set_current(float current)
-{
-    const uint64_t now_us = AP_HAL::micros64();
-    set_current(current, now_us);
-}
-
-void Battery::set_current(float current, uint64_t now_us)
+void Battery::consume_energy(float current_amps, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
     float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
@@ -151,11 +164,11 @@ void Battery::set_current(float current, uint64_t now_us)
         dt = 0;
     }
     last_us = now_us;
-    float delta_Ah = current * dt / 3600;
+    float delta_Ah = current_amps * dt / 3600;
     remaining_Ah -= delta_Ah;
     remaining_Ah = MAX(0, remaining_Ah);
 
-    float voltage_delta = current * resistance;
+    float voltage_delta = current_amps * resistance;
     float voltage;
     if (!is_positive(capacity_Ah)) {
         voltage = voltage_set;
@@ -165,17 +178,19 @@ void Battery::set_current(float current, uint64_t now_us)
 
     voltage_filter.apply(voltage, dt);
 
-    {
-        const uint64_t temperature_dt = now_us - temperature.last_update_us;
-        temperature.last_update_us = now_us;
-        // 1 amp*1 second == 0.1 degrees of energy.  Did those units hurt?
-        temperature.kelvin += 0.1 * current * temperature_dt * 0.000001;
-        // decay temperature at some %second towards ambient
-        temperature.kelvin -= (temperature.kelvin - 273) * 0.10 * temperature_dt * 0.000001;
-    }
+    update_temperature(current_amps, now_us);
 }
 
-float Battery::get_voltage(void) const
+void Battery::update_temperature(float current_amps, uint64_t now_us)
 {
-    return voltage_filter.get();
+    const uint64_t temperature_dt = now_us - temperature.last_update_us;
+    temperature.last_update_us = now_us;
+    // thermal_capacity value chosen to match previous steady-state behavior at 28amps
+    // (reminder: thermal_capacity = mass * specific_heat)
+    constexpr float thermal_capacity = 2.8f;  // watt*seconds/degC
+    constexpr float inverse_of_thermal_capacity = 1 / thermal_capacity;  // use inverse so we can multiply, not divide
+    const float temp_increase = (current_amps * current_amps) * resistance * inverse_of_thermal_capacity * (temperature_dt * 0.000001);
+    // decay temperature at some %second towards ambient
+    const float temp_decrease = (temperature.kelvin - 273.15f) * 0.10 * temperature_dt * 0.000001;
+    temperature.kelvin += (temp_increase - temp_decrease);
 }

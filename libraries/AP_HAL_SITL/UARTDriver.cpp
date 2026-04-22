@@ -772,7 +772,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
             }
 
             // feed data into CSV Reader, handle new state:
-            const auto retcode = logic_async_csv.csvreader.feed(c);
+            auto retcode = logic_async_csv.csvreader.feed(c);
             switch (retcode) {
             case AP_CSVReader::RetCode::OK:
                 continue;
@@ -791,7 +791,11 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
                     if (!logic_async_csv.done_first_line) {
                         break;
                     }
-                    logic_async_csv.loaded_data.b = (char_to_hex(logic_async_csv.term[2]) << 4) | char_to_hex(logic_async_csv.term[3]);
+                    if (!hex_twochars_to_uint8((const char*)&logic_async_csv.term[2], logic_async_csv.loaded_data.b)) {
+                        // invalid character
+                        retcode = AP_CSVReader::RetCode::ERROR;
+                        return 0;
+                    }
                     break;
                 case 2:  // error
                 case 3:  // framing error

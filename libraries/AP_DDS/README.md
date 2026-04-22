@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Ardupilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS 2 node, an eProsima Integration Service, and the MicroXRCE Agent. The two systems communicate over serial or UDP.
+ArduPilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS 2 node, an eProsima Integration Service, and the MicroXRCE Agent. The two systems communicate over serial or UDP.
 
 ```mermaid
 ---
@@ -12,7 +12,7 @@ graph LR
 
   subgraph Linux Computer
 
-    subgraph Ardupilot SITL
+    subgraph ArduPilot SITL
       veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
       xrceClient <--> port1[udp:2019]
     end
@@ -35,7 +35,7 @@ graph LR
 
   subgraph Linux Computer
 
-    subgraph Ardupilot SITL
+    subgraph ArduPilot SITL
       veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
       xrceClient <--> port1[devUSB1]
     end
@@ -52,7 +52,7 @@ graph LR
 
 ## Installation
 
-While DDS support in Ardupilot is mostly through git submodules,
+While DDS support in ArduPilot is mostly through git submodules,
 you must install Micro XRCE DDS Gen and create a workspace.
 
 Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html)
@@ -97,7 +97,7 @@ param set DDS_ENABLE 0
 REBOOT
 ```
 
-## Using the ROS 2 CLI to Read Ardupilot Data
+## Using the ROS 2 CLI to Read ArduPilot Data
 
 After your setup is complete, do the following:
 
@@ -146,7 +146,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
 
   ```console
-  # assuming we are using /dev/pts/1 for Ardupilot SITL
+  # assuming we are using /dev/pts/1 for ArduPilot SITL
   sim_vehicle.py -v ArduPlane -DG --console --enable-DDS -A "--serial1=uart:/dev/pts/1"
   ```
 
@@ -310,9 +310,9 @@ publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stam
 
 ## Contributing to `AP_DDS` library
 
-### Adding DDS messages to Ardupilot
+### Adding DDS messages to ArduPilot
 
-Unlike the use of ROS 2 `.msg` files, since Ardupilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
+Unlike the use of ROS 2 `.msg` files, since ArduPilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
 This package is intended to work with any `.idl` file complying with those extensions.
 
 Over time, these restrictions will ideally go away.

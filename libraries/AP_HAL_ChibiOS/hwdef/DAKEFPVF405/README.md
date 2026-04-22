@@ -44,17 +44,17 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART2 RX input. It supports all unidirectional serial RC protocols except PPM and SBUS. The SBUS pin is inverted and applies to R2 for SBUS support.
 
-- FPort requires an external bi-directional inverter attached to T2 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to 4 (half-duplex).  See :ref:`common-FPort-receivers`.
+- FPort requires an external bi-directional inverter attached to T2 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to 4 (half-duplex).  See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF/ELRS uses RX2/TX2.
-- SRXL2 requires a connection to T2 and automatically provides telemetry.  Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- SRXL2 requires a connection to T2 and automatically provides telemetry.  Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using an unused UART, such as the TX5 pin (UART5 transmit).
 You need to set the following parameters to enable support for FrSky S.PORT:
 
-- :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>` 10
-- :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` 7
+- [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) 10
+- [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) 7
 
 ## PWM Output
 
@@ -87,7 +87,7 @@ BATT_AMP_PERVLT=83.3
 
 ## RSSI
 
-- ADC Pin 12 -> Analog RSSI voltage monitoring. Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` = 12. For RSSI embedded in digital RC protocols like CRSF, set :ref:`RSSI_TYPE<RSSI_TYPE>` = 3
+- ADC Pin 12 -> Analog RSSI voltage monitoring. Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 1 and [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) = 12. For RSSI embedded in digital RC protocols like CRSF, set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 3
 
 ## Compass
 
@@ -104,7 +104,7 @@ GPIO 82 controls the camera output to the connectors marked "CAM1" and "CAM2". S
 
 ## Loading Firmware
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "DAKEFPVF405".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "DAKEFPVF405".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

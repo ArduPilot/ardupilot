@@ -42,16 +42,16 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 - SERIAL3 -> UART5  (GPS)
 - SERIAL4 -> USART3 (User) (TX DMA capable)
 - SERIAL5 -> USART6 (User) (TX DMA capable)
-- SERIAL6 -> USART2(DMA Capable) (RX2 normally only used for single wire RC inputs (SBUS)PPM,etc.)t, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<>` =1)
+- SERIAL6 -> USART2(DMA Capable) (RX2 normally only used for single wire RC inputs (SBUS)PPM,etc.)t, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) =1)
 
 ## RC Input
 
 RC input is configured on the RX2 pin (inverted and sent to UART2_RX). It supports all single wire RC
-protocols except serial protocols such as CRSF, ELRS, etc. Instead, these devices can be connected using both TX2 and RX2 if if :ref:`BRD_ALT_CONFIG<BRD_ALT_CONFIG>` =1 and :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` set to "23".
+protocols except serial protocols such as CRSF, ELRS, etc. Instead, these devices can be connected using both TX2 and RX2 if if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) =1 and [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) set to "23".
 
 ## OSD Support
 
-The CSKY405 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such as DJI or DisplayPort is supported using USART6 or any other free Uaet. See :ref:`common-msp-osd-overview-4.2` for more info.
+The CSKY405 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such as DJI or DisplayPort is supported using USART6 or any other free Uaet. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 

@@ -169,15 +169,31 @@ template<typename s, size_t t> struct assert_storage_size {
 */
 bool is_bounded_int32(int32_t value, int32_t lower_bound, int32_t upper_bound);
 
-bool hex_to_uint8(uint8_t a, uint8_t &res);  // return the uint8 value of an ascii hex character
+bool WARN_IF_UNUSED hex_char_to_nibble(uint8_t a, uint8_t &res);  // return the uint8 value of an ascii hex character
+
+/*
+  decode two hex characters into a byte.
+  e.g. hex_twochars_to_uint8("3F", res) -> res = 0x3F
+ */
+bool WARN_IF_UNUSED hex_twochars_to_uint8(const char s[2], uint8_t &res);
+
+/*
+  decode num_pairs pairs of hex characters into bytes at out[]
+ */
+bool WARN_IF_UNUSED hex_charpairs_to_uint8s(const char *s, uint8_t num_pairs, uint8_t *out);
+
+/*
+  decode len hex characters into a uint32_t, treating each character
+  as a nibble (most-significant first).
+  e.g. hex_chars_to_uint32("1A2B", 4, out) -> out = 0x1A2B
+ */
+bool WARN_IF_UNUSED hex_chars_to_uint32(const char *s, uint8_t len, uint32_t &out);
 
 /*
   strncpy without the warning for not leaving room for nul termination
  */
 size_t strncpy_noterm(char *dest, const char *src, size_t n);
 
-// return the numeric value of an ascii hex character
-uint8_t char_to_hex(char a);
 
 /*
   Bit manipulation

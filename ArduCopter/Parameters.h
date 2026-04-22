@@ -316,12 +316,12 @@ public:
         //
         // 200: flight modes
         //
-        k_param_flight_mode1 = 200,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
+        k_param_flight_modes0 = 200,
+        k_param_flight_modes1,
+        k_param_flight_modes2,
+        k_param_flight_modes3,
+        k_param_flight_modes4,
+        k_param_flight_modes5,
         k_param_simple_modes,
         k_param_flight_mode_chan,
         k_param_initial_mode,
@@ -402,31 +402,58 @@ public:
     AP_Enum<ModeRTL::RTLAltType> rtl_alt_type;
 #endif
 
-    AP_Int8         failsafe_gcs;               // ground station failsafe behavior
+    // GCS failsafe definitions (FS_GCS_ENABLE parameter)
+    enum class FS_GCS_Action {
+        DISABLED                 = 0,
+        ALWAYS_RTL               = 1,
+        CONTINUE_MISSION         = 2,    // Removed in 4.0+, now use fs_options
+        ALWAYS_SMARTRTL_OR_RTL   = 3,
+        ALWAYS_SMARTRTL_OR_LAND  = 4,
+        ALWAYS_LAND              = 5,
+        AUTO_RTL_OR_RTL          = 6,
+        BRAKE_OR_LAND            = 7,
+    };
+
+    AP_Enum<FS_GCS_Action> failsafe_gcs;        // ground station failsafe behavior
     AP_Int16        gps_hdop_good;              // GPS Hdop value at or below this value represent a good position
 
     AP_Int8         super_simple;
 
-    AP_Int8         wp_yaw_behavior;            // controls how the autopilot controls yaw during missions
+    // Yaw behaviours during missions (WP_YAW_BEHAVIOR parameter)
+    enum class WPYawBehavior {
+        NONE                       = 0,
+        LOOK_AT_NEXT_WP            = 1,
+        LOOK_AT_NEXT_WP_EXCEPT_RTL = 2,
+        LOOK_AHEAD                 = 3,
+    };
+
+    AP_Enum<WPYawBehavior> wp_yaw_behavior;     // controls how the autopilot controls yaw during missions
 
 #if MODE_POSHOLD_ENABLED
     AP_Int16        poshold_brake_rate_degs;    // PosHold flight mode's rotation rate during braking in deg/sec
 #endif
 
+    // Throttle failsafe definitions (FS_THR_ENABLE parameter)
+    enum class FS_THR_Action {
+        DISABLED                 = 0,
+        ALWAYS_RTL               = 1,
+        CONTINUE_MISSION         = 2,    // Removed in 4.0+, now use fs_options
+        ALWAYS_LAND              = 3,
+        ALWAYS_SMARTRTL_OR_RTL   = 4,
+        ALWAYS_SMARTRTL_OR_LAND  = 5,
+        AUTO_RTL_OR_RTL          = 6,
+        BRAKE_OR_LAND            = 7,
+    };
+
     // Throttle
     //
-    AP_Int8         failsafe_throttle;
+    AP_Enum<FS_THR_Action> failsafe_throttle;
     AP_Int16        failsafe_throttle_value;
     AP_Int16        throttle_deadzone;
 
     // Flight modes
     //
-    AP_Int8         flight_mode1;
-    AP_Int8         flight_mode2;
-    AP_Int8         flight_mode3;
-    AP_Int8         flight_mode4;
-    AP_Int8         flight_mode5;
-    AP_Int8         flight_mode6;
+    AP_Int8         flight_modes[6];
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
     AP_Int8         initial_mode;
@@ -442,7 +469,16 @@ public:
     AP_Int8         disarm_delay;
 
     AP_Int8         land_repositioning;
-    AP_Int8         fs_ekf_action;
+
+    // EKF failsafe definitions (FS_EKF_ACTION parameter)
+    enum class FS_EKF_Action {
+        REPORT_ONLY          = 0,
+        LAND                 = 1,
+        ALTHOLD              = 2,
+        LAND_EVEN_STABILIZE  = 3,
+    };
+
+    AP_Enum<FS_EKF_Action> fs_ekf_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;

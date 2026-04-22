@@ -60,11 +60,11 @@ The default RC input is configured on the UART2 RX2 input and can be used for al
 
 - SBUS/DSM/SRXL connects to the PPM pad or RX2 pin on the HD VTX connector. PPM pin connected to RX2 via inverter.
 - CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-- FPort requires connection to TX2 and :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX2 and [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 
 ## OSD Support
 
-StellarF4 supports using its internal OSD, and/or DisplayPort on Serial1, by default. See :ref:`common-msp-osd-overview-4.2` for more info.
+StellarF4 supports using its internal OSD, and/or DisplayPort on Serial1, by default. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 

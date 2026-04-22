@@ -1,6 +1,6 @@
 # RockBlock Lua Script
 
-Lua script to send a recieve very basic MAVLink telemetry over a
+Lua script to send and receive very basic MAVLink telemetry over a
 Rockblock SBD satellite modem
 Requires [rockblock2mav](https://github.com/stephendade/rockblock2mav) at the GCS end
 

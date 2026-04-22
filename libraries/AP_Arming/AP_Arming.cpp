@@ -1777,6 +1777,13 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
     }
 #endif
 
+    // Run estop check again, here in the arm checks there is no need
+    // bypass the check if arm emergency stop aux function is setup
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(true, "Motors Emergency Stopped");
+        return false;
+    }
+
     // ensure the GPS drivers are ready on any final changes
     if (check_enabled(Check::GPS_CONFIG)) {
         if (!AP::gps().prepare_for_arming()) {

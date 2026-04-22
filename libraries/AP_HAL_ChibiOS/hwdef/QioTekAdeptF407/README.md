@@ -27,7 +27,7 @@ It is an autopilot used CKS MCU.
 
 ## Pinout
 
-![QioTek AdpetF407 Board](../QioTekAdeptF407/adept_f407.jpg "QioTek AdpetF407")
+![QioTek AdeptF407 Board](../QioTekAdeptF407/adept_f407.jpg "QioTek AdeptF407")
 
 ## Connectors
 
@@ -164,11 +164,11 @@ RC input is configured on the RCIN pin by PA15 TIM2_CH1 TIM2 , at one end of the
 
 ## OSD Support
 
-QioTek AdpetF407 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+QioTek AdeptF407 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
-The QioTek AdpetF407 AIO supports up to 12 PWM outputs. All 14 PWM outputs have GND on the top row, 5V on the middle row and signal on the bottom row.
+The QioTek AdeptF407 AIO supports up to 12 PWM outputs. All 14 PWM outputs have GND on the top row, 5V on the middle row and signal on the bottom row.
 
 The 12 PWM outputs are in 3 groups:
 
@@ -206,7 +206,7 @@ The built-in BEC 5V output has a starting voltage of 2S, and 9V/12V has a starti
 
 ## Compass
 
-The QioTek AdpetF407 has a builtin QMC5883 compass. Due to potential interference the board is usually used with an external I2C compass as part of a GPS/Compass combination.
+The QioTek AdeptF407 has a builtin QMC5883 compass. Due to potential interference the board is usually used with an external I2C compass as part of a GPS/Compass combination.
 
 ## Loading Firmware
 
