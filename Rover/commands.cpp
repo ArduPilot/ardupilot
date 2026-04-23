@@ -3,6 +3,10 @@
 // set ahrs home to current location from inertial-nav location
 bool Rover::set_home_to_current_location(bool lock)
 {
+    if (!ahrs.has_origin()) {
+        // EKF3 will return GPS position and "true" if there is no origin
+        return false;
+    }
     Location temp_loc;
     if (ahrs.have_inertial_nav() && ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
