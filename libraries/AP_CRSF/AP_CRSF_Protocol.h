@@ -192,8 +192,11 @@ public:
     };
 
     // CRSF_FRAMETYPE_MAVLINK_ENVELOPE
+    // Chunk fields are zero-based indexes per the CRSF spec (tbs-crsf-spec):
+    // high nibble is the last chunk index, low nibble is the current chunk
+    // index. A single unchunked message is encoded as chunk_info == 0x00.
     struct PACKED MavlinkEnvelopeFrame {
-        uint8_t chunk_info;   // high nibble = total_chunks, low nibble = current_chunk
+        uint8_t chunk_info;
         uint8_t data_size;    // size of data in this chunk (max 58)
         uint8_t data[58];
         uint8_t total_chunks() const { return (chunk_info >> 4) & 0x0F; }

@@ -57,11 +57,15 @@ protected:
 
     // --- general helpers ---
 
+    // Encodes a CRSF MAVLink envelope chunk. Per the spec the high nibble on
+    // the wire is the zero-based index of the last chunk (count - 1), so we
+    // take a 1-based chunk_count for test ergonomics and encode last-index.
     static void build_chunk(uint8_t *payload, uint8_t &len,
-                            uint8_t total_chunks, uint8_t current_chunk,
+                            uint8_t chunk_count, uint8_t current_chunk,
                             const uint8_t *data, uint8_t data_size)
     {
-        payload[0] = ((total_chunks & 0x0F) << 4) | (current_chunk & 0x0F);
+        const uint8_t last_chunk = chunk_count - 1;
+        payload[0] = ((last_chunk & 0x0F) << 4) | (current_chunk & 0x0F);
         payload[1] = data_size;
         memcpy(&payload[2], data, data_size);
         len = data_size + 2;
@@ -76,6 +80,44 @@ protected:
         }
         return uart_read(buf, to_read);
     }
+
+    // construct a minimal MAVLink v1 frame with the given payload size.
+    // payload bytes are filled with an increasing pattern; CRC bytes are zero
+    // (we don't validate CRCs in these tests). returns total wire size.
+    static uint16_t make_v1(uint8_t *buf, uint8_t payload_len, uint8_t fill_seed = 0)
+    {
+        buf[0] = 0xFE;
+        buf[1] = payload_len;
+        buf[2] = 0;  // seq
+        buf[3] = 1;  // sysid
+        buf[4] = 1;  // compid
+        buf[5] = 0;  // msgid (HEARTBEAT)
+        for (uint8_t i = 0; i < payload_len; i++) {
+            buf[6 + i] = fill_seed + i;
+        }
+        buf[6 + payload_len] = 0;
+        buf[7 + payload_len] = 0;
+        return 8 + payload_len;
+    }
+
+    // construct a minimal unsigned MAVLink v2 frame with the given payload size.
+    static uint16_t make_v2(uint8_t *buf, uint16_t payload_len, uint8_t fill_seed = 0)
+    {
+        buf[0] = 0xFD;
+        buf[1] = payload_len & 0xFF;
+        buf[2] = 0;  // incompat_flags (no signature)
+        buf[3] = 0;  // compat_flags
+        buf[4] = 0;  // seq
+        buf[5] = 1;  // sysid
+        buf[6] = 1;  // compid
+        buf[7] = 0; buf[8] = 0; buf[9] = 0;  // msgid
+        for (uint16_t i = 0; i < payload_len; i++) {
+            buf[10 + i] = fill_seed + (i & 0xFF);
+        }
+        buf[10 + payload_len] = 0;
+        buf[11 + payload_len] = 0;
+        return 12 + payload_len;
+    }
 };
 
 // ===========================================================================
@@ -84,20 +126,23 @@ protected:
 
 TEST(CRSFProtocol, MavlinkEnvelopeChunkInfoParsing)
 {
+    // chunk_info nibbles are zero-based indexes per the CRSF spec:
+    //   high nibble = last chunk index (count - 1)
+    //   low nibble  = current chunk index
     AP_CRSF_Protocol::MavlinkEnvelopeFrame frame {};
-    // total=3, current=0
+    // 4 chunks total, this is chunk 0 -> 0x30
     frame.chunk_info = 0x30;
     EXPECT_EQ(frame.total_chunks(), 3);
     EXPECT_EQ(frame.current_chunk(), 0);
 
-    // total=15, current=7
+    // 16 chunks total, this is chunk 7 -> 0xF7
     frame.chunk_info = 0xF7;
     EXPECT_EQ(frame.total_chunks(), 15);
     EXPECT_EQ(frame.current_chunk(), 7);
 
-    // total=1, current=0  (single chunk)
-    frame.chunk_info = 0x10;
-    EXPECT_EQ(frame.total_chunks(), 1);
+    // single-chunk message -> 0x00
+    frame.chunk_info = 0x00;
+    EXPECT_EQ(frame.total_chunks(), 0);
     EXPECT_EQ(frame.current_chunk(), 0);
 }
 
@@ -213,21 +258,6 @@ TEST_F(TestCRSFMAVLink, MismatchedTotalChunksRejected)
     EXPECT_EQ(uart_available(), 0u);
 }
 
-TEST_F(TestCRSFMAVLink, ZeroTotalChunksRejected)
-{
-    uint8_t data[10];
-    memset(data, 0xDD, sizeof(data));
-
-    uint8_t payload[62];
-    uint8_t len;
-
-    build_chunk(payload, len, 0, 0, data, 10);
-    mavlink.process_frame(payload, len);
-
-    EXPECT_EQ(uart_available(), 0u);
-    EXPECT_FALSE(reassembly_active());
-}
-
 TEST_F(TestCRSFMAVLink, ChunkCurrentExceedsTotalRejected)
 {
     uint8_t data[10];
@@ -308,11 +338,11 @@ TEST_F(TestCRSFMAVLink, FrameTooShortIgnored)
 
 TEST_F(TestCRSFMAVLink, TxSingleChunk)
 {
+    // 20-byte MAVLink v1 frame: 8 header/crc + 12 payload
     uint8_t msg[20];
-    for (uint8_t i = 0; i < sizeof(msg); i++) {
-        msg[i] = i + 0x10;
-    }
-    uart_write(msg, sizeof(msg));
+    const uint16_t msg_size = make_v1(msg, 12, 0x10);
+    EXPECT_EQ(msg_size, sizeof(msg));
+    uart_write(msg, msg_size);
 
     EXPECT_TRUE(mavlink.tx_pending());
 
@@ -320,15 +350,11 @@ TEST_F(TestCRSFMAVLink, TxSingleChunk)
     uint8_t len = 0;
     EXPECT_TRUE(mavlink.get_telem_frame(payload, len));
 
-    uint8_t total = (payload[0] >> 4) & 0x0F;
-    uint8_t current = payload[0] & 0x0F;
-    uint8_t data_size = payload[1];
-
-    EXPECT_EQ(total, 1);
-    EXPECT_EQ(current, 0);
-    EXPECT_EQ(data_size, sizeof(msg));
-    EXPECT_EQ(len, sizeof(msg) + 2);
-    EXPECT_EQ(memcmp(&payload[2], msg, sizeof(msg)), 0);
+    // single-chunk messages use chunk_info == 0x00 to match the inbound convention
+    EXPECT_EQ(payload[0], 0x00);
+    EXPECT_EQ(payload[1], msg_size);
+    EXPECT_EQ(len, msg_size + 2);
+    EXPECT_EQ(memcmp(&payload[2], msg, msg_size), 0);
 
     EXPECT_FALSE(mavlink.tx_pending());
     EXPECT_FALSE(mavlink.get_telem_frame(payload, len));
@@ -336,18 +362,17 @@ TEST_F(TestCRSFMAVLink, TxSingleChunk)
 
 TEST_F(TestCRSFMAVLink, TxMultipleChunks)
 {
-    // 100 bytes — 2 chunks: 58 + 42
+    // 100-byte MAVLink v2 frame: 12 header/crc + 88 payload → 2 chunks of 58+42
     uint8_t msg[100];
-    for (uint8_t i = 0; i < sizeof(msg); i++) {
-        msg[i] = i;
-    }
-    uart_write(msg, sizeof(msg));
+    const uint16_t msg_size = make_v2(msg, 88, 0x00);
+    EXPECT_EQ(msg_size, sizeof(msg));
+    uart_write(msg, msg_size);
 
-    // chunk 0
+    // chunk 0 — per spec: last-chunk-index = 1 for a 2-chunk message
     uint8_t payload[62];
     uint8_t len = 0;
     EXPECT_TRUE(mavlink.get_telem_frame(payload, len));
-    EXPECT_EQ((payload[0] >> 4) & 0x0F, 2);
+    EXPECT_EQ((payload[0] >> 4) & 0x0F, 1);
     EXPECT_EQ(payload[0] & 0x0F, 0);
     EXPECT_EQ(payload[1], 58);
     EXPECT_EQ(len, 60);
@@ -355,7 +380,7 @@ TEST_F(TestCRSFMAVLink, TxMultipleChunks)
 
     // chunk 1
     EXPECT_TRUE(mavlink.get_telem_frame(payload, len));
-    EXPECT_EQ((payload[0] >> 4) & 0x0F, 2);
+    EXPECT_EQ((payload[0] >> 4) & 0x0F, 1);
     EXPECT_EQ(payload[0] & 0x0F, 1);
     EXPECT_EQ(payload[1], 42);
     EXPECT_EQ(len, 44);
@@ -366,20 +391,77 @@ TEST_F(TestCRSFMAVLink, TxMultipleChunks)
 
 TEST_F(TestCRSFMAVLink, TxExactlyOneChunkBoundary)
 {
-    // exactly 58 bytes — one full chunk
+    // exactly 58 bytes — one full chunk: v1 frame with 50 payload
     uint8_t msg[58];
-    memset(msg, 0x42, sizeof(msg));
-    uart_write(msg, sizeof(msg));
+    const uint16_t msg_size = make_v1(msg, 50, 0x42);
+    EXPECT_EQ(msg_size, sizeof(msg));
+    uart_write(msg, msg_size);
 
     uint8_t payload[62];
     uint8_t len = 0;
     EXPECT_TRUE(mavlink.get_telem_frame(payload, len));
-    EXPECT_EQ((payload[0] >> 4) & 0x0F, 1);
-    EXPECT_EQ(payload[0] & 0x0F, 0);
+    EXPECT_EQ(payload[0], 0x00);
     EXPECT_EQ(payload[1], 58);
     EXPECT_EQ(memcmp(&payload[2], msg, 58), 0);
 
     EXPECT_FALSE(mavlink.get_telem_frame(payload, len));
+}
+
+TEST_F(TestCRSFMAVLink, TxEmitsOneMessagePerEnvelope)
+{
+    // two back-to-back MAVLink messages in the TX buffer must be emitted as
+    // two separate envelopes (not concatenated into a multi-chunk envelope).
+    uint8_t msg_a[21];  // v2 HEARTBEAT-sized
+    uint8_t msg_b[43];  // v1 SYS_STATUS-sized
+    const uint16_t a_size = make_v2(msg_a, 9, 0xA0);
+    const uint16_t b_size = make_v1(msg_b, 35, 0xB0);
+    EXPECT_EQ(a_size, sizeof(msg_a));
+    EXPECT_EQ(b_size, sizeof(msg_b));
+    uart_write(msg_a, a_size);
+    uart_write(msg_b, b_size);
+
+    uint8_t payload[62];
+    uint8_t len = 0;
+
+    // first envelope: msg_a, single chunk
+    EXPECT_TRUE(mavlink.get_telem_frame(payload, len));
+    EXPECT_EQ(payload[0], 0x00);
+    EXPECT_EQ(payload[1], a_size);
+    EXPECT_EQ(memcmp(&payload[2], msg_a, a_size), 0);
+
+    // second envelope: msg_b, single chunk — not concatenated with msg_a
+    EXPECT_TRUE(mavlink.get_telem_frame(payload, len));
+    EXPECT_EQ(payload[0], 0x00);
+    EXPECT_EQ(payload[1], b_size);
+    EXPECT_EQ(memcmp(&payload[2], msg_b, b_size), 0);
+
+    EXPECT_FALSE(mavlink.tx_pending());
+}
+
+TEST_F(TestCRSFMAVLink, TxResyncsOnGarbage)
+{
+    // junk bytes in the TX buffer must not stall; they should be discarded
+    // until a valid STX is found.
+    uint8_t junk[] = {0x00, 0x11, 0x22, 0x33};
+    uart_write(junk, sizeof(junk));
+
+    uint8_t msg[21];
+    const uint16_t msg_size = make_v2(msg, 9, 0xC0);
+    uart_write(msg, msg_size);
+
+    uint8_t payload[62];
+    uint8_t len = 0;
+
+    // repeatedly pump: junk should be drained, then the real message emitted
+    for (int i = 0; i < 10 && mavlink.tx_pending(); i++) {
+        if (mavlink.get_telem_frame(payload, len)) {
+            EXPECT_EQ(payload[0], 0x00);
+            EXPECT_EQ(payload[1], msg_size);
+            EXPECT_EQ(memcmp(&payload[2], msg, msg_size), 0);
+            return;
+        }
+    }
+    FAIL() << "did not resync to valid MAVLink frame";
 }
 
 TEST_F(TestCRSFMAVLink, TxEmptyProducesFalse)
@@ -396,22 +478,22 @@ TEST_F(TestCRSFMAVLink, TxEmptyProducesFalse)
 
 TEST_F(TestCRSFMAVLink, RoundTripSmallMessage)
 {
+    // 30-byte MAVLink v1 frame: 8 header/crc + 22 payload
     uint8_t original[30];
-    for (uint8_t i = 0; i < sizeof(original); i++) {
-        original[i] = i + 0x50;
-    }
+    const uint16_t original_size = make_v1(original, 22, 0x50);
+    EXPECT_EQ(original_size, sizeof(original));
 
     // RX: inject as a single 0xAA chunk
     uint8_t payload[62];
     uint8_t len;
-    build_chunk(payload, len, 1, 0, original, sizeof(original));
+    build_chunk(payload, len, 1, 0, original, original_size);
     mavlink.process_frame(payload, len);
 
     // read from virtual UART
     uint8_t rx[30];
     uint32_t n = read_all_rx(rx, sizeof(rx));
-    EXPECT_EQ(n, sizeof(original));
-    EXPECT_EQ(memcmp(original, rx, sizeof(original)), 0);
+    EXPECT_EQ(n, original_size);
+    EXPECT_EQ(memcmp(original, rx, original_size), 0);
 
     // write back as a response
     uart_write(rx, n);
@@ -429,24 +511,23 @@ TEST_F(TestCRSFMAVLink, RoundTripSmallMessage)
         }
     }
 
-    EXPECT_EQ(reassembled_len, sizeof(original));
-    EXPECT_EQ(memcmp(original, reassembled, sizeof(original)), 0);
+    EXPECT_EQ(reassembled_len, original_size);
+    EXPECT_EQ(memcmp(original, reassembled, original_size), 0);
 }
 
 TEST_F(TestCRSFMAVLink, RoundTripLargeMessage)
 {
-    // 280-byte message (max MAVLink2 frame)
-    uint8_t original[280];
-    for (uint16_t i = 0; i < sizeof(original); i++) {
-        original[i] = static_cast<uint8_t>(i & 0xFF);
-    }
+    // MAVLink v2 max unsigned frame: 10 header + 255 payload + 2 CRC = 267 bytes
+    uint8_t original[267];
+    const uint16_t original_size = make_v2(original, 255, 0x00);
+    EXPECT_EQ(original_size, sizeof(original));
 
     // RX: chunk into 58-byte pieces
-    uint8_t total_chunks = (sizeof(original) + 57) / 58;  // = 5
+    uint8_t total_chunks = (original_size + 57) / 58;  // = 5
     for (uint8_t c = 0; c < total_chunks; c++) {
         uint16_t offset = static_cast<uint16_t>(c) * 58;
-        uint8_t chunk_size = (sizeof(original) - offset < 58)
-                                 ? static_cast<uint8_t>(sizeof(original) - offset)
+        uint8_t chunk_size = (original_size - offset < 58)
+                                 ? static_cast<uint8_t>(original_size - offset)
                                  : 58;
 
         uint8_t payload[62];
@@ -458,8 +539,8 @@ TEST_F(TestCRSFMAVLink, RoundTripLargeMessage)
     // verify full message arrived
     uint8_t rx[280];
     uint32_t n = read_all_rx(rx, sizeof(rx));
-    EXPECT_EQ(n, sizeof(original));
-    EXPECT_EQ(memcmp(original, rx, sizeof(original)), 0);
+    EXPECT_EQ(n, original_size);
+    EXPECT_EQ(memcmp(original, rx, original_size), 0);
 
     // write it back and re-chunk via TX
     uart_write(rx, n);
@@ -478,9 +559,9 @@ TEST_F(TestCRSFMAVLink, RoundTripLargeMessage)
         }
     }
 
-    EXPECT_EQ(reassembled_len, sizeof(original));
+    EXPECT_EQ(reassembled_len, original_size);
     EXPECT_EQ(chunk_count, total_chunks);
-    EXPECT_EQ(memcmp(original, reassembled, sizeof(original)), 0);
+    EXPECT_EQ(memcmp(original, reassembled, original_size), 0);
 }
 
 AP_GTEST_PANIC()

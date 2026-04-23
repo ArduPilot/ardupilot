@@ -70,6 +70,7 @@ private:
         // methods used by CRSF side
         uint32_t inject_rx(const uint8_t *data, uint32_t len);
         uint32_t drain_tx(uint8_t *data, uint32_t len);
+        uint32_t peek_tx(uint8_t *data, uint32_t len);
         uint32_t tx_available() const;
 
         // UARTDriver interface

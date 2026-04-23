@@ -72,6 +72,11 @@ uint32_t AP_CRSF_MAVLink::VirtualUARTDriver::drain_tx(uint8_t *data, uint32_t le
     return _tx_buf.read(data, len);
 }
 
+uint32_t AP_CRSF_MAVLink::VirtualUARTDriver::peek_tx(uint8_t *data, uint32_t len)
+{
+    return _tx_buf.peekbytes(data, len);
+}
+
 uint32_t AP_CRSF_MAVLink::VirtualUARTDriver::tx_available() const
 {
     return _tx_buf.available();
@@ -123,11 +128,15 @@ void AP_CRSF_MAVLink::process_frame(const uint8_t *payload, uint8_t len)
     const uint8_t chunk_info = payload[0];
     const uint8_t data_size = payload[1];
     const uint8_t *data = &payload[2];
-    const uint8_t total_chunks = (chunk_info >> 4) & 0x0F;
+    // per CRSF 0xAA envelope spec: chunk fields are zero-based. High nibble
+    // is the index of the LAST chunk (not a 1-based count); a single
+    // unchunked message is therefore chunk_info == 0x00.
+    const uint8_t last_chunk = (chunk_info >> 4) & 0x0F;
     const uint8_t current_chunk = chunk_info & 0x0F;
+    const uint8_t total_chunks = last_chunk + 1;
 
     // validate
-    if (total_chunks == 0 || current_chunk >= total_chunks) {
+    if (current_chunk > last_chunk) {
         _reassembly.reset();
         return;
     }
@@ -193,15 +202,45 @@ bool AP_CRSF_MAVLink::get_telem_frame(uint8_t *payload, uint8_t &len)
         return false;
     }
 
-    // if no message currently being chunked, try to read one from TX buffer
+    // if no message currently being chunked, pull exactly one MAVLink
+    // message from the TX buffer so one envelope carries one message.
     if (!_tx_state.active) {
-        uint32_t avail = _uart.tx_available();
-        if (avail == 0) {
+        uint8_t hdr[3];
+        const uint32_t peeked = _uart.peek_tx(hdr, sizeof(hdr));
+        if (peeked < 2) {
             return false;
         }
-        uint32_t to_read = MIN(avail, static_cast<uint32_t>(MAVLINK_MAX_FRAME));
-        _tx_state.msg_len = _uart.drain_tx(_tx_state.buf, to_read);
-        if (_tx_state.msg_len == 0) {
+
+        uint16_t msg_len = 0;
+        if (hdr[0] == 0xFE) {
+            // MAVLink v1: STX + LEN + SEQ + SYS + COMP + MSGID + payload + 2-byte CRC
+            msg_len = 8 + hdr[1];
+        } else if (hdr[0] == 0xFD) {
+            if (peeked < 3) {
+                return false;
+            }
+            // MAVLink v2: 10-byte header + payload + 2-byte CRC + optional 13-byte signature
+            msg_len = 12 + hdr[1] + ((hdr[2] & 0x01) ? 13 : 0);
+        } else {
+            // not a valid STX; discard one byte to resync
+            uint8_t discard;
+            _uart.drain_tx(&discard, 1);
+            return false;
+        }
+
+        if (msg_len > MAVLINK_MAX_FRAME) {
+            // malformed length; discard one byte and resync
+            uint8_t discard;
+            _uart.drain_tx(&discard, 1);
+            return false;
+        }
+        if (_uart.tx_available() < msg_len) {
+            // not the whole message yet
+            return false;
+        }
+
+        _tx_state.msg_len = _uart.drain_tx(_tx_state.buf, msg_len);
+        if (_tx_state.msg_len != msg_len) {
             return false;
         }
         _tx_state.total_chunks = (_tx_state.msg_len + MAX_CHUNK_DATA - 1) / MAX_CHUNK_DATA;
@@ -214,7 +253,10 @@ bool AP_CRSF_MAVLink::get_telem_frame(uint8_t *payload, uint8_t &len)
     const uint16_t offset = static_cast<uint16_t>(chunk_idx) * MAX_CHUNK_DATA;
     uint8_t data_size = MIN(static_cast<uint16_t>(_tx_state.msg_len - offset), static_cast<uint16_t>(MAX_CHUNK_DATA));
 
-    payload[0] = ((_tx_state.total_chunks & 0x0F) << 4) | (chunk_idx & 0x0F);
+    // per CRSF 0xAA envelope spec: high nibble = last chunk index (count-1),
+    // low nibble = current chunk index. Single-chunk messages emit 0x00.
+    const uint8_t last_chunk = _tx_state.total_chunks - 1;
+    payload[0] = ((last_chunk & 0x0F) << 4) | (chunk_idx & 0x0F);
     payload[1] = data_size;
     memcpy(&payload[2], &_tx_state.buf[offset], data_size);
     len = data_size + 2;
