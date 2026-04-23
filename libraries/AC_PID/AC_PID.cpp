@@ -84,14 +84,14 @@ const AP_Param::GroupInfo AC_PID::var_info[] = {
     // @Param: NTF
     // @DisplayName: PID Target notch filter index
     // @Description: PID Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_GROUPINFO("NTF", 15, AC_PID, _notch_T_filter, 0),
 
     // @Param: NEF
     // @DisplayName: PID Error notch filter index
     // @Description: PID Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_GROUPINFO("NEF", 16, AC_PID, _notch_E_filter, 0),
 #endif
