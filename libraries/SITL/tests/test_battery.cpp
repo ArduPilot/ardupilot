@@ -93,8 +93,8 @@ TEST_F(BatteryTest, EnergyConsumption)
 
         const float initial_voltage = battery.get_voltage();
         min_observed_voltage = initial_voltage;
-        const float initial_temperature = battery.get_temperature();
-        float prev_temperature = initial_temperature;
+        const float initial_temperature_degC = battery.get_temperature_degC();
+        float prev_temperature_degC = initial_temperature_degC;
 
         for (float t = 0.0f; t <= test_duration_sec; t+=dt_sec) {
             const uint64_t now_us = initial_us + static_cast<uint64_t>(t * 1e6);
@@ -108,12 +108,12 @@ TEST_F(BatteryTest, EnergyConsumption)
 
             // Confirm temperature rise
             if (is_zero(t)) {
-                EXPECT_FLOAT_EQ(battery.get_temperature(), initial_temperature);
+                EXPECT_FLOAT_EQ(battery.get_temperature_degC(), initial_temperature_degC);
             } else {
                 // Regardless of whether temp is rising (first half of test) or cooling (second half),
                 // it should be somewhat higher than the initial temp.
                 // (This test does not set an expectation on how much higher.)
-                EXPECT_GT(battery.get_temperature(), initial_temperature);
+                EXPECT_GT(battery.get_temperature_degC(), initial_temperature_degC);
             }
 
             // Confirm temperature-change direction
@@ -121,14 +121,14 @@ TEST_F(BatteryTest, EnergyConsumption)
                 if (t < first_half) {
                     // First half: consuming => temperature increasing
                     // (Note: the test parameters are tuned so that the consumption half ends before temp reaches steady-state.)
-                    EXPECT_GT(battery.get_temperature(), prev_temperature);
+                    EXPECT_GT(battery.get_temperature_degC(), prev_temperature_degC);
                 } else {
                     // Second half: resting => temperature decreasing
                     // (Note: the test parameters are tuned so that the test ends before temp returns to steady-state.)
-                    EXPECT_LT(battery.get_temperature(), prev_temperature);
+                    EXPECT_LT(battery.get_temperature_degC(), prev_temperature_degC);
                 }
             }
-            prev_temperature = battery.get_temperature();
+            prev_temperature_degC = battery.get_temperature_degC();
 
             // Confirm voltage drop
             if (is_zero(t) || is_zero(battery.get_capacity())) {

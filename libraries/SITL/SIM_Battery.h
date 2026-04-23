@@ -37,9 +37,7 @@ public:
 
     float get_voltage(void) const { return voltage_filter.get(); }
     float get_capacity(void) const { return capacity_Ah; }
-
-    // return battery temperature in Kelvin:
-    float get_temperature(void) const { return temperature.kelvin; }
+    float get_temperature_degC(void) const { return temperature_degC; }
 
 private:
     float capacity_Ah;
@@ -49,11 +47,8 @@ private:
     float remaining_Ah;
     uint64_t last_us;
 
-    struct {
-        float kelvin = 273;
-        uint64_t last_update_us;
-    } temperature;
-    void update_temperature(float current_amps, uint64_t now_us);
+    float temperature_degC = 0.0f;
+    void update_temperature(float current_amps, float dt);
 
     // 10Hz filter for battery voltage
     LowPassFilterFloat voltage_filter{10};
