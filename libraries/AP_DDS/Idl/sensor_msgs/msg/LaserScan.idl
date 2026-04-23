@@ -1,0 +1,28 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from sensor_msgs/msg/LaserScan.msg
+// generated code does not contain a copyright notice
+#include "std_msgs/msg/Header.idl"
+
+module sensor_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "Single scan from a planar laser range-finder" "\n"
+      "" "\n"
+      "If you have another ranging device with different behavior (e.g. a" "\n"
+      "camera-based rangefinder), please find or create a different message," "\n"
+      "since applications will make fairly laser-specific assumptions about" "\n"
+      "this data")
+    struct LaserScan {
+      std_msgs::msg::Header header;
+      float angle_min;
+      float angle_max;
+      float angle_increment;
+      float time_increment;
+      float scan_time;
+      float range_min;
+      float range_max;
+      sequence<float, 72> ranges;
+      sequence<float, 72> intensities;
+    };
+  };
+};
