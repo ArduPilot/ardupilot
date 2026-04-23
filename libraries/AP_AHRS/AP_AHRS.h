@@ -271,6 +271,8 @@ public:
 
     // returns the inertial navigation origin in lat/lon/alt
     bool get_origin(Location &ret) const WARN_IF_UNUSED;
+    // returns true if the global navigation origin is valid
+    bool has_origin() const WARN_IF_UNUSED { return state.origin_ok; }
 
     bool have_inertial_nav() const;
 
