@@ -139,6 +139,15 @@ public:
         MovingBase mb_params;
 #endif // GPS_MOVING_BASELINE
 
+        // bitmask of options
+        enum class Option : uint16_t {
+            DISABLE_AUTOBAUDING = (1U<<0),
+        };
+        AP_Int16 options;
+        bool option_is_set(Option opt) const {
+            return (options.get() & uint16_t(opt)) != 0;
+        }
+
         static const struct AP_Param::GroupInfo var_info[];
     };
 
