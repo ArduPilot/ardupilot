@@ -39,6 +39,10 @@ void Copter::set_home_to_current_location_inflight() {
 // set_home_to_current_location - set home to current GPS location
 bool Copter::set_home_to_current_location(bool lock) {
     // get current location from EKF
+    if (!ahrs.has_origin()) {
+        // EKF3 will return GPS position and "true" if there is no origin
+        return false;
+    }
     Location temp_loc;
     if (ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
