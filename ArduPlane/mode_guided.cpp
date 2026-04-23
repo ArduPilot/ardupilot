@@ -27,6 +27,12 @@ bool ModeGuided::_enter()
     return true;
 }
 
+void ModeGuided::_exit()
+{
+    // Disable gliding if DDS requested it.
+    plane.TECS_controller.set_gliding_requested_flag(false);
+}
+
 void ModeGuided::update()
 {
 #if HAL_QUADPLANE_ENABLED

@@ -50,6 +50,13 @@ public:
     */
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks) WARN_IF_UNUSED;
 
+    /*
+        Request gliding
+    */
+    virtual bool request_gliding(bool gliding_requested) WARN_IF_UNUSED {
+        return false;
+    }
+
     static AP_ExternalControl *get_singleton(void) WARN_IF_UNUSED {
         return singleton;
     }
