@@ -2139,16 +2139,21 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         // Handle fallback for the case where the DCM or EKF is unable to provide attitude or height data.
         const bool can_use_dcm = dcm.yaw_source_available() || fly_forward;
         const bool can_use_ekf = filt_state.flags.attitude && filt_state.flags.vert_vel && filt_state.flags.vert_pos;
+        const bool disable_dcm_fallback = fly_forward?
+            option_set(Options::DISABLE_DCM_FALLBACK_FW) : option_set(Options::DISABLE_DCM_FALLBACK_VTOL);
         if (!can_use_dcm && can_use_ekf) {
             // no choice - continue to use EKF
             return ret;
         } else if (!can_use_ekf) {
-            // No choice - we have to use DCM
+            // EKF lost attitude, vert_vel, or vert_pos. If user disabled
+            // DCM fallback and EKF still has attitude, keep EKF — only
+            // fall back to DCM for genuine attitude loss.
+            if (disable_dcm_fallback && filt_state.flags.attitude) {
+                return (ret != EKFType::DCM) ? ret : configured_ekf_type();
+            }
             return EKFType::DCM;
         }
 
-        const bool disable_dcm_fallback = fly_forward?
-            option_set(Options::DISABLE_DCM_FALLBACK_FW) : option_set(Options::DISABLE_DCM_FALLBACK_VTOL);
         if (disable_dcm_fallback) {
             // don't fallback
             return ret;
