@@ -98,6 +98,7 @@ repos:
     rev: v0.15.6
     hooks:
     -   id: ruff-check
+        args: [ --fix ]
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
