@@ -11347,7 +11347,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             rngfnd_type=48,
             simname='benewake_tfa1500',
             maxalt=1300,
-            sqalt=1295,
+            sqalt=600,
             sq_at_sqalt=None,
         )
 
