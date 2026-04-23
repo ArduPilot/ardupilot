@@ -15,6 +15,8 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_RSSI/AP_RSSI.h>
+#include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "AP_MSP.h"
 #include "AP_MSP_Telem_Generic.h"
@@ -232,6 +234,67 @@ bool AP_MSP::is_option_enabled(Option option) const
 {
     return (_options & (uint8_t)option) != 0;
 }
+
+#if AP_MSP_RADAR_ENABLED
+void AP_MSP::update_radar_data(const MSP::msp_radar_pos_message_t &msg)
+{
+    if (msg.radar_no < RADAR_MAX_PEERS) {
+        MSP_RadarPeer &peer = _radar_data[msg.radar_no];
+        bool was_present = peer.is_healthy(RADAR_PEER_MISSING_TIME_MS);
+        Location newp(msg.lat, msg.lon, msg.alt, Location::AltFrame::ABSOLUTE);
+        if (!newp.is_zero() && !newp.same_loc_as(peer.location)) {
+            peer.last_update_ms = AP_HAL::millis(); //only update if data is updating
+        }
+        peer.location = newp;
+        bool now_present = peer.is_healthy(RADAR_PEER_MISSING_TIME_MS);
+#if HAL_LOGGING_ENABLED
+        // @LoggerMessage: MSPR
+        // @Description: MSP Radar contact position message
+        // @Field: TimeUS: Time since system startup
+        // @Field: Lat: Contact latitude
+        // @Field: Lon: Contact longitude
+        // @Field: Alt: Contact absolute altitude
+        if (msg.radar_no == 0 && now_present) {
+            AP::logger().Write(
+                "MSPR", "TimeUS,Lat,Lon,Alt", //name, fields
+                "sDUm", "F--B", "QLLi", // units, multiplier, format
+                AP_HAL::micros64(), newp.lat, newp.lng, newp.alt
+            );
+        }
+#endif
+        GCS* gcs = GCS::get_singleton();
+        if (!was_present and now_present) {
+            gcs->send_text(MAV_SEVERITY_INFO, "MSP Radar %c detected", msg.radar_no + 'A');
+        } else if (was_present and !now_present) {
+            gcs->send_text(MAV_SEVERITY_INFO, "MSP Radar %c lost", msg.radar_no + 'A');
+        }
+    }
+}
+
+const MSP_RadarPeer* AP_MSP::get_radar_peer(uint8_t id) const
+{
+    if (id < RADAR_MAX_PEERS && _radar_data[id].is_healthy()) {
+        return &_radar_data[id];
+    }
+    return nullptr;
+}
+
+uint8_t AP_MSP::get_next_healthy_peer(uint8_t current_id) const
+{
+    for (uint8_t i = 1; i < RADAR_MAX_PEERS; i++) {
+        uint8_t next_peer = (current_id + i) % RADAR_MAX_PEERS;
+        if (get_radar_peer(next_peer) != nullptr) {
+            return next_peer;
+        }
+    }
+    return current_id;
+}
+
+bool MSP_RadarPeer::is_healthy(uint32_t fresh_time) const
+{
+    return last_update_ms > (AP_HAL::millis() - fresh_time) && !location.is_zero();
+}
+#endif
 
 namespace AP
 {
