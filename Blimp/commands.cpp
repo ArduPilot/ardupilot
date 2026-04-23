@@ -22,6 +22,10 @@ void Blimp::update_home_from_EKF()
 // set_home_to_current_location_inflight - set home to current GPS location (horizontally) and EKF origin vertically
 void Blimp::set_home_to_current_location_inflight()
 {
+    if (!ahrs.has_origin()) {
+        // EKF3 will return GPS position and "true" if there is no origin
+        return;
+    }
     // get current location from EKF
     Location temp_loc;
     Location ekf_origin;
