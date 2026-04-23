@@ -178,6 +178,8 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
     }
     mode = &newmode;
 
+    mode->enter();
+
     if (mode->requires_armed_servos()) {
         arm_servos();
     } else {
