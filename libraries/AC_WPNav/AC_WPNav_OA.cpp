@@ -242,7 +242,7 @@ bool AC_WPNav_OA::update_wpnav()
                     return false;
                 }
 
-                // Convert global destination to NEU vector and pass directly to position controller
+                // Convert global destination to NED vector and pass directly to position controller
                 Vector2f destination_ne_m;
                 if (!_oa_destination.get_vector_xy_from_origin_NE_m(destination_ne_m)) {
                     // this should never happen because we can only get here if we have an EKF origin
@@ -251,7 +251,7 @@ bool AC_WPNav_OA::update_wpnav()
                 }
                 float target_alt_loc_alt_m = 0;
                 UNUSED_RESULT(target_alt_loc.get_alt_m(target_alt_loc.get_alt_frame(), target_alt_loc_alt_m));
-                Vector3p destination_ned_m{destination_ne_m.x, destination_ne_m.y, target_alt_loc_alt_m};
+                Vector3p destination_ned_m{destination_ne_m.x, destination_ne_m.y, -target_alt_loc_alt_m};
 
                 // pass the desired position directly to the position controller
                 _pos_control.input_pos_NED_m(destination_ned_m, terrain_d_m, 10.0);
