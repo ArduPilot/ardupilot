@@ -1154,7 +1154,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             p7=x.alt_rel,    # alt
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
         )
-        expected_radius = 100
+        REALLY_BAD_FUDGE_FACTOR = 1.15  # FIXME
+        expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
         self.wait_circling_point_with_radius(loc, expected_radius)
 
         self.context_collect('CAMERA_FEEDBACK')
@@ -1589,7 +1590,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         expected_radius = REALLY_BAD_FUDGE_FACTOR * want_radius
         self.set_parameters({
             "RTL_RADIUS": want_radius,
-            "NAVL1_LIM_BANK": 60,
+            "NAVL1_ROLL_MAX": 60,
             "FENCE_ACTION": 1, # AC_FENCE_ACTION_RTL_AND_LAND == 1. mavutil.mavlink.FENCE_ACTION_RTL == 4
         })
 
@@ -1681,7 +1682,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         return_radius = 100
         return_alt = 80
         self.set_parameters({
-            "RTL_RADIUS": return_radius,
+            "WP_LOITER_RAD": return_radius,
             "FENCE_ACTION": 6, # Set Fence Action to Guided
             "FENCE_TYPE": 8,   # Only use fence floor
             "FENCE_RET_ALT": return_alt,
@@ -1689,13 +1690,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
         self.assert_fence_enabled()
 
+        REALLY_BAD_FUDGE_FACTOR = 1.085 # FIXME
+        expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
+
         self.takeoff(alt=50, alt_max=300)
         # Trigger fence breach, fly to rally location
         self.set_parameters({
             "FENCE_RET_RALLY": 1,
             "FENCE_ALT_MIN": 60,
         })
-        self.wait_circling_point_with_radius(rally_loc, return_radius)
+        self.wait_circling_point_with_radius(rally_loc, expected_radius)
         self.set_parameter("FENCE_ALT_MIN", 0) # Clear fence breach
 
         # 10 second fence min retrigger time
@@ -1710,7 +1714,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(altitude_min=return_alt-3,
                            altitude_max=return_alt+3,
                            relative=True)
-        self.wait_circling_point_with_radius(fence_loc, return_radius)
+        self.wait_circling_point_with_radius(fence_loc, expected_radius)
         self.do_fence_disable() # Disable fence so we can land
         self.fly_home_land_and_disarm() # Pack it up, we're going home.
 
@@ -2317,7 +2321,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_heading(290)
         self.wait_heading(300)
         dest = self.position_target_loc()
-        REALLY_BAD_FUDGE_FACTOR = 1.25  # FIXME
+        REALLY_BAD_FUDGE_FACTOR = 1.15  # FIXME
         expected_radius = REALLY_BAD_FUDGE_FACTOR * self.get_parameter('WP_LOITER_RAD')
         self.wait_circling_point_with_radius(dest, expected_radius)
 
@@ -4292,7 +4296,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ACTION": 6,
             "FENCE_TYPE": 4,
             "RTL_RADIUS": want_radius,
-            "NAVL1_LIM_BANK": 60,
+            "NAVL1_ROLL_MAX": 60,
         })
         home_loc = self.mav.location()
         locs = [
@@ -4367,7 +4371,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_TYPE": 2,
             "FENCE_RADIUS": 300,
             "RTL_RADIUS": want_radius,
-            "NAVL1_LIM_BANK": 60,
+            "NAVL1_ROLL_MAX": 60,
         })
 
         self.clear_fence()
@@ -5696,7 +5700,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_parameter("NAVL1_LIM_BANK", 50)
+        self.set_parameter("NAVL1_ROLL_MAX", 50)
 
         self.wait_current_waypoint(2)
 
