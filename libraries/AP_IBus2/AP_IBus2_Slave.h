@@ -114,6 +114,11 @@ private:
 
     void process_rx();
     void handle_frame1(const uint8_t *buf, uint8_t len);
+    struct {
+        bool have_decompression_key;
+        // XYZZY decompression_key;
+    } frame1_handling;
+
     void handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2);
     void send_frame3();
     void send_resp_get_type();
