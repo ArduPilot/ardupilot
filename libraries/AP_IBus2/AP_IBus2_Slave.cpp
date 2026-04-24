@@ -48,20 +48,29 @@ void AP_IBus2_Slave::init()
     if (_port == nullptr) {
         return;
     }
-    _port->set_options(_port->OPTION_HDPLEX);
-    _port->begin(IBUS2_BAUD);
-    _initialized = true;
+
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_IBus2_Slave::update, void));
 }
 
 void AP_IBus2_Slave::update()
 {
     if (!_initialized) {
-        return;
+        _port->set_options(_port->OPTION_HDPLEX);
+        _port->begin(IBUS2_BAUD);  // sets ownership
+        _initialized = true;
     }
 
     // Parse incoming bytes (Frame 1 and Frame 2)
     process_rx();
+
+    static uint32_t last_debug_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    bool debug = false;
+    if (now_ms - last_debug_ms > 1000) {
+        debug = true;
+        last_debug_ms = now_ms;
+    }
+    if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "update");}
 
     // Send Frame 3 response after the required delay
     if (_response_pending) {
@@ -88,8 +97,21 @@ void AP_IBus2_Slave::process_rx()
 {
     // In half-duplex mode our own TX bytes are echoed back; discard them first.
     _tx_pending_echo = _port->discard_bytes(_tx_pending_echo);
+    if (_tx_pending_echo > 0) {
+        return;
+    }
 
     const uint16_t avail = MIN(_port->available(), 512U);
+
+        static uint32_t last_debug_ms;
+        const uint32_t now_ms = AP_HAL::millis();
+        bool debug = false;
+        if (now_ms - last_debug_ms > 1000) {
+            debug = true;
+            last_debug_ms = now_ms;
+        }
+        if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "avail %u", unsigned(avail));}
+
     for (uint16_t i = 0; i < avail; i++) {
         uint8_t b;
         if (!_port->read(b)) {
@@ -148,6 +170,10 @@ void AP_IBus2_Slave::process_rx()
 
 void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
 {
+    if (!frame1_handling.have_decompression_key) {
+        return;
+    }
+
     // buf[0] = header (PacketType, subtype, sync_lost, failsafe)
     // buf[1] = Length
     // buf[2] = address byte
@@ -179,8 +205,18 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
 
 void AP_IBus2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)
 {
+    static uint32_t last_debug_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    bool debug = false;
+    if (now_ms - last_debug_ms > 1000) {
+        debug = true;
+        last_debug_ms = now_ms;
+    }
+    if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "handling frame2");}
+
     // Only respond if not already waiting to respond
     if (_response_pending) {
+        if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "response already pending");}
         return;
     }
     memcpy(&_pending_cmd, f2, sizeof(_pending_cmd));
@@ -231,6 +267,13 @@ void AP_IBus2_Slave::send_frame3()
 
 void AP_IBus2_Slave::send_resp_get_type()
 {
+    static uint32_t last_debug_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_debug_ms > 1000) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Sending ibus2 gettype response");
+        last_debug_ms = now_ms;
+    }
+
     const IBUS2_Pkt<IBUS2_Resp_GetType> r{
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::GET_TYPE,

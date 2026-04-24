@@ -199,49 +199,58 @@ def describe_frame(frame: Frame, idx: int) -> str:
         payload = frame.data[3:-1]  # between addr byte and CRC
 
         lines = [header,
-                 f"  Frame1 subtype={subtype} sync_lost={sync_lost} failsafe={failsafe} "
+                 f"  {pkt_type}(Frame1) subtype={subtype} sync_lost={sync_lost} failsafe={failsafe} "
                  f"addr1={addr1} addr2={addr2} crc={crc}",
                  f"  header : {' '.join(f'{b:02X}' for b in frame.data[:3])}",
                  f"  payload: {' '.join(f'{b:02X}' for b in payload)}  ({len(payload)} bytes)",
                  f"  crc    : {frame.data[-1]:02X}",
                  "  payload bits (LSB first per byte):"]
 
+        if subtype == 1:
+            # this is the encoding for the channels.
+            # Sets of 5 bits
+            # 4 bits give then length of the channel data (value is 0 if masked value is less than 2)
+            pass
+
         # bit stream, LSB of each byte first
-        bits = []
-        for b in payload:
-            for i in range(8):
-                bits.append((b >> i) & 1)
-        lines.append('    ' + ' '.join(str(b) for b in bits))
-
-        # build MSB-first bit stream too
-        bits_msb = []
-        for b in payload:
-            for i in range(7, -1, -1):
-                bits_msb.append((b >> i) & 1)
-
-        # try several channel-width decodings, both bit orderings
-        for width in (11, 12):
-            chans_lsb = []
-            for i in range(len(bits) // width):
-                val = sum(bits[i * width + j] << j for j in range(width))
-                chans_lsb.append(val)
-            chans_msb = []
-            for i in range(len(bits_msb) // width):
-                val = sum(bits_msb[i * width + j] << (width - 1 - j) for j in range(width))
-                chans_msb.append(val)
-            lines.append(f"  {width}-bit LSB-first: {chans_lsb}")
-            lines.append(f"  {width}-bit MSB-first: {chans_msb}")
-
-        # 16-bit little-endian pairs (raw)
-        le16 = [payload[i] | (payload[i+1] << 8) for i in range(0, len(payload) - 1, 2)]
-        lines.append(f"  16-bit LE pairs: {le16}")
+#        bits = []
+#        for b in payload:
+#            for i in range(8):
+#                bits.append((b >> i) & 1)
+#        lines.append('    ' + ' '.join(str(b) for b in bits))
 
         return '\n'.join(lines)
 
-    elif pkt_type in (1, 2):
+    elif pkt_type == 1:
         cmd_code  = (b0 >> 2) & 0x3F
-        type_name = {1: 'Frame2', 2: 'Frame3'}[pkt_type]
-        detail    = f"{type_name} cmd={CMD_NAMES.get(cmd_code, f'CMD({cmd_code})')}"
+        type_name = 'Frame2'
+        detail    = f"{pkt_type}({type_name}) cmd={cmd_code}({CMD_NAMES.get(cmd_code, f'CMD({cmd_code})')})"
+    elif pkt_type == 2:
+        cmd_code  = (b0 >> 2) & 0x3F
+        type_name = 'Frame3'
+        detail    = f"{pkt_type}({type_name}) cmd={cmd_code}({CMD_NAMES.get(cmd_code, f'CMD({cmd_code})')})"
+        detail += f" devicetype=0x{frame.data[1]:02x}"
+        if len(frame.data) > 2:
+            detail += f" valuelength={frame.data[2]}"
+        if len(frame.data) > 3:
+            b2 = frame.data[3]
+            bits = {
+                0: "ChannelsType",
+                1: "Failsafe",
+                2: "ReceiverInternalSensors",
+            }
+            detail += f" b2={b2}"
+            for i in range(0, 8):
+                bang = ""
+                if b2 & (1 << i) == 0:
+                    bang = "!"
+                if i in bits:
+                    name = bits[i]
+                else:
+                    if bang != "":
+                        continue
+                    name = f"UNKNOWN{i}"
+                    detail += f" {bang}{name}"
     else:
         detail = f"unknown pkt_type={pkt_type}"
 

@@ -3,7 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #ifndef AP_IBUS2_ENABLED
-#define AP_IBUS2_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 2048)
+#define AP_IBUS2_ENABLED 1
 #endif
 
 #ifndef AP_IBUS2_MASTER_ENABLED
