@@ -2072,6 +2072,8 @@ private:
     void spray(bool b);
     bool calculate_side_dest_m(Vector3p& next_dest_ned_m, bool& is_terrain_alt) const;
     void move_to_side();
+    bool is_low_altitude();
+    bool move_allowed();
 
     Vector2p dest_A_ne_m;    // in NE frame in m relative to ekf origin
     Vector2p dest_B_ne_m;    // in NE frame in m relative to ekf origin
@@ -2087,6 +2089,7 @@ private:
     AP_Float _side_dist_m;     // sideways distance
     AP_Int8  _direction;       // sideways direction
     AP_Int16 _line_num;        // total number of lines
+    AP_Float _low_alt_m;       // minimum altitude required for manual move requests
 
     enum ZigZagState {
         STORING_POINTS, // storing points A and B, pilot has manual control

@@ -56,6 +56,14 @@ const AP_Param::GroupInfo ModeZigZag::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LINE_NUM", 6, ModeZigZag, _line_num, 0),
 
+    // @Param: LOW_ALT
+    // @DisplayName: Minimum altitude for ZigZag move
+    // @Description: ZigZag move requests are rejected when the vehicle is landed, possibly landed, or below this altitude above ground
+    // @Units: m
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO("LOW_ALT", 7, ModeZigZag, _low_alt_m, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -186,6 +194,10 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
 
         case AUTO:
         case MANUAL_REGAIN:
+            if (!move_allowed()) {
+                break;
+            }
+
             // A and B have been defined, move vehicle to destination A or B
             Vector3p next_dest_ned_m;
             bool is_terrain_alt;
@@ -210,8 +222,52 @@ void ModeZigZag::save_or_move_to_destination(Destination ab_dest)
     }
 }
 
+/**
+ * Return true if the vehicle is below the configured low altitude threshold above ground
+ *
+ * @retval true if the vehicle is below the configured low altitude threshold above ground
+ * @retval false if the vehicle is above the configured low altitude threshold above ground
+ */
+bool ModeZigZag::is_low_altitude()
+{
+    const float low_alt_m = MAX(_low_alt_m, 0.0f);
+    return get_alt_above_ground_m() <= low_alt_m;
+}
+
+/**
+ * Return true if ZigZag is allowed to initiate movement
+ *
+ * @retval true if movement is allowed
+ * @retval false if movement is blocked because the vehicle is disarmed, landed,
+ *               possibly landed, or below the configured low altitude threshold
+ */
+bool ModeZigZag::move_allowed()
+{
+    if (!motors->armed()) {
+        return false;
+    }
+
+    if (copter.ap.land_complete) {
+        return false;
+    }
+
+    if (copter.ap.land_complete_maybe) {
+        return false;
+    }
+
+    if (is_low_altitude()) {
+        return false;
+    }
+
+    return true;
+}
+
 void ModeZigZag::move_to_side()
 {
+    if (!move_allowed()) {
+        return;
+    }
+
     if (!dest_A_ne_m.is_zero() && !dest_B_ne_m.is_zero() && !is_zero((dest_B_ne_m - dest_A_ne_m).length_squared())) {
         Vector3p next_dest_ned_m;
         bool is_terrain_alt;
@@ -505,6 +561,10 @@ void ModeZigZag::run_auto()
 
     // make sure both A and B point are registered and not when moving to A or B
     if (stage != MANUAL_REGAIN) {
+        return;
+    }
+
+    if (!move_allowed()) {
         return;
     }
 
