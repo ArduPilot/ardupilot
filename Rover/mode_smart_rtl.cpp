@@ -61,7 +61,7 @@ void ModeSmartRTL::update()
                     // peek at the next point.  this can fail if the IO task currently has the path semaphore
                     Vector3p next_dest_NED;
                     if (g2.smart_rtl.peek_point(next_dest_NED)) {
-                        if (!g2.wp_nav.set_desired_location_NED(dest_NED.tofloat(), next_dest_NED.tofloat())) {
+                        if (!g2.wp_nav.set_wp_destination_and_next_destination_NED_m(dest_NED.tofloat(), next_dest_NED.tofloat())) {
                             // this should never happen because the EKF origin should already be set
                             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
                             smart_rtl_state = SmartRTLState::Failure;
