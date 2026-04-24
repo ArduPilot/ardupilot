@@ -15,6 +15,8 @@
 - [ ] Logs available on request
 
 <!-- Put additional testing description for this PR's changes here -->
+<!-- If you check "No-binary" above, paste output of size_compare_branches -->
+<!-- (Consider also passing it through filter_size_compare_branches_csv) -->
 
 ### Description
 
