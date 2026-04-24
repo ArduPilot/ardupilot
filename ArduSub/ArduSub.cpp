@@ -249,7 +249,6 @@ void Sub::ten_hz_logging_loop()
         Log_Write_SensorData();
         Log_Write_ROVData();
         Log_Write_DVLData();
-        custom_data_log_write_record();
     }
 }
 

@@ -26,7 +26,6 @@
 #include <stdarg.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Filesystem/AP_Filesystem.h>
 
 // Common dependencies
 #include <AP_Common/AP_Common.h>
@@ -151,12 +150,7 @@ private:
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
 
-#if HAL_LOGGING_ENABLED
     AP_Logger logger;
-    int custom_data_log_fd = -1;
-    bool custom_data_log_header_written = false;
-    char custom_data_log_path[96] {};
-#endif
 
     AP_LeakDetector leak_detector;
 
@@ -425,9 +419,6 @@ private:
     void Log_Write_SensorData();
     void Log_Write_ROVData();
     void Log_Write_DVLData();
-    void custom_data_log_open();
-    void custom_data_log_close();
-    void custom_data_log_write_record();
     void Log_Write_Vehicle_Startup_Messages();
 #endif
     void load_parameters(void) override;
