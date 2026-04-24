@@ -127,6 +127,10 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
         }
     }
 
+#if HAL_LOGGING_ENABLED
+    sub.custom_data_log_open();
+#endif
+
     hal.util->set_soft_armed(true);
 
     // enable output to motors
@@ -195,6 +199,7 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     sub.mission.reset();
 
 #if HAL_LOGGING_ENABLED
+    sub.custom_data_log_close();
     AP::logger().set_vehicle_armed(false);
 #endif
 

@@ -245,6 +245,12 @@ void Sub::ten_hz_logging_loop()
         camera_mount.write_log();
     }
 #endif
+    if (motors.armed()) {
+        Log_Write_SensorData();
+        Log_Write_ROVData();
+        Log_Write_DVLData();
+        custom_data_log_write_record();
+    }
 }
 
 // twentyfive_hz_logging_loop
@@ -349,11 +355,6 @@ void Sub::update_altitude()
 #if HAL_LOGGING_ENABLED
     if (should_log(MASK_LOG_CTUN)) {
         Log_Write_Control_Tuning();
-        if (motors.armed()) {
-            Log_Write_SensorData();
-            Log_Write_ROVData();
-            Log_Write_DVLData();
-        }
         AP::ins().write_notch_log_messages();
 #if HAL_GYROFFT_ENABLED
         gyro_fft.write_log_messages();

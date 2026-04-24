@@ -1,5 +1,13 @@
 #include "Sub.h"
 
+#include <errno.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 #if HAL_LOGGING_ENABLED
 
 // Code to Write and Read packets from AP_Logger log memory
@@ -332,6 +340,176 @@ void Sub::Log_Write_DVLData()
         ud_m        : ud_ok ? ud.distance_m : 0.0f
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+void Sub::custom_data_log_open()
+{
+    if (custom_data_log_fd >= 0) {
+        return;
+    }
+
+    uint16_t log_num = logger.find_last_log();
+    if (log_num == 0) {
+        log_num = 1;
+    }
+
+    const int written = snprintf(custom_data_log_path,
+                                 sizeof(custom_data_log_path),
+                                 HAL_BOARD_LOG_DIRECTORY "/ROV_%04u.csv",
+                                 (unsigned)log_num);
+    if (written <= 0 || written >= int(sizeof(custom_data_log_path))) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Custom CSV path too long");
+        custom_data_log_path[0] = '\0';
+        return;
+    }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    if (::mkdir(HAL_BOARD_LOG_DIRECTORY, 0755) == -1 && errno != EEXIST) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Custom CSV mkdir failed: %d", errno);
+        custom_data_log_path[0] = '\0';
+        return;
+    }
+
+    custom_data_log_fd = ::open(custom_data_log_path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
+#else
+    custom_data_log_fd = AP::FS().open(custom_data_log_path, O_WRONLY | O_CREAT | O_TRUNC);
+#endif
+    if (custom_data_log_fd < 0) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Custom CSV open failed: %d", errno);
+        gcs().send_text(MAV_SEVERITY_WARNING, "Custom CSV path: %s", custom_data_log_path);
+        custom_data_log_path[0] = '\0';
+        return;
+    }
+
+    custom_data_log_header_written = false;
+}
+
+void Sub::custom_data_log_close()
+{
+    if (custom_data_log_fd < 0) {
+        return;
+    }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    ::fsync(custom_data_log_fd);
+    ::close(custom_data_log_fd);
+#else
+    AP::FS().fsync(custom_data_log_fd);
+    AP::FS().close(custom_data_log_fd);
+#endif
+    custom_data_log_fd = -1;
+    custom_data_log_header_written = false;
+    custom_data_log_path[0] = '\0';
+}
+
+void Sub::custom_data_log_write_record()
+{
+    if (custom_data_log_fd < 0) {
+        return;
+    }
+
+    if (!custom_data_log_header_written) {
+        static const char header[] =
+            "TimeUS,BaroInstance,TempC,PressPa,DepthM,RFAltM,IAltM,RFQ,DepthHealthy,RFHealthy,DepthSensorPresent,"
+            "VelXM,VelYM,VelZM,PosXM,PosYM,PosZM,RollDeg,PitchDeg,YawDeg,"
+            "DvlOk,DvlVx,DvlVy,DvlVz,DvlQuality,DvlLock,DvlTimeMs,UaOk,UbOk,UcOk,UdOk,UaM,UbM,UcM,UdM\n";
+        bool header_ok = false;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+        header_ok = (::write(custom_data_log_fd, header, sizeof(header) - 1) == ssize_t(sizeof(header) - 1));
+#else
+        header_ok = (AP::FS().write(custom_data_log_fd, header, sizeof(header) - 1) == ssize_t(sizeof(header) - 1));
+#endif
+        if (!header_ok) {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Custom CSV header write failed");
+            custom_data_log_close();
+            return;
+        }
+        custom_data_log_header_written = true;
+    }
+
+    const uint64_t time_us = AP_HAL::micros64();
+    const uint8_t baro_instance = ap.depth_sensor_present ? depth_sensor_idx : barometer.get_primary();
+
+    int8_t rangefinder_quality_pct = -1;
+#if RANGEFINDER_ENABLED == ENABLED
+    if (rangefinder_state.enabled) {
+        rangefinder_quality_pct = rangefinder.signal_quality_pct_orient(ROTATION_PITCH_270);
+    }
+#endif
+
+    const Vector3f vel_neu_mps = inertial_nav.get_velocity_neu_cms() * 0.01f;
+    const Vector3f pos_neu_m = inertial_nav.get_position_neu_cm() * 0.01f;
+
+    Vector3f vel_body_mps {};
+    uint32_t dvl_t_ms = 0;
+    float dvl_quality = 0.0f;
+    DVL_LockState dvl_lock = DVL_LockState::NO_LOCK;
+    const bool dvl_ok = inertial_doppler.get_velocity_body(vel_body_mps, dvl_t_ms, dvl_quality, dvl_lock);
+
+    DVL_U_Msg ua{}, ub{}, uc{}, ud{};
+    const bool ua_ok = inertial_doppler.get_ua_msg(ua);
+    const bool ub_ok = inertial_doppler.get_ub_msg(ub);
+    const bool uc_ok = inertial_doppler.get_uc_msg(uc);
+    const bool ud_ok = inertial_doppler.get_ud_msg(ud);
+
+    char line[512];
+    const int len = snprintf(
+        line,
+        sizeof(line),
+        "%llu,%u,%.6f,%.6f,%.6f,%.6f,%.6f,%d,%u,%u,%u,"
+        "%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,"
+        "%u,%.6f,%.6f,%.6f,%.6f,%u,%lu,%u,%u,%u,%u,%.6f,%.6f,%.6f,%.6f\n",
+        (unsigned long long)time_us,
+        (unsigned)baro_instance,
+        (double)barometer.get_temperature(baro_instance),
+        (double)barometer.get_pressure(baro_instance),
+        (double)barometer.get_altitude(baro_instance),
+        (double)(rangefinder_state.alt_cm * 0.01f),
+        (double)(inertial_nav.get_position_z_up_cm() * 0.01f),
+        (int)rangefinder_quality_pct,
+        (unsigned)(ap.depth_sensor_present ? (uint8_t)sensor_health.depth : (uint8_t)barometer.healthy(baro_instance)),
+        (unsigned)(uint8_t)rangefinder_state.alt_healthy,
+        (unsigned)(uint8_t)ap.depth_sensor_present,
+        (double)vel_neu_mps.x,
+        (double)vel_neu_mps.y,
+        (double)vel_neu_mps.z,
+        (double)pos_neu_m.x,
+        (double)pos_neu_m.y,
+        (double)pos_neu_m.z,
+        (double)(ahrs.roll_sensor * 0.01f),
+        (double)(ahrs.pitch_sensor * 0.01f),
+        (double)(ahrs.yaw_sensor * 0.01f),
+        (unsigned)(uint8_t)dvl_ok,
+        (double)vel_body_mps.x,
+        (double)vel_body_mps.y,
+        (double)vel_body_mps.z,
+        (double)dvl_quality,
+        (unsigned)(uint8_t)dvl_lock,
+        (unsigned long)dvl_t_ms,
+        (unsigned)(uint8_t)ua_ok,
+        (unsigned)(uint8_t)ub_ok,
+        (unsigned)(uint8_t)uc_ok,
+        (unsigned)(uint8_t)ud_ok,
+        (double)(ua_ok ? ua.distance_m : 0.0f),
+        (double)(ub_ok ? ub.distance_m : 0.0f),
+        (double)(uc_ok ? uc.distance_m : 0.0f),
+        (double)(ud_ok ? ud.distance_m : 0.0f));
+
+    if (len <= 0 || len >= int(sizeof(line))) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Custom CSV line too long");
+        return;
+    }
+
+    bool write_ok = false;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    write_ok = (::write(custom_data_log_fd, line, len) == len);
+#else
+    write_ok = (AP::FS().write(custom_data_log_fd, line, len) == len);
+#endif
+    if (!write_ok) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "Custom CSV write failed");
+        custom_data_log_close();
+    }
 }
 
 // @LoggerMessage: CTUN
