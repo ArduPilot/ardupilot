@@ -83,6 +83,9 @@ static constexpr uint16_t SPI_SOFT_RESET = (0b1010);
 #define SPI48_DATA_INT32(a)     (((int32_t)(((a) << 4)  & 0xfffff000UL)) >> 12)
 #define SPI48_DATA_UINT32(a)    ((uint32_t)(((a) >> 8)  & 0x000fffffUL))
 #define SPI48_DATA_UINT16(a)    ((uint16_t)(((a) >> 8)  & 0x0000ffffUL))
+#define SPI48_DATA_GET_DATA_COUNTER(a) ((uint8_t)(((a) >> 29) & 0x0000000fUL))
+
+#define TIMING_DEBUG    0
 
 // use crc table for save some cpu.
 static constexpr uint8_t read_data_crc_table[] = {
@@ -197,10 +200,10 @@ void AP_InertialSensor_SCH16T::collect_and_publish()
         Vector3f gyro{gyro_scale*data.gyro_x, gyro_scale*data.gyro_y, gyro_scale*data.gyro_z};
 
         _rotate_and_correct_accel(accel_instance, accel);
-        _notify_new_accel_raw_sample(accel_instance, accel, AP_HAL::micros64());
+        _notify_new_accel_raw_sample(accel_instance, accel, 0);
 
         _rotate_and_correct_gyro(gyro_instance, gyro);
-        _notify_new_gyro_raw_sample(gyro_instance, gyro, AP_HAL::micros64());
+        _notify_new_gyro_raw_sample(gyro_instance, gyro, 0);
 
         temp_sum += float(data.temp) * 0.01f;
         temp_cnt++;
@@ -211,6 +214,9 @@ void AP_InertialSensor_SCH16T::collect_and_publish()
             temp_sum = 0.0f;
             temp_cnt = 0;
         }
+    } else {
+        _inc_accel_error_count(accel_instance);
+        _inc_gyro_error_count(gyro_instance);
     }
 }
 
@@ -227,16 +233,30 @@ void AP_InertialSensor_SCH16T::reset_chip()
 
 bool AP_InertialSensor_SCH16T::read_data(SensorData *data)
 {
-    WITH_SEMAPHORE(dev->get_semaphore());
+    uint64_t gyro_x = 0;
+    uint64_t gyro_y = 0;
+    uint64_t gyro_z = 0;
+    uint64_t acc_x  = 0;
+    uint64_t acc_y  = 0;
+    uint64_t acc_z  = 0;
+    uint64_t temp   = 0;
 
-    (void)register_read_measure(RATE_X2);
-    uint64_t gyro_x = register_read_measure(RATE_Y2);
-    uint64_t gyro_y = register_read_measure(RATE_Z2);
-    uint64_t gyro_z = register_read_measure(ACC_X2);
-    uint64_t acc_x  = register_read_measure(ACC_Y2);
-    uint64_t acc_y  = register_read_measure(ACC_Z2);
-    uint64_t acc_z  = register_read_measure(TEMP);
-    uint64_t temp   = register_read_measure(TEMP);
+    {
+        WITH_SEMAPHORE(dev->get_semaphore());
+
+        if (!done_first_read) {
+            (void)register_read_measure(TEMP);
+            done_first_read = true;
+        }
+
+        temp = register_read_measure(RATE_X2);
+        gyro_x = register_read_measure(RATE_Y2);
+        gyro_y = register_read_measure(RATE_Z2);
+        gyro_z = register_read_measure(ACC_X2);
+        acc_x  = register_read_measure(ACC_Y2);
+        acc_y  = register_read_measure(ACC_Z2);
+        acc_z  = register_read_measure(TEMP);
+    }
 
     static constexpr uint64_t MASK48_ERROR = 0x001E00000000UL;
     uint64_t values[] = { gyro_x, gyro_y, gyro_z, acc_x, acc_y, acc_z, temp };
@@ -252,6 +272,34 @@ bool AP_InertialSensor_SCH16T::read_data(SensorData *data)
             return false;
         }
     }
+
+#if TIMING_DEBUG
+    // Data counter only available on RATE_*2 and ACC_*2
+    const uint8_t gyro_data_cnt[] = {
+        SPI48_DATA_GET_DATA_COUNTER(gyro_x),
+        SPI48_DATA_GET_DATA_COUNTER(gyro_y),
+        SPI48_DATA_GET_DATA_COUNTER(gyro_z)
+    };
+    const uint8_t acc_data_cnt[] = {
+        SPI48_DATA_GET_DATA_COUNTER(acc_x),
+        SPI48_DATA_GET_DATA_COUNTER(acc_y),
+        SPI48_DATA_GET_DATA_COUNTER(acc_z)
+    };
+
+    if ((gyro_data_cnt[0] != gyro_data_cnt[1]) || (gyro_data_cnt[0] != gyro_data_cnt[2])) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro cnt error\n");
+    } else if ((last_gyro_data_cnt != -1) && (gyro_data_cnt[2] != (last_gyro_data_cnt + 1) % 16)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro lost cnt\n");
+    }
+    last_gyro_data_cnt = gyro_data_cnt[2];
+
+    if ((acc_data_cnt[0] != acc_data_cnt[1]) || (acc_data_cnt[0] != acc_data_cnt[2])) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "acc cnt error\n");
+    } else if ((last_acc_data_cnt != -1) && (acc_data_cnt[2] != (last_acc_data_cnt + 1) % 16)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "acc lost cnt\n");
+    }
+    last_acc_data_cnt = acc_data_cnt[2];
+#endif
 
     // Data registers are 20bit 2s complement
     data->acc_x    = SPI48_DATA_INT32(acc_x);
@@ -473,10 +521,10 @@ uint8_t AP_InertialSensor_SCH16T::calculate_crc8(uint64_t frame)
  */
 void AP_InertialSensor_SCH16T::loop(void)
 {
+    const uint32_t period_us = (1000000UL / expected_sample_rate_hz) - 20U;
     while (true) {
         uint32_t tstart = AP_HAL::micros();
         // we deliberately set the period a bit fast to ensure we don't lose a sample
-        const uint32_t period_us = (1000000UL / expected_sample_rate_hz) - 20U;
         bool wait_ok = false;
         if (drdy_pin != 0) {
             // when we have a DRDY pin then wait for rising edge

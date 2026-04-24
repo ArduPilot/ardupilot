@@ -108,6 +108,10 @@ private:
     enum Rotation rotation {};
     uint8_t drdy_pin {};
 
+    bool done_first_read;
+    // int8_t last_gyro_data_cnt = -1;
+    // int8_t last_acc_data_cnt = -1;
+
     // which sensor type this is
     enum Sch16t_Type sch16t_type {};
 
