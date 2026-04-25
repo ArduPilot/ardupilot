@@ -171,7 +171,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination)
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -202,7 +202,7 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 #if AP_FENCE_ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -237,7 +237,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_ya
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -303,7 +303,7 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -338,7 +338,7 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
