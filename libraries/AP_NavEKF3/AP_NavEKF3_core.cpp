@@ -1099,7 +1099,8 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         const bool newTreatWindStatesAsTruth = isDragFusionDeadReckoning || !windStateIsObservable;
         if (newTreatWindStatesAsTruth) {
             treatWindStatesAsTruth = true;
-            P[23][23] = P[22][22] = 0.0f;
+            zeroRows(P,22,23);
+            zeroCols(P,22,23);
         } else {
             if (treatWindStatesAsTruth) {
                 treatWindStatesAsTruth = false;
@@ -1993,7 +1994,8 @@ void NavEKF3_core::ConstrainVariances()
 
     if (!inhibitWindStates) {
         if (treatWindStatesAsTruth) {
-            P[23][23] = P[22][22] = 0.0f;
+            zeroRows(P,22,23);
+            zeroCols(P,22,23);
         } else {
             for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
         }
