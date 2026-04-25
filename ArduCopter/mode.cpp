@@ -422,6 +422,8 @@ void Copter::update_flight_mode()
     surface_tracking.invalidate_for_logging();  // invalidate surface tracking alt, flight mode will set to true if used
 
     flightmode->run();
+
+    //gcs().send_text(MAV_SEVERITY_INFO, "PLND_MTE=%.2f", (double)g.plnd_mte);
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
@@ -857,6 +859,40 @@ void Mode::precland_retry_position(const Vector3f &retry_pos)
 
 }
 
+
+bool Mode::can_final_descend_moving_target() const
+{
+    Vector2f target_pos_rel_cm;
+    if (!copter.precland.get_target_position_relative_cm(target_pos_rel_cm)) {
+        return false;
+    }
+
+    Vector2f target_vel_rel_cms;
+    if (!copter.precland.get_target_velocity_relative_cms(target_vel_rel_cms)) {
+        return false;
+    }
+    
+    // đổi sang mét và m/s
+    const Vector2f pos_m = target_pos_rel_cm * 0.01f;
+    const Vector2f vel_ms = target_vel_rel_cms * 0.01f;
+
+    const float e = pos_m.length();
+    const float v = vel_ms.length();
+
+    const float predict_t = 1.0f;
+
+    const Vector2f pred_m = pos_m + vel_ms * predict_t;
+    const float e_pred = pred_m.length();
+
+    if (g.plnd_mte <= 0 || g.plnd_mtv <= 0 || g.plnd_mpe <= 0) {
+        return false;
+    }
+
+    return (e < g.plnd_mte) &&
+        (v < g.plnd_mtv) &&
+        (e_pred < g.plnd_mpe);
+}
+
 // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
 // This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
 void Mode::precland_run()
@@ -890,11 +926,21 @@ void Mode::precland_run()
             // should never happen, is certainly a bug. Report then descend
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             FALLTHROUGH;
-        case AC_PrecLand_StateMachine::Status::DESCEND:
-            // run land controller. This will descend towards the target if prec land target is in sight
-            // else it will just descend vertically
+        case AC_PrecLand_StateMachine::Status::DESCEND: {
+            const bool below_land_low = (get_alt_above_ground_cm() <= MAX(g2.land_alt_low, 100));
+
+            if (below_land_low &&
+                copter.precland.target_acquired() &&
+                !can_final_descend_moving_target()) {
+                // close to ground but tracking is not stable enough yet
+                land_run_horiz_and_vert_control(true);
+                break;
+            }
+
+            // either still above LAND_ALT_LOW, or final gate conditions are satisfied
             land_run_horiz_and_vert_control();
             break;
+        }
         }
     } else {
         // just land, since user has taken over controls, it does not make sense to run any retries or failsafe measures

@@ -386,9 +386,17 @@ public:
         k_param_throw_altitude_min,
         k_param_throw_altitude_max,
 
+        k_param_plnd_mte,
+        k_param_plnd_mtv,
+        k_param_plnd_mpe,
+
         // the k_param_* space is 9-bits in size
         // 511: reserved
     };
+    
+    AP_Float plnd_mte;
+    AP_Float plnd_mtv;
+    AP_Float plnd_mpe;
 
     AP_Int16        format_version;
 

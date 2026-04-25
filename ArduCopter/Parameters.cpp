@@ -712,6 +712,34 @@ const AP_Param::Info Copter::var_info[] = {
     // @Units: m
     // @User: Advanced
     GSCALAR(throw_altitude_max, "THROW_ALT_MAX", 0),
+
+    // @Param: PLND_MTE
+    // @DisplayName: Moving target max error
+    // @Description: Maximum relative horizontal error allowed before final descent to a moving precision landing target
+    // @Units: m
+    // @Range: 0.05 3.00
+    // @Increment: 0.01
+    // @User: Advanced
+    GSCALAR(plnd_mte, "PLND_MTE", PLND_MTE_DEFAULT),
+
+    // @Param: PLND_MTV
+    // @DisplayName: Moving target max relative velocity
+    // @Description: Maximum relative horizontal velocity allowed before final descent to a moving precision landing target
+    // @Units: m/s
+    // @Range: 0.05 3.00
+    // @Increment: 0.01
+    // @User: Advanced
+    GSCALAR(plnd_mtv, "PLND_MTV", PLND_MTV_DEFAULT),
+
+    // @Param: PLND_MPE
+    // @DisplayName: Moving target max predicted error
+    // @Description: Maximum predicted horizontal error allowed before final descent to a moving precision landing target
+    // @Units: m
+    // @Range: 0.05 5.00
+    // @Increment: 0.01
+    // @User: Advanced
+    GSCALAR(plnd_mpe, "PLND_MPE", PLND_MPE_DEFAULT),
+    
 #endif
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED

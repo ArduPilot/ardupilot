@@ -644,3 +644,15 @@
 #ifndef USER_PARAMS_ENABLED
   #define USER_PARAMS_ENABLED DISABLED
 #endif
+
+#ifndef PLND_MTE_DEFAULT
+ #define PLND_MTE_DEFAULT 0.30f
+#endif
+
+#ifndef PLND_MTV_DEFAULT
+ #define PLND_MTV_DEFAULT 0.30f
+#endif
+
+#ifndef PLND_MPE_DEFAULT
+ #define PLND_MPE_DEFAULT 0.40f
+#endif

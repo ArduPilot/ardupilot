@@ -218,6 +218,9 @@ protected:
     // Run precland statemachine. This function should be called from any mode that wants to do precision landing.
     // This handles everything from prec landing, to prec landing failures, to retries and failsafe measures
     void precland_run();
+
+    bool can_final_descend_moving_target() const;
+
 #endif
 
     // return expected input throttle setting to hover:
