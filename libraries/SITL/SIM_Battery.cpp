@@ -115,10 +115,10 @@ void Battery::set_initial_SoC(float voltage)
     remaining_Ah = 0;
 }
 
-void Battery::setup(float _capacity_Ah, float _resistance, float _max_voltage)
+void Battery::setup(float _capacity_Ah, float _resistance_ohm, float _max_voltage)
 {
     capacity_Ah = _capacity_Ah;
-    resistance = _resistance;
+    resistance_ohm = _resistance_ohm;
     max_voltage = _max_voltage;
 
     voltage_set = max_voltage;
@@ -155,7 +155,7 @@ void Battery::init_capacity(float capacity)
     set_initial_SoC(voltage_set);
 }
 
-void Battery::consume_energy(float current_amps, uint64_t now_us)
+void Battery::consume_energy(float current_amp, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
     float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
@@ -164,11 +164,11 @@ void Battery::consume_energy(float current_amps, uint64_t now_us)
         dt = 0;
     }
     last_us = now_us;
-    float delta_Ah = current_amps * dt / 3600;
+    float delta_Ah = current_amp * dt / 3600;
     remaining_Ah -= delta_Ah;
     remaining_Ah = MAX(0, remaining_Ah);
 
-    float voltage_delta = current_amps * resistance;
+    float voltage_delta = current_amp * resistance_ohm;
     float voltage;
     if (!is_positive(capacity_Ah)) {
         voltage = voltage_set;
@@ -178,10 +178,10 @@ void Battery::consume_energy(float current_amps, uint64_t now_us)
 
     voltage_filter.apply(voltage, dt);
 
-    update_temperature(current_amps, now_us);
+    update_temperature(current_amp, now_us);
 }
 
-void Battery::update_temperature(float current_amps, uint64_t now_us)
+void Battery::update_temperature(float current_amp, uint64_t now_us)
 {
     const uint64_t temperature_dt = now_us - temperature.last_update_us;
     temperature.last_update_us = now_us;
@@ -189,7 +189,7 @@ void Battery::update_temperature(float current_amps, uint64_t now_us)
     // (reminder: thermal_capacity = mass * specific_heat)
     constexpr float thermal_capacity = 2.8f;  // watt*seconds/degC
     constexpr float inverse_of_thermal_capacity = 1 / thermal_capacity;  // use inverse so we can multiply, not divide
-    const float temp_increase = (current_amps * current_amps) * resistance * inverse_of_thermal_capacity * (temperature_dt * 0.000001);
+    const float temp_increase = (current_amp * current_amp) * resistance_ohm * inverse_of_thermal_capacity * (temperature_dt * 0.000001);
     // decay temperature at some %second towards ambient
     const float temp_decrease = (temperature.kelvin - 273.15f) * 0.10 * temperature_dt * 0.000001;
     temperature.kelvin += (temp_increase - temp_decrease);

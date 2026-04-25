@@ -53,10 +53,11 @@ The CORVON405V2.1 supports up to 10 PWM outputs.
 Channels 1-8 support DShot. Channels 1-4 support bi-directional DShot.
 
 PWM outputs are grouped and every  group must use the same output protocol:
-1,2,5,6 are group1
-3, 4 are group 2
-7,8 are group 3
-9,10 are in group 4
+
+- 1,2,5,6 are group1
+- 3, 4 are group 2
+- 7,8 are group 3
+- 9,10 are in group 4
 
 ## Battery Monitoring
 
@@ -65,11 +66,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=21.2
-BATT_AMP_PERVLT=40.2
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN =1 1
+- BATT_VOLT_MULT = 21.2
+- BATT_AMP_PERVLT = 40.2
 
 ## Compass
 

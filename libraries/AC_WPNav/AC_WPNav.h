@@ -145,7 +145,7 @@ public:
     // Z is relative to terrain or EKF origin, depending on _is_terrain_alt.
     const Vector3p &get_wp_destination_NED_m() const { return _destination_ned_m; }
 
-    // Returns the origin waypoint vector in NED frame, in centimeters from EKF origin.
+    // Returns the origin waypoint vector in NEU frame, in centimeters from EKF origin.
     // See get_wp_origin_NED_m() for full details.
     const Vector3f get_wp_origin_NEU_cm() const { return Vector3f(_origin_ned_m.x, _origin_ned_m.y, -_origin_ned_m.z) * 100.0; }
 
@@ -179,7 +179,7 @@ public:
     // Used to unify the AC_WPNav and AC_WPNav_OA interfaces.
     virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination_loc(destination); }
 
-    // Sets waypoint destination using NED position vector in centimeters from EKF origin.
+    // Sets waypoint destination using NEU position vector in centimeters from EKF origin.
     // See set_wp_destination_NED_m() for full details.
     virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
 
@@ -205,7 +205,7 @@ public:
     // This is the point where the vehicle would come to a stop if decelerated using the configured limits.
     void get_wp_stopping_point_NE_m(Vector2p& stopping_point_ne_m) const;
 
-    // Computes the full 3D NED stopping point vector in centimeters based on current kinematics.
+    // Computes the full 3D NEU stopping point vector in centimeters based on current kinematics.
     // See get_wp_stopping_point_NED_m() for full details.
     void get_wp_stopping_point_NEU_cm(Vector3f& stopping_point_neu_cm) const;
 

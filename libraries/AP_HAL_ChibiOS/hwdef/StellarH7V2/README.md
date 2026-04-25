@@ -84,17 +84,17 @@ The board has 1 built-in voltage divider and 2x current ADC. Support external 3.
 The voltage input is compatible with 2~8S LiPo batteries.
 The default battery parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11.0
-BATT_AMP_PERVLT=66.7
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 66.7
 
-Pads for a second analog battery monitor are provided (Voltage only). To use:
+Pads for a second analog - BATTery monitor are provided (Voltage only). To use:
 
-BATT2_MONITOR=4
-BATT2_VOLT_PIN=18
-BATT2_VOLT_MULT=21.0
+- BATT2_MONITOR = 4
+- BATT2_VOLT_PIN = 18
+- BATT2_VOLT_MULT = 21.0
 
 ## Compass
 
