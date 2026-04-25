@@ -54,7 +54,7 @@ local function send_follow_target_msg()
     local capabilities = FOLLOW_TARGET_CAPABILITIES.POS
 
     -- get vehicle target velocity in m/s in NED frame
-    local vel_target_NED = poscontrol:get_vel_target()
+    local vel_target_NED = poscontrol and poscontrol:get_vel_target()
     if vel_target_NED ~= nil then
         capabilities = capabilities + FOLLOW_TARGET_CAPABILITIES.VEL
     else
@@ -62,7 +62,7 @@ local function send_follow_target_msg()
     end
 
     -- get vehicle target acceleration in m/s/s in NED frame
-    local accel_target_NED = poscontrol:get_accel_target()
+    local accel_target_NED = poscontrol and poscontrol:get_accel_target()
     if accel_target_NED ~= nil then
         capabilities = capabilities + FOLLOW_TARGET_CAPABILITIES.ACCEL
     else
