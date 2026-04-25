@@ -24,6 +24,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -33,6 +34,30 @@ extern const AP_HAL::HAL &hal;
 // Telemetry Adapter VID/PID (Telemetry_Adapter_Protocol___20240923_en_.pdf §4)
 #define IBUS2_TELEM_VID 0x01
 #define IBUS2_TELEM_PID 0x03
+
+// SES factor table — indexed by 5-bit ChannelType value.
+// Lower 4 bits (ct & 0xF) = NbBits per channel in the subtype=0 payload.
+// Bit 4 doubles the scale, giving higher resolution for standard RC channels.
+static const uint32_t ses_factors[32] = {
+    0,          0,          0x40000000, 0,          0,          0,          0x028F5C29, 0x0147AE15,
+    0x0083126F, 0x00418938, 0x0020C49C, 0x0010624E, 0x00083127, 0x00041894, 0,          0,
+    0,          0,          0,          0x20000000, 0x10000000, 0x06666667, 0x03333334, 0,
+    0x0147AE15, 0x00A3D70B, 0x00418938, 0x0020C49C, 0x0010624E, 0x00083127, 0,          0,
+};
+
+// Read nb_bits (LSB-first) from payload at bit_pos.
+// Reads at most 4 bytes, stopping at payload_len boundary (zero-pads the rest).
+static uint32_t ses_read_bits(const uint8_t *payload, uint8_t payload_len,
+                               uint16_t bit_pos, uint8_t nb_bits)
+{
+    const uint16_t byte_idx = bit_pos / 8;
+    const uint8_t  bit_off  = bit_pos % 8;
+    uint32_t chunk = 0;
+    for (uint8_t b = 0; b < 4 && (byte_idx + b) < payload_len; b++) {
+        chunk |= (uint32_t)payload[byte_idx + b] << (b * 8);
+    }
+    return (chunk >> bit_off) & ((1U << nb_bits) - 1U);
+}
 
 AP_IBus2_Slave *AP_IBus2_Slave::_singleton;
 
@@ -63,15 +88,6 @@ void AP_IBus2_Slave::update()
     // Parse incoming bytes (Frame 1 and Frame 2)
     process_rx();
 
-    static uint32_t last_debug_ms;
-    const uint32_t now_ms = AP_HAL::millis();
-    bool debug = false;
-    if (now_ms - last_debug_ms > 1000) {
-        debug = true;
-        last_debug_ms = now_ms;
-    }
-    if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "update");}
-
     // Send Frame 3 response after the required delay
     if (_response_pending) {
         const uint32_t now_us = AP_HAL::micros();
@@ -82,37 +98,65 @@ void AP_IBus2_Slave::update()
     }
 }
 
+uint8_t AP_IBus2_Slave::get_rc_channel_count() const
+{
+    WITH_SEMAPHORE(_rc_state.sem);
+    return _rc_state.channel_count;
+}
+
 bool AP_IBus2_Slave::get_rc_channels(uint16_t *channels, uint8_t &count) const
 {
-    if (_rc_channel_count == 0) {
+    WITH_SEMAPHORE(_rc_state.sem);
+    if (_rc_state.channel_count == 0) {
         count = 0;
         return false;
     }
-    count = _rc_channel_count;
-    memcpy(channels, _rc_channels, count * sizeof(uint16_t));
+    count = _rc_state.channel_count;
+    memcpy(channels, _rc_state.channels, count * sizeof(uint16_t));
     return true;
+}
+
+uint32_t AP_IBus2_Slave::get_rc_last_update_ms() const
+{
+    WITH_SEMAPHORE(_rc_state.sem);
+    return _rc_state.last_update_ms;
+}
+
+bool AP_IBus2_Slave::get_failsafe() const
+{
+    WITH_SEMAPHORE(_rc_state.sem);
+    return _rc_state.failsafe;
 }
 
 void AP_IBus2_Slave::process_rx()
 {
+    static uint32_t last_debug_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_debug_ms > 1000) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IB2: avail_peak=%u echo_stalls=%u f1=%u",
+                      unsigned(_diag_max_avail),
+                      unsigned(_diag_echo_stalls),
+                      unsigned(_diag_frame1_count));
+        _diag_max_avail = 0;
+        _diag_echo_stalls = 0;
+        _diag_frame1_count = 0;
+        last_debug_ms = now_ms;
+    }
+
     // In half-duplex mode our own TX bytes are echoed back; discard them first.
     _tx_pending_echo = _port->discard_bytes(_tx_pending_echo);
     if (_tx_pending_echo > 0) {
+        _diag_echo_stalls++;
         return;
     }
 
-    const uint16_t avail = MIN(_port->available(), 512U);
+    const uint16_t avail = _port->available();
+    if (avail > _diag_max_avail) {
+        _diag_max_avail = avail;
+    }
+    const uint16_t to_read = MIN(avail, 512U);
 
-        static uint32_t last_debug_ms;
-        const uint32_t now_ms = AP_HAL::millis();
-        bool debug = false;
-        if (now_ms - last_debug_ms > 1000) {
-            debug = true;
-            last_debug_ms = now_ms;
-        }
-        if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "avail %u", unsigned(avail));}
-
-    for (uint16_t i = 0; i < avail; i++) {
+    for (uint16_t i = 0; i < to_read; i++) {
         uint8_t b;
         if (!_port->read(b)) {
             break;
@@ -170,37 +214,101 @@ void AP_IBus2_Slave::process_rx()
 
 void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
 {
-    if (!frame1_handling.have_decompression_key) {
+    const IBUS2_Frame1_Header *hdr = reinterpret_cast<const IBUS2_Frame1_Header *>(buf);
+    const bool failsafe = hdr->failsafe || hdr->sync_lost;
+
+    const uint8_t *payload     = buf + 3;
+    const uint8_t  payload_len = len - 4;  // exclude 3-byte header and 1-byte CRC
+
+    if (hdr->subtype == 1) {
+        // Decompression key: extract packed 5-bit channel types (LSB-first).
+        uint8_t count = 0;
+        uint16_t bit_pos = 0;
+        const uint16_t total_bits = payload_len * 8;
+        while (bit_pos + 5 <= total_bits &&
+               count < ARRAY_SIZE(frame1_handling.channel_types)) {
+            const uint8_t ct = (uint8_t)ses_read_bits(payload, payload_len, bit_pos, 5);
+            if ((ct & 0xF) < 2) {
+                break;  // NbBits<2 marks end of active channels
+            }
+            frame1_handling.channel_types[count++] = ct;
+            bit_pos += 5;
+        }
+        frame1_handling.channel_count = count;
+        frame1_handling.have_decompression_key = true;
         return;
     }
 
-    // buf[0] = header (PacketType, subtype, sync_lost, failsafe)
-    // buf[1] = Length
-    // buf[2] = address byte
-    // buf[3..len-2] = compressed channel data
-    // buf[len-1] = CRC8
-
-    // For subtype=0 (compressed) we decode 2-byte little-endian values.
-    // A real implementation would use the SES_UnpackChannels decompression;
-    // for now treat each pair of bytes as a raw 16-bit channel value.
-    const IBUS2_Frame1_Header *hdr = reinterpret_cast<const IBUS2_Frame1_Header *>(buf);
-    _failsafe = hdr->failsafe || hdr->sync_lost;
-
-    const uint8_t data_start = 3;
-    const uint8_t data_end   = len - 1;  // exclude CRC
-    const uint8_t data_len   = data_end - data_start;
-    const uint8_t n_channels = data_len / 2;
-
-    for (uint8_t i = 0; i < n_channels && i < 32; i++) {
-        _rc_channels[i] = (uint16_t)buf[data_start + i * 2] |
-                          ((uint16_t)buf[data_start + i * 2 + 1] << 8);
+    if (hdr->subtype != 0 || !frame1_handling.have_decompression_key) {
+        return;
     }
-    const bool was_empty = (_rc_channel_count == 0);
-    _rc_channel_count = n_channels;
-    _rc_last_update_ms = AP_HAL::millis();
-    if (was_empty && n_channels > 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBUS2: %u RC chans from receiver", (unsigned)n_channels);
+
+    // subtype=0: SES_UnpackChannels decode (sign-magnitude, LSB-first bit packing).
+    // Decode into a local buffer first to minimise time holding the semaphore.
+    uint16_t new_channels[ARRAY_SIZE(_rc_state.channels)];
+    const uint16_t total_bits = payload_len * 8;
+    uint16_t bit_pos = 0;
+    uint8_t n_decoded = 0;
+
+    for (uint8_t i = 0;
+         i < frame1_handling.channel_count && i < ARRAY_SIZE(_rc_state.channels);
+         i++) {
+        const uint8_t ct      = frame1_handling.channel_types[i];
+        const uint8_t nb_bits = ct & 0xF;
+
+        if (bit_pos + nb_bits > total_bits) {
+            break;
+        }
+
+        uint32_t raw = ses_read_bits(payload, payload_len, bit_pos, nb_bits);
+        bit_pos += nb_bits;
+
+        const uint32_t sign_bit = 1U << (nb_bits - 1);
+        const uint32_t mag_mask = sign_bit - 1U;
+
+        // Failsafe sentinels: keep-failsafe or stop-failsafe
+        if (raw == sign_bit || (nb_bits >= 6 && raw == sign_bit + 1U)) {
+            n_decoded++;
+            continue;
+        }
+
+        const bool negative = (raw & sign_bit) != 0;
+        if (negative) {
+            raw = (uint32_t)(-(int32_t)raw) & mag_mask;
+        }
+
+        const uint32_t factor  = (ct < ARRAY_SIZE(ses_factors)) ? ses_factors[ct] : 0U;
+        const uint64_t ses     = ((uint64_t)raw * factor + (1U << 15)) >> 16;
+        const uint64_t max_ses = ((uint64_t)mag_mask * factor + (1U << 15)) >> 16;
+        const uint32_t ms      = MAX(1U, (uint32_t)max_ses);
+        const uint32_t sv      = (uint32_t)MIN(ses, (uint64_t)ms);
+        const uint32_t offset  = sv * 512U / ms;
+
+        new_channels[i] = (uint16_t)(1500 + (negative ? -(int32_t)offset : (int32_t)offset));
+        n_decoded++;
     }
+
+    _diag_frame1_count++;
+
+    {
+        WITH_SEMAPHORE(_rc_state.sem);
+        const bool was_empty = (_rc_state.channel_count == 0);
+        memcpy(_rc_state.channels, new_channels, n_decoded * sizeof(uint16_t));
+        _rc_state.channel_count = n_decoded;
+        _rc_state.last_update_ms = AP_HAL::millis();
+        _rc_state.failsafe = failsafe;
+        if (was_empty && n_decoded > 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBUS2: %u RC chans from receiver", (unsigned)n_decoded);
+        }
+    }
+
+#if HAL_LOGGING_ENABLED
+    AP::logger().WriteStreaming("IB2C", "TimeUS,Ch0,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7",
+                                "QHHHHHHHH",
+                                AP_HAL::micros64(),
+                                new_channels[0], new_channels[1], new_channels[2], new_channels[3],
+                                new_channels[4], new_channels[5], new_channels[6], new_channels[7]);
+#endif
 }
 
 void AP_IBus2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)

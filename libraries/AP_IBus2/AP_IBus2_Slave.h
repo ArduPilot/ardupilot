@@ -61,17 +61,21 @@ public:
     static AP_IBus2_Slave *get_singleton() { return _singleton; }
 
     // Number of valid RC channels received from the master
-    uint8_t get_rc_channel_count() const { return _rc_channel_count; }
+    uint8_t get_rc_channel_count() const;
 
-    // Read received channel values (PWM, 1000-2000 µs typical)
-    // Returns true if any channels are valid
+    // Read received channel values (PWM µs). Returns true if any channels are valid.
     bool get_rc_channels(uint16_t *channels, uint8_t &count) const;
 
-    // Timestamp (ms) of last Frame 1 reception; 0 if none received yet
-    uint32_t get_rc_last_update_ms() const { return _rc_last_update_ms; }
+    // Timestamp (ms) of the last time fresh RC data was stored; 0 if none received yet.
+    // A stale or zero value indicates the link may be down.
+    uint32_t get_rc_last_update_ms() const;
 
-    // True if master reported failsafe or sync-lost in the last Frame 1
-    bool get_failsafe() const { return _failsafe; }
+    // True if the master reported failsafe or sync-lost in the most recent Frame 1.
+    // sync_lost=1: receiver has lost radio link to transmitter.
+    // failsafe=1:  transmitter-side failsafe has triggered (e.g. TX powered off).
+    // Either condition means the pilot has no live control; use get_rc_last_update_ms()
+    // to additionally detect complete loss of the receiver (no Frame 1 at all).
+    bool get_failsafe() const;
 
 private:
     AP_HAL::UARTDriver *_port;
@@ -79,11 +83,18 @@ private:
 
     static AP_IBus2_Slave *_singleton;
 
-    // RC channels received in Frame 1
-    uint16_t _rc_channels[32];
-    uint8_t  _rc_channel_count;
-    uint32_t _rc_last_update_ms;
-    bool     _failsafe;
+    // Shared RC state — written by the timer task, read by the main task.
+    // All fields protected by rc_state.sem.
+    struct RCState {
+        HAL_Semaphore sem;
+        uint16_t channels[32];
+        uint8_t  channel_count;
+        // Last time fresh channel data was stored (ms); 0 if never received.
+        // Goes stale if Frame 1 stops arriving (receiver powered off / disconnected).
+        uint32_t last_update_ms;
+        // sync_lost || failsafe from the most recent Frame 1 header.
+        bool failsafe;
+    } mutable _rc_state;
 
     // Frame reception state machine
     enum class RxState : uint8_t {
@@ -104,6 +115,11 @@ private:
     // Half-duplex echo: bytes sent that will be echoed back to RX
     uint16_t _tx_pending_echo;
 
+    // Lag diagnostics: reset each second
+    uint16_t _diag_max_avail;       // peak _port->available() seen this second
+    uint16_t _diag_echo_stalls;     // times process_rx returned early due to echo pending
+    uint32_t _diag_frame1_count;    // subtype=0 frames decoded this second
+
     // Pending Frame 2 command
     bool _response_pending;
     IBUS2_Pkt<IBUS2_Frame2> _pending_cmd;
@@ -116,7 +132,8 @@ private:
     void handle_frame1(const uint8_t *buf, uint8_t len);
     struct {
         bool have_decompression_key;
-        // XYZZY decompression_key;
+        uint8_t channel_types[32];  // 5-bit ChannelType per channel from subtype=1
+        uint8_t channel_count;      // active channels (stops at first NbBits<2)
     } frame1_handling;
 
     void handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2);
