@@ -95,6 +95,7 @@ public:
     void log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty);
 
     void log_event3(Event event);
+    void log_resetHeightDatum3(float origin_alt_tolerance_m);
     void log_SetOriginLLH3(const Location &loc);
     void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
 
