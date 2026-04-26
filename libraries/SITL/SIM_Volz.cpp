@@ -92,7 +92,7 @@ Volz::Volz() : SerialDevice::SerialDevice()
 
 void Volz::update_servos(const class Aircraft &aircraft)
 {
-    const float ambient_degC = aircraft.ambient_temperature_degC();
+    const float ambient_degC = aircraft.ambient_outside_temperature_degC();
     const uint32_t now_us = AP_HAL::micros();
     const uint32_t delta_t_us = now_us - last_servo_update_us;
     if (delta_t_us < 1000) {  // only update simulation at 1kHz

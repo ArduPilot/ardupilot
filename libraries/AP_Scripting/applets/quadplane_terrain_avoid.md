@@ -20,10 +20,10 @@ This code works best long range rangefinders such as the LightWare long range li
 The "Can't make that climb" (CMTC) feature will prevent ArduPlane from flying into terrain it does know about
 by calculating the required pitch to avoid terrain between the current location and the next waypoint including
 all points in between. If the pitch required is > PTCH_LIM_MAX_DEG / 2 then the code will perform a loiter to
-altitude, using fixed wing loiter, to acheive a safe altitude to avoid the terrain before continuing the mission.
+altitude, using fixed wing loiter, to achieve a safe altitude to avoid the terrain before continuing the mission.
 
-For CMTC remember to turn it on (defaults to off), also set TA_CMTC_HGT (height above terrain for CMTC to try to acheive) and TA_ALT_MAX (max altitude to fly).
-Aso set TA_CMTC_RAD to a smaller radius than WP_LOITER_RAD. Make sure that the plane can acheive TA_CMTC_RAD based on the ROLL_LIMIT_MAX.
+For CMTC remember to turn it on (defaults to off), also set TA_CMTC_HGT (height above terrain for CMTC to try to achieve) and TA_ALT_MAX (max altitude to fly).
+Also set TA_CMTC_RAD to a smaller radius than WP_LOITER_RAD. Make sure that the plane can achieve TA_CMTC_RAD based on the ROLL_LIMIT_MAX.
 
 Note:
 
@@ -79,7 +79,7 @@ angle. (the same one used by TA_PTCH_FWD_MIN)
 
 The maximum groundspeed to attempt to fly. For best results when doing
 magnetometry surveys ideally a steady groundspeed is required even
-in windy conditions. This attempts to acheive that.
+in windy conditions. This attempts to achieve that.
 
 ## TA_GSP_AIRBRAKE
 

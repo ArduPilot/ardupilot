@@ -350,9 +350,9 @@ void AC_AttitudeControl_Heli::rate_controller_run()
     rate_bf_to_motor_roll_pitch(_rate_gyro_rads, _ang_vel_body_rads.x, _ang_vel_body_rads.y);
     _motors.set_yaw(rate_target_to_motor_yaw(_rate_gyro_rads.z, _ang_vel_body_rads.z));
 
-    _sysid_ang_vel_body_rads.zero();
-    _actuator_sysid.zero();
-
+    _pd_scale_used = _pd_scale;
+    _i_scale_used = _i_scale;
+    _angle_P_scale_used = _angle_P_scale;
 }
 
 // Update Alt_Hold angle maximum
@@ -376,13 +376,13 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
     if (_flags_heli.leaky_i) {
         _pid_rate_roll.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
-    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x, _dt_s, _motors.limit.roll) + _actuator_sysid.x;
+    float roll_pid = _pid_rate_roll.update_all(rate_roll_target_rads, rate_rads.x, _dt_s, _motors.limit.roll, _pd_scale.x, _i_scale.x) + _actuator_sysid.x;
 
     if (_flags_heli.leaky_i) {
         _pid_rate_pitch.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y, _dt_s, _motors.limit.pitch) + _actuator_sysid.y;
+    float pitch_pid = _pid_rate_pitch.update_all(rate_pitch_target_rads, rate_rads.y, _dt_s, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y;
 
     // use pid library to calculate ff
     float roll_ff = _pid_rate_roll.get_ff();
@@ -428,7 +428,7 @@ float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_yaw_actual_ra
         _pid_rate_yaw.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 
-    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads, _dt_s,  _motors.limit.yaw) + _actuator_sysid.z;
+    float pid = _pid_rate_yaw.update_all(rate_target_rads, rate_yaw_actual_rads, _dt_s, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z;
 
     // use pid library to calculate ff
     float vff = _pid_rate_yaw.get_ff()*_feedforward_scalar;

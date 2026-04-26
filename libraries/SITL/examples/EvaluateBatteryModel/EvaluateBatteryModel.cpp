@@ -50,7 +50,7 @@ void setup(void)
     frame.public_load_frame_params(argv[1]);
 
     // parse current draw
-    const float current = strtof(argv[2], NULL);
+    const float current_amps = strtof(argv[2], NULL);
 
     const float amp_hour_capacity = frame.get_capacity();
     const float resistance = frame.get_resistance();
@@ -58,7 +58,7 @@ void setup(void)
     const float min_voltage = max_voltage * 0.7;
 
     ::printf("Simulating %0.2fv, %0.2f ah battery with resistance of %f\n", max_voltage, amp_hour_capacity, resistance);
-    ::printf("Voltage from %0.2f to %0.2f with constant current draw of %0.2f\n", max_voltage, min_voltage, current);
+    ::printf("Voltage from %0.2f to %0.2f with constant current draw of %0.2f\n", max_voltage, min_voltage, current_amps);
 
     // setup battery model
     battery.setup(amp_hour_capacity, resistance, max_voltage);
@@ -71,7 +71,7 @@ void setup(void)
 
     ::printf("time, voltage\n");
     while (battery.get_voltage() >= min_voltage) {
-        battery.set_current(current, time_us);
+        battery.consume_energy(current_amps, time_us);
 
         ::printf("%0.2f, %0.2f\n", time_us * us_to_seconds, battery.get_voltage());
 

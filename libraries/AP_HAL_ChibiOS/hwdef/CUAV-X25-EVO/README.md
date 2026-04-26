@@ -46,7 +46,7 @@ The USART3 connector is labelled debug, but is available as a general purpose UA
 
 ## RC Input
 
-All ArduPilot supported unidirectional RC protocols can be input on the port marked RC IN, including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used set to `SERIALLx_PROTOCOL` = 23. See :ref:`common-rc-systems` for more details.
+All ArduPilot supported unidirectional RC protocols can be input on the port marked RC IN, including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used set to `SERIALLx_PROTOCOL` = 23. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for more details.
 
 ## PWM Output
 
@@ -62,7 +62,7 @@ The 16 PWM outputs are in 5 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot. Outputs 1-8 support BDShot. Channel 15 and 16 only support PWM.
 
-1-8 PWM outputs of CUAV-X25-EVO flight controller support switching between 3.3V voltage and 5V voltage output. It can be switched to 5V by setting GPIO 80 high by setting up a Voltage-Level Translator to control it (set the :ref:`BRD_PWM_VOLT_SEL<BRD_PWM_VOLT_SEL>` parameter in ArduPilot).
+1-8 PWM outputs of CUAV-X25-EVO flight controller support switching between 3.3V voltage and 5V voltage output. It can be switched to 5V by setting GPIO 80 high by setting up a Voltage-Level Translator to control it (set the [BRD_PWM_VOLT_SEL](https://ardupilot.org/copter/docs/parameters.html#brd-pwm-volt-sel-set-pwm-out-voltage) parameter in ArduPilot).
 
 ## Battery Monitoring
 
@@ -72,7 +72,7 @@ Digital DroneCAN/UAVCAN battery monitoring is enabled by default.
 
 ## RSSI
 
-CUAV-X25-EVO has an analog RSSI voltage monitoring input. Set parameter :ref:`RSSI_TYPE<RSSI_TYPE>` to 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 10 to  use this. RC protocols which embed RSSI would use :ref:`RSSI_TYPE<RSSI_TYPE>` = 3.
+CUAV-X25-EVO has an analog RSSI voltage monitoring input. Set parameter [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) to 1 and [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 10 to  use this. RC protocols which embed RSSI would use [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 3.
 
 ## Compass
 

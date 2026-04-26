@@ -69,8 +69,6 @@ const AP_Param::GroupInfo SLCAN::CANIface::var_info[] = {
 
 ////////Helper Methods//////////
 
-static bool hex2nibble_error;
-
 static uint8_t nibble2hex(uint8_t x)
 {
     // Allocating in RAM because it's faster
@@ -78,16 +76,6 @@ static uint8_t nibble2hex(uint8_t x)
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
     };
     return ConversionTable[x & 0x0F];
-}
-
-static uint8_t hex2nibble(char c)
-{
-    uint8_t out = char_to_hex(c);
-
-    if (out == 255) {
-        hex2nibble_error = true;
-    }
-    return out;
 }
 
 bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
@@ -107,30 +95,21 @@ bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
 bool SLCAN::CANIface::handle_FrameDataExt(const char* cmd, bool canfd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
     f.canfd = canfd;
-    f.id = f.FlagEFF |
-           (hex2nibble(cmd[1]) << 28) |
-           (hex2nibble(cmd[2]) << 24) |
-           (hex2nibble(cmd[3]) << 20) |
-           (hex2nibble(cmd[4]) << 16) |
-           (hex2nibble(cmd[5]) << 12) |
-           (hex2nibble(cmd[6]) <<  8) |
-           (hex2nibble(cmd[7]) <<  4) |
-           (hex2nibble(cmd[8]) <<  0);
-    f.dlc = hex2nibble(cmd[9]);
-    if (hex2nibble_error || f.dlc > (canfd?15:8)) {
+    uint32_t id;
+    if (!hex_chars_to_uint32(&cmd[1], 8, id)) {
         return false;
     }
-    {
-        const char* p = &cmd[10];
-        const uint8_t dlen = AP_HAL::CANFrame::dlcToDataLength(f.dlc);
-        for (unsigned i = 0; i < dlen; i++) {
-            f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
-            p += 2;
-        }
+    f.id = f.FlagEFF | id;
+    if (!hex_char_to_nibble(cmd[9], f.dlc)) {
+        return false;
     }
-    if (hex2nibble_error) {
+    if (f.dlc > (canfd?15:8)) {
+        // invalid dlc in frame
+        return false;
+    }
+    const uint8_t dlen = AP_HAL::CANFrame::dlcToDataLength(f.dlc);
+    if (!hex_charpairs_to_uint8s(&cmd[10], dlen, f.data)) {
         return false;
     }
     return push_Frame(f);
@@ -147,29 +126,16 @@ bool SLCAN::CANIface::handle_FDFrameDataExt(const char* cmd)
     return false;
 #else
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
     f.canfd = true;
-    f.id = f.FlagEFF |
-           (hex2nibble(cmd[1]) << 28) |
-           (hex2nibble(cmd[2]) << 24) |
-           (hex2nibble(cmd[3]) << 20) |
-           (hex2nibble(cmd[4]) << 16) |
-           (hex2nibble(cmd[5]) << 12) |
-           (hex2nibble(cmd[6]) <<  8) |
-           (hex2nibble(cmd[7]) <<  4) |
-           (hex2nibble(cmd[8]) <<  0);
-    f.dlc = hex2nibble(cmd[9]);
-    if (f.dlc > AP_HAL::CANFrame::dataLengthToDlc(AP_HAL::CANFrame::MaxDataLen)) {
+    uint32_t id;
+    if (!hex_chars_to_uint32(&cmd[1], 8, id)) {
         return false;
     }
-    {
-        const char* p = &cmd[10];
-        for (unsigned i = 0; i < AP_HAL::CANFrame::dlcToDataLength(f.dlc); i++) {
-            f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
-            p += 2;
-        }
+    f.id = f.FlagEFF | id;
+    if (!hex_char_to_nibble(cmd[9], f.dlc) || f.dlc > AP_HAL::CANFrame::dataLengthToDlc(AP_HAL::CANFrame::MaxDataLen)) {
+        return false;
     }
-    if (hex2nibble_error) {
+    if (!hex_charpairs_to_uint8s(&cmd[10], AP_HAL::CANFrame::dlcToDataLength(f.dlc), f.data)) {
         return false;
     }
     return push_Frame(f);
@@ -179,10 +145,9 @@ bool SLCAN::CANIface::handle_FDFrameDataExt(const char* cmd)
 bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
-    f.id = (hex2nibble(cmd[1]) << 8) |
-           (hex2nibble(cmd[2]) << 4) |
-           (hex2nibble(cmd[3]) << 0);
+    if (!hex_chars_to_uint32(&cmd[1], 3, f.id)) {
+        return false;
+    }
     if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
@@ -190,14 +155,7 @@ bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
     if (f.dlc > AP_HAL::CANFrame::NonFDCANMaxDataLen) {
         return false;
     }
-    {
-        const char* p = &cmd[5];
-        for (unsigned i = 0; i < f.dlc; i++) {
-            f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
-            p += 2;
-        }
-    }
-    if (hex2nibble_error) {
+    if (!hex_charpairs_to_uint8s(&cmd[5], f.dlc, f.data)) {
         return false;
     }
     return push_Frame(f);
@@ -206,25 +164,16 @@ bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
 bool SLCAN::CANIface::handle_FrameRTRExt(const char* cmd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
-    f.id = f.FlagEFF | f.FlagRTR |
-           (hex2nibble(cmd[1]) << 28) |
-           (hex2nibble(cmd[2]) << 24) |
-           (hex2nibble(cmd[3]) << 20) |
-           (hex2nibble(cmd[4]) << 16) |
-           (hex2nibble(cmd[5]) << 12) |
-           (hex2nibble(cmd[6]) <<  8) |
-           (hex2nibble(cmd[7]) <<  4) |
-           (hex2nibble(cmd[8]) <<  0);
+    uint32_t id;
+    if (!hex_chars_to_uint32(&cmd[1], 8, id)) {
+        return false;
+    }
+    f.id = f.FlagEFF | f.FlagRTR | id;
     if (cmd[9] < '0' || cmd[9] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[9] - '0';
-
     if (f.dlc > AP_HAL::CANFrame::NonFDCANMaxDataLen) {
-        return false;
-    }
-    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);
@@ -233,19 +182,15 @@ bool SLCAN::CANIface::handle_FrameRTRExt(const char* cmd)
 bool SLCAN::CANIface::handle_FrameRTRStd(const char* cmd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
-    f.id = f.FlagRTR |
-           (hex2nibble(cmd[1]) << 8) |
-           (hex2nibble(cmd[2]) << 4) |
-           (hex2nibble(cmd[3]) << 0);
+    if (!hex_chars_to_uint32(&cmd[1], 3, f.id)) {
+        return false;
+    }
+    f.id |= f.FlagRTR;
     if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[4] - '0';
     if (f.dlc <= AP_HAL::CANFrame::NonFDCANMaxDataLen) {
-        return false;
-    }
-    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);

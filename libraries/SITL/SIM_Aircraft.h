@@ -180,7 +180,9 @@ public:
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature() const { return battery.get_temperature(); }
 
-    float ambient_temperature_degC() const;
+    float ambient_outside_temperature_degC() const;
+    float ambient_outside_pressure_Pascal() const;
+    float baro_temperature_degC() const;
 
 #if AP_SIM_MOUNT_ENABLED
     void add_gimbal_sim(Mount &sim) {
@@ -290,7 +292,6 @@ protected:
     uint32_t last_frame_count;
     uint8_t instance;
     const char *autotest_dir;
-    const char *frame;
     bool use_time_sync = true;
     float last_speedup = -1.0f;
     const char *config_ = "";

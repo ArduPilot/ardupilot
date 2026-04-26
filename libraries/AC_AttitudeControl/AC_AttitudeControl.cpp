@@ -285,6 +285,16 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
     get_rate_yaw_pid().relax_integrator(0.0, _dt_s, AC_ATTITUDE_RATE_RELAX_TC);
 }
 
+// reset the rate controller target loop updates
+void AC_AttitudeControl::rate_controller_target_reset()
+{
+    _sysid_ang_vel_body_rads.zero();
+    _actuator_sysid.zero();
+    _pd_scale = VECTORF_111;
+    _i_scale = VECTORF_111;
+    _angle_P_scale = VECTORF_111;
+}
+
 // Reduce attitude control gains while landed to stop ground resonance
 void AC_AttitudeControl::landed_gain_reduction(bool landed)
 {

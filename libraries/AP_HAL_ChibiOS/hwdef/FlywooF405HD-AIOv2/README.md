@@ -62,17 +62,18 @@ The GOKU F405 AIO supports up to 5 PWM outputs. The pads for motor output ESC1 t
 
 The PWM are in 3 groups:
 
-PWM 1-2: Group 1
-PWM 3-4: Group 2
-LED: Group 3
+- PWM 1-2: Group 1
+- PWM 3-4: Group 2
+- LED: Group 3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot. PWM 1-4 support bidirectional dshot.
-.. note:: for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
-- :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
-- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
+> **Note:** for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
+
+- [FRAME_CLASS](https://ardupilot.org/copter/docs/parameters.html#frame-class-frame-class) = 1 (Quad)
+- [FRAME_TYPE](https://ardupilot.org/copter/docs/parameters.html#frame-type-frame-type-x-v-etc) = 12 (BetaFlightX)
 
 ## Battery Monitoring
 

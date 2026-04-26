@@ -255,10 +255,6 @@ private:
     RC_Channel *rc_tuning2;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
-    // flight modes convenience array
-    AP_Int8 *flight_modes;
-    const uint8_t num_flight_modes = 6;
-
     AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
     AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
 

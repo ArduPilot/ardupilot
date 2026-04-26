@@ -34,13 +34,13 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 The default RC input is configured on USART1. RC could  be applied instead to a different UART port such as  and set
-the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change :ref:`SERIAL1 _PROTOCOL <SERIAL1 _PROTOCOL>`
+the protocol to receive RC data `SERIALn_PROTOCOL` = 23 and change [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection)
 to something other than '23'. For rc protocols other than unidirectional, the USART1_TX pin will need to be used:
 
-- :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` should be set to "23".
-- FPort would require :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to "15".
-- CRSF would require :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to "0".
-- SRXL2 would require :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` be set to "4" and connects only the TX pin.
+- [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) should be set to "23".
+- FPort would require [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to "15".
+- CRSF would require [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to "0".
+- SRXL2 would require [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to "4" and connects only the TX pin.
 - PPM is not supported
 
 ## OSD Support
@@ -81,11 +81,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
-- :ref:BATT_MONITOR<BATT_MONITOR> = 4
-- :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 13
-- :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 12 (CURR pin)
-- :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11.0
-- :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 17.2
+- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) = 4
+- [BATT_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) = 13
+- [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 12 (CURR pin)
+- [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11.0
+- [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 17.2
 
 ## Compass
 
@@ -93,7 +93,7 @@ The SequreH743 does not have a builtin compass, but you can attach an external c
 
 ## Loading Firmware
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "SequreH743".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "SequreH743".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

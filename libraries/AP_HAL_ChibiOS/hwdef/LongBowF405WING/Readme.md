@@ -43,7 +43,7 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 - SERIAL0 -> USB
 - SERIAL1 -> USART1 (User) (DMA capable)
-- SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if :ref:`BRD_ALT_CONFIG<>` =1)
+- SERIAL2 -> USART2 (RX tied to inverted SBUS RC input, but can be used as normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) =1)
 - SERIAL3 -> UART3 (GPS) (TX DMA capable)
 - SERIAL4 -> UART4 (User) (TX DMA capable)
 - SERIAL5 -> UART5 (DisplayPort, available on DJI air unit connector) (TX DMA capable)
@@ -57,7 +57,7 @@ Fport can be connected to USART1 TX also, but will require an external bi-direct
 
 ## OSD Support
 
-The LongBowF405WING supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such DisplayPor is setup by default using UART5. Simultaneous use of the internal OSD and Displayport is allowed. See :ref:`common-msp-osd-overview-4.2` for more info.
+The LongBowF405WING supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such DisplayPor is setup by default using UART5. Simultaneous use of the internal OSD and Displayport is allowed. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 

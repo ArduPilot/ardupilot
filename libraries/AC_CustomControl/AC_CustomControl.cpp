@@ -31,7 +31,8 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // parameters for empty controller. only used as a template, no need for param table 
     // AP_SUBGROUPVARPTR(_backend, "1_", 6, AC_CustomControl, _backend_var_info[0]),
 
-    // parameters for PID controller
+    // @Group: 2_
+    // @Path: AC_CustomControl_PID.cpp
     AP_SUBGROUPVARPTR(_backend, "2_", 7, AC_CustomControl, _backend_var_info[1]),
 
     AP_GROUPEND

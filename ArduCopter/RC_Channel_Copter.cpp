@@ -16,12 +16,12 @@ int8_t RC_Channels_Copter::flight_mode_channel_number() const
 
 void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
 {
-    if (new_pos < 0 || (uint8_t)new_pos > copter.num_flight_modes) {
+    if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(copter.g.flight_modes)) {
         // should not have been called
         return;
     }
 
-    if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
+    if (!copter.set_mode((Mode::Number)copter.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
         return;
     }
 

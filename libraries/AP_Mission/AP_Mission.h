@@ -539,6 +539,9 @@ public:
     /// reset - reset mission to the first command
     void reset();
 
+    /// reset_jump_counters - reset DO_JUMP counters to their initial values without affecting current position
+    void reset_jump_counters() { init_jump_tracking(); }
+
     /// clear - clears out mission
     bool clear();
 

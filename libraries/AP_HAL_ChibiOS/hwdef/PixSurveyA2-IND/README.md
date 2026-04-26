@@ -25,7 +25,7 @@ The PixSurveyA2-IND flight controller is sold by a range of resellers listed at 
 
 ## Where to Buy
 
-`makeflyeasy <http://www.makeflyeasy.com>`_
+[makeflyeasy](http://www.makeflyeasy.com)
 
 ## Pinout
 
@@ -125,10 +125,10 @@ All compatible unidirectional RC protocols can be decoded by attaching the Recei
 
 To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART with DMA, such as SERIAL2 would need to be used for receiver connections. Below are setups using Serial6.
 
-- :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` should be set to "23".
-- FPort would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "15".
-- CRSF/ELRS would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "0".
-- SRXL2 would require :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` be set to "4" and connects only the TX pin.
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) should be set to "23".
+- FPort would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "15".
+- CRSF/ELRS would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "0".
+- SRXL2 would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "4" and connects only the TX pin.
 
 ## PWM Outputs
 
@@ -145,9 +145,7 @@ support all normal PWM output formats. All outputs also support DShot. Outputs 9
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s `SERVOx_FUNCTION` to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
-.. raw:: html
-
-   | IO Pins |  | FMU Pins |
+| IO Pins |  | FMU Pins |
 | --- | --- | --- |
 | Name | Value | Option |
 |  | Name | Value |
@@ -177,17 +175,17 @@ These should already be set by default. However, if lost or changed:
 
 Enable Battery monitor with these parameter settings :
 
-- :ref:`BATT1_MONITOR<BATT_MONITOR>` 8
-- :ref:`BATT2_MONITOR<BATT_MONITOR>` 4
+- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) 8
+- [BATT2_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt2-monitor-battery-monitoring) 4
 
 Then reboot.
 
-- :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN__AP_BattMonitor>` 13
-- :ref:`BATT2_CURR_PIN<BATT2_CURR_PIN__AP_BattMonitor>` 4
-- :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT__AP_BattMonitor>` 18.0
-- :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT__AP_BattMonitor>` 24.0
+- [BATT2_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt2-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) 13
+- [BATT2_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt2-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) 4
+- [BATT2_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt2-volt-mult-ap-battmonitor-analog-voltage-multiplier) 18.0
+- [BATT2_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt2-amp-pervlt-ap-battmonitor-analog-amps-per-volt) 24.0
 
-.. note:: OSDs will by default display the first battery monitor unless the second battery monitor panel is setup in OSD parameters.
+> **Note:** OSDs will by default display the first battery monitor unless the second battery monitor panel is setup in OSD parameters.
 
 ## DroneCAN capability
 
@@ -199,4 +197,4 @@ The board comes pre-installed with an ArduPilot compatible bootloader,
 allowing the loading of xxxxxx.apj firmware files with any ArduPilot
 compatible ground station.
 
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`_ in  sub-folders labeled "PixSurveyA2-IND".
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in  sub-folders labeled "PixSurveyA2-IND".

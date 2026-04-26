@@ -35,14 +35,19 @@ TEST(vsnprintf_Test, Basic)
         EXPECT_EQ(bytes_required, 8);
     }
     { // ensure rest of buffer survives
-        memset(output, 'A', 10);
+//Main loop where the action takes place
 #pragma GCC diagnostic push
+#if defined(__clang_major__)
+// clang doesn't understand -Wformat-truncation
+#else
 #pragma GCC diagnostic ignored "-Wformat-truncation"
+        memset(output, 'A', 10);
         const int bytes_required = snprintf(output, 5, "012345678");
-#pragma GCC diagnostic pop
         EXPECT_TRUE(streq(output, "0123"));
         EXPECT_EQ(bytes_required, 9);
         EXPECT_EQ(output[6], 'A');
+#endif
+#pragma GCC diagnostic pop
     }
     { // simple float
         const int bytes_required = hal.util->snprintf(output, ARRAY_SIZE(output), "%f", 1/3.0);

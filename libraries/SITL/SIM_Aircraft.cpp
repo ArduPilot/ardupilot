@@ -50,8 +50,7 @@ Aircraft *Aircraft::instances[MAX_SIM_INSTANCES];
   parent class for all simulator types
  */
 
-Aircraft::Aircraft(const char *frame_str) :
-    frame(frame_str)
+Aircraft::Aircraft(const char *frame_str)
 {
     // make the SIM_* variables available to simulator backends
     sitl = AP::sitl();
@@ -124,7 +123,17 @@ float Aircraft::ground_height_difference() const
     return local_ground_level;
 }
 
-float Aircraft::ambient_temperature_degC() const
+float Aircraft::ambient_outside_temperature_degC() const
+{
+    // FIXME: stop applying autopilot warming to this value
+    return baro_temperature_degC();
+}
+
+// the ambient temperature for the autopilot baro sensors, *not* the
+// ambient temperature for the outside of the vehicle.  This
+// temperature is adjusted for things like the simulated board heating
+// up
+float Aircraft::baro_temperature_degC() const
 {
     // FIXME: AP_Baro_SITL should be getting temperature from the
     // simulated aircraft, not the other way around!
@@ -132,6 +141,15 @@ float Aircraft::ambient_temperature_degC() const
     return AP::baro().get_temperature();
 #endif
     return 25.0;
+}
+
+// returns the expected ambient pressure for the vehicle.  So pressure
+// drops preceived by the sensors due to airflow should not be
+// included in this number.
+float Aircraft::ambient_outside_pressure_Pascal() const
+{
+    // FIXME: this includes airflow-related things
+    return AP::baro().get_pressure();
 }
 
 void Aircraft::set_precland(SIM_Precland *_precland) {
@@ -1164,7 +1182,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 #if AP_SIM_LOWEHEISER_ENABLED
     // update Loweheiser generator
     if (loweheiser) {
-        loweheiser->update();
+        loweheiser->update(*this);
     }
 #endif
 

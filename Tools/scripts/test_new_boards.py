@@ -159,6 +159,11 @@ class TestNewBoards(BuildScriptBase):
                 self.progress(f"Skipping ESP32 board {board.name}")
                 continue
 
+            # Skip QURT boards - CI machine can't build them
+            if board.hal == "QURT":
+                self.progress(f"Skipping QURT board {board.name}")
+                continue
+
             # Skip arms board - CI machine can't build it
             if board.toolchain == "arm-linux-gnueabihf":
                 self.progress(f"Skipping arm-linux board {board.name}")

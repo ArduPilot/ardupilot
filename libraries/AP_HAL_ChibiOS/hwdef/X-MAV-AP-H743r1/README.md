@@ -41,7 +41,7 @@ The SBUS-in pin supports all unidirectional RC protocols. For bi-directional RC 
 
 - Set SERIAL4_PROTOCOL to "23"
 - PPM is not supported.
-- FPort requires connection to TX4 and RX4 via a bi-directional inverter. See :ref:common-FPort-receivers.
+- FPort requires connection to TX4 and RX4 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html)
 - CRSF/ELRS also requires a TX4 connection, in addition to RX4, and automatically provides telemetry.
 - SRXL2 requires a connection to TX4 and automatically provides telemetry. Set SERIAL4_OPTIONS to "4".
 
@@ -81,7 +81,7 @@ The 7 FMU PWM outputs are in 3 groups:
 
 - A1 - A4 are in one group.
 - A5, A6 are in a 2nd group.
-- A7 is in a 3nd group.
+- A7 is in a 3rd group.
 
 Channels within the same group need to use the same output rate.
 If any channel in a group uses DShot then all channels in the group need to use DShot.

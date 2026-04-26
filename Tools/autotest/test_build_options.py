@@ -279,6 +279,7 @@ class TestBuildOptions(object):
             'AP_COMPASS_AK8963_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
             'AP_COMPASS_LSM303D_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
             'AP_BARO_THST_COMP_ENABLED',  # compiler is optimising this symbol away
+            'AP_GPS_DEBUG_LOGGING_ENABLED',  # must have a backend compiled in to be present
         ])
         if target.lower() != "copter":
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
@@ -303,6 +304,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
             feature_define_whitelist.add('AP_RC_TRANSMITTER_TUNING_ENABLED')
+            feature_define_whitelist.add('AP_AVOIDANCE_ALTHOLD_ENABLED')
 
         if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
             # plane has a dependency for AP_Follow which is not

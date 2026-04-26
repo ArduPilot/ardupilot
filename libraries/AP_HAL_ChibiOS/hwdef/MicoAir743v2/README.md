@@ -6,7 +6,7 @@ The MicoAir743v2 is a flight controller designed and produced by [MicoAir Tech](
 
 - STM32H743 microcontroller
 - BMI088/BMI270 dual IMUs
-- Integrated BlueTooth module for telemetry
+- Integrated Bluetooth module for telemetry
 - SPL06 barometer
 - QMC5883L magnetometer
 - AT7456E OSD
@@ -31,7 +31,7 @@ The MicoAir743v2 is a flight controller designed and produced by [MicoAir Tech](
 - SERIAL5 -> UART5 (User, DMA-enabled)
 - SERIAL6 -> UART6 (RCIN, DMA-enabled)
 - SERIAL7 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
-- SERIAL8 -> UART8 (MAVLink2, connected to on board BlueTooth module)
+- SERIAL8 -> UART8 (MAVLink2, connected to on board Bluetooth module)
 
 ## RC Input
 
@@ -93,9 +93,9 @@ The default battery parameters are:
 
 The MicoAir743v2 has a built-in compass sensor (QMC5883L), and you can also attach an external compass using I2C on the SDA and SCL connector.
 
-## BlueTooth
+## Bluetooth
 
-The MicoAir743v2 has an on board BlueTooth module connected to UART8(SERIAL8). The BlueTooth id is MicoAir743v2-xxxxxx and you can connect to it without pairing id.
+The MicoAir743v2 has an on board Bluetooth module connected to UART8(SERIAL8). The Bluetooth id is MicoAir743v2-xxxxxx and you can connect to it without pairing id.
 
 ## Mechanical
 

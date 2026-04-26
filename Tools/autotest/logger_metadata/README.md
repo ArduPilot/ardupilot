@@ -22,7 +22,7 @@ For each vehicle type, the following files are generated:
 * **LogMessages.md** - Markdown format file (not used)
 * **LogMessages.rst** - reStructuredText format file - used for populating the Log Message
 
-pages of the Ardupilot website.
+pages of the ArduPilot website.
 
 * **LogMessages.xml** - XML file - used by tools such as MavExplorer to provide
 

@@ -226,10 +226,6 @@ private:
     // hexadecimal to character conversion
     uint8_t hex2char(uint8_t data) const;
 
-    // convert a 4 character hex number to an integer
-    // the characters are in the format "1234" where the most significant digit is first
-    int16_t hexchar4_to_int16(char high, char mid_high, char mid_low, char low) const;
-
     // send a fixed length packet to gimbal
     // returns true on success, false if serial port initialization failed
     bool send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value);

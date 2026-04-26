@@ -98,11 +98,11 @@ If any channel in a group uses DShot, all channels in that group must also use D
 The board includes a built-in voltage and current sensor connected to ADC pins.
 Default configuration:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11.0
-BATT_AMP_PERVLT=25.0
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 25.0
 
 Supports direct 3 S-6 S LiPo voltage measurement.
 

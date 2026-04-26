@@ -619,6 +619,9 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 #define JEDEC_ID_GIGA_GD25Q16E         0xC84015
 #define JEDEC_ID_ZBIT_ZB25VQ128        0x5E4018 
+#define JEDEC_ID_FMSH_FM25Q64          0xA14017
+#define JEDEC_ID_FMSH_FM25Q128A        0xA14018
+#define JEDEC_ID_FMSH_FM25Q256         0xA14019
 
 /* Hardware-specific constants */
 
@@ -780,6 +783,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 
     case JEDEC_ID_MICRON_N25Q064:
     case JEDEC_ID_WINBOND_W25Q64:
+    case JEDEC_ID_FMSH_FM25Q64:
     case JEDEC_ID_MACRONIX_MX25L6406E:
     case JEDEC_ID_CYPRESS_S25FL064L:
         block_count = 128;    /* 8MiB */
@@ -790,11 +794,13 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     case JEDEC_ID_WINBOND_W25Q128_2:
     case JEDEC_ID_CYPRESS_S25FL128L:
     case JEDEC_ID_ZBIT_ZB25VQ128:   
+    case JEDEC_ID_FMSH_FM25Q128A:
         block_count = 256;    /* 16MiB */
         break;
 
     case JEDEC_ID_WINBOND_W25Q256:
     case JEDEC_ID_MACRONIX_MX25L25635E:
+    case JEDEC_ID_FMSH_FM25Q256:
         block_count = 512;    /* 32MiB */
         use_32bit_address = true;
         break;

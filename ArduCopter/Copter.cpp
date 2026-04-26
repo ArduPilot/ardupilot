@@ -981,7 +981,6 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const
  */
 Copter::Copter(void)
     :
-    flight_modes(&g.flight_mode1),
     pos_variance_filt(FS_EKF_FILT_DEFAULT),
     vel_variance_filt(FS_EKF_FILT_DEFAULT),
     flightmode(&mode_stabilize),

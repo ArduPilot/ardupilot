@@ -187,6 +187,24 @@ int slpi_link_client_receive(const uint8_t *data, int data_len_in_bytes)
     return 0;
 }
 
+/*
+  forward a pre-formatted string to the apps proc console over RPC
+ */
+void qurt_printf_to_host(const char *buf)
+{
+    struct qurt_rpc_msg msg;
+    const auto len = strnlen(buf, sizeof(msg.data));
+    if (len > sizeof(msg.data)) {
+        return;
+    }
+    msg.msg_id = QURT_MSG_ID_PRINTF;
+    msg.inst = 0;
+    msg.seq = 0;
+    msg.data_length = len;
+    memcpy(msg.data, buf, len);
+    qurt_rpc_send(msg);
+}
+
 int __wrap_printf(const char *fmt, ...)
 {
     va_list ap;
@@ -196,6 +214,7 @@ int __wrap_printf(const char *fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     HAP_PRINTF(buf);
+    qurt_printf_to_host(buf);
 
     return 0;
 }

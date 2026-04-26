@@ -54,7 +54,7 @@ below.
 
 ## MAVLink Connection
 
-* Requires at least Ardupilot 4.6.
+* Requires at least ArduPilot 4.6.
 * Set the port in the script text to `nil` to enable.
 * In addition to `repl.lua`, copy the `mavport.lua` file and `MAVLink` directory
 

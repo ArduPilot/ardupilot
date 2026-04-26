@@ -131,7 +131,7 @@ AP_GPS_GSOF::read(void)
 #if AP_GPS_DEBUG_LOGGING_ENABLED
         log_data(&temp, 1);
 #endif
-        AP_GSOF::MsgTypes parsed;
+        AP_GSOF::MsgTypes parsed {};
         const int parse_status = parse(temp, parsed);
         if(parse_status == PARSED_GSOF_DATA) {
             if (parsed.get(AP_GSOF::POS_TIME) &&

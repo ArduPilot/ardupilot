@@ -152,7 +152,6 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 Rover::Rover(void) :
     AP_Vehicle(),
     param_loader(var_info),
-    modes(&g.mode1),
     control_mode(&mode_initializing)
 {
 }

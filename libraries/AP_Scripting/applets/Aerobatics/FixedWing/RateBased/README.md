@@ -6,7 +6,7 @@ manoeuvres either in AUTO mission or by triggering using pilot commands
 using RC switches.
 
 As always, but particularly with scripted aerobatics, test in SITL until
-you understand the function and behaviour of each manouver. You will need
+you understand the function and behaviour of each manoeuvre. You will need
 an appropriate aircraft, and be ready to take manual control if necessary!
 
 These tricks are rate-based vs the precision trajectory-based manouvers of the script in the TrajectoryBased directory above this one. However, many planes have difficulty completing those tricks unless they can sustain extended vertical climbs and knife-edges, especially in wind. These tricks do not try to maintain a geospatial track, but rather, just attitude rates. Even planes that cannot hold the 90 deg knife edge trick, will probably hold the 180 deg (inverted) one and do loops and rolls, and these tricks can be done in even strong wind, although will not be well shaped.

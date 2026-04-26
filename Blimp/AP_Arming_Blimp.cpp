@@ -35,7 +35,9 @@ bool AP_Arming_Blimp::run_pre_arm_checks(bool display_failure)
     }
 
 #pragma clang diagnostic push
+#if defined(__clang_major__) && __clang_major__ >= 14
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
     return parameter_checks(display_failure)
 #if AP_FENCE_ENABLED
            & fence_checks(display_failure)

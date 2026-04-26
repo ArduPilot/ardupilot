@@ -136,19 +136,7 @@ void UARTDriver_Console::printf(const char *fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     HAP_PRINTF(buf);
-
-    // send to apps side for printing
-    struct qurt_rpc_msg msg;
-    const auto len = strnlen(buf, sizeof(buf));
-    if (len > sizeof(msg.data)) {
-        return;
-    }
-    msg.msg_id = QURT_MSG_ID_PRINTF;
-    msg.inst = 0;
-    msg.seq = 0;
-    msg.data_length = len;
-    memcpy(msg.data, buf, len);
-    qurt_rpc_send(msg);
+    qurt_printf_to_host(buf);
 }
 
 

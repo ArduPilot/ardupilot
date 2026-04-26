@@ -46,18 +46,18 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART6 RX input. It supports all serial RC protocols except PPM.
 
-- For FPort the receiver must be tied to the USART6 TX6 pin , :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3, :ref:`SERIAL6_OPTIONS <SERIAL6_OPTIONS>` = "7" (invert TX/RX, half duplex).
-- For full duplex CRSF/ELRS use both TX6 and RX6, and :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3 and provides telemetry.
+- For FPort the receiver must be tied to the USART6 TX6 pin , [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) set to 3, [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) = "7" (invert TX/RX, half duplex).
+- For full duplex CRSF/ELRS use both TX6 and RX6, and [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) set to 3 and provides telemetry.
 
-If SBUS is used on HD VTX connector (DJI TX), then :ref:`SERIAL1_PROTOCOl<SERIAL1_PROTOCOl>` should be set to "23" and :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
+If SBUS is used on HD VTX connector (DJI TX), then [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) should be set to "23" and [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
 
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit).
 You need to set the following parameters to enable support for FrSky S.PORT:
 
-- :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` 10
-- :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` 7
+- [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) 10
+- [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) 7
 
 ## OSD Support
 
@@ -90,19 +90,19 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
-- :ref:BATT_MONITOR<BATT_MONITOR> 4
-- :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> 10
-- :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> 11
-- :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> 11.0
-- :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> 40.0
+- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) 4
+- [BATT_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) 10
+- [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) 11
+- [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) 11.0
+- [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) 40.0
 
 Pads for a second analog battery monitor are provided. To use:
 
-- :ref:BATT2_MONITOR<BATT2_MONITOR> 4
-- :ref:BATT2_VOLT_PIN<BATT2_VOLT_PIN__AP_BattMonitor_Analog> 18
-- :ref:BATT2_CURR_PIN<BATT2_CURR_PIN__AP_BattMonitor_Analog> 7
-- :ref:BATT2_VOLT_MULT<BATT2_VOLT_MULT__AP_BattMonitor_Analog> 11.0
-- :ref:BATT2_AMP_PERVLT<BATT2_AMP_PERVLT__AP_BattMonitor_Analog> as required
+- [BATT2_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt2-monitor-battery-monitoring) 4
+- [BATT2_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt2-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) 18
+- [BATT2_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt2-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) 7
+- [BATT2_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt2-volt-mult-ap-battmonitor-analog-voltage-multiplier) 11.0
+- [BATT2_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt2-amp-pervlt-ap-battmonitor-analog-amps-per-volt) as required
 
 ## Analog RSSI and AIRSPEED inputs
 
@@ -126,8 +126,8 @@ GPIO 82 controls the camera output to the connectors marked "C1" and "C2". Setti
 
 ## Loading Firmware
 
-The TBS Lucid H7 Wing does not come with ArduPilot firmware pre-installed. Use the instructions here to load ArduPilot the first time :ref:`common-loading-firmware-onto-chibios-only-boards`.
-Firmware for the TBS Lucid H7 Wing can be found `here <https://firmware.ardupilot.org>`_ in sub-folders labeled “TBS_LUCID_H7_WING".
+The TBS Lucid H7 Wing does not come with ArduPilot firmware pre-installed. Use the instructions here to load ArduPilot the first time [loading firmware onto ChibiOS boards](https://ardupilot.org/copter/docs/common-loading-firmware-onto-chibios-only-boards.html).
+Firmware for the TBS Lucid H7 Wing can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “TBS_LUCID_H7_WING".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

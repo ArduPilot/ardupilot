@@ -278,15 +278,15 @@ void NavEKF3_core::FuseRngBcn()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
                 // correct the state vector
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
                     statesArray[j] = statesArray[j] - Kfusion[j] * rngBcn.innov;
                 }
                 stateStruct.quat.normalize();
+
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+                ForceSymmetry();
+                ConstrainVariances();
 
                 // record healthy fusion
                 faultStatus.bad_rngbcn = false;

@@ -233,14 +233,14 @@ The output levels of the auxiliary outputs can be selected by switch to be eithe
 The board has two dedicated power monitor ports on 6 pin
 connectors. The correct battery setting parameters are dependent on
 the type of power brick which is connected. The first is analog only, the second may be either analog or I2C, depending on baseboard jumpers.
-In order to enable monitoring, the BATT_MONITOR or BATT2_MONIOT parameter must be set. By default BATT_MONITOR is set to "4" for the included power module.
+In order to enable monitoring, the BATT_MONITOR or BATT2_MONITOR parameter must be set. By default BATT_MONITOR is set to "4" for the included power module.
 
 Default params for the first monitor are set and are:
 
-BATT_VOLT_PIN=2
-BATT_CURR_PIN=1
-BATT_VOLT_MULT=18.0
-BATT_AMP_PERVLT=24.0
+- BATT_VOLT_PIN = 2
+- BATT_CURR_PIN = 1
+- BATT_VOLT_MULT = 18.0
+- BATT_AMP_PERVLT = 24.0
 
 ## Compass
 

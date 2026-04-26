@@ -16,12 +16,12 @@ int8_t RC_Channels_Blimp::flight_mode_channel_number() const
 
 void RC_Channel_Blimp::mode_switch_changed(modeswitch_pos_t new_pos)
 {
-    if (new_pos < 0 || (uint8_t)new_pos > blimp.num_flight_modes) {
+    if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(blimp.g.flight_modes)) {
         // should not have been called
         return;
     }
 
-    if (!blimp.set_mode((Mode::Number)blimp.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
+    if (!blimp.set_mode((Mode::Number)blimp.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
         // alert user to mode change failure
         if (blimp.ap.initialised) {
             AP_Notify::events.user_mode_change_failed = 1;

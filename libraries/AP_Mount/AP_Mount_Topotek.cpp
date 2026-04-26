@@ -603,15 +603,17 @@ void AP_Mount_Topotek::read_incoming_packets()
             reset_parser = true;
             break;
 
-        case ParseState::WAITING_FOR_DATALEN:
+        case ParseState::WAITING_FOR_DATALEN: {
             // sanity check data length
-            _parser.data_len = (uint8_t)char_to_hex(b);
-            if (_parser.data_len <= AP_MOUNT_TOPOTEK_DATALEN_MAX) {
+            uint8_t data_len;
+            if (hex_char_to_nibble(b, data_len) && data_len <= AP_MOUNT_TOPOTEK_DATALEN_MAX) {
+                _parser.data_len = data_len;
                 _parser.state = ParseState::WAITING_FOR_CONTROL;
                 break;
             }
             reset_parser = true;
             break;
+        }
 
         case ParseState::WAITING_FOR_CONTROL:
             // r or w
@@ -895,9 +897,15 @@ bool AP_Mount_Topotek::send_location_info()
 void AP_Mount_Topotek::gimbal_angle_analyse()
 {
     // consume current angles
-    int16_t yaw_angle_cd = wrap_180_cd(hexchar4_to_int16(_msg_buff[10], _msg_buff[11], _msg_buff[12], _msg_buff[13]));
-    int16_t pitch_angle_cd = -hexchar4_to_int16(_msg_buff[14], _msg_buff[15], _msg_buff[16], _msg_buff[17]);
-    int16_t roll_angle_cd = hexchar4_to_int16(_msg_buff[18], _msg_buff[19], _msg_buff[20], _msg_buff[21]);
+    uint32_t yaw_raw, pitch_raw, roll_raw;
+    if (!hex_chars_to_uint32((const char*)&_msg_buff[10], 4, yaw_raw) ||
+        !hex_chars_to_uint32((const char*)&_msg_buff[14], 4, pitch_raw) ||
+        !hex_chars_to_uint32((const char*)&_msg_buff[18], 4, roll_raw)) {
+        return;
+    }
+    const int16_t yaw_angle_cd = wrap_180_cd((int16_t)yaw_raw);
+    const int16_t pitch_angle_cd = -(int16_t)pitch_raw;
+    const int16_t roll_angle_cd = (int16_t)roll_raw;
 
     // convert cd to radians
     _current_angle_rad.x = cd_to_rad(roll_angle_cd);
@@ -975,12 +983,16 @@ void AP_Mount_Topotek::gimbal_dist_info_analyse()
     }
 
     // distance is in meters in the format, "12345.6" where each digit is in decimal
-    _measure_dist_m = char_to_hex(_msg_buff[10]) * 10000.0 +
-                      char_to_hex(_msg_buff[11]) * 1000.0 +
-                      char_to_hex(_msg_buff[12]) * 100.0 +
-                      char_to_hex(_msg_buff[13]) * 10.0 +
-                      char_to_hex(_msg_buff[14]) +
-                      char_to_hex(_msg_buff[16]) * 0.1;
+    uint8_t d0, d1, d2, d3, d4, d5;
+    if (!hex_char_to_nibble(_msg_buff[10], d0) ||
+        !hex_char_to_nibble(_msg_buff[11], d1) ||
+        !hex_char_to_nibble(_msg_buff[12], d2) ||
+        !hex_char_to_nibble(_msg_buff[13], d3) ||
+        !hex_char_to_nibble(_msg_buff[14], d4) ||
+        !hex_char_to_nibble(_msg_buff[16], d5)) {
+        return;
+    }
+    _measure_dist_m = d0 * 10000.0 + d1 * 1000.0 + d2 * 100.0 + d3 * 10.0 + d4 + d5 * 0.1;
 }
 
 // gimbal basic information analysis
@@ -991,11 +1003,8 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 
     // extract firmware version
     // the version can be in the format "1.2.3" or "123"
-    // _msg_buff[5] holds the ASCII hex-encoded data length byte from the packet header;
-    // char_to_hex returns 255 for an invalid (non-hex) character, which we treat as a
-    // malformed packet rather than capping, since a valid length field is always a hex digit
-    const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
-    if (data_buf_len == 255) {
+    uint8_t data_buf_len;
+    if (!hex_char_to_nibble(_msg_buff[5], data_buf_len)) {
         return;
     }
 
@@ -1011,7 +1020,11 @@ void AP_Mount_Topotek::gimbal_version_analyse()
     if (contains_period) {
         for (uint8_t i = 0; i < data_buf_len; i++) {
             if (_msg_buff[10 + i] != '.') {
-                ver_num = ver_num * 10 + char_to_hex(_msg_buff[10 + i]);
+                uint8_t digit;
+                if (!hex_char_to_nibble(_msg_buff[10 + i], digit)) {
+                    return;
+                }
+                ver_num = ver_num * 10 + digit;
             } else {
                 version[ver_count++] = ver_num;
                 ver_num = 0;
@@ -1021,14 +1034,18 @@ void AP_Mount_Topotek::gimbal_version_analyse()
             }
         }
     } else {
+        uint8_t d;
         if (data_buf_len >= 1) {
-            version[0] = char_to_hex(_msg_buff[10]);
+            if (!hex_char_to_nibble(_msg_buff[10], d)) { return; }
+            version[0] = d;
         }
         if (data_buf_len >= 2) {
-            version[1] = char_to_hex(_msg_buff[11]);
+            if (!hex_char_to_nibble(_msg_buff[11], d)) { return; }
+            version[1] = d;
         }
         if (data_buf_len >= 3) {
-            version[2] = char_to_hex(_msg_buff[12]);
+            if (!hex_char_to_nibble(_msg_buff[12], d)) { return; }
+            version[2] = d;
         }
     }
     _firmware_ver = (version[2] << 16) | (version[1] << 8) | (version[0]);
@@ -1046,9 +1063,8 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 // gimbal model name message analysis
 void AP_Mount_Topotek::gimbal_model_name_analyse()
 {
-    const auto len = char_to_hex(_msg_buff[5]);
-    if (len == 255) {
-        // flag value indicating invalid character
+    uint8_t len;
+    if (!hex_char_to_nibble(_msg_buff[5], len)) {
         return;
     }
     memset(_model_name, 0, sizeof(_model_name));
@@ -1080,17 +1096,6 @@ uint8_t AP_Mount_Topotek::hex2char(uint8_t data) const
     }
 }
 
-// convert a 4 character hex number to an integer
-// the characters are in the format "1234" where the most significant digit is first
-int16_t AP_Mount_Topotek::hexchar4_to_int16(char high, char mid_high, char mid_low, char low) const
-{
-    const int16_t value = (char_to_hex(high) << 12) |
-                          (char_to_hex(mid_high) << 8) |
-                          (char_to_hex(mid_low) << 4) |
-                          (char_to_hex(low));
-
-    return value;
-}
 
 // send a fixed length packet
 bool AP_Mount_Topotek::send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value)

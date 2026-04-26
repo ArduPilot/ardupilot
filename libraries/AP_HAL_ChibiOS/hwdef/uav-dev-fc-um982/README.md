@@ -141,8 +141,8 @@ All UARTs except USART3 TX have DMA capability. Any UART can be re-tasked by cha
 RC input is configured on connector S1 / SERIAL4 / UART6. It supports all RC protocols.
 
 - PPM not supported
-- CRSF would require  :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>`  set to "0".
-- SRXL2 would require :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>` set to "4". And only connect the TX pin.
+- CRSF would require [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "0".
+- SRXL2 would require [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "4". And only connect the TX pin.
 
 ## Battery Monitoring
 
@@ -150,7 +150,7 @@ Via DroneCAN by UAV-DEV-POWERMODULE
 
 ## Compass
 
-The autopilot includes an internal compass as well as GNSS-based heading, but GNSS-based heading is the recommended heading source. Proper setup and placement of the dual antennas is required as well as setup of the moving baseline parameters, see :ref:`common-gps-for-yaw` for more details.
+The autopilot includes an internal compass as well as GNSS-based heading, but GNSS-based heading is the recommended heading source. Proper setup and placement of the dual antennas is required as well as setup of the moving baseline parameters, see [GPS for yaw](https://ardupilot.org/copter/docs/common-gps-for-yaw.html) for more details.
 
 ## Motor Output
 
@@ -161,7 +161,7 @@ All outputs are capable of PWM and DShot. Motors 1 through 4 are capable of Bidi
 
 ## Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “uav-dev-fc-um982”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “uav-dev-fc-um982”.
 
 ## Loading Firmware
 

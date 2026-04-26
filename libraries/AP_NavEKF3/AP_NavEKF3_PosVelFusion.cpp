@@ -1209,15 +1209,15 @@ void NavEKF3_core::FuseVelPosNED()
                         }
                     }
 
-                    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                    ForceSymmetry();
-                    ConstrainVariances();
-
                     // update states and renormalise the quaternions
                     for (uint8_t i = 0; i<=stateIndexLim; i++) {
                         statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
                     }
                     stateStruct.quat.normalize();
+
+                    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+                    ForceSymmetry();
+                    ConstrainVariances();
 
                     // record good fusion status
                     if (obsIndex == 0) {
@@ -2072,16 +2072,15 @@ void NavEKF3_core::FuseBodyVel()
                     }
                 }
 
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
                 // correct the state vector
                 for (uint8_t j= 0; j<=stateIndexLim; j++) {
                     statesArray[j] = statesArray[j] - Kfusion[j] * innovBodyVel[obsIndex];
                 }
                 stateStruct.quat.normalize();
 
+                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
+                ForceSymmetry();
+                ConstrainVariances();
             } else {
                 // record bad axis
                 if (obsIndex == 0) {

@@ -213,10 +213,6 @@ private:
     int32_t roll_limit_cd;
     float pitch_limit_min;
 
-    // flight modes convenience array
-    AP_Int8 *flight_modes = &g.flight_mode1;
-    static constexpr uint8_t num_flight_modes = 6;
-
 #if AP_RANGEFINDER_ENABLED
     AP_FixedWing::Rangefinder_State rangefinder_state;
 

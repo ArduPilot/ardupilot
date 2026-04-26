@@ -94,7 +94,9 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     }
 
 #pragma clang diagnostic push
+#if defined(__clang_major__) && __clang_major__ >= 14
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
     return (AP_Arming::pre_arm_checks(report)
             & motor_checks(report)
 #if AP_OAPATHPLANNER_ENABLED

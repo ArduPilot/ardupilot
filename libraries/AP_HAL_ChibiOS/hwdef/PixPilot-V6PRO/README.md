@@ -135,14 +135,14 @@ These should already be set by default. However, if lost or changed:
 
 Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
-BATT_VOLT_PIN=14
-BATT_CURR_PIN=15
-BATT_VOLT_MULT=18.0
-BATT_AMP_PERVLT=24.0
-BATT2_VOLT_PIN=13
-BATT2_CURR_PIN=4
-BATT2_VOLT_MULT=18.0
-BATT2_AMP_PERVLT=24.0
+- BATT_VOLT_PIN = 14
+- BATT_CURR_PIN = 15
+- BATT_VOLT_MULT = 18.0
+- BATT_AMP_PERVLT = 24.0
+- BATT2_VOLT_PIN = 13
+- BATT2_CURR_PIN = 4
+- BATT2_VOLT_MULT = 18.0
+- BATT2_AMP_PERVLT = 24.0
 
 ## DroneCAN capability
 
@@ -150,6 +150,6 @@ There are 4 CAN ports which allow connecting two independent CAN bus outputs. Ea
 
 ## Where to Buy
 
-`makeflyeasy <http://www.makeflyeasy.com>`_
+[makeflyeasy](http://www.makeflyeasy.com)
 
 [copywiki destination="plane,copter,rover,blimp"]

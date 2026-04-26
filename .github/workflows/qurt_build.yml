@@ -151,14 +151,15 @@ jobs:
 
       - name: Build QURT
         run: |
-          ./waf configure --board QURT
+          set -ex
+          ./waf configure --board ModalAI-VOXL2
           ./waf copter
           ./waf plane
           ./waf rover
-          cp -a build/QURT/bin/arducopter build/QURT/ArduPilot.so
-          cp -a build/QURT/bin/arducopter build/QURT/ArduPilot_Copter.so
-          cp -a build/QURT/bin/arduplane build/QURT/ArduPilot_Plane.so
-          cp -a build/QURT/bin/ardurover build/QURT/ArduPilot_Rover.so
+          cp -a build/ModalAI-VOXL2/bin/arducopter build/ModalAI-VOXL2/ArduPilot.so
+          cp -a build/ModalAI-VOXL2/bin/arducopter build/ModalAI-VOXL2/ArduPilot_Copter.so
+          cp -a build/ModalAI-VOXL2/bin/arduplane build/ModalAI-VOXL2/ArduPilot_Plane.so
+          cp -a build/ModalAI-VOXL2/bin/ardurover build/ModalAI-VOXL2/ArduPilot_Rover.so
           libraries/AP_HAL_QURT/packaging/make_package.sh ArduCopter arducopter
           libraries/AP_HAL_QURT/packaging/make_package.sh ArduPlane arduplane
           libraries/AP_HAL_QURT/packaging/make_package.sh Rover ardurover
@@ -168,10 +169,10 @@ jobs:
         with:
           name: qurt-binaries
           path: |
-            build/QURT/ardupilot
-            build/QURT/ArduPilot_Copter.so
-            build/QURT/ArduPilot_Plane.so
-            build/QURT/ArduPilot_Rover.so
-            build/QURT/ArduPilot.so
+            build/ModalAI-VOXL2/ardupilot
+            build/ModalAI-VOXL2/ArduPilot_Copter.so
+            build/ModalAI-VOXL2/ArduPilot_Plane.so
+            build/ModalAI-VOXL2/ArduPilot_Rover.so
+            build/ModalAI-VOXL2/ArduPilot.so
             libraries/AP_HAL_QURT/packaging/*.deb
           retention-days: 7

@@ -370,10 +370,10 @@ void SITL_State_Common::sim_update(void)
         serial_rangefinders[i]->update(sitl_model->rangefinder_range());
     }
     if (efi_ms != nullptr) {
-        efi_ms->update();
+        efi_ms->update(*sitl_model);
     }
     if (efi_hirth != nullptr) {
-        efi_hirth->update();
+        efi_hirth->update(*sitl_model);
     }
 
     if (frsky_d != nullptr) {

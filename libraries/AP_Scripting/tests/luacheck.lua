@@ -16,7 +16,14 @@ stds.ArduPilot = {}
 stds.ArduPilot.read_globals = {}
 
 local env = setmetatable({}, {__index = _G})
-assert(pcall(setfenv(assert(loadfile("libraries/AP_Scripting/docs/docs.lua")), env)))
+local docs_loader
+if _VERSION == "Lua 5.1" then
+    docs_loader = assert(loadfile("libraries/AP_Scripting/docs/docs.lua"))
+    setfenv(docs_loader, env)
+else
+    docs_loader = assert(loadfile("libraries/AP_Scripting/docs/docs.lua", "t", env))
+end
+assert(pcall(docs_loader))
 
 for key, value in pairs(env) do
     local singleton = { other_fields = false }

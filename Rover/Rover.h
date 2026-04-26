@@ -136,10 +136,6 @@ private:
     RC_Channel *channel_pitch;
     RC_Channel *channel_walking_height;
 
-    // flight modes convenience array
-    AP_Int8 *modes;
-    static constexpr uint8_t num_modes = 6;
-
     // Arming/Disarming management class
     AP_Arming_Rover arming;
 

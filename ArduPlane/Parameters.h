@@ -299,12 +299,12 @@ public:
         // 210: flight modes
         //
         k_param_flight_mode_channel = 210,
-        k_param_flight_mode1,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
+        k_param_flight_modes0,
+        k_param_flight_modes1,
+        k_param_flight_modes2,
+        k_param_flight_modes3,
+        k_param_flight_modes4,
+        k_param_flight_modes5,
         k_param_initial_mode,
         k_param_land_slope_recalc_shallow_threshold,    // unused - moved to AP_Landing
         k_param_land_slope_recalc_steep_threshold_to_abort, // unused - moved to AP_Landing
@@ -420,12 +420,7 @@ public:
     // Flight modes
     //
     AP_Int8 flight_mode_channel;
-    AP_Int8 flight_mode1;
-    AP_Int8 flight_mode2;
-    AP_Int8 flight_mode3;
-    AP_Int8 flight_mode4;
-    AP_Int8 flight_mode5;
-    AP_Int8 flight_mode6;
+    AP_Int8 flight_modes[6];
     AP_Int8 initial_mode;
 
     // Navigational manoeuvring limits

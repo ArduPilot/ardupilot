@@ -95,7 +95,7 @@ The correct battery setting parameters are:
 
 Pads for a second analog battery monitor are provided. To use:
 
-- Set BATT2_MONIOTOR 4
+- BATT2_MONITOR 4
 - BATT2_VOLT_PIN 18
 - BATT2_CURR_PIN 7
 - BATT2_VOLT_MULT 11.0

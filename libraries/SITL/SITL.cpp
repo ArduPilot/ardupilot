@@ -116,14 +116,14 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Sonar rotation from rotations enumeration
     AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
     // @Param: BATT_VOLTAGE
-    // @DisplayName: Simulated battery voltage
-    // @Description: Simulated battery voltage. Constant voltage when SIM_BATT_CAP_AH is 0, otherwise changing this parameter will re-initialize the state of charge of the battery based on this voltage versus the battery's maximum voltage (default is max voltage).
+    // @DisplayName: Simulated battery resting voltage
+    // @Description: Simulated battery resting voltage (no load sag). Defaults to and clipped to the battery model's maximum voltage. Changes re-initialize the state of charge, and values below the maximum indicate a partially-charged battery. For batteries with unlimited capacity, see `SIM_BATT_CAP_AH`. Value ignored when receiving battery state updates from an external source.
     // @Units: V
     // @User: Advanced
     AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
     // @Param: BATT_CAP_AH
     // @DisplayName: Simulated battery capacity
-    // @Description: Simulated battery capacity. Set to 0 for unlimited capacity. Changing this parameter will re-initialize the state of charge of the battery.
+    // @Description: Simulated battery capacity. Changes re-initialize the state of charge of the battery. Set to 0 for unlimited capacity. Value ignored when receiving battery state updates from an external source.
     // @Units: Ah
     // @User: Advanced
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),

@@ -335,6 +335,7 @@ class Board:
             ]
         else:
             env.CFLAGS += [
+                '-Wno-digraphs',
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
             ]
@@ -431,6 +432,7 @@ class Board:
 
                 '-Werror=address-of-packed-member',
 
+                '-Werror=unknown-warning-option',
                 '-Werror=inconsistent-missing-override',
                 '-Werror=overloaded-virtual',
 
@@ -464,6 +466,7 @@ class Board:
                 '-Werror=unused-but-set-variable',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
+                '-Wno-digraphs',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
@@ -591,10 +594,11 @@ class Board:
             # affecting the compiler output:
             env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
 
-            # disable setting build ID in the ELF header. though if two binaries
-            # are identical they will have the same build ID, setting it avoids
-            # creating a difference if they are not in a way we care about.
-            env.LDFLAGS += ['-Wl,--build-id=none']
+            # Disable setting build ID in the ELF header.
+            # This avoids flagging if two binaries differ in a way we don't care about.
+            # MacOS (darwin) outputs (Mach-O, not ELF) do not need this.
+            if cfg.env.DEST_OS != 'darwin':
+                env.LDFLAGS += ['-Wl,--build-id=none']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",
@@ -665,6 +669,10 @@ def add_dynamic_boards_linux():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(LinuxBoard, 'libraries/AP_HAL_Linux/hwdef')
 
+def add_dynamic_boards_qurt():
+    '''add boards based on existence of hwdef.dat in subdirectories for '''
+    add_dynamic_boards_from_hwdef_dir(QURTBoard, 'libraries/AP_HAL_QURT/hwdef')
+
 def add_dynamic_boards_sitl():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(SITLBoard, 'libraries/AP_HAL_SITL/hwdef')
@@ -698,6 +706,7 @@ def get_boards_names():
     add_dynamic_boards_chibios()
     add_dynamic_boards_esp32()
     add_dynamic_boards_linux()
+    add_dynamic_boards_qurt()
     add_dynamic_boards_sitl()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
@@ -1158,6 +1167,7 @@ class chibios(Board):
             '-Werror=init-self',
             '-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
+            '-Wno-digraphs',
             '-Wno-trigraphs',
             '-fno-strict-aliasing',
             '-fomit-frame-pointer',
@@ -1479,7 +1489,7 @@ class LinuxBoard(Board):
         # get name of class
         return self.__class__.__name__
 
-class QURT(Board):
+class QURTBoard(Board):
     '''support for QURT based boards'''
     toolchain = 'custom'
 
@@ -1487,6 +1497,11 @@ class QURT(Board):
         super().__init__()
 
         self.with_can = False
+
+    def configure(self, cfg):
+        # load hwdef, extract toolchain from cfg.env:
+        cfg.load('qurt')
+        super().configure(cfg)
 
     def configure_toolchain(self, cfg):
         cfg.env.CXX_NAME = 'gcc'
@@ -1522,7 +1537,7 @@ class QURT(Board):
         ]
 
     def configure_env(self, cfg, env):
-        super(QURT, self).configure_env(cfg, env)
+        super().configure_env(cfg, env)
 
         env.BOARD_CLASS = "QURT"
         env.HEXAGON_APP = "libardupilot.so"
@@ -1568,7 +1583,7 @@ class QURT(Board):
         ]
 
     def build(self, bld):
-        super(QURT, self).build(bld)
+        super().build(bld)
         bld.load('qurt')
 
     def get_name(self):
