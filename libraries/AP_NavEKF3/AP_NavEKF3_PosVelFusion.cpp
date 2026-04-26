@@ -366,8 +366,8 @@ void NavEKF3_core::ResetHeight(void)
 // Return true if the height datum reset has been performed
 bool NavEKF3_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
-        // only allow resets when on the ground.
+    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround || inFlight) {
+        // only allow resets when on the ground and not flying.
         // If using using rangefinder for height then never perform a
         // reset of the height datum
         return false;
