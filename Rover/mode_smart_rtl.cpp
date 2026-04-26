@@ -23,8 +23,7 @@ bool ModeSmartRTL::_enter()
     // initialise waypoint navigation library
     g2.wp_nav.init(MAX(0, g2.rtl_speed));
 
-    // set desired location to reasonable stopping point
-    if (!g2.wp_nav.set_desired_location_to_stopping_location()) {
+    if (!g2.wp_nav.set_destination_to_stopping_location()) {
         return false;
     }
 

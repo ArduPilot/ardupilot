@@ -301,8 +301,7 @@ bool AR_WPNav::set_desired_location(const Location& destination, Location next_d
     return true;
 }
 
-// set desired location to a reasonable stopping point, return true on success
-bool AR_WPNav::set_desired_location_to_stopping_location()
+bool AR_WPNav::set_destination_to_stopping_location()
 {
     Location stopping_loc;
     if (!get_stopping_location(stopping_loc)) {
