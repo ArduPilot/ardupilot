@@ -21,10 +21,77 @@ jobs:
             })).map(file => file.filename);
             console.log(filenames);
 
+            const vehicle_labels = {
+              AntennaTracker: 'AntennaTracker',
+              ArduCopter: 'Copter',
+              ArduPlane: 'Plane',
+              ArduSub: 'Sub',
+              Blimp: 'Blimp',
+              Rover: 'Rover',
+            };
+
+            const vehicle_sim_labels = {
+              Helicopter: 'TradHeli',
+              QuadPlane: 'VTOL-Plane',
+              Sailboat: 'Sailboat',
+              Blimp: 'Blimp',
+              Plane: 'Plane',
+              Rover: 'Rover',
+              Submarine: 'Sub',
+            };
+
             const labels = new Set();
             for (const filename of filenames) {
+              // Generic checks
               if (filename.endsWith('.lua')) labels.add('Scripting');
               else if (filename.endsWith('.py')) labels.add('Python');
+
+              // Specific/niche vehicle checks
+              if (
+                filename.startsWith('ArduPlane/quadplane') ||
+              ) {
+                labels.add('VTOL-Plane');
+                continue;
+              } else if (
+                filename == 'ArduCopter/heli.cpp' ||
+                filename.startsWith('Tools/autotest/default_params/copter-heli') ||
+                filename.startsWith('libraries/AP_Motors/AP_MotorsHeli')
+              ) {
+                labels.add('TradHeli');
+                continue;
+              } else if (
+                filename.startsWith('Rover/sailboat') ||
+              ) {
+                labels.add('Sailboat');
+                continue;
+              }
+
+              var specific = false;
+              for (const [vehicle, label] of Object.entries(vehicle_sim_labels)) {
+                if (
+                  filename == `Tools/autotest/${vehicle.toLowerCase()}.py` ||
+                  filename.startswith(`Tools/autotest/default_params/${vehicle.toLowerCase()}`) ||
+                  filename.startsWith(`libraries/SITL/SIM_${vehicle}`)
+                ) {
+                  labels.add(label);
+                  specific = true;
+                  break;
+                }
+              }
+
+              if (specific) continue;
+
+              // General vehicle checks
+              for (const [vehicle, label] of Object.entries(vehicle_labels)) {
+                if (
+                  filename.startsWith(vehicle) ||
+                  filename.startsWith(`Tools/autotest/${vehicle}_Test`) ||
+                  filename == `Tools/autotest/${vehicle.toLowerCase()}.py`
+                ) {
+                  labels.add(label);
+                  break;
+                }
+              }
             }
             console.log(labels);
 
