@@ -18,12 +18,16 @@
 #include <AP_Navigation/AP_Navigation.h>
 #include <AP_TECS/AP_TECS.h>
 #include <AP_Common/Location.h>
+#include <AP_Vehicle/AP_FixedWing.h>
 
 class AP_L1_Control : public AP_Navigation {
 public:
-    AP_L1_Control(AP_AHRS &ahrs, const AP_TECS *tecs)
+    AP_L1_Control(AP_AHRS & ahrs, const AP_TECS *tecs,
+                  const AP_FixedWing &aparm, const uint32_t log_bitmask)
         : _ahrs(ahrs)
         , _tecs(tecs)
+        , _aparm(aparm)
+        , _log_bitmask(log_bitmask)
     {
         AP_Param::setup_object_defaults(this, var_info);
     }
@@ -35,6 +39,19 @@ public:
      * functions */
     int32_t nav_roll_cd(void) const override;
     float lateral_acceleration(void) const override;
+
+    // Status flags for roll-to-lateral-acceleration gain updates.
+    enum log_RLAG_Flags : uint16_t {
+        RLAG_OK                 = 0,
+        RLAG_DISABLED           = (1U<<0),
+        RLAG_FIRST_CALL         = (1U<<1),
+        RLAG_BAD_DT             = (1U<<2),
+        RLAG_LOW_GS             = (1U<<3),
+        RLAG_LOW_DEMAND         = (1U<<4),
+        RLAG_MODEL_TOO_SMALL    = (1U<<5),
+        RLAG_ROLL_REVERSAL      = (1U<<6),
+        RLAG_DIR_MISMATCH       = (1U<<7),
+    };
 
     // return the desired track heading angle(centi-degrees)
     int32_t nav_bearing_cd(void) const override;
@@ -81,7 +98,13 @@ private:
     // pointer to the SpdHgtControl object
     const AP_TECS *_tecs;
 
-    // lateral acceration in m/s required to fly to the
+    // reference to the fixed-wing parameters object
+    const AP_FixedWing &_aparm;
+
+    // logging bitmask
+    const uint32_t _log_bitmask;
+
+    // lateral acceleration in m/s required to fly to the
     // L1 reference point (+ve to right)
     float _latAccDem;
 
@@ -123,6 +146,15 @@ private:
     bool _data_is_stale = true;
 
     AP_Float _loiter_bank_limit;
+
+    // Adaptive correction of roll-to-lateral-acceleration effectiveness.
+    // Improves turns and circle tracking when the coordinated-turn model is
+    // imperfect.
+    AP_Float _lat_acc_k_tc;
+    float _lat_acc_k = 1.0f;
+    float _lat_acc_k_tc_prev;
+    uint32_t _last_lat_acc_update_us;
+    void _update_lat_acc_gain(const Vector2f &groundspeed);
 
     // remember reached_loiter_target decision
     struct {
