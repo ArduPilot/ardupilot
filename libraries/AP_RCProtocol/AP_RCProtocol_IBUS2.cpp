@@ -33,8 +33,7 @@ void AP_RCProtocol_IBUS2::update()
     }
     _last_update_ms = last_ms;
 
-    // Use a buffer large enough for the slave's maximum channel count.
-    uint16_t channels[32];
+    uint16_t channels[MAX_RCIN_CHANNELS];
     uint8_t count;
     if (!slave->get_rc_channels(channels, count)) {
         return;

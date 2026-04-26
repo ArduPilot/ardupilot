@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-Parse a Saleae async-serial CSV capture of IBUS2 traffic.
+Parse IBUS2 traffic from a Saleae async-serial CSV or a raw binary file.
 
-Groups bytes into frames using inter-byte gap timing, then decodes
-each frame as IBUS1 (checksum) or IBUS2 (CRC-8 poly 0x25) and
-displays the results.
+CSV mode (default): groups bytes into frames using inter-byte gap timing.
+Raw mode (--raw):   uses IBUS2 protocol framing (length byte / fixed 21-byte
+                    packets) to split frames with no timing information needed.
+                    Raw binary can be produced from a dataflash log with:
+                        Tools/scripts/rcda_decode.py --csv-output OUT.csv LOG.BIN
+                    then pass OUT.csv to this script, or extract raw bytes and
+                    pass them with --raw.
 
 Usage:
     ./parse_capture.py [CSV] [--gap-us GAP] [--max-frames N] [--offset N]
+    ./parse_capture.py --raw BINARY_FILE [--max-frames N] [--offset N]
     ./parse_capture.py [CSV] --split-dir DIR   # write one CSV per frame
 """
 
@@ -379,6 +384,59 @@ def describe_frame(frame: Frame, idx: int, state: Optional[Dict] = None) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Raw binary framing (no timing available — use protocol structure)
+# ---------------------------------------------------------------------------
+IBUS2_FRAME1_MIN = 4
+IBUS2_FRAME1_MAX = 37
+IBUS2_FRAME23_SIZE = 21
+IBUS2_PKT_CHANNELS = 0
+IBUS2_PKT_COMMAND  = 1
+IBUS2_PKT_RESPONSE = 2
+
+
+def load_raw(path: str) -> List[Frame]:
+    """
+    Load frames from a raw binary file using IBUS2 protocol framing.
+
+    Frame1: pkt_type == 0, length in byte[1] (4–37).
+    Frame2/3: pkt_type == 1 or 2, always 21 bytes.
+    Unrecognised bytes are skipped.
+    Timestamps are set to 0.0 (no timing available in raw binary).
+    """
+    with open(path, 'rb') as fh:
+        data = fh.read()
+
+    frames: List[Frame] = []
+    i = 0
+    while i < len(data):
+        b0 = data[i]
+        pkt_type = b0 & 0x3
+
+        if pkt_type == IBUS2_PKT_CHANNELS:
+            if i + 1 >= len(data):
+                break
+            length = data[i + 1]
+            if length < IBUS2_FRAME1_MIN or length > IBUS2_FRAME1_MAX:
+                i += 1
+                continue
+            if i + length > len(data):
+                break
+            frames.append(Frame(0.0, None, bytes(data[i:i + length])))
+            i += length
+
+        elif pkt_type in (IBUS2_PKT_COMMAND, IBUS2_PKT_RESPONSE):
+            if i + IBUS2_FRAME23_SIZE > len(data):
+                break
+            frames.append(Frame(0.0, None, bytes(data[i:i + IBUS2_FRAME23_SIZE])))
+            i += IBUS2_FRAME23_SIZE
+
+        else:
+            i += 1
+
+    return frames
+
+
+# ---------------------------------------------------------------------------
 # Gap statistics
 # ---------------------------------------------------------------------------
 def print_gap_stats(samples: List[Sample]) -> None:
@@ -415,29 +473,36 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('csv', nargs='?',
                         default='libraries/AP_IBus2/examples/captures/ibus2-FTr8B.csv',
-                        help='Saleae async-serial CSV file')
+                        help='Saleae async-serial CSV file (or raw binary with --raw)')
+    parser.add_argument('--raw', action='store_true',
+                        help='Treat input as raw binary; use protocol framing instead of gap timing')
     parser.add_argument('--gap-us', type=float, default=50.0,
-                        help='Gap threshold in µs to split frames (default: 50)')
+                        help='Gap threshold in µs to split frames (default: 50, CSV mode only)')
     parser.add_argument('--max-frames', type=int, default=20,
                         help='Maximum number of frames to print (default: 20)')
     parser.add_argument('--offset', type=int, default=0,
                         help='Skip first N frames before printing')
     parser.add_argument('--stats', action='store_true',
-                        help='Print inter-sample gap statistics and exit')
+                        help='Print inter-sample gap statistics and exit (CSV mode only)')
     parser.add_argument('--split-dir', metavar='DIR',
                         help='Write one CSV per frame into DIR (packet1.csv, packet2.csv, …)')
     args = parser.parse_args()
 
-    print(f"Loading {args.csv}...")
-    samples = load_csv(args.csv)
-    print(f"  {len(samples)} samples loaded")
+    if args.raw:
+        print(f"Loading {args.csv} (raw binary)...")
+        frames = load_raw(args.csv)
+        print(f"  {len(frames)} frames\n")
+    else:
+        print(f"Loading {args.csv}...")
+        samples = load_csv(args.csv)
+        print(f"  {len(samples)} samples loaded")
 
-    if args.stats:
-        print_gap_stats(samples)
-        return
+        if args.stats:
+            print_gap_stats(samples)
+            return
 
-    frames = segment_frames(samples, args.gap_us)
-    print(f"  {len(frames)} frames (gap_threshold={args.gap_us}µs)\n")
+        frames = segment_frames(samples, args.gap_us)
+        print(f"  {len(frames)} frames (gap_threshold={args.gap_us}µs)\n")
 
     if args.split_dir:
         split_frames(frames, args.split_dir)
