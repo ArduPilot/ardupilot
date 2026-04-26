@@ -1,7 +1,3 @@
-# X class quad
-FRAME_CLASS 1
-FRAME_TYPE 1
-
 # SW-G OFF
 RELAY1_DEFAULT 1
 
