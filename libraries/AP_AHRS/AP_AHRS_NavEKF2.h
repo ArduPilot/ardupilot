@@ -70,7 +70,7 @@ public:
     uint32_t getLastPosDownReset(float &posDelta) override WARN_IF_UNUSED {
         return EKF2.getLastPosDownReset(posDelta);
     };
-    void resetHeightDatum(void) override {
+    void resetHeightDatum(float origin_alt_tolerance_m) override {
         EKF2.resetHeightDatum();
     }
 
