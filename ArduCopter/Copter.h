@@ -255,8 +255,8 @@ private:
     RC_Channel *rc_tuning2;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
-    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
-    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U, g2.surftrak_glitch_alt, g2.surftrak_num_samples};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U, g2.surftrak_glitch_alt, g2.surftrak_num_samples};
 
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_m(float& ret) const;

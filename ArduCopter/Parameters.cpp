@@ -1169,6 +1169,25 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Increment: 0.1
     AP_GROUPINFO("PILOT_TKO_ALT_M", 20, ParametersG2, pilot_takeoff_alt_m, PILOT_TKO_ALT_M_DEFAULT),
 
+#if AP_RANGEFINDER_ENABLED
+    // @Param: SURFTRAK_GLDST
+    // @DisplayName: Glitch threshold for surface tracking
+    // @Description: When a rangefinder reading differs from the previous by more than this, it will be considered a glitch and will not be used. A value of zero disables this check.
+    // @Units: m
+    // @Range: 0 100
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("SURFTRAK_GLDST", 21, ParametersG2, surftrak_glitch_alt, AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT),
+
+    // @Param: SURFTRAK_GLSAM
+    // @DisplayName: Number of glitched samples before accepting the new reading
+    // @Description: When this many consecutive samples are considered a glitch, we give up and accept the new reading. A value of zero disables this behaviour and glitched values are never accepted.
+    // @Range: 0 10
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surftrak_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
