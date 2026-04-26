@@ -101,11 +101,11 @@ LiPo batteries.
 
 The correct battery setting parameters are set by default and are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11.05
-BATT_AMP_PERVLT=50
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.05
+- BATT_AMP_PERVLT = 50
 
 ## Compass
 

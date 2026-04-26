@@ -286,7 +286,6 @@ class Board:
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
-            '-Wno-digraphs',
             '-Wno-trigraphs',
             '-Werror=shadow',
             '-Werror=return-type',
@@ -336,6 +335,7 @@ class Board:
             ]
         else:
             env.CFLAGS += [
+                '-Wno-digraphs',
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
             ]
@@ -418,7 +418,6 @@ class Board:
             '-Werror=unused-variable',
             '-Werror=delete-non-virtual-dtor',
             '-Wfatal-errors',
-            '-Wno-digraphs',
             '-Wno-trigraphs',
             '-Werror=parentheses',
             '-DARDUPILOT_BUILD',
@@ -433,6 +432,7 @@ class Board:
 
                 '-Werror=address-of-packed-member',
 
+                '-Werror=unknown-warning-option',
                 '-Werror=inconsistent-missing-override',
                 '-Werror=overloaded-virtual',
 
@@ -466,6 +466,7 @@ class Board:
                 '-Werror=unused-but-set-variable',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
+                '-Wno-digraphs',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
@@ -593,10 +594,11 @@ class Board:
             # affecting the compiler output:
             env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
 
-            # disable setting build ID in the ELF header. though if two binaries
-            # are identical they will have the same build ID, setting it avoids
-            # creating a difference if they are not in a way we care about.
-            env.LDFLAGS += ['-Wl,--build-id=none']
+            # Disable setting build ID in the ELF header.
+            # This avoids flagging if two binaries differ in a way we don't care about.
+            # MacOS (darwin) outputs (Mach-O, not ELF) do not need this.
+            if cfg.env.DEST_OS != 'darwin':
+                env.LDFLAGS += ['-Wl,--build-id=none']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",

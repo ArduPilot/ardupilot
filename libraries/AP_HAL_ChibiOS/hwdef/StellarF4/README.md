@@ -82,11 +82,11 @@ The voltage input is compatible with 2~6S LiPo batteries.
 
 The default battery parameters are:
 
-BATT_MONITOR=4
-BATT_VOLT_PIN=10
-BATT_CURR_PIN=11
-BATT_VOLT_MULT=11.2
-BATT_AMP_PERVLT=52.7
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.2
+- BATT_AMP_PERVLT = 52.7
 
 ## Compass
 

@@ -139,11 +139,11 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 The X6_Air flight controller has one six-pin power connectors, supporting CAN interface power supply.
 The autopilot defaults are setup for CAN Power Module use (normally supplied with autopilot):
 
-BATT_MONITOR=8
-CAN_P1_DRIVER=1
-CAN_P2_DRIVER=1
-CAN_D1_PROTOCOL=1
-CAN_D2_PROTOCOL=1
+- BATT_MONITOR = 8
+- CAN_P1_DRIVER = 1
+- CAN_P2_DRIVER = 1
+- CAN_D1_PROTOCOL = 1
+- CAN_D2_PROTOCOL = 1
 
 ## Compass
 

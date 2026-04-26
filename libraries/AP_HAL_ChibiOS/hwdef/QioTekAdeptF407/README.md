@@ -172,9 +172,9 @@ The QioTek AdeptF407 AIO supports up to 12 PWM outputs. All 14 PWM outputs have 
 
 The 12 PWM outputs are in 3 groups:
 
-PWM 1 and 4 in group1
-PWM 4 and 8 in group2
-PWM 9 and 12 in group3
+- PWM 1 and 4 in group1
+- PWM 4 and 8 in group2
+- PWM 9 and 12 in group3
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot or then all channels in the group need to use DShot.
 
@@ -188,14 +188,14 @@ The board has two dedicated power monitor ports on 6 pin connectors. The correct
 
 The correct battery setting parameters are:
 
-BATT_VOLT_PIN 2
-BATT_CURR_PIN 3
-BATT_VOLT_MULT 20.000
-BATT_AMP_PERVLT 60.000
-BATT2_VOLT_PIN 14
-BATT2_CURR_PIN 15
-BATT2_VOLT_MULT 20.000
-BATT2_AMP_PERVLT 60.000
+- BATT_VOLT_PIN 2
+- BATT_CURR_PIN 3
+- BATT_VOLT_MULT 20.000
+- BATT_AMP_PERVLT 60.000
+- BATT2_VOLT_PIN 14
+- BATT2_CURR_PIN 15
+- BATT2_VOLT_MULT 20.000
+- BATT2_AMP_PERVLT 60.000
 
 In addition, the builtin voltage divider circuit can be used by Solder pad to switching to share the battery voltage monitoring by power2 support to 6S.
 

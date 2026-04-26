@@ -52,5 +52,8 @@ extern volatile uint32_t _last_counter;
 #ifdef __cplusplus
 // send a message to the host
 bool qurt_rpc_send(struct qurt_rpc_msg &msg);
+
+// forward a pre-formatted console string to the apps proc
+void qurt_printf_to_host(const char *buf);
 #endif
 
