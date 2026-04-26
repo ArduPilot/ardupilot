@@ -37,6 +37,10 @@
 
 #include <AP_IBus2/AP_IBus2_config.h>
 
+// Debug: log every valid Frame 1 as an RCDA dataflash message (same format as
+// AP_RCProtocol_Backend::log_data).  Set to 0 to exclude from production builds.
+#define AP_IBUS2_LOG_RAW_FRAMES 1
+
 #if AP_IBUS2_SLAVE_ENABLED
 
 #include <AP_IBus2/AP_IBus2.h>
@@ -130,6 +134,9 @@ private:
 
     void process_rx();
     void handle_frame1(const uint8_t *buf, uint8_t len);
+#if AP_IBUS2_LOG_RAW_FRAMES
+    void log_raw_frame(const uint8_t *buf, uint8_t len) const;
+#endif
     struct {
         bool have_decompression_key;
         uint8_t channel_types[32];  // 5-bit ChannelType per channel from subtype=1

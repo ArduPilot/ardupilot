@@ -59,6 +59,23 @@ static uint32_t ses_read_bits(const uint8_t *payload, uint8_t payload_len,
     return (chunk >> bit_off) & ((1U << nb_bits) - 1U);
 }
 
+#if AP_IBUS2_LOG_RAW_FRAMES && HAL_LOGGING_ENABLED
+void AP_IBus2_Slave::log_raw_frame(const uint8_t *buf, uint8_t len) const
+{
+    uint32_t u32[10] {};
+    const uint8_t capped = MIN(len, (uint8_t)sizeof(u32));
+    memcpy(u32, buf, capped);
+    // Prot value 22 = AP_RCProtocol::IBUS2 (not included here to avoid circular dependency)
+    AP::logger().WriteStreaming("RCDA", "TimeUS,TS,Prot,Len,U0,U1,U2,U3,U4,U5,U6,U7,U8,U9", "QIBBIIIIIIIIII",
+                               AP_HAL::micros64(),
+                               AP_HAL::micros(),
+                               (uint8_t)22,
+                               capped,
+                               u32[0], u32[1], u32[2], u32[3], u32[4],
+                               u32[5], u32[6], u32[7], u32[8], u32[9]);
+}
+#endif  // AP_IBUS2_LOG_RAW_FRAMES && HAL_LOGGING_ENABLED
+
 AP_IBus2_Slave *AP_IBus2_Slave::_singleton;
 
 AP_IBus2_Slave::AP_IBus2_Slave()
@@ -192,6 +209,9 @@ void AP_IBus2_Slave::process_rx()
                 }
             } else if (_rx_len == _frame1_expected_len) {
                 if (ibus2_crc8_ok(_rx_buf, _frame1_expected_len)) {
+#if AP_IBUS2_LOG_RAW_FRAMES && HAL_LOGGING_ENABLED
+                    log_raw_frame(_rx_buf, _frame1_expected_len);
+#endif
                     handle_frame1(_rx_buf, _frame1_expected_len);
                 }
                 _rx_state = RxState::WAIT_HEADER;
@@ -201,6 +221,9 @@ void AP_IBus2_Slave::process_rx()
         case RxState::IN_FRAME2:
             _rx_buf[_rx_len++] = b;
             if (_rx_len == IBUS2_FRAME2_SIZE) {
+#if AP_IBUS2_LOG_RAW_FRAMES && HAL_LOGGING_ENABLED
+                log_raw_frame(_rx_buf, IBUS2_FRAME2_SIZE);
+#endif
                 const auto *pkt = IBUS2_Pkt<IBUS2_Frame2>::cast_validated(_rx_buf);
                 if (pkt != nullptr) {
                     handle_frame2(pkt);
