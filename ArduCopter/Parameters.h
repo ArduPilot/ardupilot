@@ -739,6 +739,9 @@ public:
     void *mode_poshold_ptr;
 #endif
 
+    void *surface_distance_down_ptr;
+    void *surface_distance_up_ptr;
+
 };
 
 extern const AP_Param::Info        var_info[];
