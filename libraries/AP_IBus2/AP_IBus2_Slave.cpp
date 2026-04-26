@@ -147,31 +147,13 @@ bool AP_IBus2_Slave::get_failsafe() const
 
 void AP_IBus2_Slave::process_rx()
 {
-    static uint32_t last_debug_ms;
-    const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - last_debug_ms > 1000) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IB2: avail_peak=%u echo_stalls=%u f1=%u",
-                      unsigned(_diag_max_avail),
-                      unsigned(_diag_echo_stalls),
-                      unsigned(_diag_frame1_count));
-        _diag_max_avail = 0;
-        _diag_echo_stalls = 0;
-        _diag_frame1_count = 0;
-        last_debug_ms = now_ms;
-    }
-
     // In half-duplex mode our own TX bytes are echoed back; discard them first.
     _tx_pending_echo = _port->discard_bytes(_tx_pending_echo);
     if (_tx_pending_echo > 0) {
-        _diag_echo_stalls++;
         return;
     }
 
-    const uint16_t avail = _port->available();
-    if (avail > _diag_max_avail) {
-        _diag_max_avail = avail;
-    }
-    const uint16_t to_read = MIN(avail, 512U);
+    const uint16_t to_read = MIN(_port->available(), 512U);
 
     for (uint16_t i = 0; i < to_read; i++) {
         uint8_t b;
@@ -311,8 +293,6 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
         n_decoded++;
     }
 
-    _diag_frame1_count++;
-
     {
         WITH_SEMAPHORE(_rc_state.sem);
         const bool was_empty = (_rc_state.channel_count == 0);
@@ -336,18 +316,8 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
 
 void AP_IBus2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)
 {
-    static uint32_t last_debug_ms;
-    const uint32_t now_ms = AP_HAL::millis();
-    bool debug = false;
-    if (now_ms - last_debug_ms > 1000) {
-        debug = true;
-        last_debug_ms = now_ms;
-    }
-    if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "handling frame2");}
-
     // Only respond if not already waiting to respond
     if (_response_pending) {
-        if (debug) {GCS_SEND_TEXT(MAV_SEVERITY_INFO, "response already pending");}
         return;
     }
     memcpy(&_pending_cmd, f2, sizeof(_pending_cmd));
@@ -398,13 +368,6 @@ void AP_IBus2_Slave::send_frame3()
 
 void AP_IBus2_Slave::send_resp_get_type()
 {
-    static uint32_t last_debug_ms;
-    const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - last_debug_ms > 1000) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Sending ibus2 gettype response");
-        last_debug_ms = now_ms;
-    }
-
     const IBUS2_Pkt<IBUS2_Resp_GetType> r{
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::GET_TYPE,

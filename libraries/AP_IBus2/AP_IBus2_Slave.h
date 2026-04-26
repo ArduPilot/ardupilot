@@ -119,11 +119,6 @@ private:
     // Half-duplex echo: bytes sent that will be echoed back to RX
     uint16_t _tx_pending_echo;
 
-    // Lag diagnostics: reset each second
-    uint16_t _diag_max_avail;       // peak _port->available() seen this second
-    uint16_t _diag_echo_stalls;     // times process_rx returned early due to echo pending
-    uint32_t _diag_frame1_count;    // subtype=0 frames decoded this second
-
     // Pending Frame 2 command
     bool _response_pending;
     IBUS2_Pkt<IBUS2_Frame2> _pending_cmd;
