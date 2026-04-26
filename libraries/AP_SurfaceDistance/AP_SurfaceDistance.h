@@ -6,10 +6,7 @@
 
 class AP_SurfaceDistance {
 public:
-    AP_SurfaceDistance(Rotation rot, uint8_t i) :
-        instance(i),
-        rotation(rot)
-    {};
+    AP_SurfaceDistance(Rotation rot, uint8_t i);
 
     void update();
 
@@ -32,6 +29,9 @@ public:
     uint32_t glitch_cleared_ms;             // system time glitch cleared
     float terrain_u_m;                      // filtered terrain offset (e.g. terrain's height above EKF origin)
 
+    // accessor functions for the params
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
 #if HAL_LOGGING_ENABLED
     void Log_Write(void) const;
@@ -43,6 +43,8 @@ private:
     const uint8_t instance;
     uint8_t status;
     uint32_t last_healthy_ms;
+    AP_Float glitch_alt_m;
+    AP_Float glitch_num_samples;
 
     const Rotation rotation;
 };
