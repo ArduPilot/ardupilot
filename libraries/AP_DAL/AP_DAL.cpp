@@ -228,6 +228,17 @@ void AP_DAL::log_event3(AP_DAL::Event event)
 #endif
 }
 
+void AP_DAL::log_resetHeightDatum3(float origin_alt_tolerance_m)
+{
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+    end_frame();
+    struct log_RHGT pkt{
+        origin_alt_tolerance_m : origin_alt_tolerance_m,
+    };
+    WRITE_REPLAY_BLOCK(RHGT, pkt);
+#endif
+}
+
 void AP_DAL::log_SetOriginLLH3(const Location &loc)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
