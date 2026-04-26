@@ -5288,6 +5288,56 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def SurfaceTrackingCornerCases(self):
+        """test the AP_SurfaceDistance library behaviour under real-life corner-cases"""
+
+        def restore_offset(steps):
+            """Gradually restore SIM_SONAR_OFFSET back to 0."""
+            initial_value = self.get_parameter("SIM_SONAR_OFFSET")
+            for i in range(steps):
+                self.set_parameter("SIM_SONAR_OFFSET", initial_value*(steps-1-i)/steps)
+
+        self.context_push()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.takeoff(15, takeoff_throttle=1700, mode="LOITER")
+        alt_initial = self.get_altitude()
+        glitch_offset = 1
+        # Test cases of real-life.
+        self.progress("*** Fly over building and come back.")
+        # Assumption: The building is higher than the glitch distance threshold.
+        threshold = 2  # This is the hard-coded threshold.
+        # Fly over the building, clipping the side-wall abruptly, the rangefinder reading reduces.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # This should result in increase of altitude.
+        self.assert_altitude(alt_initial + (threshold + glitch_offset), accuracy=0.5)
+        # Fly off the building. The vertical wall is scanned by the beam, resulting in gradual reading increase.
+        restore_offset(10)
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # We should be once again at the original altitude.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+
+        self.progress("*** Fly with interference from an underslung tether.")
+        threshold = self.get_parameter("SURFDSTD_GLDST")
+        # The tether moves in the FOV of the sensor.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # The vehicle should reject the reading and keep still.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+        # The tether moves out of the FOV of the sensor.
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # We should still be at the same altitude.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+
+        self.do_RTL()
+        self.reboot_sitl()
+        self.context_pop()
+
     def test_rangefinder_switchover(self):
         """test that the EKF correctly handles the switchover between baro and rangefinder"""
         self.set_analog_rangefinder_parameters()
@@ -13616,6 +13666,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RangeFinder,
              self.BaroDrivers,
              self.SurfaceTracking,
+             self.SurfaceTrackingCornerCases,
              self.Parachute,
              self.ParameterChecks,
              self.ManualThrottleModeChange,
