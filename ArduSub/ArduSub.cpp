@@ -246,6 +246,11 @@ void Sub::ten_hz_logging_loop()
         camera_mount.write_log();
     }
 #endif
+    if (motors.armed()) {
+        Log_Write_SensorData();
+        Log_Write_ROVData();
+        Log_Write_DVLData();
+    }
 }
 
 // twentyfive_hz_logging_loop
