@@ -15,10 +15,13 @@
 /*
   Simulator for an IBUS2 master device (receiver/hub) for testing AP_IBUS2_Slave.
 
-  This simulator acts as a FlySky receiver. It periodically:
-    1. Sends Frame 1 with simulated RC channel data
-    2. Sends Frame 2 commands, cycling through GET_TYPE/GET_VALUE/GET_PARAM/SET_PARAM
-    3. Reads and validates Frame 3 responses from ArduPilot
+  Protocol flow:
+    1. Send Frame 2 GET_TYPE until the slave responds.
+    2. On GET_TYPE response, record channels_types and failsafe flags.
+       If channels_types=1, the slave needs a decompression key — start sending
+       Frame 1 subtype=1 (immediately on the next cycle and every 50 cycles after).
+    3. Switch Frame 2 commands to GET_VALUE for telemetry.
+    4. Send Frame 1 subtype=0 with SES-encoded RC channel data every cycle.
 
 ./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter \
   -A --serial5=sim:ibus2master --speedup=1 --console
@@ -34,6 +37,7 @@ reboot
 #include "SIM_SerialDevice.h"
 #include <AP_Param/AP_Param.h>
 #include <AP_IBus2/AP_IBus2.h>
+#include <AP_RCProtocol/AP_RCProtocol_UDP.h>
 
 namespace SITL {
 
@@ -51,15 +55,22 @@ private:
     AP_Int8 _enabled;
 
     uint32_t _last_send_us;
-    uint8_t  _cmd_cycle;  // cycles through GET_TYPE/GET_VALUE/GET_PARAM/SET_PARAM
+    uint8_t  _cmd_cycle;       // GET_VALUE command sub-cycle counter
+
+    // Protocol state, set from the slave's GET_TYPE response
+    bool _device_wants_channel_types;  // slave needs Frame 1 subtype=1
+    bool _device_wants_failsafe;       // slave needs failsafe data
+    bool _send_subtype1_now;           // send subtype=1 on the very next Frame 1
+
+    uint32_t _frame1_cycle;    // counts every Frame 1 sent; drives periodic subtype=1
 
     // Frame reception from AP (Frame 3)
-#define IBUS2_FRAME3_SIZE  21   // fixed: 1 hdr + 19 data + 1 crc
-
     uint8_t _rx_buf[IBUS2_FRAME3_SIZE];
     uint8_t _rx_len;
 
     void send_frame1(const class Aircraft &aircraft);
+    void send_frame1_subtype1(const uint16_t *channels, uint8_t n);
+    void send_frame1_subtype0(const uint16_t *channels, uint8_t n);
     void send_frame2();
     void read_frame3();
 };

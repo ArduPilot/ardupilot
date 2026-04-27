@@ -36,7 +36,7 @@ using namespace SITL;
 // ---------------------------------------------------------------------------
 static uint8_t sitl_ibus2_crc8(const uint8_t *buf, uint16_t len)
 {
-    uint8_t crc = 0;
+    uint8_t crc = 0xFF;
     for (uint16_t i = 0; i < len; i++) {
         crc ^= buf[i];
         for (uint8_t b = 0; b < 8; b++) {
