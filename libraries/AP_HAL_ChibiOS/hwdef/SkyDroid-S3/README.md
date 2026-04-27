@@ -12,7 +12,7 @@ resellers, linked from [SKYDROID](https://www.skydroid.xin/)
 - microSD card slot
 - 4 UARTs plus USB
 - 12 PWM outputs
-- 1 I2C 
+- I2C port
 - 2 CAN ports
 - RCIN port
 - voltage monitoring for  power bricks
@@ -102,7 +102,6 @@ Unless noted otherwise all connectors are JST GH1.25mm
 
 ### USB
 
-type-c 
 
 ## RC Input
 
