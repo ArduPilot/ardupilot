@@ -730,6 +730,25 @@ void Plane::rangefinder_height_update(void)
     float distance = rangefinder.distance_orient(orientation);
     float corrected_distance = distance;
 
+    bool flightstage_good_for_rangefinder_landing = false;
+    if (flight_stage == AP_FixedWing::FlightStage::LAND) {
+        flightstage_good_for_rangefinder_landing = true;
+    }
+#if HAL_QUADPLANE_ENABLED
+    if (control_mode == &mode_qland ||
+        control_mode == &mode_qrtl ||
+        (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) {
+        flightstage_good_for_rangefinder_landing = true;
+    }
+#endif
+
+    if (rangefinder_state.in_use &&
+        !(flightstage_good_for_rangefinder_landing &&
+          rangefinder_use(RangeFinderUse::TAKEOFF_LANDING))) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", rangefinder_state.height_estimate);
+        memset(&rangefinder_state, 0, sizeof(rangefinder_state));
+    }
+
     /*
       correct distance for attitude
      */
@@ -774,18 +793,6 @@ void Plane::rangefinder_height_update(void)
             }
         } else {
             rangefinder_state.in_range = true;
-            bool flightstage_good_for_rangefinder_landing = false;
-            if (flight_stage == AP_FixedWing::FlightStage::LAND) {
-                flightstage_good_for_rangefinder_landing = true;
-            }
-#if HAL_QUADPLANE_ENABLED
-            if (control_mode == &mode_qland ||
-                control_mode == &mode_qrtl ||
-                (control_mode == &mode_auto && quadplane.is_vtol_land(plane.mission.get_current_nav_cmd().id))) {
-                flightstage_good_for_rangefinder_landing = true;
-            }
-#endif
-
             // Check if the aircraft is within RNGFND_LND_DIST meters from the
             // landing point to engage it
             const int16_t land_engage_dist_m = g2.rangefinder_land_engage_dist_m;
@@ -798,7 +805,7 @@ void Plane::rangefinder_height_update(void)
                 rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) &&
                 is_within_engagement_distance) {
                 rangefinder_state.in_use = true;
-                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
+                gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", rangefinder_state.height_estimate);
             }
         }
         rangefinder_state.last_distance = distance;
@@ -836,7 +843,7 @@ void Plane::rangefinder_height_update(void)
             if (fabsf(rangefinder_state.correction - rangefinder_state.initial_correction) > 30) {
                 // the correction has changed by more than 30m, reset use of Lidar. We may have a bad lidar
                 if (rangefinder_state.in_use) {
-                    gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder disengaged at %.2fm", (double)rangefinder_state.height_estimate);
+                    gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder anomaly: disengaged at %.2fm", rangefinder_state.height_estimate);
                 }
                 memset(&rangefinder_state, 0, sizeof(rangefinder_state));
             }
