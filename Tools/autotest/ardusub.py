@@ -302,6 +302,158 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.progress("Completed Radio failsafe disabled test")
 
+    def LeakFailsafe(self):
+        '''Test leak detector failsafe triggering logic'''
+        self.context_push()
+
+        # configure leak detector
+        self.set_parameters({
+            'LEAK1_PIN': 27,
+            'FS_LEAK_ENABLE': 2,
+        })
+        self.reboot_sitl()
+
+        MAV_SENSOR_WATER = 0x20000000
+
+        def send_leak_sys_status():
+            '''send SYS_STATUS indicating a water leak'''
+            # spoof srcSystem to match vehicle SYSID for sysid filter
+            old_srcSystem = self.mav.mav.srcSystem
+            self.mav.mav.srcSystem = self.sysid_thismav()
+            self.mav.mav.sys_status_send(
+                onboard_control_sensors_present=MAV_SENSOR_WATER,
+                onboard_control_sensors_enabled=MAV_SENSOR_WATER,
+                onboard_control_sensors_health=0,
+                load=0,
+                voltage_battery=12000,
+                current_battery=-1,
+                battery_remaining=-1,
+                drop_rate_comm=0,
+                errors_comm=0,
+                errors_count1=0,
+                errors_count2=0,
+                errors_count3=0,
+                errors_count4=0,
+            )
+            self.mav.mav.srcSystem = old_srcSystem
+
+        try:
+            # ---- Test 1: failsafe disabled ----
+            self.progress("Test 1: Leak failsafe disabled - no action")
+            self.set_parameter('FS_LEAK_ENABLE', 0)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode('ALT_HOLD')
+
+            # descend briefly
+            self.set_rc(Joystick.Throttle, 1300)
+            self.delay_sim_time(1)
+            self.set_rc(Joystick.Throttle, 1500)
+            self.delay_sim_time(2)
+
+            send_leak_sys_status()
+            self.delay_sim_time(2)
+            self.assert_mode('ALT_HOLD')
+            self.progress("Failsafe disabled - mode unchanged")
+            # Wait for leak cooldown to expire before next test
+            self.delay_sim_time(4)
+            self.disarm_vehicle()
+
+            # ---- Test 2: warn-only ----
+            self.progress("Test 2: Leak failsafe warn only")
+            self.set_parameter('FS_LEAK_ENABLE', 1)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode('ALT_HOLD')
+
+            # descend briefly
+            self.set_rc(Joystick.Throttle, 1300)
+            self.delay_sim_time(1)
+            self.set_rc(Joystick.Throttle, 1500)
+            self.delay_sim_time(2)
+
+            # the_function keeps leak detection alive across cooldown
+            self.wait_statustext(
+                "Leak Detected",
+                timeout=10,
+                the_function=send_leak_sys_status,
+            )
+            self.progress("Leak warning received")
+
+            self.assert_mode('ALT_HOLD')
+            self.progress("Mode unchanged with warn-only failsafe")
+            # Wait for leak cooldown to expire before disarm/rearm
+            self.delay_sim_time(4)
+            self.disarm_vehicle()
+
+            # ---- Test 3: surface mode ----
+            self.progress("Test 3: Leak failsafe to SURFACE")
+            self.set_parameter('FS_LEAK_ENABLE', 2)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.change_mode('ALT_HOLD')
+
+            # descend deeper so SURFACE mode can demonstrate climbing
+            self.set_rc(Joystick.Throttle, 1300)
+            self.delay_sim_time(3)
+            self.set_rc(Joystick.Throttle, 1500)
+            self.delay_sim_time(2)
+
+            send_leak_sys_status()
+            self.wait_statustext("Leak Detected", timeout=10)
+            self.wait_mode("SURFACE", timeout=10)
+            self.progress("Leak failsafe triggered SURFACE mode")
+
+            # Verify vehicle is surfacing
+            alt_before = self.mav.recv_match(
+                type='VFR_HUD', blocking=True, timeout=5).alt
+            self.delay_sim_time(5)
+            alt_after = self.mav.recv_match(
+                type='VFR_HUD', blocking=True, timeout=5).alt
+            self.progress("Altitude: %.2f -> %.2f" %
+                          (alt_before, alt_after))
+            if alt_after <= alt_before:
+                raise NotAchievedException(
+                    "Vehicle not climbing: %.2f -> %.2f" %
+                    (alt_before, alt_after))
+
+            # ---- Test 4: clear leak ----
+            self.progress("Test 4: Leak failsafe clear")
+            # spoof srcSystem to match vehicle SYSID for sysid filter
+            old_srcSystem = self.mav.mav.srcSystem
+            self.mav.mav.srcSystem = self.sysid_thismav()
+            self.mav.mav.sys_status_send(
+                onboard_control_sensors_present=MAV_SENSOR_WATER,
+                onboard_control_sensors_enabled=MAV_SENSOR_WATER,
+                onboard_control_sensors_health=MAV_SENSOR_WATER,
+                load=0,
+                voltage_battery=12000,
+                current_battery=-1,
+                battery_remaining=-1,
+                drop_rate_comm=0,
+                errors_comm=0,
+                errors_count1=0,
+                errors_count2=0,
+                errors_count3=0,
+                errors_count4=0,
+            )
+            self.mav.mav.srcSystem = old_srcSystem
+            self.delay_sim_time(4)
+            self.progress("Leak cleared")
+
+            self.change_mode('ALT_HOLD')
+            self.delay_sim_time(2)
+
+        finally:
+            self.set_rc(Joystick.Throttle, 1500)
+            try:
+                self.disarm_vehicle(force=True)
+            except Exception:
+                pass
+            self.context_pop()
+
+        self.progress("Leak failsafe test completed successfully")
+
     def Surftrak(self):
         """Test SURFTRAK mode"""
 
@@ -1330,6 +1482,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.DiveManual,
             self.GCSFailsafe,
             self.ThrottleFailsafe,
+            self.LeakFailsafe,
             self.AltitudeHold,
             self.Surftrak,
             self.SimTerrainSurftrak,
