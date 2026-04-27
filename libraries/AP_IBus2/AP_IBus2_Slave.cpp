@@ -18,6 +18,9 @@
 #if AP_IBUS2_SLAVE_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
+static_assert(AP_IBUS2_MAX_CHANNELS <= MAX_RCIN_CHANNELS,
+              "AP_IBUS2_MAX_CHANNELS must not exceed MAX_RCIN_CHANNELS");
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>

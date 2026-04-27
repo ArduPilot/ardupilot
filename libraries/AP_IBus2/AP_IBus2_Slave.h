@@ -91,7 +91,7 @@ private:
     // All fields protected by rc_state.sem.
     struct RCState {
         HAL_Semaphore sem;
-        uint16_t channels[32];
+        uint16_t channels[AP_IBUS2_MAX_CHANNELS];
         uint8_t  channel_count;
         // Last time fresh channel data was stored (ms); 0 if never received.
         // Goes stale if Frame 1 stops arriving (receiver powered off / disconnected).
@@ -134,7 +134,7 @@ private:
 #endif
     struct {
         bool have_decompression_key;
-        uint8_t channel_types[32];  // 5-bit ChannelType per channel from subtype=1
+        uint8_t channel_types[AP_IBUS2_MAX_CHANNELS];  // 5-bit ChannelType per channel from subtype=1
         uint8_t channel_count;      // active channels (stops at first NbBits<2)
     } frame1_handling;
 
