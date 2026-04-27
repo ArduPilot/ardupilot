@@ -43,15 +43,19 @@ Top-level keys are vehicle names: `ArduCopter`, `ArduPlane`, `Rover`,
 ## Default-load resolution at runtime
 
 When the SITL binary is invoked with `--model=<frame>`, the binary's startup
-code (`libraries/AP_HAL_SITL/SITL_cmdline.cpp`) follows this precedence:
+code (`libraries/AP_HAL_SITL/SITL_cmdline.cpp`) resolves the matching frame's
+`default_params_filename` list to a comma-separated `@ROMFS/<path>` string
+and **prepends** it to whatever was passed via `--defaults`. AP_Param loads
+the comma-separated list left-to-right with later files overriding earlier
+ones, so:
 
-1. **Explicit `--defaults <path>`** on the command line — highest priority.
-   Used by `sim_vehicle.py` for developer workflows.
-2. **`vehicleinfo.json` ROMFS lookup** — find the requested vehicle/frame's
-   `default_params_filename` and load each entry from
-   `@ROMFS/<path>` (with `default_params/*.parm` and `models/*.parm` already
-   embedded by the build).
-3. **Nothing** — current fallback when neither matches.
+- The ROMFS-embedded per-frame defaults always load first (base layer).
+- Any user-supplied `--defaults` file (typically from `sim_vehicle.py`'s
+  `--add-param-file` / `-P`) is loaded after, so its values override.
+
+If `--model` doesn't match any frame in `vehicleinfo.json`, only the explicit
+`--defaults` files (if any) are loaded — the binary still boots cleanly with
+no embedded defaults.
 
 ## Editing
 
