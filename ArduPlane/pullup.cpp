@@ -185,7 +185,7 @@ void GliderPullup::stabilize_pullup(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
         plane.nav_pitch_cd = 0;
         plane.nav_roll_cd = 0;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_rate_out(0, speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.run_rate_control(0, speed_scaler));
         ng_demand = 0.0;
         break;
     }
@@ -194,7 +194,7 @@ void GliderPullup::stabilize_pullup(void)
         plane.nav_roll_cd = 0;
         plane.nav_pitch_cd = 0;
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_rate_out(0, speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.run_rate_control(0, speed_scaler));
         float aspeed;
         const auto &ahrs = plane.ahrs;
         if (ahrs.airspeed_EAS(aspeed)) {
@@ -205,7 +205,7 @@ void GliderPullup::stabilize_pullup(void)
             const float pullup_accel = ng_demand * GRAVITY_MSS;
             const float demanded_rate_dps = degrees(pullup_accel / VTAS_ref);
             const uint32_t elev_trim_offset_cd = 4500.0f * elev_offset * (1.0f - ng_demand / ng_limit);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elev_trim_offset_cd + plane.pitchController.get_rate_out(demanded_rate_dps, speed_scaler));
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elev_trim_offset_cd + plane.pitchController.run_rate_control(demanded_rate_dps, speed_scaler));
         } else {
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elev_offset*4500);
         }

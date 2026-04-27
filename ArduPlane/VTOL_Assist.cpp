@@ -112,7 +112,7 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         }
     }
 
-    if (angle <= 0) {
+    if (angle <= 0 || plane.fly_inverted()) {
         // Angle assist disabled
         angle_error.reset();
 
@@ -130,8 +130,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
             (ahrs_pitch_deg > (plane.aparm.pitch_limit_min - allowed_envelope_error_deg));
 
         const bool inside_angle_error =
-            (fabsf(ahrs_roll_deg - plane.nav_roll_cd*0.01) < angle) &&
-            (fabsf(ahrs_pitch_deg - plane.nav_pitch_cd*0.01) < angle);
+            (fabsf(plane.rollController.get_angle_error_deg()) < angle) &&
+            (fabsf(plane.pitchController.get_angle_error_deg()) < angle);
 
         if (angle_error.update(!inside_envelope && !inside_angle_error, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
