@@ -50,10 +50,10 @@ public:
     bool set_desired_location_NED(const Vector3f& destination) WARN_IF_UNUSED;
     bool set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination) WARN_IF_UNUSED;
 
-    // set desired location but expect the destination to be updated again in the near future
+    // set destination but expect it to be updated again in the near future
     // position controller input shaping will be used for navigation instead of scurves
     // Note: object avoidance is not supported if this method is used
-    bool set_desired_location_expect_fast_update(const Location &destination) WARN_IF_UNUSED;
+    bool set_destination_expect_fast_update(const Location &destination) WARN_IF_UNUSED;
 
     // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return _reached_destination; }
