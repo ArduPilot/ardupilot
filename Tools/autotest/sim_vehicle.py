@@ -333,15 +333,12 @@ def wait_unlimited():
 vinfo = vehicleinfo.VehicleInfo()
 
 
-def run_gui(default_vehicle=None, initial_states=None):
+def run_gui(cmd_opts):
     try:
         import wx
     except ImportError:
         progress("Error: wxPython could not be imported. GUI cannot start.")
         sys.exit(1)
-
-    if initial_states is None:
-        initial_states = {}
 
     app = wx.App(False)
     config = wx.Config("ArduPilotSITL")
@@ -363,8 +360,9 @@ def run_gui(default_vehicle=None, initial_states=None):
     if default_location not in locations:
         locations.insert(0, default_location)
 
-    target_location = initial_states.get('location', config.Read("last_location", default_location))
+    target_location = cmd_opts.location or config.Read("last_location", default_location)
 
+    default_vehicle = cmd_opts.vehicle
     if default_vehicle and default_vehicle in vinfo.options:
         available_vehicles = [default_vehicle]
         if default_vehicle == 'ArduCopter' and 'Helicopter' in vinfo.options:
@@ -407,8 +405,8 @@ def run_gui(default_vehicle=None, initial_states=None):
 
     aircraft_combo = wx.ComboBox(panel, choices=aircraft_history, style=wx.CB_DROPDOWN)
     aircraft_combo.AutoComplete(aircraft_history)
-    if 'aircraft' in initial_states:
-        aircraft_combo.SetValue(initial_states['aircraft'])
+    if cmd_opts.aircraft:
+        aircraft_combo.SetValue(cmd_opts.aircraft)
     elif aircraft_history:
         aircraft_combo.SetValue(aircraft_history[0])
 
@@ -417,19 +415,21 @@ def run_gui(default_vehicle=None, initial_states=None):
     options_sizer = wx.BoxSizer(wx.VERTICAL)
 
     chk_mavproxy = wx.CheckBox(panel, label="Enable MAVProxy")
-    chk_mavproxy.SetValue(not initial_states.get('no_mavproxy', config.ReadBool("no_mavproxy", False)))
+    mavproxy_default = config.ReadBool("no_mavproxy", False)
+    should_enable = not cmd_opts.no_mavproxy and (cmd_opts.map or cmd_opts.console or not mavproxy_default)
+    chk_mavproxy.SetValue(should_enable)
 
     chk_map = wx.CheckBox(panel, label="Enable MAVProxy map")
-    chk_map.SetValue(initial_states.get('map', config.ReadBool("map", True)))
+    chk_map.SetValue(cmd_opts.map or config.ReadBool("map", True))
 
     chk_console = wx.CheckBox(panel, label="Enable MAVProxy console")
-    chk_console.SetValue(initial_states.get('console', config.ReadBool("console", True)))
+    chk_console.SetValue(cmd_opts.console or config.ReadBool("console", True))
 
     chk_osd = wx.CheckBox(panel, label="Enable OSD")
-    chk_osd.SetValue(initial_states.get('osd', config.ReadBool("osd", False)))
+    chk_osd.SetValue(getattr(cmd_opts, 'OSD', False) or config.ReadBool("osd", False))
 
     chk_wipe = wx.CheckBox(panel, label="Reset to Default Parameters (-w)")
-    chk_wipe.SetValue(initial_states.get('wipe', config.ReadBool("wipe", False)))
+    chk_wipe.SetValue(cmd_opts.wipe_eeprom or config.ReadBool("wipe", False))
 
     def on_mavproxy(event):
         enabled = chk_mavproxy.GetValue()
@@ -453,7 +453,6 @@ def run_gui(default_vehicle=None, initial_states=None):
 
     vbox.Add(options_sizer, flag=wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, border=10)
 
-    generated_args = []
     is_cancelled = True
 
     def on_launch(event):
@@ -478,25 +477,20 @@ def run_gui(default_vehicle=None, initial_states=None):
         config.Flush()
 
         if available_vehicles:
-            generated_args.extend(['-v', vehicle_combo.GetStringSelection()])
+            cmd_opts.vehicle = vehicle_combo.GetStringSelection()
 
         selected_loc = location_combo.GetValue()
         if selected_loc:
-            generated_args.extend(['-L', selected_loc])
+            cmd_opts.location = selected_loc
 
         if new_aircraft:
-            generated_args.extend(['--aircraft', new_aircraft])
+            cmd_opts.aircraft = new_aircraft
 
-        if chk_wipe.GetValue():
-            generated_args.append('-w')
-        if chk_console.GetValue():
-            generated_args.append('--console')
-        if chk_map.GetValue():
-            generated_args.append('--map')
-        if chk_osd.GetValue():
-            generated_args.append('--osd')
-        if not chk_mavproxy.GetValue():
-            generated_args.append('--no-mavproxy')
+        cmd_opts.wipe_eeprom = chk_wipe.GetValue()
+        cmd_opts.console = chk_console.GetValue()
+        cmd_opts.map = chk_map.GetValue()
+        cmd_opts.OSD = chk_osd.GetValue()
+        cmd_opts.no_mavproxy = not chk_mavproxy.GetValue()
 
         frame.Close()
 
@@ -511,7 +505,7 @@ def run_gui(default_vehicle=None, initial_states=None):
     frame.Show()
     app.MainLoop()
 
-    return [] if is_cancelled else generated_args
+    return not is_cancelled
 
 
 def do_build(opts, frame_options):
@@ -1631,22 +1625,16 @@ group_completion.add_option("", "--list-frame",
                             help="List the vehicle frames")
 parser.add_option_group(group_completion)
 
-gui_argv = sys.argv[:]
-
-use_gui = '--gui' in gui_argv
-if use_gui:
-    gui_argv.remove('--gui')
+cmd_opts, cmd_args = parser.parse_args()
 
 cwd = os.getcwd()
 vehicle_dir_name = os.path.basename(cwd)
 in_vehicle_dir = vehicle_dir_name in vinfo.options
 
-if len(gui_argv) == 1 and not in_vehicle_dir:
-    use_gui = True
+if len(sys.argv) == 1 and not in_vehicle_dir:
+    cmd_opts.gui = True
 
-cmd_opts, cmd_args = parser.parse_args(gui_argv[1:])
-
-if use_gui:
+if getattr(cmd_opts, 'gui', False):
     if cmd_opts.vehicle is None:
         cwd = os.getcwd()
         while cwd:
@@ -1658,61 +1646,24 @@ if use_gui:
                 break
             cwd = os.path.dirname(cwd)
 
-    initial_states = {}
+    launch_continued = run_gui(cmd_opts)
 
-    if cmd_opts.console:
-        initial_states['console'] = True
-    if cmd_opts.map:
-        initial_states['map'] = True
-    if getattr(cmd_opts, 'OSD', False):
-        initial_states['osd'] = True
-    if cmd_opts.no_mavproxy:
-        initial_states['no_mavproxy'] = True
-    if cmd_opts.wipe_eeprom:
-        initial_states['wipe'] = True
-
-    if cmd_opts.location is not None:
-        initial_states['location'] = cmd_opts.location
-    if cmd_opts.aircraft is not None:
-        initial_states['aircraft'] = cmd_opts.aircraft
-
-    gui_args_out = run_gui(default_vehicle=cmd_opts.vehicle, initial_states=initial_states)
-
-    if not gui_args_out:
+    if not launch_continued:
         progress("Launch cancelled by user.")
         sys.exit(0)
 
-    if '-v' in gui_args_out:
-        vehicle_idx = gui_args_out.index('-v') + 1
-        selected_vehicle = gui_args_out[vehicle_idx]
-
-        if selected_vehicle == 'Helicopter':
-            cmd_opts.vehicle = 'ArduCopter'
-            cmd_opts.frame = 'heli'
-        else:
-            cmd_opts.vehicle = selected_vehicle
-
-    if '-L' in gui_args_out:
-        cmd_opts.location = gui_args_out[gui_args_out.index('-L') + 1]
-
-    if '--aircraft' in gui_args_out:
-        cmd_opts.aircraft = gui_args_out[gui_args_out.index('--aircraft') + 1]
-
-    cmd_opts.wipe_eeprom = '-w' in gui_args_out
-    cmd_opts.console = '--console' in gui_args_out
-    cmd_opts.map = '--map' in gui_args_out
-    cmd_opts.OSD = '--osd' in gui_args_out
-    cmd_opts.no_mavproxy = '--no-mavproxy' in gui_args_out
+    if cmd_opts.vehicle == 'Helicopter':
+        cmd_opts.vehicle = 'ArduCopter'
+        cmd_opts.frame = 'heli'
 
 if cmd_opts.list_vehicle:
     print(' '.join(vinfo.options.keys()))
-    sys.exit(0)
-
+    sys.exit(1)
 if cmd_opts.list_frame:
     frame_options = sorted(vinfo.options[cmd_opts.list_frame]["frames"].keys())
     frame_options_string = ' '.join(frame_options)
     print(frame_options_string)
-    sys.exit(0)
+    sys.exit(1)
 
 # clean up processes at exit:
 atexit.register(kill_tasks)
