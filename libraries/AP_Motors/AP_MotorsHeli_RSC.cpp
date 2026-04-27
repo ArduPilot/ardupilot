@@ -238,17 +238,12 @@ void AP_MotorsHeli_RSC::initialize()
 
 }
 
-// configure - configure the RSC.
+// configure - configure the RSC using current parameters
 void AP_MotorsHeli_RSC::configure()
 {
 
-    set_rsc_control_mode((RotorControlMode)(_rsc_mode.get()));
-    set_ramp_time(_ramp_time.get());
-    set_runup_time(_runup_time.get());
-    set_critical_speed(_critical_speed.get());
-    set_idle_output(_idle_output.get());
+    configure((RotorControlMode)(_rsc_mode.get()), _ramp_time.get(), _runup_time.get(), _critical_speed.get(), _idle_output.get());
 
-    configure_armed();
 }
 
 // configure - configure the RSC with specific settings, allows caller to specify settings instead of using parameters.
