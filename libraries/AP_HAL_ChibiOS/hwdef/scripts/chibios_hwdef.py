@@ -707,7 +707,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             can_order = [int(s) for s in can_order_str]
         else:
             can_order = []
-            for i in range(1, 3):
+            for i in range(1, 4):
                 if 'CAN%u' % i in self.bytype or (i == 1 and 'CAN' in self.bytype):
                     can_order.append(i)
 
