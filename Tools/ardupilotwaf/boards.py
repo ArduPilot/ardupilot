@@ -922,6 +922,14 @@ class SITLBoard(Board):
         # include locations.txt so SITL on windows can lookup by name
         env.ROMFS_FILES += [('locations.txt','Tools/autotest/locations.txt')]
 
+        # embed vehicleinfo.json and the default-params files so SITL is
+        # self-sufficient: a binary invoked with --model=<frame> can resolve
+        # its parameter defaults from ROMFS without the source tree on disk.
+        env.ROMFS_FILES += [('vehicleinfo.json','Tools/autotest/pysim/vehicleinfo.json')]
+        for f in os.listdir('Tools/autotest/default_params'):
+            if fnmatch.fnmatch(f, "*.parm"):
+                env.ROMFS_FILES += [('default_params/'+f,'Tools/autotest/default_params/'+f)]
+
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
 
