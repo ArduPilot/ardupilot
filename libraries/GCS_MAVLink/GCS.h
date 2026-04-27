@@ -29,6 +29,8 @@
 #include <AP_Arming/AP_Arming_config.h>
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include <AP_Follow/AP_Follow.h>
+#include <AP_Gripper/AP_Gripper_config.h>
+#include <AC_Sprayer/AC_Sprayer_config.h>
 
 #include "ap_message.h"
 
@@ -724,7 +726,6 @@ protected:
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_airframe_configuration(const mavlink_command_int_t &packet);
 
     /*
       handle MAV_CMD_CAN_FORWARD and CAN_FRAME messages for CAN over MAVLink
@@ -801,7 +802,7 @@ protected:
     // If location is not present in the command then just omit frame.
     // this method ensures the passed-in structure is entirely
     // initialised.
-    virtual void convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
+    virtual MAV_RESULT convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT);
     virtual bool mav_frame_for_command_long(MAV_FRAME &fame, MAV_CMD packet_command) const;
     MAV_RESULT try_command_long_as_command_int(const mavlink_command_long_t &packet, const mavlink_message_t &msg);
 #endif
@@ -1405,6 +1406,26 @@ private:
     // Sequence number should be incremented when available modes changes
     // Sent in AVAILABLE_MODES_MONITOR msg
     uint8_t available_modes_sequence;
+};
+
+class CommandIntHandler {
+public:
+    CommandIntHandler(const mavlink_command_int_t &_packet, const mavlink_message_t &_msg) :
+        packet{_packet},
+        msg{_msg}
+        { }
+    virtual ~CommandIntHandler() { }
+
+    const mavlink_command_int_t &packet;
+    const mavlink_message_t &msg;
+
+    MAV_RESULT run();
+    virtual MAV_RESULT _run() = 0;
+
+    virtual uint8_t used_param_mask() const = 0;
+
+    bool check_float_param(uint8_t ofs, float value, MAV_RESULT &ret) const;
+    bool check_int_param(uint8_t ofs, int32_t value, MAV_RESULT &ret) const;
 };
 
 GCS &gcs();
