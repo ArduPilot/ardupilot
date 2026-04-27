@@ -4457,14 +4457,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_command_int(msg);
         break;
 
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-    case MAVLINK_MSG_ID_FENCE_POINT:
-    case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
-        send_received_message_deprecation_warning("FENCE_FETCH_POINT");
-        handle_fence_message(msg);
-        break;
-#endif
-
 #if AP_TERRAIN_AVAILABLE
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK: {
@@ -4530,14 +4522,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_PLAY_TUNE:
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
-        break;
-#endif
-
-#if AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
-    case MAVLINK_MSG_ID_RALLY_POINT:
-    case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
-        send_received_message_deprecation_warning("RALLY_FETCH_POINT");
-        handle_common_rally_message(msg);
         break;
 #endif
 
