@@ -308,7 +308,7 @@ bool ModeGuided::set_desired_location(const Location &destination, Location next
 {
     if (use_scurves_for_navigation()) {
         // use scurves for navigation
-        if (!g2.wp_nav.set_desired_location(destination, next_destination)) {
+        if (!g2.wp_nav.set_destination(destination, next_destination)) {
             return false;
         }
     } else {

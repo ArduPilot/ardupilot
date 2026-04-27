@@ -39,9 +39,9 @@ public:
     // get desired lateral acceleration (for reporting purposes only because will be zero during pivot turns)
     float get_lat_accel() const { return _desired_lat_accel; }
 
-    // set desired location and (optionally) next_destination
+    // set destination and (optionally) next_destination
     // next_destination should be provided if known to allow smooth cornering
-    virtual bool set_desired_location(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
+    virtual bool set_destination(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
 
     // set desired location to a reasonable stopping point, return true on success
     bool set_desired_location_to_stopping_location()  WARN_IF_UNUSED;
@@ -55,7 +55,7 @@ public:
     // Note: object avoidance is not supported if this method is used
     bool set_desired_location_expect_fast_update(const Location &destination) WARN_IF_UNUSED;
 
-    // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
+    // true if vehicle has reached destination. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return _reached_destination; }
 
     // return straight-line distance (in meters) to destination
@@ -100,7 +100,7 @@ public:
     // returns true on success, false on failure
     bool get_stopping_location(Location& stopping_loc) WARN_IF_UNUSED;
 
-    // is_fast_waypoint returns true if vehicle will not stop at destination (e.g. set_desired_location provided a next_destination)
+    // is_fast_waypoint returns true if vehicle will not stop at destination (e.g. a next_destination has been provided)
     bool is_fast_waypoint() const { return _fast_waypoint; }
 
     // parameter var table
