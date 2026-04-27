@@ -4491,3 +4491,9 @@ function DroneCAN_Handle_ud:request(target_node, payload) end
 ---@return boolean -- true if send succeeded
 function DroneCAN_Handle_ud:broadcast(payload) end
 
+-- desc
+sprayer = {}
+
+-- desc
+---@param param1 boolean
+function sprayer:set_spraying_allowed(param1) end
