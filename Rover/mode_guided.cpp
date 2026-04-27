@@ -276,8 +276,7 @@ bool ModeGuided::set_desired_speed(float speed_ms)
     return false;
 }
 
-// get desired location
-bool ModeGuided::get_desired_location(Location& destination) const
+bool ModeGuided::get_destination(Location& destination) const
 {
     switch (_guided_mode) {
     case SubMode::WP:
@@ -292,10 +291,10 @@ bool ModeGuided::get_desired_location(Location& destination) const
         return false;
     case SubMode::Loiter:
         // get destination from loiter
-        return rover.mode_loiter.get_desired_location(destination);
+        return rover.mode_loiter.get_destination(destination);
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
-        // no desired location in this submode
+        // no destination in this submode
         break;
     }
 
@@ -303,8 +302,7 @@ bool ModeGuided::get_desired_location(Location& destination) const
     return false;
 }
 
-// set desired location
-bool ModeGuided::set_desired_location(const Location &destination, Location next_destination)
+bool ModeGuided::set_destination(const Location &destination, Location next_destination)
 {
     if (use_scurves_for_navigation()) {
         // use scurves for navigation

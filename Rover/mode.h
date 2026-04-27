@@ -110,15 +110,13 @@ public:
     // return straight-line distance (in meters) to destination
     virtual float get_distance_to_destination() const { return 0.0f; }
 
-    // return desired location (used in Guided, Auto, RTL, etc)
     // return true on success, false if there is no valid destination
-    virtual bool get_desired_location(Location& destination) const WARN_IF_UNUSED { return false; }
+    virtual bool get_destination(Location& destination) const WARN_IF_UNUSED { return false; }
 
-    // set desired location (used in Guided, Auto)
-    // set next_destination (if known).  If not provided vehicle stops at destination
-    virtual bool set_desired_location(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
+    // set destination (if next_destination is not provided, vehicle stops at destination)
+    virtual bool set_destination(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
 
-    // true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
+    // true if vehicle has reached destination. defaults to true because this is normally used by missions and we do not want the mission to become stuck
     virtual bool reached_destination() const { return true; }
 
     // get default speed for this mode (held in CRUISE_SPEED, WP_SPEED or RTL_SPEED)
@@ -274,9 +272,9 @@ public:
     // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override;
 
-    // get or set desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
-    bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
+    // get or set destination
+    bool get_destination(Location& destination) const override WARN_IF_UNUSED;
+    bool set_destination(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
     bool reached_destination() const override;
 
     // set desired speed in m/s
@@ -452,8 +450,7 @@ public:
     // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
 
-    // get or set desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    bool get_destination(Location& destination) const override WARN_IF_UNUSED;
 
     // return total angle in radians that vehicle has circled
     // fabsf is used so that full rotations in either direction are counted
@@ -550,9 +547,8 @@ public:
     // set desired speed in m/s
     bool set_desired_speed(float speed_ms) override;
 
-    // get or set desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
-    bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
+    bool get_destination(Location& destination) const override WARN_IF_UNUSED;
+    bool set_destination(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
 
     // set desired heading and speed
     void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed);
@@ -661,8 +657,8 @@ public:
     float nav_bearing() const override { return _desired_yaw_cd * 0.01f; }
     float crosstrack_error_m() const override { return 0.0f; }
 
-    // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    // return destination
+    bool get_destination(Location& destination) const override WARN_IF_UNUSED;
 
     // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -717,8 +713,7 @@ public:
     // do not allow arming from this mode
     bool allows_arming() const override { return false; }
 
-    // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    bool get_destination(Location& destination) const override WARN_IF_UNUSED;
 
     // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -756,8 +751,7 @@ public:
     // do not allow arming from this mode
     bool allows_arming() const override { return false; }
 
-    // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
+    bool get_destination(Location& destination) const override WARN_IF_UNUSED;
 
     // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override { return _distance_to_destination; }
@@ -859,8 +853,7 @@ public:
     float nav_bearing() const override { return wp_bearing(); }
     float crosstrack_error_m() const override { return 0.0f; }
 
-    // return desired location
-    bool get_desired_location(Location& destination) const override WARN_IF_UNUSED { return false; }
+    bool get_destination(Location& destination) const override WARN_IF_UNUSED { return false; }
 
     // return straight-line distance (in meters) to destination
     float get_distance_to_destination() const override;

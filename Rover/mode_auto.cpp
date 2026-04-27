@@ -277,8 +277,7 @@ float ModeAuto::get_distance_to_destination() const
     return 0.0f;
 }
 
-// get desired location
-bool ModeAuto::get_desired_location(Location& destination) const
+bool ModeAuto::get_destination(Location& destination) const
 {
     switch (_submode) {
     case SubMode::WP:
@@ -289,28 +288,28 @@ bool ModeAuto::get_desired_location(Location& destination) const
         return false;
     case SubMode::HeadingAndSpeed:
     case SubMode::Stop:
-        // no desired location for this submode
+        // no destination for this submode
         return false;
     case SubMode::RTL:
-        return rover.mode_rtl.get_desired_location(destination);
+        return rover.mode_rtl.get_destination(destination);
     case SubMode::Loiter:
-        return rover.mode_loiter.get_desired_location(destination);
+        return rover.mode_loiter.get_destination(destination);
     case SubMode::Guided:
     case SubMode::NavScriptTime:
-        return rover.mode_guided.get_desired_location(destination);
+        return rover.mode_guided.get_destination(destination);
     case SubMode::Circle:
-        return g2.mode_circle.get_desired_location(destination);
+        return g2.mode_circle.get_destination(destination);
     }
 
     // we should never reach here but just in case
     return false;
 }
 
-// set desired location to drive to
-bool ModeAuto::set_desired_location(const Location &destination, Location next_destination)
+// set destination to drive to
+bool ModeAuto::set_destination(const Location &destination, Location next_destination)
 {
     // call parent
-    if (!Mode::set_desired_location(destination, next_destination)) {
+    if (!Mode::set_destination(destination, next_destination)) {
         return false;
     }
 
@@ -742,14 +741,14 @@ bool ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd, bool always_sto
     AP_Mission::Mission_Command next_cmd;
     if (always_stop_at_destination || !mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
         // single destination
-        if (!set_desired_location(cmdloc)) {
+        if (!set_destination(cmdloc)) {
             return false;
         }
     } else {
         // retrieve and sanitize next destination location
         Location next_cmdloc = next_cmd.content.location;
         next_cmdloc.sanitize(cmdloc);
-        if (!set_desired_location(cmdloc, next_cmdloc)) {
+        if (!set_destination(cmdloc, next_cmdloc)) {
             return false;
         }
     }

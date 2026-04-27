@@ -74,7 +74,7 @@ MAV_STATE GCS_MAVLINK_Rover::vehicle_system_status() const
 
 bool GCS_MAVLINK_Rover::get_target_location(Location &target) const
 {
-    return rover.control_mode->get_desired_location(target);
+    return rover.control_mode->get_destination(target);
 }
 
 void GCS_MAVLINK_Rover::send_nav_controller_output() const
@@ -416,7 +416,7 @@ bool GCS_MAVLINK_Rover::handle_guided_request(AP_Mission::Mission_Command &cmd)
     }
 
     // make any new wp uploaded instant (in case we are already in Guided mode)
-    return rover.mode_guided.set_desired_location(cmd.content.location);
+    return rover.mode_guided.set_destination(cmd.content.location);
 }
 
 MAV_RESULT GCS_MAVLINK_Rover::_handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
@@ -568,8 +568,7 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_com
         }
     }
 
-    // set the destination
-    if (!rover.mode_guided.set_desired_location(requested_location)) {
+    if (!rover.mode_guided.set_destination(requested_location)) {
         return MAV_RESULT_FAILED;
     }
 
@@ -754,12 +753,12 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
         return;
     }
 
-    // set guided mode targets
+    // set guided mode target
     if (!pos_ignore) {
         // consume position target
-        if (!rover.mode_guided.set_desired_location(target_loc)) {
-            // GCS will need to monitor desired location to
-            // see if they are having an effect.
+        if (!rover.mode_guided.set_destination(target_loc)) {
+            // GCS will need to monitor destination to
+            // see if it is having an effect.
         }
         return;
     }
@@ -867,9 +866,9 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
     // set guided mode targets
     if (!pos_ignore) {
         // consume position target
-        if (!rover.mode_guided.set_desired_location(target_loc)) {
-            // GCS will just need to look at desired location
-            // outputs to see if it having an effect.
+        if (!rover.mode_guided.set_destination(target_loc)) {
+            // GCS will need to monitor destination to
+            // see if it is having an effect.
         }
         return;
     }

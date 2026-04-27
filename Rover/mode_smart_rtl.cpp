@@ -110,8 +110,7 @@ void ModeSmartRTL::update()
     }
 }
 
-// get desired location
-bool ModeSmartRTL::get_desired_location(Location& destination) const
+bool ModeSmartRTL::get_destination(Location& destination) const
 {
     switch (smart_rtl_state) {
     case SmartRTLState::WaitForPathCleanup:
