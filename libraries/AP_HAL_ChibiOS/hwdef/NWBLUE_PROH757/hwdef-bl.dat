@@ -1,0 +1,54 @@
+# NWBLUE_PROH757 bootloader hwdef
+# Module-fixed pins live in ../CubeNode/hwdef-bl.inc
+
+include ../CubeNode/hwdef-bl.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_NWBLUE_PROH757
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the H757 has 128k sectors; 2 sectors for BL
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# FMU bootloader does not need CAN-based firmware update; drop CAN1 pins
+# and CAN1 peripheral inherited from the CubeNode module inc to avoid pulling
+# in AP_Bootloader can.cpp (which is hard-wired for AP_Periph canard build
+# flags and fails to compile with CANARD_MULTI_IFACE / CANARD_ENABLE_DEADLINE).
+undef PD0 PD1 CAN1
+
+# bootloader serial debug on TELEM1 (UART7)
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+SERIAL_ORDER OTG1 UART7
+
+# Bootloader status LED (PC0 - on-board amber LED, active low).
+# The BL flashes this during programming and SD-card flashing.
+PC0 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH
+define HAL_LED_ON 0
+
+# === microSD flashing (SDMMC2) ===
+# Allow firmware updates to be loaded from a file on the microSD card.
+
+# ChibiOS FATFS config
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
+# SDMMC2 pins (mirror of main hwdef)
+PB14 SDMMC2_D0 SDMMC2
+PB15 SDMMC2_D1 SDMMC2
+PB3  SDMMC2_D2 SDMMC2
+PB4  SDMMC2_D3 SDMMC2
+PD6  SDMMC2_CK SDMMC2
+PD7  SDMMC2_CMD SDMMC2
+
+define FATFS_HAL_DEVICE SDCD2
+define HAL_OS_FATFS_IO 1
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
