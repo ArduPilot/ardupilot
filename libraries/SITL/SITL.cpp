@@ -18,6 +18,7 @@
 */
 
 #include "SITL.h"
+#include "SIM_config.h"
 
 #if AP_SIM_ENABLED
 
@@ -1643,6 +1644,14 @@ void SIM::sim_state_send(mavlink_channel_t chan) const
 }
 
 #if HAL_LOGGING_ENABLED
+void SIM::log()
+{
+    Log_Write_SIMSTATE();
+#if AP_SIM_WIND_LOGGING_ENABLED
+    Log_Write_SIMWIND();
+#endif
+}
+
 /* report SITL state to AP_Logger */
 void SIM::Log_Write_SIMSTATE()
 {
@@ -1670,7 +1679,24 @@ void SIM::Log_Write_SIMSTATE()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
-#endif
+
+#if AP_SIM_WIND_LOGGING_ENABLED
+/* log simulated wind velocity to SIMW */
+void SIM::Log_Write_SIMWIND()
+{
+    AP::logger().WriteStreaming(
+        "SIMW",
+        "TimeUS,VWN,VWE",
+        "s" "n" "n",
+        "F" "0" "0",
+        "Q" "f" "f",
+        AP_HAL::micros64(),
+        state.wind_ef.x,
+        state.wind_ef.y);
+}
+#endif  // AP_SIM_WIND_LOGGING_ENABLED
+
+#endif  // HAL_LOGGING_ENABLED
 
 /*
  convert a set of roll rates from earth frame to body frame

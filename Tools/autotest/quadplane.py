@@ -846,6 +846,79 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def PlaneWindEstimate(self):
+        '''evaluate EKF3 wind estimation accuracy across a range of wind speeds'''
+        wind_speeds = list(range(0, 41))
+        results = []
+
+        for speed in wind_speeds:
+            self.start_subtest("Wind estimation at %dm/s" % speed)
+            self.set_parameters({
+                "SIM_WIND_SPD": speed,
+                "SIM_WIND_DIR": 180,
+            })
+            self.reboot_sitl()
+            self.zero_throttle()
+
+            self.takeoff(30, 'QLOITER')
+            log_path = self.current_onboard_log_filepath()
+            self.change_mode('LOITER')
+            self.delay_sim_time(30)
+
+            self.reboot_sitl(force=True)
+            sim_vwn, sim_vwe = [], []
+            ekf_vwn, ekf_vwe = [], []
+            dcm_vwn, dcm_vwe = [], []
+
+            dfreader = self.dfreader_for_path(log_path)
+            while True:
+                msg = dfreader.recv_match(type=['SIMW', 'XKF2', 'DCM'])
+                if msg is None:
+                    break
+                t = msg.get_type()
+                if t == 'SIMW':
+                    sim_vwn.append(msg.VWN)
+                    sim_vwe.append(msg.VWE)
+                elif t == 'XKF2' and msg.C == 0:
+                    ekf_vwn.append(msg.VWN)
+                    ekf_vwe.append(msg.VWE)
+                elif t == 'DCM':
+                    dcm_vwn.append(msg.VWN)
+                    dcm_vwe.append(msg.VWE)
+
+            def tail_mean(lst, n=10):
+                if not lst:
+                    return float('nan')
+                tail = lst[-n:]
+                return sum(tail) / len(tail)
+
+            r = {
+                'speed': speed,
+                'sim_vwn': tail_mean(sim_vwn),
+                'sim_vwe': tail_mean(sim_vwe),
+                'ekf_vwn': tail_mean(ekf_vwn),
+                'ekf_vwe': tail_mean(ekf_vwe),
+                'dcm_vwn': tail_mean(dcm_vwn),
+                'dcm_vwe': tail_mean(dcm_vwe),
+            }
+            results.append(r)
+            self.progress(
+                "speed=%2dm/s SIMW=(%+6.2f,%+6.2f) XKF2=(%+6.2f,%+6.2f) DCM=(%+6.2f,%+6.2f)" % (
+                    speed,
+                    r['sim_vwn'], r['sim_vwe'],
+                    r['ekf_vwn'], r['ekf_vwe'],
+                    r['dcm_vwn'], r['dcm_vwe']))
+
+        self.progress("Wind estimation summary (VWN, VWE in m/s):")
+        self.progress("%-6s  %-16s  %-16s  %-16s" % (
+            "Speed", "SIMW(N,E)", "XKF2(N,E)", "DCM(N,E)"))
+        for r in results:
+            self.progress("%-6d  (%+6.2f,%+6.2f)    (%+6.2f,%+6.2f)    (%+6.2f,%+6.2f)" % (
+                r['speed'],
+                r['sim_vwn'], r['sim_vwe'],
+                r['ekf_vwn'], r['ekf_vwe'],
+                r['dcm_vwn'], r['dcm_vwe']))
+
     def CPUFailsafe(self):
         '''In lockup Plane should copy RC inputs to RC outputs'''
         self.plane_CPUFailsafe()
@@ -3256,6 +3329,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.AHRSFlyForwardFlag,
+            self.PlaneWindEstimate,
             self.DoRepositionTerrain,
             self.DoRepositionTerrain2,
             self.QLoiterRecovery,
