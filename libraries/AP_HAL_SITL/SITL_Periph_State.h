@@ -82,7 +82,7 @@ public:
 
 private:
 
-    void wait_clock(uint64_t wait_time_usec);
+    void _fdm_input_step(void) override;
     bool _use_rtscts;
     uint16_t _base_port;
 

@@ -2368,7 +2368,7 @@ class TestSuite(abc.ABC):
             p1=p1, # enable/disable
         )
 
-    def reboot_sitl_mav(self, required_bootcount=None, force=False):
+    def reboot_sitl_mav(self, required_bootcount=None, force=False, invalid_heartbeat_sys_status=None):
         """Reboot SITL instance using mavlink and wait for it to reconnect."""
         # we must make sure that stats have been reset - otherwise
         # when we reboot we'll reset statistics again and lose our
@@ -2423,7 +2423,11 @@ class TestSuite(abc.ABC):
                     raise NotAchievedException("Bad reboot ACK detected")
             self.install_message_hook_context(hook)
 
-        self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
+        self.detect_and_handle_reboot(
+            old_bootcount,
+            required_bootcount=required_bootcount,
+            invalid_heartbeat_sys_status=invalid_heartbeat_sys_status,
+        )
 
         if do_context:
             self.context_pop()
@@ -2448,12 +2452,17 @@ class TestSuite(abc.ABC):
                     check_position=True,
                     mark_context=True,
                     startup_location_dist_max=1,
+                    invalid_heartbeat_sys_status=None,
                     ):
         """Reboot SITL instance and wait for it to reconnect."""
         if self.armed() and not force:
             raise NotAchievedException("Reboot attempted while armed")
         self.progress("Rebooting SITL")
-        self.reboot_sitl_mav(required_bootcount=required_bootcount, force=force)
+        self.reboot_sitl_mav(
+            required_bootcount=required_bootcount,
+            force=force,
+            invalid_heartbeat_sys_status=invalid_heartbeat_sys_status,
+        )
         self.do_heartbeats(force=True)
         if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
@@ -2470,7 +2479,7 @@ class TestSuite(abc.ABC):
         self.mavproxy.send("reboot\n")
         self.detect_and_handle_reboot(old_bootcount, required_bootcount=required_bootcount)
 
-    def detect_and_handle_reboot(self, old_bootcount, required_bootcount=None, timeout=10):
+    def detect_and_handle_reboot(self, old_bootcount, required_bootcount=None, timeout=10, invalid_heartbeat_sys_status=None):
         tstart = time.time()
         if required_bootcount is None:
             required_bootcount = old_bootcount + 1
@@ -2499,11 +2508,8 @@ class TestSuite(abc.ABC):
                 self.progress("Got unexpected exception (%s)" % str(type(e)))
                 pass
 
-        # empty mav to avoid getting old timestamps:
-        self.do_timesync_roundtrip(timeout_in_wallclock=True)
-
         self.progress("Calling initialise-after-reboot")
-        self.initialise_after_reboot_sitl()
+        self.initialise_after_reboot_sitl(invalid_heartbeat_sys_status=invalid_heartbeat_sys_status)
 
     def scripting_restart(self):
         '''restart scripting subsystem'''
@@ -3150,11 +3156,19 @@ class TestSuite(abc.ABC):
         if len(missing) > 0:
             raise NotAchievedException("Documented messages (%s) not in code" % missing)
 
-    def initialise_after_reboot_sitl(self):
+    def initialise_after_reboot_sitl(self, invalid_heartbeat_sys_status=None):
+
+        if invalid_heartbeat_sys_status is None:
+            invalid_heartbeat_sys_status = (
+                mavutil.mavlink.MAV_STATE_UNINIT,
+                mavutil.mavlink.MAV_STATE_BOOT,
+                mavutil.mavlink.MAV_STATE_CALIBRATING,
+            )
 
         # after reboot stream-rates may be zero.  Request streams.
-        self.drain_mav()
-        self.wait_heartbeat()
+        self.do_timesync_roundtrip(timeout_in_wallclock=True)
+
+        self.wait_heartbeat(invalid_sys_status=invalid_heartbeat_sys_status)
         self.set_streamrate(self.sitl_streamrate())
         self.progress("Reboot complete")
 
@@ -3180,7 +3194,11 @@ class TestSuite(abc.ABC):
             if time.time() - tstart > 30:
                 raise NotAchievedException("Failed to customise")
             try:
-                m = self.wait_heartbeat(drain_mav=True)
+                m = self.wait_heartbeat(drain_mav=True, invalid_sys_status=(
+                    mavutil.mavlink.MAV_STATE_UNINIT,
+                    mavutil.mavlink.MAV_STATE_BOOT,
+                    mavutil.mavlink.MAV_STATE_CALIBRATING,
+                ))
                 if m.type == 0:
                     self.progress("Bad heartbeat: %s" % str(m))
                     continue
@@ -3808,13 +3826,13 @@ class TestSuite(abc.ABC):
         if ex is not None:
             raise ex
 
-    def download_full_log_list(self, print_logs=True):
+    def download_full_log_list(self, print_logs=True, LOG_ENTRY_sanity_check=True):
         tstart = self.get_sim_time()
         self.mav.mav.log_request_list_send(self.sysid_thismav(),
                                            1, # target component
                                            0,
                                            0xffff)
-        logs = {}
+        logs : dict[int : mavutil.MAVLink.MAVLink_log_entry_message] = {}
         last_id = None
         num_logs = None
         while True:
@@ -3850,7 +3868,8 @@ class TestSuite(abc.ABC):
                 break
 
         # ensure we don't get any extras:
-        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+        if LOG_ENTRY_sanity_check:
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
 
         return logs
 
@@ -6572,7 +6591,7 @@ class TestSuite(abc.ABC):
         for i in range(0, attempts):
             mavproxy.send("param fetch %s\n" % name)
             try:
-                mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/attempts)
+                mavproxy.expect("%s = ([-0-9.]*)" % (name,), timeout=timeout/attempts)
                 try:
                     # sometimes race conditions garble the MAVProxy output
                     ret = float(mavproxy.match.group(1))
@@ -7095,10 +7114,9 @@ class TestSuite(abc.ABC):
 
     def change_mode(self, mode, timeout=60):
         '''change vehicle flightmode'''
-        self.wait_heartbeat()
         self.progress("Changing mode to %s" % mode)
-        self.send_cmd_do_set_mode(mode)
         tstart = self.get_sim_time()
+        self.send_cmd_do_set_mode(mode)
         while not self.mode_is(mode):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
@@ -8716,7 +8734,7 @@ class TestSuite(abc.ABC):
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, invalid_sys_status=None, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:
@@ -8729,9 +8747,14 @@ Also, ignores heartbeats not from our target system'''
                 if not self.sitl_is_running():
                     self.progress("SITL is not running")
                 raise AutoTestTimeoutException("Did not receive heartbeat")
+            # request the heartbeat:
+            self.send_cmd(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 0, quiet=True)
             m = self.mav.wait_heartbeat(*args, **x)
             if m is None:
                 continue
+            if invalid_sys_status is not None:
+                if m.system_status in invalid_sys_status:
+                    continue
             if m.get_srcSystem() == self.sysid_thismav():
                 return m
 
@@ -10797,6 +10820,25 @@ Also, ignores heartbeats not from our target system'''
         if herrors > header_errors:
             raise NotAchievedException("Error parsing log file %s, %d header errors" % (logname, herrors))
 
+    def print_downloaded_full_log_list(self, file_list):
+        self.progress("Downloaded log list")
+        for message in file_list.values():
+            self.progress(f"    {message.id} {message.size} {message.time_utc}")
+
+    def assert_current_log_filesizes(self, sizes):
+        file_list = self.download_full_log_list(LOG_ENTRY_sanity_check=False)
+        self.print_downloaded_full_log_list(file_list)
+        for file_id, minmax in sizes.items():
+            (minsize, maxsize) = minmax
+            self.progress(f"want Log {file_id} between {minsize} and {maxsize}")
+            if file_id not in file_list:
+                raise NotAchievedException(f"{file_id} not in downloaded log info")
+            m = file_list[file_id]
+            if m.size < minsize:
+                raise NotAchievedException(f"{file_id} too small; got={m.size} want>{minsize} and <{maxsize}")
+            if m.size > maxsize:
+                raise NotAchievedException(f"{file_id} too large; got={m.size} want<{maxsize} and >{minsize}")
+
     def DataFlashErase(self):
         """Test that erasing the dataflash chip and creating a new log is error free"""
         mavproxy = self.start_mavproxy()
@@ -10804,39 +10846,65 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         self.context_push()
         try:
-            self.set_parameter("LOG_BACKEND_TYPE", 4)
+            self.set_parameters({
+                "LOG_DISARMED": 0,
+                "LOG_BACKEND_TYPE": 4,
+                "SIM_SPEEDUP": 10,
+            })
             self.reboot_sitl()
             mavproxy.send("module load log\n")
             mavproxy.send("log erase\n")
             mavproxy.expect("Chip erase complete")
-            self.set_parameter("LOG_DISARMED", 1)
-            self.delay_sim_time(3)
-            self.set_parameter("LOG_DISARMED", 0)
+
+            self.set_autodisarm_delay(6)
+
+            self.progress("Creating a very short log")
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.wait_disarmed()
+            self.assert_current_log_filesizes({
+                1: (400*1024, 900*1024),
+            })
             mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
             # read the downloaded log - it must parse without error
             self.validate_log_file("logs/dataflash-log-erase.BIN")
 
             self.start_subtest("Test file wrapping results in a valid file")
-            # roughly 4mb
             self.set_parameter("LOG_FILE_DSRMROT", 1)
             self.set_parameter("LOG_BITMASK", 131071)
             self.wait_ready_to_arm()
-            if self.is_copter() or self.is_plane():
-                self.set_autodisarm_delay(0)
+
+            self.progress("Appending to create larger log")
+            self.set_autodisarm_delay(10)
             self.arm_vehicle()
-            self.delay_sim_time(30)
-            self.disarm_vehicle()
-            # roughly 4mb
+            self.wait_disarmed()
+            self.assert_current_log_filesizes({
+                1: (1900*1024, 3000*1024),
+            })
+            self.progress("Creating a second large log")
             self.arm_vehicle()
-            self.delay_sim_time(30)
-            self.disarm_vehicle()
-            # roughly 9mb, should wrap around
+            self.wait_disarmed()
+            self.assert_current_log_filesizes({
+                1: (1900*1024, 3000*1024),
+                2: (900*1024, 1700*1024),
+            })
+
+            self.set_autodisarm_delay(0)
+
+            self.progress("Creating a very large log which wipes the other ones out")
+            self.context_collect('STATUSTEXT')
             self.arm_vehicle()
-            self.delay_sim_time(50)
+            self.wait_statustext('Chip full, logging stopped', check_context=True, timeout=60)
             self.disarm_vehicle()
+
             # make sure we have finished logging
             self.delay_sim_time(15)
+
+            self.assert_current_log_filesizes({
+                1: (3809996, 4109996),
+            })
+
             mavproxy.send("log list\n")
             try:
                 mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
@@ -10846,16 +10914,12 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     self.progress("SITL is NOT running")
                 raise NotAchievedException("Received %s" % str(e))
-            if int(mavproxy.match.group(2)) != 3:
-                raise NotAchievedException("Expected 3 logs got %s" % (mavproxy.match.group(2)))
+            if int(mavproxy.match.group(2)) != 1:
+                raise NotAchievedException("Expected 1 log got %s" % (mavproxy.match.group(2)))
 
             mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase2.BIN", 1)
-
-            mavproxy.send("log download latest logs/dataflash-log-erase3.BIN\n")
-            mavproxy.expect("Finished downloading", timeout=120)
-            self.validate_log_file("logs/dataflash-log-erase3.BIN", 1)
+            self.validate_log_file("logs/dataflash-log-erase2.BIN", header_errors=1)
 
             # clean up
             mavproxy.send("log erase\n")
@@ -11569,13 +11633,14 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("Disarming tracker")
                 self.disarm_vehicle(force=True)
 
-            self.reboot_sitl(required_bootcount=1)
+            self.reboot_sitl(required_bootcount=1, invalid_heartbeat_sys_status=())
             self.progress("Waiting for 'Config error'")
             # SYSTEM_TIME not sent in config error loop:
             self.wait_statustext("Config error", wallclock_timeout=True)
             self.progress("Setting %s to %f" % (parameter_name, new_parameter_value))
             self.set_parameter(parameter_name, new_parameter_value)
         except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
             ex = e
 
         self.progress("Resetting SIM_BARO_COUNT")
@@ -12626,6 +12691,7 @@ switch value'''
         return latest
 
     def dfreader_for_path(self, path):
+        self.progress(f"Returning dfreader for {path}")
         return DFReader.DFReader_binary(path,
                                         zero_time_base=True)
 

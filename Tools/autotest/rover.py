@@ -7363,8 +7363,7 @@ return update()
             self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
             self.wait_mode('MANUAL')
 
-            if self.distance_to_home() > 2:
-                raise NotAchievedException("Did not get home!")
+            self.wait_distance_to_home(0, 5, timeout=1)
 
     def start_driving_simple_relhome_mission(self, items):
         '''uploads items, changes mode to AUTO, waits ready to arm and starts mission'''
