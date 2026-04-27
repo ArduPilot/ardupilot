@@ -6215,6 +6215,84 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress("AIS data validation passed: MMSI=%u lat=%.6f lon=%.6f" %
                       (m.MMSI, lat_deg, lon_deg))
 
+    def GPSInput(self):
+        '''Test GPS_INPUT MAVLink message'''
+        self.set_parameters({
+            "SIM_GPS1_TYPE": 0,
+            "GPS1_TYPE": 14,
+            "SIM_SPEEDUP": 10,
+        })
+        self.reboot_sitl()
+
+        def send_gps_input(simstate):
+            '''send GPS_INPUT using given SIMSTATE position'''
+            tnow = self.get_sim_time_cached()
+            self.mav.mav.gps_input_send(
+                int(tnow * 1e6),  # timestamp usec
+                0,                # gps_id
+                0,                # ignore_flags
+                int(280000000 + tnow * 1000),  # time_week_ms
+                2350,             # time_week
+                3,                # fix_type (3D fix)
+                simstate.lat,     # lat (degE7)
+                simstate.lng,     # lon (degE7)
+                584.0,            # alt (m)
+                0.5,              # hdop
+                0.5,              # vdop
+                0, 0, 0,          # vn, ve, vd (m/s)
+                0.3, 0.3, 0.3,    # speed, horiz, vert accuracy
+                14,               # satellites_visible
+                0,                # yaw (cdeg)
+            )
+
+        # Send GPS data until we get a 3D fix
+        self.progress("Sending GPS_INPUT and waiting for 3D fix")
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time() - tstart > 30:
+                raise NotAchievedException("GPS_INPUT did not produce 3D fix")
+            s = self.assert_receive_message('SIMSTATE')
+            send_gps_input(s)
+            m = self.assert_receive_message('GPS_RAW_INT')
+            if m.fix_type >= 3:
+                break
+
+        self.progress("Got 3D fix from GPS_INPUT")
+
+        # Keep sending GPS_INPUT while waiting for EKF to converge
+        self._in_gps_hook = False
+
+        def send_gps_hook(mav, m):
+            if self._in_gps_hook:
+                return
+            if m.get_type() == 'SIMSTATE':
+                self._in_gps_hook = True
+                try:
+                    send_gps_input(m)
+                finally:
+                    self._in_gps_hook = False
+
+        self.context_push()
+        self.install_message_hook_context(send_gps_hook)
+        self.wait_ekf_flags(
+            mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS,
+            0,
+            timeout=60
+        )
+        self.context_pop()
+
+        # Verify reported position is close to what we sent
+        m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
+        loc = self.sim_location_int()
+        dist = self.get_distance_int(m, loc)
+        max_dist = 1  # metres
+        if dist > max_dist:
+            raise NotAchievedException(
+                "Position mismatch: dist=%.1fm (max %dm)" %
+                (dist, max_dist)
+            )
+        self.progress("Position matches: dist=%.1fm" % dist)
+
     def DepthFinder(self):
         '''Test multiple depthfinders for boats'''
         # Setup rangefinders
@@ -7563,6 +7641,7 @@ return update()
             self.AIS,
             self.AISMultipleVessels,
             self.AISDataValidation,
+            self.GPSInput,
             self.AP_Proximity_MAV,
             self.EndMissionBehavior,
             self.PositionTargetGlobalIntAltFrame,
