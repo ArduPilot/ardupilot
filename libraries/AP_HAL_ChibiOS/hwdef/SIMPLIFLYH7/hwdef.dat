@@ -161,8 +161,10 @@ PB5 TIM3_CH2 TIM3 PWM(9) GPIO(58)  # LED strip
 # -------------------------------------------------
 # PB2 - EN pin of 9V regulator
 # OUTPUT HIGH PULLUP keeps 9V rail always enabled at boot.
+# RELAY2 assigned to GPIO 81 for software control of 9V supply.
 # -------------------------------------------------
 PB2 PINIO1 OUTPUT GPIO(81) HIGH PULLUP
+define RELAY2_PIN_DEFAULT 81
 
 # -------------------------------------------------
 # PB3 - Camera control (CC pin)

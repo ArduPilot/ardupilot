@@ -19,8 +19,8 @@ The SimpliFly H7 is a flight controller manufactured by [MACFOS](https://www.rob
 - Analog RSSI input
 - Battery voltage and current sensing
 - Buzzer support (inverted, open-drain)
-- 9V,3A regulator (EN: PB2)
-- Camera control output (PB3)
+- 9V, 3A regulator, GPIO controlled
+- Camera trigger output (CC pad, GPIO relay)
 - MicroSD card not present; uses onboard dataflash for logging
 
 ## Pinout
@@ -32,66 +32,70 @@ The SimpliFly H7 is a flight controller manufactured by [MACFOS](https://www.rob
 
 The ESC interface is an **8-pin connector** located on the bottom of the board. Pin 1 is on the left when viewed from the bottom with the connector facing you.
 
-| Pin | Label | MCU Pin | Function                        | Notes                     |
-|-----|-------|---------|---------------------------------|---------------------------|
-| 1   | M4    | PC9     | Motor 4 signal                  | TIM8_CH4                  |
-| 2   | M3    | PC8     | Motor 3 signal                  | BDshot capable (TIM8_CH3) |
-| 3   | M2    | PC7     | Motor 2 signal                  | TIM8_CH2                  |
-| 4   | M1    | PC6     | Motor 1 signal                  | BDshot capable (TIM8_CH1) |
-| 5   | T     | PD2     | ESC Telemetry RX (UART5)        | NODMA, RX only            |
-| 6   | C     | PC1     | Current sense (ADC1)            | BATT_CURR_PIN 11          |
-| 7   | G     | —       | Ground                          |                           |
-| 8   | V     | PC2     | Battery voltage sense (ADC1)    | BATT_VOLT_PIN          |
+| Pin | Label | Function                     | Notes                           |
+|-----|-------|------------------------------|---------------------------------|
+| 1   | M4    | Motor 4 signal               | TIM8_CH4                        |
+| 2   | M3    | Motor 3 signal               | BDshot capable (TIM8_CH3)       |
+| 3   | M2    | Motor 2 signal               | TIM8_CH2                        |
+| 4   | M1    | Motor 1 signal               | BDshot capable (TIM8_CH1)       |
+| 5   | T     | ESC Telemetry RX (UART5)     | RX only                         |
+| 6   | C     | Current sense input          | Connect to ESC current signal   |
+| 7   | G     | Ground                       |                                 |
+| 8   | V     | Battery voltage input        | Connect to battery positive      |
 
 > **Note:** All 4 motor signal pins (M1–M4) share TIM8 and must use the same output protocol (PWM / DShot / BDshot). ESC telemetry is on SERIAL5 — set `SERIAL5_PROTOCOL = 16` (ESC Telemetry) in Mission Planner.
 
 ## UART Mapping
 
-| Name      | Pin   | Function           | Notes           |
-|-----------|-------|--------------------|-----------------|
-| SERIAL0   | USB   | USB                |                 |
-| SERIAL1   | UART1 | TX: PA9, RX: PA10  | VTX |
-| SERIAL3   | UART3 | TX: PB10, RX: PB11 | General purpose |
-| SERIAL4   | UART4 | TX: PA0, RX: PA1   | Receiver input  |
-| SERIAL5   | UART5 | RX: PD2 only       | ESC Telemetry |
-| SERIAL7   | UART7 | TX: PE8, RX: PE7   | GPS              |
+| SERIAL Port | Pad Label         | Default Protocol | Notes                    |
+|-------------|-------------------|------------------|--------------------------|
+| SERIAL0     | USB               | USB              |                          |
+| SERIAL1     | TX1, RX1          | DJI FPV (VTX)   | DMA enabled              |
+| SERIAL3     | TX3, RX3          | None             | DMA enabled              |
+| SERIAL4     | TX4, RX4          | RC Input         | DMA enabled              |
+| SERIAL5     | T (ESC connector) | ESC Telemetry    | RX only, no DMA          |
+| SERIAL7     | TX7, RX7          | GPS              | DMA enabled              |
 
 ## PWM Output
 
 The SimpliFly H7 supports up to 9 PWM outputs.
 
-| Output | Pin  | Timer    | BDshot | Function |
-|--------|------|----------|--------|----------|
-| PWM1   | PC6  | TIM8_CH1 | Yes    | Motor 1  |
-| PWM2   | PC7  | TIM8_CH2 | Yes    | Motor 2  |
-| PWM3   | PC8  | TIM8_CH3 | Yes    | Motor 3  |
-| PWM4   | PC9  | TIM8_CH4 | Yes    | Motor 4  |
-| PWM5   | PB6  | TIM4_CH1 | No     | Servo 1  |
-| PWM6   | PB7  | TIM4_CH2 | No     | Servo 2  |
-| PWM7   | PD14 | TIM4_CH3 | No     | Servo 3  |
-| PWM8   | PD15 | TIM4_CH4 | No     | Servo 4  |
-| PWM9   | PB5  | TIM3_CH2 | No     | LED Strip (NeoPixel) |
+| Output | Pad Label | Timer    | BDshot | Function             |
+|--------|-----------|----------|--------|----------------------|
+| PWM1   | M1        | TIM8_CH1 | Yes    | Motor 1              |
+| PWM2   | M2        | TIM8_CH2 | Yes    | Motor 2              |
+| PWM3   | M3        | TIM8_CH3 | Yes    | Motor 3              |
+| PWM4   | M4        | TIM8_CH4 | Yes    | Motor 4              |
+| PWM5   | S1        | TIM4_CH1 | Yes    | Servo 1              |
+| PWM6   | S2        | TIM4_CH2 | Yes    | Servo 2              |
+| PWM7   | S3        | TIM4_CH3 | Yes    | Servo 3              |
+| PWM8   | S4        | TIM4_CH4 | Yes    | Servo 4              |
+| PWM9   | LED       | TIM3_CH2 | No     | LED Strip (NeoPixel) |
 
 **Timer groups** — all outputs in the same timer group must use the same protocol:
 
 - Group 1: PWM1, PWM2, PWM3, PWM4 (TIM8) — supports PWM, DShot, BDshot
-- Group 2: PWM5, PWM6, PWM7, PWM8 (TIM4) — supports PWM, DShot
+- Group 2: PWM5, PWM6, PWM7, PWM8 (TIM4) — supports PWM, DShot, BDshot
 - Group 3: PWM9 (TIM3) — LED strip (NeoPixel/WS2812)
 
 The motor ordering follows the Betaflight/X layout (HAL_FRAME_TYPE 12).
 
 ## RC Input
 
-RC input is configured on pin PA1, which is shared with UART4_RX.
+RC input is on the **RX4** pad (UART4). The pad has two operating modes selected by `BRD_ALT_CONFIG`:
 
-- **PPM**: Connect to the RX1 pad. Supported via timer capture (TIM2_CH2).
-- **SBUS / serial RC protocols** (CRSF, ELRS, DSM, iBus, etc.): Connect to the RX1 pad and set `SERIAL4_PROTOCOL` to the appropriate value. Set `SERIAL4_OPTIONS = 0` normally; for SBUS set to `0` with half-duplex if required by your receiver.
+**Default (`BRD_ALT_CONFIG = 0`)** — Serial RC protocols via UART4:
+
+- Supports all unidirectional protocols: SBUS, DSM, iBus, SRXL, etc. Connect receiver to the RX4 pad. SERIAL4 is configured for RC Input by default — no parameter changes needed.
 
 For CRSF/ELRS (bi-directional):
 
-- Connect TX to RX1(PA1)
-- Set `SERIAL4_PROTOCOL = 23` (RCIN)
-- Set `SERIAL4_BAUD = 115`
+- Connect receiver TX to the RX4 pad (SERIAL4 is set to RC Input by default)
+
+**Alternate config (`BRD_ALT_CONFIG = 1`)** — PPM via timer capture (TIM2_CH2):
+
+- Set `BRD_ALT_CONFIG = 1` and reboot
+- Connect your PPM receiver signal to the RX4 pad
 
 See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for more detail.
 
@@ -99,36 +103,36 @@ See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.
 
 The SimpliFly H7 has a built-in AT7456E (MAX7456) OSD chip on SPI2. The OSD is enabled by default (`OSD_TYPE = 1`).
 
-To use MSP DisplayPort OSD simultaneously on an external device, set `OSD_TYPE2 = 5` and configure a UART for MSP.
+MSP DisplayPort OSD (`OSD_TYPE2 = 5`) is also enabled by default, allowing simultaneous use of an external DisplayPort OSD device. Configure a free UART for MSP to use this feature.
 
 ## 9V supply
 
-The 9V supply is controlled by pin PB2 (PINIO1, GPIO 81). The EN pin is held HIGH by default via pull-up, keeping the 9V rail always active at boot.
+The 9V supply is always active at boot. It can be switched on/off in software via `RELAY2` (GPIO 81, assigned by default).
 
-To enable software control of 9V buck, assign a relay to GPIO 81 in Mission Planner:
+To control the 9V supply:
 
-- Set `RELAY1_PIN = 81` (or any available relay number)
-- Use the relay channel to switch 9V buck on/off
+- `RELAY2_PIN` is set to `81` by default — no additional configuration needed
+- Use the relay functions in Mission Planner or via RC switch to toggle the 9V rail on/off
 
 ## Camera Switch
 
-Camera control is available on pin PB3 (CAMERA1, GPIO 82).
+Camera control is available on the **CC** pad (GPIO 82).
 
 - GPIO 82 is assigned to `RELAY3` by default (`RELAY3_PIN_DEFAULT 82`)
 - Set `CAM_RELAY_ON` and associated parameters to control the camera trigger
 
 ## GPIOs
 
-| GPIO | Pin | Default       | Function                      |
-|------|-----|---------------|-------------------------------|
-| 80   | PD3 | HIGH (silent) | Buzzer (inverted, open-drain) |
-| 81   | PB2 | HIGH          | 9V VTX regulator EN (PINIO1)  |
-| 82   | PB3 | LOW           | Camera control (RELAY3)       |
-| 90   | PD1 | LOW           | Status LED                    |
+| GPIO | Pad Label | Default       | Function                      |
+|------|-----------|---------------|-------------------------------|
+| 80   | BZ        | HIGH (silent) | Buzzer (inverted, open-drain) |
+| 81   | —         | HIGH          | 9V regulator EN (PINIO1)      |
+| 82   | CC        | LOW           | Camera control (RELAY3)       |
+| 90   | LED       | LOW           | Status LED                    |
 
 ## RSSI / Analog Pins
 
-An analog RSSI input is available on pin PC0 (ADC1, GPIO analog pin 10).
+An analog RSSI input is available on the **RSSI** pad (analog pin 10).
 
 Set `RSSI_ANA_PIN = 10` in Mission Planner to enable analog RSSI reading.
 
@@ -139,8 +143,8 @@ The SimpliFly H7 has onboard voltage and current sensing. Default parameters:
 | Parameter        | Value |
 |------------------|-------|
 | `BATT_MONITOR`   | 4 (Analog voltage and current) |
-| `BATT_VOLT_PIN`  | 12 (PC2) |
-| `BATT_CURR_PIN`  | 11 (PC1) |
+| `BATT_VOLT_PIN`  | 12 (V pad on ESC connector) |
+| `BATT_CURR_PIN`  | 11 (C pad on ESC connector) |
 | `BATT_VOLT_MULT` | 11.0 (voltage divider ratio: scales raw ADC voltage to actual battery voltage) |
 | `BATT_AMP_PERVLT`| 35.4 (adjust for your current sensor) |
 
@@ -148,7 +152,7 @@ The voltage sensor supports up to 2S-6S LiPo batteries. The current scale value 
 
 ## Compass
 
-The SimpliFly H7 does not have a built-in compass. An external compass can be connected via I2C1 (SCL: PB8, SDA: PB9). ArduPilot will automatically probe for all supported I2C compass types.
+The SimpliFly H7 does not have a built-in compass. An external compass can be connected via the I2C connector (SCL, SDA pads). ArduPilot will automatically probe for all supported I2C compass types.
 
 ## Loading Firmware
 
