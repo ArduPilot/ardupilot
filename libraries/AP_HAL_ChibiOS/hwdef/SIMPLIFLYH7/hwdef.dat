@@ -1,0 +1,227 @@
+# hw definition file for processing by chibios_hwdef.py
+# for SimpliFly H7 hardware.
+
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_SIMPLIFLYH7
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+MCU_CLOCKRATE_MHZ 480
+
+FLASH_SIZE_KB 2048
+
+# bootloader takes first sector
+FLASH_RESERVE_START_KB 128
+
+STM32_ST_USE_TIMER 12
+define CH_CFG_ST_RESOLUTION 16
+
+# use last 2 pages for flash storage
+# H743 has 16 pages of 128k each
+STORAGE_FLASH_PAGE 14
+define HAL_STORAGE_SIZE 32768
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# -------------------------------------------------
+# SPI1 - IMU (ICM42688P)
+# -------------------------------------------------
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+# CS for gyro
+PC4 GYRO1_CS CS
+
+# -------------------------------------------------
+# SPI2 - OSD (MAX7456)
+# -------------------------------------------------
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+PB12 OSD1_CS CS
+
+# -------------------------------------------------
+# SPI3 - Dataflash (W25Q128FV)
+# -------------------------------------------------
+PC10 SPI3_SCK SPI3
+PC11 SPI3_MISO SPI3
+PD6  SPI3_MOSI SPI3
+
+PD0 FLASH1_CS CS
+
+# -------------------------------------------------
+# I2C1 - Baro + external compass
+# -------------------------------------------------
+I2C_ORDER I2C1
+
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# -------------------------------------------------
+# SERIAL ports
+# -------------------------------------------------
+# SIMPLIFLYH7 UART order matches Betaflight numbering:
+
+SERIAL_ORDER OTG1 USART1 EMPTY USART3 UART4 UART5 EMPTY UART7
+
+# USART1 - SERIAL1 (VTX)
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_DJI_FPV
+
+# USART3 - SERIAL3 
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+
+# UART4 - SERIAL4 (RC input)
+# PA1 is shared with PPM input; configure as UART4_RX
+PA0  UART4_TX UART4
+PA1  UART4_RX UART4
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
+
+# UART5 - SERIAL5 (ESC Telemetry)
+PD2  UART5_RX UART5 NODMA
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
+
+# UART7 - SERIAL7 (GPS)
+PE7  UART7_RX UART7
+PE8  UART7_TX UART7
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_GPS
+
+# -------------------------------------------------
+# RC input
+# PA1 is the PPM/RCIN pin (also serves as UART4_RX alt)
+# -------------------------------------------------
+PA1 TIM2_CH2 TIM2 RCININT PULLDOWN LOW ALT(1)
+
+# -------------------------------------------------
+# ADC
+# -------------------------------------------------
+PC2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
+PC0 RSSI_ADC ADC1
+
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 12
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_VOLT_SCALE 11.0
+define HAL_BATT_CURR_SCALE 35.4
+define BOARD_RSSI_ANA_PIN 10
+
+# -------------------------------------------------
+# LED and Buzzer
+# -------------------------------------------------
+PD1 LED0 OUTPUT LOW GPIO(90)
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+define AP_NOTIFY_GPIO_LED_1_PIN 90
+
+# Buzzer is inverted (active LOW) - matches BF BEEPER_INVERTED
+# BF uses IOCFG_OUT_OD (open drain) for inverted beepers.
+# OPENDRAIN + PULLUP: pin floats HIGH via pull-up = silent,
+# actively driven LOW = buzzer sounds.
+PD3 BUZZER OUTPUT HIGH GPIO(80) OPENDRAIN PULLUP
+define HAL_BUZZER_PIN 80
+define HAL_BUZZER_ON 0
+
+# -------------------------------------------------
+# MOTORS - TIM8 (PC6-PC9)
+# All 4 outputs on TIM8, supports BDshot
+# -------------------------------------------------
+PC6 TIM8_CH1 TIM8 PWM(1) GPIO(50) BIDIR  # M1
+PC7 TIM8_CH2 TIM8 PWM(2) GPIO(51)        # M2
+PC8 TIM8_CH3 TIM8 PWM(3) GPIO(52) BIDIR  # M3
+PC9 TIM8_CH4 TIM8 PWM(4) GPIO(53)        # M4
+
+# -------------------------------------------------
+# SERVO outputs - TIM4 (PB6, PB7, PD14, PD15)
+# -------------------------------------------------
+PB6  TIM4_CH1 TIM4 PWM(5) GPIO(54) BIDIR  # S1
+PB7  TIM4_CH2 TIM4 PWM(6) GPIO(55)        # S2
+PD14 TIM4_CH3 TIM4 PWM(7) GPIO(56) BIDIR  # S3
+PD15 TIM4_CH4 TIM4 PWM(8) GPIO(57)        # S4
+
+# -------------------------------------------------
+# LED Strip - TIM3_CH2
+# -------------------------------------------------
+PB5 TIM3_CH2 TIM3 PWM(9) GPIO(58)  # LED strip
+
+# -------------------------------------------------
+# PB2 - EN pin of 9V regulator
+# OUTPUT HIGH PULLUP keeps 9V rail always enabled at boot.
+# RELAY2 assigned to GPIO 81 for software control of 9V supply.
+# -------------------------------------------------
+PB2 PINIO1 OUTPUT GPIO(81) HIGH PULLUP
+define RELAY2_PIN_DEFAULT 81
+
+# -------------------------------------------------
+# PB3 - Camera control (CC pin)
+# -------------------------------------------------
+PB3 CAMERA1 OUTPUT GPIO(82) LOW
+define RELAY3_PIN_DEFAULT 82
+
+# -------------------------------------------------
+# DMA
+# -------------------------------------------------
+DMA_NOSHARE TIM8_UP SPI1* SPI3*
+DMA_PRIORITY TIM8_UP TIM3_UP TIM4_UP SPI1* SPI3*
+
+# -------------------------------------------------
+# SPI device declarations
+# -------------------------------------------------
+SPIDEV imu1       SPI1 DEVID1 GYRO1_CS  MODE3  2*MHZ  16*MHZ
+SPIDEV osd        SPI2 DEVID4 OSD1_CS   MODE0 10*MHZ  10*MHZ
+SPIDEV dataflash  SPI3 DEVID1 FLASH1_CS MODE3  2*MHZ  32*MHZ
+
+# -------------------------------------------------
+# IMU - ICM42688P on SPI1
+# -------------------------------------------------
+IMU Invensensev3 SPI:imu1 ROTATION_ROLL_180_YAW_270
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# -------------------------------------------------
+# Barometer - BMP280 on I2C1
+# -------------------------------------------------
+BARO BMP280 I2C:0:0x76
+
+# -------------------------------------------------
+# Dataflash logging
+# -------------------------------------------------
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+# -------------------------------------------------
+# OSD - MAX7456 on SPI2
+# -------------------------------------------------
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# -------------------------------------------------
+# No built-in compass; probe I2C for external
+# -------------------------------------------------
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_TYPE_DEFAULT 12
+
+# LED strip default (NeoPixel)
+define DEFAULT_NTF_LED_TYPES 455
+
+# build ABIN for flash-from-bootloader support
+env BUILD_ABIN True
