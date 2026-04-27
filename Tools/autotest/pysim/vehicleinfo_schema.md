@@ -9,7 +9,7 @@ parameter list without the source tree present.
 
 ## Structure
 
-```
+```json
 {
   "<VehicleName>": {
     "default_frame": "<frame>",
@@ -70,7 +70,7 @@ After editing, rebuild SITL so the embedded copy in
 
 Any SITL binary with this support compiled in answers `--list-models`:
 
-```
+```sh
 ./build/sitl/bin/arduplane --list-models | jq .
 ```
 
