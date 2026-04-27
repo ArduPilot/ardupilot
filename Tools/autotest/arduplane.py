@@ -2571,6 +2571,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "SOAR_VSPEED": 0.55,
             "SOAR_MIN_THML_S": 25,
+            "SOAR_ALT_MIN": 100,  # Stay above nearby terrain
         })
 
         self.set_current_waypoint(1)
@@ -2613,9 +2614,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('FBWB')
         self.delay_sim_time(5)
 
+        # Descent to some in-between altitude
+        alt_mid = (alt_min + alt_ctf) / 2
+        self.wait_altitude(alt_mid-10, alt_mid, timeout=600, relative=True)
+
         # Now disable soaring (should hold altitude)
         self.set_parameter("SOAR_ENABLE", 0)
-        self.delay_sim_time(10)
+        self.delay_sim_time(20)
+        # Ensure the altitude is maintained (immediate check around upper threshold)
+        self.wait_altitude(alt_mid-10, alt_mid+10, timeout=1, relative=True)
 
         # And re-enable. This should force throttle-down
         self.set_parameter("SOAR_ENABLE", 1)
@@ -2624,7 +2631,52 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Now wait for descent and check throttle up
         self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
 
-        self.progress("Waiting for climb")
+        self.progress("Waiting for climb in FBWB")
+        self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
+
+        # Now set GUIDED mode and go to a nearby location
+        self.change_mode("GUIDED")
+        loc = self.mav.location()
+        self.location_offset_ne(loc, 350, 0)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=int(loc.lat * 1e7),
+            p6=int(loc.lng * 1e7),
+            p7=alt_ctf,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+
+        # GUIDED should glide en route to target
+        self.wait_servo_channel_value(3, 1200, timeout=5, comparator=operator.lt)
+        self.wait_altitude(alt_mid-10, alt_mid, timeout=600, relative=True)
+
+        # Maintain current altitude on soaring disable
+        self.set_parameter("SOAR_ENABLE", 0)
+        self.delay_sim_time(20)
+        self.wait_altitude(alt_mid-10, alt_mid+10, timeout=1, relative=True)
+        self.set_parameter("SOAR_ENABLE", 1)
+
+        self.progress("Waiting for climb in GUIDED")
+        self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
+
+        # Now set LOITER mode
+        self.change_mode("LOITER")
+        self.delay_sim_time(5)
+
+        # Loiter should also glide around target
+        self.wait_servo_channel_value(3, 1200, timeout=5, comparator=operator.lt)
+        self.wait_altitude(alt_min-10, alt_min, timeout=600, relative=True)
+
+        # Check altitude hold also in climb
+        self.wait_altitude(alt_mid-10, alt_mid, timeout=600, relative=True)
+        # Maintain current altitude on soaring disable
+        self.set_parameter("SOAR_ENABLE", 0)
+        self.delay_sim_time(20)
+        # We were climbing, so check around lower threshold
+        self.wait_altitude(alt_mid-20, alt_mid, timeout=1, relative=True)
+        self.set_parameter("SOAR_ENABLE", 1)
+
+        self.progress("Waiting for climb in LOITER")
         self.wait_altitude(alt_ctf-10, alt_ctf, timeout=600, relative=True)
 
         # Back to auto
