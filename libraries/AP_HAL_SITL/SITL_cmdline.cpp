@@ -814,10 +814,11 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
 }
 
 /*
-  look up the model in @ROMFS/vehicleinfo.json and set defaults_path
-  to the matching comma-separated @ROMFS/<path>,@ROMFS/<path>... list.
-  Precedence: explicit --defaults always wins, so this is a no-op
-  whenever defaults_path was already set.
+  look up the model in @ROMFS/vehicleinfo.json and prepend the matching
+  @ROMFS/<path>,@ROMFS/<path>... list to defaults_path. AP_Param reads
+  the comma-separated list left-to-right with later files overriding
+  earlier ones, so any user-supplied --defaults paths layer on top of
+  the embedded per-frame defaults.
 
   We first look under the binary's own vehicle (AP_BUILD_TARGET_NAME)
   and fall back to scanning every top-level vehicle. The scan covers
@@ -826,9 +827,6 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
  */
 void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str)
 {
-    if (defaults_path != nullptr) {
-        return;     // explicit --defaults wins
-    }
     if (model_str == nullptr) {
         return;
     }
@@ -860,7 +858,13 @@ void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *
     }
 
     if (found && !joined.empty()) {
-        defaults_path = strdup(joined.c_str());
+        if (defaults_path != nullptr) {
+            // prepend ROMFS list so explicit --defaults files override
+            std::string combined = joined + "," + defaults_path;
+            defaults_path = strdup(combined.c_str());
+        } else {
+            defaults_path = strdup(joined.c_str());
+        }
     }
 
     delete root;
