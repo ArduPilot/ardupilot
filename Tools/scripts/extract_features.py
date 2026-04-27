@@ -247,8 +247,6 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
-            ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
-            ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
             ('AP_ADSB_AVOIDANCE_ENABLED', 'AP_Avoidance::init'),
 
             ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
