@@ -32,55 +32,9 @@
 
 #define CHECK_STREAM(stream, ret) while (stream == NULL || stream->fd < 0) { errno = EBADF; return ret; }
 
-#define modecmp(str, pat) (strcmp(str, pat) == 0 ? 1: 0)
-
-/*
-  map a fopen() file mode to a open() mode
- */
-static int posix_fopen_modes_to_open(const char *mode)
-{
-    int flag = 0;
-
-    if (modecmp(mode,"r") || modecmp(mode,"rb")) {
-        flag = O_RDONLY;
-        return flag;
-    }
-    if (modecmp(mode,"r+") || modecmp(mode, "r+b" ) || modecmp(mode, "rb+" )) {
-        flag = O_RDWR | O_TRUNC;
-        return flag;
-    }
-    if (modecmp(mode,"w") || modecmp(mode,"wb")) {
-        flag = O_WRONLY | O_CREAT | O_TRUNC;
-        return flag;
-    }
-    if (modecmp(mode,"w+") || modecmp(mode, "w+b" ) || modecmp(mode, "wb+" )) {
-        flag = O_RDWR | O_CREAT | O_TRUNC;
-        return flag;
-    }
-    if (modecmp(mode,"a") || modecmp(mode,"ab")) {
-        flag = O_WRONLY | O_CREAT | O_APPEND;
-        return flag;
-    }
-    if (modecmp(mode,"a+") || modecmp(mode, "a+b" ) || modecmp(mode, "ab+" )) {
-        flag = O_RDWR | O_CREAT | O_APPEND;
-        return flag;
-    }
-    return -1;
-}
-
 APFS_FILE *apfs_fopen(const char *pathname, const char *mode)
 {
-    APFS_FILE *f = NEW_NOTHROW APFS_FILE;
-    if (!f) {
-        return nullptr;
-    }
-    f->fd = AP::FS().open(pathname, posix_fopen_modes_to_open(mode));
-    if (f->fd == -1) {
-        delete f;
-        return nullptr;
-    }
-    f->unget = -1;
-    return f;
+    return AP::FS().fopen(pathname, mode);
 }
 
 int apfs_fprintf(APFS_FILE *stream, const char *fmt, ...)
@@ -93,7 +47,7 @@ int apfs_fprintf(APFS_FILE *stream, const char *fmt, ...)
     len = vasprintf(&buf, fmt, va);
     va_end(va);
     if (len > 0) {
-        len = AP::FS().write(stream->fd, buf, len);
+        len = apfs_fwrite(buf, 1, len, stream);
         free(buf);
     }
 
@@ -102,16 +56,15 @@ int apfs_fprintf(APFS_FILE *stream, const char *fmt, ...)
 
 int apfs_fflush(APFS_FILE *stream)
 {
-    CHECK_STREAM(stream, EOF);
-    if (AP::FS().fsync(stream->fd) == 0) {
-        return 0;
-    }
-    return EOF;
+    return AP::FS().fflush(stream);
 }
 
 size_t apfs_fread(void *ptr, size_t size, size_t nmemb, APFS_FILE *stream)
 {
     CHECK_STREAM(stream, 0);
+    if (stream->writebuf_used != 0) {
+        apfs_fflush(stream);
+    }
     ssize_t ret = AP::FS().read(stream->fd, ptr, size*nmemb);
     if (ret <= 0) {
         stream->eof = true;
@@ -122,19 +75,13 @@ size_t apfs_fread(void *ptr, size_t size, size_t nmemb, APFS_FILE *stream)
 
 size_t apfs_fwrite(const void *ptr, size_t size, size_t nmemb, APFS_FILE *stream)
 {
-    CHECK_STREAM(stream, 0);
-    ssize_t ret = AP::FS().write(stream->fd, ptr, size*nmemb);
-    if (ret <= 0) {
-        stream->error = true;
-        return 0;
-    }
-    return ret / size;
+    return AP::FS().fwrite(ptr, size, nmemb, stream);
 }
 
 int apfs_fputs(const char *s, APFS_FILE *stream)
 {
     CHECK_STREAM(stream, EOF);
-    ssize_t ret = AP::FS().write(stream->fd, s, strlen(s));
+    ssize_t ret = apfs_fwrite(s, 1, strlen(s), stream);
     if (ret < 0) {
         stream->error = true;
         return EOF;
@@ -146,6 +93,9 @@ int apfs_fputs(const char *s, APFS_FILE *stream)
 char *apfs_fgets(char *s, int size, APFS_FILE *stream)
 {
     CHECK_STREAM(stream, NULL);
+    if (stream->writebuf_used != 0) {
+        apfs_fflush(stream);
+    }
     auto &fs = AP::FS();
     if (!fs.fgets(s, size, stream->fd)) {
         return NULL;
@@ -161,6 +111,9 @@ void apfs_clearerr(APFS_FILE *stream)
 int apfs_fseek(APFS_FILE *stream, long offset, int whence)
 {
     CHECK_STREAM(stream, EOF);
+    if (stream->writebuf_used != 0) {
+        apfs_fflush(stream);
+    }
     stream->eof = false;
     AP::FS().lseek(stream->fd, offset, whence);
     return 0;
@@ -174,16 +127,7 @@ int apfs_ferror(APFS_FILE *stream)
 
 int apfs_fclose(APFS_FILE *stream)
 {
-    CHECK_STREAM(stream, EOF);
-    int ret = AP::FS().close(stream->fd);
-    stream->fd = -1;
-    if (stream->tmpfile_name) {
-        AP::FS().unlink(stream->tmpfile_name);
-        free(stream->tmpfile_name);
-        stream->tmpfile_name = NULL;
-    }
-    delete stream;
-    return ret;
+    return AP::FS().fclose(stream);
 }
 
 APFS_FILE *apfs_tmpfile(void)
@@ -204,6 +148,9 @@ APFS_FILE *apfs_tmpfile(void)
 int apfs_getc(APFS_FILE *stream)
 {
     CHECK_STREAM(stream, EOF);
+    if (stream->writebuf_used != 0) {
+        apfs_fflush(stream);
+    }
     uint8_t c;
     if (stream->unget != -1) {
         c = stream->unget;
@@ -221,6 +168,9 @@ int apfs_getc(APFS_FILE *stream)
 int apfs_ungetc(int c, APFS_FILE *stream)
 {
     CHECK_STREAM(stream, EOF);
+    if (stream->writebuf_used != 0) {
+        apfs_fflush(stream);
+    }
     stream->unget = c;
     stream->eof = false;
     return c;
@@ -231,28 +181,12 @@ int apfs_feof(APFS_FILE *stream)
     return stream->eof;
 }
 
-APFS_FILE *apfs_freopen(const char *pathname, const char *mode, APFS_FILE *stream)
-{
-    CHECK_STREAM(stream, NULL);
-    int ret = AP::FS().close(stream->fd);
-    if (ret < 0) {
-        return NULL;
-    }
-    if (stream->tmpfile_name) {
-        AP::FS().unlink(stream->tmpfile_name);
-        free(stream->tmpfile_name);
-        stream->tmpfile_name = NULL;
-    }
-    stream->fd = AP::FS().open(pathname, posix_fopen_modes_to_open(mode));
-    stream->error = false;
-    stream->eof = false;
-    stream->unget = -1;
-    return stream;
-}
-
 long apfs_ftell(APFS_FILE *stream)
 {
     CHECK_STREAM(stream, EOF);
+    if (stream->writebuf_used != 0) {
+        apfs_fflush(stream);
+    }
     return AP::FS().lseek(stream->fd, 0, SEEK_CUR);
 }
 
