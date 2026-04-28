@@ -154,7 +154,6 @@ define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 5   # MSP DisplayPort
 
 # Sensor configuration
-define ALLOW_ARM_NO_COMPASS     # Allow arming without compass
 define ALLOW_ARM_NO_GPS         # Allow arming without GPS
 define AP_COMPASS_PROBING_ENABLED 1
 
