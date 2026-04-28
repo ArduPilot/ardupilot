@@ -16,6 +16,7 @@ from pymavlink import mavutil
 
 import vehicle_test_suite
 
+from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
@@ -648,6 +649,63 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_waypoint(1, 4, max_dist_to_final_wp_m=5)
         self.wait_statustext("Gripper Released", timeout=60)
         self.wait_waypoint(1, 6, max_dist_to_final_wp_m=5)
+        self.disarm_vehicle()
+
+    def MANUAL_CONTROL(self):
+        '''Test mavlink MANUAL_CONTROL'''
+
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.start_subsubtest("Manual control works by default")
+
+        want_pitch = 0.003
+        want_speed = 2.0
+        tstart = self.get_sim_time_cached()
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not reach speed")
+            self.set_rc(Joystick.Throttle, 1600)
+            self.set_rc(Joystick.Forward, 1600)
+            self.set_rc(Joystick.Lateral, 1550)
+            self.mav.mav.manual_control_send(
+                1, # target system
+                500, # x forward
+                0, # y lateral
+                0, # z vertical
+                0, # r yaw
+                0, # buttons
+                0, # buttons2
+                192, # roll and pitch enabled
+                0, # pitch
+                0) # roll
+            m = self.assert_receive_message('VFR_HUD')
+            if m.groundspeed < want_speed:
+                break
+
+        self.start_subsubtest("Manual control works for pitch axis")
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise AutoTestTimeoutException("Did not reach pitch with control")
+            self.set_rc(Joystick.Throttle, 1600)
+            self.set_rc(Joystick.Forward, 1600)
+            self.set_rc(Joystick.Lateral, 1550)
+            self.mav.mav.manual_control_send(
+                1, # target system
+                0, # x forward
+                0, # y lateral
+                0, # z vertical
+                0, # r yaw
+                0, # buttons
+                0, # buttons2
+                192, # roll and pitch enabled
+                500, # pitch
+                0) # roll
+            m = self.assert_receive_message('ATTITUDE')
+            if m.pitch < want_pitch:
+                break
+
         self.disarm_vehicle()
 
     def SET_POSITION_TARGET_GLOBAL_INT(self):
@@ -1340,6 +1398,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_mgs,
             self.DiveMission,
             self.GripperMission,
+            self.MANUAL_CONTROL,
             self.DoubleCircle,
             self.MotorThrustHoverParameterIgnore,
             self.SET_POSITION_TARGET_GLOBAL_INT,
