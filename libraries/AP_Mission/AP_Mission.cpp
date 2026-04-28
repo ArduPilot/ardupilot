@@ -41,7 +41,7 @@ const AP_Param::GroupInfo AP_Mission::var_info[] = {
     // @DisplayName: Mission options bitmask
     // @Description: Bitmask of what options to use in missions. If the DontZeroCounter counter option is set than on completion of a jump loop the counter is left at zero, so the jump will not happen again if the loop is re-entered.
     // @Bitmask: 0:Clear Mission on reboot, 1:Use distance to land calc on battery failsafe,2:ContinueAfterLand, 3:DontZeroCounter
-    // @Bitmask{Copter}: 0:Clear Mission on reboot, 2:ContinueAfterLand
+    // @Bitmask{Copter,Heli}: 0:Clear Mission on reboot, 2:ContinueAfterLand
     // @Bitmask{Rover, Sub}: 0:Clear Mission on reboot
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  2, AP_Mission, _options, AP_MISSION_OPTIONS_DEFAULT),
