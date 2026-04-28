@@ -3749,6 +3749,15 @@ bool AP_AHRS::get_origin(Location &ret) const
     return state.origin_ok;
 }
 
+/**
+ * @retval true  if the home location has been set
+ * @retval false if the home location has not been set
+ */
+bool AP_AHRS::has_origin() const
+{
+    return state.origin_ok;
+}
+
 // return a ground velocity in meters/second, North/East/Down
 // order. Must only be called if have_inertial_nav() is true
 bool AP_AHRS::get_velocity_NED(Vector3f &vec) const

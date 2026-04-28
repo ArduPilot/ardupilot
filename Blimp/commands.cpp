@@ -53,8 +53,7 @@ bool Blimp::set_home_to_current_location(bool lock)
 bool Blimp::set_home(const Location& loc, bool lock)
 {
     // check EKF origin has been set
-    Location ekf_origin;
-    if (!ahrs.get_origin(ekf_origin)) {
+    if (!ahrs.has_origin()) {
         return false;
     }
 
