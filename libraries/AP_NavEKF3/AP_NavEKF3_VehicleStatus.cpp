@@ -368,7 +368,7 @@ void NavEKF3_core::detectFlight()
             }
         } else {
             // to a high certainty we are not flying
-            onGround = true;
+            onGround = !highAirSpd;
             inFlight = false;
         }
 
