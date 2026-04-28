@@ -149,8 +149,6 @@ bool AP_Baro_MS56XX::_init()
         return false;
     }
 
-    printf("%s found on bus %u address 0x%02x\n", name(), _dev->bus_num(), _dev->get_bus_address());
-
     // Save factory calibration coefficients
     _cal_reg.c1 = prom[1];
     _cal_reg.c2 = prom[2];
@@ -165,7 +163,7 @@ bool AP_Baro_MS56XX::_init()
 
     memset(&_accum, 0, sizeof(_accum));
 
-    _instance = _frontend.register_sensor();
+    _instance = _frontend.register_sensor(_dev->get_bus_id(), name());
 
     _dev->set_device_type(devtype());
     set_bus_id(_instance, _dev->get_bus_id());

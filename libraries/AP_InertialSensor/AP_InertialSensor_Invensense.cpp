@@ -238,15 +238,18 @@ void AP_InertialSensor_Invensense::start()
 
     // grab the used instances
     enum DevTypes gdev, adev;
+    const char *name;
     switch (_mpu_type) {
     case Invensense_MPU9250:
         gdev = DEVTYPE_GYR_MPU9250;
         adev = DEVTYPE_ACC_MPU9250;
+        name = "MPU9250";
         _enable_offset_checking = true;
         break;
     case Invensense_ICM20602:
         gdev = DEVTYPE_INS_ICM20602;
         adev = DEVTYPE_INS_ICM20602;
+        name = "ICM20602";
         // ICM20602 has a bug where sometimes the data gets a huge offset
         // this seems to be fixed by doing a quick FIFO reset via USR_CTRL
         // reg
@@ -256,6 +259,7 @@ void AP_InertialSensor_Invensense::start()
     case Invensense_ICM20601:
         gdev = DEVTYPE_INS_ICM20601;
         adev = DEVTYPE_INS_ICM20601;
+        name = "ICM20601";
         _enable_offset_checking = true;
         break;
     case Invensense_ICM20608:
@@ -263,16 +267,19 @@ void AP_InertialSensor_Invensense::start()
         // can't change this without breaking existing calibrations
         gdev = DEVTYPE_GYR_MPU6000;
         adev = DEVTYPE_ACC_MPU6000;
+        name = "ICM20608";
         _enable_offset_checking = true;
         break;
     case Invensense_ICM20789:
         gdev = DEVTYPE_INS_ICM20789;
         adev = DEVTYPE_INS_ICM20789;
+        name = "ICM20789";
         _enable_offset_checking = true;
         break;
     case Invensense_ICM20689:
         gdev = DEVTYPE_INS_ICM20689;
         adev = DEVTYPE_INS_ICM20689;
+        name = "ICM20689";
         _enable_offset_checking = true;
         break;
     case Invensense_MPU6000:
@@ -280,6 +287,7 @@ void AP_InertialSensor_Invensense::start()
     default:
         gdev = DEVTYPE_GYR_MPU6000;
         adev = DEVTYPE_ACC_MPU6000;
+        name = _mpu_type == Invensense_MPU6500 ? "MPU6500" : "MPU6000";
         break;
     }
 
@@ -317,7 +325,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     if (!_imu.register_gyro(gyro_instance, 1000, _dev->get_bus_id_devtype(gdev)) ||
-        !_imu.register_accel(accel_instance, 1000, _dev->get_bus_id_devtype(adev))) {
+        !_imu.register_accel(accel_instance, 1000, _dev->get_bus_id_devtype(adev), name)) {
         return;
     }
 

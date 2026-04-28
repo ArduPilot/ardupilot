@@ -83,7 +83,7 @@ AP_InertialSensor_Backend* AP_InertialSensor_SCHA63T::probe(AP_InertialSensor &i
 
 void AP_InertialSensor_SCHA63T::start()
 {
-    if (!_imu.register_accel(accel_instance, BACKEND_SAMPLE_RATE, dev_uno->get_bus_id_devtype(DEVTYPE_INS_SCHA63T)) ||
+    if (!_imu.register_accel(accel_instance, BACKEND_SAMPLE_RATE, dev_uno->get_bus_id_devtype(DEVTYPE_INS_SCHA63T), "SCHA63T") ||
         !_imu.register_gyro(gyro_instance, BACKEND_SAMPLE_RATE, dev_due->get_bus_id_devtype(DEVTYPE_INS_SCHA63T))) {
         return;
     }

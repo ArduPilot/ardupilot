@@ -98,7 +98,7 @@ bool AP_Compass_LSM9DS1::init()
 
     //register compass instance
     _dev->set_device_type(DEVTYPE_LSM9DS1);
-    if (!register_compass(_dev->get_bus_id())) {
+    if (!register_compass(_dev->get_bus_id(), name)) {
         goto errout;
     }
 

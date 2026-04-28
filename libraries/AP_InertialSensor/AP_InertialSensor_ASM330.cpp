@@ -126,7 +126,7 @@ bool AP_InertialSensor_ASM330::hardware_init()
 void AP_InertialSensor_ASM330::start(void)
 {
     if (!_imu.register_gyro(gyro_instance, GYRO_SAMPLE_RATE, dev->get_bus_id_devtype(DEVTYPE_INS_ASM330)) ||
-        !_imu.register_accel(accel_instance, ACCEL_SAMPLE_RATE, dev->get_bus_id_devtype(DEVTYPE_INS_ASM330))) {
+        !_imu.register_accel(accel_instance, ACCEL_SAMPLE_RATE, dev->get_bus_id_devtype(DEVTYPE_INS_ASM330), "ASM330")) {
         return;
     }
 

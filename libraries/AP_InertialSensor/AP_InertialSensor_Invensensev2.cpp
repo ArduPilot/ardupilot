@@ -185,10 +185,12 @@ void AP_InertialSensor_Invensensev2::start()
 
     // grab the used instances
     enum DevTypes gdev, adev;
+    const char *name;
     switch (_inv2_type) {
     case Invensensev2_ICM20648:
         gdev = DEVTYPE_INS_ICM20648;
         adev = DEVTYPE_INS_ICM20648;
+        name = "ICM20648";
         // using 16g full range, 2048 LSB/g
         _accel_scale = (GRAVITY_MSS / 2048);
         break;
@@ -196,19 +198,21 @@ void AP_InertialSensor_Invensensev2::start()
         // 20649 is setup for 30g full scale, 1024 LSB/g
         gdev = DEVTYPE_INS_ICM20649;
         adev = DEVTYPE_INS_ICM20649;
+        name = "ICM20649";
         _accel_scale = (GRAVITY_MSS / 1024);
         break;
     case Invensensev2_ICM20948:
     default:
         gdev = DEVTYPE_INS_ICM20948;
         adev = DEVTYPE_INS_ICM20948;
+        name = "ICM20948";
         // using 16g full range, 2048 LSB/g
         _accel_scale = (GRAVITY_MSS / 2048);
         break;
     }
 
     if (!_imu.register_gyro(gyro_instance, 1125, _dev->get_bus_id_devtype(gdev)) ||
-        !_imu.register_accel(accel_instance, 1125, _dev->get_bus_id_devtype(adev))) {
+        !_imu.register_accel(accel_instance, 1125, _dev->get_bus_id_devtype(adev), name)) {
         return;
     }
 

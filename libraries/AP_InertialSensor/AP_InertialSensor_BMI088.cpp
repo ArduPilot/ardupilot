@@ -100,7 +100,8 @@ AP_InertialSensor_BMI088::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_BMI088::start()
 {
-    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(_accel_devtype)) ||
+    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(_accel_devtype),
+                             _accel_devtype == DEVTYPE_INS_BMI085 ? "BMI085" : "BMI088") ||
         !_imu.register_gyro(gyro_instance, GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI088))) {
         return;
     }
@@ -212,12 +213,10 @@ bool AP_InertialSensor_BMI088::accel_init()
         case 0x1E:
             _accel_devtype = DEVTYPE_INS_BMI088;
             accel_range = 24.0;
-            hal.console->printf("BMI088: Found device\n");
             break;
         case 0x1F:
             _accel_devtype = DEVTYPE_INS_BMI085;
             accel_range = 16.0;
-            hal.console->printf("BMI085: Found device\n");
             break;
         default:
             return false;
@@ -226,8 +225,6 @@ bool AP_InertialSensor_BMI088::accel_init()
     if (!setup_accel_config()) {
         DEV_PRINTF("BMI08x: delaying accel config\n");
     }
-
-    DEV_PRINTF("BMI08x: found accel\n");
 
     return true;
 }
@@ -278,7 +275,6 @@ bool AP_InertialSensor_BMI088::gyro_init()
         return false;
     }
 
-    DEV_PRINTF("BMI088: found gyro\n");    
 
     return true;
 }

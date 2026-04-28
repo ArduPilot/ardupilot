@@ -111,7 +111,6 @@ bool AP_Baro_FBM320::init()
         dev->get_semaphore()->give();
         return false;
     }
-    printf("FBM320 ID 0x%x\n", whoami);
 
     if (!read_calibration()) {
         dev->get_semaphore()->give();
@@ -120,7 +119,7 @@ bool AP_Baro_FBM320::init()
 
     dev->write_register(FBM320_REG_CMD, FBM320_CMD_READ_T);
 
-    instance = _frontend.register_sensor();
+    instance = _frontend.register_sensor(dev->get_bus_id(), "FBM320");
 
     dev->set_device_type(DEVTYPE_BARO_FBM320);
     set_bus_id(instance, dev->get_bus_id());

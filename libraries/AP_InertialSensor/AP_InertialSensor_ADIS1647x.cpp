@@ -105,7 +105,7 @@ AP_InertialSensor_ADIS1647x::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_ADIS1647x::start()
 {
-    if (!_imu.register_accel(accel_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS1647X)) ||
+    if (!_imu.register_accel(accel_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS1647X), "ADIS1647x") ||
         !_imu.register_gyro(gyro_instance, expected_sample_rate_hz,   dev->get_bus_id_devtype(DEVTYPE_INS_ADIS1647X))) {
         return;
     }

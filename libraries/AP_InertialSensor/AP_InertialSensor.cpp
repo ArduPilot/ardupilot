@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 
 #include "AP_InertialSensor.h"
 
@@ -813,7 +814,7 @@ bool AP_InertialSensor::get_gyro_instance(uint8_t &instance) const
 /*
   register a new accel instance
  */
-bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id)
+bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id, const char *name)
 {
     if (_accel_count == INS_MAX_INSTANCES) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to register accel id %u", unsigned(id));
@@ -854,6 +855,15 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
 #endif
 
     instance = _accel_count++;
+
+    if (name != nullptr) {
+        printf("%s found on bus %u id %u address 0x%02x\n",
+               name,
+               AP_HAL::Device::devid_get_bus(id),
+               unsigned(id),
+               AP_HAL::Device::devid_get_address(id));
+    }
+
     return true;
 }
 

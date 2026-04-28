@@ -134,7 +134,7 @@ bool AP_Baro_BMP085::_init()
 
     _state = 0;
 
-    _instance = _frontend.register_sensor();
+    _instance = _frontend.register_sensor(_dev->get_bus_id(), "BMP085");
 
     _dev->set_device_type(DEVTYPE_BARO_BMP085);
     set_bus_id(_instance, _dev->get_bus_id());

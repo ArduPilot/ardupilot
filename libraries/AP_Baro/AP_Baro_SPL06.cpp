@@ -233,7 +233,8 @@ bool AP_Baro_SPL06::_init()
     }
     _dev->write_register(SPL06_REG_INT_AND_FIFO_CFG, int_and_fifo_reg_value, true);
 
-    _instance = _frontend.register_sensor();
+    _instance = _frontend.register_sensor(_dev->get_bus_id(),
+                                           type == Type::SPA06 ? "SPA06" : "SPL06");
 
     if(type == Type::SPA06) {
 	    _dev->set_device_type(DEVTYPE_BARO_SPA06);

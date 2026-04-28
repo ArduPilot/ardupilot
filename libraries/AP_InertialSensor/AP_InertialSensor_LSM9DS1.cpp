@@ -331,7 +331,7 @@ void AP_InertialSensor_LSM9DS1::_fifo_reset()
 void AP_InertialSensor_LSM9DS1::start(void)
 {
     if (!_imu.register_gyro(gyro_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_GYR_LSM9DS1)) ||
-        !_imu.register_accel(accel_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_ACC_LSM9DS1))) {
+        !_imu.register_accel(accel_instance, 952, _dev->get_bus_id_devtype(DEVTYPE_ACC_LSM9DS1), "LSM9DS1")) {
         return;
     }
 

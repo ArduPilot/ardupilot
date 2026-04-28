@@ -169,7 +169,7 @@ bool AP_Baro_LPS2XH::_init()
         CallTime = 1000000/75;
     }
 
-    _instance = _frontend.register_sensor();
+    _instance = _frontend.register_sensor(_dev->get_bus_id(), "LPS2XH");
 
     _dev->set_device_type(DEVTYPE_BARO_LPS2XH);
     set_bus_id(_instance, _dev->get_bus_id());

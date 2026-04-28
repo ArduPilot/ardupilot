@@ -196,7 +196,7 @@ bool AP_Compass_HMC5843::init()
 
     //register compass instance
     _bus->set_device_type(DEVTYPE_HMC5883);
-    if (!register_compass(_bus->get_bus_id())) {
+    if (!register_compass(_bus->get_bus_id(), name)) {
         return false;
     }
 
@@ -210,8 +210,6 @@ bool AP_Compass_HMC5843::init()
     _bus->register_periodic_callback(13333,
                                      FUNCTOR_BIND_MEMBER(&AP_Compass_HMC5843::_timer, void));
 
-    DEV_PRINTF("HMC5843 found on bus 0x%x\n", (unsigned)_bus->get_bus_id());
-    
     return true;
 
 errout:

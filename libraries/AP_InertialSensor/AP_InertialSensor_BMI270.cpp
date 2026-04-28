@@ -212,7 +212,7 @@ void AP_InertialSensor_BMI270::start()
 
     _dev->get_semaphore()->give();
 
-    if (!_imu.register_accel(accel_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270)) ||
+    if (!_imu.register_accel(accel_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270), "BMI270") ||
         !_imu.register_gyro(gyro_instance, BMI270_BACKEND_SAMPLE_RATE, _dev->get_bus_id_devtype(DEVTYPE_BMI270))) {
         return;
     }
