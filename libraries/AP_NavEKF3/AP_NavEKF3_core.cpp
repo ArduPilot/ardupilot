@@ -1865,20 +1865,6 @@ void NavEKF3_core::StoreQuatRotate(const QuaternionF &deltaQuat)
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
 }
 
-// force symmetry on the covariance matrix to prevent ill-conditioning
-void NavEKF3_core::ForceSymmetry()
-{
-    for (uint8_t i=1; i<=stateIndexLim; i++)
-    {
-        for (uint8_t j=0; j<=i-1; j++)
-        {
-            ftype temp = 0.5f*(P[i][j] + P[j][i]);
-            P[i][j] = temp;
-            P[j][i] = temp;
-        }
-    }
-}
-
 // constrain variances (diagonal terms) in the state covariance matrix to  prevent ill-conditioning
 // if states are inactive, zero the corresponding off-diagonals
 void NavEKF3_core::ConstrainVariances()
@@ -2001,6 +1987,47 @@ void NavEKF3_core::ConstrainVariances()
         zeroCols(P,22,23);
         zeroRows(P,22,23);
     }
+}
+
+// actually do fusion to update statesArray from Kfusion and P from KHP.
+// returns true and skips fusion if variances would be driven negative.
+// force skips this negative check; passing true is probably a bug!
+bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
+{
+    if (!force) {
+        // Check that we are not going to drive any variances negative and skip the update if so
+        for (auto s=0; s<=stateIndexLim; s++) {
+            if (KHP[s][s] > P[s][s]) {
+                return true;
+            }
+        }
+    }
+
+    // correct the state vector using kalman gains filled in by caller
+    for (auto s=0; s<=stateIndexLim; s++) {
+        statesArray[s] -= Kfusion[s] * innov;
+    }
+    stateStruct.quat.normalize();
+
+    // update the covariance matrix as P = P - KHP (KHP was filled by caller)
+    for (auto r=0; r<=stateIndexLim; r++) {
+        for (auto c=0; c<=r; c++) {
+            // P must end up symmetric, so average the upper and lower
+            // differences, then store that result in both positions. it would
+            // be faster and more numerically stable to average the KHP entries
+            // instead, but we have no good proof P was symmetric before!
+            const ftype lower = P[r][c] - KHP[r][c];
+            const ftype upper = P[c][r] - KHP[c][r];
+            const ftype res = 0.5f*(lower + upper);
+            P[r][c] = res;
+            P[c][r] = res;
+        }
+    }
+
+    // limit the variances to prevent ill-conditioning
+    ConstrainVariances(); // can change statesArray!!
+
+    return false;
 }
 
 // constrain states using WMM tables and specified limit

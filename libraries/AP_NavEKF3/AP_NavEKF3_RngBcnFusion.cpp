@@ -245,7 +245,6 @@ void NavEKF3_core::FuseRngBcn()
 
         // test the ratio before fusing data
         if (rngBcn.health) {
-
             // restart the counter
             rngBcn.lastPassTime_ms = imuSampleTime_ms;
 
@@ -263,39 +262,8 @@ void NavEKF3_core::FuseRngBcn()
                 }
             }
 
-            // Check that we are not going to drive any variances negative and skip the update if so
-            bool healthyFusion = true;
-            for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                if (KHP[i][i] > P[i][i]) {
-                    healthyFusion = false;
-                }
-            }
-            if (healthyFusion) {
-                // update the covariance matrix
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        P[i][j] = P[i][j] - KHP[i][j];
-                    }
-                }
-
-                // correct the state vector
-                for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * rngBcn.innov;
-                }
-                stateStruct.quat.normalize();
-
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
-                // record healthy fusion
-                faultStatus.bad_rngbcn = false;
-
-            } else {
-                // record bad fusion
-                faultStatus.bad_rngbcn = true;
-
-            }
+            // finish fusion from KHP and Kfusion then record health status
+            faultStatus.bad_rngbcn = FinishFusion(rngBcn.innov);
         }
 
         // Update the fusion report
