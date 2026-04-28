@@ -141,7 +141,7 @@ void AP_CRSF_Protocol::decode_variable_bit_channels(const uint8_t* payload, uint
     }
 }
 
-// encode 16 channels of PWM values into a CRSFv3 variable bit length frame payload
+// encode nchannels channels of PWM values into a CRSFv3 variable bit length frame payload
 void AP_CRSF_Protocol::encode_variable_bit_channels(Frame& frame, const uint16_t *values, uint8_t nchannels, uint8_t start_chan)
 {
     frame.device_address = DeviceAddress::CRSF_ADDRESS_SYNC_BYTE;
@@ -161,9 +161,9 @@ void AP_CRSF_Protocol::encode_variable_bit_channels(Frame& frame, const uint16_t
     uint32_t writeValue = 0;
     uint8_t bitsMerged = 0;
     uint8_t writeByteIndex = 1;
-    const uint8_t num_to_send = MIN(nchannels, MAX_CHANNELS);
+    const uint8_t num_to_send = MIN(nchannels, MAX_CHANNELS - start_chan);
 
-    for (uint8_t n = start_chan; n < num_to_send; n++) {
+    for (uint8_t n = start_chan; n < start_chan + num_to_send; n++) {
         uint16_t channel_value = constrain_int16(lroundf((values[n] - 988) / 0.5f), 0, 2047);
         writeValue |= ((uint32_t)channel_value) << bitsMerged;
         bitsMerged += channelBits;
