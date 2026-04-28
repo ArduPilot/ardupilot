@@ -78,6 +78,23 @@ jobs:
               Submarine: 'Sub',
             };
 
+            const generic_suffix_labels = {
+              '.lua': 'Scripting',
+              '.py': 'Python',
+            };
+
+            const generic_prefix_labels = {
+              'libraries/AP_ExternalAHRS': 'ExternalAHRS',
+              'libraries/AP_Compass': 'Compass',
+              'libraries/AP_NavEKF': 'EKF',
+              'libraries/AP_HAL_Linux': 'Linux',
+              'libraries/GCS_MAVLink': 'MAVLink',
+              'libraries/SITL': 'SITL',
+              'Tools/AP_Periph': 'AP_Periph',
+              'Tools/autotest': 'CI',
+              '.github/workflows': 'github_actions',
+            };
+
             const specific_vehicle_checks = {
               'VTOL-Plane': ['ArduPlane/quadplane'],
               'TradHeli': [
@@ -92,8 +109,18 @@ jobs:
             const labels = new Set();
             for (const filename of filenames) {
               // Generic checks
-              if (filename.endsWith('.lua')) labels.add('Scripting');
-              else if (filename.endsWith('.py')) labels.add('Python');
+              for (const [suffix, label] of Object.entries(generic_suffix_labels)) {
+                if (filename.endsWith(suffix)) {
+                  labels.add(label);
+                  break;
+                }
+              }
+              for (const [prefix, label] of Object.entries(generic_prefix_labels)) {
+                if (filename.startsWith(prefix)) {
+                  labels.add(label);
+                  break;
+                }
+              }
 
               // Specific/niche vehicle checks
               var specific = false;  // There can only be one specific label per file.
