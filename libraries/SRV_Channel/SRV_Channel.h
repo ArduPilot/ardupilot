@@ -573,6 +573,14 @@ public:
         return SRV_Channel::Function((SRV_Channel::k_motor13+(channel-12)));
     }
 
+    // given a zero-based channel, return the k_scripting function for that channel
+    static SRV_Channel::Function get_scripting_function(uint8_t channel) {
+        if (channel < 16) {
+            return SRV_Channel::Function(SRV_Channel::k_scripting1 + channel);
+        }
+        return SRV_Channel::Function(SRV_Channel::k_none);
+    }
+
     void cork();
     void push();
 
