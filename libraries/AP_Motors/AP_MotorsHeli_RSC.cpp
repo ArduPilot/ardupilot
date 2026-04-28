@@ -753,22 +753,20 @@ void AP_MotorsHeli_RSC::write_log(void) const
     // @Field: Gov: Governor Output
     // @Field: Throt: Throttle output
     // @Field: Ramp: throttle ramp up
-    // @Field: Stat: RSC state
 
     // Write to data flash log
     AP::logger().WriteStreaming("HRSC",
-                        "TimeUS,I,DRRPM,ERRPM,Gov,Throt,Ramp,Stat",
-                        "s#------",
-                        "F-------",
-                        "QBfffffB",
+                        "TimeUS,I,DRRPM,ERRPM,Gov,Throt,Ramp",
+                        "s#-----",
+                        "F------",
+                        "QBfffff",
                         AP_HAL::micros64(),
                         _instance,
                         get_desired_rotor_speed(),
                         _rotor_runup_output,
                         _governor_output,
                         get_control_output(),
-                        _rotor_ramp_output,
-                        uint8_t(_desired_spool_state));
+                        _rotor_ramp_output);
 }
 #endif
 

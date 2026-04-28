@@ -279,7 +279,9 @@ AP_Motors::SpoolState AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_R
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
     }
     
-    // Check if rotors are run-up
+    // Check if main rotor is run-up complete.  Tail rotor run-up is not included in check because currently
+    // the tail rotor in DDVP uses the same ramp and runup time as the main rotor.  This may need changed if 
+    // the RSC is used for DDFP tail rotors.
     set_rotor_runup_complete(main_rotor_state == AP_MotorsHeli_RSC::RSCSpoolState::THROTTLE_UNLIMITED);
 
     return main_rotor_state;
