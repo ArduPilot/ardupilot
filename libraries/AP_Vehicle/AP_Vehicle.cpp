@@ -1163,10 +1163,16 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
         return true;
     }
 
-    // clear warning timer when disarmed
-    if (!motors->armed()) {
+    // clear warning timer when disarmed or motors not yet spinning
+    if (!motors->armed() || motors->get_spool_state() == AP_Motors::SpoolState::SHUT_DOWN) {
         takeoff_check_state.warning_ms = 0;
         return false;
+    }
+
+    // motors are in a state that we can start reporting on them - start the counter now
+    uint32_t now_ms = AP_HAL::millis();
+    if (takeoff_check_state.warning_ms == 0) {
+        takeoff_check_state.warning_ms = now_ms;
     }
 
     // check ESCs are sending RPM at expected level
@@ -1180,10 +1186,6 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
     }
 
     // warn user telem inactive or rpm is inadequate every 5 seconds
-    uint32_t now_ms = AP_HAL::millis();
-    if (takeoff_check_state.warning_ms == 0) {
-        takeoff_check_state.warning_ms = now_ms;
-    }
     if (now_ms - takeoff_check_state.warning_ms > 5000) {
         takeoff_check_state.warning_ms = now_ms;
         const char* prefix_str = "Takeoff blocked:";

@@ -14,19 +14,24 @@ void Copter::takeoff_check()
         return;
     }
 
-    // Run the common motor checks (called early so it can clear its warning timer when disarmed)
-    const bool motor_check_passed = motors_takeoff_check(g2.takeoff_rpm_min, g2.takeoff_rpm_max);
-
-    // block takeoff when disarmed but do not display warnings
-    if (!motors->armed()) {
+    // block takeoff when disarmed or motors stopped but do not display warnings
+    if (!motors->get_spoolup_ready()) {
         motors->set_spoolup_block(true);
-        takeoff_check_warning_ms = 0;
+        takeoff_check_state.warning_ms = 0;
         return;
     }
 
     // if motors have become unblocked return immediately
     // this ensures the motors can only be blocked immediate after arming
     if (!motors->get_spoolup_block()) {
+        return;
+    }
+
+    // Run the common motor checks
+    const bool motor_check_passed = motors_takeoff_check(g2.takeoff_rpm_min, g2.takeoff_rpm_max);
+
+    // early return if motor checks failed as we will already have output a message
+    if (!motor_check_passed) {
         return;
     }
 
@@ -47,11 +52,8 @@ void Copter::takeoff_check()
 
     // warn about CPU load every 5 seconds
     uint32_t now_ms = AP_HAL::millis();
-    if (takeoff_check_warning_ms == 0) {
-        takeoff_check_warning_ms = now_ms;
-    }
-    if (now_ms - takeoff_check_warning_ms > 5000) {
-        takeoff_check_warning_ms = now_ms;
+    if (now_ms - takeoff_check_state.warning_ms > 5000) {
+        takeoff_check_state.warning_ms = now_ms;
         const char* prefix_str = "Takeoff blocked:";
         if (!load_adequate) {
             gcs().send_text(MAV_SEVERITY_CRITICAL, "%s CPU overload (%4.1f%%)", prefix_str, avg_load);

@@ -3082,6 +3082,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Test blocking doesn't occur with in-range RPM")
         self.context_push()
+        self.context_collect('STATUSTEXT')
         self.set_parameters({
             'SIM_VIB_MOT_MAX': 150, # Hz, 9000 RPM, ensures the test fails if check occurs after takeoff starts
             'SIM_ESC_ARM_RPM': 1000,
@@ -3098,6 +3099,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(2)
         self.wait_disarmed()
         self.set_current_waypoint(0, check_afterwards=False)
+        # ensure no spurious takeoff blocked warnings during spoolup
+        for m in self.context_collection('STATUSTEXT'):
+            if "Takeoff blocked" in m.text:
+                raise NotAchievedException("Spurious takeoff blocked message: %s" % m.text)
         self.context_pop()
 
         self.start_subtest("Ensure blocked if motors don't spool up")
