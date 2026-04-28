@@ -391,6 +391,8 @@ AP_HW_GEPRC_TAKER_H743               1502
 AP_HW_StellarH7V2                    1503
 AP_HW_StellarF4V2                    1504
 
+AP_HW_BCUBEF745V2                    1511
+
 AP_HW_HGLRCF405V4                    1524
 
 AP_HW_F4BY_F427                      1530
