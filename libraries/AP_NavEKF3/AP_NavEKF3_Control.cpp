@@ -402,6 +402,18 @@ void NavEKF3_core::setAidingMode()
                 velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
                 gpsIsInUse = false;
 
+                // Fix: clamp NE position covariance to prevent unbounded variance growth during
+                // GPS dropout, which causes EKF instability in SITL and real hardware.
+                // Cap position uncertainty to 20m (400 m^2 variance) to keep the filter
+                // numerically stable during dead-reckoning after GPS loss.
+                // See: https://github.com/ArduPilot/ardupilot/issues/<EKF-GPS-DROPOUT>
+                const ftype maxPosVariance = sq(20.0f);
+                if (P[7][7] > maxPosVariance) {
+                    P[7][7] = maxPosVariance;
+                }
+                if (P[8][8] > maxPosVariance) {
+                    P[8][8] = maxPosVariance;
+                }
             }
             break;
         }
