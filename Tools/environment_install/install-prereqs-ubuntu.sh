@@ -155,6 +155,11 @@ elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP="python3 -m pip"
+elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
+    SITLFML_VERSION="3.0"
+    SITLCFML_VERSION="3.0"
+    PYTHON_V="python3"
+    PIP="python3 -m pip"
 elif [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
@@ -212,6 +217,7 @@ if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
+   [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
     PYTHON_PKGS+=" numpy pyparsing psutil"
@@ -227,6 +233,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
        [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
+       [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
         SITL_PKGS+=" xterm xfonts-base libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION}"
@@ -316,6 +323,7 @@ elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
 elif [ ${RELEASE_CODENAME} != 'noble' ] &&
      [ ${RELEASE_CODENAME} != 'plucky' ] &&
      [ ${RELEASE_CODENAME} != 'questing' ] &&
+     [ ${RELEASE_CODENAME} != 'resolute' ] &&
      true; then
     if apt-cache search python-argparse | grep argp; then
         SITL_PKGS+=" python-argparse"
@@ -342,6 +350,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
+  elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
   elif apt-cache search python-wxgtk3.0 | grep wx; then
       SITL_PKGS+=" python-wxgtk3.0"
   elif apt-cache search python3-wxgtk4.0 | grep wx; then
@@ -364,6 +375,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
+       [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
@@ -423,6 +435,7 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
      [ ${RELEASE_CODENAME} == 'noble' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
      [ ${RELEASE_CODENAME} == 'questing' ] ||
+     [ ${RELEASE_CODENAME} == 'resolute' ] ||
      false; then
     $APT_GET install python3-venv
 
@@ -473,6 +486,7 @@ if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
+   [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # must do this ahead of wxPython pip3 run :-/
     $PIP install $PIP_USER_ARGUMENT --upgrade attrdict3
@@ -510,6 +524,7 @@ done
 if false || \
         [ ${RELEASE_CODENAME} == 'plucky' ] || \
         [ ${RELEASE_CODENAME} == 'questing' ] || \
+        [ ${RELEASE_CODENAME} == 'resolute' ] || \
         false; then
     $PIP install --force-reinstall pillow
 fi
