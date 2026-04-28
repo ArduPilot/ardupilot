@@ -8,8 +8,11 @@
 void Copter::takeoff_check()
 {
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
-    // If takeoff check is disabled or vehicle is armed and flying then clear block and return
-    if ((g2.takeoff_rpm_min <= 0) || (motors->armed() && !ap.land_complete)) {
+    // If takeoff check is disabled, vehicle is armed and flying, or in
+    // throw mode (where motors must spool before land_complete is cleared)
+    // then clear block and return
+    if ((g2.takeoff_rpm_min <= 0) || (motors->armed() && !ap.land_complete) ||
+        flightmode->mode_number() == Mode::Number::THROW) {
         motors->set_spoolup_block(false);
         return;
     }
