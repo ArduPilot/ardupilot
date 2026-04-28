@@ -582,10 +582,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
 {
-    if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
-        return MAV_RESULT_DENIED;  // meaning some parameters are bad
-    }
-
+    switch (packet.frame) {
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT: {
         // param3 : horizontal navigation by pilot acceptable
         // param4 : yaw angle   (not supported)
         // param5 : latitude    (not supported)
@@ -599,17 +597,25 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+    }
+
+    default:
+        return MAV_RESULT_DENIED;  // meaning some parameters are bad
+    }
 }
 
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
 bool GCS_MAVLINK_Copter::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
 {
-    if (packet_command == MAV_CMD_NAV_TAKEOFF ||
-        packet_command == MAV_CMD_NAV_VTOL_TAKEOFF) {
+    switch (packet_command) {
+    case MAV_CMD_NAV_TAKEOFF:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
         frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
         return true;
+
+    default:
+        return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
     }
-    return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
 }
 #endif
 
@@ -817,24 +823,24 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_PAUSE_CLICK(const mavlink
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_command_int_t &packet)
 {
-    // requested pause
-    if ((uint8_t) packet.param1 == 0) {
+    switch ((uint8_t) packet.param1) {
+    case 0: // requested pause
         if (copter.flightmode->pause()) {
             return MAV_RESULT_ACCEPTED;
         }
         send_text(MAV_SEVERITY_INFO, "Failed to pause");
         return MAV_RESULT_FAILED;
-    }
 
-    // requested resume
-    if ((uint8_t) packet.param1 == 1) {
+    case 1: // requested resume
         if (copter.flightmode->resume()) {
             return MAV_RESULT_ACCEPTED;
         }
         send_text(MAV_SEVERITY_INFO, "Failed to resume");
         return MAV_RESULT_FAILED;
+
+    default:
+        return MAV_RESULT_DENIED;
     }
-    return MAV_RESULT_DENIED;
 }
 
 // this is called on receipt of a MANUAL_CONTROL packet and is
