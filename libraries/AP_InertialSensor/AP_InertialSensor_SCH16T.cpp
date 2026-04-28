@@ -200,10 +200,10 @@ void AP_InertialSensor_SCH16T::collect_and_publish()
         Vector3f gyro{gyro_scale*data.gyro_x, gyro_scale*data.gyro_y, gyro_scale*data.gyro_z};
 
         _rotate_and_correct_accel(accel_instance, accel);
-        _notify_new_accel_raw_sample(accel_instance, accel, 0);
+        _notify_new_accel_raw_sample(accel_instance, accel, AP_HAL::micros64());
 
         _rotate_and_correct_gyro(gyro_instance, gyro);
-        _notify_new_gyro_raw_sample(gyro_instance, gyro, 0);
+        _notify_new_gyro_raw_sample(gyro_instance, gyro, AP_HAL::micros64());
 
         temp_sum += float(data.temp) * 0.01f;
         temp_cnt++;
