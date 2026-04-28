@@ -402,7 +402,7 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const WARN_IF_UNUSED;
 
     // get 1-sigma position and velocity uncertainty derived from the EKF state error covariance matrix P
     // pos_horiz_m: 2D RMS horizontal position uncertainty (m)

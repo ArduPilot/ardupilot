@@ -94,7 +94,9 @@ bool Rover::ekf_over_threshold()
     // use EKF to get variance
     float position_variance, vel_variance, height_variance, tas_variance;
     Vector3f mag_variance;
-    ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance);
+    if(!ahrs.get_variances(vel_variance, position_variance, height_variance, mag_variance, tas_variance)) {
+        return true;
+    }
 
     // return true if two of compass, velocity and position variances are over the threshold
     uint8_t over_thresh_count = 0;
@@ -117,7 +119,7 @@ bool Rover::ekf_over_threshold()
     } else if (vel_variance >= g.fs_ekf_thresh) {
         over_thresh_count++;
     }
-    
+
     if (over_thresh_count >= 2) {
         return true;
     }
