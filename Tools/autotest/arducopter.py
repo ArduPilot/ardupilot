@@ -11623,6 +11623,104 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Changed to ALT_HOLD with no altitude estimate")
         self.disarm_vehicle(force=True)
 
+    def BaroDriftResetOnArm(self):
+        '''Test that baro temperature drift is cleared on arming'''
+        # Scenario: GPS sets home, then GPS is lost (indoor flight).
+        # Baro drifts from temperature while sitting on the ground.
+        # On arming, resetHeightDatum should recalibrate the baro
+        # and zero the altitude.
+        # On master, resetHeightDatum is only called when home is NOT
+        # set. With home already set from GPS, the drift persists.
+        self.wait_ready_to_arm()
+
+        # home is now set from GPS. Disable GPS to simulate indoors.
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "ARMING_SKIPCHK": -1,
+        })
+
+        # wait for EKF to notice GPS is gone
+        self.delay_sim_time(5)
+
+        # simulate temperature baro drift at 0.3 m/s while sitting
+        # on the ground (30 seconds = ~9m drift)
+        self.set_parameter("SIM_BARO_DRIFT", 0.3)
+        self.delay_sim_time(30)
+        self.set_parameter("SIM_BARO_DRIFT", 0)
+
+        # check altitude has drifted
+        m = self.assert_receive_message('GLOBAL_POSITION_INT')
+        pre_arm_alt = m.relative_alt * 0.001
+        self.progress("Pre-arm relative alt: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) < 3.0:
+            raise NotAchievedException(
+                "Expected significant baro drift, got %.2f m" % pre_arm_alt)
+
+        # arm in stabilize — should trigger datum reset
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+
+        # wait for baro to be fused with new calibration, then
+        # drain all buffered messages to get a truly fresh reading
+        self.delay_sim_time(10)
+        while self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=False) is not None:
+            pass
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
+        if m is None:
+            raise NotAchievedException("Did not receive GLOBAL_POSITION_INT")
+        post_arm_alt = m.relative_alt * 0.001
+        self.progress("Post-arm relative alt: %.2f m" % post_arm_alt)
+        if abs(post_arm_alt) > 2.0:
+            raise NotAchievedException(
+                "Altitude should be near zero after arming, got %.2f m" % post_arm_alt)
+
+        self.disarm_vehicle(force=True)
+
+        # Subtest 2: pure indoor scenario with AHRS origin params,
+        # never had GPS. Tests that the fix also works when origin
+        # is set from saved parameters.
+        self.start_subtest("AHRS origin params, no GPS")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "AHRS_OPTIONS": 16,     # USE_RECORDED_ORIGIN_FOR_NONGPS
+            "AHRS_ORIGIN_LAT": -35.363261,
+            "AHRS_ORIGIN_LON": 149.165230,
+            "AHRS_ORIGIN_ALT": 584,
+            "ARMING_SKIPCHK": -1,
+        })
+        self.reboot_sitl()
+
+        # wait for origin and home to be established
+        self.delay_sim_time(15)
+
+        # simulate temperature baro drift
+        self.set_parameter("SIM_BARO_DRIFT", 0.3)
+        self.delay_sim_time(30)
+        self.set_parameter("SIM_BARO_DRIFT", 0)
+
+        m = self.assert_receive_message('GLOBAL_POSITION_INT')
+        pre_arm_alt = m.relative_alt * 0.001
+        self.progress("Pre-arm relative alt: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) < 3.0:
+            raise NotAchievedException(
+                "Expected significant baro drift, got %.2f m" % pre_arm_alt)
+
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        self.delay_sim_time(10)
+        while self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=False) is not None:
+            pass
+        m = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
+        if m is None:
+            raise NotAchievedException("Did not receive GLOBAL_POSITION_INT")
+        post_arm_alt = m.relative_alt * 0.001
+        self.progress("Post-arm relative alt: %.2f m" % post_arm_alt)
+        if abs(post_arm_alt) > 2.0:
+            raise NotAchievedException(
+                "Altitude should be near zero after arming, got %.2f m" % post_arm_alt)
+
+        self.disarm_vehicle(force=True)
+
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
         self.wait_ready_to_arm()
@@ -15076,7 +15174,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
         self.arm_vehicle()
         self.set_rc(3, 2000)
-        self.wait_altitude(0, 5, minimum_duration=5, relative=True)
+        self.wait_altitude(-1, 5, minimum_duration=5, relative=True)
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=1000)
         self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
         self.wait_altitude(5, 5000, minimum_duration=1, relative=True)
@@ -15092,7 +15190,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
         self.arm_vehicle()
         self.set_rc(3, 2000)
-        self.wait_altitude(0, 1, minimum_duration=5, relative=True)
+        self.wait_altitude(-1, 1, minimum_duration=5, relative=True)
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=1000)
         self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
         self.wait_altitude(5, 5000, minimum_duration=1, relative=True)
@@ -16608,6 +16706,7 @@ return update, 1000
             self.CRSF,
             self.MotorTest,
             self.AltEstimation,
+            self.BaroDriftResetOnArm,
             self.EKFSource,
             self.GSF,
             self.GSF_reset,

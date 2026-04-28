@@ -34,9 +34,11 @@ void Copter::update_ground_effect_detector(void)
     float pos_d_m = 0;
     UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
 
-    // if we aren't taking off yet, reset the takeoff timer, altitude and complete flag
-    const bool throttle_up = flightmode->has_manual_throttle() && channel_throttle->get_control_in() > 0;
-    if (!throttle_up && ap.land_complete) {
+    // Reset the takeoff timer while still on the ground so the timeout
+    // counts from actual liftoff, not from when throttle was raised.
+    // This ensures the ground effect window covers the entire spool-up
+    // period regardless of how long the pilot sits with motors spinning.
+    if (ap.land_complete) {
         gndeffect_state.takeoff_time_ms = tnow_ms;
         gndeffect_state.takeoff_alt_m = -pos_d_m;
     }

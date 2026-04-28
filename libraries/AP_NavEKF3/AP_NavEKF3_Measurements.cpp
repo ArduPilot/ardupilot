@@ -713,6 +713,11 @@ void NavEKF3_core::readGpsData()
         setEarthFieldFromLocation(gpsloc);
     }
 
+    // don't fuse GPS data when GPS is not the configured position source
+    if (frontend->sources.getPosXYSource(core_index) != AP_NavEKF_Source::SourceXY::GPS) {
+        return;
+    }
+
     // convert GPS measurements to local NED and save to buffer to be fused later if we have a valid origin
     // and are not waiting for GPs checks to pass
     if (validOrigin && !waitingForGpsChecks) {

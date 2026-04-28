@@ -393,8 +393,8 @@ private:
 
     RCMapper rcmap;
 
-    // inertial nav alt when we armed
-    float arming_altitude_m;
+    // height above EKF origin (metres, up) at the time of arming
+    float arming_alt_above_origin_m;
 
     // Failsafe
     struct {

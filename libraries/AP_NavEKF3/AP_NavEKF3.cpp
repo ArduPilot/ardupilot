@@ -706,8 +706,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: GND_EFF_DZ
     // @DisplayName: Baro height ground effect dead zone
-    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present.
-    // @Range: 0.0 10.0
+    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present. When set to a negative value the absolute value is used as the baro observation noise floor in metres during ground effect. Negative values result in the baro being more heavily de-weighted without fully inhibiting it so the EKF retains a weak altitude anchor. For example -8 is appropriate for a small copter with up to 8m of prop wash baro error.
+    // @Range: -10.0 10.0
     // @Increment: 0.5
     // @User: Advanced
     AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
