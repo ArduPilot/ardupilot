@@ -84,6 +84,7 @@ private:
 
     // main loop for the CRSF output thread
     void run_state_machine();
+    // output the current RC rates being used and update the rate counter
     void update_rates_status();
 
     // sends RC frames at the configured rate

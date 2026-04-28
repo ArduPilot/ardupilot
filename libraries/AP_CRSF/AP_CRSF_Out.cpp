@@ -96,7 +96,7 @@ void AP_CRSF_Out::init()
     crsf_port = NEW_NOTHROW AP_RCProtocol_CRSF(AP::RC(), AP_RCProtocol_CRSF::PortMode::DIRECT_RCOUT, uart);
 
     if (crsf_port == nullptr) {
-        debug_rcout("Init failed: could not create CRSF output port");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "CRSF_OUT: could not create CRSF output port");
         return;
     }
 
@@ -113,11 +113,12 @@ void AP_CRSF_Out::init()
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_CRSF_Out::crsf_out_thread, void), "crsf", 2048, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
         delete crsf_port;
         crsf_port = nullptr;
-        debug_rcout("Failed to create CRSF_Out thread");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "CRSF_OUT: could not create CRSF output thread");
         return;
     }
 }
 
+// output the current RC rates being used and update the rate counter
 void AP_CRSF_Out::update_rates_status()
 {
     const float report_rate = reporting_rate_hz.get();
