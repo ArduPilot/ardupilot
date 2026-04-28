@@ -44,6 +44,7 @@ public:
         INA3221                        = 30,
         ANALOG_CURRENT_ONLY            = 31,
         TIBQ76952_I2C                  = 32,
+        ACS37800_I2C                   = 33,
     };
 
     // low voltage sources (used for BATT_LOW_TYPE parameter)
