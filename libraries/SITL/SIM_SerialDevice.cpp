@@ -47,31 +47,84 @@ bool SerialDevice::init_sitl_pointer()
 #if AP_SIM_SERIALDEVICE_CORRUPTION_ENABLED
 ssize_t SerialDevice::corrupt_transfer(char *buffer, const ssize_t ret, const size_t size) const
 {
-    if (ret > 0 && (rand() % 100) < 2) {
-        // drop a random byte from returned data:
-        const size_t byte_ofs_to_drop = rand() % ret;
-        fprintf(stderr, "dropping byte at offset %u\n", unsigned(byte_ofs_to_drop));
-        memmove(&buffer[byte_ofs_to_drop], &buffer[byte_ofs_to_drop+1], ret - byte_ofs_to_drop - 1);
-        return ret - 1;
-    }
-
-    if (ret > 0 && size_t(ret) < size && (rand() % 100) < 2) {
-        // add a random byte to the stream:
-        const size_t byte_ofs_to_add = rand() % ret;
-        fprintf(stderr, "adding byte at offset %u\n", unsigned(byte_ofs_to_add));
-        memmove(&buffer[byte_ofs_to_add+1], &buffer[byte_ofs_to_add], ret - byte_ofs_to_add);
-        buffer[byte_ofs_to_add] = rand()*256;
-        return ret + 1;
-    }
-
-    if (ret > 0 && unsigned(ret) < size && (rand() % 100) < 2) {
-        // corrupt a random byte in the stream:
-        const size_t byte_ofs_to_corrupt = rand() % ret;
-        fprintf(stderr, "corrupting byte at offset=%u\n", unsigned(byte_ofs_to_corrupt));
-        buffer[byte_ofs_to_corrupt] = rand()*256;
+    if (ret <= 0) {
+        // nothing to corrupt
         return ret;
     }
 
+    // probabilities in percent (kept simple and local to this function)
+    const int pct_stall = 2;   // return 0 bytes even though data was available
+    const int pct_short = 2;   // return only a short prefix of the data
+    const int pct_drop  = 2;   // drop one byte
+    const int pct_add   = 2;   // insert one byte
+    const int pct_flip  = 2;   // flip one byte
+    const int pct_burst = 2;   // corrupt a small burst of bytes
+
+    const ssize_t short_max = 8; // maximum bytes to return on short-read
+    const size_t  burst_max = 4; // maximum burst length
+
+    // 1) stall: caller sees "no data" although there was some
+    if ((rand() % 100) < pct_stall) {
+        fprintf(stderr, "stall (ret=%d -> 0)\n", int(ret));
+        return 0;
+    }
+
+    // 2) short-read: only return part of the available bytes
+    if ((rand() % 100) < pct_short && ret > 1) {
+        ssize_t max_short = ret < short_max ? ret : short_max;
+        ssize_t newret = 1 + (rand() % max_short);
+        if (newret < ret) {
+            fprintf(stderr, "short-read (ret=%d -> %d)\n",
+                    int(ret), int(newret));
+            // first newret bytes stay unchanged, remaining bytes are ignored
+            return newret;
+        }
+    }
+
+    // 3) drop: remove a single byte from the stream
+    if ((rand() % 100) < pct_drop && ret > 1) {
+        const size_t ofs = rand() % ret;
+        fprintf(stderr, "dropping byte at offset %u (ret=%d -> %d)\n",
+                unsigned(ofs), int(ret), int(ret-1));
+        memmove(&buffer[ofs], &buffer[ofs+1], ret - ofs - 1);
+        return ret - 1;
+    }
+
+    // 4) add: insert a random byte into the stream (if there is room)
+    if ((rand() % 100) < pct_add && size_t(ret) < size) {
+        const size_t ofs = rand() % ret;
+        fprintf(stderr, "adding byte at offset %u (ret=%d -> %d)\n",
+                unsigned(ofs), int(ret), int(ret+1));
+        memmove(&buffer[ofs+1], &buffer[ofs], ret - ofs);
+        buffer[ofs] = uint8_t(rand() & 0xFF);
+        return ret + 1;
+    }
+
+    // 5) flip: corrupt a single byte in the stream
+    if ((rand() % 100) < pct_flip) {
+        const size_t ofs = rand() % ret;
+        fprintf(stderr, "flipping byte at offset %u\n", unsigned(ofs));
+        buffer[ofs] = uint8_t(rand() & 0xFF);
+        return ret;
+    }
+
+    // 6) burst: corrupt several consecutive bytes
+    if ((rand() % 100) < pct_burst && ret > 0) {
+        size_t len = 1 + (rand() % burst_max);
+        const size_t ofs = rand() % ret;
+        size_t end = ofs + len;
+        if (end > (size_t)ret) {
+            end = (size_t)ret;
+        }
+        fprintf(stderr, "burst-flip [%u..%u)\n",
+                unsigned(ofs), unsigned(end));
+        for (size_t i = ofs; i < end; i++) {
+            buffer[i] = uint8_t(rand() & 0xFF);
+        }
+        return ret;
+    }
+
+    // no corruption applied
     return ret;
 }
 #endif
