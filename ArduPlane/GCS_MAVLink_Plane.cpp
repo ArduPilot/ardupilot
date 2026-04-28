@@ -1211,18 +1211,17 @@ uint8_t GCS_MAVLINK_Plane::high_latency_tgt_heading() const
         return wrap_360_cd(nav_controller->target_bearing_cd() ) / 200;
 }
 
-// return units are dm
-uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
+uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist_dam() const
 {
 #if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
         bool wp_nav_valid = quadplane.using_wp_nav();
-        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination_cm(), UINT16_MAX) : 0) / 10;
+        return (wp_nav_valid ? MIN(static_cast<uint16_t>(quadplane.wp_nav->get_wp_distance_to_destination_cm() * 1e-3), UINT16_MAX) : 0);
     }
     #endif
 
-    return MIN(plane.auto_state.wp_distance, UINT16_MAX) / 10;
+    return MIN(static_cast<uint16_t>(plane.auto_state.wp_distance * 0.1), UINT16_MAX);
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const

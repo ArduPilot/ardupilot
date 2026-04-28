@@ -74,7 +74,7 @@ private:
 
 #if HAL_HIGH_LATENCY2_ENABLED
     uint8_t high_latency_tgt_heading() const override;
-    uint16_t high_latency_tgt_dist() const override;
+    uint16_t high_latency_tgt_dist_dam() const override;
     uint8_t high_latency_tgt_airspeed() const override;
     uint8_t high_latency_wind_speed() const override;
     uint8_t high_latency_wind_direction() const override;

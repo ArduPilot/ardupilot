@@ -1301,12 +1301,11 @@ uint8_t GCS_MAVLINK_Copter::high_latency_tgt_heading() const
     return 0;     
 }
     
-uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist() const
+uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist_dam() const
 {
     if (copter.ap.initialised) {
-        // return units are dm
         const Mode *flightmode = copter.flightmode;
-        return MIN(flightmode->wp_distance_m(), UINT16_MAX) / 10;
+        return MIN(static_cast<uint16_t>(flightmode->wp_distance_m() * 0.1), UINT16_MAX);
     }
     return 0;
 }

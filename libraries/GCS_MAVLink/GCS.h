@@ -772,7 +772,7 @@ protected:
 #if HAL_HIGH_LATENCY2_ENABLED
     virtual int16_t high_latency_target_altitude() const { return 0; }
     virtual uint8_t high_latency_tgt_heading() const { return 0; }
-    virtual uint16_t high_latency_tgt_dist() const { return 0; }
+    virtual uint16_t high_latency_tgt_dist_dam() const { return 0; }
     virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
     virtual uint8_t high_latency_wind_speed() const { return 0; }
     virtual uint8_t high_latency_wind_direction() const { return 0; }
