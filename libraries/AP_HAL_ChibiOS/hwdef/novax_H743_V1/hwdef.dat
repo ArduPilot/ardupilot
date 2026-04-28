@@ -1,0 +1,284 @@
+# =============================================================================
+# novax_H743_V1 Flight Controller - Hardware Definition for ArduPilot
+# =============================================================================
+# MCU:  STM32H743VIH6 (TFBGA-100, 480MHz)
+# IMU:  Dual ICM-42688-P (SPI1 + SPI4)
+# BARO: DPS310 (I2C)
+# MAG:  IST8310 (I2C)
+# OSD:  AT7456E (SPI2)
+# CAN:  TJA1051TK/3 transceiver
+# =============================================================================
+
+# ---- MCU & Board ----
+MCU STM32H7xx STM32H743xx
+
+# Board ID 6200 (IDs 6200-6209 reserved for novaX)
+# https://github.com/ArduPilot/ardupilot/blob/master/Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID 6200
+
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+FLASH_RESERVE_START_KB 128
+FLASH_BOOTLOADER_LOAD_KB 128
+
+env OPTIMIZE -O2
+
+# ChibiOS system timer (default TIM5 is used for motors)
+STM32_ST_USE_TIMER 2
+
+# ---- USB (Type-C) ----
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+USB_STRING_MANUFACTURER "NovaX"
+USB_STRING_PRODUCT "novax_H743_V1"
+
+define HAL_HAVE_DUAL_USB_CDC 1
+
+# ---- LEDs ----
+PE3 LED_BOOTLOADER OUTPUT LOW
+PE4 LED_ACTIVITY   OUTPUT LOW
+
+# ---- Buzzer (through SS8050 NPN transistor) ----
+PA15 BUZZER OUTPUT GPIO(32) LOW
+define HAL_BUZZER_PIN 32
+define HAL_BUZZER_ON  1
+define HAL_BUZZER_OFF 0
+
+# =============================================================================
+# Serial Ports
+# =============================================================================
+# SERIAL0 = USB           (MAVLink)
+# SERIAL1 = USART1 PA9/PA10   (VTX connector - SmartAudio/IRC Tramp)
+# SERIAL2 = USART2 PD5/PD6    (DJI O3 RC SBUS input)
+# SERIAL3 = USART3 PD8/PD9    (ELRS receiver connector)
+# SERIAL4 = UART4  PB9/PB8    (DJI O3 MSP / CAN connector)
+# SERIAL5 = EMPTY             (UART5 pins unavailable)
+# SERIAL6 = USART6 PC6/PC7    (GPS connector)
+# SERIAL7 = UART7  PE8/PE7    (spare pads)
+# SERIAL8 = UART8  PE1/PE0    (spare pads)
+# =============================================================================
+
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 EMPTY USART6 UART7 UART8
+
+# SERIAL1 - VTX
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+
+# SERIAL2 - DJI O3
+PD5  USART2_TX USART2
+PD6  USART2_RX USART2
+
+# SERIAL3 - ELRS
+PD8  USART3_TX USART3
+PD9  USART3_RX USART3
+
+# SERIAL4 - DJI O3 MSP
+PB9  UART4_TX  UART4
+PB8  UART4_RX  UART4
+
+# SERIAL6 - GPS
+PC6  USART6_TX USART6
+PC7  USART6_RX USART6
+
+# SERIAL7 - Spare
+PE8  UART7_TX  UART7
+PE7  UART7_RX  UART7
+
+# SERIAL8 - Spare
+PE1  UART8_TX  UART8
+PE0  UART8_RX  UART8
+
+# =============================================================================
+# SPI Buses
+# =============================================================================
+
+# SPI1 - IMU1 (ICM-42688-P)
+PA5  SPI1_SCK  SPI1
+PA6  SPI1_MISO SPI1
+PD7  SPI1_MOSI SPI1
+
+# SPI2 - OSD (AT7456E)
+PB13 SPI2_SCK  SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+
+# SPI3 - Reserved (flash / expansion)
+PB3  SPI3_SCK  SPI3
+PB4  SPI3_MISO SPI3
+PB5  SPI3_MOSI SPI3
+
+# SPI4 - IMU2 (ICM-42688-P)
+PE12 SPI4_SCK  SPI4
+PE13 SPI4_MISO SPI4
+PE14 SPI4_MOSI SPI4
+
+# ---- Chip Select Pins ----
+PC15 IMU1_CS    CS
+PE11 IMU2_CS    CS
+PB12 AT7456E_CS CS
+PD4  SPARE_CS1  CS
+PE2  SPARE_CS2  CS
+
+# ---- SPI Device Declarations ----
+SPIDEV icm42688_1  SPI1 DEVID1 IMU1_CS    MODE3  2*MHZ  8*MHZ
+SPIDEV icm42688_2  SPI4 DEVID1 IMU2_CS    MODE3  2*MHZ  8*MHZ
+SPIDEV osd         SPI2 DEVID1 AT7456E_CS MODE0 10*MHZ 10*MHZ
+
+# =============================================================================
+# IMU
+# =============================================================================
+
+IMU Invensensev3 SPI:icm42688_1 ROTATION_NONE
+IMU Invensensev3 SPI:icm42688_2 ROTATION_NONE
+
+# fast sampling on both IMUs (bit0=IMU1, bit1=IMU2)
+define HAL_DEFAULT_INS_FAST_SAMPLE 3
+
+# Data-Ready interrupt pins
+PB2  GYRO1_EXTI INPUT
+PE15 GYRO2_EXTI INPUT
+
+# =============================================================================
+# I2C Buses
+# =============================================================================
+# Bus 0 = I2C2 (onboard sensors: DPS310 baro + IST8310 compass)
+# Bus 1 = I2C1 (external: GPS/Compass connector P3)
+
+I2C_ORDER I2C2 I2C1
+
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+PB6  I2C1_SCL I2C1
+PB7  I2C1_SDA I2C1
+
+# bus 0 is internal only
+define HAL_I2C_INTERNAL_MASK 1
+
+# =============================================================================
+# Barometer - DPS310 on I2C bus 0 (SDO→GND = address 0x76)
+# =============================================================================
+
+BARO DPS310 I2C:0:0x76
+
+# =============================================================================
+# Compass - IST8310 on I2C bus 0 (address 0x0E)
+# =============================================================================
+
+define AP_COMPASS_PROBING_ENABLED 1
+COMPASS IST8310 I2C:0:0x0E false ROTATION_NONE
+
+# =============================================================================
+# CAN Bus - FDCAN1 with TJA1051TK/3 transceiver
+# =============================================================================
+
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+
+# TJA1051 SILENT pin (LOW = normal operation)
+PD3 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+define HAL_NUM_CAN_IFACES 1
+
+# =============================================================================
+# PWM / Motor Outputs (10 channels + LED strip)
+# =============================================================================
+# Motors 1-2  : TIM3 CH3/CH4  (PB0, PB1)
+# Motors 3-6  : TIM5 CH1-CH4  (PA0, PA1, PA2, PA3)
+# Motors 7-10 : TIM4 CH1-CH4  (PD12, PD13, PD14, PD15)
+# LED Strip   : TIM1 CH1      (PA8)
+
+# Motors 1-4 support bidirectional DShot
+PB0  TIM3_CH3 TIM3 PWM(1)  GPIO(50) BIDIR
+PB1  TIM3_CH4 TIM3 PWM(2)  GPIO(51) BIDIR
+PA0  TIM5_CH1 TIM5 PWM(3)  GPIO(52) BIDIR
+PA1  TIM5_CH2 TIM5 PWM(4)  GPIO(53) BIDIR
+PA2  TIM5_CH3 TIM5 PWM(5)  GPIO(54)
+PA3  TIM5_CH4 TIM5 PWM(6)  GPIO(55)
+PD12 TIM4_CH1 TIM4 PWM(7)  GPIO(56)
+PD13 TIM4_CH2 TIM4 PWM(8)  GPIO(57)
+PD14 TIM4_CH3 TIM4 PWM(9)  GPIO(58)
+PD15 TIM4_CH4 TIM4 PWM(10) GPIO(59)
+
+# LED strip (WS2812)
+PA8  TIM1_CH1 TIM1 PWM(11) GPIO(60)
+
+# =============================================================================
+# ADC - Analog Inputs
+# =============================================================================
+
+PC0  BATT_VOLTAGE_SENS  ADC1 SCALE(1)
+PC1  BATT_CURRENT_SENS  ADC1 SCALE(1)
+PA4  BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PA7  BATT2_CURRENT_SENS ADC1 SCALE(1)
+PC5  RSSI_ADC_PIN       ADC1 SCALE(1)
+PC4  PRESSURE_SENS      ADC1 SCALE(1)
+
+# ADC channel numbers (STM32H743 ADC input mapping)
+# PC0=CH10, PC1=CH11, PA4=CH18, PA7=CH7, PC5=CH8, PC4=CH4
+define HAL_BATT_VOLT_PIN  10
+define HAL_BATT_CURR_PIN  11
+define HAL_BATT2_VOLT_PIN 18
+define HAL_BATT2_CURR_PIN 7
+define BOARD_RSSI_ANA_PIN 8
+
+# TODO: 根据实际分压电阻值调整 SCALE
+# R14=10K, R24=1K → (10K+1K)/1K = 11.0
+define HAL_BATT_VOLT_SCALE 11.0
+define HAL_BATT_CURR_SCALE 40.0
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# =============================================================================
+# MicroSD Card (SDMMC1 4-bit mode)
+# =============================================================================
+
+PC8  SDMMC1_D0  SDMMC1
+PC9  SDMMC1_D1  SDMMC1
+PC10 SDMMC1_D2  SDMMC1
+PC11 SDMMC1_D3  SDMMC1
+PC12 SDMMC1_CK  SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+
+define HAL_OS_FATFS_IO 1
+define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
+define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
+
+# =============================================================================
+# OSD - AT7456E (MAX7456 compatible) on SPI2
+# =============================================================================
+
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# =============================================================================
+# PINIO - User controllable GPIOs
+# =============================================================================
+
+PD10 PINIO1 OUTPUT GPIO(81) LOW
+PD11 PINIO2 OUTPUT GPIO(82) LOW
+PE6  PINIO3 OUTPUT GPIO(83) LOW
+PE5  PINIO4 OUTPUT GPIO(84) LOW
+
+# =============================================================================
+# DMA Priority & Allocation
+# =============================================================================
+
+# IMU SPI and motor timers get highest DMA priority
+DMA_PRIORITY SPI1* SPI4* TIM3* TIM5* TIM4*
+# IMU SPI must not share DMA streams
+DMA_NOSHARE  SPI1* SPI4*
+
+# =============================================================================
+# Storage
+# =============================================================================
+
+define HAL_STORAGE_SIZE 32768
+define HAL_WITH_RAMTRON  0
+
+# =============================================================================
+# Default Parameters
+# =============================================================================
+
+DEFAULT_PARAMETERS libraries/AP_HAL_ChibiOS/hwdef/novax_H743_V1/defaults.parm
