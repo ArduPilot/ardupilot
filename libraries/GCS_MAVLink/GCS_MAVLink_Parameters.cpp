@@ -221,6 +221,14 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("_OPTIONSCNV",   21, GCS_MAVLINK, options_were_converted, 0, AP_PARAM_FLAG_HIDDEN),
 
+    // @Param: _MSG_LVL
+    // @DisplayName: Message Notification Level
+    // @Description: Filter level for GCS text messages. Only messages with a severity equal to or higher than this level will be sent. 0:Emergency only, 7:All (including Debug).
+    // @Values: 0:Emergency, 1:Alert, 2:Critical, 3:Error, 4:Warning, 5:Notice, 6:Info, 7:Debug
+    // @User: Standard
+    AP_GROUPINFO("_MSG_LVL", 22, GCS_MAVLINK, msg_notice_level, 7),
+
+
     AP_GROUPEND
 };
 #undef DRATE

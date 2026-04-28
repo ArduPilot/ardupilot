@@ -554,6 +554,8 @@ protected:
     }
     AP_Int8 options_were_converted;
 
+    AP_Int8 msg_notice_level;
+
     virtual void handle_command_ack(const mavlink_message_t &msg);
     void handle_set_mode(const mavlink_message_t &msg);
     void handle_command_int(const mavlink_message_t &msg);
