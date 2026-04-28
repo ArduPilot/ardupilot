@@ -46,6 +46,15 @@ jobs:
               if (filename.endsWith('.lua')) labels.add('Scripting');
               else if (filename.endsWith('.py')) labels.add('Python');
 
+              if (filename.startsWith('libraries/AP_ExternalAHRS')) labels.add('ExternalAHRS');
+              else if (filename.startsWith('libraries/AP_Compass')) labels.add('Compass');
+              else if (filename.startsWith('libraries/AP_NavEKF')) labels.add('EKF');
+              else if (filename.startsWith('libraries/AP_HAL_Linux')) labels.add('Linux');
+              else if (filename.startsWith('libraries/GCS_MAVLink')) labels.add('MAVLink');
+              else if (filename.startsWith('libraries/SITL')) labels.add('SITL');
+              else if (filename.startsWith('Tools/AP_Periph')) labels.add('AP_Periph');
+              else if (filename.startsWith('.github/workflows')) labels.add('CI');
+
               // Specific/niche vehicle checks
               if (
                 filename.startsWith('ArduPlane/quadplane') ||
