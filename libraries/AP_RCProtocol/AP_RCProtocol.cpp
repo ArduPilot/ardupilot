@@ -41,6 +41,7 @@
 #include "AP_RCProtocol_UDP.h"
 #include "AP_RCProtocol_FDM.h"
 #include "AP_RCProtocol_Radio.h"
+#include "AP_RCProtocol_IBUS2.h"
 #include <AP_Math/AP_Math.h>
 #include <RC_Channel/RC_Channel.h>
 
@@ -123,6 +124,9 @@ void AP_RCProtocol::init()
 #endif  // AP_RCPROTOCOL_IOMCU_ENABLED
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
     backend[AP_RCProtocol::EMLID_RCIO] = NEW_NOTHROW AP_RCProtocol_Emlid_RCIO(*this);
+#endif
+#if AP_RCPROTOCOL_IBUS2_ENABLED
+    backend[AP_RCProtocol::IBUS2] = NEW_NOTHROW AP_RCProtocol_IBUS2(*this);
 #endif
 }
 
@@ -528,6 +532,9 @@ bool AP_RCProtocol::new_input()
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         AP_RCProtocol::EMLID_RCIO,
 #endif
+#if AP_RCPROTOCOL_IBUS2_ENABLED
+        AP_RCProtocol::IBUS2,
+#endif
     };
     for (const auto protocol : pollable) {
         if (!detect_async_protocol(protocol)) {
@@ -702,6 +709,10 @@ const char *AP_RCProtocol::protocol_name_from_protocol(rcprotocol_t protocol)
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
     case EMLID_RCIO:
         return "Emlid RCIO";
+#endif
+#if AP_RCPROTOCOL_IBUS2_ENABLED
+    case IBUS2:
+        return "IBUS2";
 #endif
     case NONE:
         break;

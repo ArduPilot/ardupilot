@@ -25,6 +25,9 @@
 #include "SIM_RichenPower.h"
 #include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
+#include "SIM_IBus2_Master.h"
+#include "SIM_IBus2_Slave.h"
+#include "SIM_IBus2_ESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include "SIM_SlungPayload.h"
@@ -559,6 +562,9 @@ public:
 #endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
+    IBus2Master       ibus2master_sim;
+    IBus2SlaveDevice  ibus2slave_sim;
+    IBus2ESC          ibus2esc_sim;
 #if AP_SIM_VOLZ_ENABLED
     Volz volz_sim;
 #endif  // AP_SIM_VOLZ_ENABLED

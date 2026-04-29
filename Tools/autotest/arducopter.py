@@ -13275,6 +13275,109 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()
 
+    def IBus2Slave(self):
+        '''Test AP as IBUS2 slave receiving RC channels from a FlySky receiver'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        # Frame 1: SIM master encodes UDP RC channels (16 from the RC thread).
+        self.wait_statustext("IBUS2:", timeout=10, check_context=True)
+        # Frame 2/3: SIM master cycles through all four command codes; verify
+        # AP_IBUS2_Slave handles each one (GET_VALUE is implicit in the above).
+        self.wait_statustext("IBUS2: GET_TYPE cmd from master", timeout=10, check_context=True)
+        self.wait_statustext("IBUS2: GET_PARAM cmd from master", timeout=10, check_context=True)
+        self.wait_statustext("IBUS2: SET_PARAM cmd from master", timeout=10, check_context=True)
+
+    def IBus2Master(self):
+        '''Test AP as IBUS2 master polling telemetry from a slave device'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 51,  # SerialProtocol_IBUS2_Master
+            "IBUS2M_ENABLE": 1,
+            "IBUS2M_SEND_MASK": 3,   # bit0=GET_TYPE, bit1=GET_VALUE
+            "SIM_IBUS2S_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2slave"])
+        # Phase 1: enumerate device (GET_TYPE, Frame 2/3 code=1) then read
+        # sensor data (GET_VALUE, Frame 2/3 code=2).
+        # The statustext is emitted on the first valid GET_VALUE response.
+        self.wait_statustext("IBUS2: device 0 VID=1 PID=3", timeout=15, check_context=True)
+
+        # Phase 2: exercise GET_PARAM (Frame 2/3 code=3).
+        self.set_parameter("IBUS2M_SEND_MASK", 4)  # bit2=GET_PARAM only
+        self.wait_statustext("IBUS2: device 0 GET_PARAM ack", timeout=15, check_context=True)
+
+        # Phase 3: exercise SET_PARAM (Frame 2/3 code=4) with a
+        # ReceiverInternalSensors payload (ParamType=0xC000, spec Appendix 1).
+        self.set_parameter("IBUS2M_SEND_MASK", 8)  # bit3=SET_PARAM only
+        self.wait_statustext("IBUS2: device 0 SET_PARAM ack", timeout=15, check_context=True)
+
+    def IBus2ESC_flight(self):
+        '''fly with motor outputs driven by IBUS2 ESC'''
+        self.start_subtest("IBUS2 ESC flight")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
+        self.fly_loaded_mission(num_wp)
+
+    def IBus2ESC(self):
+        '''Test IBUS2 ESC motor control via Frame 1 channel outputs'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 51,   # SerialProtocol_IBUS2_Master
+            "IBUS2M_ENABLE": 1,
+            "IBUS2M_SEND_MASK": 0,    # Frame 1 only — no Frame 2 queries needed for ESC
+            "SIM_IBUS2E_ENA": 1,
+            "SERVO1_FUNCTION": 33,    # k_motor1
+            "SERVO2_FUNCTION": 34,    # k_motor2
+            "SERVO3_FUNCTION": 35,    # k_motor3
+            "SERVO4_FUNCTION": 36,    # k_motor4
+        })
+        self.customise_SITL_commandline(["--serial5=sim:ibus2esc"])
+        self.IBus2ESC_flight()
+
+    def IBus2RCInput(self):
+        '''Test that IBUS2 slave RC channels reach AP_RCProtocol'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        # Wait for the slave to first receive channels from the simulated master.
+        self.wait_statustext("IBUS2:", timeout=10, check_context=True)
+        # 1500 µs (centre) is exact through SES encode/decode.
+        self.set_rc(1, 1500)
+        self.assert_rc_channel_value(1, 1500)
+        # ch3 carries throttle-low (1000 µs); SES quantises it to 1001 µs.
+        ch3 = self.get_rc_channel_value(3, timeout=2)
+        if abs(ch3 - 1000) > 5:
+            raise NotAchievedException("ch3 expected ~1000 got %u" % ch3)
+
+    def IBus2RCInputViaUDP(self):
+        '''Test full UDP->IBus2-encode->IBus2-decode->RC chain'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        self.wait_statustext("IBUS2:", timeout=10, check_context=True)
+
+        # Use values that round-trip exactly through SES encode/decode.
+        # 1550 (+50) and 1450 (-50) both map to raw_mag=100, which is not a
+        # failsafe sentinel (1024 or 1025 in 11-bit space).
+        self.set_rc(1, 1550)
+        self.assert_rc_channel_value(1, 1550)
+        self.set_rc(4, 1450)
+        self.assert_rc_channel_value(4, 1450)
+
+        # Return to centre.
+        self.set_rc(1, 1500)
+        self.assert_rc_channel_value(1, 1500)
+        self.set_rc(4, 1500)
+        self.assert_rc_channel_value(4, 1500)
+
     def PerfInfo(self):
         '''Test Scheduler PerfInfo output'''
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
@@ -16675,6 +16778,11 @@ return update, 1000
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.IBus,
+            self.IBus2Slave,
+            self.IBus2Master,
+            self.IBus2ESC,
+            self.IBus2RCInput,
+            self.IBus2RCInputViaUDP,
             self.WaitAndMaintainAttitude_RCFlight,
             self.GuidedYawRate,
             self.RudderDisarmMidair,

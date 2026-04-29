@@ -801,7 +801,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
             case AP_CSVReader::RetCode::OK:
                 continue;
             case AP_CSVReader::RetCode::ERROR:
-                AP_HAL::panic("Malformed CSV?");
+                AP_HAL::panic("Malformed CSV? (line %u)", logic_async_csv.line);
             case AP_CSVReader::RetCode::TERM_DONE:
             case AP_CSVReader::RetCode::VECTOR_DONE:
                 switch (logic_async_csv.terms_seen) {
@@ -836,6 +836,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
                 if (logic_async_csv.terms_seen != 4) {
                     AP_HAL::panic("Incorrect number off terms in CSV, want (Time [s],Value,Parity Error,Framing Error)");
                 }
+                logic_async_csv.line++;
                 logic_async_csv.terms_seen = 0;
                 if (!logic_async_csv.done_first_line) {
                     // skip the headers
@@ -898,6 +899,10 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
             navail = MIN(navail, max_bytes);
             if (_sim_serial_device != nullptr) {
                 nwritten = _sim_serial_device->write_to_device((const char*)readptr, navail);
+                // Half-duplex: echo TX bytes back to RX to simulate shared-wire behaviour
+                if (nwritten > 0 && (get_options() & OPTION_HDPLEX)) {
+                    _sim_serial_device->write_to_autopilot((const char*)readptr, nwritten);
+                }
             } else if (!_use_send_recv) {
                 // For ENABLE/AUTO modes on a real UART, check CTS via ioctl
                 // before writing. This provides reliable flow control on
