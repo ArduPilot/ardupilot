@@ -5326,6 +5326,9 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     case MAV_CMD_DO_REPOSITION:
     case MAV_CMD_EXTERNAL_POSITION_ESTIMATE:
     case MAV_CMD_DO_SET_GLOBAL_ORIGIN:
+#if AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
+    case MAV_CMD_DO_ORBIT:
+#endif
         return true;
     default:
         return false;

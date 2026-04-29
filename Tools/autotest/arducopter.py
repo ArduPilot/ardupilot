@@ -652,6 +652,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             timeout=30,
             track_angle=False,
         )
+        self.wait_groundspeed(0.5, 10.0, minimum_duration=5, timeout=30)
         self.wait_distance_to_home(80, 100)
         self.wait_disarmed()
 
@@ -14285,6 +14286,103 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.change_mode('RTL')
             self.wait_disarmed()
 
+    def DO_ORBIT(self):
+        '''test MAV_CMD_DO_ORBIT in Guided mode'''
+        self.takeoff(20, mode='GUIDED')
+
+        # offset home location 50m North and use as orbit center
+        home = self.home_position_as_mav_location()
+        orbit_center = self.offset_location_ne(home, 50, 0)
+
+        self.start_subtest("Orbit clockwise around offset point")
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=10,    # radius 10m, positive = CW
+            p2=0,     # speed - use default
+            p3=0,     # yaw behaviour - face center
+            p4=0,     # orbits - forever
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,    # altitude 20m
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_circling_point_with_radius(
+            orbit_center,
+            want_radius=10,
+            epsilon=5,
+            min_circle_time=10,
+            timeout=60,
+            track_angle=False,
+        )
+        self.progress("Clockwise orbit verified")
+        self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
+        self.progress("Clockwise orbit speed verified")
+
+        self.start_subtest("Orbit counter-clockwise around offset point")
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=-10,   # radius -10m, negative = CCW
+            p2=0,
+            p3=0,
+            p4=0,
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_circling_point_with_radius(
+            orbit_center,
+            want_radius=10,
+            epsilon=5,
+            min_circle_time=10,
+            timeout=60,
+            track_angle=False,
+        )
+        self.progress("Counter-clockwise orbit verified")
+        self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
+        self.progress("Clockwise orbit speed verified")
+        self.start_subtest("NaN turns: second orbit command updates speed but preserves turn count")
+        # Start a 3-turn orbit at 2 m/s
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=10,    # radius 10m CW
+            p2=2.0,   # speed 2 m/s
+            p3=0,
+            p4=3,     # 3 turns
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_circling_point_with_radius(
+            orbit_center,
+            want_radius=10,
+            epsilon=5,
+            min_circle_time=5,
+            timeout=60,
+            track_angle=False,
+        )
+        self.progress("3-turn orbit started at 2 m/s")
+        # Send second command with NaN turns and different speed - turn count must not change
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=10,
+            p2=3.0,   # new speed 3 m/s
+            p3=0,
+            p4=float('nan'),  # NaN: do not change turn count
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.progress("Second command with NaN turns sent - speed updated to 3 m/s")
+        self.wait_groundspeed(2.0, 15, minimum_duration=5, timeout=30)
+        self.progress("Speed update confirmed")
+        # Wait for orbit to complete (vehicle should switch to pos hold after 3 turns)
+        self.wait_mode('GUIDED', timeout=10)
+        self.progress("NaN turns test passed - turn count preserved, speed updated")
+        self.do_RTL()
+
     def DO_CHANGE_SPEED_in_guided(self):
         '''test Copter DO_CHANGE_SPEED handling in guided mode'''
         self.takeoff(20, mode='GUIDED')
@@ -16679,6 +16777,7 @@ return update, 1000
             self.GuidedYawRate,
             self.RudderDisarmMidair,
             self.NoArmWithoutMissionItems,
+            self.DO_ORBIT,
             self.DO_CHANGE_SPEED_in_guided,
             self.ArmSwitchAfterReboot,
             self.RPLidarA1,

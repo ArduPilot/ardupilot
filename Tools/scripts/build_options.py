@@ -197,6 +197,7 @@ BUILD_OPTIONS = [
     Feature('Copter', 'MODE_FLIP', 'MODE_FLIP_ENABLED', 'Enable Mode Flip', 0, None),
     Feature('Copter', 'MODE_BRAKE', 'MODE_BRAKE_ENABLED', 'Enable Mode Brake', 0, None),
     Feature('Copter', 'MODE_THROW', 'MODE_THROW_ENABLED', 'Enable Mode Throw', 0, None),
+    Feature('Copter', 'MAV_CMD_DO_ORBIT', 'AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED', 'Enable MAV_CMD_DO_ORBIT command in Guided mode', 0, None),  # noqa
     Feature('Copter', 'COPTER_ADVANCED_FAILSAFE', 'AP_COPTER_ADVANCED_FAILSAFE_ENABLED', 'Enable Advanced Failsafe', 0, "ADVANCED_FAILSAFE"),  # NOQA: E501
     Feature('Copter', 'COPTER_AHRS_AUTO_TRIM', 'AP_COPTER_AHRS_AUTO_TRIM_ENABLED', 'Enable Copter AHRS AutoTrim', 0, None),  # NOQA: E501
 
