@@ -32,7 +32,6 @@ Sub::Sub()
 #endif
           motors(MAIN_LOOP_RATE),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
-          inertial_nav(ahrs),
           ahrs_view(ahrs, ROTATION_NONE),
           attitude_control(ahrs_view, motors),
           pos_control(ahrs_view, motors, attitude_control),
