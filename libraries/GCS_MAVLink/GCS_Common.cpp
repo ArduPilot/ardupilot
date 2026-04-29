@@ -33,6 +33,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Actuators/AP_Actuators.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Camera/AP_Camera.h>
@@ -5849,6 +5850,41 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_servorelay_message(packet);
 #endif
 
+#if AP_ACTUATORS_ENABLED
+    case MAV_CMD_DO_SET_ACTUATOR: {
+        AP_Actuators* actuators = AP_Actuators::get_singleton();
+        if (actuators == nullptr) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
+
+        float actuator_values[] = {
+            packet.param1,
+            packet.param2,
+            packet.param3,
+            packet.param4,
+            static_cast<float>(packet.x),
+            static_cast<float>(packet.y)
+        };
+        if (packet.x == INT16_MAX) {
+            actuator_values[4] = NAN;
+        }
+        if (packet.y == INT16_MAX) {
+            actuator_values[5] = NAN;
+        }
+        // z field specifies which set of actuators to control
+        // index 0 = actuators 1-6, index 1 = actuators 7-12, etc.
+        const uint8_t index = static_cast<uint8_t>(packet.z);
+        const uint8_t actuator_offset = index * ARRAY_SIZE(actuator_values);
+
+        for (int i = 0; i < (int)ARRAY_SIZE(actuator_values); i++) {
+            // NaN means "ignore this actuator" per MAVLink spec
+            if (!isnan(actuator_values[i])) {
+                actuators->set_actuator(actuator_offset + i, actuator_values[i]);
+            }
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif // AP_ACTUATORS_ENABLED
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
     case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES:
         return handle_command_request_autopilot_capabilities(packet);
