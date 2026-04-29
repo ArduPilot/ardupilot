@@ -83,6 +83,16 @@ private:
         return backend_rate_hz;
     }
 
+    // Invensensev3 sensors have very low gyro drift compared to the
+    // legacy default, so the EKF can clamp the bias state much tighter
+    // and seed the bias covariance with a smaller initial uncertainty.
+    float gyro_bias_limit_rads() const override {
+        return radians(2.0f); // 0.035 rad/s
+    }
+    float gyro_bias_init_dps() const override {
+        return 1.0f;
+    }
+
     // reset FIFO configure1 register
     uint8_t fifo_config1;
 
