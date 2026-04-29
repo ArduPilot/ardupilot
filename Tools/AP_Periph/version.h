@@ -7,7 +7,7 @@
 #include "ap_version.h"
 #include <AP_HAL/AP_HAL.h>
 
-#define THISFIRMWARE "AP_Periph 4.7.0-beta3"
+#define THISFIRMWARE "AP_Periph 4.7.0-beta4"
 
 // defines needed due to lack of GCS includes
 #ifndef HAVE_ENUM_FIRMWARE_VERSION_TYPE
@@ -17,7 +17,7 @@
 #endif
 
 // the following line is parsed by the autotest scripts
-#define FIRMWARE_VERSION 4,7,0,FIRMWARE_VERSION_TYPE_BETA+2
+#define FIRMWARE_VERSION 4,7,0,FIRMWARE_VERSION_TYPE_BETA+3
 
 #define FW_MAJOR 4
 #define FW_MINOR 7
