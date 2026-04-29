@@ -48,7 +48,7 @@ public:
         k_trim_pitch_inc        = 46,           ///< increase pitch trim
         k_trim_pitch_dec        = 47,           ///< decrease pitch trim
         k_input_hold_set        = 48,           ///< toggle input hold (trim to current controls)
-        k_roll_pitch_toggle     = 49,           ///< adjust roll/pitch input instead of forward/lateral
+        k_roll_pitch_toggle     = 49,           // Deprecated: axis remapping should be handled by the joystick or GCS
 
         // 50 reserved for future function
 

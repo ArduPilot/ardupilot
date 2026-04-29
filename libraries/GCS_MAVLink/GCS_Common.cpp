@@ -7644,7 +7644,7 @@ void GCS_MAVLINK::manual_override(RC_Channel *c, int16_t value_in, const uint16_
         if (reversed) {
             value_in *= -1;
         }
-        override_value = radio_min + (radio_max - radio_min) * (value_in + offset) / scaler;
+        override_value = constrain_float(radio_min + (radio_max - radio_min) * (value_in + offset) / scaler, radio_min, radio_max);
     }
     c->set_override(override_value, tnow);
 }
