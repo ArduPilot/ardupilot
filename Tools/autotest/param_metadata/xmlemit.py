@@ -81,7 +81,11 @@ class XmlEmit(Emit):
         return sorted(keys, key=sort_key)
 
     def emit(self, g):
-        xml_parameters = etree.SubElement(self.current_element, 'parameters', name=g.reference)  # i.e. ArduPlane
+        existing = self.current_element.find("parameters[@name='%s']" % g.reference)
+        if existing is not None:
+            xml_parameters = existing
+        else:
+            xml_parameters = etree.SubElement(self.current_element, 'parameters', name=g.reference)  # i.e. ArduPlane
 
         for param in g.params:
             if not self.should_emit_param(param):
