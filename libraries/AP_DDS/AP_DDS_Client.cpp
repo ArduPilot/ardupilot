@@ -99,6 +99,11 @@ static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #if AP_DDS_JOY_SUB_ENABLED
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 #endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_CLOCK_SUB_ENABLED
+rosgraph_msgs_msg_Clock AP_DDS_Client::rx_clock_topic {};
+builtin_interfaces_msg_Time AP_DDS_Client::external_clock_time {};
+bool AP_DDS_Client::has_received_clock = false;
+#endif // AP_DDS_CLOCK_SUB_ENABLED
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
@@ -208,12 +213,21 @@ AP_DDS_Client::~AP_DDS_Client()
 #if AP_DDS_TIME_PUB_ENABLED
 void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 {
+#if AP_DDS_CLOCK_SUB_ENABLED
+    // use external /clock topic if available
+    if (has_received_clock) {
+        msg.sec = external_clock_time.sec;
+        msg.nanosec = external_clock_time.nanosec;
+        return;
+    }
+#endif // AP_DDS_CLOCK_SUB_ENABLED
     uint64_t utc_usec;
     if (!AP::rtc().get_utc_usec(utc_usec)) {
         utc_usec = AP_HAL::micros64();
     }
     msg.sec = utc_usec / 1000000ULL;
     msg.nanosec = (utc_usec % 1000000ULL) * 1000UL;
+
 
 }
 #endif // AP_DDS_TIME_PUB_ENABLED
@@ -891,6 +905,19 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_CLOCK_SUB_ENABLED
+    case topics[to_underlying(TopicIndex::CLOCK_SUB)].dr_id.id: {
+        const bool success = rosgraph_msgs_msg_Clock_deserialize_topic(ub, &rx_clock_topic);
+        if (success == false) {
+            break;
+        }
+
+        // Store the received external clock time
+        external_clock_time = rx_clock_topic.clock;
+        has_received_clock = true;
+        break;
+    }
+#endif // AP_DDS_CLOCK_SUB_ENABLED
     }
 
 }
@@ -1512,12 +1539,25 @@ bool AP_DDS_Client::create()
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Topic/Sub/Reader session request retry for index '%u'", msg_prefix, i);
             }
             if (!success) {
-                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
-                for (uint8_t s = 0 ; s < nRequests; s++) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
+                // Don't fail on /clock subscription
+#if AP_DDS_CLOCK_SUB_ENABLED
+                if (i == to_underlying(TopicIndex::CLOCK_SUB)) {
+                    // Optional subscription failed, log warning but continue
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Optional Topic/Sub/Reader session request failure for index '%u' - continuing without it", msg_prefix, i);
+                    for (uint8_t s = 0 ; s < nRequests; s++) {
+                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
+                    }
+                } else {
+#endif
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
+                    for (uint8_t s = 0 ; s < nRequests; s++) {
+                        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
+                    }
+                    // TODO add a failure log message sharing the status results
+                    return false;
+#if AP_DDS_CLOCK_SUB_ENABLED
                 }
-                // TODO add a failure log message sharing the status results
-                return false;
+#endif
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Sub/Reader session pass for index '%u'", msg_prefix, i);
                 uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);
