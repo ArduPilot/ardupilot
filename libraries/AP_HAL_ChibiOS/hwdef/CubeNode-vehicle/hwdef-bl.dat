@@ -1,0 +1,6 @@
+include ../CubeNode/hwdef-bl.inc
+
+# Add activity LEDs
+PB1 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # Blue
+PB0 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # Green
+define HAL_LED_ON 0
