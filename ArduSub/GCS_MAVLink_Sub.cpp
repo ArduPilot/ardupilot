@@ -641,7 +641,9 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                     packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_FRD ||
                     packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-                pos_vector += sub.inertial_nav.get_position_neu_cm();
+                Vector3f pos_cm = (sub.pos_control.get_pos_estimate_NED_m() * 100.0f).tofloat();
+                pos_cm.z = -pos_cm.z;
+                pos_vector += pos_cm;
             }
         }
 
