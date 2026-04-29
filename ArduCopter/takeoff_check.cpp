@@ -9,13 +9,16 @@ void Copter::takeoff_check()
 {
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     // If takeoff check is disabled or vehicle is armed and flying then clear block and return
-    if ((g2.takeoff_rpm_min <= 0) || (motors->armed() && !ap.land_complete)) {
+    if (motors->armed() && !ap.land_complete) {
         motors->set_spoolup_block(false);
         return;
     }
 
     // Run the common motor checks (called early so it can clear its warning timer when disarmed)
-    const bool motor_check_passed = motors_takeoff_check(g2.takeoff_rpm_min, g2.takeoff_rpm_max);
+    bool motor_check_ok = true;
+    if (g2.takeoff_rpm_min > 0) {
+        motor_check_ok = motors_takeoff_check(g2.takeoff_rpm_min, g2.takeoff_rpm_max);
+    }
 
     // block takeoff when disarmed but do not display warnings
     if (!motors->armed()) {
@@ -40,7 +43,7 @@ void Copter::takeoff_check()
     }
 
     // Clear block if all checks passed
-    if (motor_check_passed && load_adequate) {
+    if (motor_check_ok && load_adequate) {
         motors->set_spoolup_block(false);
         return;
     }
