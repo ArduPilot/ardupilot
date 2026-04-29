@@ -547,6 +547,10 @@ AP_HW_BrotherHobbyF405v3             5811
 #IDs 5820 ~ 5829 reserved for VimDrones
 AP_HW_VIMDRONES_BMS                  5820
 
+#IDs 5830-5839 reserved for SectionBlue
+AP_HW_SectionBlue_H7_FPV             5830
+AP_HW_SectionBlue_AUAV               5831
+
 # IDs 6000-6099 reserved for SpektreWorks
 AP_HW_sw-spar-f407                   6000
 AP_HW_sw-boom-f407                   6001
