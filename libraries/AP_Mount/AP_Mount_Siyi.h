@@ -78,8 +78,24 @@ public:
     // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
     bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
 
-    // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const override;
+    bool has_camera_information() const override { return true; }
+    // return camera vendor name
+    void get_camera_vendor_name(char *buf, uint8_t buflen) const override { strncpy(buf, "Siyi", buflen); }
+    // return camera model name
+    void get_camera_model_name(char *buf, uint8_t buflen) const override { strncpy(buf, get_model_name(), buflen); }
+    // return camera firmware version
+    uint32_t get_camera_firmware_version() const override {
+        return _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
+    }
+    // return focal length in mm for the current hardware model
+    float get_camera_focal_length_mm() const override;
+    // return camera capability flags
+    uint32_t get_camera_cap_flags() const override {
+        return (CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
+                CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
+                CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
+                CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS);
+    }
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;

@@ -373,6 +373,39 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 }
 
 #if HAL_GCS_ENABLED
+// send a CAMERA_INFORMATION message to GCS
+void AP_Mount_Backend::send_camera_information(mavlink_channel_t chan) const
+{
+    if (!has_camera_information()) {
+        return;
+    }
+
+    uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN+1] {};
+    get_camera_vendor_name((char*)vendor_name, ARRAY_SIZE(vendor_name)-1);
+
+    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN+1] {};
+    get_camera_model_name((char*)model_name, ARRAY_SIZE(model_name)-1);
+
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
+
+    mavlink_msg_camera_information_send(
+        chan,
+        AP_HAL::millis(),              // time_boot_ms
+        vendor_name,                   // vendor_name uint8_t[32]
+        model_name,                    // model_name uint8_t[32]
+        get_camera_firmware_version(), // firmware_version uint32_t
+        get_camera_focal_length_mm(),  // focal_length float (mm)
+        NaNf,                          // sensor_size_h float (mm)
+        NaNf,                          // sensor_size_v float (mm)
+        0,                             // resolution_h uint16_t (pix)
+        0,                             // resolution_v uint16_t (pix)
+        get_camera_lens_id(),          // lens_id uint8_t
+        get_camera_cap_flags(),        // flags uint32_t (CAMERA_CAP_FLAGS)
+        0,                             // cam_definition_version uint16_t
+        cam_definition_uri,            // cam_definition_uri char[140]
+        _instance + 1);                // gimbal_device_id uint8_t
+}
+
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
 void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan)
 {

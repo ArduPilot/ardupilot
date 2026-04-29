@@ -212,7 +212,18 @@ public:
 #endif
 
     // send camera information message to GCS
-    virtual void send_camera_information(mavlink_channel_t chan) const {}
+    void send_camera_information(mavlink_channel_t chan) const;
+
+    // virtual methods supplying data for send_camera_information
+    // backends that have no associated camera (e.g. pass-through gimbals like STorM32)
+    // should leave has_camera_information() returning false to suppress sending
+    virtual bool has_camera_information() const { return false; }
+    virtual void get_camera_vendor_name(char *buf, uint8_t buflen) const { }
+    virtual void get_camera_model_name(char *buf, uint8_t buflen) const { }
+    virtual uint32_t get_camera_firmware_version() const { return 0; }
+    virtual float get_camera_focal_length_mm() const { return NaNf; }
+    virtual uint8_t get_camera_lens_id() const { return 0; }
+    virtual uint32_t get_camera_cap_flags() const { return 0; }
 
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const {}
