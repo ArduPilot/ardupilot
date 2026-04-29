@@ -668,6 +668,24 @@ class ChibiOSHWDef(hwdef.HWDef):
             return None
         return lib.mcu[name]
 
+    def mcu_uses_I2Cv4(self):
+        '''return True if this MCU uses the ChibiOS I2Cv4 LLD driver, which
+        uses a single DMA channel per I2C peripheral (shared between TX and
+        RX) rather than separate RX and TX streams'''
+        lib = self.get_mcu_lib(self.mcu_type)
+        platform_mk = getattr(lib, 'build', {}).get('CHIBIOS_PLATFORM_MK', '')
+        # ChibiOS platform directories whose platform.mk pulls in LLD/I2Cv4
+        i2cv4_platforms = (
+            'STM32G0xx/',
+            'STM32G4xx/',
+            'STM32C0xx/',
+            'STM32U0xx/',
+            'STM32U3xx/',
+            'STM32H5xx/',
+            'STM32L4xx+/',
+        )
+        return any(p in platform_mk for p in i2cv4_platforms)
+
     def get_ram_reserve_start(self):
         '''get amount of memory to reserve for bootloader comms and the address if non-zero'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
@@ -1938,6 +1956,7 @@ INCLUDE common.ld
         devlist = []
 
         # write out config structures
+        uses_i2cv4 = self.mcu_uses_I2Cv4()
         for dev in i2c_list:
             if not dev.startswith('I2C') or dev[3] not in "1234":
                 self.error("Bad I2C_ORDER element %s" % dev)
@@ -1945,14 +1964,26 @@ INCLUDE common.ld
             devlist.append('HAL_I2C%u_CONFIG' % n)
             sda_line = self.make_line('I2C%u_SDA' % n)
             scl_line = self.make_line('I2C%u_SCL' % n)
-            f.write('''
+            if uses_i2cv4:
+                # I2Cv4 (STM32G0/G4/C0/U0/U3/H5/L4+) uses a single DMA
+                # channel for both TX and RX on each I2C peripheral
+                f.write('''
+#if defined(STM32_I2C_I2C%u_DMA_CHANNEL)
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, STM32_I2C_I2C%u_DMA_CHANNEL, SHARED_DMA_NONE, %s, %s }
+#else
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
+#endif
+'''
+                        % (n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
+            else:
+                f.write('''
 #if defined(STM32_I2C_I2C%u_RX_DMA_STREAM) && defined(STM32_I2C_I2C%u_TX_DMA_STREAM)
 #define HAL_I2C%u_CONFIG { &I2CD%u, %u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, %s, %s }
 #else
 #define HAL_I2C%u_CONFIG { &I2CD%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
 #endif
 '''
-                    % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
+                        % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
         f.write('\n')
         self.write_device_table(f, "i2c devices", "HAL_I2C_DEVICE_LIST", devlist)
 
@@ -2658,6 +2689,13 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 continue
             for prefix in prefixes:
                 if type.startswith(prefix):
+                    if prefix == 'I2C' and self.mcu_uses_I2Cv4():
+                        # I2Cv4 uses a single DMA channel per I2C peripheral
+                        # shared between TX and RX, so request DMA using the
+                        # plain peripheral name (no _RX/_TX suffix)
+                        if type not in peripherals:
+                            peripherals.append(type)
+                        break
                     ptx = type + "_TX"
                     prx = type + "_RX"
                     if prefix in ['SPI', 'I2C']:
