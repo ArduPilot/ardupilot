@@ -60,11 +60,12 @@ public:
 
     // ADSB driver types
     enum class Type {
-        None                = 0,
-        uAvionix_MAVLink    = 1,
-        Sagetech            = 2,
-        uAvionix_UCP        = 3,
-        Sagetech_MXS        = 4,
+        None                   = 0,
+        uAvionix_MAVLink_InOut = 1,
+        Sagetech               = 2,
+        uAvionix_UCP           = 3,
+        Sagetech_MXS           = 4,
+        uAvionix_MAVLink_In    = 5,
     };
 
     struct adsb_vehicle_t {
