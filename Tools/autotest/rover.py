@@ -6924,7 +6924,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
         self.wait_ready_to_arm()
 
-        self.progress("Ensure we can't arm when we are in breacnh of a polyfence")
+        self.progress("Ensure we can't arm when we are in breach of a polyfence")
         self.clear_fence()
 
         self.progress("Now create a fence we are in breach of")

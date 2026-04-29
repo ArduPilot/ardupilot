@@ -52,6 +52,10 @@ bool MissionItemProtocol_Fence::get_item_as_mission_item(uint16_t seq,
         ret_cmd = MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION;
         p1 = fenceitem.radius;
         break;
+    case AC_PolyFenceType::HOME_CIRCLE_INCLUSION:
+        ret_cmd = MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION;
+        p1 = fenceitem.radius;
+        break;
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     case AC_PolyFenceType::CIRCLE_EXCLUSION_INT:
     case AC_PolyFenceType::CIRCLE_INCLUSION_INT:
@@ -132,6 +136,10 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_Pol
         break;
     case MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION:
         ret.type = AC_PolyFenceType::CIRCLE_INCLUSION;
+        ret.radius = mission_item_int.param1;
+        break;
+    case MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION:
+        ret.type = AC_PolyFenceType::HOME_CIRCLE_INCLUSION;
         ret.radius = mission_item_int.param1;
         break;
     default:
