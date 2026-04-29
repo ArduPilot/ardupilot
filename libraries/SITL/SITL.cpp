@@ -655,6 +655,17 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     AP_SUBGROUPINFO(vicon, "VICON_", 56, SIM, ViconParms),
 #endif  // AP_SIM_VICON_ENABLED
 
+#if AP_SIM_CAM_ENABLED
+    // @Group: CAM_
+    // @Path: ./SIM_Camera.cpp
+    AP_SUBGROUPINFO(camera_sim[0], "CAM_", 57, SIM, Camera),
+#if AP_SIM_MAX_CAMERAS > 1
+    // @Group: CAM2_
+    // @Path: ./SIM_Camera.cpp
+    AP_SUBGROUPINFO(camera_sim[1], "CAM2_", 58, SIM, Camera),
+#endif
+#endif
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK

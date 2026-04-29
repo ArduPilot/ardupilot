@@ -24,6 +24,7 @@
 
 #include "SITL.h"
 #include "SITL_Input.h"
+#include "SIM_Camera.h"
 #include "SIM_Sprayer.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_Gripper_EPM.h"
@@ -47,6 +48,7 @@
 #include "SIM_Topotek.h"
 #include "SIM_Viewpro.h"
 #include "SIM_Mount.h"
+#include <GCS_MAVLink/GCS.h>
 
 #define MAX_SIM_INSTANCES 16
 
@@ -158,6 +160,16 @@ public:
     float get_home_yaw() const { return home_yaw; }
 
     void set_buzzer(Buzzer *_buzzer) { buzzer = _buzzer; }
+    void add_camera(Camera *_camera) {
+        for (uint8_t i = 0; i < ARRAY_SIZE(cameras); i++) {
+            if (cameras[i] != nullptr) {
+                continue;
+            }
+            cameras[i] = _camera;
+            return;
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "No free camera slots");
+    }
     void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
     void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
@@ -406,6 +418,7 @@ private:
     } smoothing;
 
     Buzzer *buzzer;
+    Camera *cameras[AP_SIM_MAX_CAMERAS]{};
     Sprayer *sprayer;
     Gripper_Servo *gripper;
     Gripper_EPM *gripper_epm;
