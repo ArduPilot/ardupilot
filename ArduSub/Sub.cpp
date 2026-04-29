@@ -466,6 +466,24 @@ void Sub::rc_loop()
 }
 #endif
 
+#if AP_SCRIPTING_ENABLED
+// set target position and velocity, alt frame is Location::AltFrame::ABOVE_ORIGIN
+bool Sub::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, Location::AltFrame alt_frame)
+{
+    // exit if the vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    // dest_z_m is either distance above the origin (the water surface) or the distance to the seafloor, depending on the altitude frame
+    const auto dest_z_m = alt_frame == Location::AltFrame::ABOVE_ORIGIN ? -target_pos_ned_m.z : target_pos_ned_m.z;
+    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, dest_z_m * 100.0f);
+    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
+
+    return mode_guided.guided_set_destination_posvel(pos_neu_cm, vel_neu_cms, alt_frame);
+}
+#endif  // AP_SCRIPTING_ENABLED
+
 Sub *Sub::_singleton = nullptr;
 
 Sub sub;
