@@ -41,7 +41,8 @@ void AP_DAL_InertialSensor::start_frame()
             RISI.get_delta_angle_ret = ins.get_delta_angle(i, RISI.delta_angle, RISI.delta_angle_dt);
         }
 
-        RISI.low_drift = ins.is_low_drift(i);
+        RISI.gyro_bias_limit = ins.get_gyro_bias_limit_rads(i);
+        RISI.gyro_bias_init_dps = ins.get_gyro_bias_init_dps(i);
 
         update_filtered(i);
 
