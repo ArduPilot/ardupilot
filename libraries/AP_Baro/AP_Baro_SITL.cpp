@@ -17,8 +17,11 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
 {
     if (_sitl != nullptr) {
         _instance = _frontend.register_sensor();
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
+    // If specific gravity is set, treat this as an underwater sensor
+    if (_frontend.get_specific_gravity() > 0.0f) {
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
+    }
 #endif
         set_bus_id(_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SITL, 0, _instance, DEVTYPE_BARO_SITL));
         hal.scheduler->register_timer_process(FUNCTOR_BIND(this, &AP_Baro_SITL::_timer, void));
@@ -51,6 +54,8 @@ void AP_Baro_SITL::temperature_adjustment(float &p, float &T)
 
 void AP_Baro_SITL::_timer()
 {
+    float p = 0.0f;
+    float T = 0.0f;
 
     // 100Hz
     const uint32_t now = AP_HAL::millis();
@@ -117,16 +122,25 @@ void AP_Baro_SITL::_timer()
         sim_alt = _buffer[best_index].data;
     }
 
-#if !APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    float p, T_K;
+#if !APM_BUILD_TYPE(APM_BUILD_ArduSub) && !APM_BUILD_TYPE(APM_BUILD_Rover)
+    float T_K;
     AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, T_K);
-    float T = KELVIN_TO_C(T_K);
+    T = KELVIN_TO_C(T_K);
     temperature_adjustment(p, T);
 #else
-    float rho, delta, theta;
-    AP_Baro::SimpleUnderWaterAtmosphere(-sim_alt * 0.001f, rho, delta, theta);
-    float p = SSL_AIR_PRESSURE * delta;
-    float T = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
+    // Use this only when actually underwater
+    if (_frontend.get_specific_gravity() > 0.0f && sim_alt <= 0.0f) {
+        float rho, delta, theta;
+        AP_Baro::SimpleUnderWaterAtmosphere(-sim_alt * 0.001f, rho, delta, theta);
+        p = SSL_AIR_PRESSURE * delta;
+        T = KELVIN_TO_C(SSL_AIR_TEMPERATURE * theta);
+    } else {
+        // For standard Rovers, or when the vehicle is above sea level
+        float T_K_fallback;
+        AP_Baro::get_pressure_temperature_for_alt_amsl(sim_alt, p, T_K_fallback);
+        T = KELVIN_TO_C(T_K_fallback);
+        temperature_adjustment(p, T);
+    }
 #endif
 
     // add in correction for wind effects

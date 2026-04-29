@@ -7496,6 +7496,7 @@ return update()
         ret = super(AutoTestRover, self).tests()
 
         ret.extend([
+            self.WaterBaroParams,
             self.MAVProxy_SetModeUsingSwitch,
             self.HIGH_LATENCY2,
             self.MAVProxy_SetModeUsingMode,
@@ -7629,3 +7630,17 @@ return update()
 
     def default_mode(self):
         return 'MANUAL'
+
+    def WaterBaroParams(self):
+        '''Test water barometer recognition and depth reporting for Rover'''
+        self.progress("Testing Water Barometer support")
+
+        # Set density and reboot to trigger the new probe logic
+        self.set_parameter("BARO_SPEC_GRAV", 1.024)
+        self.reboot_sitl()
+
+        # Add this delay to let the SITL fully boot before RC is checked
+        self.delay_sim_time(5)
+
+        self.progress("Wait for barometer depth reading")
+        self.wait_altitude(1580, 1590, relative=False)
