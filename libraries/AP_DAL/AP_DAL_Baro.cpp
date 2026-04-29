@@ -7,6 +7,9 @@ AP_DAL_Baro::AP_DAL_Baro()
 {
     for (uint8_t i=0; i<BARO_MAX_INSTANCES; i++) {
         _RBRI[i].instance = i;
+#if AP_BARO_POSITION_COMPENSATION_ENABLED
+        _RBRJ[i].instance = i;
+#endif // AP_BARO_POSITION_COMPENSATION_ENABLED
     }
 }
 
@@ -26,6 +29,12 @@ void AP_DAL_Baro::start_frame()
         RBRI.healthy = baro.healthy(i);
         RBRI.altitude = baro.get_altitude(i);
         WRITE_REPLAY_BLOCK_IFCHANGED(RBRI, _RBRI[i], old);
+#if AP_BARO_POSITION_COMPENSATION_ENABLED
+        log_RBRJ &RBRJ = _RBRJ[i];
+        log_RBRJ old_rbrj = RBRJ;
+        RBRJ.pos_offset = baro.get_baro_pos_offset();
+        WRITE_REPLAY_BLOCK_IFCHANGED(RBRJ, _RBRJ[i], old_rbrj);
+#endif // AP_BARO_POSITION_COMPENSATION_ENABLED
     }
 }
 
