@@ -1,5 +1,41 @@
 ArduPilot Sub Release Notes:
 ------------------------------------------------------------------
+Release 4.7.0-beta4 30-Apr-2026
+
+Changes from 4.7.0-beta3
+
+1) Board specific changes
+
+- VUAV-TinyV7 board added (@viewpro-caijie, PR:32058)
+
+2) Driver changes
+
+- LSM6DSV16X IMU from ST is now supported (@zebulon-86, PR:32574)
+- MMP581 driver handles data corruption better (@peterbarker, PR:32171)
+
+3) Library changes
+
+- AC_PID: NTF and NEF parameters metadata includes 0 as a valid value (@IamPete1, PR:32898)
+- AC_WPNav: BendyRuler altitude bug fixed (@hunt0r, PR:32892)
+- AP_Arming: E-stop value is taken into account (@IamPete1, PR:32705)
+- AP_GPS: SBF driver improvement in Do Not Use values (@UAVcihang, PR:32642)
+- AP_Math: S-Curve bugs fixed (@lthall, PR: 32730)
+- RC_Channel: RCx_PROTOCOLS metadata updated with SITLUDP option (@peterbarker, PR:32778)
+
+4) Plane specific changes
+
+- AP_IOMCU: Throttle will not output on failsafe while disarmed (@IamPete1, PR:32912)
+
+5) Sub specific changes
+
+- Lights servo channels defaults fixed (@ES-Alexander, PR:32764)
+- Remote leak detector MAVLink interface support added (@ES-Alexander, PR:32614)
+
+6) Rover specific changes
+
+- Power limiting UX improved (@stephendade, PR:32788)
+
+------------------------------------------------------------------
 Release 4.7.0-beta3 10-Apr-2026
 
 Changes from 4.7.0-beta2
