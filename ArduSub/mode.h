@@ -278,6 +278,7 @@ public:
     float get_auto_heading();
     void guided_limit_clear();
     void set_auto_yaw_mode(autopilot_yaw_mode yaw_mode);
+    void set_vel_NED_ms(const Vector3f& vel_ned_ms);
 
 protected:
 
