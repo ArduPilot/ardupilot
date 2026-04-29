@@ -5288,6 +5288,139 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def SurfaceTracking2(self):
+        """test the AP_SurfaceDistance library parameters"""
+
+        def restore_offset(steps):
+            """Gradually restore SIM_SONAR_OFFSET back to 0."""
+            initial_value = self.get_parameter("SIM_SONAR_OFFSET")
+            for i in range(steps):
+                self.set_parameter("SIM_SONAR_OFFSET", initial_value*(steps-1-i)/steps)
+
+        self.context_push()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        samples_default = self.get_parameter("SURFDSTD_GLSAM")
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.takeoff(15, takeoff_throttle=1700, mode="LOITER")
+        alt_initial = self.get_altitude()
+        glitch_offset = 1
+
+        self.progress("*** Testing normal glitch procedure.")
+        threshold = self.get_parameter("SURFDSTD_GLDST")
+        # Glitch it below the threshold, observe that the reading is not rejected and there is no reset.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold-glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.assert_altitude(alt_initial + (threshold - glitch_offset), accuracy=0.5)
+        restore_offset(10)
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+
+        # Glitch it over the threshold, observe there is reset.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # Vehicle doesn't change altitude, because the rangefinder off set has been reset.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+        restore_offset(10)
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.assert_altitude(alt_initial - (threshold + glitch_offset), accuracy=0.5)
+
+        self.progress("*** Testing that the glitch threshold can be extended.")
+        alt_initial = self.get_altitude()
+        # Increase the threshold.
+        # The threshold is extended by glitch_offset+1, which means that if the parameter doesn't work, 
+        # both cases below would trigger a reset.
+        self.set_parameter("SURFDSTD_GLDST", threshold+glitch_offset+1)
+        threshold = self.get_parameter("SURFDSTD_GLDST")
+        # Glitch it below the threshold, observe that the reading is not rejected and there is no reset.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold-glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.assert_altitude(alt_initial + (threshold - glitch_offset), accuracy=0.5)
+        restore_offset(10)
+        self.delay_sim_time(5) # Wait for the vehicle to stabilize again.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+
+        # Glitch it over the threshold, observe there is reset.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+        restore_offset(10)
+        self.delay_sim_time(5) # Wait for the vehicle to stabilize again.
+        self.assert_altitude(alt_initial - (threshold + glitch_offset), accuracy=0.5)
+
+        self.progress("*** Testing that the glitch reset can be disabled.")
+        alt_initial = self.get_altitude()
+        self.set_parameter("SURFDSTD_GLSAM", 0)  # Disable resetting.
+        # Glitch it above the threshold, observe that the reading is rejected and there is no reset.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.assert_altitude(alt_initial, accuracy=0.5)  # The aircraft should reject the measurements and not climb.
+        restore_offset(10)
+        self.delay_sim_time(5) # Wait for the vehicle to stabilize again.
+        self.assert_altitude(alt_initial, accuracy=0.5)  # The aircraft should have maintained the same altitude reference.
+        self.set_parameter("SURFDSTD_GLSAM", samples_default)  # Restore the default value.
+
+        self.do_RTL()
+        self.reboot_sitl()
+        self.context_pop()
+
+    def SurfaceTrackingCornerCases(self):
+        """test the AP_SurfaceDistance library behaviour under real-life corner-cases"""
+
+        def restore_offset(steps):
+            """Gradually restore SIM_SONAR_OFFSET back to 0."""
+            initial_value = self.get_parameter("SIM_SONAR_OFFSET")
+            for i in range(steps):
+                self.set_parameter("SIM_SONAR_OFFSET", initial_value*(steps-1-i)/steps)
+
+        self.context_push()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        samples_default = self.get_parameter("SURFDSTD_GLSAM")
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.takeoff(15, takeoff_throttle=1700, mode="LOITER")
+        alt_initial = self.get_altitude()
+        glitch_offset = 1
+        # Test cases of real-life.
+        self.progress("*** Fly over building and come back.")
+        # This is the same as the first test, but made explicit for the real-life use-case.
+        # Assumption: The building is lower than the glitch distance threshold.
+        threshold = self.get_parameter("SURFDSTD_GLDST")
+        # Fly over the building, clipping the side-wall abruptly, the rangefinder reading reduces.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold-glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # This should result in increase of altitude.
+        self.assert_altitude(alt_initial + (threshold - glitch_offset), accuracy=0.5)
+        # Fly off the building. The vertical wall is scanned by the beam, resulting in gradual reading increase.
+        restore_offset(10)
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # We should be once again at the original altitude.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+
+        self.progress("*** Fly with interference from an underslung tether.")
+        threshold = self.get_parameter("SURFDSTD_GLDST")
+        # Disable reference resets, we expect a lot of false glitches, due to cable interference.
+        self.set_parameter("SURFDSTD_GLSAM", 0)
+        # The tether moves in the FOV of the sensor.
+        self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # The vehicle should reject the reading and keep still.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+        # The tether moves out of the FOV of the sensor.
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        # We should still be at the same altitude.
+        self.assert_altitude(alt_initial, accuracy=0.5)
+        self.set_parameter("SURFDSTD_GLSAM", samples_default)  # Restore the default value.
+
+        self.do_RTL()
+        self.reboot_sitl()
+        self.context_pop()
+
     def test_rangefinder_switchover(self):
         """test that the EKF correctly handles the switchover between baro and rangefinder"""
         self.set_analog_rangefinder_parameters()
@@ -13616,6 +13749,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RangeFinder,
              self.BaroDrivers,
              self.SurfaceTracking,
+             self.SurfaceTracking2,
+             self.SurfaceTrackingCornerCases,
              self.Parachute,
              self.ParameterChecks,
              self.ManualThrottleModeChange,

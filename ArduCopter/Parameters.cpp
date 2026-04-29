@@ -1169,6 +1169,14 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Increment: 0.1
     AP_GROUPINFO("PILOT_TKO_ALT_M", 20, ParametersG2, pilot_takeoff_alt_m, PILOT_TKO_ALT_M_DEFAULT),
 
+    // @Group: SURFDSTD__
+    // @Path: ../libraries/AP_SurfaceDistance/AP_SurfaceDistance.cpp
+    AP_SUBGROUPPTR(surface_distance_down_ptr, "SURFDSTD_", 21, ParametersG2, AP_SurfaceDistance),
+
+    // @Group: SURFDSTD__
+    // @Path: ../libraries/AP_SurfaceDistance/AP_SurfaceDistance.cpp
+    AP_SUBGROUPPTR(surface_distance_up_ptr, "SURFDSTU_", 22, ParametersG2, AP_SurfaceDistance),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1238,6 +1246,8 @@ ParametersG2::ParametersG2(void) :
 #if MODE_POSHOLD_ENABLED
     ,mode_poshold_ptr(&copter.mode_poshold)
 #endif
+    ,surface_distance_down_ptr(&copter.rangefinder_state)
+    ,surface_distance_up_ptr(&copter.rangefinder_up_state)
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
