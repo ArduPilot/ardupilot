@@ -622,16 +622,16 @@ void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
 
     // convert thrust to ground speed
     packet.thrust = constrain_float(packet.thrust, -1.0f, 1.0f);
-    const float target_speed = rover.control_mode->get_speed_default() * packet.thrust;
+    const float target_velocity = rover.control_mode->get_speed_default() * packet.thrust;
 
     // if the body_yaw_rate field is ignored, convert quaternion to heading
     if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_YAW_RATE_IGNORE) != 0) {
         // convert quaternion to heading
         float target_heading_cd = degrees(Quaternion(packet.q[0], packet.q[1], packet.q[2], packet.q[3]).get_euler_yaw()) * 100.0f;
-        rover.mode_guided.set_desired_heading_and_speed(target_heading_cd, target_speed);
+        rover.mode_guided.set_desired_heading_and_velocity(target_heading_cd, target_velocity);
     } else {
         // use body_yaw_rate field
-        rover.mode_guided.set_desired_turn_rate_and_speed((RAD_TO_DEG * packet.body_yaw_rate) * 100.0f, target_speed);
+        rover.mode_guided.set_desired_turn_rate_and_velocity((RAD_TO_DEG * packet.body_yaw_rate) * 100.0f, target_velocity);
     }
 }
 
@@ -713,7 +713,7 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
     if (!vel_ignore) {
         const float speed_max = rover.control_mode->get_speed_default();
         // convert vector length into a speed
-        target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), -speed_max, speed_max);
+        target_speed = constrain_float(safe_sqrt(sq(packet.vx) + sq(packet.vy)), 0.0f, speed_max);
         // convert vector direction to target yaw
         target_yaw_cd = degrees(atan2f(packet.vy, packet.vx)) * 100.0f;
 
@@ -766,19 +766,19 @@ void GCS_MAVLINK_Rover::handle_set_position_target_local_ned(const mavlink_messa
 
     if (!vel_ignore && yaw_ignore && yaw_rate_ignore) {
         // consume velocity
-        rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
+        rover.mode_guided.set_desired_heading_and_velocity(target_yaw_cd, speed_dir * target_speed);
     } else if (!vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume velocity and turn rate
-        rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
+        rover.mode_guided.set_desired_turn_rate_and_velocity(target_turn_rate_cds, speed_dir * target_speed);
     } else if (!vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume velocity and heading
-        rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
+        rover.mode_guided.set_desired_heading_and_velocity(target_yaw_cd, speed_dir * target_speed);
     } else if (vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume just target heading (probably only skid steering vehicles can do this)
-        rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
+        rover.mode_guided.set_desired_heading_and_velocity(target_yaw_cd, 0.0f);
     } else if (vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume just turn rate (probably only skid steering vehicles can do this)
-        rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
+        rover.mode_guided.set_desired_turn_rate_and_velocity(target_turn_rate_cds, 0.0f);
     }
 }
 
@@ -876,19 +876,19 @@ void GCS_MAVLINK_Rover::handle_set_position_target_global_int(const mavlink_mess
 
     if (!vel_ignore && yaw_ignore && yaw_rate_ignore) {
         // consume velocity
-        rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
+        rover.mode_guided.set_desired_heading_and_velocity(target_yaw_cd, speed_dir * target_speed);
     } else if (!vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume velocity and turn rate
-        rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, speed_dir * target_speed);
+        rover.mode_guided.set_desired_turn_rate_and_velocity(target_turn_rate_cds, speed_dir * target_speed);
     } else if (!vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume velocity
-        rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, speed_dir * target_speed);
+        rover.mode_guided.set_desired_heading_and_velocity(target_yaw_cd, speed_dir * target_speed);
     } else if (vel_ignore && !yaw_ignore && yaw_rate_ignore) {
         // consume just target heading (probably only skid steering vehicles can do this)
-        rover.mode_guided.set_desired_heading_and_speed(target_yaw_cd, 0.0f);
+        rover.mode_guided.set_desired_heading_and_velocity(target_yaw_cd, 0.0f);
     } else if (vel_ignore && yaw_ignore && !yaw_rate_ignore) {
         // consume just turn rate(probably only skid steering vehicles can do this)
-        rover.mode_guided.set_desired_turn_rate_and_speed(target_turn_rate_cds, 0.0f);
+        rover.mode_guided.set_desired_turn_rate_and_velocity(target_turn_rate_cds, 0.0f);
     }
 }
 

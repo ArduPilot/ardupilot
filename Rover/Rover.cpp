@@ -185,7 +185,7 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_t
     const float target_yaw_cd = degrees(atan2f(vel_ned_ms.y, vel_ned_ms.x)) * 100.0f;
 
     // send target heading and speed
-    mode_guided.set_desired_heading_and_speed(target_yaw_cd, target_speed_ms);
+    mode_guided.set_desired_heading_and_velocity(target_yaw_cd, target_speed_ms);
 
     return true;
 }
@@ -220,7 +220,7 @@ bool Rover::set_desired_turn_rate_and_speed(float turn_rate_degs, float speed_ms
     }
 
     // set turn rate and speed. Turn rate is expected in centidegrees/s and speed in meters/s
-    mode_guided.set_desired_turn_rate_and_speed(turn_rate_degs * 100.0f, speed_ms);
+    mode_guided.set_desired_turn_rate_and_velocity(turn_rate_degs * 100.0f, speed_ms);
     return true;
 }
 
