@@ -39,7 +39,8 @@
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
     LOG_RBOH_MSG, \
-    LOG_RTER_MSG
+    LOG_RTER_MSG, \
+    LOG_RHGT_MSG
 
 // @LoggerMessage: RFRH
 // @Description: Replay FRame Header
@@ -581,6 +582,14 @@ struct log_RBOH {
     uint8_t _end;
 };
 
+// @LoggerMessage: RHGT
+// @Description: Replay resetHeightDatum event with origin-altitude tolerance (EKF3)
+// @Field: Tol: max divergence between EKF origin alt and GPS alt for full reset (m); negative disables the check
+struct log_RHGT {
+    float origin_alt_tolerance_m;
+    uint8_t _end;
+};
+
 // @LoggerMessage: RTER
 // @Description: Replay Terrain SRTM Altitude
 // @Field: Alt: altitude above origin in meters
@@ -657,4 +666,6 @@ struct log_RTER {
     { LOG_RBOH_MSG, RLOG_SIZE(RBOH),                                   \
       "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" }, \
     { LOG_RTER_MSG, RLOG_SIZE(RTER),                                   \
-      "RTER", "f", "Alt", "m", "0" },
+      "RTER", "f", "Alt", "m", "0" }, \
+    { LOG_RHGT_MSG, RLOG_SIZE(RHGT),                                  \
+      "RHGT", "f", "Tol", "m", "0" },

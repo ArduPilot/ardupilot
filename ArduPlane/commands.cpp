@@ -122,15 +122,20 @@ bool Plane::update_home()
     if (hal.util->was_watchdog_armed()) {
         return false;
     }
-    if ((g2.home_reset_threshold == -1) ||
-        ((g2.home_reset_threshold > 0) &&
-         (fabsf(barometer.get_altitude()) > g2.home_reset_threshold))) {
-        // don't auto-update if we have changed barometer altitude
-        // significantly. This allows us to cope with slow baro drift
-        // but not re-do home and the baro if we have changed height
-        // significantly
+    if (g2.home_reset_threshold == -1) {
         return false;
     }
+
+    // HOME_RESET_ALT sets the EKF origin-vs-GPS altitude tolerance
+    // for resetHeightDatum (0 uses a 10 m default).  The EKF falls
+    // back to a partial reset (baro recalibration only) when the
+    // user-set origin altitude diverges from current GPS altitude
+    // by more than the tolerance; that preserves AMSL consistency
+    // for cases where AHRS_ORIGIN_ALT or MAV_CMD_DO_SET_GLOBAL_ORIGIN
+    // anchored the origin away from current physical altitude.
+    const float origin_alt_tolerance_m = (g2.home_reset_threshold > 0) ?
+        (float)g2.home_reset_threshold : 10.0f;
+
     bool ret = false;
     if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS_FixType::FIX_3D) {
         Location loc;
@@ -149,7 +154,7 @@ bool Plane::update_home()
     // even if home is not updated we do a baro reset to stop baro
     // drift errors while disarmed
     barometer.update_calibration();
-    ahrs.resetHeightDatum();
+    ahrs.resetHeightDatum(origin_alt_tolerance_m);
 
     update_current_loc();
 

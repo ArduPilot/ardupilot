@@ -362,9 +362,10 @@ void NavEKF3_core::ResetHeight(void)
     vertVelVarClipCounter = 0;
 }
 
-// Zero the EKF height datum
-// Return true if the height datum reset has been performed
-bool NavEKF3_core::resetHeightDatum(void)
+// Reset the EKF height datum and clear accumulated baro drift.
+// origin_alt_tolerance_m: see NavEKF3::resetHeightDatum declaration.
+// Return true if the height datum reset has been performed.
+bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
 {
     if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
         // only allow resets when on the ground.
@@ -374,47 +375,86 @@ bool NavEKF3_core::resetHeightDatum(void)
     }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
-    // reset the barometer so that it reads zero at the current height
-    dal.baro().update_calibration();
 
-    // clear the baro data buffer
+    // Decide between a full reset (zero position.z, snap ekfGpsRefHgt
+    // to current GPS) and a partial reset (recalibrate baro and flush
+    // baro buffer only).  A full reset is only safe when EKF_origin.alt
+    // is consistent with current GPS altitude; if the user has set
+    // origin altitude far from physical altitude (AHRS_ORIGIN_ALT,
+    // MAV_CMD_DO_SET_GLOBAL_ORIGIN), zeroing position.z would break
+    // AMSL consistency once GPS fusion drives position.z to track the
+    // origin/GPS alt offset.  In that case the EKF position state is
+    // already correct (it tracks the offset); only baro needs a refresh.
+    bool full_reset = true;
+    if (origin_alt_tolerance_m >= 0 && validOrigin && gpsGoodToAlign) {
+        const float gps_origin_diff_m = fabsf(0.01f *
+            (float)(dal.gps().location().alt - EKF_origin.alt));
+        if (gps_origin_diff_m > origin_alt_tolerance_m) {
+            full_reset = false;
+        }
+    }
+
+    // Always: reset the barometer so that it reads zero at the current
+    // height, and discard any pre-recalibration samples still in the
+    // observation buffer (they would otherwise be fused as delayed
+    // observations and produce an altitude transient).
+    dal.baro().update_calibration();
     storedBaro.reset();
 
-    // reset the vertical position and velocity states
-    stateStruct.position.z = 0.0f;
-    stateStruct.velocity.z = 0.0f;
-    for (uint8_t i=0; i<imu_buffer_length; i++) {
-        storedOutput[i].position.z = stateStruct.position.z;
-        storedOutput[i].velocity.z = stateStruct.velocity.z;
-    }
-    outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
-    outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
-    vertCompFiltState.vel = outputDataNew.velocity.z;
-
-    // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
-    // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
-    // reads 0 and position.z is 0 so the steady-state offset is 0;
-    // without this, hgtMea = baroDataDelayed.hgt - baroHgtOffset
-    // would feed a non-zero observation into the EKF for the ~1 s
-    // the filter takes to relax, producing a post-reset altitude
-    // transient.
-    baroHgtOffset = 0.0f;
-
-    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
-    if (validOrigin) {
-        if (!gpsGoodToAlign) {
-            // if we don't have GPS lock then we shouldn't be doing a
-            // resetHeightDatum, but if we do then the best option is
-            // to maintain the old error
-            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
-        } else {
-            // if we have a good GPS lock then reset to the GPS
-            // altitude. This ensures the reported AMSL alt from
-            // getLLH() is equal to GPS altitude, while also ensuring
-            // that the relative alt is zero
-            EKF_origin.copy_alt_from(dal.gps().location());
+    if (full_reset) {
+        // reset the vertical position and velocity states
+        stateStruct.position.z = 0.0f;
+        stateStruct.velocity.z = 0.0f;
+        for (uint8_t i=0; i<imu_buffer_length; i++) {
+            storedOutput[i].position.z = stateStruct.position.z;
+            storedOutput[i].velocity.z = stateStruct.velocity.z;
         }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+        outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
+        outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+        vertCompFiltState.vel = outputDataNew.velocity.z;
+
+        // baroHgtOffset (calcFiltBaroOffset) is a slow first-order
+        // filter tracking baroDataDelayed.hgt + position.z.  Post-reset
+        // baro reads 0 and position.z is 0, so the steady-state offset
+        // is 0.  Without this, hgtMea = baroDataDelayed.hgt -
+        // baroHgtOffset would feed a non-zero observation into the EKF
+        // for the ~1 s the filter takes to relax, producing a post-reset
+        // altitude transient.
+        baroHgtOffset = 0.0f;
+
+        // shift the WGS-84 reference height so that getLLH() reports the
+        // same AMSL before and after the reset.  EKF_origin.alt itself
+        // is left unchanged -- it is the NED reference frame anchor and
+        // must be immutable once set, otherwise a user-configured origin
+        // (set via AHRS_ORIGIN parameters or MAV_CMD_DO_SET_GLOBAL_ORIGIN)
+        // gets corrupted.
+        if (validOrigin) {
+            if (!gpsGoodToAlign) {
+                // without GPS (e.g. indoor / GPS-denied flight), preserve
+                // the pre-reset height estimate by carrying it into
+                // ekfGpsRefHgt.  Any baro drift that had accumulated in
+                // position.z is absorbed into the reference height; we
+                // have no independent truth source to correct it against.
+                ekfGpsRefHgt += (double)oldHgt;
+            } else {
+                // with a good GPS lock, reset ekfGpsRefHgt to GPS
+                // altitude so the reported AMSL alt from getLLH() is
+                // equal to GPS altitude post-reset.
+                ekfGpsRefHgt = (double)0.01 * (double)dal.gps().location().alt;
+            }
+        }
+    } else {
+        // Partial reset: leave position.z, velocity.z, and the output
+        // observer chain alone -- they are correctly tracking the
+        // GPS-vs-origin altitude offset.  Leave ekfGpsRefHgt anchored
+        // to EKF_origin.alt so AMSL reporting stays consistent with the
+        // user-set origin.  Snap baroHgtOffset to where the slow filter
+        // would converge (calcFiltBaroOffset target is
+        // baroDataDelayed.hgt + position.z; baro just got recalibrated
+        // to 0, so target = position.z) so baro fusion does not pull
+        // position.z away from the GPS-anchored value during the ~1 s
+        // the filter would otherwise take to relax.
+        baroHgtOffset = stateStruct.position.z;
     }
 
     // set the terrain state to zero (on ground). The adjustment for

@@ -1097,6 +1097,15 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("FSTRATE_DIV", 10, ParametersG2, att_decimation, 1),
 #endif
 
+    // @Param: HGT_RESET_ALT
+    // @DisplayName: Height Datum Reset Altitude Threshold
+    // @Description: At re-arm (when home is set but not locked) the EKF height datum is reset to clear any baro temperature drift accumulated while disarmed. This parameter caps how far the altitude above the EKF origin can be before that reset is suppressed: -1 disables the reset entirely; 0 always resets; >0 suppresses the reset when |altitude-above-origin| exceeds the value, preserving AMSL accuracy after the vehicle has been moved or flown to a different elevation.
+    // @Values: -1:Never reset,0:Always reset
+    // @Range: -1 127
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("HGT_RESET_ALT", 59, ParametersG2, hgt_reset_threshold, 10),
+
 #if AP_RC_TRANSMITTER_TUNING_ENABLED
     // @Param: TUNE2_MIN
     // @DisplayName: Tuning minimum
