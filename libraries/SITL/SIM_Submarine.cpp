@@ -90,6 +90,9 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
         }
 
         float thrust = output * fabs(output) * frame_property.thrust; // approximate pwm to thrust function using a quadratic curve
+        if (is_negative(thrust) && !is_zero(sitl->thrust_asymmetry)) {
+            thrust *= sitl->thrust_asymmetry;
+        }
         body_accel += t.linear * thrust / frame_property.weight;
         rot_accel += t.rotational * thrust * frame_property.thruster_mount_radius / frame_property.moment_of_inertia;
     }

@@ -118,6 +118,14 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("12_DIRECTION", 13, AP_Motors6DOF, _motor_reverse[11], 1),
 
+    // @Param: ASYMMETRY
+    // @DisplayName: Motor thrust asymmetry
+    // @Description: Ratio of reverse to forward thrust at matching input magnitude. (Below 1: reverse is weaker than forward.) Controller will compensate for weaker by increasing reverse thrust magnitude (which may clip) and for stronger by reducing thrust magnitude.
+    // @Range: 0.5 2.0
+    // @Increment: 0.05
+    // @User: Standard
+    AP_GROUPINFO("ASYMMETRY", 14, AP_Motors6DOF, _thrust_asymmetry, 1.0f),
+
     AP_GROUPEND
 };
 
@@ -234,6 +242,18 @@ int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
     return 1500 + thrust_in * (thrust_in > 0 ? range_up : range_down);
 }
 
+// Scale thrust values to compensate for asymmetric forward/reverse motor output.
+// Ratio of reverse to forward thrust.
+// Controller will compensate for weaker by increasing reverse thrust magnitude (which may clip)
+// and for stronger by reducing thrust magnitude.
+float AP_Motors6DOF::compensate_for_thrust_asymmetry(float thrust_in) const
+{
+    if (is_negative(thrust_in) && is_positive(_thrust_asymmetry.get())) {
+        return constrain_float(thrust_in / sqrtf(_thrust_asymmetry.get()), -1.0f, 1.0f);
+    }
+    return thrust_in;
+}
+
 void AP_Motors6DOF::output_to_motors()
 {
     int8_t i;
@@ -263,7 +283,8 @@ void AP_Motors6DOF::output_to_motors()
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = calc_thrust_to_pwm(_thrust_rpyt_out[i]);
+                const float thrust_adjusted = compensate_for_thrust_asymmetry(_thrust_rpyt_out[i]);
+                motor_out[i] = calc_thrust_to_pwm(thrust_adjusted);
             }
         }
         break;
