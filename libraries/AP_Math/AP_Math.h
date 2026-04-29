@@ -167,6 +167,14 @@ template <typename T>
 T wrap_PI(const T radian);
 
 /*
+ * wrap an angle in radians to -2PI..2PI
+ */
+inline ftype wrap_neg2PI_2PI(const ftype radian) 
+{
+    return fmodF(radian, M_2PI);
+}
+
+/*
  * Constrain a value to be within the range: low and high
  */
 template <typename T>
