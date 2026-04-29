@@ -4,13 +4,16 @@ local LOOP_MS = 100 -- Run at 10Hz
 
 -- 1. SETUP PARAMETER TABLE
 local KEY = 110
-assert(param:add_table(KEY, "AUTOB_", 4), "AUTOB table failed")
+assert(param:add_table(KEY, "AUTOB_", 7), "AUTOB table failed")
 
 -- 2. ADD PARAMETERS
 assert(param:add_param(KEY, 1,  "PIT_LIM", 40),'could not add AUTOB_PIT_LIM')    -- Pitch limit
 assert(param:add_param(KEY, 2, "ENABLE", 1),'could not add AUTOB_ENABLE')    -- 1 = Enabled
 assert(param:add_param(KEY, 3, "MODE_DLY", 1000), 'could not add AUTOB_MODE_DLY') -- Delay (ms) before checking pitch
 assert(param:add_param(KEY, 4,"PIT_TOUT", 500),'could not add AUTOB_PIT_TOUT')
+assert(param:add_param(KEY, 5, "PARA_EN", 1),'could not add AUTOB_PARA_EN')    -- 1 = Enabled
+assert(param:add_param(KEY, 6,"PARA_ANG", -45),'could not add AUTOB_PARA_ANG')
+assert(param:add_param(KEY, 7,"PARA_TOUT", 200),'could not add AUTOB_PARA_TOUT')
 
 -- 3. BIND PARAMETERS
 local function bind_param(name)
@@ -25,6 +28,12 @@ local p_enable = bind_param("AUTOB_ENABLE")
 local p_pit_lim = bind_param("AUTOB_PIT_LIM")
 local p_mode_dly = bind_param("AUTOB_MODE_DLY")
 local p_pitch_timeout = bind_param("AUTOB_PIT_TOUT")
+local p_para_enable = bind_param("AUTOB_PARA_EN")
+local p_para_ang = bind_param("AUTOB_PARA_ANG")
+local p_para_timeout = bind_param("AUTOB_PARA_TOUT")
+
+-- Read Parachute trigger channel number from FCU parameter list 
+
 
 -- 4. MODE DEFINITIONS (ArduPlane)
 local MODE_QLOITER = 19 -- Auto-Hover (Functionally same as QLoiter 50% Thr)
@@ -35,6 +44,11 @@ local active = false
 local last_mode_idx = 0
 local mode_entry_time = 0
 local first_pitch_exceeded_t = nil
+
+-- Parachute state variables
+local trigger_para_script = false
+local first_para_pitch_exceeded_t = nil
+local PARA_CHAN_HIGH = 1850
 
 -- Helper: Radians to Degrees
 local function rad2deg(r) return r * 57.2958 end
@@ -50,9 +64,68 @@ function is_vehicle_landing()
     end
 end
 
+function is_parachute_angle_threshold_valid(threshold_angle)
+-- check if the threshold angle set by user is valid
+    ahrs_pitch_threshold_max = -40
+    ahrs_pitch_threshold_min = -50
+    if threshold_angle < ahrs_pitch_threshold_max and threshold_angle > ahrs_pitch_threshold_min then
+        return true
+    end
+    return false
+end
+
+function para_deploy()
+    if p_para_enable:get() ~= 1 then return end
+
+    para_trigger_rc_chan = nil
+    PARA_TRIG_CHAN = Parameter()
+    PARA_TRIG_CHAN:init('PARA_TRIG_CH')
+    if PARA_TRIG_CHAN then
+        channel_num = PARA_TRIG_CHAN:get()
+        -- gcs:send_text(2, "Channel num" .. tostring(channel_num))
+        para_trigger_rc_chan = rc:get_channel(channel_num)
+    end
+
+    if para_trigger_rc_chan == nil then
+        gcs:send_text(2, "AUTOB:Para rc channel is nil")
+        return
+    end
+    
+    para_threshold = p_para_ang:get() or -45
+    if not is_parachute_angle_threshold_valid(para_threshold) then
+        gcs:send_text(2, "AUTOB:AUTB_PARA_ANG invalid. Range(-40,-50)")    
+        return
+    end
+
+    now = millis():tofloat()
+    ahrs_pitch = rad2deg(ahrs:get_pitch() or 0)
+    para_ang_timeout = p_para_timeout:get() or 200
+    check_pitch = ahrs_pitch < para_threshold and (trigger_para_script == false) and quadplane:in_vtol_mode() and arming:is_armed()
+    if check_pitch then
+        if first_para_pitch_exceeded_t == nil then
+            first_para_pitch_exceeded_t = millis():tofloat()
+        else
+            para_time_diff = now - first_para_pitch_exceeded_t
+            if para_time_diff > para_ang_timeout then
+                first_para_pitch_exceeded_t = nil
+                trigger_para_script = true
+                gcs:send_text(2, "AUTOB:trigger parachute via rc override")
+            end
+        end
+    else
+        first_para_pitch_exceeded_t = nil
+    end
+    
+    if trigger_para_script then
+        para_trigger_rc_chan:set_override(PARA_CHAN_HIGH)
+    end
+end
+
 function update()
+    para_deploy()
+    if trigger_para_script then return  update, LOOP_MS end
+
     -- Safety Check
-    if not p_enable  then return update, 1000 end
     if p_enable:get() ~= 1 then return update, LOOP_MS end
 
     local current_mode = vehicle:get_mode()
@@ -108,4 +181,4 @@ function update()
 end
 
 gcs:send_text(6, "Airbound Lua: Autobailout script loaded")
-return update, LOOP_MS
+return update, 1000
