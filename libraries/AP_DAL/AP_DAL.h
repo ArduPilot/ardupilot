@@ -203,6 +203,10 @@ public:
         return _RFRN.touchdown_expected;
     }
 
+    bool get_hover_z_bias_enabled(void) const {
+        return _RFRN.hover_z_bias_enabled;
+    }
+
     // for EKF usage to enable takeoff expected to true
     void set_takeoff_expected();
 

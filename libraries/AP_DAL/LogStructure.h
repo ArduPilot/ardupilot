@@ -87,7 +87,7 @@ struct log_RFRN {
     uint8_t vehicle_class;
     uint8_t ekf_type;
     uint8_t armed:1;
-    uint8_t unused:1;  // was get_compass_is_null
+    uint8_t hover_z_bias_enabled:1;
     uint8_t fly_forward:1;
     uint8_t ahrs_airspeed_sensor_enabled:1;
     uint8_t opticalflow_enabled:1;
@@ -125,6 +125,7 @@ struct log_RISH {
 // @Field: DAZ: z-axis delta-angle
 // @Field: DVDT: delta-velocity-delta-time
 // @Field: DADT: delta-angle-delta-time
+// @Field: VRFBZ: vibration rectification Z-bias
 // @Field: Flags: use-accel, use-gyro, delta-vel-valid, delta-accel-valid
 // @Field: I: IMU instance
 struct log_RISI {
@@ -132,6 +133,7 @@ struct log_RISI {
     Vector3f delta_angle;
     float delta_velocity_dt;
     float delta_angle_dt;
+    float accel_vrf_bias_z;
     uint8_t use_accel:1;
     uint8_t use_gyro:1;
     uint8_t get_delta_velocity_ret:1;
@@ -615,7 +617,7 @@ struct log_RTER {
     { LOG_RISH_MSG, RLOG_SIZE(RISH),                                   \
       "RISH", "HBBfBB", "LR,PG,PA,LD,AC,GC", "------", "------" }, \
     { LOG_RISI_MSG, RLOG_SIZE(RISI),                                   \
-      "RISI", "ffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,Flags,I", "---------#", "----------" }, \
+      "RISI", "fffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,VRFBZ,Flags,I", "----------#", "-----------" }, \
     { LOG_RASH_MSG, RLOG_SIZE(RASH),                                   \
       "RASH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RASI_MSG, RLOG_SIZE(RASI),                                   \

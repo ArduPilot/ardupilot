@@ -1073,6 +1073,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
 #endif
 
+    // @Param: ACC_ZBIAS_LEARN
+    // @DisplayName: Accel Z-axis Bias Learning
+    // @Description: Bitmask to help the EKF converge on the correct accel Z bias faster after arming by using a previously learned vibration rectification offset. The EKF will still learn the correct bias in flight regardless of these settings, this just speeds up initial convergence. Only active when using EKF3 (AHRS_EKF_TYPE=3). Bit 0: Learn bias during hover and save to EEPROM on disarm. Bit 1: Apply saved bias as initial estimate on arm. Bit 2: Inhibit EKF accel bias learning while disarmed to prevent learning motors-off bias.
+    // @Bitmask: 0:Learn and Save,1:Use Saved Values,2:Inhibit Disarmed Learning
+    // @User: Advanced
+    AP_GROUPINFO("ACC_ZBIAS_LEARN", 21, ParametersG2, accel_zbias_learn, 0),
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.
