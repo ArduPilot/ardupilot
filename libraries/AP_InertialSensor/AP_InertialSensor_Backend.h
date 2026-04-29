@@ -317,9 +317,22 @@ protected:
         _imu._accel_orientation[instance] = rotation;
     }
 
-    // mark an IMU instance as low drift for EKF bias learning
-    void set_low_drift(uint8_t instance) {
-        _imu._low_drift_mask |= (1U<<instance);
+    // return the maximum allowed gyro bias for this sensor (rad/s).
+    // The EKF clamps its gyro bias state to this value.
+    virtual float gyro_bias_limit_rads() const {
+        return 0.5f;
+    }
+
+    // return the initial 1-sigma gyro bias uncertainty for this sensor (deg/s)
+    virtual float gyro_bias_init_dps() const {
+        return 2.5f;
+    }
+
+    // publish this backend's gyro bias metadata into the frontend's
+    // per-instance arrays so the EKF (via the DAL) can use it.
+    void set_gyro_bias_metadata(uint8_t instance) {
+        _imu._gyro_bias_limit_rads[instance] = gyro_bias_limit_rads();
+        _imu._gyro_bias_init_dps[instance] = gyro_bias_init_dps();
     }
 
     uint8_t get_gyro_instance() const {
