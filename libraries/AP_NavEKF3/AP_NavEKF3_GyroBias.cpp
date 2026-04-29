@@ -16,24 +16,18 @@ void NavEKF3_core::resetGyroBias(void)
 }
 
 /*
-   vehicle specific initial gyro bias uncertainty in deg/sec
+   sensor specific initial gyro bias 1-sigma uncertainty in deg/sec
  */
 ftype NavEKF3_core::InitialGyroBiasUncertainty(void) const
 {
-    if (dal.ins().is_low_drift(imu_index)) {
-        return 1.0f;
-    }
-    return 2.5f;
+    return dal.ins().get_gyro_bias_init_dps(imu_index);
 }
 
 /*
-   get the gyro bias limit for this core's IMU
+   get the gyro bias state clamp (rad/s) for this core's IMU
  */
 ftype NavEKF3_core::getGyroBiasLimit(void) const
 {
-    if (dal.ins().is_low_drift(imu_index)) {
-        return GYRO_BIAS_LIMIT_LOW_DRIFT;
-    }
-    return GYRO_BIAS_LIMIT;
+    return dal.ins().get_gyro_bias_limit(imu_index);
 }
 
