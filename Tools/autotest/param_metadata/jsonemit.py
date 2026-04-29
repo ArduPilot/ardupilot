@@ -32,7 +32,8 @@ class JSONEmit(Emit):
         # Copy content to avoid any modification
         g = copy.deepcopy(g)
 
-        self.content[g.name] = {}
+        if g.name not in self.content:
+            self.content[g.name] = {}
 
         # Check all params available
         for param in g.params:
