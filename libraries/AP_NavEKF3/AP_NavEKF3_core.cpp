@@ -564,6 +564,11 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
         inactiveBias[i].accel_bias.zero();
     }
 
+    // restore the navigation origin from the public origin if possible:
+    if (public_origin.initialised()) {
+        setOriginLLH(public_origin);
+    }
+
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
 
     // we initially return false to wait for the IMU buffer to fill
