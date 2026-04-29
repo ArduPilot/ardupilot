@@ -27,7 +27,7 @@ else
     if  [ ! `ls  esp_idf/install.sh 2>/dev/null` ]; then
         echo "found empty IDF, cloning"
         # add esp_idf as almost submodule, depths  uses less space
-        git clone -b 'release/v5.3'  https://github.com/espressif/esp-idf.git esp_idf
+        git clone -b 'release/v5.5'  https://github.com/espressif/esp-idf.git esp_idf
         git checkout $COMMIT
     fi
 fi
