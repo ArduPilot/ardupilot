@@ -1,0 +1,73 @@
+# hw definition file for processing by chibios_hwdef.py
+# for HAKRC H743-12S bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HAKRC_H743
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+MCU_CLOCKRATE_MHZ 480
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# order of UARTs (and USB) - only USB needed for DFU/normal bootload
+SERIAL_ORDER OTG1
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# SWD debug
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# Keep PINIO high so peripherals/VTX stay powered during bootloader
+PD10 PINIO1 OUTPUT HIGH
+PD11 PINIO2 OUTPUT HIGH
+
+# Bootloader LED
+PE3 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 1
+
+# Chip select pins (held high so shared SPI buses behave cleanly in BL)
+PC15 IMU1_CS    CS
+PC13 IMU2_CS    CS
+PE2  MAX7456_CS CS
+PD4  SD_CS      CS
+
+# ---------------- SD Card Firmware Flashing ----
+
+# FATFS / ChibiOS config required for FATFS
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
+# microSD support (SDMMC1)
+PC8  SDMMC1_D0  SDMMC1
+PC9  SDMMC1_D1  SDMMC1
+PC10 SDMMC1_D2  SDMMC1
+PC11 SDMMC1_D3  SDMMC1
+PC12 SDMMC1_CK  SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+
+define FATFS_HAL_DEVICE SDCD1
+
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+
+# allow the bootloader to flash firmware directly from SD card
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
