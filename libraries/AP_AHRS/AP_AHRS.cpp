@@ -714,13 +714,18 @@ void AP_AHRS::update_EKF2(void)
         if (!done_common_origin) {
             Location new_origin;
             if (EKF2.getOriginLLH(new_origin)) {
-                done_common_origin = true;
+                bool set_origin_success = true;
 #if HAL_NAVEKF3_AVAILABLE
-                EKF3.setOriginLLH(new_origin);
+                if (_ekf3_started) {
+                    set_origin_success &= EKF3.setOriginLLH(new_origin);
+                }
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
-                external.set_origin(new_origin);
+                if (external.initialised()) {
+                    set_origin_success &= external.set_origin(new_origin);
+                }
 #endif
+                done_common_origin = set_origin_success;
             }
         }
     }
@@ -798,13 +803,18 @@ void AP_AHRS::update_EKF3(void)
         if (!done_common_origin) {
             Location new_origin;
             if (EKF3.getOriginLLH(new_origin)) {
-                done_common_origin = true;
+                bool set_origin_success = true;
 #if HAL_NAVEKF2_AVAILABLE
-                EKF2.setOriginLLH(new_origin);
+                if (_ekf2_started) {
+                    set_origin_success &= EKF2.setOriginLLH(new_origin);
+                }
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
-                external.set_origin(new_origin);
+                if (external.initialised()) {
+                    set_origin_success &= external.set_origin(new_origin);
+                }
 #endif
+                done_common_origin = set_origin_success;
             }
         }
     }
@@ -827,13 +837,18 @@ void AP_AHRS::update_external(void)
     if (!done_common_origin) {
         Location new_origin;
         if (external.get_origin(new_origin)) {
-            done_common_origin = true;
+            bool set_origin_success = true;
 #if HAL_NAVEKF2_AVAILABLE
-            EKF2.setOriginLLH(new_origin);
+            if (_ekf2_started) {
+                set_origin_success &= EKF2.setOriginLLH(new_origin);
+            }
 #endif
 #if HAL_NAVEKF3_AVAILABLE
-            EKF3.setOriginLLH(new_origin);
+            if (_ekf3_started) {
+                set_origin_success &= EKF3.setOriginLLH(new_origin);
+            }
 #endif
+            done_common_origin = set_origin_success;
         }
     }
 }
