@@ -1115,6 +1115,7 @@ private:
     bool using_rate_thread;
 
 public:
+    void save_trim();
     void failsafe_check();      // failsafe.cpp
 };
 
