@@ -26,6 +26,7 @@
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
+#include "AP_ExternalAHRS_InertialSense.h"
 #include "AP_ExternalAHRS_SBG.h"
 #include "AP_ExternalAHRS_GSOF.h"
 #include "AP_ExternalAHRS_SensAItion.h"
@@ -61,7 +62,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: AHRS type
     // @Description: Type of AHRS device
-    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,6:Trimble GSOF,7:MicroStrain7,8:SBG,11:SensAItion
+    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,6:Trimble GSOF,7:MicroStrain7,8:SBG,11:SensAItion,12:InertialSense
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, HAL_EXTERNAL_AHRS_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
@@ -92,7 +93,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),
-    
+
     AP_GROUPEND
 };
 
@@ -144,6 +145,13 @@ void AP_ExternalAHRS::init(void)
         return;
 #endif
 
+#if AP_EXTERNAL_AHRS_INERTIALSENSE_ENABLED
+    case DevType::InertialSense:
+        DEV_PRINTF("Instantiating InertialSense...\r\n");
+        backend = NEW_NOTHROW AP_ExternalAHRS_InertialSense(this, state);
+        return;
+#endif
+
 #if AP_EXTERNAL_AHRS_SBG_ENABLED
     case DevType::SBG:
         backend = NEW_NOTHROW AP_ExternalAHRS_SBG(this, state);
@@ -152,6 +160,7 @@ void AP_ExternalAHRS::init(void)
 
     }
 
+    DEV_PRINTF("Unsupported ExternalAHRS type %u", unsigned(devtype));
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Unsupported ExternalAHRS type %u", unsigned(devtype));
 }
 
@@ -493,4 +502,3 @@ AP_ExternalAHRS &externalAHRS()
 };
 
 #endif  // AP_EXTERNAL_AHRS_ENABLED
-
