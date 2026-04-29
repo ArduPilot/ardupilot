@@ -13046,6 +13046,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
+    def DO_CHANGE_SPEED_FirstMissionItem(self):
+        '''DO_CHANGE_SPEED as the first AUTO mission item is executed when
+        the vehicle enters AUTO from Loiter mid-flight without NAV_TAKEOFF.
+        WP_SPD is set to a non-default value to exercise the AC_WPNav
+        speed parameter-change detection path.'''
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+                p1=1,  # groundspeed
+                p2=2,  # 2 m/s
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        self.set_parameter("WP_SPD", 5)
+
+        self.takeoff(10, mode='LOITER')
+        self.change_mode('AUTO')
+
+        self.wait_current_waypoint(2, timeout=30)
+        self.wait_groundspeed(
+            1.5, 2.5,
+            minimum_duration=5,
+            timeout=60,
+        )
+        self.wait_disarmed(timeout=300)
+
     def AUTO_LAND_TO_BRAKE(self):
         '''ensure terrain altitude is taken into account when braking'''
         self.set_parameters({
@@ -16635,6 +16663,7 @@ return update, 1000
             self.GroundEffectCompensation_touchDownExpected,
             self.GroundEffectCompensation_takeOffExpected,
             self.DO_CHANGE_SPEED,
+            self.DO_CHANGE_SPEED_FirstMissionItem,
             self.MISSION_START,
             self.AUTO_LAND_TO_BRAKE,
             self.WP_SPEED,
