@@ -41,6 +41,15 @@ public:
     }
 
     /*
+        Set trajectory targets.
+        All values are in earth-fixed NED frame. Pass NaN for any field to ignore it.
+    */
+    virtual bool set_local_position(const Vector3f &position_ned_m, const Vector3f &velocity_ned_ms,
+                                    const Vector3f &acceleration_ned_mss, float yaw_ned_rad, float yaw_rate_ned_rads, bool yaw_relative) WARN_IF_UNUSED {
+        return false;
+    }
+
+    /*
         Arm the vehicle
     */
     virtual bool arm(AP_Arming::Method method, bool do_arming_checks) WARN_IF_UNUSED;

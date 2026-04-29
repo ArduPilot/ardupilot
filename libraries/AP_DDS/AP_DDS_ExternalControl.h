@@ -6,6 +6,10 @@
 #include <AP_Arming/AP_Arming.h>
 #include <AP_Common/Location.h>
 
+#if AP_DDS_LOCAL_POSE_CTRL_ENABLED
+#include "ardupilot_msgs/msg/LocalPosition.h"
+#endif // AP_DDS_LOCAL_POSE_CTRL_ENABLED
+
 class AP_DDS_External_Control
 {
 public:
@@ -13,6 +17,9 @@ public:
     // https://ros.org/reps/rep-0147.html#goal-interface
     static bool handle_global_position_control(ardupilot_msgs_msg_GlobalPosition& cmd_pos);
     static bool handle_velocity_control(geometry_msgs_msg_TwistStamped& cmd_vel);
+#if AP_DDS_LOCAL_POSE_CTRL_ENABLED
+    static bool handle_local_position_control(ardupilot_msgs_msg_LocalPosition& cmd_pos);
+#endif // AP_DDS_LOCAL_POSE_CTRL_ENABLED
     static bool arm(AP_Arming::Method method, bool do_arming_checks);
     static bool disarm(AP_Arming::Method method, bool do_disarm_checks);
 

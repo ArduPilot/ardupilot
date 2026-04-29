@@ -5,8 +5,15 @@
 #include "AP_DDS_ExternalControl.h"
 #include "AP_DDS_Frames.h"
 #include <AP_AHRS/AP_AHRS.h>
-
+#include <AP_Math/quaternion.h>
 #include <AP_ExternalControl/AP_ExternalControl.h>
+
+// Yaw from quaternion ENU convention
+static float quat_to_yaw_enu(double qx, double qy, double qz, double qw)
+{
+    Quaternion q(static_cast<float>(qw), static_cast<float>(qx), static_cast<float>(qy), static_cast<float>(qz));
+    return q.get_euler_yaw();
+}
 
 bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_GlobalPosition& cmd_pos)
 {
@@ -56,7 +63,7 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
         Vector3f linear_velocity;
         Vector3f linear_velocity_base_link {
             float(cmd_vel.twist.linear.x),
-            float(cmd_vel.twist.linear.y),
+            float(-cmd_vel.twist.linear.y),
             float(-cmd_vel.twist.linear.z) };
 
         if (isnan(linear_velocity_base_link.y) && isnan(linear_velocity_base_link.z)) {
@@ -85,6 +92,172 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
 
     return false;
 }
+
+#if AP_DDS_LOCAL_POSE_CTRL_ENABLED
+bool AP_DDS_External_Control::handle_local_position_control(ardupilot_msgs_msg_LocalPosition& cmd_pos)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+    // TODO: currently odom frame is considered fixed to map frame
+    // TODO: DDS architecture should publish map to odom transform and odom to base_link transform
+
+    // Handle MAP (ENU) or ODOM (ENU) frames
+    if (strcmp(cmd_pos.header.frame_id, MAP_FRAME) == 0 || strcmp(cmd_pos.header.frame_id, ODOM_FRAME) == 0) {
+        Vector3p pos_ned_m;
+        // not allowing mixing of ignore flags
+        const bool pos_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_X | LocalPosition::IGNORE_Y | LocalPosition::IGNORE_Z)) == (LocalPosition::IGNORE_X | LocalPosition::IGNORE_Y | LocalPosition::IGNORE_Z);
+        const bool vel_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_VX | LocalPosition::IGNORE_VY | LocalPosition::IGNORE_VZ)) == (LocalPosition::IGNORE_VX | LocalPosition::IGNORE_VY | LocalPosition::IGNORE_VZ);
+        const bool acc_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_AFX | LocalPosition::IGNORE_AFY | LocalPosition::IGNORE_AFZ)) == (LocalPosition::IGNORE_AFX | LocalPosition::IGNORE_AFY | LocalPosition::IGNORE_AFZ);
+        const bool yaw_ignore = cmd_pos.type_mask & LocalPosition::IGNORE_YAW;
+        const bool yaw_rate_ignore = cmd_pos.type_mask & LocalPosition::IGNORE_YAW_RATE;
+
+        if (!pos_ignore) {
+            pos_ned_m = Vector3p{
+                postype_t(cmd_pos.pose.position.y),
+                postype_t(cmd_pos.pose.position.x),
+                -postype_t(cmd_pos.pose.position.z)
+            };
+        } else {
+            pos_ned_m = Vector3p{NAN, NAN, NAN};
+        }
+
+        Vector3f velocity_ned;
+        if (!vel_ignore) {
+            velocity_ned = Vector3f{
+                float(cmd_pos.twist.linear.y),
+                float(cmd_pos.twist.linear.x),
+                -float(cmd_pos.twist.linear.z)
+            };
+        } else {
+            velocity_ned = Vector3f{NAN, NAN, NAN};
+        }
+
+        Vector3f acceleration_ned;
+        if (!acc_ignore) {
+            acceleration_ned = Vector3f{
+                float(cmd_pos.accel.linear.y),
+                float(cmd_pos.accel.linear.x),
+                -float(cmd_pos.accel.linear.z)
+            };
+        } else {
+            acceleration_ned = Vector3f{NAN, NAN, NAN};
+        }
+
+        float yaw_ned = yaw_ignore ? NAN : (M_PI_2 - quat_to_yaw_enu(
+                                                cmd_pos.pose.orientation.x, cmd_pos.pose.orientation.y,
+                                                cmd_pos.pose.orientation.z, cmd_pos.pose.orientation.w));
+        float yaw_rate_ned = yaw_rate_ignore ? NAN : -float(cmd_pos.twist.angular.z);
+
+        return external_control->set_local_position(pos_ned_m.tofloat(), velocity_ned, acceleration_ned, yaw_ned, yaw_rate_ned, false);
+    }
+    // handle base_link frame (FLU) frame
+    else if (strcmp(cmd_pos.header.frame_id, BASE_LINK_FRAME_ID) == 0) {
+        Vector3p pos_ned_m;
+
+        const bool pos_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_X | LocalPosition::IGNORE_Y | LocalPosition::IGNORE_Z)) == (LocalPosition::IGNORE_X | LocalPosition::IGNORE_Y | LocalPosition::IGNORE_Z);
+        const bool vel_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_VX | LocalPosition::IGNORE_VY | LocalPosition::IGNORE_VZ)) == (LocalPosition::IGNORE_VX | LocalPosition::IGNORE_VY | LocalPosition::IGNORE_VZ);
+        const bool acc_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_AFX | LocalPosition::IGNORE_AFY | LocalPosition::IGNORE_AFZ)) == (LocalPosition::IGNORE_AFX | LocalPosition::IGNORE_AFY | LocalPosition::IGNORE_AFZ);
+        const bool yaw_ignore = cmd_pos.type_mask & LocalPosition::IGNORE_YAW;
+        const bool yaw_rate_ignore = cmd_pos.type_mask & LocalPosition::IGNORE_YAW_RATE;
+
+        if (!pos_ignore) {
+            // Convert FLU to FRD to NED
+            Vector3f pos_body_frd(
+                float(cmd_pos.pose.position.x),
+                -float(cmd_pos.pose.position.y),
+                -float(cmd_pos.pose.position.z)
+            );
+            auto &ahrs = AP::ahrs();
+            pos_ned_m = ahrs.body_to_earth(pos_body_frd).topostype();
+            Vector3p rel_pos_ned_m;
+            if (!ahrs.get_relative_position_NED_origin(rel_pos_ned_m)) {
+                return false;
+            }
+            pos_ned_m += rel_pos_ned_m;
+        } else {
+            pos_ned_m = Vector3p{NAN, NAN, NAN};
+        }
+
+        Vector3f velocity_ned;
+        if (!vel_ignore) {
+            Vector3f velocity_frd(
+                float(cmd_pos.twist.linear.x),
+                -float(cmd_pos.twist.linear.y),
+                -float(cmd_pos.twist.linear.z)
+            );
+            velocity_ned = AP::ahrs().body_to_earth(velocity_frd);
+        } else {
+            velocity_ned = Vector3f{NAN, NAN, NAN};
+        }
+
+        Vector3f acceleration_ned;
+        if (!acc_ignore) {
+            Vector3f acceleration_frd(
+                float(cmd_pos.accel.linear.x),
+                -float(cmd_pos.accel.linear.y),
+                -float(cmd_pos.accel.linear.z)
+            );
+            acceleration_ned = AP::ahrs().body_to_earth(acceleration_frd);
+        } else {
+            acceleration_ned = Vector3f{NAN, NAN, NAN};
+        }
+
+        float yaw_ned = yaw_ignore ? NAN : -quat_to_yaw_enu(
+                            cmd_pos.pose.orientation.x, cmd_pos.pose.orientation.y,
+                            cmd_pos.pose.orientation.z, cmd_pos.pose.orientation.w);
+        float yaw_rate_ned = yaw_rate_ignore ? NAN : -float(cmd_pos.twist.angular.z);
+
+        return external_control->set_local_position(pos_ned_m.tofloat(), velocity_ned, acceleration_ned, yaw_ned, yaw_rate_ned, true);
+    }
+    // base_link_ned
+    else if (strcmp(cmd_pos.header.frame_id, BASE_LINK_NED_FRAME_ID) == 0) {
+        Vector3p pos_ned_m;
+        const bool pos_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_X | LocalPosition::IGNORE_Y | LocalPosition::IGNORE_Z)) == (LocalPosition::IGNORE_X | LocalPosition::IGNORE_Y | LocalPosition::IGNORE_Z);
+        const bool vel_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_VX | LocalPosition::IGNORE_VY | LocalPosition::IGNORE_VZ)) == (LocalPosition::IGNORE_VX | LocalPosition::IGNORE_VY | LocalPosition::IGNORE_VZ);
+        const bool acc_ignore = (cmd_pos.type_mask & (LocalPosition::IGNORE_AFX | LocalPosition::IGNORE_AFY | LocalPosition::IGNORE_AFZ)) == (LocalPosition::IGNORE_AFX | LocalPosition::IGNORE_AFY | LocalPosition::IGNORE_AFZ);
+        const bool yaw_ignore = cmd_pos.type_mask & LocalPosition::IGNORE_YAW;
+        const bool yaw_rate_ignore = cmd_pos.type_mask & LocalPosition::IGNORE_YAW_RATE;
+
+        auto &ahrs = AP::ahrs();
+        if (!pos_ignore) {
+            Vector2f ned_xy = ahrs.body_to_earth2D(Vector2f(float(cmd_pos.pose.position.x), float(cmd_pos.pose.position.y)));
+            Vector3p rel_pos_ned_m;
+            if (!ahrs.get_relative_position_NED_origin(rel_pos_ned_m)) {
+                return false;
+            }
+            pos_ned_m = rel_pos_ned_m + Vector3p(ned_xy.x, ned_xy.y, postype_t(cmd_pos.pose.position.z));
+        } else {
+            pos_ned_m = Vector3p{NAN, NAN, NAN};
+        }
+
+        Vector3f velocity_ned;
+        if (!vel_ignore) {
+            Vector2f vel_ned_xy = ahrs.body_to_earth2D(Vector2f(float(cmd_pos.twist.linear.x), float(cmd_pos.twist.linear.y)));
+            velocity_ned = Vector3f(vel_ned_xy.x, vel_ned_xy.y, float(cmd_pos.twist.linear.z));
+        } else {
+            velocity_ned = Vector3f{NAN, NAN, NAN};
+        }
+
+        Vector3f acceleration_ned;
+        if (!acc_ignore) {
+            Vector2f acc_ned_xy = ahrs.body_to_earth2D(Vector2f(float(cmd_pos.accel.linear.x), float(cmd_pos.accel.linear.y)));
+            acceleration_ned = Vector3f(acc_ned_xy.x, acc_ned_xy.y, float(cmd_pos.accel.linear.z));
+        } else {
+            acceleration_ned = Vector3f{NAN, NAN, NAN};
+        }
+
+        float yaw_ned = yaw_ignore ? NAN : -quat_to_yaw_enu(
+                            cmd_pos.pose.orientation.x, cmd_pos.pose.orientation.y,
+                            cmd_pos.pose.orientation.z, cmd_pos.pose.orientation.w);
+        float yaw_rate_ned = yaw_rate_ignore ? NAN : -float(cmd_pos.twist.angular.z);
+
+        return external_control->set_local_position(pos_ned_m.tofloat(), velocity_ned, acceleration_ned, yaw_ned, yaw_rate_ned, true);
+    }
+    return false;
+}
+#endif // AP_DDS_LOCAL_POSE_CTRL_ENABLED
 
 bool AP_DDS_External_Control::arm(AP_Arming::Method method, bool do_arming_checks)
 {
@@ -125,6 +298,5 @@ bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Locatio
     }
     return true;
 }
-
 
 #endif // AP_DDS_ENABLED
