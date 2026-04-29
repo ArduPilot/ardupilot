@@ -35,6 +35,9 @@ bool ModeAuto::init(bool ignore_checks) {
 // according to the current auto_mode
 void ModeAuto::run()
 {
+    float distance_to_surface = (g.surface_depth - inertial_nav.get_position_z_up_cm()) * 0.01f;
+    distance_to_surface = constrain_float(distance_to_surface, 0.0f, 1.0f);
+    motors.set_max_throttle(g.surface_max_throttle + (1.0f - g.surface_max_throttle) * distance_to_surface);
     sub.mission.update();
 
     // call the correct auto controller
