@@ -108,20 +108,28 @@ MAV_MISSION_RESULT MissionItemProtocol_Fence::convert_MISSION_ITEM_INT_to_AC_Pol
         return MAV_MISSION_UNSUPPORTED_FRAME;
     }
 
+    // Validate param1 is a valid finite number before processing
+    if (!std::isfinite(mission_item_int.param1)) {
+        return MAV_MISSION_INVALID_PARAM1;
+    }
+
+
     switch (mission_item_int.command) {
     case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION:
         ret.type = AC_PolyFenceType::POLYGON_INCLUSION;
-        if (mission_item_int.param1 > 255) {
+        // Validate vertex count is within valid uint8_t range (0-255)
+        if (mission_item_int.param1 < 0 || mission_item_int.param1 > 255) {
             return MAV_MISSION_INVALID_PARAM1;
         }
-        ret.vertex_count = mission_item_int.param1;
+        ret.vertex_count = static_cast<uint8_t>(mission_item_int.param1);
         break;
     case MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION:
         ret.type = AC_PolyFenceType::POLYGON_EXCLUSION;
-        if (mission_item_int.param1 > 255) {
+        // Validate vertex count is within valid uint8_t range (0-255)
+        if (mission_item_int.param1 < 0 || mission_item_int.param1 > 255) {
             return MAV_MISSION_INVALID_PARAM1;
         }
-        ret.vertex_count = mission_item_int.param1;
+        ret.vertex_count = static_cast<uint8_t>(mission_item_int.param1);
         break;
     case MAV_CMD_NAV_FENCE_RETURN_POINT:
         ret.type = AC_PolyFenceType::RETURN_POINT;
