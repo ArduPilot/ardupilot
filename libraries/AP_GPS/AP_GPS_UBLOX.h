@@ -66,7 +66,10 @@
 #endif
 #define UBLOX_MAX_RXM_RAW_SATS 22
 #if AP_GPS_UBLOX_CFGV2_ENABLED
-#define UBLOX_MAX_RXM_RAWX_SATS 80
+// multi-constellation, multi-frequency receivers can report many more
+// raw measurements than satellites used in the fix.  Buffer is
+// dynamically allocated so this only costs RAM when GPS_RAW_DATA != 0.
+#define UBLOX_MAX_RXM_RAWX_SATS 92
 #define UBLOX_MAX_INTERFACE_PORTS 5
 #else
 #define UBLOX_MAX_RXM_RAWX_SATS 32
@@ -554,7 +557,7 @@ private:
             float doMes;
             uint8_t gnssId;
             uint8_t svId;
-            uint8_t reserved2;
+            uint8_t sigId;
             uint8_t freqId;
             uint16_t locktime;
             uint8_t cno;
@@ -656,7 +659,6 @@ private:
         ubx_nav_relposned relposned;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
-        ubx_rxm_rawx rxm_rawx;
 #endif
         ubx_ack_ack ack;
         ubx_ack_nack nack;
@@ -966,6 +968,11 @@ private:
     bool supports_l5;
     // scratch space for GNSS config
     config_list* config_GNSS;
+#if UBLOX_RXM_RAW_LOGGING
+    // dynamically allocated when GPS_RAW_DATA != 0 to avoid
+    // permanent RAM cost for this niche feature
+    ubx_rxm_rawx *_rxm_rawx;
+#endif
 #if AP_GPS_UBLOX_CFGV2_ENABLED
     AP_GPS_UBLOX_CFGv2 _cfg_v2;
 #endif

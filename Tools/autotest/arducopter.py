@@ -12140,6 +12140,73 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 current_ts = None
         self.progress(f"{max_errors=}")
 
+    def GPSRawXLargePacket(self):
+        '''Large UBX RXM-RAWX packets are not dropped'''
+        self.set_parameter("GPS1_RAW_DATA", 1)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(2)   # let RAWX frames accumulate in log
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        grxh = dfreader.recv_match(type='GRXH')
+        if grxh is None:
+            raise NotAchievedException("No GRXH messages in log. RAWX packets were dropped")
+        if grxh.numMeas == 0:
+            raise NotAchievedException("GRXH.numMeas is zero")
+
+    def GPSRawXDisabled(self):
+        '''No RXM-RAWX packets logged when GPS1_RAW_DATA=0'''
+        self.set_parameter("GPS1_RAW_DATA", 0)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(2)
+        dfreader = self.dfreader_for_current_onboard_log()
+        if dfreader.recv_match(type='GRXH') is not None:
+            raise NotAchievedException("GRXH found in log with GPS1_RAW_DATA=0")
+
+    def GPSRawXDualGPS(self):
+        '''Raw data logged independently per GPS; GRXS cno encodes instance so streams can be verified'''
+        self.set_parameters({
+            "GPS2_TYPE": 1,
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+            "GPS1_RAW_DATA": 1,
+            "GPS2_RAW_DATA": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(2)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        seen_grxh = set()
+        grxs_cno_by_instance = {}
+        while True:
+            m = dfreader.recv_match(type=['GRXH', 'GRXS'])
+            if m is None:
+                break
+            if m.get_type() == 'GRXH':
+                seen_grxh.add(m.I)
+            elif m.get_type() == 'GRXS':
+                if m.I not in grxs_cno_by_instance:
+                    grxs_cno_by_instance[m.I] = set()
+                grxs_cno_by_instance[m.I].add(m.cno)
+
+        for inst in (0, 1):
+            if inst not in seen_grxh:
+                raise NotAchievedException(f"No GRXH messages for GPS instance {inst}")
+            if inst not in grxs_cno_by_instance:
+                raise NotAchievedException(f"No GRXS messages for GPS instance {inst}")
+            # The SITL uBlox simulator sets cno = 40 + instance so each GPS
+            # produces a distinct value, letting us confirm streams are not crossed.
+            expected_cno = 40 + inst
+            if expected_cno not in grxs_cno_by_instance[inst]:
+                raise NotAchievedException(
+                    f"GPS {inst} GRXS records lack expected cno={expected_cno}; got {grxs_cno_by_instance[inst]}")
+            wrong_cno = 40 + (1 - inst)
+            if wrong_cno in grxs_cno_by_instance[inst]:
+                raise NotAchievedException(
+                    f"GPS {inst} GRXS records contain cno={wrong_cno} from the other GPS (streams crossed)")
+
     def Callisto(self):
         '''Test Callisto'''
         self.customise_SITL_commandline(
@@ -16624,6 +16691,9 @@ return update, 1000
             self.GPSWeightedBlending,
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
+            self.GPSRawXLargePacket,
+            self.GPSRawXDisabled,
+            self.GPSRawXDualGPS,
             self.DataFlash,
             Test(self.DataFlashErase, attempts=8),
             self.Callisto,
