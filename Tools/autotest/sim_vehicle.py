@@ -37,10 +37,10 @@ autotest_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = os.path.realpath(os.path.join(autotest_dir, '../..'))
 
 try:
-    from pymavlink import mavextra
+    from pymavlink import mavextra 
 except ImportError:
     sys.path.append(os.path.join(root_dir, "modules/mavlink"))
-    from pymavlink import mavextra
+    from pymavlink import mavextra 
 
 os.environ["SIM_VEHICLE_SESSION"] = binascii.hexlify(os.urandom(8)).decode()
 
@@ -117,7 +117,7 @@ class CompatOptionParser(optparse.OptionParser):
                                        formatter=formatter,
                                        **kwargs)
 
-    def error(self, error):
+    def error(self, error): 
         """Override default error handler called by
         optparse.OptionParser.parse_args when a parse error occurs;
         raise a detailed exception which can be caught
@@ -159,7 +159,7 @@ def cygwin_pidof(proc_name):
     pipe = subprocess.Popen("ps -ea | grep " + proc_name,
                             shell=True,
                             stdout=subprocess.PIPE)
-    output_lines = pipe.stdout.read().decode('utf-8').replace("\r", "").split("\n")
+    output_lines = pipe.stdout.read().decode('utf-8').replace("\r", "").split("\n") 
     ret = pipe.wait()
     pids = []
     if ret != 0:
@@ -205,7 +205,7 @@ def wsl2_host_ip():
     pipe = subprocess.Popen("ip route show default | awk '{print $3}'",
                             shell=True,
                             stdout=subprocess.PIPE)
-    output_lines = pipe.stdout.read().decode('utf-8').strip(' \r\n')
+    output_lines = pipe.stdout.read().decode('utf-8').strip(' \r\n') 
     ret = pipe.wait()
 
     if ret != 0:
@@ -267,7 +267,7 @@ def kill_tasks():
             if proc.name() not in ["arducopter", "ardurover", "arduplane", "ardusub", "antennatracker"]:
                 # only kill vehicle that way
                 continue
-            if os.environ['SIM_VEHICLE_SESSION'] not in proc.environ().get('SIM_VEHICLE_SESSION'):
+            if os.environ['SIM_VEHICLE_SESSION'] not in proc.environ().get('SIM_VEHICLE_SESSION'): 
                 # only kill vehicle launched with sim_vehicle.py that way
                 continue
             proc.terminate()
@@ -509,7 +509,7 @@ def find_offsets(instances, file_path):
 def find_geocoder_location(locname):
     '''find a location using geocoder and SRTM'''
     try:
-        import geocoder
+        import geocoder 
     except ImportError:
         print("geocoder not installed")
         return None
@@ -536,7 +536,7 @@ def find_geocoder_location(locname):
     # Step 3: Success logic
     lat, lon = j.lat, j.lng
 
-    from MAVProxy.modules.mavproxy_map import srtm
+    from MAVProxy.modules.mavproxy_map import srtm 
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
     start = time.time()
@@ -626,7 +626,7 @@ def run_in_terminal_window(name, cmd, **kw):
     if under_macos() and os.environ.get('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
         out = subprocess.Popen(runme, stdout=subprocess.PIPE, **kw).communicate()[0]
-        out = out.decode('utf-8')
+        out = out.decode('utf-8') 
         p = re.compile('tab 1 of window id (.*)')
 
         tstart = time.time()
@@ -639,8 +639,8 @@ def run_in_terminal_window(name, cmd, **kw):
             time.sleep(0.1)
         # sleep for extra 2 seconds for application to start
         time.sleep(2)
-        if len(tabs) > 0:
-            windowID.append(tabs[0])
+        if len(tabs) > 0: 
+            windowID.append(tabs[0]) 
         else:
             progress("Cannot find %s process terminal" % name)
     else:
@@ -790,11 +790,21 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(opts.sitl_instance_args)
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
-    # the SITL binary resolves the per-frame default parameter files
-    # from its embedded vehicleinfo.json keyed by --model, so we no
-    # longer pass --defaults here. Use --add-param-file or --param to
-    # layer extra parameters on top of the embedded defaults.
     path = None
+    if "default_params_filename" in stuff:
+        paths = stuff["default_params_filename"]
+        if not isinstance(paths, list):
+            paths = [paths]
+        paths = [util.relcurdir(os.path.join(autotest_dir, x)) for x in paths]
+        for x in paths:
+            if not os.path.isfile(x):
+                print("The parameter file (%s) does not exist" % (x,))
+                sys.exit(1)
+        if cmd_opts.count > 1 or opts.auto_sysid:
+            # we are in a subdirectory when using -n
+            paths = [os.path.join("..", x) for x in paths]
+        path = ",".join(paths)
+        progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
         cmd.append("--set-storage-posix-enabled 0")
@@ -831,14 +841,8 @@ def start_vehicle(binary, opts, stuff, spawns=None):
             path = str(param_dir)
 
     if opts.OSDMSP:
-        osd_paths = [
-            os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm"),
-            os.path.join(autotest_dir, "default_params/msposd.parm"),
-        ]
-        if path is not None:
-            path += "," + ",".join(osd_paths)
-        else:
-            path = ",".join(osd_paths)
+        path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm") 
+        path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
         subprocess.Popen([os.path.join(root_dir, "libraries/AP_MSP/Tools/msposd.py")])
 
     if path is not None and len(path) > 0:
@@ -1041,6 +1045,8 @@ def generate_frame_help():
 vehicle_map = {
     "APMrover2": "Rover",
     "Copter": "ArduCopter",
+    "Helicopter": "ArduCopter", # Add this
+    "AntennaTracker": "AntennaTracker", # Add this
     "Plane": "ArduPlane",
     "Sub": "ArduSub",
     "Blimp" : "Blimp",
@@ -1088,9 +1094,7 @@ parser.add_option("-C", "--sim_vehicle_sh_compatible",
 parser.add_option("-P", "--param",
                   default=None,
                   action='append',
-                  help="set some param with the format PARAM=VALUE; "
-                       "layered on top of the per-frame defaults the "
-                       "binary loads from its embedded vehicleinfo.json")
+                  help="set some param with the format PARAM=VALUE")
 
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",
@@ -1171,19 +1175,31 @@ group_build.add_option("--num-aux-imus",
                        help='number of auxiliary IMUs to simulate')
 parser.add_option_group(group_build)
 
+
+# Create the Simulation options group
 group_sim = optparse.OptionGroup(parser, "Simulation options")
+          
+# 1.  GUI Hook
+group_sim.add_option("--gui", action='store_true', default=False, help="Launch GUI")
+
+# 2. Instance Definition (The starting number)
 group_sim.add_option("-I", "--instance",
                      default=0,
                      type='int',
                      help="instance of simulator")
+
+# 3. Vehicle Count (How many to spawn)
 group_sim.add_option("-n", "--count",
                      type='int',
                      default=1,
                      help="vehicle count; if this is specified, -I is used as a base-value")
+
+# 4. Specific Instances List (THIS WAS MISSING)
 group_sim.add_option("-i", "--instances",
                      default=None,
                      type='string',
                      help="a space delimited list of instances to spawn; if specified, overrides -I and -n.")
+# End of gui hook of group sim
 group_sim.add_option("-V", "--valgrind",
                      action='store_true',
                      default=False,
@@ -1323,9 +1339,7 @@ group_sim.add_option("", "--add-param-file",
                      type='string',
                      action="append",
                      default=None,
-                     help="Add a parameters file to use; layered on "
-                     "top of the per-frame defaults the binary loads "
-                     "from its embedded vehicleinfo.json")
+                     help="Add a parameters file to use")
 group_sim.add_option("", "--no-extra-ports",
                      action='store_true',
                      dest='no_extra_ports',
@@ -1446,16 +1460,56 @@ group_completion.add_option("", "--list-frame",
 parser.add_option_group(group_completion)
 
 cmd_opts, cmd_args = parser.parse_args()
+# Gui cmd hook
+# --- STEP 1: Determine Contextual Vehicle ---
+# We need to know if we are in a vehicle folder BEFORE deciding to show the GUI
+autodetected_vehicle = None
+cwd = os.getcwd()
 
-if cmd_opts.list_vehicle:
-    print(' '.join(vinfo.options.keys()))
-    sys.exit(1)
-if cmd_opts.list_frame:
-    frame_options = sorted(vinfo.options[cmd_opts.list_frame]["frames"].keys())
-    frame_options_string = ' '.join(frame_options)
-    print(frame_options_string)
-    sys.exit(1)
+# Traverse up the directory tree to allow for running inside sub-directories
+while cwd:
+    bname = os.path.basename(cwd)
+    if not bname:
+        break
+    
+    # 1. Check actual canonical vehicle names (e.g., "ArduCopter", "ArduPlane")
+    if bname in vinfo.options:
+        autodetected_vehicle = bname
+        break
+    # 2. Check aliases (e.g., "Copter" -> "ArduCopter", "APMrover2" -> "Rover")
+    elif bname in vehicle_map:
+        autodetected_vehicle = vehicle_map[bname]
+        break
+    elif bname.lower() in vehicle_map:
+        autodetected_vehicle = vehicle_map[bname.lower()]
+        break
+        
+    # Move up one directory level
+    cwd = os.path.dirname(cwd)
 
+# --- STEP 2: The GUI Logic ---
+should_show_gui = False
+
+if cmd_opts.gui:
+    # Rule 1: Explicitly asked for GUI
+    should_show_gui = True
+elif cmd_opts.vehicle is None and autodetected_vehicle is None:
+    # Rule 2: No CLI vehicle AND not in a vehicle directory
+    should_show_gui = True
+
+if should_show_gui:
+    try:
+        from sim_gui_helper import SimVehicleGUI
+        # Pass the autodetected_vehicle to help the GUI set the default
+        gui = SimVehicleGUI(cmd_opts, vinfo, vehicle_map, autodetected_vehicle)
+        if not gui.show_and_run():
+            sys.exit(0) 
+    except ImportError:
+        if cmd_opts.gui:
+            print("wxPython not found. Install it with: pip install wxPython")
+            sys.exit(1)
+# Gui cmd Ended
+# normal ArduPilot launch logic below.
 # clean up processes at exit:
 atexit.register(kill_tasks)
 
@@ -1651,7 +1705,7 @@ if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
     from tempfile import mkstemp
 
     # import only here so as to avoid jinja dependency in whole script
-    from jinja2 import Environment
+    from jinja2 import Environment  
     from jinja2 import FileSystemLoader
     entities = []
     config = {}
