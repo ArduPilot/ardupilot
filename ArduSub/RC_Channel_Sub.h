@@ -33,12 +33,6 @@ public:
         }
         return &obj_channels[chan];
     }
-
-protected:
-
-    // note that these callbacks are not presently used on Plane:
-    int8_t flight_mode_channel_number() const override;
-
 };
 
 #else
@@ -69,12 +63,6 @@ public:
     // tell the gimbal code all is good with RC input:
     bool in_rc_failsafe() const override { return false; };
     bool arming_check_throttle() const override;
-
-protected:
-
-    // note that these callbacks are not presently used on Plane:
-    int8_t flight_mode_channel_number() const override;
-
 };
 #endif
 

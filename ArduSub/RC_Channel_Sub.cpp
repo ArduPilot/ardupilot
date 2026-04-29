@@ -13,11 +13,6 @@
 
 
 #if AP_SUB_RC_ENABLED
-int8_t RC_Channels_Sub::flight_mode_channel_number() const
-{
-    return sub.g.flight_mode_chan.get();
-}
-
 void RC_Channel_Sub::mode_switch_changed(modeswitch_pos_t new_pos)
 {
     if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(sub.g.flight_modes)) {
@@ -57,12 +52,6 @@ bool RC_Channels_Sub::has_valid_input() const
 bool RC_Channel_Sub::do_aux_function(const AuxFuncTrigger &trigger)
 {
    return RC_Channel::do_aux_function(trigger);
-}
-#else
-// note that this callback is not presently used on Plane:
-int8_t RC_Channels_Sub::flight_mode_channel_number() const
-{
-    return 1; // sub does not have a flight mode channel
 }
 #endif
 

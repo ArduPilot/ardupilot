@@ -119,8 +119,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Verify that flightmode channel is 5 (default)")
         default_fltmode_ch = 5
-        if (self.get_parameter("FLTMODE_CH") != default_fltmode_ch):
-            raise PreconditionFailedException("FLTMODE_CH not %d" % default_fltmode_ch)
+        if (self.find_channel_for_option(250) != default_fltmode_ch):
+            raise PreconditionFailedException("Flight mode channel not default")
 
         """When disarmed, motor PWM will drop to min_pwm"""
         min_pwm = self.get_parameter("Q_M_PWM_MIN")

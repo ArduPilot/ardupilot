@@ -298,7 +298,7 @@ public:
         //
         // 210: flight modes
         //
-        k_param_flight_mode_channel = 210,
+        k_param_flight_mode_channel_old = 210,
         k_param_flight_modes0,
         k_param_flight_modes1,
         k_param_flight_modes2,
@@ -419,7 +419,6 @@ public:
 
     // Flight modes
     //
-    AP_Int8 flight_mode_channel;
     AP_Int8 flight_modes[6];
     AP_Int8 initial_mode;
 

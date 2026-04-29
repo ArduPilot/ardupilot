@@ -202,6 +202,7 @@ void RC_Channels::init_aux_all()
         }
         c->init_aux();
     }
+    cached_flight_mode_channel = find_channel_for_option(RC_Channel::AUX_FUNC::MODE);
     reset_mode_switch();
 }
 
@@ -210,14 +211,7 @@ void RC_Channels::init_aux_all()
 //
 RC_Channel *RC_Channels::flight_mode_channel() const
 {
-    const int8_t num = flight_mode_channel_number();
-    if (num <= 0) {
-        return nullptr;
-    }
-    if (num >= NUM_RC_CHANNELS) {
-        return nullptr;
-    }
-    return rc_channel(num-1);
+    return cached_flight_mode_channel;
 }
 
 void RC_Channels::reset_mode_switch()
@@ -240,17 +234,6 @@ void RC_Channels::read_mode_switch()
         return;
     }
     c->read_mode_switch();
-}
-
-// check if flight mode channel is assigned RC option
-// return true if assigned
-bool RC_Channels::flight_mode_channel_conflicts_with_rc_option() const
-{
-    RC_Channel *chan = flight_mode_channel();
-    if (chan == nullptr) {
-        return false;
-    }
-    return (RC_Channel::AUX_FUNC)chan->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING;
 }
 
 /*

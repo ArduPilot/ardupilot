@@ -5868,7 +5868,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def SetModesViaModeSwitch(self):
         '''Set modes via modeswitch'''
         fltmode_ch = 5
-        self.set_parameter("FLTMODE_CH", fltmode_ch)
+        self.set_parameter(f"RC{fltmode_ch}_OPTION", 250)
         self.set_rc(fltmode_ch, 1000) # PWM for mode1
         testmodes = [("FLTMODE1", 4, "GUIDED", 1165),
                      ("FLTMODE2", 2, "ALT_HOLD", 1295),
@@ -5898,7 +5898,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SetModesViaAuxSwitch(self):
         '''"Set modes via auxswitch"'''
-        fltmode_ch = int(self.get_parameter("FLTMODE_CH"))
+        fltmode_ch = self.find_rc_channel_for_option(250)  # 250 AUX_FUNC::Mode
         self.set_rc(fltmode_ch, 1000)
         self.wait_mode("CIRCLE")
         self.set_rc(9, 1000)

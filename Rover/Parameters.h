@@ -175,7 +175,7 @@ public:
         //
         // 210: driving modes
         //
-        k_param_mode_channel = 210,
+        k_param_mode_channel_old = 210,
         k_param_modes0,
         k_param_modes1,
         k_param_modes2,
@@ -266,7 +266,6 @@ public:
 
     // driving modes
     //
-    AP_Int8     mode_channel;
     AP_Int8     modes[6];
 
     Parameters() {}

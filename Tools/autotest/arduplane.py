@@ -2554,15 +2554,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.load_mission('CMAC-soar.txt', strict=False)
 
         # Enable thermalling RC
-        rc_chan = 0
-        for i in range(8):
-            rcx_option = self.get_parameter('RC{0}_OPTION'.format(i+1))
-            if rcx_option == 88:
-                rc_chan = i+1
-                break
-
-        if rc_chan == 0:
-            raise NotAchievedException("Did not find soaring enable channel option.")
+        rc_chan = self.find_rc_channel_for_option(88)
 
         self.set_rc_from_map({
             rc_chan: 1900,

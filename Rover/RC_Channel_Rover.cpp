@@ -10,11 +10,6 @@
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
-int8_t RC_Channels_Rover::flight_mode_channel_number() const
-{
-    return rover.g.mode_channel;
-}
-
 void RC_Channel_Rover::mode_switch_changed(modeswitch_pos_t new_pos)
 {
     if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(rover.g.modes)) {

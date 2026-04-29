@@ -18,7 +18,7 @@ FLTMODE3         12
 FLTMODE4         5
 FLTMODE5         7
 FLTMODE6         0
-FLTMODE_CH       5
+RC5_OPTION       250  # mode selection channel
 FS_GCS_ENABL     0
 INS_ACCEL_FILTER 10
 INS_GYRO_FILTER  5

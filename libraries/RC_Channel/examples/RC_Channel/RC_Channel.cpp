@@ -37,8 +37,6 @@ public:
 
 protected:
 
-    int8_t flight_mode_channel_number() const override { return 5; }
-
 private:
 
 };

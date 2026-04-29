@@ -759,7 +759,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def ModeSwitch(self):
         ''''Set modes via modeswitch'''
-        self.set_parameter("MODE_CH", 8)
+        self.set_parameter("RC8_OPTION", 250)  # AUX_FUNC::Mode
         self.set_rc(8, 1000)
         # mavutil.mavlink.ROVER_MODE_HOLD:
         self.set_parameter("MODE6", 4)
