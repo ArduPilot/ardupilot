@@ -256,7 +256,7 @@ void SRV_Channel::set_output_pwm(uint16_t pwm, bool force)
 void SRV_Channel::set_output_norm(float value)
 {
     // convert normalised value to pwm
-    set_output_pwm(pwm_from_scaled_value(value * high_out));
+    set_output_pwm(pwm_from_scaled_value(0.5 * (1.0 + value) * high_out));
 }
 
 // set angular range of scaled output
