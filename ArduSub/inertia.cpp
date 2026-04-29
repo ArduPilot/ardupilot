@@ -19,8 +19,4 @@ void Sub::read_inertia()
     }
 
     current_loc.alt = pos_control.get_pos_estimate_U_m() * 100.0f;
-
-    // get velocity, altitude is always absolute frame, referenced from
-    // water's surface
-    climb_rate = pos_control.get_vel_estimate_U_ms() * 100.0f;
 }

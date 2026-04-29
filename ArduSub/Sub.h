@@ -281,10 +281,6 @@ private:
 
     AP_Arming_Sub arming;
 
-    // Altitude
-    // The cm/s we are moving up or down based on filtered data - Positive = UP
-    int16_t climb_rate;
-
     // Turn counter
     int32_t quarter_turn_count;
     uint8_t last_turn_state;

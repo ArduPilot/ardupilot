@@ -51,7 +51,7 @@ void Sub::Log_Write_Control_Tuning()
         rangefinder_alt           : rangefinder_state.alt,
         terr_alt            : terr_alt,
         target_climb_rate   : (int16_t)pos_control.get_vel_target_U_cms(),
-        climb_rate          : climb_rate
+        climb_rate          : int16_t(pos_control.get_vel_estimate_U_ms() * 100.0f)
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
