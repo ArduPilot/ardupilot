@@ -212,6 +212,23 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
         posErr : (float)outputTrackError.z              // output predictor position tracking error
     };
     AP::logger().WriteBlock(&pkt5, sizeof(pkt5));
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // log the optial "special" KF for HAGL estimation directly via RangeFinder + IMU
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+        const struct log_XKF6 pktf6{
+            LOG_PACKET_HEADER_INIT(LOG_XKF6_MSG),
+            time_us : time_us,
+            core    : DAL_CORE(core_index),
+            hAgl    : (float)aglKfH,                // AGL height estimate (m)
+            vAgl    : (float)aglKfV,                // AGL velocity estimate (m/s, +ve = climbing)
+            hAglStd : (float)sqrtF(aglKfP[0][0]),   // std-dev of h_agl (m)
+            vAglStd : (float)sqrtF(aglKfP[1][1]),   // std-dev of v_agl (m/s)
+            valid   : (uint8_t)aglKfValid            // 1 when RF fused within last 5 s
+        };
+        AP::logger().WriteBlock(&pktf6, sizeof(pktf6));
+    }
+#endif
 }
 
 void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const
