@@ -11226,6 +11226,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             I2CDriverToTest("tfs20l", 46, rngfnd_addr=0x10),
             I2CDriverToTest("TFMiniPlus", 25, rngfnd_addr=0x09),
             I2CDriverToTest("TOFSenseF_I2C", 40, rngfnd_addr=0x08),
+            I2CDriverToTest("lightware_grf_i2c", 48, rngfnd_addr=0x66),
         ]
         while len(i2c_drivers):
             do_drivers = i2c_drivers[0:9]
