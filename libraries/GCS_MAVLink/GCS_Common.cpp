@@ -243,6 +243,26 @@ bool GCS_MAVLINK::init(uint8_t instance)
     return true;
 }
 
+#if AP_CRSF_MAVLINK_ENABLED
+// init for virtual (non-serial) UART channels like CRSF MAVLink
+bool GCS_MAVLINK::init_virtual(uint8_t instance)
+{
+    chan = (mavlink_channel_t)(MAVLINK_COMM_0 + instance);
+    if (!valid_channel(chan)) {
+        return false;
+    }
+
+    // no SerialManager lookup needed; uartstate stays nullptr
+    _port->begin(0);
+    mavlink_comm_port[chan] = _port;
+
+    // default to MAVLink2 output
+    _channel_status.flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+
+    return true;
+}
+#endif  // AP_CRSF_MAVLINK_ENABLED
+
 void GCS_MAVLINK::send_meminfo(void)
 {
     unsigned __brkval = 0;
@@ -1869,15 +1889,17 @@ void GCS_MAVLINK::packetReceived(const mavlink_status_t &status,
     if (msg.msgid != MAVLINK_MSG_ID_RADIO && msg.msgid != MAVLINK_MSG_ID_RADIO_STATUS) {
         mavlink_active |= (1U<<(chan-MAVLINK_COMM_0));
     }
-    const auto mavlink_protocol = uartstate->get_protocol();
-    if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
-        (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
-        (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 ||
-         mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL)) {
-        // if we receive any MAVLink2 packets on a connection
-        // currently sending MAVLink1 then switch to sending
-        // MAVLink2
-        _channel_status.flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+    if (uartstate != nullptr) {
+        const auto mavlink_protocol = uartstate->get_protocol();
+        if (!(status.flags & MAVLINK_STATUS_FLAG_IN_MAVLINK1) &&
+            (status.flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) &&
+            (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 ||
+             mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL)) {
+            // if we receive any MAVLink2 packets on a connection
+            // currently sending MAVLink1 then switch to sending
+            // MAVLink2
+            _channel_status.flags &= ~MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
+        }
     }
 }
 
@@ -2844,6 +2866,33 @@ void GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
 
     _num_gcs++;
 }
+
+#if AP_CRSF_MAVLINK_ENABLED
+// create a virtual GCS backend on a non-serial UART (e.g. CRSF MAVLink)
+void GCS::create_virtual_backend(AP_HAL::UARTDriver &uart)
+{
+    if (_num_gcs >= ARRAY_SIZE(_chan_var_info)) {
+        return;
+    }
+    _chan[_num_gcs] = new_gcs_mavlink_backend(uart);
+    if (_chan[_num_gcs] == nullptr) {
+        return;
+    }
+
+    _chan_var_info[_num_gcs] = _chan[_num_gcs]->var_info;
+
+    if (!_chan[_num_gcs]->init_virtual(_num_gcs)) {
+        delete _chan[_num_gcs];
+        _chan[_num_gcs] = nullptr;
+        return;
+    }
+
+    // mark as private so it doesn't get broadcast/forwarded traffic
+    GCS_MAVLINK::set_channel_private(_chan[_num_gcs]->get_chan());
+
+    _num_gcs++;
+}
+#endif  // AP_CRSF_MAVLINK_ENABLED
 
 void GCS::setup_uarts()
 {
@@ -7596,8 +7645,13 @@ uint64_t GCS_MAVLINK::capabilities() const
     uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
         MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
-    const auto mavlink_protocol = uartstate->get_protocol();
-    if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
+    if (uartstate != nullptr) {
+        const auto mavlink_protocol = uartstate->get_protocol();
+        if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
+            ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
+        }
+    } else {
+        // virtual channels (e.g. CRSF MAVLink) default to MAVLink2
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
     }
 
