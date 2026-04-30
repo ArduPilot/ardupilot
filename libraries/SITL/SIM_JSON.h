@@ -23,6 +23,10 @@
 
 #define SITL_JSON_DEBUG 0
 
+// Forward declaration so the private friend declaration below resolves
+// regardless of include order.
+class JSONTest;
+
 namespace SITL {
 
 class JSON : public Aircraft {
@@ -41,6 +45,8 @@ public:
     void set_interface_ports(const char* address, const int port_in, const int port_out) override;
 
 private:
+
+    friend class ::JSONTest;
 
     struct servo_packet_16 {
         uint16_t magic = 18458; // constant magic value
@@ -116,6 +122,7 @@ private:
         float airspeed;
         bool no_time_sync;
         bool no_lockstep;
+        float rpm[4];
     } state;
 
     // table to aid parsing of JSON sensor data
@@ -125,7 +132,7 @@ private:
         void *ptr;
         enum data_type type;
         bool required;
-    } keytable[36] {
+    } keytable[40] {
         { "", "timestamp", &state.timestamp_s, DATA_DOUBLE, true },
         { "", "latitude", &state.latitude, DATA_DOUBLE, false },
         { "", "longitude", &state.longitude, DATA_DOUBLE, false },
@@ -162,6 +169,10 @@ private:
         { "rc", "rc_12", &state.rc[11], DATA_FLOAT, false },
         { "battery", "voltage", &state.bat_volt, DATA_FLOAT, false },
         { "battery", "current", &state.bat_amp, DATA_FLOAT, false },
+        { "rpm", "rpm_1", &state.rpm[0], DATA_FLOAT, false },
+        { "rpm", "rpm_2", &state.rpm[1], DATA_FLOAT, false },
+        { "rpm", "rpm_3", &state.rpm[2], DATA_FLOAT, false },
+        { "rpm", "rpm_4", &state.rpm[3], DATA_FLOAT, false },
     };
 
     // Enum coresponding to the ordering of keys in the keytable.
@@ -202,6 +213,10 @@ private:
         RC_12       = 0x0000000200000000ULL, // 1ULL << 33
         BAT_VOLT    = 0x0000000400000000ULL, // 1ULL << 34
         BAT_AMP     = 0x0000000800000000ULL, // 1ULL << 35
+        RPM_1       = 0x0000001000000000ULL, // 1ULL << 36
+        RPM_2       = 0x0000002000000000ULL, // 1ULL << 37
+        RPM_3       = 0x0000004000000000ULL, // 1ULL << 38
+        RPM_4       = 0x0000008000000000ULL, // 1ULL << 39
     };
     uint64_t last_received_bitmask;
 

@@ -23,6 +23,7 @@
 #include "SIM_JSON.h"
 
 #include <stdio.h>
+#include <ctype.h>
 #include <arpa/inet.h>
 #include <errno.h>
 
@@ -210,8 +211,19 @@ uint64_t JSON::parse_sensors(const char *json)
         }
         p += strlen(key.section)+1;
 
-        // find key inside section
-        p = strstr(p, key.key);
+        // find key inside section; require a word boundary after the match
+        // to avoid substring matches (e.g. "rc_1" matching inside "rc_12")
+        while (true) {
+            p = strstr(p, key.key);
+            if (p == nullptr) {
+                break;
+            }
+            const char next = p[strlen(key.key)];
+            if (next != '_' && !isalnum((unsigned char)next)) {
+                break;  // not a continuation of the key name
+            }
+            p++;
+        }
         if (!p) {
             if (key.required) {
                 printf("Failed to find key %s/%s\n", key.section, key.key);
@@ -280,6 +292,9 @@ uint64_t JSON::parse_sensors(const char *json)
 
             case BOOLEAN: {
                 bool *b = (bool *)key.ptr;
+                while (isspace((unsigned char)*p)) {
+                    p++;
+                }
                 if (strncasecmp(p, "true", 4) == 0) {
                     *b = true;
                 } else if (strncasecmp(p, "false", 5) == 0) {
@@ -490,10 +505,18 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     // update battery state
     if ((received_bitmask & BAT_VOLT) != 0) {
-        battery_voltage = state.bat_volt; 
+        battery_voltage = state.bat_volt;
     }
     if ((received_bitmask & BAT_AMP) != 0) {
-        battery_current = state.bat_amp; 
+        battery_current = state.bat_amp;
+    }
+
+    // update RPM - sets motor_mask so AP_ESC_Telem_SITL reports these values
+    for (uint8_t i = 0; i < 4; i++) {
+        if ((received_bitmask & (RPM_1 << i)) != 0) {
+            rpm[i] = state.rpm[i];
+            motor_mask |= (1U << i);
+        }
     }
 
     double deltat;
