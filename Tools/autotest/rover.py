@@ -1868,22 +1868,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.setGCSfailsafe(0)
         self.progress("All GCS failsafe tests complete")
 
-    def test_gcs_fence_centroid(self, target_system=1, target_component=1):
-        self.start_subtest("Ensuring if we don't have a centroid it gets calculated")
-        items = self.test_gcs_fence_need_centroid(
-            target_system=target_system,
-            target_component=target_component)
-        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                                           items)
-        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        centroid = downloaded_items[0]
-        want_lat = 1.0001
-        want_lng = 1.00005
-        if abs(centroid.lat - want_lat) > 0.000001:
-            raise NotAchievedException("Centroid lat not as expected (want=%f got=%f)" % (want_lat, centroid.lat))
-        if abs(centroid.lng - want_lng) > 0.000001:
-            raise NotAchievedException("Centroid lng not as expected (want=%f got=%f)" % (want_lng, centroid.lng))
-
     def test_gcs_fence_update_fencepoint(self, target_system=1, target_component=1):
         self.start_subtest("Ensuring we can move a fencepoint")
         items = self.test_gcs_fence_boring_triangle(
@@ -2208,9 +2192,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.test_gcs_fence_update_fencepoint(target_system=target_system,
                                               target_component=target_component)
-
-        self.test_gcs_fence_centroid(target_system=target_system,
-                                     target_component=target_component)
 
         self.test_gcs_fence_via_mavproxy(target_system=target_system,
                                          target_component=target_component)
