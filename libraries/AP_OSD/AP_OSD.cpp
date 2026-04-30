@@ -546,7 +546,7 @@ void AP_OSD::update_current_screen()
     }
 
 #if AP_RC_CHANNEL_ENABLED
-    RC_Channel *channel = RC_Channels::rc_channel(rc_channel-1);
+    RC_Channel *channel = rc().channel(rc_channel-1);
     if (channel == nullptr) {
         return;
     }
