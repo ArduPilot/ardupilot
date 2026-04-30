@@ -1420,7 +1420,9 @@ void Aircraft::update_eas_airspeed()
 /*
   set pose on the aircraft, called from scripting
  */
-bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat, const Vector3f &velocity_ef, const Vector3f &gyro_rads)
+bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                        const Vector3f &velocity_ef, const Vector3f &gyro_rads,
+                        uint8_t flags)
 {
     if (instance >= MAX_SIM_INSTANCES || instances[instance] == nullptr) {
         return false;
@@ -1431,7 +1433,27 @@ bool Aircraft::set_pose(uint8_t instance, const Location &loc, const Quaternion 
     quat.rotation_matrix(aircraft.dcm);
     aircraft.velocity_ef = velocity_ef;
     aircraft.location = loc;
-    aircraft.position = aircraft.home.get_distance_NED_double(loc);
+
+    if ((flags & SITL::SIM::SET_POSE_RESET_HOME_ORIGIN) != 0) {
+        // Reset the local reference frame so the requested pose becomes the new absolute origin.
+        aircraft.home = loc;
+        aircraft.origin = loc;
+        aircraft.home_is_set = true;
+        aircraft.position = Vector3d(0, 0, 0);
+        aircraft.ground_level = aircraft.home.alt * 0.01f;
+
+        float roll, pitch, yaw;
+        aircraft.dcm.to_euler(&roll, &pitch, &yaw);
+        aircraft.home_yaw = degrees(yaw);
+
+        if (aircraft.precland != nullptr) {
+            aircraft.precland->set_default_location(aircraft.home.lat * 1.0e-7f,
+                                                    aircraft.home.lng * 1.0e-7f,
+                                                    static_cast<int16_t>(aircraft.get_home_yaw()));
+        }
+    } else {
+        aircraft.position = aircraft.home.get_distance_NED_double(loc);
+    }
     aircraft.smoothing.position = aircraft.position;
     aircraft.smoothing.rotation_b2e = aircraft.dcm;
     aircraft.smoothing.velocity_ef = velocity_ef;
@@ -1449,3 +1471,12 @@ bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion
     return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
 }
 
+/*
+  wrapper for scripting access with explicit flags
+ */
+bool SITL::SIM::set_pose_flags(uint8_t instance, const Location &loc, const Quaternion &quat,
+                               const Vector3f &velocity_ef, const Vector3f &gyro_rads,
+                               uint8_t flags)
+{
+    return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads, flags);
+}

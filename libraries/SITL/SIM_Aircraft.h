@@ -212,7 +212,8 @@ public:
       used by scripting to control simulated aircraft position
      */
     static bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
-                         const Vector3f &velocity_ef, const Vector3f &gyro_rads);
+                         const Vector3f &velocity_ef, const Vector3f &gyro_rads,
+                         uint8_t flags = 0);
 
 protected:
     SIM *sitl;

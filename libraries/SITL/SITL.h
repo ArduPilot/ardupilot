@@ -646,8 +646,15 @@ public:
     /*
       used by scripting to control simulated aircraft position
      */
+    enum SetPoseFlags : uint8_t {
+        SET_POSE_RESET_HOME_ORIGIN = 1U << 0,
+    };
+
     bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
                   const Vector3f &velocity_ef, const Vector3f &gyro_rads);
+    bool set_pose_flags(uint8_t instance, const Location &loc, const Quaternion &quat,
+                        const Vector3f &velocity_ef, const Vector3f &gyro_rads,
+                        uint8_t flags);
 };
 
 } // namespace SITL

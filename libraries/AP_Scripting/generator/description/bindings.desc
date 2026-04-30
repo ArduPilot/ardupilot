@@ -1154,6 +1154,7 @@ include SITL/SITL.h depends AP_SIM_ENABLED
 singleton SITL::SIM depends AP_SIM_ENABLED
 singleton SITL::SIM rename sim
 singleton SITL::SIM method set_pose boolean uint8_t'skip_check Location Quaternion Vector3f Vector3f
+singleton SITL::SIM method set_pose_flags boolean uint8_t'skip_check Location Quaternion Vector3f Vector3f uint8_t'skip_check
 
 userdata DroneCAN_Handle depends HAL_ENABLE_DRONECAN_DRIVERS
 userdata DroneCAN_Handle creation DroneCAN_Handle::new_handle 4
@@ -1162,4 +1163,3 @@ userdata DroneCAN_Handle manual request DroneCAN_Handle::request 2 1
 userdata DroneCAN_Handle method subscribe boolean
 userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 4
 userdata DroneCAN_Handle manual_operator __gc DroneCAN_Handle::__gc
-
