@@ -25,6 +25,7 @@
 #include "SRV_Channel.h"
 #include <AP_Logger/AP_Logger.h>
 #include <AP_KDECAN/AP_KDECAN.h>
+#include <AP_CRSF/AP_CRSF_Out.h>
 
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
@@ -546,6 +547,12 @@ void SRV_Channels::push()
         }
     }
 #endif // HAL_NUM_CAN_IFACES
+
+#if AP_CRSF_OUT_ENABLED
+    if (AP::crsf_out() != nullptr) {
+        AP::crsf_out()->push();
+    }
+#endif
 }
 
 void SRV_Channels::zero_rc_outputs()
