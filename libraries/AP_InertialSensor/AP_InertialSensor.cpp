@@ -41,6 +41,7 @@
 #include "AP_InertialSensor_SCHA63T.h"
 #include "AP_InertialSensor_ASM330.h"
 #include "AP_InertialSensor_ADIS16607.h"
+#include "AP_InertialSensor_ADIS1650x.h"
 #include <AP_Scheduler/AP_Scheduler.h>
 #include "AP_InertialSensor_ZeroOne_FPGA_SCH16T.h"
 
