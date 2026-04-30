@@ -330,6 +330,8 @@ void Tailsitter::output(void)
     // throttle 0 to 1
     float throttle = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * 0.01;
 
+    // To inform the attitude controller that tailsitter is enabled
+    quadplane.attitude_control->set_tailsitter_enabled(true);
     // handle forward flight modes and transition to VTOL modes
     if (!active() || in_vtol_transition()) {
         // get FW controller throttle demand and mask of motors enabled during forward flight
@@ -932,6 +934,8 @@ void Tailsitter_Transition::update()
 
     case TRANSITION_ANGLE_WAIT_FW: {
         if (tailsitter.transition_fw_complete()) {
+            // To inform the attitude controller that FW_DONE
+            quadplane.attitude_control->set_tailsitter_transition(false);
             transition_state = TRANSITION_DONE;
             if (plane.arming.is_armed_and_safety_off()) {
                 fw_limit_start_ms = now;
@@ -954,6 +958,8 @@ void Tailsitter_Transition::update()
         // set throttle at either hover throttle or current throttle, whichever is higher, through the transition
         quadplane.attitude_control->set_throttle_out(MAX(motors->get_throttle_hover(),quadplane.attitude_control->get_throttle_in()), true, 0);
         quadplane.motors_output();
+        // To inform the attitude controller that tailsitter is in transition
+        quadplane.attitude_control->set_tailsitter_transition(true);
         break;
     }
 

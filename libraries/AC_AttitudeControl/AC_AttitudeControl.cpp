@@ -150,6 +150,24 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("INPUT_TC", 20, AC_AttitudeControl, _input_tc, AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT),
 
+    // @Param: RELX_TC
+    // @DisplayName: Relaxation time constant
+    // @Description: Time constant for relaxing the attitude controller
+    // @Units: s
+    // @Range: 0.01 10
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("RELX_TC", 21, AC_AttitudeControl, _relax_time_constant, 0.4f),
+
+    // @Param: RELX_ANG
+    // @DisplayName: Max tilt angle for postion controller relaxation
+    // @Description: Maximum tilt angle allowed to pass the position correction.
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("RELX_ANG", 22, AC_AttitudeControl, _max_tilt_relax, 45.0f),
+
     AP_GROUPEND
 };
 
@@ -713,6 +731,36 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // This vector represents the angular error to rotate the thrust vector using x and y and heading using z
     Vector3f attitude_error;
+
+    if(_ts_enabled){
+        float attitude_tilt;
+        compute_tilt_angle(attitude_tilt);
+        // Gradually relax roll/pitch setpoint toward zero when tilt exceeds limit
+        Vector3f euler;
+        _attitude_target.to_euler(euler.x, euler.y, euler.z);
+        const float alpha = _dt / (_dt + _relax_time_constant);
+        // Gradually bring the setpoint towards zero
+        if (fabsf(attitude_tilt) > _max_tilt_relax && !_ts_in_transition) {
+                _relaxed_roll  *= (1.0f - alpha);
+                _relaxed_pitch *= (1.0f - alpha);
+                _attitude_target.from_euler(_relaxed_roll, _relaxed_pitch, euler.z);
+                _ang_vel_target.x *= (1.0f - alpha);
+                _ang_vel_target.y *= (1.0f - alpha);
+            }
+            // When the attitude is relaxed, gradually recover the setpoint as the vehicle returns within limits
+            // 0.5f degree threshold is used to prevent oscillations around the limit when recovering
+            else if (fabsf(_relaxed_roll - euler.x) > radians(0.5f) ||fabsf(_relaxed_pitch - euler.y) > radians(0.5f)) {
+                _relaxed_roll  += (euler.x - _relaxed_roll)  * alpha;
+                _relaxed_pitch += (euler.y - _relaxed_pitch) * alpha;
+                if (fabsf(_relaxed_roll  - euler.x) < radians(0.5f)) _relaxed_roll  = euler.x;
+                if (fabsf(_relaxed_pitch - euler.y) < radians(0.5f)) _relaxed_pitch = euler.y;
+                _attitude_target.from_euler(_relaxed_roll, _relaxed_pitch, euler.z);
+            } else {
+            // Fully recovered — update the relaxed angles to original setpoint
+                _relaxed_roll  = euler.x;
+                _relaxed_pitch = euler.y;
+            }
+    }
     thrust_heading_rotation_angles(_attitude_target, attitude_body, attitude_error, _thrust_angle, _thrust_error_angle);
 
     // Compute the angular velocity corrections in the body frame from the attitude error
@@ -1192,4 +1240,12 @@ void AC_AttitudeControl::get_rpy_srate(float &roll_srate, float &pitch_srate, fl
     roll_srate = get_rate_roll_pid().get_pid_info().slew_rate;
     pitch_srate = get_rate_pitch_pid().get_pid_info().slew_rate;
     yaw_srate = get_rate_yaw_pid().get_pid_info().slew_rate;
+}
+void AC_AttitudeControl::compute_tilt_angle(float &tilt_angle){
+    Quaternion attitude_quaternion;
+    _ahrs.get_quat_body_to_ned(attitude_quaternion);
+    // To calculate the tilt angle, used the formula: cos(tilt) = 1 - 2*(q2^2 + q3^2), where q1, q2, q3, q4 are the components of the quaternion.
+    // This calculation is in VTOL frame
+    float cos_tilt = 1.0f - 2.0f*(attitude_quaternion.q2*attitude_quaternion.q2 + attitude_quaternion.q3*attitude_quaternion.q3);
+    tilt_angle = degrees(acosf(constrain_float(cos_tilt, -1.0f, 1.0f)));
 }
