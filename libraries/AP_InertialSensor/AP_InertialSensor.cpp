@@ -42,6 +42,7 @@
 #include "AP_InertialSensor_ASM330.h"
 #include "AP_InertialSensor_ADIS16607.h"
 #include <AP_Scheduler/AP_Scheduler.h>
+#include "AP_InertialSensor_ZeroOne_FPGA_SCH16T.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
