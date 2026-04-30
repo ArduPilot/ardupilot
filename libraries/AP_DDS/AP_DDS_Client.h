@@ -90,11 +90,13 @@ private:
 
     // Serial Allocation
     uxrSession session; //Session
-    bool is_using_serial; // true when using serial transport
+    bool is_using_serial{false}; // true when using serial transport
+    bool transport_initialized{false};
+    bool session_created{false};
 
     // input and output stream
-    uint8_t *input_reliable_stream;
-    uint8_t *output_reliable_stream;
+    uint8_t *input_reliable_stream{nullptr};
+    uint8_t *output_reliable_stream{nullptr};
     uxrStreamId reliable_in;
     uxrStreamId reliable_out;
 
@@ -277,12 +279,13 @@ private:
 
     // functions for serial transport
     bool ddsSerialInit();
+    void cleanup_session();
     static bool serial_transport_open(uxrCustomTransport* args);
     static bool serial_transport_close(uxrCustomTransport* transport);
     static size_t serial_transport_write(uxrCustomTransport* transport, const uint8_t* buf, size_t len, uint8_t* error);
     static size_t serial_transport_read(uxrCustomTransport* transport, uint8_t* buf, size_t len, int timeout, uint8_t* error);
     struct {
-        AP_HAL::UARTDriver *port;
+        AP_HAL::UARTDriver *port{nullptr};
         uxrCustomTransport transport;
     } serial;
 
@@ -300,7 +303,7 @@ private:
         AP_Networking_IPV4 ip{AP_DDS_DEFAULT_UDP_IP_ADDR};
         // UDP Allocation
         uxrCustomTransport transport;
-        SocketAPM *socket;
+        SocketAPM *socket{nullptr};
     } udp;
 #endif
     // pointer to transport's communication structure
@@ -418,5 +421,4 @@ public:
 };
 
 #endif // AP_DDS_ENABLED
-
 
