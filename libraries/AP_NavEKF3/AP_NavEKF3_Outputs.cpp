@@ -328,12 +328,13 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
-// If a calculated location isn't available, return a raw GPS measurement
+// If a calculated location isn't available and position source is GPS, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
+    const bool pos_from_GPS = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS);
     if (getOriginLLH(origin)) {
         postype_t posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
@@ -348,7 +349,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 return true;
             } else {
                 // We have been be doing inertial dead reckoning for too long so use raw GPS if available
-                if (getGPSLLH(loc)) {
+                if (pos_from_GPS && getGPSLLH(loc)) {
                     return true;
                 } else {
                     // Return the EKF estimate but mark it as invalid
@@ -361,7 +362,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
             }
         } else {
             // Return a raw GPS reading if available and the last recorded positon if not
-            if (getGPSLLH(loc)) {
+            if (pos_from_GPS && getGPSLLH(loc)) {
                 return true;
             } else {
                 loc.lat = EKF_origin.lat;
@@ -374,7 +375,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
         }
     } else {
         // The EKF is not navigating so use raw GPS if available
-        return getGPSLLH(loc);
+        return pos_from_GPS && getGPSLLH(loc);
     }
 }
 
