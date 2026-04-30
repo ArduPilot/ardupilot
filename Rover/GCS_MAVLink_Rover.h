@@ -2,11 +2,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 
-  // set 0 in 4.6, remove feature in 4.7:
-#ifndef AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
-#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 0
-#endif
-
 #include "defines.h"
 
 class GCS_MAVLINK_Rover : public GCS_MAVLINK
@@ -20,7 +15,6 @@ protected:
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_nav_set_yaw_speed(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
     bool get_target_location(Location &loc) const override;
 
