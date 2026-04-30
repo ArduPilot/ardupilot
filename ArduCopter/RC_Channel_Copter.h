@@ -56,7 +56,6 @@ public:
     void auto_trim_run();
     void auto_trim_cancel();
 #endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-    void save_trim();
 
 protected:
 
