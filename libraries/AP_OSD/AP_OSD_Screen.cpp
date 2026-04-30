@@ -2496,7 +2496,14 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     uint16_t powr = 0;
     // If currently in pit mode, just render 0mW to the screen
     if(!vtx->has_option(AP_VideoTX::VideoOptions::VTX_PITMODE)){
-        powr = vtx->get_power_mw();
+        // prefer the VTX's self-reported actual transmit power when it is
+        // available, so the pilot sees what is really being broadcast rather
+        // than the configured request. Falls back to configured for providers
+        // (e.g. SmartAudio) that do not report actual power. -1 means the
+        // active provider has not reported actual power; zero is a valid
+        // value (e.g. VTX briefly transmitting 0mW after exiting pit mode).
+        const int32_t actual_mw = vtx->get_actual_power_mw();
+        powr = actual_mw >= 0 ? uint16_t(actual_mw) : vtx->get_power_mw();
     }
     backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
 }
