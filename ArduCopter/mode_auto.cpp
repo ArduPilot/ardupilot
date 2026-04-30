@@ -1516,29 +1516,30 @@ void ModeAuto::do_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_start(cmd.content.location);
 }
 
-// return the Location portion of a command.  If the command's lat and lon and/or alt are zero the default_loc's lat,lon and/or alt are returned instead
-Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const
+// get the Location portion of a command.  If the command's lat and lon and/or alt are zero the default_loc's lat,lon and/or alt are returned instead
+// returns false if the location cannot be determined which only happens if the terrain data is unavailable
+bool ModeAuto::get_loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& loc) const
 {
-    Location ret(cmd.content.location);
+    loc = cmd.content.location;
 
     // use current lat, lon if zero
-    if (ret.lat == 0 && ret.lng == 0) {
-        ret.lat = default_loc.lat;
-        ret.lng = default_loc.lng;
+    if (loc.lat == 0 && loc.lng == 0) {
+        loc.lat = default_loc.lat;
+        loc.lng = default_loc.lng;
     }
+
     // use default altitude if not provided in cmd
-    if (ret.alt == 0) {
+    if (loc.alt == 0) {
         // set to default_loc's altitude but in command's alt frame
         // note that this may use the terrain database
         float default_alt_m;
-        if (default_loc.get_alt_m(ret.get_alt_frame(), default_alt_m)) {
-            ret.set_alt_m(default_alt_m, ret.get_alt_frame());
-        } else {
-            // default to default_loc's altitude and frame
-            ret.copy_alt_from(default_loc);
+        if (!default_loc.get_alt_m(loc.get_alt_frame(), default_alt_m)) {
+            return false;
         }
+        loc.set_alt_m(default_alt_m, loc.get_alt_frame());
     }
-    return ret;
+
+    return true;
 }
 
 // do_nav_wp - initiate move to next waypoint
@@ -1558,10 +1559,9 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
     }
 
     // get waypoint's location from command and send to wp_nav
-    const Location target_loc = loc_from_cmd(cmd, default_loc);
-
-    if (!wp_start(target_loc)) {
-        // failure to set next destination can be because of missing terrain data or unhealthy rangefinder
+    Location target_loc;
+    if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc)) {
+        // failure to get the location or set next destination can only be because of missing terrain data or unhealthy rangefinder
         copter.failsafe_terrain_on_event();
         return;
     }
@@ -1606,7 +1606,7 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     switch (next_cmd.id) {
     case MAV_CMD_NAV_VTOL_LAND:
     case MAV_CMD_NAV_LAND:
-        // ensure landing alt is zero
+        // ensure landing alt is zero so it is populated from the current altitude
         next_cmd.content.location.alt = 0;
         FALLTHROUGH;
     case MAV_CMD_NAV_WAYPOINT:
@@ -1615,20 +1615,30 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     case MAV_CMD_NAV_PAYLOAD_PLACE:
 #endif
     case MAV_CMD_NAV_LOITER_TIME: {
-        const Location dest_loc = loc_from_cmd(current_cmd, default_loc);
-        const Location next_dest_loc = loc_from_cmd(next_cmd, dest_loc);
+        Location dest_loc;
+        Location next_dest_loc;
+        if (!get_loc_from_cmd(current_cmd, default_loc, dest_loc) ||
+            !get_loc_from_cmd(next_cmd, dest_loc, next_dest_loc)) {
+            return false;
+        }
         return wp_nav->set_wp_destination_next_loc(next_dest_loc);
     }
     case MAV_CMD_NAV_SPLINE_WAYPOINT: {
         // get spline's location and next location from command and send to wp_nav
         Location next_dest_loc, next_next_dest_loc;
         bool next_next_dest_loc_is_spline;
-        get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
+        if (!get_spline_from_cmd(next_cmd, default_loc, next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline)) {
+            return false;
+        }
         return wp_nav->set_spline_destination_next_loc(next_dest_loc, next_next_dest_loc, next_next_dest_loc_is_spline);
     }
     case MAV_CMD_NAV_ARC_WAYPOINT: {
-        const Location dest_loc = loc_from_cmd(current_cmd, default_loc);
-        const Location next_dest_loc = loc_from_cmd(next_cmd, dest_loc);
+        Location dest_loc;
+        Location next_dest_loc;
+        if (!get_loc_from_cmd(current_cmd, default_loc, dest_loc) ||
+            !get_loc_from_cmd(next_cmd, dest_loc, next_dest_loc)) {
+            return false;
+        }
         const float arc_angle_rad = next_cmd.get_arc_angle_rad();
         return wp_nav->set_wp_destination_next_loc(next_dest_loc, arc_angle_rad);
     }
@@ -1659,13 +1669,14 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         Location default_loc = copter.current_loc;
         subtract_pos_offsets(default_loc);
 
-        // ensure landing alt is zero
+        // ensure landing alt is zero so it is populated from the current altitude
         AP_Mission::Mission_Command cmd_alt_zero = cmd;
         cmd_alt_zero.content.location.alt = 0;
 
-        const Location target_loc = loc_from_cmd(cmd_alt_zero, default_loc);
-        if (!wp_start(target_loc)) {
-            // failure to set next destination can only be because of missing terrain data
+        // get location from command and send to wp_nav
+        Location target_loc;
+        if (!get_loc_from_cmd(cmd_alt_zero, default_loc, target_loc) || !wp_start(target_loc)) {
+            // failure to get location or set next destination can only be because of missing terrain data
             copter.failsafe_terrain_on_event();
             return;
         }
@@ -1680,7 +1691,7 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
 
 // do_loiter_unlimited - start loitering with no end conditions
 // note: caller should set yaw_mode
-void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
+bool ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
 {
     // calculate default location used when lat, lon or alt is zero
     Location default_loc = copter.current_loc;
@@ -1696,15 +1707,15 @@ void ModeAuto::do_loiter_unlimited(const AP_Mission::Mission_Command& cmd)
         }
     }
 
-    // get waypoint's location from command and send to wp_nav
-    const Location target_loc = loc_from_cmd(cmd, default_loc);
-
-    // start way point navigator and provide it the desired location
-    if (!wp_start(target_loc)) {
-        // failure to set next destination can only be because of missing terrain data
+    // get location from command and send to wp_nav
+    Location target_loc;
+    if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc)) {
+        // failure to get location or set next destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
-        return;
+        return false;
     }
+
+    return true;
 }
 
 // do_circle - initiate moving in a circle
@@ -1716,7 +1727,12 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
     // subtract position offsets
     subtract_pos_offsets(default_loc);
 
-    const Location circle_center = loc_from_cmd(cmd, default_loc);
+    Location circle_center;
+    if (!get_loc_from_cmd(cmd, default_loc, circle_center)) {
+        // failure to get location can only be because of missing terrain data
+        copter.failsafe_terrain_on_event();
+        return;
+    }
 
     // calculate radius
     uint16_t circle_radius_m = HIGHBYTE(cmd.p1); // circle radius held in high byte of p1
@@ -1740,7 +1756,9 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 {
     // re-use loiter unlimited
-    do_loiter_unlimited(cmd);
+    if (!do_loiter_unlimited(cmd)) {
+        return;
+    }
 
     // setup loiter timer
     loiter_time     = 0;
@@ -1752,7 +1770,9 @@ void ModeAuto::do_loiter_time(const AP_Mission::Mission_Command& cmd)
 void ModeAuto::do_loiter_to_alt(const AP_Mission::Mission_Command& cmd)
 {
     // re-use loiter unlimited
-    do_loiter_unlimited(cmd);
+    if (!do_loiter_unlimited(cmd)) {
+        return;
+    }
 
     // if we aren't navigating to a location then we have to adjust
     // altitude for current location
@@ -1800,7 +1820,10 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
     // get spline's location and next location from command and send to wp_nav
     Location dest_loc, next_dest_loc;
     bool next_dest_loc_is_spline;
-    get_spline_from_cmd(cmd, default_loc, dest_loc, next_dest_loc, next_dest_loc_is_spline);
+    if (!get_spline_from_cmd(cmd, default_loc, dest_loc, next_dest_loc, next_dest_loc_is_spline)) {
+        copter.failsafe_terrain_on_event();
+        return;
+    }
     if (!wp_nav->set_spline_destination_loc(dest_loc, next_dest_loc, next_dest_loc_is_spline)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
@@ -1832,19 +1855,25 @@ void ModeAuto::do_spline_wp(const AP_Mission::Mission_Command& cmd)
 // calculate locations required to build a spline curve from a mission command
 // dest_loc is populated from cmd's location using default_loc in cases where the lat and lon or altitude is zero
 // next_dest_loc and nest_dest_loc_is_spline is filled in with the following navigation command's location if it exists.  If it does not exist it is set to the dest_loc and false
-void ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline)
+bool ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline)
 {
-    dest_loc = loc_from_cmd(cmd, default_loc);
+    if (!get_loc_from_cmd(cmd, default_loc, dest_loc)) {
+        return false;
+    }
 
     // if there is no delay at the end of this segment get next nav command
     AP_Mission::Mission_Command temp_cmd;
     if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
-        next_dest_loc = loc_from_cmd(temp_cmd, dest_loc);
+        if (!get_loc_from_cmd(temp_cmd, dest_loc, next_dest_loc)) {
+            return false;
+        }
         next_dest_loc_is_spline = temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT;
     } else {
         next_dest_loc = dest_loc;
         next_dest_loc_is_spline = false;
     }
+
+    return true;
 }
 
 #if AC_NAV_GUIDED
@@ -2044,9 +2073,10 @@ void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
         Location default_loc = copter.current_loc;
         subtract_pos_offsets(default_loc);
 
-        const Location target_loc = loc_from_cmd(cmd, default_loc);
-        if (!wp_start(target_loc)) {
-            // failure to set next destination can only be because of missing terrain data
+        // get location from command and send to wp_nav
+        Location target_loc;
+        if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc)) {
+            // failure to get location or set next destination can only be because of missing terrain data
             copter.failsafe_terrain_on_event();
             return;
         }
