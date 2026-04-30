@@ -683,8 +683,6 @@ private:
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
 
-    bool shift_alt_to_current_alt(Location& target_loc) const;
-
     // subtract position controller offsets from target location
     // should be used when the location will be used as a target for the position controller
     void subtract_pos_offsets(Location& target_loc) const;

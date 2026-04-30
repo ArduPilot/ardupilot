@@ -1496,37 +1496,6 @@ void PayloadPlace::run()
 }
 #endif
 
-// sets the target_loc's alt to the vehicle's current alt but does not change target_loc's frame
-// in the case of terrain altitudes either the terrain database or the rangefinder may be used
-// returns true on success, false on failure
-bool ModeAuto::shift_alt_to_current_alt(Location& target_loc) const
-{
-    // if terrain alt using rangefinder is being used then set alt to current rangefinder altitude
-    if ((target_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN) &&
-        (wp_nav->get_terrain_source() == AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER)) {
-        float curr_rngfnd_alt_m;
-        if (copter.get_rangefinder_height_interpolated_m(curr_rngfnd_alt_m)) {
-            // subtract position offset (if any)
-            curr_rngfnd_alt_m -= pos_control->get_pos_offset_U_m();
-            // wp_nav is using rangefinder so use current rangefinder alt
-            target_loc.set_alt_m(MAX(curr_rngfnd_alt_m, 2.0), Location::AltFrame::ABOVE_TERRAIN);
-            return true;
-        }
-        return false;
-    }
-
-    // take copy of current location and change frame to match target
-    Location currloc = copter.current_loc;
-    if (!currloc.change_alt_frame(target_loc.get_alt_frame())) {
-        // this could fail due missing terrain database alt
-        return false;
-    }
-
-    // set target_loc's alt minus position offset (if any)
-    target_loc.set_alt_m(currloc.alt * 0.01 - pos_control->get_pos_offset_U_m(), currloc.get_alt_frame());
-    return true;
-}
-
 // subtract position controller offsets from target location
 // should be used when the location will be used as a target for the position controller
 void ModeAuto::subtract_pos_offsets(Location& target_loc) const
@@ -1635,6 +1604,11 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
 
     // whether vehicle should stop at the target position depends upon the next command
     switch (next_cmd.id) {
+    case MAV_CMD_NAV_VTOL_LAND:
+    case MAV_CMD_NAV_LAND:
+        // ensure landing alt is zero
+        next_cmd.content.location.alt = 0;
+        FALLTHROUGH;
     case MAV_CMD_NAV_WAYPOINT:
     case MAV_CMD_NAV_LOITER_UNLIM:
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED
@@ -1658,9 +1632,6 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
         const float arc_angle_rad = next_cmd.get_arc_angle_rad();
         return wp_nav->set_wp_destination_next_loc(next_dest_loc, arc_angle_rad);
     }
-    case MAV_CMD_NAV_VTOL_LAND:
-    case MAV_CMD_NAV_LAND:
-        // stop because we may change between rel,abs and terrain alt types
     case MAV_CMD_NAV_LOITER_TURNS:
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
     case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -1684,16 +1655,15 @@ void ModeAuto::do_land(const AP_Mission::Mission_Command& cmd)
         // set state to fly to location
         state = State::FlyToLocation;
 
-        // convert cmd to location class
-        Location target_loc(cmd.content.location);
-        if (!shift_alt_to_current_alt(target_loc)) {
-            // this can only fail due to missing terrain database alt or rangefinder alt
-            // use current alt-above-home and report error
-            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "Land: no terrain data, using alt-above-home");
-        }
+        // calculate default location used when alt is zero
+        Location default_loc = copter.current_loc;
+        subtract_pos_offsets(default_loc);
 
+        // ensure landing alt is zero
+        AP_Mission::Mission_Command cmd_alt_zero = cmd;
+        cmd_alt_zero.content.location.alt = 0;
+
+        const Location target_loc = loc_from_cmd(cmd_alt_zero, default_loc);
         if (!wp_start(target_loc)) {
             // failure to set next destination can only be because of missing terrain data
             copter.failsafe_terrain_on_event();
@@ -2065,20 +2035,16 @@ void ModeAuto::do_winch(const AP_Mission::Mission_Command& cmd)
 // do_payload_place - initiate placing procedure
 void ModeAuto::do_payload_place(const AP_Mission::Mission_Command& cmd)
 {
-    // if location provided we fly to that location at current altitude
-    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0) {
+    // if location provided we fly to that location first
+    if (cmd.content.location.lat != 0 || cmd.content.location.lng != 0 || cmd.content.location.alt != 0) {
         // set state to fly to location
         payload_place.state = PayloadPlace::State::FlyToLocation;
 
-        // convert cmd to location class
-        Location target_loc(cmd.content.location);
-        if (!shift_alt_to_current_alt(target_loc)) {
-            // this can only fail due to missing terrain database alt or rangefinder alt
-            // use current alt-above-home and report error
-            target_loc.set_alt_cm(copter.current_loc.alt, Location::AltFrame::ABOVE_HOME);
-            LOGGER_WRITE_ERROR(LogErrorSubsystem::TERRAIN, LogErrorCode::MISSING_TERRAIN_DATA);
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "PayloadPlace: no terrain data, using alt-above-home");
-        }
+        // calculate default location used when lat, lon or alt is zero
+        Location default_loc = copter.current_loc;
+        subtract_pos_offsets(default_loc);
+
+        const Location target_loc = loc_from_cmd(cmd, default_loc);
         if (!wp_start(target_loc)) {
             // failure to set next destination can only be because of missing terrain data
             copter.failsafe_terrain_on_event();
