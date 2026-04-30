@@ -53,6 +53,10 @@
 #if AP_DDS_CLOCK_PUB_ENABLED
 #include "rosgraph_msgs/msg/Clock.h"
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_RANGEFINDER_PUB_ENABLED
+#include "sensor_msgs/msg/Range.h"
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#endif // AP_DDS_RANGEFINDER_PUB_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
 #include "rcl_interfaces/srv/SetParameters.h"
 #include "rcl_interfaces/msg/Parameter.h"
@@ -220,6 +224,16 @@ private:
     //! @brief Serialize the current status and publish to the IO stream(s)
     void write_status_topic();
 #endif // AP_DDS_STATUS_PUB_ENABLED
+
+#if AP_DDS_RANGEFINDER_PUB_ENABLED
+    sensor_msgs_msg_Range rangefinder_topic;
+    // The last ms timestamp AP_DDS attempted to publish each rangefinder instance
+    uint64_t last_rangefinder_time_ms[RANGEFINDER_MAX_INSTANCES];
+    //! @brief Serialize the current rangefinder data and publish to the IO stream(s)
+    void write_rangefinder_topic();
+    //! @brief Update a ROS 2 Range message from an ArduPilot rangefinder instance
+    static bool update_topic(sensor_msgs_msg_Range& msg, const uint8_t instance) WARN_IF_UNUSED;
+#endif // AP_DDS_RANGEFINDER_PUB_ENABLED
 
 #if AP_DDS_STATIC_TF_PUB_ENABLED
     // outgoing transforms

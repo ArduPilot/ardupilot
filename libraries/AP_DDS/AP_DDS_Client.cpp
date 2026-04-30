@@ -40,6 +40,11 @@
 #if AP_DDS_RC_PUB_ENABLED
 #include "AP_RSSI/AP_RSSI.h"
 #endif // AP_DDS_RC_PUB_ENABLED
+#if AP_DDS_RANGEFINDER_PUB_ENABLED
+#include "sensor_msgs/msg/Range.h"
+#include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_RangeFinder/AP_RangeFinder_Backend.h>
+#endif // AP_DDS_RANGEFINDER_PUB_ENABLED
 
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_ExternalControl.h"
@@ -92,6 +97,9 @@ static constexpr uint16_t DELAY_PING_MS = 500;
 #if AP_DDS_STATUS_PUB_ENABLED
 static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #endif // AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_RANGEFINDER_PUB_ENABLED
+static constexpr uint16_t DELAY_RANGEFINDER_TOPIC_MS = AP_DDS_DELAY_RANGEFINDER_TOPIC_MS;
+#endif // AP_DDS_RANGEFINDER_PUB_ENABLED
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -773,6 +781,47 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     }
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+
+#if AP_DDS_RANGEFINDER_PUB_ENABLED
+bool AP_DDS_Client::update_topic(sensor_msgs_msg_Range& msg, const uint8_t instance)
+{
+    RangeFinder *rangefinder = RangeFinder::get_singleton();
+    if (rangefinder == nullptr) {
+        return false;
+    }
+
+    AP_RangeFinder_Backend *sensor = rangefinder->get_backend(instance);
+    if (sensor == nullptr) {
+        return false;
+    }
+
+    if (!sensor->has_data()) {
+        return false;
+    }
+
+    update_topic(msg.header.stamp);
+
+    hal.util->snprintf(msg.header.frame_id, ARRAY_SIZE(msg.header.frame_id),
+                       "rangefinder_%u", unsigned(instance));
+
+    // Sensor_msgs/msg/Range only has:  ULTRASOUND = 0 and INFRARED   = 1
+    // For a 1D LiDAR / ToF rangefinder, INFRARED is the closest standard value
+    // available in sensor_msgs/msg/Range.
+
+    msg.radiation_type = 1U;
+
+    msg.field_of_view = 0.0f;
+
+    // Assign the min and max range based on the sensor's specifications.
+    msg.min_range = sensor->min_distance();
+    msg.max_range = sensor->max_distance();
+    // Assign the current range reading from the sensor.
+    msg.range = sensor->distance();
+
+    return true;
+}
+#endif // AP_DDS_RANGEFINDER_PUB_ENABLED
+
 /*
   start the DDS thread
  */
@@ -1806,6 +1855,30 @@ void AP_DDS_Client::write_status_topic()
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
 
+
+#if AP_DDS_RANGEFINDER_PUB_ENABLED
+void AP_DDS_Client::write_rangefinder_topic()
+{
+    WITH_SEMAPHORE(csem);
+
+    if (connected) {
+        ucdrBuffer ub {};
+
+        const uint32_t topic_size = sensor_msgs_msg_Range_size_of_topic(&rangefinder_topic, 0);
+
+        uxr_prepare_output_stream(&session, reliable_out,
+                                  topics[to_underlying(TopicIndex::RANGEFINDER_PUB)].dw_id, &ub, topic_size);
+
+        const bool success = sensor_msgs_msg_Range_serialize_topic(&ub, &rangefinder_topic);
+
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_RANGEFINDER_PUB_ENABLED
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1910,6 +1983,16 @@ void AP_DDS_Client::update()
         last_status_check_time_ms = cur_time_ms;
     }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_RANGEFINDER_PUB_ENABLED
+    for (uint8_t rangefinder_instance = 0; rangefinder_instance < RANGEFINDER_MAX_INSTANCES; rangefinder_instance++) {
+        if (cur_time_ms - last_rangefinder_time_ms[rangefinder_instance] > DELAY_RANGEFINDER_TOPIC_MS) {
+            if (update_topic(rangefinder_topic, rangefinder_instance)) {
+                write_rangefinder_topic();
+            }
+            last_rangefinder_time_ms[rangefinder_instance] = cur_time_ms;
+        }
+    }
+#endif // AP_DDS_RANGEFINDER_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
