@@ -479,20 +479,41 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
 
 bool CompassCalibrator::fit_acceptable() const
 {
-    if (!isnan(_fitness) &&
-        _params.radius > FIELD_RADIUS_MIN && _params.radius < FIELD_RADIUS_MAX &&
-        fabsf(_params.offset.x) < _offset_max &&
-        fabsf(_params.offset.y) < _offset_max &&
-        fabsf(_params.offset.z) < _offset_max &&
-        _params.diag.x > 0.2f && _params.diag.x < 5.0f &&
-        _params.diag.y > 0.2f && _params.diag.y < 5.0f &&
-        _params.diag.z > 0.2f && _params.diag.z < 5.0f &&
-        fabsf(_params.offdiag.x) < 1.0f &&      //absolute of sine/cosine output cannot be greater than 1
-        fabsf(_params.offdiag.y) < 1.0f &&
-        fabsf(_params.offdiag.z) < 1.0f ) {
-            return _fitness <= sq(_tolerance);
-        }
-    return false;
+    if (isnan(_fitness)) {
+        return false;
+    }
+    bool acceptable = true;
+    if (_params.radius <= FIELD_RADIUS_MIN || _params.radius >= FIELD_RADIUS_MAX) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag(%u) bad fit: radius %.0f [%d,%d]",
+                      _compass_idx, _params.radius, FIELD_RADIUS_MIN, FIELD_RADIUS_MAX);
+        acceptable = false;
+    }
+    if (fabsf(_params.offset.x) >= _offset_max ||
+        fabsf(_params.offset.y) >= _offset_max ||
+        fabsf(_params.offset.z) >= _offset_max) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag(%u) bad fit: ofs (%.0f,%.0f,%.0f)>=%u",
+                      _compass_idx, _params.offset.x, _params.offset.y,
+                      _params.offset.z, _offset_max);
+        acceptable = false;
+    }
+    if (_params.diag.x <= 0.2f || _params.diag.x >= 5.0f ||
+        _params.diag.y <= 0.2f || _params.diag.y >= 5.0f ||
+        _params.diag.z <= 0.2f || _params.diag.z >= 5.0f ||
+        fabsf(_params.offdiag.x) >= 1.0f ||
+        fabsf(_params.offdiag.y) >= 1.0f ||
+        fabsf(_params.offdiag.z) >= 1.0f) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag(%u) bad fit: diag (%.2f,%.2f,%.2f) offdiag (%.2f,%.2f,%.2f)",
+                      _compass_idx,
+                      _params.diag.x, _params.diag.y, _params.diag.z,
+                      _params.offdiag.x, _params.offdiag.y, _params.offdiag.z);
+        acceptable = false;
+    }
+    if (_fitness > sq(_tolerance)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag(%u) bad fit: fitness %.4g tolerance %.4g",
+                      _compass_idx, _fitness, sq(_tolerance));
+        acceptable = false;
+    }
+    return acceptable;
 }
 
 void CompassCalibrator::thin_samples()
