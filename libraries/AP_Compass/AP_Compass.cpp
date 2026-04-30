@@ -1356,14 +1356,14 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 
-#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#if AP_COMPASS_RM3100_INTERNAL_BUS_PROBING_ENABLED
     FOREACH_I2C_INTERNAL(i) {
         for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
             probe_i2c_dev(DRIVER_RM3100, AP_Compass_RM3100::probe, i, rm3100_addresses[j], all_external, ROTATION_NONE);
             RETURN_IF_NO_SPACE;
         }
     }
-#endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#endif  // AP_COMPASS_RM3100_INTERNAL_BUS_PROBING_ENABLED
 #endif  // AP_COMPASS_RM3100_ENABLED
 
 #if AP_COMPASS_BMM150_ENABLED
