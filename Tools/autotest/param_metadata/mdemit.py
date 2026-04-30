@@ -21,25 +21,38 @@ class MDEmit(Emit):
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
         fname = 'Parameters.md'
+        self.md_fname = fname
         self.nparams = []
         self.f = open(fname, mode='w')
-
         self.blacklist = None
-        
+
         # Flag to generate navigation header for BlueRobotics' ArduSub docs
         if os.getenv('BRDOC') is not None:
             self.header = """---\nlayout: default\ntitle: "Parameters"\npermalink: /parameters/\nnav:"""
-        
+
         self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
         self.t = ''
+
+    def output_fname(self):
+        return self.md_fname
 
     def close(self):
         # Write navigation header for BlueRobotics' ArduSub docs
         if os.getenv('BRDOC') is not None:
             self.f.write(self.header)
             self.f.write('\n---\n')
-            
-        self.f.write(self.preamble)
+
+        # Prepend optional firmware metadata as a Markdown comment
+        preamble = self.preamble
+        if self.git_sha is not None or self.git_tag is not None:
+            parts = []
+            if self.git_sha is not None:
+                parts.append(f'git_sha: {self.git_sha}')
+            if self.git_tag is not None:
+                parts.append(f'git_tag: {self.git_tag}')
+            preamble = '<!-- Firmware: ' + ', '.join(parts) + ' -->\n' + preamble
+
+        self.f.write(preamble)
         self.f.write(self.t)
         self.f.close()
 

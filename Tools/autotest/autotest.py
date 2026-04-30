@@ -192,8 +192,9 @@ def all_vehicles():
 def build_parameters():
     """Run the param_parse.py script."""
     print("Running param_parse.py")
+    git_sha = util.get_git_hash()
     for vehicle in all_vehicles():
-        if util.run_cmd([param_parse_filepath(), '--vehicle', vehicle],
+        if util.run_cmd([param_parse_filepath(), '--vehicle', vehicle, '--git-sha', git_sha],
                         directory=util.reltopdir('.')) != 0:
             print("Failed param_parse.py (%s)" % vehicle)
             return False

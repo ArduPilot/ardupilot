@@ -9,11 +9,23 @@ from emit import Emit
 class JSONEmit(Emit):
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        json_fname = 'apm.pdef.json'
-        self.f = open(json_fname, mode='w')
+        self.json_fname = 'apm.pdef.json'
+        self.f = open(self.json_fname, mode='w')
         self.content = {"json": {"version": 0}}
+        self.firmware_content = {}
+
+    def output_fname(self):
+        return self.json_fname
+
 
     def close(self):
+        # Include optional firmware metadata if provided
+        if self.git_sha is not None:
+            self.firmware_content['git_sha'] = self.git_sha
+        if self.git_tag is not None:
+            self.firmware_content['git_tag'] = self.git_tag
+        if self.firmware_content:
+            self.content['firmware'] = self.firmware_content
         json.dump(self.content, self.f, indent=2, sort_keys=True)
         self.f.close()
 
