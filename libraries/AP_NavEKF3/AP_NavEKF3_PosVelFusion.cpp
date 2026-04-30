@@ -129,7 +129,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
     } else  {
         // Use GPS data as first preference if fresh data is available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::GPS) {
+        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::GPS)) {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
