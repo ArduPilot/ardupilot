@@ -601,19 +601,6 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // compatability functions for Plane:
-    static uint16_t get_radio_in(const uint8_t chan) {
-        RC_Channel *c = _singleton->channel(chan);
-        if (c == nullptr) {
-            return 0;
-        }
-        return c->get_radio_in();
-    }
-    static RC_Channel *rc_channel(const uint8_t chan) {
-        return _singleton->channel(chan);
-    }
-    //end compatability functions for Plane
-
     // this function is implemented in the child class in the vehicle
     // code
     virtual RC_Channel *channel(uint8_t chan) = 0;
@@ -724,7 +711,7 @@ public:
     // method for other parts of the system (e.g. Button and mavlink)
     // to trigger auxiliary functions
     bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTrigger::Source source, uint16_t source_index) {
-        return rc_channel(0)->run_aux_function(ch_option, pos, source, source_index);
+        return channel(0)->run_aux_function(ch_option, pos, source, source_index);
     }
 
     // check if flight mode channel is assigned RC option
