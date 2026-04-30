@@ -24,6 +24,12 @@ public:
         }
         return &obj_channels[chan];
     }
+    const RC_Channel_Tracker *channel(const uint8_t chan) const override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
 
     // we always trust our RC inputs ATM:
     bool in_rc_failsafe() const override { return false; }
