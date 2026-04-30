@@ -33,6 +33,7 @@ char keyword_creation[]            = "creation";
 char keyword_manual_operator[]     = "manual_operator";
 char keyword_operator_getter[]     = "operator_getter";
 char keyword_field_valid_mask[]    = "valid_mask";
+char keyword_get[]                 = "get";
 
 
 // attributes (should include the leading ' )
@@ -429,6 +430,7 @@ struct userdata {
   char *creation; // name of a manual creation function if set, note that this will not be used internally
   int creation_args; // number of args for custom creation function
   char *operator_getter; // Custom function to get values for use in operators
+  char *get_string; // custom string to get object pointer
 };
 
 static struct userdata *parsed_userdata;
@@ -1163,6 +1165,15 @@ void handle_singleton(void) {
       error(ERROR_DEPENDS, "Expected a depends string for %s",node->name);
     }
     string_copy(&(node->dependency), depends);
+  } else if (strcmp(type, keyword_get) == 0) {
+    if (node->get_string != NULL) {
+      error(ERROR_SINGLETON, "Singletons only support a single get");
+    }
+    char *get = strtok(NULL, "");
+    if (get == NULL) {
+      error(ERROR_DEPENDS, "Expected a get string for %s",node->name);
+    }
+    string_copy(&(node->get_string), get);
   } else if (strcmp(type, keyword_literal) == 0) {
     node->flags |= UD_FLAG_LITERAL;
   } else if (strcmp(type, keyword_field) == 0) {
@@ -1420,7 +1431,11 @@ void emit_singleton_checkers(void) {
     if (!(node->flags & UD_FLAG_LITERAL) && (node->methods != NULL)) {
       start_dependency(source, node->dependency);
       fprintf(source, "%s * check_%s(lua_State *L) {\n", node->name, node->sanitized_name);
-      fprintf(source, "    %s * ud = %s::get_singleton();\n", node->name, node->name);
+      if (node->get_string == NULL) {
+        fprintf(source, "    %s * ud = %s::get_singleton();\n", node->name, node->name);
+      } else {
+        fprintf(source, "    %s * ud = %s;\n", node->name, node->get_string);
+      }
       fprintf(source, "    if (ud == nullptr) {\n");
       fprintf(source, "        // This error will never return, so there is no danger of returning a nullptr\n");
       fprintf(source, "        not_supported_error(L, 1, \"%s\");\n", node->rename ? node->rename : node->name);

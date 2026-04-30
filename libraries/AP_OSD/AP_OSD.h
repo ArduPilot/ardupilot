@@ -657,6 +657,20 @@ public:
     void enable() {
         _disable = false;
     }
+#if AP_SCRIPTING_ENABLED
+    AP_OSD_Backend *scripting_get_backend() {
+        scripting_override = true;
+        override_count = 0;
+        return _backends[0];
+    }
+    void draw_screen() {
+        if (scripting_override) {
+            update_osd();
+        }
+    }
+    bool display_disabled() const { return _disable; }
+    uint8_t get_screen() const { return current_screen; }
+#endif // AP_SCRIPTING_ENABLED
 
     AP_OSD_AbstractScreen& get_screen(uint8_t idx) {
 #if OSD_PARAM_ENABLED
@@ -718,6 +732,11 @@ private:
     AP_OSD_Backend *_backends[OSD_MAX_INSTANCES];
     uint8_t _backend_count;
 
+#if AP_SCRIPTING_ENABLED
+    // bool for scripting override and counter to timeout override
+    bool scripting_override;
+    uint8_t override_count;
+#endif // AP_SCRIPTING_ENABLED
     static AP_OSD *_singleton;
     // multi-thread access support
     HAL_Semaphore _sem;
