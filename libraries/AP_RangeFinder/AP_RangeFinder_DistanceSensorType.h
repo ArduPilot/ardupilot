@@ -14,28 +14,12 @@
  */
 #pragma once
 
-#include "AP_RangeFinder_config.h"
-
-#if AP_RANGEFINDER_SIM_ENABLED
-
-#include "AP_RangeFinder_Backend.h"
-
-class AP_RangeFinder_SITL : public AP_RangeFinder_Backend {
-public:
-    // constructor. This incorporates initialisation as well.
-    AP_RangeFinder_SITL(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params, uint8_t instance);
-
-    // update the state structure
-    void update() override;
-
-protected:
-
-    AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const override {
-        return AP_RangeFinder_DistanceSensorType::UNKNOWN;
-    }
-
-    uint8_t _instance;
-
+// distance sensor type enum, decoupled from MAVLink MAV_DISTANCE_SENSOR.
+// values must match MAVLink to allow direct casting.
+enum class AP_RangeFinder_DistanceSensorType : uint8_t {
+    LASER      = 0,
+    ULTRASOUND = 1,
+    INFRARED   = 2,
+    RADAR      = 3,
+    UNKNOWN    = 4,
 };
-
-#endif  // AP_RANGEFINDER_SIM_ENABLED

@@ -21,7 +21,7 @@ public:
 protected:
 
     // Returns the MAVLink distance sensor type
-    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override { return MAV_DISTANCE_SENSOR_LASER; }
+    AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const override { return AP_RangeFinder_DistanceSensorType::LASER; }
 
     // Called periodically to fetch a new range reading
     bool get_reading(float &reading_m) override;

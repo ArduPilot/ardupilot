@@ -836,13 +836,13 @@ uint32_t RangeFinder::last_reading_ms(enum Rotation orientation) const
     return backend->last_reading_ms();
 }
 
-MAV_DISTANCE_SENSOR RangeFinder::get_mav_distance_sensor_type_orient(enum Rotation orientation) const
+AP_RangeFinder_DistanceSensorType RangeFinder::get_distance_sensor_type_orient(enum Rotation orientation) const
 {
     AP_RangeFinder_Backend *backend = find_instance(orientation);
     if (backend == nullptr) {
-        return MAV_DISTANCE_SENSOR_UNKNOWN;
+        return AP_RangeFinder_DistanceSensorType::UNKNOWN;
     }
-    return backend->get_mav_distance_sensor_type();
+    return backend->get_distance_sensor_type();
 }
 
 // get temperature reading in C.  returns true on success and populates temp argument

@@ -26,9 +26,9 @@ public:
 
 protected:
 
-    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override
+    virtual AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const override
     {
-        return MAV_DISTANCE_SENSOR_LASER;
+        return AP_RangeFinder_DistanceSensorType::LASER;
     }
 
 private:

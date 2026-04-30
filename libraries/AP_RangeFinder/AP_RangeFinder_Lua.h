@@ -23,8 +23,8 @@ public:
     bool handle_script_msg(float dist_m) override;
     bool handle_script_msg(const RangeFinder::RangeFinder_State &state_arg) override;
 
-    MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
-        return MAV_DISTANCE_SENSOR_UNKNOWN;
+    AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const override {
+        return AP_RangeFinder_DistanceSensorType::UNKNOWN;
     }
 
 private:

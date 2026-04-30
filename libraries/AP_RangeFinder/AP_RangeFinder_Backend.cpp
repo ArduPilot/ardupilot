@@ -24,8 +24,19 @@
 
 extern const AP_HAL::HAL& hal;
 
+// ensure that AP_RangeFinder_DistanceSensorType is 1:1 with the mavlink
+// MAV_DISTANCE_SENSOR enum. This allows us to do a simple cast from one
+// to the other when sending MAVLink messages.
+#if HAL_GCS_ENABLED
+static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::LASER == MAV_DISTANCE_SENSOR_LASER, "LASER incorrect");
+static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::ULTRASOUND == MAV_DISTANCE_SENSOR_ULTRASOUND, "ULTRASOUND incorrect");
+static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::INFRARED == MAV_DISTANCE_SENSOR_INFRARED, "INFRARED incorrect");
+static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::RADAR == MAV_DISTANCE_SENSOR_RADAR, "RADAR incorrect");
+static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::UNKNOWN == MAV_DISTANCE_SENSOR_UNKNOWN, "UNKNOWN incorrect");
+#endif
+
 /*
-  base class constructor. 
+  base class constructor.
   This incorporates initialisation as well.
 */
 AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
@@ -35,11 +46,11 @@ AP_RangeFinder_Backend::AP_RangeFinder_Backend(RangeFinder::RangeFinder_State &_
     _backend_type = type();
 }
 
-MAV_DISTANCE_SENSOR AP_RangeFinder_Backend::get_mav_distance_sensor_type() const {
+AP_RangeFinder_DistanceSensorType AP_RangeFinder_Backend::get_distance_sensor_type() const {
     if (type() == RangeFinder::Type::NONE) {
-        return MAV_DISTANCE_SENSOR_UNKNOWN;
+        return AP_RangeFinder_DistanceSensorType::UNKNOWN;
     }
-    return _get_mav_distance_sensor_type();
+    return _get_distance_sensor_type();
 }
 
 RangeFinder::Status AP_RangeFinder_Backend::status() const {
