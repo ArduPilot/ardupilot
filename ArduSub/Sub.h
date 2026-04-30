@@ -34,6 +34,7 @@
 #include <StorageManager/StorageManager.h>
 #include <AP_AccelCal/AP_AccelCal.h>                // interface and maths for accelerometer calibration
 #include <AP_Math/AP_Math.h>            // ArduPilot Mega Vector/Matrix math Library
+#include <Filter/LowPassFilter.h>
 #include <AP_Declination/AP_Declination.h>     // ArduPilot Mega Declination Helper Library
 
 // Application dependencies
@@ -233,7 +234,17 @@ private:
         uint8_t internal_temperature : 1; // true if temperature is over threshold
         uint8_t crash                : 1; // true if we are crashed
         uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
+        uint8_t depth_warn           : 1; // true if depth warning threshold exceeded
+        uint8_t depth_critical       : 1; // true if depth critical threshold exceeded
     } failsafe;
+
+    // Depth failsafe state
+    enum class DepthFailsafeState : uint8_t { NONE, WARN, CRITICAL };
+    struct {
+        LowPassFilterFloat depth_lpf;    // smooths depth readings 
+        uint32_t           last_msg_ms;         // last time any depth-failsafe message was sent
+        DepthFailsafeState last_sent_state;     // state was reported in that last message
+    } depth_failsafe;
 
     bool any_failsafe_triggered() const {
         return (
@@ -247,6 +258,7 @@ private:
             || failsafe.internal_temperature
             || failsafe.crash
             || failsafe.sensor_health
+            || failsafe.depth_critical
         );
     }
 
@@ -551,9 +563,14 @@ private:
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
+    bool get_depth_sensor_depth(float &depth_m) const;
     void failsafe_leak_check();
     void failsafe_internal_pressure_check();
     void failsafe_internal_temperature_check();
+    void failsafe_depth_check();
+    void failsafe_depth_warn_event(float depth);
+    void failsafe_depth_critical_event(float depth);
+    void failsafe_depth_off_event();
 
     void failsafe_terrain_act(void);
 

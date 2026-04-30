@@ -260,6 +260,117 @@ void Sub::failsafe_internal_temperature_check()
     }
 }
 
+// Get current depth in metres. Returns false if no sensor.
+// Uses barometer for now.
+bool Sub::get_depth_sensor_depth(float &depth_m) const
+{
+    if (!ap.depth_sensor_present) {
+        return false;
+    }
+    depth_m = -barometer.get_altitude(depth_sensor_idx);
+    return true;
+}
+
+// Depth failsafe check
+// Detects state transitions and delegates all action to event functions.
+void Sub::failsafe_depth_check()
+{
+    const bool warn_fs_disabled     = is_equal(g.failsafe_depth_warn.cast_to_float(), FS_DEPTH_DISABLED);
+    const bool critical_fs_disabled = is_equal(g.failsafe_depth_critical.cast_to_float(), FS_DEPTH_DISABLED);
+
+    if (critical_fs_disabled && warn_fs_disabled) {
+        if (failsafe.depth_critical) {
+            failsafe_depth_off_event();
+        } else if (failsafe.depth_warn) {
+            failsafe_depth_off_event();
+        }
+        return;
+    }
+
+    float curr_depth;
+    if (!get_depth_sensor_depth(curr_depth)) {
+        return;
+    }
+
+    // LPF to prevent erratic readings
+    if (is_zero(depth_failsafe.depth_lpf.get_cutoff_freq())) {
+        depth_failsafe.depth_lpf.set_cutoff_frequency(0.1f);
+    }
+    const float filtered_depth = depth_failsafe.depth_lpf.apply(curr_depth, 1.0f/3.0f);
+
+    if (!critical_fs_disabled && filtered_depth >= g.failsafe_depth_critical) {
+        if (!failsafe.depth_critical) {
+            failsafe_depth_critical_event(curr_depth);
+        }
+    } else if (!warn_fs_disabled && filtered_depth >= g.failsafe_depth_warn) {
+        if (failsafe.depth_critical) {
+            // back to warn 
+            failsafe_depth_off_event();
+        }
+        if (!failsafe.depth_warn) {
+            failsafe_depth_warn_event(curr_depth);
+        }
+    } else {
+        if (failsafe.depth_critical || failsafe.depth_warn) {
+            failsafe_depth_off_event();
+        }
+    }
+
+    // resend warning on state change or 30s elapsed
+    const uint32_t tnow = AP_HAL::millis();
+    const DepthFailsafeState current_state = failsafe.depth_critical ? DepthFailsafeState::CRITICAL
+                                           : failsafe.depth_warn     ? DepthFailsafeState::WARN
+                                           : DepthFailsafeState::NONE;
+    const bool state_changed = current_state != depth_failsafe.last_sent_state;
+    const bool time_elapsed  = tnow - depth_failsafe.last_msg_ms > 30000;
+
+    if (current_state != DepthFailsafeState::NONE && (state_changed || time_elapsed)) {
+        depth_failsafe.last_msg_ms     = tnow;
+        depth_failsafe.last_sent_state = current_state;
+        if (failsafe.depth_critical) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Depth critical: %.1fm", curr_depth);
+        } else {
+            gcs().send_text(MAV_SEVERITY_WARNING, "Depth warning: %.1fm", curr_depth);
+        }
+    }
+}
+
+void Sub::failsafe_depth_warn_event(float depth)
+{
+    failsafe.depth_warn = true;
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::FAILSAFE_OCCURRED);
+    gcs().send_text(MAV_SEVERITY_WARNING, "Depth warning: %.1fm", depth);
+    depth_failsafe.last_msg_ms     = AP_HAL::millis();
+    depth_failsafe.last_sent_state = DepthFailsafeState::WARN;
+
+    // Surface (if configured)
+    if (g.failsafe_depth_warn_action == FS_DEPTH_SURFACE && motors.armed()) {
+        set_mode(Mode::Number::SURFACE, ModeReason::DEPTH_FAILSAFE);
+    }
+}
+
+void Sub::failsafe_depth_critical_event(float depth)
+{
+    failsafe.depth_warn     = false;
+    failsafe.depth_critical = true;
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::FAILSAFE_OCCURRED);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "Depth critical: %.1fm! Max depth exceeded!", depth);
+    depth_failsafe.last_msg_ms     = AP_HAL::millis();
+    depth_failsafe.last_sent_state = DepthFailsafeState::CRITICAL;
+
+    // Surface (if configured)
+    if (g.failsafe_depth_critical_action == FS_DEPTH_SURFACE && motors.armed()) {
+        set_mode(Mode::Number::SURFACE, ModeReason::DEPTH_FAILSAFE);
+    }
+}
+
+void Sub::failsafe_depth_off_event()
+{
+    failsafe.depth_warn     = false;
+    failsafe.depth_critical = false;
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_SENSORS, LogErrorCode::ERROR_RESOLVED);
+}
+
 // Check if we are leaking and perform appropriate action
 void Sub::failsafe_leak_check()
 {

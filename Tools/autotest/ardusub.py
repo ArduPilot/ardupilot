@@ -1322,6 +1322,83 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         if m.flags & mavutil.mavlink.UTM_DATA_AVAIL_FLAGS_UAS_ID_AVAILABLE == 0:
             raise NotAchievedException("UAS_ID_AVAILABLE flag not set")
 
+    def DepthFailsafe(self):
+        """Test depth failsafe warn and critical thresholds"""
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        # Prearm test: arming must be blocked if no depth sensor is present
+        self.start_subtest("Prearm check: no depth sensor")
+        old_baro_count = self.get_parameter("SIM_BARO_COUNT")
+        self.set_parameters({
+            'FS_DEPTH_WARN': 1.0,
+            'SIM_BARO_COUNT': 0,
+        })
+        self.reboot_sitl()
+        self.assert_prearm_failure(
+            "Depth failsafe requires depth sensor",
+            other_prearm_failures_fatal=False,
+        )
+        self.set_parameter("SIM_BARO_COUNT", old_baro_count)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # Warn and critical thresholds trigger statustext and SURFACE mode
+        self.start_subtest("Warn and critical thresholds")
+        self.set_parameters({
+            'FS_DEPTH_WARN': 1.0,
+            'FS_DEPTH_CRIT': 2.0,
+            'FS_DEPTH_CRI_ACT': 1,
+        })
+        self.arm_vehicle()
+        self.change_mode('ALT_HOLD')
+        # Dive past warn threshold(1m)
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-1.8, altitude_max=-1.5, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.wait_statustext("Depth warning", timeout=20, check_context=True)
+        # Dive past critical threshold(2m)
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-2.8, altitude_max=-2.5, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.wait_statustext("Depth critical", timeout=20, check_context=True)
+        self.wait_mode("SURFACE", timeout=20)
+        self.wait_altitude(altitude_min=-0.5, altitude_max=0, relative=False, timeout=60)
+        self.disarm_vehicle()
+
+        # Off-event test: re-dive past warn; a fresh warning triggers confirming state was cleared
+        self.start_subtest("Off-event clears failsafe state")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('ALT_HOLD')
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-1.8, altitude_max=-1.5, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.wait_statustext("Depth warning", timeout=20)
+        self.change_mode('SURFACE')
+        self.wait_altitude(altitude_min=-0.5, altitude_max=0, relative=False, timeout=60)
+        self.disarm_vehicle()
+
+        # Warn action test: FS_DEPTH_WAR_ACT=1 must surface the vehicle on warn alone
+        self.start_subtest("Warn action surfaces vehicle")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameters({
+            'FS_DEPTH_WAR_ACT': 1,
+            'FS_DEPTH_CRIT': -1.0,  # critical disabled
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('ALT_HOLD')
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-1.8, altitude_max=-1.5, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.wait_statustext("Depth warning", timeout=20, check_context=True)
+        self.wait_mode("SURFACE", timeout=20)
+        self.wait_altitude(altitude_min=-0.5, altitude_max=0, relative=False, timeout=60)
+        self.disarm_vehicle()
+
+        self.context_pop()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1365,6 +1442,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.VisoForYaw,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
+            self.DepthFailsafe,
         ])
 
         return ret

@@ -38,6 +38,14 @@ bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
         return false;
     }
 
+    // depth failsafe thresholds require depth sensor 
+    const bool warn_fs_configured     = !is_equal(sub.g.failsafe_depth_warn.cast_to_float(), FS_DEPTH_DISABLED);
+    const bool critical_fs_configured = !is_equal(sub.g.failsafe_depth_critical.cast_to_float(), FS_DEPTH_DISABLED);
+    if ((warn_fs_configured || critical_fs_configured) && !sub.ap.depth_sensor_present) {
+        check_failed(display_failure, "Depth failsafe requires depth sensor");
+        return false;
+    }
+
     return AP_Arming::pre_arm_checks(display_failure);
 }
 
