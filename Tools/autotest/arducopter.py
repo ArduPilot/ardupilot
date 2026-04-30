@@ -7448,20 +7448,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def MountYawVehicleForMountROI(self):
-        '''Test Camera/Antenna Mount vehicle yawing for ROI'''
+        '''Test vehicle yawing for ROI with no mount configured'''
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
-        yaw_servo = 7
-        self.setup_servo_mount(yaw_servo=yaw_servo)
-        self.reboot_sitl() # to handle MNT1_TYPE changing
-
-        self.progress("checking ArduCopter yaw-aircraft-for-roi")
+        self.progress("checking ArduCopter yaw-aircraft-for-roi without mount")
         self.takeoff(20, mode='GUIDED')
 
-        m = self.assert_receive_message('VFR_HUD')
-        self.progress("current heading %u" % m.heading)
-        self.set_parameter("SERVO%u_FUNCTION" % yaw_servo, 0) # yaw
-        self.progress("Waiting for check_servo_map to do its job")
-        self.delay_sim_time(5)
         self.progress("Pointing North")
         self.guided_achieve_heading(0, direction=1, accuracy=1)
         self.delay_sim_time(5)
@@ -7521,6 +7512,82 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Wait for vehicle to point sssse due to moving")
         self.wait_heading(170, timeout=600, minimum_duration=1)
 
+        self.do_RTL()
+
+    def MountYawVehicleForLimitedYawROI(self):
+        '''Copter yaws with mount midpoint offset when mount has limited yaw range'''
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.setup_servo_mount()
+        self.set_parameters({
+            "MNT1_YAW_MIN": 0,
+            "MNT1_YAW_MAX": 90,
+        })
+        self.reboot_sitl()
+
+        self.takeoff(20, mode='GUIDED')
+        self.guided_achieve_heading(0, direction=1, accuracy=1)
+        self.delay_sim_time(5)
+
+        start = self.mav.location()
+        (roi_lat, roi_lon) = mavextra.gps_offset(start.lat, start.lng, -100, -100)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+            p5=roi_lat,
+            p6=roi_lon,
+            p7=0,
+        )
+        # bearing ≈ 225°, midpoint offset = 45° → expect heading 180°
+        self.wait_heading(180, timeout=600, minimum_duration=2)
+        self.do_RTL()
+
+    def MountYawVehicleForFixedYawROI(self):
+        '''Copter yaws with fixed-angle offset for a fixed-yaw (right-facing) mount in ROI mode'''
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.setup_servo_mount()
+        self.set_parameters({
+            "MNT1_YAW_MIN": 90,
+            "MNT1_YAW_MAX": 90,
+        })
+        self.reboot_sitl()
+
+        self.takeoff(20, mode='GUIDED')
+        self.guided_achieve_heading(0, direction=1, accuracy=1)
+        self.delay_sim_time(5)
+
+        start = self.mav.location()
+        (roi_lat, roi_lon) = mavextra.gps_offset(start.lat, start.lng, -100, -100)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+            p5=roi_lat,
+            p6=roi_lon,
+            p7=0,
+        )
+        # bearing ≈ 225°, fixed offset = 90° → expect heading 135° (right side faces ROI)
+        self.wait_heading(135, timeout=600, minimum_duration=2)
+        self.do_RTL()
+
+    def MountYawVehicleForROIFullRangeRegression(self):
+        '''Copter must NOT yaw for ROI when mount has full 360-degree yaw range'''
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.setup_servo_mount()  # default MNT1_YAW_MIN=-180, MNT1_YAW_MAX=180; yaw servo enabled
+        self.reboot_sitl()
+
+        self.takeoff(20, mode='GUIDED')
+        self.guided_achieve_heading(0, direction=1, accuracy=1)
+        self.delay_sim_time(5)
+
+        start = self.mav.location()
+        (roi_lat, roi_lon) = mavextra.gps_offset(start.lat, start.lng, -100, -100)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI,
+            p5=roi_lat,
+            p6=roi_lon,
+            p7=0,
+        )
+        # mount has full range: neither get_roi_yaw_offset_rad() nor !has_pan_control() fires
+        # copter should remain pointing North
+        self.delay_sim_time(5)
+        self.assert_heading(0, accuracy=10)
         self.do_RTL()
 
     def ThrowMode(self):
@@ -13607,6 +13674,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RTLSpeed,
              self.Mount,
              self.MountYawVehicleForMountROI,
+             self.MountYawVehicleForLimitedYawROI,
+             self.MountYawVehicleForFixedYawROI,
+             self.MountYawVehicleForROIFullRangeRegression,
              self.MAV_CMD_DO_MOUNT_CONTROL,
              self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
              self.AutoYawDO_MOUNT_CONTROL,
