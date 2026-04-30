@@ -968,10 +968,8 @@ private:
     // Apply a median filter to range finder data
     void readRangeFinder();
 
-#if EK3_FEATURE_OPTFLOW_FUSION
-    // check if the vehicle has taken off during optical flow navigation by looking at inertial and range finder data
-    void detectOptFlowTakeoff(void);
-#endif
+    // check if the vehicle has taken off by looking at inertial and range finder data
+    void detectTakeoff(void);
 
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
@@ -1471,7 +1469,7 @@ private:
     AP_NavEKF_Source::SourceZ prevHgtSource;    // previous height source used to detect changes in source
 
     // Movement detector
-    bool takeOffDetected;           // true when takeoff for optical flow navigation has been detected
+    bool takeOffDetected;           // true when takeoff has been detected
     ftype rngAtStartOfFlight;       // range finder measurement at start of flight
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 
