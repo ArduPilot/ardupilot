@@ -11642,6 +11642,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_prearm_failure("EK3 sources require Compass")
         self.context_pop()
 
+    def EKFSourceSetFailsafe(self):
+        '''Test EKF failsafe gate resets on source set switch'''
+        # Configure source set 2 with no position/velocity aiding.
+        # When the vehicle switches from GPS (set 1) to no-aiding (set 2),
+        # has_position drops to false.  Without the ekf_check source-reset
+        # fix, the failsafe fires within 1 second because has_ever_passed
+        # is still true from the GPS fix.
+        self.set_parameters({
+            "EK3_SRC2_POSXY": 0,  # none
+            "EK3_SRC2_VELXY": 0,  # none
+            "EK3_SRC2_POSZ": 1,   # baro
+            "EK3_SRC2_VELZ": 0,   # none
+            "EK3_SRC2_YAW": 1,    # compass
+            "RC8_OPTION": 90,      # EKF source selector
+        })
+        self.set_rc(8, 1000)  # ensure source set 1 (GPS)
+        self.reboot_sitl()
+
+        # take off with GPS — EKF establishes position, has_ever_passed latches true
+        self.takeoff(10, mode="LOITER")
+        self.delay_sim_time(5)
+
+        # switch to ALT_HOLD which does not require position
+        self.change_mode('ALT_HOLD')
+
+        self.context_collect('STATUSTEXT')
+
+        # switch to source set 2 (no position aiding)
+        self.progress("Switching to no-aiding source set")
+        self.set_rc(8, 1500)
+
+        # wait for EKF to lose position.  The EKF stays in AID_ABSOLUTE
+        # for posRetryTimeNoVel_ms (7s) after the last GPS fusion, then
+        # posTimeout fires and horiz_pos_abs goes false.  Once
+        # has_position is false and has_ever_passed is true, ekf_check
+        # increments fail_count at 10Hz — failsafe fires after 1s.
+        # Total: ~8s without the fix.  Wait 10s to be safe.
+        self.delay_sim_time(10)
+
+        # verify no EKF failsafe fired
+        if self.statustext_in_collections("EKF variance"):
+            raise NotAchievedException(
+                "EKF failsafe triggered on intentional source set switch")
+
+        # switch back to GPS source set
+        self.progress("Switching back to GPS source set")
+        self.set_rc(8, 1000)
+        self.delay_sim_time(2)
+
+        # return and land
+        self.do_RTL()
+
     def EK3_EXT_NAV_vel_without_vert(self):
         '''Test that EK3 External Navigation velocity works without vertical velocity.'''
 
@@ -16609,6 +16661,7 @@ return update, 1000
             self.MotorTest,
             self.AltEstimation,
             self.EKFSource,
+            self.EKFSourceSetFailsafe,
             self.GSF,
             self.GSF_reset,
             self.AP_Avoidance,
