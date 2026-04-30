@@ -53,6 +53,9 @@
 #if AP_DDS_CLOCK_PUB_ENABLED
 #include "rosgraph_msgs/msg/Clock.h"
 #endif // AP_DDS_CLOCK_PUB_ENABLED
+#if AP_DDS_ODOM_SUB_ENABLED
+#include "nav_msgs/msg/Odometry.h"
+#endif // AP_DDS_ODOM_SUB_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
 #include "rcl_interfaces/srv/SetParameters.h"
 #include "rcl_interfaces/msg/Parameter.h"
@@ -245,6 +248,10 @@ private:
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_ODOM_SUB_ENABLED
+    // incoming odometry for external position and velocity
+    static nav_msgs_msg_Odometry rx_odom_topic;
+#endif // AP_DDS_ODOM_SUB_ENABLED
     HAL_Semaphore csem;
 
 #if AP_DDS_PARAMETER_SERVER_ENABLED
