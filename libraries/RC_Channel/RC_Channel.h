@@ -604,6 +604,7 @@ public:
     // this function is implemented in the child class in the vehicle
     // code
     virtual RC_Channel *channel(uint8_t chan) = 0;
+    virtual const RC_Channel *channel(uint8_t chan) const = 0;
     // helper used by scripting to convert the above function from 0 to 1 indexeing
     // range is checked correctly by the underlying channel function
     RC_Channel *lua_rc_channel(const uint8_t chan) {
@@ -740,12 +741,19 @@ public:
     uint32_t get_fs_timeout_ms() const { return MAX(_fs_timeout * 1000, 100); }
 
     // methods which return RC input channels used for various axes.
-    RC_Channel &get_roll_channel() const;
-    RC_Channel &get_pitch_channel() const;
-    RC_Channel &get_yaw_channel() const;
-    RC_Channel &get_throttle_channel() const;
-    RC_Channel &get_forward_channel() const;
-    RC_Channel &get_lateral_channel() const;
+    const RC_Channel &get_roll_channel() const;
+    const RC_Channel &get_pitch_channel() const;
+    const RC_Channel &get_yaw_channel() const;
+    const RC_Channel &get_throttle_channel() const;
+    const RC_Channel &get_forward_channel() const;
+    const RC_Channel &get_lateral_channel() const;
+
+    RC_Channel &get_roll_channel();
+    RC_Channel &get_pitch_channel();
+    RC_Channel &get_yaw_channel();
+    RC_Channel &get_throttle_channel();
+    RC_Channel &get_forward_channel();
+    RC_Channel &get_lateral_channel();
 
     bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
 
@@ -774,7 +782,8 @@ private:
     // set to true if we see overrides or other RC input
     bool _has_ever_seen_rc_input;
 
-    RC_Channel *flight_mode_channel() const;
+    RC_Channel *flight_mode_channel();
+    const RC_Channel *flight_mode_channel() const;
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
@@ -791,7 +800,8 @@ private:
     void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
 #endif
 
-    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
+    const RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
+    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number);
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
