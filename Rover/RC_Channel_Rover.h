@@ -45,6 +45,12 @@ public:
         }
         return &obj_channels[chan];
     }
+    const RC_Channel_Rover *channel(const uint8_t chan) const override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
 
 private:
 

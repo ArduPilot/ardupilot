@@ -42,6 +42,12 @@ public:
         }
         return &obj_channels[chan];
     }
+    const RC_Channel_Copter *channel(const uint8_t chan) const override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
 
     // returns true if throttle arming checks should be run
     bool arming_check_throttle() const override;
