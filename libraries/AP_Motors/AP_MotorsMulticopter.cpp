@@ -39,6 +39,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Yaw control is given at least this pwm in microseconds range
     // @Range: 0 500
     // @Units: PWM
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("YAW_HEADROOM", 6, AP_MotorsMulticopter, _yaw_headroom, AP_MOTORS_YAW_HEADROOM_DEFAULT),
 
@@ -64,6 +65,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
     // @Range: 6 53
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("BAT_VOLT_MAX", 10, AP_MotorsMulticopter, thr_lin.batt_voltage_max, AP_MOTORS_BAT_VOLT_MAX_DEFAULT),
 
@@ -72,6 +74,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
     // @Range: 6 42
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("BAT_VOLT_MIN", 11, AP_MotorsMulticopter, thr_lin.batt_voltage_min, AP_MOTORS_BAT_VOLT_MIN_DEFAULT),
 
@@ -80,6 +83,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Maximum current over which maximum throttle is limited (0 = Disabled)
     // @Range: 0 200
     // @Units: A
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_BAT_CURR_MAX_DEFAULT),
 
@@ -98,6 +102,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: This sets the min PWM output value in microseconds that will ever be output to the motors
     // @Units: PWM
     // @Range: 0 2000
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PWM_MIN", 16, AP_MotorsMulticopter, _pwm_min, 1000),
 
@@ -106,6 +111,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: This sets the max PWM value in microseconds that will ever be output to the motors
     // @Units: PWM
     // @Range: 0 2000
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 2000),
 
@@ -114,6 +120,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
     // @Values: 0.0:Low, 0.15:Default, 0.25:High
     // @Range: 0.0 0.25
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, thr_lin.spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
@@ -122,6 +129,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range.  Should be lower than MOT_SPIN_MIN.
     // @Values: 0.0:Low, 0.1:Default, 0.2:High
     // @Range: 0.0 0.2
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _spin_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
 
@@ -130,6 +138,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Time constant used to limit the maximum current
     // @Range: 0 10
     // @Units: s
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_TC", 20, AP_MotorsMulticopter, _batt_current_time_constant, AP_MOTORS_BAT_CURR_TC_DEFAULT),
 
@@ -189,6 +198,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
     // @Range: 0 15
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("BAT_IDX", 39, AP_MotorsMulticopter, thr_lin.batt_idx, 0),
 
