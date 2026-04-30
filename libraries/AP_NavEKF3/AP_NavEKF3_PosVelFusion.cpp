@@ -145,7 +145,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             // set the variances using the position measurement noise parameter
             P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
 #if EK3_FEATURE_BEACON_FUSION
-        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
+        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::RNGBCN)) {
             // use the range beacon data as a second preference
             stateStruct.position.x = rngBcn.receiverPos.x;
             stateStruct.position.y = rngBcn.receiverPos.y;
@@ -154,7 +154,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             P[8][8] = rngBcn.receiverPosCov[1][1];
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
+        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::EXTNAV)) {
             // use external nav data as the third preference
             stateStruct.position.x = extNavDataDelayed.pos.x;
             stateStruct.position.y = extNavDataDelayed.pos.y;
