@@ -144,3 +144,6 @@ define AP_SERVO_TELEM_ENABLED 0
 
 # don't send extra flight information on small boards
 define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED 0
+
+# Enable Benewake TFA1500
+define AP_RANGEFINDER_BENEWAKE_TFA1500_ENABLED 0
