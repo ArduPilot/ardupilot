@@ -23,6 +23,15 @@
 #define HAL_HIGH_LATENCY2_ENABLED 1
 #endif
 
+// MAV_CMD_GET_HOME_POSITION is redundant with
+// MAV_CMD_REQUEST_MESSAGE, it is slated for removal:
+// ArduPilot 4.8 allows it to be compiled out
+// ArduPilot 4.9 stops compiling in by default
+// ArduPilot 4.10 removes the code entirely
+#ifndef AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
+#define AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED AP_AHRS_ENABLED
+#endif
+
 // handling of MISSION_SET_CURRENT (the message) is slated to be
 // removed.  It has signficant deficiencies vs MAV_CMD_DO_SET_CURRENT.
 // The command was added to the spec in January 2019 and to MAVLink in

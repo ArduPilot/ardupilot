@@ -5105,7 +5105,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &
     return _set_mode_common(_base_mode, _custom_mode);
 }
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_int_t &packet)
 {
     if (!AP::ahrs().home_is_set()) {
@@ -5122,7 +5122,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_i
 
     return MAV_RESULT_ACCEPTED;
 }
-#endif  // AP_AHRS_ENABLED
+#endif  // AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_int_t &packet)
 {
@@ -5802,10 +5802,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_flash_bootloader(packet);
 #endif
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
     case MAV_CMD_GET_HOME_POSITION:
         return handle_command_get_home_position(packet);
-#endif
+#endif  // AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         return handle_command_preflight_calibration(packet, msg);
