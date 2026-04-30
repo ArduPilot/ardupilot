@@ -208,7 +208,7 @@ void RC_Channels::init_aux_all()
 //
 // Support for mode switches
 //
-RC_Channel *RC_Channels::flight_mode_channel() const
+RC_Channel *RC_Channels::flight_mode_channel()
 {
     const int8_t num = flight_mode_channel_number();
     if (num <= 0) {
@@ -217,7 +217,18 @@ RC_Channel *RC_Channels::flight_mode_channel() const
     if (num >= NUM_RC_CHANNELS) {
         return nullptr;
     }
-    return rc_channel(num-1);
+    return channel(num-1);
+}
+const RC_Channel *RC_Channels::flight_mode_channel() const
+{
+    const int8_t num = flight_mode_channel_number();
+    if (num <= 0) {
+        return nullptr;
+    }
+    if (num >= NUM_RC_CHANNELS) {
+        return nullptr;
+    }
+    return channel(num-1);
 }
 
 void RC_Channels::reset_mode_switch()
@@ -246,7 +257,7 @@ void RC_Channels::read_mode_switch()
 // return true if assigned
 bool RC_Channels::flight_mode_channel_conflicts_with_rc_option() const
 {
-    RC_Channel *chan = flight_mode_channel();
+    const RC_Channel *chan = flight_mode_channel();
     if (chan == nullptr) {
         return false;
     }
@@ -260,7 +271,7 @@ bool RC_Channels::flight_mode_channel_conflicts_with_rc_option() const
 */
 bool RC_Channels::get_pwm(uint8_t c, uint16_t &pwm) const
 {
-    RC_Channel *chan = rc_channel(c-1);
+    const RC_Channel *chan = channel(c-1);
     if (chan == nullptr) {
         return false;
     }
@@ -328,35 +339,67 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 // invalid option has been chosen somehow then the returned channel
 // will be a dummy channel.
 static RC_Channel dummy_rcchannel;
-RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
+const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
 {
-    RC_Channel *ret = RC_Channels::rc_channel(rcmap_number-1);
+    const RC_Channel *ret = channel(rcmap_number-1);
     if (ret != nullptr) {
         return *ret;
     }
     return dummy_rcchannel;
 }
-RC_Channel &RC_Channels::get_roll_channel() const
+RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
+{
+    RC_Channel *ret = channel(rcmap_number-1);
+    if (ret != nullptr) {
+        return *ret;
+    }
+    return dummy_rcchannel;
+}
+const RC_Channel &RC_Channels::get_roll_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->roll());
 };
-RC_Channel &RC_Channels::get_pitch_channel() const
+RC_Channel &RC_Channels::get_roll_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+};
+const RC_Channel &RC_Channels::get_pitch_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
 };
-RC_Channel &RC_Channels::get_throttle_channel() const
+RC_Channel &RC_Channels::get_pitch_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+};
+const RC_Channel &RC_Channels::get_throttle_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
 };
-RC_Channel &RC_Channels::get_yaw_channel() const
+RC_Channel &RC_Channels::get_throttle_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+};
+const RC_Channel &RC_Channels::get_yaw_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
 };
-RC_Channel &RC_Channels::get_forward_channel() const
+RC_Channel &RC_Channels::get_yaw_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+};
+const RC_Channel &RC_Channels::get_forward_channel() const
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->forward());
 };
-RC_Channel &RC_Channels::get_lateral_channel() const
+RC_Channel &RC_Channels::get_forward_channel()
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+};
+const RC_Channel &RC_Channels::get_lateral_channel() const
+{
+    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+};
+RC_Channel &RC_Channels::get_lateral_channel()
 {
     return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
 };
