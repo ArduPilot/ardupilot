@@ -170,7 +170,17 @@ static void handle_get_node_info(CanardInstance* ins,
                            transfer->priority,
                            CanardResponse,
                            &buffer[0],
-                           total_size);
+                           total_size
+#if CANARD_ENABLE_DEADLINE
+                           , 100000  // deadline, in microseconds
+#endif  // CANARD_ENABLE_DEADLINE
+#if CANARD_MULTI_IFACE
+                           , 255     // uint8_t iface_mask
+#endif  // CANARD_MULTI_IFACE
+#if CANARD_ENABLE_CANFD
+                           , 1  // bool can_fd
+#endif  // CANARD_ENABLE_CANFD
+        );
 }
 
 /*
@@ -198,7 +208,17 @@ static bool send_fw_read(uint8_t idx)
                                CANARD_TRANSFER_PRIORITY_HIGH,
                                CanardRequest,
                                &buffer[0],
-                               total_size) > 0) {
+                               total_size
+#if CANARD_ENABLE_DEADLINE
+                               , 100000  // deadline, in microseconds
+#endif  // CANARD_ENABLE_DEADLINE
+#if CANARD_MULTI_IFACE
+                               , 255     // uint8_t iface_mask
+#endif  // CANARD_MULTI_IFACE
+#if CANARD_ENABLE_CANFD
+                               , 1  // bool can_fd
+#endif  // CANARD_ENABLE_CANFD
+            ) > 0) {
         // mark it as having been sent
         r.sent_ms = AP_HAL::millis();
         return true;
@@ -399,7 +419,17 @@ static void handle_begin_firmware_update(CanardInstance* ins, CanardRxTransfer* 
                            transfer->priority,
                            CanardResponse,
                            &buffer[0],
-                           total_size);
+                           total_size
+#if CANARD_ENABLE_DEADLINE
+                           , 100000  // deadline, in microseconds
+#endif  // CANARD_ENABLE_DEADLINE
+#if CANARD_MULTI_IFACE
+                           , 255     // uint8_t iface_mask
+#endif  // CANARD_MULTI_IFACE
+#if CANARD_ENABLE_CANFD
+                           , 1  // bool can_fd
+#endif  // CANARD_ENABLE_CANFD
+        );
 }
 
 static void handle_allocation_response(CanardInstance* ins, CanardRxTransfer* transfer)
@@ -657,7 +687,17 @@ static void canard_broadcast(uint64_t data_type_signature,
                     &transfer_id,
                     priority,
                     payload,
-                    payload_len);
+                    payload_len
+#if CANARD_ENABLE_DEADLINE
+                    , 100000  // deadline, in microseconds
+#endif  // CANARD_ENABLE_DEADLINE
+#if CANARD_MULTI_IFACE
+                    , 255     // uint8_t iface_mask
+#endif  // CANARD_MULTI_IFACE
+#if CANARD_ENABLE_CANFD
+                    , 1  // bool can_fd
+#endif  // CANARD_ENABLE_CANFD
+        );
 }
 
 
