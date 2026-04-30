@@ -10,6 +10,7 @@ AP_FLAKE8_CLEAN
 import os
 
 from math import degrees
+from math import radians
 
 from pymavlink import mavextra
 from pymavlink import mavutil
@@ -1322,6 +1323,63 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         if m.flags & mavutil.mavlink.UTM_DATA_AVAIL_FLAGS_UAS_ID_AVAILABLE == 0:
             raise NotAchievedException("UAS_ID_AVAILABLE flag not set")
 
+    def UpsideDown(self):
+        """Test roll authority and attitude control of vectored_6dof frame via SET_ATTITUDE_TARGET."""
+        model = "vectored_6dof"
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=','.join(self.model_defaults_filepath(model)),
+        )
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('ALT_HOLD')
+
+        type_mask = (
+            mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+            mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+            mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE |
+            mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_THROTTLE_IGNORE
+        )
+
+        def command_and_wait_roll(target_deg, timeout=30, hold_seconds=2):
+            q = mavextra.euler_to_quat([radians(target_deg), 0, 0])
+            achieved_start = None
+            tstart = self.get_sim_time()
+            while "Achieving roll target":
+                now = self.get_sim_time_cached()
+                if now - tstart > timeout:
+                    raise NotAchievedException(f"Failed to achieve roll {target_deg} degrees")
+                self.mav.mav.set_attitude_target_send(
+                    0,  # timestamp
+                    self.sysid_thismav(), 1,  # target IDs
+                    type_mask,
+                    q,
+                    0, 0, 0,  # (ignored) attitude rate targets
+                    0.5  # thrust
+                )
+                m = self.assert_receive_message('ATTITUDE', timeout=5)
+                current_roll_deg = degrees(m.roll)
+                on_target = abs(mavextra.angle_diff(current_roll_deg, target_deg)) < 5
+                if on_target:
+                    if achieved_start is None:
+                        achieved_start = now
+                    elif now - achieved_start >= hold_seconds:
+                        self.progress(f"Achieved roll {target_deg} degrees")
+                        return
+                else:
+                    achieved_start = None
+
+        for roll_deg in [45, 90, 120, 180]:
+            self.start_subtest(f"Roll {roll_deg} degrees")
+            command_and_wait_roll(roll_deg)
+
+            self.start_subtest(f"Return to level from {roll_deg} degrees")
+            command_and_wait_roll(0)
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1365,6 +1423,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.VisoForYaw,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
+            self.UpsideDown,
         ])
 
         return ret
