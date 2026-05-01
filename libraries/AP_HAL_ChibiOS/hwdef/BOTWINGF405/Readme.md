@@ -89,7 +89,7 @@ Any UART can be used for RC system connections in ArduPilot also, and is compati
 
 The BOTWINGF405 includes an internal AT7456E OSD enabled for analog video. Simultaneous DisplayPort operation is enabled by default on UART3
 
-## PWM Outputs
+## PWM Output
 
 All motor/servo outputs are Dshot and PWM capable. M1-4 are also BDshot capable. However, mixing Dshot, serial LED, and normal PWM operation for outputs is restricted into groups, ie. enabling Dshot for an output in a group requires that ALL outputs in that group be configured and used as Dshot, rather than PWM outputs.
 
@@ -117,7 +117,7 @@ There is no onboard compass. External compass modules can be connected via I2C (
 
 GPIO81 controls 9V video BEC output. Set GPIO high to enable 9V for connected devices. RELAY1 is configured by default to control this GPIO.
 
-## GPIO
+## GPIOs
 
 The PIO pad is setup as a user GPIO (GPIO82) by default, controlled by RELAY2.
 

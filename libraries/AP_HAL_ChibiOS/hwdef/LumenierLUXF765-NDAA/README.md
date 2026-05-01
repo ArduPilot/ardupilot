@@ -157,14 +157,14 @@ The AT7456E communicates with the flight controller on SPI3.
 
 The LUX F765 - NDAA has a camera control output on PE10, which corresponds to GPIO 82. Additionally, RELAY3 is pre-configured to control GPIO 82.
 
-## Analog inputs
+## Analog Inputs
 
 The LUX F765 NDAA has 2 analog inputs:
 
 - PC2 -> Battery Current
 - PC3 -> Battery Voltage
 
-## Battery Monitor
+## Battery Monitoring
 
 The LUX F765 - NDAA has an internal voltage sensor and connections on the ESC connector
 for an external current sensor input. The voltage sensor can handle up to an 8S battery.

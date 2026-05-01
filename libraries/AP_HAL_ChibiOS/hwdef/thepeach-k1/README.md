@@ -46,7 +46,7 @@ Contact the [manufacturer](https://thepeach.kr/) for hardware support or complia
 
 ![pinmap_bottom](./pinmap_bottom.png)
 
-## Serial Port Mapping
+## UART Mapping
 
 | UART | Device | Port
 --- | --- | ---
@@ -82,6 +82,6 @@ Under these conditions, all power sources cause permanent damage to the flight c
 1. POWER input (5.5V Over)
 2. USB input (5.5V Over)
 
-## Where to buy
+## Where to Buy
 
 Order from [ThePeach](http://thepeach.shop/)

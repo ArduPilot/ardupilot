@@ -55,7 +55,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![Wire Diagram](./images/3.Wire_Diagram.png "Wire Diagram")
 
-## UART Mapping (Port Diagram & Pin outs)
+## UART Mapping
 
  UART corresponding to each SERIAL port, and its default protocol, are shown below:
 
@@ -196,7 +196,7 @@ The numbering of the GPIOs for use in the PIN parameters in ArduPilot is:
 - PWM13(M13) 62
 - PWM14(M14) 63
 
-## Analog inputs
+## Analog Inputs
 
 The NarinFC-H7 has 2 analog inputs, one 6V tolerant and one 3.3V tolerant
 
@@ -210,7 +210,7 @@ The NarinFC-H7 has 2 analog inputs, one 6V tolerant and one 3.3V tolerant
 - ADC Pin8  -> VDD_5V_SENS
 - ADC Pin11 -> SCALED_V3V3
 
-## Battery Monitor
+## Battery Monitoring
 
 The board has two dedicated power monitor ports on 6 pin connectors. The correct battery setting parameters are dependent on the type of power brick which is connected. By default, use of a CAN battery monitor is enabled.
 

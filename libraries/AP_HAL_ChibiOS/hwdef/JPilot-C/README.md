@@ -141,7 +141,7 @@ Channels within the same group need to use the same output rate. If any channel 
 
 Any of the serial ports can be used for a bidirectional RC connection. Change its `SERIALx_PROTOCOL` to "23" and follow the instructions in [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) to other setup info for the RC system being used.
 
-## Battery Monitor
+## Battery Monitoring
 
 The board has internal voltage sensors and connection for external current sensors, able to monitor two batteries.
 The default battery parameters are:

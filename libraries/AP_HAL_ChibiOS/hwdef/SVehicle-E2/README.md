@@ -124,7 +124,7 @@ The board has connectors for 3 power monitors. The board is configure by default
 
 The E2-Plus has an RM3100 builtin compass, but due to interference the board is usually used with an external I2C or CAN compass as part of a GPS/Compass combination.
 
-## Analog inputs
+## Analog Inputs
 
 The E2-Plus has 6 analog inputs.
 

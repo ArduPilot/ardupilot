@@ -90,7 +90,7 @@ Analog RSSI uses [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.htm
 
 The SkystarsF405v2 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## Camera control
+## Camera Control
 
 GPIO 81 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output
 from CAM1 to CAM2. By default RELAY2 is configured to control this pin and sets the GPIO high.

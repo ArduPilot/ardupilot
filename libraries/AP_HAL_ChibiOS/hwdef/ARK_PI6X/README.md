@@ -163,7 +163,7 @@ The default battery parameters are:
 
 This autopilot has a built-in compass. The compass is the IIS2MDC. Often this internal compass is disabled due to power interference and a remotely located compass is used.
 
-## Motor Output
+## PWM Output
 
 All outputs are capable of PWM and DShot. Motors 1-4 are configured as Bidirectional-DSHOT by default. All outputs in the motor groups below must be either PWM or DShot:
 

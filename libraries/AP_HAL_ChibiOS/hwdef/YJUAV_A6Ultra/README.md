@@ -235,7 +235,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM6         | 55   | PWM13        | 62   |
 | PWM7         | 56   |              |      |
 
-## Analog inputs
+## Analog Inputs
 
 The A6Ultra flight controller has 7 Analog inputs
 
@@ -247,7 +247,7 @@ The A6Ultra flight controller has 7 Analog inputs
 - ADC Pin10 -> ADC 6V6 Sense
 - ADC Pin11 -> RSSI voltage monitoring
 
-## Battery Monitor Configuration
+## Battery Monitoring
 
 The board has voltage and current sensor inputs on the POWER1_ADC and POWER2_ADC connector.
 

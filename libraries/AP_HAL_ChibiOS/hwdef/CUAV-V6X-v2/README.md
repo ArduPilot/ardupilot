@@ -111,7 +111,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - MAIN(7) 107
 - MAIN(8) 108
 
-## Analog inputs
+## Analog Inputs
 
 The CUAV-V6X-v2 has 3 analog inputs
 

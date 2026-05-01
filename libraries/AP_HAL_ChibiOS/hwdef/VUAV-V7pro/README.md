@@ -199,7 +199,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM6 | 55 | PWM13 | 62 |
 | PWM7 | 56 | PWM14 | 63 |
 
-## Analog inputs
+## Analog Inputs
 
 The VUAV-V7pro flight controller has 5 Analog inputs
 
@@ -209,7 +209,7 @@ The VUAV-V7pro flight controller has 5 Analog inputs
 - ADC Pin3 -> ADC 6V6 Sense
 - ADC Pin9 -> RSSI voltage monitoring
 
-## Battery Monitor Configuration
+## Battery Monitoring
 
 The board has voltage and current inputs sensor on the POWER1 ADC and POWER2 CAN connector.
 

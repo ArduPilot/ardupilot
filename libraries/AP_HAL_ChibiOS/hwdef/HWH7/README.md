@@ -18,7 +18,7 @@ The **HWH7** is a flight controller designed and produced by HW.
 
 ![image](HWH7.png)
 
-## Serial Ports (UARTs)
+## UART Mapping
 
 Serial ordering (ArduPilot): `SERIAL0..SERIAL8` = `OTG1, USART1, USART2, USART3, UART4, UART5, USART6, UART7, UART8`
 
@@ -34,7 +34,7 @@ Serial ordering (ArduPilot): `SERIAL0..SERIAL8` = `OTG1, USART1, USART2, USART3,
 | UART7 | SERIAL7 | UART7 | PE8 | PE7 | User |
 | UART8 | SERIAL8 | UART8 | PE1 | PE0 | ESC Telemetry |
 
-## PWM Outputs
+## PWM Output
 
 The HWH7 supports up to 12 PWM or DShot outputs. These outputs are organized into 5 groups based on the MCU timers:
 
@@ -98,7 +98,7 @@ Because both signals share the same UART port on different pins, **simultaneous 
 - **To use telemetry from ESC 1:** Set `SERIAL8_OPTIONS` to `0` (default).
 - **To use telemetry from ESC 2:** Set `SERIAL8_OPTIONS` to `8` (SwapTXRX), which allows the flight controller to listen for telemetry on the TX8 pin.
 
-## OSD
+## OSD Support
 
 The HWH7 includes an integrated AT7456E analog OSD chip, accessible via the CAM1/2 and VTX pins. MSP DisplayPort OSD is also supported and enabled by default for use with digital video systems.
 

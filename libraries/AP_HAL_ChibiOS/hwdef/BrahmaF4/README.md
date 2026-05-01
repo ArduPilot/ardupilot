@@ -47,7 +47,7 @@ The UARTs are marked Rx and Tx in the above pinouts.
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See Radio Control Systems for details.
 
-## OSD
+## OSD Support
 
 - ANALOG OSD (MAX7456) (SPI1) (Preconfigured)
 - DIGITAL OSD (MSP)    (UART4 can be used for MSP Displayport by changing [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) to "42")
