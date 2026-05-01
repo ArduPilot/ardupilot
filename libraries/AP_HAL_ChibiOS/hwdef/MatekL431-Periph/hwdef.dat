@@ -1,5 +1,4 @@
 include ../MatekL431/hwdef.inc
-define HAL_RCIN_THREAD_ENABLED 1
 
 
 # --------------------- PWM -----------------------
