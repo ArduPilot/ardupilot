@@ -434,6 +434,7 @@ AP_HW_SkyRukh_Surge_H7               2815
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
+AP_HW_KARSHAKH743VTOL                4002
 
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
