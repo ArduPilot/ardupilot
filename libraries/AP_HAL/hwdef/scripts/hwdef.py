@@ -314,7 +314,7 @@ class HWDef:
             return
 
         for name in self.intdefines:
-            if name.startswith('AP_PERIPH_'):
+            if name.startswith('AP_PERIPH_') and self.intdefines[name]:
                 self.error(f"define {name} is only valid on AP_Periph boards")
 
     def process_line_define(self, line, depth, a):
