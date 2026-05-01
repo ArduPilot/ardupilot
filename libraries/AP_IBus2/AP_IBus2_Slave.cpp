@@ -253,7 +253,14 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
 
     // subtype=0: SES_UnpackChannels decode (sign-magnitude, LSB-first bit packing).
     // Decode into a local buffer first to minimise time holding the semaphore.
+    // Pre-fill from the current channel state so failsafe sentinels (which skip
+    // the per-channel write below) carry the last known value forward instead
+    // of leaking uninitialised stack memory into the RC channels.
     uint16_t new_channels[ARRAY_SIZE(_rc_state.channels)];
+    {
+        WITH_SEMAPHORE(_rc_state.sem);
+        memcpy(new_channels, _rc_state.channels, sizeof(new_channels));
+    }
     const uint16_t total_bits = payload_len * 8;
     uint16_t bit_pos = 0;
     uint8_t n_decoded = 0;
@@ -274,7 +281,9 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
         const uint32_t sign_bit = 1U << (nb_bits - 1);
         const uint32_t mag_mask = sign_bit - 1U;
 
-        // Failsafe sentinels: keep-failsafe or stop-failsafe
+        // Failsafe sentinels: keep-failsafe (raw == sign_bit) or stop-failsafe
+        // (raw == sign_bit + 1).  Leave new_channels[i] at its pre-filled
+        // previous value so the channel does not jump.
         if (raw == sign_bit || (nb_bits >= 6 && raw == sign_bit + 1U)) {
             n_decoded++;
             continue;
