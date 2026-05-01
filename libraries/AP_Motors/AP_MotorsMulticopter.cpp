@@ -711,13 +711,8 @@ void AP_MotorsMulticopter::output_logic()
             // constrain ramp value and update mode
             if (_spin_up_ratio >= 1.0f) {
                 _spin_up_ratio = 1.0f;
-                if (!get_spoolup_block()) {
-                    // only advance from ground idle when pre-takeoff checks have cleared
-                    // get_spoolup_block() is true while takeoff_check() is blocking spool-up
-                    // (e.g. esc telemetry inactive, rpm not in range, cpu overload, or disarmed)
-                    // must be false to proceed
-                    _spool_state = SpoolState::SPOOLING_UP;
-                }
+                set_spoolup_block(true);
+                _spool_state = SpoolState::SPOOLING_UP;
             }
             break;
         }
