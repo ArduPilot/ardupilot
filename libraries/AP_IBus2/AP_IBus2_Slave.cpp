@@ -318,11 +318,31 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
     }
 
 #if HAL_LOGGING_ENABLED
-    AP::logger().WriteStreaming("IB2C", "TimeUS,Ch0,Ch1,Ch2,Ch3,Ch4,Ch5,Ch6,Ch7",
-                                "QHHHHHHHH",
-                                AP_HAL::micros64(),
-                                new_channels[0], new_channels[1], new_channels[2], new_channels[3],
-                                new_channels[4], new_channels[5], new_channels[6], new_channels[7]);
+    static_assert(ARRAY_SIZE(_rc_state.channels) >= 18,
+                  "IB2C/IB2D log assumes at least 18 RC channel slots");
+    // log_Format::format is 16 bytes, so a single message holds at most 14
+    // channels alongside TimeUS.  Mirror the RCIN/RCI2 split: IB2C carries
+    // channels 1-14, IB2D carries the last four.
+    const uint64_t now_us = AP_HAL::micros64();
+    AP::logger().WriteStreaming(
+        "IB2C",
+        "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14",
+        "sYYYYYYYYYYYYYY",
+        "F--------------",
+        "QHHHHHHHHHHHHHH",
+        now_us,
+        new_channels[0],  new_channels[1],  new_channels[2],  new_channels[3],
+        new_channels[4],  new_channels[5],  new_channels[6],  new_channels[7],
+        new_channels[8],  new_channels[9],  new_channels[10], new_channels[11],
+        new_channels[12], new_channels[13]);
+    AP::logger().WriteStreaming(
+        "IB2D",
+        "TimeUS,C15,C16,C17,C18",
+        "sYYYY",
+        "F----",
+        "QHHHH",
+        now_us,
+        new_channels[14], new_channels[15], new_channels[16], new_channels[17]);
 #endif
 }
 
