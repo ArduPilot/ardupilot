@@ -644,7 +644,7 @@ void GCS::update_sensor_status_flags()
     if (rc().has_ever_seen_rc_input()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
-        if (!rc().in_rc_failsafe()) {  // should this be has_valid_input?
+        if (!rc().has_valid_input()) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_RC_RECEIVER;
         }
     }

@@ -1500,7 +1500,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc_from_map({
             3: 800,
             channel: 1300,
-        })
+        }, timeout=None)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER,
+            present=True,
+            enabled=True,
+            healthy=False,
+            timeout=5,
+        )
         self.wait_servo_channel_value(channel, trim_value)
         self.delay_sim_time(10, reason="RC failsafe passthrough to settle")
 
