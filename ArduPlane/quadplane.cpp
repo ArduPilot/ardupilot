@@ -1963,6 +1963,12 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
+    // QuadPlane has no pre-takeoff RPM gate that asserts the spool-up block,
+    // so clear it every cycle before motors->output() runs output_logic().
+    // Without this the block set during ground-idle ramp would never clear
+    // and the spool would stay in GROUND_IDLE.
+    motors->set_spoolup_block(false);
+
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
        1) for safety (OPTION_DELAY_ARMING)
        2) to allow motors to return to vertical (OPTION_DISARMED_TILT)
