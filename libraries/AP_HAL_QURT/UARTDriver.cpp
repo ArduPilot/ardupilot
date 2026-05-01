@@ -286,3 +286,218 @@ uint64_t UARTDriver_Local::receive_time_constraint_us(uint16_t nbytes)
     }
     return last_receive_us;
 }
+
+/*
+  methods for UARTDriver_RemoteRegistered — a dynamic serial port that
+  tunnels to a UART on the apps processor. The port is registered with
+  AP_SerialManager at boot; the user selects a protocol for it via the
+  SERIALn_PROTOCOL parameter matching the registered state.idx.
+*/
+typedef void (*remote_uart_data_callback_t)(const struct qurt_rpc_msg *msg, void *p);
+extern void register_remote_uart_data_callback(uint8_t port_id,
+                                               remote_uart_data_callback_t func,
+                                               void *p);
+
+void UARTDriver_RemoteRegistered::init(uint8_t serial_idx)
+{
+    state.idx = serial_idx;
+    // this port's protocol and baud come from the matching SERIALn_*
+    // parameters via AP_SerialManager::state[serial_idx]; leave our own
+    // state.protocol at SerialProtocol_None so it is not matched in the
+    // registered_ports search path of find_protocol_instance()
+    state.protocol.set(AP_SerialManager::SerialProtocol_None);
+    // register once; data callbacks start flowing immediately
+    register_remote_uart_data_callback(port_id, uart_data_cb, (void *)this);
+    AP::serialmanager().register_port(this);
+}
+
+uint32_t UARTDriver_RemoteRegistered::get_baud_rate() const
+{
+    // once _begin() has been called, return the negotiated baud
+    if (baudrate != 0) {
+        return baudrate;
+    }
+    // before first _begin(), fall back to the SERIALn_BAUD configured
+    // for our slot. AP_GPS's auto-baud detection calls get_baud_rate()
+    // to seed its first probe; returning 0 here would wedge the probe
+    // in a begin(0) loop (_begin skips send_config when b==0).
+    const auto *st = AP::serialmanager().get_state_by_id(state.idx);
+    return st != nullptr ? st->baudrate() : 0;
+}
+
+bool UARTDriver_RemoteRegistered::tx_pending()
+{
+    WITH_SEMAPHORE(write_mutex);
+    return writebuffer != nullptr && writebuffer->available() > 0;
+}
+
+uint32_t UARTDriver_RemoteRegistered::txspace()
+{
+    WITH_SEMAPHORE(write_mutex);
+    return writebuffer != nullptr ? writebuffer->space() : 0;
+}
+
+bool UARTDriver_RemoteRegistered::send_config(uint32_t b)
+{
+    struct qurt_rpc_msg msg {};
+    msg.msg_id = QURT_MSG_ID_UART_CONFIG;
+    msg.inst = port_id;
+    msg.seq = 0;
+    struct qurt_uart_config cfg {};
+    cfg.baudrate = b;
+    cfg.device_id = device_id;
+    cfg.port_id = port_id;
+    msg.data_length = sizeof(cfg);
+    memcpy(msg.data, &cfg, sizeof(cfg));
+    if (!qurt_rpc_send(msg)) {
+        DEV_PRINTF("Remote UART %u: config send failed (baud=%lu device=%lu)",
+                   (unsigned)port_id,
+                   (unsigned long)b,
+                   (unsigned long)device_id);
+        return false;
+    }
+    return true;
+}
+
+void UARTDriver_RemoteRegistered::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
+{
+    if (rxS < 4096) {
+        rxS = 4096;
+    }
+    if (txS < 4096) {
+        txS = 4096;
+    }
+
+    {
+        WITH_SEMAPHORE(read_mutex);
+        if (readbuffer == nullptr) {
+            readbuffer = NEW_NOTHROW ByteBuffer(rxS);
+        } else {
+            readbuffer->set_size_best(rxS);
+        }
+    }
+    {
+        WITH_SEMAPHORE(write_mutex);
+        if (writebuffer == nullptr) {
+            writebuffer = NEW_NOTHROW ByteBuffer(txS);
+        } else {
+            writebuffer->set_size_best(txS);
+        }
+    }
+
+    initialised = (readbuffer != nullptr) && (writebuffer != nullptr);
+
+    if (b != 0 && initialised && (!remote_configured || baudrate != b)) {
+        {
+            WITH_SEMAPHORE(read_mutex);
+            readbuffer->clear();
+        }
+        if (send_config(b)) {
+            baudrate = b;
+            remote_configured = true;
+        }
+    }
+}
+
+size_t UARTDriver_RemoteRegistered::_write(const uint8_t *buffer, size_t size)
+{
+    WITH_SEMAPHORE(write_mutex);
+    return writebuffer != nullptr ? writebuffer->write(buffer, size) : 0;
+}
+
+ssize_t UARTDriver_RemoteRegistered::_read(uint8_t *buffer, uint16_t count)
+{
+    WITH_SEMAPHORE(read_mutex);
+    return readbuffer != nullptr ? readbuffer->read(buffer, count) : -1;
+}
+
+uint32_t UARTDriver_RemoteRegistered::_available()
+{
+    WITH_SEMAPHORE(read_mutex);
+    return readbuffer != nullptr ? readbuffer->available() : 0;
+}
+
+bool UARTDriver_RemoteRegistered::_discard_input()
+{
+    WITH_SEMAPHORE(read_mutex);
+    if (readbuffer != nullptr) {
+        readbuffer->clear();
+    }
+    return true;
+}
+
+bool UARTDriver_RemoteRegistered::push_pending_bytes()
+{
+    if (!remote_configured) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(write_mutex);
+
+    if (writebuffer == nullptr) {
+        return false;
+    }
+
+    uint32_t available;
+    const uint8_t *ptr = writebuffer->readptr(available);
+    if (ptr == nullptr || available == 0) {
+        return false;
+    }
+
+    struct qurt_rpc_msg msg {};
+    const uint16_t n = (uint16_t)(available < sizeof(msg.data) ? available : sizeof(msg.data));
+
+    msg.msg_id = QURT_MSG_ID_UART_DATA;
+    msg.inst = port_id;
+    msg.seq = tx_seq++;
+    msg.data_length = n;
+    memcpy(msg.data, ptr, n);
+
+    if (qurt_rpc_send(msg)) {
+        writebuffer->advance(n);
+        return true;
+    }
+    return false;
+}
+
+void UARTDriver_RemoteRegistered::_timer_tick(void)
+{
+    if (!initialised) {
+        return;
+    }
+    // cap chunks per tick so one port can't starve the others in the
+    // shared uart thread (each chunk is up to sizeof(qurt_rpc_msg::data))
+    constexpr uint8_t MAX_TX_BURST = 10;
+    for (uint8_t i = 0; i < MAX_TX_BURST; i++) {
+        if (!push_pending_bytes()) {
+            break;
+        }
+    }
+}
+
+void UARTDriver_RemoteRegistered::uart_data_cb(const struct qurt_rpc_msg *msg, void *p)
+{
+    auto *driver = (UARTDriver_RemoteRegistered *)p;
+    if (msg->seq != driver->rx_seq) {
+        DEV_PRINTF("Remote UART %u: RX seq mismatch expected=%lu got=%lu len=%u",
+                   (unsigned)driver->port_id,
+                   (unsigned long)driver->rx_seq,
+                   (unsigned long)msg->seq,
+                   msg->data_length);
+        driver->rx_seq = msg->seq;
+    }
+    WITH_SEMAPHORE(driver->read_mutex);
+    if (driver->readbuffer == nullptr) {
+        return;
+    }
+    const uint16_t written = driver->readbuffer->write(msg->data, msg->data_length);
+    if (written != msg->data_length) {
+        DEV_PRINTF("Remote UART %u: RX buffer dropped %u/%u bytes (space=%u)",
+                   (unsigned)driver->port_id,
+                   (unsigned)(msg->data_length - written),
+                   (unsigned)msg->data_length,
+                   (unsigned)driver->readbuffer->space());
+    }
+
+    driver->rx_seq++;
+}
