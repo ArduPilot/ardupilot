@@ -38,8 +38,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
     velResetNE.y = stateStruct.velocity.y;
 
     // reset the corresponding covariances
-    zeroRows(P,4,5);
-    zeroCols(P,4,5);
+    zeroStatesVarCov(4, 5);
 
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.xy().zero();
@@ -118,8 +117,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
     posResetNE.y = stateStruct.position.y;
 
     // reset the corresponding covariances
-    zeroRows(P,7,8);
-    zeroCols(P,7,8);
+    zeroStatesVarCov(7, 8);
 
     if (PV_AidingMode != AID_ABSOLUTE) {
         // reset all position state history to the last known position
@@ -201,8 +199,7 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
     posResetNE.y = stateStruct.position.y;
 
     // reset the corresponding covariances
-    zeroRows(P,7,8);
-    zeroCols(P,7,8);
+    zeroStatesVarCov(7, 8);
 
     // handle unknown accuracy
     if (isnan(posAccuracy)) {
@@ -318,8 +315,7 @@ void NavEKF3_core::ResetHeight(void)
     lastHgtPassTime_ms = imuSampleTime_ms;
 
     // reset the corresponding covariances
-    zeroRows(P,9,9);
-    zeroCols(P,9,9);
+    zeroStatesVarCov(9, 9);
 
     // set the variances to the measurement variance
     P[9][9] = posDownObsNoise;
@@ -347,8 +343,7 @@ void NavEKF3_core::ResetHeight(void)
     vertCompFiltState.vel = outputDataNew.velocity.z;
 
     // reset the corresponding covariances
-    zeroRows(P,6,6);
-    zeroCols(P,6,6);
+    zeroStatesVarCov(6, 6);
 
     // set the variances to the measurement variance
 #if EK3_FEATURE_EXTERNAL_NAV
@@ -954,8 +949,7 @@ void NavEKF3_core::FuseVelPosNED()
                     fusePosData = false;
 
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
-                    zeroRows(P,7,8);
-                    zeroCols(P,7,8);
+                    zeroStatesVarCov(7, 8);
                     P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
                     P[8][8] = P[7][7];
 
