@@ -12,9 +12,6 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/dsm.h>
-#include <AP_HAL/utility/sumd.h>
-#include <AP_HAL/utility/st24.h>
-#include <AP_HAL/utility/srxl.h>
 #include <AP_RCProtocol/AP_RCProtocol_SBUS.h>
 
 #include "RCInput.h"
