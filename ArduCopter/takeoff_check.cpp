@@ -35,8 +35,8 @@ void Copter::takeoff_check()
         return;
     }
 
-    // warn about CPU load every 5 seconds
-    if (now_ms - takeoff_check_warning_ms > 5000) {
+    // warn about CPU load every 2 seconds
+    if (now_ms - takeoff_check_warning_ms > 2000) {
         takeoff_check_warning_ms = now_ms;
         const char* prefix_str = "Takeoff blocked:";
         if (!load_adequate) {
