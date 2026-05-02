@@ -42,7 +42,10 @@ using namespace SITL;
 static const uint8_t  SIM_CHAN_TYPE = 0x1B;
 static const uint8_t  SIM_NB_BITS  = 11;
 static const uint32_t SIM_FACTOR   = 0x0020C49CU;
-// SIM_MAX_SES = ((2^(NB_BITS-1) - 1) * FACTOR + 0x8000) >> 16
+// Encoder full-scale.  An offset of 512 µs maps to raw_mag = 1023 (largest
+// non-sentinel magnitude in 11-bit space).  Empirically the rounded form
+// ((mag_mask * FACTOR + 0x8000) >> 16) is 33522, but using 33521 here matches
+// the truncating side of the decoder and keeps 2012 µs ⇄ raw 1023 exact.
 static const uint32_t SIM_MAX_SES  = 33521U;
 
 // Fallback RC channels used when no UDP input is available (µs).
@@ -127,7 +130,14 @@ static uint32_t ses_encode_us(uint16_t us_val)
     if (!negative || raw_mag == 0U) {
         return raw_mag;
     }
-    // Negative: store as two's complement in SIM_NB_BITS
+    // Negative path: a magnitude of mag_mask (1023) would encode to
+    // raw = (-1023) & full_mask = 1025, which the decoder treats as the
+    // stop-failsafe sentinel.  Clamp one step below so PWM values at or below
+    // 988 µs saturate cleanly to the most-negative valid raw (decodes to ~989)
+    // instead of being silently dropped as failsafe.
+    if (raw_mag >= mag_mask) {
+        raw_mag = mag_mask - 1U;
+    }
     return (uint32_t)(-(int32_t)raw_mag) & full_mask;
 }
 
