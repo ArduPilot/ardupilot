@@ -6,6 +6,8 @@
 
 #include "AP_DAL/AP_DAL.h"
 
+#define P (Pmut)
+
 // Control filter mode transitions
 void NavEKF3_core::controlFilterModes()
 {

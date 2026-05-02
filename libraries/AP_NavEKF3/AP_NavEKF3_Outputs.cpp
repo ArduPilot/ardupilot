@@ -5,6 +5,8 @@
 #include <AP_DAL/AP_DAL.h>
 #include <GCS_MAVLink/GCS.h>
 
+#define P (Pmut)
+
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF3_core::healthy(void) const
 {

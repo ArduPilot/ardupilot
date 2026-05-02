@@ -1,6 +1,8 @@
 #include "AP_NavEKF3_core.h"
 #include <AP_DAL/AP_DAL.h>
 
+#define P (Pmut)
+
 // reset the body axis gyro bias states to zero and re-initialise the corresponding covariances
 // Assume that the calibration is performed to an accuracy of 0.5 deg/sec which will require averaging under static conditions
 // WARNING - a non-blocking calibration method must be used

@@ -1110,7 +1110,7 @@ private:
     uint32_t vertVelVarClipCounter; // counter used to control reset of vertical velocity variance following collapse against the lower limit
 
     ftype gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
-    Matrix24 P;                     // covariance matrix
+    Matrix24 Pmut;                  // covariance matrix, must remain symmetric and positive semi-definite
     EKF_IMU_buffer_t<imu_elements> storedIMU;      // IMU data buffer
     EKF_obs_buffer_t<gps_elements> storedGPS;      // GPS data buffer
     EKF_obs_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
