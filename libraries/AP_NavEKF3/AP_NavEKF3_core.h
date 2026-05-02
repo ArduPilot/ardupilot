@@ -1008,9 +1008,6 @@ private:
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
 
-    // zero attitude state covariances, but preserve variances
-    void zeroAttCovOnly();
-
     // record all requested yaw resets completed
     void recordYawResetsCompleted();
 

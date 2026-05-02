@@ -2188,20 +2188,6 @@ void NavEKF3_core::resetMagFieldStates()
     recordMagReset();
 }
 
-// zero the attitude covariances, but preserve the variances
-void NavEKF3_core::zeroAttCovOnly()
-{
-    ftype varTemp[4];
-    for (uint8_t index=0; index<=3; index++) {
-        varTemp[index] = P[index][index];
-    }
-    zeroCols(P,0,3);
-    zeroRows(P,0,3);
-    for (uint8_t index=0; index<=3; index++) {
-        P[index][index] = varTemp[index];
-    }
-}
-
 // calculate the tilt error variance
 void NavEKF3_core::calcTiltErrorVariance()
 {
