@@ -324,9 +324,6 @@ void NavEKF3_core::FuseSideslip()
 
         if (!airDataFusionWindOnly) {
             kalman_mask = (1<<10)-1;
-        } else {
-            // zero indexes 0 to 9
-            zero_range(&Kfusion[0], 0, 9);
         }
 
         if (!inhibitDelAngBiasStates && !airDataFusionWindOnly) {
