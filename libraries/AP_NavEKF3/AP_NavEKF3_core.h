@@ -773,11 +773,8 @@ private:
     // fuse synthetic sideslip measurement of zero
     void FuseSideslip();
 
-    // zero specified range of rows in the state covariance matrix
-    void zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last);
-
-    // zero specified range of columns in the state covariance matrix
-    void zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last);
+    // zero specified state variances and covariances in state covariance matrix
+    void zeroStatesVarCov(uint8_t first, uint8_t last);
 
     // Reset the stored output history to current data
     void StoreOutputReset(void);
