@@ -5,6 +5,8 @@
 
 #include <AP_DAL/AP_DAL.h>
 
+#define P (Pmut)
+
 // initialise state:
 void NavEKF3_core::BeaconFusion::InitialiseVariables()
 {

@@ -9,6 +9,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
+#define P (Pmut)
+
 /********************************************************
 *                   RESET FUNCTIONS                     *
 ********************************************************/
