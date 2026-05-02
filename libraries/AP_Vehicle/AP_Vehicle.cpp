@@ -1180,8 +1180,8 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
         return true;
     }
 
-    // warn user telem inactive or rpm is inadequate every 5 seconds
-    if (now_ms - takeoff_check_state.warning_ms > 5000) {
+    // warn the user every 2 seconds that telemetry is inactive or rpm is inadequate
+    if (now_ms - takeoff_check_state.warning_ms > 2000) {
         takeoff_check_state.warning_ms = now_ms;
         const char* prefix_str = "Takeoff blocked:";
         if (!telem_active) {
