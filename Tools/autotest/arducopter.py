@@ -13735,6 +13735,35 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(4, 1500)
         self.assert_rc_channel_value(4, 1500)
 
+        # Exercise the negative-offset boundary that previously aliased to the
+        # stop-failsafe sentinel (raw = 1025).  988 µs is the FlySky trim
+        # minimum; the encoder clamp now saturates it to ~989 µs rather than
+        # being silently swallowed.  Push the value through rc_queue directly
+        # because set_rc() loops until RC_CHANNELS reports an exact match,
+        # which 988 µs cannot achieve through SES quantisation.
+        self.rc_queue.put({1: 988})
+        self.delay_sim_time(0.5)
+        ch1 = self.get_rc_channel_value(1, timeout=2)
+        if abs(ch1 - 989) > 2:
+            raise NotAchievedException("ch1 expected ~989 (988µs clamped) got %u" % ch1)
+
+        # Positive boundary still round-trips exactly through SES.
+        self.set_rc(1, 2012)
+        self.assert_rc_channel_value(1, 2012)
+
+        # A spread of mid-range values to catch any future scaling regression.
+        # SES quantisation can introduce ±1 µs even mid-range, so use the
+        # queue+poll pattern with a small tolerance rather than set_rc().
+        for pwm in (1100, 1300, 1700, 1900):
+            self.rc_queue.put({1: pwm})
+            self.delay_sim_time(0.5)
+            got = self.get_rc_channel_value(1, timeout=2)
+            if abs(got - pwm) > 2:
+                raise NotAchievedException(
+                    "ch1 round-trip failed at %u µs: got %u" % (pwm, got))
+
+        self.set_rc(1, 1500)
+
     def PerfInfo(self):
         '''Test Scheduler PerfInfo output'''
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
