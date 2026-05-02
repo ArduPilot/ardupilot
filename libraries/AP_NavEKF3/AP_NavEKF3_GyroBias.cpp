@@ -1,7 +1,7 @@
 #include "AP_NavEKF3_core.h"
 #include <AP_DAL/AP_DAL.h>
 
-#define P (Pmut)
+#define P (const_cast<const Matrix24 &>(Pmut))
 
 // reset the body axis gyro bias states to zero and re-initialise the corresponding covariances
 // Assume that the calibration is performed to an accuracy of 0.5 deg/sec which will require averaging under static conditions
@@ -11,9 +11,9 @@ void NavEKF3_core::resetGyroBias(void)
     stateStruct.gyro_bias.zero();
     zeroStatesVarCov(10, 12);
 
-    P[10][10] = sq(radians(0.5f * dtIMUavg));
-    P[11][11] = P[10][10];
-    P[12][12] = P[10][10];
+    Pmut[10][10] = sq(radians(0.5f * dtIMUavg));
+    Pmut[11][11] = P[10][10];
+    Pmut[12][12] = P[10][10];
 }
 
 /*
