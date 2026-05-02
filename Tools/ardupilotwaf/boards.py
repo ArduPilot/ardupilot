@@ -286,6 +286,7 @@ class Board:
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
             '-Wno-unknown-pragmas',
+            '-Wno-digraphs',
             '-Wno-trigraphs',
             '-Werror=shadow',
             '-Werror=return-type',
@@ -335,7 +336,6 @@ class Board:
             ]
         else:
             env.CFLAGS += [
-                '-Wno-digraphs',
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
             ]
@@ -418,6 +418,7 @@ class Board:
             '-Werror=unused-variable',
             '-Werror=delete-non-virtual-dtor',
             '-Wfatal-errors',
+            '-Wno-digraphs',
             '-Wno-trigraphs',
             '-Werror=parentheses',
             '-DARDUPILOT_BUILD',
@@ -466,7 +467,6 @@ class Board:
                 '-Werror=unused-but-set-variable',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
-                '-Wno-digraphs',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
