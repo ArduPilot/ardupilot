@@ -5,7 +5,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
-#define P (Pmut)
+#define P (const_cast<const Matrix24 &>(Pmut))
 
 /********************************************************
 *                   RESET FUNCTIONS                     *
@@ -41,7 +41,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.xy().zero();
         // set the variances using the measurement noise parameter
-        P[5][5] = P[4][4] = sq(frontend->_gpsHorizVelNoise);
+        Pmut[5][5] = Pmut[4][4] = sq(frontend->_gpsHorizVelNoise);
     } else {
         // reset horizontal velocity states to the GPS velocity if available
         if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250) && (velResetSource == resetDataSource::DEFAULT || velResetSource == resetDataSource::GPS)) {
@@ -51,20 +51,20 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
             stateStruct.velocity.x  = gps_corrected.vel.x;
             stateStruct.velocity.y  = gps_corrected.vel.y;
             // set the variances using the reported GPS speed accuracy
-            P[5][5] = P[4][4] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
+            Pmut[5][5] = Pmut[4][4] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
 #if EK3_FEATURE_EXTERNAL_NAV
         } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250) && (velResetSource == resetDataSource::DEFAULT || velResetSource == resetDataSource::EXTNAV)) {
             // use external nav data as the 2nd preference
             // already corrected for sensor position
             stateStruct.velocity.x = extNavVelDelayed.vel.x;
             stateStruct.velocity.y = extNavVelDelayed.vel.y;
-            P[5][5] = P[4][4] = sq(extNavVelDelayed.err);
+            Pmut[5][5] = Pmut[4][4] = sq(extNavVelDelayed.err);
 #endif // EK3_FEATURE_EXTERNAL_NAV
         } else {
             stateStruct.velocity.x  = 0.0f;
             stateStruct.velocity.y  = 0.0f;
             // set the variances using the likely speed range
-            P[5][5] = P[4][4] = sq(25.0f);
+            Pmut[5][5] = Pmut[4][4] = sq(25.0f);
         }
         // clear the timeout flags and counters
         velTimeout = false;
@@ -116,7 +116,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         stateStruct.position.x = lastKnownPositionNE.x;
         stateStruct.position.y = lastKnownPositionNE.y;
         // set the variances using the position measurement noise parameter
-        P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
+        Pmut[7][7] = Pmut[8][8] = sq(frontend->_gpsHorizPosNoise);
     } else  {
         // Use GPS data as first preference if fresh data is available
         if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::GPS)) {
@@ -133,15 +133,15 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             const int32_t tdiff = imuDataDelayed.time_ms - gps_corrected.time_ms;
             stateStruct.position.xy() += gps_corrected.vel.xy()*0.001*tdiff;
             // set the variances using the position measurement noise parameter
-            P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
+            Pmut[7][7] = Pmut[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
 #if EK3_FEATURE_BEACON_FUSION
         } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::RNGBCN)) {
             // use the range beacon data as a second preference
             stateStruct.position.x = rngBcn.receiverPos.x;
             stateStruct.position.y = rngBcn.receiverPos.y;
             // set the variances from the beacon alignment filter
-            P[7][7] = rngBcn.receiverPosCov[0][0];
-            P[8][8] = rngBcn.receiverPosCov[1][1];
+            Pmut[7][7] = rngBcn.receiverPosCov[0][0];
+            Pmut[8][8] = rngBcn.receiverPosCov[1][1];
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
         } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::EXTNAV)) {
@@ -149,7 +149,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             stateStruct.position.x = extNavDataDelayed.pos.x;
             stateStruct.position.y = extNavDataDelayed.pos.y;
             // set the variances as received from external nav system data
-            P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
+            Pmut[7][7] = Pmut[8][8] = sq(extNavDataDelayed.posErr);
 #endif // EK3_FEATURE_EXTERNAL_NAV
         }
     }
@@ -198,7 +198,7 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
     }
 
     // set the variances using the position measurement noise parameter
-    P[7][7] = P[8][8] = sq(MAX(posAccuracy,frontend->_gpsHorizPosNoise));
+    Pmut[7][7] = Pmut[8][8] = sq(MAX(posAccuracy,frontend->_gpsHorizPosNoise));
 
     // Correct the position for time delay relative to fusion time horizon assuming a constant velocity
     // Limit time stamp to a range between current time and 5 seconds ago
@@ -306,7 +306,7 @@ void NavEKF3_core::ResetHeight(void)
     zeroStatesVarCov(9, 9);
 
     // set the variances to the measurement variance
-    P[9][9] = posDownObsNoise;
+    Pmut[9][9] = posDownObsNoise;
 
     // Reset the vertical velocity state using GPS vertical velocity if we are airborne
     // Check that GPS vertical velocity data is available and can be used
@@ -336,11 +336,11 @@ void NavEKF3_core::ResetHeight(void)
     // set the variances to the measurement variance
 #if EK3_FEATURE_EXTERNAL_NAV
     if (useExtNavVel) {
-        P[6][6] = sq(extNavVelDelayed.err);
+        Pmut[6][6] = sq(extNavVelDelayed.err);
     } else
 #endif
     {
-        P[6][6] = sq(frontend->_gpsVertVelNoise);
+        Pmut[6][6] = sq(frontend->_gpsVertVelNoise);
     }
     vertVelVarClipCounter = 0;
 }
@@ -937,8 +937,8 @@ void NavEKF3_core::FuseVelPosNED()
 
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
                     zeroStatesVarCov(7, 8);
-                    P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
-                    P[8][8] = P[7][7];
+                    Pmut[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
+                    Pmut[8][8] = P[7][7];
 
                     // Reset the normalised innovation to avoid failing the bad fusion tests
                     posTestRatio = 0.0f;
