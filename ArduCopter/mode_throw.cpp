@@ -149,6 +149,8 @@ void ModeThrow::run()
 
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        // ignore motor checks
+        motors->set_spoolup_block(false);
 
         break;
 
