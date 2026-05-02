@@ -5,7 +5,7 @@
 
 #include <AP_DAL/AP_DAL.h>
 
-#define P (Pmut)
+#define P (const_cast<const Matrix24 &>(Pmut))
 
 // initialise state:
 void NavEKF3_core::BeaconFusion::InitialiseVariables()
