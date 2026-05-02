@@ -14,7 +14,7 @@
   #define GPS_VEL_YAW_ALIGN_MIN_SPD 1.0F
 #endif
 
-#define P (Pmut)
+#define P (const_cast<const Matrix24 &>(Pmut))
 
 /********************************************************
 *                   RESET FUNCTIONS                     *
@@ -1373,8 +1373,8 @@ void NavEKF3_core::alignMagStateDeclination()
         ftype var_16 = P[16][16];
         ftype var_17 = P[17][17];
         zeroStatesVarCov(16, 17);
-        P[16][16] = var_16;
-        P[17][17] = var_17;
+        Pmut[16][16] = var_16;
+        Pmut[17][17] = var_17;
 
         // fuse the declination angle to establish covariances and prevent large swings in declination
         // during initial fusion
