@@ -161,18 +161,22 @@ IBus2Master::IBus2Master() : SerialDevice::SerialDevice()
 
 void IBus2Master::update(const Aircraft &aircraft)
 {
+    // Inform AP_RCProtocol_UDP whether we are routing its data through the
+    // IBus2 encode/decode chain.  This suppresses UDP's own add_input() call.
+    // Done before the _enabled / init_sitl_pointer early returns so that
+    // toggling SIM_IBUS2M_ENA off cleanly releases UDP back to driving
+    // add_input() itself, instead of leaving _ibus2_active latched true.
+    auto *udp = AP_RCProtocol_UDP::get_singleton();
+    if (udp != nullptr) {
+        const bool active = _enabled.get() && (AP_IBus2_Slave::get_singleton() != nullptr);
+        udp->set_ibus2_active(active);
+    }
+
     if (!_enabled.get()) {
         return;
     }
     if (!init_sitl_pointer()) {
         return;
-    }
-
-    // Inform AP_RCProtocol_UDP whether we are routing its data through the
-    // IBus2 encode/decode chain.  This suppresses UDP's own add_input() call.
-    auto *udp = AP_RCProtocol_UDP::get_singleton();
-    if (udp != nullptr) {
-        udp->set_ibus2_active(AP_IBus2_Slave::get_singleton() != nullptr);
     }
 
     const uint32_t now_us = AP_HAL::micros();
