@@ -129,7 +129,7 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
                 if (!is_temperature_compensated(instance)) {
                                 _imu.tcal(instance).correct_accel(_imu.get_temperature(instance), _imu.caltemp_accel(instance), accel);
                 }
-
+#endif
         // apply offsets
         accel -= _imu._accel_offset(instance);
 
