@@ -9,11 +9,19 @@ void Copter::takeoff_check()
 {
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     // if motors have become unblocked return immediately
-    // this ensures the motors can only be blocked immediate after arming
+    // this ensures the motors can only be blocked immediately after arming
     uint32_t now_ms = AP_HAL::millis();
     if (!motors->get_spoolup_block()) {
         takeoff_check_warning_ms = now_ms;
         takeoff_check_state.warning_ms = now_ms;
+        return;
+    }
+
+    // Motors Library has enabled the spool up block.
+
+    // Immediately clear the spool up block if not landed
+    if (!ap.land_complete) {
+        motors->set_spoolup_block(false);
         return;
     }
 
