@@ -125,9 +125,10 @@ void AP_InertialSensor_Backend::_rotate_and_correct_accel(uint8_t instance, Vect
     )) {
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-        // apply temperature corrections
-        _imu.tcal(instance).correct_accel(_imu.get_temperature(instance), _imu.caltemp_accel(instance), accel);
-#endif
+                // apply temperature corrections
+                if (!is_temperature_compensated(instance)) {
+                                _imu.tcal(instance).correct_accel(_imu.get_temperature(instance), _imu.caltemp_accel(instance), accel);
+                }
 
         // apply offsets
         accel -= _imu._accel_offset(instance);
@@ -159,7 +160,9 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         // apply temperature corrections
-        _imu.tcal(instance).correct_gyro(_imu.get_temperature(instance), _imu.caltemp_gyro(instance), gyro);
+                if (!is_temperature_compensated(instance)) {
+                                _imu.tcal(instance).correct_gyro(_imu.get_temperature(instance), _imu.caltemp_gyro(instance), gyro);
+                }
 #endif
 
         // gyro calibration is always assumed to have been done in sensor frame
