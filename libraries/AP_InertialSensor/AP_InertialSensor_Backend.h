@@ -40,6 +40,7 @@ class AP_InertialSensor_Backend
 {
 public:
     AP_InertialSensor_Backend(AP_InertialSensor &imu);
+    virtual bool is_temperature_compensated(uint8_t instance) const { return false; }
     AP_InertialSensor_Backend(const AP_InertialSensor_Backend &that) = delete;
 
     // we declare a virtual destructor so that drivers can
