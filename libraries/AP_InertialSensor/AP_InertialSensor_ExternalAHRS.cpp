@@ -1,23 +1,13 @@
 #include <AP_HAL/AP_HAL.h>
-#include "AP_InertialSensor_ExternalAHRS.h"
-#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-#include <stdio.h>
 
 #if AP_EXTERNAL_AHRS_ENABLED
-
-const extern AP_HAL::HAL& hal;
-
-AP_InertialSensor_ExternalAHRS::AP_InertialSensor_ExternalAHRS(AP_InertialSensor &imu, uint8_t _serial_port) :
-    AP_InertialSensor_Backend(imu),
-    serial_port(_serial_port)
-{
-}
 
 void AP_InertialSensor_ExternalAHRS::handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt)
 {
     if (!started) {
         return;
     }
+    temperature_compensated = pkt.temperature_compensated;
     Vector3f accel = pkt.accel;
     Vector3f gyro = pkt.gyro;
 
@@ -67,5 +57,9 @@ bool AP_InertialSensor_ExternalAHRS::get_output_banner(char* banner, uint8_t ban
     return true;
 }
 
-#endif // AP_EXTERNAL_AHRS_ENABLED
+bool AP_InertialSensor_ExternalAHRS::is_temperature_compensated(uint8_t instance) const
+{
+    return temperature_compensated;
+}
 
+#endif // AP_EXTERNAL_AHRS_ENABLED
