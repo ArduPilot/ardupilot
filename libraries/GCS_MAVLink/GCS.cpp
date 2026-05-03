@@ -340,7 +340,7 @@ void GCS::send_named_float(const char *name, float value) const
 // @Field: TimeUS: Time since system startup
 // @Field: Name: Name of float
 // @Field: Value: Value of float
-    AP::logger().WriteStreaming(
+    AP::logger().Write(
         "NVF",
         "TimeUS," "Name," "Value",
         "s"       "#"     "-",
