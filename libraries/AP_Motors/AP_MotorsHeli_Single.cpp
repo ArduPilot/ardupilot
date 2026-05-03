@@ -367,9 +367,6 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
     // updates takeoff collective flag based on 50% hover collective
     update_takeoff_collective_flag(collective_out);
 
-    // Get yaw offset required to cancel out steady state main rotor torque
-    const float yaw_offset = get_yaw_offset(collective_out);
-
     // feed power estimate into main rotor controller
     // ToDo: include tail rotor power?
     // ToDo: add main rotor cyclic power?
@@ -381,6 +378,16 @@ void AP_MotorsHeli_Single::move_actuators(float roll_out, float pitch_out, float
 
     // Caculate servo positions from swashplate library
     _swashplate.calculate(roll_out, pitch_out, collective_out_scaled);
+
+    if (have_DDFP_tail()) {
+        // calc filtered battery voltage and lift_max
+        thr_lin.update_lift_max_from_batt_voltage();
+        // apply compensation gain to yaw output
+        yaw_out *= thr_lin.get_compensation_gain();
+    }
+
+    // Get yaw offset required to cancel out steady state main rotor torque
+    const float yaw_offset = get_yaw_offset(collective_out);
 
     // update the yaw rate using the tail rotor/servo
     move_yaw(yaw_out + yaw_offset);
@@ -447,8 +454,6 @@ void AP_MotorsHeli_Single::output_to_motors()
             FALLTHROUGH;
 
         case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW:
-            // calc filtered battery voltage and lift_max
-            thr_lin.update_lift_max_from_batt_voltage();
             output_to_ddfp_tail(thr_lin.thrust_to_actuator(_servo4_out));
             break;
 
