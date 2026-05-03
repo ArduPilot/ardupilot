@@ -1,4 +1,4 @@
-/*
+f/*
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -170,6 +170,7 @@ public:
         Vector3f accel;
         Vector3f gyro;
         float temperature;
+    bool temperature_compensated;
     } ins_data_message_t;
 
     typedef struct {
