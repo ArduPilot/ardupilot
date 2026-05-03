@@ -12438,6 +12438,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle(force=True)
 
+    def BaroGroundEffectAtTakeoff(self):
+        '''Test EKF altitude protection during simulated ground-effect baro contamination'''
+        # Models prop-wash baro corruption that hits small copters during
+        # motor spool-up.  With a negative EK3_GND_EFF_DZ:
+        #   1. Pre-takeoff fusion replaces the corrupt baro with the
+        #      pre-ground-effect reference (meaHgtAtTakeOff frozen when
+        #      takeoff_expected went true).
+        #   2. ResetHeight() is suppressed when hgtTimeout fires during
+        #      ground effect, so the EKF cannot snap altitude to the
+        #      glitched baro value.
+        # Together these hold EKF altitude near zero throughout the
+        # spool-up window even with several metres of injected baro
+        # contamination.
+        self.set_parameters({
+            "EK3_GND_EFF_DZ": -5,    # negative: |DZ| metres noise floor + pre-takeoff anchor
+            "EK3_RNG_USE_HGT": -1,   # force baro-only height path (no rangefinder fallback)
+            "DISARM_DELAY": 30,      # keep armed long enough to observe past hgtTimeout
+        })
+        self.reboot_sitl()
+
+        self.change_mode("ALT_HOLD")
+        self.wait_ready_to_arm()
+
+        # Arm at idle.  takeoff_expected goes true and meaHgtAtTakeOff
+        # is frozen at the clean baro reading.
+        self.arm_vehicle()
+
+        # Inject -5 m baro contamination AFTER takeoff_expected has been
+        # set so the frozen reference is clean.  In real flight this
+        # models propwash arriving as motors spool above idle.
+        self.set_parameter("SIM_BARO_GLITCH", -5)
+
+        # Sample altitude for 8 s.  hgtTimeout fires at 5 s of failed
+        # innovation gate; without the suppression, ResetHeight() would
+        # slam the EKF altitude to roughly -5 m at that point.  With the
+        # fix the synthetic pre-takeoff observation anchors altitude
+        # near zero throughout.
+        sample_tstart = self.get_sim_time()
+        peak_excursion = 0.0
+        while self.get_sim_time() - sample_tstart < 8.0:
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            peak_excursion = max(peak_excursion, abs(m.relative_alt * 0.001))
+
+        self.progress("Peak altitude excursion over 8s with -5m baro glitch: %.3f m" % peak_excursion)
+        if peak_excursion > 0.5:
+            raise NotAchievedException(
+                "EKF altitude not protected during ground-effect contamination: "
+                "peak %.3f m (want <0.5 m). Pre-takeoff anchor and "
+                "ResetHeight suppression should hold altitude near zero." % peak_excursion)
+
+        self.set_parameter("SIM_BARO_GLITCH", 0)
+        self.disarm_vehicle(force=True)
+
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
         self.wait_ready_to_arm()
@@ -17802,6 +17855,7 @@ return update, 1000
             self.AltEstimation,
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
+            self.BaroGroundEffectAtTakeoff,
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
