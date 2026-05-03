@@ -20,12 +20,11 @@ public:
     void handle_external(const AP_ExternalAHRS::ins_data_message_t &pkt) override;
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
-    bool is_temperature_compensated(uint8_t instance) const override;
-
+        bool is_temperature_compensated(uint8_t instance) override;
 private:
     const uint8_t serial_port;
     bool started;
-    bool temperature_compensated;
+    
 };
 
 #endif // AP_EXTERNAL_AHRS_ENABLED
