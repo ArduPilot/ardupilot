@@ -169,7 +169,7 @@ You can set parameters either by setting individual parameters or uploading enti
 To run the example `Kevin bot` inside `UnityMDS`, you need to set its frame config. Run this in the interactive terminal:
 
 ```bash
-param set FRAME_CONFIG 7
+param set SOME_PARAM 1
 reboot
 ```
 
@@ -177,14 +177,15 @@ reboot
 
 You can refer to example parameter files in the `params/` folder and read up their definitions on official Ardupilot documentation.
 
-To upload entire parameter files, run the following command in the interactive terminal. For example, to test with no-GPS underwater (using DVL):
+To upload entire parameter files, run the following command in the interactive terminal. For example, to test with no-GPS underwater (using DVL), and upload the correct thruster config:
 
 ```bash
 param load params/no_gps_ext_nav.parm
+param load params/vectored_thrust.parm
 reboot
 ```
 
-## Available frames
+## Available frames (deprecated)
 
 For Kevin bot:
 
