@@ -18,6 +18,8 @@
 #include "transition.h"
 #include <AP_Motors/AP_MotorsTailsitter.h>
 #include <AP_Logger/LogStructure.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
+// #define SITL_DEBUG
 
 class QuadPlane;
 class AP_MotorsMulticopter;
@@ -70,6 +72,22 @@ public:
     // Write tailsitter specific log
     void write_log();
 
+    // get throttle scaler for current flight mode based on motor rpm
+    void get_rpm_based_tilt_scaler(float &scale_l, float &scale_r, float default_throttle_scaler);
+
+    // Kalman filter for RPM estimation
+    struct RPM_KF {
+    float rpm;   // estimated RPM
+    float bias;   // estimated measurement bias
+    float P_rr;  // covariance of rpm-rpm
+    float P_rb;  // covariance of rpm-bias
+    float P_bb;  // covariance of bias-bias
+    float innovation; // last innovation
+    };
+
+    // update the rpm kalman filter
+    void update_rpm_kalman(RPM_KF &kf,float pwm,float rpm_meas,float dt);
+
     // tailsitter speed scaler
     float last_spd_scaler = 1.0f; // used to slew rate limiting with TAILSITTER_GSCL_ATT_THR option
 
@@ -116,6 +134,9 @@ public:
     AP_Float wvane_pitch_hi;
     AP_Float wvane_pitch_mid;
     AP_Float pitch_rate_effort_hi, pitch_rate_effort_low;
+    AP_Int8 rpm_based_tilt_scaling;
+    AP_Float hover_rpm_tilt_scale;
+    AP_Float rpm_scale_low;
 
     AP_MotorsTailsitter* tailsitter_motors;
 
@@ -156,6 +177,11 @@ private:
 
     // transition logic
     Tailsitter_Transition* transition;
+
+#if HAL_WITH_ESC_TELEM
+    // ESC Telemetry
+    AP_ESC_Telem* _esc_telem;
+#endif
 
 };
 
@@ -225,5 +251,6 @@ private:
     float prev_fw_initial_pitch;
 
     Tailsitter& tailsitter;
+
 
 };

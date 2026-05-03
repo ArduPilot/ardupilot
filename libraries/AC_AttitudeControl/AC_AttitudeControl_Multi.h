@@ -63,6 +63,9 @@ public:
     // calculate total body frame throttle required to produce the given earth frame throttle
     float get_throttle_boosted(float throttle_in);
 
+    // calculate total body frame throttle required to produce the given earth frame throttle for vectored thrust tailsitters
+    float get_throttle_boosted_ts(float throttle_in);
+
     // set desired throttle vs attitude mixing (actual mix is slewed towards this value over 1~2 seconds)
     //  low values favour pilot/autopilot throttle over attitude control, high values favour attitude control over throttle
     //  has no effect when throttle is above hover throttle
@@ -83,6 +86,8 @@ public:
 
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) override;
+
+    void get_tilt_motor_angle(float tilt_angle){_ts_tilt_angle = tilt_angle;}
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -149,4 +154,6 @@ protected:
 
     // angle_p/pd boost multiplier
     AP_Float              _throttle_gain_boost;
+
+    float               _ts_tilt_angle = 0.0f; // tailsitter tilt motor angle
 };

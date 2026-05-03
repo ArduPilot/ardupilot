@@ -425,6 +425,7 @@ public:
 
    // set tailsitter enabled flag
     void set_tailsitter_enabled(bool enabled = false) { _ts_enabled = enabled; }
+    
     // To check the transition state
     void set_tailsitter_transition(bool in_transition) { _ts_in_transition = in_transition; }
 protected:
