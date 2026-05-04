@@ -825,8 +825,14 @@ void RCOutput::push_local(void)
                     if (period_us > widest_pulse) {
                         widest_pulse = period_us;
                     }
-                    const uint8_t i = &group - pwm_group_list;
-                    need_trigger |= (1U<<i);
+                    // For oneshot, skip the trigger if this channel's new
+                    // width is 0 so the timer
+                    // completes the in-flight pulse naturally and stays low.
+                    // DShot always needs its DMA trigger.
+                    if (period_us > 0 || is_dshot_protocol(group.current_mode)) {
+                        const uint8_t i = &group - pwm_group_list;
+                        need_trigger |= (1U<<i);
+                    }
                 }
             }
         }
@@ -835,13 +841,16 @@ void RCOutput::push_local(void)
     if (widest_pulse > 2300) {
         widest_pulse = 2300;
     }
-    trigger_widest_pulse = widest_pulse + 50;
 
     trigger_groupmask = need_trigger;
 
     if (trigger_groupmask) {
         trigger_groups();
     }
+
+    // set trigger_widest_pulse trigger_groups() so the wait inside
+    // trigger_groups() gets the previous pulse's width, not this ones
+    trigger_widest_pulse = widest_pulse + 50;
 }
 
 uint16_t RCOutput::read(uint8_t chan)
