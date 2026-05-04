@@ -194,16 +194,8 @@ class AutoTestHelicopter(AutoTestCopter):
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            # the model string for Callisto has crap in it.... we
-            # should really have another entry in the vehicleinfo data
-            # to carry the path to the JSON.
-            actual_model = model.split(":")[0]
-            defaults = self.model_defaults_filepath(actual_model)
-            if not isinstance(defaults, list):
-                defaults = [defaults]
             self.customise_SITL_commandline(
                 [],
-                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
@@ -214,7 +206,6 @@ class AutoTestHelicopter(AutoTestCopter):
         '''Test Heli Internal Throttle Curve and Governor'''
         self.customise_SITL_commandline(
             [],
-            defaults_filepath=self.model_defaults_filepath('heli-gas'),
             model="heli-gas",
             wipe=True,
         )

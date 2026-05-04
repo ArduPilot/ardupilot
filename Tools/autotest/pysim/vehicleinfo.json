@@ -477,6 +477,14 @@
                     "default_params/plane-elevons.parm"
                 ]
             },
+            "plane-elevrev": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-reverse-servo-pitch-yaw.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm"
+                ]
+            },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
@@ -532,6 +540,7 @@
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
                     "models/plane.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm",
                     "default_params/plane-redundant.parm"
                 ]
             },
@@ -559,7 +568,11 @@
             },
             "jsbsim": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-jsbsim.parm",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-reverse-servo-pitch-yaw.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm"
+                ],
                 "external": true
             },
             "scrimmage-plane": {
