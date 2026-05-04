@@ -457,6 +457,13 @@
                     "default_params/plane-elevons.parm"
                 ]
             },
+            "plane-elevrev": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-elevrev.parm"
+                ]
+            },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [

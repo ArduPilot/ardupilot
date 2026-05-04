@@ -113,14 +113,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "wipe": True
         }
 
-    def apply_defaultfile_parameters(self):
-        # Copter passes in a defaults_filepath in place of applying
-        # parameters afterwards.
-        pass
-
-    def defaults_filepath(self):
-        return self.model_defaults_filepath(self.frame)
-
     def wait_disarmed_default_wait_time(self):
         return 120
 
@@ -8205,7 +8197,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("INS_HNTCH_OPTS", 0)
         self.customise_SITL_commandline(
             [],
-            defaults_filepath=','.join(self.model_defaults_filepath("octa")),
             model="octa"
         )
         freq, hover_throttle, peakdb1, psd = \
@@ -12681,16 +12672,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            defaults = self.model_defaults_filepath(frame)
-            if not isinstance(defaults, list):
-                defaults = [defaults]
             self.context_push()
             frame_script = frame_bits.get('frame_example_script', None)
             if frame_script is not None:
                 self.install_example_script_context(frame_script)
             self.customise_SITL_commandline(
                 [],
-                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
