@@ -433,7 +433,10 @@
             },
             "plane-3d": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": []
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-3d.parm"
+                ]
             },
             "glider": {
                 "waf_target": "bin/arduplane",
