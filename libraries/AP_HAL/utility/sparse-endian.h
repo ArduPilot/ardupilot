@@ -25,9 +25,25 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
-#include <byteswap.h>
-#include <endian.h>
 #include <stdint.h>
+
+#ifdef __ANDROID__
+  #include <sys/endian.h>
+  // Bionic's <sys/endian.h> provides __swap16/32/64
+  // but ArduPilot code expects glibc's __bswap_16/32/64
+  #ifndef __bswap_16
+    #define __bswap_16(x) __swap16(x)
+  #endif
+  #ifndef __bswap_32
+    #define __bswap_32(x) __swap32(x)
+  #endif
+  #ifndef __bswap_64
+    #define __bswap_64(x) __swap64(x)
+  #endif
+#else
+  #include <byteswap.h>
+  #include <endian.h>
+#endif
 
 #ifdef __CHECKER__
 #define __ap_bitwise __attribute__((bitwise))
