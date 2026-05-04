@@ -374,10 +374,15 @@ public:
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosDownReset(float &posDelta);
 
-    // Resets the baro so that it reads zero at the current height
-    // Resets the EKF height to zero
-    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-    void resetHeightDatum();
+    // Resets the baro so that it reads zero at the current height,
+    // and resets the EKF height datum.  origin_alt_tolerance_m caps
+    // how far the EKF origin altitude may diverge from current GPS
+    // altitude before the EKF falls back to a partial reset (baro
+    // recalibration only) instead of zeroing the vertical position
+    // state.  Negative (default) disables the check (always full
+    // reset, matching pre-2026 behaviour).  See
+    // NavEKF3::resetHeightDatum for details.
+    void resetHeightDatum(float origin_alt_tolerance_m = -1.0f);
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;

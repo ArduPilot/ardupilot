@@ -722,6 +722,8 @@ public:
     AP_Int8 att_enable;
     AP_Int8 att_decimation;
 
+    AP_Int16 hgt_reset_threshold;
+
 #if AP_RC_TRANSMITTER_TUNING_ENABLED
     // second transmitter channel for tuning:
     AP_Int8 rc_tuning2_param;

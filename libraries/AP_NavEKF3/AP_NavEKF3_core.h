@@ -187,11 +187,10 @@ public:
     void resetGyroBias(void);
 
     // Resets the baro so that it reads zero at the current height
-    // Resets the EKF height to zero
-    // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    // Resets the EKF height datum and clears baro temperature drift.
+    // origin_alt_tolerance_m: see NavEKF3::resetHeightDatum.
+    // Returns true if the height datum reset was performed.
+    bool resetHeightDatum(float origin_alt_tolerance_m);
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
