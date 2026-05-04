@@ -1242,34 +1242,50 @@ void NavEKF3_core::FuseVelPosNED()
                     ConstrainVariances();
 
                     // record good fusion status
-                    if (obsIndex == 0) {
+                    switch (obsIndex) {
+                    case 0:
                         faultStatus.bad_nvel = false;
-                    } else if (obsIndex == 1) {
+                        break;
+                    case 1:
                         faultStatus.bad_evel = false;
-                    } else if (obsIndex == 2) {
+                        break;
+                    case 2:
                         faultStatus.bad_dvel = false;
-                    } else if (obsIndex == 3) {
+                        break;
+                    case 3:
                         faultStatus.bad_npos = false;
-                    } else if (obsIndex == 4) {
+                        break;
+                    case 4:
                         faultStatus.bad_epos = false;
-                    } else if (obsIndex == 5) {
+                        break;
+                    case 5:
                         faultStatus.bad_dpos = false;
+                        break;
                     }
+
                 } else {
                     // record bad fusion status
-                    if (obsIndex == 0) {
+                    switch (obsIndex) {
+                    case 0:
                         faultStatus.bad_nvel = true;
-                    } else if (obsIndex == 1) {
+                        break;
+                    case 1:
                         faultStatus.bad_evel = true;
-                    } else if (obsIndex == 2) {
+                        break;
+                    case 2:
                         faultStatus.bad_dvel = true;
-                    } else if (obsIndex == 3) {
+                        break;
+                    case 3:
                         faultStatus.bad_npos = true;
-                    } else if (obsIndex == 4) {
+                        break;
+                    case 4:
                         faultStatus.bad_epos = true;
-                    } else if (obsIndex == 5) {
+                        break;
+                    case 5:
                         faultStatus.bad_dpos = true;
+                        break;
                     }
+
                 }
             }
         }
@@ -2105,12 +2121,18 @@ void NavEKF3_core::FuseBodyVel()
                 ConstrainVariances();
             } else {
                 // record bad axis
-                if (obsIndex == 0) {
+                switch (obsIndex) {
+                case 0:
                     faultStatus.bad_xvel = true;
-                } else if (obsIndex == 1) {
+                    break;
+                case 1:
                     faultStatus.bad_yvel = true;
-                } else if (obsIndex == 2) {
+                    break;
+                case 2:
                     faultStatus.bad_zvel = true;
+                    break;
+                default:
+                    break;
                 }
 
             }
