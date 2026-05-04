@@ -209,7 +209,8 @@ bool AP_ExternalAHRS::set_origin(const Location &loc)
 {
     WITH_SEMAPHORE(state.sem);
     if (state.have_origin) {
-        return false;
+        // return true if origin has not changed
+        return state.origin.same_loc_as(loc);
     }
     state.origin = loc;
     state.have_origin = true;
