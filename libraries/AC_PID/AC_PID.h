@@ -161,6 +161,19 @@ protected:
     // If `limit` is true, the integrator is only allowed to shrink to avoid wind-up.
     void update_i(float dt, bool limit, float i_scale = 1.0f);
 
+    // Declared before AP_Float members so they are initialized first; GCC analyses
+    // the AP_GROUPINFO_FLAGS_DEFAULT_POINTER offset and warns if these come later.
+    const float default_kp;
+    const float default_ki;
+    const float default_kd;
+    const float default_kff;
+    const float default_kdff;
+    const float default_kimax;
+    const float default_filt_T_hz;
+    const float default_filt_E_hz;
+    const float default_filt_D_hz;
+    const float default_slew_rate_max;
+
     // parameters
     AP_Float _kp;
     AP_Float _ki;
@@ -202,15 +215,4 @@ protected:
 #endif
 
     AP_PIDInfo _pid_info;
-
-    const float default_kp;
-    const float default_ki;
-    const float default_kd;
-    const float default_kff;
-    const float default_kdff;
-    const float default_kimax;
-    const float default_filt_T_hz;
-    const float default_filt_E_hz;
-    const float default_filt_D_hz;
-    const float default_slew_rate_max;
 };
