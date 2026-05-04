@@ -12,6 +12,7 @@ local RC_NEUTRAL_US          = 1500 -- Neutral PWM for RC channels
 local RC_DEFLECTION          = 500  -- PWM deflection from neutral to simulate full stick
 local STEP_DELAY_MS          = 3000 -- Delay between each movement in milliseconds
 local MODE_CHANGE_TIMEOUT_MS = 5000 -- Max time to wait for a mode change
+local REMINDER_INTERVAL_MS   = 15000 -- 15 seconds for the nag message
 
 -- ArduPilot flight modes
 local MODE_MANUAL            = 0 -- Manual mode (QuadPlane)
@@ -30,12 +31,20 @@ local running                = false -- True if the test sequence is active
 local step                   = 0 -- Current step in the sequence
 local last_step_time         = 0 -- Timestamp of the last action
 local prev_switch_state      = false -- Previous state of the trigger switch
+local checks_completed       = false -- Tracks if the sequence has finished successfully
+local last_reminder_time     = millis() -- Timestamp for the 30-second reminder timer
 
+-- Request an authorization ID for custom pre-arm checks
+local auth_id = arming:get_aux_auth_id()
+if not auth_id then
+    gcs:send_text(4, "ERROR: Could not get arming aux auth ID")
+end
 
--- Get RC channel objects for Pitch and Roll
+-- Get RC channel objects for Pitch, Roll, and Flaps
 local rc_pitch_chan = rc:get_channel(RC_CHAN_PITCH)
 local rc_roll_chan = rc:get_channel(RC_CHAN_ROLL)
 local rc_flap_chan = rc:get_channel(RC_CHAN_FLAP)
+
 if not rc_pitch_chan or not rc_roll_chan or not rc_flap_chan then
     gcs:send_text(4, "ERROR: RC Roll/Pitch/flap channels not found.")
     return -- Stop the script from running
@@ -52,16 +61,38 @@ local function change_mode(mode_id, mode_name)
     end
 end
 
+-- Helper to release RC overrides back to transmitter control
+local function release_overrides()
+    rc_pitch_chan:set_override(0)
+    rc_roll_chan:set_override(0)
+    rc_flap_chan:set_override(0)
+end
+
 -- Main update loop, runs continuously
 function update()
-    if arming:is_armed() then
-        return update, 50
-    end
-
     local now = millis()
 
-    -- 1. Check for the trigger switch activation (rising edge)
-    --local rc_pwm = rc:get_pwm(TRIGGER_CHANNEL)
+    -- 1. Pre-Arm Check Injection
+    if auth_id then
+        if not checks_completed then
+            arming:set_aux_auth_failed(auth_id, "Control surface checks required")
+        else
+            arming:set_aux_auth_passed(auth_id)
+        end
+    end
+
+    -- 2. Nag Reminder Logic (Runs every 30 seconds if checks aren't done)
+    if not checks_completed and not running and (now - last_reminder_time >= REMINDER_INTERVAL_MS) then
+        gcs:send_text(4, "Please run control surface checks before flight")
+        last_reminder_time = now
+    end
+
+    -- Prevent running the check while armed
+    if arming:is_armed() then
+        return update, 100
+    end
+
+    -- 3. Check for the trigger switch activation (rising edge)
     local trig_chan = CTSF_TRIG_CH:get()
     local rc_pwm = rc:get_pwm(trig_chan)
     local switch_is_on = rc_pwm and rc_pwm > 1800
@@ -76,7 +107,7 @@ function update()
         gcs:send_text(1, "Starting control surface check")
     end
 
-    -- 2. Execute the test sequence if it's running
+    -- 4. Execute the test sequence if it's running
     if not running then
         return update, 100 -- If not running, check again in 100ms
     end
@@ -100,6 +131,7 @@ function update()
             last_step_time = now
         elseif (now - last_step_time > MODE_CHANGE_TIMEOUT_MS) then
             gcs:send_text(4, "TIMEOUT: Failed to enter MANUAL mode. Aborting.")
+            release_overrides()
             running = false
         end
     elseif step >= 2 then
@@ -120,8 +152,8 @@ function update()
             rc_pitch_chan:set_override(RC_NEUTRAL_US + RC_DEFLECTION)
             step = step + 1
         elseif step == 4 then
-            -- Pitch Down
-            gcs:send_text(1, "Neutral")
+            -- Pitch Neutral
+            gcs:send_text(1, "Pitch Neutral")
             rc_pitch_chan:set_override(RC_NEUTRAL_US)
             step = step + 1
         elseif step == 5 then
@@ -137,22 +169,25 @@ function update()
         elseif step == 7 then
             -- Door Closed
             gcs:send_text(1, "Cargo bay door closed")
+            -- Also neutralising roll from the previous step
+            rc_roll_chan:set_override(RC_NEUTRAL_US)
             rc_flap_chan:set_override(RC_NEUTRAL_US + RC_DEFLECTION)
             step = step + 1
         elseif step == 8 then
-            rc_pitch_chan:set_override(RC_NEUTRAL_US)
-            step = step + 1
-        elseif step == 9 then
             -- Door Open
             gcs:send_text(1, "Cargo bay door open")
             rc_flap_chan:set_override(RC_NEUTRAL_US - RC_DEFLECTION)
             step = step + 1
-        elseif step == 10 then
+        elseif step == 9 then
             -- Sequence complete: reset everything
             gcs:send_text(1, "All checks complete. Releasing controls.")
             change_mode(MODE_QLOITER, "QLOITER")
             param:set('Q_TAILSIT_VFGAIN', 0.2)
             gcs:send_text(6, "Set Q_TAILSIT_VFGAIN to 0.2 (VTOL mode)")
+            
+            release_overrides() -- Releases overrides completely back to TX
+            
+            checks_completed = true -- Flags checks as done to clear pre-arm block & 30s reminder
             running = false -- Reset for the next trigger
         end
     end
