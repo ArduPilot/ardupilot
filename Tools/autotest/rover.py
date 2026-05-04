@@ -5437,11 +5437,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def SkidSteer(self):
         '''Check skid-steering'''
-        model = "rover-skid"
-
-        self.customise_SITL_commandline([],
-                                        model=model,
-                                        defaults_filepath=self.model_defaults_filepath(model))
+        self.customise_SITL_commandline([], model="rover-skid")
 
         self.change_mode("MANUAL")
         self.wait_ready_to_arm()
@@ -7309,12 +7305,8 @@ return update()
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            defaults = self.model_defaults_filepath(frame)
-            if not isinstance(defaults, list):
-                defaults = [defaults]
             self.customise_SITL_commandline(
                 [],
-                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
