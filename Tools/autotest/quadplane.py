@@ -70,14 +70,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def set_current_test_name(self, name):
         self.current_test_name_directory = "ArduPlane_Tests/" + name + "/"
 
-    def apply_defaultfile_parameters(self):
-        # plane passes in a defaults_filepath in place of applying
-        # parameters afterwards.
-        pass
-
-    def defaults_filepath(self):
-        return self.model_defaults_filepath(self.frame)
-
     def is_plane(self):
         return True
 
@@ -1185,7 +1177,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''copter tailsitter test'''
         self.customise_SITL_commandline(
             [],
-            defaults_filepath=self.model_defaults_filepath('quadplane-copter_tailsitter'),
             model="quadplane-copter_tailsitter",
             wipe=True,
         )
@@ -1218,7 +1209,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model=model,
-            defaults_filepath=self.model_defaults_filepath(model),
             wipe=False,
         )
 

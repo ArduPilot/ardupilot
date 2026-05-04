@@ -2327,7 +2327,6 @@ class TestSuite(abc.ABC):
                 self.customise_SITL_commandline(
                     self.valgrind_restart_customisations,
                     model=self.valgrind_restart_model,
-                    defaults_filepath=self.valgrind_restart_defaults_filepath,
                 )
             else:
                 self.stop_SITL()
@@ -3149,7 +3148,6 @@ class TestSuite(abc.ABC):
         # reboot_sitl with Valgrind active:
         if self.valgrind or self.callgrind:
             self.valgrind_restart_model = model
-            self.valgrind_restart_defaults_filepath = defaults_filepath
             self.valgrind_restart_customisations = customisations
 
     def restart_SITL_frame(self,
@@ -3253,12 +3251,8 @@ class TestSuite(abc.ABC):
             ret["LOG_REPLAY"] = 1
         return ret
 
-    def apply_default_parameter_list(self):
-        self.set_parameters(self.default_parameter_list())
-
     def apply_default_parameters(self):
-        self.apply_defaultfile_parameters()
-        self.apply_default_parameter_list()
+        self.set_parameters(self.default_parameter_list())
         self.reboot_sitl()
 
     def reset_SITL_commandline(self):
@@ -9586,9 +9580,6 @@ Also, ignores heartbeats not from our target system'''
         result.passed = passed
         return result
 
-    def defaults_filepath(self):
-        return None
-
     def start_mavproxy(self, sitl_rcin_port=None, master=None, options=None):
         self.start_mavproxy_count += 1
         if self.mavproxy is not None:
@@ -9662,10 +9653,6 @@ Also, ignores heartbeats not from our target system'''
             "enable_fgview": self.enable_fgview,
         }
         start_sitl_args.update(**sitl_args)
-        if ("defaults_filepath" not in start_sitl_args or
-                start_sitl_args["defaults_filepath"] is None):
-            start_sitl_args["defaults_filepath"] = self.defaults_filepath()
-
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
             start_sitl_args["model"] = self.frame
         self.progress("Starting SITL", send_statustext=False)

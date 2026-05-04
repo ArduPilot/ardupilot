@@ -63,19 +63,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
-    def defaults_filepath(self):
-        return os.path.join(testdir, 'default_params/plane-jsbsim.parm')
-
     def set_current_test_name(self, name):
         self.current_test_name_directory = "ArduPlane_Tests/" + name + "/"
 
     def default_frame(self):
         return "plane-elevrev"
-
-    def apply_defaultfile_parameters(self):
-        # plane passes in a defaults_filepath in place of applying
-        # parameters afterwards.
-        pass
 
     def is_plane(self):
         return True
@@ -2613,7 +2605,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model=model,
-            defaults_filepath=self.model_defaults_filepath(model),
             wipe=True)
 
         self.load_mission('CMAC-soar.txt', strict=False)
@@ -2727,7 +2718,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model=model,
-            defaults_filepath=self.model_defaults_filepath(model),
             wipe=True)
 
         self.load_mission('CMAC-soar.txt', strict=False)
@@ -4776,12 +4766,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Actually, no I'm not - it is an external simulation")
                 continue
             model = frame_bits.get("model", frame)
-            defaults = self.model_defaults_filepath(frame)
-            if not isinstance(defaults, list):
-                defaults = [defaults]
             self.customise_SITL_commandline(
                 [],
-                defaults_filepath=defaults,
                 model=model,
                 wipe=True,
             )
@@ -5063,7 +5049,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 1.0,
@@ -5111,7 +5096,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 0.0,
@@ -5158,7 +5142,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 1.0,
@@ -5217,7 +5200,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 0.0,
@@ -5270,7 +5252,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 1.0,
@@ -5324,7 +5305,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 1.0,
@@ -5381,7 +5361,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 0.0,
@@ -5450,7 +5429,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 0.0,
@@ -5552,7 +5530,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "TKOFF_THR_IDLE": 20.0,
@@ -5586,7 +5563,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model='plane-catapult',
-            defaults_filepath=self.model_defaults_filepath("plane")
         )
         self.set_parameters({
             "ARSPD_USE": 0.0,
@@ -6004,7 +5980,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model=model,
-            defaults_filepath="Tools/autotest/models/plane-3d.parm",
             wipe=True)
 
         self.context_push()
@@ -7385,7 +7360,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model="glider",
-            defaults_filepath="Tools/autotest/default_params/glider.parm",
             wipe=True)
 
         self.set_parameter('LOG_DISARMED', 1)
