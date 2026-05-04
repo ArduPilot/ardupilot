@@ -491,7 +491,10 @@
             },
             "jsbsim": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-jsbsim.parm",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-elevrev.parm"
+                ],
                 "external": true
             },
             "scrimmage-plane": {
