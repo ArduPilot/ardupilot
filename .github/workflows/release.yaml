@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+
+# Required for OIDC-based AWS authentication.
+permissions:
+  id-token: write
+  contents: read
+
+
+env:
+  MAIN_AWS_BUCKET: 783764596630-ardupilot-artifacts
+  MAIN_AWS_REGION: eu-north-1
+  MAIN_AWS_ROLE_ARN: arn:aws:iam::783764596630:role/GitHubActionsArduPilotBuilder
+
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build-and-push.yaml
+    with:
+      version: ${{ github.event.release.tag_name }}
+      push_to: s3
+
+  get-targets:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.get.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deployment-targets
+      - id: get
+        run: |
+          targets=$(ls deployment-targets/*.json | xargs -I{} basename {} .json | jq -R -s -c 'split("\n")[:-1]')
+          echo "targets=$targets" >> $GITHUB_OUTPUT
+
+  distribute:
+    needs: [build, get-targets]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ${{ fromJson(needs.get-targets.outputs.targets) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: deployment-targets
+
+      - name: Resolve release info
+        id: release
+        run: |
+          echo "tag=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+
+      - name: Read target config
+        id: config
+        run: |
+          CONFIG="deployment-targets/${{ matrix.target }}.json"
+          echo "target_aws_bucket=$(jq -r '.aws.bucket' $CONFIG)" >> $GITHUB_OUTPUT
+          echo "target_aws_region=$(jq -r '.aws.region' $CONFIG)" >> $GITHUB_OUTPUT
+          echo "target_aws_role_arn=$(jq -r '.aws.role_arn' $CONFIG)" >> $GITHUB_OUTPUT
+
+      - name: Configure main account AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.MAIN_AWS_ROLE_ARN }}
+          aws-region: ${{ env.MAIN_AWS_REGION }}
+
+      - name: Download artifacts from main account
+        run: |
+          aws s3 cp s3://${MAIN_AWS_BUCKET}/${{ steps.release.outputs.tag }}/ardupilot.zip ./ardupilot.zip
+
+      - name: Configure target account AWS credentials
+        if: ${{ matrix.target != 'main' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.config.outputs.target_aws_role_arn }}
+          aws-region: ${{ steps.config.outputs.target_aws_region }}
+
+      - name: Upload artifacts to target account
+        if: ${{ matrix.target != 'main' }}
+        run: |
+          aws s3 cp ./ardupilot.zip s3://${{ steps.config.outputs.target_aws_bucket }}/${{ steps.release.outputs.tag }}/ardupilot.zip

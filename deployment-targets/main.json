@@ -1,0 +1,8 @@
+{
+  "name": "main",
+  "aws": {
+    "region": "eu-north-1",
+    "bucket": "783764596630-ardupilot-artifacts",
+    "role_arn": "arn:aws:iam::783764596630:role/GitHubActionsArduPilotBuilder"
+  }
+}

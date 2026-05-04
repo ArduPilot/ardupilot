@@ -1,0 +1,25 @@
+name: Build on demand
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'Space separated list of targets to build. If not provided, all targets from build.sh will be built'
+        required: false
+        type: string
+
+
+permissions:
+  id-token: write
+  contents: read
+
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build-and-push.yaml
+    with:
+      version: ${{ github.sha }}
+      targets: ${{ github.event.inputs.targets }}
+      push_to: github

@@ -1,0 +1,88 @@
+name: Build and push
+
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Git ref of code version to build'
+        required: true
+        type: string
+      targets:
+        description: 'Space separated list of targets to build. If not provided, all targets from build.sh will be built'
+        required: false
+        type: string
+      push_to:
+        description: 'Where to push the artifacts: s3 or github'
+        required: true
+        type: string
+
+
+# Required for OIDC-based AWS authentication.
+permissions:
+  id-token: write
+  contents: read
+
+
+env:
+  AWS_BUCKET_NAME: 783764596630-ardupilot-artifacts
+  AWS_REGION: eu-north-1
+  AWS_ROLE_ARN: arn:aws:iam::783764596630:role/GitHubActionsArduPilotBuilder
+
+
+jobs:
+  build-and-push:
+    name: Build and push
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version }}
+          submodules: recursive
+
+      - name: Mark workspace safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+
+      - name: ccache cache files
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ github.workflow }}-ccache-${{ inputs.targets }}-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+          restore-keys: ${{ github.workflow }}-ccache-${{ inputs.targets }}
+
+      - name: Setup ccache
+        run: . .github/workflows/ccache.env
+
+      - name: Run build
+        run: |
+          export PATH="/usr/lib/ccache:/opt/gcc-arm-none-eabi-10/bin:$PATH"
+          ./build.sh ${{ inputs.targets }}
+          ccache -s
+
+      - name: Configure AWS Credentials via OIDC
+        if: ${{ inputs.push_to == 's3' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload artifacts to S3
+        if: ${{ inputs.push_to == 's3' }}
+        run: |
+          zip -r ardupilot.zip ardupilot
+          aws s3 cp ardupilot.zip s3://${{ env.AWS_BUCKET_NAME }}/${{ inputs.version }}/ardupilot.zip
+
+      - name: Upload artifacts to GitHub
+        if: ${{ inputs.push_to == 'github' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ardupilot
+          path: ardupilot
+          retention-days: 30
