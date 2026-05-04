@@ -1027,6 +1027,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LAND_FLAP_PERCNT": 50,
             "LOG_DISARMED": 1,
             "RTL_AUTOLAND": 1,
+            "LAND_DISARMDELAY": 3,
 
             "RC%u_MIN" % flaps_ch: flaps_ch_min,
             "RC%u_MAX" % flaps_ch: flaps_ch_max,
