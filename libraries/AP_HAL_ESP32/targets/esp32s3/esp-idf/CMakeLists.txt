@@ -22,6 +22,7 @@ idf_build_process(esp32s3
                app_update
                esp_adc
                esp_driver_mcpwm
+               esp_driver_usb_serial_jtag
                driver
                lwip
                esp_wifi
@@ -109,6 +110,7 @@ target_link_libraries(${elf_file}
                 idf::app_update
                 idf::esp_adc
                 idf::esp_driver_mcpwm
+                idf::esp_driver_usb_serial_jtag
                 idf::driver
                 idf::lwip
                 idf::esp_wifi
