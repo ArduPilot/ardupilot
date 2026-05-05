@@ -116,6 +116,14 @@ uint8_t RCInput::read(uint16_t* periods, uint8_t len)
     return len;
 }
 
+// there is no point enabling the thread if you're not using the
+// RCProtocol library - this catches regressions in our hwdefs.  It
+// can be removed in the future when the chance of there being
+// outstanding work with regressions in is negigible
+#if HAL_RCIN_THREAD_ENABLED && !AP_RCPROTOCOL_ENABLED
+#error Do not enable the RCIN thread when not doing AP_RCPROTOCOL_ENABLED
+#endif
+
 void RCInput::_timer_tick(void)
 {
     if (!_init) {
