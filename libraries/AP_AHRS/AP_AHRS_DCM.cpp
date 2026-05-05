@@ -151,6 +151,7 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // quaternion is derived from transformation matrix:
     results.quaternion.from_rotation_matrix(_dcm_matrix);
+    results.quaternion.rotate(-AP::ahrs().get_trim());
 
     results.attitude_valid = true;
 
