@@ -3187,7 +3187,7 @@ bool AP_AHRS::get_pos_vel_uncertainty(float &pos_horiz_m, float &pos_vert_m, flo
     switch (active_EKF_type()) {
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.getPosVelUncertainty(pos_horiz_m, pos_vert_m, vel_m_s);
+        return ekf3.EKF3.getPosVelUncertainty(pos_horiz_m, pos_vert_m, vel_m_s);
 #endif
     default:
         return false;
@@ -3534,11 +3534,11 @@ bool AP_AHRS::using_gps_for_pos(void) const
     switch (active_EKF_type()) {
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        return EKF2.configuredToUseGPSForPosXY();
+        return ekf2.EKF2.configuredToUseGPSForPosXY();
 #endif
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        return EKF3.configuredToUseGPSForPos();
+        return ekf3.EKF3.configuredToUseGPSForPos();
 #endif
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
