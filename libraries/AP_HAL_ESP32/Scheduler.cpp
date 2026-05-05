@@ -578,4 +578,3 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
         };
     }
 }
-

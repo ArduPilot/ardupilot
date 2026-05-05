@@ -16,10 +16,14 @@
 #include <AP_HAL_ESP32/USBSerialDriver.h>
 #include <AP_Math/AP_Math.h>
 
-#include "driver/usb_serial_jtag.h"
+#include "esp_err.h"
 
 namespace ESP32
 {
+
+USBSerialDriver *USBSerialDriver::_singleton;
+volatile bool USBSerialDriver::_mounted;
+volatile bool USBSerialDriver::_port_open;
 
 USBSerialDriver::USBSerialDriver()
 {
@@ -27,6 +31,7 @@ USBSerialDriver::USBSerialDriver()
     _receive_timestamp_idx = 0;
     _baudrate = 0;
     _uart_owner_thd = nullptr;
+    _singleton = this;
 }
 
 void USBSerialDriver::vprintf(const char *fmt, va_list ap)
@@ -45,22 +50,26 @@ void USBSerialDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     }
 
     if (!_initialized) {
-        usb_serial_jtag_driver_config_t config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
-        config.tx_buffer_size = TX_BUF_SIZE;
-        config.rx_buffer_size = RX_BUF_SIZE;
-        if (!usb_serial_jtag_is_driver_installed()) {
-            if (usb_serial_jtag_driver_install(&config) != ESP_OK) {
-                return;
-            }
+        if (!ardupilot_tusb_init(&USBSerialDriver::rx_callback,
+                                 &USBSerialDriver::line_state_callback,
+                                 this)) {
+            return;
         }
-        _readbuf.set_size(MAX((size_t)rxSpace, RX_BUF_SIZE));
-        _writebuf.set_size(MAX((size_t)txSpace, TX_BUF_SIZE));
-        _uart_owner_thd = xTaskGetCurrentTaskHandle();
+
+        _mounted = true;
+        _port_open = false;
+        const size_t read_size = MAX((size_t)rxSpace, RX_BUF_SIZE);
+        const size_t write_size = MAX((size_t)txSpace, TX_BUF_SIZE);
+        if (!_readbuf.set_size(read_size) || !_writebuf.set_size(write_size)) {
+            ardupilot_tusb_deinit();
+            return;
+        }
         _initialized = true;
     } else {
-        flush();
+        _flush();
     }
 
+    _uart_owner_thd = xTaskGetCurrentTaskHandle();
     _baudrate = baud;
 }
 
@@ -69,19 +78,22 @@ void USBSerialDriver::_end()
     if (_initialized) {
         _readbuf.set_size(0);
         _writebuf.set_size(0);
-        if (usb_serial_jtag_is_driver_installed()) {
-            usb_serial_jtag_driver_uninstall();
-        }
+        _mounted = false;
+        _port_open = false;
+        ardupilot_tusb_deinit();
     }
     _initialized = false;
 }
 
 void USBSerialDriver::_flush()
 {
-    if (!_initialized || !usb_serial_jtag_is_driver_installed()) {
+    if (!_initialized) {
         return;
     }
-    (void)usb_serial_jtag_wait_tx_done(pdMS_TO_TICKS(20));
+    if (!ardupilot_tusb_is_cdc_connected() && !ardupilot_tusb_is_open()) {
+        return;
+    }
+    (void)ardupilot_tusb_flush(pdMS_TO_TICKS(50));
 }
 
 bool USBSerialDriver::is_initialized()
@@ -121,7 +133,9 @@ ssize_t USBSerialDriver::_read(uint8_t *buffer, uint16_t count)
         return -1;
     }
 
+    _read_mutex.take_blocking();
     const uint32_t ret = _readbuf.read(buffer, count);
+    _read_mutex.give();
     if (ret == 0) {
         return 0;
     }
@@ -141,36 +155,43 @@ void USBSerialDriver::_timer_tick()
 
 void USBSerialDriver::read_data()
 {
-    if (!usb_serial_jtag_is_driver_installed()) {
-        return;
-    }
-
-    int count = 0;
-    do {
-        count = usb_serial_jtag_read_bytes(_buffer, sizeof(_buffer), 0);
-        if (count > 0) {
-            _readbuf.write(_buffer, count);
-        }
-    } while (count > 0);
+    // RX is callback-fed into the read buffer by TinyUSB.
 }
 
 void USBSerialDriver::write_data()
 {
-    if (!usb_serial_jtag_is_driver_installed()) {
+    if (!_initialized) {
         return;
     }
 
     _write_mutex.take_blocking();
     while (true) {
-        int count = _writebuf.peekbytes(_buffer, sizeof(_buffer));
+        const int count = _writebuf.peekbytes(_buffer, sizeof(_buffer));
         if (count <= 0) {
+            if (ardupilot_tusb_tx_pending() &&
+                (ardupilot_tusb_is_cdc_connected() || ardupilot_tusb_is_open())) {
+                (void)ardupilot_tusb_flush(pdMS_TO_TICKS(50));
+            }
             break;
         }
-        count = usb_serial_jtag_write_bytes(_buffer, count, 0);
-        if (count <= 0) {
+
+        const int accepted = ardupilot_tusb_write(_buffer, count);
+        if (accepted <= 0) {
             break;
         }
-        _writebuf.advance(count);
+
+        _writebuf.advance(accepted);
+
+        if (!ardupilot_tusb_is_cdc_connected() && !ardupilot_tusb_is_open()) {
+            continue;
+        }
+
+        const esp_err_t flush_ret = ardupilot_tusb_flush(pdMS_TO_TICKS(50));
+        if (flush_ret != ESP_OK &&
+            flush_ret != ESP_ERR_NOT_FINISHED &&
+            flush_ret != ESP_ERR_TIMEOUT) {
+            break;
+        }
     }
     _write_mutex.give();
 }
@@ -196,7 +217,9 @@ bool USBSerialDriver::_discard_input()
         return false;
     }
 
+    _read_mutex.take_blocking();
     _readbuf.clear();
+    _read_mutex.give();
     return true;
 }
 
@@ -238,7 +261,35 @@ uint8_t USBSerialDriver::get_usb_parity() const
 
 bool USBSerialDriver::is_usb_connected()
 {
-    return usb_serial_jtag_is_driver_installed() && usb_serial_jtag_is_connected();
+    return ardupilot_tusb_is_connected();
+}
+
+void USBSerialDriver::handle_rx()
+{
+    size_t rx_size = 0;
+    while ((rx_size = ardupilot_tusb_read(_buffer, sizeof(_buffer))) > 0) {
+        _read_mutex.take_blocking();
+        _readbuf.write(_buffer, rx_size);
+        _read_mutex.give();
+        _receive_timestamp_update();
+    }
+}
+
+void USBSerialDriver::rx_callback(void *arg)
+{
+    if (_singleton == nullptr || arg != _singleton) {
+        return;
+    }
+    _singleton->handle_rx();
+}
+
+void USBSerialDriver::line_state_callback(bool dtr, bool rts, void *arg)
+{
+    if (_singleton == nullptr || arg != _singleton) {
+        return;
+    }
+    _mounted = true;
+    _port_open = dtr || rts;
 }
 
 } // namespace ESP32
