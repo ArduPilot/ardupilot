@@ -961,7 +961,7 @@ void AP_Logger::Write_Fence()
 
 void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 {
-    WriteStreaming(
+    Write(
         "NVF",
         "TimeUS,Name,Value",
         "s#-",
