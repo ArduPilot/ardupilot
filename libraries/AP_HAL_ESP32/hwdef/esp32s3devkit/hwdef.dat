@@ -1,24 +1,18 @@
-# ESP32-S3 board definition with native USB CDC SERIAL4 support
+# ESP32-S3 devkit board definition with native USB CDC SERIAL4 support
 #
-# Based on esp32s3devkit, adapted as a low-level Rover controller example:
-# - ESP32-S3 runs ArduRover / low-level control
-# - WiFi/Bluetooth disabled by default
-# - CAN/TWAI via external CAN transceiver
-# - UART fallback link to a companion computer
-# - UART link to an optional external controller / panel
-# - Native USB CDC link on SERIAL4 for primary MAVLink
-# - SPI IMU
-# - I2C power monitors / auxiliary sensors
-# - optional PWM fallback outputs
+# This board definition enables the ESP32-S3 native USB OTG port as a
+# TinyUSB CDC MAVLink transport on SERIAL4 while keeping UART0 as the
+# console/debug port. UART1 and UART2 remain available as regular
+# hardware serial ports.
 #
 # ==== ESP32-S3 PINOUT ====
 # CAN:      TX=15 RX=18
 # SPI IMU:  MOSI=36 MISO=37 SCLK=35 CS=10
 # I2C:      SDA=13 SCL=12
 # UART0:    SERIAL0 USB-UART console/debug
-# UART1:    SERIAL3 companion fallback MAVLink
-# UART2:    SERIAL2 external controller / panel
-# USB CDC:  SERIAL4 native USB OTG primary MAVLink
+# UART1:    SERIAL3 auxiliary MAVLink / debug UART
+# UART2:    SERIAL2 auxiliary serial port
+# USB CDC:  SERIAL4 native USB OTG MAVLink
 # RCIN:     GPIO4
 # RCOUT:    GPIO9, GPIO11, GPIO5
 # ENCODERS: L(2,6) R(7,8)  (PCNT planned)
@@ -42,10 +36,7 @@ ESP32_SPIBUS SPI3_HOST SPI_DMA_CH_AUTO GPIO_NUM_36 GPIO_NUM_37 GPIO_NUM_35
 # --------------------------------------------------------------------
 # I2C Buses
 # --------------------------------------------------------------------
-# I2C reserved for low-speed sensors:
-# - INA226 / INA228 battery current monitor
-# - INA226 / INA228 charge current monitor
-# - optional temperature / auxiliary sensors
+# I2C reserved for low-speed sensors and peripherals.
 #
 #             Port       SDA         SCL          SPEED    INTERNAL SOFT
 ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13 GPIO_NUM_12  400*KHZ  true     false
@@ -142,7 +133,6 @@ define AP_COMPASS_PROBING_ENABLED 1
 # --------------------------------------------------------------------
 # Barometer
 # --------------------------------------------------------------------
-# Rover does not strictly need a barometer.
 # Keep optional BMP280 probing on I2C address 0x77.
 #
 BARO BMP280 I2C:0:0x77
@@ -151,8 +141,7 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 # --------------------------------------------------------------------
 # WiFi
 # --------------------------------------------------------------------
-# WiFi/Bluetooth disabled by default for deterministic low-level control.
-# Network/UI can be handled by an external companion or controller.
+# WiFi/Bluetooth disabled by default.
 #
 define HAL_ESP32_WIFI 0
 
@@ -163,12 +152,7 @@ define WIFI_PWD "ardupilot123"
 # --------------------------------------------------------------------
 # RCOUT / PWM fallback
 # --------------------------------------------------------------------
-# Optional PWM outputs kept for fallback:
-# - motor / actuator test output
-# - servo/ESC auxiliary output
-# - spare output
-#
-# Main drive ESCs should normally use CAN/TWAI when available.
+# Optional PWM outputs.
 #
 ESP32_RCOUT GPIO_NUM_9
 ESP32_RCOUT GPIO_NUM_11
@@ -214,15 +198,15 @@ ESP32_SERIAL  UART_NUM_2  GPIO_NUM_14  GPIO_NUM_21
 # SERIAL0 is console-oriented in the ESP32 HAL and is intentionally kept
 # separate from the primary MAVLink backend.
 
-# SERIAL2 -> UART2 -> external controller / panel
+# SERIAL2 -> UART2 -> auxiliary serial port
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MAVLink2
 define DEFAULT_SERIAL2_BAUD 115
 
-# SERIAL3 -> UART1 -> companion fallback MAVLink
+# SERIAL3 -> UART1 -> auxiliary MAVLink / debug UART
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MAVLink2
 define DEFAULT_SERIAL3_BAUD 921
 
-# SERIAL4 -> Native USB CDC / TinyUSB primary MAVLink
+# SERIAL4 -> Native USB CDC / TinyUSB MAVLink
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_MAVLink2
 define DEFAULT_SERIAL4_BAUD 921
 

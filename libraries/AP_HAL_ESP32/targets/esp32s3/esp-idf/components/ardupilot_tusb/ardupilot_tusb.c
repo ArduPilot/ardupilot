@@ -21,7 +21,6 @@ static void *s_callback_arg;
 static bool s_initialized;
 static bool s_mounted;
 static bool s_open;
-static bool s_logged_rx;
 
 enum {
     ITF_NUM_CDC = 0,
@@ -43,6 +42,10 @@ enum {
     STRID_CDC_INTERFACE,
 };
 
+enum {
+    CDC_DESC_CONFIG_LEN = TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN,
+};
+
 static tusb_desc_device_t s_device_descriptor = {
     .bLength = sizeof(tusb_desc_device_t),
     .bDescriptorType = TUSB_DESC_DEVICE,
@@ -58,6 +61,18 @@ static tusb_desc_device_t s_device_descriptor = {
     .iProduct = STRID_PRODUCT,
     .iSerialNumber = STRID_SERIAL,
     .bNumConfigurations = 0x01,
+};
+
+static const uint8_t s_fs_configuration_descriptor[] = {
+    // Configuration number, interface count, string index, total length, attributes, power in mA
+    TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CDC_DESC_CONFIG_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 100),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC,
+                       STRID_CDC_INTERFACE,
+                       EPNUM_CDC_NOTIF,
+                       8,
+                       EPNUM_CDC_OUT,
+                       EPNUM_CDC_IN,
+                       64),
 };
 
 static char s_serial_string[17];
@@ -80,12 +95,10 @@ static void ardupilot_tusb_event_cb(tinyusb_event_t *event, void *arg)
     switch (event->id) {
     case TINYUSB_EVENT_ATTACHED:
         s_mounted = true;
-        ESP_LOGI(TAG, "CDC mounted/attached");
         break;
     case TINYUSB_EVENT_DETACHED:
         s_mounted = false;
         s_open = false;
-        ESP_LOGI(TAG, "CDC detached");
         break;
     default:
         break;
@@ -96,10 +109,6 @@ static void ardupilot_tusb_rx_callback(int itf, cdcacm_event_t *event)
 {
     (void)event;
     if (itf == TINYUSB_CDC_ACM_0 && s_rx_cb != NULL) {
-        if (!s_logged_rx) {
-            ESP_LOGI(TAG, "CDC RX callback");
-            s_logged_rx = true;
-        }
         s_rx_cb(s_callback_arg);
     }
 }
@@ -112,9 +121,6 @@ static void ardupilot_tusb_line_state_changed_callback(int itf, cdcacm_event_t *
 
     s_mounted = true;
     s_open = event->line_state_changed_data.dtr || event->line_state_changed_data.rts;
-    ESP_LOGI(TAG, "CDC line state changed: DTR=%d RTS=%d",
-             event->line_state_changed_data.dtr,
-             event->line_state_changed_data.rts);
 
     if (s_line_state_cb != NULL) {
         s_line_state_cb(event->line_state_changed_data.dtr,
@@ -131,7 +137,6 @@ bool ardupilot_tusb_init(ardupilot_tusb_rx_cb_t rx_cb,
         s_rx_cb = rx_cb;
         s_line_state_cb = line_state_cb;
         s_callback_arg = arg;
-        ESP_LOGI(TAG, "TinyUSB CDC already initialized");
         return true;
     }
 
@@ -145,11 +150,10 @@ bool ardupilot_tusb_init(ardupilot_tusb_rx_cb_t rx_cb,
     tusb_cfg.descriptor.qualifier = NULL;
     tusb_cfg.descriptor.string = s_string_descriptors;
     tusb_cfg.descriptor.string_count = STRID_CDC_INTERFACE + 1;
-    tusb_cfg.descriptor.full_speed_config = NULL;
+    tusb_cfg.descriptor.full_speed_config = s_fs_configuration_descriptor;
     tusb_cfg.descriptor.high_speed_config = NULL;
     tusb_cfg.event_cb = ardupilot_tusb_event_cb;
     tusb_cfg.event_arg = NULL;
-    ESP_LOGI(TAG, "ardupilot_tusb_init: installing TinyUSB CDC");
     if (tinyusb_driver_install(&tusb_cfg) != ESP_OK) {
         ESP_LOGE(TAG, "tinyusb_driver_install failed");
         return false;
@@ -167,16 +171,13 @@ bool ardupilot_tusb_init(ardupilot_tusb_rx_cb_t rx_cb,
         (void)tinyusb_driver_uninstall();
         return false;
     }
-    ESP_LOGI(TAG, "TinyUSB CDC ACM 0 initialized");
 
     s_rx_cb = rx_cb;
     s_line_state_cb = line_state_cb;
     s_callback_arg = arg;
     s_mounted = false;
     s_open = false;
-    s_logged_rx = false;
     s_initialized = true;
-    ESP_LOGI(TAG, "TinyUSB CDC ready with serial %s", s_serial_string);
     return true;
 }
 
@@ -193,7 +194,6 @@ void ardupilot_tusb_deinit(void)
     s_callback_arg = NULL;
     s_mounted = false;
     s_open = false;
-    s_logged_rx = false;
     s_initialized = false;
 }
 

@@ -14,9 +14,12 @@
  */
 
 #include <AP_HAL_ESP32/USBSerialDriver.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 
 #include "esp_err.h"
+
+extern const AP_HAL::HAL& hal;
 
 namespace ESP32
 {
@@ -205,6 +208,12 @@ size_t USBSerialDriver::_write(const uint8_t *buffer, size_t size)
     _write_mutex.take_blocking();
     const size_t ret = _writebuf.write(buffer, size);
     _write_mutex.give();
+
+    if (ret > 0 &&
+        (ardupilot_tusb_is_cdc_connected() || ardupilot_tusb_is_open())) {
+        write_data();
+    }
+
     return ret;
 }
 
@@ -290,6 +299,9 @@ void USBSerialDriver::line_state_callback(bool dtr, bool rts, void *arg)
     }
     _mounted = true;
     _port_open = dtr || rts;
+    if (_port_open) {
+        _singleton->write_data();
+    }
 }
 
 } // namespace ESP32
