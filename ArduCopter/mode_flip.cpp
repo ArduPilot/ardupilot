@@ -93,7 +93,7 @@ void ModeFlip::run()
 {
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
     if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
-        _state = FlipState::Abandon;
+        abandon_flip();
     }
 
     // get pilot's desired throttle
@@ -199,19 +199,23 @@ void ModeFlip::run()
         break;
 
     }
-    case FlipState::Abandon:
-        // restore original flight mode
-        if (!copter.set_mode(orig_control_mode, ModeReason::FLIP_COMPLETE)) {
-            // this should never happen but just in case
-            copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
-        }
-        // log abandoning flip
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);
-        break;
     }
 
     // output pilot's throttle without angle boost
     attitude_control->set_throttle_out(throttle_out, false, g.throttle_filt);
+}
+
+void ModeFlip::abandon_flip()
+{
+    // this defends against attempts to abandon when not actually flipping
+    if (copter.get_mode() == static_cast<uint8_t>(Mode::Number::FLIP)) {
+        return;
+    }
+    if (!copter.set_mode(orig_control_mode, ModeReason::FLIP_COMPLETE)) {
+        // this should never happen but just in case
+        copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
+    }
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);
 }
 
 #endif

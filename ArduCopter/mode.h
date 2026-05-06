@@ -970,6 +970,8 @@ public:
     bool is_autopilot() const override { return false; }
     bool crash_check_enabled() const override { return false; }
 
+    void abandon_flip();
+
 protected:
 
     const char *name() const override { return "Flip"; }
@@ -985,8 +987,7 @@ private:
         Roll,
         Pitch_A,
         Pitch_B,
-        Recover,
-        Abandon
+        Recover
     };
     FlipState _state;                   // current state of flip
     Mode::Number  orig_control_mode;    // flight mode when flip was initiated
