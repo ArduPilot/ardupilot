@@ -113,6 +113,7 @@ imu_types = {
     0x3E : "DEVTYPE_INS_LSM6DSV",
     0x3F : "DEVTYPE_INS_ASM330",
     0x40 : "DEVTYPE_INS_ADIS16607",
+    0x41 : "DEVTYPE_INS_SCH16T",
 }
 
 baro_types = {
