@@ -45,8 +45,7 @@ bool ModeFlip::init(bool ignore_checks)
         return false;
     }
 
-    // ensure roll input is less than 40deg
-    if (abs(channel_roll->get_control_in()) >= 4000) {
+    if (input_is_high_magnitude(channel_roll)) {
         return false;
     }
 
@@ -92,7 +91,7 @@ bool ModeFlip::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeFlip::run()
 {
-    if (abandon_requested || !motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+    if (abandon_requested || !motors->armed() || input_is_high_magnitude(channel_roll) || input_is_high_magnitude(channel_pitch) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
         _state = FlipState::Abandon;
         abandon_requested = false;
     }
@@ -218,6 +217,11 @@ void ModeFlip::run()
 void ModeFlip::abandon_flip()
 {
     abandon_requested = true;
+}
+
+bool ModeFlip::input_is_high_magnitude(RC_Channel *& input) const
+{
+    return abs(input->get_control_in()) >= 4000;
 }
 
 #endif

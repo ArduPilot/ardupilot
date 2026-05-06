@@ -997,6 +997,8 @@ private:
     uint32_t start_time_ms;             // time since flip began
     int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
     int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+
+    bool input_is_high_magnitude(RC_Channel *& input) const;
 };
 
 
