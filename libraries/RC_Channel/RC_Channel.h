@@ -49,30 +49,27 @@ public:
     uint8_t ch() const { return ch_in + 1; }
 
     // setup the control preferences
-    void        set_range(uint16_t high);
-    uint16_t    get_range() const { return high_in; }
-    void        set_angle(uint16_t angle);
+    void        set_range();
+    void        set_angle();
     bool        get_reverse(void) const;
     void        set_default_dead_zone(int16_t dzone);
     uint16_t    get_dead_zone(void) const { return dead_zone; }
 
-    // get the center stick position expressed as a control_in value
-    int16_t     get_control_mid() const;
-
-    // read input from hal.rcin - create a control_in value
+    // read input from hal.rcin
     bool        update(void);
-
-    // calculate an angle given dead_zone and trim. This is used by the quadplane code
-    // for hover throttle
-    float       pwm_to_angle_dz_trim(uint16_t dead_zone, uint16_t trim) const;
 
     // return a normalised input for a channel, in range -1 to 1,
     // centered around the channel trim. Ignore deadzone.
     float       norm_input() const;
 
     // return a normalised input for a channel, in range -1 to 1,
-    // centered around the channel trim. Take into account the deadzone
-    float       norm_input_dz() const;
+    // centered around the channel trim. Take into account the deadzone.
+    // Returns the cached value from update(); can be overridden with set_norm_in().
+    float       norm_input_dz() const { return radio_norm; }
+
+    // return a normalised input for a channel, in range -1 to 1, centered
+    // around the given trim with the given dead_zone. Does not use the cache.
+    float       norm_input_dz_trim(uint16_t dead_zone, uint16_t trim) const;
 
     // return a normalised input for a channel, in range -1 to 1,
     // ignores trim and deadzone
@@ -96,17 +93,14 @@ public:
     int16_t    get_radio_in() const { return radio_in;}
     void       set_radio_in(int16_t val) {radio_in = val;}
 
-    int16_t    get_control_in() const { return control_in;}
-    void       set_control_in(int16_t val) { control_in = val;}
+    // override the normalised input (e.g. for failsafe or frame-rotation). Value in [-1, 1].
+    void       set_norm_in(float val) { radio_norm = val; }
 
     void       clear_override();
     void       set_override(const uint16_t v, const uint32_t timestamp_ms);
     bool       has_override() const;
 
     float    stick_mixing(const float servo_in);
-
-    // get control input with zero deadzone
-    float      get_control_in_zero_dz(void) const;
 
     int16_t    get_radio_min() const {return radio_min.get();}
 
@@ -528,8 +522,8 @@ private:
     // pwm is stored here
     int16_t     radio_in;
 
-    // value generated from PWM normalised to configured scale
-    int16_t    control_in;
+    // normalised input in [-1, 1], updated by update(), overridable with set_norm_in()
+    float       radio_norm;
 
     AP_Int16    radio_min;
     AP_Int16    radio_trim;
@@ -539,17 +533,10 @@ private:
     AP_Int16    dead_zone;
 
     ControlType type_in;
-    int16_t     high_in;
 
     // overrides
     uint16_t override_value;
     uint32_t last_override_time;
-
-    float pwm_to_angle() const;
-    float pwm_to_angle_dz(uint16_t dead_zone) const;
-
-    float pwm_to_range() const;
-    float pwm_to_range_dz(uint16_t dead_zone) const;
 
     bool read_3pos_switch(AuxSwitchPos &ret) const WARN_IF_UNUSED;
     bool read_6pos_switch(int8_t& position) WARN_IF_UNUSED;
