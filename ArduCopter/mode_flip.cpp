@@ -92,7 +92,6 @@ bool ModeFlip::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeFlip::run()
 {
-    // if pilot inputs roll > 40deg or timeout occurs abandon flip
     if (abandon_requested || !motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
         _state = FlipState::Abandon;
         abandon_requested = false;
