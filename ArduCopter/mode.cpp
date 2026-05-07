@@ -989,9 +989,9 @@ float Mode::get_pilot_desired_throttle() const
 float Mode::get_avoidance_adjusted_climbrate_ms(float target_rate_ms)
 {
 #if AP_AVOIDANCE_ENABLED
-    float target_rate_cms = target_rate_ms * 100.0;
-    AP::ac_avoid()->adjust_velocity_z(pos_control->D_get_pos_p().kP(), pos_control->D_get_max_accel_mss() * 100.0, target_rate_cms, G_Dt);
-    return target_rate_cms * 0.01;
+    float target_rate_cms = target_rate_ms * 100.0f;
+    AP::ac_avoid()->adjust_velocity_z(pos_control->D_get_pos_p().kP(), pos_control->D_get_max_accel_mss() * 100.0f, target_rate_cms, G_Dt);
+    return target_rate_cms * 0.01f;
 #else
     return target_rate_ms;
 #endif
