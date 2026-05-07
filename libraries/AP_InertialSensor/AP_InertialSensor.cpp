@@ -1310,10 +1310,11 @@ AP_InertialSensor::detect_backends(void)
     if (_backend_count == 0) {
 
         // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink
-        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || defined(RP2350)
+// RP2350 (Pico2): SPI IMU pins are on extended-GPIO castellated pads not connected on bare hardware.
+// Register a mock backend so wait_for_sample() doesn't block forever and the vehicle reaches ap.initialised.
         ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_NONE_SENSOR_A));
         #else
-        DEV_PRINTF("INS: unable to initialise driver\n");
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
         #if !AP_INERTIALSENSOR_ALLOW_NO_SENSORS
         AP_BoardConfig::config_error("INS: unable to initialise driver");
@@ -1486,7 +1487,7 @@ bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint1
 {
 #if AP_SCHEDULER_ENABLED
     const auto gyro_count = get_gyro_count();
-    const auto threshold = 1.8 * _loop_rate;
+    const auto threshold = 1.8f * _loop_rate;
     for (uint8_t i=0; i<gyro_count; i++) {
         if (!_use(i) || _backends[i] == nullptr) {
             continue;
