@@ -32,7 +32,6 @@
 #define FLIP_PITCH_BACK      1      // used to set flip_dir
 #define FLIP_PITCH_FORWARD  -1      // used to set flip_dir
 
-// flip_init - initialise flip controller
 bool ModeFlip::init(bool ignore_checks)
 {
     // only allow flip from some flight modes, for example ACRO, Stabilize, AltHold or FlowHold flight modes
@@ -57,7 +56,6 @@ bool ModeFlip::init(bool ignore_checks)
     // capture original flight mode so that we can return to it after completion
     orig_control_mode = copter.flightmode->mode_number();
 
-    // initialise state
     _state = FlipState::Start;
     abandon_requested = false;
     start_time_ms = millis();
@@ -75,7 +73,6 @@ bool ModeFlip::init(bool ignore_checks)
         roll_dir = FLIP_ROLL_LEFT;
     }
 
-    // log start of flip
     LOGGER_WRITE_EVENT(LogEvent::FLIP_START);
 
     // capture current attitude which will be used during the FlipState::Recovery stage
@@ -96,7 +93,6 @@ void ModeFlip::run()
         abandon_requested = false;
     }
 
-    // get pilot's desired throttle
     float throttle_out = get_pilot_desired_throttle();
 
     // set motors to full range
@@ -116,55 +112,44 @@ void ModeFlip::run()
     switch (_state) {
 
     case FlipState::Start:
-        // under 45 degrees request 400deg/sec roll or pitch
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
 
-        // increase throttle
         throttle_out += FLIP_THR_INC;
 
-        // beyond 45deg lean angle move to next stage
         if (flip_angle_rad >= radians(45.0)) {
             if (roll_dir != 0) {
-                // we are rolling
-            _state = FlipState::Roll;
+                _state = FlipState::Roll;
             } else {
-                // we are pitching
                 _state = FlipState::Pitch_A;
-        }
+            }
         }
         break;
 
     case FlipState::Roll:
-        // between 45deg ~ -90deg request 400deg/sec roll
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, 0.0, 0.0);
-        // decrease throttle
+
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
-        // beyond -90deg move on to recovery
         if ((flip_angle_rad < radians(45.0)) && (flip_angle_rad > -radians(90.0))) {
             _state = FlipState::Recover;
         }
         break;
 
     case FlipState::Pitch_A:
-        // between 45deg ~ -90deg request 400deg/sec pitch
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0f, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
-        // decrease throttle
+
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
-        // check roll for inversion
         if ((fabsf(ahrs.get_roll_rad()) > radians(90.0)) && (flip_angle_rad > radians(45.0))) {
             _state = FlipState::Pitch_B;
         }
         break;
 
     case FlipState::Pitch_B:
-        // between 45deg ~ -90deg request 400deg/sec pitch
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
-        // decrease throttle
+
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
-        // check roll for inversion
         if ((fabsf(ahrs.get_roll_rad()) < radians(90.0)) && (flip_angle_rad > -radians(45.0))) {
             _state = FlipState::Recover;
         }
@@ -179,33 +164,27 @@ void ModeFlip::run()
 
         float recovery_angle_rad;
         if (roll_dir != 0) {
-            // we are rolling
             recovery_angle_rad = fabsf(orig_attitude_euler_rad.x - ahrs.get_roll_rad());
         } else {
-            // we are pitching
             recovery_angle_rad = fabsf(orig_attitude_euler_rad.y - ahrs.get_pitch_rad());
         }
 
         // check for successful recovery
         if (fabsf(recovery_angle_rad) <= FLIP_RECOVERY_ANGLE_RAD) {
-            // restore original flight mode
             if (!copter.set_mode(orig_control_mode, ModeReason::FLIP_COMPLETE)) {
                 // this should never happen but just in case
                 copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
             }
-            // log successful completion
             LOGGER_WRITE_EVENT(LogEvent::FLIP_END);
         }
         break;
 
     }
     case FlipState::Abandon:
-        // restore original flight mode
         if (!copter.set_mode(orig_control_mode, ModeReason::FLIP_COMPLETE)) {
             // this should never happen but just in case
             copter.set_mode(Mode::Number::STABILIZE, ModeReason::UNKNOWN);
         }
-        // log abandoning flip
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIP, LogErrorCode::FLIP_ABANDONED);
         break;
     }
