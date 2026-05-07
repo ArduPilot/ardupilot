@@ -59,7 +59,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
 
     // check throttle is at zero
     read_radio();
-    if (channel_throttle->get_control_in() != 0) {
+    if (!is_zero(channel_throttle->norm_input_dz())) {
         gcs_chan.send_text(MAV_SEVERITY_CRITICAL, "Throttle not zero");
         ap.compass_mot = false;
         return MAV_RESULT_TEMPORARILY_REJECTED;
@@ -148,7 +148,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         // pass through throttle to motors
         auto &srv = AP::srv();
         srv.cork();
-        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
+        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->norm_input_dz());
         srv.push();
 
         // read some compass values
@@ -158,7 +158,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         battery.read();
 
         // calculate scaling for throttle
-        throttle_pct = (float)channel_throttle->get_control_in() * 0.001f;
+        throttle_pct = channel_throttle->norm_input_dz();
         throttle_pct = constrain_float(throttle_pct,0.0f,1.0f);
 
         // record maximum throttle
@@ -220,7 +220,7 @@ MAV_RESULT Copter::mavlink_compassmot(const GCS_MAVLINK &gcs_chan)
         if (AP_HAL::millis() - last_send_time_ms > 500) {
             last_send_time_ms = AP_HAL::millis();
             mavlink_msg_compassmot_status_send(gcs_chan.get_chan(),
-                                               channel_throttle->get_control_in(),
+                                               uint16_t(channel_throttle->norm_input_dz() * 1000.0f),
                                                current,
                                                interference_pct[0],
                                                motor_compensation[0].x,
