@@ -100,6 +100,7 @@ public:
         OPTION_MAVLINK_NO_FORWARD_old = (1U<<10), // // moved to GCS_MAVLINK::Option
         OPTION_NOFIFO             = (1U<<11), // disable hardware FIFO
         OPTION_NOSTREAMOVERRIDE_old   = (1U<<12), // moved to GCS_MAVLINK::Option
+        OPTION_RTSCTS             = (1U<<13), // enable hardware RTS/CTS flow control
     };
 
     bool option_is_set(Option option) const {
