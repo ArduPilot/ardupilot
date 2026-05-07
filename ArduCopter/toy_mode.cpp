@@ -408,11 +408,11 @@ void ToyMode::update()
 
     // we use 150 for throttle_at_min to cope with varying stick throws
     bool throttle_at_min =
-        copter.channel_throttle->get_control_in() < 150;
+        copter.channel_throttle->norm_input_dz() < 0.15f;
 
     // throttle threshold for throttle arming
     bool throttle_near_max =
-        copter.channel_throttle->get_control_in() > 700;
+        copter.channel_throttle->norm_input_dz() > 0.7f;
     
     /*
       disarm if throttle is low for 1 second when landed
@@ -799,9 +799,9 @@ void ToyMode::action_arm(void)
     // don't arm if sticks aren't in deadzone, to prevent pot problems
     // on TX causing flight control issues
     bool sticks_centered =
-        copter.channel_roll->get_control_in() == 0 &&
-        copter.channel_pitch->get_control_in() == 0 &&
-        copter.channel_yaw->get_control_in() == 0;
+        is_zero(copter.channel_roll->norm_input_dz()) &&
+        is_zero(copter.channel_pitch->norm_input_dz()) &&
+        is_zero(copter.channel_yaw->norm_input_dz());
 
     if (!sticks_centered) {
         gcs().send_text(MAV_SEVERITY_ERROR, "Tmode: sticks not centered");

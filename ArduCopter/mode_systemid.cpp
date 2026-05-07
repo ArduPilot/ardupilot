@@ -227,7 +227,7 @@ void ModeSystemId::run()
 
         // get pilot's desired throttle
 #if FRAME_CONFIG == HELI_FRAME
-        pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
+        pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(int16_t(channel_throttle->norm_input_dz() * 1000.0f));
 #else
         pilot_throttle_scaled = get_pilot_desired_throttle();
 #endif
