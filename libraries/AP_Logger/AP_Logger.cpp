@@ -222,8 +222,13 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
 {
     _log_bitmask = &log_bitmask;
 
+#if defined(RP2350)
+// RP2350/Pico2 bring-up: this conversion path hardfaults very early in AP_Param::configured_in_storage(), before comms diagnostics can run.
+// Skip legacy width migration on this board to keep startup deterministic.
+#else
     // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
     _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
+#endif
 
     if (hal.util->was_watchdog_armed()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
