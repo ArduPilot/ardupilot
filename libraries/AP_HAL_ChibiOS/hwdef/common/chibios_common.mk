@@ -3,6 +3,14 @@
 # Processing options coming from the upper Makefile.
 #
 
+# id like to test if the folder modules/ChibiOS/os/ext/fatfs exists and if not, unzp it with 7z.
+FATFS_DIR := $(CHIBIOS)/ext/fatfs
+ifeq ($(wildcard $(FATFS_DIR)),)
+  $(shell 7z x $(CHIBIOS)/ext/fatfs-0.14b_patched.7z -o$(CHIBIOS)/ext)
+endif
+# also littlefs.
+# LITTLEFS_DIR := $(CHIBIOS)/ext/littlefs ifeq ($(wildcard $(LITTLEFS_DIR)),) $(shell 7z x $(CHIBIOS)/ext/littlefs-2.10.1.7z -o$(CHIBIOS)/ext) endif
+
 # Compiler options
 OPT    := $(USE_OPT)
 COPT   := $(USE_COPT)
@@ -185,7 +193,12 @@ ECHO = echo "[$C/$T] ChibiOS:"
 endif
 all: PRE_MAKE_ALL_RULE_HOOK $(OBJS) $(CRASHCATCHER_ASMXOBJS) $(OUTFILES) POST_MAKE_ALL_RULE_HOOK
 
+ifneq ($(findstring RP2350,$(CHIBIOS_PLATFORM_MK)),)
 PRE_MAKE_ALL_RULE_HOOK:
+	@bash $(abspath $(BUILDROOT)/../../libraries/AP_HAL_ChibiOS/hwdef/common/rp2350_ramfunc2_sections.sh) $(BUILDROOT)
+else
+PRE_MAKE_ALL_RULE_HOOK:
+endif
 
 POST_MAKE_ALL_RULE_HOOK:
 
@@ -324,7 +337,7 @@ else
 	@echo Done
 endif
 
-lib: $(OBJS) $(CRASHCATCHER_ASMXOBJS) $(BUILDDIR)/lib$(PROJECT).a pass
+lib: PRE_MAKE_ALL_RULE_HOOK $(OBJS) $(CRASHCATCHER_ASMXOBJS) $(BUILDDIR)/lib$(PROJECT).a pass
 
 $(BUILDDIR)/lib$(PROJECT).a: $(OBJS)
 	@$(AR) -r $@ $^

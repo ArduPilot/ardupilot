@@ -1,0 +1,59 @@
+# hw definition file for processing by chibios_hwdef.py
+# bootloader for the Laurel RP2350B board
+
+MCU PICO2 PICO2
+
+APJ_BOARD_ID AP_HW_RASPBERRYPI_LAUREL
+
+OSCILLATOR_HZ 12000000
+
+FLASH_SIZE_KB 8192
+FLASH_RESERVE_START_KB 0
+
+FLASH_BOOTLOADER_LOAD_KB 32
+APP_START_OFFSET_KB 32
+define APP_START_ADDRESS 0x10010080
+
+# Override the ChibiOS EFLv1 default (4MB) with the actual W25Q64 capacity so
+# efl_lld_program and efl_lld_start_erase_block accept full-range addresses.
+define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
+
+define HAL_USE_EFL                         TRUE
+define HAL_USE_WDG                         TRUE
+# RP2350 is defined elsewhere for this MCU type                    1
+define HAL_USE_PAL                         TRUE
+define HAL_USE_SIO                         TRUE
+define HAL_USE_SERIAL                      FALSE
+define HAL_USE_SERIAL_USB                  TRUE
+define HAL_USE_UART                        FALSE
+define RP_USB_USE_USB1                     TRUE
+
+USB_STRING_MANUFACTURER "ArduPilot"
+
+define BOOTLOADER_BAUDRATE 115200
+define RP_CORE1_START FALSE
+define AP_FASTBOOT_ENABLED 1
+// Laurel RP2350 bring-up: allow app jump even when APP_DESCRIPTOR is missing
+// so runtime faults can be debugged on-target instead of being masked by BL.
+define AP_CHECK_FIRMWARE_ENABLED 0
+define HAL_WITH_MCU_MONITORING 0
+define HAL_BOOTLOADER_TIMEOUT 3000
+
+SERIAL_ORDER OTG1 UART0
+
+PB0 OTG_FS_DM OTG1
+PB1 OTG_FS_DP OTG1
+
+PC0 SWCLK SWD
+PC1 SWDIO SWD
+
+PA12 UART0_TX UART0
+PA13 UART0_RX UART0
+
+# Hold sensor chip-selects inactive while the bootloader is running.
+PA1  ICM42688_CS CS
+PA17 AT7456E_CS CS
+
+# Leave board rails disabled in the bootloader.
+PA14 BEC_5V_EN OUTPUT LOW
+PA15 BEC_9V_EN OUTPUT LOW

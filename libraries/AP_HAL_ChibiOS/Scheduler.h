@@ -32,7 +32,9 @@
 #define APM_UART_UNBUFFERED_PRIORITY 181
 #define APM_STORAGE_PRIORITY     59
 #define APM_IO_PRIORITY          58
+#ifndef APM_STARTUP_PRIORITY
 #define APM_STARTUP_PRIORITY     10
+#endif
 #define APM_SCRIPTING_PRIORITY  LOWPRIO
 
 /*
@@ -61,15 +63,28 @@
 #endif
 
 #ifndef TIMER_THD_WA_SIZE
-#define TIMER_THD_WA_SIZE   1536
+// Increased from 1536: live threads.txt showed timer at 84% (288 B free).
+#define TIMER_THD_WA_SIZE   2048
 #endif
 
 #ifndef RCOUT_THD_WA_SIZE
+#if defined(RP2350)
+// RP2350/Pico2 debug builds exercise deeper RCOutput paths and need a larger working area.
+// Bumped 1024 → 1536 → 2048 → 4096 → 8192: threads.new2.txt showed 4168/4352 used (95.8%) with the 4096 allocation.
+#define RCOUT_THD_WA_SIZE    8192
+#else
 #define RCOUT_THD_WA_SIZE    512
+#endif
 #endif
 
 #ifndef RCIN_THD_WA_SIZE
+#if defined(RP2350)
+// RP2350/Pico2 RC-in protocol parsing and timing checks exceed the default stack budget in debug builds.
+// Bumped 2048 → 3072 → 4096 → 8192 → 12288: threads.new2.txt showed 8304/8448 used (98.3%) with 8192 allocation.
+#define RCIN_THD_WA_SIZE    12288
+#else
 #define RCIN_THD_WA_SIZE    1024
+#endif
 #endif
 
 #ifndef IO_THD_WA_SIZE
@@ -81,7 +96,9 @@
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE
-#define MONITOR_THD_WA_SIZE 1024
+// Bumped 1024 → 1536 → 2048 → 4096 → 8192: threads.new2.txt showed
+// 4120/4352 used (94.7%) with the 4096 allocation.
+#define MONITOR_THD_WA_SIZE 8192
 #endif
 
 // MEMCHECK_ENABLED checks the bottom 1kB of RAM on H7 to ensure it is

@@ -54,6 +54,16 @@ static_assert(CH_STORAGE_SIZE % CH_STORAGE_LINE_SIZE == 0,
 #define AP_FLASH_STORAGE_DOUBLE_PAGE 0
 #endif
 
+/*
+  on boards with 4k sector sizes (e.g. RP2350 QSPI flash) we use 4x sector
+  aggregation to ensure the physical sector is large enough to satisfy
+  AP_FlashStorage's reserve_size requirement (reserve_size > sector_size would
+  cause constant compaction with DOUBLE_PAGE).
+ */
+#ifndef AP_FLASH_STORAGE_QUAD_PAGE
+#define AP_FLASH_STORAGE_QUAD_PAGE 0
+#endif
+
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
     void init() override {}
@@ -88,12 +98,16 @@ private:
     bool _flash_erase_ok(void);
     uint16_t _flash_page;
     bool _flash_failed;
+    uint16_t _flash_read_fail_count;
+    bool _flash_read_disabled;
     uint32_t _last_re_init_ms;
     uint32_t _last_empty_ms;
 
 #ifdef STORAGE_FLASH_PAGE
     AP_FlashStorage _flash{_buffer,
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
+#if AP_FLASH_STORAGE_QUAD_PAGE
+            stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*4,
+#elif AP_FLASH_STORAGE_DOUBLE_PAGE
             stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*2,
 #else
             stm32_flash_getpagesize(STORAGE_FLASH_PAGE),
@@ -111,7 +125,15 @@ private:
     AP_RAMTRON fram;
 #endif
 #ifdef USE_POSIX
-    int log_fd;
+    bool _sdcard_open(void);
+    void _sdcard_close(void);
+    void _sdcard_note_failure(const char *reason);
+    void _sdcard_note_recovered(void);
+
+    // -2 means closed and available for reopen attempts, -1 means disabled at init.
+    int log_fd = -2;
+    uint32_t _sdcard_last_retry_ms = 0;
+    bool _sdcard_had_io_failure = false;
 #endif
 };
 

@@ -16,6 +16,24 @@
 
 #include "hal.h"
 
+#if defined(RP2350)
+/*
+  RP2350 has a single GPIO bank: PAL_LINE(port, pad) discards port via the
+  comma operator, triggering -Wunused-value. Redefine with an explicit void
+  cast to silence the warning while keeping the same semantics.
+ */
+#undef PAL_LINE
+#define PAL_LINE(port, pad) ((void)(port), (ioline_t)(pad))
+#endif
+
+#if defined(RP2350)
+// #define RP2350 TRUE   - this comes via hwdef.dat for pico2
+#undef STM32_HW
+#else // stm32...
+#define STM32_HW TRUE
+#undef RP2350
+#endif
+
 #ifndef AP_WATCHDOG_SAVE_FAULT_ENABLED
 #define AP_WATCHDOG_SAVE_FAULT_ENABLED 1
 #endif
@@ -28,8 +46,13 @@
 extern "C" {
 #endif
 
+#if defined(STM32_HW)
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode);
 void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t input_source);
+#endif
+#if defined(RP2350)
+// RP2350 does not need STM32 timer helper implementations above.
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 // print stack usage
@@ -43,6 +66,63 @@ void *malloc_axi_sram(size_t size);
 void *malloc_fastmem(size_t size);
 void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
+
+#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
+/*
+ * Dispatch fn() to core1's bare-metal FIFO dispatcher and block until done.
+ * fn must not call any ChibiOS blocking primitives (no semaphores, no sleep).
+ * All data fn() reads/writes must be in shared SRAM (no core-local memory).
+ */
+bool c1_run_sync(void (*fn)(void));
+/*
+ * c1_run_sync_locked(): serialised dispatch.
+ * acquires dispatch mutex first.
+ */
+void c1_run_sync_locked(void (*fn)(void));
+/*
+ * c1_try_run_sync(): non-blocking try-dispatch.
+ * rate_thread PID) that must not stall.
+ */
+bool c1_try_run_sync(void (*fn)(void));
+/*
+ * c1_att_dispatch_async(): fire attitude controller fn() to Core1 via side-channel.
+ * Uses a volatile pointer side-channel (c1_att_fn_sidechan / c1_att_sidechan_done) rather than the SIO FIFO done-token protocol.
+ * This eliminates the cross-cycle mutex deadlock that occurred with the old FIFO-based async dispatch.
+ */
+bool c1_att_dispatch_async(void (*fn)(void));
+/*
+ * c1_att_barrier(): wait for the in-flight side-channel attitude dispatch.
+ * Spins on c1_att_sidechan_done (3 ms timeout), applies a DMB acquire barrier, then clears the flag for the next cycle.
+ */
+void c1_att_barrier(void);
+/* True while a c1_att_dispatch_async() dispatch is in flight (not yet barrier'd). */
+extern volatile bool c1_att_pending;
+/* Side-channel variables shared between board.c and Laurel/Pico2 c1_main.c. */
+extern volatile uint32_t c1_att_fn_sidechan;    /* fn ptr queued for Core1 att side-channel */
+extern volatile uint8_t  c1_att_sidechan_done;  /* 1 when Core1 finished att side-channel fn */
+/*
+ * c1_cov_dispatch_async() / c1_cov_barrier(): Covariance side-channel.
+ * separate from attitude so UpdateFilter() doesn't need to drain the attitude channel before dispatching covariance.
+ */
+bool c1_cov_dispatch_async(void (*fn)(void));
+void c1_cov_barrier(void);
+extern volatile bool     c1_cov_pending;
+extern volatile uint32_t c1_cov_fn_sidechan;
+extern volatile uint8_t  c1_cov_sidechan_done;
+/*
+ * c1_flash_begin() / c1_flash_end(): Enter/leave a flash-program/erase critical section on RP2350.
+ * While active, new Core1 dispatches are blocked and in-flight async side-channel jobs are drained so QSPI direct-mode flash operations don't race with Core1 code execution.
+ */
+void c1_flash_begin(void);
+void c1_flash_end(void);
+extern volatile uint32_t c1_timeout_count;
+/* Per-type dispatch counters — used by the 10 s dual-core utilisation print. */
+extern volatile uint32_t c1_ekf_c1_count;  /* EKF dispatches that ran on Core1        */
+extern volatile uint32_t c1_ekf_c0_count;  /* EKF dispatches that fell back to Core0  */
+extern volatile uint32_t c1_pid_c1_count;  /* PID dispatches that ran on Core1        */
+extern volatile uint32_t c1_pid_c0_count;  /* PID dispatches that fell back to Core0  */
+extern volatile uint32_t c1_busy_us;       /* Core1 cumulative busy time in µs        */
+#endif
 bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op);
 
 struct memory_region {
@@ -57,9 +137,20 @@ uint8_t malloc_get_heaps(memory_heap_t **_heaps, const struct memory_region **re
 // flush all dcache
 void memory_flush_all(void);
     
-// UTC system clock handling    
+// UTC system clock handling
+#if defined(RP2350)
+/*
+ * Rename UTC helpers to remove the stm32_ prefix from the RP2350 binary.
+ * stm32_util.c includes this header, so both the function definitions and all external callers are renamed consistently by the preprocessor.
+ */
+#define stm32_set_utc_usec  rp2350_set_utc_usec
+#define stm32_get_utc_usec  rp2350_get_utc_usec
+void rp2350_set_utc_usec(uint64_t time_utc_usec);
+uint64_t rp2350_get_utc_usec(void);
+#else
 void stm32_set_utc_usec(uint64_t time_utc_usec);
 uint64_t stm32_get_utc_usec(void);
+#endif // RP2350 UTC helpers
 
 // hook for FAT timestamps    
 uint32_t get_fattime(void);
@@ -105,8 +196,6 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS)
-iomode_t palReadLineMode(ioline_t line);
 
 enum PalPushPull {
     PAL_PUSHPULL_NOPULL=0,
@@ -115,6 +204,11 @@ enum PalPushPull {
 };
 
 void palLineSetPushPull(ioline_t line, enum PalPushPull pp);
+
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS)
+iomode_t palReadLineMode(ioline_t line);
+#elif defined(RP2350)
+iomode_t palReadLineMode(ioline_t line);
 #endif
 
 // set n RTC backup registers starting at given idx
@@ -123,8 +217,17 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n);
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
 
+#if defined(RP2350)
+/*
+ * RP2350: there is no data cache
+ * Inline them directly instead of calling stm32_-prefixed wrapper functions to avoid emitting stm32_ symbols in the RP2350 binary.
+ */
+#define stm32_cacheBufferInvalidate(p, sz)  cacheBufferInvalidate((p), (sz))
+#define stm32_cacheBufferFlush(p, sz)       cacheBufferFlush((p), (sz))
+#else
 void stm32_cacheBufferInvalidate(const void *p, size_t size);
 void stm32_cacheBufferFlush(const void *p, size_t size);
+#endif // RP2350 cacheBuffer
 
 #ifdef HAL_GPIO_PIN_FAULT
 // printf for fault handlers
@@ -184,6 +287,19 @@ extern uint32_t chibios_rand_generate(void);
 
 void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);
+
+#if defined(RP2350)
+typedef uint64_t port_stkalign_t;
+typedef port_stkalign_t stkalign_t;
+#endif
+
+// this is what stm32 now calls it:
+//typedef port_stkline_t  stkline_t;          /**< Stack alignment type.      */
+
+#if defined(STM32_HW)
+// old name first, new name second.
+typedef stkline_t stkalign_t;
+#endif
 
 // allow stack view code to show free ISR stack
 extern stkalign_t __main_stack_base__;

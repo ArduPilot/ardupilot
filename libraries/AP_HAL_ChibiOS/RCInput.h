@@ -21,12 +21,16 @@
 
 #include <AP_RCProtocol/AP_RCProtocol.h>
 
-#if HAL_USE_ICU == TRUE
+#if defined(HAL_USE_ICU) && (HAL_USE_ICU == TRUE)
 #include "SoftSigReader.h"
 #endif
 
-#if HAL_USE_EICU == TRUE
+#if defined(HAL_USE_EICU) && (HAL_USE_EICU == TRUE)
 #include "SoftSigReaderInt.h"
+#endif
+
+#if defined(HAL_RCIN_IS_GPIO)
+#include "SoftSigReaderRP2350.h"
 #endif
 
 #ifndef RC_INPUT_MAX_CHANNELS
@@ -67,11 +71,15 @@ private:
 
     bool pulse_input_enabled;
 
-#if HAL_USE_ICU == TRUE
+#if defined(HAL_USE_ICU) && (HAL_USE_ICU == TRUE)
     ChibiOS::SoftSigReader sig_reader;
 #endif
 
-#if HAL_USE_EICU == TRUE
+#if defined(HAL_USE_EICU) && (HAL_USE_EICU == TRUE)
     ChibiOS::SoftSigReaderInt sig_reader;
+#endif
+
+#if defined(HAL_RCIN_IS_GPIO)
+    ChibiOS::SoftSigReaderRP2350 sig_reader;
 #endif
 };
