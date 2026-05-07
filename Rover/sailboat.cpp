@@ -164,7 +164,7 @@ void Sailboat::init_rc_in()
     if (rc_ptr != nullptr) {
         // use aux as sail input if defined
         channel_mainsail = rc_ptr;
-        channel_mainsail->set_angle(100);
+        channel_mainsail->set_angle();
         channel_mainsail->set_default_dead_zone(30);
     } else {
         // use throttle channel
@@ -180,9 +180,9 @@ void Sailboat::set_pilot_desired_mainsail()
     if ((rover.failsafe.bits & FAILSAFE_EVENT_THROTTLE) || (channel_mainsail == nullptr)) {
        relax_sails();
     } else {
-       rover.g2.motors.set_mainsail(constrain_float(channel_mainsail->get_control_in(), 0.0f, 100.0f));
-       rover.g2.motors.set_wingsail(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
-       rover.g2.motors.set_mast_rotation(constrain_float(channel_mainsail->get_control_in(), -100.0f, 100.0f));
+       rover.g2.motors.set_mainsail(constrain_float(channel_mainsail->norm_input_dz() * 100.0f, 0.0f, 100.0f));
+       rover.g2.motors.set_wingsail(constrain_float(channel_mainsail->norm_input_dz() * 100.0f, -100.0f, 100.0f));
+       rover.g2.motors.set_mast_rotation(constrain_float(channel_mainsail->norm_input_dz() * 100.0f, -100.0f, 100.0f));
     }
 }
 
