@@ -138,6 +138,69 @@ class upload_fw(Task.Task):
     def keyword(self):
         return "Uploading"
 
+
+class upload_fw_pico2(Task.Task):
+    '''Upload firmware to RP2350/Pico2 using picotool'''
+    color = 'BLUE'
+    always_run = True
+
+    PICOTOOL_URL = 'https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.2.0-3/picotool-2.2.0-a4-x86_64-lin.tar.gz'
+
+    def ensure_picotool(self):
+        '''Download and extract picotool if not already present.
+        The tarball structure is picotool/picotool, so we extract to SRCROOT
+        and the binary lands at SRCROOT/picotool/picotool.'''
+        import urllib.request
+        import tarfile
+        srcroot = self.env.get_flat('SRCROOT')
+        picotool_path = os.path.join(srcroot, 'picotool', 'picotool')
+        if not os.path.exists(picotool_path):
+            tarball = os.path.join(srcroot, 'picotool.tar.gz')
+            print("Downloading picotool from %s ..." % self.PICOTOOL_URL)
+            urllib.request.urlretrieve(self.PICOTOOL_URL, tarball)
+            with tarfile.open(tarball) as tar:
+                tar.extractall(srcroot)
+            os.remove(tarball)
+            if not os.path.exists(picotool_path):
+                raise Exception("picotool binary not found at %s after extraction" % picotool_path)
+            os.chmod(picotool_path, 0o755)
+        return picotool_path
+
+    def run(self):
+        elf_path = self.inputs[0].abspath()
+        # Place UF2 alongside the ELF
+        uf2_path = os.path.splitext(elf_path)[0] + '.uf2'
+        if not uf2_path.endswith('.uf2'):
+            uf2_path = elf_path + '.uf2'
+
+        picotool = self.ensure_picotool()
+
+        # Convert BL ELF to UF2; use -t elf since the file has no .elf extension
+        print("Converting bootloader ELF to UF2: %s -> %s" % (elf_path, uf2_path))
+        ret = self.exec_command([picotool, 'uf2', 'convert', elf_path, '-t', 'elf', uf2_path])
+        if ret != 0:
+            print("Error: picotool uf2 convert failed")
+            return ret
+
+        print("\n*** BOOTLOADER FIRST-TIME FLASH ***")
+        print("Hold the BOOTSEL button on the Pico2 while plugging in USB,")
+        print("then release. The board will appear as a mass-storage device.")
+        print("Flashing bootloader UF2 now...\n")
+        return self.exec_command([picotool, 'load', '-v', '-x', uf2_path, '-f'])
+
+    def exec_command(self, cmd, **kw):
+        kw['stdout'] = sys.stdout
+        return super(upload_fw_pico2, self).exec_command(cmd, **kw)
+
+    def keyword(self):
+        return "Uploading Bootloader (UF2/BOOTSEL)"
+
+
+def board_uses_rp2350_bootsel(board_name):
+    '''Return true for boards that use the RP2350 ROM BOOTSEL + picotool path.'''
+    board = board_name.lower()
+    return 'pico2' in board or board == 'laurel'
+
 class set_default_parameters(Task.Task):
     color='CYAN'
     always_run = True
@@ -481,8 +544,15 @@ def chibios_firmware(self):
             hex_task.set_run_after(generate_bin_task)
         
     if self.bld.options.upload:
-        _upload_task = self.create_task('upload_fw', src=apj_target)
-        _upload_task.set_run_after(generate_apj_task)
+        if board_uses_rp2350_bootsel(self.env.BOARD) and self.bld.env.BOOTLOADER:
+            # First-time BL flash: convert to UF2 and load via picotool (requires BOOTSEL mode)
+            _upload_task = self.create_task('upload_fw_pico2', src=link_output)
+            _upload_task.set_run_after(generate_apj_task)
+        else:
+            # App upload (or non-pico2 board): use standard AP uploader.py (MAVLink BL protocol)
+            # On Pico2 this requires the AP_Bootloader to already be installed.
+            _upload_task = self.create_task('upload_fw', src=apj_target)
+            _upload_task.set_run_after(generate_apj_task)
 
     if self.bld.options.upload_blueos:
         _upload_task = self.create_task('upload_fw_blueos', src=link_output)
@@ -716,6 +786,10 @@ def build(bld):
     bld.env.LIBPATH += ['modules/ChibiOS/']
     if bld.env.ENABLE_CRASHDUMP:
         bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
+# For RP2350/Pico2: force board.o out of libch.a so the strong __late_init() (calling halInit/chSysInit) overrides the weak crt1.o stub.
+# boardInit (defined T in ArduPilot's board.o) is used as the pull handle.
+    if board_uses_rp2350_bootsel(bld.env.BOARD):
+        bld.env.LINKFLAGS += ['-Wl,--undefined=boardInit']
     # list of functions that will be wrapped to move them out of libc into our
     # own code
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']

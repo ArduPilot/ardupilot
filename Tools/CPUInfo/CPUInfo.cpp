@@ -5,7 +5,15 @@
 
 #define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
+#ifndef CPUINFO_ENABLE_EKF_TEST
+#define CPUINFO_ENABLE_EKF_TEST 0
+#endif
+
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
+#include <stdio.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
@@ -37,6 +45,9 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static uint32_t sysclk = STM32_SYS_CK;
 #elif defined(STM32_SYSCLK)
 static uint32_t sysclk = STM32_SYSCLK;
+#elif defined(RP2350)
+//static uint32_t sysclk = 150000000U;// stock
+static uint32_t sysclk = 375000000U;  // over clocked
 #else
 static uint32_t sysclk = 0;
 #endif
@@ -48,7 +59,96 @@ HAL_Semaphore sem;
 AP_ESC_Telem telem;
 #endif
 
+// Debugger-visible mirror of console output for boards where USB console
+// output is hard to capture during early bring-up.
+char g_cpuinfo_debug_log[16384];
+uint32_t g_cpuinfo_debug_log_len;
+uint32_t g_cpuinfo_debug_log_overflow_count;
+uint32_t g_cpuinfo_cycle_count;
+
+static void cpuinfo_debug_log_reset(void)
+{
+    g_cpuinfo_debug_log_len = 0;
+    g_cpuinfo_debug_log[0] = '\0';
+}
+
+static bool cpuinfo_format_has_float_conv(const char *fmt)
+{
+    while (*fmt != '\0') {
+        if (*fmt++ != '%') {
+            continue;
+        }
+        if (*fmt == '%') {
+            fmt++;
+            continue;
+        }
+        while (*fmt == '-' || *fmt == '+' || *fmt == ' ' || *fmt == '#' || *fmt == '0') {
+            fmt++;
+        }
+        while (*fmt >= '0' && *fmt <= '9') {
+            fmt++;
+        }
+        if (*fmt == '.') {
+            fmt++;
+            while (*fmt >= '0' && *fmt <= '9') {
+                fmt++;
+            }
+        }
+        while (*fmt == 'l' || *fmt == 'h' || *fmt == 'L' || *fmt == 'z' || *fmt == 't' || *fmt == 'j') {
+            fmt++;
+        }
+        if (*fmt == 'f' || *fmt == 'F' || *fmt == 'e' || *fmt == 'E' || *fmt == 'g' || *fmt == 'G' || *fmt == 'a' || *fmt == 'A') {
+            return true;
+        }
+        if (*fmt == '\0') {
+            break;
+        }
+        fmt++;
+    }
+    return false;
+}
+
+static void cpuinfo_printf(const char *fmt, ...)
+{
+    va_list ap_console;
+    va_start(ap_console, fmt);
+    hal.console->vprintf(fmt, ap_console);
+    va_end(ap_console);
+
+    // On some embedded libc builds, float formatting in vsnprintf can hang.
+    // Keep console output path active and only skip RAM mirroring for float formats.
+    if (cpuinfo_format_has_float_conv(fmt)) {
+        return;
+    }
+
+    if (g_cpuinfo_debug_log_len >= sizeof(g_cpuinfo_debug_log)) {
+        g_cpuinfo_debug_log_overflow_count++;
+        return;
+    }
+
+    va_list ap_buf;
+    va_start(ap_buf, fmt);
+    const int n = ::vsnprintf(&g_cpuinfo_debug_log[g_cpuinfo_debug_log_len],
+                              sizeof(g_cpuinfo_debug_log) - g_cpuinfo_debug_log_len,
+                              fmt,
+                              ap_buf);
+    va_end(ap_buf);
+
+    if (n <= 0) {
+        return;
+    }
+
+    const uint32_t appended = MIN<uint32_t>(n, sizeof(g_cpuinfo_debug_log) - g_cpuinfo_debug_log_len - 1);
+    g_cpuinfo_debug_log_len += appended;
+
+    if (appended != uint32_t(n)) {
+        g_cpuinfo_debug_log_overflow_count++;
+    }
+}
+
 void setup() {
+    cpuinfo_debug_log_reset();
+    cpuinfo_printf("CPUInfo setup reached\n");
 #ifdef DISABLE_CACHES
 #if !HAL_XIP_ENABLED // can't disable DCache in memory-mapped mode
     SCB_DisableDCache();
@@ -60,20 +160,22 @@ void setup() {
 
 static void show_sizes(void)
 {
-    hal.console->printf("SYSCLK %uMHz\n", unsigned(sysclk/1000000U));
+    cpuinfo_printf("SYSCLK %uMHz\n", unsigned(sysclk/1000000U));
 
-    hal.console->printf("Type sizes:\n");
-    hal.console->printf("char      : %lu\n", (unsigned long)sizeof(char));
-    hal.console->printf("short     : %lu\n", (unsigned long)sizeof(short));
-    hal.console->printf("int       : %lu\n", (unsigned long)sizeof(int));
-    hal.console->printf("long      : %lu\n", (unsigned long)sizeof(long));
-    hal.console->printf("long long : %lu\n", (unsigned long)sizeof(long long));
-    hal.console->printf("bool      : %lu\n", (unsigned long)sizeof(bool));
-    hal.console->printf("void*     : %lu\n", (unsigned long)sizeof(void *));
+    cpuinfo_printf("Type sizes:\n");
+    cpuinfo_printf("char      : %lu\n", (unsigned long)sizeof(char));
+    cpuinfo_printf("short     : %lu\n", (unsigned long)sizeof(short));
+    cpuinfo_printf("int       : %lu\n", (unsigned long)sizeof(int));
+    cpuinfo_printf("long      : %lu\n", (unsigned long)sizeof(long));
+    cpuinfo_printf("long long : %lu\n", (unsigned long)sizeof(long long));
+    cpuinfo_printf("bool      : %lu\n", (unsigned long)sizeof(bool));
+    cpuinfo_printf("void*     : %lu\n", (unsigned long)sizeof(void *));
 
-    hal.console->printf("printing NaN: %f\n", (double)sqrtf(-1.0f));
-    hal.console->printf("printing +Inf: %f\n", (double)(1.0f/0.0f));
-    hal.console->printf("printing -Inf: %f\n", (double)(-1.0f/0.0f));
+    cpuinfo_printf("printing NaN: %f\n", (double)sqrtf(-1.0f));
+    hal.scheduler->delay(50); // careful of watchdog
+    cpuinfo_printf("printing +Inf: %f\n", (double)(1.0f/0.0f)); // rp2350 hangs here
+    hal.scheduler->delay(50); // careful of watchdog
+    cpuinfo_printf("printing -Inf: %f\n", (double)(-1.0f/0.0f)); // rp2350 hangs here
 }
 
 #define TENTIMES(x) do { x; x; x; x; x; x; x; x; x; x; } while (0)
@@ -87,7 +189,7 @@ static void show_sizes(void)
     } \
     us_end = AP_HAL::micros16(); \
     uint16_t dt_us = us_end - us_start; \
-    hal.console->printf("%-10s %7.4f usec/call\n", name, double(dt_us) / double(count * 50.0)); \
+    cpuinfo_printf("%-10s %7.4f usec/call\n", name, double(dt_us) / double(count * 50.0)); \
     hal.scheduler->delay(10); \
 } while (0)
 
@@ -104,6 +206,75 @@ volatile uint8_t v_out_8 = 1;
 volatile uint8_t mbuf1[128], mbuf2[128];
 volatile uint64_t v_64 = 1;
 volatile uint64_t v_out_64 = 1;
+volatile float v_fn_out_f = 0;
+volatile double v_fn_out_d = 0;
+
+static float fp_call_f(float a, float b)
+{
+    return a * 1.000123f + b;
+}
+
+static double fp_call_d(double a, double b)
+{
+    return a * 1.000123 + b;
+}
+
+static float bench_float_call_us(void)
+{
+    uint64_t us_start = AP_HAL::micros64();
+    for (uint16_t i = 0; i < 20000; i++) {
+        FIFTYTIMES(v_fn_out_f = fp_call_f(v_f, v_out));
+    }
+    uint64_t us_end = AP_HAL::micros64();
+    return float(us_end - us_start) / float(20000.0f * 50.0f);
+}
+
+static float bench_double_call_us(void)
+{
+    uint64_t us_start = AP_HAL::micros64();
+    for (uint16_t i = 0; i < 20000; i++) {
+        FIFTYTIMES(v_fn_out_d = fp_call_d(v_d, v_out_d));
+    }
+    uint64_t us_end = AP_HAL::micros64();
+    return float(us_end - us_start) / float(20000.0f * 50.0f);
+}
+
+static void show_fp_build_and_precision_summary(void)
+{
+    const char *float_abi = "unknown";
+#if defined(__ARM_PCS_VFP)
+    float_abi = "hard";
+#elif defined(__SOFTFP__)
+    float_abi = "softfp";
+#elif defined(__SOFTFP)
+    float_abi = "softfp";
+#endif
+
+    const char *fpu_mode = "none";
+#if defined(__ARM_FP) && (__ARM_FP & 0x4)
+    fpu_mode = "sp";
+#endif
+#if defined(__ARM_FP) && (__ARM_FP & 0x8)
+    fpu_mode = "dp";
+#endif
+
+    cpuinfo_printf("FP build mode:\n");
+    cpuinfo_printf("  float ABI      : %s\n", float_abi);
+    cpuinfo_printf("  FPU precision  : %s\n", fpu_mode);
+    cpuinfo_printf("  __ARM_FP       : 0x%lx\n", (unsigned long)__ARM_FP);
+    cpuinfo_printf("  sizeof(float)  : %lu\n", (unsigned long)sizeof(float));
+    cpuinfo_printf("  sizeof(double) : %lu\n", (unsigned long)sizeof(double));
+
+    const float f_call_us = bench_float_call_us();
+    const float d_call_us = bench_double_call_us();
+    cpuinfo_printf("SP/DP microbench:\n");
+    cpuinfo_printf("  float call     : %.5f usec/call\n", (double)f_call_us);
+    cpuinfo_printf("  double call    : %.5f usec/call\n", (double)d_call_us);
+    if (f_call_us > 0.0f) {
+        cpuinfo_printf("  dp/sp ratio    : %.2fx\n", (double)(d_call_us / f_call_us));
+    }
+    cpuinfo_printf("  note           : hard vs softfp requires comparing separate builds\n");
+}
 
 //Main loop where the action takes place
 #if defined(__clang_major__)
@@ -128,8 +299,10 @@ static void show_timings(void)
     v_out_8 = 1+(AP_HAL::micros() % 3);
 
 
-    hal.console->printf("Operation timings:\n");
-    hal.console->printf("Note: timings for some operations are very data dependent\n");
+    cpuinfo_printf("Operation timings:\n");
+    cpuinfo_printf("Note: timings for some operations are very data dependent\n");
+    show_fp_build_and_precision_summary();
+    cpuinfo_printf("\n");
 
     TIMEIT("nop", asm volatile("nop"::), 255);
 
@@ -182,7 +355,11 @@ static void show_timings(void)
     TIMEIT("sq()",v_out = sq(v_f), 100);
     TIMEIT("powf(v,2)",v_out = powf(v_f, 2), 100);
     TIMEIT("powf(v,3.1)",v_out = powf(v_f, 3.1), 100);
-    TIMEIT("EKF",v_out = ekf.test(), 5);
+#if CPUINFO_ENABLE_EKF_TEST
+    TIMEIT("EKF", v_out = ekf.test(), 5);
+#else
+    cpuinfo_printf("EKF test skipped (CPUINFO_ENABLE_EKF_TEST=0)\n");
+#endif
 
     TIMEIT("iadd8", v_out_8 += v_8, 100);
     TIMEIT("isub8", v_out_8 -= v_8, 100);
@@ -213,7 +390,7 @@ static void show_timings(void)
 
 static void test_div1000(void)
 {
-    hal.console->printf("Testing div1000\n");
+    cpuinfo_printf("Testing div1000\n");
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
@@ -247,17 +424,29 @@ static void test_div1000(void)
         }
     }
 #endif
-    hal.console->printf("div1000 OK\n");
+    cpuinfo_printf("div1000 OK\n");
 }
 
 void loop()
 {
+    hal.scheduler->delay(50); // careful of watchdog
+
+    cpuinfo_debug_log_reset();
+    hal.scheduler->delay(50); // careful of watchdog
+    g_cpuinfo_cycle_count++;
+    hal.scheduler->delay(50); // careful of watchdog
+    cpuinfo_printf("CPUInfo cycle %lu\n", (unsigned long)g_cpuinfo_cycle_count);
+    hal.scheduler->delay(50); // careful of watchdog
+
     show_sizes();
-    hal.console->printf("\n");
+    hal.scheduler->delay(50); // careful of watchdog
+    cpuinfo_printf("\n");
+    hal.scheduler->delay(50); // careful of watchdog
     show_timings();
+    hal.scheduler->delay(50); // careful of watchdog
     test_div1000();
-    hal.console->printf("\n");
-    hal.scheduler->delay(3000);
+    cpuinfo_printf("\n");
+    hal.scheduler->delay(500);
 }
 
 AP_HAL_MAIN();

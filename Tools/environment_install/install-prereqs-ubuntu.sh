@@ -525,6 +525,9 @@ fi
 if package_is_installed "brltty"; then
     $APT_GET remove brltty
 fi
+if ! package_is_installed "7zip"; then
+    $APT_GET install 7zip
+fi
 echo "Done!"
 
 CCACHE_PATH=$(which ccache)

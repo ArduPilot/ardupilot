@@ -19,7 +19,11 @@
 #include "support.h"
 
 // swiped from support.cpp:
+#if defined(RP2350)
+static const uint8_t *flash_base = (const uint8_t *)(0x10000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
+#else
 static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
+#endif
 
 #define MAX_IO_SIZE 4096
 static uint8_t buffer[MAX_IO_SIZE];
