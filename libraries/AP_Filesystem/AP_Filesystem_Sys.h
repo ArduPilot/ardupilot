@@ -40,6 +40,8 @@ private:
     // only allow up to 4 files at a time
     static constexpr uint8_t max_open_file = 4;
     int8_t file_in_sysfs(const char *fname);
+    struct rfile;
+    bool ensure_generated(struct rfile &r);
 
     struct DirReadTracker {
         size_t file_offset;
@@ -48,6 +50,8 @@ private:
 
     struct rfile {
         bool open;
+        bool generated;
+        uint8_t file_index;
         uint32_t file_ofs;
         ExpandingString *str;
     } file[max_open_file];
