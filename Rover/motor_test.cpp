@@ -43,7 +43,7 @@ void Rover::motor_test_output()
                 if (motor_test_instance == AP_MotorsUGV::MOTOR_TEST_STEERING) {
                     test_result = g2.motors.output_test_pct(motor_test_instance, channel_steer->norm_input_dz() * 100.0f);
                 } else {
-                    test_result = g2.motors.output_test_pct(motor_test_instance, channel_throttle->get_control_in());
+                    test_result = g2.motors.output_test_pct(motor_test_instance, channel_throttle->norm_input_dz() * 100.0f);
                 }
                 break;
 
