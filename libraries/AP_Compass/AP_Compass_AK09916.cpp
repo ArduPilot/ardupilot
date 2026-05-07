@@ -199,9 +199,12 @@ AP_Compass_Backend *AP_Compass_AK09916::probe_ICM20948_I2C(uint8_t inv2_instance
     }
 
     AP_Compass_AK09916 *sensor = NEW_NOTHROW AP_Compass_AK09916(*bus, false, rotation);
-    if (!sensor || !sensor->init()) {
-        // TODO: do we need to "delete bus;" here?
-        delete sensor;
+    if (sensor == nullptr) {
+        delete bus;
+        return nullptr;
+    }
+    if (!sensor->init()) {
+        delete sensor;  // sensor's destructor deletes bus
         return nullptr;
     }
 

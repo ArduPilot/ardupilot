@@ -114,9 +114,12 @@ AP_Compass_Backend *AP_Compass_HMC5843::probe(AP_HAL::Device &dev,
     }
 
     AP_Compass_HMC5843 *sensor = NEW_NOTHROW AP_Compass_HMC5843(*bus, force_external, rotation);
-    if (!sensor || !sensor->init()) {
-        // TODO: do we need to "delete bus;" here?
-        delete sensor;
+    if (sensor == nullptr) {
+        delete bus;
+        return nullptr;
+    }
+    if (!sensor->init()) {
+        delete sensor;  // sensor's destructor deletes bus
         return nullptr;
     }
 
