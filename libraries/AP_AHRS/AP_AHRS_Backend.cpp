@@ -148,7 +148,7 @@ void AP_AHRS::update_trig(void)
 }
 
 /*
-  update the centi-degree values
+    update the centi-degree values
  */
 void AP_AHRS::update_cd_values(void)
 {
