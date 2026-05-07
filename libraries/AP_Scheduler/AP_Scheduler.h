@@ -274,6 +274,11 @@ private:
     // the loop rate in case we are well over budget
     uint32_t extra_loop_us;
 
+#ifndef AP_SCHEDULER_FAST_TASK_MODULO
+#define AP_SCHEDULER_FAST_TASK_MODULO 1
+#endif
+    // FAST_TASKs run every N ticks (1 = every tick, 2 = alternate ticks ~200Hz)
+    const uint8_t _fast_task_modulo = AP_SCHEDULER_FAST_TASK_MODULO;
 
     // semaphore that is held while not waiting for ins samples
     HAL_Semaphore _rsem;

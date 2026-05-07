@@ -258,7 +258,11 @@ void AP_Scheduler::run(uint32_t time_available)
                 continue;
             }
         } else {
-            _task_time_allowed = get_loop_period_us();
+            // FAST_TASK: skip on non-zero modulo remainder to reduce per-tick load
+            if (_fast_task_modulo > 1 && (_tick_counter % _fast_task_modulo) != 0) {
+                continue;
+            }
+            _task_time_allowed = get_loop_period_us() * _fast_task_modulo;
         }
 
         // run it
