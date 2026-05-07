@@ -968,6 +968,8 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
     bool crash_check_enabled() const override { return false; }
+    // this is made explicit just for defensive programming + clarity
+    bool allows_flip() const override { return false; }
 
     void abandon_flip();
 
