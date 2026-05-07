@@ -59,6 +59,7 @@ static void CrashCatcher_DumpMemoryHex(const void* pvMemory, CrashCatcherElement
 
 extern uint32_t __crash_log_base__, __crash_log_end__;
 
+#if defined(STM32_HW)
 uint32_t stm32_crash_dump_size(void)
 {
     uint32_t* page_addr = (uint32_t*)&__crash_log_base__;
@@ -73,7 +74,6 @@ uint32_t stm32_crash_dump_max_size(void)
 
 uint32_t stm32_crash_dump_addr(void)
 {
-    return (uint32_t)&__crash_log_base__;
 }
 
 bool stm32_crash_dump_region_erased(void)
@@ -85,6 +85,10 @@ bool stm32_crash_dump_region_erased(void)
     }
     return true;
 }
+#endif
+#if defined(RP2350)
+// RP2350 does not use the STM32 crash-dump helper implementations above.
+#endif
 
 #define ARRAY_SIZE(X) (sizeof(X)/sizeof(X[0]))
 extern uint32_t __ram0_start__, __ram0_end__, __heap_base__, __heap_end__, __bss_base__, __bss_end__;
@@ -270,6 +274,7 @@ static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo)
 
     dump_size = 0;
     buf_off = 0;
+    #if defined(STM32_HW)
     // we expect crash dump flash page to already be empty
     if (!stm32_crash_dump_region_erased()) {
         // stuff is already there, maybe last dump
@@ -280,11 +285,17 @@ static void CrashCatcher_DumpStartFlash(const CrashCatcherInfo* pInfo)
     stm32_watchdog_pat();
     // unlock flash page for write
     stm32_flash_keep_unlocked(true);
+    #elif defined(RP2350)
+        // RP2350 does not perform STM32 flash crash-dump setup here.
+    #else
+        #error "Unsupported target for crash dump"
+    #endif
 }
 // only flushes if we have a full buffer
 static void flush_dump_buffer(void)
 {
     if (buf_off == sizeof(dump_buffer)) {
+        #if defined(STM32_HW)
         uint32_t page_start = (uint32_t)stm32_crash_dump_addr();
         // write dump buffer to flash
         stm32_flash_write(page_start + dump_size, dump_buffer, sizeof(dump_buffer));
@@ -292,6 +303,11 @@ static void flush_dump_buffer(void)
         buf_off = 0;
         memset(dump_buffer, 0, sizeof(dump_buffer));
         stm32_watchdog_pat();
+        #elif defined(RP2350)
+            // RP2350 does not use STM32 flash-buffer write path here.
+        #else
+            #error "Unsupported target for crash dump"
+        #endif
     }
 }
 
@@ -336,6 +352,7 @@ static void CrashCatcher_DumpMemoryFlash(const void* pvMemory, CrashCatcherEleme
 static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void)
 {
     // flush the buffer
+    #if defined(STM32_HW)
     if (dump_size + buf_off + sizeof(dump_size) >= stm32_crash_dump_max_size()) {
         // when this happens, buf_off will be sizeof(buffer)-sizeof(dump_size)
         // 0xFF will be used to detect that we were in the middle of taking a dump
@@ -364,6 +381,11 @@ static CrashCatcherReturnCodes CrashCatcher_DumpEndFlash(void)
     }
 
     stm32_flash_keep_unlocked(false);
+    #elif defined(RP2350)
+        // RP2350 does not use STM32 final flash-close sequence here.
+    #else
+        #error "Unsupported target for crash dump"
+    #endif
     // How big of a dump did we take, record that at the end of flash sector
     if (g_crashCatcherDumpEndReturn == CRASH_CATCHER_TRY_AGAIN && g_info.isBKPT)
         return CRASH_CATCHER_EXIT;

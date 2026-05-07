@@ -432,7 +432,7 @@ size_t mem_available(void)
     chHeapStatus(NULL, &totalp, NULL);
 
     // we also need to add in memory that is not yet allocated to the heap
-    totalp += chCoreGetStatusX();
+    totalp += _chCoreGetStatusX();
 
     // now our own heaps
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
@@ -476,7 +476,8 @@ thread_t *thread_create_alloc(size_t size,
     }
     return NULL;
 }
-#endif
+
+#endif  // CH_CFG_USE_DYNAMIC
 
 /*
   return heap information

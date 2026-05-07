@@ -97,7 +97,8 @@ static uint64_t hrt_micros64I(void)
 }
 
 static inline bool is_locked(void) {
-    return !port_irq_enabled(port_get_irq_status());
+    // All ChibiOS ARM ports (ARMv6-M, ARMv7-M, ARMv8-M) use __port_irq_enabled
+    return !__port_irq_enabled(__port_get_irq_status());
 }
 
 uint64_t hrt_micros64()
@@ -105,16 +106,18 @@ uint64_t hrt_micros64()
     if (is_locked()) {
         return hrt_micros64I();
     } else if (port_is_isr_context()) {
-        uint64_t ret;
-        chSysLockFromISR();
-        ret = hrt_micros64I();
-        chSysUnlockFromISR();
+// Use the port-level lock helpers directly here.
+// On ARMv8-M these are inlined BASEPRI operations, which avoids the extra veneer calls and stack spill/reload sequence generated around chSysLockFromISR().
+        port_lock_from_isr();
+        const uint64_t ret = hrt_micros64I();
+        port_unlock_from_isr();
         return ret;
     } else {
-        uint64_t ret;
-        chSysLock();
-        ret = hrt_micros64I();
-        chSysUnlock();
+// Thread-context timestamp reads only require the ChibiOS system lock, not a full scheduler call chain.
+// Keeping this path inline avoids the post-unlock stack reload that has been faulting on Pico2 bring-up.
+        port_lock();
+        const uint64_t ret = hrt_micros64I();
+        port_unlock();
         return ret;
     }
 }

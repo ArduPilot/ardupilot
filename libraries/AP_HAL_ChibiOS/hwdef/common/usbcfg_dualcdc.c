@@ -51,8 +51,14 @@ static cdc_linecoding_t linecoding[] = {
   {{0x00, 0x96, 0x00, 0x00},             /* 38400.                           */
   LC_STOP_1, LC_PARITY_NONE, 8}
 };
+static volatile uint16_t control_line_state[2];
 
 static uint8_t ep_index[] = {0, 2};
+
+static void usb_control_line_reset(void)
+{
+  memset((void *)control_line_state, 0, sizeof(control_line_state));
+}
 
 /*
  * Endpoints.
@@ -328,6 +334,26 @@ uint8_t get_usb_parity(uint16_t endpoint_id)
   }
   return 0;
 }
+
+uint16_t get_usb_control_line_state(uint16_t endpoint_id)
+{
+  for (uint8_t i = 0; i < ARRAY_SIZE(control_line_state); i++) {
+      if (endpoint_id == ep_index[i]) {
+          return control_line_state[i];
+      }
+  }
+  return 0;
+}
+
+bool usb_cdc_host_open(uint16_t endpoint_id)
+{
+/*
+ * Always report "host open".
+ * don't gate MAVLink TX on DTR/RTS.
+ */
+  (void)endpoint_id;
+  return true;
+}
 #endif
 /**
  * @brief   IN EP1 state.
@@ -456,10 +482,13 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     chSysUnlockFromISR();
     return;
   case USB_EVENT_RESET:
+    usb_control_line_reset();
     /* Falls into.*/
   case USB_EVENT_UNCONFIGURED:
+    usb_control_line_reset();
     /* Falls into.*/
   case USB_EVENT_SUSPEND:
+    usb_control_line_reset();
     chSysLockFromISR();
 
     /* Disconnection event on suspend.*/
@@ -504,7 +533,7 @@ static bool requests_hook(USBDriver *usbp) {
         usbSetupTransfer(usbp, (uint8_t *)&linecoding[i], sizeof(linecoding[i]), NULL);
         return true;
       case CDC_SET_CONTROL_LINE_STATE:
-        /* Nothing to do, there are no control lines.*/
+        control_line_state[i] = usbp->setup[2] | ((uint16_t)usbp->setup[3] << 8);
         usbSetupTransfer(usbp, NULL, 0, NULL);
         return true;
       }

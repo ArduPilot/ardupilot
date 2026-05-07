@@ -20,6 +20,7 @@
 #include "bouncebuffer.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "bouncebuffer.h"
 #include "stm32_util.h"
@@ -32,6 +33,10 @@ static FATFS SDC_FS; // FATFS object
 static HAL_Semaphore sem;
 #endif
 static bool sdcard_running;
+static uint32_t sdcard_last_fail_ms;
+#ifndef HAL_SDCARD_RETRY_INTERVAL_MS
+#define HAL_SDCARD_RETRY_INTERVAL_MS 2000U
+#endif
 #endif
 
 #if HAL_USE_SDC
@@ -45,6 +50,9 @@ static AP_HAL::SPIDevice *device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
+#ifndef HAL_SDCARD_SPI_INIT_TRIES
+#define HAL_SDCARD_SPI_INIT_TRIES 3U
+#endif
 #endif
 
 /*
@@ -70,14 +78,17 @@ bool sdcard_init()
     auto &sdcd = SDCD1;
 #endif
 
-    if (sdcd.bouncebuffer == nullptr) {
+    // local bounce buffer pointer (SDCDriver no longer carries this field)
+    static struct bouncebuffer_t *sdc_bouncebuffer;
+
+    if (sdc_bouncebuffer == nullptr) {
         // allocate 4k-32k bouncebuffer for microSD to match size in
         // AP_Logger
 #if defined(STM32H7)
-        bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MAX_IO_SIZE, true);
+        bouncebuffer_init(&sdc_bouncebuffer, AP_FATFS_MAX_IO_SIZE, true);
         // allocation failure, pick a smaller size
-        if (sdcd.bouncebuffer->dma_buf == nullptr) {
-            bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MIN_IO_SIZE, true);
+        if (sdc_bouncebuffer->dma_buf == nullptr) {
+            bouncebuffer_init(&sdc_bouncebuffer, AP_FATFS_MIN_IO_SIZE, true);
 #if AP_FILESYSTEM_FATFS_ENABLED
             AP_Filesystem_FATFS::set_io_size(AP_FATFS_MIN_IO_SIZE);
 #endif
@@ -87,12 +98,12 @@ bool sdcard_init()
 #endif
         }
 #else
-        bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MAX_IO_SIZE, false);
+        bouncebuffer_init(&sdc_bouncebuffer, AP_FATFS_MAX_IO_SIZE, false);
 #if AP_FILESYSTEM_FATFS_ENABLED
         AP_Filesystem_FATFS::set_io_size(AP_FATFS_MAX_IO_SIZE);
 #endif
 #endif
-        if (sdcd.bouncebuffer->dma_buf == nullptr) {    // we are never going to be able to log
+        if (sdc_bouncebuffer->dma_buf == nullptr) {    // we are never going to be able to log
             sdcard_running = false;
             return false;
         }
@@ -151,7 +162,7 @@ bool sdcard_init()
     /*
       try up to 3 times to init microSD interface
      */
-    const uint8_t tries = 3;
+    const uint8_t tries = (uint8_t)HAL_SDCARD_SPI_INIT_TRIES;
     for (uint8_t i=0; i<tries; i++) {
         mmcStart(&MMCD1, &mmcconfig);
 
@@ -206,11 +217,22 @@ bool sdcard_retry(void)
 {
 #if HAL_USE_FATFS
     if (!sdcard_running) {
+        // Avoid repeated long probe sequences when no card is present.
+        // Boot paths can call retry_mount() many times in a tight loop.
+        const uint32_t now_ms = AP_HAL::millis();
+        if ((now_ms - sdcard_last_fail_ms) < HAL_SDCARD_RETRY_INTERVAL_MS) {
+            return false;
+        }
         if (sdcard_init()) {
+            sdcard_last_fail_ms = 0;
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
-            // create APM directory
-            AP::FS().mkdir("/APM");
+// create APM directory without re-entering AP::FS()
+// callers may already hold the FATFS backend mutex on targets where mutexes are non-recursive.
+            const FRESULT res = f_mkdir("/APM");
+            (void)res;
 #endif
+        } else {
+            sdcard_last_fail_ms = now_ms;
         }
     }
     return sdcard_running;

@@ -1,0 +1,119 @@
+# hw definition file for processing by chibios_hwdef.py
+# for bootloader for Pico2 board (Raspberry Pi RP2350)
+#
+# AP_Bootloader for RP2350.  Flash layout:
+#   0x10000000..0x10007FFF  bootloader (32 KB, ~17 KB used after ChibiOS HAL init)
+#   0x10008000..0x1000FFFF  parameter storage (32 KB, pages 8–15, two 16KB halves)
+#   0x10010000..0x103FFFFF  application
+#
+# The bootloader accepts firmware via USB (MAVLink/DFU protocol) or UART0
+# and reflashes the application region, enabling repeated over-the-wire
+# updates without physically touching the board.
+
+# MCU class and specific type
+MCU PICO2 PICO2
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_RASPBERRYPI_PICO2
+
+# crystal frequency (12 MHz — not used by RP2350 clock init, kept for consistency)
+OSCILLATOR_HZ 12000000
+
+# flash size
+FLASH_SIZE_KB 4096
+
+# bootloader itself starts at 0x10000000 (no offset)
+FLASH_RESERVE_START_KB 0
+
+FLASH_BOOTLOADER_LOAD_KB 32
+# 32 KB bootloader is required; 16 KB caused linker overflow after ChibiOS HAL init chain was added.
+
+APP_START_OFFSET_KB 32
+# Storage uses 8 pages × 4KB = 32KB (pages 8–15, 0x10008000–0x1000FFFF).
+# App starts at 0x10010000 (page-aligned), vector table at 0x10010080 (VTOR alignment).
+
+# RP2350 flash base is 0x10000000 (not STM32's 0x08000000).
+# Flash layout: BL(32KB@0x10000000) Storage(32KB@0x10008000) App(4032KB@0x10010000)
+#
+# The RP2350 ChibiOS startup includes an IMAGE_DEF block (32 bytes) at the very
+# start of the app binary, followed by 96 bytes of padding (to reach 128-byte
+# VTOR alignment), giving: app_flash_base + 0x80 = 0x10010080 as the ARM vector
+# table base.  APP_START_ADDRESS must point to the vector table, not the flash base.
+#
+# chibios_hwdef.py computes FLASH_LOAD_ADDRESS as 0x08000000+FLASH_RESERVE_START_KB*1024
+# which is wrong for RP2350.  Override APP_START_ADDRESS directly so bl_protocol.cpp
+# (which uses #ifndef APP_START_ADDRESS) picks up the correct value.
+define APP_START_ADDRESS 0x10010080
+
+# EFL driver required for RP2350 QSPI flash erase/write
+define HAL_USE_EFL                         TRUE
+define HAL_USE_WDG                         TRUE
+
+# RP2350 availability flag — used by common code (stm32_util.h, flash.c, etc.)
+# RP2350 is defined elsewhere for this MCU type                    1
+
+# RP2350 uses SIO driver for UARTs (no hal_serial_lld for this MCU)
+define HAL_USE_PAL                         TRUE
+define HAL_USE_SIO                         TRUE
+define HAL_USE_SERIAL                      FALSE
+define HAL_USE_SERIAL_USB                  TRUE
+define HAL_USE_UART                        FALSE
+# AP_HAL_UARTDRIVER_ENABLED defaults to 0 for BL builds (see defaults_bootloader.h)
+define RP_USB_USE_USB1                     TRUE
+
+# USB setup
+USB_STRING_MANUFACTURER "ArduPilot"
+
+# baudrate to run bootloader at on uarts
+define BOOTLOADER_BAUDRATE 115200
+
+# Keep the bootloader single-core.
+#
+# also launches core1, then a PROTO_BOOT jump-to-app leaves core1 executing
+# bootloader code while core0 enters the app.  The app then hangs in
+# hal_lld_init()->start_core1() waiting for a clean ROM FIFO handshake that
+# never completes.  For the bootloader we do not need core1 at all, so force
+# it off here and let only the application own core1 startup.
+define RP_CORE1_START FALSE
+
+# enable fastboot for RP2350: uses WATCHDOG->SCRATCH[0] (survives SYSRESETREQ) as the
+# reboot-cookie.  stm32_was_watchdog_reset() / stm32_watchdog_clear_reason() stubs are
+# provided in watchdog.c; set_fast_reboot / check_fast_reboot use the defined(RP2350)
+# path in stm32_util.c (WATCHDOG->SCRATCH).  The app writes RTC_BOOT_HOLD to SCRATCH[0]
+# via Scheduler::reboot(hold_in_bootloader=true) before SYSRESETREQ; the bootloader sees
+# the magic and sets timeout=0 (stay in bootloader indefinitely).
+define AP_FASTBOOT_ENABLED 1
+
+# MCU monitoring not needed in bootloader
+define HAL_WITH_MCU_MONITORING 0
+
+# Allow 15 seconds for the uploader to connect over USB CDC.
+# USB CDC enumeration + host-side udev takes ~2-3s; 15s gives ample margin.
+define HAL_BOOTLOADER_TIMEOUT 15000
+
+# uarts and USB to run bootloader protocol on
+SERIAL_ORDER OTG1 UART0
+
+# USB pins (virtual PB prefix used by chibios_hwdef.py for RP2350 USB)
+PB0 OTG_FS_DM OTG1
+PB1 OTG_FS_DP OTG1
+
+PA9 VBUS INPUT OPENDRAIN
+
+# SWD debug
+PC0 SWCLK SWD
+PC1 SWDIO SWD
+
+# UART0 on GPIO 12/13
+PA12 UART0_TX UART0
+PA13 UART0_RX UART0
+
+# Peripheral power disabled during bootloader (active-LOW signal, HIGH = off)
+PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
+
+# CS pins held high in bootloader to avoid spurious SPI activity
+PA23 MAG_CS CS
+PA24 MPU_CS CS
+PA25 BARO_EXT_CS CS
+PA26 GYRO_EXT_CS CS
+

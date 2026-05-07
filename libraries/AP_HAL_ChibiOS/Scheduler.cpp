@@ -38,6 +38,7 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <cstring>
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -58,7 +59,51 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#if defined(RP2350)
+/* RP2350 reset-cause constants live in watchdog.h — include for SCRATCH idx / sentinel defines */
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#endif
+
 using namespace ChibiOS;
+
+extern "C" {
+
+thread_t *ap_chibios_first_thread(void);
+thread_t *ap_chibios_next_thread(thread_t *tp);
+thread_t *ap_chibios_find_thread_by_name(const char *name);
+
+// GDB helper: always-present entry points for thread-registry introspection.
+// We expose these from ArduPilot so debug sessions don't depend on whether specific ChibiOS helper symbols were linked in or dead-stripped.
+thread_t *ap_chibios_first_thread(void)
+{
+    return chRegFirstThread();
+}
+
+thread_t *ap_chibios_next_thread(thread_t *tp)
+{
+    return chRegNextThread(tp);
+}
+
+thread_t *ap_chibios_find_thread_by_name(const char *name)
+{
+    if (name == nullptr) {
+        return nullptr;
+    }
+
+    for (thread_t *tp = chRegFirstThread(); tp != nullptr; tp = chRegNextThread(tp)) {
+        if (tp->name != nullptr && strcmp(tp->name, name) == 0) {
+            return tp;
+        }
+    }
+
+    return nullptr;
+}
+
+}
+
+#ifndef HAL_RCIN_THREAD_ENABLED
+#define HAL_RCIN_THREAD_ENABLED 1
+#endif
 
 #ifndef HAL_MONITOR_THREAD_ENABLED
 #define HAL_MONITOR_THREAD_ENABLED 1
@@ -91,12 +136,21 @@ THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
 #define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 1
 #endif
 
+#ifndef HAL_MAIN_LOOP_STUCK_THRESHOLD_MS
+#define HAL_MAIN_LOOP_STUCK_THRESHOLD_MS 500U
+#endif
+
 Scheduler::Scheduler()
 {
 }
 
 void Scheduler::init()
 {
+// Keep debug helper symbols linked by executing a real call path once.
+// This is side-effect free and guarantees the helpers are available to GDB even with --gc-sections.
+    (void)ap_chibios_first_thread();
+    (void)ap_chibios_find_thread_by_name("nonexistent");
+
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
 
@@ -167,7 +221,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         ticks = 1;
     }
     ticks = MIN(TIME_MAX_INTERVAL, ticks);
-    chThdSleep(MAX(ticks,CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
+    chThdSleep(MAX(ticks, (systime_t)CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
 }
 
 /*
@@ -307,6 +361,11 @@ void Scheduler::reboot(bool hold_in_bootloader)
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif
 
+#if defined(RP2350)
+    // Breadcrumb for distinguishing explicit scheduler reboot from fault loops.
+    WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] = RP2350_RESET_DIAG_SCHEDULER_REBOOT;
+#endif
+
     // disable all interrupt sources
     port_disable();
 
@@ -424,7 +483,13 @@ void Scheduler::_monitor_thread(void *arg)
     while (true) {
         sched->delay(100);
         if (using_watchdog) {
+#if defined(STM32_HW)
             stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+#elif defined(RP2350)
+            // Save persistent data into noinit SRAM on every watchdog pat so
+            // it can be restored after a WD-triggered PSM reset.
+            rp2350_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+#endif
         }
 
         // if running memory guard then check all allocations
@@ -456,7 +521,7 @@ void Scheduler::_monitor_thread(void *arg)
             }
 #endif
         }
-        if (loop_delay >= 500 && !sched->in_expected_delay()) {
+        if (loop_delay >= HAL_MAIN_LOOP_STUCK_THRESHOLD_MS && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
             AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck, hal.util->persistent_data.semaphore_line);
             /*
@@ -776,7 +841,11 @@ void Scheduler::expect_delay_ms(uint32_t ms)
 // pat the watchdog
 void Scheduler::watchdog_pat(void)
 {
+#if defined(STM32_HW)
     stm32_watchdog_pat();
+#elif defined(RP2350)
+    rp2350_watchdog_pat();
+#endif
     last_watchdog_pat_ms = AP_HAL::millis();
 #if defined(HAL_GPIO_PIN_EXT_WDOG)
     ext_watchdog_pat(last_watchdog_pat_ms);
@@ -858,7 +927,9 @@ void Scheduler::try_force_mutex(void)
     strncpy(thdname, wtmtx->owner->name, sizeof(thdname)-1);
 
     // we will force release the lock
+#if defined(STM32_HW) && !defined(HAL_LLD_SELECT_SPI_V2)
     chMtxForceReleaseS(wtmtx);
+#endif
     chSysUnlock();
 
     // log a DLCK message with information on the deadlock we have avoided

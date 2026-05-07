@@ -1,0 +1,64 @@
+; RP2350 PIO UART programs for 8N1 serial at 8 cycles/bit
+; Human-readable equivalent of the runtime PIO programs.
+; The live instruction words are hardcoded in PIOUART.h and loaded by PIOUART.cpp.
+;
+; Clock divider formula: clkdiv = sys_clk_hz / (PIO_UART_CYCLES_PER_BIT * baud_rate)
+; At sys_clk = 150 MHz, baud 115200: clkdiv = 150e6 / (8 * 115200) ≈ 163
+;
+; The pre-assembled instruction words in PIOUART.h are derived from these
+; sources.  When pioasm is available in the build (future work), this file
+; should supersede the hardcoded arrays.
+;
+; Reference: Raspberry Pi pico-sdk uart_tx.pio / uart_rx.pio
+
+; ----------------------------------------------------------------------------
+; UART TX — transmit 8N1, side-set drives the TX line
+; Loaded at PIO_UART_TX_PROG_OFFSET (0) in instruction memory
+; PINCTRL: OUT_BASE=tx_pin, OUT_COUNT=1, SIDESET_BASE=tx_pin, SIDESET_COUNT=2(1+opt)
+; SHIFTCTRL: AUTOPULL=0, OUT_SHIFTDIR=right (LSB first), PULL_THRESH=0
+; EXECCTRL: WRAP_BOTTOM=1, WRAP_TOP=4
+.program uart_tx
+.side_set 1 opt
+
+    set pindirs, 1          ; one-time pin direction init
+    pull       side 1 [7]  ; block waiting for data; assert stop bit / idle
+    set x, 7   side 0 [7]  ; load bit counter (7 = 8 bits); assert start bit
+bitloop:
+    out pins, 1             ; shift 1 bit from OSR → TX pin
+    jmp x-- bitloop [6]     ; each loop iteration = 8 cycles total
+
+; ----------------------------------------------------------------------------
+; UART RX — receive 8N1, samples pin at bit centres
+; Loaded at PIO_UART_RX_PROG_OFFSET (5) in instruction memory.
+; The hardcoded words in PIOUART.h are pre-relocated for that offset.
+; This symbolic source remains the readable equivalent of the same program.
+; PINCTRL: IN_BASE=rx_pin
+; EXECCTRL: JMP_PIN=rx_pin, WRAP_BOTTOM=prog_offset, WRAP_TOP=prog_offset+4
+; SHIFTCTRL: AUTOPUSH=0, IN_SHIFTDIR=right (LSB first), PUSH_THRESH=8
+.program uart_rx
+
+    wait 0 pin 0        ; wait for start bit (falling edge)
+    set x, 7 [10]       ; half-bit delay to sample near bit center
+bit_loop:
+    in pins, 1          ; sample data bit into ISR
+    jmp x-- bit_loop [6]; loop for 8 data bits (8 cycles/iter)
+    ; Bring-up path for generic 8N1 uses no strict stop-bit gate.
+    push noblock        ; push received byte to RX FIFO
+
+; ----------------------------------------------------------------------------
+; UART RX for SBUS (8E2, inverted at GPIO INOVER)
+; Loads at PIO_UART_RX_SBUS_PROG_OFFSET in PIOUART.h.
+; We skip parity and require first stop bit HIGH before push.
+.program uart_rx_sbus
+
+    wait 0 pin 0        ; start bit
+    set x, 7 [10]       ; align to bit center
+sbus_bit_loop:
+    in pins, 1
+    jmp x-- sbus_bit_loop [6]
+    mov y, y [6]        ; skip parity bit timing window
+    jmp pin sbus_push   ; stop bit must be high, else framing error
+    jmp uart_rx_sbus    ; drop bad byte
+sbus_push:
+    push noblock
+    jmp uart_rx_sbus

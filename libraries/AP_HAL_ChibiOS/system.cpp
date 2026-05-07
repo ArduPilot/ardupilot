@@ -29,6 +29,10 @@
 #include <ch.h>
 #include "hal.h"
 #include <hrt.h>
+extern thread_t* get_main_thread(void);
+#include "Scheduler.h"
+#include "UARTDriver.h"
+#include "hwdef/common/usbcfg.h"
 
 // we rely on systimestamp_t for 64 bit timestamps
 static_assert(sizeof(uint64_t) == sizeof(systimestamp_t), "unexpected systimestamp_t size");
@@ -48,6 +52,8 @@ static_assert(sizeof(systime_t) == sizeof(sysinterval_t), "expected systime_t sa
 static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
 #elif defined(STM32_HCLK)
 static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
+#elif defined(RP2350) || defined(RP2040)
+// RP2350/RP2040 use dynamic clocks; skip compile-time check
 #else
 #error "unknown system clock"
 #endif
@@ -86,6 +92,158 @@ extern "C"
 #define bkpt() __asm volatile("BKPT #0\n")
 
 #if !AP_CRASHDUMP_ENABLED
+
+#if defined(RP2350)
+/*
+ * Robust fault handler for RP2350 / ChibiOS.
+ * Problem with the original handler: it called memcpy() from XIP flash to capture the exception frame.
+ * overclocking sys_clk with a too-aggressive flash divider) then the memcpy itself faults, producing a double-fault which locks the CPU at PC=0xEFFFFFFE before any C code can run.
+ */
+
+/* Cortex-M exception frame (hardware auto-stacked on exception entry). */
+struct ap_fault_frame_t {
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t lr;      /* LR at point of fault (link register / return address) */
+    uint32_t pc;      /* PC at point of fault */
+    uint32_t xpsr;
+};
+
+/* All fault information captured in SRAM — survives even if XIP is broken. */
+struct ap_fault_info_t {
+    uint32_t magic;         /* 0xDEADFA17 when valid */
+    uint32_t ipsr;          /* exception number (3=HardFault, 4=MemManage, 5=BusFault, 6=UsageFault) */
+    uint32_t cfsr;          /* Combined Fault Status Register */
+    uint32_t hfsr;          /* HardFault Status Register */
+    uint32_t dfsr;          /* Debug Fault Status Register */
+    uint32_t bfar;          /* Bus Fault Address Register (valid if CFSR.BFARVALID) */
+    uint32_t mmfar;         /* MemManage Fault Address Register (valid if CFSR.MMARVALID) */
+    uint32_t exc_return;    /* EXC_RETURN value in LR on handler entry */
+    ap_fault_frame_t frame; /* hardware-stacked registers from faulting context */
+};
+
+/* Placed in .noinit so it is not zeroed by startup and persists across soft
+ * resets, allowing post-mortem inspection via JTAG/SWD after a reset. */
+volatile ap_fault_info_t fault_info __attribute__((section(".noinit")));
+
+/* Forward declaration required since the naked trampolines reference this
+ * via an asm branch before the C definition. */
+void fault_capture(uint32_t *frame, uint32_t exc_return);
+/*
+ * Core fault capture implementation — __RAMFUNC2__ so it runs from SRAM and
+ * is immune to XIP flash reliability issues at overclocked frequencies.
+ * @param frame Pointer to the hardware exception frame (from PSP or MSP) @param exc_return EXC_RETURN value (LR on handler entry), used to determine which stack was active
+ */
+void fault_capture(uint32_t *frame, uint32_t exc_return)
+{
+    /* Write the magic cookie last so a partial write is not mistaken for valid. */
+    fault_info.ipsr       = __get_IPSR();
+    fault_info.cfsr       = SCB->CFSR;
+    fault_info.hfsr       = SCB->HFSR;
+    fault_info.dfsr       = SCB->DFSR;
+    fault_info.bfar       = SCB->BFAR;
+    fault_info.mmfar      = SCB->MMFAR;
+    fault_info.exc_return = exc_return;
+
+    /* Copy the hardware-stacked frame registers — no memcpy (avoids XIP). */
+    fault_info.frame.r0   = frame[0];
+    fault_info.frame.r1   = frame[1];
+    fault_info.frame.r2   = frame[2];
+    fault_info.frame.r3   = frame[3];
+    fault_info.frame.r12  = frame[4];
+    fault_info.frame.lr   = frame[5];
+    fault_info.frame.pc   = frame[6];
+    fault_info.frame.xpsr = frame[7];
+
+    /* Commit valid marker. */
+    fault_info.magic = 0xDEADFA17U;
+
+#if AP_WATCHDOG_SAVE_FAULT_ENABLED
+    save_fault_watchdog(__LINE__,
+                        (FaultType)fault_info.ipsr,
+                        fault_info.bfar,
+                        fault_info.frame.lr);
+#endif
+
+/*
+ * BKPT only when a debugger is connected.
+ * without one, BKPT escalates to HardFault which (since we are already in HardFault) causes a double-fault lockup at 0xEFFFFFFE, defeating the whole handler.
+ */
+    if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) {
+        __asm volatile ("bkpt #0");
+    }
+    while (1) {}  /* Never return — GDB: `print fault_info` to inspect */
+}
+
+/*
+ * Naked trampolines: determine PSP vs MSP from EXC_RETURN bit[2], then tail-call fault_capture().
+ * The naked attribute means the compiler emits no prologue/epilogue, so no stack space is used before we save the frame.
+ * COPY_VECTORS_TO_RAM copies the vector POINTER TABLE
+ * to SRAM and redirects VTOR there, so the vector index fetch is flash-free.
+ * But without __RAMFUNC2__ the handler CODE still lives in XIP flash and the CPU
+ * would fetch bad instructions if XIP is unreliable at the higher clock, causing
+ * a double-fault lockup before any C runs.
+ * __RAMFUNC2__ ensures both the vector
+ * entry AND the code it points to are in SRAM.
+ * The "b fault_capture" branch relies on both the trampoline and fault_capture being in the same.ramtext section (VMA in RAM), keeping the offset within the 16 MB range of the Thumb-2 unconditional branch instruction.
+ */
+void HardFault_Handler(void) __attribute__((naked));
+void HardFault_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"  /* test EXC_RETURN bit[2]: 0=MSP, 1=PSP */
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"  /* r0 = frame pointer (MSP) */
+        "mrsne  r0, psp         \n"  /* r0 = frame pointer (PSP) */
+        "mov    r1, lr          \n"  /* r1 = EXC_RETURN */
+        "b      fault_capture   \n"  /* tail-call the RAMFUNC implementation */
+    );
+}
+
+/*
+ * BusFault, UsageFault, MemManage all share the same capture path.
+ * Without SCB->SHCSR fault-enable bits set (ChibiOS doesn't set them by default) these escalate to HardFault anyway, but having explicit handlers gives cleaner CFSR decoding.
+ */
+void BusFault_Handler(void) __attribute__((naked));
+void BusFault_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"
+        "mrsne  r0, psp         \n"
+        "mov    r1, lr          \n"
+        "b      fault_capture   \n"
+    );
+}
+
+void UsageFault_Handler(void) __attribute__((naked));
+void UsageFault_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"
+        "mrsne  r0, psp         \n"
+        "mov    r1, lr          \n"
+        "b      fault_capture   \n"
+    );
+}
+
+void MemManage_Handler(void) __attribute__((naked));
+void MemManage_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"
+        "mrsne  r0, psp         \n"
+        "mov    r1, lr          \n"
+        "b      fault_capture   \n"
+    );
+}
+
+#else  /* STM32 fault handlers */
+
 // do legacy hardfault handling
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
@@ -124,34 +282,34 @@ void HardFault_Handler(void) {
 #endif
 
 #ifdef HAL_GPIO_PIN_FAULT
-    while (true) {
-        // forced means that another kind of unhandled fault got escalated to a hardfault
-        if (faultType == BusFault) {
-            fault_printf("BUSFAULT\n");
-        } else if (forced) {
-            fault_printf("FORCED HARDFAULT\n");
-        } else {
-            fault_printf("HARDFAULT(%d)\n", int(faultType));
-        }
-        fault_printf("CSFR=0x%08x\n", cfsr);
-        fault_printf("CUR=0x%08x\n", currcore->rlist.current);
-        if (currcore->rlist.current) {
-            fault_printf("NAME=%s\n", currcore->rlist.current->name);
-        }
-        fault_printf("FA=0x%08x\n", faultAddress);
-        fault_printf("PC=0x%08x\n", ctx.pc);
-        fault_printf("LR=0x%08x\n", ctx.lr_thd);
-        fault_printf("R0=0x%08x\n", ctx.r0);
-        fault_printf("R1=0x%08x\n", ctx.r1);
-        fault_printf("R2=0x%08x\n", ctx.r2);
-        fault_printf("R3=0x%08x\n", ctx.r3);
-        fault_printf("R12=0x%08x\n", ctx.r12);
-        fault_printf("XPSR=0x%08x\n", ctx.xpsr);
-        fault_printf("\n\n");
+    // Print fault info once (not in a loop) then fall through to reset
+    // forced means that another kind of unhandled fault got escalated to a hardfault
+    if (faultType == BusFault) {
+        fault_printf("BUSFAULT\n");
+    } else if (forced) {
+        fault_printf("FORCED HARDFAULT\n");
+    } else {
+        fault_printf("HARDFAULT(%d)\n", int(faultType));
     }
+    fault_printf("CSFR=0x%08x\n", cfsr);
+    fault_printf("CUR=0x%08x\n", currcore->rlist.current);
+    if (currcore->rlist.current) {
+        fault_printf("NAME=%s\n", currcore->rlist.current->name);
+    }
+    fault_printf("FA=0x%08x\n", faultAddress);
+    fault_printf("PC=0x%08x\n", ctx.pc);
+    fault_printf("LR=0x%08x\n", ctx.lr_thd);
+    fault_printf("R0=0x%08x\n", ctx.r0);
+    fault_printf("R1=0x%08x\n", ctx.r1);
+    fault_printf("R2=0x%08x\n", ctx.r2);
+    fault_printf("R3=0x%08x\n", ctx.r3);
+    fault_printf("R12=0x%08x\n", ctx.r12);
+    fault_printf("XPSR=0x%08x\n", ctx.xpsr);
+    fault_printf("\n\n");
 #endif
-    //Cause debugger to stop. Ignored if no debugger is attached
-    while(1) {}
+    // DEBUG: reset commented out so GDB can inspect fault state; re-enable for production
+    // NVIC_SystemReset();
+    while(1) {} // halt here — attach GDB to inspect ctx, cfsr, faultAddress
 }
 
 // For the BusFault handler to be active SCB_SHCSR_BUSFAULTENA_Msk should be set in SCB->SHCSR
@@ -191,8 +349,9 @@ void UsageFault_Handler(void) {
     save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
 #endif
 
-    //Cause debugger to stop. Ignored if no debugger is attached
-    while(1) {}
+    // DEBUG: reset commented out so GDB can inspect fault state; re-enable for production
+    // NVIC_SystemReset();
+    while(1) {} // halt here — attach GDB to inspect ctx, cfsr
 }
 
 void MemManage_Handler(void);
@@ -227,8 +386,13 @@ void MemManage_Handler(void) {
     save_fault_watchdog(__LINE__, faultType, faultAddress, (uint32_t)ctx.lr_thd);
 #endif
 
-    while(1) {}
+    // DEBUG: reset commented out so GDB can inspect fault state; re-enable for production
+    // NVIC_SystemReset();
+    while(1) {} // halt here — attach GDB to inspect ctx, cfsr
 }
+
+#endif  /* RP2350 or STM32  */
+
 #else
 // Handle via Crash Catcher
 extern void HardFault_Handler(void);
@@ -265,17 +429,19 @@ void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_add
             pd.fault_type = fault_type;
             pd.fault_addr = fault_addr;
             thread_t *tp = chThdGetSelfX();
-            if (tp) {
+            if (tp && is_address_in_memory(tp)) {
                 pd.fault_thd_prio = tp->hdr.pqueue.prio;
                 // get first 4 bytes of the name, but only of first fault
-                if (tp->name && pd.thread_name4[0] == 0) {
+                if (tp->name && is_address_in_memory((void*)tp->name) && pd.thread_name4[0] == 0) {
                     strncpy_noterm(pd.thread_name4, tp->name, 4);
                 }
             }
             pd.fault_icsr = SCB->ICSR;
             pd.fault_lr = lr;
         }
+#if defined(STM32_HW)
         stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+#endif
     }
 }
 #endif  // AP_WATCHDOG_SAVE_FAULT_ENABLED
@@ -317,7 +483,7 @@ uint32_t chibios_rand_generate()
     return val;
 }
 
-}
+} // extern "C"
 namespace AP_HAL {
 
 void init()

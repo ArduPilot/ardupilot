@@ -157,6 +157,20 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
         if (is_zero(frequency) || is_zero(volume)) {
             pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
         } else {
+#if defined(HAL_PWM_ALARM_GPIO_LINE) && defined(PAL_MODE_ALTERNATE_PWM)
+/*
+ * RP2350: AP_Notify::Buzzer::init() calls hal.gpio->pinMode(HAL_BUZZER_PIN) which sets FUNCSEL=5 (SIO), overwriting the FUNCSEL=4 (PWM) set by pico2_gpio_init().
+ * Re-assert PWM alternate function here every time a tone starts so the PWM slice signal actually reaches the pad.
+ */
+            palSetLineMode(HAL_PWM_ALARM_GPIO_LINE, PAL_MODE_ALTERNATE_PWM);
+#endif
+#ifdef HAL_BUZZER_NOMINAL_FREQ_HZ
+/*
+ * Some electromagnetic transducers (e.g.
+ * RDTE-4.000-3030-NS1) require a specific drive frequency for rated SPL.
+ */
+            frequency = HAL_BUZZER_NOMINAL_FREQ_HZ;
+#endif
             pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
                             roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
 
@@ -336,7 +350,20 @@ bool Util::get_system_id(char buf[50])
     uint8_t serialid[12];
     char board_name[24];
 
+#if defined(RP2350)
+// RP2350: read unique ID from OTP.
+// Rows 0-3 = CHIPID (64-bit public ID), rows 4-5 = RANDID[0:1] (32 more bits).
+    {
+        const uint32_t otp_base = 0x40130000U;
+        uint16_t tmp[6];
+        for (uint32_t i = 0; i < 6U; i++) {
+            tmp[i] = (uint16_t)(*(volatile const uint32_t *)(otp_base + i * 4U));
+        }
+        memcpy(serialid, tmp, 12);
+    }
+#else
     memcpy(serialid, (const void *)UDID_START, 12);
+#endif
     // avoid board names greater than 23 chars (sizeof includes null char, so allow 24 bytes total)
     static_assert(sizeof(CHIBIOS_SHORT_BOARD_NAME) <= 24, "CHIBIOS_SHORT_BOARD_NAME must be 23 characters or less");
     strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 23);
@@ -355,14 +382,34 @@ bool Util::get_system_id(char buf[50])
 bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
     len = MIN(12, len);
+#if defined(RP2350)
+    // RP2350: read unique ID from OTP. Rows 0-3 = CHIPID (64-bit public ID),
+    // rows 4-5 = RANDID[0:1] (32 more bits). OTP_DATA ECC-mapped base 0x40130000;
+    // each row is a 4-byte word with 16-bit data in bits[15:0].
+    {
+        const uint32_t otp_base = 0x40130000U;
+        uint16_t tmp[6];
+        for (uint32_t i = 0; i < 6U; i++) {
+            tmp[i] = (uint16_t)(*(volatile const uint32_t *)(otp_base + i * 4U));
+        }
+        memcpy(buf, tmp, len);
+    }
+#else
     memcpy(buf, (const void *)UDID_START, len);
+#endif
     return true;
 }
 
 // return true if the reason for the reboot was a watchdog reset
 bool Util::was_watchdog_reset() const
 {
+#if defined(STM32_HW)
     return stm32_was_watchdog_reset();
+#elif defined(RP2350)
+    return rp2350_was_watchdog_reset();
+#else
+    return false;
+#endif
 }
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
@@ -409,21 +456,34 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
             // above the stack top
             total_stack = uint32_t(tp) - uint32_t(tp->wabase);
         }
+// The idle thread (realprio==1) runs on the hardware Main Stack (MSP) rather than a ChibiOS working area.
+// Emit "MSP" as the total so log parsers can identify the row without trying to interpret a garbage number.
+        const bool is_idle = (tp->realprio == 1);
 #if HAL_ENABLE_THREAD_STATISTICS
         time_measurement_t stats = tp->stats;
         if (tp->stats.best > 0) { // not run
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
-                        tp->name, unsigned(tp->realprio), tp->wabase,
-                        unsigned(stack_free(tp->wabase)), unsigned(total_stack),
-                        100.0f * float(stats.cumulative) / float(cumulative_cycles),
-                        // more than a loop slice is bad for everyone else, warn on
-                        // more than a 200Hz slice so that only the worst offenders are identified
-                        // also don't do this for the main or idle threads
-                        tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
-                            && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
+            if (is_idle) {
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP  LOAD=%4.1f%%\n",
+                            tp->name, unsigned(tp->realprio), tp->wabase,
+                            unsigned(stack_free(tp->wabase)),
+                            100.0f * float(stats.cumulative) / float(cumulative_cycles));
+            } else {
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
+                            tp->name, unsigned(tp->realprio), tp->wabase,
+                            unsigned(stack_free(tp->wabase)), unsigned(total_stack),
+                            100.0f * float(stats.cumulative) / float(cumulative_cycles),
+// more than a loop slice is bad for everyone else, warn on more than a 200Hz slice so only the worst offenders are identified also don't do this for the main or idle threads
+                            tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
+                                && tp != get_main_thread() ? "*" : "");
+            }
         } else {
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
-                        tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+            if (is_idle) {
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP\n",
+                            tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)));
+            } else {
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
+                            tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+            }
         }
         // Giovanni thinks this is dangerous, but we can't get useable data without it
         if (tp != chThdGetSelfX()) {
@@ -432,9 +492,15 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
             tp->stats.cumulative = 0U;
         }
 #else
-        str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
-                    tp->name, unsigned(tp->realprio), tp->wabase,
-                    unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+        if (is_idle) {
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/MSP\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase,
+                        unsigned(stack_free(tp->wabase)));
+        } else {
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase,
+                        unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+        }
 #endif
     }
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE

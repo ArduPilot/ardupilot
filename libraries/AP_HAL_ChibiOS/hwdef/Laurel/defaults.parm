@@ -1,0 +1,43 @@
+# Laurel defaults tuned for the onboard ICM42688P sensor stack.
+#
+# Scheduler rate: live profiling (2025-04) shows main loop tasks take ~7 ms
+# in release builds.  Setting SCHED_LOOP_RATE=125 (8 ms budget) gives:
+#   - ~87% Core0 CPU usage (spare ~1 ms per loop for idle/GCS)
+#   - Attitude rate stays at 1000/7=142 Hz (rate ceiling > 125 Hz)
+#   - PreArm "main loop slow" check passes (target 125 Hz, actual ~125 Hz)
+# Debug builds run at ~7 ms/loop too so the rate drops to ~123-133 Hz,
+# still above the 125 Hz threshold in most cases.
+# If performance improves in future, bump SCHED_LOOP_RATE towards 200-400 Hz.
+SCHED_LOOP_RATE 125
+INS_FAST_SAMPLE 1
+FSTRATE_ENABLE 1
+
+# Enable watchdog by default.
+BRD_OPTIONS 1
+
+# Laurel bring-up default: avoid hard pre-arm failure when filesystem logging
+# backend cannot initialise (e.g. no/unstable SPI microSD path).
+# 0 = no logger backend enabled by default.
+LOG_BACKEND_TYPE 0
+
+# Quad-X frame with 4 motors (matches the 4 PWM outputs on GPIO28-31).
+FRAME_CLASS 1
+FRAME_TYPE 1
+
+# Battery scaling values need Laurel hardware calibration.
+
+# Serial port protocol defaults.
+# SERIAL1 (UART0 / DVTX connector): MSP DisplayPort is compiled-in default.
+# SERIAL2 (UART1 / GPS connector): GPS is compiled-in default.
+# SERIAL3 (PIOUART0 / CRSF-ELRS port, GPIO20/21): enable RCIN by default so
+#   PIOUART0 is initialised and the PIO state machine configures GPIO20/21
+#   FUNCSEL=6(PIO0) at boot.  Without a receiver plugged in, the board simply
+#   shows "PreArm: RC not found" (normal behaviour).
+SERIAL3_PROTOCOL 23
+
+# SERIAL4 (PIOUART1 / AUX port, GPIO34/35): MAVLink2 by default so the
+# spare UART connector is ready for a telemetry radio or GCS link.
+# Protocol 2 enables PIOUART1 PIO1 state machines (GPIO34/35 FUNCSEL=7).
+SERIAL4_PROTOCOL 2
+#BATT_AMP_PERVLT 1.0
+#BATT_VOLT_MULT 1.0
