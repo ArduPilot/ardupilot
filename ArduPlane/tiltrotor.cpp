@@ -566,8 +566,7 @@ void Tiltrotor::vectoring(void)
         // this test is subject to wrapping at ~49 days, but the consequences are insignificant
         if ((now - hal.util->get_last_armed_change()) > TILT_DELAY_MS) {
             if (quadplane.in_vtol_mode()) {
-                float yaw_out = plane.channel_rudder->get_control_in();
-                yaw_out /= plane.channel_rudder->get_range();
+                float yaw_out = plane.channel_rudder->norm_input_dz();
                 float yaw_range = zero_out;
 
                 SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorLeft,  1000 * constrain_float(base_output + yaw_out * yaw_range,0,1));
