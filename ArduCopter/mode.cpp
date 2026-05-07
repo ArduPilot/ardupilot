@@ -967,7 +967,7 @@ float Mode::get_pilot_desired_throttle() const
         mid_stick = 500;
     }
 
-    int16_t throttle_control = channel_throttle->get_control_in();
+    int16_t throttle_control = int16_t(channel_throttle->norm_input_dz() * 1000.0f);
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
 
