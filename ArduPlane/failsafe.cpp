@@ -65,7 +65,7 @@ void Plane::failsafe_check(void)
 
         float roll = roll_in_expo(false);
         float pitch = pitch_in_expo(false);
-        float throttle = get_throttle_input(true);
+        float throttle = get_throttle_input_norm(true) * 100.0f;
         float rudder = rudder_in_expo(false);
 
         if (!arming.is_armed_and_safety_off()) {
