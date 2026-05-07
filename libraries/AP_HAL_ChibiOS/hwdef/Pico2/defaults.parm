@@ -1,0 +1,50 @@
+# Default parameters for Raspberry Pi Pico 2 (RP2350) ArduPilot port.
+# Battery monitoring defaults are set as compile-time defines in hwdef.dat
+# (HAL_BATT_VOLT_SCALE=10.1, HAL_BATT_CURR_SCALE=17.0) and do not need
+# to be overridden here.
+#
+# Run the main loop at 100 Hz for Pico2 development without a real IMU.
+# AP_InertialSensor_NONE generates fake data at 1 kHz via the timer
+# thread (priority 181), consuming ~35 % of core0 CPU with software sinf.
+# NavEKF3 at 350 Hz would also consume ~35 % leaving < 30 % for GCS/USB.
+# At 100 Hz (10 ms / loop) both costs fit and GCS heartbeats flow.
+# When a real high-rate IMU (ICM-42688) is fitted, raise this to 400.
+SCHED_LOOP_RATE 100
+
+# Disable IMU fast sampling (8x oversampling).  AP_InertialSensor_NONE
+# generates 8 fake samples per 1 kHz timer call when fast-sampling is
+# enabled, consuming ~50 % of core0 in the timer thread and starving the
+# main loop / GCS.  With a real high-rate IMU (e.g. ICM-42688) set this
+# to 1 after calibration.
+INS_FAST_SAMPLE 0
+
+# Disable fast-rate thread when running with AP_InertialSensor_NONE (no real IMU).
+# NONE IMU generates gyro samples at 1 kHz; FSTRATE_ENABLE=1 would dispatch the
+# rate controller to core1 at 1 kHz (1000 c1_run_sync calls/s), consuming ~100 %
+# of core1 and blocking core0.  With a real high-rate IMU (ICM-42688), set to 1.
+FSTRATE_ENABLE 0
+
+# Enable UART0 (GPIO12/13) and UART1 (GPIO10/11) with MAVLink2.
+# Without this, ArduPilot leaves UARTs unconfigured (FUNCSEL=5/SIO).
+# Setting protocol=2 makes the UARTs start at boot regardless of whether
+# a GCS is connected — required for UART register verification and loopback tests.
+SERIAL1_PROTOCOL 2
+SERIAL2_PROTOCOL 2
+
+# Keep PIOUART ports free for dedicated loopback bring-up on GP14/17 and GP19/20.
+# SerialManager background users (for example GPS probing on SERIAL3 defaults)
+# can otherwise consume RX bytes and mask direct SERIAL_CONTROL validation.
+SERIAL3_PROTOCOL -1
+SERIAL4_PROTOCOL -1
+SERIAL5_PROTOCOL -1
+
+# Enable watchdog (bit 0 of BRD_OPTIONS = BOARD_OPTION_WATCHDOG).
+# HAL_WATCHDOG_ENABLED_DEFAULT in hwdef.dat is only the fallback when
+# AP_BoardConfig singleton is absent; at runtime watchdog_enabled() reads
+# BRD_OPTIONS from the param store, so this is the canonical knob.
+# Set to 0 to disable watchdog during debug sessions.
+BRD_OPTIONS 1
+
+# Uncomment and adjust to match your power brick or current sensor:
+#BATT_AMP_PERVLT 17.0
+#BATT_VOLT_MULT 10.1

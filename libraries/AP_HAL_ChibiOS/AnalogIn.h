@@ -27,7 +27,8 @@
 #define HAL_MAX_ANALOG_IN_CHANNELS 20
 
 #ifndef HAL_NUM_ANALOG_INPUTS
-#if defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING
+#if (defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING) && !defined(RP2350)
+// STM32H7: MCU monitoring uses a dedicated third ADC group.
 #define HAL_NUM_ANALOG_INPUTS 3
 #elif defined(HAL_ANALOG2_PINS)
 #define HAL_NUM_ANALOG_INPUTS 2
@@ -92,6 +93,10 @@ private:
     void update_power_flags(void);
     void setup_adc(uint8_t index);
     static void adccallback(ADCDriver *adcp);
+#if defined(RP2350)
+    // Error callback: restarts ADC on FIFO overflow (called from DMA ISR context).
+    static void adcerrorcallback(ADCDriver *adcp, adcerror_t err);
+#endif
 
     ChibiOS::AnalogSource* _channels[ANALOG_MAX_CHANNELS];
 
@@ -119,7 +124,8 @@ private:
 #ifdef HAL_ANALOG2_PINS
     static const pin_info pin_config_2[];
 #endif
-#if defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING
+#if (defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING) && !defined(RP2350)
+    // STM32H7 MCU monitoring uses pin_config_3 on the third ADC group.
     static const pin_info pin_config_3[];
 #endif
 

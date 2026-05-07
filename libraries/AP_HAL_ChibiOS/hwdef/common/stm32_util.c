@@ -17,7 +17,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stm32_dma.h>
+#if defined(STM32_HW)
+    #include <stm32_dma.h>
+#endif
 #include <hrt.h>
 
 static int64_t utc_time_offset;
@@ -25,6 +27,7 @@ static int64_t utc_time_offset;
 /*
   setup the timer capture digital filter for a channel
  */
+#if defined(STM32_HW)
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode)
 {
     switch (channel) {
@@ -42,10 +45,12 @@ void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t fil
         break;
     }
 }
+#endif // STM32_HW
 
 /*
   set the input source of a timer channel
  */    
+#if defined(STM32_HW)
 void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t input_source)
 {
     switch (channel) {
@@ -75,6 +80,7 @@ void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t in
             break;
     }
 }
+#endif // STM32_HW
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
 void show_stack_usage(void)
@@ -211,7 +217,9 @@ uint32_t get_fattime()
 
 #if AP_FASTBOOT_ENABLED
 
-// get RTC backup registers starting at given idx
+#define UNUSED(x)                           (void)(x)
+
+        // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
     while (n--) {
@@ -221,8 +229,17 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
         *v++ = (dr[n/2]&0xFFFF) | (dr[n/2+1]<<16);
 #elif defined(STM32G4)
         *v++ = ((__IO uint32_t *)&TAMP->BKP0R)[idx++];
-#else
+#elif defined(STM32_HW)
         *v++ = ((__IO uint32_t *)&RTC->BKP0R)[idx++];
+#elif defined(RP2350)
+        if (idx < 8) {
+            *v++ = WATCHDOG->SCRATCH[idx++];
+        } else {
+            *v++ = 0;
+            idx++;
+        }
+#else
+        #error "Unsupported target for RTC backup"
 #endif
     }
 }
@@ -230,15 +247,17 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 {
-#if !defined(STM32F1)
+#if defined(STM32_HW) && !defined(STM32F1)
     if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0) {
         RCC->BDCR |= STM32_RTCSEL;
         RCC->BDCR |= RCC_BDCR_RTCEN;
     }
-#ifdef PWR_CR_DBP
+#if defined(STM32_HW) && defined(PWR_CR_DBP)
     PWR->CR |= PWR_CR_DBP;
-#else
+#elif defined(STM32_HW)
     PWR->CR1 |= PWR_CR1_DBP;
+# else 
+    #error "Unsupported target for RTC backup"
 #endif
 #endif
     while (n--) {
@@ -249,8 +268,17 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
         dr[n/2+1] = (*v) >> 16;
 #elif defined(STM32G4)
         ((__IO uint32_t *)&TAMP->BKP0R)[idx++] = *v++;
-#else
+#elif defined(STM32_HW)
         ((__IO uint32_t *)&RTC->BKP0R)[idx++] = *v++;
+#elif defined(RP2350)
+        if (idx < 8) {
+            WATCHDOG->SCRATCH[idx++] = *v++;
+        } else {
+            v++;
+            idx++;
+        }
+#else
+        #warning "Unsupported target for RTC backup"
 #endif
     }
 }
@@ -381,9 +409,67 @@ void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
     uint8_t pad = PAL_PAD(line);
     port->PUPDR = (port->PUPDR & ~(3<<(pad*2))) | (pp<<(pad*2));
 }
+#elif defined(RP2350)
+/*
+  read mode of a pin for RP2350. Reconstructs the ChibiOS iomode_t from
+  hardware: bits 0-22 from IO_BANK0 CTRL, bit 23 from SIO GPIO_OE, bits
+  24-31 from PADS_BANK0 GPIO pad register.
 
+  IMPORTANT: For RP2350 PAL, ioline_t encodes the ABSOLUTE GPIO number
+  directly (PAL_LINE(IOPORT1, n) = n for N=0-47, since IOPORT1=0).
+  PAL_PAD(line) gives only bits[4:0] of the line (= pad within port),
+  which is WRONG for GPIO32+ (gives 0-15 instead of 32-47).
+  Must use (uint32_t)line as the absolute GPIO index into IO_BANK0/PADS_BANK0.
+ */
+iomode_t palReadLineMode(ioline_t line)
+{
+    /* abspad = absolute GPIO number (0-47) as used by IO_BANK0/PADS_BANK0 */
+    uint32_t abspad = (uint32_t)line;
+    uint32_t ctrlbits = IO_BANK0->GPIO[abspad].CTRL;
+    uint32_t oebits;
+    uint32_t padbits = PADS_BANK0->GPIO[abspad];
+    if (abspad < 32U) {
+        oebits = (SIO->GPIO_OE >> abspad) & 1U;
+    } else {
+        oebits = (SIO->GPIO_HI_OE >> (abspad - 32U)) & 1U;
+    }
+    return (iomode_t)(ctrlbits | (oebits << 23U) | (padbits << 24U));
+}
+
+/*
+  set pin as pullup, pulldown or floating for RP2350.
+  PUE is bit 3 and PDE is bit 2 of PADS_BANK0->GPIO[pad].
+
+  Uses absolute GPIO number — see palReadLineMode comment above.
+ */
+void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
+{
+    /* abspad = absolute GPIO number (0-47) */
+    uint32_t abspad = (uint32_t)line;
+    uint32_t padbits = PADS_BANK0->GPIO[abspad];
+    padbits &= ~((1U << 3U) | (1U << 2U));
+    if (pp == PAL_PUSHPULL_PULLUP) {
+        padbits |= (1U << 3U);
+    } else if (pp == PAL_PUSHPULL_PULLDOWN) {
+        padbits |= (1U << 2U);
+    }
+    PADS_BANK0->GPIO[abspad] = padbits;
+}
+#else
+void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
+{
+    (void)line;
+    (void)pp;
+}
 #endif // F7, H7, F4
 
+#if defined(RP2350)
+// rp2350 specific goes here
+#else 
+/*
+ * // stm32 specifc These wrappers exist only on platforms that have a D-cache.
+ * RP2350: the cacheBuffer* macros expand to no-ops and are used directly via the header-level #define redirects, so no wrapper function is needed.
+ */
 void stm32_cacheBufferInvalidate(const void *p, size_t size)
 {
     cacheBufferInvalidate(p, size);
@@ -393,6 +479,7 @@ void stm32_cacheBufferFlush(const void *p, size_t size)
 {
     cacheBufferFlush(p, size);
 }
+#endif // !RP2350
 
 
 #ifdef HAL_GPIO_PIN_FAULT

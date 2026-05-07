@@ -361,8 +361,10 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     dmaStreamSetPeripheral(ic_dma, &(group->pwm_drv->tim->DMAR));
     dmaStreamSetMemory0(ic_dma, group->dma_buffer);
     dmaStreamSetTransactionSize(ic_dma, GCR_TELEMETRY_BIT_LEN);
-#if STM32_DMA_ADVANCED
+#if defined(STM32_DMA_ADVANCED) && STM32_DMA_ADVANCED
     dmaStreamSetFIFO(ic_dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
+#else
+    #warning "DMA FIFO mode not supported, performance may be poor and DShot telemetry may not work at higher bitrates"
 #endif
     dmaStreamSetMode(ic_dma,
                     STM32_DMA_CR_CHSEL(group->dma_ch[curr_ch].channel) |
