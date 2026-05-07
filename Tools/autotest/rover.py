@@ -7120,6 +7120,44 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def EKF_FS_REQUIRES_POSITION_HISTORY(self):
+        '''check EKF failsafe requires a prior position estimate and autonomous modes remain blocked without position'''
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 5, 0, 0),
+        ])
+
+        self.set_parameter("RC6_OPTION", 65)  # GPS Disable
+        self.wait_ready_to_arm()
+        self.set_rc(6, 2000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() < tstart + 30:
+            esr = self.assert_receive_message("EKF_STATUS_REPORT", timeout=30)
+            if not (esr.flags & mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL):
+                break
+        else:
+            raise AutoTestTimeoutException("Failed to disable GPS using RC6_OPTION")
+        self.change_mode("MANUAL")
+        self.context_clear_collection("STATUSTEXT")
+        self.arm_vehicle()
+        self.delay_sim_time(5)
+
+        if self.statustext_in_collections("EKF variance") is not None:
+            raise NotAchievedException("EKF variance triggered without a prior position estimate")
+
+        for mode in ["GUIDED", "AUTO", "RTL", "SMART_RTL"]:
+            self.start_subtest(f"{mode} denied while armed without position")
+            self.context_clear_collection("STATUSTEXT")
+            self.send_cmd_do_set_mode(mode)
+            self.wait_statustext("Flight mode change failed", timeout=5, check_context=True)
+            self.assert_mode("MANUAL")
+
+        self.disarm_vehicle()
+        self.context_pop()
+        self.reboot_sitl()
+
     def SafetySwitch(self):
         '''check safety switch works'''
         self.start_subtest("Make sure we don't start moving when safety switch enabled")
@@ -7367,6 +7405,7 @@ return update()
             self.JammingSimulation,
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
+            self.EKF_FS_REQUIRES_POSITION_HISTORY,
             self.GetMessageInterval,
             self.SafetySwitch,
             self.ThrottleFailsafe,
