@@ -365,7 +365,11 @@
 #endif
 
 #ifndef __FASTRAMFUNC__
+#if defined(RP2350)
+#define __FASTRAMFUNC__ __attribute__((__section__(".ramtext")))
+#else
 #define __FASTRAMFUNC__
+#endif
 #endif
 
 #ifndef __EXTFLASHFUNC__
