@@ -12,7 +12,7 @@
 	url = https://github.com/ArduPilot/googletest
 [submodule "modules/ChibiOS"]
 	path = modules/ChibiOS
-	url = https://github.com/ArduPilot/ChibiOS.git
+	url = https://github.com/davidbuzz/ChibiOS.git
 [submodule "modules/gsoap"]
 	path = modules/gsoap
 	url = https://github.com/ArduPilot/gsoap
