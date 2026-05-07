@@ -71,9 +71,12 @@ AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::Device &dev,
     }
 
     AP_Compass_AK8963 *sensor = NEW_NOTHROW AP_Compass_AK8963(*bus, rotation);
-    if (!sensor || !sensor->init()) {
-        // TODO: do we need to "delete bus;" here?
-        delete sensor;
+    if (sensor == nullptr) {
+        delete bus;
+        return nullptr;
+    }
+    if (!sensor->init()) {
+        delete sensor;  // sensor's destructor deletes bus
         return nullptr;
     }
 
@@ -106,9 +109,12 @@ AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(uint8_t mpu9250_instance,
     }
 
     AP_Compass_AK8963 *sensor = NEW_NOTHROW AP_Compass_AK8963(*bus, rotation);
-    if (!sensor || !sensor->init()) {
-        // TODO: do we need to "delete bus" here?
-        delete sensor;
+    if (sensor == nullptr) {
+        delete bus;
+        return nullptr;
+    }
+    if (!sensor->init()) {
+        delete sensor;  // sensor's destructor deletes bus
         return nullptr;
     }
 
