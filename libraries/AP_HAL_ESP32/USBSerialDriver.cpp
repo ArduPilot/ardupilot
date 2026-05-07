@@ -167,14 +167,15 @@ void USBSerialDriver::write_data()
         return;
     }
 
+    static constexpr size_t flush_threshold = TX_BUF_SIZE / 2;
+    bool should_flush = false;
+    bool queued_any = false;
+    size_t local_pending = 0;
+
     _write_mutex.take_blocking();
     while (true) {
         const int count = _writebuf.peekbytes(_buffer, sizeof(_buffer));
         if (count <= 0) {
-            if (ardupilot_tusb_tx_pending() &&
-                (ardupilot_tusb_is_cdc_connected() || ardupilot_tusb_is_open())) {
-                (void)ardupilot_tusb_flush(pdMS_TO_TICKS(50));
-            }
             break;
         }
 
@@ -184,19 +185,28 @@ void USBSerialDriver::write_data()
         }
 
         _writebuf.advance(accepted);
-
-        if (!ardupilot_tusb_is_cdc_connected() && !ardupilot_tusb_is_open()) {
-            continue;
-        }
-
-        const esp_err_t flush_ret = ardupilot_tusb_flush(pdMS_TO_TICKS(50));
-        if (flush_ret != ESP_OK &&
-            flush_ret != ESP_ERR_NOT_FINISHED &&
-            flush_ret != ESP_ERR_TIMEOUT) {
+        queued_any = true;
+        if (accepted < count) {
             break;
         }
     }
+    local_pending = _writebuf.available();
     _write_mutex.give();
+
+    should_flush = (local_pending == 0 && ardupilot_tusb_tx_pending()) ||
+                   (queued_any && local_pending >= flush_threshold);
+
+    if (should_flush &&
+        (ardupilot_tusb_is_cdc_connected() || ardupilot_tusb_is_open())) {
+        const esp_err_t flush_ret = ardupilot_tusb_flush(0);
+        if (flush_ret == ESP_ERR_NOT_FINISHED ||
+            flush_ret == ESP_ERR_TIMEOUT) {
+            return;
+        }
+        if (flush_ret != ESP_OK) {
+            return;
+        }
+    }
 }
 
 size_t USBSerialDriver::_write(const uint8_t *buffer, size_t size)
