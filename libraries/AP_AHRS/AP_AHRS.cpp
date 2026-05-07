@@ -583,6 +583,19 @@ void AP_AHRS::update(bool skip_ins_update)
             // already updated
             continue;
         }
+#if defined(RP2350) && AP_AHRS_DCM_ENABLED
+        // the full DCM path is expensive enough to cap the main loop
+        // rate. Once another estimator is active DCM is only a
+        // fallback source, so half rate still keeps a fresh solution.
+        if (&backend_and_estimates.backend == &dcm &&
+            _active_EKF_type() != EKFType::DCM) {
+            static uint8_t backup_dcm_skip_count;
+            backup_dcm_skip_count ^= 1U;
+            if (backup_dcm_skip_count != 0U) {
+                continue;
+            }
+        }
+#endif
         backend_and_estimates.backend.update();
         backend_and_estimates.estimates = {};
         backend_and_estimates.backend.get_results(backend_and_estimates.estimates);
