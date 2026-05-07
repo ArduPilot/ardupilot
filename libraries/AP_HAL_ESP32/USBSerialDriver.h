@@ -6,6 +6,7 @@
 #include <AP_HAL_ESP32/Semaphores.h>
 
 #include "ardupilot_tusb.h"
+#include "esp_err.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -45,6 +46,16 @@ private:
     uint8_t _receive_timestamp_idx;
     uint32_t _baudrate;
     const tskTaskControlBlock *_uart_owner_thd;
+    uint32_t _tx_tick_counter;
+    uint32_t _write_calls;
+    uint32_t _tx_bytes_queued;
+    uint32_t _tx_bytes_sent_to_tusb;
+    uint32_t _flush_failures;
+    uint32_t _last_write_ms;
+    uint32_t _last_progress_ms;
+    uint32_t _last_diag_ms;
+    uint32_t _last_flush_log_ms;
+    esp_err_t _last_flush_ret;
     static USBSerialDriver *_singleton;
     static volatile bool _mounted;
     static volatile bool _port_open;

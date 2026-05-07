@@ -27,6 +27,7 @@ bool ardupilot_tusb_is_ready(void);
 bool ardupilot_tusb_is_cdc_connected(void);
 bool ardupilot_tusb_task_alive(void);
 bool ardupilot_tusb_tx_pending(void);
+size_t ardupilot_tusb_write_available(void);
 
 #ifdef __cplusplus
 }

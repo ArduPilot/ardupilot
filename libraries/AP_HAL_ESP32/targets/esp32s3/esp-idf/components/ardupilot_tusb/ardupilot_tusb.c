@@ -95,10 +95,12 @@ static void ardupilot_tusb_event_cb(tinyusb_event_t *event, void *arg)
     switch (event->id) {
     case TINYUSB_EVENT_ATTACHED:
         s_mounted = true;
+        ESP_LOGI(TAG, "CDC attached");
         break;
     case TINYUSB_EVENT_DETACHED:
         s_mounted = false;
         s_open = false;
+        ESP_LOGW(TAG, "CDC detached");
         break;
     default:
         break;
@@ -264,4 +266,12 @@ bool ardupilot_tusb_tx_pending(void)
         return false;
     }
     return tud_cdc_n_write_available(TINYUSB_CDC_ACM_0) < CFG_TUD_CDC_TX_BUFSIZE;
+}
+
+size_t ardupilot_tusb_write_available(void)
+{
+    if (!s_initialized || !tinyusb_cdcacm_initialized(TINYUSB_CDC_ACM_0)) {
+        return 0;
+    }
+    return tud_cdc_n_write_available(TINYUSB_CDC_ACM_0);
 }
