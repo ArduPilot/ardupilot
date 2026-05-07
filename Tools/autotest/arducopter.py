@@ -3355,6 +3355,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.takeoff(20)
 
+        self.change_mode('ALT_HOLD')
+
         self.progress("Flipping in roll")
         self.set_rc(1, 1700)
         self.send_cmd_do_set_mode('FLIP') # don't wait for success
@@ -3364,9 +3366,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Waiting for level")
         self.set_rc(1, 1500) # can't change quickly enough!
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
-
+        self.wait_mode('ALT_HOLD')
         self.progress("Regaining altitude")
-        self.change_mode('ALT_HOLD')
         self.wait_altitude(19, 60, relative=True)
 
         self.progress("Flipping in pitch")
@@ -3379,6 +3380,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Waiting for level")
         self.set_rc(2, 1500) # can't change quickly enough!
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+        self.wait_mode('ALT_HOLD')
+        self.progress("Regaining altitude")
+        self.wait_altitude(19, 60, relative=True)
 
         self.do_RTL()
 
