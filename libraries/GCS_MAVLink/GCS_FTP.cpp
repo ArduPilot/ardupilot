@@ -46,8 +46,14 @@ bool GCS_FTP::init(void)
         return true;
     }
 
+// RP2350 needs a larger stack (ExpandingString for @SYS files) and higher priority (PRIORITY_UART+1 = 61) so the worker is not starved by UART threads that wake at PRIORITY_UART (60) every 1 ms.
+#if defined(RP2350)
+    initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
+                                               "FTP", 8192, AP_HAL::Scheduler::PRIORITY_UART, 1);
+#else
     initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
                                                "FTP", 2560, AP_HAL::Scheduler::PRIORITY_IO, 0);
+#endif
     if (!initialised) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "failed to initialize MAVFTP");
     }
@@ -101,9 +107,15 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
 
 bool GCS_FTP::send_reply(const Transaction &reply)
 {
+// RP2350 USB CDC with FLOW_CONTROL_ENABLE skips the bandwidth-throttle path, so last_txbuf is not updated and this gate always blocks replies.
+// HAVE_PAYLOAD_SPACE() alone is sufficient back-pressure.
+#if !defined(RP2350)
     if (!GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
         return false;
     }
+#endif
+    // Keep payload-space check and packet send in one critical section so
+    // another sender cannot consume the channel between those operations.
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
     if (!HAVE_PAYLOAD_SPACE(reply.chan, FILE_TRANSFER_PROTOCOL)) {
         return false;
@@ -143,9 +155,17 @@ bool GCS_FTP::Session::check_name_len(const Transaction &request)
 // send our response back out to the system
 void GCS_FTP::Session::push_reply(Transaction &reply)
 {
-    last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
+    const uint32_t send_start_ms = AP_HAL::millis();
+    last_send_ms = send_start_ms; // Used to detect active FTP session
 
+// Spin until TX buffer has space, with a short hard timeout.
+// Without the timeout, if the USB host disconnects mid-transfer the TX ring stays full forever and the FTP worker thread stalls permanently, preventing new clients from getting their ResetSessions Ack.
     while (!send_reply(reply)) {
+        if (AP_HAL::millis() - send_start_ms > FTP_SESSION_TIMEOUT) {
+            // host gone — abandon this session so the worker can serve new clients
+            close();
+            return;
+        }
         hal.scheduler->delay_microseconds(100);
     }
 
@@ -409,7 +429,13 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
         }
 
         // fill the buffer
-        const ssize_t read_bytes = AP::FS().read(fd, reply.data, MIN(sizeof(reply.data),request.size));
+        uint16_t read_size = MIN(sizeof(reply.data), request.size);
+#if defined(RP2350)
+        // Keep RP2350 FTP replies small enough that TX-space back-pressure can
+        // satisfy them quickly on USB CDC under stream load.
+        read_size = MIN<uint16_t>(read_size, 48);
+#endif
+        const ssize_t read_bytes = AP::FS().read(fd, reply.data, read_size);
         if (read_bytes == -1) {
             GCS_FTP::error(reply, FTP_ERROR::FailErrno);
             break;
@@ -553,7 +579,12 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
     }
     case FTP_OP::BurstReadFile:
     {
-        const uint16_t max_read = (request.size == 0?sizeof(reply.data):request.size);
+        uint16_t max_read = (request.size == 0?sizeof(reply.data):request.size);
+#if defined(RP2350)
+        // Keep burst chunks small enough to avoid prolonged send blocking on
+        // RP2350 USB CDC when normal MAVLink streams are active.
+        max_read = MIN<uint16_t>(max_read, 48);
+#endif
         // must actually be working on a file
         if (fd == -1) {
             GCS_FTP::error(reply, FTP_ERROR::FileNotFound);
@@ -772,7 +803,17 @@ void GCS_FTP::worker(void)
             // always ACK, even if no sessions were closed
             setup_reply(request, reply);
             reply.opcode = FTP_OP::Ack;
-            send_reply(reply);
+// Retry until TX buffer has space.
+// pymavlink.mavftp blocks indefinitely waiting for this Ack before it sends any other command
+            {
+                const uint32_t rs_start_ms = AP_HAL::millis();
+                while (!send_reply(reply)) {
+                    if (AP_HAL::millis() - rs_start_ms > 1000) {
+                        break;  // give up after 1 s rather than blocking forever
+                    }
+                    hal.scheduler->delay_microseconds(100);
+                }
+            }
             continue;
         }
 
@@ -809,12 +850,34 @@ void GCS_FTP::worker(void)
                 // the oldest session is still active, reject the request
                 setup_reply(request, reply);
                 error(reply, FTP_ERROR::NoSessionsAvailable);
-                send_reply(reply);
+                // Use a retry loop so the Nack is not silently dropped when the
+                // TX buffer is momentarily full.
+                {
+                    const uint32_t ns_start_ms = AP_HAL::millis();
+                    while (!send_reply(reply)) {
+                        if (AP_HAL::millis() - ns_start_ms > 1000) {
+                            break;
+                        }
+                        hal.scheduler->delay_microseconds(100);
+                    }
+                }
                 continue;
             }
             // claim the session
             s.close();   // error code ignored
-            s.session_id = request.session;
+
+// MAVFTP clients start with session=0 and expect the server to allocate a real session id in the Open* Ack.
+// Keeping 0 causes stale-session aliasing and can break follow-up ReadFile requests.
+            if (request.session == 0) {
+                static uint8_t next_session_id = 1;
+                s.session_id = next_session_id++;
+                if (next_session_id == 0) {
+                    next_session_id = 1;
+                }
+                request.session = s.session_id;
+            } else {
+                s.session_id = request.session;
+            }
             s.sysid = request.sysid;
             s.compid = request.compid;
             s.chan = request.chan;
