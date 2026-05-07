@@ -418,7 +418,22 @@ void AP_BLHeli::msp_process_command(void)
     case MSP_UID:
         // MCU identifier
         debug("MSP_UID");
+#if defined(RP2350)
+        // RP2350: read unique ID from OTP ECC-mapped view (rows 0-5: CHIPID0-3 + RANDID0-1).
+        // OTP base 0x40130000; row N at offset N*4, 16-bit data in bits[15:0].
+        {
+            const uint32_t otp_base = 0x40130000U;
+            uint16_t tmp[6];
+            for (uint32_t i = 0; i < 6U; i++) {
+                tmp[i] = (uint16_t)(*(volatile const uint32_t *)(otp_base + i * 4U));
+            }
+            uint8_t cpu_id[12];
+            memcpy(cpu_id, tmp, 12);
+            msp_send_reply(msp.cmdMSP, cpu_id, 12);
+        }
+#else
         msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
+#endif
         break;
 
         // a literal "4" is used for the PWMType here to allow Rover
