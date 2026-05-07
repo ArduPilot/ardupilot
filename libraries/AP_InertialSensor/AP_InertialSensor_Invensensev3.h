@@ -150,4 +150,14 @@ private:
     float temp_filtered;
     LowPassFilter2pFloat temp_filter;
     uint32_t sampling_rate_hz;
+
+    // Throttled debug snapshot for proving live IMU data on target hardware.
+    Vector3f dbg_last_accel;
+    Vector3f dbg_last_gyro;
+    uint32_t dbg_sample_count;
+    uint32_t dbg_fifo_calls;
+    uint32_t dbg_fifo_empty;
+    uint32_t dbg_fifo_xfer_fail;
+    uint32_t dbg_last_report_ms;
+    bool dbg_have_sample;
 };

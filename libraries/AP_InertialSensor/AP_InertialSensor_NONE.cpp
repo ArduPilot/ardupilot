@@ -1,15 +1,18 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_NONE.h"
-#include <SITL/SITL.h>
 #include <stdio.h>
+#include <stdlib.h>  // rand()
 #include <GCS_MAVLink/GCS.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+// Available on ESP32 and RP2350 — boards without a physical IMU
+// that still need to boot successfully so USB/MAVLink telemetry can reach the GCS.
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || defined(RP2350) 
 
 
 static float sim_rand_float(void)
 {
-    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
+    // rand() is portable across ESP32 and ChibiOS/RP2350; scale to [-1, 1]
+    return ((((unsigned)rand()) % 2000000) - 1.0e6) / 1.0e6;
 }
 
 const extern AP_HAL::HAL& hal;
@@ -85,7 +88,13 @@ void AP_InertialSensor_NONE::generate_accel()
         yAccel += accel_noise * sim_rand_float();
         zAccel += accel_noise * sim_rand_float();
 
-        bool motors_on = 1; 
+// On ChibiOS/RP2350 hardware the motor vibration simulation consumes ~60 % of core0 CPU (sinf() at 1 kHz × 15 calls) and starves the IO thread, silencing MAVLink output.
+// Motor simulation is only meaningful in SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        bool motors_on = 0;
+#else
+        bool motors_on = 1;
+#endif
 
         // on a real 180mm copter gyro noise varies between 0.8-4 m/s/s for throttle 0.2-0.8
         // giving a accel noise variation of 5.33 m/s/s over the full throttle range
@@ -193,7 +202,13 @@ void AP_InertialSensor_NONE::generate_gyro()
         q += gyro_noise * sim_rand_float();
         r += gyro_noise * sim_rand_float();
 
-        bool motors_on = 1;
+        // See generate_accel() comment: disable motor simulation on ChibiOS
+        // to avoid starving the IO thread with sinf() at 1 kHz.
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        bool motors_on = false;
+#else
+        bool motors_on = true;
+#endif
         // on a real 180mm copter gyro noise varies between 0.2-0.4 rad/s for throttle 0.2-0.8
         // giving a gyro noise variation of 0.33 rad/s or 20deg/s over the full throttle range
         if (motors_on) {
@@ -299,6 +314,11 @@ bool AP_InertialSensor_NONE::update(void)
 {
     update_accel(accel_instance);
     update_gyro(gyro_instance);
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+// update() is called from the main thread (priority 180) every loop iteration.
+// With no real IMU, wait_for_sample() returns immediately and the main thread never blocks, starving the IO thread (priority 58) that drains USB CDC RX.
+    hal.scheduler->delay_microseconds(1);
+#endif
     return true;
 }
 
@@ -317,4 +337,4 @@ void AP_InertialSensor_NONE::start()
 
 }
 
-#endif // HAL_BOARD_NONE
+#endif // HAL_BOARD_ESP32 || defined(RP2350)
