@@ -98,49 +98,8 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         return -1;
     }
 
-    if (strcmp(fname, "threads.txt") == 0) {
-        hal.util->thread_info(*r.str);
-    }
-#if AP_SCHEDULER_ENABLED
-    if (strcmp(fname, "tasks.txt") == 0) {
-        AP::scheduler().task_info(*r.str);
-    }
-#endif
-    if (strcmp(fname, "dma.txt") == 0) {
-        hal.util->dma_info(*r.str);
-    }
-    if (strcmp(fname, "memory.txt") == 0) {
-        hal.util->mem_info(*r.str);
-    }
-#if HAL_UART_STATS_ENABLED
-    if (strcmp(fname, "uarts.txt") == 0) {
-        hal.util->uart_info(*r.str);
-    }
-#endif
-    if (strcmp(fname, "timers.txt") == 0) {
-        hal.util->timer_info(*r.str);
-    }
-#if HAL_CANMANAGER_ENABLED
-    if (strcmp(fname, "can_log.txt") == 0) {
-        AP::can().log_retrieve(*r.str);
-    }
-#endif
-#if HAL_NUM_CAN_IFACES > 0
-    int8_t can_stats_num = -1;
-    if (strcmp(fname, "can0_stats.txt") == 0) {
-        can_stats_num = 0;
-    } else if (strcmp(fname, "can1_stats.txt") == 0) {
-        can_stats_num = 1;
-    }
-    if (can_stats_num != -1 && can_stats_num < HAL_NUM_CAN_IFACES) {
-        if (hal.can[can_stats_num] != nullptr) {
-            hal.can[can_stats_num]->get_stats(*r.str);
-        }
-    }
-#endif
-    if (strcmp(fname, "persistent.parm") == 0) {
-        hal.util->load_persistent_params(*r.str);
-    }
+    r.file_index = uint8_t(pos);
+    r.generated = false;
 #if AP_CRASHDUMP_ENABLED
     if (strcmp(fname, "crash_dump.bin") == 0) {
         r.str->set_buffer((char*)hal.util->last_crash_dump_ptr(), hal.util->last_crash_dump_size(), hal.util->last_crash_dump_size());
@@ -153,6 +112,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         size_t size = 0;
         if (hal.storage->get_storage_ptr(ptr, size)) {
             r.str->set_buffer((char*)ptr, size, size);
+            r.generated = true;
         }
     }
 #if AP_FILESYSTEM_SYS_FLASH_ENABLED
@@ -160,10 +120,13 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         void *ptr = (void*)0x08000000;
         const size_t size = HAL_PROGRAM_SIZE_LIMIT_KB*1024;
         r.str->set_buffer((char*)ptr, size, size);
+        r.generated = true;
     }
 #endif
-    
-    if (r.str->get_length() == 0) {
+
+    // For lazily generated text files we allow zero length at open()
+    // and populate content on the first read()/lseek().
+    if (r.generated && r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;
         r.str = nullptr;
@@ -194,6 +157,9 @@ int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
         return -1;
     }
     struct rfile &r = file[fd];
+    if (!ensure_generated(r)) {
+        return -1;
+    }
     count = MIN(count, r.str->get_length() - r.file_ofs);
     memcpy(buf, &r.str->get_string()[r.file_ofs], count);
 
@@ -208,6 +174,9 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
         return -1;
     }
     struct rfile &r = file[fd];
+    if (!ensure_generated(r)) {
+        return -1;
+    }
     switch (seek_from) {
     case SEEK_SET:
         r.file_ofs = MIN(offset, int32_t(r.str->get_length()));
@@ -220,6 +189,67 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
         return -1;
     }
     return r.file_ofs;
+}
+
+bool AP_Filesystem_Sys::ensure_generated(struct rfile &r)
+{
+    if (r.generated) {
+        return true;
+    }
+
+    const char *const fname = sysfs_file_list[r.file_index].name;
+
+    if (strcmp(fname, "threads.txt") == 0) {
+        hal.util->thread_info(*r.str);
+    }
+#if AP_SCHEDULER_ENABLED
+    else if (strcmp(fname, "tasks.txt") == 0) {
+        AP::scheduler().task_info(*r.str);
+    }
+#endif
+    else if (strcmp(fname, "dma.txt") == 0) {
+        hal.util->dma_info(*r.str);
+    }
+    else if (strcmp(fname, "memory.txt") == 0) {
+        hal.util->mem_info(*r.str);
+    }
+#if HAL_UART_STATS_ENABLED
+    else if (strcmp(fname, "uarts.txt") == 0) {
+        hal.util->uart_info(*r.str);
+    }
+#endif
+    else if (strcmp(fname, "timers.txt") == 0) {
+        hal.util->timer_info(*r.str);
+    }
+#if HAL_CANMANAGER_ENABLED
+    else if (strcmp(fname, "can_log.txt") == 0) {
+        AP::can().log_retrieve(*r.str);
+    }
+#endif
+#if HAL_NUM_CAN_IFACES > 0
+    else if (strcmp(fname, "can0_stats.txt") == 0 || strcmp(fname, "can1_stats.txt") == 0) {
+        const int8_t can_stats_num = (fname[3] == '0') ? 0 : 1;
+        if (can_stats_num < HAL_NUM_CAN_IFACES && hal.can[can_stats_num] != nullptr) {
+            hal.can[can_stats_num]->get_stats(*r.str);
+        }
+    }
+#endif
+    else if (strcmp(fname, "persistent.parm") == 0) {
+        hal.util->load_persistent_params(*r.str);
+    }
+
+    if (r.str->has_failed_allocation()) {
+        errno = ENOMEM;
+        return false;
+    }
+
+    if (r.str->get_length() == 0) {
+        errno = ENOENT;
+        return false;
+    }
+
+    r.generated = true;
+    return true;
 }
 
 void *AP_Filesystem_Sys::opendir(const char *pathname)
@@ -248,7 +278,10 @@ struct dirent *AP_Filesystem_Sys::readdir(void *dirp)
     dtracker->curr_file.d_type = DT_REG;
 #endif
     size_t max_length = ARRAY_SIZE(dtracker->curr_file.d_name);
-    strncpy_noterm(dtracker->curr_file.d_name, sysfs_file_list[dtracker->file_offset].name, max_length);
+    // Keep names explicitly NUL-terminated so directory listings never read
+    // stale bytes from previous entries.
+    memset(dtracker->curr_file.d_name, 0, max_length);
+    strncpy_noterm(dtracker->curr_file.d_name, sysfs_file_list[dtracker->file_offset].name, max_length-1);
     dtracker->file_offset++;
     return &dtracker->curr_file;
 }
