@@ -237,7 +237,7 @@ void AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
 {
     uint8_t type;
     uint64_t used_mask = 0;
-    for (uint8_t i=0;
+    for (uint16_t i=0;
          (type=group_info[i].type) != AP_PARAM_NONE;
          i++) {
         uint8_t idx = group_info[i].idx;
@@ -485,14 +485,14 @@ const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header 
             }
 
             const struct AP_Param::Info *ret = find_by_header_group(phdr, ptr, vindex, ginfo,
-                                                                    group_id(group_info, group_base, i, group_shift),
+                                                                    group_id(group_info, group_base, (uint8_t)i, group_shift),
                                                                     group_shift + _group_level_shift, new_offset);
             if (ret != nullptr) {
                 return ret;
             }
             continue;
         }
-        if (group_id(group_info, group_base, i, group_shift) == phdr.group_element && type == phdr.type) {
+        if (group_id(group_info, group_base, (uint8_t)i, group_shift) == phdr.group_element && type == phdr.type) {
             // found a group element
             ptrdiff_t base;
             if (!get_base(var_info(vindex), base)) {
@@ -554,7 +554,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
         return nullptr;
     }
     uint8_t type;
-    for (uint8_t i=0;
+    for (uint16_t i=0;
          (type=group_info[i].type) != AP_PARAM_NONE;
          i++) {
         ptrdiff_t ofs = group_info[i].offset + group_offset;
@@ -579,7 +579,7 @@ const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInf
             }
             group_nesting.group_ret[group_nesting.level++] = &group_info[i];
             info = find_var_info_group(ginfo, vindex,
-                                       group_id(group_info, group_base, i, group_shift),
+                                       group_id(group_info, group_base, (uint8_t)i, group_shift),
                                        group_shift + _group_level_shift,
                                        new_offset,
                                        group_element,
@@ -1010,7 +1010,7 @@ bool AP_Param::find_key_by_pointer_group(const void *ptr, uint16_t vindex,
                                          const struct GroupInfo *group_info,
                                          ptrdiff_t offset, uint16_t &key)
 {
-    for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
+    for (uint16_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
         if (group_info[i].type != AP_PARAM_GROUP) {
             continue;
         }
@@ -1495,7 +1495,7 @@ void AP_Param::setup_object_defaults(const void *object_pointer, const struct Gr
 {
     ptrdiff_t base = (ptrdiff_t)object_pointer;
     uint8_t type;
-    for (uint8_t i=0;
+    for (uint16_t i=0;
          (type=group_info[i].type) != AP_PARAM_NONE;
          i++) {
         if (type <= AP_PARAM_FLOAT) {
@@ -1681,8 +1681,8 @@ void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct 
         DEV_PRINTF("ERROR: Unable to find param pointer\n");
         return;
     }
-    
-    for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
+
+    for (uint16_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
         if (group_info[i].type == AP_PARAM_GROUP) {
             ptrdiff_t new_offset = 0;
             if (!adjust_group_offset(key, group_info[i], new_offset)) {
@@ -2064,7 +2064,7 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
 {
     const uint8_t group_shift = is_top_level ? 0 : 6;
 
-    for (uint8_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
+    for (uint16_t i=0; group_info[i].type != AP_PARAM_NONE; i++) {
         struct ConversionInfo info;
         info.old_key = param_key;
         info.type = (ap_var_type)group_info[i].type;
