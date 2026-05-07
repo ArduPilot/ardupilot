@@ -45,8 +45,7 @@ bool ModeFlip::init(bool ignore_checks)
         return false;
     }
 
-    // ensure roll input is less than 40deg
-    if (abs(channel_roll->get_control_in()) >= 4000) {
+    if (input_is_high_magnitude(*channel_roll)) {
         return false;
     }
 
@@ -92,8 +91,7 @@ bool ModeFlip::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeFlip::run()
 {
-    // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (abandon_requested || !motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+    if (abandon_requested || !motors->armed() || input_is_high_magnitude(*channel_roll) || input_is_high_magnitude(*channel_pitch) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
         _state = FlipState::Abandon;
         abandon_requested = false;
     }
@@ -118,13 +116,13 @@ void ModeFlip::run()
     switch (_state) {
 
     case FlipState::Start:
-        // under 45 degrees request 400deg/sec roll or pitch
+        // request FLIP_ROTATION_RATE_RADS in the nonzero dir
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
 
         // increase throttle
         throttle_out += FLIP_THR_INC;
 
-        // beyond 45deg lean angle move to next stage
+        // beyond specified lean angle: move to next stage
         if (flip_angle_rad >= radians(45.0)) {
             if (roll_dir != 0) {
                 // we are rolling
@@ -132,24 +130,24 @@ void ModeFlip::run()
             } else {
                 // we are pitching
                 _state = FlipState::Pitch_A;
-        }
+            }
         }
         break;
 
     case FlipState::Roll:
-        // between 45deg ~ -90deg request 400deg/sec roll
+        // request FLIP_ROTATION_RATE_RADS roll
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
-        // beyond -90deg move on to recovery
+        // if state transition conditions are met: move on to recovery
         if ((flip_angle_rad < radians(45.0)) && (flip_angle_rad > -radians(90.0))) {
             _state = FlipState::Recover;
         }
         break;
 
     case FlipState::Pitch_A:
-        // between 45deg ~ -90deg request 400deg/sec pitch
+        // request FLIP_ROTATION_RATE_RADS pitch
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0f, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
@@ -161,7 +159,7 @@ void ModeFlip::run()
         break;
 
     case FlipState::Pitch_B:
-        // between 45deg ~ -90deg request 400deg/sec pitch
+        // request FLIP_ROTATION_RATE_RADS pitch
         attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
@@ -219,6 +217,11 @@ void ModeFlip::run()
 void ModeFlip::abandon_flip()
 {
     abandon_requested = true;
+}
+
+bool ModeFlip::input_is_high_magnitude(RC_Channel &input) const
+{
+    return abs(input.get_control_in()) >= 4000;
 }
 
 #endif
