@@ -12,10 +12,10 @@ void Rover::set_control_channels(void)
     channel_lateral  = &rc().get_yaw_channel();
 
     // set rc channel ranges
-    channel_steer->set_angle(SERVO_MAX);
-    channel_throttle->set_angle(100);
+    channel_steer->set_angle();
+    channel_throttle->set_angle();
     if (channel_lateral != nullptr) {
-        channel_lateral->set_angle(100);
+        channel_lateral->set_angle();
     }
 
     // walking robots rc input init
@@ -23,15 +23,15 @@ void Rover::set_control_channels(void)
     channel_pitch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::PITCH);
     channel_walking_height = rc().find_channel_for_option(RC_Channel::AUX_FUNC::WALKING_HEIGHT);
     if (channel_roll != nullptr) {
-        channel_roll->set_angle(SERVO_MAX);
+        channel_roll->set_angle();
         channel_roll->set_default_dead_zone(30);
     }
     if (channel_pitch != nullptr) {
-        channel_pitch->set_angle(SERVO_MAX);
+        channel_pitch->set_angle();
         channel_pitch->set_default_dead_zone(30);
     }
     if (channel_walking_height != nullptr) {
-        channel_walking_height->set_angle(SERVO_MAX);
+        channel_walking_height->set_angle();
         channel_walking_height->set_default_dead_zone(30);
     }    
 
