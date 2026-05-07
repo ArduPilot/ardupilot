@@ -19,7 +19,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_USE_EICU == TRUE
+#if defined(HAL_USE_EICU) && (HAL_USE_EICU == TRUE)
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
 #ifndef SOFTSIG_MAX_SIGNAL_TRANSITIONS

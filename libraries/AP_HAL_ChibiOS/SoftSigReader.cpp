@@ -21,10 +21,14 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
+#if defined(RP2350)
+#undef  STM32_HW
+#endif
+
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
-#if HAL_USE_ICU == TRUE
+#if defined(HAL_USE_ICU) && (HAL_USE_ICU == TRUE)
 
 bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, uint8_t dma_stream, uint32_t dma_channel)
 {
@@ -85,7 +89,11 @@ bool SoftSigReader::attach_capture_timer(ICUDriver* icu_drv, icuchannel_t chan, 
     dmaStreamEnable(dma);
 
     //sets input filtering to 4 timer clock
+    #if defined(STM32_HW)
     stm32_timer_set_input_filter(_icu_drv->tim, chan, 2);
+    #else
+       #error "STM32 utility functions not available, alternate implementation needed"
+    #endif
 
     //Start Timer
     icuStartCapture(_icu_drv);
