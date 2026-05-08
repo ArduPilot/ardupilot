@@ -6999,6 +6999,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl() # to handle MNT_TYPE changing
         self.mount_test_body()
 
+    def MountRCFailAngle(self):
+        '''check mount behaviour when RC input becomes bad'''
+        yaw_servo = 7
+        self.setup_servo_mount(yaw_servo=yaw_servo)
+        self.set_parameters({
+            "RC12_OPTION": 214,  # MOUNT1_YAW
+        })
+        self.reboot_sitl()
+
+        self.start_subtest("Angle test")
+        self.set_rc(12, 1200)
+        vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            yaw_servo,
+            1200,
+            minimum_duration=5,
+        ).run()
+        self.set_parameter("SIM_RC_FAIL", 2)  # 2:All Channels neutral except Throttle is 950us
+        # should hold position
+        vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            yaw_servo,
+            1200,
+            minimum_duration=5,
+        ).run()
+
+    def MountRCFailRate(self):
+        '''check mount behaviour when RC input becomes bad - rates should zero'''
+        yaw_servo = 7
+        self.setup_servo_mount(yaw_servo=yaw_servo)
+        self.set_parameters({
+            "RC12_OPTION": 214,  # MOUNT1_YAW
+            "MNT1_RC_RATE": 10,
+            "RC12_TRIM": 1600,  # non-neutral during failsafe
+        })
+        self.reboot_sitl()
+
+        self.set_rc(12, 1200)
+        self.delay_sim_time(5, reason="allow some yaw movement to enter log")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_RC_FAIL", 2)  # 2:All Channels neutral except Throttle is 950us
+        self.wait_statustext('Radio Failsafe', check_context=True, timeout=10)
+        val = self.get_servo_channel_value(yaw_servo)
+        # should hold position
+        vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            yaw_servo,
+            val,
+            minimum_duration=5,
+        ).run()
+
     def MountPOIFromAuxFunction(self):
         '''test we can lock onto a lat/lng/alt with the flick of a switch'''
         self.install_terrain_handlers_context()
@@ -16724,6 +16775,8 @@ return update, 1000
             self.MountViewPro,
             self.MountAVTCM62,
             self.MountAVTCM62Dual,
+            self.MountRCFailAngle,
+            self.MountRCFailRate,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
