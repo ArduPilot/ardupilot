@@ -5603,7 +5603,11 @@ class TestSuite(abc.ABC):
             16: 1500,
         }
 
-    def set_rc_from_map(self, _map, timeout=20, quiet=False):
+    def set_rc_from_map(self, _map, *, timeout: float | int | None = 20.0, quiet=False):
+        """Sets provided RC channel/value pairs.
+
+        Passing the special value 'None' for timeout means 'do not wait for confirmation'.
+        """
         map_copy = _map.copy()
         for v in map_copy.values():
             if not isinstance(v, int):
@@ -5615,6 +5619,9 @@ class TestSuite(abc.ABC):
             if self.rc_thread is None:
                 raise NotAchievedException("Could not create thread")
             self.rc_thread.start()
+
+        if timeout is None:
+            return
 
         tstart = self.get_sim_time()
         while True:
@@ -5694,8 +5701,11 @@ class TestSuite(abc.ABC):
                 need_set[chan] = default_value
         self.set_rc_from_map(need_set)
 
-    def set_rc(self, chan, pwm, timeout=20):
-        """Setup a simulated RC control to a PWM value"""
+    def set_rc(self, chan, pwm, *, timeout: float | int | None = 20.0):
+        """Setup a simulated RC control to a PWM value.
+
+        Passing the special value 'None' for timeout means 'do not wait for confirmation'.
+        """
         self.set_rc_from_map({chan: pwm}, timeout=timeout)
 
     def set_servo(self, chan, pwm):
