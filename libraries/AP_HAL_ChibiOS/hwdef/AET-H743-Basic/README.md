@@ -19,37 +19,9 @@ The AET-H743-Basic is a flight controller designed and produced by AeroEggTech
 - AT7456E OSD
 - 2 I2Cs
 
-## Physical
 
-![AET-H743-Basic overview](AET-H743-Basic_overview.jpg)
 
-![AET-H743-Basic core board](AET-H743-Basic_core_board.png)
-
-![AET-H743-Basic power board](AET-H743-Basic_power_board.png)
-
-## Mechanical
-
-- Dimensions: 36 x 47 x 17 mm
-- Weight: 45g
-
-## Power supply
-
-The AET-H743-Basic supports 2-6s Li battery input. It has 3 ways of BEC, which result in 6 ways of power supplys. Please see the table below.
-
-| Power symbol | Power source | Max power (current) |
-|--------------|--------------|---------------------|
-| 5V | from 5V BEC | 20W (4A) |
-| 9V | from 9V BEC | 18W (2A) |
-| 9Vsw | from 9V BEC, controlled by MCU with an NPN MOS | 10W (1A) |
-| 4V5 | from USB or 5V BEC, with a diode | 5W (1A) |
-| VX | from Servo rail VX BEC, default 5V, can be changed to 6V or 7V | 50W (10A) |
-| BAT | directly from battery | (5A) |
-
-## Loading Firmware
-
-Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool, such as Mission Planner.
-
-Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the "\*.apj" firmware files.
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -68,10 +40,6 @@ All UARTs are DMA capable.
 ## RC Input
 
 The default RC input is configured on the UART6 and supports all RC protocols except PPM. The SBUS pin is inverted and connected to RX6. RC can be attached to any UART port as long as the serial port protocol is set to `SERIALn_PROTOCOL=23` and SERIAL6_Protocol is changed to something other than '23'.
-
-## OSD Support
-
-The AET-H743-Basic supports onboard analog SD OSD using a AT7456 chip. The analog VTX should connect to the VTX pin.
 
 ## PWM Output
 
@@ -109,6 +77,42 @@ The first voltage/current sensor is enabled by default and the pin inputs for th
 - BATT2_VOLT_PIN 18
 - BATT2_CURR_PIN 7
 - BATT2_VOLT_MULT 11
+
+## Physical
+
+![AET-H743-Basic overview](AET-H743-Basic_overview.jpg)
+
+![AET-H743-Basic core board](AET-H743-Basic_core_board.png)
+
+![AET-H743-Basic power board](AET-H743-Basic_power_board.png)
+
+## Mechanical
+
+- Dimensions: 36 x 47 x 17 mm
+- Weight: 45g
+
+## Power supply
+
+The AET-H743-Basic supports 2-6s Li battery input. It has 3 ways of BEC, which result in 6 ways of power supplys. Please see the table below.
+
+| Power symbol | Power source | Max power (current) |
+|--------------|--------------|---------------------|
+| 5V | from 5V BEC | 20W (4A) |
+| 9V | from 9V BEC | 18W (2A) |
+| 9Vsw | from 9V BEC, controlled by MCU with an NPN MOS | 10W (1A) |
+| 4V5 | from USB or 5V BEC, with a diode | 5W (1A) |
+| VX | from Servo rail VX BEC, default 5V, can be changed to 6V or 7V | 50W (10A) |
+| BAT | directly from battery | (5A) |
+
+## Loading Firmware
+
+Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "with_bl.hex" firmware, using your favorite DFU loading tool, such as Mission Planner.
+
+Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the "\*.apj" firmware files.
+
+## OSD Support
+
+The AET-H743-Basic supports onboard analog SD OSD using a AT7456 chip. The analog VTX should connect to the VTX pin.
 
 ## Compass
 

@@ -46,9 +46,6 @@ The SERIAL1 and SERIAL2 ports have RTS/CTS pins, the other UARTs do not have RTS
 
 RC input is provided through the SBUS connector and supports all unidirectional RC protocols. For bi-directional protocols, such as CRSF/ELRS/SRXL2, a UART with DMA will be need to be used, See [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html) for more information.
   
-## OSD Support
-
-The SkyRukh Surge H7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
@@ -76,6 +73,10 @@ The default battery parameters are:
 - BATT_CUR_PIN = 17 (C pin on ESC connector)
 - BATT_VOLT_MULT = 7.39
 - BATT_AMP_PERVLT = 40 (should be set according to ESC block used)
+
+## OSD Support
+
+The SkyRukh Surge H7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

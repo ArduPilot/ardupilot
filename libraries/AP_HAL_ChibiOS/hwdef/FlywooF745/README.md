@@ -66,10 +66,6 @@ UART3 supports RX and TX DMA. UART1, UART2, UART4, and UART6 supports TX DMA. UA
 In versions 1.0 and 1.2, RC input is usually configured on the UART3, which supports serial RC protocols. This board does not support PPM.
 In version 3, the connector intended for RC input is on the UART2, so the default protocol will need to be changed for SERIAL 2 to "23" and SERIAL 33 protocol changed to something else.
 
-## OSD Support
-
-The GOKU GN 745 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The GOKU GN 745 AIO supports up to 8 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are the first 4 outputs, there are four additional pads for PWM 5-8. All 8 outputs support DShot as well as all PWM types.
@@ -114,6 +110,10 @@ for version 3.0:
 
 - BATT_AMP_PERVLT around 14.0
 - BATT_AMP_OFFSET around 0.0055
+
+## OSD Support
+
+The GOKU GN 745 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Sensor Orientation
 

@@ -24,6 +24,80 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 
 ![YJUAV_A6Ultra Board](YJUAV_A6Ultra-pinout.jpg "YJUAV_A6Ultra")
 
+## UART Mapping
+
+- SERIAL0 -> USB (OTG1)
+- SERIAL1 -> USART2 (Telem1)
+- SERIAL2 -> USART6 (Telem2)
+- SERIAL3 -> USART3 (GPS1)
+- SERIAL4 -> USART1 (GPS2)
+- SERIAL5 -> UART8 (USER) TX only, normally used for SBUS_OUT with protocol change
+- SERIAL6 -> UART7 (USER/Debug), NODMA
+- SERIAL7 -> USB2 (OTG2)
+
+## RC Input
+
+The RCIN pin is mapped to a timer input instead of the UART, and can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection. However, FPort, when connected in this manner, can provide RC without telemetry.
+
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART must be used. For example, UART1 can have its protocol changed from the default GPS protocol for GPS2 to RX input protocol:
+
+With this option, SERIAL4_PROTOCOL must be set to “23”, and:
+
+PPM is not supported.
+
+SBUS/DSM/SRXL connects to the RX1 pin.
+
+FPort requires connection to TX1 and RX1. See FPort Receivers.
+
+CRSF also requires a TX1 connection, in addition to RX1, and automatically provides telemetry.
+
+SRXL2 requires a connection to TX1 and automatically provides telemetry. Set SERIAL4_OPTIONS to “4”.
+
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See Radio Control Systems for details.
+
+## PWM Output
+
+The A6Ultra supports up to 13 PWM outputs,support all PWM protocols as well as DShot. All 13 PWM outputs have GND on the bottom row, 5V on the middle row and Signal on the top row.
+
+The 13 PWM outputs are in 4 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 in group3
+- PWM 12, 13 in group4
+
+Channels 1-8 support bi-directional Dshot.
+Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
+
+## Battery Monitoring
+
+The board has voltage and current sensor inputs on the POWER1_ADC and POWER2_ADC connector.
+
+The correct battery setting parameters are:
+
+Enable Battery1 monitor:
+
+BATT_MONITOR    4
+
+BATT_VOLT_PIN   2
+
+BATT_CURR_PIN   4
+
+BATT_VOLT_MULT 21.0 (may need adjustment if supplied monitor is not used)
+
+BATT_AMP_PERVLT 34.6 (may need adjustment if supplied monitor is not used)
+
+Enable Battery2 monitor:
+BATT2_MONITOR   4
+
+BATT2_VOLT_PIN  12
+
+BATT2_CURR_PIN  16
+
+BATT2_VOLT_MULT 21.0 (may need adjustment if supplied monitor is not used)
+
+BATT2_AMP_PERVLT 34.6 (may need adjustment if supplied monitor is not used)
+
 ## Connectors
 
 ### POWER1 ADC
@@ -174,51 +248,6 @@ The A6Ultra flight controller is manufactured and sold by [YJUAV](http://www.yju
 |  3   |   DP   | +3.3V |
 |  4   |  GND   |  GND  |
 
-## UART Mapping
-
-- SERIAL0 -> USB (OTG1)
-- SERIAL1 -> USART2 (Telem1)
-- SERIAL2 -> USART6 (Telem2)
-- SERIAL3 -> USART3 (GPS1)
-- SERIAL4 -> USART1 (GPS2)
-- SERIAL5 -> UART8 (USER) TX only, normally used for SBUS_OUT with protocol change
-- SERIAL6 -> UART7 (USER/Debug), NODMA
-- SERIAL7 -> USB2 (OTG2)
-
-## RC Input
-
-The RCIN pin is mapped to a timer input instead of the UART, and can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection. However, FPort, when connected in this manner, can provide RC without telemetry.
-
-To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART must be used. For example, UART1 can have its protocol changed from the default GPS protocol for GPS2 to RX input protocol:
-
-With this option, SERIAL4_PROTOCOL must be set to “23”, and:
-
-PPM is not supported.
-
-SBUS/DSM/SRXL connects to the RX1 pin.
-
-FPort requires connection to TX1 and RX1. See FPort Receivers.
-
-CRSF also requires a TX1 connection, in addition to RX1, and automatically provides telemetry.
-
-SRXL2 requires a connection to TX1 and automatically provides telemetry. Set SERIAL4_OPTIONS to “4”.
-
-Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See Radio Control Systems for details.
-
-## PWM Output
-
-The A6Ultra supports up to 13 PWM outputs,support all PWM protocols as well as DShot. All 13 PWM outputs have GND on the bottom row, 5V on the middle row and Signal on the top row.
-
-The 13 PWM outputs are in 4 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5, 6, 7 and 8 in group2
-- PWM 9, 10, 11 in group3
-- PWM 12, 13 in group4
-
-Channels 1-8 support bi-directional Dshot.
-Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
-
 ## GPIOs
 
 All 13 PWM channels can be used for GPIO functions (relays, buttons, RPM etc).
@@ -246,35 +275,6 @@ The A6Ultra flight controller has 7 Analog inputs
 - ADC Pin8   -> ADC 3V3 Sense
 - ADC Pin10 -> ADC 6V6 Sense
 - ADC Pin11 -> RSSI voltage monitoring
-
-## Battery Monitoring
-
-The board has voltage and current sensor inputs on the POWER1_ADC and POWER2_ADC connector.
-
-The correct battery setting parameters are:
-
-Enable Battery1 monitor:
-
-BATT_MONITOR    4
-
-BATT_VOLT_PIN   2
-
-BATT_CURR_PIN   4
-
-BATT_VOLT_MULT 21.0 (may need adjustment if supplied monitor is not used)
-
-BATT_AMP_PERVLT 34.6 (may need adjustment if supplied monitor is not used)
-
-Enable Battery2 monitor:
-BATT2_MONITOR   4
-
-BATT2_VOLT_PIN  12
-
-BATT2_CURR_PIN  16
-
-BATT2_VOLT_MULT 21.0 (may need adjustment if supplied monitor is not used)
-
-BATT2_AMP_PERVLT 34.6 (may need adjustment if supplied monitor is not used)
 
 ## Build the FC
 

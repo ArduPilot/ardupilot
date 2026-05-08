@@ -41,6 +41,41 @@ The VUAV-V7pro  flight controller is manufactured and sold by [V-UAV](http://www
 
 The Telem1,Telem2 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
+## RC Input
+
+RC input is configured on the RCIN pin, at one end of the servo rail. This pin supports all unidirectional RC protocols. For bi-directional protocols, such as CRSF/ELRS, UART8 can be set to protocol "23" and the receiver tied to RCIN (shared with UART8 RX) and UART8 TX. In this case, the RC_PROTOCOLS parameter should be set to the expected protocol type to avoid accidental erroneous detection by the RCIN path.
+
+## PWM Output
+
+The VUAV-V7pro supports up to 14 PWM outputs,support all PWM protocols. Outputs 1-12 support  DShot. Outputs 1-8 support bi-directional Dshot. All 14 PWM outputs have GND on the top row, 5V on the middle row and signal on the bottom row.
+
+The 14 PWM outputs are in 4 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 and 12 in group3
+- PWM 13, 14 in group4
+
+Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
+
+## Battery Monitoring
+
+The board has voltage and current inputs sensor on the POWER1 ADC and POWER2 CAN connector.
+
+The correct battery setting parameters are:
+
+Enable Battery1 monitor:
+
+- BATT_MONITOR   4
+- BATT_VOLT_PIN 16
+- BATT_CUR_PIN 2
+- BATT_VOLT_MULT 15.7 (may need adjustment if supplied monitor is not used)
+- BATT_AMP_PERVLT 60.61 (may need adjustment if supplied monitor is not used)
+
+Enable Battery2 monitor (if used):
+
+- BATT2_MONITOR  8
+
 ## Connectors
 
 ### TELEM1 ,TELEM2 port
@@ -167,23 +202,6 @@ The Telem1,Telem2 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 | 5 | GND | GND |
 | 6 | GND | GND |
 
-## RC Input
-
-RC input is configured on the RCIN pin, at one end of the servo rail. This pin supports all unidirectional RC protocols. For bi-directional protocols, such as CRSF/ELRS, UART8 can be set to protocol "23" and the receiver tied to RCIN (shared with UART8 RX) and UART8 TX. In this case, the RC_PROTOCOLS parameter should be set to the expected protocol type to avoid accidental erroneous detection by the RCIN path.
-
-## PWM Output
-
-The VUAV-V7pro supports up to 14 PWM outputs,support all PWM protocols. Outputs 1-12 support  DShot. Outputs 1-8 support bi-directional Dshot. All 14 PWM outputs have GND on the top row, 5V on the middle row and signal on the bottom row.
-
-The 14 PWM outputs are in 4 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5, 6, 7 and 8 in group2
-- PWM 9, 10, 11 and 12 in group3
-- PWM 13, 14 in group4
-
-Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
-
 ## GPIOs
 
 All 14 PWM channels can be used for GPIO functions (relays, buttons, RPM etc).
@@ -208,24 +226,6 @@ The VUAV-V7pro flight controller has 5 Analog inputs
 - ADC Pin19 -> ADC 3V3 Sense
 - ADC Pin3 -> ADC 6V6 Sense
 - ADC Pin9 -> RSSI voltage monitoring
-
-## Battery Monitoring
-
-The board has voltage and current inputs sensor on the POWER1 ADC and POWER2 CAN connector.
-
-The correct battery setting parameters are:
-
-Enable Battery1 monitor:
-
-- BATT_MONITOR   4
-- BATT_VOLT_PIN 16
-- BATT_CUR_PIN 2
-- BATT_VOLT_MULT 15.7 (may need adjustment if supplied monitor is not used)
-- BATT_AMP_PERVLT 60.61 (may need adjustment if supplied monitor is not used)
-
-Enable Battery2 monitor (if used):
-
-- BATT2_MONITOR  8
 
 ## Loading Firmware
 

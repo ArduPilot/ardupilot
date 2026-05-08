@@ -19,19 +19,6 @@ The KT-FMU-F1 is a flight controller manufactured by [Coolfly](https://www.cecoo
   - 1x CAN
   - 1x USB
 
-## UART Mapping
-
-| Serial | Port  | Protocol    | Notes       |
-| ------ | ----- | ----------- | ----------- |
-| 0      | USB   | MAVLink2    |             |
-| 1      | UART1 | MAVLink2    | DMA-enabled |
-| 2      | UART2 | DisplayPort | DMA-enabled |
-| 3      | UART3 | GPS         | DMA-enabled |
-| 4      | UART4 | MAVLink2    | DMA-enabled |
-| 6      | UART6 | RCIN        | DMA-enabled |
-| 7      | UART7 | ESC Telem   | RX only     |
-| 8      | UART8 | None        |             |
-
 ## Pinout
 
 There are a lot of interfaces on the board:
@@ -180,16 +167,18 @@ Pin definition:
 | 9          | Buzzer        |
 | 10         | GND           |
 
-## PWM Output
+## UART Mapping
 
-KT-FMU-F1 supports up to 10 PWM outputs.
-The PWM channels are divided into 3 groups:
-
-| PWM Channel | Group |
-| ----------- | ----- |
-| 1 - 4       | TIM1  |
-| 5 - 6       | TIM3  |
-| 7 - 10      | TIM4  |
+| Serial | Port  | Protocol    | Notes       |
+| ------ | ----- | ----------- | ----------- |
+| 0      | USB   | MAVLink2    |             |
+| 1      | UART1 | MAVLink2    | DMA-enabled |
+| 2      | UART2 | DisplayPort | DMA-enabled |
+| 3      | UART3 | GPS         | DMA-enabled |
+| 4      | UART4 | MAVLink2    | DMA-enabled |
+| 6      | UART6 | RCIN        | DMA-enabled |
+| 7      | UART7 | ESC Telem   | RX only     |
+| 8      | UART8 | None        |             |
 
 ## RC Input
 
@@ -200,14 +189,16 @@ telemetry (such as FPort) you should set SERIAL6_OPTIONS to 4 (HalfDuplex).
 Additionally, there's also a connector `RCOUT` outputing the RC signal from `RCIN`,
 allowing another module to receive it.
 
-## OSD Support
+## PWM Output
 
-Onboard OSD (using MAX7456 driver) is supported by default.
-DisplayPort OSD is also simultaneously available on any of the UART connectors (default is UART2).
+KT-FMU-F1 supports up to 10 PWM outputs.
+The PWM channels are divided into 3 groups:
 
-## Compass
-
-The KT-FMU-F1 has a built-in compass on the IMU submodule. Due to potential interference,  this compass is disabled, and the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.  
+| PWM Channel | Group |
+| ----------- | ----- |
+| 1 - 4       | TIM1  |
+| 5 - 6       | TIM3  |
+| 7 - 10      | TIM4  |
 
 ## Battery Monitoring
 
@@ -222,6 +213,15 @@ The default battery parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 21
 - BATT_AMP_PERVLT 40.2
+
+## OSD Support
+
+Onboard OSD (using MAX7456 driver) is supported by default.
+DisplayPort OSD is also simultaneously available on any of the UART connectors (default is UART2).
+
+## Compass
+
+The KT-FMU-F1 has a built-in compass on the IMU submodule. Due to potential interference,  this compass is disabled, and the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.  
 
 ## Loading Firmware
 

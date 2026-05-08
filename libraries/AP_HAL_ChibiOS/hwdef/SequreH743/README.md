@@ -43,20 +43,6 @@ to something other than '23'. For rc protocols other than unidirectional, the US
 - SRXL2 would require [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) be set to "4" and connects only the TX pin.
 - PPM is not supported
 
-## OSD Support
-
-The SequreH743 supports OSD using OSD_TYPE 1 (MAX7456 driver)
- and simultaneously DisplayPort using UART7 on the HD VTX connector.
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so
-be careful not to connect this to a peripheral that can not tolerate this voltage.
-
-## Camera Control
-
-GPIO 81 is a pin for PWM camera control which is not supported by ArduPilot. It can be used as a general GPIO pin. By default RELAY2 is configured to control this pin and sets the GPIO high.
-
 ## PWM Output
 
 The SequreH743 supports up to 9 PWM or DShot outputs. The pads for motor output
@@ -86,6 +72,20 @@ The default battery parameters are:
 - [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 12 (CURR pin)
 - [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11.0
 - [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 17.2
+
+## OSD Support
+
+The SequreH743 supports OSD using OSD_TYPE 1 (MAX7456 driver)
+ and simultaneously DisplayPort using UART7 on the HD VTX connector.
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so
+be careful not to connect this to a peripheral that can not tolerate this voltage.
+
+## Camera Control
+
+GPIO 81 is a pin for PWM camera control which is not supported by ArduPilot. It can be used as a general GPIO pin. By default RELAY2 is configured to control this pin and sets the GPIO high.
 
 ## Compass
 

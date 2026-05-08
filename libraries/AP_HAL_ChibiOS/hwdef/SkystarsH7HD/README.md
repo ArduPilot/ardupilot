@@ -37,10 +37,6 @@ telemetry (such as FPort) you should set BRD_ALT_CONFIG=1 and setup
 SERIAL6 as an RC input serial port, with half-duplex, pin-swap
 and inversion enabled.
 
-## OSD Support
-
-The Skystars H7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The Skystars H7 supports up to 9 PWM outputs. The pads for motor output
@@ -72,6 +68,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 10.1
 - BATT_AMP_PERVLT 17.0
+
+## OSD Support
+
+The Skystars H7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

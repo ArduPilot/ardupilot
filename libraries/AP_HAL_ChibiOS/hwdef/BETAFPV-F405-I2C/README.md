@@ -36,10 +36,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured on the on-board ELRS on UART3 or through (UART6_RX/UART6_TX) pins. It supports all serial RC protocols.
 
-## OSD Support
-
-The BETAFPV F405 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The BETAFPV F405 AIO has 4 PWM outputs internally connected to its 4-in-1 ESC. The pads for motor output are M1 to M4 on the board. All 4 outputs support bi-directional DShot and DShot, as well as all PWM types. The default configuration is for bi-directional DShot using the already installed BlueJay firmware.
@@ -68,6 +64,10 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The BETAFPV F405 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

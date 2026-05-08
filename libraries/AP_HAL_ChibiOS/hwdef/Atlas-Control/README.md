@@ -55,6 +55,37 @@ The Atlas Control flight controller
 
 > **Note:** SERIAL 1 and 2 have RTS/CTS flow control capability.
 
+## RC Input
+
+RC input is configured on the RCIN pin, at one end of the servo rail,
+marked RCIN in the above diagram. All ArduPilot supported unidirectional
+RC protocols can be input here including PPM. For bi-directional or half-duplex
+protocols, such as CRSF/ELRS a full UART will have to be used.
+See [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
+
+## PWM Output
+
+The 14 PWM outputs are in 4 groups: Each group must be the same protocol (ie PWM or DShot or Serial LED, etc.):
+
+- Outputs 1, 2, 3 and 4 in group1 (supports Bi-directional DShot)
+- Outputs 5, 6, 7 and 8 in group2 (supports Bi-directional DShot)
+- Outputs 9, 10, 11 and 12 in group3 (supports DShot)
+- Outputs 13 and 14 in group4 (PWM only, no DMA)
+
+## Battery Monitoring
+
+The board has two dedicated power monitor ports on 6 pin connectors.
+
+The board is supplied with an analog power module. Analog monitoring is set as the default configuration.
+The module is rated for up to 60V (14S) and 60A continuous current.
+
+- **BATT_MONITOR**: 4 (Analog Voltage and Current)
+- **BATT_VOLT_PIN**: 16
+- **BATT_CURR_PIN**: 17
+- **BATT_VOLT_MULT**: 18.000
+- **BATT_AMP_PERVLT**: 24.000
+- **BATT_VLT_OFFSET**: -0.1
+
 ## Connectors
 
 Unless noted otherwise all connectors are JST GH 1.25mm pitch
@@ -135,37 +166,6 @@ the servo rail.
 | 4 (blk) | GND | GND |
 | 5 (blk) | BUZZER | battery voltage |
 | 6 (blk) | Boot/Error LED |  |
-
-## RC Input
-
-RC input is configured on the RCIN pin, at one end of the servo rail,
-marked RCIN in the above diagram. All ArduPilot supported unidirectional
-RC protocols can be input here including PPM. For bi-directional or half-duplex
-protocols, such as CRSF/ELRS a full UART will have to be used.
-See [ArduPilot RC documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
-
-## PWM Output
-
-The 14 PWM outputs are in 4 groups: Each group must be the same protocol (ie PWM or DShot or Serial LED, etc.):
-
-- Outputs 1, 2, 3 and 4 in group1 (supports Bi-directional DShot)
-- Outputs 5, 6, 7 and 8 in group2 (supports Bi-directional DShot)
-- Outputs 9, 10, 11 and 12 in group3 (supports DShot)
-- Outputs 13 and 14 in group4 (PWM only, no DMA)
-
-## Battery Monitoring
-
-The board has two dedicated power monitor ports on 6 pin connectors.
-
-The board is supplied with an analog power module. Analog monitoring is set as the default configuration.
-The module is rated for up to 60V (14S) and 60A continuous current.
-
-- **BATT_MONITOR**: 4 (Analog Voltage and Current)
-- **BATT_VOLT_PIN**: 16
-- **BATT_CURR_PIN**: 17
-- **BATT_VOLT_MULT**: 18.000
-- **BATT_AMP_PERVLT**: 24.000
-- **BATT_VLT_OFFSET**: -0.1
 
 ## Compass
 

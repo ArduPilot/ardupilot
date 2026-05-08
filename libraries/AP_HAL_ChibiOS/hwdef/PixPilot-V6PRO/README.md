@@ -24,10 +24,9 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed at [
 - servo rail BEC independent power input for servos
 - external safety Switch
 
-## Picture
 
-![PixPilot-V6PRO](PixPilot-V6Pro-1.png "PixPilot-V6Pro-1")
-![PixPilot-V6PRO](PixPilot-V6Pro-2.png "PixPilot-V6Pro-2")
+
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -37,6 +36,34 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed at [
 - SERIAL3 -> UART4 (GPS1) (TX is DMA capable)
 - SERIAL4 -> UART8 (GPS2) (RX is DMA capable)
 - SERIAL5 -> UART7   (USER)
+
+## RC Input
+
+All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
+
+
+
+<!-- TODO: add PWM Output content -->
+
+## Battery Monitoring
+
+These should already be set by default. However, if lost or changed:
+
+Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
+
+- BATT_VOLT_PIN = 14
+- BATT_CURR_PIN = 15
+- BATT_VOLT_MULT = 18.0
+- BATT_AMP_PERVLT = 24.0
+- BATT2_VOLT_PIN = 13
+- BATT2_CURR_PIN = 4
+- BATT2_VOLT_MULT = 18.0
+- BATT2_AMP_PERVLT = 24.0
+
+## Picture
+
+![PixPilot-V6PRO](PixPilot-V6Pro-1.png "PixPilot-V6Pro-1")
+![PixPilot-V6PRO](PixPilot-V6Pro-2.png "PixPilot-V6Pro-2")
 
 ## Connector pin assignments
 
@@ -124,25 +151,6 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed at [
 | 4 | VOLTAGE | +3.3V |
 | 5 | GND | GND |
 | 6 | GND | GND |
-
-## RC Input
-
-All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
-
-## Battery Monitoring
-
-These should already be set by default. However, if lost or changed:
-
-Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
-
-- BATT_VOLT_PIN = 14
-- BATT_CURR_PIN = 15
-- BATT_VOLT_MULT = 18.0
-- BATT_AMP_PERVLT = 24.0
-- BATT2_VOLT_PIN = 13
-- BATT2_CURR_PIN = 4
-- BATT2_VOLT_MULT = 18.0
-- BATT2_AMP_PERVLT = 24.0
 
 ## DroneCAN capability
 

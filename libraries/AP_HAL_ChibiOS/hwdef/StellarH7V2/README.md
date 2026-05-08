@@ -29,11 +29,9 @@
 - Size
   - 41 x 41mm PCB with 30.5mm M3 mounting
 
-## Overview
 
-![StellarH7V2](StellarH7V2-top.png)
 
-![StellarH7V2](StellarH7V2-bot.png)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -49,10 +47,6 @@ receive pin for UARTx. The Tx pin is the transmit pin for UARTx. All UARTS excep
 - SERIAL6 -> UART7 (DisplayPort)
 - SERIAL7 -> UART8 (ESC Telemetry, RX8 pin only)
 
-## CAN and I2C
-
-StellarH7V2 supports 1x CAN bus and 1x I2C bus
-
 ## RC Input
 
 The default RC input is configured on the UART4 RX4 input and can be used for all ArduPilot supported unidirectional receiver protocols.
@@ -62,10 +56,6 @@ The default RC input is configured on the UART4 RX4 input and can be used for al
 - FPort requires connection to TX4 and [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF also requires a TX4 connection, in addition to RX4, and automatically provides telemetry.
 - SRXL2 requires a connection to TX4 and automatically provides telemetry. Set [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) to "4".
-
-## OSD Support
-
-StellarH7V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation  is preconfigured on SERIAL 6 but requires OSD_TYPE2 = 5. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -95,6 +85,20 @@ Pads for a second analog - BATTery monitor are provided (Voltage only). To use:
 - BATT2_MONITOR = 4
 - BATT2_VOLT_PIN = 18
 - BATT2_VOLT_MULT = 21.0
+
+## Overview
+
+![StellarH7V2](StellarH7V2-top.png)
+
+![StellarH7V2](StellarH7V2-bot.png)
+
+## CAN and I2C
+
+StellarH7V2 supports 1x CAN bus and 1x I2C bus
+
+## OSD Support
+
+StellarH7V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation  is preconfigured on SERIAL 6 but requires OSD_TYPE2 = 5. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## Compass
 

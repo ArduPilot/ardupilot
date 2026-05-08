@@ -6,6 +6,57 @@ the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
 > **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See [Firmware Limitations](https://ardupilot.org/copter/docs/common-limited-firmware.html) for details.
 
+
+
+<!-- TODO: add Features content -->
+
+## Pinout
+
+tbd
+
+## UART Mapping
+
+- SERIAL0 = console = USB
+- SERIAL1 = RF Module = USART1(MAVLink2), not usable by AP GCS
+- SERIAL2 = RCinput, DMA capable = USART2 (RX2 connected to SBUS pins via inverter for SBUS receivers)
+- SERIAL3 = USER = USART3
+- SERIAL4 = GPS2 = UART4
+- SERIAL5 = DisplayPort = UART5
+- SERIAL6 = USER = USART6 (DMA capable)
+
+Serial protocols shown are defaults, but can be adjusted to personal preferences.
+
+## RC Input
+
+The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to RCIN protocol and can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection.
+
+- PPM is not supported.
+
+- DSM/SRXL connects to the RX2  pin, but SBUS would still be connected to SBUS.
+
+- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
+
+- CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
+
+- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to "4".
+
+> **Note:** the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
+
+
+
+<!-- TODO: add PWM Output content -->
+
+## Battery Monitoring
+
+These settings are set as defaults when the firmware is loaded (except `BATT_AMP_PERVLT` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
+
+Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
+
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11
+- BATT_AMP_PERVLT = 30
+
 ## Specifications
 
 - **Processor**
@@ -47,22 +98,6 @@ the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
 [ATOMRC](https://atomrc.com)
 
-## Pinout
-
-tbd
-
-## UART Mapping
-
-- SERIAL0 = console = USB
-- SERIAL1 = RF Module = USART1(MAVLink2), not usable by AP GCS
-- SERIAL2 = RCinput, DMA capable = USART2 (RX2 connected to SBUS pins via inverter for SBUS receivers)
-- SERIAL3 = USER = USART3
-- SERIAL4 = GPS2 = UART4
-- SERIAL5 = DisplayPort = UART5
-- SERIAL6 = USER = USART6 (DMA capable)
-
-Serial protocols shown are defaults, but can be adjusted to personal preferences.
-
 ## Dshot capability
 
 All motor/servo outputs are Dshot and PWM capable. Outputs 1/2 and 6/7 are Bi-Directional DSHot capable.
@@ -70,33 +105,6 @@ All motor/servo outputs are Dshot and PWM capable. Outputs 1/2 and 6/7 are Bi-Di
 Mixing Dshot and normal PWM operation for outputs is restricted into groups, ie. enabling Dshot for an output in a group requires that ALL outputs in that group be configured and used as Dshot, rather than PWM outputs. The output groups that must be the same (PWM rate or Dshot, when configured as a normal servo/motor output) are: 1/2, 3/4, 5/6/7, 8/9/10, and 11/12(LED).
 
 > **Note:** PWM12 is marked as "LED" and defaulted to serial led protocol, so output 11 must also be used for serial LED unless output 12 function is changed.
-
-## RC Input
-
-The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to RCIN protocol and can be used for all ArduPilot supported receiver protocols, except CRSF/ELRS and SRXL2 which require a true UART connection.
-
-- PPM is not supported.
-
-- DSM/SRXL connects to the RX2  pin, but SBUS would still be connected to SBUS.
-
-- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
-
-- CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-
-- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to "4".
-
-> **Note:** the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
-
-## Battery Monitoring
-
-These settings are set as defaults when the firmware is loaded (except `BATT_AMP_PERVLT` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
-
-Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
-
-- BATT_VOLT_PIN = 10
-- BATT_CURR_PIN = 11
-- BATT_VOLT_MULT = 11
-- BATT_AMP_PERVLT = 30
 
 ## Connecting a GPS/Compass module
 

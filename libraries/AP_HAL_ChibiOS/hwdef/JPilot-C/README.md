@@ -119,9 +119,9 @@ Port      UART      Protocol        TX DMA  RX DMA
 5         UART8     None            ✔       ✔
 6         UART4     None            ✔       ✔
 
-## CAN Ports
+## RC Input
 
-There are 2 CAN buses available, each with a 120 Ohm termination resistor built-in.
+Any of the serial ports can be used for a bidirectional RC connection. Change its `SERIALx_PROTOCOL` to "23" and follow the instructions in [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) to other setup info for the RC system being used.
 
 ## PWM Output
 
@@ -137,10 +137,6 @@ The PWM outputs are in 5 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses D-Shot then all channels in the group need to use D-Shot.
 
-## RC Input
-
-Any of the serial ports can be used for a bidirectional RC connection. Change its `SERIALx_PROTOCOL` to "23" and follow the instructions in [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) to other setup info for the RC system being used.
-
 ## Battery Monitoring
 
 The board has internal voltage sensors and connection for external current sensors, able to monitor two batteries.
@@ -155,6 +151,10 @@ The default battery parameters are:
 - BATT2_CURR_PIN 7
 - BATT2_VOLT_MULT 11
 - BATT2_AMP_PERVLT 40
+
+## CAN Ports
+
+There are 2 CAN buses available, each with a 120 Ohm termination resistor built-in.
 
 ## Analog pins
 

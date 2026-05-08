@@ -15,6 +15,10 @@ The NxtPX4v2 is an open-source hardware designed and maintened by [HKUST UAV-Gro
 - 1x SPI
 - 1x SWD
 
+
+
+<!-- TODO: add Pinout content -->
+
 ## UART Mapping
 
 - SERIAL0 -> USB
@@ -29,10 +33,6 @@ The NxtPX4v2 is an open-source hardware designed and maintened by [HKUST UAV-Gro
 ## RC Input
 
 The default RC input is configured on the UART5. The SBUS pin is inverted and connected to RX5. Non SBUS,  single wire serial inputs can be directly tied to RX5 if SBUS pin is left unconnected. RC could  be applied instead at a different UART port such as UART2, UART4 or UART8, and set the protocol to receive RC data: `SERIALn_PROTOCOL=23` and change SERIAL6 _Protocol to something other than '23'
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 12v so be careful not to connect this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -58,6 +58,10 @@ The default battery parameters are:
 - BATT_CURR_PIN 8
 - BATT_VOLT_MULT 10.2
 - BATT_AMP_PERVLT 20.4
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 12v so be careful not to connect this to a peripheral requiring 5v.
 
 ## Compass
 

@@ -1,4 +1,4 @@
-﻿# Morakot Flight Controller Overview
+# Morakot Flight Controller Overview
 
 The Morakot is a flight controller designed and produced by [Taiphoon](https://taiphoon.com.tw/)
 
@@ -7,11 +7,6 @@ The Morakot is a flight controller designed and produced by [Taiphoon](https://t
 
 Morakot Flight Controller - **NDAA-Compliant. Made in Taiwan.** Built for Performance.
 Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller meets full NDAA compliance, ensuring trusted quality and security for professional applications. With an integrated Ethernet interface, it delivers high-speed, reliable connectivity for next-generation FPV and unmanned aerial systems.
-
-## Pinout
-
-![top_wired](Morakot_top_Wired.jpg)
-![bottom_wired](Morakot_bottom_Wired.jpg)
 
 ## Features
 
@@ -64,6 +59,42 @@ RTS/CTS flow control is available on UART7.
 ### VTX Support
 
 The JST-GH 7p connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 12v so be careful not to connect this to a peripheral that can not tolerate this voltage.
+
+## Pinout
+
+![top_wired](Morakot_top_Wired.jpg)
+![bottom_wired](Morakot_bottom_Wired.jpg)
+
+
+
+<!-- TODO: add UART Mapping content -->
+
+## RC Input
+
+RC input is via SERIAL7(UART8) on the RC connector. Unidirectional protocols can be connected to R8. Bi-Directional Protocols will use the T8 pin also.
+
+- PPM is not supported.
+- SBUS/DSM/SRXL connects to the RX8 pin.
+- FPort requires connection to TX8. Set [SERIAL7_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial7-options-serial7-options) = 7
+- CRSF/ELRS also requires both TX8 and RX8 connections and provides telemetry automatically.
+
+In order to use the SBUS pin on the HD VTX connector, you must change SERIAL7_PROTOCOL to something other than "23" and set [SERIAL3_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial3-protocol-serial-3-gps-protocol-selection) to "23".
+
+## PWM Output
+
+The Morakot supports up to 9 PWM outputs. All are DSHot and Bi-Directional DShot capable
+
+The PWM is in 3 groups:
+
+- PWM 1-4  in group1
+- PWM 4-8  in group2
+- PWM 9  in group3
+
+ Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in that group need to use DShot.
+
+
+
+<!-- TODO: add Battery Monitoring content -->
 
 ## Additional Information
 
@@ -177,29 +208,6 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | 2   | RXP                 | 3.3V    |
 | 3   | TXN                 | 3.3V    |
 | 4   | TXP                 | 3.3V    |
-
-## RC Input
-
-RC input is via SERIAL7(UART8) on the RC connector. Unidirectional protocols can be connected to R8. Bi-Directional Protocols will use the T8 pin also.
-
-- PPM is not supported.
-- SBUS/DSM/SRXL connects to the RX8 pin.
-- FPort requires connection to TX8. Set [SERIAL7_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial7-options-serial7-options) = 7
-- CRSF/ELRS also requires both TX8 and RX8 connections and provides telemetry automatically.
-
-In order to use the SBUS pin on the HD VTX connector, you must change SERIAL7_PROTOCOL to something other than "23" and set [SERIAL3_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial3-protocol-serial-3-gps-protocol-selection) to "23".
-
-## PWM Output
-
-The Morakot supports up to 9 PWM outputs. All are DSHot and Bi-Directional DShot capable
-
-The PWM is in 3 groups:
-
-- PWM 1-4  in group1
-- PWM 4-8  in group2
-- PWM 9  in group3
-
- Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in that group need to use DShot.
 
 ## Compass
 

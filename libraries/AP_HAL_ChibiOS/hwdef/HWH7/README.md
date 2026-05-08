@@ -14,9 +14,9 @@ The **HWH7** is a flight controller designed and produced by HW.
 - Power (board hardware): 4S–8S LiPo input (12–35.6 V), on-board 5V/3A and 12V/3A BECs.
 - Other hardware (board option): 512Mb blackbox flash.
 
-## Pinout / Connectors
 
-![image](HWH7.png)
+
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -33,6 +33,10 @@ Serial ordering (ArduPilot): `SERIAL0..SERIAL8` = `OTG1, USART1, USART2, USART3,
 | UART6 | SERIAL6 | USART6 | PC6 | PC7 | User |
 | UART7 | SERIAL7 | UART7 | PE8 | PE7 | User |
 | UART8 | SERIAL8 | UART8 | PE1 | PE0 | ESC Telemetry |
+
+
+
+<!-- TODO: add RC Input content -->
 
 ## PWM Output
 
@@ -62,6 +66,14 @@ The HWH7 supports up to 12 PWM or DShot outputs. These outputs are organized int
 - **Rate and Protocol Consistency:** All channels within the same group **must** use the same output rate and protocol. If any channel in a group is configured for DShot, all other channels in that group must also be configured for DShot.
 - **Bi-directional DShot:** Support is available for **PWM 1 through 8** (Groups 1 and 2).
 - **Timer Grouping Warning:** Be cautious when mixing different types of servos, ESCs, or other timer-based outputs. For example, if PWM 9 is used for a standard servo and PWM 10 is used for a NeoPixel LED, they will conflict because they share **Group 3 (TIM15)**. In typical setups, PE5 and PE6 are used together as servo outputs by default.
+
+
+
+<!-- TODO: add Battery Monitoring content -->
+
+## Pinout / Connectors
+
+![image](HWH7.png)
 
 ## Battery Monitor (ADC)
 

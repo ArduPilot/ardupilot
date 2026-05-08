@@ -51,10 +51,6 @@ USART1 and USART3 supports RX and TX DMA. UART4 supports TX DMA. USART2 supports
 
 RC input is configured on UART1 or UART3, which supports serial RC protocols. This board does not support PPM.
 
-## OSD Support
-
-The GOKU F405 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The GOKU F405 AIO supports up to 5 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are the first 4 outputs.All 5 outputs support DShot.
@@ -83,6 +79,10 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT around 60.2
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The GOKU F405 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

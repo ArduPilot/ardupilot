@@ -34,20 +34,6 @@ ESC telemetry input.
 
 RC input is configured on the R6 (UART3_RX) pin. It supports all RC protocols.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the SmartPort pad (UART1). You need
-to set the following parameters to enable support for FrSky S.PORT. It
-has builtin inverters and a diode to allow for operation from a single
-pin with no special adapters.
-
-- SERIAL2_PROTOCOL 10
-- SERIAL2_OPTIONS 0
-
-## OSD Support
-
-The KakuteF4 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The KakuteF4 supports up to 4 PWM outputs. The pads for motor output
@@ -76,6 +62,20 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 12
 - BATT_VOLT_MULT 10.1
 - BATT_AMP_PERVLT 17.0
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the SmartPort pad (UART1). You need
+to set the following parameters to enable support for FrSky S.PORT. It
+has builtin inverters and a diode to allow for operation from a single
+pin with no special adapters.
+
+- SERIAL2_PROTOCOL 10
+- SERIAL2_OPTIONS 0
+
+## OSD Support
+
+The KakuteF4 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

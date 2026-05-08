@@ -17,6 +17,10 @@ The JFB-100 flight controller is sold by [JAE](https://www.jae.com/files/user/mo
 - voltage monitoring for servo rail and Vcc
 - two dedicated power input ports for external power bricks
 
+
+
+<!-- TODO: add Pinout content -->
+
 ## UART Mapping
 
 - SERIAL0 -> USB

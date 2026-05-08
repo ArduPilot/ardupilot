@@ -66,14 +66,6 @@ all channels in the same group need to use the same configuration / rate.
 - PWM 7-8 Group 4
 - PWM 9-10 Group 5 (These are on the TX6 and RX6 pads that can also be used for SERIAL6)
 
-## Analog Inputs
-
-The RADIX 2 HD has 3 analog inputs:
-
-- ADC Pin 10 -> Battery Voltage (VBAT pin, builtin 1:17.6 voltage divider)
-- ADC Pin 3  -> Battery Current Sensor (CUR pin)
-- ADC Pin 11 -> RSSI voltage monitoring (RSSI pad)
-
 ## Battery Monitoring
 
 The RADIX 2 HD can monitor battery voltages up to 12S using a built-in voltage divider.
@@ -84,6 +76,14 @@ WARNING Powering the board with more than 8S (35 V) with the "PWR:VBAT" jumper s
 will damage it. Refer to the official documentation for more details.
 
 In addition to voltage sensing, the board also has an input for an external current sensor.
+
+## Analog Inputs
+
+The RADIX 2 HD has 3 analog inputs:
+
+- ADC Pin 10 -> Battery Voltage (VBAT pin, builtin 1:17.6 voltage divider)
+- ADC Pin 3  -> Battery Current Sensor (CUR pin)
+- ADC Pin 11 -> RSSI voltage monitoring (RSSI pad)
 
 ## Loading Firmware
 

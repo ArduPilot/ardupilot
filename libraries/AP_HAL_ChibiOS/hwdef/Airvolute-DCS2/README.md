@@ -5,10 +5,6 @@ This system usually uses a "CUBE" autopilot as its primary FMU, but can use an o
 For more information on DCS2.Pilot board see:
 [Airvolute documentation](https://docs.airvolute.com/dronecore-autopilot/dcs2)
 
-## Where to Buy
-
-info@airvolute.com
-
 ## Features
 
 - MCU: STM32H743
@@ -22,6 +18,31 @@ info@airvolute.com
 - SD card connector
 - USB connection onboard with Jetson Host
 - Ethernet
+
+
+
+<!-- TODO: add Pinout content -->
+
+## UART Mapping
+
+- SERIAL0 -> USB (Default baud: 115200)
+- SERIAL1 -> UART1 (FMU SEC) (Default baud: 57600, Default protocol: Mavlink2 (2))
+- SERIAL2 -> UART2 (FMU SEC) (Default baud: 57600, Default protocol: Mavlink2 (2))
+- SERIAL3 -> UART3 (RX pin only labeled as PPM on PPM connector) (Since this is a secondary FMU, default protocol is set to NONE instead of RCIN (23))
+
+UARTs do not have RTS/CTS. UARTs 1 and 2 are routed to FMU_SEC. connector.
+
+
+
+
+
+<!-- TODO: add RC Input content -->
+<!-- TODO: add PWM Output content -->
+<!-- TODO: add Battery Monitoring content -->
+
+## Where to Buy
+
+info@airvolute.com
 
 ## DCS2.Pilot peripherals diagram
 
@@ -139,15 +160,6 @@ Matching connector JST GHR-04V-S.
 | 2 | CAN_H |
 | 3 | CAN_L |
 | 4 | GND |
-
-## UART Mapping
-
-- SERIAL0 -> USB (Default baud: 115200)
-- SERIAL1 -> UART1 (FMU SEC) (Default baud: 57600, Default protocol: Mavlink2 (2))
-- SERIAL2 -> UART2 (FMU SEC) (Default baud: 57600, Default protocol: Mavlink2 (2))
-- SERIAL3 -> UART3 (RX pin only labeled as PPM on PPM connector) (Since this is a secondary FMU, default protocol is set to NONE instead of RCIN (23))
-
-UARTs do not have RTS/CTS. UARTs 1 and 2 are routed to FMU_SEC. connector.
 
 ## Loading Firmware
 

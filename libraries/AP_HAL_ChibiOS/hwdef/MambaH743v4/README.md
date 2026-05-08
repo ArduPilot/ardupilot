@@ -42,17 +42,6 @@ protocols. For protocols requiring half-duplex serial to transmit
 telemetry (such as FPort) you should setup SERIAL6 as an RC input serial port,
 with half-duplex, pin-swap and inversion enabled.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the T5 pin (UART5 transmit). You need to set the following parameters to enable support for FrSky S.PORT
-
-- SERIAL5_PROTOCOL 10
-- SERIAL5_OPTIONS 7
-
-## OSD Support
-
-The MambaH743v4 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The MambaH743v4 supports up to 9 PWM outputs. The pads for motor output
@@ -83,6 +72,17 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 13
 - BATT_VOLT_MULT 11.1
 - BATT_AMP_PERVLT 64
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the T5 pin (UART5 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+
+- SERIAL5_PROTOCOL 10
+- SERIAL5_OPTIONS 7
+
+## OSD Support
+
+The MambaH743v4 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

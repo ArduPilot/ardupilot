@@ -21,3 +21,12 @@ The flight controller is based on FMUv3, with added MPU9250 or ICM20948 internal
 - two voltage & current monitoring and servo rail voltage monitoring
 - servo rail BEC independent power input for servos
 - external safety Switch
+
+
+
+
+<!-- TODO: add Pinout content -->
+<!-- TODO: add UART Mapping content -->
+<!-- TODO: add RC Input content -->
+<!-- TODO: add PWM Output content -->
+<!-- TODO: add Battery Monitoring content -->

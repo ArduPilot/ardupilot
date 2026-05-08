@@ -38,26 +38,6 @@ protocols. For protocols requiring half-duplex  or full duplex serial for operat
 select another UART with DMA and set its protocol to "23". To use this UART for other uses, set
 [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) to "1"
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6 . You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL6). Note this assumes the RC input is using default (ALT_BRD_CONFIG =0). Obviously, if using ALT_BRD_CONFIG = 1 for full duplex RC prtocols, you must a different UART for FrSky Telemetry.
-
-- SERIAL6_PROTOCOL 10
-- SERIAL6_OPTIONS 7
-
-## OSD Support
-
-The SDMODEL SDH7 V2 supports OSD using OSD_TYPE 1 (MAX7456 driver).The defaults are also setup to allow DJI Goggle OSD support on UART1. Both OSDs can operate simultaneously.
-
-## VTX Support
-
-The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
-this to a peripheral requiring 5v. The 9v supply is controlled by RELAY2_PIN set to GPIO 81 and is on by default. It can be configured to be operated by an RC switch by selecting the function RELAY2.
-
-## Camera Control
-
-The Cam pin is GPIO82 and is set to be controlled by RELAY4 by default. Relay pins can be controlled either by an RC switch or GCS command. See [relay documentation](https://ardupilot.org/copter/docs/common-relay.html) for more information.
-
 ## PWM Output
 
 The SDMODEL SDH7 V2 supports up to 9 PWM or DShot outputs.  Outputs 1-4 support BDShot. The pads for motor output
@@ -94,6 +74,26 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 11
 - BATT_AMP_PERVLT 59.5
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6 . You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL6). Note this assumes the RC input is using default (ALT_BRD_CONFIG =0). Obviously, if using ALT_BRD_CONFIG = 1 for full duplex RC prtocols, you must a different UART for FrSky Telemetry.
+
+- SERIAL6_PROTOCOL 10
+- SERIAL6_OPTIONS 7
+
+## OSD Support
+
+The SDMODEL SDH7 V2 supports OSD using OSD_TYPE 1 (MAX7456 driver).The defaults are also setup to allow DJI Goggle OSD support on UART1. Both OSDs can operate simultaneously.
+
+## VTX Support
+
+The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
+this to a peripheral requiring 5v. The 9v supply is controlled by RELAY2_PIN set to GPIO 81 and is on by default. It can be configured to be operated by an RC switch by selecting the function RELAY2.
+
+## Camera Control
+
+The Cam pin is GPIO82 and is set to be controlled by RELAY4 by default. Relay pins can be controlled either by an RC switch or GCS command. See [relay documentation](https://ardupilot.org/copter/docs/common-relay.html) for more information.
 
 ## Compass
 

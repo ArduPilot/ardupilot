@@ -14,6 +14,18 @@ Here4 Module is sold as a GPS module, but it can be used as a flight controller.
 - 1x RCIN
 - 1x UBLOX NEO-F9P L1L5 GNSS
 
+
+
+
+
+
+
+<!-- TODO: add Pinout content -->
+<!-- TODO: add UART Mapping content -->
+<!-- TODO: add RC Input content -->
+<!-- TODO: add PWM Output content -->
+<!-- TODO: add Battery Monitoring content -->
+
 ## How to use
 
 - To load the FC firmware on production Here4. User needs to first update Here4 through DroneCAN tool or Mission Planners DroneCAN config using FC firmware, which is .bin format.

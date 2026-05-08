@@ -53,13 +53,6 @@ RC input is best configured on the RX1/TX1 (USART1_RX/USART1_TX) pins due to hav
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
-## OSD Support
-
-JHEMCUF405PRO supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
-- Use of internal MAX7456 for analog OSD/VTX is enabled by default.
-- Simultaneous HD VTX OSD support is pre-configured on UART6
-
 ## PWM Output
 
 JHEMCUF405PRO supports up to 5 motor/servo outputs. 4 motors and 1 LED strip or another PWM output. Outputs are grouped and each group must use the same protocol. All outputs support PWM and DShot.
@@ -77,6 +70,13 @@ The default battery configuration is:
 - BATT_CURR_PIN = 12
 - BATT_VOLT_MULT = 11
 - BATT_AMP_PERVLT = 95.84
+
+## OSD Support
+
+JHEMCUF405PRO supports OSD using OSD_TYPE 1 (MAX7456 driver).
+
+- Use of internal MAX7456 for analog OSD/VTX is enabled by default.
+- Simultaneous HD VTX OSD support is pre-configured on UART6
 
 ## Compass
 

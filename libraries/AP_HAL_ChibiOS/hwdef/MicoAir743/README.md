@@ -17,11 +17,9 @@ The MicoAir743 is a flight controller designed and produced by [MicoAir Tech.](h
 - 1 I2C
 - 1 SWD
 
-## Physical
 
-![MicoAir H743 V1.3 Front View](MicoAir743_FrontView.jpg)
 
-![MicoAir H743 V1.3 Back View](MicoAir743_BackView.jpg)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -37,14 +35,6 @@ The MicoAir743 is a flight controller designed and produced by [MicoAir Tech.](h
 ## RC Input
 
 The default RC input is configured on the UART6. The SBUS pin is inverted and connected to RX6. Non SBUS, single wire serial inputs can be directly tied to RX6 if SBUS pin is left unconnected. RC could  be applied instead at a different UART port such as UART1, UART4 or UART8, and set the protocol to receive RC data: `SERIALn_PROTOCOL=23` and change SERIAL5 _Protocol to something other than '23'.
-
-## OSD Support
-
-The MicoAir743 supports onboard OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort OSD is available on the HD VTX connector, See below.
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -74,6 +64,20 @@ The default battery parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 21.2
 - BATT_AMP_PERVLT 40.2
+
+## Physical
+
+![MicoAir H743 V1.3 Front View](MicoAir743_FrontView.jpg)
+
+![MicoAir H743 V1.3 Back View](MicoAir743_BackView.jpg)
+
+## OSD Support
+
+The MicoAir743 supports onboard OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort OSD is available on the HD VTX connector, See below.
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## Compass
 

@@ -151,6 +151,14 @@ RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols e
 - CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
 - SRXL2 requires a connection to TX6 and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to “4”.
 
+## PWM Output
+
+All outputs are capable of PWM and DShot. Motors 1-4 are configured as Bidirectional-DSHOT by default. All outputs in the motor groups below must be either PWM or DShot:
+
+- Motors 1-4  Group1 (TIM5)
+- Motors 5-6  Group2 (TIM4)
+- Motors 7-8  Group3 (TIM12)
+
 ## Battery Monitoring
 
 The board has an integrated INA226 digital power monitor. The board supports up to 6S LiPo batteries.
@@ -162,14 +170,6 @@ The default battery parameters are:
 ## Compass
 
 This autopilot has a built-in compass. The compass is the IIS2MDC. Often this internal compass is disabled due to power interference and a remotely located compass is used.
-
-## PWM Output
-
-All outputs are capable of PWM and DShot. Motors 1-4 are configured as Bidirectional-DSHOT by default. All outputs in the motor groups below must be either PWM or DShot:
-
-- Motors 1-4  Group1 (TIM5)
-- Motors 5-6  Group2 (TIM4)
-- Motors 7-8  Group3 (TIM12)
 
 ## Loading Firmware
 

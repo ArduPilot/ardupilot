@@ -12,11 +12,9 @@ The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com
 - microSD card slot
 - DF9-41S-1V(32) Hirose Mezzanine Connector
 
-## Connector Overview
 
-![UltraBlue Board Connector Overview - Top View](UltraBlue_connector_overview_top.png)
 
-![UltraBlue Board Connector Overview - Bottom View](UltraBlue_connector_overview_bottom.png)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -29,6 +27,47 @@ The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com
 - SERIAL6 -> USART3 (ESC telemetry)
 - SERIAL7 -> UART7 (USER/[debug tx/rx], no DMA)
 - SERIAL8 -> USB2
+
+## RC Input
+
+The RCIN pin, which is physically mapped to UART8 and configured by default as SERIAL5, can be used for most ArduPilot supported unidirectional receiver protocols. For this reason SERIAL5_PROTOCOL defaults to “23” (RCIN).
+
+- PPM: Connect to the JP1 connector. PPM input is only supported on JP1 as it requires a special interrupt.
+- SBUS: Connect to the JP1 connector.
+- Spektrum/DSM radios: Connect to the JP4 connector.
+
+Bi-directional protocols such as CRSF/ELRS and SRXL2 require a full UART connection. FPort, when connected to RCIN, will only provide RC without telemetry.
+
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL2 (telem2) or SERIAL4 (GPS2) would need to be used for receiver connections. Below are setups using Serial2.
+
+- SERIAL2_PROTOCOL should be set to "23".
+- FPort would require SERIAL2_OPTIONS be set to "15"
+- CRSF would require SERIAL2_OPTIONS be set to "0"
+- SRXL2 would require SERIAL2_OPTIONS be set to "4" and connects only the TX pin.
+
+## PWM Output
+
+The UltraBlue flight controller supports up to 16 PWM outputs.
+
+The 16 PWM outputs are in 5 groups:
+
+- PWM 1 - 4 are in group1 (TIM5)
+- PWM 5 - 8 are in group2 (TIM4)
+- PWM 9 - 12 are in group3 (TIM1)
+- PWM 13 and 14 are in group4 (TIM12) (no DMA, no DShot)
+- PWM 15 and 16 are in group5 (TIM8)
+
+Channels within the same group need to use the same output rate and protocol. Outputs 1 - 8 support bi-directional DShot.
+
+## Battery Monitoring
+
+The J1 - Mezzanine Connector has inputs for battery voltage and current. It also has an I2C bus connection, Bus 1 (I2C3), intended for use with SMBus batteries and BMSs. The BATT_I2C_BUS parameter should be set to 1.
+
+## Connector Overview
+
+![UltraBlue Board Connector Overview - Top View](UltraBlue_connector_overview_top.png)
+
+![UltraBlue Board Connector Overview - Bottom View](UltraBlue_connector_overview_bottom.png)
 
 ## Connectors
 
@@ -279,37 +318,6 @@ External Pin Information:
 | 38 | Serial LED Controller Output, AP FMU CAP1 Port (3.3v) |
 | 40 | One Wire Bus to Jetson (3.3v PU) |
 
-## RC Input
-
-The RCIN pin, which is physically mapped to UART8 and configured by default as SERIAL5, can be used for most ArduPilot supported unidirectional receiver protocols. For this reason SERIAL5_PROTOCOL defaults to “23” (RCIN).
-
-- PPM: Connect to the JP1 connector. PPM input is only supported on JP1 as it requires a special interrupt.
-- SBUS: Connect to the JP1 connector.
-- Spektrum/DSM radios: Connect to the JP4 connector.
-
-Bi-directional protocols such as CRSF/ELRS and SRXL2 require a full UART connection. FPort, when connected to RCIN, will only provide RC without telemetry.
-
-To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL2 (telem2) or SERIAL4 (GPS2) would need to be used for receiver connections. Below are setups using Serial2.
-
-- SERIAL2_PROTOCOL should be set to "23".
-- FPort would require SERIAL2_OPTIONS be set to "15"
-- CRSF would require SERIAL2_OPTIONS be set to "0"
-- SRXL2 would require SERIAL2_OPTIONS be set to "4" and connects only the TX pin.
-
-## PWM Output
-
-The UltraBlue flight controller supports up to 16 PWM outputs.
-
-The 16 PWM outputs are in 5 groups:
-
-- PWM 1 - 4 are in group1 (TIM5)
-- PWM 5 - 8 are in group2 (TIM4)
-- PWM 9 - 12 are in group3 (TIM1)
-- PWM 13 and 14 are in group4 (TIM12) (no DMA, no DShot)
-- PWM 15 and 16 are in group5 (TIM8)
-
-Channels within the same group need to use the same output rate and protocol. Outputs 1 - 8 support bi-directional DShot.
-
 ## GPIOs
 
 All PWM outputs can be used as GPIO (relays, buttons, RPM, etc.). To use them you need to set the output's SERVOx_FUNCTION to -1. See GPIOs page for more information.
@@ -334,10 +342,6 @@ The numbering of the GPIOs for PIN parameters in ArduPilot is:
 ## Firmware
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.
-
-## Battery Monitoring
-
-The J1 - Mezzanine Connector has inputs for battery voltage and current. It also has an I2C bus connection, Bus 1 (I2C3), intended for use with SMBus batteries and BMSs. The BATT_I2C_BUS parameter should be set to 1.
 
 ## Camera Control
 

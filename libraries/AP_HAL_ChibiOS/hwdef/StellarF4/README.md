@@ -28,13 +28,9 @@
 - Size
   - 41 x 41mm PCB with 30.5mm M3 mounting
 
-## Overview
 
-![StellarF4](StellarF4-top.png)
 
-![StellarF4](StellarF4-bot.png)
-
-## Wiring Diagram
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -49,11 +45,6 @@ receive pin for UARTx. The Tx pin is the transmit pin for UARTx. The UARTs 1,2,6
 - SERIAL5 -> UART5  (ESC Telemetry) (NO DMA)
 - SERIAL6 -> USART6 (GPS) (NO DMA)
 
-## CAN and I2C
-
-StellarF4 supports I2C bus
-multiple I2C peripherals can be connected to one I2C bus in parallel.
-
 ## RC Input
 
 The default RC input is configured on the UART2 RX2 input and can be used for all ArduPilot supported unidirectional receiver protocols.
@@ -61,10 +52,6 @@ The default RC input is configured on the UART2 RX2 input and can be used for al
 - SBUS/DSM/SRXL connects to the PPM pad or RX2 pin on the HD VTX connector. PPM pin connected to RX2 via inverter.
 - CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 - FPort requires connection to TX2 and [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
-
-## OSD Support
-
-StellarF4 supports using its internal OSD, and/or DisplayPort on Serial1, by default. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -87,6 +74,23 @@ The default battery parameters are:
 - BATT_CURR_PIN = 11
 - BATT_VOLT_MULT = 11.2
 - BATT_AMP_PERVLT = 52.7
+
+## Overview
+
+![StellarF4](StellarF4-top.png)
+
+![StellarF4](StellarF4-bot.png)
+
+## Wiring Diagram
+
+## CAN and I2C
+
+StellarF4 supports I2C bus
+multiple I2C peripherals can be connected to one I2C bus in parallel.
+
+## OSD Support
+
+StellarF4 supports using its internal OSD, and/or DisplayPort on Serial1, by default. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## Compass
 

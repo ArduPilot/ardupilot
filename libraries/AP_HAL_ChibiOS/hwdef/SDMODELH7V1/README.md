@@ -6,30 +6,9 @@
 
 above image and some content courtesy of SDMODEL
 
-## Specifications
 
-- Processor
-  - STM32H743 32-bit processor
-  - AT7456E OSD
-  - 128 MByte flash for logging
 
-- Sensors
-  - BMI270 IMU (accel and gyro only, no compass)
-  - BMP280 barometer
-
-- Power
-  - 2S - 8S Lipo input voltage with voltage monitoring
-  - 9V, 1.5A BEC for powering Video Transmitter
-
-- Interfaces
-  - 9x PWM outputs (9th pwm output is for NeoPixel LED string via the LED pad)
-  - 1x RC input
-  - 6x UARTs/serial for GPS and other peripherals
-  - 1x I2C port for external compass
-  - USB-C port
-  - Switchable VTX power
-  - All UARTS support hardware inversion. SBUS, SmartPort, and other inverted protocols work on any UART without "uninvert hack"
-  - External current monitor input
+<!-- TODO: add Features content -->
 
 ## Pinout
 
@@ -108,10 +87,6 @@ The SERIAL7 port (UART7) is normally for ESC telemetry, and has an R7 pin on bot
 
 Any UART may be re-tasked by changing its protocol parameter.
 
-## Copter Default Frame Type
-
-For Copter firmware the FRAME_TYPE is already defaulted to type "12" (BetaFlight X) allowing existing BetaFlight configurations with ESCs attached to have the correct motor ordering without changes to the FRAME_TYPE and FRAME_CLASS parameters or ESC wiring.
-
 ## RC Input
 
 RC input is configured on the R6 (UART6_RX) pin. It supports all RC protocols except PPM. See Radio Control Systems for details for a specific RC system. SERIAL6_PROTOCOL is set to "23", by default, to enable this.
@@ -122,17 +97,6 @@ RC input is configured on the R6 (UART6_RX) pin. It supports all RC protocols ex
 - SRXL2 requires a connection to T6 and automatically provides telemetry. Set SERIAL6_OPTIONS to "4".
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See Radio Control Systems for details.
-
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the Tx pin of any UART. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL2).
-
-- SERIAL2_PROTOCOL 10
-- SERIAL2_OPTIONS 7
-
-## OSD Support
-
-The SDH7V1 supports OSD using OSD_TYPE 1 (MAX7456 driver). The defaults are also setup to allow DJI Goggle OSD support on UART1.
 
 ## PWM Output
 
@@ -148,10 +112,6 @@ The PWM is in 3 groups:
 
 Channels within the same group need to use the same output rate, whether PWM or Dshot. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
-## LED Output
-
-The LED output is configured by default to support NeoPixel LED strings.
-
 ## Battery Monitoring
 
 The board has a built-in voltage sensor via the B+ pin, but no internal current sensor. An external current sensor can be connected to the CUR pin.
@@ -163,6 +123,50 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 10.1
 - BATT_AMP_PERVLT varies depending on external current sensor
+
+## Specifications
+
+- Processor
+  - STM32H743 32-bit processor
+  - AT7456E OSD
+  - 128 MByte flash for logging
+
+- Sensors
+  - BMI270 IMU (accel and gyro only, no compass)
+  - BMP280 barometer
+
+- Power
+  - 2S - 8S Lipo input voltage with voltage monitoring
+  - 9V, 1.5A BEC for powering Video Transmitter
+
+- Interfaces
+  - 9x PWM outputs (9th pwm output is for NeoPixel LED string via the LED pad)
+  - 1x RC input
+  - 6x UARTs/serial for GPS and other peripherals
+  - 1x I2C port for external compass
+  - USB-C port
+  - Switchable VTX power
+  - All UARTS support hardware inversion. SBUS, SmartPort, and other inverted protocols work on any UART without "uninvert hack"
+  - External current monitor input
+
+## Copter Default Frame Type
+
+For Copter firmware the FRAME_TYPE is already defaulted to type "12" (BetaFlight X) allowing existing BetaFlight configurations with ESCs attached to have the correct motor ordering without changes to the FRAME_TYPE and FRAME_CLASS parameters or ESC wiring.
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the Tx pin of any UART. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL2).
+
+- SERIAL2_PROTOCOL 10
+- SERIAL2_OPTIONS 7
+
+## OSD Support
+
+The SDH7V1 supports OSD using OSD_TYPE 1 (MAX7456 driver). The defaults are also setup to allow DJI Goggle OSD support on UART1.
+
+## LED Output
+
+The LED output is configured by default to support NeoPixel LED strings.
 
 ## Compass
 

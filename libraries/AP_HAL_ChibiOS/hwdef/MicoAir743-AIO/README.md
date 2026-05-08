@@ -15,9 +15,9 @@ The MicoAir743-AIO is a flight controller designed and produced by [MicoAir Tech
 - 1 I2C
 - 1 SWD
 
-## Physical
 
-![MicoAir H743 AIO Physical Size](MicoAir743-AIO_Physical_Size.jpg)
+
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -33,10 +33,6 @@ The MicoAir743-AIO is a flight controller designed and produced by [MicoAir Tech
 ## RC Input
 
 The default RC input is configured on the UART6. The SBus input on the HD VTX connector is tied to RX6.
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 12v so be careful not to connect this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -68,6 +64,14 @@ The default battery parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 21.2
 - BATT_AMP_PERVLT 14.14
+
+## Physical
+
+![MicoAir H743 AIO Physical Size](MicoAir743-AIO_Physical_Size.jpg)
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 12v so be careful not to connect this to a peripheral requiring 5v.
 
 ## Compass
 

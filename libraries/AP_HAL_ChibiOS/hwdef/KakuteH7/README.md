@@ -40,17 +40,6 @@ telemetry (such as FPort) you should set BRD_ALT_CONFIG=1 and setup
 SERIAL6 as an RC input serial port, with half-duplex, pin-swap
 and inversion enabled.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6 . You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL6). Note this assumes the RC input is using default (ALT_BRD_CONFIG =0). Obviously, if using ALT_BRD_CONFIG = 1 for full duplex RC prtocols, you must a different UART for FrSky Telemetry.
-
-- SERIAL6_PROTOCOL 10
-- SERIAL6_OPTIONS 7
-
-## OSD Support
-
-The KakuteH7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The KakuteH7 supports up to 9 PWM outputs. The pads for motor output
@@ -82,6 +71,17 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 10.1
 - BATT_AMP_PERVLT 17.0
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the Tx pin of any UART including SERIAL6/UART6 . You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL6). Note this assumes the RC input is using default (ALT_BRD_CONFIG =0). Obviously, if using ALT_BRD_CONFIG = 1 for full duplex RC prtocols, you must a different UART for FrSky Telemetry.
+
+- SERIAL6_PROTOCOL 10
+- SERIAL6_OPTIONS 7
+
+## OSD Support
+
+The KakuteH7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

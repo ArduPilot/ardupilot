@@ -35,6 +35,47 @@ resellers, linked from [SIYI](https://siyi.biz)
 
 The Telem1 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
+## RC Input
+
+RC input is configured on the RCIN pin, at one end of the servo rail,
+marked RCIN in the above diagram. This pin supports all RC
+protocols.
+
+## PWM Output
+
+The SIYI N7 supports up to 13 PWM outputs. First first 8 outputs
+(labelled "MAIN") are controlled by a dedicated STM32F103 IO
+controller. These 8 outputs support all PWM output formats, but not
+DShot.
+
+The remaining 5 outputs (labelled AUX1 to AUX5) are the "auxiliary"
+outputs. These are directly attached to the STM32H743 and support all
+PWM protocols as well as DShot.
+
+All 13 PWM outputs have GND on the top row, 5V on the middle row and
+signal on the bottom row.
+
+The 8 main PWM outputs are in 3 groups:
+
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
+
+The 4 auxiliary PWM outputs are in 2 groups:
+
+- PWM 1, 2, 3 and 4 in group4
+- PWM 5 in group5
+
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot.
+
+## Battery Monitoring
+
+The board has a dedicated power monitor ports on a 6 pin
+connector. The correct battery setting parameters are dependent on
+the type of power brick which is connected.
+
 ## Connectors
 
 Unless noted otherwise all connectors are JST GH
@@ -113,47 +154,6 @@ Unless noted otherwise all connectors are JST GH
 | 2 (blk) | D_minus | +3.3V |
 | 3 (blk) | D_plus | +3.3V |
 | 4 (blk) | GND | GND |
-
-## RC Input
-
-RC input is configured on the RCIN pin, at one end of the servo rail,
-marked RCIN in the above diagram. This pin supports all RC
-protocols.
-
-## PWM Output
-
-The SIYI N7 supports up to 13 PWM outputs. First first 8 outputs
-(labelled "MAIN") are controlled by a dedicated STM32F103 IO
-controller. These 8 outputs support all PWM output formats, but not
-DShot.
-
-The remaining 5 outputs (labelled AUX1 to AUX5) are the "auxiliary"
-outputs. These are directly attached to the STM32H743 and support all
-PWM protocols as well as DShot.
-
-All 13 PWM outputs have GND on the top row, 5V on the middle row and
-signal on the bottom row.
-
-The 8 main PWM outputs are in 3 groups:
-
-- PWM 1 and 2 in group1
-- PWM 3 and 4 in group2
-- PWM 5, 6, 7 and 8 in group3
-
-The 4 auxiliary PWM outputs are in 2 groups:
-
-- PWM 1, 2, 3 and 4 in group4
-- PWM 5 in group5
-
-Channels within the same group need to use the same output rate. If
-any channel in a group uses DShot then all channels in the group need
-to use DShot.
-
-## Battery Monitoring
-
-The board has a dedicated power monitor ports on a 6 pin
-connector. The correct battery setting parameters are dependent on
-the type of power brick which is connected.
 
 ## Compass
 

@@ -49,10 +49,6 @@ With recommended option:
 - Set SERIAL1_PROTOCOL<SERIAL1_PROTOCOL must be set to "23"
 - Set SERIAL1_OPTIONS<SERIAL1_OPTIONS to "0".
 
-## OSD Support
-
-The Aocoda-RC-H743Dual supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The Aocoda-RC-H743Dual supports up to 12 PWM outputs.
@@ -71,12 +67,6 @@ The PWM is in 6 groups:
 - PWM 11, 12 in group6
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
-
-## Pin IO
-
-- PINIO1: 9V DCDC control (HIGH:on; LOW:off)
-
-*Note: DCDC default is enabled.*
 
 ## Battery Monitoring
 
@@ -98,6 +88,16 @@ Please calibrate before use amp parameters.
 - BATT2_AMP_PERVLT 17.0
 
 *Note:* Please check carefully before use BATT_AMP_PERVLT/BATT2_AMP_PERVLT, as voltage divider circuit for data collection is at ESC/BEC side.
+
+## OSD Support
+
+The Aocoda-RC-H743Dual supports OSD using OSD_TYPE 1 (MAX7456 driver).
+
+## Pin IO
+
+- PINIO1: 9V DCDC control (HIGH:on; LOW:off)
+
+*Note: DCDC default is enabled.*
 
 ## Compass
 

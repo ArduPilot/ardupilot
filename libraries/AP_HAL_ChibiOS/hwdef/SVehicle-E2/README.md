@@ -23,10 +23,6 @@ The S-Vehicle E2-Plus Flight Controller produced by [S-Vehicle](http://svehicle.
 - 100Mbps Ethernet port
 - 3 power monitor inputs
 
-## IOMCU
-
-This board has an IOMCU implemented on a STM32F103 microcontroller which, manages
-
 ## Pinout
 
 ![E2plus-Top.png](E2plus-Top.png)
@@ -76,6 +72,14 @@ A5, A6 are in a 2nd group.
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
+## Battery Monitoring
+
+The board has connectors for 3 power monitors. The board is configure by default for a DroneCAN power monitor, and also has analog power monitor defaults configured which is enabled. The default PDB included with the E2+ is DroneCAN and must be connected to Power 2. If using a analog power monitor, battery voltage is on pin 6 and current on pin 9 and this should be connected to Power 1.
+
+## IOMCU
+
+This board has an IOMCU implemented on a STM32F103 microcontroller which, manages
+
 ## GPIOs
 
 Two of the PWM ports on the FMU labeled A5 and A6, can be used as GPIOs (relays, buttons, RPM etc). To use them you need to limit the number of these pins that are used for PWM by setting the BRD_PWM_COUNT to a number less than 6. For example if you set BRD_PWM_COUNT to 4 then PWM A5 and PWM A6 will be available for use as GPIOs.
@@ -115,10 +119,6 @@ The complete list of GPIOS is:
 | MAIN(6) | 106 |
 | MAIN(7) | 107 |
 | MAIN(8) | 108 |
-
-## Battery Monitoring
-
-The board has connectors for 3 power monitors. The board is configure by default for a DroneCAN power monitor, and also has analog power monitor defaults configured which is enabled. The default PDB included with the E2+ is DroneCAN and must be connected to Power 2. If using a analog power monitor, battery voltage is on pin 6 and current on pin 9 and this should be connected to Power 1.
 
 ## Compass
 

@@ -28,11 +28,9 @@
 - Size
   - 41 x 41mm PCB with 30.5mm M3 mounting
 
-## Overview
 
-![StellarF4 V2](StellarF4V2-top.png)
 
-![StellarF4 V2](StellarF4V2-bot.png)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -45,11 +43,6 @@ receive pin for UARTx. The Tx pin is the transmit pin for UARTx.
 - SERIAL3 -> UART4 (DisplayPort) (NO DMA)
 - SERIAL4 -> UART5 (ESC Telemetry) (NO DMA)
 
-## CAN and I2C
-
-StellarF4V2 supports 1x I2C bus
-multiple I2C peripherals can be connected to one I2C bus in parallel.
-
 ## RC Input
 
 The default RC input is configured on the UART2(SERIAL1) RX2 input and can be used for all ArduPilot supported unidirectional receiver protocols.
@@ -58,11 +51,6 @@ The default RC input is configured on the UART2(SERIAL1) RX2 input and can be us
 - CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 - FPort requires connection to TX2 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
-
-## OSD Support
-
-StellarF4V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver).
-External OSD support such as DJI or DisplayPort is preconfigured on SERIAL3 but supported on any spare UART. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -86,6 +74,22 @@ The default battery parameters are:
 - BATT_CURR_PIN = 11
 - BATT_VOLT_MULT = 11
 - BATT_AMP_PERVLT = 10
+
+## Overview
+
+![StellarF4 V2](StellarF4V2-top.png)
+
+![StellarF4 V2](StellarF4V2-bot.png)
+
+## CAN and I2C
+
+StellarF4V2 supports 1x I2C bus
+multiple I2C peripherals can be connected to one I2C bus in parallel.
+
+## OSD Support
+
+StellarF4V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver).
+External OSD support such as DJI or DisplayPort is preconfigured on SERIAL3 but supported on any spare UART. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## Compass
 

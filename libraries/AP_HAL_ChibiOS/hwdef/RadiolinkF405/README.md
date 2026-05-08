@@ -34,15 +34,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
 For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for more info
 
-## OSD Support
-
-The RadiolinkF405 supports analog OSD using its internal MAX7456. Simultaneous HD OSD operation is enabled by defaullt also.
-
-## VTX Support
-
-The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
-this to a peripheral requiring 5v.
-
 ## PWM Output
 
 The RadiolinkF405 supports up to 7 PWM outputs. The pads for motor output
@@ -58,11 +49,6 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot. Channels 1-4 support bi-directional DShot.
 
-## Pin IO
-
-- GPIO81 is 9V VTX power control (HIGH:on; LOW:off)
-- RELAY2 is assigned to control this GPIO by default.
-
 ## Battery Monitoring
 
 The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input.
@@ -75,6 +61,20 @@ The default battery parameters are:
 - BATT_CURR_PIN = 11
 - BATT_VOLT_MULT = 11.0
 - BATT_AMP_PERVLT = 25
+
+## OSD Support
+
+The RadiolinkF405 supports analog OSD using its internal MAX7456. Simultaneous HD OSD operation is enabled by defaullt also.
+
+## VTX Support
+
+The JST-GH-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
+this to a peripheral requiring 5v.
+
+## Pin IO
+
+- GPIO81 is 9V VTX power control (HIGH:on; LOW:off)
+- RELAY2 is assigned to control this GPIO by default.
 
 ## Compass
 

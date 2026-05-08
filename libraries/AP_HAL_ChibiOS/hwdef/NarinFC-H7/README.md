@@ -1,74 +1,8 @@
 # [NarinFC-H7 VOLOLAND CO., LTD](https://vololand.com/pages/product/computer "NarinFC-H7")
 
-## Introduction
 
-The NarinFC-H7 is a flight controller produced by [VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
 
-NarinFC-H7 is an advanced autopilot family designed in-house by VOLOLAND CO., LTD.
-
-It uses a higher-performance STM32H7 processor and integrates industrial-grade sensors.
-
-Compared with previous autopilots, it has better performance and higher reliability.
-
-![NarinFC-H7](./images/NarinFC_Header.jpg "NarinFC")
-
-## Features/Specifications
-
-- **Processor**
-  - STM32H743
-
-- **Sensors**
-  - Accelerometer/Gyroscope: ADIS16470
-  - Accelerometer/Gyroscope: ICM-20649
-  - Accelerometer/Gyroscope: BMI088
-  - Magnetometer: RM3100
-  - Barometer: MS5611*2
-
-- **Interfaces**
-  - 14 PWM servo outputs
-  - Support multiple RC inputs (SBus / CPPM / DSM)
-  - Analog/PWM RSSI input
-  - 2 GPS ports (GPS and UART4 ports)
-  - 4 ⅹ I2C buses
-  - 2 ⅹ CAN bus ports
-  - 2 ⅹ Power ports
-  - 2 ⅹ ADC ports
-  - 1 ⅹ USB port
-
-- **Power**
-  - Power 4.3V ~ 5.4V
-  - USB Input 4.75V ~ 5.25V
-
-- **Size and Dimensions**
-  - 93.4mm x 46.4mm x 34.1mm
-  - 106g
-
-## Where to Buy
-
-[VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
-
-## Outline Dimensions
-
-![Outline Dimensions](./images/2.Outline_Dimensions.png "Outline Dimensions")
-
-## Wiring Diagram
-
-![Wire Diagram](./images/3.Wire_Diagram.png "Wire Diagram")
-
-## UART Mapping
-
- UART corresponding to each SERIAL port, and its default protocol, are shown below:
-
-- SERIAL0 = USB (MAVLink2 default)
-- SERIAL1 = USART2,Telemetry1 (MAVlink2 default,DMA-enabled)
-- SERIAL2 = USART6,Telemetry2 (MAVlink2 default,DMA-enabled)
-- SERIAL3 = USART1,GPS1 (GPS default, DMA-enabled)
-- SERIAL4 = UART4,GPS2 (GPS2 default)
-- SERIAL5 = UART8 (not available except on custom carrier boards)(USER default,DMA-enabled)
-- SERIAL6 = UART7,DEBUG (USER)
-- SERIAL7 = USB2 (MAVLink2 default)
-
-  Serial protocols can be adjusted to personal preferences.
+<!-- TODO: add Features content -->
 
 ## Pinout
 
@@ -162,6 +96,35 @@ UART7(SERIAL6) is labeled DEBUG RX/TX below
 
 - SD CARD
 
+## UART Mapping
+
+ UART corresponding to each SERIAL port, and its default protocol, are shown below:
+
+- SERIAL0 = USB (MAVLink2 default)
+- SERIAL1 = USART2,Telemetry1 (MAVlink2 default,DMA-enabled)
+- SERIAL2 = USART6,Telemetry2 (MAVlink2 default,DMA-enabled)
+- SERIAL3 = USART1,GPS1 (GPS default, DMA-enabled)
+- SERIAL4 = UART4,GPS2 (GPS2 default)
+- SERIAL5 = UART8 (not available except on custom carrier boards)(USER default,DMA-enabled)
+- SERIAL6 = UART7,DEBUG (USER)
+- SERIAL7 = USB2 (MAVLink2 default)
+
+  Serial protocols can be adjusted to personal preferences.
+
+## RC Input
+
+The RCIN pin, which by default is mapped to a timer input, can be used for all ArduPilot supported unidirectional receiver protocols. Bi-directional protocols such as CRSF/ELRS and SRXL2 require a full UART connection. FPort, when connected to RCIN, will only provide RC without telemetry.
+
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART7) would need to be used for receiver connections. Below are setups using Serial6.
+
+- [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) should be set to "23".
+- FPort would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "15".
+- CRSF would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "0".
+- SRXL2 would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "4" and connects only the TX pin.
+
+Any UART can also be used for RC system connections in ArduPilot, and is compatible with all protocols except PPM. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
+The power rail associated with this connector position is powered via USB or PMU.
+
 ## PWM Output
 
 The NarinFC-H7 supports up to 14 PWM outputs. All outputs except M13 and M14 support DShot. Outputs 1-8 support Bi-Directional DShot.
@@ -174,6 +137,65 @@ The 14 PWM outputs are in 4 groups:
 - Outputs 13 and 14 in group4
 
 ALL outputs within the same group need to use the same output rate and protocol.
+
+## Battery Monitoring
+
+The board has two dedicated power monitor ports on 6 pin connectors. The correct battery setting parameters are dependent on the type of power brick which is connected. By default, use of a CAN battery monitor is enabled.
+
+## Introduction
+
+The NarinFC-H7 is a flight controller produced by [VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
+
+NarinFC-H7 is an advanced autopilot family designed in-house by VOLOLAND CO., LTD.
+
+It uses a higher-performance STM32H7 processor and integrates industrial-grade sensors.
+
+Compared with previous autopilots, it has better performance and higher reliability.
+
+![NarinFC-H7](./images/NarinFC_Header.jpg "NarinFC")
+
+## Features/Specifications
+
+- **Processor**
+  - STM32H743
+
+- **Sensors**
+  - Accelerometer/Gyroscope: ADIS16470
+  - Accelerometer/Gyroscope: ICM-20649
+  - Accelerometer/Gyroscope: BMI088
+  - Magnetometer: RM3100
+  - Barometer: MS5611*2
+
+- **Interfaces**
+  - 14 PWM servo outputs
+  - Support multiple RC inputs (SBus / CPPM / DSM)
+  - Analog/PWM RSSI input
+  - 2 GPS ports (GPS and UART4 ports)
+  - 4 ⅹ I2C buses
+  - 2 ⅹ CAN bus ports
+  - 2 ⅹ Power ports
+  - 2 ⅹ ADC ports
+  - 1 ⅹ USB port
+
+- **Power**
+  - Power 4.3V ~ 5.4V
+  - USB Input 4.75V ~ 5.25V
+
+- **Size and Dimensions**
+  - 93.4mm x 46.4mm x 34.1mm
+  - 106g
+
+## Where to Buy
+
+[VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
+
+## Outline Dimensions
+
+![Outline Dimensions](./images/2.Outline_Dimensions.png "Outline Dimensions")
+
+## Wiring Diagram
+
+![Wire Diagram](./images/3.Wire_Diagram.png "Wire Diagram")
 
 ## GPIOs
 
@@ -209,24 +231,6 @@ The NarinFC-H7 has 2 analog inputs, one 6V tolerant and one 3.3V tolerant
 - ADC Pin6  -> RSSI_IN_ADC1(3.3V)
 - ADC Pin8  -> VDD_5V_SENS
 - ADC Pin11 -> SCALED_V3V3
-
-## Battery Monitoring
-
-The board has two dedicated power monitor ports on 6 pin connectors. The correct battery setting parameters are dependent on the type of power brick which is connected. By default, use of a CAN battery monitor is enabled.
-
-## RC Input
-
-The RCIN pin, which by default is mapped to a timer input, can be used for all ArduPilot supported unidirectional receiver protocols. Bi-directional protocols such as CRSF/ELRS and SRXL2 require a full UART connection. FPort, when connected to RCIN, will only provide RC without telemetry.
-
-To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART7) would need to be used for receiver connections. Below are setups using Serial6.
-
-- [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) should be set to "23".
-- FPort would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "15".
-- CRSF would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "0".
-- SRXL2 would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to "4" and connects only the TX pin.
-
-Any UART can also be used for RC system connections in ArduPilot, and is compatible with all protocols except PPM. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
-The power rail associated with this connector position is powered via USB or PMU.
 
 ## Loading Firmware
 

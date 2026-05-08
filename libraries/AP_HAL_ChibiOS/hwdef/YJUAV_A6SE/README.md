@@ -24,6 +24,40 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 
 ![YJUAV_A6SE Board](YJUAV_A6SE-pinout.jpg "YJUAV_A6SE")
 
+## UART Mapping
+
+- SERIAL0 -> USB (OTG1)
+- SERIAL1 -> USART1 (Telem1)
+- SERIAL2 -> USART6 (Telem2)
+- SERIAL3 -> USART3 (GPS1), NODMA
+- SERIAL4 -> USART2 (GPS2), NODMA
+- SERIAL5 -> UART8 (SBUS)
+- SERIAL6 -> UART7 (Debug), NODMA
+- SERIAL7 -> USB2 (OTG2)
+
+## RC Input
+
+The remote control signal should be connected to the “RC IN” pin, at one side of the servo channels.
+
+This signal pin supports two types of remote control signal inputs, SBUS and PPM signals.
+
+## PWM Output
+
+The A6SE supports up to 11 PWM outputs,support all PWM protocols as well as DShot. All 11 PWM outputs have GND on the bottom row, 5V on the middle row and signal on the top row.
+
+The 11 PWM outputs are in 4 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 in group3
+
+Channels 1-8 support bi-directional Dshot.
+Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
+
+
+
+<!-- TODO: add Battery Monitoring content -->
+
 ## Connectors
 
 ### POWER ADC
@@ -142,36 +176,6 @@ The A6SE flight controller is manufactured and sold by [YJUAV](http://www.yjuav.
 |  2   |   DM   | +3.3V |
 |  3   |   DP   | +3.3V |
 |  4   |  GND   |  GND  |
-
-## UART Mapping
-
-- SERIAL0 -> USB (OTG1)
-- SERIAL1 -> USART1 (Telem1)
-- SERIAL2 -> USART6 (Telem2)
-- SERIAL3 -> USART3 (GPS1), NODMA
-- SERIAL4 -> USART2 (GPS2), NODMA
-- SERIAL5 -> UART8 (SBUS)
-- SERIAL6 -> UART7 (Debug), NODMA
-- SERIAL7 -> USB2 (OTG2)
-
-## RC Input
-
-The remote control signal should be connected to the “RC IN” pin, at one side of the servo channels.
-
-This signal pin supports two types of remote control signal inputs, SBUS and PPM signals.
-
-## PWM Output
-
-The A6SE supports up to 11 PWM outputs,support all PWM protocols as well as DShot. All 11 PWM outputs have GND on the bottom row, 5V on the middle row and signal on the top row.
-
-The 11 PWM outputs are in 4 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5, 6, 7 and 8 in group2
-- PWM 9, 10, 11 in group3
-
-Channels 1-8 support bi-directional Dshot.
-Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
 
 ## GPIOs
 

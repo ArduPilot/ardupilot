@@ -12,10 +12,6 @@ The CUAV-V6X-v2 is an upgraded version of CUAV-V6X flight controller. It has the
 - Replace one of the ICP20100 barometer with BMP581.
 - Replace ICM42688P with IIM42652 and ICM20649 with ICM45686.
 
-## Pinout
-
-![CUAV-V6X-v2-pinout.png](CUAV-V6X-v2-pinout.png)
-
 ## Features
 
 - STM32H753 microcontroller
@@ -31,6 +27,10 @@ The CUAV-V6X-v2 is an upgraded version of CUAV-V6X flight controller. It has the
 - 2 CAN ports (two independent CAN buses)
 - Analog RSSI input
 - 3.3V/5V configurable PWM output voltage
+
+## Pinout
+
+![CUAV-V6X-v2-pinout.png](CUAV-V6X-v2-pinout.png)
 
 ## UART Mapping
 

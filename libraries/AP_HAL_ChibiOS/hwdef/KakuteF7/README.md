@@ -47,17 +47,6 @@ each of the four corners of the KakuteF7 AIO board.
 
 RC input is configured on the R6 (UART6_RX) pin. It supports all RC protocols.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the T6 pin (UART6 transmit). You need to set the following parameters to enable support for FrSky S.PORT
-
-- SERIAL6_PROTOCOL 10
-- SERIAL6_OPTIONS 7
-
-## OSD Support
-
-The KakuteF7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The KakuteF7 supports up to 6 PWM outputs. The pads for motor output M1 to M6 on the above diagram are for the 6 outputs. All 6 outputs support DShot as well as all PWM types.
@@ -85,6 +74,17 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 12
 - BATT_VOLT_MULT 10.1
 - BATT_AMP_PERVLT 17.0
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the T6 pin (UART6 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+
+- SERIAL6_PROTOCOL 10
+- SERIAL6_OPTIONS 7
+
+## OSD Support
+
+The KakuteF7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

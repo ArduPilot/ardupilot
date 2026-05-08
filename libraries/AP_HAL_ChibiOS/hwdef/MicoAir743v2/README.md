@@ -17,9 +17,9 @@ The MicoAir743v2 is a flight controller designed and produced by [MicoAir Tech](
 - 1 I2C
 - 1 SWD
 
-## Physical
 
-![MicoAir H743 v2.0 Physical Size](MicoAir743v2_Physical_Size.jpg)
+
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -48,14 +48,6 @@ The UART6  is compatible with all ArduPilot supported receiver protocols,
 - SRXL2 requires a connection to TX6 and automatically provides telemetry. Set SERIAL6_OPTIONS to "4".
 
 Any UART can also be used for RC system connections in ArduPilot and is compatible with all protocols except PPM. See Radio Control Systems for details.
-
-## OSD Support
-
-The MicoAir743v2 supports onboard OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort OSD is available on the HD VTX connector, set OSD_TYPE2 = "5".
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -88,6 +80,18 @@ The default battery parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 21.12
 - BATT_AMP_PERVLT 40.2
+
+## Physical
+
+![MicoAir H743 v2.0 Physical Size](MicoAir743v2_Physical_Size.jpg)
+
+## OSD Support
+
+The MicoAir743v2 supports onboard OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort OSD is available on the HD VTX connector, set OSD_TYPE2 = "5".
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## Compass
 

@@ -6,49 +6,9 @@ Raspberry Pi Zero 2 for low cost onboard computing applications.
 
 ![PrincipIoT H7 Pi](H7-Pi-board-image.jpg)
 
-## Where to Buy
 
-[PrincipIoT Website](https://principiot.com>)
 
-## Specifications
-
-- Processor
-
-  - STM32H743 32-bit processor, 480Mhz
-  - 2MB Flash
-  - 1MB RAM
-
-- Sensors
-
-  - Invensense ICM-42688P
-  - Invensense IIM-42653
-  - Infineon DPS368 Barometer
-  - ST IIS2MDC Magnetometer
-
-- Interfaces
-
-  - Micro SD card
-  - USB-C
-  - 9 PWM (6 motors, 2 servos, and LED strip)
-  - 6 UARTS, one shared with the Raspberry Pi
-  - CAN
-  - ESC Connector with current sense and telemetry inputs
-  - VTX Connector with UART and analog video from the Raspberry Pi
-  - Debug port
-
-- Power
-
-  - Integrated voltage/current power monitor 11V - 30V (3S - 6S) input
-  - 10V GPIO controlled Video power BEC, 2A output
-  - 5V, 2A output for board, Raspberry Pi, and peripherals
-
-- Dimensions
-
-  - Size: 65 x 30 x 9 mm (20mm high with Raspberry Pi installed)
-  - Weight: 11.3g with MicroSD card
-
-For more information, see the
-[PrincipIoT Wiki](https://principiot.gitbook.io/principiot-docs/h7-pi/).
+<!-- TODO: add Features content -->
 
 ## Pinout
 
@@ -110,6 +70,64 @@ All outputs are directly wired to the H743 MCU. All 8 outputs support normal
 PWM output formats. All outputs support DShot, outputs 1-6 support
 Bi-Directional DShot.
 
+## Battery Monitoring
+
+The board has a internal voltage sensor and connections on the ESC connector
+for an external current sensor input.
+The voltage sensor can handle up to 6S LiPo batteries.
+
+The default battery parameters are:
+
+- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) = 4
+- [BATT_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) = 10
+- [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11 (CURR pin)
+- [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11.0
+- [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 40
+
+## Where to Buy
+
+[PrincipIoT Website](https://principiot.com>)
+
+## Specifications
+
+- Processor
+
+  - STM32H743 32-bit processor, 480Mhz
+  - 2MB Flash
+  - 1MB RAM
+
+- Sensors
+
+  - Invensense ICM-42688P
+  - Invensense IIM-42653
+  - Infineon DPS368 Barometer
+  - ST IIS2MDC Magnetometer
+
+- Interfaces
+
+  - Micro SD card
+  - USB-C
+  - 9 PWM (6 motors, 2 servos, and LED strip)
+  - 6 UARTS, one shared with the Raspberry Pi
+  - CAN
+  - ESC Connector with current sense and telemetry inputs
+  - VTX Connector with UART and analog video from the Raspberry Pi
+  - Debug port
+
+- Power
+
+  - Integrated voltage/current power monitor 11V - 30V (3S - 6S) input
+  - 10V GPIO controlled Video power BEC, 2A output
+  - 5V, 2A output for board, Raspberry Pi, and peripherals
+
+- Dimensions
+
+  - Size: 65 x 30 x 9 mm (20mm high with Raspberry Pi installed)
+  - Weight: 11.3g with MicroSD card
+
+For more information, see the
+[PrincipIoT Wiki](https://principiot.gitbook.io/principiot-docs/h7-pi/).
+
 ## Analog Video and OSD Support
 
 The Raspberry Pi Zero 2 support analog video output through a pad on its PCB.
@@ -158,20 +176,6 @@ model or desolder the onboard one.
 |USER SW       | 82         |GPIO Switch     |
 |LED0          | 90         |Blue LED        |
 |LED1          | 91         |Green LED       |
-
-## Battery Monitoring
-
-The board has a internal voltage sensor and connections on the ESC connector
-for an external current sensor input.
-The voltage sensor can handle up to 6S LiPo batteries.
-
-The default battery parameters are:
-
-- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) = 4
-- [BATT_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) = 10
-- [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11 (CURR pin)
-- [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11.0
-- [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 40
 
 ## Firmware
 

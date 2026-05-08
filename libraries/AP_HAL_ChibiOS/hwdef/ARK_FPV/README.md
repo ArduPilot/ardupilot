@@ -218,6 +218,14 @@ RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols e
 - CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options)
 - SRXL2 requires a connection to TX6 and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to “4”. =3.
 
+## PWM Output
+
+All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectional-DSHOT. All outputs in the motor groups below must be either PWM or DShot:
+
+- Motors 1-4  Group1 (TIM5)
+- Motors 5-8  Group2 (TIM8)
+- Motor 9     Group3 (TIM4)
+
 ## Battery Monitoring
 
 The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input. The board supports up to 12S LiPo batteries.
@@ -237,14 +245,6 @@ This autopilot has a built-in compass. The compass is the IIS2MDC
 ## OSD Support
 
 This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH.
-
-## PWM Output
-
-All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectional-DSHOT. All outputs in the motor groups below must be either PWM or DShot:
-
-- Motors 1-4  Group1 (TIM5)
-- Motors 5-8  Group2 (TIM8)
-- Motor 9     Group3 (TIM4)
 
 ## Loading Firmware
 
