@@ -21,6 +21,7 @@
     LOG_RISI_MSG, \
     LOG_RBRH_MSG, \
     LOG_RBRI_MSG, \
+    LOG_RBRJ_MSG, \
     LOG_RRNH_MSG, \
     LOG_RRNI_MSG, \
     LOG_RGPH_MSG, \
@@ -216,7 +217,7 @@ struct log_RBRH {
 };
 
 // @LoggerMessage: RBRI
-// @Description: Replay Data Barometer Instance
+// @Description: Replay Data Barometer Instance - rapidly changing data
 // @Field: LastUpdate: timestamp of barometer data
 // @Field: Alt: barometer altitude estimate
 // @Field: H: barometer sensor health indication
@@ -226,6 +227,14 @@ struct log_RBRI {
     float altitude;  // from get_altitude
     bool healthy;
     uint8_t instance;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RBRJ
+// @Description: Replay Data Barometer Instance - infrequently changing data
+// @Field: FldElv: field elevation
+struct log_RBRJ {
+    float field_elevation;
     uint8_t _end;
 };
 
@@ -624,6 +633,8 @@ struct log_RTER {
       "RBRH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RBRI_MSG, RLOG_SIZE(RBRI),                                   \
       "RBRI", "IfBB", "LastUpdate,Alt,H,I", "---#", "----" }, \
+    { LOG_RBRJ_MSG, RLOG_SIZE(RBRJ),                                   \
+      "RBRJ", "f", "FldElv", "m", "0" }, \
     { LOG_RRNH_MSG, RLOG_SIZE(RRNH),                                   \
       "RRNH", "ffB", "GCl,MaxD,NumSensors", "mm-", "00-" },  \
     { LOG_RRNI_MSG, RLOG_SIZE(RRNI),                                   \

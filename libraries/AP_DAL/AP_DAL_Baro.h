@@ -28,6 +28,9 @@ public:
     float get_altitude() const {
         return get_altitude(get_primary());
     }
+    float get_field_elevation(void) const {
+        return _RBRJ.field_elevation;
+    }
 
     // update_calibration is a no-op in Replay as it simply modifies the data
     // which we'll be logging for input to the EKF.
@@ -44,10 +47,14 @@ public:
     void handle_message(const log_RBRI &msg) {
         _RBRI[msg.instance] = msg;
     }
+    void handle_message(const log_RBRJ &msg) {
+        _RBRJ = msg;
+    }
 
 private:
 
     struct log_RBRH _RBRH;
     struct log_RBRI _RBRI[BARO_MAX_INSTANCES];
+    struct log_RBRJ _RBRJ;
 };
 

@@ -27,6 +27,10 @@ void AP_DAL_Baro::start_frame()
         RBRI.altitude = baro.get_altitude(i);
         WRITE_REPLAY_BLOCK_IFCHANGED(RBRI, _RBRI[i], old);
     }
+
+    const log_RBRJ old_RBRJ = _RBRJ;
+    _RBRJ.field_elevation = baro.get_field_elevation();
+    WRITE_REPLAY_BLOCK_IFCHANGED(RBRJ, _RBRJ, old_RBRJ);
 }
 
 #if AP_BARO_CALIBRATION_ENABLED
