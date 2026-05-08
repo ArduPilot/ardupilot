@@ -4,16 +4,27 @@
 
 # --- Servo 9 Configuration (Physical PWM Output) ---
 # Refer to: https://ardupilot.org/copter/docs/parameters.html#servo9-function-servo-output-function
-SERVO9_FUNCTION 7    # Assigns this output pin to control Mount 1 Pitch 
-SERVO9_MAX 1800      # Maximum physical PWM travel limit
-SERVO9_MIN 1000      # Minimum physical PWM travel limit
-SERVO9_REVERSED 0    # Servo direction (0 = normal, 1 = reversed)
-SERVO9_TRIM 1550     # Neutral PWM position
+
+# Assigns this output pin to control Mount 1 Pitch
+SERVO9_FUNCTION 7
+# Maximum physical PWM travel limit
+SERVO9_MAX 1800
+# Minimum physical PWM travel limit
+SERVO9_MIN 1000
+# Servo direction (0 = normal, 1 = reversed)
+SERVO9_REVERSED 0
+# Neutral PWM position
+SERVO9_TRIM 1550
 
 # --- Mount 1 Configuration (Mount Logic & Limits) ---
 # Refer to: https://ardupilot.org/copter/docs/parameters.html#mnt1-deflt-mode-mount-default-operating-mode
-MNT1_DEFLT_MODE 2    # MAVLink Targeting (listens to MAVROS/GCS)
-MNT1_NEUTRAL_Y 0     # Neutral pitch angle
-MNT1_PITCH_MAX 30    # Maximum allowable pitch angle (looking up)
-MNT1_PITCH_MIN -90   # Minimum allowable pitch angle (looking down)
-MNT1_TYPE 1          # Servo
+# MAVLink Targeting (listens to MAVROS/GCS)
+MNT1_DEFLT_MODE 2
+# Neutral pitch angle
+MNT1_NEUTRAL_Y 0
+# Maximum allowable pitch angle (looking up)
+MNT1_PITCH_MAX 30
+# Minimum allowable pitch angle (looking down)
+MNT1_PITCH_MIN -90
+# Servo
+MNT1_TYPE 1
