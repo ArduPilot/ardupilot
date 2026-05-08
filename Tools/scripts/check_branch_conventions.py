@@ -9,6 +9,7 @@ Validates:
   - commit messages have a well-formed subsystem prefix before ':'
   - commit subject lines are <= 160 characters
   - changed markdown files pass markdownlint-cli2
+  - non-AP_Periph README.md files have required headings in the correct order
 
 AP_FLAKE8_CLEAN
 '''
@@ -28,6 +29,25 @@ import build_script_base
 
 DOCS_URL = "https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
 MAX_SUBJECT_LEN = 160
+
+# Required heading sequence for hardware README.md files (non-AP_Periph).
+# Each entry is (heading_pattern, todo_pattern, display_label).
+# todo_pattern matches the placeholder comment added when content is absent.
+
+
+def _todo(label):
+    return re.compile(r'^<!-- TODO: add ' + re.escape(label) + r' content -->')
+
+
+REQUIRED_README_HEADINGS = [
+    (re.compile(r'^# .+'),              None,                   '# <title>'),
+    (re.compile(r'^## Features$'),      _todo('Features'),      '## Features'),
+    (re.compile(r'^## Pinout$'),        _todo('Pinout'),        '## Pinout'),
+    (re.compile(r'^## UART Mapping$'),  _todo('UART Mapping'),  '## UART Mapping'),
+    (re.compile(r'^## RC Input$'),      _todo('RC Input'),      '## RC Input'),
+    (re.compile(r'^## PWM Output$'),    _todo('PWM Output'),    '## PWM Output'),
+    (re.compile(r'^## Battery Monitoring$'), _todo('Battery Monitoring'), '## Battery Monitoring'),
+]
 BLACKLISTED_PREFIXES = {
     "DEBUG",
     "DRAFT",
@@ -486,6 +506,78 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         print(f"{PASS} Markdown files pass linting.")
         return True
 
+    def check_markdown_readme_heading_order(self) -> bool:
+        '''check non-AP_Periph README.md files have required headings in the correct order
+        with no other headings interspersed between them'''
+        boards_with_readmes = self.find_boards_with_modified_readmes(
+            branch='HEAD',
+            master_branch=self.base_branch,
+            use_merge_base=False,
+        )
+
+        readme_files = [
+            path for path, board_obj in boards_with_readmes
+            if not board_obj.is_ap_periph
+        ]
+
+        if not readme_files:
+            print(f"{PASS} No non-AP_Periph README.md files changed (heading order check).")
+            return True
+
+        heading_re = re.compile(r'^#{1,6} ')
+        fence_re = re.compile(r'^(`{3,}|~{3,})')
+
+        ok = True
+        for path in readme_files:
+            if not os.path.exists(path):
+                continue
+
+            # Collect heading lines and TODO placeholder comments as tokens.
+            tokens = []
+            in_fence = False
+            todo_re = re.compile(r'^<!-- TODO: add .+ content -->')
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                for lineno, raw in enumerate(fh, 1):
+                    line = raw.rstrip("\n")
+                    if fence_re.match(line):
+                        in_fence = not in_fence
+                    if not in_fence and (heading_re.match(line) or todo_re.match(line)):
+                        tokens.append((lineno, line.strip()))
+
+            errors = []
+            req_idx = 0
+            in_sequence = False
+
+            for lineno, token in tokens:
+                if req_idx < len(REQUIRED_README_HEADINGS):
+                    h_pat, t_pat, _ = REQUIRED_README_HEADINGS[req_idx]
+                    if h_pat.match(token) or (t_pat and t_pat.match(token)):
+                        in_sequence = True
+                        req_idx += 1
+                        continue
+                if in_sequence and req_idx < len(REQUIRED_README_HEADINGS):
+                    _, _, next_label = REQUIRED_README_HEADINGS[req_idx]
+                    errors.append(
+                        f"         {path}:{lineno}: unexpected heading '{token}'"
+                        f" (expected '{next_label}')"
+                    )
+
+            if req_idx < len(REQUIRED_README_HEADINGS):
+                missing = [label for _, _, label in REQUIRED_README_HEADINGS[req_idx:]]
+                errors.append(
+                    f"         {path}: missing required headings: {', '.join(missing)}"
+                )
+
+            if errors:
+                print(f"{FAIL} README.md heading order check failed for {path}:")
+                for e in errors:
+                    print(e)
+                ok = False
+            else:
+                print(f"{PASS} {path}: required headings present in correct order.")
+
+        return ok
+
     def run(self) -> None:
         if self.base_branch is None:
             current = self.find_current_git_branch_or_sha1()
@@ -511,6 +603,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_markdown(),
             self.check_markdown_rst_hyperlinks(),
             self.check_markdown_rst_underlines(),
+            self.check_markdown_readme_heading_order(),
         ]
 
         failures = results.count(False)
