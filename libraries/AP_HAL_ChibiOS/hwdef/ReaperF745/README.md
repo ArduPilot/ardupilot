@@ -35,10 +35,6 @@ RC input is configured on the R2 (UART2_RX) pin by default. It supports all seri
 protocols. For FPort you should setup the TX PIN as an RC input serial port,
 with half-duplex and inversion enabled.
 
-## OSD Support
-
-The ReaperF745v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The ReaperF745v2 supports up to 5 PWM outputs. There are no pads for motor output
@@ -67,6 +63,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 12
 - BATT_VOLT_MULT 10.9
 - BATT_AMP_PERVLT 100
+
+## OSD Support
+
+The ReaperF745v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

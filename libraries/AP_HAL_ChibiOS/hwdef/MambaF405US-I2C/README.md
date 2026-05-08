@@ -35,10 +35,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured on the PPM (UART1_RX) pin. It supports all RC protocols.
 
-## OSD Support
-
-The Mamba F405 MK2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The Mamba F405 MK2 supports up to 4 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are for the 4 outputs. All 4 outputs support DShot as well as all PWM types.
@@ -61,6 +57,10 @@ The correct battery setting parameters are:
 - BATT_VOLT_MULT around 11.0
 - BATT_CURR_PIN 13
 - BATT_CURR_MULT around 28 with the 20x20 40A ESC (calculated, needs to be verified)
+
+## OSD Support
+
+The Mamba F405 MK2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

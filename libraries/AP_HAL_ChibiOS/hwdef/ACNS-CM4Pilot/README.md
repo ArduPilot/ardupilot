@@ -29,6 +29,10 @@ The CM4PILOT is a low-cost and compact flight controller which integrated a Rasp
 - RBG LED on board
 - 128M flash on board for logging
 
+
+
+<!-- TODO: add Pinout content -->
+
 ## UART Mapping
 
 - SERIAL0 -> USB(OTG1)
@@ -52,6 +56,16 @@ The PWM is in 4 groups:
 - PWM 7,8 in group3
 - Buzzer on board in group4
 
+## Battery Monitoring
+
+The correct battery setting parameters are set by default and are:
+
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 11
+- BATT_CURR_PIN 12
+- BATT_VOLT_SCALE 10.1
+- BATT_AMP_PERVLT 17.0
+
 ## GPIOs
 
 All 8 PWM channels can be used for GPIO functions.
@@ -66,16 +80,6 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM5         | 54   |
 | PWM6         | 55   |
 | PWM7         | 56   |
-
-## Battery Monitoring
-
-The correct battery setting parameters are set by default and are:
-
-- BATT_MONITOR 4
-- BATT_VOLT_PIN 11
-- BATT_CURR_PIN 12
-- BATT_VOLT_SCALE 10.1
-- BATT_AMP_PERVLT 17.0
 
 ## Compass
 

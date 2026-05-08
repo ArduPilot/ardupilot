@@ -22,11 +22,6 @@ The DAKEFPV F405 is a flight controller produced by [DAKEFPV](https://www.dakefp
 ![DAKEFPV F405 Board Top](Top.png "DAKEFPV F405 Top")
 ![DAKEFPV F405 Board Bottom](Bottom.png "DAKEFPV F405 Bottom")
 
-## DAKEFPV F405 Wiring Diagram
-
-![DAKEFPV F405 Wiring Diagram Top]( WiringDiagramTop.png "DAKEFPV F405 Wiring Diagram Top")
-![DAKEFPV F405 Wiring Diagram Bottom](WiringDiagramBottom.png "DAKEFPV F405 Wiring Diagram Bottom")
-
 ## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
@@ -47,14 +42,6 @@ RC input is configured by default via the USART2 RX input. It supports all unidi
 - FPort requires an external bi-directional inverter attached to T2 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to 4 (half-duplex).  See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF/ELRS uses RX2/TX2.
 - SRXL2 requires a connection to T2 and automatically provides telemetry.  Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
-
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the TX5 pin (UART5 transmit).
-You need to set the following parameters to enable support for FrSky S.PORT:
-
-- [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) 10
-- [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) 7
 
 ## PWM Output
 
@@ -84,6 +71,19 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN = 10
 - BATT_VOLT_MULT = 11.0
 - BATT_AMP_PERVLT = 83.3
+
+## DAKEFPV F405 Wiring Diagram
+
+![DAKEFPV F405 Wiring Diagram Top]( WiringDiagramTop.png "DAKEFPV F405 Wiring Diagram Top")
+![DAKEFPV F405 Wiring Diagram Bottom](WiringDiagramBottom.png "DAKEFPV F405 Wiring Diagram Bottom")
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the TX5 pin (UART5 transmit).
+You need to set the following parameters to enable support for FrSky S.PORT:
+
+- [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) 10
+- [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) 7
 
 ## RSSI
 

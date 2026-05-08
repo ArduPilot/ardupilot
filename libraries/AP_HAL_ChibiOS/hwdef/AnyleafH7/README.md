@@ -50,20 +50,11 @@ Pins and connector values are labeled on the flight controller PCB, with the fol
 - SERIAL5 -> UART7 (Onboard ELRS receiver only, RCIN protocol)
 - SERIAL6 -> UART8 (USER, External pads)
 
-## Can FD port
-
-This flight controller includes a 4-pin DroneCAN standard CAN port. It's capable of 64-byte frames,
-and up to 5Mbps data rates. It's useful for connecting GPS devices, compasses, power monitoring, sensors, motors, servos, and other CAN peripherals.
-
 ## RC Input
 
 This flight controller includes a 2.4Ghz ExpressLRS transceiver, capable of receiving control input, and transmitting or receiving MavLink telemetry. To enable all ELRS features, either RC5 channel should be setup as an ARM switch (there are several RC5_OPTIONS that can do this) or by mapping the transmitter's Channel 5 to reflect ARM status from telemetry. See: [this video](https://youtu.be/YO2yA1fmZBs) for an example.
 
 SBUS on the DJI connector may be used if SERIAL5_PROTOCOL is changed to 0 and SERIAL1_PROTOCOL is changed to 23 for RC input.
-
-## OSD Support
-
-This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH port re-configured.
 
 ## PWM Output
 
@@ -73,6 +64,19 @@ All outputs in the motor groups below must be either PWM or DShot:
 Motors 1-4  Group1
 Motors 5-6  Group2
 Motors 7-8  Group3
+
+
+
+<!-- TODO: add Battery Monitoring content -->
+
+## Can FD port
+
+This flight controller includes a 4-pin DroneCAN standard CAN port. It's capable of 64-byte frames,
+and up to 5Mbps data rates. It's useful for connecting GPS devices, compasses, power monitoring, sensors, motors, servos, and other CAN peripherals.
+
+## OSD Support
+
+This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH port re-configured.
 
 ## Magnetometer
 

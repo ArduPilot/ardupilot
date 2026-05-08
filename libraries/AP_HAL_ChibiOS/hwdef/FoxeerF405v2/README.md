@@ -40,10 +40,6 @@ protocols. Half-duplex serial protocols should be configured on T2 (UART2_TX). R
 supported on UART6_RX within the DJI connector, although because it is not inverted it cannot be
 used for SBUS.
 
-## OSD Support
-
-The FoxeerF405v2 supports OSD using OSD_TYPE 1 (MAX7456 driver) or OSD_TYPE 3 if using DJI OSD
-
 ## PWM Output
 
 The FoxeerF405v2 supports up to 9 PWM outputs. The pads for motor output
@@ -76,6 +72,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 11
 - BATT_AMP_PERVLT 142.9
+
+## OSD Support
+
+The FoxeerF405v2 supports OSD using OSD_TYPE 1 (MAX7456 driver) or OSD_TYPE 3 if using DJI OSD
 
 ## Compass
 

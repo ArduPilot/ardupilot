@@ -43,16 +43,6 @@ See Flight Core Datasheet [Here](https://docs.modalai.com/flight-core-datasheets
 
 For detailed pinout descriptions see [FlightCore Pinout](https://docs.modalai.com/flight-core-datasheets-connectors/)
 
-## Dimensions
-
-![ModalAI-fc-dims](flight_core_v1_imu_locations.png "modal-fc-dims")
-
-![ModalAI_fc-dims2](flight-core-dims.png "modal-fc-dims2")
-
-## Block Diagram
-
-![ModalAI_FC](fc-dk-preliminary-datasheet.png "modal-fc-block")
-
 ## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
@@ -96,6 +86,16 @@ the modalAI build supports two I2C power monitors, the INA231 and the
 LTC2946. The FlightCore board comes with the INA231 and you should set
 BATTERY_MONITOR to 21. For the LTC2946 based power brick you should
 set BATTERY_MONITOR to 22.
+
+## Dimensions
+
+![ModalAI-fc-dims](flight_core_v1_imu_locations.png "modal-fc-dims")
+
+![ModalAI_fc-dims2](flight-core-dims.png "modal-fc-dims2")
+
+## Block Diagram
+
+![ModalAI_FC](fc-dk-preliminary-datasheet.png "modal-fc-block")
 
 ## Compass
 

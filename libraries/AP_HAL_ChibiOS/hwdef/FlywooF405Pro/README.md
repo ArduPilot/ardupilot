@@ -42,10 +42,6 @@ USART3 and USART6 supports RX and TX DMA. UART4 supports TX DMA. UART1, UART2 an
 
 RC input is configured on UART3, UART4 or UART6 which support serial RC protocols. SBUS *must* be used on UART4 which has hardware inversion, UART5 also has hardware inversion but no DMA so use for SBUS is not recommended.
 
-## OSD Support
-
-The GOKU F405 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The GOKU F405 Pro supports up to 9 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are the first 4 outputs.All 9 outputs support DShot.
@@ -76,6 +72,10 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT around 59
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The GOKU F405 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

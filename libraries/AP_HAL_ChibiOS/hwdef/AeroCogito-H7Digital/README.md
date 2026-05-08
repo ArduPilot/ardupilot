@@ -13,17 +13,6 @@ The AeroCogito H7-Digital is a **NDAA-compliant**, high-performance flight contr
 - 10 PWM outputs
 - Software-controlled 10V VTX power
 
-## Specifications
-
-- **MCU**: STM32H743 @ 480MHz
-- **Memory**: 1MB RAM, 2MB Flash
-- **IMU**: ICM-42688-P 6-axis, with isolated power rail and additional filtering
-- **Baro**: DPS368
-- **Size**: 41mm x 41mm (30.5mm mounting)
-- **Input**: 3S-6S (11.1V - 25.2V)
-- **5V BEC**: 2.5A peak, 2A continuous
-- **10V BEC**: 2.5A peak, 2A continuous
-
 ## Pinout
 
 ![AeroCogito H7-Digital Pinout - Front and back views with labeled pins](H7-Digital_pinout.jpg)
@@ -43,6 +32,66 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | SERIAL6     | UART7    | NONE          | RX only on R7 for DJI, DMA-enabled      |
 
 Note: in order to use SERIAL6 for SBUS input on HD VTX connector, SERIAL 4 must not be used for RC, its protocol changed from "23", and SERIAL6_PROTOCOL changed to "23".
+
+## RC Input
+
+RC input is configured by default on UART4 (SERIAL4). It supports all standard protocols (SBUS, CRSF/ELRS, DSM, PPM).
+
+## PWM Output
+
+The H7-Digital supports up to 10 PWM outputs. All motor outputs support DShot (150/300/600) as well as PWM/OneShot.
+
+Bidirectional DShot supported on motors 1-8.
+
+**Note**: All outputs in the same group must use the same protocol:
+
+- Group 1 (M1-M4): Must all be the same (e.g., all DShot300)
+- Group 2 (M5-M8): Must all be the same
+- Group 3 (S1-S2): Must all be the same
+
+### Motor Outputs (Outputs 1-8)
+
+| Output | Pin  | Group |
+|--------|------|-------|
+| M1     | PE9  | 1     |
+| M2     | PE11 | 1     |
+| M3     | PE13 | 1     |
+| M4     | PE14 | 1     |
+| M5     | PD12 | 2     |
+| M6     | PD13 | 2     |
+| M7     | PD14 | 2     |
+| M8     | PD15 | 2     |
+
+### Servo Outputs (Outputs 9-10)
+
+| Output | Pin | Group |
+|--------|-----|-------|
+| S1     | PC6 | 3     |
+| S2     | PC7 | 3     |
+
+## Battery Monitoring
+
+The board has built-in voltage and current monitoring:
+
+- **Voltage Sensing**: default scale - 11.0
+- **Current Sensing**: default scale - 18.0
+
+Default battery monitoring parameters:
+
+- `BATT_MONITOR = 4` (Voltage and Current)
+- `BATT_VOLT_PIN = 16`
+- `BATT_CURR_PIN = 17`
+
+## Specifications
+
+- **MCU**: STM32H743 @ 480MHz
+- **Memory**: 1MB RAM, 2MB Flash
+- **IMU**: ICM-42688-P 6-axis, with isolated power rail and additional filtering
+- **Baro**: DPS368
+- **Size**: 41mm x 41mm (30.5mm mounting)
+- **Input**: 3S-6S (11.1V - 25.2V)
+- **5V BEC**: 2.5A peak, 2A continuous
+- **10V BEC**: 2.5A peak, 2A continuous
 
 ## Connectors
 
@@ -148,10 +197,6 @@ Connect your companion computer (e.g. Raspberry Pi, Nvidia Jetson) to the Compan
 - For high-bandwidth applications, consider `SERIAL1_BAUD = 921` (921600 baud)
 - Note: Higher baud rates require short, shielded cables and good electrical design.
 
-## RC Input
-
-RC input is configured by default on UART4 (SERIAL4). It supports all standard protocols (SBUS, CRSF/ELRS, DSM, PPM).
-
 ## OSD Support
 
 The H7-Digital supports **digital HD VTX only** via MSP DisplayPort on UART2 (SERIAL2). There is no analog OSD chip on this board.
@@ -167,51 +212,6 @@ Defaults set to:
 
 - `OSD_TYPE = 5` (MSP DisplayPort)
 - `SERIAL2_PROTOCOL = 42` (DisplayPort)
-
-## PWM Output
-
-The H7-Digital supports up to 10 PWM outputs. All motor outputs support DShot (150/300/600) as well as PWM/OneShot.
-
-Bidirectional DShot supported on motors 1-8.
-
-**Note**: All outputs in the same group must use the same protocol:
-
-- Group 1 (M1-M4): Must all be the same (e.g., all DShot300)
-- Group 2 (M5-M8): Must all be the same
-- Group 3 (S1-S2): Must all be the same
-
-### Motor Outputs (Outputs 1-8)
-
-| Output | Pin  | Group |
-|--------|------|-------|
-| M1     | PE9  | 1     |
-| M2     | PE11 | 1     |
-| M3     | PE13 | 1     |
-| M4     | PE14 | 1     |
-| M5     | PD12 | 2     |
-| M6     | PD13 | 2     |
-| M7     | PD14 | 2     |
-| M8     | PD15 | 2     |
-
-### Servo Outputs (Outputs 9-10)
-
-| Output | Pin | Group |
-|--------|-----|-------|
-| S1     | PC6 | 3     |
-| S2     | PC7 | 3     |
-
-## Battery Monitoring
-
-The board has built-in voltage and current monitoring:
-
-- **Voltage Sensing**: default scale - 11.0
-- **Current Sensing**: default scale - 18.0
-
-Default battery monitoring parameters:
-
-- `BATT_MONITOR = 4` (Voltage and Current)
-- `BATT_VOLT_PIN = 16`
-- `BATT_CURR_PIN = 17`
 
 ## Compass
 

@@ -41,10 +41,6 @@ Note: If the receiver is FPort the receiver must be tied to the USART2 TX pin , 
 and SERIAL2_OPTIONS must be set to 7 (invert TX/RX, half duplex). For full duplex like CRSF/ELRS use both
 RX2 and TX2 and set RSSI_TYPE also to 3.
 
-## OSD Support
-
-Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector.
-
 ## PWM Output
 
 The SPEDIX F405 supports up to 9 PWM outputs. The pads for motor output
@@ -74,6 +70,10 @@ The correct battery setting parameters are:
 - [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11 (CURR pin)
 - [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11.0
 - [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 25
+
+## OSD Support
+
+Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultaneously, DisplayPort OSD is available on the HD VTX connector.
 
 ## Compass
 

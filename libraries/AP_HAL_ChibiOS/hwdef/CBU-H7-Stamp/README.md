@@ -15,37 +15,6 @@ The [CBUnmanned H743 Stamp](https://cbunmanned.com/store) is a flight controller
 - All complicated/supporting circuitry is on-board, just power with 5v.
 - Just 22mm x 24.25mm & 3g.
 
-## Specifications
-
-- Processor
-- STM32H743IIK6 microcontroller
-- 480MHz
-- 2Mb Flash
-- 1Mb RAM
-
-- Sensors
-- x2 Ivensense ICM-42688 IMU
-- x1 Ivensense ICM-42670 IMU
-- x1 BMP280 Barometer
-- x1 Bosch BMM150 Magnetometer
-
-- Power
-- 5v Main Power in
-- x6 Independent Power Regulators
-- x2 ADC Inputs for Voltage and Current Sense
-
-- Interfaces
-- x1 MicroSD card slot
-- x8 UARTs inc RC, x3 with flow control
-- x10 PWM outputs
-- x2 I2C
-- x2 CAN
-- x1 External SPI
-- x1 Ethernet
-- External Buzzer
-- External Safety Switch
-- External USB connectors
-
 ## Pinout
 
 ![H743 Stamp Pinout](H743Pinout.png "H743")
@@ -135,6 +104,47 @@ Optional, if it is not fitted remove the check from arming mask. To activate sho
 A regulated 3.3v output is available from the stamp for use with the safety button. WARNING! This is shared with the main IC - Do NOT use for accessories. Keep current draw under 0.1A!
 
 The Stamp requires a stable 5v supply input of at least 1.5A. This directly powers the 5v components and supplies the 3.3v LDOs with power. Typical idle usage is 0.35A @ 5v.
+
+
+
+
+
+
+<!-- TODO: add UART Mapping content -->
+<!-- TODO: add RC Input content -->
+<!-- TODO: add PWM Output content -->
+<!-- TODO: add Battery Monitoring content -->
+
+## Specifications
+
+- Processor
+- STM32H743IIK6 microcontroller
+- 480MHz
+- 2Mb Flash
+- 1Mb RAM
+
+- Sensors
+- x2 Ivensense ICM-42688 IMU
+- x1 Ivensense ICM-42670 IMU
+- x1 BMP280 Barometer
+- x1 Bosch BMM150 Magnetometer
+
+- Power
+- 5v Main Power in
+- x6 Independent Power Regulators
+- x2 ADC Inputs for Voltage and Current Sense
+
+- Interfaces
+- x1 MicroSD card slot
+- x8 UARTs inc RC, x3 with flow control
+- x10 PWM outputs
+- x2 I2C
+- x2 CAN
+- x1 External SPI
+- x1 Ethernet
+- External Buzzer
+- External Safety Switch
+- External USB connectors
 
 ## Loading Firmware
 

@@ -16,9 +16,9 @@
 - 5V Power Out: 2.0A max
 - 9V Power Out: 2.0A max
 
-## Pinout for BRAHMA F405
 
-![BrahmaF405](BRAHMA_F405-diagram.jpg "DM_BrahmaF4")
+
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -46,11 +46,6 @@ The UARTs are marked Rx and Tx in the above pinouts.
 - SRXL2 requires a connection to T1 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See Radio Control Systems for details.
-
-## OSD Support
-
-- ANALOG OSD (MAX7456) (SPI1) (Preconfigured)
-- DIGITAL OSD (MSP)    (UART4 can be used for MSP Displayport by changing [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) to "42")
 
 ## PWM Output
 
@@ -81,6 +76,15 @@ The default battery configuration is:
 - BATT_VOLT_MULT 11
 - BATT_CURR_PIN 13
 - BATT_CURR_MULT 37
+
+## Pinout for BRAHMA F405
+
+![BrahmaF405](BRAHMA_F405-diagram.jpg "DM_BrahmaF4")
+
+## OSD Support
+
+- ANALOG OSD (MAX7456) (SPI1) (Preconfigured)
+- DIGITAL OSD (MSP)    (UART4 can be used for MSP Displayport by changing [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) to "42")
 
 ## Compass & Baro
 

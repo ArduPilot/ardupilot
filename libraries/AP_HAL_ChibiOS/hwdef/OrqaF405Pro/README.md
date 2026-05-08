@@ -34,9 +34,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured for GHST by default on the T1 (UART1_TX) pin using half-duplex. To support other RC protocols set SERIAL1_OPTIONS to 0. This will support all serial RC protocols except SBUS. For PPM and SBUS support on UART1_RX set BRD_ALT_CONFIG to 1.
   
-## OSD Support
-
-The Orqa FC 3030 F405 supports OSD using OSD_TYPE 1 (MAX7456 driver) or OSD_TYPE 3 if using DJI OSD
 
 ## PWM Output
 
@@ -66,6 +63,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 12
 - BATT_VOLT_MULT 8.3
 - BATT_AMP_PERVLT 92.6
+
+## OSD Support
+
+The Orqa FC 3030 F405 supports OSD using OSD_TYPE 1 (MAX7456 driver) or OSD_TYPE 3 if using DJI OSD
 
 ## VTX Control
 

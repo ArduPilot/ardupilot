@@ -44,11 +44,6 @@ The Control Zero H7 OEM revision G is a flight controller produced by [3DR (mRo)
 
  *Note:* Case sold separately.
 
-## Changelog
-
-- M10059C - Initial Release
-- M10059G adds external power supply and TCXO.
-
 ## Pinout
 
 ![Control Zero H7 OEM revision G pinout](https://vddwxegfxugwzpfnrrlp.supabase.co/storage/v1/object/public/Website-CDN/pinouts/czoem_pinout_revG_topview.png)
@@ -79,15 +74,6 @@ Spektrum DSM / DSM2 / DSM-X® Satellite compatible input and binding.
 Futaba S.BUS® & S.BUS2® compatible input.
 Graupner SUMD. Yuneec ST24.
 
-## Analog Inputs
-
-The Control Zero H7 OEM revision G has 4 ADC inputs:
-
-- ADC1 Pin11 -> RSSI IN
-- ADC1 Pin14 -> Battery Voltage
-- ADC1 Pin15 -> Battery Current
-- ADC1 Pin18 -> 5V Sensor
-
 ## PWM Output
 
 The Control Zero H7 OEM revision G supports up to 8 PWM outputs. All DShot and BiDirDShot capable.
@@ -100,10 +86,6 @@ The PWM outputs are distributed in 3 groups:
 
 Channels within the same group must use only one output rate. If any channel is using DShot or BiDirDShot the rest of the group will use the said output type.
 
-## Power Supply
-
-This board requires a 5V, 1 Amps power supply.
-
 ## Battery Monitoring
 
 This board has a built-in voltage and current sensors. The following settings need to be present already on the board to work with a Power Zero Module (M10077):
@@ -115,6 +97,24 @@ This board has a built-in voltage and current sensors. The following settings ne
 - BATT_AMP_PERVLT 50.0
 
 *Note:* Other Power Module needs to be adjusted accordingly.
+
+## Changelog
+
+- M10059C - Initial Release
+- M10059G adds external power supply and TCXO.
+
+## Analog Inputs
+
+The Control Zero H7 OEM revision G has 4 ADC inputs:
+
+- ADC1 Pin11 -> RSSI IN
+- ADC1 Pin14 -> Battery Voltage
+- ADC1 Pin15 -> Battery Current
+- ADC1 Pin18 -> 5V Sensor
+
+## Power Supply
+
+This board requires a 5V, 1 Amps power supply.
 
 ## Build
 

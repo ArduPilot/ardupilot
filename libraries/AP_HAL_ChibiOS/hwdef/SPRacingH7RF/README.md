@@ -49,10 +49,6 @@ protocols. PPM is not supported. For protocols requiring half-duplex serial to t
 telemetry (such as FPort) you should setup SERIAL2 as an RC input serial port,
 with half-duplex, pin-swap and inversion enabled. For duplex protocols, like CRSF/ELRS, T2 must also be connected to the receiver.
 
-## Pixel OSD Support
-
-Ardupilot does not currently support the integrated OSD chip. UART3 is setup fir use with DisplayPort goggles with OSD.
-
 ## PWM Output
 
 The SPRacingH7 RF supports up to 9 PWM outputs. PWM 1-8 support DShot and Bi-Directional DShot. The pads for motor output
@@ -81,6 +77,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 10.9
 - BATT_AMP_PERVLT 28.5 (will need adjustment for the current sensor range of the ESC)
+
+## Pixel OSD Support
+
+Ardupilot does not currently support the integrated OSD chip. UART3 is setup fir use with DisplayPort goggles with OSD.
 
 ## Compass
 

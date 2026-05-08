@@ -4,47 +4,9 @@ The SparkNavi Blue autopilot is manufactured by [SparkNavi](https://www.sparknav
 
 ![SparkNavi Blue](sparknavi-blue.png)
 
-## Where to Buy
 
-[SparkNavi Official](https://www.sparknavi.com)
 
-## Specifications
-
-- Processor
-
-  - STM32H743 32-bit processor, 480MHz
-  - STM32F103 IOMCU
-  - 2MB Flash
-  - 1MB RAM
-
-- Sensors
-
-  - InvenSense ICM42688 / ICM42652 IMU
-  - Bosch BMP280 Barometer
-  - Honeywell HMC5883L Magnetometer
-
-- Interfaces
-
-  - Micro SD card
-  - USB-C
-  - 14 PWM outputs (8 Main + 6 AUX)
-  - 5 UARTs, two with flow control
-  - Dual CAN
-  - I2C expansion port
-  - SPI expansion port
-  - ADC expansion port (6.6V input range)
-  - FRAM for parameter storage
-  - Safety switch input (on GPS1 connector)
-
-- Power
-
-  - Dual power input connectors (POWER1, POWER2) with independent voltage and current monitoring
-  - Maximum power input voltage: 6V
-
-- Dimensions
-
-  - Size: 7.4 × 4.8 × 1.7 cm
-  - Weight: 70g with MicroSD card
+<!-- TODO: add Features content -->
 
 ## Pinout
 
@@ -99,6 +61,70 @@ The 6 AUX OUT outputs are in 3 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
+## Battery Monitoring
+
+The board has dual internal voltage and current sensors connected to the POWER1 and POWER2 connectors. Maximum power input voltage: 6V.
+
+The default battery parameters are:
+
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 16
+- BATT_CURR_PIN = 17
+- BATT_VOLT_MULT = 16.76
+- BATT_AMP_PERVLT = 100
+
+A second battery monitor is also enabled by default:
+
+- BATT2_MONITOR = 4
+- BATT2_VOLT_PIN = 14
+- BATT2_CURR_PIN = 15
+- BATT2_VOLT_MULT = 16.76
+- BATT2_AMP_PERVLT = 100
+
+These scale values are calibrated for the SparkNavi Blue power module and may need adjustment for other power modules.
+
+## Where to Buy
+
+[SparkNavi Official](https://www.sparknavi.com)
+
+## Specifications
+
+- Processor
+
+  - STM32H743 32-bit processor, 480MHz
+  - STM32F103 IOMCU
+  - 2MB Flash
+  - 1MB RAM
+
+- Sensors
+
+  - InvenSense ICM42688 / ICM42652 IMU
+  - Bosch BMP280 Barometer
+  - Honeywell HMC5883L Magnetometer
+
+- Interfaces
+
+  - Micro SD card
+  - USB-C
+  - 14 PWM outputs (8 Main + 6 AUX)
+  - 5 UARTs, two with flow control
+  - Dual CAN
+  - I2C expansion port
+  - SPI expansion port
+  - ADC expansion port (6.6V input range)
+  - FRAM for parameter storage
+  - Safety switch input (on GPS1 connector)
+
+- Power
+
+  - Dual power input connectors (POWER1, POWER2) with independent voltage and current monitoring
+  - Maximum power input voltage: 6V
+
+- Dimensions
+
+  - Size: 7.4 × 4.8 × 1.7 cm
+  - Weight: 70g with MicroSD card
+
 ## Compass
 
 An on-board HMC5883L compass is provided. However, users often will disable this compass and use an external one remotely located to avoid power circuitry interference using the SDA and SCL I2C lines provided.
@@ -132,28 +158,6 @@ If the ARSPD pin is used for analog airspeed  input. Set [ARSPD_PIN](https://ard
 | MAIN(6)        | 106         |
 | MAIN(7)        | 107         |
 | MAIN(8)        | 108         |
-
-## Battery Monitoring
-
-The board has dual internal voltage and current sensors connected to the POWER1 and POWER2 connectors. Maximum power input voltage: 6V.
-
-The default battery parameters are:
-
-- BATT_MONITOR = 4
-- BATT_VOLT_PIN = 16
-- BATT_CURR_PIN = 17
-- BATT_VOLT_MULT = 16.76
-- BATT_AMP_PERVLT = 100
-
-A second battery monitor is also enabled by default:
-
-- BATT2_MONITOR = 4
-- BATT2_VOLT_PIN = 14
-- BATT2_CURR_PIN = 15
-- BATT2_VOLT_MULT = 16.76
-- BATT2_AMP_PERVLT = 100
-
-These scale values are calibrated for the SparkNavi Blue power module and may need adjustment for other power modules.
 
 ## Firmware
 
