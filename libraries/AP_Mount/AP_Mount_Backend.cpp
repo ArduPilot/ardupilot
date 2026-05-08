@@ -109,6 +109,19 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
             mnt_target.target_type = MountTargetType::ANGLE;
             return;
         }
+        // zero rates when in failsafe
+        if (mnt_target.target_type == MountTargetType::RATE) {
+            // note that we do not change the frame here; if a gimbal
+            // is tracking in earth-frame it will continue to do so.
+            mnt_target.rate_rads.roll = 0;
+            mnt_target.rate_rads.pitch = 0;
+            mnt_target.rate_rads.yaw = 0;
+        }
+        return;
+    }
+
+    if (!rc().has_valid_input()) {
+        return;
     }
 
     // get RC input from pilot
