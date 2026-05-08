@@ -11929,6 +11929,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.change_mode("LOITER")
         self.wait_ready_to_arm(require_absolute=False)
+        # require_absolute=False does not wait for the EKF origin (and thus home)
+        # to be set. Block until home is set so the GUIDED takeoff's ABOVE_HOME
+        # alt frame conversion succeeds.
+        self.poll_home_position()
         self.arm_vehicle()
         self.takeoffAndMoveAway()
         self.do_RTL()
