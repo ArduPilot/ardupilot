@@ -8251,6 +8251,79 @@ class TestSuite(abc.ABC):
             raise NotAchievedException("Expected %s to be %u got %u" %
                                        (channel, value, m_value))
 
+    def _rc_overrides_send_single(self, chan, pwm):
+        '''Send RC_CHANNELS_OVERRIDE targeting a single channel; others are UINT16_MAX (ignore)'''
+        channels = [65535] * 18
+        channels[chan-1] = pwm
+        self.mav.mav.rc_channels_override_send(
+            self.mav.target_system,
+            1,
+            *channels,
+        )
+
+    def _rc_overrides_release_single(self, chan):
+        '''Release RC override on a single channel by sending 0; others are UINT16_MAX (ignore)'''
+        channels = [65535] * 18
+        channels[chan-1] = 0
+        self.mav.mav.rc_channels_override_send(
+            self.mav.target_system,
+            1,
+            *channels,
+        )
+
+    def _check_rc_overrides_cleared_by_pilot_input(self,
+                                                   trigger_ch,
+                                                   trigger_pwm,
+                                                   override_ch,
+                                                   override_pwm,
+                                                   expect_clear):
+        '''Verify whether moving trigger_ch clears an active override on override_ch (RC_OPTIONS bit 14).
+
+        Pass trigger_ch=None to skip the pilot-input step. Caller must have set
+        RC12_OPTION=46 and rebooted; this helper toggles ch12 to recover from a
+        previous clear-by-pilot.'''
+        if trigger_ch is not None and trigger_ch == override_ch:
+            raise ValueError("trigger_ch must differ from override_ch")
+
+        self.context_push()
+        self.context_collect("STATUSTEXT")
+        try:
+            # disable auto-expiry so the test does not race the 3s timeout
+            self.set_parameter("RC_OVERRIDE_TIME", -1)
+
+            # toggle ch12 to recover override-enable after a prior clear-by-pilot
+            self.set_rc(12, 1000)
+            self.delay_sim_time(0.2)
+            self.set_rc(12, 2000)
+            self.delay_sim_time(0.5)
+
+            self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+            self.delay_sim_time(0.5)
+
+            self._rc_overrides_send_single(override_ch, override_pwm)
+            self.wait_rc_channel_value(override_ch, override_pwm, timeout=5)
+
+            if trigger_ch is not None:
+                self.set_rc(trigger_ch, trigger_pwm)
+
+            if expect_clear:
+                self.wait_statustext(
+                    "RC overrides cleared by pilot input",
+                    timeout=5,
+                    check_context=True,
+                )
+                self.wait_rc_channel_value(override_ch, 1500, timeout=3)
+            else:
+                # re-send override since it may have just expired
+                self.delay_sim_time(1.0)
+                self._rc_overrides_send_single(override_ch, override_pwm)
+                self.wait_rc_channel_value(override_ch, override_pwm, timeout=2)
+        finally:
+            self._rc_overrides_release_single(override_ch)
+            self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+            self.delay_sim_time(0.2)
+            self.context_pop()
+
     def send_do_reposition(self,
                            loc,
                            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT):
