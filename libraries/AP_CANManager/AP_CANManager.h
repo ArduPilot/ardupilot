@@ -84,10 +84,8 @@ public:
         return LogLevel(_loglevel.get());
     }
     
-    // Method to log status and debug information for review while debugging
+    // Method to log status and debug information via GCS
     void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...) FMT_PRINTF(4,5);
-
-    void log_retrieve(ExpandingString &str) const;
 
     // return driver type index i
     AP_CAN::Protocol get_driver_type(uint8_t i) const
@@ -165,9 +163,6 @@ private:
 #endif
 
     static AP_CANManager *_singleton;
-
-    char* _log_buf;
-    int32_t _log_pos;
 
     HAL_Semaphore _sem;
 
