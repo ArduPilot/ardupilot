@@ -3401,15 +3401,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Specify this starting mode in order to confirm it is reselected after FLIP mode.
         self.change_mode('ALT_HOLD')
 
-        # Test 1: default flip initialized by mode-change to FLIP.
+        # Test 1: default flip initialized by RC Aux.
         self.progress("Flipping in roll (default = roll-right)")
         flip_mode_watcher = WatchForMode(self, 'FLIP')
         self.install_message_hook(flip_mode_watcher)
         neutral_stick = 1500
         self.set_rc(1, neutral_stick) # forces default flip behavior
-        self.send_cmd_do_set_mode('FLIP') # don't wait for success
-        self.wait_attitude(despitch=0, desroll=45, tolerance=30)
-        self.wait_attitude(despitch=0, desroll=90, tolerance=30)
+        flip_rc_aux_channel = 9
+        aux_low = 1000
+        aux_high = 2000
+        self.set_rc(flip_rc_aux_channel, aux_low)
+        rc_option_flip_mode = 2 # (source: RC1_OPTION definition)
+        self.set_parameter(f'RC{flip_rc_aux_channel}_OPTION', rc_option_flip_mode)
+        self.set_rc(flip_rc_aux_channel, aux_high)
+        # By the time self.set_rc() finishes, copter is mid-flip.
+        self.wait_attitude(despitch=0, desroll=150, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=-130, tolerance=30)
         self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
         self.progress("Waiting for level")
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
