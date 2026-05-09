@@ -215,6 +215,9 @@ void Copter::startup_INS_ground()
 
     // reset ahrs including gyro bias
     ahrs.reset();
+
+    // Load saved hover Z-bias corrections into EKF (must be after ahrs.reset())
+    init_hover_bias_correction();
 }
 
 // position_ok - returns true if the horizontal absolute position is ok and home position is set
