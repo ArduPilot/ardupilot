@@ -3475,6 +3475,45 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Regaining altitude")
         self.wait_altitude(19, 60, relative=True)
 
+        class RollReachesMagnitude(vehicle_test_suite.TestSuite.MessageHook):
+            """Observes if roll angle ever exceeds specified magnitude."""
+            def __init__(self, suite: vehicle_test_suite.TestSuite, roll_magnitude_deg: float):
+                super(RollReachesMagnitude, self).__init__(suite)
+                self.roll_magnitude = math.radians(roll_magnitude_deg)
+                self.roll_exceeded_magnitude = False
+
+            def process(self, mav, m):
+                if self.roll_exceeded_magnitude:
+                    return
+                if m.get_type() == 'ATTITUDE' and abs(m.roll) > self.roll_magnitude:
+                    self.roll_exceeded_magnitude = True
+
+        # Test 3: abandon the flip
+        self.progress("Start then abandon a default flip (roll-right)")
+        higher_than_usual_roll_mag_deg = 20.0 # Seeing this indicates the copter started an unusual maneuver
+        flip_start_watcher = RollReachesMagnitude(self, higher_than_usual_roll_mag_deg)
+        # Bigger than the flip-mode abandon threshold (45 deg) plus a bit more for 'momentum during recovery'.
+        flip_happened_threshold_deg = 95.0
+        flip_abort_watcher = RollReachesMagnitude(self, flip_happened_threshold_deg)
+        self.install_message_hook(flip_mode_watcher)
+        self.install_message_hook(flip_start_watcher)
+        self.install_message_hook(flip_abort_watcher)
+        self.send_cmd_do_set_mode('FLIP')
+        # Enough delay that the flip physically initiates, but not enough that it passes the no-abandon point.
+        time.sleep(0.04) # (self.delay_sim_time is too slow for this use-case.)
+        self.send_cmd_do_set_mode('ALT_HOLD')
+        self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+        self.wait_mode('ALT_HOLD')
+        if not flip_mode_watcher.mode_was_observed:
+            raise NotAchievedException("Flip mode did not occur as expected.")
+        if not flip_start_watcher.roll_exceeded_magnitude:
+            raise NotAchievedException("Flip mode abandoned too quickly.")
+        if flip_abort_watcher.roll_exceeded_magnitude:
+            raise NotAchievedException("Flip mode did not abandon, so the flip actually happened.")
+        self.remove_message_hook(flip_mode_watcher)
+        self.remove_message_hook(flip_start_watcher)
+        self.remove_message_hook(flip_abort_watcher)
+
         self.do_RTL()
 
     def configure_EKFs_to_use_optical_flow_instead_of_GPS(self):
