@@ -704,6 +704,9 @@ public:
     AP_Int16 takeoff_rpm_max;
 #endif
 
+    // hover Z-axis accel bias learning mode
+    AP_Int8 accel_zbias_learn;
+
     // EKF variance filter cutoff
     AP_Float fs_ekf_filt_hz;
 
