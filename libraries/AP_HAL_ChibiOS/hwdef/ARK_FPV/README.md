@@ -17,7 +17,7 @@
 - Bosch BMP390 Barometer
 - ST IIS2MDC Magnetometer
 
-### Power
+### Power Supplies
 
 - 5.5V - 54V (2S - 12S) input
 - 12V, 2A output
@@ -59,7 +59,7 @@
   - 3.3V Out, UART, SWD
   - JST-SH 6 Pin
 
-### Dimensions
+### Physical
 
 - Size: 3.6 x 3.6 x 0.8 cm
 - Weight: 7.5g with MicroSD card

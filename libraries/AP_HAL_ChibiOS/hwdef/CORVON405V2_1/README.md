@@ -76,7 +76,7 @@ The default battery parameters are:
 
 The CORVON405V2.1 does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL connector.
 
-## Ports Connector
+## Pinout
 
 ![CORVON405V2.1 Ports Connection](CORVON405V2.1_PortsConnection.jpg)
 
