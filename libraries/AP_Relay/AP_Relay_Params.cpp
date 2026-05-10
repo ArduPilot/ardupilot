@@ -5,11 +5,11 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
     // @Param: FUNCTION
     // @DisplayName: Relay function
     // @Description: The function the relay channel is mapped to.
-    // @Values{Copter, Rover, Plane, Blimp,Sub}: 0:None
-    // @Values{Copter, Rover, Plane, Blimp,Sub}: 1:Relay
+    // @Values{Copter, Heli, Rover, Plane, Blimp,Sub}: 0:None
+    // @Values{Copter, Heli, Rover, Plane, Blimp,Sub}: 1:Relay
     // @Values{Plane}: 2:Ignition
-    // @Values{Plane, Copter}: 3:Parachute
-    // @Values{Copter, Rover, Plane, Blimp,Sub}: 4:Camera
+    // @Values{Plane, Copter, Heli}: 3:Parachute
+    // @Values{Copter, Heli, Rover, Plane, Blimp,Sub}: 4:Camera
     // @Values{Rover}: 5:Bushed motor reverse 1 throttle or throttle-left or omni motor 1
     // @Values{Rover}: 6:Bushed motor reverse 2 throttle-right or omni motor 2
     // @Values{Rover}: 7:Bushed motor reverse 3 omni motor 3
