@@ -203,6 +203,137 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
 
+struct PACKED log_SensorData {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t baro_instance;
+    float temperature_c;
+    float pressure_pa;
+    float depth_m;
+    float rangefinder_alt_m;
+    float inertial_alt_m;
+    int8_t rangefinder_quality_pct;
+    uint8_t depth_healthy;
+    uint8_t rangefinder_healthy;
+    uint8_t depth_sensor_present;
+};
+
+void Sub::Log_Write_SensorData()
+{
+    const uint8_t baro_instance = ap.depth_sensor_present ? depth_sensor_idx : barometer.get_primary();
+
+    int8_t rangefinder_quality_pct = -1;
+#if RANGEFINDER_ENABLED == ENABLED
+    if (rangefinder_state.enabled) {
+        rangefinder_quality_pct = rangefinder.signal_quality_pct_orient(ROTATION_PITCH_270);
+    }
+#endif
+
+    const struct log_SensorData pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_SENSOR_DATA_MSG),
+        time_us                : AP_HAL::micros64(),
+        baro_instance          : baro_instance,
+        temperature_c          : barometer.get_temperature(baro_instance),
+        pressure_pa            : barometer.get_pressure(baro_instance),
+        depth_m                : barometer.get_altitude(baro_instance),
+        rangefinder_alt_m      : rangefinder_state.alt_cm * 0.01f,
+        inertial_alt_m         : inertial_nav.get_position_z_up_cm() * 0.01f,
+        rangefinder_quality_pct: rangefinder_quality_pct,
+        depth_healthy          : ap.depth_sensor_present ? (uint8_t)sensor_health.depth : (uint8_t)barometer.healthy(baro_instance),
+        rangefinder_healthy    : (uint8_t)rangefinder_state.alt_healthy,
+        depth_sensor_present   : (uint8_t)ap.depth_sensor_present
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+struct PACKED log_ROVData {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float vel_x_m;
+    float vel_y_m;
+    float vel_z_m;
+    float pos_x_m;
+    float pos_y_m;
+    float pos_z_m;
+    float roll_deg;
+    float pitch_deg;
+    float yaw_deg;
+};
+
+void Sub::Log_Write_ROVData()
+{
+    const struct log_ROVData pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_ROV_DATA_MSG),
+        time_us  : AP_HAL::micros64(),
+        vel_x_m  : inertial_nav.get_velocity_neu_cms().x * 0.01f,
+        vel_y_m  : inertial_nav.get_velocity_neu_cms().y * 0.01f,
+        vel_z_m  : inertial_nav.get_velocity_neu_cms().z * 0.01f,
+        pos_x_m  : inertial_nav.get_position_neu_cm().x * 0.01f,
+        pos_y_m  : inertial_nav.get_position_neu_cm().y * 0.01f,
+        pos_z_m  : inertial_nav.get_position_neu_cm().z * 0.01f,
+        roll_deg : ahrs.roll_sensor * 0.01f,
+        pitch_deg: ahrs.pitch_sensor * 0.01f,
+        yaw_deg  : ahrs.yaw_sensor * 0.01f
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
+struct PACKED log_DVLData {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t dvl_ok;
+    float vx_mps;
+    float vy_mps;
+    float vz_mps;
+    float dvl_quality;
+    uint8_t dvl_lock;
+    uint32_t dvl_time_ms;
+    uint8_t ua_ok;
+    uint8_t ub_ok;
+    uint8_t uc_ok;
+    uint8_t ud_ok;
+    float ua_m;
+    float ub_m;
+    float uc_m;
+    float ud_m;
+};
+
+void Sub::Log_Write_DVLData()
+{
+    Vector3f vel_body_mps {};
+    uint32_t dvl_t_ms = 0;
+    float dvl_quality = 0.0f;
+    DVL_LockState dvl_lock = DVL_LockState::NO_LOCK;
+    const bool dvl_ok = inertial_doppler.get_velocity_body(vel_body_mps, dvl_t_ms, dvl_quality, dvl_lock);
+
+    DVL_U_Msg ua{}, ub{}, uc{}, ud{};
+    const bool ua_ok = inertial_doppler.get_ua_msg(ua);
+    const bool ub_ok = inertial_doppler.get_ub_msg(ub);
+    const bool uc_ok = inertial_doppler.get_uc_msg(uc);
+    const bool ud_ok = inertial_doppler.get_ud_msg(ud);
+
+    const struct log_DVLData pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_DVL_DATA_MSG),
+        time_us     : AP_HAL::micros64(),
+        dvl_ok      : (uint8_t)dvl_ok,
+        vx_mps      : vel_body_mps.x,
+        vy_mps      : vel_body_mps.y,
+        vz_mps      : vel_body_mps.z,
+        dvl_quality : dvl_quality,
+        dvl_lock    : (uint8_t)dvl_lock,
+        dvl_time_ms : dvl_t_ms,
+        ua_ok       : (uint8_t)ua_ok,
+        ub_ok       : (uint8_t)ub_ok,
+        uc_ok       : (uint8_t)uc_ok,
+        ud_ok       : (uint8_t)ud_ok,
+        ua_m        : ua_ok ? ua.distance_m : 0.0f,
+        ub_m        : ub_ok ? ub.distance_m : 0.0f,
+        uc_m        : uc_ok ? uc.distance_m : 0.0f,
+        ud_m        : ud_ok ? ud.distance_m : 0.0f
+    };
+    logger.WriteBlock(&pkt, sizeof(pkt));
+}
+
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
 // @Field: TimeUS: Time since system startup
@@ -260,6 +391,52 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: vY: Target velocity, Y-Axis
 // @Field: vZ: Target velocity, Z-Axis
 
+// @LoggerMessage: SENS
+// @Description: Depth and range-related sensor values
+// @Field: TimeUS: Time since system startup
+// @Field: BI: Barometer instance used for logging
+// @Field: Temp: Temperature in degrees Celsius
+// @Field: Press: Pressure in pascals
+// @Field: Depth: Depth sensor altitude/depth estimate in meters
+// @Field: RFAlt: Rangefinder altitude in meters
+// @Field: IAlt: Inertial altitude in meters
+// @Field: RFQ: Rangefinder signal quality in percent, -1 if unavailable
+// @Field: DH: Depth sensor healthy flag
+// @Field: RH: Rangefinder healthy flag
+// @Field: DSP: External depth sensor present flag
+
+// @LoggerMessage: ROVS
+// @Description: Fused vehicle position, velocity and attitude values
+// @Field: TimeUS: Time since system startup
+// @Field: VX: X velocity in meters per second, NEU frame
+// @Field: VY: Y velocity in meters per second, NEU frame
+// @Field: VZ: Z velocity in meters per second, NEU frame
+// @Field: PX: X position in meters, NEU frame
+// @Field: PY: Y position in meters, NEU frame
+// @Field: PZ: Z position in meters, NEU frame
+// @Field: Roll: Roll angle in degrees
+// @Field: Pitch: Pitch angle in degrees
+// @Field: Yaw: Yaw angle in degrees
+
+// @LoggerMessage: DVL
+// @Description: DVL status, body-frame velocity and beam distances
+// @Field: TimeUS: Time since system startup
+// @Field: OK: True when DVL body velocity is valid
+// @Field: VX: Body X velocity in meters per second
+// @Field: VY: Body Y velocity in meters per second
+// @Field: VZ: Body Z velocity in meters per second
+// @Field: Q: DVL quality metric
+// @Field: Lock: DVL lock status
+// @Field: DVLT: DVL sample time in milliseconds
+// @Field: AO: Beam A distance valid flag
+// @Field: BO: Beam B distance valid flag
+// @Field: CO: Beam C distance valid flag
+// @Field: DO: Beam D distance valid flag
+// @Field: UA: Beam A distance in meters
+// @Field: UB: Beam B distance in meters
+// @Field: UC: Beam C distance in meters
+// @Field: UD: Beam D distance in meters
+
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
 // units and "Format characters" for field type information
@@ -279,6 +456,12 @@ const struct LogStructure Sub::log_structure[] = {
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
       "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+    { LOG_SENSOR_DATA_MSG, sizeof(log_SensorData),
+      "SENS",  "QBfffffbBBB", "TimeUS,BI,Temp,Press,Depth,RFAlt,IAlt,RFQ,DH,RH,DSP", "s#---------", "F----------" },
+    { LOG_ROV_DATA_MSG, sizeof(log_ROVData),
+      "ROVS",  "Qfffffffff", "TimeUS,VX,VY,VZ,PX,PY,PZ,Roll,Pitch,Yaw", "s---------", "F---------" },
+    { LOG_DVL_DATA_MSG, sizeof(log_DVLData),
+      "DVL",   "QBffffBIBBBBffff", "TimeUS,OK,VX,VY,VZ,Q,Lock,DVLT,AO,BO,CO,DO,UA,UB,UC,UD", "s---------------", "F---------------" },
 };
 
 void Sub::Log_Write_Vehicle_Startup_Messages()
