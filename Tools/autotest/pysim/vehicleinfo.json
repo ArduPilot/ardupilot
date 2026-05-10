@@ -522,6 +522,7 @@
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
                     "models/plane.parm",
+                    "models/plane-elevrev.parm",
                     "default_params/plane-redundant.parm"
                 ]
             },
