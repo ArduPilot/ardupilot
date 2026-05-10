@@ -85,7 +85,7 @@ Analog inputs are supported.
 
 The ORBITH743 has an onboard OSD using a MAX7456 chip and is enabled by default. The CAM1/2 and VTX pins provide connections for using the internal OSD. Simultaneous DisplayPort OSD is possible and is configured by default.
 
-## DJI Video and OSD
+## OSD Support
 
 An **SH1.0 6P** connector supports a standard DJI HD VTX. `SERIAL3` is configured by default for DisplayPort. Pin 1 provides 10V which is controlled by GPIO81 -**do not** connect peripherals that require 5V to this pin.
 
