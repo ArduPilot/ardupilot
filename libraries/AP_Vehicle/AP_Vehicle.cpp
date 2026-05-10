@@ -150,30 +150,30 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Param: FLTMODE_GCSBLOCK
     // @DisplayName: Flight mode block from GCS
     // @Description: Bitmask of flight modes to disable for GCS selection. Mode can still be accessed via RC or failsafe.
-    // @Bitmask{Copter}: 0:Stabilize
-    // @Bitmask{Copter}: 1:Acro
-    // @Bitmask{Copter}: 2:AltHold
-    // @Bitmask{Copter}: 3:Auto
-    // @Bitmask{Copter}: 4:Guided
-    // @Bitmask{Copter}: 5:Loiter
-    // @Bitmask{Copter}: 6:Circle
-    // @Bitmask{Copter}: 7:Drift
-    // @Bitmask{Copter}: 8:Sport
-    // @Bitmask{Copter}: 9:Flip
-    // @Bitmask{Copter}: 10:AutoTune
-    // @Bitmask{Copter}: 11:PosHold
-    // @Bitmask{Copter}: 12:Brake
-    // @Bitmask{Copter}: 13:Throw
-    // @Bitmask{Copter}: 14:Avoid_ADSB
-    // @Bitmask{Copter}: 15:Guided_NoGPS
-    // @Bitmask{Copter}: 16:Smart_RTL
-    // @Bitmask{Copter}: 17:FlowHold
-    // @Bitmask{Copter}: 18:Follow
-    // @Bitmask{Copter}: 19:ZigZag
-    // @Bitmask{Copter}: 20:SystemID
-    // @Bitmask{Copter}: 21:Heli_Autorotate
-    // @Bitmask{Copter}: 22:Auto RTL
-    // @Bitmask{Copter}: 23:Turtle
+    // @Bitmask{Copter,Heli}: 0:Stabilize
+    // @Bitmask{Copter,Heli}: 1:Acro
+    // @Bitmask{Copter,Heli}: 2:AltHold
+    // @Bitmask{Copter,Heli}: 3:Auto
+    // @Bitmask{Copter,Heli}: 4:Guided
+    // @Bitmask{Copter,Heli}: 5:Loiter
+    // @Bitmask{Copter,Heli}: 6:Circle
+    // @Bitmask{Copter,Heli}: 7:Drift
+    // @Bitmask{Copter,Heli}: 8:Sport
+    // @Bitmask{Copter,Heli}: 9:Flip
+    // @Bitmask{Copter,Heli}: 10:AutoTune
+    // @Bitmask{Copter,Heli}: 11:PosHold
+    // @Bitmask{Copter,Heli}: 12:Brake
+    // @Bitmask{Copter,Heli}: 13:Throw
+    // @Bitmask{Copter,Heli}: 14:Avoid_ADSB
+    // @Bitmask{Copter,Heli}: 15:Guided_NoGPS
+    // @Bitmask{Copter,Heli}: 16:Smart_RTL
+    // @Bitmask{Copter,Heli}: 17:FlowHold
+    // @Bitmask{Copter,Heli}: 18:Follow
+    // @Bitmask{Copter,Heli}: 19:ZigZag
+    // @Bitmask{Copter,Heli}: 20:SystemID
+    // @Bitmask{Copter,Heli}: 21:Heli_Autorotate
+    // @Bitmask{Copter,Heli}: 22:Auto RTL
+    // @Bitmask{Copter,Heli}: 23:Turtle
     // @Bitmask{Plane}: 0:Manual
     // @Bitmask{Plane}: 1:Circle
     // @Bitmask{Plane}: 2:Stabilize
