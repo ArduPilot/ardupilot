@@ -375,12 +375,9 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
 #if WEATHERVANE_ENABLED
 void Mode::AutoYaw::update_weathervane(const float pilot_yaw_rads)
 {
-    if (!copter.flightmode->allows_weathervaning()) {
-        return;
-    }
-
     float yaw_rate_cds;
-    if (copter.g2.weathervane.get_yaw_out(yaw_rate_cds, rad_to_cd(pilot_yaw_rads), copter.flightmode->get_alt_above_ground_m(),
+    if (copter.flightmode->allows_weathervaning() &&
+        copter.g2.weathervane.get_yaw_out(yaw_rate_cds, rad_to_cd(pilot_yaw_rads), copter.flightmode->get_alt_above_ground_m(),
                                                                        copter.pos_control->get_roll_cd()-copter.attitude_control->get_roll_trim_cd(),
                                                                        copter.pos_control->get_pitch_cd(),
                                                                        copter.flightmode->is_taking_off(),
@@ -389,6 +386,8 @@ void Mode::AutoYaw::update_weathervane(const float pilot_yaw_rads)
         _yaw_rate_rads = cd_to_rad(yaw_rate_cds);
         return;
     }
+
+    // Weathervane not allowed in current mode, or weathervane thresholds not met
 
     // if the weathervane controller has previously been activated we need to ensure we return control back to what was previously set
     if (mode() == Mode::WEATHERVANE) {
