@@ -49,7 +49,7 @@ protocols. PPM is not supported. For protocols requiring half-duplex serial to t
 telemetry (such as FPort) you should setup SERIAL2 as an RC input serial port,
 with half-duplex, pin-swap and inversion enabled. For duplex protocols, like CRSF/ELRS, T2 must also be connected to the receiver.
 
-## Pixel OSD Support
+## OSD Support
 
 Ardupilot does not currently support the integrated OSD chip. UART3 is setup fir use with DisplayPort goggles with OSD.
 

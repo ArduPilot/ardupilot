@@ -119,7 +119,7 @@ Port      UART      Protocol        TX DMA  RX DMA
 5         UART8     None            ✔       ✔
 6         UART4     None            ✔       ✔
 
-## CAN Ports
+## CAN
 
 There are 2 CAN buses available, each with a 120 Ohm termination resistor built-in.
 
@@ -156,7 +156,7 @@ The default battery parameters are:
 - BATT2_VOLT_MULT 11
 - BATT2_AMP_PERVLT 40
 
-## Analog pins
+## Analog Inputs
 
 These analog pins are used in addition to battery monitoring:
 

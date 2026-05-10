@@ -97,13 +97,13 @@ The MicoAir743v2 has a built-in compass sensor (QMC5883L), and you can also atta
 
 The MicoAir743v2 has an on board Bluetooth module connected to UART8(SERIAL8). The Bluetooth id is MicoAir743v2-xxxxxx and you can connect to it without pairing id.
 
-## Mechanical
+## Physical
 
 - Mounting: 30.5 x 30.5mm, Φ4mm
 - Dimensions: 36 x 36 x 8 mm
 - Weight: 10g
 
-## Ports Connector
+## Pinout
 
 ![MicoAir H743 v2.0 Ports Connection](MicoAir743v2_Ports_Connection.jpg)
 

@@ -43,7 +43,7 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 - 1x CAN
 - 1x Ethernet
 
-### UART Mapping
+## UART Mapping
 
 UART Mapping
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.

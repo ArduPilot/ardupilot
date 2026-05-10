@@ -50,7 +50,7 @@ The [CBUnmanned H743 Stamp](https://cbunmanned.com/store) is a flight controller
 
 ![H743 Stamp Pinout](H743Pinout.png "H743")
 
-### UART Mapping
+## UART Mapping
 
  Ardupilot -> STM32
 
@@ -68,7 +68,7 @@ Serial 2, 5 & 7 have RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
 GPS 1 & 2 are on Serial 3 & 4 respectively.
 
-### RC Input
+## RC Input
 
 RC input is configured on the USART 6 Rx Pin. This pin allows all RC protocols compatible with direct connection to a H7 IC (SBus requires setting the bitmask for hardware inversion, CRSF etc), PPM is NOT supported.
 
@@ -76,11 +76,11 @@ USART 6 Tx is available for use with bi directional protocols.
 
 An optional IOMCU can be connected to this serial port, a compatible custom build of the firmware required.
 
-### CAN Ports
+## CAN
 
 2 CAN buses are available, each with a built in 120 ohm termination resistor.
 
-### I2C
+## I2C
 
 I2C 1 - Internal for BMM150 Compass.
 
@@ -90,11 +90,11 @@ I2C 3 - External With internal 2.2k Pull Up.
 
 I2C 4 - External With internal 2.2k Pull Up.
 
-### SPI
+## SPI
 
 SPI 4 is available for use with external sensors alongside a Chip Select and Data Ready pin, compatible custom build of the firmware required.
 
-### PWM Output
+## PWM Output
 
 The Stamp supports up to 10 PWM outputs with D-Shot.
 
@@ -110,27 +110,27 @@ BiDirectional DShot available on the first 8 outputs.
 
 A buzzer alarm signal is available on Timer 14.
 
-### Analog Inputs
+## Analog Inputs
 
 The board has two ADC input channels for Voltage (0-3.3v) and Current (0-3.3v) measurement. Settings are dependent on the external hardware used.
 
-### Ethernet
+## Ethernet
 
 Ethernet is available on 4 output pads and has internal magnetics supporting direct connection to external equipment, no need for a large RJ45 connector.
 
-### Compass
+## Compass
 
 The H743 Stamp has a built in compass, the BMM150. Due to potential interference the board is usually used with an external I2C or CAN compass as part of a GPS/Compass combination.
 
-### USB
+## USB
 
 USB Signals D+ & D- are available to route to a suitable connector for your project.
 
-### Safety Button
+## Safety Button
 
 Optional, if it is not fitted remove the check from arming mask. To activate short this pad to 3.3v with a momentary push button (Press & Hold).
 
-### Power
+## Power
 
 A regulated 3.3v output is available from the stamp for use with the safety button. WARNING! This is shared with the main IC - Do NOT use for accessories. Keep current draw under 0.1A!
 

@@ -1,4 +1,4 @@
-# BETAFPV F405 AIO Flight Controller
+# BETAFPV F405 AIO Flight Controller (I2C)
 
 The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafpv.com/collections/flight-controller-1/products/f4-2-3s-20a-aio-fc-v1).
 

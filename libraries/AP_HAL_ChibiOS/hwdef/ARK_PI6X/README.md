@@ -47,7 +47,7 @@
   - 3.3V Out, USART3, SWD
   - JST-SH 6 Pin
 
-### Dimensions
+### Physical
 
 - Size: 91.5mm x 56mm
 - Weight: 41g

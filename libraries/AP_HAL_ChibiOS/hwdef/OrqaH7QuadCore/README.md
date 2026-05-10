@@ -72,7 +72,7 @@ The correct battery setting parameters are:
 - BATT_VOLT_MULT 8.3
 - BATT_AMP_PERVLT 92.6
 
-## VTX Control
+## VTX Power Control
 
 Switching between Camera1 and Camera2 can be achieved via GPIO pin 74 which is configured on RELAY2
 
