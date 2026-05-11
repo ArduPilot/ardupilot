@@ -215,13 +215,14 @@ int16_t Copter::get_throttle_mid(void)
         return g2.toy_mode.get_throttle_mid();
     }
 #endif
-    // For RANGE channels, the mid-stick position maps to radio_trim, not 50% of
-    // the normalized [0,1000] range, because the channel dead zone shifts the scale.
-    const int16_t dead_zone_top = channel_throttle->get_radio_min() + int16_t(channel_throttle->get_dead_zone());
+    // Use the geometric mid-point of the PWM range (matches original get_control_mid() behaviour).
+    // radio_trim is intentionally not used — it affects feel but not stick centre.
+    const int16_t r_min = channel_throttle->get_radio_min();
     const int16_t r_max = channel_throttle->get_radio_max();
-    const int16_t r_trim = channel_throttle->get_radio_trim();
-    if (dead_zone_top >= r_max || r_trim <= dead_zone_top) {
+    const int16_t r_mid = (r_min + r_max) / 2;
+    const int16_t dead_zone_top = r_min + int16_t(channel_throttle->get_dead_zone());
+    if (dead_zone_top >= r_max || r_mid <= dead_zone_top) {
         return 500;
     }
-    return int16_t(1000.0f * float(r_trim - dead_zone_top) / float(r_max - dead_zone_top));
+    return int16_t(1000.0f * float(r_mid - dead_zone_top) / float(r_max - dead_zone_top));
 }
