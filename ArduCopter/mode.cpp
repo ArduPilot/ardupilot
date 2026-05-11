@@ -967,6 +967,7 @@ float Mode::get_pilot_desired_throttle() const
         mid_stick = 500;
     }
 
+    // norm_input_dz() on a RANGE channel: 0 at bottom with deadzone, 1 at top; does not use trim
     int16_t throttle_control = int16_t(channel_throttle->norm_input_dz() * 1000.0f);
     // ensure reasonable throttle values
     throttle_control = constrain_int16(throttle_control,0,1000);
