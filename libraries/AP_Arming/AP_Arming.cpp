@@ -475,9 +475,11 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
 
     // if accels can in theory be inconsistent,
     // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
     if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -500,9 +502,11 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
 
     // if gyros can in theory be inconsistent,
     // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
-    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms <  AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
+    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
