@@ -1197,11 +1197,21 @@ void NavEKF3_core::FuseVelPosNED()
                     Kfusion[i] = res;
                 }
 
-                // update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
-                // this is a numerically optimised implementation of standard equation P = (I - K*H)*P;
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        KHP[i][j] = Kfusion[i] * P[stateIndex][j];
+                // one element of H is 1, compiler will optimize it away
+                Vector24 Hfusion;
+                Hfusion[stateIndex] = 1;
+
+                // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+                // the zero elements of H to reduce the number of operations.
+                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                    // j as the inner loop allows the compiler to hoist the KH product
+                    // to save computation, and do the inner indexing more efficiently.
+                    for (unsigned j = 0; j<=stateIndexLim; j++) {
+                        ftype res = 0;
+                        res += (Kfusion[i] * Hfusion[stateIndex]) * P[stateIndex][j];
+                        KHP[i][j] = res;
+                    }
+                }
 
                 // finish fusion from KHP and Kfusion
                 const bool fault = FinishFusion(innovVelPos[obsIndex]);
