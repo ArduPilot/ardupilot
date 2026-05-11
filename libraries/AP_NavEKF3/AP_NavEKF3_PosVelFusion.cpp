@@ -1142,9 +1142,8 @@ void NavEKF3_core::FuseVelPosNED()
                 // calculate the Kalman gain and calculate innovation variances
                 varInnovVelPos[obsIndex] = P[stateIndex][stateIndex] + R_OBS[obsIndex];
                 SK = 1.0f/varInnovVelPos[obsIndex];
-                for (uint8_t i= 0; i<=9; i++) {
-                    Kfusion[i] = P[i][stateIndex]*SK;
-                }
+
+                uint32_t kalman_mask = (1<<10)-1; // values to calculate in Kfusion (others are set to zero)
 
                 // inhibit delta angle bias state estimation by setting Kalman gains to zero
                 if (!inhibitDelAngBiasStates) {
@@ -1162,15 +1161,10 @@ void NavEKF3_core::FuseVelPosNED()
                                 poorObservability = fabsF(prevTnb.c.z) > M_SQRT1_2;
                             }
                         }
-                        if (poorObservability) {
-                            Kfusion[i] = 0.0;
-                        } else {
-                            Kfusion[i] = P[i][stateIndex]*SK;
+                        if (!poorObservability) {
+                            kalman_mask |= (1<<i);
                         }
                     }
-                } else {
-                    // zero indexes 10 to 12
-                    zero_range(&Kfusion[0], 10, 12);
                 }
 
                 // Inhibit delta velocity bias state estimation by setting Kalman gains to zero
@@ -1180,33 +1174,27 @@ void NavEKF3_core::FuseVelPosNED()
                 if (!horizInhibit && !inhibitDelVelBiasStates && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
                         if (!dvelBiasAxisInhibit[i-13]) {
-                            Kfusion[i] = P[i][stateIndex]*SK;
-                        } else {
-                            Kfusion[i] = 0.0f;
+                            kalman_mask |= (1<<i);
                         }
                     }
-                } else {
-                    // zero indexes 13 to 15
-                    zero_range(&Kfusion[0], 13, 15);
                 }
 
                 // inhibit magnetic field state estimation by setting Kalman gains to zero
                 if (!inhibitMagStates) {
-                    for (uint8_t i = 16; i<=21; i++) {
-                        Kfusion[i] = P[i][stateIndex]*SK;
-                    }
-                } else {
-                    // zero indexes 16 to 21
-                    zero_range(&Kfusion[0], 16, 21);
+                    kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
                 }
 
                 // inhibit wind state estimation by setting Kalman gains to zero
                 if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                    Kfusion[22] = P[22][stateIndex]*SK;
-                    Kfusion[23] = P[23][stateIndex]*SK;
-                } else {
-                    // zero indexes 22 to 23
-                    zero_range(&Kfusion[0], 22, 23);
+                    kalman_mask |= (1<<22) | (1<<23);
+                }
+
+                for (auto i=0; i<24; i++) {
+                    ftype res = 0;
+                    if (kalman_mask & (1<<i)) {
+                        res = P[i][stateIndex]*SK;
+                    }
+                    Kfusion[i] = res;
                 }
 
                 // update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
@@ -1214,8 +1202,6 @@ void NavEKF3_core::FuseVelPosNED()
                 for (uint8_t i= 0; i<=stateIndexLim; i++) {
                     for (uint8_t j= 0; j<=stateIndexLim; j++) {
                         KHP[i][j] = Kfusion[i] * P[stateIndex][j];
-                    }
-                }
 
                 // finish fusion from KHP and Kfusion
                 const bool fault = FinishFusion(innovVelPos[obsIndex]);
