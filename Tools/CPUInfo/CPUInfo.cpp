@@ -72,8 +72,10 @@ static void show_sizes(void)
     hal.console->printf("void*     : %lu\n", (unsigned long)sizeof(void *));
 
     hal.console->printf("printing NaN: %f\n", (double)sqrtf(-1.0f));
+#if !defined(STM32F4)   // divide by zero seems not to work on F4
     hal.console->printf("printing +Inf: %f\n", (double)(1.0f/0.0f));
     hal.console->printf("printing -Inf: %f\n", (double)(-1.0f/0.0f));
+#endif
 }
 
 #define TENTIMES(x) do { x; x; x; x; x; x; x; x; x; x; } while (0)
