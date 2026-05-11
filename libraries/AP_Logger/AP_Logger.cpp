@@ -782,19 +782,23 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
         buf[2] = msg_id;
         memcpy(&buf[3], pBuffer, size);
         for (uint8_t i=0; i<_next_backend; i++) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            while (!backends[i]->WritePrioritisedBlock(buf, sizeof(buf), true)) {
+                if (!log_while_disarmed()) {
+                    // we don't care
+                    ret = false;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Failed to log replay block");
+                // give time for the thread to run
+                hal.scheduler->delay_microseconds(1000);
+            }
+#else  // this is not SITL:
             if (!backends[i]->WritePrioritisedBlock(buf, sizeof(buf), true)) {
                 ret = false;
             }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         }
     }
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    // things will almost certainly go sour.  However, if we are not
-    // logging while disarmed then the EKF can be started and trying
-    // to log things even 'though the backends might be saying "no".
-    if (!ret && log_while_disarmed()) {
-        AP_HAL::panic("Failed to log replay block");
-    }
-#endif
     return ret;
 }
 
