@@ -291,6 +291,12 @@ public:
         _baro.handle_message(msg);
     }
 
+    void handle_message(const log_RBRJ &msg) {
+#if AP_BARO_POSITION_COMPENSATION_ENABLED
+        _baro.handle_message(msg);
+#endif // AP_BARO_POSITION_COMPENSATION_ENABLED
+    }
+
     void handle_message(const log_RRNH &msg) {
 #if AP_RANGEFINDER_ENABLED
         if (_rangefinder == nullptr) {
