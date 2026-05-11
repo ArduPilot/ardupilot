@@ -789,8 +789,9 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
                     ret = false;
                 }
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Failed to log replay block");
-                // give time for the thread to run
-                hal.scheduler->delay_microseconds(1000);
+                // give time for the thread to run - i.e. delay
+                // wallclock but not simclock
+                usleep(10000);
             }
 #else  // this is not SITL:
             if (!backends[i]->WritePrioritisedBlock(buf, sizeof(buf), true)) {

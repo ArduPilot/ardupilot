@@ -444,6 +444,12 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 {
     WITH_SEMAPHORE(semaphore);
 
+    static bool did_fail;
+    if (!did_fail && AP_HAL::millis() > 5000) {
+        did_fail = true;
+        return false;
+    }
+
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     if (AP::FS().write(_write_fd, pBuffer, size) != size) {
         AP_HAL::panic("Short write");
