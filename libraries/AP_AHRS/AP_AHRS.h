@@ -1104,8 +1104,11 @@ private:
     // true when we have completed the common origin setup
     bool done_common_origin;
 
-    const AP_AHRS_Backend *backend_for_type(EKFType type) const;
+    // return a pointer to the backend for supplied type
     AP_AHRS_Backend *backend_for_type(EKFType type);
+    const AP_AHRS_Backend *backend_for_type(EKFType type) const {
+        return const_cast<AP_AHRS*>(this)->backend_for_type(type);
+    }
 
     AP_AHRS_Backend *active_backend;
 };
