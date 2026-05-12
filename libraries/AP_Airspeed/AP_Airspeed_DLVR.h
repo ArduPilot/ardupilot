@@ -31,12 +31,12 @@ class AP_Airspeed_DLVR : public AP_Airspeed_Backend
 {
 public:
 
-    AP_Airspeed_DLVR(AP_Airspeed &frontend, uint8_t _instance, const float _range_inH2O);
-    static AP_Airspeed_Backend *probe(AP_Airspeed &frontend, uint8_t _instance, AP_HAL::I2CDevice *_dev, const float _range_inH2O);
-
-    ~AP_Airspeed_DLVR(void) {
-        delete dev;
-    }
+    AP_Airspeed_DLVR(AP_Airspeed &frontend, class AP_Airspeed::airspeed_state &state, class AP_Airspeed_Params &params, const float _range_inH2O);
+    static AP_Airspeed_Backend *probe(AP_Airspeed &frontend,
+                                      class AP_Airspeed::airspeed_state &state,
+                                      class AP_Airspeed_Params &params,
+                                      AP_HAL::I2CDevice *_dev,
+                                      const float _range_inH2O);
 
     // probe and initialise the sensor
     bool init() override;
