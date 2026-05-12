@@ -122,19 +122,32 @@ bool Plane::update_home()
     if (hal.util->was_watchdog_armed()) {
         return false;
     }
-    if (g2.home_reset_threshold == -1) {
+    if (is_negative(g2.home_reset_threshold)) {
         return false;
     }
 
     // HOME_RESET_ALT sets the EKF origin-vs-GPS altitude tolerance
-    // for resetHeightDatum (0 uses a 10 m default).  The EKF falls
-    // back to a partial reset (baro recalibration only) when the
-    // user-set origin altitude diverges from current GPS altitude
-    // by more than the tolerance; that preserves AMSL consistency
-    // for cases where AHRS_ORIGIN_ALT or MAV_CMD_DO_SET_GLOBAL_ORIGIN
-    // anchored the origin away from current physical altitude.
+    // passed to resetHeightDatum (0 uses a 10 m default).
+    //
+    // Inside the tolerance the EKF does a full reset: zero
+    // position.z, recalibrate the baro and flush the baro buffer to
+    // clear any temperature drift accumulated while disarmed.
+    //
+    // Outside the tolerance -- typical when AHRS_ORIGIN_ALT or
+    // MAV_CMD_DO_SET_GLOBAL_ORIGIN anchored the origin at a
+    // different elevation than the vehicle is currently at -- the
+    // EKF takes the partial-reset branch: it leaves position.z,
+    // velocity.z, the baro calibration, the baro buffer and
+    // baroHgtOffset all untouched, so AMSL altitude stays correct.
+    //
+    // Note: do NOT call barometer.update_calibration() here.  The
+    // EKF performs the baro recalibration itself (via the DAL) only
+    // on the full-reset path.  Calling it unconditionally here would
+    // destroy the baro reading even on the partial path, defeating
+    // the AMSL-preserving intent of the tolerance and silently
+    // corrupting subsequent altitude reporting at the new elevation.
     const float origin_alt_tolerance_m = (g2.home_reset_threshold > 0) ?
-        (float)g2.home_reset_threshold : 10.0f;
+        g2.home_reset_threshold : 10.0f;
 
     bool ret = false;
     if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS_FixType::FIX_3D) {
@@ -151,9 +164,9 @@ bool Plane::update_home()
         }
     }
 
-    // even if home is not updated we do a baro reset to stop baro
-    // drift errors while disarmed
-    barometer.update_calibration();
+    // resetHeightDatum handles baro recalibration itself on the
+    // full-reset path; on the partial-reset path it intentionally
+    // leaves the baro alone.
     ahrs.resetHeightDatum(origin_alt_tolerance_m);
 
     update_current_loc();
