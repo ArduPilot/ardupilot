@@ -13151,6 +13151,27 @@ switch value'''
                            relative=True,
                            timeout=timeout)
 
+    def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int, divergence_r, divergence_p):
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
+        att_desroll = 0
+        att_despitch = 0
+        if ahrs_type == 11:
+            # this is very nasty compatibility
+            # code for the fact our rotations are
+            # incorrect for ExternalAHRS eulers
+            # and rotation matrix!  It is here to
+            # ensure behaviour is preserved until
+            # we can fix the bug!  Search for
+            # "note that this is suspect" to find
+            # the problem code.
+            att_desroll = -divergence_r
+            att_despitch = -divergence_p
+        self.wait_attitude(desroll=att_desroll, despitch=att_despitch, timeout=120, tolerance=1.5)
+        if ahrs_type != 0:
+            self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
+        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+        self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
+
     def ahrstrim_attitude_correctness(self):
         self.wait_ready_to_arm()
         HOME = self.sitl_start_location()
@@ -13222,26 +13243,7 @@ switch value'''
                                 "SIM_ACC_TRIM_Y": math.radians(p),
                             })
                             self.reboot_sitl()
-                            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-                            att_desroll = 0
-                            att_despitch = 0
-                            if ahrs_type == 11:
-                                # this is very nasty compatibility
-                                # code for the fact our rotations are
-                                # incorrect for ExternalAHRS eulers
-                                # and rotation matrix!  It is here to
-                                # ensure behaviour is preserved until
-                                # we can fix the bug!  Search for
-                                # "note that this is suspect" to find
-                                # the problem code.
-                                att_desroll = -r
-                                att_despitch = -p
-                            self.wait_attitude(desroll=att_desroll, despitch=att_despitch, timeout=120, tolerance=1.5)
-                            if ahrs_type != 0:
-                                self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
-                            self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
-                            self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
-
+                            self.ahrstrim_attitude_correctness_test_attitude(ahrs_type, r, p)
                         self.context_pop()
                         self.reboot_sitl()
 
