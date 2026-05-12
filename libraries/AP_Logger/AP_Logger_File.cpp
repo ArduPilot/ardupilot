@@ -23,6 +23,10 @@
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL/AP_HAL_SITL.h>
+#endif
+
 #include <AP_Common/AP_Common.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_RTC/AP_RTC.h>
@@ -99,6 +103,15 @@ void AP_Logger_File::Init()
     const char* custom_dir = hal.util->get_custom_log_directory();
     if (custom_dir != nullptr){
         _log_directory = custom_dir;
+    } else {
+#ifdef HAL_BOARD_LOG_DIRECTORY_INSTANCE_FORMAT_STRING
+        extern const HAL_SITL &hal_sitl;
+        if (hal_sitl.get_instance() > 0) {
+            char *tmp = new char[80];
+            _log_directory = tmp;;
+            snprintf(tmp, 80, HAL_BOARD_LOG_DIRECTORY_INSTANCE_FORMAT_STRING, hal_sitl.get_instance());
+        }
+#endif
     }
 
     uint16_t last_log_num = find_last_log();
