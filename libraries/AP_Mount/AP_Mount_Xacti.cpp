@@ -14,7 +14,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define LOG_TAG "Mount"
 #define XACTI_MSG_SEND_MIN_MS 20                    // messages should not be sent to camera more often than 20ms
 #define XACTI_DIGITAL_ZOOM_RATE_UPDATE_INTERVAL_MS  500 // digital zoom rate control updates 11% up or down every 0.5sec
 #define XACTI_OPTICAL_ZOOM_RATE_UPDATE_INTERVAL_MS  250 // optical zoom rate control updates 6.6% up or down every 0.25sec
