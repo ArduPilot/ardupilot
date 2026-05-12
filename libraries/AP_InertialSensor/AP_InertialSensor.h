@@ -189,15 +189,11 @@ public:
 
     // return the gyro bias limit (rad/s) for this IMU instance.
     // The EKF clamps its gyro bias state to this value.
-    float get_gyro_bias_limit_rads(uint8_t instance) const {
-        return _gyro_bias_limit_rads[instance];
-    }
+    float get_gyro_bias_limit_rads(uint8_t instance) const;
 
     // return the initial gyro bias 1-sigma uncertainty (deg/s) for this
     // IMU instance, used to seed the EKF's gyro bias covariance.
-    float get_gyro_bias_init_dps(uint8_t instance) const {
-        return _gyro_bias_init_dps[instance];
-    }
+    float get_gyro_bias_init_dps(uint8_t instance) const;
 
     // return the temperature if supported. Zero is returned if no
     // temperature is available
@@ -513,7 +509,10 @@ private:
 
     // Logging function
     void Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance) const;
-    
+
+    // look up the backend that owns the given gyro instance, or nullptr
+    const AP_InertialSensor_Backend *_find_gyro_backend(uint8_t instance) const;
+
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
 
@@ -667,13 +666,6 @@ private:
     // per-sensor orientation to allow for board type defaults at runtime
     enum Rotation _gyro_orientation[INS_MAX_INSTANCES];
     enum Rotation _accel_orientation[INS_MAX_INSTANCES];
-
-    // per-instance gyro bias metadata, populated by backends. The
-    // limit is the EKF gyro bias state clamp (rad/s); the init value
-    // is the initial 1-sigma bias uncertainty (deg/s) used to seed
-    // the EKF covariance at filter start.
-    float _gyro_bias_limit_rads[INS_MAX_INSTANCES];
-    float _gyro_bias_init_dps[INS_MAX_INSTANCES];
 
     // calibrated_ok/id_ok flags
     bool _gyro_cal_ok[INS_MAX_INSTANCES];

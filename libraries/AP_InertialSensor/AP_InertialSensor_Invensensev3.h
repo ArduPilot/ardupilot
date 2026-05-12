@@ -83,9 +83,14 @@ private:
         return backend_rate_hz;
     }
 
-    // Invensensev3 sensors have very low gyro drift compared to the
-    // legacy default, so the EKF can clamp the bias state much tighter
-    // and seed the bias covariance with a smaller initial uncertainty.
+    // The EKF clamps and the initial covariance below act on the
+    // residual gyro bias after ArduPilot's startup calibration has
+    // removed the static offset. Across the v3 family (ICM-42605,
+    // ICM-42688, ICM-40605, ICM-40609, ICM-42670, ICM-45686, IIM-42652,
+    // IIM-42653), residual drift over a flight is dominated by bias
+    // instability plus temperature drift and is well under 1 deg/s, so
+    // a 2 deg/s clamp and 1 deg/s init uncertainty are conservative for
+    // all variants.
     float gyro_bias_limit_rads() const override {
         return radians(2.0f); // 0.035 rad/s
     }

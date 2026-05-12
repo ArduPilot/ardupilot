@@ -107,6 +107,25 @@ public:
         return _gyro_raw_sample_rate(gyro_instance);
     }
 
+    // return the maximum allowed gyro bias for this sensor (rad/s).
+    // The EKF clamps its gyro bias state to this value.
+    virtual float gyro_bias_limit_rads() const {
+        return 0.5f;
+    }
+
+    // return the initial 1-sigma gyro bias uncertainty for this sensor (deg/s)
+    virtual float gyro_bias_init_dps() const {
+        return 2.5f;
+    }
+
+    uint8_t get_gyro_instance() const {
+        return gyro_instance;
+    }
+
+    uint8_t get_accel_instance() const {
+        return accel_instance;
+    }
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -315,32 +334,6 @@ protected:
 
     void set_accel_orientation(uint8_t instance, enum Rotation rotation) {
         _imu._accel_orientation[instance] = rotation;
-    }
-
-    // return the maximum allowed gyro bias for this sensor (rad/s).
-    // The EKF clamps its gyro bias state to this value.
-    virtual float gyro_bias_limit_rads() const {
-        return 0.5f;
-    }
-
-    // return the initial 1-sigma gyro bias uncertainty for this sensor (deg/s)
-    virtual float gyro_bias_init_dps() const {
-        return 2.5f;
-    }
-
-    // publish this backend's gyro bias metadata into the frontend's
-    // per-instance arrays so the EKF (via the DAL) can use it.
-    void set_gyro_bias_metadata(uint8_t instance) {
-        _imu._gyro_bias_limit_rads[instance] = gyro_bias_limit_rads();
-        _imu._gyro_bias_init_dps[instance] = gyro_bias_init_dps();
-    }
-
-    uint8_t get_gyro_instance() const {
-        return gyro_instance;
-    }
-
-    uint8_t get_accel_instance() const {
-        return accel_instance;
     }
 
     // increment clipping counted. Used by drivers that do decimation before supplying

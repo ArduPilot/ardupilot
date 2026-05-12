@@ -379,9 +379,6 @@ void AP_InertialSensor_Invensensev3::start()
     set_gyro_orientation(gyro_instance, rotation);
     set_accel_orientation(accel_instance, rotation);
 
-    // publish per-instance gyro bias metadata to the frontend
-    set_gyro_bias_metadata(gyro_instance);
-
     // allocate fifo buffer
 #if HAL_INS_HIGHRES_SAMPLE
     if (highres_sampling) {
