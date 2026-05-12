@@ -44,6 +44,9 @@
 #if AP_DDS_AIRSPEED_PUB_ENABLED
 #include "ardupilot_msgs/msg/Airspeed.h"
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
+#if AP_DDS_HOME_POSE_PUB_ENABLED
+#include "ardupilot_msgs/msg/HomePosition.h"
+#endif // AP_DDS_HOME_POSE_PUB_ENABLED
 #if AP_DDS_RC_PUB_ENABLED
 #include "ardupilot_msgs/msg/Rc.h"
 #endif // AP_DDS_RC_PUB_ENABLED
@@ -220,6 +223,16 @@ private:
     //! @brief Serialize the current status and publish to the IO stream(s)
     void write_status_topic();
 #endif // AP_DDS_STATUS_PUB_ENABLED
+
+#if AP_DDS_HOME_POSE_PUB_ENABLED
+    ardupilot_msgs_msg_HomePosition home_pose_topic;
+    // The last ms timestamp AP_DDS wrote a HomePosition message
+    uint64_t last_home_pose_time_ms;
+    //! @brief Populate the home position message from AHRS
+    static bool update_topic(ardupilot_msgs_msg_HomePosition& msg);
+    //! @brief Serialize the current home position and publish to the IO stream(s)
+    void write_home_pose_topic();
+#endif // AP_DDS_HOME_POSE_PUB_ENABLED
 
 #if AP_DDS_STATIC_TF_PUB_ENABLED
     // outgoing transforms
