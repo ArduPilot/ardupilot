@@ -171,7 +171,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Range: 0 1000
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 10),
 #endif
 
 #if HAL_LOGGING_BLOCK_ENABLED
