@@ -17444,11 +17444,8 @@ return update, 1000
             self.CRSF,
             self.MotorTest,
             self.AltEstimation,
-<<<<<<< HEAD
             self.EK3_NoGPSLeakWhenNotSource,
-=======
             self.BaroDriftClearedAtArm,
->>>>>>> cc968f4848 (autotest: add BaroDriftClearedAtArm and AmslAltPreservedOnRearmAtDifferentElevation tests)
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
