@@ -167,7 +167,7 @@ private:
     static AP_CANManager *_singleton;
 
     char* _log_buf;
-    uint32_t _log_pos;
+    int32_t _log_pos;
 
     HAL_Semaphore _sem;
 
