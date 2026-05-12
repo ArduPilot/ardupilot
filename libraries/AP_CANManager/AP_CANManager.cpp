@@ -341,42 +341,6 @@ bool AP_CANManager::register_11bit_driver(AP_CAN::Protocol dtype, CANSensor *sen
 
 }
 
-#if AP_CANMANAGER_LOG_TEXT_ENABLED
-// Method used by CAN related library methods to report status and debug info via GCS
-void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...)
-{
-    if (loglevel > _loglevel) {
-        return;
-    }
-
-    MAV_SEVERITY severity = MAV_SEVERITY_INFO;
-    switch (loglevel) {
-    case AP_CANManager::LOG_ERROR:
-        severity = MAV_SEVERITY_ERROR;
-        break;
-    case AP_CANManager::LOG_WARNING:
-        severity = MAV_SEVERITY_WARNING;
-        break;
-    case AP_CANManager::LOG_INFO:
-        severity = MAV_SEVERITY_INFO;
-        break;
-    case AP_CANManager::LOG_DEBUG:
-        severity = MAV_SEVERITY_DEBUG;
-        break;
-    case AP_CANManager::LOG_NONE:
-        return;
-    }
-
-    char msg[100];
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    hal.util->vsnprintf(msg, sizeof(msg), fmt, arg_list);
-    va_end(arg_list);
-
-    GCS_SEND_TEXT(severity, "%s: %s", tag, msg);
-}
-#endif // AP_CANMANAGER_LOG_TEXT_ENABLED
-
 #if AP_CAN_LOGGING_ENABLED
 /*
   handler for CAN frames for frame logging
