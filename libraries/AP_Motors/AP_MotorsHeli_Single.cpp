@@ -288,7 +288,7 @@ AP_Motors::SpoolState AP_MotorsHeli_Single::update_spool_state(AP_MotorsHeli_RSC
     _tail_rotor.update_spool_state(_dt_s, state);
     SpoolState main_rotor_state = _main_rotor.update_spool_state(_dt_s, state);
 
-        // Check if main rotor is run-up complete.  Tail rotor run-up is not included in check because currently
+    // Check if main rotor is run-up complete.  Tail rotor run-up is not included in check because currently
     // the tail rotor in DDVP uses the same ramp and runup time as the main rotor.  This may need changed if 
     // the RSC is used for DDFP tail rotors.
     set_rotor_runup_complete(main_rotor_state == AP_MotorsHeli_RSC::RSCSpoolState::THROTTLE_UNLIMITED);
@@ -296,6 +296,7 @@ AP_Motors::SpoolState AP_MotorsHeli_Single::update_spool_state(AP_MotorsHeli_RSC
     return main_rotor_state;
 
 }
+
 //
 // move_actuators - moves swash plate and tail rotor
 //                 - expected ranges:
