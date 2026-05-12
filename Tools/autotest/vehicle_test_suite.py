@@ -2539,6 +2539,9 @@ class TestSuite(abc.ABC):
             "CC_TYPE": 2,         # AC_CustomControl: PID backend (ArduCopter)
         }
 
+    def param_metadata_vehicle_name(self):
+        return self.log_name()
+
     def test_parameter_documentation_get_all_parameters(self):
 
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
@@ -2547,9 +2550,7 @@ class TestSuite(abc.ABC):
             os.unlink(xml_filepath)
         except OSError:
             pass
-        vehicle = self.log_name()
-        if vehicle == "HeliCopter":
-            vehicle = "ArduCopter"
+        vehicle = self.param_metadata_vehicle_name()
         if vehicle == "QuadPlane":
             vehicle = "ArduPlane"
         cmd = [param_parse_filepath, '--vehicle', vehicle]
