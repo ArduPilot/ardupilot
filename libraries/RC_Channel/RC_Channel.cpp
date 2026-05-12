@@ -1933,8 +1933,12 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 #if AP_AHRS_EKF_RESET_ENABLED
     case AUX_FUNC::EKF_RESET:
         if (ch_flag == AuxSwitchPos::HIGH) {
-            if (AP::ahrs().reset_configured_backend() && hal.util->get_soft_armed()) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF bootstrap reset performed");
+            // only allowed while disarmed - resetting the EKF in flight would
+            // discard the in-flight state estimate
+            if (hal.util->get_soft_armed()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF reset ignored: vehicle armed");
+            } else if (AP::ahrs().reset_configured_backend()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF bootstrap reset performed");
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF bootstrap reset failed");
             }
