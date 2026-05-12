@@ -11037,61 +11037,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("GSF reset failed, vehicle flew too far (%f > %f)" % (dist_m, dist_m_max))
 
     def EKFBootstrapReset(self):
-        '''test EKF bootstrap reset via aux switch preserves origin and position hold'''
+        '''verify EKF reset aux switch is disarmed-only and preserves origin'''
         self.set_parameters({
             "RC8_OPTION": 187,  # EKF_RESET
-            "FS_EKF_THRESH": 0,  # disable EKF failsafe
         })
         self.reboot_sitl()
 
-        self.change_mode('GUIDED')
         self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.user_takeoff(alt_min=10)
+        home = self.mav.location()
 
-        # let the vehicle settle in GUIDED hover before capturing reference
-        self.delay_sim_time(3)
-        pre_reset_loc = self.mav.location()
-
-        # collect STATUSTEXT after takeoff so boot messages aren't matched
-        self.context_push()
         self.context_collect('STATUSTEXT')
 
-        # trigger EKF bootstrap reset
+        # disarmed: reset should succeed and re-bootstrap the cores
         self.set_rc(8, 2000)
-        self.wait_text("EKF3 IMU. initialised", timeout=5, regex=True,
-                       check_context=True)
+        self.wait_statustext("EKF bootstrap reset performed", check_context=True, timeout=10)
+        self.wait_statustext("EKF3 IMU. initialised", check_context=True, regex=True, timeout=10)
         self.set_rc(8, 1000)
 
-        self.context_pop()
+        # take off and confirm the GUIDED position controller holds station
+        # at the pre-reset location - if the origin had moved during the
+        # reset, position hold would drive the vehicle away from home
+        self.takeoff(10, mode='GUIDED')
+        self.wait_location(home, accuracy=5, height_accuracy=None,
+                           minimum_duration=10, timeout=30)
 
-        # hover for several seconds so any origin shift would translate
-        # into a position controller correction and the vehicle would
-        # fly away from the takeoff point
-        self.delay_sim_time(10)
-
-        # check altitude didn't diverge wildly (should stay within ~5m of 10m)
-        gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if gpi is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
-        alt_m = gpi.relative_alt / 1000.0
-        if abs(alt_m - 10.0) > 5.0:
-            raise NotAchievedException(
-                "Altitude diverged after EKF reset: %.1f (expected ~10m)" % alt_m
-            )
-
-        # check vehicle is still near the pre-reset position - if the
-        # EKF origin shifted, the GUIDED position controller would have
-        # commanded a correction and the vehicle would have drifted
-        post_reset_loc = self.mav.location()
-        drift_m = self.get_distance(pre_reset_loc, post_reset_loc)
-        self.progress("Horizontal drift after EKF reset: %.2fm" % drift_m)
-        max_drift_m = 5.0
-        if drift_m > max_drift_m:
-            raise NotAchievedException(
-                "Vehicle drifted %.1fm after EKF reset (max %.1fm) - origin may not be preserved"
-                % (drift_m, max_drift_m)
-            )
+        # armed: reset should be refused
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF reset ignored: vehicle armed", check_context=True, timeout=10)
+        self.set_rc(8, 1000)
 
         self.do_RTL()
 
