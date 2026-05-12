@@ -450,14 +450,10 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update_spool_state(float dt,
     // set desired spool state
     _desired_spool_state = desired_spool_state;
 
-    if (_desired_spool_state == DesiredRSCSpoolState::SHUT_DOWN) {
-        // if we are shutting down, we want to immediately go to SHUT_DOWN state and not wait for spool down to complete
-        _spool_state = RSCSpoolState::SHUT_DOWN;
-        return _spool_state;
-    }
-
     switch (_desired_spool_state) {
         case DesiredRSCSpoolState::SHUT_DOWN:
+            // if we are shutting down, we want to immediately go to SHUT_DOWN state and not wait for spool down to complete
+            _spool_state = RSCSpoolState::SHUT_DOWN;
             // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
             update_rotor_ramp(0.0f, dt);
             break;
