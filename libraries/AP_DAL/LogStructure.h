@@ -19,6 +19,7 @@
     LOG_RFRN_MSG, \
     LOG_RISH_MSG, \
     LOG_RISI_MSG, \
+    LOG_RISJ_MSG, \
     LOG_RBRH_MSG, \
     LOG_RBRI_MSG, \
     LOG_RRNH_MSG, \
@@ -125,8 +126,6 @@ struct log_RISH {
 // @Field: DAZ: z-axis delta-angle
 // @Field: DVDT: delta-velocity-delta-time
 // @Field: DADT: delta-angle-delta-time
-// @Field: GBL: gyro bias limit (rad/s) for the EKF gyro bias state clamp
-// @Field: GBI: initial gyro bias 1-sigma uncertainty (deg/s)
 // @Field: Flags: use-accel, use-gyro, delta-vel-valid, delta-accel-valid
 // @Field: I: IMU instance
 struct log_RISI {
@@ -134,12 +133,22 @@ struct log_RISI {
     Vector3f delta_angle;
     float delta_velocity_dt;
     float delta_angle_dt;
-    float gyro_bias_limit;
-    float gyro_bias_init_dps;
     uint8_t use_accel:1;
     uint8_t use_gyro:1;
     uint8_t get_delta_velocity_ret:1;
     uint8_t get_delta_angle_ret:1;
+    uint8_t instance;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RISJ
+// @Description: Replay Inertial Sensor instance metadata (low-rate, only logged when changed)
+// @Field: GBL: gyro bias limit (rad/s) for the EKF gyro bias state clamp
+// @Field: GBI: initial gyro bias 1-sigma uncertainty (deg/s)
+// @Field: I: IMU instance
+struct log_RISJ {
+    float gyro_bias_limit;
+    float gyro_bias_init_dps;
     uint8_t instance;
     uint8_t _end;
 };
@@ -619,7 +628,9 @@ struct log_RTER {
     { LOG_RISH_MSG, RLOG_SIZE(RISH),                                   \
       "RISH", "HBBfBB", "LR,PG,PA,LD,AC,GC", "------", "------" }, \
     { LOG_RISI_MSG, RLOG_SIZE(RISI),                                   \
-      "RISI", "ffffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,GBL,GBI,Flags,I", "-----------#", "------------" }, \
+      "RISI", "ffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,Flags,I", "---------#", "----------" }, \
+    { LOG_RISJ_MSG, RLOG_SIZE(RISJ),                                   \
+      "RISJ", "ffB", "GBL,GBI,I", "--#", "---" }, \
     { LOG_RASH_MSG, RLOG_SIZE(RASH),                                   \
       "RASH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RASI_MSG, RLOG_SIZE(RASI),                                   \

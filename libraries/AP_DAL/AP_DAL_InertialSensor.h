@@ -33,8 +33,8 @@ public:
     uint8_t get_first_usable_gyro(void) const { return _RISH.first_usable_gyro; };
 
     bool use_gyro(uint8_t instance) const { return _RISI[instance].use_gyro; }
-    float get_gyro_bias_limit(uint8_t instance) const { return _RISI[instance].gyro_bias_limit; }
-    float get_gyro_bias_init_dps(uint8_t instance) const { return _RISI[instance].gyro_bias_init_dps; }
+    float get_gyro_bias_limit(uint8_t instance) const { return _RISJ[instance].gyro_bias_limit; }
+    float get_gyro_bias_init_dps(uint8_t instance) const { return _RISJ[instance].gyro_bias_init_dps; }
     const Vector3f     &get_gyro(uint8_t i) const { return gyro_filtered[i]; }
     const Vector3f     &get_gyro() const { return get_gyro(_primary_gyro); }
     bool get_delta_angle(uint8_t i, Vector3f &delta_angle, float &delta_angle_dt) const {
@@ -59,10 +59,14 @@ public:
         pos[msg.instance] = AP::ins().get_imu_pos_offset(msg.instance);
         update_filtered(msg.instance);
     }
+    void handle_message(const log_RISJ &msg) {
+        _RISJ[msg.instance] = msg;
+    }
 
 private:
     struct log_RISH _RISH;
     struct log_RISI _RISI[INS_MAX_INSTANCES];
+    struct log_RISJ _RISJ[INS_MAX_INSTANCES];
     float alpha;
 
     // sensor positions
