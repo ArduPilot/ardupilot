@@ -42,27 +42,17 @@ void Copter::update_ground_effect_detector(void)
     }
 
     // if we are in takeoff_expected and we meet the conditions for having taken off
-    // end the takeoff_expected state
-    // Use configured altitude threshold, or the original 0.50m default when not set
-    const float gndeff_alt_m = is_positive(g2.tkoff_gndeff_alt) ? g2.tkoff_gndeff_alt : 0.50f;
+    // end the takeoff_expected state. TKOFF_GNDEFF_TMO is a minimum hold time
+    // before the altitude check is allowed to release; the 5s hard timeout
+    // still applies unconditionally.
+    const float gndeff_alt_m = g2.tkoff_gndeff_alt;
     const float height_above_takeoff_m = -pos_d_m - gndeffect_state.takeoff_alt_m;
-    const uint32_t time_since_takeoff_ms = tnow_ms - gndeffect_state.takeoff_time_ms;
+    const uint32_t min_hold_ms = MIN(uint32_t(g2.tkoff_gndeff_tmo * 1000.0f), 5000U);
     const bool above_gndeff_alt = height_above_takeoff_m > gndeff_alt_m;
-    const bool max_timeout = time_since_takeoff_ms > 5000;
+    const bool min_hold_elapsed = AP_HAL::timeout_expired(gndeffect_state.takeoff_time_ms, tnow_ms, min_hold_ms);
+    const bool max_timeout = AP_HAL::timeout_expired(gndeffect_state.takeoff_time_ms, tnow_ms, 5000U);
 
-    // Determine if ground effect should be disabled
-    bool should_clear_gndeff;
-    if (is_positive(g2.tkoff_gndeff_tmo)) {
-        // With timeout parameter: require BOTH timeout AND altitude, but always clear after 5s max
-        const uint32_t tmo_ms = uint32_t(g2.tkoff_gndeff_tmo * 1000.0f);
-        const bool tmo_elapsed = time_since_takeoff_ms > tmo_ms;
-        should_clear_gndeff = max_timeout || (tmo_elapsed && above_gndeff_alt);
-    } else {
-        // Without timeout parameter: original behavior (altitude OR 5s timeout)
-        should_clear_gndeff = max_timeout || above_gndeff_alt;
-    }
-
-    if (gndeffect_state.takeoff_expected && should_clear_gndeff) {
+    if (gndeffect_state.takeoff_expected && (max_timeout || (min_hold_elapsed && above_gndeff_alt))) {
         gndeffect_state.takeoff_expected = false;
     }
 
