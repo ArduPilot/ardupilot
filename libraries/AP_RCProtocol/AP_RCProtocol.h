@@ -27,6 +27,10 @@
 #define MAX_RCIN_CHANNELS 18
 #define MIN_RCIN_CHANNELS  5
 
+#ifndef RCPROTOCOL_DEBUG_DETECTION
+#define RCPROTOCOL_DEBUG_DETECTION 0
+#endif
+
 class AP_RCProtocol_Backend;
 
 class AP_RCProtocol {
@@ -304,6 +308,9 @@ private:
     // optional additional uart
     struct {
         AP_HAL::UARTDriver *uart;
+#if RCPROTOCOL_DEBUG_DETECTION
+        uint32_t bytes_received;
+#endif
         bool opened;
         uint32_t last_config_change_ms;
         uint8_t config_num;

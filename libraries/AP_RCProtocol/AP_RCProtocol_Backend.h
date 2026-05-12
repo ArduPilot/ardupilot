@@ -41,7 +41,7 @@ public:
     // support for receivers that have FC initiated bind support
     virtual void start_bind() {}
 
-    // allow for backends that need regular polling
+    // allow for backends that need regular polling, called from new_input() by the rcin thread (1KHz on ChibiOS)
     virtual void update(void) {}
 
     // update from mavlink messages

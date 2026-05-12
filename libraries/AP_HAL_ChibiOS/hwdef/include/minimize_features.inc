@@ -51,3 +51,4 @@ define AP_ICENGINE_ENABLED 0
 
 # remove feature allowing optical flow without rangefinder:
 define EK3_FEATURE_OPTFLOW_SRTM 0
+define AP_CRSF_OUT_ENABLED 0
