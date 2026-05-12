@@ -2841,7 +2841,10 @@ void AP_AHRS::resetHeightDatum(float origin_alt_tolerance_m)
     WITH_SEMAPHORE(_rsem);
 
 #if HAL_NAVEKF3_AVAILABLE
-    ekf3.resetHeightDatum(origin_alt_tolerance_m);
+    // Call the EKF3 instance directly: the AP_AHRS_NavEKF3 shim only
+    // overrides the no-arg form (matching the AP_AHRS_Backend virtual),
+    // so we bypass it here to forward the tolerance value.
+    ekf3.EKF3.resetHeightDatum(origin_alt_tolerance_m);
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     // EKF2 has no equivalent guard; the tolerance argument is ignored.
