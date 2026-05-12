@@ -1,3 +1,4 @@
+#include "AP_Compass/AP_Compass.h"
 #include "Tracker.h"
 
 // mission storage
@@ -65,6 +66,12 @@ void Tracker::init_ardupilot()
     // see if EEPROM has a default location as well
     if (current_loc.lat == 0 && current_loc.lng == 0) {
         get_home_eeprom(current_loc);
+    }
+
+    // force compass declination update if starting coordinates are given
+    if (current_loc.lat != 0 || current_loc.lng != 0) {
+        AP::compass().set_initial_location((float)current_loc.lat / 10000000,
+                                           (float)current_loc.lng / 10000000);
     }
 
     hal.scheduler->delay(1000); // Why????
@@ -137,6 +144,9 @@ bool Tracker::set_home(const Location &temp, bool lock)
 
     current_loc = temp;
 
+    // update compass declination with the new location
+    AP::compass().set_initial_location((float)current_loc.lat / 10000000,
+                                       (float)current_loc.lng / 10000000);
     return true;
 }
 
