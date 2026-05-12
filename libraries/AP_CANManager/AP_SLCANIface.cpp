@@ -30,8 +30,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define LOG_TAG "SLCAN"
-
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo SLCAN::CANIface::var_info[] = {
@@ -268,9 +266,7 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
     _can_iface = hal.can[i];
     _iface_num = _slcan_can_port - 1;
     _prev_ser_port = -1;
-#if HAL_CANMANAGER_ENABLED
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port - 1);
-#endif
+
     return true;
 }
 

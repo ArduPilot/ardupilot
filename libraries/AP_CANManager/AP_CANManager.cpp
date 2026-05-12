@@ -42,8 +42,6 @@
 #include <AP_Common/sorting.h>
 #include <AP_Logger/AP_Logger.h>
 
-#define LOG_TAG "CANMGR"
-
 extern const AP_HAL::HAL& hal;
 
 // table of user settable parameters
@@ -173,15 +171,12 @@ void AP_CANManager::init()
         }
 
         if (!can_initialised) {
-            log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "Failed to initialise CAN Interface %d", i+1);
             continue;
         }
 
-        log_text(AP_CANManager::LOG_INFO, LOG_TAG, "CAN Interface %d initialized well", i + 1);
 
         if (_drivers[drv_num] != nullptr) {
             //We already initialised the driver just add interface and move on
-            log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
             _drivers[drv_num]->add_interface(iface);
             continue;
         }
@@ -226,8 +221,6 @@ void AP_CANManager::init()
 
         // Hook this interface to the selected Driver Type
         _drivers[drv_num]->add_interface(iface);
-        log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
-
     }
 
     for (uint8_t drv_num = 0; drv_num < HAL_MAX_CAN_PROTOCOL_DRIVERS; drv_num++) {
@@ -311,7 +304,6 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
 
         _drivers[drv_num] = driver;
         _drivers[drv_num]->add_interface(iface);
-        log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
 
         _drivers[drv_num]->init(drv_num);
         _driver_type_cache[drv_num] = dtype;
