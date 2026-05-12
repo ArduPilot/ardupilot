@@ -349,6 +349,7 @@ bool AP_CANManager::register_11bit_driver(AP_CAN::Protocol dtype, CANSensor *sen
 
 }
 
+#if AP_CANMANAGER_LOG_TEXT_ENABLED
 // Method used by CAN related library methods to report status and debug info via GCS
 void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...)
 {
@@ -382,6 +383,7 @@ void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, 
 
     GCS_SEND_TEXT(severity, "%s: %s", tag, msg);
 }
+#endif // AP_CANMANAGER_LOG_TEXT_ENABLED
 
 #if AP_CAN_LOGGING_ENABLED
 /*
