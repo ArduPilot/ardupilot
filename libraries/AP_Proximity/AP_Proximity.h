@@ -118,6 +118,9 @@ public:
     // return distance filter frequency
     float get_filter_freq() const { return _filt_freq; }
 
+    // return arming distance threshold (meters)
+    float get_arm_distance_m() const { return _arm_dist_m; }
+
     // return sensor health
     Status get_instance_status(uint8_t instance) const;
 
@@ -233,6 +236,7 @@ private:
     AP_Int8 _ign_gnd_enable;                    // true if land detection should be enabled
     AP_Float _filt_freq;                        // cutoff frequency for low pass filter
     AP_Float _alt_min_m;                        // Minimum altitude -in meters- below which proximity should not work.
+    AP_Float _arm_dist_m;                       // minimum distance (in meters) required to arm
 
     // get alt from rangefinder in meters. This reading is corrected for vehicle tilt
     bool get_rangefinder_alt(float &alt_m) const;
