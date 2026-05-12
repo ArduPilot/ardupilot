@@ -3713,6 +3713,125 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if ogains[g] != ngains[g]:
                 raise NotAchievedException(f"AUTOTUNE gains not discarded {ogains=} {ngains=}")
 
+    def AutoTuneRateDemandSafeWithHighAngleP(self):
+        '''Regression test: AutoTune must not demand unsafe pitch rates
+        when ATC_ANG_PIT_P is pre-tuned high.
+
+        Reproduces the in-field crash where a quad had
+            ATC_ANG_PIT_P = 36       (8x the 4.5 default)
+            ATC_RATE_P_MAX = 0       (no rate cap)
+            ATC_ACC_P_MAX = 3641
+        AutoTune entered Pitch Angle P Down. load_test_gains() disables
+        the sqrt_controller, so update_ang_vel_target_from_att_error()
+        falls back to the linear branch:
+            rate_target = ANG_P * angle_error
+        With a 20-deg step at ANG_P=36 the demand is 720 deg/s. In the
+        field the vehicle reached 263 deg/s actual pitch rate before
+        losing attitude. The autotune-side `target_angle` constrain at
+        AC_AutoTune_Multi.cpp:162 clamps the step UP to
+        lean_angle_max/3, defeating the ANG_P-scaled safety reduction
+        that `max_angle_step_bf_pitch()` would otherwise provide.
+
+        Test strategy:
+          - watch ATTITUDE.pitchspeed live and fail fast if the *actual*
+            body pitch rate exceeds a sane cap (catches if SITL motors
+            keep up with the demand);
+          - after the autotune session ends, scan the onboard RATE log
+            and assert that RATE.PDes (the rate-controller demand,
+            i.e. `_ang_vel_body_rads.y`) also stays under the cap. This
+            catches the bug even when SITL motor saturation prevents
+            the actual rate from reaching the demand.'''
+
+        # autotune mutates a wide set of parameters; reset the vehicle
+        # between runs in line with the existing AutoTune test
+        self.customise_SITL_commandline([])
+
+        # reproduce the dangerous starting configuration from the crash log
+        self.set_parameters({
+            "ATC_ANG_RLL_P":    28.3,
+            "ATC_ANG_PIT_P":    36.0,
+            "ATC_ANG_YAW_P":    16.1,
+            "ATC_ACC_R_MAX":  4300.0,
+            "ATC_ACC_P_MAX":  3640.0,
+            "ATC_ACC_Y_MAX":  1920.0,
+            "ATC_RATE_R_MAX":    0.0,
+            "ATC_RATE_P_MAX":    0.0,
+            "ATC_RATE_Y_MAX":    0.0,
+            "ATC_ANGLE_MAX":    60.0,
+            "AUTOTUNE_AGGR":   0.075,
+            "AUTOTUNE_MIN_D": 0.0001,
+            "AUTOTUNE_AXES":     2,  # pitch only, where the crash occurred
+            "LOG_BITMASK":   65535,  # ensure RATE messages get logged
+        })
+
+        # 250 deg/s is well above anything a sane autotune twitch ought
+        # to produce on a multirotor; the in-field crash hit 263 deg/s
+        # actual and ~496 deg/s demand.
+        max_rate_dps = 250.0
+        max_rate_radps = math.radians(max_rate_dps)
+        peak = {"pitch_actual": 0.0}
+        watch = {"active": False}
+
+        def assert_pitch_rate_safe(mav, m):
+            if m.get_type() != 'ATTITUDE' or not watch["active"]:
+                return
+            r = abs(m.pitchspeed)
+            if r > peak["pitch_actual"]:
+                peak["pitch_actual"] = r
+            if r > max_rate_radps:
+                raise NotAchievedException(
+                    "AutoTune drove actual pitch rate to %.1f deg/s (cap %.1f); "
+                    "with sqrt_controller disabled, high ANG_P and no RATE_P_MAX "
+                    "the angle-step demand is unbounded" %
+                    (math.degrees(r), max_rate_dps))
+
+        gain_names = [
+            "ATC_RAT_PIT_P", "ATC_RAT_PIT_I", "ATC_RAT_PIT_D",
+            "ATC_ANG_PIT_P",
+        ]
+        ogains = self.get_parameters(gain_names)
+        # restore on test exit
+        self.set_parameters(ogains)
+
+        self.takeoff(10)
+
+        self.install_message_hook_context(assert_pitch_rate_safe)
+
+        watch["active"] = True
+        self.change_mode('AUTOTUNE')
+        try:
+            self.wait_statustext("AutoTune: Success", timeout=600)
+        finally:
+            watch["active"] = False
+
+        self.change_mode('LAND')
+        self.wait_landed_and_disarmed()
+
+        # Post-flight: scan the onboard log for the rate-controller
+        # demand peak so we catch the unbounded-demand bug even if SITL
+        # motor authority would have prevented the actual rate from
+        # reaching the cap.
+        max_pdes_dps = 0.0
+        mlog = self.dfreader_for_current_onboard_log()
+        while True:
+            m = mlog.recv_match(type=['RATE'])
+            if m is None:
+                break
+            pdes = abs(m.PDes)   # deg/s, rate-controller target
+            if pdes > max_pdes_dps:
+                max_pdes_dps = pdes
+
+        self.progress("AutoTune peaks: actual pitch %.1f deg/s, demanded pitch %.1f deg/s "
+                      "(cap %.1f deg/s)" %
+                      (math.degrees(peak["pitch_actual"]), max_pdes_dps, max_rate_dps))
+
+        if max_pdes_dps > max_rate_dps:
+            raise NotAchievedException(
+                "AutoTune demanded pitch rate %.1f deg/s (cap %.1f); the angle "
+                "controller produced an unbounded rate target during the test "
+                "because sqrt_controller is disabled and ATC_RATE_P_MAX is 0" %
+                (max_pdes_dps, max_rate_dps))
+
     def EKF3SRCPerCore(self):
         '''Check SP/SH values in XKF4 for GPS (core 0) vs VICON (core 1) with targeted glitches.'''
         self.set_parameters({
@@ -13561,6 +13680,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AuxFunctionsInMission,
              self.AutoTune,
              self.AutoTuneYawD,
+             self.AutoTuneRateDemandSafeWithHighAngleP,
              self.NoRCOnBootPreArmFailure,
         ])
         return ret
