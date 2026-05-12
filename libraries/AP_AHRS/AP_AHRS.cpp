@@ -264,33 +264,7 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
 }
 
-// set active_backend variable in AP_AHRS object:
-const AP_AHRS_Backend *AP_AHRS::backend_for_type(EKFType type) const
-{
-    switch (type) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return &dcm;
-#endif
-#if AP_AHRS_NAVEKF3_ENABLED
-    case EKFType::THREE:
-        return &ekf3;
-#endif
-#if AP_AHRS_NAVEKF2_ENABLED
-    case EKFType::TWO:
-        return &ekf2;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return &external;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return &sim;
-#endif
-    }
-    return nullptr;
-}
+// return a pointer to the backend for supplied type
 AP_AHRS_Backend *AP_AHRS::backend_for_type(EKFType type)
 {
     switch (type) {
