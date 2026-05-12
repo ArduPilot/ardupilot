@@ -12975,9 +12975,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                        (duration, want_lt))
 
     def TakeoffGroundEffectAlt(self):
-        '''Test TKOFF_GNDEFF_ALT and TKOFF_GNDEFF_TMO control ground effect'''
-        self.context_push()
-        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        '''Test TKOFF_GNDEFF_ALT and TKOFF_GNDEFF_TMO gate the ground-effect compensation window'''
+        # SIM_BARO_GEFF injects a real baro static-pressure error near the
+        # ground so the compensation window has something to compensate for;
+        # without it the detector parameters would be exercised but the
+        # underlying baro error they exist to mitigate wouldn't be present.
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "SIM_BARO_GEFF": 1.0,
+        })
 
         # Subtest A: large threshold — takeoff_expected persists at 5m
         self.start_subtest("Large TKOFF_GNDEFF_ALT keeps ground effect at 5m")
@@ -13031,9 +13037,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "TKOFF_GNDEFF_TMO should extend ground effect (tmo=%fs <= no_tmo=%fs)"
                 % (total_tmo, total_small))
-
-        self.context_pop()
-        self.reboot_sitl()
 
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
