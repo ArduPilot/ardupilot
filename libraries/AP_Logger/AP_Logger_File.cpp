@@ -322,6 +322,12 @@ void AP_Logger_File::Prep_MinSpace()
 
     const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
 
+    // When called in-flight the writer holds an open fd on the
+    // most recent log; never unlink that file or the writes that
+    // follow will go to an orphan inode that disappears when the
+    // fd closes.
+    const uint16_t active_log = (_write_fd != -1) ? find_last_log() : 0;
+
     uint16_t log_to_remove = first_log_to_remove;
 
     uint16_t count = 0;
@@ -337,6 +343,15 @@ void AP_Logger_File::Prep_MinSpace()
             // *way* too many deletions going on here.  Possible internal error.
             INTERNAL_ERROR(AP_InternalError::error_t::logger_too_many_deletions);
             break;
+        }
+        if (log_to_remove == active_log) {
+            // skip the in-flight log; advance and let the loop
+            // condition decide whether to keep going
+            log_to_remove++;
+            if (log_to_remove > _front.get_max_num_logs()) {
+                log_to_remove = 1;
+            }
+            continue;
         }
         char *filename_to_remove = _log_file_name(log_to_remove);
         if (filename_to_remove == nullptr) {
@@ -911,6 +926,29 @@ void AP_Logger_File::io_timer(void)
 {
     uint32_t tnow = AP_HAL::millis();
     _io_timer_heartbeat = tnow;
+
+    // Proactive low-space scan. Once per
+    // _low_space_check_interval_ms, if disk_space_avail() drops below
+    // min(50 MB, 0.1 * LOG_FILE_MB_FREE), run Prep_MinSpace() to trim
+    // old logs while the writer is still healthy. The active log
+    // file keeps being written to and never has to be closed and
+    // reopened.
+    if (_initialised &&
+        tnow - _low_space_check_last_ms >= _low_space_check_interval_ms) {
+        _low_space_check_last_ms = tnow;
+        const int64_t avail = disk_space_avail();
+        if (avail >= 0) {
+            const int32_t log_mb_free = _front._params.min_MB_free;
+            // compute in bytes to keep precision for small
+            // LOG_FILE_MB_FREE values
+            const int64_t threshold_bytes =
+                MIN((int64_t)50 * MB_to_B,
+                    ((int64_t)log_mb_free * MB_to_B) / 10);
+            if (threshold_bytes > 0 && avail < threshold_bytes) {
+                Prep_MinSpace();
+            }
+        }
+    }
 
     if (start_new_log_pending) {
         start_new_log();
