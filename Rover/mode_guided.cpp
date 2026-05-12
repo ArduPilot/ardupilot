@@ -306,6 +306,16 @@ bool ModeGuided::get_desired_location(Location& destination) const
 // set desired location
 bool ModeGuided::set_desired_location(const Location &destination, Location next_destination)
 {
+#if AP_FENCE_ENABLED
+    // reject destination outside the fence.
+    // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
+    if (!rover.fence.check_destination_within_fence(destination)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        // failure is propagated to GCS with NAK
+        return false;
+    }
+#endif
+
     if (use_scurves_for_navigation()) {
         // use scurves for navigation
         if (!g2.wp_nav.set_desired_location(destination, next_destination)) {
