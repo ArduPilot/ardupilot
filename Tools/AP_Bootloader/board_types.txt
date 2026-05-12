@@ -562,6 +562,9 @@ AP_HW_PixSurveyA2-IND                6104
 # IDs 6110 - 6119 for S-vehicle
 AP_HW_SVehicle-E2                    6110
 
+# IDs 6200-6209 reserved for novaX
+AP_HW_novax_H743_V1                  6200
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6900-6909 reserved for Easy Aerial

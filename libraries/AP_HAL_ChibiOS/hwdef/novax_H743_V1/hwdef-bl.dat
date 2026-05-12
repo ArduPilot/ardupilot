@@ -1,0 +1,44 @@
+# =============================================================================
+# novax_H743_V1 Bootloader - Hardware Definition for ArduPilot
+# =============================================================================
+
+# ---- MCU & Board ----
+MCU STM32H7xx STM32H743xx
+
+APJ_BOARD_ID 6200
+
+OSCILLATOR_HZ 8000000
+FLASH_SIZE_KB 2048
+FLASH_BOOTLOADER_LOAD_KB 128
+FLASH_RESERVE_START_KB 0
+
+env OPTIMIZE -Os
+
+# ---- USB (for DFU firmware upload) ----
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+USB_STRING_MANUFACTURER "NovaX"
+USB_STRING_PRODUCT "novax_H743_V1-BL"
+
+# ---- Bootloader LED ----
+PE3 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# ---- SPI CS Pins held HIGH (prevent bus contention) ----
+PC15 IMU1_CS    OUTPUT HIGH
+PE11 IMU2_CS    OUTPUT HIGH
+PB12 AT7456E_CS OUTPUT HIGH
+PD4  SPARE_CS1  OUTPUT HIGH
+PE2  SPARE_CS2  OUTPUT HIGH
+
+# ---- UART for serial bootloader ----
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+
+SERIAL_ORDER OTG1 USART1
+
+# ---- Storage ----
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 32768
+define HAL_RAM_RESERVE_START 0
