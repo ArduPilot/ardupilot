@@ -83,16 +83,7 @@ public:
     {
         return LogLevel(_loglevel.get());
     }
-    
-    // Method to log status and debug information via GCS
-#if AP_CANMANAGER_LOG_TEXT_ENABLED
-    void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...) FMT_PRINTF(4,5);
-#else
-    void log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...) FMT_PRINTF(4,5)
-    {
-        // do nothing if disabled
-    }
-#endif // AP_CANMANAGER_LOG_TEXT_ENABLED
+
     // return driver type index i
     AP_CAN::Protocol get_driver_type(uint8_t i) const
     {
