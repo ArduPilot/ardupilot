@@ -256,6 +256,43 @@ void AP_InertialSensor_Invensensev3::fifo_reset()
     notify_gyro_fifo_reset(gyro_instance);
 }
 
+// see header for the per-variant rationale and datasheet references
+float AP_InertialSensor_Invensensev3::gyro_bias_limit_rads() const
+{
+    switch (inv3_type) {
+    case Invensensev3_Type::ICM42688:
+    case Invensensev3_Type::ICM45686:
+        return radians(2.0f);
+    case Invensensev3_Type::ICM42605:
+    case Invensensev3_Type::ICM40609:
+    case Invensensev3_Type::ICM42670:
+    case Invensensev3_Type::IIM42652:
+        return radians(3.0f);
+    case Invensensev3_Type::ICM40605:
+    case Invensensev3_Type::IIM42653:
+        break;
+    }
+    return AP_InertialSensor_Backend::gyro_bias_limit_rads();
+}
+
+float AP_InertialSensor_Invensensev3::gyro_bias_init_dps() const
+{
+    switch (inv3_type) {
+    case Invensensev3_Type::ICM42688:
+    case Invensensev3_Type::ICM45686:
+        return 1.0f;
+    case Invensensev3_Type::ICM42605:
+    case Invensensev3_Type::ICM40609:
+    case Invensensev3_Type::ICM42670:
+    case Invensensev3_Type::IIM42652:
+        return 1.5f;
+    case Invensensev3_Type::ICM40605:
+    case Invensensev3_Type::IIM42653:
+        break;
+    }
+    return AP_InertialSensor_Backend::gyro_bias_init_dps();
+}
+
 void AP_InertialSensor_Invensensev3::start()
 {
     // pre-fetch instance numbers for checking fast sampling settings

@@ -83,20 +83,24 @@ private:
         return backend_rate_hz;
     }
 
-    // The EKF clamps and the initial covariance below act on the
-    // residual gyro bias after ArduPilot's startup calibration has
-    // removed the static offset. Across the v3 family (ICM-42605,
-    // ICM-42688, ICM-40605, ICM-40609, ICM-42670, ICM-45686, IIM-42652,
-    // IIM-42653), residual drift over a flight is dominated by bias
-    // instability plus temperature drift and is well under 1 deg/s, so
-    // a 2 deg/s clamp and 1 deg/s init uncertainty are conservative for
-    // all variants.
-    float gyro_bias_limit_rads() const override {
-        return radians(2.0f); // 0.035 rad/s
-    }
-    float gyro_bias_init_dps() const override {
-        return 1.0f;
-    }
+    // The EKF clamp acts on residual gyro bias after ArduPilot's
+    // startup calibration has removed the static ZRO. Residual drift
+    // over a flight is therefore dominated by ZRO temperature drift
+    // (temp coefficient x in-flight temperature swing). The v3 family
+    // has a wide spread in this coefficient, so the override is tiered:
+    //
+    //   tier  parts                    ZRO drift   limit / init
+    //   ----  -----------------------  ----------  ------------------
+    //   low   ICM-42688-P, ICM-45686   0.005/C     radians(2.0) / 1.0
+    //   mid   ICM-42605, ICM-40609-D,  0.01-0.02/C radians(3.0) / 1.5
+    //         ICM-42670-P, IIM-42652
+    //   none  ICM-40605, IIM-42653,    0.04/C or   base default
+    //         (anything else)          unknown     (0.5 rad/s / 2.5)
+    //
+    // See datasheets DS-000347, DS-000489, DS-000292, DS-000330,
+    // DS-000451, DS-000440, DS-000529.
+    float gyro_bias_limit_rads() const override;
+    float gyro_bias_init_dps() const override;
 
     // reset FIFO configure1 register
     uint8_t fifo_config1;
