@@ -376,15 +376,29 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
 
-    // Decide between a full reset (zero position.z, snap ekfGpsRefHgt
-    // to current GPS) and a partial reset (recalibrate baro and flush
-    // baro buffer only).  A full reset is only safe when EKF_origin.alt
-    // is consistent with current GPS altitude; if the user has set
-    // origin altitude far from physical altitude (AHRS_ORIGIN_ALT,
-    // MAV_CMD_DO_SET_GLOBAL_ORIGIN), zeroing position.z would break
-    // AMSL consistency once GPS fusion drives position.z to track the
-    // origin/GPS alt offset.  In that case the EKF position state is
-    // already correct (it tracks the offset); only baro needs a refresh.
+    // Decide between a full reset and a no-op based on whether the
+    // EKF_origin altitude is consistent with current GPS altitude.
+    //
+    // A full reset zeroes position.z/velocity.z, recalibrates the
+    // baro to read 0 at the current height, flushes the baro
+    // observation buffer (so stale pre-recal samples are not fused
+    // as delayed observations and produce a post-reset altitude
+    // transient), and snaps ekfGpsRefHgt so AMSL reporting from
+    // getLLH() is unchanged across the reset.
+    //
+    // A full reset is only safe when EKF_origin.alt matches current
+    // physical altitude.  If the user pinned the origin elsewhere
+    // (AHRS_ORIGIN_ALT, MAV_CMD_DO_SET_GLOBAL_ORIGIN), zeroing
+    // position.z would corrupt AMSL once GPS fusion pulls
+    // position.z back to track the origin/GPS offset.  In that case
+    // the EKF state is already correct: position.z encodes the
+    // origin-vs-physical offset, baroHgtOffset has been tracking
+    // baroDataDelayed.hgt + position.z via calcFiltBaroOffset's
+    // slow filter throughout disarm and is already converged, and
+    // the baro itself carries the absolute pressure reference we
+    // depend on for AMSL.  Doing anything -- even just recalibrating
+    // the baro to 0 -- would destroy state we explicitly want to
+    // preserve.  So the partial-reset branch is a true no-op.
     bool full_reset = true;
     if (origin_alt_tolerance_m >= 0 && validOrigin && gpsGoodToAlign) {
         const float gps_origin_diff_m = fabsf(0.01f *
@@ -394,14 +408,18 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
         }
     }
 
-    // Always: reset the barometer so that it reads zero at the current
-    // height, and discard any pre-recalibration samples still in the
-    // observation buffer (they would otherwise be fused as delayed
-    // observations and produce an altitude transient).
-    dal.baro().update_calibration();
-    storedBaro.reset();
-
     if (full_reset) {
+        // Recalibrate the baro to read zero at the current height and
+        // discard any pre-recalibration samples still in the
+        // observation buffer.  Without the buffer flush those stale
+        // samples would be fused as delayed observations and produce
+        // a post-reset altitude transient.  This MUST stay scoped to
+        // the full-reset branch -- on the partial-reset branch we
+        // deliberately keep the baro's pre-arm calibration so the
+        // AMSL reference is preserved.
+        dal.baro().update_calibration();
+        storedBaro.reset();
+
         // reset the vertical position and velocity states
         stateStruct.position.z = 0.0f;
         stateStruct.velocity.z = 0.0f;
@@ -444,17 +462,17 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
             }
         }
     } else {
-        // Partial reset: leave position.z, velocity.z, and the output
-        // observer chain alone -- they are correctly tracking the
-        // GPS-vs-origin altitude offset.  Leave ekfGpsRefHgt anchored
-        // to EKF_origin.alt so AMSL reporting stays consistent with the
-        // user-set origin.  Snap baroHgtOffset to where the slow filter
-        // would converge (calcFiltBaroOffset target is
-        // baroDataDelayed.hgt + position.z; baro just got recalibrated
-        // to 0, so target = position.z) so baro fusion does not pull
-        // position.z away from the GPS-anchored value during the ~1 s
-        // the filter would otherwise take to relax.
-        baroHgtOffset = stateStruct.position.z;
+        // Partial-reset path: explicit no-op.  Leave position.z,
+        // velocity.z and the output observer chain alone -- they
+        // correctly encode the GPS-vs-origin altitude offset for a
+        // user-pinned origin.  Leave the baro alone -- its absolute
+        // pressure reference is what makes AMSL reporting correct at
+        // this elevation.  Leave storedBaro alone -- its samples are
+        // consistent with the unchanged baro calibration.  Leave
+        // baroHgtOffset alone -- calcFiltBaroOffset has been
+        // converging on baroDataDelayed.hgt + position.z throughout
+        // disarm, so it is already at the right value; snapping it
+        // would actually introduce error rather than remove one.
     }
 
     // set the terrain state to zero (on ground). The adjustment for
