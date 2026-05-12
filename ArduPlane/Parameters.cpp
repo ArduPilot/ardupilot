@@ -1047,7 +1047,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Home reset altitude threshold
     // @Description: How far the altitude above the EKF origin can change before the home position and EKF height datum stop being reset periodically while disarmed. A value of 0 will always reset; a value of -1 will never reset. When the altitude above origin exceeds this value the reset is skipped, preserving AMSL altitude accuracy after the vehicle has been moved or flown to a different elevation.
     // @Values: -1:Never reset,0:Always reset
-    // @Range: -1 127
+    // @Range: -1 1000
+    // @Increment: 0.5
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("HOME_RESET_ALT", 11, ParametersG2, home_reset_threshold, 10),
@@ -1480,6 +1481,15 @@ void Plane::load_parameters(void)
 
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
+
+    // PARAMETER_CONVERSION - Added: May-2026
+    // HOME_RESET_ALT widened from AP_Int8 to AP_Float so the
+    // origin-vs-GPS altitude tolerance can be expressed at finer
+    // than 1 m granularity.  AP_Param silently ignores a stored
+    // value whose type does not match the declared type, so without
+    // this call every existing user's setting (the param has shipped
+    // as AP_Int8 since 2017) would revert to the default on upgrade.
+    g2.home_reset_threshold.convert_parameter_width(AP_PARAM_INT8);
 
 #if AP_AIRSPEED_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2022
