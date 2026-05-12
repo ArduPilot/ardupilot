@@ -9359,8 +9359,12 @@ Also, ignores heartbeats not from our target system'''
         if passed:
             self.progress('PASSED: "%s"' % prettyname)
         else:
-            self.progress('FAILED: "%s": %s (see %s)' %
-                          (prettyname, repr(ex), test_output_filename))
+            if attempt != 1:
+                self.progress('FAILED [retry %u/%u]: "%s": %s (see %s)' %
+                              (attempt, test.attempts, prettyname, repr(ex), test_output_filename))
+            else:
+                self.progress('FAILED: "%s": %s (see %s)' %
+                              (prettyname, repr(ex), test_output_filename))
             result.exception = ex
             result.debug_filename = test_output_filename
             if interact:
