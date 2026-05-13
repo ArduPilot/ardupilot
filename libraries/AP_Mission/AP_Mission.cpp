@@ -3196,4 +3196,29 @@ AP_Mission *mission()
 
 }
 
+
+
+// -------------------------------------------------------------------------
+// GSoC 2026 Draft: MAVLink Input Sanitization
+// -------------------------------------------------------------------------
+
+/*
+  Check if a DO_SET_SERVO command contains mathematically and physically valid parameters.
+  Returns false if parameters are out of bounds, allowing graceful rejection.
+*/
+bool AP_Mission::is_valid_do_set_servo(const mavlink_mission_item_int_t &packet) 
+{
+    // Param 1: Ensure servo channel is within valid physical range (e.g., 1 to 16)
+    if (packet.param1 < 1.0f || packet.param1 > 16.0f) {
+        return false;
+    }
+    
+    // Param 2: Ensure PWM value is within safe operational bounds (800 to 2200)
+    // Value 0 is used to disable/ignore, so we allow 0 as an exception
+    if (!is_zero(packet.param2) && (packet.param2 < 800.0f || packet.param2 > 2200.0f)) {
+        return false;
+    }
+    
+    return true;
+}
 #endif  // AP_MISSION_ENABLED

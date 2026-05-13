@@ -203,6 +203,9 @@ public:
         bool allow_disarmed_start; // allow starting the engine while disarmed
     };
 
+    // GSoC Draft: Boundary check helper for DO_SET_SERVO
+    static bool is_valid_do_set_servo(const mavlink_mission_item_int_t &packet);
+
     // NAV_SET_YAW_SPEED support
     struct PACKED Set_Yaw_Speed {
         float angle_deg;        // target angle in degrees (0=north, 90=east)
