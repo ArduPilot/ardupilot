@@ -67,7 +67,7 @@ void AR_WPNav_OA::update(float dt)
         case AP_OAPathPlanner::OA_NOT_REQUIRED:
             if (_oa_active) {
                 // object avoidance has become inactive so reset target to original destination
-                if (!AR_WPNav::set_desired_location(_destination_oabak)) {
+                if (!AR_WPNav::set_destination(_destination_oabak)) {
                     // this should never happen because we should have an EKF origin and the destination must be valid
                     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
                     stop_vehicle = true;
@@ -99,7 +99,7 @@ void AR_WPNav_OA::update(float dt)
             case AP_OAPathPlanner::OAPathPlannerUsed::Dijkstras:
                 // Dijkstra's.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
                 if (!_oa_active || !oa_destination_new.same_latlon_as(_oa_destination)) {
-                    if (AR_WPNav::set_desired_location(oa_destination_new)) {
+                    if (AR_WPNav::set_destination(oa_destination_new)) {
                         // if new target set successfully, update oa state and destination
                         _oa_active = true;
                         _oa_origin = oa_origin_new;
@@ -149,11 +149,9 @@ void AR_WPNav_OA::update(float dt)
     AR_WPNav::update(dt);
 }
 
-// set desired location and (optionally) next_destination
-// next_destination should be provided if known to allow smooth cornering
-bool AR_WPNav_OA::set_desired_location(const Location& destination, Location next_destination)
+bool AR_WPNav_OA::set_destination(const Location& destination, Location next_destination)
 {
-    const bool ret = AR_WPNav::set_desired_location(destination, next_destination);
+    const bool ret = AR_WPNav::set_destination(destination, next_destination);
 
     if (ret) {
         // disable object avoidance, it will be re-enabled (if necessary) on next update
@@ -163,7 +161,6 @@ bool AR_WPNav_OA::set_desired_location(const Location& destination, Location nex
     return ret;
 }
 
-// true if vehicle has reached desired location. defaults to true because this is normally used by missions and we do not want the mission to become stuck
 bool AR_WPNav_OA::reached_destination() const
 {
     // object avoidance should always be deactivated before reaching final destination
