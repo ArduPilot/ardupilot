@@ -37,6 +37,7 @@ public:
     friend class AP_ExternalAHRS_SBG;
     friend class AP_ExternalAHRS_VectorNav;
     friend class AP_ExternalAHRS_SensAItion;
+    friend class AP_ExternalAHRS_Aeron_plx;
 
     AP_ExternalAHRS();
 
@@ -68,7 +69,9 @@ public:
         SBG = 8,
 #endif
         // 9 reserved for EulerNav
-        // 10 reserved for Aeron
+#if AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
+        Aeron = 10,
+#endif
 #if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
         SensAItion = 11,
 #endif
