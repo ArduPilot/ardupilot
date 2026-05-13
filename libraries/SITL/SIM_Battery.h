@@ -24,6 +24,7 @@ namespace SITL {
 
 class Battery {
 public:
+    // Note: capacity<=0 means **unlimited** capacity.
     void setup(float _capacity_Ah, float _resistance_ohm, float _max_voltage, float _ambient_temperature_degC);
 
     // Resets the battery state if the configuration (e.g. from SIM_BATT_* parameters) has changed.
@@ -35,9 +36,10 @@ public:
     float get_voltage(void) const { return voltage_filter.get(); }
     float get_capacity(void) const { return capacity_Ah; }
     float get_temperature_degC(void) const { return temperature_degC; }
+    bool capacity_is_unlimited(void) const { return !(is_positive(capacity_Ah)); } // for readability
 
 private:
-    float capacity_Ah;
+    float capacity_Ah; // set <= 0 for unlmited capacity
     float resistance_ohm;
     float max_voltage;
     float ambient_temperature_degC;
@@ -51,7 +53,7 @@ private:
     // 10Hz filter for battery voltage
     LowPassFilterFloat voltage_filter{10};
 
-    float get_resting_voltage(float charge_pct) const;
+    float get_resting_voltage(void) const;
     void set_initial_SoC(float voltage);
 };
 }
