@@ -63,7 +63,6 @@ void setup(void)
 
     // setup battery model
     battery.setup(amp_hour_capacity, resistance, max_voltage, ambient_temperature_degC);
-    battery.init_voltage(max_voltage);
 
     uint64_t time_us = 0;
     const double time_step_s = 0.05;
