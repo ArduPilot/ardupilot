@@ -144,7 +144,11 @@ void AP_RangeFinder_TeraRangerI2C::timer(void)
 */
 void AP_RangeFinder_TeraRangerI2C::update(void)
 {
-    WITH_SEMAPHORE(_sem);
+    // Try to take the semaphore without blocking. 
+    // If we can't get it immediately, exit and try again next loop.
+    if (!_sem.take(0)) {
+        return;
+    }
 
     if (accum.count > 0) {
         state.distance_m = (accum.sum * 0.01f) / accum.count;
@@ -155,6 +159,9 @@ void AP_RangeFinder_TeraRangerI2C::update(void)
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
         set_status(RangeFinder::Status::NoData);
     }
+
+    // We must manually release the semaphore when we are done
+    _sem.give();
 }
 
 #endif  // AP_RANGEFINDER_TRI2C_ENABLED
