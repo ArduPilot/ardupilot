@@ -59,7 +59,7 @@
   - 3.3V Out, UART, SWD
   - JST-SH 6 Pin
 
-### Dimensions
+### Physical
 
 - Size: 3.6 x 3.6 x 0.8 cm
 - Weight: 7.5g with MicroSD card

@@ -84,7 +84,7 @@ USART 6 Tx is available for use with bi directional protocols.
 
 An optional IOMCU can be connected to this serial port, a compatible custom build of the firmware required.
 
-## CAN Ports
+## CAN
 
 2 CAN buses are available, each with a built in 120 ohm termination resistor.
 

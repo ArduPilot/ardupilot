@@ -63,7 +63,7 @@ tbd
 
 Serial protocols shown are defaults, but can be adjusted to personal preferences.
 
-## Dshot capability
+## DShot Capability
 
 All motor/servo outputs are Dshot and PWM capable. Outputs 1/2 and 6/7 are Bi-Directional DSHot capable.
 
@@ -98,7 +98,7 @@ Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 - BATT_VOLT_MULT = 11
 - BATT_AMP_PERVLT = 30
 
-## Connecting a GPS/Compass module
+## Connecting a GPS/Compass Module
 
 This board does not include a GPS or compass. But a connector is provided to attach an external module.
 
