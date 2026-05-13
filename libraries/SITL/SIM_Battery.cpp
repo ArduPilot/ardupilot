@@ -141,20 +141,6 @@ void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
     set_initial_SoC(voltage_set);
 }
 
-void Battery::init_voltage(float voltage)
-{
-    voltage = MIN(voltage, max_voltage);
-    voltage_filter.reset(voltage);
-    voltage_set = voltage;
-    set_initial_SoC(voltage);
-}
-
-void Battery::init_capacity(float capacity)
-{
-    capacity_Ah = capacity;
-    set_initial_SoC(voltage_set);
-}
-
 void Battery::consume_energy(float current_amp, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
