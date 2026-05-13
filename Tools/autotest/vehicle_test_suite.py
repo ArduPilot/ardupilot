@@ -13263,13 +13263,7 @@ switch value'''
                         "SIM_ACC_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
-                    self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-                    self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
-                    self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5, message_type='SIM_STATE')
-                    if ahrs_type != 0:  # we don't get secondary msgs while DCM is primary
-                        self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
-                    self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
-                    self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
+                    self.ahrstrim_attitude_correctness_test_attitude(ahrs_type, r, p)
 
                 self.context_pop()
                 self.reboot_sitl()
