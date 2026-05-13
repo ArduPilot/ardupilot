@@ -13153,8 +13153,8 @@ switch value'''
 
     def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int, divergence_r, divergence_p):
         self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-        att_desroll = 0
-        att_despitch = 0
+        ATTITUDE_euler_desroll = 0
+        ATTITUDE_euler_despitch = 0
         if ahrs_type == 11:
             # this is very nasty compatibility
             # code for the fact our rotations are
@@ -13164,13 +13164,14 @@ switch value'''
             # we can fix the bug!  Search for
             # "note that this is suspect" to find
             # the problem code.
-            att_desroll = -divergence_r
-            att_despitch = -divergence_p
-        self.wait_attitude(desroll=att_desroll, despitch=att_despitch, timeout=120, tolerance=1.5)
+            ATTITUDE_euler_desroll = -divergence_r
+            ATTITUDE_euler_despitch = -divergence_p
+        self.wait_attitude(desroll=ATTITUDE_euler_desroll, despitch=ATTITUDE_euler_despitch, timeout=120, tolerance=1.5)
         if ahrs_type != 0:
             self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
         self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
         self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
+        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
 
     def ahrstrim_attitude_correctness(self):
         self.wait_ready_to_arm()
