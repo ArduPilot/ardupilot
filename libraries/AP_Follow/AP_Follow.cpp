@@ -316,10 +316,11 @@ void AP_Follow::update_estimates()
         _ofs_estimate_accel_ned_mss = _estimate_accel_ned_mss;
         // with kinematic shaping of heading we can improve our offset velocity and acceleration of the offset
         if (valid_kinematic_params) {
-            Vector3f offset_cross = offset_m.cross(Vector3f{0.0, 0.0, 1.0});
-            float offset_length_m = offset_m.length();
-            _ofs_estimate_vel_ned_ms += offset_cross * offset_length_m * _estimate_heading_rate_rads;
-            _ofs_estimate_accel_ned_mss += offset_cross * offset_length_m * _estimate_heading_accel_radss;
+            const Vector3f angular_vel{0.0f, 0.0f, _estimate_heading_rate_rads};
+            const Vector3f angular_accel{0.0f, 0.0f, _estimate_heading_accel_radss};
+            const Vector3f vel_due_to_rotation = angular_vel.cross(offset_m);
+            _ofs_estimate_vel_ned_ms += vel_due_to_rotation;
+            _ofs_estimate_accel_ned_mss += angular_accel.cross(offset_m) + angular_vel.cross(vel_due_to_rotation);
         }
     }
 
