@@ -51,7 +51,9 @@ static const luaL_Reg loadedlibs[] = {
 #if !defined(ARDUPILOT_BUILD)
   {LUA_UTF8LIBNAME, luaopen_utf8},
 #endif
-//  {LUA_DBLIBNAME, luaopen_debug},
+#if defined(AP_LUA_COVERAGE_ENABLED)
+  {LUA_DBLIBNAME, luaopen_debug},
+#endif
 #if defined(LUA_COMPAT_BITLIB)
   {LUA_BITLIBNAME, luaopen_bit32},
 #endif

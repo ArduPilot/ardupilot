@@ -794,6 +794,7 @@ class SITLBoard(Board):
             CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
             AP_SCRIPTING_CHECKS = 1, # SITL should always do runtime scripting checks
             AP_BARO_PROBE_EXTERNAL_I2C_BUSES = 1,
+            AP_LUA_COVERAGE_ENABLED = 1,
         )
 
         env.BOARD_CLASS = "SITL"

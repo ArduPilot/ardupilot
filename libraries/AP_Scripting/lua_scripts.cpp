@@ -27,7 +27,11 @@
 #define DISABLE_INTERRUPTS_FOR_SCRIPT_RUN 0
 
 extern const AP_HAL::HAL& hal;
+#ifdef AP_LUA_COVERAGE_ENABLED
+#define ENABLE_DEBUG_MODULE 1
+#else
 #define ENABLE_DEBUG_MODULE 0
+#endif
 
 bool lua_scripts::overtime;
 char *lua_scripts::error_msg_buf;
@@ -61,13 +65,29 @@ lua_scripts::~lua_scripts() {
 }
 
 void lua_scripts::hook(lua_State *L, lua_Debug *ar) {
-    lua_scripts::overtime = true;
+    if (ar->event == LUA_HOOKCOUNT) {
+        lua_scripts::overtime = true;
 
-    // we need to aggressively bail out as we are over time
-    // so we will aggressively trap errors until we clear out
-    lua_sethook(L, hook, LUA_MASKCOUNT, 1);
+        // we need to aggressively bail out as we are over time
+        // so we will aggressively trap errors until we clear out
+        lua_sethook(L, hook, LUA_MASKCOUNT, 1);
 
-    luaL_error(L, "Exceeded CPU time");
+        luaL_error(L, "Exceeded CPU time");
+    }
+#if defined(AP_LUA_COVERAGE_ENABLED)
+    else if (ar->event == LUA_HOOKLINE) {
+        // call the Lua line-hook stored in the registry by luacov.lua
+        int saved_top = lua_gettop(L);
+        lua_pushliteral(L, "AP_LUA_LINE_HOOK");
+        lua_rawget(L, LUA_REGISTRYINDEX);
+        if (lua_isfunction(L, -1)) {
+            lua_pushstring(L, "line");
+            lua_pushinteger(L, ar->currentline);
+            lua_pcall(L, 2, 0, 0);  // errors are suppressed; stack restored below
+        }
+        lua_settop(L, saved_top);
+    }
+#endif
 }
 
 void lua_scripts::print_error(MAV_SEVERITY severity) {
@@ -317,7 +337,11 @@ void lua_scripts::reset_loop_overtime(lua_State *L) {
     overtime = false;
     // reset the hook to clear the counter
     const int32_t vm_steps = MAX(_vm_steps, 1000);
+#if defined(AP_LUA_COVERAGE_ENABLED)
+    lua_sethook(L, hook, LUA_MASKCOUNT | LUA_MASKLINE, vm_steps);
+#else
     lua_sethook(L, hook, LUA_MASKCOUNT, vm_steps);
+#endif
 }
 
 void lua_scripts::run_next_script(lua_State *L) {

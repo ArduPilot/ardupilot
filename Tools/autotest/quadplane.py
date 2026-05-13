@@ -3122,8 +3122,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.test_takeoff_check_mode("AUTO", force_disarm=True)
         self.context_pop()
 
+    def check_plane_wind_failsafe_coverage(self):
+        '''verify 100% of executable lines in plane-wind-failsafe.lua were hit'''
+        script_path = self.script_example_source_path("plane-wind-failsafe.lua")
+        coverage = self.lua_coverage_stats()
+        html_out = self.buildlogs_path("plane-wind-failsafe-coverage.html")
+        self.generate_lua_coverage_html(coverage, script_path, html_out)
+        self.check_lua_coverage(coverage, script_path)
+
     def PlaneWindFailsafe(self):
         '''test the plane-wind-failsafe.lua example script'''
+        self.install_lua_coverage_context()
         self.install_example_script_context("plane-wind-failsafe.lua")
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -3202,6 +3211,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(-5, 1, relative=True, timeout=60)
         self.wait_disarmed(timeout=60)
         self.zero_throttle()
+
+        # Reboot to close the Lua VM; __gc on the luacov sentinel flushes stats.
+        self.reboot_sitl()
+        self.check_plane_wind_failsafe_coverage()
 
     def tests(self):
         '''return list of all tests'''
