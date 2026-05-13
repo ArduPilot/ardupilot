@@ -153,27 +153,27 @@ void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
     remaining_Ah = compute_remaining_Ah(voltage_set);
 }
 
-void Battery::consume_energy(float current_amp, uint64_t now_us)
+void Battery::consume_energy(float attempted_current_amp, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
-    float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
+    const float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
+    if (dt <= 0.0f) {
+        return;
+    }
     last_us = now_us;
     if (dt > maximum_permissible_dt) {
         return;
     }
-    const float delta_Ah = current_amp * dt / 3600;
-    remaining_Ah -= delta_Ah;
-    remaining_Ah = MAX(0, remaining_Ah);
-
-    const float voltage_delta = current_amp * resistance_ohm;
-    float voltage;
-    if (!is_positive(capacity_Ah)) {
-        voltage = voltage_set;
-    } else {
-        voltage = get_resting_voltage() - voltage_delta;
+    constexpr float hours_per_second = 1.0f / 3600.0f;
+    const float dt_hr = dt * hours_per_second;
+    const float delta_Ah = MIN(attempted_current_amp * dt_hr, remaining_Ah);
+    if (!capacity_is_unlimited()) {
+        remaining_Ah -= delta_Ah;
     }
-
-    voltage_filter.apply(voltage, dt);
+    const float current_amp = delta_Ah / dt_hr;
+    const float voltage_delta = current_amp * resistance_ohm;
+    const float sagged_voltage = get_resting_voltage() - voltage_delta;
+    voltage_filter.apply(sagged_voltage, dt);
 
     update_temperature(current_amp, dt);
 }
