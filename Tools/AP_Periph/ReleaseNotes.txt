@@ -1,5 +1,37 @@
 ArduPilot AP_Periph Release Notes
 ------------------------------------------------------------------
+Release 4.7.0-beta5 15-May-2026
+
+Changes from 4.7.0-beta4
+
+1) Board specific changes
+
+- Linux-Navigator: IIS2MDC support added (@WillianGalvani, PR:32863)
+
+2) Library changes
+
+- AP_Logger: Named Value Float dataflash logging drops fixed (@tridge, PR:32975)
+- AP_Logger: LOG_MAV_RATEMAX default changed to 10 (@tridge, PR:33013)
+- AP_Logger: logging over MAVLink speed significantly improved (@tridge, PR:33020)
+- AP_NavEKF3: barometer offset logging added (@rmackay, PR:32931)
+- AP_NavEKF3: bugfix to prevent covariance state corruption (@tpwrules, PR:32177)
+- HAL_ChibiOS: Oneshot pulse corruption upon safety-enable fixed (@tridge, PR:32979)
+
+3) Copter specific changes
+
+- Increment data added for several parameters (@ES-Alexander, PR:32949)
+- Weathervaning bugfix to properly stop weathervaning (@IamPete1, PR:33019)
+- Land and Payload place waypoints fixed to use correct altitude and spline waypoints (@lthall, PR:32634)
+
+4) Helicopter specific changes
+
+- PID scaling support fixed (@lthall, PR:32725)
+
+5) Sub specific changes
+
+- Increment data added for several parameters (@ES-Alexander, PR:32949)
+
+------------------------------------------------------------------
 Release 4.7.0-beta4 30-Apr-2026
 
 Changes from 4.7.0-beta3
