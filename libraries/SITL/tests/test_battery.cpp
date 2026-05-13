@@ -131,7 +131,7 @@ TEST_F(BatteryTest, EnergyConsumption)
             prev_temperature_degC = battery.get_temperature_degC();
 
             // Confirm voltage drop
-            if (is_zero(t) || is_zero(battery.get_capacity())) {
+            if (is_zero(t) || battery.capacity_is_unlimited()) {
                 EXPECT_FLOAT_EQ(battery.get_voltage(), initial_voltage);
             } else {
                 // During consumption, both voltage sag and capacity-loss contribute to voltage < initial.
@@ -141,7 +141,7 @@ TEST_F(BatteryTest, EnergyConsumption)
 
             // Confirm voltage drop works as expected.
             const float observed_voltage = battery.get_voltage();
-            if (is_zero(t) || is_zero(battery.get_capacity())) {
+            if (is_zero(t) || battery.capacity_is_unlimited()) {
                 EXPECT_FLOAT_EQ(observed_voltage, initial_voltage);
                 EXPECT_FLOAT_EQ(observed_voltage, min_observed_voltage);
             }
@@ -212,7 +212,7 @@ TEST_F(BatteryTest, Resetting)
 
         // Show that voltage-based reset works.
         use_some_energy(battery);
-        if (is_positive(battery.get_capacity())) {
+        if (!battery.capacity_is_unlimited()) {
             // Show that some voltage has been lost
             EXPECT_LT(battery.get_voltage(), initial_voltage);
             // Reset to initial value using voltage
@@ -244,7 +244,7 @@ TEST_F(BatteryTest, Resetting)
         EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
 
         // Show that switching from limited to unlimited capacity (or vice versa) works
-        if (is_zero(battery.get_capacity())) {
+        if (battery.capacity_is_unlimited()) {
             battery.init_capacity(small_capacity_Ah);
             EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
             EXPECT_FLOAT_EQ(battery.get_capacity(), small_capacity_Ah);
@@ -255,7 +255,7 @@ TEST_F(BatteryTest, Resetting)
         }
         use_some_energy(battery);
         // Show that now-unlimited batteries do not lose voltage, and now-limited ones do.
-        if (is_zero(battery.get_capacity())) {
+        if (battery.capacity_is_unlimited()) {
             EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
         } else {
             EXPECT_LT(battery.get_voltage(), max_voltage);

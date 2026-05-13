@@ -72,9 +72,14 @@ static const struct {
 /*
   use table to get resting voltage from remaining capacity
  */
-float Battery::get_resting_voltage(float charge_pct) const
+float Battery::get_resting_voltage(void) const
 {
+    if (capacity_is_unlimited()) {
+        return voltage_set;
+    }
+    float charge_pct = 100 * remaining_Ah / capacity_Ah;
     const float max_cell_voltage = soc_table[0].volt_per_cell;
+    const float min_cell_voltage = soc_table[ARRAY_SIZE(soc_table) - 1].volt_per_cell;
     for (uint8_t i=1; i<ARRAY_SIZE(soc_table); i++) {
         if (charge_pct >= soc_table[i].soc_pct) {
             // linear interpolation between table rows
@@ -86,8 +91,8 @@ float Battery::get_resting_voltage(float charge_pct) const
             return (cell_volt / max_cell_voltage) * max_voltage;
         }
     }
-    // off the bottom of the table, return a small non-zero to prevent math errors
-    return 0.001;
+    // off the bottom of the table
+    return min_cell_voltage;
 }
 
 /*
@@ -115,6 +120,7 @@ void Battery::set_initial_SoC(float voltage)
     remaining_Ah = 0;
 }
 
+// Reminder: capacity <= 0 means **unlimited**
 void Battery::setup(float _capacity_Ah, float _resistance_ohm, float _max_voltage)
 {
     capacity_Ah = _capacity_Ah;
@@ -173,7 +179,7 @@ void Battery::consume_energy(float current_amp, uint64_t now_us)
     if (!is_positive(capacity_Ah)) {
         voltage = voltage_set;
     } else {
-        voltage = get_resting_voltage(100 * remaining_Ah / capacity_Ah) - voltage_delta;
+        voltage = get_resting_voltage() - voltage_delta;
     }
 
     voltage_filter.apply(voltage, dt);
@@ -181,6 +187,7 @@ void Battery::consume_energy(float current_amp, uint64_t now_us)
     update_temperature(current_amp, dt);
 }
 
+// A first-order temperature growth & decay model
 void Battery::update_temperature(float current_amp, float dt)
 {
     // In the (near) future, this value will instead come from Aircraft::ambient_outside_temperature_degC()
