@@ -184,6 +184,31 @@ TEST_F(BatteryTest, EnergyConsumption)
                     batteries_and_data[infinite].final_observed_voltage);
 }
 
+TEST_F(BatteryTest, MaximumDeltaTime)
+{
+    // For this test, value must be larger than SIM::Battery's maximum permissible dt.
+    constexpr float dt_sec = 0.11f;
+
+    constexpr float current_amp = 25.0f; // This value is arbitrary
+
+    for (auto& b_and_d : batteries_and_data) {
+        SITL::Battery& battery = std::ref(*b_and_d.batt);
+        const float initial_voltage = battery.get_voltage();
+        const float initial_temperature_degC = battery.get_temperature_degC();
+
+        for (float t = 0.0f; t <= dt_sec * 10; t+=dt_sec) {
+            const uint64_t now_us = initial_us + static_cast<uint64_t>(t * 1e6);
+
+            // Attempt to consume battery energy (but does not work because dt is too large)
+            battery.consume_energy(current_amp, now_us);
+
+            // Confirm no voltage or temperature change (because energy-consumption did not work)
+            EXPECT_FLOAT_EQ(battery.get_voltage(), initial_voltage);
+            EXPECT_FLOAT_EQ(battery.get_temperature_degC(), initial_temperature_degC);
+        }
+    }
+}
+
 namespace {
 void use_some_energy(SITL::Battery& battery) {
     constexpr float current_amp = 25.0f;
@@ -218,7 +243,7 @@ TEST_F(BatteryTest, Resetting)
 
         // Show that attempting a reset without changing any batt params is a no-op.
         use_some_energy(battery);
-        if (is_positive(battery.get_capacity())) {
+        if (!battery.capacity_is_unlimited()) {
             // Show that some voltage has been lost
             float observed = battery.get_voltage();
             EXPECT_LT(observed, max_voltage);
