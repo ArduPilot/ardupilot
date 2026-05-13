@@ -44,7 +44,7 @@ private:
     float max_voltage;
     float ambient_temperature_degC;
     float voltage_set;
-    float remaining_Ah;
+    float remaining_Ah; // if capacity is unlimited, this is FLT_MAX
     uint64_t last_us;
 
     float temperature_degC = 0.0f;
@@ -54,6 +54,6 @@ private:
     LowPassFilterFloat voltage_filter{10};
 
     float get_resting_voltage(void) const;
-    void set_initial_SoC(float voltage);
+    float compute_remaining_Ah(float voltage) const;
 };
 }

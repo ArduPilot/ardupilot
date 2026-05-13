@@ -17,6 +17,7 @@
 */
 
 #include "SIM_Battery.h"
+#include <float.h>
 #include <AP_Math/AP_Math.h>
 
 using namespace SITL;
@@ -96,10 +97,14 @@ float Battery::get_resting_voltage(void) const
 }
 
 /*
-  use table to set initial state of charge from voltage
+  return remaining Amp-hours (aka "charge", "state of charge") corresponding to a voltage
  */
-void Battery::set_initial_SoC(float voltage)
+float Battery::compute_remaining_Ah(float voltage) const
 {
+    if (capacity_is_unlimited()) {
+        return FLT_MAX;
+    }
+
     const float max_cell_voltage = soc_table[0].volt_per_cell;
     const float cell_volt = (voltage / max_voltage) * max_cell_voltage;
 
@@ -111,13 +116,11 @@ void Battery::set_initial_SoC(float voltage)
             const float soc1 = soc_table[i].soc_pct;
             const float soc2 = soc_table[i-1].soc_pct;
             const float soc = soc1 + (dv1 / dv2) * (soc2 - soc1);
-            remaining_Ah = capacity_Ah * soc * 0.01;
-            return;
+            return capacity_Ah * (soc * 0.01);
         }
     }
-
     // off the bottom of the table
-    remaining_Ah = 0;
+    return 0.0f;
 }
 
 // Reminder: capacity <= 0 means **unlimited**
@@ -130,7 +133,7 @@ void Battery::setup(float _capacity_Ah, float _resistance_ohm, float _max_voltag
 
     voltage_set = max_voltage;
     voltage_filter.reset(voltage_set);
-    set_initial_SoC(voltage_set);
+    remaining_Ah = compute_remaining_Ah(voltage_set);
 }
 
 void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
@@ -145,7 +148,7 @@ void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
     // a negative desired voltage is unexpected, but not problematic
     voltage_set = MIN(desired_voltage, max_voltage);
     voltage_filter.reset(voltage_set);
-    set_initial_SoC(voltage_set);
+    remaining_Ah = compute_remaining_Ah(voltage_set);
 }
 
 void Battery::consume_energy(float current_amp, uint64_t now_us)
