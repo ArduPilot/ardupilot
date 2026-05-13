@@ -3329,6 +3329,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.fly_mission("ap1.txt", mission_timeout=120)
         self.disarm_vehicle(force=True)
 
+    def AeronEAHRS(self):
+        '''Test AeronPlx3 EAHRS support'''
+        self.fly_external_AHRS("Aeron-PLX3", 10)
+
     def GpsSensorPreArmEAHRS(self):
         '''Test pre-arm checks related to EAHRS_SENSORS using the MicroStrain7 driver'''
         self.customise_SITL_commandline(["--serial4=sim:MicroStrain7"])
@@ -8142,6 +8146,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.InertialLabsEAHRS,
             self.KebniSensAItionExternalINS,
             self.KebniSensAItionExternalIMU,
+            self.AeronEAHRS,
             self.GpsSensorPreArmEAHRS,
             self.Deadreckoning,
             self.EKFlaneswitch,
