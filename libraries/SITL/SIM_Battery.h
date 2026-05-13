@@ -29,9 +29,6 @@ public:
     // Resets the battery state if the configuration (e.g. from SIM_BATT_* parameters) has changed.
     void maybe_reset(float desired_voltage, float desired_capacity_Ah);
 
-    void init_voltage(float voltage);
-    void init_capacity(float capacity);
-
     // Call this periodically to "step" the battery forward in time
     void consume_energy(float current_amp, uint64_t now_us);
 
