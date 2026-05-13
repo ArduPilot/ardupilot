@@ -3,6 +3,7 @@
 #include "GCS_MAVLink_Copter.h"
 #include <AP_RPM/AP_RPM_config.h>
 #include <AP_EFI/AP_EFI_config.h>
+#include <cmath>
 
 MAV_TYPE GCS_Copter::frame_type() const
 {
@@ -449,8 +450,12 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
         return MAV_RESULT_DENIED; // failed as the location is not valid
     }
 
+    const float yaw_rad = packet.param4;
+    const bool use_yaw = !isnan(yaw_rad);
+    const bool relative_yaw = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_RELATIVE_YAW) == MAV_DO_REPOSITION_FLAGS_RELATIVE_YAW;
+
     // we need to do this first, as we don't want to change the flight mode unless we can also set the target
-    if (!copter.mode_guided.set_destination(request_location, false, 0, false, 0)) {
+    if (!copter.mode_guided.set_destination(request_location, use_yaw, yaw_rad, false, 0, relative_yaw)) {
         return MAV_RESULT_FAILED;
     }
 
@@ -459,7 +464,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
             return MAV_RESULT_FAILED;
         }
         // the position won't have been loaded if we had to change the flight mode, so load it again
-        if (!copter.mode_guided.set_destination(request_location, false, 0, false, 0)) {
+        if (!copter.mode_guided.set_destination(request_location, use_yaw, yaw_rad, false, 0, relative_yaw)) {
             return MAV_RESULT_FAILED;
         }
     }
