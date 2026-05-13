@@ -190,6 +190,11 @@ public:
     Plane(void);
 
 private:
+    // tri-fin initialization flag
+    bool trifin_initialized = false;
+
+    // tri-fin mixing matrix: [fin][axis] = roll/pitch/yaw contributions
+    float trifin_mix[3][3];
 
     // key aircraft parameters passed to multiple libraries
     AP_FixedWing aparm;
@@ -1170,6 +1175,8 @@ private:
     void set_servos_flaps(void);
     void dspoiler_update(void);
     void airbrake_update(void);
+    void trifin_setup(void);
+    void trifin_update(void);
     void landing_neutral_control_surface_servos(void);
     void servos_output(void);
     void servos_auto_trim(void);

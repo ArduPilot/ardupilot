@@ -223,3 +223,27 @@
 #ifndef THR_CTRL_LAND_THRESH
  #define THR_CTRL_LAND_THRESH 0.7
 #endif
+
+/////////////////////////////////////////////////////////////////////////////
+// TRI-FIN MIXING and CONFIGURATION
+
+//tuning parameters
+#ifndef TRI_MIX_GAIN_DEFAULT
+ # define TRI_MIX_GAIN_DEFAULT      1.0f   
+#endif
+
+#ifndef TRI_TRIM_DZ_DEFAULT
+ # define TRI_TRIM_DZ_DEFAULT      0.01f   
+#endif
+
+#ifndef TRI_FIN1_AZIMUTH
+  #define TRI_FIN1_AZIMUTH 0.0f // deg, (Tail to Nose) increases clockwise from -Z (up) in Y-Z plane.
+#endif
+
+#ifndef TRI_FIN2_AZIMUTH
+  #define TRI_FIN2_AZIMUTH 120.0f 
+#endif
+
+#ifndef TRI_FIN3_AZIMUTH
+  #define TRI_FIN3_AZIMUTH 240.0f
+#endif

@@ -371,6 +371,9 @@ public:
         k_param_mode_autoland,
         k_param__gcs,
 
+        k_param_tri_mix_gain,
+        k_param_tri_trim_dz,
+
     };
 
     AP_Int16 format_version;
@@ -469,6 +472,9 @@ public:
     AP_Int8 override_channel;
 #endif
     AP_Int16 gcs_pid_mask;
+    
+    AP_Float tri_mix_gain;
+    AP_Float tri_trim_dz;
 };
 
 /*

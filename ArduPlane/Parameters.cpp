@@ -987,6 +987,21 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+    // @Param: TRI_MIX_GAIN
+    // @DisplayName: TriFin Mixing Gain
+    // @Description: Overall gain applied to tri-fin mixer outputs (scaled units).
+    // @Range: 0.1 2.0
+    // @Increment: 0.01
+    GSCALAR(tri_mix_gain,  "TRI_MIX_GAIN",  TRI_MIX_GAIN_DEFAULT),
+
+    // @Param: TRI_TRIM_DZ
+    // @DisplayName: Tri-Fin Trim Deadzone
+    // @Description: Threshold for I-term trim adjustments. Prevents servo chatter by ignoring small persistent errors. 0.01 = 1% I-term.
+    // @Range: 0 0.1
+    // @Increment: 0.001
+    // @User: Advanced
+    GSCALAR(tri_trim_dz, "TRI_TRIM_DZ", TRI_TRIM_DZ_DEFAULT),
+
     AP_VAREND
 };
 
