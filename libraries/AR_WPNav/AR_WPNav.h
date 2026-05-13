@@ -48,7 +48,8 @@ public:
 
     // set desired location as offset from the EKF origin, return true on success
     bool set_desired_location_NED(const Vector3f& destination) WARN_IF_UNUSED;
-    bool set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination) WARN_IF_UNUSED;
+    bool set_wp_destination_and_next_destination_NED_m(const Vector3f &offset_of_dest_from_origin,
+                                                       const Vector3f &offset_of_next_from_origin) WARN_IF_UNUSED;
 
     // set desired location but expect the destination to be updated again in the near future
     // position controller input shaping will be used for navigation instead of scurves
