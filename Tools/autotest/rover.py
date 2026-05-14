@@ -4998,6 +4998,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def test_scripting_callback_time(self):
+        self.start_subtest("Scripting callback time")
+
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_test_script_context("callback_time_test.lua")
+        self.reboot_sitl()
+
+        self.wait_statustext('Timing test passed', check_context=True, timeout=600)
+
     def Scripting(self):
         '''Scripting test'''
         self.test_scripting_set_home_to_vehicle_location()
@@ -5007,6 +5017,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_scripting_internal_test()
         self.test_scripting_auxfunc()
         self.test_scripting_serial_loopback()
+        self.test_scripting_callback_time()
 
     def test_mission_frame(self, frame, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
