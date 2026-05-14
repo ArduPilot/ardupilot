@@ -19,6 +19,7 @@ import math
 import operator
 import os
 import pathlib
+import queue
 import random
 import re
 import shutil
@@ -60,11 +61,6 @@ from pymavlink.rotmat import Vector3
 
 from pysim import util
 from pysim import vehicleinfo
-
-try:
-    import queue as Queue
-except ImportError:
-    import Queue
 
 
 # Enumeration convenience class for mavlink POSITION_TARGET_TYPEMASK
@@ -2040,7 +2036,7 @@ class TestSuite(abc.ABC):
 
         self.rc_thread: threading.Thread | None = None
         self.rc_thread_should_quit: bool = False
-        self.rc_queue = Queue.Queue()
+        self.rc_queue = queue.Queue()
 
         self.expect_list = []
 
@@ -5749,7 +5745,7 @@ class TestSuite(abc.ABC):
                 for chan, val in rc_value_updates.items():
                     if isinstance(chan, int) and 1 <= chan <= NUM_RC_CHANNELS:
                         rc_values[chan-1] = val
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             sitl_output.write(struct.pack(format_str, *rc_values))
 
