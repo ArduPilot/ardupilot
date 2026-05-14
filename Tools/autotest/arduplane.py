@@ -24,6 +24,7 @@ from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import OldpymavlinkException
 from vehicle_test_suite import PreconditionFailedException
+from vehicle_test_suite import RcValues
 from vehicle_test_suite import Test
 from vehicle_test_suite import WaitModeTimeout
 
@@ -138,17 +139,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(6, 100)
 
         # a bit faster again, straighten rudder
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             3: 1600,
             4: 1500,
-        })
+        }))
         self.wait_groundspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             2: 1100,
             3: 2000,
-        })
+        }))
 
         # gain a bit of altitude
         self.wait_altitude(alt, alt_max, timeout=timeout, relative=relative)
@@ -1322,10 +1323,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.set_parameter("RC7_OPTION", 11) # AC_Fence uses Aux switch functionality
         self.set_parameter("FENCE_ACTION", 4) # Fence action Brake
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             3: 1000,
             7: 2000,
-        }) # Turn fence on with aux function
+        })) # Turn fence on with aux function
 
         m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
 
@@ -2564,9 +2565,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if rc_chan == 0:
             raise NotAchievedException("Did not find soaring enable channel option.")
 
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             rc_chan: 1900,
-        })
+        }))
 
         self.set_parameters({
             "SOAR_VSPEED": 0.55,
@@ -4090,10 +4091,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.load_fence("CMAC-fence.txt")
 
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             3: 1500,
             7: 2000,
-        }) # Turn fence on with aux function
+        })) # Turn fence on with aux function
 
         m = self.assert_receive_message('FENCE_STATUS', timeout=2, verbose=True)
 
@@ -4118,9 +4119,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # check we are in breach
         self.assert_fence_enabled()
 
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             7: 1000,
-        }) # Turn fence off with aux function
+        })) # Turn fence off with aux function
 
         # wait to no longer be in breach
         self.delay_sim_time(5)

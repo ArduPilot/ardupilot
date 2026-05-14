@@ -32,6 +32,7 @@ from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
+from vehicle_test_suite import RcValues
 from vehicle_test_suite import Test
 from vehicle_test_suite import WaitAndMaintainArmed
 from vehicle_test_suite import WaitAndMaintainAttitude
@@ -204,12 +205,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     # Takeoff, climb to given altitude, and fly east for 10 seconds
     def takeoffAndMoveAway(self, dAlt=50, dDist=50):
         self.progress("Centering sticks")
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             1: 1500,
             2: 1500,
             3: 1000,
             4: 1500,
-        })
+        }))
         self.takeoff(alt_min=dAlt, mode='GUIDED')
         self.hover()
         self.change_mode("ALT_HOLD")
@@ -281,15 +282,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.watch_altitude_maintained(altitude_min=9, altitude_max=11)
         # feed in full elevator and aileron input and make sure we
         # retain altitude:
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             1: 1000,
             2: 1000,
-        })
+        }))
         self.watch_altitude_maintained(altitude_min=9, altitude_max=11)
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             1: 1500,
             2: 1500,
-        })
+        }))
         self.do_RTL()
 
     def fly_to_origin(self, final_alt=10):
@@ -324,12 +325,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
 
         # ensure all sticks in the middle
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             1: 1500,
             2: 1500,
             3: 1500,
             4: 1500,
-        })
+        }))
 
         # switch to loiter mode temporarily to stop us from rising
         self.change_mode('LOITER')
@@ -1167,10 +1168,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.install_message_hook_context(ensure_SERVO_values_never_input)
         self.progress("Forcing receiver into failsafe")
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             3: 800,
             channel: 1300,
-        })
+        }))
         self.wait_servo_channel_value(channel, trim_value)
         self.delay_sim_time(10)
 
@@ -2292,10 +2293,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_distance(20)
 
         self.progress("flying up")
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             2: 1500,
             3: 1800,
-        })
+        }))
 
         # wait for fence to trigger
         self.wait_mode('RTL', timeout=120)
@@ -2415,10 +2416,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_distance(20)
 
         # stop flying forward and start flying down:
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             2: 1500,
             3: 1200,
-        })
+        }))
 
         # wait for fence to trigger
         self.wait_mode('RTL', timeout=120)
@@ -6685,11 +6686,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             })
             self.progress("Testing RC angular control")
             # default RC min=1100 max=1900
-            self.set_rc_from_map({
+            self.set_rc_from_map(RcValues({
                 11: 1500,
                 12: 1500,
                 13: 1500,
-            })
+            }))
             self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
             self.progress("Testing RC input down 1/4 of its range in the output, should be down 1/4 range in output")
             rc12_in = 1400
@@ -6705,11 +6706,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.test_mount_pitch(-11.25, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
             self.set_rc(12, 1800)
             self.test_mount_pitch(33.75, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            self.set_rc_from_map({
+            self.set_rc_from_map(RcValues({
                 11: 1500,
                 12: 1500,
                 13: 1500,
-            })
+            }))
 
             try:
                 self.context_push()
@@ -10022,9 +10023,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "LOG_DISARMED": 1
         })
 
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             gen_ctrl_ch: 1000,   # remember this is a switch position - stop
-        })
+        }))
 
         self.customise_SITL_commandline(["--serial5=sim:loweheiser"])
 
@@ -10323,11 +10324,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "RC%u_OPTION" % loweheiser_man_start_ch: 111, # loweheiser starter channel
         })
 
-        self.set_rc_from_map({
+        self.set_rc_from_map(RcValues({
             gen_ctrl_ch: 1000,   # remember this is a switch position - stop
             loweheiser_man_throt_ch: 1000,  # zero throttle
             loweheiser_man_start_ch: 1000,  # the starter is off
-        })
+        }))
 
         self.customise_SITL_commandline(["--serial5=sim:loweheiser"])
 
@@ -15943,10 +15944,10 @@ RTL_ALT_M 111
                     pitch_input += delta
                 elif lpn.vy < 0:
                     pitch_input -= delta
-                self.set_rc_from_map({
+                self.set_rc_from_map(RcValues({
                     1: roll_input,
                     2: pitch_input,
-                }, quiet=True)
+                }), quiet=True)
 
                 # check parameters once/second:
                 if now - param_last_check_time > 1:
