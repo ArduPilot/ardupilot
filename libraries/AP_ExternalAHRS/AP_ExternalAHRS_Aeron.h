@@ -34,7 +34,7 @@
       param set EAHRS_RATE        <SENS_PARA rate, e.g. 200>
       param set SERIAL*_PROTOCOL  36
       param set SERIAL*_BAUD      921
-      param set GPS1_TYPE	      21
+      param set GPS1_TYPE         21
 
   EAHRS_RATE must match the actual SENS_PARA rate, and SENS_PARA rate
   must be at least the vehicle's SCHED_LOOP_RATE (400 Hz copter,
@@ -49,130 +49,9 @@
 
 #include "AP_ExternalAHRS_backend.h"
 
-// packet identifiers (PRP_ID field, big-endian on the wire)
-enum class AeronPacketID : uint16_t {
-    NAV_PARA1       = 0xAAA1,
-    NAV_PARA2       = 0xA2A2,
-    SENS_PARA       = 0xA2A3,
-    GPS_PARA        = 0xA2A4,
-    DEV_INFO        = 0xA2A6,
-    EXTD_GNSS       = 0xA2A8,
-    HEADING_S       = 0x0165,
-    H_SPEED_S       = 0x0166,
-    V_SPEED_S       = 0x0167,
-    POSITION_S      = 0x0168,
-    ALTITUDE_S      = 0x0169,
-    GNSS_PKT        = 0x0212,
-    GNSS_FIX_STATUS = 0x0067,
-    EXT_SENSORS_MAG = 0x0117,
-    EXT_SENSORS_ASP = 0x0362,
-};
-
-enum class AeronPacketLen : uint16_t {
-    LEN_NAV_PARA1 = 64,
-    LEN_NAV_PARA2 = 72,
-    LEN_SENS_PARA = 72,
-    LEN_GPS_PARA  = 48,
-    LEN_DEV_INFO  = 62,
-    LEN_EXTD_GNSS = 40,
-};
-
-// GNSS fix types reported by PLX
-enum class AeronGnssFix : uint8_t {
-    NO_FIX    = 0,
-    GNSS_FIX  = 1,
-    SBAS_FIX  = 2,
-    RTK_FIX   = 3,
-    RTK_FLOAT = 4,
-};
-
-// jamming/spoofing detection levels
-enum class AeronJamSpoof : uint8_t {
-    NOT_DETECTED = 1,
-    WARNING      = 2,
-    CRITICAL     = 3,
-};
-
-// hardware status bit positions inside NAV_PARA2.hw_status
-enum class AeronHwBit : uint8_t {
-    GNSS     = 0,
-    ACC      = 1,
-    GYR      = 2,
-    MAG      = 3,
-    BARO     = 4,
-    SUP_VLTG = 5,
-    CM_PRT   = 10,
-    RAM      = 11,
-    FIRMWARE = 12,
-    CONFIG   = 13,
-    EXT_MAG  = 22,
-    EXT_ASP  = 23,
-};
-
-// Local decode structures
-struct AeronDecNavPara1 {
-    uint32_t epoch_time;
-    uint32_t microseconds;
-    uint32_t ins_status;
-    uint32_t hw_status;
-    float    euler[3];
-    float    course;
-    float    velocity_ned[3];
-    float    height_abv_ellip;
-    double   position[2];
-    bool     fresh;
-};
-
-struct AeronDecNavPara2 {
-    uint32_t epoch_time;
-    uint32_t microseconds;
-    uint32_t ins_status;
-    uint32_t hw_status;
-    float    quat[4];
-    float    body_vel[3];
-    float    altitude;
-    double   ecef_pos[3];
-    bool     fresh;
-};
-
-struct AeronDecSens {
-    uint32_t epoch_time;
-    uint32_t microseconds;
-    float    temperature;
-    float    gyro[3];
-    float    accel[3];
-    float    mag[3];
-    float    euler_rates[3];
-    float    baro_pressure;
-    float    baro_temperature;
-    float    baro_altitude;
-    bool     fresh;
-};
-
-struct AeronDecGps {
-    uint32_t epoch_time;
-    uint32_t microseconds;
-    uint32_t gps_status;
-    double   gps_position[2];
-    float    gps_height_abv_ellip;
-    float    gps_undulation;
-    float    pdop;
-    float    hdop;
-    float    gdop;
-    bool     fresh;
-};
-
-struct AeronDecCust {
-    float    hpa;
-    float    vpa;
-    float    hva;
-    float    vdop;
-    double   gnss_vned[3];
-    bool     fresh;
-};
-
-// deferred GCS messages - collected during decode, emitted once per
-// drain so GCS_SEND_TEXT calls aren't sprinkled through the parser
+// Deferred GCS messages - collected during one drain pass and emitted
+// once at the end, so GCS_SEND_TEXT() calls don't get sprinkled through
+// the byte-by-byte parser loop.
 struct AeronDeferredMsgs {
     bool     crc_fail;
     bool     garbage;
@@ -205,42 +84,148 @@ protected:
 
 private:
 
-    mutable HAL_Semaphore arn_sem;
-    // hw_status bits we treat as errors. Built from AeronHwBit so the
-    // mask, the case-statement coverage and the loop bound stay in sync.
-    static constexpr uint32_t HW_ERROR_MASK =
-        (1U << uint8_t(AeronHwBit::GNSS))     |
-        (1U << uint8_t(AeronHwBit::ACC))      |
-        (1U << uint8_t(AeronHwBit::GYR))      |
-        (1U << uint8_t(AeronHwBit::MAG))      |
-        (1U << uint8_t(AeronHwBit::BARO))     |
-        (1U << uint8_t(AeronHwBit::SUP_VLTG)) |
-        (1U << uint8_t(AeronHwBit::CM_PRT))   |
-        (1U << uint8_t(AeronHwBit::RAM))      |
-        (1U << uint8_t(AeronHwBit::FIRMWARE)) |
-        (1U << uint8_t(AeronHwBit::CONFIG))   |
-        (1U << uint8_t(AeronHwBit::EXT_MAG))  |
-        (1U << uint8_t(AeronHwBit::EXT_ASP));
+    // packet identifiers (PRP_ID field, big-endian on the wire)
+    enum class AeronPacketID : uint16_t {
+        NAV_PARA1       = 0xAAA1,
+        NAV_PARA2       = 0xA2A2,
+        SENS_PARA       = 0xA2A3,
+        GPS_PARA        = 0xA2A4,
+        DEV_INFO        = 0xA2A6,
+        EXTD_GNSS       = 0xA2A8,
+        HEADING_S       = 0x0165,
+        H_SPEED_S       = 0x0166,
+        V_SPEED_S       = 0x0167,
+        POSITION_S      = 0x0168,
+        ALTITUDE_S      = 0x0169,
+        GNSS_PKT        = 0x0212,
+        GNSS_FIX_STATUS = 0x0067,
+        EXT_SENSORS_MAG = 0x0117,
+        EXT_SENSORS_ASP = 0x0362,
+    };
 
-    // highest bit position we ever inspect, +1 - used as the loop bound
-    static constexpr uint8_t HW_BIT_COUNT = uint8_t(AeronHwBit::EXT_ASP) + 1;
+    // GNSS fix types reported by PLX (raw value field inside gps_status)
+    enum class AeronGnssFix : uint8_t {
+        NO_FIX    = 0,
+        GNSS_FIX  = 1,
+        SBAS_FIX  = 2,
+        RTK_FIX   = 3,
+        RTK_FLOAT = 4,
+    };
+
+    // jamming/spoofing detection levels
+    enum class AeronJamSpoof : uint8_t {
+        NOT_DETECTED = 1,
+        WARNING      = 2,
+        CRITICAL     = 3,
+    };
+
+    // hardware status flag positions inside NAV_PARA2.hw_status
+    enum class AeronHwStatus : uint8_t {
+        GNSS     = 0,
+        ACC      = 1,
+        GYR      = 2,
+        MAG      = 3,
+        BARO     = 4,
+        SUP_VLTG = 5,
+        CM_PRT   = 10,
+        RAM      = 11,
+        FIRMWARE = 12,
+        CONFIG   = 13,
+        EXT_MAG  = 22,
+        EXT_ASP  = 23,
+    };
+
+    // ---- packed on-wire payload layouts ----
+    // These are cast directly over rx_buf[8 .. payload_end] once the CRC
+    // has validated the frame, so the layout must exactly match the
+    // PLX3 wire format. The matching SIM_Aeron structs carry the same
+    // static_asserts.
+
+    struct PACKED NavPara1Payload {
+        uint32_t epoch_time;
+        uint32_t microseconds;
+        uint32_t ins_status;
+        uint32_t hw_status;
+        float    euler[3];
+        float    course;
+        float    velocity_ned[3];
+        double   position[2];
+        float    height_abv_ellip;
+    };
+    static_assert(sizeof(NavPara1Payload) == 64, "NavPara1Payload size mismatch");
+
+    struct PACKED NavPara2Payload {
+        uint32_t epoch_time;
+        uint32_t microseconds;
+        uint32_t ins_status;
+        uint32_t hw_status;
+        float    quat[4];
+        float    body_vel[3];
+        double   ecef_pos[3];
+        float    altitude;
+    };
+    static_assert(sizeof(NavPara2Payload) == 72, "NavPara2Payload size mismatch");
+
+    struct PACKED SensParaPayload {
+        uint32_t epoch_time;
+        uint32_t microseconds;
+        float    temperature;
+        float    gyro[3];
+        float    accel[3];
+        float    mag[3];
+        float    euler_rates[3];
+        float    baro_pressure;
+        float    baro_temperature;
+        float    baro_altitude;
+    };
+    static_assert(sizeof(SensParaPayload) == 72, "SensParaPayload size mismatch");
+
+    struct PACKED GpsParaPayload {
+        uint32_t epoch_time;
+        uint32_t microseconds;
+        uint32_t gps_status;
+        double   gps_position[2];
+        float    gps_height_abv_ellip;
+        float    gps_undulation;
+        float    pdop;
+        float    hdop;
+        float    gdop;
+    };
+    static_assert(sizeof(GpsParaPayload) == 48, "GpsParaPayload size mismatch");
+
+    struct PACKED ExtdGnssPayload {
+        float    hpa;
+        float    vpa;
+        float    hva;
+        float    vdop;
+        double   gnss_vned[3];
+    };
+    static_assert(sizeof(ExtdGnssPayload) == 40, "ExtdGnssPayload size mismatch");
+
+    // ---- hw_status reporting table ----
+    // One row per status flag we track. Used by report_hw_status() to
+    // emit both the fault and the matching "okay" message, so the value
+    // -> name mapping lives in exactly one place.
+    struct HwStatusEntry {
+        AeronHwStatus  status;
+        uint8_t        severity;    // a MAV_SEVERITY_* value
+        const char    *fault_msg;
+        const char    *clear_msg;   // nullptr -> never emit a recovery message
+    };
+    static const HwStatusEntry hw_status_table[];
+
+    mutable HAL_Semaphore arn_sem;
 
     void update_thread();
-    bool check_and_decode();
+    void check_and_decode();
     void report_hw_status();
     bool parse_byte(uint8_t byte);
-    uint16_t decode_to_local(AeronDecNavPara1 *nav1,
-                             AeronDecNavPara2 *nav2,
-                             AeronDecSens *sens,
-                             AeronDecGps *gps,
-                             AeronDecCust *cust,
-                             AeronDeferredMsgs *msgs);
 
-    void publish_nav_para1(const AeronDecNavPara1 &data);
-    void publish_nav_para2(const AeronDecNavPara2 &data);
-    void publish_sens_para(const AeronDecSens &data);
-    void publish_gps_para(const AeronDecGps &data);
-    void publish_cust_pkt(const AeronDecCust &data);
+    void publish_nav_para1(const NavPara1Payload &p);
+    void publish_nav_para2(const NavPara2Payload &p);
+    void publish_sens_para(const SensParaPayload &p);
+    void publish_gps_para(const GpsParaPayload &p);
+    void publish_extd_gnss(const ExtdGnssPayload &p);
 
     // GPS formatting - combines GPS_PARA + EXTD_GNSS + NAV_PARA1 fields
     void format_and_push_gps();
@@ -290,6 +275,7 @@ private:
         LEN_LOW,
         PAYLOAD,
         CRC,
+        RESET,
     };
 
     ParseState parse_state;
@@ -298,7 +284,6 @@ private:
     uint16_t   write_idx;
     uint16_t   decoded_pkt_len;
     uint8_t    rx_buf[512];
-    uint8_t    decode_buf[512];
     uint8_t    chunk_buf[512];
 
     // Per-packet-group staleness timestamps.
@@ -318,20 +303,10 @@ private:
     bool nav1_valid;          // gates the GPS message construction
     bool has_variance_data;   // gates get_variances() reporting
 
-    // throttled-warning state for hw_status bits. Rising edges fire
+    // throttled-warning state for hw_status flags. Rising edges fire
     // immediately; persistent faults re-warn every HEALTH_REPEAT_INTERVAL_MS.
-    uint32_t last_warned_bits;
+    uint32_t last_warned_stat;
     uint32_t last_warned_ms[32];
-
-    // rate diagnostics
-    uint32_t sens_count;
-    uint32_t nav1_count;
-    uint32_t nav2_count;
-    uint32_t gps_count;
-    uint32_t extd_gnss_count;
-    uint32_t last_rate_ms;
-
-    static constexpr uint32_t RATE_LOG_INTERVAL_MS = 60000;
 
     // Per-group staleness deadlines for healthy().
     static constexpr uint32_t SENS_TIMEOUT_MS = 40;
