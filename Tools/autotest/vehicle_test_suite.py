@@ -2048,8 +2048,8 @@ class TestSuite(abc.ABC):
         self.tlog = None
         self.enable_fgview = enable_fgview
 
-        self.rc_thread = None
-        self.rc_thread_should_quit = False
+        self.rc_thread: threading.Thread | None = None
+        self.rc_thread_should_quit: bool = False
         self.rc_queue = queue.Queue()
 
         self.expect_list = []
@@ -5881,40 +5881,28 @@ class TestSuite(abc.ABC):
                 raise ValueError("RC thread is dead")  # FIXME: type
 
     def rc_thread_main(self):
-        chan16 = [1000] * 16
-
+        """When this function completes, the thread terminates."""
         sitl_output = mavutil.mavudp("127.0.0.1:%u" % self.sitl_rcin_port(), input=False)
-        buf = None
+        num_rc_channels = 16
 
-        while True:
-            if self.rc_thread_should_quit:
-                break
+        # Pay attention, there are race conditions /
+        # wallclock-vs-simtime issues to worry about here.
+        max_wait_before_sending_values = 0.2 / self.speedup
 
-            # the 0.05 here means we're updating the RC values into
-            # the autopilot at 20Hz - that's our 50Hz wallclock, , not
-            # the autopilot's simulated 20Hz, so if speedup is 10 the
-            # autopilot will see ~2Hz.
-            timeout = 0.02
-            # ... and 2Hz is too slow when we now run at 100x speedup:
-            timeout /= (self.speedup / 10.0)
-
+        format_str = "<" + "H" * num_rc_channels
+        rc_values = [1000] * num_rc_channels
+        while not self.rc_thread_should_quit:
             try:
-                map_copy = self.rc_queue.get(timeout=timeout)
-
-                # 16 packed entries:
-                for i in range(1, 17):
-                    if i in map_copy:
-                        chan16[i-1] = map_copy[i]
-
+                rc_value_updates = self.rc_queue.get(timeout=max_wait_before_sending_values)
+                for chan, val in rc_value_updates.items():
+                    if not isinstance(chan, int):
+                        raise ValueError(f"{chan} is not a valid RC channel, must be an int.")
+                    if not (1 <= chan <= num_rc_channels):
+                        raise ValueError(f"{chan} is not a valid RC channel, must be in range [1, {num_rc_channels}].")
+                    rc_values[chan-1] = val
             except queue.Empty:
                 pass
-
-            buf = struct.pack('<HHHHHHHHHHHHHHHH', *chan16)
-
-            if buf is None:
-                continue
-
-            sitl_output.write(buf)
+            sitl_output.write(struct.pack(format_str, *rc_values))
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
