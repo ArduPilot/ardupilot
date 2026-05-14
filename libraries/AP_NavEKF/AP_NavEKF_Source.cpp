@@ -18,8 +18,25 @@
 #include <AP_DAL/AP_DAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#include <AP_Doppler_Telem/AP_Doppler_Telem.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
+
+namespace {
+bool doppler_body_odom_enabled()
+{
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+    AP_Doppler_Telem *dvl = AP::Doppler_telem();
+    return dvl != nullptr && dvl->odom_enabled();
+#else
+    return false;
+#endif
+}
+}
 
 const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
 
@@ -331,6 +348,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
     bool gps_required = false;
     bool rangefinder_required = false;
     bool visualodom_required = false;
+    bool extnav_velxy_required = false;
     bool optflow_required = false;
     bool wheelencoder_required = false;
 
@@ -370,7 +388,7 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
                 optflow_required = true;
                 break;
             case SourceXY::EXTNAV:
-                visualodom_required = true;
+                extnav_velxy_required = true;
                 break;
             case SourceXY::WHEEL_ENCODER:
                 wheelencoder_required = true;
@@ -491,16 +509,22 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
         return false;
     }
 
-    if (visualodom_required) {
-        bool visualodom_available = false;
+    bool visualodom_available = false;
 #if HAL_VISUALODOM_ENABLED
-        auto *vo = AP::dal().visualodom();
-        visualodom_available = vo && vo->enabled();
+    auto *vo = AP::dal().visualodom();
+    visualodom_available = vo && vo->enabled();
 #endif
+
+    if (visualodom_required) {
         if (!visualodom_available) {
             hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "VisualOdom");
             return false;
         }
+    }
+
+    if (extnav_velxy_required && !visualodom_available && !doppler_body_odom_enabled()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, ekf_requires_msg, "VisualOdom or DVL");
+        return false;
     }
 
     if (wheelencoder_required && !dal.wheelencoder_enabled()) {

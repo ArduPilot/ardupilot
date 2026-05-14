@@ -46,6 +46,67 @@ const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SIM_EN", 4, AP_Doppler_Parameters, _sim_en, 0),
 
+    // @Param: FUSE_MODE
+    // @DisplayName: DVL EKF fusion mode
+    // @Description: Controls how DVL velocity is provided to the EKF
+    // @Values: 0:Disabled,1:BodyOdometry,2:ExternalNavVelocity
+    // @User: Advanced
+    AP_GROUPINFO("FUSE_MODE", 5, AP_Doppler_Parameters, _fusion_mode, (int8_t)AP_Doppler_Parameters::FusionMode::BodyOdom),
+
+    // @Param: ORIENT
+    // @DisplayName: DVL sensor orientation
+    // @Description: DVL sensor orientation relative to the vehicle body frame
+    // @Values: 0:Forward, 2:Right, 4:Back, 6:Left, 24:Up, 25:Down
+    // @User: Advanced
+    AP_GROUPINFO("ORIENT", 6, AP_Doppler_Parameters, _orientation, ROTATION_NONE),
+
+    // @Param: POS_X
+    // @DisplayName: DVL X position offset
+    // @Description: X position of the DVL in body frame. Positive X is forward of the origin.
+    // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POS_Y
+    // @DisplayName: DVL Y position offset
+    // @Description: Y position of the DVL in body frame. Positive Y is to the right of the origin.
+    // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: POS_Z
+    // @DisplayName: DVL Z position offset
+    // @Description: Z position of the DVL in body frame. Positive Z is down from the origin.
+    // @Units: m
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("POS", 7, AP_Doppler_Parameters, _pos_offset, 0.0f),
+
+    // @Param: DELAY_MS
+    // @DisplayName: DVL sensor delay
+    // @Description: DVL sensor delay relative to inertial measurements
+    // @Units: ms
+    // @Range: 0 250
+    // @User: Advanced
+    AP_GROUPINFO("DELAY_MS", 8, AP_Doppler_Parameters, _delay_ms, 10),
+
+    // @Param: USE_WATER
+    // @DisplayName: DVL water-track fusion enable
+    // @Description: Allows water-track velocity to be used when bottom-track velocity is unavailable. Bottom-track is still preferred.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("USE_WATER", 9, AP_Doppler_Parameters, _use_water_track, 0),
+
+    // @Param: MIN_QUAL
+    // @DisplayName: DVL minimum fusion quality
+    // @Description: Minimum DVL quality required before velocity is fused by the EKF
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("MIN_QUAL", 10, AP_Doppler_Parameters, _min_quality, 50.0f),
+
     AP_GROUPEND
 };
 

@@ -335,6 +335,8 @@ private:
     // Inertial Navigation
     AP_InertialNav inertial_nav;
     AP_Doppler_Telem inertial_doppler;    
+    uint32_t doppler_odom_last_sequence;
+    uint32_t doppler_odom_last_ms;
     AP_AHRS_View ahrs_view;
 
     // Attitude, Position and Waypoint navigation objects

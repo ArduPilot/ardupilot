@@ -233,6 +233,27 @@ bool AP_Doppler_Backend::get_ud_msg(DVL_U_Msg &msg) const
     return msg.valid;
 }
 
+bool AP_Doppler_Backend::get_velocity_sample(EPD6VelocitySample &sample, bool allow_water_track) const
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    WITH_SEMAPHORE(_sample_sem);
+
+    if (_epd6_bottom_track_velocity_sample.valid &&
+        (now_ms - _epd6_bottom_track_velocity_sample.update_ms) <= DVL_TIMEOUT_MS) {
+        sample = _epd6_bottom_track_velocity_sample;
+        return true;
+    }
+
+    if (allow_water_track &&
+        _epd6_water_track_velocity_sample.valid &&
+        (now_ms - _epd6_water_track_velocity_sample.update_ms) <= DVL_TIMEOUT_MS) {
+        sample = _epd6_water_track_velocity_sample;
+        return true;
+    }
+
+    return false;
+}
+
 void AP_Doppler_Backend::send_epd6_startup_commands()
 {
     if (_port == nullptr) {
@@ -384,7 +405,7 @@ void AP_Doppler_Backend::parse_epd6_bs(const char *payload)
         _epd6_bs.x_velocity_mm_s = x_velocity_mm_s;
         _epd6_bs.y_velocity_mm_s = y_velocity_mm_s;
         _epd6_bs.z_velocity_mm_s = z_velocity_mm_s;
-        update_epd6_velocity_sample(_epd6_bottom_track_velocity_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, DVL_LockState::BOTTOM_LOCK);
+        update_epd6_velocity_sample(_epd6_bottom_track_velocity_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, 0.0f, DVL_LockState::BOTTOM_LOCK);
     }
 }
 
@@ -460,7 +481,7 @@ void AP_Doppler_Backend::parse_epd6_ws(const char *payload)
         _epd6_ws.x_velocity_mm_s = x_velocity_mm_s;
         _epd6_ws.y_velocity_mm_s = y_velocity_mm_s;
         _epd6_ws.z_velocity_mm_s = z_velocity_mm_s;
-        update_epd6_velocity_sample(_epd6_water_track_velocity_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, DVL_LockState::WATER_TRACK);
+        update_epd6_velocity_sample(_epd6_water_track_velocity_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, 0.0f, DVL_LockState::WATER_TRACK);
     }
 }
 
@@ -587,14 +608,16 @@ void AP_Doppler_Backend::parse_epd6_td(const char *payload)
     _epd6_td.update_ms = AP_HAL::millis();
 }
 
-void AP_Doppler_Backend::update_epd6_velocity_sample(EPD6VelocitySample &sample, float x_velocity_mm_s, float y_velocity_mm_s, float z_velocity_mm_s, DVL_LockState lock)
+void AP_Doppler_Backend::update_epd6_velocity_sample(EPD6VelocitySample &sample, float x_velocity_mm_s, float y_velocity_mm_s, float z_velocity_mm_s, float vel_error_mm_s, DVL_LockState lock)
 {
     WITH_SEMAPHORE(_sample_sem);
     sample.vel_body_mps.x = x_velocity_mm_s * 0.001f;
     sample.vel_body_mps.y = y_velocity_mm_s * 0.001f;
     sample.vel_body_mps.z = z_velocity_mm_s * 0.001f;
+    sample.sequence++;
     sample.update_ms = AP_HAL::millis();
-    sample.quality = 255.0f;
+    sample.vel_error_mps = MAX(vel_error_mm_s * 0.001f, 0.0f);
+    sample.quality = 100.0f;
     sample.lock = lock;
     sample.valid = true;
 }
@@ -618,24 +641,12 @@ bool AP_Doppler_Backend::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_m
     quality = 0.0f;
     t_ms = 0;
 
-    const uint32_t now_ms = AP_HAL::millis();
-    WITH_SEMAPHORE(_sample_sem);
-
-    if (_epd6_bottom_track_velocity_sample.valid &&
-        (now_ms - _epd6_bottom_track_velocity_sample.update_ms) <= DVL_TIMEOUT_MS) {
-        vel_body_mps = _epd6_bottom_track_velocity_sample.vel_body_mps;
-        t_ms = _epd6_bottom_track_velocity_sample.update_ms;
-        quality = _epd6_bottom_track_velocity_sample.quality;
-        lock = _epd6_bottom_track_velocity_sample.lock;
-        return true;
-    }
-
-    if (_epd6_water_track_velocity_sample.valid &&
-        (now_ms - _epd6_water_track_velocity_sample.update_ms) <= DVL_TIMEOUT_MS) {
-        vel_body_mps = _epd6_water_track_velocity_sample.vel_body_mps;
-        t_ms = _epd6_water_track_velocity_sample.update_ms;
-        quality = _epd6_water_track_velocity_sample.quality;
-        lock = _epd6_water_track_velocity_sample.lock;
+    EPD6VelocitySample sample {};
+    if (get_velocity_sample(sample, true)) {
+        vel_body_mps = sample.vel_body_mps;
+        t_ms = sample.update_ms;
+        quality = sample.quality;
+        lock = sample.lock;
         return true;
     }
 

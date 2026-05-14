@@ -21,6 +21,15 @@
 
 class AP_Doppler_Parameters;
 
+struct DVLBodyOdomSample {
+    Vector3f vel_body_mps {};
+    uint32_t time_ms = 0;
+    uint32_t sequence = 0;
+    float vel_error_mps = 0.0f;
+    float quality = 0.0f;
+    DVL_LockState lock = DVL_LockState::NO_LOCK;
+};
+
 class AP_Doppler_Telem {
 
 public:
@@ -36,6 +45,12 @@ public:
     void update();
     void send();
     bool get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const;
+    bool get_odom_sample(DVLBodyOdomSample &sample) const;
+    bool odom_enabled() const;
+    bool extnav_vel_enabled() const;
+    bool odom_healthy() const;
+    const Vector3f &odom_pos_offset() const;
+    uint16_t odom_delay_ms() const;
     bool get_bi_msg(DVL_BI_Msg &msg) const;
     bool get_bd_msg(DVL_BD_Msg &msg) const;
     bool get_wi_msg(DVL_WI_Msg &msg) const;

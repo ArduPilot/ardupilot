@@ -22,7 +22,9 @@ enum class DVL_LockState : uint8_t {
 
 struct EPD6VelocitySample {
     Vector3f vel_body_mps {};
+    uint32_t sequence = 0;
     uint32_t update_ms = 0;
+    float vel_error_mps = 0.0f;
     float quality = 0.0f;
     DVL_LockState lock = DVL_LockState::NO_LOCK;
     bool valid = false;
@@ -85,6 +87,7 @@ public:
     virtual void send();
     virtual void loop();
     bool get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms, float &quality, DVL_LockState &lock) const;
+    bool get_velocity_sample(EPD6VelocitySample &sample, bool allow_water_track) const;
     bool get_bi_msg(DVL_BI_Msg &msg) const;
     bool get_bd_msg(DVL_BD_Msg &msg) const;
     bool get_wi_msg(DVL_WI_Msg &msg) const;
@@ -236,7 +239,7 @@ private:
     void parse_epd6_ud(const char *payload);
     void parse_epd6_td(const char *payload);
     void send_epd6_startup_commands();
-    void update_epd6_velocity_sample(EPD6VelocitySample &sample, float x_velocity_mm_s, float y_velocity_mm_s, float z_velocity_mm_s, DVL_LockState lock);
+    void update_epd6_velocity_sample(EPD6VelocitySample &sample, float x_velocity_mm_s, float y_velocity_mm_s, float z_velocity_mm_s, float vel_error_mm_s, DVL_LockState lock);
     void update_epd6_beam_sample(EPD6BeamSample &sample, float velocity_mm_s, float distance_m, float rssi, float nsd, EPD6_Status status);
 
     static constexpr uint32_t DVL_TIMEOUT_MS = 500;

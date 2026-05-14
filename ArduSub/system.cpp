@@ -252,6 +252,9 @@ bool Sub::optflow_position_ok()
         enabled = true;
     }
 #endif
+    if (inertial_doppler.odom_enabled()) {
+        enabled = true;
+    }
     if (!enabled) {
         return false;
     }

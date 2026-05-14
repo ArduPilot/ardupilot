@@ -34,6 +34,8 @@ Sub::Sub()
           guided_mode(Guided_WP),
           auto_yaw_mode(AUTO_YAW_LOOK_AT_NEXT_WP),
           inertial_nav(ahrs),
+          doppler_odom_last_sequence(0),
+          doppler_odom_last_ms(0),
           ahrs_view(ahrs, ROTATION_NONE),
           attitude_control(ahrs_view, aparm, motors),
           pos_control(ahrs_view, inertial_nav, motors, attitude_control),

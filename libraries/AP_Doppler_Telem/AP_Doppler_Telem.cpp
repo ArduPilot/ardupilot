@@ -6,6 +6,7 @@
 
 #include "AP_Doppler_Telem.h"
 #include "AP_Doppler_Backend.h"
+#include "AP_Doppler_Parameters.h"
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -114,6 +115,66 @@ bool AP_Doppler_Telem::get_velocity_body(Vector3f &vel_body_mps, uint32_t &t_ms,
         return false;
     }
     return _backend->get_velocity_body(vel_body_mps, t_ms, quality, lock);
+}
+
+bool AP_Doppler_Telem::get_odom_sample(DVLBodyOdomSample &sample) const
+{
+    if (_doppler_parameters->sim_enabled()) {
+        return false;
+    }
+
+    if (_backend == nullptr) {
+        return false;
+    }
+
+    EPD6VelocitySample backend_sample {};
+    if (!_backend->get_velocity_sample(backend_sample, _doppler_parameters->use_water_track())) {
+        return false;
+    }
+
+    sample.vel_body_mps = backend_sample.vel_body_mps;
+    sample.vel_body_mps.rotate(_doppler_parameters->orientation());
+    sample.time_ms = backend_sample.update_ms;
+    sample.sequence = backend_sample.sequence;
+    sample.vel_error_mps = backend_sample.vel_error_mps;
+    sample.quality = constrain_float(backend_sample.quality, 0.0f, 100.0f);
+    sample.lock = backend_sample.lock;
+
+    if (sample.lock == DVL_LockState::WATER_TRACK) {
+        sample.quality = MIN(sample.quality, 60.0f);
+    }
+
+    return sample.quality >= _doppler_parameters->min_quality();
+}
+
+bool AP_Doppler_Telem::odom_enabled() const
+{
+    return _doppler_parameters != nullptr && _backend != nullptr &&
+           !_doppler_parameters->sim_enabled() &&
+           _doppler_parameters->body_odom_enabled();
+}
+
+bool AP_Doppler_Telem::extnav_vel_enabled() const
+{
+    return _doppler_parameters != nullptr && _backend != nullptr &&
+           !_doppler_parameters->sim_enabled() &&
+           _doppler_parameters->extnav_vel_enabled();
+}
+
+bool AP_Doppler_Telem::odom_healthy() const
+{
+    DVLBodyOdomSample sample {};
+    return odom_enabled() && get_odom_sample(sample);
+}
+
+const Vector3f &AP_Doppler_Telem::odom_pos_offset() const
+{
+    return _doppler_parameters->pos_offset();
+}
+
+uint16_t AP_Doppler_Telem::odom_delay_ms() const
+{
+    return _doppler_parameters->delay_ms();
 }
 
 bool AP_Doppler_Telem::get_bi_msg(DVL_BI_Msg &msg) const

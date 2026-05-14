@@ -186,23 +186,51 @@ void Sub::doppler_update()
 {
     inertial_doppler.update();
 
-//    const AP_Doppler_Parameters &params = inertial_doppler.parameters();
+    DVLBodyOdomSample odom_sample {};
+    if (inertial_doppler.odom_enabled()) {
+        if (!inertial_doppler.get_odom_sample(odom_sample)) {
+            return;
+        }
 
-    Vector3f vel_body_mps;
-    uint32_t t_ms = 0;
-    float quality = 0.0f;
-    DVL_LockState lock = DVL_LockState::NO_LOCK;
-    if (!inertial_doppler.get_velocity_body(vel_body_mps, t_ms, quality, lock)) {
-        return;
+        if (odom_sample.sequence == doppler_odom_last_sequence) {
+            return;
+        }
+
+        if (doppler_odom_last_ms == 0) {
+            doppler_odom_last_sequence = odom_sample.sequence;
+            doppler_odom_last_ms = odom_sample.time_ms;
+            return;
+        }
+
+        const uint32_t delta_ms = odom_sample.time_ms - doppler_odom_last_ms;
+        doppler_odom_last_sequence = odom_sample.sequence;
+        doppler_odom_last_ms = odom_sample.time_ms;
+
+        if (delta_ms < 20U || delta_ms > 500U) {
+            return;
+        }
+
+        const float delta_time_s = delta_ms * 0.001f;
+        const Vector3f position_delta = odom_sample.vel_body_mps * delta_time_s;
+        const Vector3f angle_delta {};
+        ahrs.writeBodyFrameOdom(odom_sample.quality,
+                                position_delta,
+                                angle_delta,
+                                delta_time_s,
+                                odom_sample.time_ms,
+                                inertial_doppler.odom_delay_ms(),
+                                inertial_doppler.odom_pos_offset());
+    } else if (inertial_doppler.extnav_vel_enabled()) {
+        if (!inertial_doppler.get_odom_sample(odom_sample)) {
+            return;
+        }
+
+        const Matrix3f &rot_bn = ahrs.get_rotation_body_to_ned();
+        const Vector3f vel_ned = rot_bn * odom_sample.vel_body_mps;
+        const float vel_err = MAX(odom_sample.vel_error_mps, 0.05f);
+        ahrs.writeExtNavVelData(vel_ned, vel_err, odom_sample.time_ms, inertial_doppler.odom_delay_ms());
     }
 
-    Vector3f vel_body_corr = vel_body_mps;
-
-    const Matrix3f &rot_bn = ahrs.get_rotation_body_to_ned();
-    const Vector3f vel_ned = rot_bn * vel_body_corr;
-
-    ahrs.writeExtNavVelData(vel_ned, 0, t_ms, 0);
-//    gcs().send_text(MAV_SEVERITY_INFO, "vei_body_corr: %.3f %.3f %.3f", vel_body_corr.x, vel_body_corr.y, vel_body_corr.z);
     inertial_doppler.send(); 
 }
 
