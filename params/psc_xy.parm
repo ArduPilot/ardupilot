@@ -1,0 +1,17 @@
+# PID paramaters for horizontal control in guided mode
+# This is a good starting point for AUV of the size used at Mecatron (it will work generally fine, you may not need to tune)
+# There are some non-default params
+# PSC_VELXY_IMAX (default 1000, range 0-4500, unit cm/s^2)
+# PSC_VELXY_I (default 0.5, range 0.02-1.0)
+
+PSC_JERK_XY      5.0
+
+PSC_VELXY_D      0.8
+PSC_VELXY_FF     6.0
+PSC_VELXY_FLTD   5.0
+PSC_VELXY_FLTE   5.0
+PSC_VELXY_I      0.1
+PSC_VELXY_IMAX   100.0
+PSC_VELXY_P      6.0
+
+PSC_POSXY_P      2.0

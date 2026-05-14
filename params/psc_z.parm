@@ -1,3 +1,11 @@
+# PID paramaters for vertical (depth) control
+# This is a good starting point for AUV of the size used at Mecatron (it will work generally fine, you may not need to tune)
+# There are some non-default params
+# SURFACE_DEPTH (default -10.0, unit cm)
+# PSC_VELZ_D (default 0.0, range 0.0-1.0)
+# PSC_VELZ_P (default 8.0, range 1.0-8.0)
+# PSC_POSZ_P (default 3.0, range 1.0-3.0)
+
 PSC_ACCZ_D	    0.0
 PSC_ACCZ_D_FF	0.0
 PSC_ACCZ_FF	    0.0
@@ -12,11 +20,14 @@ PSC_ACCZ_P	    0.5
 PSC_ACCZ_PDMX	0.0
 PSC_ACCZ_SMAX	0.0
 PSC_JERK_Z	    50.0
-PSC_POSZ_P	    3.0
-PSC_VELZ_D	    0.0
+
+PSC_VELZ_D	    0.75
 PSC_VELZ_FF	    0.0
 PSC_VELZ_FLTD	5.0
 PSC_VELZ_FLTE	5.0
 PSC_VELZ_I	    0.0
-PSC_VELZ_IMAX	1000.0
-PSC_VELZ_P	    8.0
+PSC_VELZ_IMAX	1.0
+PSC_VELZ_P	    7.0
+
+PSC_POSZ_P	    1.5
+SURFACE_DEPTH   -2.0

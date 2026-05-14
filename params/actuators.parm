@@ -1,0 +1,19 @@
+# Configuration for actuators
+# All of these apply to AUX pins (not main, bcz main is used for thrusters)
+# Note that when you first load this file, it will throw warning "Unknown parameter RELAYx_PIN". You have to power-cycle it for the param to appear; reboot alone will not work!
+
+# Pin 1: mount control (aka gimbal)
+# Paramters stored in a separate camera mount file
+
+# Pin 2: general servo (used for gripper)
+SERVO10_FUNCTION    0
+
+# Pin 3: relay (dropper/torpedo)
+SERVO11_FUNCTION    -1
+RELAY3_FUNCTION     1
+RELAY3_PIN          52
+
+# Pin 4: relay (dropper/torpedo)
+SERVO12_FUNCTION    -1
+RELAY4_FUNCTION     1
+RELAY4_PIN          53

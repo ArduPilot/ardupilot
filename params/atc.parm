@@ -1,0 +1,56 @@
+# PID paramaters for roll pitch yaw control
+# This is a good starting point for AUV of the size used at Mecatron (it will work generally fine, you may not need to tune)
+
+# Some non-default params
+# ATC_RAT_PIT_D (default 0.00, range 0.00-0.02)
+# ATC_RAT_PIT_P (default 0.135, range 0.00-0.30)
+# ATC_ANG_YAW_P (default 6.00, range 0.00-6.00)
+# ATC_RAT_YAW_I (default 0.018, range 0.00-0.05)
+ATC_RAT_PIT_D    0.01
+ATC_RAT_PIT_D_FF 0.0
+ATC_RAT_PIT_FF   0.0
+ATC_RAT_PIT_FLTD 30.0
+ATC_RAT_PIT_FLTE 0.0
+ATC_RAT_PIT_FLTT 30.0
+ATC_RAT_PIT_I    0.09
+ATC_RAT_PIT_IMAX 0.444
+ATC_RAT_PIT_NEF  0.0
+ATC_RAT_PIT_NTF  0.0
+ATC_RAT_PIT_P    0.20
+ATC_RAT_PIT_PDMX 0.0
+ATC_RAT_PIT_SMAX 0.0
+
+ATC_RAT_RLL_D    0.0036
+ATC_RAT_RLL_D_FF 0.0
+ATC_RAT_RLL_FF   0.0
+ATC_RAT_RLL_FLTD 30.0
+ATC_RAT_RLL_FLTE 0.0
+ATC_RAT_RLL_FLTT 30.0
+ATC_RAT_RLL_I    0.09
+ATC_RAT_RLL_IMAX 0.444
+ATC_RAT_RLL_NEF  0.0
+ATC_RAT_RLL_NTF  0.0
+ATC_RAT_RLL_P    0.135
+ATC_RAT_RLL_PDMX 0.0
+ATC_RAT_RLL_SMAX 0.0
+
+# Some non-default params
+# ATC_RAT_YAW_D (default 0.00, range 0.00-0.02)
+# ATC_RAT_YAW_P (default 0.18, range 0.00-0.50)
+ATC_RAT_YAW_D    0.01
+ATC_RAT_YAW_D_FF 0.0
+ATC_RAT_YAW_FF   0.0
+ATC_RAT_YAW_FLTD 5.0
+ATC_RAT_YAW_FLTE 0.0
+ATC_RAT_YAW_FLTT 5.0
+ATC_RAT_YAW_I    0.0
+ATC_RAT_YAW_IMAX 0.222
+ATC_RAT_YAW_NEF  0.0
+ATC_RAT_YAW_NTF  0.0
+ATC_RAT_YAW_P    0.25
+ATC_RAT_YAW_PDMX 0.0
+ATC_RAT_YAW_SMAX 0.0
+
+ATC_ANG_PIT_P    6.0
+ATC_ANG_RLL_P    6.0
+ATC_ANG_YAW_P    4.0

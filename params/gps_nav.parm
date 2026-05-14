@@ -1,13 +1,15 @@
-SIM_GPS_DISABLE 0
+# This set of params only useful in sim (where there is gps)
 
-EK2_ENABLE 0
-EK3_ENABLE 1
-AHRS_EKF_TYPE 3
+SIM_GPS_DISABLE     0
 
-EK3_SRC1_POSXY 3
-EK3_SRC1_VELXY 3
-EK3_SRC1_POSZ 1
+EK2_ENABLE          0
+EK3_ENABLE          1
+AHRS_EKF_TYPE       3
 
-VISO_TYPE 0
+EK3_SRC1_POSXY      3
+EK3_SRC1_VELXY      3
+EK3_SRC1_POSZ       1
+
+VISO_TYPE           0
 
 # SERIAL0_PROTOCOL 2
