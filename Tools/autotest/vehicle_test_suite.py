@@ -198,6 +198,9 @@ class ArmedAtEndOfTestException(ErrorException):
     pass
 
 
+NUM_RC_CHANNELS = 16
+
+
 class Context(object):
     def __init__(self):
         self.parameters = []
@@ -5819,24 +5822,7 @@ class TestSuite(abc.ABC):
         return path
 
     def rc_defaults(self):
-        return {
-            1: 1500,
-            2: 1500,
-            3: 1500,
-            4: 1500,
-            5: 1500,
-            6: 1500,
-            7: 1500,
-            8: 1500,
-            9: 1500,
-            10: 1500,
-            11: 1500,
-            12: 1500,
-            13: 1500,
-            14: 1500,
-            15: 1500,
-            16: 1500,
-        }
+        return {channel: 1500 for channel in range(1, NUM_RC_CHANNELS+1)}
 
     def set_rc_from_map(self, _map, *, timeout: float | int | None = 20.0, quiet=False):
         """Sets provided RC channel/value pairs.
@@ -5883,40 +5869,37 @@ class TestSuite(abc.ABC):
     def rc_thread_main(self):
         """When this function completes, the thread terminates."""
         sitl_output = mavutil.mavudp("127.0.0.1:%u" % self.sitl_rcin_port(), input=False)
-        num_rc_channels = 16
 
         # Pay attention, there are race conditions /
         # wallclock-vs-simtime issues to worry about here.
         max_wait_before_sending_values = 0.2 / self.speedup
 
-        format_str = "<" + "H" * num_rc_channels
-        rc_values = [1000] * num_rc_channels
+        format_str = "<" + "H" * NUM_RC_CHANNELS
+        rc_values = [1000] * NUM_RC_CHANNELS
         while not self.rc_thread_should_quit:
             try:
                 rc_value_updates = self.rc_queue.get(timeout=max_wait_before_sending_values)
                 for chan, val in rc_value_updates.items():
                     if not isinstance(chan, int):
                         raise ValueError(f"{chan} is not a valid RC channel, must be an int.")
-                    if not (1 <= chan <= num_rc_channels):
-                        raise ValueError(f"{chan} is not a valid RC channel, must be in range [1, {num_rc_channels}].")
+                    if not (1 <= chan <= NUM_RC_CHANNELS):
+                        raise ValueError(f"{chan} is not a valid RC channel, must be in range [1, {NUM_RC_CHANNELS}].")
                     rc_values[chan-1] = val
             except queue.Empty:
                 pass
             sitl_output.write(struct.pack(format_str, *rc_values))
 
     def set_rc_default(self):
-        """Setup all simulated RC control to 1500."""
+        """Set all channels of simulated RC control to the default value (typically 1500)."""
         _defaults = self.rc_defaults()
         self.set_rc_from_map(_defaults)
 
     def check_rc_defaults(self):
         """Ensure all rc outputs are at defaults"""
         self.do_timesync_roundtrip()
-        _defaults = self.rc_defaults()
         m = self.assert_receive_message('RC_CHANNELS', timeout=5)
         need_set = {}
-        for chan in _defaults:
-            default_value = _defaults[chan]
+        for chan, default_value in self.rc_defaults().items():
             current_value = getattr(m, "chan" + str(chan) + "_raw")
             if default_value != current_value:
                 self.progress("chan=%u needs resetting is=%u want=%u" %
