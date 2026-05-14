@@ -111,7 +111,7 @@
 // ArduPilot 4.9 removes the code but sends message about MISSION_REQUEST not supported
 // ArduPilot 4.10 stops sending the warning
 #ifndef AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
-#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED 0
+#define AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED AP_MISSION_ITEM_ENABLED
 #endif
 
 // RANGEFINDER is a subset of the DISTANCE_SENSOR message which we
