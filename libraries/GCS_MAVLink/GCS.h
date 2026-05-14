@@ -754,9 +754,6 @@ protected:
 
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-    void send_hwstatus();
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
     void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
