@@ -39,6 +39,9 @@ private:
     bool inverted;
     SoftSerial ss;
     uint32_t saved_width;
+    bool filtered_failsafe;
+    uint8_t consecutive_failsafe_frames;
+    uint8_t consecutive_good_frames;
 
     struct {
         uint8_t buf[25];
