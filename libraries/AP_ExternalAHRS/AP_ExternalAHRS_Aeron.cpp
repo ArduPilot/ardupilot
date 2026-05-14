@@ -40,6 +40,14 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <GCS_MAVLink/GCS.h>
 
+// Local debug macro - no-op in release builds.
+// Define AERON_DEBUG before this header to enable.
+#ifndef AERON_DEBUG
+#define debug(...) do {} while (0)
+#else
+#define debug(fmt, args ...) GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Aeron: " fmt, ##args)
+#endif
+
 extern const AP_HAL::HAL &hal;
 
 AP_ExternalAHRS_Aeron_plx::AP_ExternalAHRS_Aeron_plx(AP_ExternalAHRS *_frontend,
@@ -86,58 +94,33 @@ void AP_ExternalAHRS_Aeron_plx::update_thread()
     while (true) {
         check_and_decode();
         report_hw_status();
-
-        // Periodic packet-rate diagnostics
-        const uint32_t now = AP_HAL::millis();
-        if (now - last_rate_ms >= RATE_LOG_INTERVAL_MS) {
-            const uint32_t dt_s = RATE_LOG_INTERVAL_MS / 1000;
-            GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,
-                          "SENS %luHz NAV1 %luHz NAV2 %luHz GPS %luHz E.GPS %luHz",
-                          (unsigned long)(sens_count / dt_s),
-                          (unsigned long)(nav1_count / dt_s),
-                          (unsigned long)(nav2_count / dt_s),
-                          (unsigned long)(gps_count / dt_s),
-                          (unsigned long)(extd_gnss_count / dt_s));
-
-            sens_count = nav1_count = nav2_count = gps_count = extd_gnss_count = 0;
-            last_rate_ms = now;
-        }
-
         hal.scheduler->delay_microseconds(1000);
     }
 }
 
 // Core pipeline: read -> parse -> decode -> publish -> deferred messages.
-// Returns true if any bytes were processed this call, false if no data
-// was available.
-bool AP_ExternalAHRS_Aeron_plx::check_and_decode()
+void AP_ExternalAHRS_Aeron_plx::check_and_decode()
 {
     WITH_SEMAPHORE(arn_sem);
 
     if (uart == nullptr) {
-        return false;
+        return;
     }
 
     const uint16_t avail = MIN(uart->available(), uint16_t(sizeof(chunk_buf)));
     if (avail == 0) {
-        return false;
+        return;
     }
 
     const uint16_t n_read = uart->read(chunk_buf, avail);
     if (n_read == 0) {
-        return false;
+        return;
     }
 
-    AeronDecNavPara1  nav1{};
-    AeronDecNavPara2  nav2{};
-    AeronDecSens      sens{};
-    AeronDecGps       gps{};
-    AeronDecCust      cust{};
     AeronDeferredMsgs msgs{};
-
     if (crc_fail_pending) {
-        msgs.crc_fail     = true;
-        crc_fail_pending  = false;
+        msgs.crc_fail    = true;
+        crc_fail_pending = false;
     }
 
     for (uint16_t index = 0; index < n_read; index++) {
@@ -145,65 +128,112 @@ bool AP_ExternalAHRS_Aeron_plx::check_and_decode()
             continue;
         }
 
-        const uint16_t pkt_id = decode_to_local(&nav1, &nav2, &sens, &gps, &cust, &msgs);
-        switch (pkt_id) {
-        case uint16_t(AeronPacketID::NAV_PARA1):
-            if (nav1.fresh) {
-                publish_nav_para1(nav1);
-                nav1.fresh = false;
-                nav1_count++;
+        // parse_byte just confirmed a CRC-valid frame.  The frame sits
+        // in rx_buf[0 .. decoded_pkt_len-1]; PRP_ID is at offset 6..7
+        // (big-endian) and the payload starts at offset 8.  parse_byte
+        // has already reset write_idx so we must consume rx_buf here
+        // before the next byte overwrites it.
+        const uint16_t prp_id      = be16toh_ptr(&rx_buf[6]);
+        const uint16_t payload_len = (decoded_pkt_len > 8) ? (decoded_pkt_len - 8) : 0;
+        const uint8_t *payload     = &rx_buf[8];
+
+        switch (AeronPacketID(prp_id)) {
+        case AeronPacketID::NAV_PARA1:
+            if (payload_len < sizeof(NavPara1Payload)) {
+                msgs.garbage = true;
+                break;
             }
+            publish_nav_para1(*reinterpret_cast<const NavPara1Payload *>(payload));
             break;
 
-        case uint16_t(AeronPacketID::NAV_PARA2):
-            if (nav2.fresh) {
-                publish_nav_para2(nav2);
-                nav2.fresh = false;
-                nav2_count++;
+        case AeronPacketID::NAV_PARA2:
+            if (payload_len < sizeof(NavPara2Payload)) {
+                msgs.garbage = true;
+                break;
             }
+            publish_nav_para2(*reinterpret_cast<const NavPara2Payload *>(payload));
             break;
 
-        case uint16_t(AeronPacketID::SENS_PARA):
-            if (sens.fresh) {
-                publish_sens_para(sens);
-                sens.fresh = false;
-                sens_count++;
+        case AeronPacketID::SENS_PARA:
+            if (payload_len < sizeof(SensParaPayload)) {
+                msgs.garbage = true;
+                break;
             }
+            publish_sens_para(*reinterpret_cast<const SensParaPayload *>(payload));
             break;
 
-        case uint16_t(AeronPacketID::GPS_PARA):
-            if (gps.fresh) {
-                publish_gps_para(gps);
-                gps.fresh = false;
-                gps_count++;
+        case AeronPacketID::GPS_PARA:
+            if (payload_len < sizeof(GpsParaPayload)) {
+                msgs.garbage = true;
+                break;
             }
+            publish_gps_para(*reinterpret_cast<const GpsParaPayload *>(payload));
             break;
 
-        case uint16_t(AeronPacketID::EXTD_GNSS):
-            if (cust.fresh) {
-                publish_cust_pkt(cust);
-                cust.fresh = false;
-                extd_gnss_count++;
+        case AeronPacketID::EXTD_GNSS:
+            if (payload_len < sizeof(ExtdGnssPayload)) {
+                msgs.garbage = true;
+                break;
             }
+            publish_extd_gnss(*reinterpret_cast<const ExtdGnssPayload *>(payload));
+            break;
+
+        case AeronPacketID::EXT_SENSORS_MAG: {
+            // Single-byte presence flag. Written under the lock so the
+            // const main-thread reader in healthy() sees a consistent
+            // value.
+            WITH_SEMAPHORE(state.sem);
+            shared.ext_mag_present = payload[0];
+            shared.ext_mag_checked = true;
+            msgs.ext_mag_checked   = true;
+            break;
+        }
+
+        case AeronPacketID::EXT_SENSORS_ASP: {
+            WITH_SEMAPHORE(state.sem);
+            shared.ext_asp_present = payload[0];
+            shared.ext_asp_checked = true;
+            msgs.ext_asp_checked   = true;
+            break;
+        }
+
+        case AeronPacketID::HEADING_S:
+        case AeronPacketID::H_SPEED_S:
+        case AeronPacketID::V_SPEED_S:
+        case AeronPacketID::POSITION_S:
+        case AeronPacketID::ALTITUDE_S:
+        case AeronPacketID::DEV_INFO:
+            // Aiding-status acks and the DEV_INFO handshake reply.
+            // We accept their existence (the CRC-valid frame already
+            // refreshed the stale timestamps inside parse_byte) but
+            // take no further action.
+            break;
+
+        case AeronPacketID::GNSS_PKT:
+        case AeronPacketID::GNSS_FIX_STATUS:
+            // Recognised but unused: detailed GNSS pseudorange / fix
+            // status packets that the PLX may emit if certain config
+            // bits are set. Fused output already reaches us via
+            // NAV_PARA1 and GPS_PARA so these are ignored.
             break;
 
         default:
-            // Aiding-status acks, DEV_INFO and the EXT_SENSORS_*
-            // responses are decoded inside decode_to_local() but don't
-            // need an action here. Garbage / unknown IDs are reported
-            // via the deferred message pipeline below.
+            msgs.garbage    = true;
+            msgs.unknown_id = prp_id;
             break;
         }
     }
 
     send_deferred_messages(msgs);
 
+    // Send the optional external-sensor presence queries once, after the
+    // PLX has had time to boot and start responding to commands.  
+    // Responses arrive as EXT_SENSORS_MAG / ASP
+    // packets and are routed through the switch above.
     if (!ext_sensor_query_done && AP_HAL::millis() > 10000) {
         query_ext_sensors();
         ext_sensor_query_done = true;
     }
-
-    return true;
 }
 
 // State-machine parser for the Aeron binary protocol.
@@ -236,9 +266,7 @@ bool AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte)
         if (pkt_length >= PKT_LEN_MIN && pkt_length < PKT_LEN_MAX) {
             parse_state = ParseState::PAYLOAD;
         } else {
-            parse_state = ParseState::SYNC;
-            write_idx   = 0;
-            pkt_length  = 0;
+            parse_state = ParseState::RESET;
         }
         return false;
 
@@ -253,12 +281,9 @@ bool AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte)
     case ParseState::CRC: {
         rx_buf[write_idx++] = byte;
         const bool valid = (byte == crc_xor_of_bytes(rx_buf, pkt_length));
-        if (valid) {
-            memcpy(decode_buf, rx_buf, pkt_length);
-        } else {
+        if (!valid) {
             crc_fail_pending = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,
-                  "Aeron: CRC-ID=0x%04X",
+            debug("CRC-ID=0x%04X",
                   (uint16_t(rx_buf[6]) << 8) | rx_buf[7]);
         }
         parse_state = ParseState::SYNC;
@@ -266,190 +291,22 @@ bool AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte)
         pkt_length  = 0;
         return valid;
     }
+
+    case ParseState::RESET: {
+        write_idx = 0;
+        pkt_length = 0;
+        parse_state = ParseState::SYNC;
+        return false;
+    }
     }
 
     // Unreachable - all enum values handled above.
-    parse_state = ParseState::SYNC;
-    write_idx   = 0;
-    pkt_length  = 0;
+    parse_state = ParseState::RESET;
     return false;
 }
 
-/*
-  Decode the framed packet from decode_buf into the appropriate local
-  struct. No shared state is touched, except for the EXT_SENSORS_*
-  cases which need to publish the presence flag.
- */
-uint16_t AP_ExternalAHRS_Aeron_plx::decode_to_local(AeronDecNavPara1 *nav1,
-                                                    AeronDecNavPara2 *nav2,
-                                                    AeronDecSens *sens,
-                                                    AeronDecGps *gps,
-                                                    AeronDecCust *extd_gnss,
-                                                    AeronDeferredMsgs *msgs)
-{
-    // payload starts after sync(4) + length(2) + prp_id(2)
-    const uint8_t *p             = &decode_buf[8];
-    const uint16_t prp_id        = be16toh_ptr(&decode_buf[6]);
-    const uint16_t payload_len   = (decoded_pkt_len > 8) ? (decoded_pkt_len - 8) : 0;
-
-    switch (prp_id) {
-    case uint16_t(AeronPacketID::NAV_PARA1): {
-        if (payload_len < uint16_t(AeronPacketLen::LEN_NAV_PARA1)) {
-            msgs->garbage = true;
-            return prp_id;
-        }
-        nav1->epoch_time      = le32toh_ptr(p +  0);
-        nav1->microseconds    = le32toh_ptr(p +  4);
-        nav1->ins_status      = le32toh_ptr(p +  8);
-        nav1->hw_status       = le32toh_ptr(p + 12);
-        nav1->euler[0]        = int32_to_float_le(le32toh_ptr(p + 16));
-        nav1->euler[1]        = int32_to_float_le(le32toh_ptr(p + 20));
-        nav1->euler[2]        = int32_to_float_le(le32toh_ptr(p + 24));
-        nav1->course          = int32_to_float_le(le32toh_ptr(p + 28));
-        nav1->velocity_ned[0] = int32_to_float_le(le32toh_ptr(p + 32));
-        nav1->velocity_ned[1] = int32_to_float_le(le32toh_ptr(p + 36));
-        nav1->velocity_ned[2] = int32_to_float_le(le32toh_ptr(p + 40));
-        nav1->position[0]     = uint64_to_double_le(le64toh_ptr(p + 44));
-        nav1->position[1]     = uint64_to_double_le(le64toh_ptr(p + 52));
-        nav1->height_abv_ellip = int32_to_float_le(le32toh_ptr(p + 60));
-        nav1->fresh = true;
-        break;
-    }
-
-    case uint16_t(AeronPacketID::NAV_PARA2): {
-        if (payload_len < uint16_t(AeronPacketLen::LEN_NAV_PARA2)) {
-            msgs->garbage = true;
-            return prp_id;
-        }
-        nav2->epoch_time   = le32toh_ptr(p +  0);
-        nav2->microseconds = le32toh_ptr(p +  4);
-        nav2->ins_status   = le32toh_ptr(p +  8);
-        nav2->hw_status    = le32toh_ptr(p + 12);
-        nav2->quat[0]      = int32_to_float_le(le32toh_ptr(p + 16));
-        nav2->quat[1]      = int32_to_float_le(le32toh_ptr(p + 20));
-        nav2->quat[2]      = int32_to_float_le(le32toh_ptr(p + 24));
-        nav2->quat[3]      = int32_to_float_le(le32toh_ptr(p + 28));
-        nav2->body_vel[0]  = int32_to_float_le(le32toh_ptr(p + 32));
-        nav2->body_vel[1]  = int32_to_float_le(le32toh_ptr(p + 36));
-        nav2->body_vel[2]  = int32_to_float_le(le32toh_ptr(p + 40));
-        nav2->ecef_pos[0]  = uint64_to_double_le(le64toh_ptr(p + 44));
-        nav2->ecef_pos[1]  = uint64_to_double_le(le64toh_ptr(p + 52));
-        nav2->ecef_pos[2]  = uint64_to_double_le(le64toh_ptr(p + 60));
-        nav2->altitude     = int32_to_float_le(le32toh_ptr(p + 68));
-        nav2->fresh = true;
-        break;
-    }
-
-    case uint16_t(AeronPacketID::SENS_PARA): {
-        if (payload_len < uint16_t(AeronPacketLen::LEN_SENS_PARA)) {
-            msgs->garbage = true;
-            return prp_id;
-        }
-        sens->epoch_time       = le32toh_ptr(p +  0);
-        sens->microseconds     = le32toh_ptr(p +  4);
-        sens->temperature      = int32_to_float_le(le32toh_ptr(p +  8));
-        sens->gyro[0]          = int32_to_float_le(le32toh_ptr(p + 12));
-        sens->gyro[1]          = int32_to_float_le(le32toh_ptr(p + 16));
-        sens->gyro[2]          = int32_to_float_le(le32toh_ptr(p + 20));
-        sens->accel[0]         = int32_to_float_le(le32toh_ptr(p + 24));
-        sens->accel[1]         = int32_to_float_le(le32toh_ptr(p + 28));
-        sens->accel[2]         = int32_to_float_le(le32toh_ptr(p + 32));
-        sens->mag[0]           = int32_to_float_le(le32toh_ptr(p + 36));
-        sens->mag[1]           = int32_to_float_le(le32toh_ptr(p + 40));
-        sens->mag[2]           = int32_to_float_le(le32toh_ptr(p + 44));
-        sens->euler_rates[0]   = int32_to_float_le(le32toh_ptr(p + 48));
-        sens->euler_rates[1]   = int32_to_float_le(le32toh_ptr(p + 52));
-        sens->euler_rates[2]   = int32_to_float_le(le32toh_ptr(p + 56));
-        sens->baro_pressure    = int32_to_float_le(le32toh_ptr(p + 60));
-        sens->baro_temperature = int32_to_float_le(le32toh_ptr(p + 64));
-        sens->baro_altitude    = int32_to_float_le(le32toh_ptr(p + 68));
-        sens->fresh = true;
-        break;
-    }
-
-    case uint16_t(AeronPacketID::GPS_PARA): {
-        if (payload_len < uint16_t(AeronPacketLen::LEN_GPS_PARA)) {
-            msgs->garbage = true;
-            return prp_id;
-        }
-        gps->epoch_time           = le32toh_ptr(p +  0);
-        gps->microseconds         = le32toh_ptr(p +  4);
-        gps->gps_status           = le32toh_ptr(p +  8);
-        gps->gps_position[0]      = uint64_to_double_le(le64toh_ptr(p + 12));
-        gps->gps_position[1]      = uint64_to_double_le(le64toh_ptr(p + 20));
-        gps->gps_height_abv_ellip = int32_to_float_le(le32toh_ptr(p + 28));
-        gps->gps_undulation       = int32_to_float_le(le32toh_ptr(p + 32));
-        gps->pdop                 = int32_to_float_le(le32toh_ptr(p + 36));
-        gps->hdop                 = int32_to_float_le(le32toh_ptr(p + 40));
-        gps->gdop                 = int32_to_float_le(le32toh_ptr(p + 44));
-        gps->fresh = true;
-        break;
-    }
-
-    case uint16_t(AeronPacketID::EXTD_GNSS): {
-        if (payload_len < uint16_t(AeronPacketLen::LEN_EXTD_GNSS)) {
-            msgs->garbage = true;
-            return prp_id;
-        }
-        extd_gnss->hpa          = int32_to_float_le(le32toh_ptr(p +  0));
-        extd_gnss->vpa          = int32_to_float_le(le32toh_ptr(p +  4));
-        extd_gnss->hva          = int32_to_float_le(le32toh_ptr(p +  8));
-        extd_gnss->vdop         = int32_to_float_le(le32toh_ptr(p + 12));
-        extd_gnss->gnss_vned[0] = uint64_to_double_le(le64toh_ptr(p + 16));
-        extd_gnss->gnss_vned[1] = uint64_to_double_le(le64toh_ptr(p + 24));
-        extd_gnss->gnss_vned[2] = uint64_to_double_le(le64toh_ptr(p + 32));
-        extd_gnss->fresh = true;
-        break;
-    }
-
-    case uint16_t(AeronPacketID::EXT_SENSORS_MAG): {
-        // Single-byte presence flag. Written under the lock so the
-        // const main-thread reader in healthy() sees a consistent value.
-        WITH_SEMAPHORE(state.sem);
-        shared.ext_mag_present = p[0];
-        shared.ext_mag_checked = true;
-        msgs->ext_mag_checked  = true;
-        break;
-    }
-
-    case uint16_t(AeronPacketID::EXT_SENSORS_ASP): {
-        WITH_SEMAPHORE(state.sem);
-        shared.ext_asp_present = p[0];
-        shared.ext_asp_checked = true;
-        msgs->ext_asp_checked  = true;
-        break;
-    }
-
-    case uint16_t(AeronPacketID::HEADING_S):
-    case uint16_t(AeronPacketID::H_SPEED_S):
-    case uint16_t(AeronPacketID::V_SPEED_S):
-    case uint16_t(AeronPacketID::POSITION_S):
-    case uint16_t(AeronPacketID::ALTITUDE_S):
-    case uint16_t(AeronPacketID::DEV_INFO):
-        // Aiding-status acks and the DEV_INFO handshake reply.
-        // We acknowledge their existence (the CRC-valid frame already
-        // reset last_pkt_ms in parse_byte) but take no further action.
-        break;
-
-    case uint16_t(AeronPacketID::GNSS_PKT):
-    case uint16_t(AeronPacketID::GNSS_FIX_STATUS):
-        // Recognised but unused: detailed GNSS pseudorange / fix-status
-        // packets that the PLX may emit if certain config bits are set.
-        // Fused output already reaches us via NAV_PARA1 and GPS_PARA, so
-        // these are intentionally ignored.
-        break;
-
-    default:
-        msgs->garbage    = true;
-        msgs->unknown_id = prp_id;
-        break;
-    }
-
-    return prp_id;
-}
-
 // NAV_PARA1: velocity, position, euler angles, course
-void AP_ExternalAHRS_Aeron_plx::publish_nav_para1(const AeronDecNavPara1 &data)
+void AP_ExternalAHRS_Aeron_plx::publish_nav_para1(const NavPara1Payload &data)
 {
     last_nav_ms = AP_HAL::millis();
 
@@ -508,7 +365,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_nav_para1(const AeronDecNavPara1 &data)
 }
 
 // NAV_PARA2: quaternion, body velocity, ECEF, hw_status
-void AP_ExternalAHRS_Aeron_plx::publish_nav_para2(const AeronDecNavPara2 &data)
+void AP_ExternalAHRS_Aeron_plx::publish_nav_para2(const NavPara2Payload &data)
 {
     last_nav_ms = AP_HAL::millis();
 
@@ -521,7 +378,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_nav_para2(const AeronDecNavPara2 &data)
 }
 
 // SENS_PARA: gyro/accel/mag/baro
-void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const AeronDecSens &data)
+void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
 {
     last_sens_ms = AP_HAL::millis();
 
@@ -587,7 +444,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const AeronDecSens &data)
 }
 
 // GPS_PARA: GNSS status, position, DOP
-void AP_ExternalAHRS_Aeron_plx::publish_gps_para(const AeronDecGps &data)
+void AP_ExternalAHRS_Aeron_plx::publish_gps_para(const GpsParaPayload &data)
 {
     last_gnss_ms = AP_HAL::millis();
 
@@ -608,7 +465,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_gps_para(const AeronDecGps &data)
 }
 
 // EXTD_GNSS: accuracy metrics + GNSS NED velocity
-void AP_ExternalAHRS_Aeron_plx::publish_cust_pkt(const AeronDecCust &data)
+void AP_ExternalAHRS_Aeron_plx::publish_extd_gnss(const ExtdGnssPayload &data)
 {
     last_gnss_ms = AP_HAL::millis();
 
@@ -669,20 +526,20 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
 
     // PLX fix type -> ArduPilot fix type
     if (num_sats > 0) {
-        switch (fix_raw) {
-        case uint8_t(AeronGnssFix::NO_FIX):
+        switch (AeronGnssFix(fix_raw)) {
+        case AeronGnssFix::NO_FIX:
             gps_msg.fix_type = AP_GPS_FixType::NONE;
             break;
-        case uint8_t(AeronGnssFix::GNSS_FIX):
+        case AeronGnssFix::GNSS_FIX:
             gps_msg.fix_type = AP_GPS_FixType::FIX_3D;
             break;
-        case uint8_t(AeronGnssFix::SBAS_FIX):
+        case AeronGnssFix::SBAS_FIX:
             gps_msg.fix_type = AP_GPS_FixType::DGPS;
             break;
-        case uint8_t(AeronGnssFix::RTK_FIX):
+        case AeronGnssFix::RTK_FIX:
             gps_msg.fix_type = AP_GPS_FixType::RTK_FIXED;
             break;
-        case uint8_t(AeronGnssFix::RTK_FLOAT):
+        case AeronGnssFix::RTK_FLOAT:
             gps_msg.fix_type = AP_GPS_FixType::RTK_FLOAT;
             break;
         default:
@@ -823,17 +680,37 @@ bool AP_ExternalAHRS_Aeron_plx::initialised() const
         && last_gnss_ms != 0;
 }
 
+// hw_status reporting table.  Order is not significant - report_hw_status
+// walks every row to compute both the effective error mask and the
+// fault / recovery messages.
+const AP_ExternalAHRS_Aeron_plx::HwStatusEntry
+AP_ExternalAHRS_Aeron_plx::hw_status_table[] = {
+    { AeronHwStatus::GNSS,     MAV_SEVERITY_NOTICE,    "Aeron: GNSS unhealthy",             "Aeron: GNSS okay" },
+    { AeronHwStatus::ACC,      MAV_SEVERITY_ERROR,     "Aeron: Accelerometer unhealthy",    "Aeron: Accel okay" },
+    { AeronHwStatus::GYR,      MAV_SEVERITY_ERROR,     "Aeron: Gyroscope unhealthy",        "Aeron: Gyro okay" },
+    { AeronHwStatus::MAG,      MAV_SEVERITY_ERROR,     "Aeron: Magnetometer unhealthy",     "Aeron: Mag okay" },
+    { AeronHwStatus::BARO,     MAV_SEVERITY_ERROR,     "Aeron: Barometer unhealthy",        "Aeron: Baro okay" },
+    { AeronHwStatus::SUP_VLTG, MAV_SEVERITY_WARNING,   "Aeron: Supply Voltage Error",       "Aeron: Supply voltage okay" },
+    { AeronHwStatus::CM_PRT,   MAV_SEVERITY_WARNING,   "Aeron: Comport Overrun",            "Aeron: Comport okay" },
+    { AeronHwStatus::RAM,      MAV_SEVERITY_EMERGENCY, "Aeron: RAM Failure",                nullptr },
+    { AeronHwStatus::FIRMWARE, MAV_SEVERITY_EMERGENCY, "Aeron: Firmware Failure",           nullptr },
+    { AeronHwStatus::CONFIG,   MAV_SEVERITY_EMERGENCY, "Aeron: Config Memory Failure",      nullptr },
+    { AeronHwStatus::EXT_MAG,  MAV_SEVERITY_WARNING,   "Aeron: Ext mag not connected",      "Aeron: Ext Mag connected" },
+    { AeronHwStatus::EXT_ASP,  MAV_SEVERITY_WARNING,   "Aeron: Ext airspeed not connected", "Aeron: Ext Airspeed connected" },
+};
+
 /*
-  Hardware-status reporting. Emits GCS warnings for any error bit in
-  NAV_PARA2.hw_status, with rising-edge + per-bit-rate-limited
+  Hardware-status reporting. Emits GCS warnings for any error flag in
+  NAV_PARA2.hw_status, with rising-edge + per-flag-rate-limited
   semantics.
 
   Reporting strategy:
-    - Rising edge (bit 0 -> 1):       report immediately, once.
-    - Persistent fault (bit stays 1): repeat every HEALTH_REPEAT_INTERVAL_MS.
-    - Falling edge (bit 1 -> 0):      log "okay" and stop reporting.
+    - Rising edge (flag 0 -> 1):       report immediately, once.
+    - Persistent fault (flag stays 1): repeat every HEALTH_REPEAT_INTERVAL_MS.
+    - Falling edge (flag 1 -> 0):      log "okay" (if a clear_msg is set)
+                                       and stop reporting.
 
-  The hw_status bits do NOT fail healthy() - the PLX continues
+  The hw_status flags do NOT fail healthy() - the PLX continues
   navigation with degraded sensor inputs and reports the resulting
   accuracy degradation through get_variances(). This routine only
   emits informational/warning GCS messages.
@@ -860,122 +737,49 @@ void AP_ExternalAHRS_Aeron_plx::report_hw_status()
         ext_asp_checked = shared.ext_asp_checked;
     }
 
-    // Drop EXT_* error bits unless the user configured the sensor.
-    uint32_t effective_mask = HW_ERROR_MASK;
+    // Build the effective error mask from the table, then drop the
+    // EXT_* flags unless the user actually has those sensors configured.
+    uint32_t effective_mask = 0;
+    for (const auto &entry : hw_status_table) {
+        effective_mask |= 1U << uint8_t(entry.status);
+    }
     if (!(ext_mag_checked && ext_mag_present)) {
-        effective_mask &= ~(1U << uint8_t(AeronHwBit::EXT_MAG));
+        effective_mask &= ~(1U << uint8_t(AeronHwStatus::EXT_MAG));
     }
     if (!(ext_asp_checked && ext_asp_present)) {
-        effective_mask &= ~(1U << uint8_t(AeronHwBit::EXT_ASP));
+        effective_mask &= ~(1U << uint8_t(AeronHwStatus::EXT_ASP));
     }
 
     const uint32_t errors      = hw & effective_mask;
-    const uint32_t newly_set   = errors & ~last_warned_bits;
-    const uint32_t newly_clear = last_warned_bits & ~errors;
+    const uint32_t newly_set   = errors & ~last_warned_stat;
+    const uint32_t newly_clear = last_warned_stat & ~errors;
 
-    // log clears for any bits that just dropped
-    for (uint8_t index = 0; (index < HW_BIT_COUNT) && (newly_clear != 0U); index++) {
-        if ((newly_clear & (1U << index)) == 0U) {
-            continue;
-        }
-        switch (index) {
-        case uint8_t(AeronHwBit::GNSS):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: GNSS okay"); 
-            break;
-        case uint8_t(AeronHwBit::ACC):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Accel okay"); 
-            break;
-        case uint8_t(AeronHwBit::GYR):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Gyro okay"); 
-            break;
-        case uint8_t(AeronHwBit::MAG):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Mag okay"); 
-            break;
-        case uint8_t(AeronHwBit::BARO):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Baro okay"); 
-            break;
-        case uint8_t(AeronHwBit::SUP_VLTG):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Supply voltage okay"); 
-            break;
-        case uint8_t(AeronHwBit::CM_PRT):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Comport okay"); 
-            break;
-        case uint8_t(AeronHwBit::EXT_MAG):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Ext Mag connected"); 
-            break;
-        case uint8_t(AeronHwBit::EXT_ASP):
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Ext Airspeed connected"); 
-            break;
-        default:
-            // RAM/FIRMWARE/CONFIG don't meaningfully "recover".
-            break;
-        }
-    }
+    for (const auto &entry : hw_status_table) {
+        const uint8_t  status_index = uint8_t(entry.status);
+        const uint32_t mask         = 1U << status_index;
 
-    // walk every currently-set error bit. Report it if either:
-    //   - it is a rising edge (newly_set), or
-    //   - HEALTH_REPEAT_INTERVAL_MS has elapsed since the last warning.
-    for (uint8_t index = 0; index < HW_BIT_COUNT; index++) {
-        const uint32_t mask = 1U << index;
+        // Recovery message on falling edge.
+        if ((newly_clear & mask) != 0U && entry.clear_msg != nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", entry.clear_msg);
+        }
+
         if ((errors & mask) == 0U) {
             continue;
         }
+
+        // Currently in fault: emit on rising edge or after the repeat
+        // interval has elapsed.
         const bool rising  = (newly_set & mask) != 0U;
-        const bool overdue = (now - last_warned_ms[index]) >= HEALTH_REPEAT_INTERVAL_MS;
+        const bool overdue = (now - last_warned_ms[status_index]) >= HEALTH_REPEAT_INTERVAL_MS;
         if (!rising && !overdue) {
             continue;
         }
 
-        switch (index) {
-        case uint8_t(AeronHwBit::GNSS):
-            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,    "Aeron: GNSS unhealthy"); 
-            break;
-        case uint8_t(AeronHwBit::ACC):
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,     "Aeron: Accelerometer unhealthy"); 
-            break;
-        case uint8_t(AeronHwBit::GYR):
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,     "Aeron: Gyroscope unhealthy"); 
-            break;
-        case uint8_t(AeronHwBit::MAG):
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,     "Aeron: Magnetometer unhealthy"); 
-            break;
-        case uint8_t(AeronHwBit::BARO):
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR,     "Aeron: Barometer unhealthy"); 
-            break;
-        case uint8_t(AeronHwBit::SUP_VLTG):
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,   "Aeron: Supply Voltage Error"); 
-            break;
-        case uint8_t(AeronHwBit::CM_PRT):
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,   "Aeron: Comport Overrun"); 
-            break;
-        case uint8_t(AeronHwBit::RAM):
-            GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Aeron: RAM Failure"); 
-            break;
-        case uint8_t(AeronHwBit::FIRMWARE):
-            GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Aeron: Firmware Failure"); 
-            break;
-        case uint8_t(AeronHwBit::CONFIG):
-            GCS_SEND_TEXT(MAV_SEVERITY_EMERGENCY, "Aeron: Config Memory Failure"); 
-            break;
-        case uint8_t(AeronHwBit::EXT_MAG):
-            // gated above by effective_mask: only reaches here if user
-            // configured ext mag AND it is missing
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Aeron: ext mag not connected"); 
-            break;
-        case uint8_t(AeronHwBit::EXT_ASP):
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Aeron: ext airspeed not connected"); 
-            break;
-        default:
-            // Reserved bits inside HW_BIT_COUNT but not in the enum.
-            // Should not be reachable since HW_ERROR_MASK only sets
-            // the enum bits. Skip without updating timestamp.
-            continue;
-        }
-
-        last_warned_ms[index] = now;
+        GCS_SEND_TEXT(MAV_SEVERITY(entry.severity), "%s", entry.fault_msg);
+        last_warned_ms[status_index] = now;
     }
 
-    last_warned_bits = errors;
+    last_warned_stat = errors;
 }
 
 /*

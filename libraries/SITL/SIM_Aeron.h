@@ -49,11 +49,15 @@ private:
 
     // packet identifiers (PRP_ID, transmitted big-endian)
     enum class PktID : uint16_t {
-        NAV_PARA1 = 0xAAA1,
-        NAV_PARA2 = 0xA2A2,
-        SENS_PARA = 0xA2A3,
-        GPS_PARA  = 0xA2A4,
-        EXTD_GNSS = 0xA2A8,
+        NAV_PARA1       = 0xAAA1,
+        NAV_PARA2       = 0xA2A2,
+        SENS_PARA       = 0xA2A3,
+        GPS_PARA        = 0xA2A4,
+        EXTD_GNSS       = 0xA2A8,
+        // Replies sent in response to the autopilot's external-sensor
+        // presence queries.  Single-byte payload (0 or 1).
+        EXT_SENSORS_MAG = 0x0117,
+        EXT_SENSORS_ASP = 0x0362,
     };
 
     // payload structures (must match the on-wire layout exactly) 
@@ -140,9 +144,32 @@ private:
     // produce a Unix timeval that follows the simulation clock
     static void simulation_timeval(struct timeval *tv);
 
-    // WGS84 lat/lon/h(ellipsoid) -> ECEF X/Y/Z
-    static void llh_to_ecef(double lat_deg, double lon_deg, double height_m,
-                            double ecef[3]);
+    // -------- inbound (autopilot -> SIM) parser --------
+    // Drives EXT_SENSORS_MAG / EXT_SENSORS_ASP responses so the SITL
+    // run exercises the driver's external-sensor query path.
+    enum class RxParseState : uint8_t {
+        SYNC = 0,
+        LEN_HIGH,
+        LEN_LOW,
+        PAYLOAD,
+        CRC,
+        RESET,
+    };
+
+    void process_inbound();
+    void handle_inbound_byte(uint8_t byte);
+    void handle_inbound_packet(uint16_t prp_id, const uint8_t *payload, uint16_t payload_len);
+
+    RxParseState rx_state;
+    uint8_t      rx_sync_count;
+    uint16_t     rx_pkt_len;
+    uint16_t     rx_write_idx;
+    uint8_t      rx_buf[128];
+
+    // PRP_ID used to request an external-sensor
+    // presence reply.  The 2-byte payload identifies which response
+    // packet to send (e.g. 0x0117 -> reply with EXT_SENSORS_MAG).
+    static constexpr uint16_t QUERY_PRP_ID = 0x00A1;
 
     // -------- timing state --------
     // 1 kHz tick counter — caps update() to one execution per

@@ -55,28 +55,6 @@ void Aeron::simulation_timeval(struct timeval *tv)
     tv->tv_usec = new_usec % 1000000ULL;
 }
 
-// WGS84 geodetic (lat, lon, height-above-ellipsoid) -> ECEF X/Y/Z [m].
-void Aeron::llh_to_ecef(double lat_deg, double lon_deg, double height_m,
-                        double ecef[3])
-{
-    static constexpr double A_WGS84_A  = 6378137.0;            // semi-major axis [m]
-    static constexpr double A_WGS84_E2 = 6.69437999014e-3;     // first eccentricity^2
-
-    const double lat = radians(lat_deg);
-    const double lon = radians(lon_deg);
-
-    const double sin_lat = sin(lat);
-    const double cos_lat = cos(lat);
-    const double sin_lon = sin(lon);
-    const double cos_lon = cos(lon);
-
-    const double N = A_WGS84_A / sqrt(1.0 - A_WGS84_E2 * sin_lat * sin_lat);
-
-    ecef[0] = (N + height_m) * cos_lat * cos_lon;
-    ecef[1] = (N + height_m) * cos_lat * sin_lon;
-    ecef[2] = (N * (1.0 - A_WGS84_E2) + height_m) * sin_lat;
-}
-
 /*
   pack the GPS status word consumed by AP_ExternalAHRS_Aeron::format_and_push_gps()
 
@@ -109,9 +87,11 @@ void Aeron::send_aeron_packet(PktID prp_id, const void *payload,
     const uint16_t total_len = 8 + payload_len;          // length field (excludes CRC)
     const uint16_t on_wire   = total_len + 1;            // bytes actually transmitted
 
-    // sanity guard against a future enum getting out of step with the structs
+    // sanity guard against a future enum getting out of step with the
+    // structs.  Panic rather than silently dropping
     if (on_wire > sizeof(buf)) {
-        return;
+        AP_HAL::panic("Aeron SIM: packet too large for tx buffer (%u > %u)",
+                      unsigned(on_wire), unsigned(sizeof(buf)));
     }
 
     // sync bytes
@@ -203,13 +183,13 @@ void Aeron::send_nav_para2()
     p.body_vel[1] = v_body.y;
     p.body_vel[2] = v_body.z;
 
-    // compute ECEF into a properly-aligned local, then copy element-wise —
-    // taking the address of a packed-struct.
-    double ecef[3];
-    llh_to_ecef(fdm.latitude, fdm.longitude, fdm.altitude, ecef);
-    p.ecef_pos[0] = ecef[0];
-    p.ecef_pos[1] = ecef[1];
-    p.ecef_pos[2] = ecef[2];
+    // compute ECEF using the AP_Math helper packed in a Vector3d.
+    Vector3d llh{radians(fdm.latitude), radians(fdm.longitude), double(fdm.altitude)};
+    Vector3d ecef_v;
+    wgsllh2ecef(llh, ecef_v);
+    p.ecef_pos[0] = ecef_v.x;
+    p.ecef_pos[1] = ecef_v.y;
+    p.ecef_pos[2] = ecef_v.z;
 
     p.altitude = fdm.altitude;
 
@@ -330,12 +310,11 @@ void Aeron::update(void)
     }
     _tick = tick_now;
 
-    // Drain anything the driver writes back to us (e.g. boot-time
-    // EXT_SENSORS_* queries). We don't act on these.
-    char rx[64];
-    while (read_from_autopilot(rx, sizeof(rx)) > 0) {
-        // discarded
-    }
+    // Drive the inbound parser.  The driver sends EXT_SENSORS_* query
+    // commands a few seconds after boot; handle_inbound_packet replies
+    // with the matching presence frame so the driver's response path
+    // gets exercised in SITL.
+    process_inbound();
 
     // Phased emission.
     if ((_tick % SENS_PERIOD_MS) == SENS_PHASE_MS) {
@@ -348,5 +327,103 @@ void Aeron::update(void)
         send_gps_para();
     } else if ((_tick % EXTD_PERIOD_MS) == EXTD_PHASE_MS) {
         send_extd_gnss();
+    }
+}
+
+// Drain whatever the driver has sent us this tick.  Each byte feeds a
+// minimal state-machine that mirrors the on-wire framing handled by
+// AP_ExternalAHRS_Aeron_plx::parse_byte.
+void Aeron::process_inbound()
+{
+    char buf[64];
+    ssize_t num;
+    while ((num = read_from_autopilot(buf, sizeof(buf))) > 0) {
+        for (ssize_t index = 0; index < num; index++) {
+            handle_inbound_byte(uint8_t(buf[index]));
+        }
+    }
+}
+
+void Aeron::handle_inbound_byte(uint8_t byte)
+{
+    switch (rx_state) {
+    case RxParseState::SYNC:
+        if (byte == SYNC_BYTE) {
+            rx_buf[rx_write_idx++] = byte;
+            if (++rx_sync_count == SYNC_COUNT) {
+                rx_state      = RxParseState::LEN_HIGH;
+                rx_sync_count = 0;
+            }
+        } else {
+            rx_sync_count = 0;
+            rx_write_idx  = 0;
+        }
+        return;
+
+    case RxParseState::LEN_HIGH:
+        rx_pkt_len = byte;
+        rx_buf[rx_write_idx++] = byte;
+        rx_state = RxParseState::LEN_LOW;
+        return;
+
+    case RxParseState::LEN_LOW:
+        rx_buf[rx_write_idx++] = byte;
+        rx_pkt_len = (rx_pkt_len << 8) | byte;
+        if (rx_pkt_len >= 8 && rx_pkt_len < sizeof(rx_buf)) {
+            rx_state = RxParseState::PAYLOAD;
+        } else {
+            rx_state = RxParseState::RESET;
+        }
+        return;
+
+    case RxParseState::PAYLOAD:
+        rx_buf[rx_write_idx++] = byte;
+        if (rx_write_idx >= rx_pkt_len) {
+            rx_state = RxParseState::CRC;
+        }
+        return;
+
+    case RxParseState::CRC: {
+        rx_buf[rx_write_idx++] = byte;
+        const bool valid = (byte == crc_xor_of_bytes(rx_buf, rx_pkt_len));
+        if (valid) {
+            const uint16_t prp = (uint16_t(rx_buf[6]) << 8) | rx_buf[7];
+            handle_inbound_packet(prp, &rx_buf[8], rx_pkt_len - 8);
+        }
+        rx_state     = RxParseState::SYNC;
+        rx_write_idx = 0;
+        rx_pkt_len   = 0;
+        return;
+    }
+
+    case RxParseState::RESET: {
+        rx_write_idx = 0;
+        rx_pkt_len = 0;
+        rx_state = RxParseState::SYNC;
+        return ;
+    }
+    }
+
+    rx_state = RxParseState::RESET;
+    return ;
+}
+
+// Dispatch a CRC-valid inbound command.  The PLX query format puts the
+// target packet ID in the 2-byte payload (big-endian) of a 0x00A1
+// command frame; we reply with the matching response packet carrying a
+// single byte of presence info.
+void Aeron::handle_inbound_packet(uint16_t prp_id, const uint8_t *payload, uint16_t payload_len)
+{
+    if (prp_id != QUERY_PRP_ID || payload_len < 2) {
+        return;
+    }
+
+    const uint16_t target = (uint16_t(payload[0]) << 8) | payload[1];
+    const uint8_t  presence = 1;   // SIM always reports the sensor as present
+
+    if (target == uint16_t(PktID::EXT_SENSORS_MAG)) {
+        send_aeron_packet(PktID::EXT_SENSORS_MAG, &presence, sizeof(presence));
+    } else if (target == uint16_t(PktID::EXT_SENSORS_ASP)) {
+        send_aeron_packet(PktID::EXT_SENSORS_ASP, &presence, sizeof(presence));
     }
 }
