@@ -36,6 +36,7 @@ from inspect import currentframe
 from inspect import getframeinfo
 from pathlib import Path
 from typing import Dict
+from typing import Final
 from typing import List
 from typing import Tuple
 
@@ -201,6 +202,8 @@ class ArmedAtEndOfTestException(ErrorException):
     """Created when test left vehicle armed"""
     pass
 
+
+NUM_RC_CHANNELS: Final[int] = 16
 
 class Context(object):
     def __init__(self):
@@ -1977,9 +1980,7 @@ class TestSuite(abc.ABC):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
         self.disable_breakpoints = disable_breakpoints
-        self.speedup = speedup
-        if self.speedup is None:
-            self.speedup = self.default_speedup()
+        self.speedup: Final = speedup or self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
         self.force_32bit = force_32bit
@@ -2028,8 +2029,8 @@ class TestSuite(abc.ABC):
         self.tlog = None
         self.enable_fgview = enable_fgview
 
-        self.rc_thread = None
-        self.rc_thread_should_quit = False
+        self.rc_thread: threading.Thread | None = None
+        self.rc_thread_should_quit: bool = False
         self.rc_queue = Queue.Queue()
 
         self.expect_list = []
@@ -5639,40 +5640,20 @@ class TestSuite(abc.ABC):
                 raise ValueError("RC thread is dead")  # FIXME: type
 
     def rc_thread_main(self):
-        chan16 = [1000] * 16
-
+        """When this function completes, the thread terminates."""
         sitl_output = mavutil.mavudp("127.0.0.1:%u" % self.sitl_rcin_port(), input=False)
-        buf = None
-
-        while True:
-            if self.rc_thread_should_quit:
-                break
-
-            # the 0.05 here means we're updating the RC values into
-            # the autopilot at 20Hz - that's our 50Hz wallclock, , not
-            # the autopilot's simulated 20Hz, so if speedup is 10 the
-            # autopilot will see ~2Hz.
-            timeout = 0.02
-            # ... and 2Hz is too slow when we now run at 100x speedup:
-            timeout /= (self.speedup / 10.0)
-
+        max_wait_before_sending_values: Final = 0.2 / self.speedup
+        format_str: Final = "<" + "H" * NUM_RC_CHANNELS
+        rc_values = [1000] * NUM_RC_CHANNELS  # (Don't forget this is persistent.)
+        while not self.rc_thread_should_quit:
             try:
-                map_copy = self.rc_queue.get(timeout=timeout)
-
-                # 16 packed entries:
-                for i in range(1, 17):
-                    if i in map_copy:
-                        chan16[i-1] = map_copy[i]
-
+                rc_value_updates = self.rc_queue.get(timeout=max_wait_before_sending_values)
+                for chan, val in rc_value_updates.items():
+                    if isinstance(chan, int) and 1 <= chan <= NUM_RC_CHANNELS:
+                        rc_values[chan-1] = val
             except Queue.Empty:
                 pass
-
-            buf = struct.pack('<HHHHHHHHHHHHHHHH', *chan16)
-
-            if buf is None:
-                continue
-
-            sitl_output.write(buf)
+            sitl_output.write(struct.pack(format_str, *rc_values))
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
