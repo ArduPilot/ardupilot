@@ -669,6 +669,9 @@ void NavEKF3_core::FuseVelPosNED()
     // so we might as well take advantage of the computational efficiencies
     // associated with sequential fusion
     if (fuseVelData || fuseVelVertData || fusePosData || fuseHgtData) {
+        // calculate additional error in GPS position caused by manoeuvring
+        ftype posErr = frontend->gpsPosVarAccScale * accNavMag;
+
         // estimate the velocity, horiz position and height measurement variances.
         // Use different errors if operating without external aiding using an assumed position or velocity of zero
         if (PV_AidingMode == AID_NONE) {
