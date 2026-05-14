@@ -13161,22 +13161,9 @@ switch value'''
                            relative=True,
                            timeout=timeout)
 
-    def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int, divergence_r, divergence_p):
+    def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int):
         self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-        ATTITUDE_euler_desroll = 0
-        ATTITUDE_euler_despitch = 0
-        if ahrs_type == 11:
-            # this is very nasty compatibility
-            # code for the fact our rotations are
-            # incorrect for ExternalAHRS eulers
-            # and rotation matrix!  It is here to
-            # ensure behaviour is preserved until
-            # we can fix the bug!  Search for
-            # "note that this is suspect" to find
-            # the problem code.
-            ATTITUDE_euler_desroll = -divergence_r
-            ATTITUDE_euler_despitch = -divergence_p
-        self.wait_attitude(desroll=ATTITUDE_euler_desroll, despitch=ATTITUDE_euler_despitch, timeout=120, tolerance=1.5)
+        self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
         if ahrs_type != 0:
             self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
         self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
@@ -13250,7 +13237,7 @@ switch value'''
                         "SIM_ACC_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
-                    self.ahrstrim_attitude_correctness_test_attitude(11, r, p)
+                    self.ahrstrim_attitude_correctness_test_attitude(11)
                 self.context_pop()
                 self.reboot_sitl()
 
@@ -13270,7 +13257,7 @@ switch value'''
                         "SIM_ACC_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
-                    self.ahrstrim_attitude_correctness_test_attitude(ahrs_type, r, p)
+                    self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)
 
                 self.context_pop()
 
