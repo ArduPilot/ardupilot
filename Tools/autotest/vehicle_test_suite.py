@@ -5673,24 +5673,7 @@ class TestSuite(abc.ABC):
         return path
 
     def rc_defaults(self):
-        return {
-            1: 1500,
-            2: 1500,
-            3: 1500,
-            4: 1500,
-            5: 1500,
-            6: 1500,
-            7: 1500,
-            8: 1500,
-            9: 1500,
-            10: 1500,
-            11: 1500,
-            12: 1500,
-            13: 1500,
-            14: 1500,
-            15: 1500,
-            16: 1500,
-        }
+        return {channel: 1500 for channel in range(1, NUM_RC_CHANNELS+1)}
 
     def set_rc_from_map(self, _map, *, timeout: float | int | None = 20.0, quiet=False):
         """Sets provided RC channel/value pairs.
@@ -5771,18 +5754,16 @@ class TestSuite(abc.ABC):
             sitl_output.write(buf)
 
     def set_rc_default(self):
-        """Setup all simulated RC control to 1500."""
+        """Set all channels of simulated RC control to the default value (typically 1500)."""
         _defaults = self.rc_defaults()
         self.set_rc_from_map(_defaults)
 
     def check_rc_defaults(self):
         """Ensure all rc outputs are at defaults"""
         self.do_timesync_roundtrip()
-        _defaults = self.rc_defaults()
         m = self.assert_receive_message('RC_CHANNELS', timeout=5)
         need_set = {}
-        for chan in _defaults:
-            default_value = _defaults[chan]
+        for chan, default_value in self.rc_defaults().items():
             current_value = getattr(m, "chan" + str(chan) + "_raw")
             if default_value != current_value:
                 self.progress("chan=%u needs resetting is=%u want=%u" %
