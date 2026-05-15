@@ -1359,6 +1359,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter('FS_OPTIONS', 0)
         self.progress("All GCS failsafe tests complete")
 
+    def TerrainFailsafe(self):
+        '''test that auto mode triggers terrain failsafe if waypoint alt frame is terrain and terrain database is disabled'''
+        # allow arming and takeoff in Auto mode
+        self.set_parameter('AUTO_OPTIONS', 3)
+
+        self.install_terrain_handlers_context()
+
+        # create a mission: takeoff to 20m then waypoint with alt-above-terrain
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 0, 0, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        # change to auto and wait for arming checks to pass
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm(timeout=200)
+
+        # disable terrain database and force arm vehicle
+        self.set_parameter('TERRAIN_ENABLE', 0)
+        self.arm_vehicle(force=True)
+
+        # takeoff should succeed but WP with terrain alt should trigger
+        # the terrain failsafe and vehicle should switch to RTL
+        self.wait_statustext("Failsafe: Terrain", timeout=60)
+        self.wait_mode("RTL")
+        self.wait_rtl_complete()
+
     def CustomController(self, timeout=300):
         '''Test Custom Controller'''
         self.progress("Configure custom controller parameters")
@@ -6998,6 +7028,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.setup_servo_mount()
         self.reboot_sitl() # to handle MNT_TYPE changing
         self.mount_test_body()
+
+    def MountRCFailAngle(self):
+        '''check mount behaviour when RC input becomes bad'''
+        yaw_servo = 7
+        self.setup_servo_mount(yaw_servo=yaw_servo)
+        self.set_parameters({
+            "RC12_OPTION": 214,  # MOUNT1_YAW
+        })
+        self.reboot_sitl()
+
+        self.start_subtest("Angle test")
+        self.set_rc(12, 1200)
+        vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            yaw_servo,
+            1200,
+            minimum_duration=5,
+        ).run()
+        self.set_parameter("SIM_RC_FAIL", 2)  # 2:All Channels neutral except Throttle is 950us
+        # should hold position
+        vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            yaw_servo,
+            1200,
+            minimum_duration=5,
+        ).run()
+
+    def MountRCFailRate(self):
+        '''check mount behaviour when RC input becomes bad - rates should zero'''
+        yaw_servo = 7
+        self.setup_servo_mount(yaw_servo=yaw_servo)
+        self.set_parameters({
+            "RC12_OPTION": 214,  # MOUNT1_YAW
+            "MNT1_RC_RATE": 10,
+            "RC12_TRIM": 1600,  # non-neutral during failsafe
+        })
+        self.reboot_sitl()
+
+        self.set_rc(12, 1200)
+        self.delay_sim_time(5, reason="allow some yaw movement to enter log")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_RC_FAIL", 2)  # 2:All Channels neutral except Throttle is 950us
+        self.wait_statustext('Radio Failsafe', check_context=True, timeout=10)
+        val = self.get_servo_channel_value(yaw_servo)
+        # should hold position
+        vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            yaw_servo,
+            val,
+            minimum_duration=5,
+        ).run()
 
     def MountPOIFromAuxFunction(self):
         '''test we can lock onto a lat/lng/alt with the flick of a switch'''
@@ -13607,6 +13688,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ThrottleFailsafe,
              self.ThrottleFailsafePassthrough,
              self.GCSFailsafe,
+             self.TerrainFailsafe,
              self.CustomController,
              self.WPArcs,
              self.WPArcs2,
@@ -16757,6 +16839,8 @@ return update, 1000
             self.MountViewPro,
             self.MountAVTCM62,
             self.MountAVTCM62Dual,
+            self.MountRCFailAngle,
+            self.MountRCFailRate,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
