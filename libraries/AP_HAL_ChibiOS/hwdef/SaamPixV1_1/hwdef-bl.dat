@@ -4,8 +4,6 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-define HAL_CHIBIOS_ARCH_SAAMPIXV1_1 1
-
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_SAAMPIXV1_1
 
@@ -44,9 +42,9 @@ define HAL_LED_ON 1
 
 
 # Add CS pins to ensure they are high in bootloader
-PB2 GYRO_CS CS
+PB2 ICM_20602_GY_AM_CS CS
 PC15 BARO_CS CS
-PD11 ACCEL_MAG_CS CS
-PE3 MPU_CS CS
+PD11 LIS3MDL_MAG_CS CS
+PE3 MPU9250_GY_AM_MAG_CS CS
 PE12 FRAM_CS CS
 PE15 NRF_CS CS

@@ -34,27 +34,32 @@ Available from [Saam Drones](https://www.saamdrones.com/).
 
 ![SaamPixV1_1 Top View](SaamPixV1_1-top.png)
 
-![SaamPixV1_1 USB Connector](SaamPixV1_1-USB.png)
-
 ## UART Mapping
 
 | Name | Pin | Function | Notes |
-|------|-----|----------|-------|
+| ------ | ----- | ---------- | ------- |
 | SERIAL0 | USB OTG1 | USB Console | |
 | SERIAL1 | USART2 | Telemetry 1 | CTS/RTS on PD3/PD4 |
 | SERIAL2 | USART3 | Telemetry 2 | |
 | SERIAL3 | UART4 | GPS 1 | |
-| SERIAL4 | UART8 | FrSky / User | TX invertible via GPIO(78) |
+| SERIAL4 | UART8 | GPS 2 (default) | TX invertible via GPIO(78) |
 | SERIAL5 | USART1 | SBUS input | |
 | SERIAL6 | UART7 | Debug UART | |
 | SERIAL7 | USART6 | RC Input alt | ALT config only |
+
+## CAN
+
+The SaamPixV1_1 exposes one CAN interface:
+
+- CAN1 RX: PD0
+- CAN1 TX: PD1
 
 ## PWM Output
 
 The SaamPixV1_1 has 16 PWM outputs. All outputs support PWM and DShot protocols.
 
 | Outputs | Timer | Pins | Notes |
-|---------|-------|------|-------|
+| --------- | ------- | ------ | ------- |
 | 1-4 | TIM1 | PE9, PE11, PE13, PE14 | |
 | 5-8 | TIM4 | PD12, PD13, PD14, PD15 | |
 | 9-12 | TIM3 | PB4, PC7, PB0, PB1 | GPIO(50-53) |
@@ -75,7 +80,7 @@ An alternate RC input path via USART6 on PC6 is available using ALT config 1.
 ## GPIOs
 
 | GPIO | Pin | Function |
-|------|-----|----------|
+| ------ | ----- | ---------- |
 | GPIO(0) | PA8 | RUN_LED |
 | GPIO(32) | PA7 | ALARM (TIM14) |
 | GPIO(50) | PB4 | Servo9 |
@@ -86,11 +91,11 @@ An alternate RC input path via USART6 on PC6 is available using ALT config 1.
 | GPIO(55) | PB3 | Servo14 |
 | GPIO(78) | PB12 | UART8 TX invert |
 
-## RSSI/Airspeed/Analog Pins
+## RSSI and Analog Pins
 
 | Pin | GPIO | Function |
-|-----|------|----------|
-| PC1 | - | RSSI analog input |
+| ----- | ------ | ---------- |
+| PC1 | FMU_GPIO3 | RSSI digital input |
 | PC3 | - | ADC1 (FMU_ADC1) |
 | PC4 | - | ADC2 (FMU_ADC2) |
 | PC5 | - | ADC3 (FMU_ADC3) |
