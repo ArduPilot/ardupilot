@@ -70,6 +70,14 @@ void AP_InertialSensor::set_rate_decimation(uint8_t rdec)
     fast_rate_buffer->set_rate_decimation(rdec);
 }
 
+uint8_t AP_InertialSensor::get_rate_decimation() const
+{
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return 1;
+    }
+    return MAX(fast_rate_buffer->get_rate_decimation(), 1U);
+}
+
 // whether or not to push the current gyro sample
 bool AP_InertialSensor::is_rate_loop_gyro_enabled(uint8_t instance) const
 {
