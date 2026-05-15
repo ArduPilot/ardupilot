@@ -274,7 +274,6 @@ public:
     void Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
 
     void Write_MessageF(const char *fmt, ...);
-    void Write_Compass();
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
     void Write_EntireMission();
@@ -479,8 +478,6 @@ private:
     bool fill_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const;
 
     bool _armed;
-
-    void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
 
