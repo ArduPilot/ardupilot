@@ -16,32 +16,6 @@
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
-
-/*
- * Core1 PID dispatch for RP2350.
- * rate_controller_run_dt() is pure computation (no ChibiOS blocking calls).
- * Arguments are passed via a file-scope struct.
- * plain SRAM visible to both cores.
- */
-namespace {
-struct C1RateArgs {
-    AC_AttitudeControl *attitude_control;
-    Vector3f            gyro_with_drift;
-    float               sensor_dt;
-};
-
-static C1RateArgs _c1_rate_args;
-
-static void _c1_rate_compute()
-{
-    _c1_rate_args.attitude_control->rate_controller_run_dt(
-        _c1_rate_args.gyro_with_drift,
-        _c1_rate_args.sensor_dt);
-}
-} // namespace
-#endif  /* RP_CORE1_START */
 
 #pragma GCC optimize("O2")
 
@@ -292,67 +266,9 @@ void Copter::rate_controller_thread()
         // run the rate controller on all available samples
         // it is important not to drop samples otherwise the filtering will be fubar
         // there is no need to output to the motors more than once for every batch of samples
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-// RP2350 dual-core: dispatch PID computation to core1 (bare-metal).
-// Uses c1_try_run_sync().
-// a non-blocking TryLock variant.
-// core0 then continues with motors_output() without delay.
-        _c1_rate_args.attitude_control = attitude_control;
-        _c1_rate_args.gyro_with_drift  = gyro + ahrs.get_gyro_drift();
-        _c1_rate_args.sensor_dt        = sensor_dt;
-        c1_try_run_sync(_c1_rate_compute);
-
-/*
- * Every 10 seconds: print dual-core dispatch counts and CPU utilisation.
- * approximate utilisation EKF counts from c1_run_sync_locked() in AP_NavEKF3_core.cpp.
- * Core1 CPU% = c1_busy_us / (window_ms * 10), capped at 100.
- */
-        {
-            static uint32_t _stats_last_ms;
-            static uint32_t _s_ekf_c1, _s_ekf_c0, _s_pid_c1, _s_pid_c0, _s_busy_us;
-            const uint32_t _now_ms = AP_HAL::millis();
-            if (_now_ms - _stats_last_ms >= 10000U) {
-                if (_stats_last_ms != 0U) {
-                    const uint32_t _dt_ms  = _now_ms - _stats_last_ms;
-                    const uint32_t _ekf_c1 = c1_ekf_c1_count - _s_ekf_c1;
-                    const uint32_t _ekf_c0 = c1_ekf_c0_count - _s_ekf_c0;
-                    const uint32_t _pid_c1 = c1_pid_c1_count - _s_pid_c1;
-                    const uint32_t _pid_c0 = c1_pid_c0_count - _s_pid_c0;
-                    const uint32_t _busy   = c1_busy_us       - _s_busy_us;
-                    /* Core1 busy%: busy_µs × 100 / (window_ms × 1000 µs). */
-                    uint32_t _c1_pct = (_dt_ms > 0U) ? (_busy / (_dt_ms * 10U)) : 0U;
-                    if (_c1_pct > 100U) { _c1_pct = 100U; }
-                    const uint32_t _c0_pct = (uint32_t)(AP::scheduler().load_average() * 100.0f);
-                    // Report the configured RP2350 system clock from hwdef PLL divisors.
-                    uint32_t _sys_mhz = 0U;
-#if defined(RP_PLL_SYS_POSTDIV1) && defined(RP_PLL_SYS_POSTDIV2)
-                    if ((RP_PLL_SYS_POSTDIV1 > 0U) && (RP_PLL_SYS_POSTDIV2 > 0U)) {
-                        _sys_mhz = 1500U / (RP_PLL_SYS_POSTDIV1 * RP_PLL_SYS_POSTDIV2);
-                    }
-#elif defined(RP_CLK_SYS_FREQ)
-                    _sys_mhz = RP_CLK_SYS_FREQ / 1000000U;
-#endif
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                  "EKF C1=%u C0=%u PID C1=%u C0=%u",
-                                  (unsigned)_ekf_c1, (unsigned)_ekf_c0,
-                                  (unsigned)_pid_c1, (unsigned)_pid_c0);
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                                  "CPU C0=%u%% C1=%u%% SYS=%uMHz",
-                                  (unsigned)_c0_pct, (unsigned)_c1_pct,
-                                  (unsigned)_sys_mhz);
-                }
-                /* Snap counters for next window. */
-                _stats_last_ms = _now_ms;
-                _s_ekf_c1  = c1_ekf_c1_count;
-                _s_ekf_c0  = c1_ekf_c0_count;
-                _s_pid_c1  = c1_pid_c1_count;
-                _s_pid_c0  = c1_pid_c0_count;
-                _s_busy_us = c1_busy_us;
-            }
-        }
-#else
+        // Rate thread runs on core1 (pinned via ChibiOS SMP thread affinity).
+        // PID math executes directly here — no dispatch needed.
         attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt);
-#endif
 
 #ifdef RATE_LOOP_TIMING_DEBUG
         rate_controller_time_us += AP_HAL::micros() - rate_now_us;
