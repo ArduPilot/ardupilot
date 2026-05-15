@@ -186,12 +186,13 @@ void Battery::update_temperature(float current_amp, float dt)
     // In the (near) future, this value will instead come from Aircraft::ambient_outside_temperature_degC()
     constexpr float ambient_temperature_degC = 0.0f;
 
-    // thermal_capacity value chosen to match previous steady-state behavior at 28amps
+    // Reasonable thermal_capacity value for a 500g Li-ion battery
     // (reminder: thermal_capacity = mass * specific_heat)
-    constexpr float thermal_capacity = 2.8f;  // watt*seconds/degC
+    constexpr float thermal_capacity = 500.0f;  // J/degC
     constexpr float inverse_of_thermal_capacity = 1 / thermal_capacity;  // use inverse so we can multiply, not divide
     const float temp_increase = (current_amp * current_amp) * resistance_ohm * inverse_of_thermal_capacity * dt;
-    // decay temperature at some %second towards ambient
-    const float temp_decrease = (temperature_degC - ambient_temperature_degC) * 0.10 * dt;
+    // Decay coefficient chosen merely to match previous steady-state behavior
+    constexpr float temperature_decay_coefficient = 5.6e-3f;
+    const float temp_decrease = (temperature_degC - ambient_temperature_degC) * temperature_decay_coefficient * dt;
     temperature_degC += (temp_increase - temp_decrease);
 }
