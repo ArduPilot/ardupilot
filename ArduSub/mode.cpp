@@ -93,10 +93,13 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
     }
 
     // check for valid altitude if old mode did not require it but new one does
-    // we only want to stop changing modes if it could make things worse
+    // we only want to stop changing modes if it could make things worse.
+    // accept the mode change if either the EKF has a valid altitude estimate
+    // (e.g. from GPS or ExternalNav) or the depth sensor is healthy.
     if (!flightmode->requires_altitude() &&
         new_flightmode->requires_altitude() &&
-        !sub.control_check_barometer()) { // maybe use ekf_alt_ok() instead?
+        !sub.ekf_alt_ok() &&
+        !sub.control_check_barometer()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;

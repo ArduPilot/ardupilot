@@ -513,6 +513,7 @@ private:
     bool position_ok();
     bool ekf_position_ok();
     bool optflow_position_ok();
+    bool ekf_alt_ok();
     bool should_log(uint32_t mask);
     bool start_command(const AP_Mission::Mission_Command& cmd);
     bool verify_command(const AP_Mission::Mission_Command& cmd);

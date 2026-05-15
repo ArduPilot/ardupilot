@@ -267,6 +267,26 @@ bool Sub::optflow_position_ok()
     return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL);
 }
 
+// ekf_alt_ok - returns true if the ekf has a good altitude estimate
+// (e.g. from GPS or ExternalNav), allowing modes which require altitude
+// hold to be entered without a healthy depth sensor.
+bool Sub::ekf_alt_ok()
+{
+    if (!ahrs.have_inertial_nav()) {
+        // do not allow alt control with only dcm
+        return false;
+    }
+
+    // require both vertical position and velocity estimates
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_POS)) {
+        return false;
+    }
+    if (!ahrs.has_status(AP_AHRS::Status::VERT_VEL)) {
+        return false;
+    }
+    return true;
+}
+
 #if HAL_LOGGING_ENABLED
 /*
   should we log a message type now?
