@@ -483,9 +483,6 @@ private:
 
     bool _armed;
 
-    // state to help us not log unnecessary RCIN values:
-    bool should_log_rcin2;
-
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 
     void backend_starting_new_log(const AP_Logger_Backend *backend);
