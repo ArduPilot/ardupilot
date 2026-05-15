@@ -2,13 +2,13 @@
 
 def build(bld):
     bld.ap_stlib(
-        name='AP_DAL' + '_libs',
+        name='AP_DAL_libs',
         ap_vehicle='AP_DAL_Standalone',
         ap_libraries=[
             'AP_NavEKF2',
             'AP_NavEKF3',
             'AP_NavEKF',
-            'AP_Common',
+            'AP_Common',     
             'AP_Math',
             'AP_DAL',
             'AP_InternalError',
@@ -17,9 +17,10 @@ def build(bld):
         ],
     )
 
+    # RE-ENABLE THE IF STATEMENT:
     # only valid to build with no GCS and no scripting
     if '-DHAL_GCS_ENABLED=0' in bld.env.CXXFLAGS and 'AP_SCRIPTING_ENABLED=1' not in bld.env.DEFINES:
-        bld.ap_program(
+        bld.ap_program(      # <--- This MUST be indented 4 spaces relative to 'if'
             program_groups=['tool'],
             use='AP_DAL_libs',
         )
