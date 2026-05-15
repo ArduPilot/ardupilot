@@ -55,6 +55,11 @@ public:
         return allocation_failed;
     }
 
+    // Pre-allocate at least min_size bytes of buffer capacity without
+    // changing the used length.  On failure, allocation_failed is NOT set
+    // so normal incremental growth via printf/append still works.
+    bool reserve(uint32_t min_size);
+
 private:
     char *buf;
     uint32_t buflen;

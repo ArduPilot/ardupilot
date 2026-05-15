@@ -64,6 +64,24 @@ bool ExpandingString::expand(uint32_t min_extra_space_needed)
 /*
   print into the buffer, expanding if needed
  */
+bool ExpandingString::reserve(uint32_t min_size)
+{
+    if (external_buffer || buflen >= min_size) {
+        return true;
+    }
+    const uint32_t extra = min_size > used ? min_size - used : 0;
+    const bool ok = expand(extra);
+    if (!ok) {
+        // Don't let a failed pre-reservation block subsequent writes;
+        // fall back to normal incremental growth.
+        allocation_failed = false;
+    }
+    return ok;
+}
+
+/*
+  print into the buffer, expanding if needed
+ */
 void ExpandingString::printf(const char *format, ...)
 {
     if (allocation_failed) {
