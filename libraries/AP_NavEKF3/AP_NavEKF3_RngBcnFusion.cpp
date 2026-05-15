@@ -1,3 +1,7 @@
+#if defined(RP2350)
+#pragma GCC optimize("O2")
+#endif
+
 #include "AP_NavEKF3.h"
 #include "AP_NavEKF3_core.h"
 
