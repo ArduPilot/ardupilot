@@ -3413,11 +3413,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(flip_rc_aux_channel, aux_low)
         rc_option_flip_mode = 2 # (source: RC1_OPTION definition)
         self.set_parameter(f'RC{flip_rc_aux_channel}_OPTION', rc_option_flip_mode)
-        self.set_rc(flip_rc_aux_channel, aux_high)
-        # By the time self.set_rc() finishes, copter is mid-flip.
-        self.wait_attitude(despitch=0, desroll=150, tolerance=30)
-        self.wait_attitude(despitch=0, desroll=-130, tolerance=30)
-        self.wait_attitude(despitch=0, desroll=-45, tolerance=30)
+        self.set_rc(flip_rc_aux_channel, aux_high, timeout=None)
+        self.wait_attitude(despitch=0, desroll=120, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=-120, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=-30, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=0, tolerance=30)
         self.progress("Waiting for level")
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
         self.wait_mode('ALT_HOLD')
@@ -3432,10 +3432,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         gentle_positive_stick = 1700
         self.set_rc(2, gentle_positive_stick)
         self.send_cmd_do_set_mode('FLIP') # don't wait for success
-        self.wait_attitude(despitch=45, desroll=0, tolerance=30)
-        # can't check roll here as it flips from 0 to -180..
-        self.wait_attitude(despitch=90, tolerance=30)
-        self.wait_attitude(despitch=-45, tolerance=30)
+        # Due to Euler-angle choices, a pitch-back flip progresses like:
+        #  Roll = 0, pitch 0 -> +90
+        #  (instantly with pitch = +90) Roll 0 -> 180
+        #  Roll = 180, pitch +90 -> 0 -> -90
+        #  (instantly with pitch = -90) Roll 180 -> 0
+        #  Roll = 0, pitch -90 -> 0
+        # (Note that Roll ~180 might be positive or negative, or even flip-flop)
+        self.wait_attitude(despitch=60, desroll=0, tolerance=30)
+        self.wait_attitude(despitch=60, tolerance=30) # desroll is +/-180
+        self.wait_attitude(despitch=-60, desroll=0, tolerance=30)
+        self.wait_attitude(despitch=0, desroll=0, tolerance=30)
         self.progress("Waiting for level")
         self.set_rc(2, neutral_stick)
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
