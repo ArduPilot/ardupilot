@@ -124,7 +124,9 @@ ALLCSRC := $(filter-out $(CHIBIOS)/os/hal/boards/RP_PICO2_RP2350/board.c,$(ALLCS
 include $(CHIBIOS)/os/hal/osal/rt-nil/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
-# include $(CHIBIOS)/os/common/ports/ARMv7-M/compilers/GCC/mk/port.mk SMP-capable RP2 port: includes chcoresmp.c (SIO spinlock + inter-core FIFO) and sets PORT_CORES_NUMBER=2, enabling ChibiOS full-SMP on both Cortex-M33 cores.
+# SMP port: includes chcoresmp.c (hardware spinlock + inter-core FIFO) and
+# sets PORT_CORES_NUMBER=2.  CH_CFG_SMP_MODE=TRUE activates spinlocks in
+# chSysLock/chSysUnlock for real dual-core operation.
 include $(CHIBIOS)/os/common/ports/ARMv8-M-ML-ALT/compilers/GCC/mk/port_rp2.mk
 # Other files (optional).
 #include $(CHIBIOS)/test/rt/test.mk
@@ -256,7 +258,7 @@ CPPWARN = -Wall -Wextra -Wundef
 # List all user C define here, like -D_DEBUG=1
 UDEFS = $(ENV_UDEFS) $(FATFS_FLAGS) -DHAL_BOARD_NAME=\"$(HAL_BOARD_NAME)\" \
   -DHAL_MAX_STACK_FRAME_SIZE=$(HAL_MAX_STACK_FRAME_SIZE) \
-        -DCRT0_EXTRA_CORES_NUMBER=1
+  -DCRT0_EXTRA_CORES_NUMBER=1
 
 # Single-core demo: disable core 1 startup code
 #UDEFS = -DCRT0_VTOR_INIT=1 -DNDEBUG
@@ -280,8 +282,7 @@ ifneq ($(AP_BOARD_START_TIME),)
  UDEFS += -DAP_BOARD_START_TIME=$(AP_BOARD_START_TIME)
 endif
 
-# Define ASM defines here CRT0_EXTRA_CORES_NUMBER=1 generates the _crt0_c1_entry startup trampoline which sets up core1's MSP/PSP/FPU then calls c1_main().
-# Required for the bare-metal core1 FIFO dispatcher (RP_CORE1_START=TRUE, SMP=FALSE).
+# SMP: generate _crt0_c1_entry trampoline for bare-metal core1 FIFO dispatcher.
 UADEFS = -DCRT0_EXTRA_CORES_NUMBER=1
 
 ifeq ($(COPY_VECTORS_TO_RAM),yes)

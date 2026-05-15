@@ -2338,13 +2338,6 @@ bool UARTDriver::set_options(uint16_t options)
     if (options & OPTION_SWAP) {
         ret = false;  // pin swap not supported on RP2350 hardware UART
     }
-// Enable/disable hardware RTS/CTS flow control based on the OPTION_RTSCTS bit.
-// Updating _flow_control here (before begin() is called) ensures that when _begin() subsequently calls set_flow_control(_flow_control), it picks up the requested state.
-    if (arts_line != 0) {
-        const enum flow_control fc = (options & OPTION_RTSCTS) ? FLOW_CONTROL_ENABLE : FLOW_CONTROL_DISABLE;
-        _flow_control = fc;
-        set_flow_control(fc);
-    }
     set_pushpull(options);
 #endif // HAL_USE_SERIAL == TRUE
     return ret;

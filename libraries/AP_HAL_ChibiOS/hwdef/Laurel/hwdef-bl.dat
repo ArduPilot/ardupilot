@@ -32,6 +32,12 @@ USB_STRING_MANUFACTURER "ArduPilot"
 
 define BOOTLOADER_BAUDRATE 115200
 define RP_CORE1_START FALSE
+# QMI flash timing for the bootloader (150 MHz default sys_clk).
+# CLKDIV=3 → SCK = 50 MHz (within W25Q64's 80 MHz limit).
+# RXDELAY=2 → 13.3 ns capture delay, covering W25Q64 tCHQV ≤ 7 ns.
+# Without this the ROM's W25Q32-tuned timing makes XIP readback unreliable.
+define RP_QMI_CLKDIV 3
+define RP_QMI_RXDELAY 2
 define AP_FASTBOOT_ENABLED 1
 // Laurel RP2350 bring-up: allow app jump even when APP_DESCRIPTOR is missing
 // so runtime faults can be debugged on-target instead of being masked by BL.

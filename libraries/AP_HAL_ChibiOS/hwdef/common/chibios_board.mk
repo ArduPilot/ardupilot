@@ -2,8 +2,8 @@
 # Build global options
 # NOTE: Can be overridden externally.
 #
-# if a particular board has its own chibios_board.mk in the hwdef/Laurel/ directory, 
-#   it will be used *instead* of this one.  This file is basically all STM32 targets.
+# A board with its own chibios_board.mk in its hwdef directory uses that instead
+# of this one. This file covers the STM32 targets.
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
@@ -71,9 +71,6 @@ include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 # ArduPilot provides ff_memalloc/ff_memfree in hwdef/common/malloc.c with better STM32-specific (DMA-capable, size-limited) implementations.
 # with FF_FS_REENTRANT=0 it provides nothing else, so exclude it to avoid linker duplicate-symbol errors.
 ALLCSRC := $(filter-out $(CHIBIOS)/os/various/fatfs_bindings/fatfs_syscall.c, $(ALLCSRC))
-# ArduPilot provides a GPS-based get_fattime() in hwdef/common/stm32_util.c.
-# ChibiOS fatfs_diskio.c also defines get_fattime() causing a duplicate-symbol linker error.
-ALLCSRC := $(filter-out $(CHIBIOS)/os/various/fatfs_bindings/fatfs_diskio.c, $(ALLCSRC))
 endif
 
 #
@@ -131,10 +128,9 @@ include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 endif
 
-# ArduPilot provides better (DMA-capable, size-limited) ff_memalloc/ff_memfree in hwdef/common/malloc.c, and a GPS-based get_fattime() in stm32_util.c.
-# Remove both to prevent linker duplicate-symbol errors
+# ArduPilot provides better (DMA-capable, size-limited) ff_memalloc/ff_memfree in hwdef/common/malloc.c.
+# Remove fatfs_syscall.c to prevent linker duplicate-symbol errors.
 ALLCSRC := $(filter-out $(CHIBIOS)/os/various/fatfs_bindings/fatfs_syscall.c, $(ALLCSRC))
-ALLCSRC := $(filter-out $(CHIBIOS)/os/various/fatfs_bindings/fatfs_diskio.c, $(ALLCSRC))
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -143,7 +139,6 @@ CSRC = $(sort $(ALLCSRC))
 
 CSRC += $(HWDEF)/common/stubs.c \
         $(HWDEF)/common/board.c \
-        $(HWDEF)/common/board_rp2350.c \
         $(HWDEF)/common/usbcfg.c \
         $(HWDEF)/common/usbcfg_dualcdc.c \
         $(HWDEF)/common/usbcfg_common.c \
@@ -154,12 +149,6 @@ CSRC += $(HWDEF)/common/stubs.c \
         $(HWDEF)/common/bouncebuffer.c \
         $(HWDEF)/common/watchdog.c \
         $(HWDEF)/common/sysperf.c
-
-ifeq ($(USE_FATFS),yes)
-# Replacement for ChibiOS fatfs_diskio.c: same disk I/O functions but without
-# get_fattime() since stm32_util.c provides an accurate GPS-based version.
-CSRC += $(HWDEF)/common/fatfs_diskio_ap.c
-endif
 
 ifeq ($(USE_USB_MSD),yes)
 CSRC += $(CHIBIOS)/os/various/scsi_bindings/lib_scsi.c \
