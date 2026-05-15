@@ -9624,6 +9624,49 @@ return update()
         self.wait_text("clear: Motors EStopped", timeout=30, check_context=True, regex=True)
         self.wait_ready_to_arm()
 
+    def FFTPrearms(self):
+        '''check FFT prearms work'''
+        self.set_parameters({
+            "FFT_ENABLE": 1,
+            "FFT_MAXHZ": 1,
+            "FFT_MINHZ": 200,
+        })
+        self.reboot_sitl()
+        self.assert_prearm_failure(
+            "FFT config MINHZ >= MAXHZ",
+            other_prearm_failures_fatal=False,
+            timeout=120,
+        )
+
+        self.progress("Fixing parameters should allow arming without a reboot")
+        self.set_parameters({
+            "FFT_MAXHZ": 300,
+            "FFT_MINHZ": 50,
+        })
+        self.wait_ready_to_arm()
+
+        self.progress("Breaking parameters after a good config should block arming")
+        self.set_parameter("FFT_MINHZ", 400)
+        self.assert_prearm_failure("FFT config MINHZ >= MAXHZ")
+
+        self.progress("Repeated arming attempts must not bypass the check")
+        for i in range(3):
+            self.assert_arm_failure("Arm: FFT config MINHZ >= MAXHZ")
+
+        self.progress("MINHZ above the Nyquist limit (SITL gyros run at ~1kHz)")
+        self.set_parameters({
+            "FFT_MAXHZ": 495,
+            "FFT_MINHZ": 490,
+        })
+        self.assert_prearm_failure("FFT config MINHZ must be <")
+        self.assert_arm_failure("Arm: FFT config MINHZ must be <")
+
+        self.set_parameters({
+            "FFT_MAXHZ": 300,
+            "FFT_MINHZ": 50,
+        })
+        self.wait_ready_to_arm()
+
     def ScriptedArmingChecksAppletRally(self):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
@@ -10766,6 +10809,7 @@ return update()
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.TerrainMission,
             self.TerrainMissionInterrupt,
+            self.FFTPrearms,
             self.InertialLabsEAHRS,
             self.KebniSensAItionExternalIMU,
             self.GpsSensorPreArmEAHRS,
