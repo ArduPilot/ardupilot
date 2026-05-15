@@ -195,6 +195,9 @@ public:
     // indicate which bit in LOG_BITMASK indicates we should log compass readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
+    void Write_Compass(void);
+    void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
+
     // check if the compasses are pointing in the same direction
     bool consistent() const;
 
