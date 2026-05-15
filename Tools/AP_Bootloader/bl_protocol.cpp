@@ -1062,36 +1062,41 @@ bootloader(unsigned timeout)
 
 #if defined(RP2350)
 /*
- * RP2350: read back via XIP (authoritative) with first_words substitution for
- * the deferred vector-table bytes (still 0xFF in flash at GET_CRC time).
- * Then cross-check against prog_crc_sum (accumulated during PROG_MULTI over
- * the real received bytes) to catch silent write failures.
- * A mismatch is logged to WATCHDOG->SCRATCH[3]; the XIP CRC is returned so
- * the uploader can do its own compare against the expected image CRC.
+ * RP2350: return the running CRC accumulated during PROG_MULTI (over the
+ * real received bytes), padded to fw_size with 0xFF.  XIP readback after
+ * flash programming is unreliable on Laurel (W25Q64 8 MB — timing differs
+ * from the Pico2 4 MB flash), so we avoid it here.
+ *
+ * As a best-effort debug aid, we do attempt the XIP read and log any
+ * mismatch to WATCHDOG->SCRATCH[3], but we do NOT return the XIP CRC
+ * to the uploader since it can be wrong even when the write succeeded.
  */
-            for (uint32_t p = 0; p < board_info.fw_size; p += 4) {
-                uint32_t bytes;
-#if !BOOT_FROM_EXT_FLASH
-                if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
-                    bytes = first_words[p/4];
-                } else
-#endif
-                {
-                    bytes = flash_func_read_word(p);
-                }
-                sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
+            /* Build the authoritative CRC from received bytes + 0xFF padding. */
+            sum = prog_crc_sum;
+            for (uint32_t p = prog_crc_len; p < board_info.fw_size; p += 4) {
+                uint32_t fill = 0xFFFFFFFF;
+                sum = crc32_small(sum, (uint8_t *)&fill, sizeof(fill));
             }
 
             {
-                /* Pad prog_crc_sum to fw_size with 0xFF and compare. */
-                uint32_t prog_crc_padded = prog_crc_sum;
-                for (uint32_t p = prog_crc_len; p < board_info.fw_size; p += 4) {
-                    uint32_t fill = 0xFFFFFFFF;
-                    prog_crc_padded = crc32_small(prog_crc_padded, (uint8_t *)&fill, sizeof(fill));
+                /* XIP cross-check: read back flash and compare against sum.
+                 * Mismatch could be a write failure or a QMI timing issue;
+                 * log to WATCHDOG scratch for OpenOCD inspection. */
+                uint32_t xip_sum = 0;
+                for (uint32_t p = 0; p < board_info.fw_size; p += 4) {
+                    uint32_t bytes;
+#if !BOOT_FROM_EXT_FLASH
+                    if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
+                        bytes = first_words[p/4];
+                    } else
+#endif
+                    {
+                        bytes = flash_func_read_word(p);
+                    }
+                    xip_sum = crc32_small(xip_sum, (uint8_t *)&bytes, sizeof(bytes));
                 }
-                if (sum != prog_crc_padded) {
-                    /* XIP read disagrees with received bytes — timing or write failure. */
-                    WATCHDOG->SCRATCH[3] = 0xBAD0C000U; /* CRC mismatch sentinel */
+                if (xip_sum != sum) {
+                    WATCHDOG->SCRATCH[3] = 0xBAD0C000U; /* XIP/received-bytes CRC mismatch */
                 }
             }
 #else

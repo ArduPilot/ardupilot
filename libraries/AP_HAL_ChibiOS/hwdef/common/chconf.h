@@ -264,6 +264,9 @@
  */
 #if !defined(CH_CFG_USE_TM)
 #define CH_CFG_USE_TM                       TRUE
+#elif CH_DBG_STATISTICS == TRUE
+#undef CH_CFG_USE_TM
+#define CH_CFG_USE_TM                       TRUE
 #endif
 
 #if !defined(HAL_USE_LOAD_MEASURE)

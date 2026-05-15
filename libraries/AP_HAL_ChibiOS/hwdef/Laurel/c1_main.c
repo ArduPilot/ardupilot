@@ -117,7 +117,7 @@ void __c1_late_init(void)
  */
 void c1_main(void) {
     c1_boot_stage = 3U;
-
+#if CH_CFG_SMP_MODE == TRUE
     /* Wait for core0's chSysInit() to complete. */
     chSysWaitSystemState(ch_sys_running);
 
@@ -130,4 +130,7 @@ void c1_main(void) {
     while (true) {
         chThdSleepMilliseconds(1000U);
     }
+#else
+    while (true) {}
+#endif
 }

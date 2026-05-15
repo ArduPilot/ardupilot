@@ -1263,7 +1263,9 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define AP_HAL_SHARED_DMA_ENABLED 0
 #endif
 #define HAL_NO_ROMFS_SUPPORT TRUE
+#ifndef CH_CFG_USE_TM
 #define CH_CFG_USE_TM FALSE
+#endif
 #ifndef CH_CFG_USE_REGISTRY
 #define CH_CFG_USE_REGISTRY FALSE
 #endif
