@@ -2028,7 +2028,7 @@ class TestSuite(abc.ABC):
 
         self.rc_thread: threading.Thread | None = None
         self.rc_thread_should_quit: bool = False
-        self.rc_queue = queue.Queue()
+        self.rc_queue: queue.Queue[dict[int, int]] = queue.Queue()
 
         self.expect_list = []
 
@@ -5601,12 +5601,12 @@ class TestSuite(abc.ABC):
             16: 1500,
         }
 
-    def set_rc_from_map(self, _map, timeout=20, quiet=False):
-        map_copy = _map.copy()
-        for v in map_copy.values():
+    def set_rc_from_map(self, map: dict[int, int], timeout=20, quiet=False):
+        rc_values = map.copy()
+        for v in rc_values.values():
             if not isinstance(v, int):
                 raise NotAchievedException("RC values must be integers")
-        self.rc_queue.put(map_copy)
+        self.rc_queue.put(rc_values)
 
         if self.rc_thread is None:
             self.rc_thread = threading.Thread(target=self.rc_thread_main, name='RC')
@@ -5622,10 +5622,10 @@ class TestSuite(abc.ABC):
             if m is None:
                 continue
             bad_channels = ""
-            for chan in map_copy:
+            for chan in rc_values:
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
-                if chan_pwm != map_copy[chan]:
-                    bad_channels += " (ch=%u want=%u got=%u)" % (chan, map_copy[chan], chan_pwm)
+                if chan_pwm != rc_values[chan]:
+                    bad_channels += " (ch=%u want=%u got=%u)" % (chan, rc_values[chan], chan_pwm)
                     break
             if len(bad_channels) == 0:
                 if not quiet:
@@ -5644,8 +5644,8 @@ class TestSuite(abc.ABC):
         rc_values = [1000] * NUM_RC_CHANNELS  # (Don't forget this is persistent.)
         while not self.rc_thread_should_quit:
             try:
-                rc_value_updates = self.rc_queue.get(timeout=max_wait_before_sending_values)
-                for chan, val in rc_value_updates.items():
+                updates = self.rc_queue.get(timeout=max_wait_before_sending_values)
+                for chan, val in updates.items():
                     if isinstance(chan, int) and 1 <= chan <= NUM_RC_CHANNELS:
                         rc_values[chan-1] = val
             except queue.Empty:
@@ -5672,7 +5672,7 @@ class TestSuite(abc.ABC):
                 need_set[chan] = default_value
         self.set_rc_from_map(need_set)
 
-    def set_rc(self, chan, pwm, timeout=20):
+    def set_rc(self, chan: int, pwm: int, timeout=20):
         """Setup a simulated RC control to a PWM value"""
         self.set_rc_from_map({chan: pwm}, timeout=timeout)
 
