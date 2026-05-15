@@ -137,6 +137,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Camera/LogStructure.h>
 #include <AP_Mount/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
+#include <AP_Compass/LogStructure.h>
 #include <AP_CANManager/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
@@ -429,23 +430,6 @@ struct PACKED log_ADSB {
     uint16_t hor_velocity;
     int16_t ver_velocity;
     uint16_t squawk;
-};
-
-struct PACKED log_MAG {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    int16_t  mag_x;
-    int16_t  mag_y;
-    int16_t  mag_z;
-    int16_t  offset_x;
-    int16_t  offset_y;
-    int16_t  offset_z;
-    int16_t  motor_offset_x;
-    int16_t  motor_offset_y;
-    int16_t  motor_offset_z;
-    uint8_t  health;
-    uint32_t SUS;
 };
 
 struct PACKED log_Mode {
@@ -1224,8 +1208,7 @@ LOG_STRUCTURE_FROM_CAMERA \
 LOG_STRUCTURE_FROM_MOUNT \
     { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBffB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hp,TR,Pri", "s#nPOPP-----", "F-00B00-----", true }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
-    { LOG_MAG_MSG, sizeof(log_MAG), \
-      "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F", true }, \
+    LOG_STRUCTURE_FROM_COMPASS \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
 LOG_RTC_MESSAGE \
@@ -1350,7 +1333,7 @@ enum LogMessages : uint8_t {
     LOG_PIDE_MSG,
     LOG_PIDW_MSG,
     LOG_IDS_FROM_LANDING,
-    LOG_MAG_MSG,
+    LOG_IDS_FROM_COMPASS,
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
