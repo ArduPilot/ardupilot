@@ -110,7 +110,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Returns kwargs for a SITL commandline to fly the Callisto. Wipes params."""
         return {
             "defaults_filepath": self.model_defaults_filepath('Callisto'),
-            "model": "octa-quad:@ROMFS/models/Callisto.json",
+            "model": "octa-quad-cwx:@ROMFS/models/Callisto.json",
             "wipe": True
         }
 
