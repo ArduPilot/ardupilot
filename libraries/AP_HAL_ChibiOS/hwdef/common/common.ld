@@ -53,18 +53,8 @@ SECTIONS
     _text = .;
 
 /*
- * RP2350 PICOBIN image definition block.
- * The RP2350 bootrom scans the first 4KB of flash for a block loop identified by PICOBIN_BLOCK_MARKER_START (0xffffded3).
- */
-    embedded_block : ALIGN(4)
-    {
-        KEEP(*(.embedded_block))
-    } > flash
-
-/*
- * Cortex-M33 VTOR requires bits[6:0] = 0, i.e.
- * 128-byte alignment.
- * The IMAGE_DEF block (32 bytes) ends at flash_base+0x20 which is only 32-byte aligned.
+ * Cortex-M33 VTOR requires bits[6:0] = 0 (128-byte alignment).
+ * Vector table first at flash_base+0x0000 satisfies this without padding.
  */
     startup : ALIGN(128) SUBALIGN(16)
     {
@@ -74,6 +64,16 @@ SECTIONS
     __firmware_crc_start__ = LOADADDR(startup);
     __firmware_crc_ext_start__ = 0;
     __firmware_crc_ext_end__ = 0;
+
+/*
+ * RP2350 PICOBIN image definition block (empty/absent on non-RP2350 boards).
+ * The bootrom scans the first 4KB of flash for PICOBIN_BLOCK_MARKER_START (0xffffded3).
+ * Placing it after the vector table keeps it well within that window.
+ */
+    embedded_block : ALIGN(4)
+    {
+        KEEP(*(.embedded_block))
+    } > flash
 
     constructors : ALIGN(4) SUBALIGN(4)
     {

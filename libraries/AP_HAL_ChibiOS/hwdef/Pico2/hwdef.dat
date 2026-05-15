@@ -528,6 +528,7 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 # it registers dummy gyro+accel instances returning near-zero data so
 # wait_for_sample() completes normally. IMU absence is flagged in SYS_STATUS.
 define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
+define HAL_INS_ALLOW_NO_SENSORS 1
 
 # No microSD/SDIO on Pico2. HAL_USE_MMC_SPI could be enabled if an SPI-mode
 # SD card is wired to a free SPI bus, but no SD slot exists on standard Pico2.
@@ -688,16 +689,14 @@ define AP_COMPASS_PROBING_ENABLED 1
 # RP2350 now sets these centrally in AP_HAL_Boards.h, so no hwdef override
 # is needed here.
 
-# Bare-metal dual-core architecture: core0 runs ChibiOS (single-instance),
-# core1 runs a bare-metal SIO FIFO dispatcher (c1_main.c).
-# CH_CFG_SMP_MODE=FALSE: core1 has no ChibiOS instance, no scheduler,
-# no NVIC setup.  All ChibiOS threads live on core0.  Core1 is launched
-# by hal_lld via start_core1() (gated on RP_CORE1_START=TRUE below) and
-# executes tasks dispatched by c1_run_sync() in board.c.
-define CH_CFG_SMP_MODE FALSE
+# SMP dual-core: both cores run under ChibiOS with hardware spinlocks.
+# c1_main.c is compiled in but core1 participates as a full ChibiOS SMP peer.
+# CH_CFG_SMP_MODE=TRUE: chcoresmp.c owns VectorA4 (SIO FIFO IRQ), spinlocks active.
+# Core1 is launched by hal_lld via start_core1()
+# (gated on RP_CORE1_START=TRUE below).
+define CH_CFG_SMP_MODE TRUE
 
-# Enable core1 bare-metal startup: hal_lld_init() calls start_core1()
-# which sends the ROM handshake then jumps to _crt0_c1_entry → c1_main().
+# SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
 define RP_CORE1_START TRUE
 
 # Overclock the RP2350 from the default 150 MHz to 250 MHz.
