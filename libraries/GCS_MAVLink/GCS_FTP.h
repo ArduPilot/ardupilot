@@ -21,38 +21,38 @@ public:
 
 private:
     enum class FTP_OP : uint8_t {
-        None = 0,
-        TerminateSession = 1,
-        ResetSessions = 2,
-        ListDirectory = 3,
-        OpenFileRO = 4,
-        ReadFile = 5,
-        CreateFile = 6,
-        WriteFile = 7,
-        RemoveFile = 8,
-        CreateDirectory = 9,
-        RemoveDirectory = 10,
-        OpenFileWO = 11,
-        TruncateFile = 12,
-        Rename = 13,
-        CalcFileCRC32 = 14,
-        BurstReadFile = 15,
-        Ack = 128,
-        Nack = 129,
+        None = MAV_FTP_OPCODE_NONE,
+        TerminateSession = MAV_FTP_OPCODE_TERMINATESESSION,
+        ResetSessions = MAV_FTP_OPCODE_RESETSESSION,
+        ListDirectory = MAV_FTP_OPCODE_LISTDIRECTORY,
+        OpenFileRO = MAV_FTP_OPCODE_OPENFILERO,
+        ReadFile = MAV_FTP_OPCODE_READFILE,
+        CreateFile = MAV_FTP_OPCODE_CREATEFILE,
+        WriteFile = MAV_FTP_OPCODE_WRITEFILE,
+        RemoveFile = MAV_FTP_OPCODE_REMOVEFILE,
+        CreateDirectory = MAV_FTP_OPCODE_CREATEDIRECTORY,
+        RemoveDirectory = MAV_FTP_OPCODE_REMOVEDIRECTORY,
+        OpenFileWO = MAV_FTP_OPCODE_OPENFILEWO,
+        TruncateFile = MAV_FTP_OPCODE_TRUNCATEFILE,
+        Rename = MAV_FTP_OPCODE_RENAME,
+        CalcFileCRC32 = MAV_FTP_OPCODE_CALCFILECRC,
+        BurstReadFile = MAV_FTP_OPCODE_BURSTREADFILE,
+        Ack = MAV_FTP_OPCODE_ACK,
+        Nack = MAV_FTP_OPCODE_NAK,
     };
 
     enum class FTP_ERROR : uint8_t {
-        None = 0,
-        Fail = 1,
-        FailErrno = 2,
-        InvalidDataSize = 3,
-        InvalidSession = 4,
-        NoSessionsAvailable = 5,
-        EndOfFile = 6,
-        UnknownCommand = 7,
-        FileExists = 8,
-        FileProtected = 9,
-        FileNotFound = 10,
+        None = MAV_FTP_ERR_NONE,
+        Fail = MAV_FTP_ERR_FAIL,
+        FailErrno = MAV_FTP_ERR_FAILERRNO,
+        InvalidDataSize = MAV_FTP_ERR_INVALIDDATASIZE,
+        InvalidSession = MAV_FTP_ERR_INVALIDSESSION,
+        NoSessionsAvailable = MAV_FTP_ERR_NOSESSIONSAVAILABLE,
+        EndOfFile = MAV_FTP_ERR_EOF,
+        UnknownCommand = MAV_FTP_ERR_UNKNOWNCOMMAND,
+        FileExists = MAV_FTP_ERR_FILEEXISTS,
+        FileProtected = MAV_FTP_ERR_FILEPROTECTED,
+        FileNotFound = MAV_FTP_ERR_FILENOTFOUND,
     };
 
     struct Transaction {
@@ -76,18 +76,22 @@ private:
 
     ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
-    bool initialised = false;
+    // signalled by handle_file_transfer_protocol() when a request is pushed;
+    // allows the worker thread to wake immediately instead of polling every 2ms
+    HAL_BinarySemaphore *_requests_sem{nullptr};
+
+    bool initialised;
 
     // session specific info
     class Session {
     public:
         int fd = -1;
-        uint32_t last_send_ms = 0;
+        uint32_t last_send_ms;
         int16_t session_id = -1;
         FTP_FILE_MODE mode = FTP_FILE_MODE::Read; // work around AP_Filesystem not supporting file modes
         mavlink_channel_t chan = MAVLINK_COMM_0;
-        uint8_t sysid = 0;
-        uint8_t compid = 0;
+        uint8_t sysid;
+        uint8_t compid;
 
         bool check_name_len(const Transaction &request);
         int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
