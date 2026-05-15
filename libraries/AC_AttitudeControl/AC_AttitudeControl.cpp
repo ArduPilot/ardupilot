@@ -4,28 +4,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-// RP2350 dual-core async dispatch for attitude controller inner loop.
-// Results in _ang_vel_body_rads are guaranteed stable before the next call to attitude_controller_run_quat() via c1_att_barrier().
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
-
-// File-scope pointer to the AC_AttitudeControl instance being computed on Core1.
-// Set with a DMB fence before every async dispatch.
-static AC_AttitudeControl *_c1_att_ctrl_ptr;
-
-// Flag: true while Core1 is executing inside attitude_controller_run_quat().
-// Used to detect the re-entry from the Core1 trampoline and skip the dispatch path, preventing infinite recursion and deadlock in c1_att_barrier().
-static volatile bool _c1_att_running;
-
-// Core1 trampoline.
-// Called by Core1's bare-metal FIFO dispatcher.
-static void _c1_att_trampoline(void)
-{
-    _c1_att_running = true;                                  /* mark Core1 active */
-    _c1_att_ctrl_ptr->attitude_controller_run_quat();        /* inner loop runs on Core1 */
-    _c1_att_running = false;                                 /* Core1 done */
-}
-#endif  /* RP_CORE1_START */
 
 // Optimize the hot attitude-control path at -O2 (same as the rate thread).
 // On RP2350 these functions are also placed in SRAM via __RAMFUNC2__ registry mapping
@@ -1016,23 +994,6 @@ void AC_AttitudeControl::update_attitude_target()
 // Calculates the body frame angular velocities to follow the target attitude
 void AC_AttitudeControl::attitude_controller_run_quat()
 {
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-    // Detect Core1 re-entry from _c1_att_trampoline: skip barrier and dispatch
-    // to avoid deadlock (c1_att_barrier would spin-wait for itself) and infinite recursion.
-    if (!_c1_att_running) {
-        // Core0 path: wait for any in-flight async from the previous cycle, then
-        // attempt to fire this cycle's computation to Core1 asynchronously.
-        c1_att_barrier();
-        _c1_att_ctrl_ptr = this;
-        __DMB();  /* ensure _c1_att_ctrl_ptr is visible to Core1 before dispatch */
-        if (c1_att_dispatch_async(_c1_att_trampoline)) {
-            /* Dispatched to Core1. Core0 returns immediately; Core1 will write
-             * _ang_vel_body_rads.  Results guaranteed stable at next call's barrier. */
-            return;
-        }
-        /* Core1 busy (EKF mutex held or FIFO full) — fall through to Core0. */
-    }
-#endif
     // This represents a quaternion rotation in NED frame to the body
     Quaternion attitude_body;
     _ahrs.get_quat_body_to_ned(attitude_body);
