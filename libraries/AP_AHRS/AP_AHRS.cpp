@@ -611,8 +611,9 @@ void AP_AHRS::update_DCM()
 {
 #if defined(RP2350)
     if (_active_EKF_type() != EKFType::DCM) {
-// RP2350: the full DCM backup path is expensive enough to cap the main loop rate.
-// Once a non-DCM estimator is active, DCM only serves as a backup/fallback source, so updating it at half rate preserves a fresh fallback solution while materially reducing Core0 load.
+// RP2350: DCM::Update() costs ~800-1000 µs at 150 Hz — a large fraction of the 6.7 ms budget.
+// When EKF3 is active, DCM is only a fallback; run it at half rate to preserve a fresh
+// fallback solution while halving its Core0 cost. Full rate when DCM is the active estimator.
         static uint8_t backup_dcm_skip_count;
         backup_dcm_skip_count ^= 1U;
         if (backup_dcm_skip_count != 0U) {
