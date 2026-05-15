@@ -1,22 +1,5 @@
 #include "Copter.h"
 
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
-
-namespace {
-struct C1MainRateArgs {
-    AC_AttitudeControl *attitude_control;
-};
-
-static C1MainRateArgs c1_main_rate_args;
-
-// Core1 callback for main-loop rate controller math.
-static void c1_main_rate_compute(void)
-{
-    c1_main_rate_args.attitude_control->rate_controller_run();
-}
-} // namespace
-#endif
 
 /*************************************************************
  *  Attitude Rate controllers and timing
@@ -34,14 +17,7 @@ void Copter::run_rate_controller_main()
 
     if (!using_rate_thread) {
         motors->set_dt_s(last_loop_time_s);
-        // Keep core0 available for scheduler/GCS work by running pure PID math on core1 when available.
-    #if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-        c1_main_rate_args.attitude_control = attitude_control;
-        c1_try_run_sync(c1_main_rate_compute);
-    #else
-        // only run the rate controller if we are not using the rate thread
         attitude_control->rate_controller_run();
-    #endif
     }
     // reset sysid and other temporary inputs
     attitude_control->rate_controller_target_reset();
@@ -129,7 +105,7 @@ float Copter::get_pilot_desired_climb_rate_ms()
         desired_rate_ms = get_pilot_speed_dn_adjusted_ms() * (throttle_control - deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate_ms = get_pilot_speed_up_adjusted_ms() * (throttle_control - deadband_top) / (1000.0f - deadband_top);
+        desired_rate_ms = get_pilot_speed_up_adjusted_ms() * (throttle_control - deadband_top) / (1000.0 - deadband_top);
     } else {
         // must be in the deadband
         desired_rate_ms = 0.0f;
@@ -141,14 +117,14 @@ float Copter::get_pilot_desired_climb_rate_ms()
 // get_non_takeoff_throttle - a throttle somewhere between min and mid throttle which should not lead to a takeoff
 float Copter::get_non_takeoff_throttle()
 {
-    return MAX(0,motors->get_throttle_hover() / 2.0f);
+    return MAX(0,motors->get_throttle_hover() / 2.0);
 }
 
 // set_accel_throttle_I_from_pilot_throttle - smoothes transition from pilot controlled throttle to autopilot throttle
 void Copter::set_accel_throttle_I_from_pilot_throttle()
 {
     // get last throttle input sent to attitude controller
-    float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0f, 1.0f);
+    float pilot_throttle = constrain_float(attitude_control->get_throttle_in(), 0.0, 1.0);
     // shift difference between pilot's throttle and hover throttle into accelerometer I
     pos_control->D_get_accel_pid().set_integrator(-(pilot_throttle - motors->get_throttle_hover()));
 }
