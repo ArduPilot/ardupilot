@@ -177,53 +177,36 @@ void print_vprintf(AP_HAL::BetterStream *s, const char *fmt, va_list ap)
 
 flt_oper:
                 float value = va_arg(ap,double);
-                exp = 0;
 
-                // Handle NaN/Inf without passing through ftoa_engine().
-                // Some targets can misbehave when converting special values.
-                if (isnan(value)) {
-                    ndigs = 0;
-                    vtype = FTOA_NAN;
-                    if (signbit(value)) {
-                        vtype |= FTOA_MINUS;
-                    }
-                } else if (isinf(value)) {
-                    ndigs = 0;
-                    vtype = FTOA_INF;
-                    if (signbit(value)) {
-                        vtype |= FTOA_MINUS;
-                    }
-                } else {
-                    if (!(flags & FL_PREC)) {
-                        prec = 6;
-                    }
-                    flags &= ~(FL_FLTEXP | FL_FLTFIX);
-                    if (c == 'e') {
-                        flags |= FL_FLTEXP;
-                    } else if (c == 'f') {
-                        flags |= FL_FLTFIX;
-                    } else if (prec > 0) {
-                        prec -= 1;
-                    }
-
-                    if ((flags & FL_FLTFIX) && fabsf(value) > 9999999) {
-                        flags = (flags & ~FL_FLTFIX) | FL_FLTEXP;
-                    }
-
-                    if (flags & FL_FLTFIX) {
-                        vtype = 7;              /* 'prec' arg for 'ftoa_engine' */
-                        ndigs = prec < 60 ? prec + 1 : 60;
-                    } else {
-                        if (prec > 10) {
-                            prec = 10;
-                        }
-                        vtype = prec;
-                        ndigs = 0;
-                    }
-                    memset(buf, 0, sizeof(buf));
-                    exp = ftoa_engine(value, (char *)buf, vtype, ndigs);
-                    vtype = buf[0];
+                if (!(flags & FL_PREC)) {
+                    prec = 6;
                 }
+                flags &= ~(FL_FLTEXP | FL_FLTFIX);
+                if (c == 'e') {
+                    flags |= FL_FLTEXP;
+                } else if (c == 'f') {
+                    flags |= FL_FLTFIX;
+                } else if (prec > 0) {
+                    prec -= 1;
+                }
+
+                if ((flags & FL_FLTFIX) && fabsf(value) > 9999999) {
+                    flags = (flags & ~FL_FLTFIX) | FL_FLTEXP;
+                }
+
+                if (flags & FL_FLTFIX) {
+                    vtype = 7;              /* 'prec' arg for 'ftoa_engine' */
+                    ndigs = prec < 60 ? prec + 1 : 60;
+                } else {
+                    if (prec > 10) {
+                        prec = 10;
+                    }
+                    vtype = prec;
+                    ndigs = 0;
+                }
+                memset(buf, 0, sizeof(buf));
+                exp = ftoa_engine(value, (char *)buf, vtype, ndigs);
+                vtype = buf[0];
 
                 sign = 0;
                 if ((vtype & FTOA_MINUS) && !(vtype & FTOA_NAN))
