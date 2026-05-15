@@ -21,24 +21,24 @@ public:
 
 private:
     enum class FTP_OP : uint8_t {
-        None = 0,
-        TerminateSession = 1,
-        ResetSessions = 2,
-        ListDirectory = 3,
-        OpenFileRO = 4,
-        ReadFile = 5,
-        CreateFile = 6,
-        WriteFile = 7,
-        RemoveFile = 8,
-        CreateDirectory = 9,
-        RemoveDirectory = 10,
-        OpenFileWO = 11,
-        TruncateFile = 12,
-        Rename = 13,
-        CalcFileCRC32 = 14,
-        BurstReadFile = 15,
-        Ack = 128,
-        Nack = 129,
+        None = MAV_FTP_OPCODE_NONE,
+        TerminateSession = MAV_FTP_OPCODE_TERMINATESESSION,
+        ResetSessions = MAV_FTP_OPCODE_RESETSESSION,
+        ListDirectory = MAV_FTP_OPCODE_LISTDIRECTORY,
+        OpenFileRO = MAV_FTP_OPCODE_OPENFILERO,
+        ReadFile = MAV_FTP_OPCODE_READFILE,
+        CreateFile = MAV_FTP_OPCODE_CREATEFILE,
+        WriteFile = MAV_FTP_OPCODE_WRITEFILE,
+        RemoveFile = MAV_FTP_OPCODE_REMOVEFILE,
+        CreateDirectory = MAV_FTP_OPCODE_CREATEDIRECTORY,
+        RemoveDirectory = MAV_FTP_OPCODE_REMOVEDIRECTORY,
+        OpenFileWO = MAV_FTP_OPCODE_OPENFILEWO,
+        TruncateFile = MAV_FTP_OPCODE_TRUNCATEFILE,
+        Rename = MAV_FTP_OPCODE_RENAME,
+        CalcFileCRC32 = MAV_FTP_OPCODE_CALCFILECRC,
+        BurstReadFile = MAV_FTP_OPCODE_BURSTREADFILE,
+        Ack = MAV_FTP_OPCODE_ACK,
+        Nack = MAV_FTP_OPCODE_NAK,
     };
 
     enum class FTP_ERROR : uint8_t {
@@ -76,7 +76,11 @@ private:
 
     ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
-    bool initialised = false;
+    // signalled by handle_file_transfer_protocol() when a request is pushed;
+    // allows the worker thread to wake immediately instead of polling every 2ms
+    HAL_BinarySemaphore *_requests_sem{nullptr};
+
+    bool initialised;
 
     // session specific info
     class Session {
