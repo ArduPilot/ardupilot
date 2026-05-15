@@ -47,7 +47,7 @@ void ModeAuto::update()
     // check if mission exists (due to being cleared while disarmed in AUTO,
     // if no mission, then stop...needs mode change out of AUTO, mission load,
     // and change back to AUTO to run a mission at this point
-    if (!hal.util->get_soft_armed() && !mission.present()) {
+    if (!rover.arming.is_armed_and_safety_off() && !mission.present()) {
         start_stop();
     }
     // start or update mission
