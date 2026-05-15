@@ -286,9 +286,6 @@ public:
     void Write_MISE(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
         Write_Mission_Cmd(mission, cmd, LOG_MISE_MSG);
     }
-    void Write_CMD(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
-        Write_Mission_Cmd(mission, cmd, LOG_CMD_MSG);
-    }
     void Write_Mission_Cmd(const AP_Mission &mission,
                            const AP_Mission::Mission_Command &cmd,
                            LogMessages id);
