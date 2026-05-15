@@ -584,13 +584,12 @@ void AP_AHRS::update(bool skip_ins_update)
             continue;
         }
 #if defined(RP2350) && AP_AHRS_DCM_ENABLED
-        // the full DCM path is expensive enough to cap the main loop
-        // rate. Once another estimator is active DCM is only a
-        // fallback source, so half rate still keeps a fresh solution.
+        // DCM costs ~2246 us/call. Run at 1/16 rate as emergency backup
+        // when EKF3 is active; full rate when DCM is the active estimator.
         if (&backend_and_estimates.backend == &dcm &&
             _active_EKF_type() != EKFType::DCM) {
             static uint8_t backup_dcm_skip_count;
-            backup_dcm_skip_count ^= 1U;
+            backup_dcm_skip_count = (backup_dcm_skip_count + 1U) & 15U;
             if (backup_dcm_skip_count != 0U) {
                 continue;
             }
