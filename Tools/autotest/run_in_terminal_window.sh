@@ -47,6 +47,9 @@ elif [ -n "$STY" ]; then
 elif [ -n "$ZELLIJ" ]; then
   # Create a new pane to run
   zellij run -n "$name" -- "$1" "${@:2}"
+elif [ -n "$(which mintty 2>/dev/null)" ]; then
+  # Cygwin native terminal - no X11 fonts required
+  mintty --hold always -T "$name" -e "$@" &
 else
   filename="/tmp/$name.log"
   echo "RiTW: Window access not found, logging to $filename"
