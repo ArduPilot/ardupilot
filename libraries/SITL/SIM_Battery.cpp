@@ -115,11 +115,12 @@ void Battery::set_initial_SoC(float voltage)
     remaining_Ah = 0;
 }
 
-void Battery::setup(float _capacity_Ah, float _resistance_ohm, float _max_voltage)
+void Battery::setup(float _capacity_Ah, float _resistance_ohm, float _max_voltage, float _ambient_temperature_degC)
 {
     capacity_Ah = _capacity_Ah;
     resistance_ohm = _resistance_ohm;
     max_voltage = _max_voltage;
+    ambient_temperature_degC = _ambient_temperature_degC;
 
     voltage_set = max_voltage;
     voltage_filter.reset(voltage_set);
@@ -183,9 +184,6 @@ void Battery::consume_energy(float current_amp, uint64_t now_us)
 
 void Battery::update_temperature(float current_amp, float dt)
 {
-    // In the (near) future, this value will instead come from Aircraft::ambient_outside_temperature_degC()
-    constexpr float ambient_temperature_degC = 0.0f;
-
     // thermal_capacity value chosen to match previous steady-state behavior at 28amps
     // (reminder: thermal_capacity = mass * specific_heat)
     constexpr float thermal_capacity = 2.8f;  // watt*seconds/degC
