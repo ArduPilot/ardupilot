@@ -77,30 +77,20 @@ void AP_InertialSensor_NONE::generate_accel()
         float yAccel = 0.01;
         float zAccel = 0.01;
 
-        // minimum noise levels are 2 bits, but averaged over many
-        // samples, giving around 0.01 m/s/s
-        float accel_noise = 0.01f;
-        float noise_variation = 0.05f;
-        // this smears the individual motor peaks somewhat emulating physical motors
-        //float freq_variation = 0.12f;
-        // add in sensor noise
-        xAccel += accel_noise * sim_rand_float();
-        yAccel += accel_noise * sim_rand_float();
-        zAccel += accel_noise * sim_rand_float();
-
-// On ChibiOS/RP2350 hardware the motor vibration simulation consumes ~60 % of core0 CPU (sinf() at 1 kHz × 15 calls) and starves the IO thread, silencing MAVLink output.
-// Motor simulation is only meaningful in SITL
+// Motor vibration simulation is only meaningful in SITL; disable on real hardware.
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        bool motors_on = 0;
+        float accel_noise = 0.0f;
+        bool motors_on = false;
 #else
-        bool motors_on = 1;
+        float accel_noise = 0.01f;
+        bool motors_on = true;
 #endif
-
-        // on a real 180mm copter gyro noise varies between 0.8-4 m/s/s for throttle 0.2-0.8
-        // giving a accel noise variation of 5.33 m/s/s over the full throttle range
-        if (motors_on) {
-            // add extra noise when the motors are on
-            accel_noise = 0;
+        float noise_variation = 0.05f;
+        // minimum noise levels are 2 bits, but averaged over many samples
+        if (accel_noise > 0.0f) {
+            xAccel += accel_noise * sim_rand_float();
+            yAccel += accel_noise * sim_rand_float();
+            zAccel += accel_noise * sim_rand_float();
         }
 
         // VIB_FREQ is a static vibration applied to each axis
@@ -192,23 +182,24 @@ void AP_InertialSensor_NONE::generate_gyro()
         float q = radians(0.01) + gyro_drift();
         float r = radians(0.01) + gyro_drift();
 
-        // minimum gyro noise is less than 1 bit
-        float gyro_noise = radians(0.04f);
         float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
         float freq_variation = 0.12f;
-        // add in sensor noise
-        p += gyro_noise * sim_rand_float();
-        q += gyro_noise * sim_rand_float();
-        r += gyro_noise * sim_rand_float();
 
-        // See generate_accel() comment: disable motor simulation on ChibiOS
-        // to avoid starving the IO thread with sinf() at 1 kHz.
+        // Motor vibration simulation is only meaningful in SITL; disable on real hardware.
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        float gyro_noise = 0.0f;
         bool motors_on = false;
 #else
+        float gyro_noise = radians(0.04f);
         bool motors_on = true;
 #endif
+        // add in sensor noise
+        if (gyro_noise > 0.0f) {
+            p += gyro_noise * sim_rand_float();
+            q += gyro_noise * sim_rand_float();
+            r += gyro_noise * sim_rand_float();
+        }
         // on a real 180mm copter gyro noise varies between 0.2-0.4 rad/s for throttle 0.2-0.8
         // giving a gyro noise variation of 0.33 rad/s or 20deg/s over the full throttle range
         if (motors_on) {
@@ -219,7 +210,7 @@ void AP_InertialSensor_NONE::generate_gyro()
         // VIB_FREQ is a static vibration applied to each axis
         const Vector3f &vibe_freq = Vector3f{0.01,0.01,0.01};
 
-        if ( vibe_freq.is_zero() ) {
+        if (vibe_freq.is_zero() && gyro_noise > 0.0f) {
             // no rpm noise, so add in background noise if any
             p += gyro_noise * sim_rand_float();
             q += gyro_noise * sim_rand_float();
