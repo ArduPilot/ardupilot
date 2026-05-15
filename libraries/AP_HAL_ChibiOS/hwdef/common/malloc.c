@@ -477,6 +477,38 @@ thread_t *thread_create_alloc(size_t size,
     return NULL;
 }
 
+#if CH_CFG_SMP_MODE == TRUE
+/*
+  allocate a thread pinned to a specific ChibiOS OS instance (core).
+  Uses thread descriptor affinity — the thread will be scheduled exclusively
+  on the core owning 'oip'. Pass &ch1 to pin to core1.
+  No heap-free callback is set; caller is responsible for ensuring the thread
+  is permanent (i.e. runs forever and never exits).
+ */
+thread_t *thread_create_alloc_affinity(size_t size, const char *name, tprio_t prio,
+                                       tfunc_t pf, void *arg, os_instance_t *oip)
+{
+    void *wbase = chHeapAllocAligned(NULL, size, PORT_WORKING_AREA_ALIGN);
+    if (wbase == NULL) {
+        for (uint8_t i = 1; i < NUM_MEMORY_REGIONS; i++) {
+            wbase = chHeapAllocAligned(&heaps[i], size, PORT_WORKING_AREA_ALIGN);
+            if (wbase != NULL) break;
+        }
+    }
+    if (wbase == NULL) return NULL;
+
+    void *wend = (uint8_t *)wbase + size;
+    thread_descriptor_t td = __THD_DECL_DATA(name, wbase, wend, prio, pf, arg, oip);
+
+    chSysLock();
+    thread_t *tp = chThdCreateSuspendedI(&td);
+    chSchWakeupS(tp, MSG_OK);
+    chSysUnlock();
+
+    return tp;
+}
+#endif  // CH_CFG_SMP_MODE
+
 #endif  // CH_CFG_USE_DYNAMIC
 
 /*

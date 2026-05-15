@@ -561,14 +561,8 @@ bool stm32_flash_erasepage(uint32_t page)
 #ifndef HAL_BOOTLOADER_BUILD
     last_erase_ms = hrt_millis32();
 #endif
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-    c1_flash_begin();
-#endif
     flash_error_t err = efl_lld_start_erase_sector(&EFLD1, (flash_sector_t)page);
     if (err != FLASH_NO_ERROR) {
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-        c1_flash_end();
-#endif
         return false;
     }
     // Poll until erase completes (efl_lld_start_erase_sector is asynchronous)
@@ -579,9 +573,6 @@ bool stm32_flash_erasepage(uint32_t page)
             chThdSleepMilliseconds(wait_ms > 0 ? wait_ms : 1);
         }
     } while (err == FLASH_BUSY_ERASING);
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-    c1_flash_end();
-#endif
     if (err != FLASH_NO_ERROR) {
         return false;
     }
@@ -1067,13 +1058,7 @@ bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
             return true;  /* all bytes already 0xFF: PP is a no-op, skip it */
         }
     }
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-    c1_flash_begin();
-#endif
     flash_error_t err = efl_lld_program(&EFLD1, (flash_offset_t)(addr - RP_FLASH_BASE), count, (const uint8_t *)buf);
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-    c1_flash_end();
-#endif
     return err == FLASH_NO_ERROR;
 #elif defined(STM32F1) || defined(STM32F3)
     return stm32_flash_write_f1(addr, buf, count);

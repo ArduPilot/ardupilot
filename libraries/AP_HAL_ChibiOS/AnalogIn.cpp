@@ -621,6 +621,7 @@ void AnalogIn::setup_adc(uint8_t index)
         adcgrpcfg[index].channel    = (first_chan == 255U) ? 0U : first_chan;
         adcgrpcfg[index].rrobin     = (num_grp_channels > 1) ? rrobin_mask : 0U;
 // RP2350 ADC_DIV: total period = (1 + INT + FRAC/256) cycles at 48 MHz.
+// ADC_DIV(9599, 0) → 9600 cycles = 5 kHz aggregate sample rate (~1.67 kHz per channel in 3-channel round-robin).
 // div=0 → back-to-back 500 kS/s → 4-entry FIFO fills in 8 µs → DMA ISR re-arm gap (~2 µs) causes FIFO overflow → ADC_FCS_OVER set → adc_lld_serve_dma_interrupt calls _adc_isr_error_code → ADC stops permanently.
         adcgrpcfg[index].div        = ADC_DIV(9599, 0);
         // Enable internal temperature sensor when RP_ADC_TEMPERATURE_CHANNEL is sampled.

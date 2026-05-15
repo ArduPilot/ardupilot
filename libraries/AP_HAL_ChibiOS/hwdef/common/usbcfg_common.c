@@ -99,8 +99,8 @@ void string_substitute(const char *str, char *str2)
 #endif
                 uint8_t i;
                 for (i=0; i<12; i++) {
-                    *p++ = hex[(cpu_id[i]>>4)&0xF];
-                    *p++ = hex[cpu_id[i]&0xF];
+                    *p++ = hex[(cpu_id_ptr[i]>>4)&0xF];
+                    *p++ = hex[cpu_id_ptr[i]&0xF];
                 }
                 str += 8;
                 continue;

@@ -198,7 +198,7 @@ all: PRE_MAKE_ALL_RULE_HOOK $(OBJS) $(LIBCC_OBJS) $(OUTFILES) POST_MAKE_ALL_RULE
 
 ifneq ($(findstring RP2350,$(CHIBIOS_PLATFORM_MK)),)
 PRE_MAKE_ALL_RULE_HOOK:
-	@bash $(abspath $(BUILDROOT)/../../libraries/AP_HAL_ChibiOS/hwdef/common/rp2350_ramfunc2_sections.sh) $(BUILDROOT)
+	@touch $(BUILDROOT)/rp2350_ramfunc2_sections.ld
 else
 PRE_MAKE_ALL_RULE_HOOK:
 endif

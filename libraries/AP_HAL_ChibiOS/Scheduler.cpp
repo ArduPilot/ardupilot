@@ -638,10 +638,13 @@ void Scheduler::_io_thread(void* arg)
 #endif
 
 #if HAL_LOGGING_ENABLED
+#ifndef HAL_FS_MOUNT_RETRY_MS
+#define HAL_FS_MOUNT_RETRY_MS 3000U
+#endif
         if (!hal.util->get_soft_armed()) {
-            // if sdcard hasn't mounted then retry it every 3s in the IO
-            // thread when disarmed
-            if (now - last_sd_start_ms > 3000) {
+            // if sdcard hasn't mounted then retry it periodically in the IO
+            // thread when disarmed (rate controlled by HAL_FS_MOUNT_RETRY_MS)
+            if (now - last_sd_start_ms > HAL_FS_MOUNT_RETRY_MS) {
                 last_sd_start_ms = now;
                 AP::FS().retry_mount();
             }
@@ -795,6 +798,65 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         return false;
     }
     return true;
+}
+
+bool Scheduler::thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char *name,
+                                             uint32_t stack_size, priority_base base,
+                                             int8_t priority, uint8_t core)
+{
+#if CH_CFG_SMP_MODE == TRUE
+    // Only core1 pinning is supported; any other core falls back to thread_create().
+    if (core == 1) {
+        AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+        if (!tproc) {
+            return false;
+        }
+        *tproc = proc;
+
+        const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
+        thread_t *thread_ctx = thread_create_alloc_affinity(THD_WORKING_AREA_SIZE(stack_size),
+                                                            name,
+                                                            thread_priority,
+                                                            thread_create_trampoline,
+                                                            tproc,
+                                                            &ch1);
+        if (thread_ctx == nullptr) {
+            free(tproc);
+            return false;
+        }
+        _core1_thread_ctx = thread_ctx;
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+        _core1_last_cumulative = ch1.idlethread.stats.cumulative;
+        _core1_last_us = AP_HAL::micros64();
+#endif
+        return true;
+    }
+#endif
+    return thread_create(proc, name, stack_size, base, priority);
+}
+
+float Scheduler::get_core1_load_pct()
+{
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+    if (_core1_thread_ctx == nullptr) {
+        return -1.0f;
+    }
+    // Measure idle time on ch1 and invert: load = 100% - idle%.
+    // This automatically includes all threads pinned to Core1.
+    const rttime_t cur_idle = ch1.idlethread.stats.cumulative;
+    const uint64_t cur_us = AP_HAL::micros64();
+    const uint64_t elapsed = cur_us - _core1_last_us;
+    if (elapsed == 0) {
+        return 0.0f;
+    }
+    const float idle_pct = (float)(cur_idle - _core1_last_cumulative) * 100.0f / elapsed;
+    _core1_last_cumulative = cur_idle;
+    _core1_last_us = cur_us;
+    return 100.0f - idle_pct;
+#else
+    return -1.0f;
+#endif
 }
 
 /*

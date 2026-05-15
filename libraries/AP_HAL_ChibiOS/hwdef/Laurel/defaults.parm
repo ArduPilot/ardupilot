@@ -1,15 +1,31 @@
 # Laurel defaults tuned for the onboard ICM42688P sensor stack.
 #
-# Scheduler rate: live profiling (2025-04) shows main loop tasks take ~7 ms
-# in release builds.  Setting SCHED_LOOP_RATE=125 (8 ms budget) gives:
-#   - ~87% Core0 CPU usage (spare ~1 ms per loop for idle/GCS)
-#   - Attitude rate stays at 1000/7=142 Hz (rate ceiling > 125 Hz)
-#   - PreArm "main loop slow" check passes (target 125 Hz, actual ~125 Hz)
-# Debug builds run at ~7 ms/loop too so the rate drops to ~123-133 Hz,
-# still above the 125 Hz threshold in most cases.
-# If performance improves in future, bump SCHED_LOOP_RATE towards 200-400 Hz.
-SCHED_LOOP_RATE 125
+# IMU / rate-loop split — targeting 1 kHz backend and ~333 Hz rate control:
+#
+#   INS_GYRO_RATE=0  → get_fast_sampling_rate()=1, and Laurel keeps the
+#     Invensensev3 SPI FIFO path enabled at the base 1000 Hz backend rate.
+#     Per-sample filter work stays in the IMU interrupt path; ins.update() in
+#     the main loop just reads aggregated output instead of draining queued
+#     samples per iteration (which was causing the 73 Hz main-loop stall).
+#
+#   FSTRATE_ENABLE=1 (FAST_RATE_DYNAMIC): rate thread active, pinned to core1
+#     via ChibiOS SMP thread affinity (THD_DESCRIPTOR_AFFINITY + &ch1).
+#     IMU sample read → rate PID → motors output all run on core1.
+#     SPI IRQs remain on core0 (core that started the SPI driver); rate thread
+#     consumes from FastRateBuffer and writes PWM registers directly.
+#
+#   FSTRATE_DIV=3: rate thread runs at 1000 Hz / 3 ≈ 333 Hz.
+#
+#   SCHED_LOOP_RATE=150: EKF, attitude target, GCS, logging at 150 Hz.
+#     The rate thread remains decoupled from the main loop and now runs at
+#     about 333 Hz independently (FSTRATE_DIV=3) to reduce SPI/backend load.
+#
+#   INS_FAST_SAMPLE=1: enables fast-sample window for the rate thread (required
+#     for AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW).
+SCHED_LOOP_RATE 150
 INS_FAST_SAMPLE 1
+INS_GYRO_RATE 0
+FSTRATE_DIV 3
 FSTRATE_ENABLE 1
 
 # Enable watchdog by default.
@@ -41,3 +57,12 @@ SERIAL3_PROTOCOL 23
 SERIAL4_PROTOCOL 2
 #BATT_AMP_PERVLT 1.0
 #BATT_VOLT_MULT 1.0
+
+EK3_IMU_MASK 1
+
+# Enable task statistics collection from boot so @SYS/tasks.txt is populated on
+# the first FTP request.  SCHED_OPTIONS bit 0 = RECORD_TASK_INFO.  Without this,
+# AP_Scheduler::task_info() enables the option on its first call and returns only
+# the "TasksV2\n" header — the TaskInfo array isn't allocated until the next
+# scheduler loop, so every FTP get @SYS/tasks.txt returns an empty file.
+SCHED_OPTIONS 1
