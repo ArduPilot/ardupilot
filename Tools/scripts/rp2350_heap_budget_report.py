@@ -38,6 +38,20 @@ RE_NEW_ARRAY_LITERAL = re.compile(
 )
 RE_BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
+# RP2350-specific RAMFUNC danger thresholds (empirically derived from Laurel bringup).
+# The RP2350 XIP cache is 16 KB.  CovariancePrediction alone compiles to ~19.3 KB, so
+# if it runs from XIP flash it evicts everything else from the cache every EKF cycle
+# (400 Hz on Laurel) → massive latency spike → scheduler watchdog reset.
+_RP2350_XIP_CACHE_SIZE = 16 * 1024
+# The MAVFTP worker thread is given an 8 KB stack on RP2350 (vs 2560 B default).
+# After a full boot the heap is fragmented; empirically, < 48 KB of slack above the
+# linker-enforced __rp2350_min_heap__ means the 8 KB contiguous alloc fails silently
+# and ftp get @SYS/threads.txt never completes.
+_MAVFTP_THREAD_STACK_RP2350 = 8 * 1024
+_MAVFTP_MIN_HEAP_SLACK = 48 * 1024   # 8 KB stack + ~40 KB ExpandingString/frag margin
+# RAMFUNC below this risks CovariancePrediction running from XIP → EKF watchdog.
+_RAMFUNC_EKF_WATCHDOG_THRESHOLD = 32 * 1024
+
 # Parse useful runtime profiling rows from @SYS/threads.txt and @SYS/tasks.txt.
 # Group 3 is either a decimal total or the literal "MSP" (emitted by newer firmware for idle threads that run on the hardware main stack and have no conventional ChibiOS working area).
 RE_THREADS_STACK_ROW = re.compile(
@@ -570,6 +584,36 @@ def recommend_min_heap(
     }
 
 
+def check_ramfunc_dangers(ramfunc_size: int, heap_size: int, min_heap: int) -> List[str]:
+    """Return a list of DANGER strings when RAMFUNC size causes known RP2350 failure modes.
+
+    Two conditions are checked (both empirically confirmed on Laurel bringup):
+    1. RAMFUNC too large  → heap slack too small for late-boot MAVFTP thread allocation.
+    2. RAMFUNC too small  → CovariancePrediction (19.3 KB) runs from XIP flash, thrashing
+       the 16 KB cache at 400 Hz EKF rate and triggering scheduler watchdog resets.
+    """
+    dangers: List[str] = []
+    heap_slack = heap_size - min_heap
+    if heap_slack < _MAVFTP_MIN_HEAP_SLACK:
+        dangers.append(
+            f"DANGER: RAMFUNC too large — heap slack is only {human_bytes(heap_slack)}"
+            f" (need >= {human_bytes(_MAVFTP_MIN_HEAP_SLACK)})\n"
+            f"  MAVFTP thread (8 KB stack) cannot allocate after EKF init fragments the heap.\n"
+            f"  ftp get @SYS/threads.txt will silently fail or return NAK FileNotFound.\n"
+            f"  Fix: comment out NavEKF3 entries in rp2350_ramfunc2_registry.txt to free heap."
+        )
+    if ramfunc_size < _RAMFUNC_EKF_WATCHDOG_THRESHOLD:
+        dangers.append(
+            f"DANGER: RAMFUNC too small ({human_bytes(ramfunc_size)})"
+            f" — risk of XIP cache thrash and EKF watchdog reset\n"
+            f"  CovariancePrediction (~19.3 KB) exceeds the RP2350 XIP cache ({human_bytes(_RP2350_XIP_CACHE_SIZE)}).\n"
+            f"  Running it from flash at 400 Hz evicts all other cached code every EKF cycle\n"
+            f"  causing scheduler overrun and watchdog-triggered board reboot.\n"
+            f"  Fix: keep NavEKF3_core::CovariancePrediction in rp2350_ramfunc2_registry.txt."
+        )
+    return dangers
+
+
 def human_bytes(value: int) -> str:
     if value >= 1024 * 1024:
         return f"{value / (1024 * 1024):.2f} MiB"
@@ -611,11 +655,19 @@ def detect_default_hwdef(repo_root: Path, map_path: Path) -> Optional[Path]:
     return None
 
 
+_HWDEF_FALLBACK_DIRS = [
+    Path("libraries/AP_HAL_ChibiOS/hwdef/Laurel"),
+    Path("libraries/AP_HAL_ChibiOS/hwdef/Pico2"),
+]
+
+
 def detect_default_runtime_file(repo_root: Path, names: List[str]) -> Optional[Path]:
+    search_dirs = [repo_root] + [repo_root / d for d in _HWDEF_FALLBACK_DIRS]
     for name in names:
-        candidate = repo_root / name
-        if candidate.exists() and candidate.is_file():
-            return candidate
+        for d in search_dirs:
+            candidate = d / name
+            if candidate.exists() and candidate.is_file():
+                return candidate
     return None
 
 
@@ -724,6 +776,19 @@ def print_human_report(report: Dict[str, object]) -> None:
     # obvious how much of the 512 KiB is locked into SRAM-resident code.
     ramfunc_pct = sram['ramfunc_size'] * 100 // sram['ram0_size'] if sram['ram0_size'] else 0
     print(f"- RAMFUNC size:       {human_bytes(sram['ramfunc_size'])}  ({ramfunc_pct}% of SRAM)")
+
+    dangers = check_ramfunc_dangers(
+        ramfunc_size=sram['ramfunc_size'],
+        heap_size=sram['heap_size'],
+        min_heap=sram['current_min_heap'],
+    )
+    if dangers:
+        print()
+        print("! " + "=" * 68 + " !")
+        for d in dangers:
+            for line in d.splitlines():
+                print(f"!  {line}")
+        print("! " + "=" * 68 + " !")
     print()
     print("Allocation scan (source)")
     print(f"- Files scanned:      {alloc['files_scanned']}")
@@ -961,12 +1026,12 @@ def main() -> int:
     if args.threads_file:
         threads_path = Path(args.threads_file).expanduser().resolve()
     else:
-        threads_path = detect_default_runtime_file(repo_root, ["threads.new2.txt", "threads.new.txt","threads.current.txt" ])
+        threads_path = detect_default_runtime_file(repo_root, ["threads.new2.txt", "threads.new.txt", "threads.current.txt", "threads.txt"])
 
     if args.tasks_file:
         tasks_path = Path(args.tasks_file).expanduser().resolve()
     else:
-        tasks_path = detect_default_runtime_file(repo_root, ["tasks.new2.txt", "tasks.new.txt", "tasks.current.txt"])
+        tasks_path = detect_default_runtime_file(repo_root, ["tasks.new2.txt", "tasks.new.txt", "tasks.current.txt", "tasks.txt"])
 
     runtime_metrics: Optional[RuntimeMetrics] = None
     if (threads_path and threads_path.exists()) or (tasks_path and tasks_path.exists()):

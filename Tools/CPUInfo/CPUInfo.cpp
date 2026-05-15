@@ -59,9 +59,23 @@ HAL_Semaphore sem;
 AP_ESC_Telem telem;
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+static mutex_t s_raw_mtx;
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(RP2350)
+// Section marker — written before each major operation.
+// After a crash, read this via OpenOCD to see which section faulted.
+// Also read CFSR (0xE000ED28) and HFSR (0xE000ED2C) via OpenOCD mdw command.
+char g_fault_section[64];
+#define SET_SECTION(s) do { strncpy(g_fault_section, s, sizeof(g_fault_section)-1); } while(0)
+#else
+#define SET_SECTION(s) do {} while(0)
+#endif
+
 // Debugger-visible mirror of console output for boards where USB console
 // output is hard to capture during early bring-up.
-char g_cpuinfo_debug_log[16384];
+char g_cpuinfo_debug_log[32768];
 uint32_t g_cpuinfo_debug_log_len;
 uint32_t g_cpuinfo_debug_log_overflow_count;
 uint32_t g_cpuinfo_cycle_count;
@@ -72,41 +86,6 @@ static void cpuinfo_debug_log_reset(void)
     g_cpuinfo_debug_log[0] = '\0';
 }
 
-static bool cpuinfo_format_has_float_conv(const char *fmt)
-{
-    while (*fmt != '\0') {
-        if (*fmt++ != '%') {
-            continue;
-        }
-        if (*fmt == '%') {
-            fmt++;
-            continue;
-        }
-        while (*fmt == '-' || *fmt == '+' || *fmt == ' ' || *fmt == '#' || *fmt == '0') {
-            fmt++;
-        }
-        while (*fmt >= '0' && *fmt <= '9') {
-            fmt++;
-        }
-        if (*fmt == '.') {
-            fmt++;
-            while (*fmt >= '0' && *fmt <= '9') {
-                fmt++;
-            }
-        }
-        while (*fmt == 'l' || *fmt == 'h' || *fmt == 'L' || *fmt == 'z' || *fmt == 't' || *fmt == 'j') {
-            fmt++;
-        }
-        if (*fmt == 'f' || *fmt == 'F' || *fmt == 'e' || *fmt == 'E' || *fmt == 'g' || *fmt == 'G' || *fmt == 'a' || *fmt == 'A') {
-            return true;
-        }
-        if (*fmt == '\0') {
-            break;
-        }
-        fmt++;
-    }
-    return false;
-}
 
 static void cpuinfo_printf(const char *fmt, ...)
 {
@@ -114,12 +93,6 @@ static void cpuinfo_printf(const char *fmt, ...)
     va_start(ap_console, fmt);
     hal.console->vprintf(fmt, ap_console);
     va_end(ap_console);
-
-    // On some embedded libc builds, float formatting in vsnprintf can hang.
-    // Keep console output path active and only skip RAM mirroring for float formats.
-    if (cpuinfo_format_has_float_conv(fmt)) {
-        return;
-    }
 
     if (g_cpuinfo_debug_log_len >= sizeof(g_cpuinfo_debug_log)) {
         g_cpuinfo_debug_log_overflow_count++;
@@ -156,6 +129,9 @@ void setup() {
     SCB_DisableICache();
 #endif
     ekf.init();
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    chMtxObjectInit(&s_raw_mtx);
+#endif
 }
 
 static void show_sizes(void)
@@ -171,11 +147,14 @@ static void show_sizes(void)
     cpuinfo_printf("bool      : %lu\n", (unsigned long)sizeof(bool));
     cpuinfo_printf("void*     : %lu\n", (unsigned long)sizeof(void *));
 
+    SET_SECTION("print_NaN");
     cpuinfo_printf("printing NaN: %f\n", (double)sqrtf(-1.0f));
-    hal.scheduler->delay(50); // careful of watchdog
-    cpuinfo_printf("printing +Inf: %f\n", (double)(1.0f/0.0f)); // rp2350 hangs here
-    hal.scheduler->delay(50); // careful of watchdog
-    cpuinfo_printf("printing -Inf: %f\n", (double)(-1.0f/0.0f)); // rp2350 hangs here
+    hal.scheduler->delay(50);
+    SET_SECTION("print_PosInf");
+    cpuinfo_printf("printing +Inf: %f\n", (double)(1.0f/0.0f));
+    hal.scheduler->delay(50);
+    SET_SECTION("print_NegInf");
+    cpuinfo_printf("printing -Inf: %f\n", (double)(-1.0f/0.0f));
 }
 
 #define TENTIMES(x) do { x; x; x; x; x; x; x; x; x; x; } while (0)
@@ -386,40 +365,54 @@ static void show_timings(void)
     TIMEIT("delay(1)", hal.scheduler->delay(1), 5);
 
     TIMEIT("SEM", { WITH_SEMAPHORE(sem); v_out_32 += v_32;}, 100);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+    // These three tests isolate ChibiOS OS-primitive overhead.
+    // chSysLock is where the SMP spinlock sits in port_rp2.mk builds —
+    // single-core (port.mk) is just BASEPRI write; SMP adds LDREX/STREX
+    // on the hardware spinlock register.
+    TIMEIT("chSysLock", { chSysLock(); chSysUnlock(); }, 200);
+    TIMEIT("chMtxLock", { chMtxLock(&s_raw_mtx); chMtxUnlock(&s_raw_mtx); }, 100);
+    TIMEIT("chThdYield", chThdYield(), 50);
+#endif
 }
 
 static void test_div1000(void)
 {
+    // Use a fast xorshift64 PRNG — div1000 tests the math, not the RNG.
+    // TRNG reads on RP2350 are slow enough to trigger the watchdog at 2M iters.
     cpuinfo_printf("Testing div1000\n");
+    SET_SECTION("div1000_pass1");
+    uint64_t prng = 0x123456789abcdefULL;
     for (uint32_t i=0; i<2000000; i++) {
-        uint64_t v = 0;
-        if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
-            AP_HAL::panic("ERROR: div1000 no random");
-            break;
+        if ((i % 50000) == 0) {
+            hal.scheduler->delay(1); // pat the watchdog
         }
-        uint64_t v1 = v / 1000ULL;
-        uint64_t v2 = uint64_div1000(v);
+        prng ^= prng << 13; prng ^= prng >> 7; prng ^= prng << 17;
+        uint64_t v1 = prng / 1000ULL;
+        uint64_t v2 = uint64_div1000(prng);
         if (v1 != v2) {
             AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
-                          (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
+                          (unsigned long long)prng, (unsigned long long)v1, (unsigned long long)v2);
             return;
         }
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-    // test from locked context
+    SET_SECTION("div1000_pass2");
+    // repeat from locked context
+    prng = 0x123456789abcdefULL;
     for (uint32_t i=0; i<2000000; i++) {
-        uint64_t v = 0;
-        if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
-            AP_HAL::panic("ERROR: div1000 no random");
-            break;
+        if ((i % 50000) == 0) {
+            hal.scheduler->delay(1); // pat the watchdog
         }
+        prng ^= prng << 13; prng ^= prng >> 7; prng ^= prng << 17;
         chSysLock();
-        uint64_t v1 = v / 1000ULL;
-        uint64_t v2 = uint64_div1000(v);
+        uint64_t v1 = prng / 1000ULL;
+        uint64_t v2 = uint64_div1000(prng);
         chSysUnlock();
         if (v1 != v2) {
             AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
-                          (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
+                          (unsigned long long)prng, (unsigned long long)v1, (unsigned long long)v2);
             return;
         }
     }
@@ -438,13 +431,17 @@ void loop()
     cpuinfo_printf("CPUInfo cycle %lu\n", (unsigned long)g_cpuinfo_cycle_count);
     hal.scheduler->delay(50); // careful of watchdog
 
+    SET_SECTION("show_sizes");
     show_sizes();
-    hal.scheduler->delay(50); // careful of watchdog
+    hal.scheduler->delay(50);
     cpuinfo_printf("\n");
-    hal.scheduler->delay(50); // careful of watchdog
+    hal.scheduler->delay(50);
+    SET_SECTION("show_timings");
     show_timings();
-    hal.scheduler->delay(50); // careful of watchdog
+    hal.scheduler->delay(50);
+    SET_SECTION("test_div1000");
     test_div1000();
+    SET_SECTION("loop_delay");
     cpuinfo_printf("\n");
     hal.scheduler->delay(500);
 }

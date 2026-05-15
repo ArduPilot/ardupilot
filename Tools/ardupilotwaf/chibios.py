@@ -61,6 +61,23 @@ def ch_dynamic_env(self):
     self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
 
 
+class rp2350_ramfunc2_gen(Task.Task):
+    """Generate rp2350_ramfunc2_sections.ld from all build artifacts (pre-link)."""
+    color = 'CYAN'
+    # always_run so that incremental builds also refresh the section list
+    always_run = True
+
+    def run(self):
+        import subprocess
+        buildroot = self.env.BUILDROOT
+        script = os.path.join(self.env.SRCROOT,
+                              'libraries/AP_HAL_ChibiOS/hwdef/common/rp2350_ramfunc2_sections.sh')
+        return subprocess.call(['bash', script, buildroot])
+
+    def __str__(self):
+        return 'rp2350_ramfunc2_sections.ld'
+
+
 class upload_fw(Task.Task):
     color='BLUE'
     always_run = True
@@ -486,6 +503,15 @@ class build_intel_hex(Task.Task):
 def chibios_firmware(self):
     self.link_task.always_run = True
 
+    # For RP2350 boards: generate rp2350_ramfunc2_sections.ld from all build
+    # artifacts just before linking so hot functions land in SRAM.  The task
+    # takes the full link-input list as dependencies so it waits for every .a
+    # to be ready, then the link task is ordered after it.
+    if board_uses_rp2350_bootsel(self.env.BOARD):
+        rf2_task = self.create_task('rp2350_ramfunc2_gen',
+                                    src=list(self.link_task.inputs))
+        self.link_task.set_run_after(rf2_task)
+
     link_output = self.link_task.outputs[0]
     hex_task = None
 
@@ -786,10 +812,15 @@ def build(bld):
     bld.env.LIBPATH += ['modules/ChibiOS/']
     if bld.env.ENABLE_CRASHDUMP:
         bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
-# For RP2350/Pico2: force board.o out of libch.a so the strong __late_init() (calling halInit/chSysInit) overrides the weak crt1.o stub.
-# boardInit (defined T in ArduPilot's board.o) is used as the pull handle.
+    # For RP2350/Pico2: force board.o out of libch.a so the strong __late_init() (calling halInit/chSysInit) overrides the weak crt1.o stub.
+    # boardInit (defined T in ArduPilot's board.o) is used as the pull handle.
     if board_uses_rp2350_bootsel(bld.env.BOARD):
         bld.env.LINKFLAGS += ['-Wl,--undefined=boardInit']
+        # Ensure rp2350_ramfunc2_sections.ld exists as an empty placeholder so
+        # the linker-script INCLUDE doesn't fail before rp2350_ramfunc2_gen runs.
+        ld_placeholder = os.path.join(bld.env.BUILDROOT, 'rp2350_ramfunc2_sections.ld')
+        if not os.path.exists(ld_placeholder):
+            open(ld_placeholder, 'w').close()
     # list of functions that will be wrapped to move them out of libc into our
     # own code
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']

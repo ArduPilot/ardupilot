@@ -1,0 +1,88 @@
+CPUInfo cycle 16
+SYSCLK 375MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+Operation timings:
+Note: timings for some operations are very data dependent
+FP build mode:
+  float ABI      : hard
+  FPU precision  : sp
+  __ARM_FP       : 0x4
+  sizeof(float)  : 4
+  sizeof(double) : 8
+SP/DP microbench:
+  float call     : 0.01914 usec/call
+  double call    : 0.26200 usec/call
+  dp/sp ratio    : 13.68x
+  note           : hard vs softfp requires comparing separate builds
+nop         0.0021 usec/call
+micros()    0.0480 usec/call
+micros16()  0.0300 usec/call
+millis()    0.3207 usec/call
+millis16()  0.3365 usec/call
+micros64()  0.2317 usec/call
+hrt_micros32()  0.0684 usec/call
+hrt_micros64()  0.2148 usec/call
+hrt_millis32()  0.3110 usec/call
+hrt_millis64()  0.3126 usec/call
+fadd        0.0274 usec/call
+fsub        0.0242 usec/call
+fmul        0.0244 usec/call
+fdiv /=     0.0586 usec/call
+fdiv 2/x    0.0546 usec/call
+dadd        0.2792 usec/call
+dsub        0.2614 usec/call
+dmul        0.1390 usec/call
+ddiv        0.1616 usec/call
+sinf()      0.3942 usec/call
+cosf()      0.3692 usec/call
+tanf()      1.1814 usec/call
+acosf()     0.3416 usec/call
+asinf()     0.3718 usec/call
+atan2f()    0.6434 usec/call
+sqrtf()     0.0550 usec/call
+sin()       0.3930 usec/call
+cos()       0.3902 usec/call
+tan()       0.5894 usec/call
+acos()      0.3458 usec/call
+asin()      0.3656 usec/call
+atan2()     0.6172 usec/call
+sqrt()      0.0536 usec/call
+sq()        0.0192 usec/call
+powf(v,2)   0.0200 usec/call
+powf(v,3.1)  0.3604 usec/call
+EKF test skipped (CPUINFO_ENABLE_EKF_TEST=0)
+iadd8       0.0230 usec/call
+isub8       0.0242 usec/call
+imul8       0.0308 usec/call
+idiv8       0.0228 usec/call
+iadd16      0.0240 usec/call
+isub16      0.0242 usec/call
+imul16      0.0270 usec/call
+idiv16      0.0336 usec/call
+iadd32      0.0202 usec/call
+isub32      0.0234 usec/call
+imul32      0.0214 usec/call
+idiv32      0.0232 usec/call
+iadd64      0.0548 usec/call
+isub64      0.0576 usec/call
+imul64      0.0786 usec/call
+idiv64      0.2710 usec/call
+memcpy128   1.8049 usec/call
+memset128   2.5441 usec/call
+delay(1)   230.0480 usec/call
+SEM         0.7908 usec/call
+chSysLock   0.0664 usec/call
+chMtxLock   0.3502 usec/call
+chThdYield  0.1708 usec/call
+Testing div1000
+div1000 OK
