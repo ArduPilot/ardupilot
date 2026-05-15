@@ -16,6 +16,8 @@ define RP2350B_QFN80 1
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 # RP2350 has single-precision hardware FP only; keep EKF precision as float.
 define HAL_WITH_EKF_DOUBLE 0
+# one ekf lane.
+define HAL_EKF_IMU_MASK_DEFAULT 1
 
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_RASPBERRYPI_LAUREL
@@ -204,7 +206,9 @@ define HAL_HAVE_SAFETY_SWITCH 0
 define HAL_WITH_MCU_MONITORING 1
 define HAL_HAVE_IMU_HEATER 0
 define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 0
-# Run FAST_TASKs every other tick (~200Hz) to free alternate ticks for GCS/logger/UART
+# DO NOT CHANGE AP_SCHEDULER_FAST_TASK_MODULO NO MATTER WHAT.
+# Reducing EKF/FAST_TASK frequency is not an acceptable workaround.
+# Look for improvements elsewhere (ramfunc, dual-core, etc).
 define AP_SCHEDULER_FAST_TASK_MODULO 2
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
@@ -220,7 +224,10 @@ define MMC_CONNECT_IDLE_TIMEOUT_MS 20
 # On SPI-only card detection (no dedicated CD GPIO), avoid repeated long
 # connect attempts when no card is fitted.
 define HAL_SDCARD_SPI_INIT_TRIES 1
-define HAL_SDCARD_RETRY_INTERVAL_MS 5000
+# SD mount retry: outer Scheduler gate and inner sdcard_retry() gate.
+# Keep both long to avoid SPI bus stalls from repeated failed card probes.
+define HAL_FS_MOUNT_RETRY_MS 30000
+define HAL_SDCARD_RETRY_INTERVAL_MS 30000
 
 # Battery and RSSI channels on RP2350 ADC inputs.
 define HAL_BATT_MONITOR_DEFAULT 4
@@ -274,7 +281,9 @@ define HAL_USE_UART                        FALSE
 define AP_HAL_UARTDRIVER_ENABLED           1
 define HAL_USE_USB                         TRUE
 define HAL_USE_WDG                         TRUE
-define HAL_WATCHDOG_ENABLED_DEFAULT        1
+define HAL_WATCHDOG_ENABLED_DEFAULT        0
+define DISABLE_WATCHDOG                    1
+define HAL_MONITOR_THREAD_ENABLED 0
 define HAL_USE_WSPI                        FALSE
 
 # Port roles chosen to match the Laurel carrier wiring.
@@ -326,11 +335,8 @@ define OSD_ENABLED                         1
 define HAL_OSD_TYPE_DEFAULT                1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
-define CH_CFG_SMP_MODE FALSE
-# Core1 launch re-enabled: the VTOR crash-loop (I2C0 unhandled exception every
-# ~5s) that previously deadlocked start_core1() FIFO handshake is now fixed.
-# The PSM FRCE_OFF pre-reset in start_core1() ensures a clean ROM wait-for-
-# launch state even if core1 survived a soft reset from the bootloader.
+define CH_CFG_SMP_MODE TRUE
+# SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
 define RP_CORE1_START TRUE
 # CPU clock: 375 MHz (1500 MHz VCO / POSTDIV1=4 / POSTDIV2=1 = 375 MHz).
 # The on-chip VREG is raised to 1.30 V (VSEL=0x0f) in software BEFORE the
@@ -366,5 +372,6 @@ define RP_QMI_RXDELAY 6
 #   currently enabled.
 
 # Sensors
+define HAL_INS_ALLOW_NO_SENSORS 1
 IMU Invensensev3 SPI:icm42688 ROTATION_NONE
 BARO DPS310 I2C:0:0x76

@@ -579,7 +579,7 @@ bool Storage::healthy(void)
 #if defined(RP2350)
     // RP2350 targets can run close to CPU budget; allow extra slack before
     // declaring parameter storage unhealthy to avoid false PreArm failures.
-    static constexpr uint32_t healthy_timeout_ms = 10000U;
+    static constexpr uint32_t healthy_timeout_ms = 30000U;
 #else
     static constexpr uint32_t healthy_timeout_ms = 2000U;
 #endif

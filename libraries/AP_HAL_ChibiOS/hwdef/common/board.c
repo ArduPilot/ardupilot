@@ -303,10 +303,6 @@ void __late_init(void) {
 
   chSysInit();
 
-#if defined(RP2350) && defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-  c1_startup_verify();
-#endif
-
 #if defined(RP2350) && HAL_USE_EFL == TRUE
   eflStart(&EFLD1, NULL);
 #endif

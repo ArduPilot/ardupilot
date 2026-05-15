@@ -163,6 +163,10 @@ public:
       create a new thread
      */
     bool thread_create(AP_HAL::MemberProc, const char *name, uint32_t stack_size, priority_base base, int8_t priority) override;
+    bool thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char *name,
+                                      uint32_t stack_size, priority_base base,
+                                      int8_t priority, uint8_t core) override;
+    float get_core1_load_pct() override;
 
     // pat the watchdog
     void watchdog_pat(void);
@@ -192,6 +196,11 @@ private:
     thread_t* _io_thread_ctx;
     thread_t* _storage_thread_ctx;
     thread_t* _monitor_thread_ctx;
+    thread_t* _core1_thread_ctx;
+#if CH_DBG_STATISTICS == TRUE
+    rttime_t  _core1_last_cumulative;
+    uint64_t  _core1_last_us;
+#endif
 
 #if CH_CFG_USE_SEMAPHORES == TRUE
     binary_semaphore_t _timer_semaphore;
