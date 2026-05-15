@@ -5603,7 +5603,7 @@ class TestSuite(abc.ABC):
             16: 1500,
         }
 
-    def set_rc_from_map(self, _map, timeout=20, quiet=False):
+    def set_rc_from_map(self, _map, *, timeout=20, quiet=False):
         map_copy = _map.copy()
         for v in map_copy.values():
             if not isinstance(v, int):
@@ -5694,7 +5694,7 @@ class TestSuite(abc.ABC):
                 need_set[chan] = default_value
         self.set_rc_from_map(need_set)
 
-    def set_rc(self, chan, pwm, timeout=20):
+    def set_rc(self, chan, pwm, *, timeout=20):
         """Setup a simulated RC control to a PWM value"""
         self.set_rc_from_map({chan: pwm}, timeout=timeout)
 
