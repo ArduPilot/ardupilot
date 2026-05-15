@@ -100,6 +100,31 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
 
     r.file_index = uint8_t(pos);
     r.generated = false;
+
+    // Pre-reserve a contiguous buffer for lazily-generated text files so that
+    // ensure_generated() only needs to do one heap allocation rather than many
+    // incremental reallocs.  On RP2350 (and other boards) late-boot heap
+    // fragmentation means the small 512-byte ExpandingString expand increments
+    // can fail even with plenty of total free memory.  A single upfront alloc
+    // of the expected max size succeeds when many small ones would not.
+    // reserve() does not set allocation_failed on failure, so incremental
+    // growth still works as a fallback.
+    if (strcmp(fname, "threads.txt") == 0) {
+        // ~100 bytes per thread with stats, 40 threads max is a safe upper bound.
+        // Pre-reserve a single contiguous block to avoid ExpandingString realloc
+        // after late-boot heap fragmentation on RP2350.
+        r.str->reserve(100 * 40);
+    } else if (strcmp(fname, "tasks.txt") == 0) {
+        // ArduCopter has ~108 vehicle + common tasks.  Extended format prints
+        // 87 bytes/line: 108 * 87 = 9396 bytes + 8 byte header = ~9.4 KB.
+        // Reserve a single contiguous block to avoid fragmented realloc fails.
+        r.str->reserve(120 * 100);
+    } else if (strcmp(fname, "memory.txt") == 0 ||
+               strcmp(fname, "uarts.txt") == 0 ||
+               strcmp(fname, "timers.txt") == 0) {
+        r.str->reserve(512);
+    }
+
 #if AP_CRASHDUMP_ENABLED
     if (strcmp(fname, "crash_dump.bin") == 0) {
         r.str->set_buffer((char*)hal.util->last_crash_dump_ptr(), hal.util->last_crash_dump_size(), hal.util->last_crash_dump_size());
