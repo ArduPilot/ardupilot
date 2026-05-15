@@ -21,7 +21,7 @@ void Mode::exit()
 
 bool Mode::enter()
 {
-    const bool ignore_checks = !rover.arming.is_armed_and_safety_off();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+    const bool ignore_checks = !rover.arming.is_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
 
         // get EKF filter status
