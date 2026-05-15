@@ -126,6 +126,18 @@ public:
         return false;
     }
 
+    // Create a thread pinned to a specific CPU core (0-indexed).
+    // Default implementation ignores the core hint and falls back to thread_create().
+    // HAL implementations that support SMP thread affinity may override this.
+    virtual bool thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char *name,
+                                              uint32_t stack_size, priority_base base,
+                                              int8_t priority, uint8_t core) {
+        return thread_create(proc, name, stack_size, base, priority);
+    }
+
+    // Returns the CPU load percentage of the thread pinned to core1, or -1 if unavailable.
+    virtual float get_core1_load_pct() { return -1.0f; }
+
 private:
 
     AP_HAL::Proc _delay_cb;
