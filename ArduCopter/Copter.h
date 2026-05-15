@@ -713,6 +713,7 @@ private:
     void twentyfive_hz_logging();
     void three_hz_loop();
     void one_hz_loop();
+    void perf_report();
     void init_simple_bearing();
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
