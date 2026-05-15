@@ -30,14 +30,6 @@ const AP_Param::GroupInfo AP_L1_Control::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("XTRACK_I",   2, AP_L1_Control, _L1_xtrack_i_gain, 0.02),
 
-    // @Param: LIM_BANK
-    // @DisplayName: Loiter Radius Bank Angle Limit
-    // @Description: The sealevel bank angle limit for a continuous loiter. (Used to calculate airframe loading limits at higher altitudes). Setting to 0, will instead just scale the loiter radius directly
-    // @Units: deg
-    // @Range: 0 89
-    // @User: Advanced
-    AP_GROUPINFO("LIM_BANK",   3, AP_L1_Control, _loiter_bank_limit, 0.0f),
-
     AP_GROUPEND
 };
 
@@ -123,7 +115,6 @@ int32_t AP_L1_Control::target_bearing_cd(void) const
  */
 float AP_L1_Control::turn_distance(float wp_radius) const
 {
-    wp_radius *= sq(_ahrs.get_EAS2TAS());
     return MIN(wp_radius, _L1_dist);
 }
 
@@ -145,36 +136,28 @@ float AP_L1_Control::turn_distance(float wp_radius, float turn_angle) const
     return distance_90 * turn_angle / 90.0f;
 }
 
-float AP_L1_Control::loiter_radius(const float radius) const
+float AP_L1_Control::_calc_min_turn_radius(float indicated_airspeed,
+                                           float altitude_amsl) const
 {
-    // prevent an insane loiter bank limit
-    float sanitized_bank_limit = constrain_float(_loiter_bank_limit, 0.0f, 89.0f);
-    float lateral_accel_sea_level = tanf(radians(sanitized_bank_limit)) * GRAVITY_MSS;
+    float reference_ias = isnan(indicated_airspeed)
+                              ? _tecs.get_target_airspeed()
+                              : indicated_airspeed;
+    float reference_alt_amsl =
+        isnan(altitude_amsl) ? AP_Baro::get_singleton()->get_altitude_AMSL()
+                             : altitude_amsl;
 
-    float nominal_velocity_sea_level = 0.0f;
-    if(_tecs != nullptr) {
-        nominal_velocity_sea_level =  _tecs->get_target_airspeed();
-    }
+    float tas_at_alt =
+        reference_ias * AP_Baro::get_EAS2TAS_for_alt_amsl(reference_alt_amsl);
 
-    float eas2tas_sq = sq(_ahrs.get_EAS2TAS());
+    return sq(tas_at_alt) / (GRAVITY_MSS * tanf(radians(_aparm.roll_limit)));
+}
 
-    if (is_zero(sanitized_bank_limit) || is_zero(nominal_velocity_sea_level) ||
-        is_zero(lateral_accel_sea_level)) {
-        // Missing a sane input for calculating the limit, or the user has
-        // requested a straight scaling with altitude. This will always vary
-        // with the current altitude, but will at least protect the airframe
-        return radius * eas2tas_sq;
-    } else {
-        float sea_level_radius = sq(nominal_velocity_sea_level) / lateral_accel_sea_level;
-        if (sea_level_radius > radius) {
-            // If we've told the plane that its sea level radius is unachievable fallback to
-            // straight altitude scaling
-            return radius * eas2tas_sq;
-        } else {
-            // select the requested radius, or the required altitude scale, whichever is safer
-            return MAX(sea_level_radius * eas2tas_sq, radius);
-        }
-    }
+float AP_L1_Control::calc_corrected_loiter_radius(float original_radius,
+                                                  float indicated_airspeed,
+                                                  float altitude_amsl) const
+{
+    return MAX(original_radius,
+               _calc_min_turn_radius(indicated_airspeed, altitude_amsl));
 }
 
 bool AP_L1_Control::reached_loiter_target(void)
@@ -352,10 +335,6 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     const float radius_unscaled = radius;
 
     Location _current_loc;
-
-    // scale loiter radius with square of EAS2TAS to allow us to stay
-    // stable at high altitude
-    radius = loiter_radius(fabsf(radius));
 
     // Calculate guidance gains used by PD loop (used during circle tracking)
     float omega = (6.2832f / _L1_period);
