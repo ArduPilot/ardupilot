@@ -2053,7 +2053,7 @@ class TestSuite(abc.ABC):
 
         self.rc_thread: threading.Thread | None = None
         self.rc_thread_should_quit: bool = False
-        self.rc_queue = queue.Queue()
+        self.rc_queue: queue.Queue[dict[int, int]] = queue.Queue()
 
         self.expect_list = []
 
@@ -5824,16 +5824,15 @@ class TestSuite(abc.ABC):
     def rc_defaults(self):
         return {channel: 1500 for channel in range(1, NUM_RC_CHANNELS+1)}
 
-    def set_rc_from_map(self, _map, *, timeout: float | int | None = 20.0, quiet=False):
+    def set_rc_from_map(self, rc_values: dict[int, int], *, timeout: float | int | None = 20.0, quiet=False):
         """Sets provided RC channel/value pairs.
 
         Passing the special value 'None' for timeout means 'do not wait for confirmation'.
         """
-        map_copy = _map.copy()
-        for v in map_copy.values():
+        for v in rc_values.values():
             if not isinstance(v, int):
                 raise NotAchievedException("RC values must be integers")
-        self.rc_queue.put(map_copy)
+        self.rc_queue.put(rc_values.copy())
 
         if self.rc_thread is None:
             self.rc_thread = threading.Thread(target=self.rc_thread_main, name='RC')
@@ -5852,10 +5851,10 @@ class TestSuite(abc.ABC):
             if m is None:
                 continue
             bad_channels = ""
-            for chan in map_copy:
+            for chan in rc_values:
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
-                if chan_pwm != map_copy[chan]:
-                    bad_channels += " (ch=%u want=%u got=%u)" % (chan, map_copy[chan], chan_pwm)
+                if chan_pwm != rc_values[chan]:
+                    bad_channels += " (ch=%u want=%u got=%u)" % (chan, rc_values[chan], chan_pwm)
                     break
             if len(bad_channels) == 0:
                 if not quiet:
@@ -5907,7 +5906,7 @@ class TestSuite(abc.ABC):
                 need_set[chan] = default_value
         self.set_rc_from_map(need_set)
 
-    def set_rc(self, chan, pwm, *, timeout: float | int | None = 20.0):
+    def set_rc(self, chan: int, pwm: int, *, timeout: float | int | None = 20.0):
         """Setup a simulated RC control to a PWM value.
 
         Passing the special value 'None' for timeout means 'do not wait for confirmation'.
