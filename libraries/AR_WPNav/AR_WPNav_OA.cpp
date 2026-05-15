@@ -115,7 +115,7 @@ void AR_WPNav_OA::update(float dt)
             case AP_OAPathPlanner::OAPathPlannerUsed::BendyRulerHorizontal: {
                 // BendyRuler.  Action is only needed if path planner has just became active or the target destination's lat or lon has changed
                 if (!_oa_active || !oa_destination_new.same_latlon_as(_oa_destination)) {
-                    if (AR_WPNav::set_desired_location_expect_fast_update(oa_destination_new)) {
+                    if (AR_WPNav::set_destination_expect_fast_update(oa_destination_new)) {
                         // if new target set successfully, update oa state and destination
                         _oa_active = true;
                         _oa_origin = oa_origin_new;
