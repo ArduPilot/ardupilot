@@ -7,29 +7,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_DAL/AP_DAL.h>
 
-/*
- * RP2350 dual-core EKF covariance offload.
- * On RP2350 with RP_CORE1_START=TRUE, CovariancePrediction() is dispatched to
- * Core1 using c1_run_sync_locked() (FIFO + lock protected path).
- */
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-#include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
-
-/* Pointer to 'this' passed via file scope so the zero-arg static method wrapper
- * can call the instance method.  Set with a DMB fence before every dispatch. */
-static NavEKF3_core *_c1_cov_core;
-
-/*
- * NavEKF3_core::c1_covariance_entry().
- * A static member function has the same ABI as a free void(*)(void) function,
- * so it can be passed directly to c1_run_sync_locked().
- */
-void NavEKF3_core::c1_covariance_entry(void)
-{
-    _c1_cov_core->CovariancePrediction(nullptr);
-}
-#endif  /* RP_CORE1_START */
-
 // constructor
 NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
     dal(_dal),
@@ -671,17 +648,7 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Predict states using IMU data from the delayed time horizon
         UpdateStrapdownEquationsNED();
 
-// Predict the covariance growth.
-// On RP2350: synchronous dispatch to Core1 via FIFO+mutex (c1_run_sync_locked).
-// the cov_barrier() wait after runYawEstimatorPrediction adds ~191-283 µs of chThdSleep spinning to the main loop critical path, which apparently offsets the ~300 µs saved from covariance overlap.
-// if yaw_est is moved to Core1 too, making the cov_barrier wait ~0 µs instead of ~191 µs).
-#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
-        _c1_cov_core = this;
-        __DMB();  /* ensure _c1_cov_core pointer is visible to Core1 before dispatch */
-        c1_run_sync_locked(NavEKF3_core::c1_covariance_entry);
-#else
         CovariancePrediction(nullptr);
-#endif
 
         // Run the IMU prediction step for the GSF yaw estimator algorithm
         // using IMU and optionally true airspeed data.

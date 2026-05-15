@@ -819,6 +819,9 @@ bool NavEKF3::InitialiseFilter(void)
         }
 
         //try to allocate from CCM RAM, fallback to Normal RAM if not available or full
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "EKF3: alloc %u cores sz=%u free=%u",
+                      (unsigned)num_cores, (unsigned)(sizeof(NavEKF3_core)*num_cores),
+                      (unsigned)dal.available_memory());
         core = (NavEKF3_core*)dal.malloc_type(sizeof(NavEKF3_core)*num_cores, AP_DAL::MemoryType::FAST);
         if (core == nullptr) {
             _enable.set(0);
