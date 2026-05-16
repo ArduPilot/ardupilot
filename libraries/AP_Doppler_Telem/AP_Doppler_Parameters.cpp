@@ -46,12 +46,12 @@ const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SIM_EN", 4, AP_Doppler_Parameters, _sim_en, 0),
 
-    // @Param: FUSE_MODE
+    // @Param: FUSEMODE
     // @DisplayName: DVL EKF fusion mode
     // @Description: Controls how DVL velocity is provided to the EKF
     // @Values: 0:Disabled,1:BodyOdometry,2:ExternalNavVelocity
     // @User: Advanced
-    AP_GROUPINFO("FUSE_MODE", 5, AP_Doppler_Parameters, _fusion_mode, (int8_t)AP_Doppler_Parameters::FusionMode::BodyOdom),
+    AP_GROUPINFO("FUSEMODE", 5, AP_Doppler_Parameters, _fusion_mode, (int8_t)AP_Doppler_Parameters::FusionMode::BodyOdom),
 
     // @Param: ORIENT
     // @DisplayName: DVL sensor orientation
@@ -93,12 +93,12 @@ const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DELAY_MS", 8, AP_Doppler_Parameters, _delay_ms, 10),
 
-    // @Param: USE_WATER
+    // @Param: USEWTR
     // @DisplayName: DVL water-track fusion enable
     // @Description: Allows water-track velocity to be used when bottom-track velocity is unavailable. Bottom-track is still preferred.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
-    AP_GROUPINFO("USE_WATER", 9, AP_Doppler_Parameters, _use_water_track, 0),
+    AP_GROUPINFO("USEWTR", 9, AP_Doppler_Parameters, _use_water_track, 0),
 
     // @Param: MIN_QUAL
     // @DisplayName: DVL minimum fusion quality
@@ -106,6 +106,47 @@ const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
     // @Range: 0 100
     // @User: Advanced
     AP_GROUPINFO("MIN_QUAL", 10, AP_Doppler_Parameters, _min_quality, 50.0f),
+
+    // @Param: SIMVEL_X
+    // @DisplayName: DVL simulated X velocity
+    // @Description: Simulated DVL velocity in the DVL sensor X axis before ORIENT correction. Positive X is forward when ORIENT is Forward.
+    // @Units: m/s
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: SIMVEL_Y
+    // @DisplayName: DVL simulated Y velocity
+    // @Description: Simulated DVL velocity in the DVL sensor Y axis before ORIENT correction. Positive Y is right when ORIENT is Forward.
+    // @Units: m/s
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+
+    // @Param: SIMVEL_Z
+    // @DisplayName: DVL simulated Z velocity
+    // @Description: Simulated DVL velocity in the DVL sensor Z axis before ORIENT correction. Positive Z is down when ORIENT is Forward.
+    // @Units: m/s
+    // @Range: -5 5
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("SIMVEL", 11, AP_Doppler_Parameters, _sim_velocity, 0.0f),
+
+    // @Param: SIM_ALT
+    // @DisplayName: DVL simulated altitude
+    // @Description: Simulated bottom-track altitude reported by the internal DVL simulator
+    // @Units: m
+    // @Range: 0.1 100
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("SIM_ALT", 12, AP_Doppler_Parameters, _sim_altitude_m, 2.0f),
+
+    // @Param: SIM_QUAL
+    // @DisplayName: DVL simulated quality
+    // @Description: Simulated DVL bottom-track quality passed to the EKF body odometry path
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("SIM_QUAL", 13, AP_Doppler_Parameters, _sim_quality, 100.0f),
 
     AP_GROUPEND
 };

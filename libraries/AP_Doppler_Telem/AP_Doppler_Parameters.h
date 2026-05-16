@@ -48,6 +48,9 @@ public:
     uint16_t delay_ms() const { return MAX(0, _delay_ms.get()); }
     bool use_water_track() const { return _use_water_track.get() != 0; }
     float min_quality() const { return constrain_float(_min_quality.get(), 0.0f, 100.0f); }
+    const Vector3f &sim_velocity() const { return _sim_velocity; }
+    float sim_altitude_m() const { return MAX(_sim_altitude_m.get(), 0.1f); }
+    float sim_quality() const { return constrain_float(_sim_quality.get(), 0.0f, 100.0f); }
 
 
 private:
@@ -61,6 +64,9 @@ private:
     AP_Int16 _delay_ms;
     AP_Int8 _use_water_track;
     AP_Float _min_quality;
+    AP_Vector3f _sim_velocity;
+    AP_Float _sim_altitude_m;
+    AP_Float _sim_quality;
 
     // settable parameters
 

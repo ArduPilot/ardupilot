@@ -89,6 +89,7 @@ private:
     DVL_U_Msg _sim_ub_msg {};
     DVL_U_Msg _sim_uc_msg {};
     DVL_U_Msg _sim_ud_msg {};
+    DVLBodyOdomSample _sim_odom_sample {};
     static AP_Doppler_Telem *singleton;
     bool fit_health = false;
 
