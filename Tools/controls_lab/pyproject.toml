@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ardupilot-controls-lab"
+dynamic = ["version"]
+description = "A framework for control system experiments on ArduPilot SITL"
+requires-python = ">=3.9"
+license = {text = "GPL-3.0"}
+dependencies = [
+    "pymavlink>=2.4.0",
+    "numpy>=1.21.0",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib>=3.5.0"]
+gym = ["gymnasium>=0.29.0"]
+dev = ["pytest>=7.0.0", "pytest-cov>=4.0.0", "flake8>=7.0.0"]
+
+[tool.setuptools.dynamic]
+version = {attr = "controls_lab._version.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["controls_lab*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
