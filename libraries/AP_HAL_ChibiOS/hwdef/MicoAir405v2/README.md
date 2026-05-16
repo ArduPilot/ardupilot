@@ -14,11 +14,9 @@ The MicoAir405v2 is a flight controller produced by [MicoAir](http://micoair.com
 - 10 PWM outputs
 - 1 SWD
 
-## Physical
 
-![MicoAir F405 V2.1 Front View](MicoAir405v2_FrontView.jpg)
 
-![MicoAir F405 V2.1 Back View](MicoAir405v2_BackView.jpg)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -33,15 +31,6 @@ The MicoAir405v2 is a flight controller produced by [MicoAir](http://micoair.com
 ## RC Input
 
 The default RC input is configured on the UART6_RX inverted from the SBUS pin. Other RC  protocols  should be applied at other UART port such as UART1 or UART4, and set the protocol to receive RC data: `SERIALn_PROTOCOL=23` and change SERIAL6 _Protocol to something other than '23'
-
-## OSD Support
-
-The MicoAir405v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
-## VTX Support
-
-The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
-this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -68,6 +57,21 @@ The default battery parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 21.2
 - BATT_AMP_PERVLT 40.2
+
+## Physical
+
+![MicoAir F405 V2.1 Front View](MicoAir405v2_FrontView.jpg)
+
+![MicoAir F405 V2.1 Back View](MicoAir405v2_BackView.jpg)
+
+## OSD Support
+
+The MicoAir405v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+
+## VTX Support
+
+The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 9v so be careful not to connect
+this to a peripheral requiring 5v.
 
 ## Compass
 

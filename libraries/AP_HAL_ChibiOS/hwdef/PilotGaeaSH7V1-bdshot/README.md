@@ -19,27 +19,9 @@ The PilotGaeaSH7V1-bdshot is a flight controller designed and produced by PilotG
 - 5V/1.5A BEC for main power supply
 - 8V/1.5A BEC for powering Video Transmitter
 
-## Mechanical
 
-- Dimensions: 36 x 36 x 17 mm
-- Weight: 10.5g
 
-## Physical and pinout
-
-![PilotGaeaSH7V1-bdshot front view](./PilotGaea_front_view_Pin.jpg)
-
-![PilotGaeaSH7V1-bdshot rear view](./PilotGaea_rear_view_Pin.jpg)
-
-## Power supply
-
-The PilotGaeaSH7V1-bdshot supports 3-8s Li battery input. It has 2 ways of BEC, which result in 3 ways of power supplies. Please see the table below.
-
-| Power symbol | Power source | Max power (current) |
-| :--- | :--- | :--- |
-| BAT | directly from battery | |
-| 5V | from 5V BEC | 7.5W (1.5A) |
-| 8V | from 8V BEC, controlled by MCU | 12W (1.5A) |
-| 4V5 | from USB or 5V BEC, diodes isolate the two powers | 4.7W (1A) |
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -66,6 +48,54 @@ RC input can be attached to any UART port. To reassign it:
 
 1. Set the target port protocol to RC input (e.g., `SERIALn_PROTOCOL` = 23).
 2. Change `SERIAL6_PROTOCOL` to a different protocol (e.g., -1 or 2) to avoid resource conflicts.
+
+
+
+<!-- TODO: add PWM Output content -->
+
+## Battery Monitoring
+
+The PilotGaeaSH7V1-bdshot features high-voltage monitoring capabilities, supporting up to 8S LiPo on both sensors. Notably, **BATT2** is optimized with a higher divider ratio for enhanced voltage range support.
+
+### Primary Battery (BATT)
+
+- `BATT_MONITOR`: **4** (Analog Voltage and Current)
+- `BATT_VOLT_PIN`: **10**
+- `BATT_CURR_PIN`: **11**
+- `BATT_VOLT_MULT`: **11.0**
+- `BATT_AMP_PERVLT`: **40.0**
+
+### Secondary Battery (BATT2)
+
+To enable the second monitor, set the parameters below and **reboot** the flight controller:
+
+- `BATT2_MONITOR`: **4**
+- `BATT2_VOLT_PIN`: **18**
+- `BATT2_CURR_PIN`: **7**
+- `BATT2_VOLT_MULT`: **21.0**
+- `BATT2_AMP_PERVLT`: **40.0**
+
+## Mechanical
+
+- Dimensions: 36 x 36 x 17 mm
+- Weight: 10.5g
+
+## Physical and pinout
+
+![PilotGaeaSH7V1-bdshot front view](./PilotGaea_front_view_Pin.jpg)
+
+![PilotGaeaSH7V1-bdshot rear view](./PilotGaea_rear_view_Pin.jpg)
+
+## Power supply
+
+The PilotGaeaSH7V1-bdshot supports 3-8s Li battery input. It has 2 ways of BEC, which result in 3 ways of power supplies. Please see the table below.
+
+| Power symbol | Power source | Max power (current) |
+| :--- | :--- | :--- |
+| BAT | directly from battery | |
+| 5V | from 5V BEC | 7.5W (1.5A) |
+| 8V | from 8V BEC, controlled by MCU | 12W (1.5A) |
+| 4V5 | from USB or 5V BEC, diodes isolate the two powers | 4.7W (1A) |
 
 ## OSD Support
 
@@ -99,28 +129,6 @@ To use BDShot for RPM filtering, you must flash the `PilotGaeaSH7V1-bdshot` firm
 > **Note:** **PWM 13 (Group 5)** supports DMA, but is pre-configured for Serial LED ( `NTF_LED_TYPES` = **455** ) in default parameters to support onboard status lighting.
 >
 > **Important:** Every output within a timer group must use the same protocol (e.g., Output 3 & 4 must both be DShot or PWM).
-
-## Battery Monitoring
-
-The PilotGaeaSH7V1-bdshot features high-voltage monitoring capabilities, supporting up to 8S LiPo on both sensors. Notably, **BATT2** is optimized with a higher divider ratio for enhanced voltage range support.
-
-### Primary Battery (BATT)
-
-- `BATT_MONITOR`: **4** (Analog Voltage and Current)
-- `BATT_VOLT_PIN`: **10**
-- `BATT_CURR_PIN`: **11**
-- `BATT_VOLT_MULT`: **11.0**
-- `BATT_AMP_PERVLT`: **40.0**
-
-### Secondary Battery (BATT2)
-
-To enable the second monitor, set the parameters below and **reboot** the flight controller:
-
-- `BATT2_MONITOR`: **4**
-- `BATT2_VOLT_PIN`: **18**
-- `BATT2_CURR_PIN`: **7**
-- `BATT2_VOLT_MULT`: **21.0**
-- `BATT2_AMP_PERVLT`: **40.0**
 
 ## Compass
 

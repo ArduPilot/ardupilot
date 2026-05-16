@@ -232,6 +232,46 @@ class BuildScriptBase:
 
         return sorted(modified_board_names, key=lambda x: x.lower())
 
+    def find_boards_with_modified_readmes(self, branch, master_branch, use_merge_base=True):
+        '''find board objects whose README.md files have been modified between
+        branch and master. Returns a list of (path, board_obj) pairs, one per
+        changed README.md that belongs to a known board directory.'''
+        if use_merge_base:
+            base_commit = self.find_git_branch_merge_base(branch, master_branch)
+        else:
+            base_commit = master_branch
+
+        delta_files = self.run_git([
+            'diff',
+            '--name-only',
+            '--diff-filter=AM',
+            base_commit,
+            branch,
+        ], show_output=False)
+
+        readme_paths = [
+            f.strip() for f in delta_files.splitlines()
+            if f.strip().endswith('README.md')
+        ]
+        if not readme_paths:
+            return []
+
+        bl = board_list.BoardList()
+        board_by_name = {b.name: b for b in bl.boards}
+        hwdef_dirs_real = {os.path.realpath(d) for d in bl.hwdef_dir}
+
+        result = []
+        for path in readme_paths:
+            board_name = os.path.basename(os.path.dirname(path))
+            if board_name not in board_by_name:
+                continue
+            board_dir_real = os.path.realpath(os.path.dirname(path))
+            if os.path.dirname(board_dir_real) not in hwdef_dirs_real:
+                continue
+            result.append((path, board_by_name[board_name]))
+
+        return result
+
     def progress(self, string):
         '''pretty-print progress'''
         print(f"{self.progress_prefix()}: {string}", file=sys.stderr)

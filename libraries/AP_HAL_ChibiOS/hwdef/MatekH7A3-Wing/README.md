@@ -28,11 +28,9 @@
 - Size
   - 36 x 36mm PCB with 30.5mm M3 mounting
 
-## Overview
 
-![MATEKH7A3-SLIM](H7A3-WING.jpg)
 
-## Wiring Diagram
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -47,11 +45,6 @@ receive pin for UARTx. The Tx pin is the transmit pin for UARTx.
 - SERIAL5 -> UART5  (User) (NO DMA)
 - SERIAL6 -> USART6 (User) (NO DMA)
 
-## CAN and I2C
-
-H7A3-SLIM supports 1x CAN bus and 1x I2C bus
-multiple CAN peripherals can be connected to one CAN bus in parallel. similarly for I2C bus.
-
 ## RC Input
 
 RC input is configured on the USART2(SERIAL2). It supports all serial RC protocols. SERIAL2_PROTOCOL=23 by default.
@@ -61,10 +54,6 @@ RC input is configured on the USART2(SERIAL2). It supports all serial RC protoco
 - SBUS/DSM/SRXL connects to the Rx2 pin, but SBUS requires that the SERIAL2_OPTIONS be set to “3”.
 - FPort requires connection to Tx2, and set SERIAL2_OPTIONS to “7”.
 - SRXL2 requires a connection to Tx2, and automatically provides telemetry. Set SERIAL2_OPTIONS to “4”.
-
-## OSD Support
-
-H7A3-SLIM supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such as DJI or DisplayPort is supported using any spare UART. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -94,6 +83,21 @@ The correct battery setting parameters are set by default and are:
 - BATT2_CURR_PIN 8
 - BATT2_VOLT_MULT 21.0  ("VB2" pad support Max.69V voltage sense)
 - BATT_AMP_PERVLT X ("CU2" pad, set it according to external current sensor spec)
+
+## Overview
+
+![MATEKH7A3-SLIM](H7A3-WING.jpg)
+
+## Wiring Diagram
+
+## CAN and I2C
+
+H7A3-SLIM supports 1x CAN bus and 1x I2C bus
+multiple CAN peripherals can be connected to one CAN bus in parallel. similarly for I2C bus.
+
+## OSD Support
+
+H7A3-SLIM supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). External OSD support such as DJI or DisplayPort is supported using any spare UART. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## Compass
 

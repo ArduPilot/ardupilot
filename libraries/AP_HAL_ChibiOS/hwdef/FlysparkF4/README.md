@@ -22,36 +22,9 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 - 3 S - 6 S LiPo input voltage range
 - 30.5 x 30.5 mm mounting pattern (⌀4 mm holes)
 
-## Mechanical
 
-- 41.6mm x 39.4mm x 7.8mm
-- 10.5g
-- Mounting: 30.5mmx30.5mm (4 mm holes)
 
-## Wiring / Pinout
-
-![FlySparkF4 Pinout1](flyspark_f4_connections.png "Pinout1")
-![FlySparkF4 Pinout2](flyspark_f4_connections_1.png "Pinout2")
-
-| Function | MCU / Pin | Notes |
-|---|---|---|
-| ESC / motor outputs | M1-M8 | M1-M4 bottom, M5-M8 front side |
-| UART1 | TX1 / RX1 | DisplayPort |
-| UART2 | TX2 / RX2 | For RC. SBUS pins are inverted and connected directly to to RX2. |
-| UART3 | TX3 / RX3 | Spare |
-| UART4 | TX4 / RX4 | Bluetooth, NOT supported by ArduPilot |
-| UART5 | TX5 / RX5 | ESC telemetry |
-| UART6 | TX6 / RX6 | GPS |
-| I2C | SDA / SCL pads | Magnetometer, Rangefinder, etc. |
-| SPI | SPI pins | IMU |
-| ADC / analog | Current sensor input |
-| Buzzer | BZ+ / BZ− | 5 V buzzer support |
-| RSSI | RS pad | RSSI voltage input |
-| Boot button | BOOT | Forces DFU mode |
-| SD  | SD card slot | |
-| OSD | Via VTX,CAM,CC pins | |
-
----
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -105,6 +78,37 @@ Default configuration:
 - BATT_AMP_PERVLT = 25.0
 
 Supports direct 3 S-6 S LiPo voltage measurement.
+
+---
+
+## Mechanical
+
+- 41.6mm x 39.4mm x 7.8mm
+- 10.5g
+- Mounting: 30.5mmx30.5mm (4 mm holes)
+
+## Wiring / Pinout
+
+![FlySparkF4 Pinout1](flyspark_f4_connections.png "Pinout1")
+![FlySparkF4 Pinout2](flyspark_f4_connections_1.png "Pinout2")
+
+| Function | MCU / Pin | Notes |
+|---|---|---|
+| ESC / motor outputs | M1-M8 | M1-M4 bottom, M5-M8 front side |
+| UART1 | TX1 / RX1 | DisplayPort |
+| UART2 | TX2 / RX2 | For RC. SBUS pins are inverted and connected directly to to RX2. |
+| UART3 | TX3 / RX3 | Spare |
+| UART4 | TX4 / RX4 | Bluetooth, NOT supported by ArduPilot |
+| UART5 | TX5 / RX5 | ESC telemetry |
+| UART6 | TX6 / RX6 | GPS |
+| I2C | SDA / SCL pads | Magnetometer, Rangefinder, etc. |
+| SPI | SPI pins | IMU |
+| ADC / analog | Current sensor input |
+| Buzzer | BZ+ / BZ− | 5 V buzzer support |
+| RSSI | RS pad | RSSI voltage input |
+| Boot button | BOOT | Forces DFU mode |
+| SD  | SD card slot | |
+| OSD | Via VTX,CAM,CC pins | |
 
 ---
 

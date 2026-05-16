@@ -17,11 +17,9 @@ The CORVON743V1 is a flight controller designed and produced by [CORVON]
 - 1 I2C
 - 1 SWD
 
-## Physical
 
-![CORVON743V1 Front View](CORVON743V1_FrontView.jpg)
 
-![CORVON743V1 Back View](CORVON743V1_BackView.jpg)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -42,14 +40,6 @@ The default RC input is configured on the UART6. The SBUS pin is inverted and co
 - FPort would require [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) be set to "15".
 - CRSF would require [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) be set to "0".
 - SRXL2 would require [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) be set to "4" and connects only the TX pin.
-
-## OSD Support
-
-The CORVON743V1 supports onboard OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort OSD is available on the HD VTX connector, See below.
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral that can not tolerate this voltage.
 
 ## PWM Output
 
@@ -75,6 +65,20 @@ The default battery parameters are:
 - [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11 (CURR pin)
 - [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 21.12
 - [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 40.2
+
+## Physical
+
+![CORVON743V1 Front View](CORVON743V1_FrontView.jpg)
+
+![CORVON743V1 Back View](CORVON743V1_BackView.jpg)
+
+## OSD Support
+
+The CORVON743V1 supports onboard OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort OSD is available on the HD VTX connector, See below.
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral that can not tolerate this voltage.
 
 ## Compass
 

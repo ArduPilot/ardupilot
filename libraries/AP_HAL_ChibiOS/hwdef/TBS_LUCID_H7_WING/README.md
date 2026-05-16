@@ -51,18 +51,6 @@ RC input is configured by default via the USART6 RX input. It supports all seria
 
 If SBUS is used on HD VTX connector (DJI TX), then [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) should be set to "23" and [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit).
-You need to set the following parameters to enable support for FrSky S.PORT:
-
-- [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) 10
-- [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) 7
-
-## OSD Support
-
-The TBS Lucid H7 Wing supports analog OSD using its onboard MAX7456 and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
-
 ## PWM Output
 
 The TBS Lucid H7 Wing supports up to 13 PWM or DShot outputs. The pads for motor output
@@ -103,6 +91,18 @@ Pads for a second analog battery monitor are provided. To use:
 - [BATT2_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt2-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) 7
 - [BATT2_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt2-volt-mult-ap-battmonitor-analog-voltage-multiplier) 11.0
 - [BATT2_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt2-amp-pervlt-ap-battmonitor-analog-amps-per-volt) as required
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit).
+You need to set the following parameters to enable support for FrSky S.PORT:
+
+- [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) 10
+- [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) 7
+
+## OSD Support
+
+The TBS Lucid H7 Wing supports analog OSD using its onboard MAX7456 and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
 
 ## Analog RSSI and AIRSPEED inputs
 

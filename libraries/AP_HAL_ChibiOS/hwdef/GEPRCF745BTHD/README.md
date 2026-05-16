@@ -38,21 +38,6 @@ RC input is configured by default via the USAR2 RX input. It supports all unidir
 Note:
 If the receiver is FPort or a full duplex protocol, then the receiver must be tied to the USART2 TX pin and [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options) = 7 (invert TX/RX, half duplex), and [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type) =3.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the Tx pin of any UART including SERIAL2/UART2. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL3).
-
-- SERIAL3_PROTOCOL 10
-- SERIAL3_OPTIONS 7
-
-## OSD Support
-
-The TAKER F745 BT supports analog OSD using its internal OSD chip and simultaneously HD goggle DisplayPort OSDs via the HD VTX connector.
-
-## VTX Support
-
-The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 12v (or VBAT by solder pad selection) so be careful not to connect to devices expecting 5v.
-
 ## PWM Output
 
 The TAKER F745 BT supports up to 9 PWM outputs. The pads for motor output
@@ -82,6 +67,21 @@ The default battery parameters are:
 - BATT_VOLT_SCALE 11.0
 - BATT_CURR_PIN 12
 - BATT_AMP_PERVLT 28.5
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the Tx pin of any UART including SERIAL2/UART2. You need to set the following parameters to enable support for FrSky S.PORT (example shows SERIAL3).
+
+- SERIAL3_PROTOCOL 10
+- SERIAL3_OPTIONS 7
+
+## OSD Support
+
+The TAKER F745 BT supports analog OSD using its internal OSD chip and simultaneously HD goggle DisplayPort OSDs via the HD VTX connector.
+
+## VTX Support
+
+The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 12v (or VBAT by solder pad selection) so be careful not to connect to devices expecting 5v.
 
 ## Compass
 

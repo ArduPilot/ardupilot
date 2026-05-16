@@ -44,18 +44,6 @@ Note: If the receiver is FPort the receiver must be tied to the USART2 TX pin , 
 and SERIAL2_OPTIONS must be set to 7 (invert TX/RX, half duplex). For full duplex like CRSF/ELRS use both
 RX1 and TX1 and set RSSI_TYPE also to 3.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the T3 pin (UART3 transmit).
-You need to set the following parameters to enable support for FrSky S.PORT:
-
-- SERIAL3_PROTOCOL 10
-- SERIAL3_OPTIONS 7
-
-## OSD Support
-
-The Flywoo H743 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX8/RX8 on the HD VTX connector.
-
 ## PWM Output
 
 The Flywoo H743 Pro supports up to 13 PWM or DShot outputs. The pads for motor output
@@ -87,6 +75,18 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 13
 - BATT_VOLT_MULT 11.1
 - BATT_AMP_PERVLT 40
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the T3 pin (UART3 transmit).
+You need to set the following parameters to enable support for FrSky S.PORT:
+
+- SERIAL3_PROTOCOL 10
+- SERIAL3_OPTIONS 7
+
+## OSD Support
+
+The Flywoo H743 Pro supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX8/RX8 on the HD VTX connector.
 
 ## Compass
 

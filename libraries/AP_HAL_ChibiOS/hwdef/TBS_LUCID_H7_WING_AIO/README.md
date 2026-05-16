@@ -53,18 +53,6 @@ RC input is configured by default via the USART4 RX input. It supports all seria
 
 If SBUS is used on HD VTX connector (DJI TX), then [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) should be set to "23" and [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the T2 pin (UART2 transmit).
-Using UART2 you would need to set the following parameters to enable support for FrSky S.PORT:
-
-- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
-- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
-
-## OSD Support
-
-The TBS Lucid H7 Wing AIO supports analog OSD using its onboard MAX7456 and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
-
 ## PWM Output
 
 The TBS Lucid H7 Wing AIO supports up to 8 PWM or DShot outputs. Motor outputs
@@ -103,6 +91,18 @@ Pads for a second analog - BATTery monitor are provided. To use:
 - BATT2_CURR_PIN = 7
 - BATT2_VOLT_MULT = 11.0
 - BATT2_AMP_PERVLT = as required
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the T2 pin (UART2 transmit).
+Using UART2 you would need to set the following parameters to enable support for FrSky S.PORT:
+
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
+- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
+
+## OSD Support
+
+The TBS Lucid H7 Wing AIO supports analog OSD using its onboard MAX7456 and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
 
 ## Analog RSSI and AIRSPEED inputs
 

@@ -37,10 +37,6 @@ RC input is configured on the R6/TX6 (UART6_RX/UART6_TX) pins. It supports all s
 protocols. For protocols requiring half-duplex serial to transmit
 telemetry (such as FPort) you should setup SERIAL6 with half-duplex, pin-swap and inversion enabled.
 
-## OSD Support
-
-The T-Motor H7 Mini supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The T-Motor H7 Mini supports up to 5 PWM outputs. The pads for motor output
@@ -69,6 +65,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 13
 - BATT_VOLT_MULT 11.0
 - BATT_AMP_PERVLT 50.0
+
+## OSD Support
+
+The T-Motor H7 Mini supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

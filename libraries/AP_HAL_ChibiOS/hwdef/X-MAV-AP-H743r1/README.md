@@ -7,43 +7,11 @@ It brings you ultimate performance, stability, and reliability in every aspect.
 
 ![AP-H743-R1](ap-h743r1-main.png)
 
-## Processors & Sensors
 
-- FMU Processor: STM32H743VIT6
-- 32 Bit Arm® Cortex®-M7, 480MHz, 2MB flash memory, 1MB RAM
-- IO Processor: STM32F103
-- 32 Bit Arm® Cortex®-M3, 72MHz, 20KB SRAM
-- On-board sensors
-- Accel/Gyro: ICM-42688-P\*2(Version1), BMI270\*2(Version2)
-- Mag: QMC5883P
-- Barometer: SPL06
 
-## Interfaces
 
-- 15x PWM Servo Outputs
-- 1x Dedicated S.Bus Input
-- 6x UARTs
-- 1x USB Port (TYPE-C)
-- 3x I2C Bus Ports
-- 2x CAN Ports
-- microSD card slot
-- 2x Dedicated Debug Port
-- FMU Debug
-- IO Debug
-
-## Purchase Channels
-
-Order from [X-MAV](https://www.x-mav.cn/).
-
-## Radio Control
-
-The SBUS-in pin supports all unidirectional RC protocols. For bi-directional RC systems (CRSF/ELRS,etc.) you will need to use a UART/SERIAL port such as SERIAL4:
-
-- Set SERIAL4_PROTOCOL to "23"
-- PPM is not supported.
-- FPort requires connection to TX4 and RX4 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html)
-- CRSF/ELRS also requires a TX4 connection, in addition to RX4, and automatically provides telemetry.
-- SRXL2 requires a connection to TX4 and automatically provides telemetry. Set SERIAL4_OPTIONS to "4".
+<!-- TODO: add Features content -->
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -56,6 +24,10 @@ all UARTs have DMA
 - SERIAL4 -> UART4 (MAVLink2)
 - SERIAL5 -> UART7 (User)
 - SERIAL6 -> UART8 (User)
+
+
+
+<!-- TODO: add RC Input content -->
 
 ## PWM Output
 
@@ -110,6 +82,44 @@ The default battery parameters are:
 - BATT_CURR_PIN 8
 - BATT_VOLT_MULT 18.5
 - BATT_AMP_PERVLT 40
+
+## Processors & Sensors
+
+- FMU Processor: STM32H743VIT6
+- 32 Bit Arm® Cortex®-M7, 480MHz, 2MB flash memory, 1MB RAM
+- IO Processor: STM32F103
+- 32 Bit Arm® Cortex®-M3, 72MHz, 20KB SRAM
+- On-board sensors
+- Accel/Gyro: ICM-42688-P\*2(Version1), BMI270\*2(Version2)
+- Mag: QMC5883P
+- Barometer: SPL06
+
+## Interfaces
+
+- 15x PWM Servo Outputs
+- 1x Dedicated S.Bus Input
+- 6x UARTs
+- 1x USB Port (TYPE-C)
+- 3x I2C Bus Ports
+- 2x CAN Ports
+- microSD card slot
+- 2x Dedicated Debug Port
+- FMU Debug
+- IO Debug
+
+## Purchase Channels
+
+Order from [X-MAV](https://www.x-mav.cn/).
+
+## Radio Control
+
+The SBUS-in pin supports all unidirectional RC protocols. For bi-directional RC systems (CRSF/ELRS,etc.) you will need to use a UART/SERIAL port such as SERIAL4:
+
+- Set SERIAL4_PROTOCOL to "23"
+- PPM is not supported.
+- FPort requires connection to TX4 and RX4 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html)
+- CRSF/ELRS also requires a TX4 connection, in addition to RX4, and automatically provides telemetry.
+- SRXL2 requires a connection to TX4 and automatically provides telemetry. Set SERIAL4_OPTIONS to "4".
 
 ## Pinouts
 

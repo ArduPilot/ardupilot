@@ -106,6 +106,17 @@ The A9-15 outputs are in 4 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
+## Battery Monitoring
+
+The X6_Air flight controller has one six-pin power connectors, supporting CAN interface power supply.
+The autopilot defaults are setup for CAN Power Module use (normally supplied with autopilot):
+
+- BATT_MONITOR = 8
+- CAN_P1_DRIVER = 1
+- CAN_P2_DRIVER = 1
+- CAN_D1_PROTOCOL = 1
+- CAN_D2_PROTOCOL = 1
+
 ## GPIOs
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
@@ -133,17 +144,6 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 | 56 |  | M8 |
 | 108 | MainOut8 |  |
 |  |  |  |
-
-## Battery Monitoring
-
-The X6_Air flight controller has one six-pin power connectors, supporting CAN interface power supply.
-The autopilot defaults are setup for CAN Power Module use (normally supplied with autopilot):
-
-- BATT_MONITOR = 8
-- CAN_P1_DRIVER = 1
-- CAN_P2_DRIVER = 1
-- CAN_D1_PROTOCOL = 1
-- CAN_D2_PROTOCOL = 1
 
 ## Compass
 

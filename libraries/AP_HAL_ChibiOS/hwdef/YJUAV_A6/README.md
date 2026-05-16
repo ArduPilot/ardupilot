@@ -26,6 +26,41 @@ The [full schematics](https://github.com/yunjiuav/Hardware/tree/main/A6) of the 
 
 ![YJUAV_A6 Board](YJUAV_A6-pinout.jpg "YJUAV_A6")
 
+## UART Mapping
+
+- SERIAL0 -> USB(OTG1)
+- SERIAL1 -> USART1(Telem1)
+- SERIAL2 -> USART2 (Telem2)
+- SERIAL3 -> USART3 (GPS1), NODMA
+- SERIAL4 -> UART5 (GPS2), NODMA
+- SERIAL5 -> UART6 (SBUS)
+- SERIAL6 -> UART7 (Debug), NODMA
+- SERIAL7 -> USB2(OTG2)
+
+## RC Input
+
+The remote control signal should be connected to the “RC IN” pin, at one side of the servo channels.
+
+This signal pin supports two types of remote control signal inputs, SBUS and PPM signals.
+
+## PWM Output
+
+The A6 supports up to 14 PWM outputs,support all PWM protocols as well as DShot. All 14 PWM outputs have GND on the bottom row, 5V on the middle row and signal on the top row.
+
+The 14 PWM outputs are in 4 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10, 11 and 12 in group3
+- PWM 13 and 14 group4
+
+Channels 1-8 support bi-directional Dshot, channels 9-12 support Dshot, channels 13-14 support regular PWM.
+Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
+
+## Battery Monitoring
+
+The A6 flight controller has two six-pin power connectors, supporting CAN interface power supply and analog interface power supply.
+
 ## Connectors
 
 ### ADC
@@ -162,41 +197,6 @@ The [full schematics](https://github.com/yunjiuav/Hardware/tree/main/A6) of the 
 |  4   | CAN_N  | +3.3V |
 |  5   |  GND   |  GND  |
 |  6   |  GND   |  GND  |
-
-## UART Mapping
-
-- SERIAL0 -> USB(OTG1)
-- SERIAL1 -> USART1(Telem1)
-- SERIAL2 -> USART2 (Telem2)
-- SERIAL3 -> USART3 (GPS1), NODMA
-- SERIAL4 -> UART5 (GPS2), NODMA
-- SERIAL5 -> UART6 (SBUS)
-- SERIAL6 -> UART7 (Debug), NODMA
-- SERIAL7 -> USB2(OTG2)
-
-## RC Input
-
-The remote control signal should be connected to the “RC IN” pin, at one side of the servo channels.
-
-This signal pin supports two types of remote control signal inputs, SBUS and PPM signals.
-
-## PWM Output
-
-The A6 supports up to 14 PWM outputs,support all PWM protocols as well as DShot. All 14 PWM outputs have GND on the bottom row, 5V on the middle row and signal on the top row.
-
-The 14 PWM outputs are in 4 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5, 6, 7 and 8 in group2
-- PWM 9, 10, 11 and 12 in group3
-- PWM 13 and 14 group4
-
-Channels 1-8 support bi-directional Dshot, channels 9-12 support Dshot, channels 13-14 support regular PWM.
-Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
-
-## Battery Monitoring
-
-The A6 flight controller has two six-pin power connectors, supporting CAN interface power supply and analog interface power supply.
 
 ## Compass
 

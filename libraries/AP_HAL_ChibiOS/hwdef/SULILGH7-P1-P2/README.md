@@ -1,11 +1,5 @@
 # SULILGH7P1/P2 Flight Controller
 
-## This firmware is compatible with SULILGH7-P1 and SULILGH7-P2
-
-This is the open-source hardware I have released, and you can find more details at the following link: [OSHW Hub](https://oshwhub.com/shuyedeye/p1-flight-control.)
-
-![SULILGH7-P1](P1.jpg)
-
 ## Features
 
 - Separate flight control core design.
@@ -33,6 +27,10 @@ This is the open-source hardware I have released, and you can find more details 
 
    Two barometers:Baro1-BMP581 , Baro2-ICP20100
   Magnetometer:   Builtin IST8310 magnetometer
+
+
+
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -83,6 +81,17 @@ The 8 FMU PWM outputs are in 4 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
+## Battery Monitoring
+
+Two DroneCAN power monitor interfaces have been configured
+These are set by default in the firmware and shouldn't need to be adjusted.
+
+## This firmware is compatible with SULILGH7-P1 and SULILGH7-P2
+
+This is the open-source hardware I have released, and you can find more details at the following link: [OSHW Hub](https://oshwhub.com/shuyedeye/p1-flight-control.)
+
+![SULILGH7-P1](P1.jpg)
+
 ## GPIOs
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
@@ -110,11 +119,6 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 | 56 |  | M8 |
 | 108 | MainOut8 |  |
 | M16 | 57 |  |
-
-## Battery Monitoring
-
-Two DroneCAN power monitor interfaces have been configured
-These are set by default in the firmware and shouldn't need to be adjusted.
 
 ## Compass
 

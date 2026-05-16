@@ -39,17 +39,6 @@ protocols. For protocols requiring half-duplex serial to transmit
 telemetry (such as FPort) you should setup SERIAL6 as an RC input serial port,
 with half-duplex, pin-swap and inversion enabled.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the T6 pin (UART6 transmit). You need to set the following parameters to enable support for FrSky S.PORT
-
-- SERIAL6_PROTOCOL 10
-- SERIAL6_OPTIONS 7
-
-## OSD Support
-
-The KakuteH7Mini supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The KakuteH7Mini supports up to 9 PWM outputs. The pads for motor output
@@ -81,6 +70,17 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 11.1
 - BATT_AMP_PERVLT 59.5
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the T6 pin (UART6 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+
+- SERIAL6_PROTOCOL 10
+- SERIAL6_OPTIONS 7
+
+## OSD Support
+
+The KakuteH7Mini supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

@@ -45,6 +45,48 @@ have RTS/CTS.
 The CONS port was originally used as a debug console, but is now a
 general purpose UART (debug output is now on USB).
 
+## RC Input
+
+RC input is configured on the RCIN pin, at one end of the servo rail,
+marked RCIN in the above diagram. This pin supports all RC
+protocols. In addition there is a dedicated Spektrum satellite port
+which supports software power control, allowing for binding of
+Spektrum satellite receivers.
+
+## PWM Output
+
+The CubeBlack supports up to 14 PWM outputs. First first 8 outputs (labelled
+"MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
+outputs support all PWM output formats, but not DShot.
+
+The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
+outputs. These are directly attached to the STM32F427 and support all
+PWM protocols as well as DShot.
+
+All 14 PWM outputs have GND on the top row, 5V on the middle row and
+signal on the bottom row.
+
+The 8 main PWM outputs are in 3 groups:
+
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
+
+The 6 auxiliary PWM outputs are in 2 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
+
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot.
+
+## Battery Monitoring
+
+The board has two dedicated power monitor ports on 6 pin
+connectors. The correct battery setting parameters are dependent on
+the type of power brick which is connected.
+
 ## Connectors
 
 Unless noted otherwise all connectors are JST GH
@@ -200,48 +242,6 @@ the servo rail.
 | 4 (blk) | GND | GND |
 | 5 (blk) | BUZZER | battery voltage |
 | 6 (blk) | Boot/Error LED |  |
-
-## RC Input
-
-RC input is configured on the RCIN pin, at one end of the servo rail,
-marked RCIN in the above diagram. This pin supports all RC
-protocols. In addition there is a dedicated Spektrum satellite port
-which supports software power control, allowing for binding of
-Spektrum satellite receivers.
-
-## PWM Output
-
-The CubeBlack supports up to 14 PWM outputs. First first 8 outputs (labelled
-"MAIN") are controlled by a dedicated STM32F100 IO controller. These 8
-outputs support all PWM output formats, but not DShot.
-
-The remaining 6 outputs (labelled AUX1 to AUX6) are the "auxiliary"
-outputs. These are directly attached to the STM32F427 and support all
-PWM protocols as well as DShot.
-
-All 14 PWM outputs have GND on the top row, 5V on the middle row and
-signal on the bottom row.
-
-The 8 main PWM outputs are in 3 groups:
-
-- PWM 1 and 2 in group1
-- PWM 3 and 4 in group2
-- PWM 5, 6, 7 and 8 in group3
-
-The 6 auxiliary PWM outputs are in 2 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5 and 6 in group2
-
-Channels within the same group need to use the same output rate. If
-any channel in a group uses DShot then all channels in the group need
-to use DShot.
-
-## Battery Monitoring
-
-The board has two dedicated power monitor ports on 6 pin
-connectors. The correct battery setting parameters are dependent on
-the type of power brick which is connected.
 
 ## Compass
 

@@ -22,6 +22,77 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 - voltage monitoring for servo rail and Vcc
 - two dedicated power input ports for external power bricks
 
+
+
+<!-- TODO: add Pinout content -->
+
+## UART Mapping
+
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> UART3 (Telem2)
+- SERIAL3 -> UART1 (GPS)
+- SERIAL4 -> UART4 (GPS2)
+- SERIAL5 -> UART6 (spare)
+- SERIAL6 -> UART7 (spare, debug)
+- SERIAL7 -> USB2  (SLCAN)
+
+The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
+have RTS/CTS.
+
+The UART7 connector is labelled debug, but is available as a general
+purpose UART with ArduPilot.
+
+## RC Input
+
+RC input is configured on the PPM pin, at one end of the servo rail,
+marked RC in the above diagram. This pin supports all unidirectional RC protocols including PPM.  The DSM/SBUS pin is also tied to the PPM pin.For CRSF/ELRS/etc. protocols
+a full UART will need to be used with its SERIALx_PROTOCOL set to "23".
+
+## PWM Output
+
+The MUPilot supports up to 14 PWM outputs. First first 8 outputs (labelled
+"M1 to M8") are controlled by a dedicated STM32F103 IO controller. These 8
+outputs support all PWM output formats, but not DShot.
+
+The remaining 6 outputs (labelled A1 to A6) are the "auxiliary"
+outputs. These are directly attached to the STM32F765 and support all
+PWM protocols as well as DShot.
+
+All 14 PWM outputs have GND on the top row, 5V on the middle row and
+signal on the bottom row.
+
+The 8 main PWM outputs are in 3 groups:
+
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
+
+The 6 auxiliary PWM outputs are in 2 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
+
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot.
+
+The output levels of the auxiliary outputs can be selected by switch to be either 3.3V or 5V. The output level is 3.3V for the main outputs.
+
+## Battery Monitoring
+
+The board has two dedicated power monitor ports on 6 pin
+connectors. The correct battery setting parameters are dependent on
+the type of power brick which is connected. The first is analog only, the second may be either analog or I2C, depending on baseboard jumpers.
+In order to enable monitoring, the BATT_MONITOR or BATT2_MONITOR parameter must be set. By default BATT_MONITOR is set to "4" for the included power module.
+
+Default params for the first monitor are set and are:
+
+- BATT_VOLT_PIN = 2
+- BATT_CURR_PIN = 1
+- BATT_VOLT_MULT = 18.0
+- BATT_AMP_PERVLT = 24.0
+
 ## Mechanical
 
 - 91mm x 46mm x 31mm
@@ -174,73 +245,6 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  3   |   RSSI      | +3.3V |
 |  4   |   3V3_OUT   | +3.3V |
 |  5   |   GND       |  GND  |
-
-## UART Mapping
-
-- SERIAL0 -> USB
-- SERIAL1 -> UART2 (Telem1)
-- SERIAL2 -> UART3 (Telem2)
-- SERIAL3 -> UART1 (GPS)
-- SERIAL4 -> UART4 (GPS2)
-- SERIAL5 -> UART6 (spare)
-- SERIAL6 -> UART7 (spare, debug)
-- SERIAL7 -> USB2  (SLCAN)
-
-The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
-have RTS/CTS.
-
-The UART7 connector is labelled debug, but is available as a general
-purpose UART with ArduPilot.
-
-## RC Input
-
-RC input is configured on the PPM pin, at one end of the servo rail,
-marked RC in the above diagram. This pin supports all unidirectional RC protocols including PPM.  The DSM/SBUS pin is also tied to the PPM pin.For CRSF/ELRS/etc. protocols
-a full UART will need to be used with its SERIALx_PROTOCOL set to "23".
-
-## PWM Output
-
-The MUPilot supports up to 14 PWM outputs. First first 8 outputs (labelled
-"M1 to M8") are controlled by a dedicated STM32F103 IO controller. These 8
-outputs support all PWM output formats, but not DShot.
-
-The remaining 6 outputs (labelled A1 to A6) are the "auxiliary"
-outputs. These are directly attached to the STM32F765 and support all
-PWM protocols as well as DShot.
-
-All 14 PWM outputs have GND on the top row, 5V on the middle row and
-signal on the bottom row.
-
-The 8 main PWM outputs are in 3 groups:
-
-- PWM 1 and 2 in group1
-- PWM 3 and 4 in group2
-- PWM 5, 6, 7 and 8 in group3
-
-The 6 auxiliary PWM outputs are in 2 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5 and 6 in group2
-
-Channels within the same group need to use the same output rate. If
-any channel in a group uses DShot then all channels in the group need
-to use DShot.
-
-The output levels of the auxiliary outputs can be selected by switch to be either 3.3V or 5V. The output level is 3.3V for the main outputs.
-
-## Battery Monitoring
-
-The board has two dedicated power monitor ports on 6 pin
-connectors. The correct battery setting parameters are dependent on
-the type of power brick which is connected. The first is analog only, the second may be either analog or I2C, depending on baseboard jumpers.
-In order to enable monitoring, the BATT_MONITOR or BATT2_MONITOR parameter must be set. By default BATT_MONITOR is set to "4" for the included power module.
-
-Default params for the first monitor are set and are:
-
-- BATT_VOLT_PIN = 2
-- BATT_CURR_PIN = 1
-- BATT_VOLT_MULT = 18.0
-- BATT_AMP_PERVLT = 24.0
 
 ## Compass
 

@@ -22,16 +22,6 @@ The DAKEFPV H743 is a flight controller produced by [DAKEFPV](https://www.dakefp
 ![DAKEFPV H743 Board Top](DAKEFPVH743_Top.jpg "DAKEFPV H743 Top")
 ![DAKEFPV H743 Board Bottom](DAKEFPVH743_Bottom.jpg "DAKEFPV H743 Bottom")
 
-## DAKEFPV H743 Wiring Diagram
-
-### DAKEFPV H743 Pro Wiring Diagram Top
-
-![DAKEFPV H743 Wiring Diagram Top](DAKEFPVH743_WiringDiagramTop.jpg "DAKEFPV H743 Wiring Diagram Top")
-
-### DAKEFPV H743 Pro Wiring Diagram Bottom
-
-![DAKEFPV H743 Wiring Diagram Bottom](DAKEFPVH743_WiringDiagramBottom.jpg "DAKEFPV H743 Wiring Diagram Bottom")
-
 ## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
@@ -54,14 +44,6 @@ RC input is configured by default via the USART5 RX input. It supports all unidi
 - FPort requires an external bi-directional inverter attached to T5 and [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) set to 4 (half-duplex).  See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF/ELRS uses RX5/TX5.
 - SRXL2 requires a connection to T5 and automatically provides telemetry.  Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) to "4".
-
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART2 transmit).
-You need to set the following parameters to enable support for FrSky S.PORT:
-
-- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
-- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
 
 ## PWM Output
 
@@ -94,6 +76,24 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN =1 0
 - BATT_VOLT_MULT = 16.0
 - BATT_AMP_PERVLT = 83.3
+
+## DAKEFPV H743 Wiring Diagram
+
+### DAKEFPV H743 Pro Wiring Diagram Top
+
+![DAKEFPV H743 Wiring Diagram Top](DAKEFPVH743_WiringDiagramTop.jpg "DAKEFPV H743 Wiring Diagram Top")
+
+### DAKEFPV H743 Pro Wiring Diagram Bottom
+
+![DAKEFPV H743 Wiring Diagram Bottom](DAKEFPVH743_WiringDiagramBottom.jpg "DAKEFPV H743 Wiring Diagram Bottom")
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART2 transmit).
+You need to set the following parameters to enable support for FrSky S.PORT:
+
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
+- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
 
 ## RSSI
 

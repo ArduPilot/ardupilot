@@ -7,6 +7,52 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 
 ---
 
+
+
+<!-- TODO: add Features content -->
+
+## Pinout
+
+![Pinout Diagram](Pinout.png)
+
+---
+
+## UART Mapping
+
+| SERIAL Port | UART Interface | Label / Function     | Flow Control |
+|-------------|----------------|----------------------|---------------|
+| SERIAL1     | UART7          | TELEM1/MAVLink2| Yes           |
+| SERIAL2     | UART5          | TELEM2/MAVLink2| Yes           |
+| SERIAL3     | UART1          | GPS1                 | No            |
+| SERIAL4     | UART8          | GPS2                 | No            |
+| SERIAL5     | USART2         | TELEM3/MAVLink2| Yes           |
+| SERIAL6     | UART4          | UART4 (General Use)  | No            |
+| SERIAL7     | USART3         | FMU_DEBUG            | No            |
+
+> **Note**: All UARTS are DMA capable. UART7, USART2, and UART5 support hardware flow control.
+
+---
+
+
+
+<!-- TODO: add RC Input content -->
+
+## PWM Output
+
+Supports up to **16 PWM outputs**:
+
+- **Main Outputs (M1-M8)**: via STM32F103 IO Processor
+- **Auxiliary Outputs (A1-A8)**: via STM32H753 FMU
+
+> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1-M8** are bi-directional DShot capable.
+---
+
+## Battery Monitoring
+
+Includes **two I2C power monitor ports** using 6-pin connectors. Configuration is defaulted for the first monitor to be INA2XX I2C type power monitor.
+
+---
+
 ## Specifications
 
 ### Main Processors
@@ -86,47 +132,9 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 
 ---
 
-## Pinout
-
-![Pinout Diagram](Pinout.png)
-
----
-
-## UART Mapping
-
-| SERIAL Port | UART Interface | Label / Function     | Flow Control |
-|-------------|----------------|----------------------|---------------|
-| SERIAL1     | UART7          | TELEM1/MAVLink2| Yes           |
-| SERIAL2     | UART5          | TELEM2/MAVLink2| Yes           |
-| SERIAL3     | UART1          | GPS1                 | No            |
-| SERIAL4     | UART8          | GPS2                 | No            |
-| SERIAL5     | USART2         | TELEM3/MAVLink2| Yes           |
-| SERIAL6     | UART4          | UART4 (General Use)  | No            |
-| SERIAL7     | USART3         | FMU_DEBUG            | No            |
-
-> **Note**: All UARTS are DMA capable. UART7, USART2, and UART5 support hardware flow control.
-
----
-
 ## RC Input Configuration
 
 RC input supports SBUS, PPM, and DSM protocols with dedicated ports available for each. For bi-directional protocols, UART4 or other telemetry ports can be configured to handle the connection. For more details, refer to the [ArduPilot documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
-
----
-
-## PWM Output
-
-Supports up to **16 PWM outputs**:
-
-- **Main Outputs (M1-M8)**: via STM32F103 IO Processor
-- **Auxiliary Outputs (A1-A8)**: via STM32H753 FMU
-
-> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1-M8** are bi-directional DShot capable.
----
-
-## Battery Monitoring
-
-Includes **two I2C power monitor ports** using 6-pin connectors. Configuration is defaulted for the first monitor to be INA2XX I2C type power monitor.
 
 ---
 

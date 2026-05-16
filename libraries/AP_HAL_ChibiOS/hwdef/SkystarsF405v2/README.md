@@ -42,16 +42,6 @@ to something other than '23'. For rc protocols other than unidirectional, the US
 
 SBUS is supported via hardware inversion connected to USART_RX2 and is available on both a solder pad and in the DJI HD connector.
 
-## OSD Support
-
-The SkystarsF405v2 supports OSD using OSD_TYPE 1 (MAX7456 driver)
- and simultaneously DisplayPort using USART6 on the HD VTX connector.
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 10v so
-be careful not to connect this to a peripheral that can not tolerate this voltage.
-
 ## PWM Output
 
 The SkystarsF405v2 supports up to 7 PWM or DShot outputs. The pads for motor output
@@ -81,6 +71,16 @@ The default battery parameters are:
 - BATT_CURR_PIN = 11
 - BATT_VOLT_MULT = 11.0
 - BATT_AMP_PERVLT = 25.0
+
+## OSD Support
+
+The SkystarsF405v2 supports OSD using OSD_TYPE 1 (MAX7456 driver)
+ and simultaneously DisplayPort using USART6 on the HD VTX connector.
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 10v so
+be careful not to connect this to a peripheral that can not tolerate this voltage.
 
 ## Analog RSSI input
 

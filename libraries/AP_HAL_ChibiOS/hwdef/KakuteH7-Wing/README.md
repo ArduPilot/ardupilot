@@ -52,10 +52,6 @@ telemetry (such as FPort) you should set BRD_ALT_CONFIG=1 and setup
 SERIAL6 as an RC input serial port, with half-duplex, pin-swap
 and inversion enabled.
 
-## OSD Support
-
-The KakuteH7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The KakuteH7 supports up to 14 PWM outputs. Outputs 1-10 support DShot. Outputs 5-8 support BiDirDshot.
@@ -86,6 +82,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 4
 - BATT_VOLT_MULT 18.18
 - BATT_AMP_PERVLT 36.6
+
+## OSD Support
+
+The KakuteH7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Switchable Vidoe Supply and Camera Inputs
 

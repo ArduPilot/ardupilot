@@ -18,12 +18,6 @@ The BLITZ Wing H743 is a flight controller produced by [iFlight](https://shop.if
 - 2x I2C for external compass, airspeed, etc.
 - CAN port
 
-## Physical
-
-- Mount pattern: 30.5*30.5mm/?4
-- Dimensions: 36.9*52mm
-- Weight: 35g
-
 ## Pinout
 
 ![BLITZ Wing H743 Board](blitz_h7_wing_top.PNG "BLITZ Wing H743 Top")
@@ -49,10 +43,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured on the (UART2_RX/UART2_TX) pins which forms part of the DJI connector. It supports all serial RC protocols.
 
-## OSD Support
-
-The BLITZ Wing H743 supports OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort HD OSD is enabled by default and available on the HD VTX connector.
-
 ## PWM Output
 
 The BLITZ Wing H743 has 13 PWM outputs. The first 8 outputs support bi-directional DShot and DShot, as well as all PWM types. Outputs 9-10 support DShot, as well as all PWM types and outputs 11-12 only support PWM.
@@ -69,18 +59,6 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot.
 
-## Video Power Control
-
-The 9V video power can be turned off/on  using GPIO 81 which is already assigned by default to RELAY2.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
-
-## Camera Switch
-
-The camera output can be switched using GPIO 82 which is already assigned by default to RELAY3.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
-
-## Analog Airspeed Input
-
-The analog airspeed pin is "4"
-
 ## Battery Monitoring
 
 The board has a built-in voltage sensor and  current sensor. The voltage sensor can handle up to 8S
@@ -95,6 +73,28 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## Physical
+
+- Mount pattern: 30.5*30.5mm/?4
+- Dimensions: 36.9*52mm
+- Weight: 35g
+
+## OSD Support
+
+The BLITZ Wing H743 supports OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort HD OSD is enabled by default and available on the HD VTX connector.
+
+## Video Power Control
+
+The 9V video power can be turned off/on  using GPIO 81 which is already assigned by default to RELAY2.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
+
+## Camera Switch
+
+The camera output can be switched using GPIO 82 which is already assigned by default to RELAY3.  This relay can be controlled either from the GCS or using a transmitter channel (See [auxiliary functions](https://ardupilot.org/copter/docs/common-auxiliary-functions.html))
+
+## Analog Airspeed Input
+
+The analog airspeed pin is "4"
 
 ## Compass
 

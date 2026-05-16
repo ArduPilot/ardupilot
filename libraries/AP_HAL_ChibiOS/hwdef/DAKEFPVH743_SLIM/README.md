@@ -21,17 +21,6 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 ![DAKEFPV H743 SLIM Board Top](DAKEFPVH743_SLIM_Top.jpg "DAKEFPV H743 SLIM Top")
 ![DAKEFPV H743 SLIM Board Bottom](DAKEFPVH743_SLIM_Bottom.jpg "DAKEFPV H743 SLIM Bottom")
 
-## DAKEFPV H743 SLIM Wiring Diagram
-
-### DAKEFPV H743 SLIM Wiring Diagram Top
-
-![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop.png "DAKEFPV H743 SLIM Wiring Diagram Top")
-![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop2.png "DAKEFPV H743 SLIM Wiring Diagram Top1")
-
-### DAKEFPV H743 SLIM Wiring Diagram Bottom
-
-![DAKEFPV H743 SLIM Wiring Diagram Bottom](DAKEFPVH743_SLIM_WiringDiagramBottom.png "DAKEFPV H743 SLIM Wiring Diagram Bottom")
-
 ## UART Mapping
 
 The UARTs are marked Rxn and Txn in the above pinouts. The Rxn pin is the
@@ -56,14 +45,6 @@ RC input is configured by default via the USART5 RX input. It supports all seria
 - SRXL2 requires a connection to T5 and automatically provides telemetry.  Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) to "4".
 
 If the user wishes to use the SBUS from a DJI air unit for RC control, it is suggested that the RX8 pad be used as shown in the wiring diagram and [SERIAL8_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial8-protocol-serial8-protocol-selection) be set to "23" and [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) be changed from "23" to something else.
-
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART2 transmit).
-You need to set the following parameters to enable support for FrSky S.PORT:
-
-- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
-- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
 
 ## PWM Output
 
@@ -93,6 +74,25 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN = 10
 - BATT_VOLT_MULT = 16.0
 - BATT_AMP_PERVLT = 83.3
+
+## DAKEFPV H743 SLIM Wiring Diagram
+
+### DAKEFPV H743 SLIM Wiring Diagram Top
+
+![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop.png "DAKEFPV H743 SLIM Wiring Diagram Top")
+![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop2.png "DAKEFPV H743 SLIM Wiring Diagram Top1")
+
+### DAKEFPV H743 SLIM Wiring Diagram Bottom
+
+![DAKEFPV H743 SLIM Wiring Diagram Bottom](DAKEFPVH743_SLIM_WiringDiagramBottom.png "DAKEFPV H743 SLIM Wiring Diagram Bottom")
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART2 transmit).
+You need to set the following parameters to enable support for FrSky S.PORT:
+
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
+- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
 
 ## RSSI
 

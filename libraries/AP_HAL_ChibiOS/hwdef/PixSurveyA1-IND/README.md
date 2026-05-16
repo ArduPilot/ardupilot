@@ -37,6 +37,49 @@ The PixSurveyA1-IND flight controller is an upgrade to PixSurveyA1, with better 
 - SERIAL4 -> UART8   (GPS2, DMA-enabled)
 - SERIAL5 -> UART7   (USER)
 
+## RC Input
+
+All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
+
+## PWM Output
+
+The PixSurveyA1-IND supports up to 14 PWM outputs. First first 8 outputs (labelled 1 to 8) are controlled by a dedicated STM32F103 IO controller. These 8
+outputs support all PWM output formats, but not DShot.
+
+The remaining 6 outputs (labelled 9 to 14) are the "auxiliary"
+outputs. These are directly attached to the STM32F427 and support all
+PWM protocols as well as DShot.
+
+The 8 main PWM outputs are in 3 groups:
+
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
+
+The 6 auxiliary PWM outputs are in 2 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
+
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot.
+
+## Battery Monitoring
+
+These should already be set by default. However, if lost or changed:
+
+Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
+
+- BATT_VOLT_PIN = 2
+- BATT_CURR_PIN = 3
+- BATT_VOLT_MULT = 18.0
+- BATT_AMP_PERVLT = 24.0
+- BATT2_VOLT_PIN = 14
+- BATT2_CURR_PIN = 13
+- BATT2_VOLT_MULT = 18.0
+- BATT2_AMP_PERVLT = 24.0
+
 ## Connector pin assignments
 
 ### TELEM1, TELEM2 ports
@@ -121,52 +164,9 @@ The PixSurveyA1-IND flight controller is an upgrade to PixSurveyA1, with better 
 | 2 | NC | NC |
 | 3 | GND | GND |
 
-## RC Input
-
-All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
-
 ## Compass
 
 The PixSurveyA1-IND has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.
-
-## PWM Output
-
-The PixSurveyA1-IND supports up to 14 PWM outputs. First first 8 outputs (labelled 1 to 8) are controlled by a dedicated STM32F103 IO controller. These 8
-outputs support all PWM output formats, but not DShot.
-
-The remaining 6 outputs (labelled 9 to 14) are the "auxiliary"
-outputs. These are directly attached to the STM32F427 and support all
-PWM protocols as well as DShot.
-
-The 8 main PWM outputs are in 3 groups:
-
-- PWM 1 and 2 in group1
-- PWM 3 and 4 in group2
-- PWM 5, 6, 7 and 8 in group3
-
-The 6 auxiliary PWM outputs are in 2 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5 and 6 in group2
-
-Channels within the same group need to use the same output rate. If
-any channel in a group uses DShot then all channels in the group need
-to use DShot.
-
-## Battery Monitoring
-
-These should already be set by default. However, if lost or changed:
-
-Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
-
-- BATT_VOLT_PIN = 2
-- BATT_CURR_PIN = 3
-- BATT_VOLT_MULT = 18.0
-- BATT_AMP_PERVLT = 24.0
-- BATT2_VOLT_PIN = 14
-- BATT2_CURR_PIN = 13
-- BATT2_VOLT_MULT = 18.0
-- BATT2_AMP_PERVLT = 24.0
 
 ## DroneCAN capability
 

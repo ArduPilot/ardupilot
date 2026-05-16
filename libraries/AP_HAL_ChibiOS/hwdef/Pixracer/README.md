@@ -40,6 +40,38 @@ The [full schematics](https://github.com/ArduPilot/Schematics/tree/master/mRobot
 The Telem1 and Telem2 ports have RTS/CTS pins, the other UARTs do not
 have RTS/CTS.
 
+## RC Input
+
+RC input is via a RC input cable. That cable comes in two forms, one
+for Spektrum satellite receivers and another for all other receiver
+types.
+
+Both cables support all protocols with ArduPilot, but you need to use
+the Spektrum cable if you want to be able to bind the receiver using
+the ArduPilot binding support as only the Spektrum cable gives
+ArduPilot the ability to control the power on the Spektrum satellite
+receiver.
+
+## PWM Output
+
+The Pixracer supports up to 6 PWM outputs. All 6 outputs can support
+DShot as well as all PWM protocols.
+
+The 6 PWM outputs are in 2 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5 and 6 in group2
+
+Channels within the same group need to use the same output rate. If
+any channel in a group uses DShot then all channels in the group need
+to use DShot.
+
+## Battery Monitoring
+
+The board has a dedicated power monitor port on a 6 pin connector. The
+correct battery setting parameters are dependent on the type of power
+brick which is connected.
+
 ## Connectors
 
 Unless noted otherwise all connectors are JST GH
@@ -133,18 +165,6 @@ purpose UART.
 | 5 (blk) | SWCLK | +3.3V |
 | 6 (blk) | GND | GND |
 
-## RC Input
-
-RC input is via a RC input cable. That cable comes in two forms, one
-for Spektrum satellite receivers and another for all other receiver
-types.
-
-Both cables support all protocols with ArduPilot, but you need to use
-the Spektrum cable if you want to be able to bind the receiver using
-the ArduPilot binding support as only the Spektrum cable gives
-ArduPilot the ability to control the power on the Spektrum satellite
-receiver.
-
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using SERIAL4, on the port marked as
@@ -155,26 +175,6 @@ port to the FrSky S.Port pin on your receiver.
 
 - SERIAL4_PROTOCOL 10
 - SERIAL4_OPTIONS 0
-
-## PWM Output
-
-The Pixracer supports up to 6 PWM outputs. All 6 outputs can support
-DShot as well as all PWM protocols.
-
-The 6 PWM outputs are in 2 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5 and 6 in group2
-
-Channels within the same group need to use the same output rate. If
-any channel in a group uses DShot then all channels in the group need
-to use DShot.
-
-## Battery Monitoring
-
-The board has a dedicated power monitor port on a 6 pin connector. The
-correct battery setting parameters are dependent on the type of power
-brick which is connected.
 
 ## Compass
 

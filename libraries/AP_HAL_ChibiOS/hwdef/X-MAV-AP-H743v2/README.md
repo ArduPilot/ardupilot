@@ -17,11 +17,9 @@ The AP-H743v2 is a flight controller designed and produced by X-MAV
 - 1 I2C
 - 1 SWD
 
-## Physical
 
-![X-MAV AP-H743v2 Front View](AP-H743v2_TopPort.png)
 
-![X-MAV AP-H743v2  Back View](AP-H743v2_BottomPort.png)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -38,14 +36,6 @@ The AP-H743v2 is a flight controller designed and produced by X-MAV
 ## RC Input
 
 The default RC input is configured on the UART5 and supports all RC protocols except PPM. The SBUS pin is inverted and connected to RX5. When using RX5 or SBUS, the other input should be unconnected. RC can be attached to any UART port as long as the serial port protocol is set to `SERIALn_PROTOCOL=23` and SERIAL7_Protocol  is changed to something other than '23'.
-
-## OSD Support
-
-The AP-H743v2 supports onboard analog SD OSD using a MAX7456 chip. Simultaneously, DisplayPort HD OSD is available on the DJI connector for HD VTX. Both on board OSD and DisplayPort OSD can be operated simultaneously.
-
-## VTX Support
-
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -73,6 +63,20 @@ The default battery parameters are:
 - BATT_CURR_PIN 8
 - BATT_VOLT_MULT 10.2
 - BATT_AMP_PERVLT 20.4
+
+## Physical
+
+![X-MAV AP-H743v2 Front View](AP-H743v2_TopPort.png)
+
+![X-MAV AP-H743v2  Back View](AP-H743v2_BottomPort.png)
+
+## OSD Support
+
+The AP-H743v2 supports onboard analog SD OSD using a MAX7456 chip. Simultaneously, DisplayPort HD OSD is available on the DJI connector for HD VTX. Both on board OSD and DisplayPort OSD can be operated simultaneously.
+
+## VTX Support
+
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## Compass
 

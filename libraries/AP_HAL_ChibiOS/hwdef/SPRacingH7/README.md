@@ -40,17 +40,6 @@ protocols. For protocols requiring half-duplex serial to transmit
 telemetry (such as FPort) you should setup SERIAL1
 with half-duplex, pin-swap and inversion enabled.
 
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the T2 pin (UART2 transmit). You need to set the following parameters to enable support for FrSky S.PORT
-
-- SERIAL2_PROTOCOL 10
-- SERIAL2_OPTIONS 15
-
-## OSD Support
-
-The SPRacingH7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The SPRacingH7 supports up to 11 PWM outputs. The pads for motor output
@@ -82,6 +71,17 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 10.9
 - BATT_AMP_PERVLT 28.5
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the T2 pin (UART2 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+
+- SERIAL2_PROTOCOL 10
+- SERIAL2_OPTIONS 15
+
+## OSD Support
+
+The SPRacingH7 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

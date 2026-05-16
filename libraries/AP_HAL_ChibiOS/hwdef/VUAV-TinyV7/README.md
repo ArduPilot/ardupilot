@@ -36,6 +36,43 @@ The VUAV-V7Tiny  flight controller is manufactured and sold by [V-UAV](http://ww
 
 The Telem1 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
+## RC Input
+
+The RC input is configured on the RCIN pin at one end of the servo rail. This pin supports all unidirectional RC protocols. For bidirectional protocols, such as CRSF/ELRS, any SERIAL port can be set to protocol "23" and the receiver can be connected to its RX and TX pins as described in [RC control systems](https://ardupilot.org/rover/docs/common-rc-systems.html).
+
+## PWM Output
+
+The VUAV-V7Tiny supports up to 12 PWM outputs and all PWM protocols. Outputs 1-8 support bidirectional Dshot protocol. All 8 PWM outputs use a three-row design: the top row is GND, the middle rows are connected together, and the bottom row is the signal line. Outputs 9-12 do not support Dshot and are located at the ESC interface.
+
+The 12 PWM outputs are in 4 groups:
+
+- PWM 1, 2, 3 and 4 in group1
+- PWM 5, 6, 7 and 8 in group2
+- PWM 9, 10 in group3
+- PWM 11, 12 in group4
+
+Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
+
+## Battery Monitoring
+
+The board has voltage and current inputs sensor on the POWER and ESC connector.
+
+The correct battery setting parameters are:
+
+Enable POWER monitor:
+
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 4
+- BATT_CUR_PIN 8
+- BATT_VOLT_MULT 20
+- BATT_AMP_PERVLT 24
+
+Enable ESC battery monitor (if used) :
+
+- BATT2_MONITOR 3
+- BATT2_VOLT_PIN 10
+- BATT2_VOLT_MULT 10.09
+
 ## Connectors
 
 ### TELEM1 port
@@ -139,23 +176,6 @@ NOTE: RX7 is pinned out here and on the ESC connector
 |  7   |   PWM12    |    +3.3V    |
 |  8   |    GND     |     GND     |
 
-## RC Input
-
-The RC input is configured on the RCIN pin at one end of the servo rail. This pin supports all unidirectional RC protocols. For bidirectional protocols, such as CRSF/ELRS, any SERIAL port can be set to protocol "23" and the receiver can be connected to its RX and TX pins as described in [RC control systems](https://ardupilot.org/rover/docs/common-rc-systems.html).
-
-## PWM Output
-
-The VUAV-V7Tiny supports up to 12 PWM outputs and all PWM protocols. Outputs 1-8 support bidirectional Dshot protocol. All 8 PWM outputs use a three-row design: the top row is GND, the middle rows are connected together, and the bottom row is the signal line. Outputs 9-12 do not support Dshot and are located at the ESC interface.
-
-The 12 PWM outputs are in 4 groups:
-
-- PWM 1, 2, 3 and 4 in group1
-- PWM 5, 6, 7 and 8 in group2
-- PWM 9, 10 in group3
-- PWM 11, 12 in group4
-
-Channels within the same group need to use the same output rate. If any channel in a group uses DShot, then all channels in that group need to use DShot.
-
 ## GPIOs
 
 All 12 PWM channels can be used for GPIO functions (relays, buttons, RPM etc).
@@ -181,26 +201,6 @@ The VUAV-V7Tiny  flight controller has 6 Analog inputs
 - ADC Pin5 -> ADC 6V6 Sense
 - ADC Pin10  -> Battery Voltage input on ESC connector
 - ADC Pin8  -> Servo Voltage
-
-## Battery Monitoring
-
-The board has voltage and current inputs sensor on the POWER and ESC connector.
-
-The correct battery setting parameters are:
-
-Enable POWER monitor:
-
-- BATT_MONITOR 4
-- BATT_VOLT_PIN 4
-- BATT_CUR_PIN 8
-- BATT_VOLT_MULT 20
-- BATT_AMP_PERVLT 24
-
-Enable ESC battery monitor (if used) :
-
-- BATT2_MONITOR 3
-- BATT2_VOLT_PIN 10
-- BATT2_VOLT_MULT 10.09
 
 ## Loading Firmware
 

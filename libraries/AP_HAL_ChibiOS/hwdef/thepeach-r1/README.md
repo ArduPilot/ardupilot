@@ -9,6 +9,32 @@ Contact the [manufacturer](https://thepeach.kr/) for hardware support or complia
 
 ![ThePeach_R1](./main.png)
 
+
+
+
+<!-- TODO: add Features content -->
+<!-- TODO: add Pinout content -->
+
+## UART Mapping
+
+| UART   | Device     | Port                       |
+| ------ | ---------- | -------------------------- |
+| USART1 | /dev/ttyS0 | IO Processor Debug         |
+| USART2 | /dev/ttyS1 | TELEM1 (flow control)      |
+| USART3 | /dev/ttyS2 | TELEM2 (Raspberry pi cm3+) |
+| UART4  | /dev/ttyS3 | GPS1                       |
+| USART6 | /dev/ttyS4 | PX4IO                      |
+| UART7  | /dev/ttys5 | Debug console              |
+| UART8  | /dev/ttyS6 | TELEM4                     |
+
+
+
+
+
+<!-- TODO: add RC Input content -->
+<!-- TODO: add PWM Output content -->
+<!-- TODO: add Battery Monitoring content -->
+
 ## Specifications
 
 - Main Processor: STM32F427VIT6
@@ -49,18 +75,6 @@ Contact the [manufacturer](https://thepeach.kr/) for hardware support or complia
 ## Connectors
 
 ![pinmap_top](./pinmap.png)
-
-## UART Mapping
-
-| UART   | Device     | Port                       |
-| ------ | ---------- | -------------------------- |
-| USART1 | /dev/ttyS0 | IO Processor Debug         |
-| USART2 | /dev/ttyS1 | TELEM1 (flow control)      |
-| USART3 | /dev/ttyS2 | TELEM2 (Raspberry pi cm3+) |
-| UART4  | /dev/ttyS3 | GPS1                       |
-| USART6 | /dev/ttyS4 | PX4IO                      |
-| UART7  | /dev/ttys5 | Debug console              |
-| UART8  | /dev/ttyS6 | TELEM4                     |
 
 ## Voltage Ratings
 

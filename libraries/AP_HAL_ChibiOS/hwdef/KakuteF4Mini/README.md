@@ -18,6 +18,10 @@ The KakuteF7 Mini is a flight controller produced by [Holybro](http://www.holybr
 
 ![KakuteF4 Mini Board](kakutef4mini.jpg "KakuteF4 Mini")
 
+
+
+<!-- TODO: add Pinout content -->
+
 ## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
@@ -30,22 +34,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 - SERIAL5 -> UART5 (Receive only, ESC Telemetry)
 - SERIAL6 -> UART6 (GPS2/Telem2)
 
-## ESC Telemetry
-
-The SERIAL5 port (UART5) is for ESC telemetry. It is connected through the
-motor connector and works out of the box with the [Tekko32 F3 Mini](https://shop.holybro.com/tekko32-f3-4in1-45a-mini-esc_p1132.html) which is commonly paired with this flight controller
-
 ## RC Input
 
 RC input is configured on the R3 (UART3_RX) pin. It supports all serial RC protocols.
-
-## FrSky Telemetry
-
-FrSky Telemetry is supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
-
-## OSD Support
-
-The KakuteF7 Mini supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
@@ -74,6 +65,19 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 12
 - BATT_VOLT_MULT 10.9
 - BATT_AMP_PERVLT 28.5
+
+## ESC Telemetry
+
+The SERIAL5 port (UART5) is for ESC telemetry. It is connected through the
+motor connector and works out of the box with the [Tekko32 F3 Mini](https://shop.holybro.com/tekko32-f3-4in1-45a-mini-esc_p1132.html) which is commonly paired with this flight controller
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+
+## OSD Support
+
+The KakuteF7 Mini supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

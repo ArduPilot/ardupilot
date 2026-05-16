@@ -4,57 +4,16 @@ The F4BY_H743 autopilot is manufactured by [F4BY Team](https://f4by.com)
 
 ![F4BY_H743](F4BY_H743_board_image.jpg)
 
-## Where to Buy
 
-Shop [here](https://f4by.com/en/?order/our_product)
-The instructions, schematic, 3D model  are available [here](https://f4by.com/en/?doc/fc_f4by_v3.0.1_h743)
 
-## Specifications
+<!-- TODO: add Features content -->
 
-- Processor
-  - STM32H743 32-bit processor, 480Mhz
-  - 2MB Flash
-  - 1MB RAM
-- Sensors
-  - ICM-42688-P IMU (F4BY_H743 v3.0.3)
-  - IIM-42652   IMU (F4BY_H743 v3.0.2)
-  - MPU6000     IMU (F4BY_H743 v3.0.1)
-  - MS5611 Barometer
-  - QMC5883P Compass
-- Power
-  - Power from external power module (range +5.0 ... +6.0V)
-  - Anslog current and voltage analog inputs (range 0 ... +6,6V)
-- Interfaces
-  - 16x PWM outputs DShot capable (include 4x BDShot)
-  - 1x RC input
-  - 5x UARTs/serial for GPS, bi-directional RC and other peripherals)
-  - 1x I2C port for external compass, airspeed, etc.
-  - 1x CAN bus
-  - Buzzer output
-  - micro SD Card for logging, Lua scripts etc.
-  - USB type-C port
-  - USB GHS type port for external connector.
-  - DFU bootloader button
+## Pinout
 
-## Analog sensors
+![F4BY_H743 V3.0.3 Board](f4BY_H743_v303_diagramm.jpg "F4BY_H743 V3.0.3")
 
-- Analog airspeed PC0 (0...+3.3v range) pin 10
-- Analog rssi PC1     (0...+3.3v range) pin 11
-- Voltage sensing PC3 (0...+6.6v range) pin 13
-- Current sensing PC2 (0...+6.6v range) pin 12
-- Board power sensing PC4 (0...+6.6v range)
-- Servo power sensing PC5 (0...+9.9v range)
-
-## Analog Airspeed
-
-If the ARSPD pin is used for analog airspeed  input.
-Set [ARSPD_PIN](https://ardupilot.org/copter/docs/parameters.html#arspd-pin-airspeed-pin) to 10.
-Set [ARSPD_TYPE](https://ardupilot.org/copter/docs/parameters.html#arspd-type-airspeed-type) to "1".
-
-## Analog RSSI
-
-If the RSSI pin is used for analog RSSI input. Set [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 11.
-Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) to "1" .
+RCIN solder pad location for board version 3.0.3
+![RCIN solder pad location](rcin_303.jpg "RCIN solder pad location ")
 
 ## UART Mapping
 
@@ -118,6 +77,70 @@ Group #4
 
 **Note:** All outputs of a group must be of the same type (PWM or DSHOT).
 
+## Battery Monitoring
+
+The board has a external current and voltage sensor input. The sensors range from 0v to +6.6V.
+
+The default battery parameters are:
+
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 13
+- BATT_CURR_PIN = 12
+- BATT_VOLT_MULT = 16.04981
+- BATT_AMP_PERVLT = 100
+
+## Where to Buy
+
+Shop [here](https://f4by.com/en/?order/our_product)
+The instructions, schematic, 3D model  are available [here](https://f4by.com/en/?doc/fc_f4by_v3.0.1_h743)
+
+## Specifications
+
+- Processor
+  - STM32H743 32-bit processor, 480Mhz
+  - 2MB Flash
+  - 1MB RAM
+- Sensors
+  - ICM-42688-P IMU (F4BY_H743 v3.0.3)
+  - IIM-42652   IMU (F4BY_H743 v3.0.2)
+  - MPU6000     IMU (F4BY_H743 v3.0.1)
+  - MS5611 Barometer
+  - QMC5883P Compass
+- Power
+  - Power from external power module (range +5.0 ... +6.0V)
+  - Anslog current and voltage analog inputs (range 0 ... +6,6V)
+- Interfaces
+  - 16x PWM outputs DShot capable (include 4x BDShot)
+  - 1x RC input
+  - 5x UARTs/serial for GPS, bi-directional RC and other peripherals)
+  - 1x I2C port for external compass, airspeed, etc.
+  - 1x CAN bus
+  - Buzzer output
+  - micro SD Card for logging, Lua scripts etc.
+  - USB type-C port
+  - USB GHS type port for external connector.
+  - DFU bootloader button
+
+## Analog sensors
+
+- Analog airspeed PC0 (0...+3.3v range) pin 10
+- Analog rssi PC1     (0...+3.3v range) pin 11
+- Voltage sensing PC3 (0...+6.6v range) pin 13
+- Current sensing PC2 (0...+6.6v range) pin 12
+- Board power sensing PC4 (0...+6.6v range)
+- Servo power sensing PC5 (0...+9.9v range)
+
+## Analog Airspeed
+
+If the ARSPD pin is used for analog airspeed  input.
+Set [ARSPD_PIN](https://ardupilot.org/copter/docs/parameters.html#arspd-pin-airspeed-pin) to 10.
+Set [ARSPD_TYPE](https://ardupilot.org/copter/docs/parameters.html#arspd-type-airspeed-type) to "1".
+
+## Analog RSSI
+
+If the RSSI pin is used for analog RSSI input. Set [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 11.
+Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) to "1" .
+
 ## GPIOs
 
 -D1 pin 1
@@ -133,25 +156,6 @@ Group #4
 - Size: 50 x 50 mm
 - Mounting holes: 45 x 45 mm (M3)
 - Weight: 15.5 g
-
-## Pinout
-
-![F4BY_H743 V3.0.3 Board](f4BY_H743_v303_diagramm.jpg "F4BY_H743 V3.0.3")
-
-RCIN solder pad location for board version 3.0.3
-![RCIN solder pad location](rcin_303.jpg "RCIN solder pad location ")
-
-## Battery Monitoring
-
-The board has a external current and voltage sensor input. The sensors range from 0v to +6.6V.
-
-The default battery parameters are:
-
-- BATT_MONITOR = 4
-- BATT_VOLT_PIN = 13
-- BATT_CURR_PIN = 12
-- BATT_VOLT_MULT = 16.04981
-- BATT_AMP_PERVLT = 100
 
 ## Compass
 

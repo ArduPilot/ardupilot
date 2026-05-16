@@ -42,17 +42,6 @@ protocols. For protocols requiring separate half-duplex serial to transmit
 telemetry (such as FPort) you should setup SERIAL1 as an RC input serial port,
 with half-duplex, pin-swap and inversion enabled. You can also use the soldered pads on UART1 by setting SERIAL4_PROTOCOL to -1 and SERIAL1_PROTOCOL to 23. For PPM support on UART1_RX set BRD_ALT_CONFIG to 1.
 
-## FrSky Telemetry
-
-FrSky Telemetry can be supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
-
-- SERIAL1_PROTOCOL 10
-- SERIAL1_OPTIONS 7
-
-## OSD Support
-
-The FoxeerH743 supports OSD using OSD_TYPE 1 (MAX7456 driver) or OSD_TYPE 3 if using DJI OSD
-
 ## PWM Output
 
 The FoxeerH743 supports up to 9 PWM outputs. The pads for motor output
@@ -83,6 +72,17 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 12
 - BATT_VOLT_MULT 11
 - BATT_AMP_PERVLT 35.4
+
+## FrSky Telemetry
+
+FrSky Telemetry can be supported using the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT
+
+- SERIAL1_PROTOCOL 10
+- SERIAL1_OPTIONS 7
+
+## OSD Support
+
+The FoxeerH743 supports OSD using OSD_TYPE 1 (MAX7456 driver) or OSD_TYPE 3 if using DJI OSD
 
 ## Compass
 

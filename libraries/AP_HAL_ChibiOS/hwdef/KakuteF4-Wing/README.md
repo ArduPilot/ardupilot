@@ -45,10 +45,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 RC input is configured on the R3 (UART3_RX) pin. It supports all serial RC
 protocols.
 
-## OSD Support
-
-The KakuteF4-Wing supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The KakuteF4 supports up to 7 PWM outputs. All outputs support DShot. Outputs 1-4 support BiDirDshot.
@@ -77,6 +73,10 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 11
 - BATT_AMP_PERVLT 40
+
+## OSD Support
+
+The KakuteF4-Wing supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

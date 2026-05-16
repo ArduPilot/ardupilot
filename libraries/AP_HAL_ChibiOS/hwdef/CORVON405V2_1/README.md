@@ -14,11 +14,9 @@ The CORVON405V2.1 is a flight controller produced by CORVON.
 - 10 PWM outputs
 - 1 SWD
 
-## Physical
 
-![CORVON F405 V2.1 Front View](CORVON405V2.1_FrontView.jpg)
 
-![CORVON F405 V2.1 Back View](CORVON405V2.1_BackView.jpg)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -37,14 +35,6 @@ The default RC input is configured on the UART6_RX input which is inverted from 
 - CRSF/ELRS also requires a TX1 connection, in addition to RX1, and automatically provides telemetry.
 - FPort requires connection to TX1 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html)
 - SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
-
-## OSD Support
-
-The CORVON405V2.1 supports  internal analog OSD MAX7456. Simultaneous external HD OSD support is preconfigured on SERIAL6. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
-
-## VTX Support
-
-Both Analog and HD VTX connectors are provided. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## PWM Output
 
@@ -71,6 +61,20 @@ The default battery parameters are:
 - BATT_CURR_PIN =1 1
 - BATT_VOLT_MULT = 21.2
 - BATT_AMP_PERVLT = 40.2
+
+## Physical
+
+![CORVON F405 V2.1 Front View](CORVON405V2.1_FrontView.jpg)
+
+![CORVON F405 V2.1 Back View](CORVON405V2.1_BackView.jpg)
+
+## OSD Support
+
+The CORVON405V2.1 supports  internal analog OSD MAX7456. Simultaneous external HD OSD support is preconfigured on SERIAL6. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
+
+## VTX Support
+
+Both Analog and HD VTX connectors are provided. Pin 1 of the connector is 9v so be careful not to connect this to a peripheral requiring 5v.
 
 ## Compass
 

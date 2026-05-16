@@ -18,6 +18,10 @@ The HEEWING F405 is a flight controller produced by [HEEWING](https://www.heewin
 
 ![HEEWING F405 Board](heewingf405.jpg "HEEWING F405")
 
+
+
+<!-- TODO: add Pinout content -->
+
 ## UART Mapping
 
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
@@ -32,14 +36,6 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 ## RC Input
 
 RC input is configured on the RCIN connector (UART2_RX) pin. It supports all serial RC protocols. It can be configured for two-way protocols (e.g. CRSF) by setting BRD_ALT_CONFIG=1
-
-## FrSky Telemetry
-
-FrSky Telemetry can be supported using the transmit pin on a spare serial ports SERIAL1 and SERIAL2.
-
-## OSD Support
-
-The HEEWING F405 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
@@ -69,6 +65,14 @@ The correct battery setting parameters are:
 - BATT_CURR_PIN 11
 - BATT_VOLT_MULT 7.71
 - BATT_AMP_PERVLT 26.67
+
+## FrSky Telemetry
+
+FrSky Telemetry can be supported using the transmit pin on a spare serial ports SERIAL1 and SERIAL2.
+
+## OSD Support
+
+The HEEWING F405 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

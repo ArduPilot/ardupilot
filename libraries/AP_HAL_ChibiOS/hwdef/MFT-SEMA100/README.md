@@ -14,11 +14,9 @@ The MFT-SEMA100 is a flight controller designed and produced by MFT Savunma ve H
 - 2 CANs
 - 2 I2Cs
 
-## Physical
 
-![MFT-SEMA100_Top_View](MFT-SEMA100_TopView.jpeg)
 
-![MFT-SEMA100_Bottom_View](MFT-SEMA100_BottomView.jpeg)
+<!-- TODO: add Pinout content -->
 
 ## UART Mapping
 
@@ -29,14 +27,6 @@ The MFT-SEMA100 is a flight controller designed and produced by MFT Savunma ve H
 - SERIAL4 -> UART5 (GPS2, DMA-enabled)
 - SERIAL5 -> UART7 (DMA-enabled)
 - SERIAL6 -> UART8 (RX only)
-
-## Connectors
-
-All pins are 2.54 mm Pin Headers
-
-## Power Connector
-
-XT30-PW 5V Input for powering the board
 
 ## RC Input
 
@@ -60,6 +50,33 @@ PWM outputs are grouped and every group must use the same output protocol:
 
 Channels within the same group need to use the same output rate.
 
+## Battery Monitoring
+
+The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input.
+The voltage sensor can handle up to 6S LiPo batteries.
+
+The default battery parameters are:
+
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 19
+- BATT_CURR_PIN 8
+- BATT_VOLT_MULT 10
+- BATT_AMP_PERVLT 10
+
+## Physical
+
+![MFT-SEMA100_Top_View](MFT-SEMA100_TopView.jpeg)
+
+![MFT-SEMA100_Bottom_View](MFT-SEMA100_BottomView.jpeg)
+
+## Connectors
+
+All pins are 2.54 mm Pin Headers
+
+## Power Connector
+
+XT30-PW 5V Input for powering the board
+
 ## GPIOs
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
@@ -76,19 +93,6 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - PWM10 59
 - PWM11 60
 - PWM12 61
-
-## Battery Monitoring
-
-The board has a internal voltage sensor and connections on the ESC connector for an external current sensor input.
-The voltage sensor can handle up to 6S LiPo batteries.
-
-The default battery parameters are:
-
-- BATT_MONITOR 4
-- BATT_VOLT_PIN 19
-- BATT_CURR_PIN 8
-- BATT_VOLT_MULT 10
-- BATT_AMP_PERVLT 10
 
 ## Compass
 

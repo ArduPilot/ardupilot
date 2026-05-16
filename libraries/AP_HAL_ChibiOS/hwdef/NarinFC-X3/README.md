@@ -1,68 +1,8 @@
 # [NarinFC-X3 VOLOLAND Inc.](https://vololand.com/pages/product/computer "NarinFC-X3")
 
-## Introduction
 
-The NarinFC-X3 is a flight controller produced by [VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")
 
-NarinFC-X3 is an advanced autopilot family designed in-house by VOLOLAND Inc.
-
-It uses a higher-performance STM32H7 processor and integrates industrial-grade sensors.
-
-Compared with previous autopilots, it has better performance and higher reliability.
-
-![NarinFC-X3](./images/NarinFC_X3_Introduction.png "NarinFC")
-
-## Features/Specifications
-
-- **Processor**
-  - STM32H743
-
-- **Sensors**
-  - Accelerometer/Gyroscope: ICM-42688-P X 2
-  - Barometer: DPS368XTSA1
-
-- **Interfaces**
-  - 12 x PWM servo outputs
-  - 1 ⅹ I2C buses
-  - 1 ⅹ CAN bus ports
-  - 5 ⅹ UART
-  - 1 ⅹ USB Type-C
-  - 1 ⅹ MicroSD card
-  - JST Connector (SH1.0)
-
-- **Power**
-  - Input Power 6VDC ~ 36VDC (2S ~ 8S)
-  - Output Power
-    - 3.3VDC 0.5A
-    - 5VDC 2.5A
-    - 9VDC 2.5A
-
-- **Size and Dimensions**
-  - 38mm x 38mm (mount hole 30.5mm x 30.5mm)
-  - 8g
-
-## Where to Buy
-
-[VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")
-
-## Outline Dimensions
-
-![Outline Dimensions](./images/NarinFC_X3_Dimensions.png "Outline Dimensions")
-
-## UART Mapping
-
- UART corresponding to each SERIAL port, and its default protocol, are shown below:
-
-- SERIAL0 -> USB (MAVLink2)
-- SERIAL1 -> UART1 (RX1 is SBUS in HD VTX connector)
-- SERIAL2 -> UART2 (GPS, DMA-enabled)
-- SERIAL3 -> UART3 (DisplayPort, DMA-enabled)
-- SERIAL4 -> UART4 (MAVLink2, Telem1)
-- SERIAL6 -> UART6 (RC Input, DMA-enabled)
-- SERIAL7 -> UART7 (MAVLink2, Telem2, DMA and flow-control enabled)
-- SERIAL8 -> UART8 (ESC Telemetry, RX8 on ESC connector for telem)
-
-  Serial protocols can be adjusted to personal preferences.
+<!-- TODO: add Features content -->
 
 ## Pinout
 
@@ -138,22 +78,26 @@ UART7(SERIAL6) is labeled DEBUG RX/TX below
 - JST GH 6P connector
 - DEBUG NODMA
 
+## UART Mapping
+
+ UART corresponding to each SERIAL port, and its default protocol, are shown below:
+
+- SERIAL0 -> USB (MAVLink2)
+- SERIAL1 -> UART1 (RX1 is SBUS in HD VTX connector)
+- SERIAL2 -> UART2 (GPS, DMA-enabled)
+- SERIAL3 -> UART3 (DisplayPort, DMA-enabled)
+- SERIAL4 -> UART4 (MAVLink2, Telem1)
+- SERIAL6 -> UART6 (RC Input, DMA-enabled)
+- SERIAL7 -> UART7 (MAVLink2, Telem2, DMA and flow-control enabled)
+- SERIAL8 -> UART8 (ESC Telemetry, RX8 on ESC connector for telem)
+
+  Serial protocols can be adjusted to personal preferences.
+
 ## RC Input
 
 RC input is configured by default via the USART6 RX input. It supports all serial RC protocols except PPM.
 Note: If the receiver is FPort the receiver must be tied to the USART6 TX pin , RSSI_TYPE set to 3, and SERIAL6_OPTIONS must be set to 7 (invert TX/RX, half duplex). For full duplex like CRSF/ELRS use both RX6 and TX6 and set RSSI_TYPE also to 3.
 If SBUS is used on HD VTX connector (DJI TX), then SERIAL1_PROTOCOl should be set to “23” and SERIAL6_PROTOCOL changed to something else.
-
-## FrSky Telemetry
-
-FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT:
-
-- SERIAL1_PROTOCOL = 10
-- SERIAL1_OPTIONS = 7
-
-## OSD Support
-
-The NarinFC-X3 supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
 
 ## PWM Output
 
@@ -190,6 +134,66 @@ Pads for a second analog battery monitor are provided. To use:
 - BATT2_CURR_PIN = 7
 - BATT2_VOLT_MULT = 11.0
 - BATT2_AMP_PERVLT as required
+
+## Introduction
+
+The NarinFC-X3 is a flight controller produced by [VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")
+
+NarinFC-X3 is an advanced autopilot family designed in-house by VOLOLAND Inc.
+
+It uses a higher-performance STM32H7 processor and integrates industrial-grade sensors.
+
+Compared with previous autopilots, it has better performance and higher reliability.
+
+![NarinFC-X3](./images/NarinFC_X3_Introduction.png "NarinFC")
+
+## Features/Specifications
+
+- **Processor**
+  - STM32H743
+
+- **Sensors**
+  - Accelerometer/Gyroscope: ICM-42688-P X 2
+  - Barometer: DPS368XTSA1
+
+- **Interfaces**
+  - 12 x PWM servo outputs
+  - 1 ⅹ I2C buses
+  - 1 ⅹ CAN bus ports
+  - 5 ⅹ UART
+  - 1 ⅹ USB Type-C
+  - 1 ⅹ MicroSD card
+  - JST Connector (SH1.0)
+
+- **Power**
+  - Input Power 6VDC ~ 36VDC (2S ~ 8S)
+  - Output Power
+    - 3.3VDC 0.5A
+    - 5VDC 2.5A
+    - 9VDC 2.5A
+
+- **Size and Dimensions**
+  - 38mm x 38mm (mount hole 30.5mm x 30.5mm)
+  - 8g
+
+## Where to Buy
+
+[VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")
+
+## Outline Dimensions
+
+![Outline Dimensions](./images/NarinFC_X3_Dimensions.png "Outline Dimensions")
+
+## FrSky Telemetry
+
+FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT:
+
+- SERIAL1_PROTOCOL = 10
+- SERIAL1_OPTIONS = 7
+
+## OSD Support
+
+The NarinFC-X3 supports OSD using OSD_TYPE 1 (MAX7456 driver) and simultaneously DisplayPort using TX3/RX3 on the HD VTX connector.
 
 ## Analog RSSI and AIRSPEED inputs
 

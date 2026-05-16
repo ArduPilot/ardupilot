@@ -5,6 +5,63 @@
 
 The above image and some content courtesy of [orbitteknoloji.com.tr](https://orbitteknoloji.com.tr/)
 
+
+
+
+<!-- TODO: add Features content -->
+<!-- TODO: add Pinout content -->
+
+## UART Mapping
+
+- `SERIAL0` = USB (MAVLink2)  
+- `SERIAL1` = UART1 (ESC Telemetry)  
+- `SERIAL2` = UART2 (USER)  
+- `SERIAL3` = UART3 (DJI HD Air Unit)  
+- `SERIAL4` = UART4 (VTX)  
+- `SERIAL5` = UART5 (RC Input)  
+- `SERIAL6` = UART6 (GPS)  
+- `SERIAL7` = UART7 (USER)  
+- `SERIAL8` = UART8 (USER)  
+
+All UARTs, except UART1, are DMA capable.
+
+> **Note:** Serial port protocols (Telem, GPS, etc.) can be adjusted based on personal preferences.
+
+## RC Input
+
+RC input is configured by default on `SERIAL5` (UART5). The 4V5 pin is powered by both USB and the onboard 5V BEC from the battery.
+
+- PPM is supported.  
+- SBUS/DSM/SRXL connects to the RX5 pin.  
+- FPort requires connection to TX5. Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) = 7  
+- CRSF also requires both TX5 and RX5 connections and provides telemetry automatically.
+
+Any UART can be used for RC system connections in ArduPilot. See the [common RC systems](https://ardupilot.org) documentation for details.
+
+
+
+<!-- TODO: add PWM Output content -->
+
+## Battery Monitoring
+
+These are set by default. If reset:
+
+Enable battery monitor with `BATT_MONITOR=4`, then reboot, then set:
+
+**First battery monitor is enabled by default:**
+
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 10.1
+- BATT_AMP_PERVLT = 80.0
+
+**The second battery monitor is not enabled by default, but its parameter defaults have been set:**
+
+- BATT2_VOLT_PIN = 4
+- BATT2_CURR_PIN = 18
+- BATT2_VOLT_MULT = 10.1
+- BATT2_AMP_PERVLT = 80.0
+
 ## Specifications
 
 ### **Processor**
@@ -45,33 +102,6 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 ### **Mounting Hole**
 
 - 30.5 mm x 30.5 mm
-
-## UART Mapping
-
-- `SERIAL0` = USB (MAVLink2)  
-- `SERIAL1` = UART1 (ESC Telemetry)  
-- `SERIAL2` = UART2 (USER)  
-- `SERIAL3` = UART3 (DJI HD Air Unit)  
-- `SERIAL4` = UART4 (VTX)  
-- `SERIAL5` = UART5 (RC Input)  
-- `SERIAL6` = UART6 (GPS)  
-- `SERIAL7` = UART7 (USER)  
-- `SERIAL8` = UART8 (USER)  
-
-All UARTs, except UART1, are DMA capable.
-
-> **Note:** Serial port protocols (Telem, GPS, etc.) can be adjusted based on personal preferences.
-
-## RC Input
-
-RC input is configured by default on `SERIAL5` (UART5). The 4V5 pin is powered by both USB and the onboard 5V BEC from the battery.
-
-- PPM is supported.  
-- SBUS/DSM/SRXL connects to the RX5 pin.  
-- FPort requires connection to TX5. Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) = 7  
-- CRSF also requires both TX5 and RX5 connections and provides telemetry automatically.
-
-Any UART can be used for RC system connections in ArduPilot. See the [common RC systems](https://ardupilot.org) documentation for details.
 
 ## RSSI
 
@@ -158,26 +188,6 @@ This board does **not** include GPS or compass modules. An [external GPS/compass
 > **Note:** If GPS is powered via 5V , a battery is required for power.
 <!-- -->
 > **Tip:** The 4V5 pin can power both RC and GPS for bench setup (without battery), as long as the total current does not exceed USB limits (typically 1A).
-
-## Battery Monitoring
-
-These are set by default. If reset:
-
-Enable battery monitor with `BATT_MONITOR=4`, then reboot, then set:
-
-**First battery monitor is enabled by default:**
-
-- BATT_VOLT_PIN = 10
-- BATT_CURR_PIN = 11
-- BATT_VOLT_MULT = 10.1
-- BATT_AMP_PERVLT = 80.0
-
-**The second battery monitor is not enabled by default, but its parameter defaults have been set:**
-
-- BATT2_VOLT_PIN = 4
-- BATT2_CURR_PIN = 18
-- BATT2_VOLT_MULT = 10.1
-- BATT2_AMP_PERVLT = 80.0
 
 ## Where to Buy
 

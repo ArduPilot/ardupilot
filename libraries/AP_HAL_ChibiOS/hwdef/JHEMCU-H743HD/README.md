@@ -40,10 +40,6 @@ In addition to pinouts, the board also has SH6P 1mm connector for DJI FPV and SH
 
 RC input is configured on the RX2/TX2 (USART2_RX/USART2_TX) pins. It supports ELRS(CSRF), TBS(CSRF), SBUS, IBUS, DSM2, and DSMX.
 
-## OSD Support
-
-JHEMCU H743 supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 JHEMCU H743 supports up to 9 PWM outputs. 8 motors and 1 LED strip or another PWM output.
@@ -62,6 +58,10 @@ Channels within the same group need to use the same output rate. If any channel 
 The board has a built-in voltage and current sensor. The current
 sensor's max Amps is not specified. The voltage sensor can handle up to 6S
 LiPo batteries.
+
+## OSD Support
+
+JHEMCU H743 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

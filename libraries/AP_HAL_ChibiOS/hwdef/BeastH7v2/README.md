@@ -39,10 +39,6 @@ All UARTS support DMA.
 
 RC input is configured on the (UART2_RX/UART2_TX) pins which forms part of the DJI connector. It supports all RC protocols.
 
-## OSD Support
-
-The Beast H7 v2 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The Beast H7 AIO supports up to 4 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are for the 4 outputs. All 4 outputs support DShot as well as all PWM types.
@@ -67,6 +63,10 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT around 28.5
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The Beast H7 v2 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

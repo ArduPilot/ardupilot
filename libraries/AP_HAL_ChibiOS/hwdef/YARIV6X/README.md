@@ -1,15 +1,5 @@
 # YARI V6X
 
-## Introduction
-
-The YARI V6X autopilot is based on the [FMUV6X and Pixhawk Autopilot Bus open source specifications](https://github.com/pixhawk/Pixhawk-Standards). The Pixhawk Autopilot Bus (PAB) form factor enables the YARI V6X to be used on any PAB carrier board.
-
-![YARI V6X Product](yariv6x-product.jpg)
-
-## Where to Buy
-
-YARI V6X autopilots are produced and sold by [YARI Robotics](https://yarirobotics.com).
-
 ## Features
 
 - Modular architecture: Discrete IMU, FMU, and base boards linked by the Pixhawk Autopilot Bus (PAB) for clean routing, serviceability, and future upgrades.
@@ -19,6 +9,71 @@ YARI V6X autopilots are produced and sold by [YARI Robotics](https://yarirobotic
 - Thermally stabilized IMUs: Actively temperature controlled IMU board maintains the IMU sensors at their optimal operating temperature for consistent accuracy.
 - Vibration isolation: Durable custom formulated foam material to offer optimal vibration damping characteristics for better IMU stability and accuracy.
 - Rugged enclosure: Precision CNC-machined aluminum housing for durability, thermal performance, and EMI shielding.
+
+## Pinout
+
+![YARI V6X Pinout](yariv6x-pinout.jpg)
+
+## UART Mapping
+
+| Serial# | Port            | UART              |
+|---------|-----------------|-------------------|
+| SERIAL0 | OTG1            | USB               |
+| SERIAL1 | Telem1          | UART7 (RTC/CTS)   |
+| SERIAL2 | Telem2          | UART5 (RTS/CTS)   |
+| SERIAL3 | GPS1            | USART1            |
+| SERIAL4 | GPS2            | UART8             |
+| SERIAL5 | Telem3          | USART2 (RTS/CTS)  |
+| SERIAL6 | UART4, I2C      | UART4             |
+| SERIAL7 | Debug Console   | USART3            |
+| SERIAL8 | IO/RC           | USART6            |
+
+All UARTs have DMA capability
+
+## RC Input
+
+The PPM pin, which by default is mapped to a timer input, can be used for all ArduPilot supported unidirectional receiver protocols,. Half-Duplex and bi-directional protocols, such as CRSF/ELRS, Fport, and SRXL2) require a true UART connection (see below). FPort when connected to PPM will only provide RC without telemetry.
+
+To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART4) would need to be used for receiver connections. Below are setups using SERIAL6.
+
+- [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) should be set to “23”.
+- FPort would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “15”.
+- CRSF/ELRS would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “0”.
+- SRXL2 would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “4” and connects only the TX pin.
+
+Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html#common-rc-systems) for details.
+
+## PWM Output
+
+The YARI V6X supports up to 16 PWM outputs (M1-8 and A1-8). All 16 outputs support all normal PWM output formats. All outputs support DShot and BiDir DShot, except A7 and A8 which only support PWM.
+
+The 8 FMU PWM outputs (A1-8) are in 4 groups:
+
+- Outputs 1, 2, 3 and 4 in group1
+- Outputs 5 and 6 in group2
+- Outputs 7 and 8 in group3
+
+FMU outputs within the same group need to use the same output rate and protocol. If any output in a group uses DShot then all channels in that group need to use DShot.
+
+## Battery Monitoring
+
+The default battery parameters for use with a digital power module (with INA2xx) connected to Power1 port:
+
+BATT_I2C_BUS=1
+BATT_I2C_ADDR=0
+BATT_MONITOR=21
+
+For use with Power2 port update BATT_I2C_BUS = 2
+
+## Introduction
+
+The YARI V6X autopilot is based on the [FMUV6X and Pixhawk Autopilot Bus open source specifications](https://github.com/pixhawk/Pixhawk-Standards). The Pixhawk Autopilot Bus (PAB) form factor enables the YARI V6X to be used on any PAB carrier board.
+
+![YARI V6X Product](yariv6x-product.jpg)
+
+## Where to Buy
+
+YARI V6X autopilots are produced and sold by [YARI Robotics](https://yarirobotics.com).
 
 ## Specifications
 
@@ -56,61 +111,6 @@ Carrier Board
 - LED Indicators
 
 ![YARI V6X Dimensions](yariv6x-dimensions.jpg)
-
-## Pinout
-
-![YARI V6X Pinout](yariv6x-pinout.jpg)
-
-## UART Mapping
-
-| Serial# | Port            | UART              |
-|---------|-----------------|-------------------|
-| SERIAL0 | OTG1            | USB               |
-| SERIAL1 | Telem1          | UART7 (RTC/CTS)   |
-| SERIAL2 | Telem2          | UART5 (RTS/CTS)   |
-| SERIAL3 | GPS1            | USART1            |
-| SERIAL4 | GPS2            | UART8             |
-| SERIAL5 | Telem3          | USART2 (RTS/CTS)  |
-| SERIAL6 | UART4, I2C      | UART4             |
-| SERIAL7 | Debug Console   | USART3            |
-| SERIAL8 | IO/RC           | USART6            |
-
-All UARTs have DMA capability
-
-## PWM Output
-
-The YARI V6X supports up to 16 PWM outputs (M1-8 and A1-8). All 16 outputs support all normal PWM output formats. All outputs support DShot and BiDir DShot, except A7 and A8 which only support PWM.
-
-The 8 FMU PWM outputs (A1-8) are in 4 groups:
-
-- Outputs 1, 2, 3 and 4 in group1
-- Outputs 5 and 6 in group2
-- Outputs 7 and 8 in group3
-
-FMU outputs within the same group need to use the same output rate and protocol. If any output in a group uses DShot then all channels in that group need to use DShot.
-
-## RC Input
-
-The PPM pin, which by default is mapped to a timer input, can be used for all ArduPilot supported unidirectional receiver protocols,. Half-Duplex and bi-directional protocols, such as CRSF/ELRS, Fport, and SRXL2) require a true UART connection (see below). FPort when connected to PPM will only provide RC without telemetry.
-
-To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receivers, a full UART, such as SERIAL6 (UART4) would need to be used for receiver connections. Below are setups using SERIAL6.
-
-- [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) should be set to “23”.
-- FPort would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “15”.
-- CRSF/ELRS would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “0”.
-- SRXL2 would require [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “4” and connects only the TX pin.
-
-Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html#common-rc-systems) for details.
-
-## Battery Monitoring
-
-The default battery parameters for use with a digital power module (with INA2xx) connected to Power1 port:
-
-BATT_I2C_BUS=1
-BATT_I2C_ADDR=0
-BATT_MONITOR=21
-
-For use with Power2 port update BATT_I2C_BUS = 2
 
 ## Compass
 

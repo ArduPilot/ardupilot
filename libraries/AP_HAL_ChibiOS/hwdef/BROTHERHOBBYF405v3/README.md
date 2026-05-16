@@ -39,22 +39,6 @@ The default RC input is configured on UART2, all ArduPilot compatible protocols,
 - DSM/SRXL connects to the RX2 pin, but SBUS would still be connected to SBUS.
 - SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) to "4".
 
-## FrSky Telemetry
-
-FrSky Telemetry can be supported using a spare UART transmit pin. You need to set the following parameters to enable support for FrSky S.PORT on SERIAL4
-
-- [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) 10
-- [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) 7
-
-## OSD Support
-
-The BROTHERHOBBYF405v3 supports OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort HD VTX connections can be made to UART3 (included on the HD VTX connector) by setting OSD_TYPE2 = 5.
-
-## VTX Support
-
-The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 10v so be careful not to connect
-anything that could be damaged by this voltage.
-
 ## PWM Output
 
 The BROTHERHOBBYF405v3 supports up to 9 PWM outputs. Outputs 1-4 are on the ESC connector, while the others are available via solder pads.
@@ -82,6 +66,22 @@ The default battery parameters are:
 - [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11
 - [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11
 - [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 25.9 (will need to be adjusted for whichever current sensor is attached)
+
+## FrSky Telemetry
+
+FrSky Telemetry can be supported using a spare UART transmit pin. You need to set the following parameters to enable support for FrSky S.PORT on SERIAL4
+
+- [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) 10
+- [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) 7
+
+## OSD Support
+
+The BROTHERHOBBYF405v3 supports OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort HD VTX connections can be made to UART3 (included on the HD VTX connector) by setting OSD_TYPE2 = 5.
+
+## VTX Support
+
+The SH1.0-6P connector supports a standard DJI HD VTX connection. Pin 1 of the connector is 10v so be careful not to connect
+anything that could be damaged by this voltage.
 
 ## RSSI
 

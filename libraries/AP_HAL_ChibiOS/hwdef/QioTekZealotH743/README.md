@@ -27,3 +27,12 @@ The QioTek Zealot H743 flight controller is sold by a range of resellers listed 
 - builtin BEC (6S 1.5A) power input (share power2 module voltage monitoring)
 - external safety Switch
 - external USB connectors (Type-C USB and JST GH1.25)
+
+
+
+
+<!-- TODO: add Pinout content -->
+<!-- TODO: add UART Mapping content -->
+<!-- TODO: add RC Input content -->
+<!-- TODO: add PWM Output content -->
+<!-- TODO: add Battery Monitoring content -->

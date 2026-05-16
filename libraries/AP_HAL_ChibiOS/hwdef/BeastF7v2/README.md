@@ -38,10 +38,6 @@ UART1 supports RX and TX DMA. UART2, UART3 and UART4 support RX DMA. UART7 suppo
 RC input is configured on the (UART3_RX) pin which forms part of the DJI connector. It supports all RC protocols.
 For RC input/output use UART1 with SERIAL1_PROTOCOL as 23 and set SERIAL3_PROTOCOL set to -1
 
-## OSD Support
-
-The Beast F7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
-
 ## PWM Output
 
 The Beast F7 AIO supports up to 4 PWM outputs. The pads for motor output ESC1 to ESC4 on the above diagram are for the 4 outputs. All 4 outputs support DShot as well as all PWM types.
@@ -66,6 +62,10 @@ The correct battery setting parameters are:
 - BATT_CURR_MULT around 28.5
 
 These are set by default in the firmware and shouldn't need to be adjusted
+
+## OSD Support
+
+The Beast F7 AIO supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## Compass
 

@@ -38,24 +38,9 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL7|TX8/RX8|UART8 (ESC-Telemetry, RX8 on ESC connectors, TX8 can be used if protocol is change from ESC telem)|
 |SERIAL8|COMPUTER|USB|
 
-## Safety Button
-
-SkySakura H743 supports safety button, with connection to sh1.0 6 pin connector, with buzzer and safety led on the same connector.
-Safety button is defaulted to be disabled but can be enabled by setting the following parameter:
-
-- BRD_SAFETY_DEFLT 1
-
 ## RC Input
 
 RC input is configured on UART4 with an sh1.0 connector. It supports all RC protocols except PPM. The SBUS pin on the HD VTX connector is tied directly the UART4 RX. If ELRS is used on UART4, then the SBUS lead from a DJI VTX must not be connected to the SBUS to prevent ELRS lock up on boot.
-
-## OSD Support
-
-SkySakura H743  supports HD OSD through UART6 by default.
-
-## VTX Power Control
-
-The 12VSW output voltage on the HD VTX connector is controlled by GPIO 85, via RELAY1 by default. Low activates the voltage.
 
 ## PWM Output
 
@@ -90,6 +75,21 @@ The default battery setting parameters are:
 - BATT2_CURR_PIN 13
 - BATT2_VOLT_MULT 10
 - set BATT2_AMP_PERVLT to appropriate value for second current sensor
+
+## Safety Button
+
+SkySakura H743 supports safety button, with connection to sh1.0 6 pin connector, with buzzer and safety led on the same connector.
+Safety button is defaulted to be disabled but can be enabled by setting the following parameter:
+
+- BRD_SAFETY_DEFLT 1
+
+## OSD Support
+
+SkySakura H743  supports HD OSD through UART6 by default.
+
+## VTX Power Control
+
+The 12VSW output voltage on the HD VTX connector is controlled by GPIO 85, via RELAY1 by default. Low activates the voltage.
 
 ## Compass
 
