@@ -209,6 +209,7 @@ SPIDEV iim42652_2 SPI4 DEVID2  IIM42652_2_CS MODE3  2*MHZ  8*MHZ
 # IMU devices for JFB110. The JFB110 board has a SCHA63T, two ICM42652,
 # the SCHA63T and ICM42652_1 are on the same SPI buses and CS pins.
 # The IIM42652_2 is on a different bus
+define AP_INERTIALSENSOR_SCHA63T_ENABLED 1
 IMU SCHA63T      SPI:scha63t_a SPI:scha63t_g  ROTATION_NONE
 IMU Invensensev3 SPI:iim42652_1               ROTATION_NONE
 IMU Invensensev3 SPI:iim42652_2               ROTATION_NONE

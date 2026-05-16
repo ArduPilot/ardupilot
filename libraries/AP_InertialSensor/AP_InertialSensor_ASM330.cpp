@@ -18,9 +18,12 @@
  *      ASM330LHH
 */
 
+#include "AP_InertialSensor_ASM330.h"
+
+#if AP_INERTIALSENSOR_ASM330_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 
-#include "AP_InertialSensor_ASM330.h"
 #include "AP_InertialSensor_ASM330_registers.h"
 
 #include <utility>
@@ -409,3 +412,5 @@ void AP_InertialSensor_ASM330::dump_registers(void)
     hal.console->println("");
 }
 #endif
+
+#endif  // AP_INERTIALSENSOR_ASM330_ENABLED

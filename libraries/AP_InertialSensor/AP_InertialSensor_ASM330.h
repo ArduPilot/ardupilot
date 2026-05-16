@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_InertialSensor_config.h"
+
+#if AP_INERTIALSENSOR_ASM330_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/SPIDevice.h>
 
@@ -70,3 +74,5 @@ private:
     uint8_t temperature_counter;
     LowPassFilter2pFloat temperature_filter{100.0f, 1.0f};
 };
+
+#endif  // AP_INERTIALSENSOR_ASM330_ENABLED
