@@ -2818,18 +2818,20 @@ void GCS::setup_console()
     if (ARRAY_SIZE(_chan_var_info) == 0) {
         return;
     }
-    create_gcs_mavlink_backend(*uart);
+    if (!create_gcs_mavlink_backend(*uart)) {
+        AP_BoardConfig::config_error("Failed to create MAVLink console backend");
+    }
 }
 
 
-void GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
+bool GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
 {
     if (_num_gcs >= ARRAY_SIZE(_chan_var_info)) {
-        return;
+        return false;
     }
     _chan[_num_gcs] = new_gcs_mavlink_backend(uart);
     if (_chan[_num_gcs] == nullptr) {
-        return;
+        return false;
     }
 
     // prepare parameters:
@@ -2839,23 +2841,15 @@ void GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
     if (!_chan[_num_gcs]->init(_num_gcs)) {
         delete _chan[_num_gcs];
         _chan[_num_gcs] = nullptr;
-        return;
+        return false;
     }
 
     _num_gcs++;
+    return true;
 }
 
 void GCS::setup_uarts()
 {
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
-        if (uart == nullptr) {
-            // no more mavlink uarts
-            break;
-        }
-        create_gcs_mavlink_backend(*uart);
-    }
-
 #if AP_FRSKY_TELEM_ENABLED
     if (frsky == nullptr) {
         frsky = NEW_NOTHROW AP_Frsky_Telem();
@@ -2873,6 +2867,20 @@ void GCS::setup_uarts()
 #if AP_DEVO_TELEM_ENABLED
     devo_telemetry.init();
 #endif
+
+    for (uint8_t i = 1; i < UINT8_MAX; i++) {  // we really can't have this many serial connections, right?!
+        AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
+        if (uart == nullptr) {
+            // no more mavlink uarts
+            return;
+        }
+        if (!create_gcs_mavlink_backend(*uart)) {
+            AP_BoardConfig::config_error("Failed to create MAVLink backend %u", unsigned(i));
+        }
+    }
+
+    // no way we allocated UINT8_MAX backends, something has gone wrong
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
 /*
