@@ -75,24 +75,26 @@ void AP_SurfaceDistance::update()
     // are considered a glitch and glitch_count becomes non-zero
     // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
     // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
-    const float glitch_m = alt_m - alt_glitch_protected_m;
     bool reset_terrain = false;
-    if (glitch_m >= RANGEFINDER_GLITCH_ALT_M) {
-        glitch_count = MAX(glitch_count+1, 1);
-        status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
-    } else if (glitch_m <= -RANGEFINDER_GLITCH_ALT_M) {
-        glitch_count = MIN(glitch_count-1, -1);
-        status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
-    } else {
-        glitch_count = 0;
-        alt_glitch_protected_m = alt_m;
-    }
-    if (abs(glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
-        // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
-        glitch_count = 0;
-        alt_glitch_protected_m = alt_m;
-        glitch_cleared_ms = now;
-        reset_terrain = true;
+    if (alt_healthy && isfinite(alt_m)) {
+        const float glitch_m = alt_m - alt_glitch_protected_m;
+        if (glitch_m >= RANGEFINDER_GLITCH_ALT_M) {
+            glitch_count = MAX(glitch_count+1, 1);
+            status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
+        } else if (glitch_m <= -RANGEFINDER_GLITCH_ALT_M) {
+            glitch_count = MIN(glitch_count-1, -1);
+            status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
+        } else {
+            glitch_count = 0;
+            alt_glitch_protected_m = alt_m;
+        }
+        if (abs(glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
+            // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
+            glitch_count = 0;
+            alt_glitch_protected_m = alt_m;
+            glitch_cleared_ms = now;
+            reset_terrain = true;
+        }
     }
 
     // filter rangefinder altitude
