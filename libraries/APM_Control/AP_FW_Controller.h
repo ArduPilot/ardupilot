@@ -110,8 +110,9 @@ protected:
     float rate_target_deg;
     float accel_target_deg;
 
-    // input shaping accel and jerk limits
+    // Input shaping accel limit and angle P gain
     AP_Float accel_limit;
+    AP_Float angle_p;
 
     const AP_AutoTune::ATType autotune_type;
 };
