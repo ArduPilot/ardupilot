@@ -169,28 +169,12 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
 #endif
 
     case MAV_CMD_IMAGE_START_CAPTURE:
-        // check if this is a single picture request (e.g. total images is 1 or interval and total images are zero)
-        if ((cmd.content.image_start_capture.total_num_images == 1) ||
-            (cmd.content.image_start_capture.total_num_images == 0 && is_zero(cmd.content.image_start_capture.interval_s))) {
-            if (cmd.content.image_start_capture.instance == 0) {
-                // take pictures for every backend
-                return camera->take_picture();
-            }
-            return camera->take_picture(cmd.content.image_start_capture.instance-1);
-        } else if (cmd.content.image_start_capture.total_num_images == 0) {
-            // multiple picture request, take pictures forever
-            if (cmd.content.image_start_capture.instance == 0) {
-                // take pictures for every backend
-                return camera->take_multiple_pictures(cmd.content.image_start_capture.interval_s*1000, -1);
-            }
-            return camera->take_multiple_pictures(cmd.content.image_start_capture.instance-1, cmd.content.image_start_capture.interval_s*1000, -1);
-        } else {
-            if (cmd.content.image_start_capture.instance == 0) {
-                // take pictures for every backend
-                return camera->take_multiple_pictures(cmd.content.image_start_capture.interval_s*1000, cmd.content.image_start_capture.total_num_images);
-            }
-            return camera->take_multiple_pictures(cmd.content.image_start_capture.instance-1, cmd.content.image_start_capture.interval_s*1000, cmd.content.image_start_capture.total_num_images);
-        }
+        return camera->handle_mav_IMG_START_CAPTURE(
+            cmd.content.image_start_capture.instance,
+            cmd.content.image_start_capture.interval_s,
+            cmd.content.image_start_capture.total_num_images
+        ) == MAV_RESULT_ACCEPTED;
+
     case MAV_CMD_IMAGE_STOP_CAPTURE:
         if (cmd.p1 == 0) {
             // stop capture for each backend
