@@ -130,13 +130,7 @@ bool Plane::stick_mixing_enabled(void)
 void Plane::stabilize_roll()
 {
     if (fly_inverted()) {
-        // we want to fly upside down. We need to cope with wrap of
-        // the roll_sensor interfering with wrap of nav_roll, which
-        // would really confuse the PID code. The easiest way to
-        // handle this is to ensure both go in the same direction from
-        // zero
         nav_roll_cd += 18000;
-        if (ahrs.roll_sensor < 0) nav_roll_cd -= 36000;
     }
     float roll_out = stabilize_roll_get_roll_out();
 
@@ -169,7 +163,7 @@ float Plane::stabilize_roll_get_roll_out()
             }
         }
 
-        const float roll_out = rollController.get_rate_out(degrees(pid_info.target), speed_scaler);
+        const float roll_out = rollController.run_rate_control(degrees(pid_info.target), speed_scaler);
         /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
            opposing integrators balancing between the two controllers
         */
@@ -182,7 +176,7 @@ float Plane::stabilize_roll_get_roll_out()
     if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
         disable_integrator = true;
     }
-    return rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator,
+    return rollController.run_angle_control(nav_roll_cd, speed_scaler, disable_integrator,
                                         ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
@@ -232,7 +226,7 @@ float Plane::stabilize_pitch_get_pitch_out()
             }
         }
 
-        const int32_t pitch_out = pitchController.get_rate_out(degrees(pid_info.target), speed_scaler);
+        const int32_t pitch_out = pitchController.run_rate_control(degrees(pid_info.target), speed_scaler);
         /* when slaving fixed wing control to VTOL control we need to decay the integrator to prevent
            opposing integrators balancing between the two controllers
         */
@@ -265,7 +259,7 @@ float Plane::stabilize_pitch_get_pitch_out()
         demanded_pitch = landing.get_pitch_cd();
     }
 
-    return pitchController.get_servo_out(demanded_pitch - ahrs.pitch_sensor, speed_scaler, disable_integrator,
+    return pitchController.run_angle_control(demanded_pitch, speed_scaler, disable_integrator,
                                          ground_mode && !(plane.flight_option_enabled(FlightOptions::DISABLE_GROUND_PID_SUPPRESSION)));
 }
 
@@ -455,8 +449,8 @@ void Plane::stabilize()
     } else if (nav_scripting_active()) {
         // scripting is in control of roll and pitch rates and throttle
         const float speed_scaler = get_speed_scaler();
-        const float aileron = rollController.get_rate_out(nav_scripting.roll_rate_dps, speed_scaler);
-        const float elevator = pitchController.get_rate_out(nav_scripting.pitch_rate_dps, speed_scaler);
+        const float aileron = rollController.run_rate_control(nav_scripting.roll_rate_dps, speed_scaler);
+        const float elevator = pitchController.run_rate_control(nav_scripting.pitch_rate_dps, speed_scaler);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, aileron);
         SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elevator);
         float rudder = 0;
@@ -760,4 +754,53 @@ void Plane::apply_load_factor_roll_limits(void)
 
     nav_roll_cd = constrain_int32(nav_roll_cd, -lf_roll_limit_deg * 100, lf_roll_limit_deg * 100);
     roll_limit_cd = MIN(roll_limit_cd, lf_roll_limit_deg * 100);
+}
+
+// Check if there has been a change in attitude estimate which the attitude controllers should be told about
+// This allows them to compensate for the change so smooth control is maintained
+void Plane::check_ahrs_reset()
+{
+    bool should_reset = false;
+
+    // Check for change in ahrs type
+    const AP_AHRS::EKFType ahrs_type = ahrs.active_EKF_type();
+    if (ahrs_check.last_ahrs_type != ahrs_type) {
+        should_reset = true;
+    }
+    ahrs_check.last_ahrs_type = ahrs_type;
+
+    // Check for change in core
+    const int8_t primary_core = ahrs.get_primary_core_index();
+    if (ahrs_check.last_primary_core != primary_core) {
+        should_reset = true;
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)primary_core);
+    }
+    ahrs_check.last_primary_core = primary_core;
+
+    // Check for yaw reset
+    float yaw_angle_change_rad;
+    const uint32_t yaw_reset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
+    if (ahrs_check.last_yaw_reset_ms != yaw_reset_ms) {
+        should_reset = true;
+        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
+    }
+    ahrs_check.last_yaw_reset_ms = yaw_reset_ms;
+
+    // Nothing to do if there are no resets
+    if (!should_reset) {
+        return;
+    }
+
+    // Reset fixed wing controllers
+    rollController.ahrs_reset();
+    pitchController.ahrs_reset();
+
+#if HAL_QUADPLANE_ENABLED
+    // Reset vtol controllers
+    if (quadplane.initialised) {
+        quadplane.attitude_control->inertial_frame_reset();
+    }
+#endif
+
 }
