@@ -755,3 +755,52 @@ void Plane::apply_load_factor_roll_limits(void)
     nav_roll_cd = constrain_int32(nav_roll_cd, -lf_roll_limit_deg * 100, lf_roll_limit_deg * 100);
     roll_limit_cd = MIN(roll_limit_cd, lf_roll_limit_deg * 100);
 }
+
+// Check if there has been a change in attitude estimate which the attitude controllers should be told about
+// This allows them to compensate for the change so smooth control is maintained
+void Plane::check_ahrs_reset()
+{
+    bool should_reset = false;
+
+    // Check for change in ahrs type
+    const AP_AHRS::EKFType ahrs_type = ahrs.active_EKF_type();
+    if (ahrs_check.last_ahrs_type != ahrs_type) {
+        should_reset = true;
+    }
+    ahrs_check.last_ahrs_type = ahrs_type;
+
+    // Check for change in core
+    const int8_t primary_core = ahrs.get_primary_core_index();
+    if (ahrs_check.last_primary_core != primary_core) {
+        should_reset = true;
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
+        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)primary_core);
+    }
+    ahrs_check.last_primary_core = primary_core;
+
+    // Check for yaw reset
+    float yaw_angle_change_rad;
+    const uint32_t yaw_reset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
+    if (ahrs_check.last_yaw_reset_ms != yaw_reset_ms) {
+        should_reset = true;
+        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
+    }
+    ahrs_check.last_yaw_reset_ms = yaw_reset_ms;
+
+    // Nothing to do if there are no resets
+    if (!should_reset) {
+        return;
+    }
+
+    // Reset fixed wing controllers
+    rollController.ahrs_reset();
+    pitchController.ahrs_reset();
+
+#if HAL_QUADPLANE_ENABLED
+    // Reset vtol controllers
+    if (quadplane.initialised) {
+        quadplane.attitude_control->inertial_frame_reset();
+    }
+#endif
+
+}
