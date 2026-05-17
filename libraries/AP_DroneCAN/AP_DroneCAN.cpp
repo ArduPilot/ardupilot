@@ -1416,6 +1416,59 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
 
     servo_telem->update_telem_data(msg.actuator_id - 1, telem_data);
 }
+
+/*
+    handle circuit status message     
+*/
+void AP_DroneCAN::handle_circuit_status(const CanardRxTransfer& transfer, const uavcan_equipment_power_CircuitStatus& msg)
+{
+
+    if (msg.circuit_id >= DRONECAN_SRV_NUMBER) {
+        return;
+    }
+
+    AP_Servo_Telem *servo_telem = AP_Servo_Telem::get_singleton();
+
+    if (servo_telem == nullptr || !servo_telem->is_active(msg.circuit_id - 1)) {
+        return;
+    }
+
+    const AP_Servo_Telem::TelemetryData telem_data {
+        .voltage = msg.voltage,
+        .current = msg.current,
+        .status_flags = msg.error_flags,
+        .present_types = AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                         AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                         AP_Servo_Telem::TelemetryData::Types::STATUS
+    };
+
+    servo_telem->update_telem_data(msg.circuit_id - 1, telem_data);
+}
+
+/*
+    handle equipment temperature message
+*/
+void AP_DroneCAN::handle_device_temperature(const CanardRxTransfer& transfer, const uavcan_equipment_device_Temperature& msg)
+{
+    
+    if (msg.device_id >= DRONECAN_SRV_NUMBER) {
+        return;
+    }
+
+    AP_Servo_Telem *servo_telem = AP_Servo_Telem::get_singleton();
+
+    if (servo_telem == nullptr || !servo_telem->is_active(msg.device_id - 1)) {
+        return;
+    }
+    
+    const AP_Servo_Telem::TelemetryData telem_data {
+        .motor_temperature_cdeg = int16_t(msg.temperature * 100),
+        .present_types = AP_Servo_Telem::TelemetryData::Types::MOTOR_TEMP
+    };
+
+    servo_telem->update_telem_data(msg.device_id - 1, telem_data);
+}
+
 #endif
 
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT && AP_SERVO_TELEM_ENABLED
