@@ -56,6 +56,9 @@ public:
     // Get the angle error in degrees
     float get_angle_error_deg() const { return angle_err_deg; }
 
+    // Reset the attitude target to such that a change in attitude due to a ahrs change is smooth
+    void ahrs_reset();
+
 protected:
     const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;

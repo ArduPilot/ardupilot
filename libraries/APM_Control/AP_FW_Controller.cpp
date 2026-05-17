@@ -337,3 +337,10 @@ void AP_FW_Controller::get_input_shaping(float &angle, float &rate, float &accel
     rate = rate_target_deg;
     accel = accel_target_deg;
 }
+
+// Reset the attitude target to such that a change in attitude due to a ahrs change is smooth
+void AP_FW_Controller::ahrs_reset()
+{
+    // Update the target angle such that the angle error remains the same before and after the change in measured angle from the ahrs
+    angle_target_deg = wrap_180(get_measured_angle() + angle_err_deg);
+}
