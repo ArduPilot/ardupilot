@@ -769,6 +769,9 @@ public:
     // get access to an EKFGSF_yaw estimator
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
+    // Return the active EKF type
+    EKFType active_EKF_type(void) const { return state.active_EKF_type; }
+
 private:
 
     // roll/pitch/yaw euler angles, all in radians
@@ -812,8 +815,6 @@ private:
     AP_Float _origin_lat;
     AP_Float _origin_lon;
     AP_Float _origin_alt;
-
-    EKFType active_EKF_type(void) const { return state.active_EKF_type; }
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
