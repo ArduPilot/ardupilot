@@ -48,9 +48,6 @@
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
-// maximum allowed gyro bias (rad/sec)
-#define GYRO_BIAS_LIMIT 0.5f
-
 // initial accel bias uncertainty as a fraction of the state limit
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
@@ -488,7 +485,13 @@ public:
     // failure message
     // requires_position should be true if horizontal position configuration should be checked
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
-    
+
+    // clear the statesInitialised status which allows a reset and bootstrap alignment
+    void clearStatesInitialised(void) { statesInitialised = false; }
+
+    // return true if states have been initialised by a bootstrap alignment
+    bool isStatesInitialised(void) const { return statesInitialised; }
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -1614,6 +1617,9 @@ private:
 
     // vehicle specific initial gyro bias uncertainty
     ftype InitialGyroBiasUncertainty(void) const;
+
+    // get the gyro bias limit for this core's IMU
+    ftype getGyroBiasLimit(void) const;
 
     /*
       learn magnetometer biases from GPS yaw. Return true if the

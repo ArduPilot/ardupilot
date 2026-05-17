@@ -1510,6 +1510,36 @@ bool AP_InertialSensor::use_gyro(uint8_t instance) const
     return (get_gyro_health(instance) && _use(instance));
 }
 
+// look up the backend that owns the given gyro instance, or nullptr
+const AP_InertialSensor_Backend *AP_InertialSensor::_find_gyro_backend(uint8_t instance) const
+{
+    for (uint8_t i = 0; i < _backend_count; i++) {
+        if (_backends[i] != nullptr && _backends[i]->get_gyro_instance() == instance) {
+            return _backends[i];
+        }
+    }
+    return nullptr;
+}
+
+float AP_InertialSensor::get_gyro_bias_limit_rads(uint8_t instance) const
+{
+    const auto *backend = _find_gyro_backend(instance);
+    if (backend == nullptr) {
+        // fall back to the legacy default if no backend has claimed this instance yet
+        return 0.5f;
+    }
+    return backend->gyro_bias_limit_rads();
+}
+
+float AP_InertialSensor::get_gyro_bias_init_dps(uint8_t instance) const
+{
+    const auto *backend = _find_gyro_backend(instance);
+    if (backend == nullptr) {
+        return 2.5f;
+    }
+    return backend->gyro_bias_init_dps();
+}
+
 // get_accel_health_all - return true if all accels are healthy
 bool AP_InertialSensor::get_accel_health_all(void) const
 {

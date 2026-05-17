@@ -230,7 +230,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif  // HAL_BARO_WIND_COMP_ENABLED
 
 #if AP_FIELD_ELEVATION_ENABLED
-    // @Param: _FIELD_ELV
+    // @Param{Blimp,Copter,Plane,Rover,Tracker}: _FIELD_ELV
     // @DisplayName: field elevation
     // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. Changes to this parameter will only be used when disarmed. A value of 0 means the EKF origin height is used for takeoff height above sea level.
     // @Units: m
@@ -241,7 +241,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    // @Param: _ALTERR_MAX
+    // @Param{Copter,Plane}: _ALTERR_MAX
     // @DisplayName: Altitude error maximum
     // @Description: This is the maximum acceptable altitude discrepancy between GPS altitude and barometric presssure altitude calculated against a standard atmosphere for arming checks to pass. If you are getting an arming error due to this parameter then you may have a faulty or substituted barometer. A common issue is vendors replacing a MS5611 in a "Pixhawk" with a MS5607. If you have that issue then please see BARO_OPTIONS parameter to force the MS5611 to be treated as a MS5607. This check is disabled if the value is zero.
     // @Units: m
@@ -250,7 +250,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ALTERR_MAX", 23, AP_Baro, _alt_error_max, 2000),
 
-    // @Param: _OPTIONS
+    // @Param{Copter,Plane}: _OPTIONS
     // @DisplayName: Barometer options
     // @Description: Barometer options
     // @Bitmask: 0:Treat MS5611 as MS5607
