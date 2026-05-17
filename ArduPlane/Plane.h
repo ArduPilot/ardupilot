@@ -935,6 +935,14 @@ private:
     int16_t calc_nav_yaw_course(void);
     int16_t calc_nav_yaw_ground(void);
 
+    // Check if there has been a change in attitude estimate which the attitude controllers should be told about
+    void check_ahrs_reset();
+    struct {
+        uint32_t last_yaw_reset_ms;
+        int8_t last_primary_core;
+        AP_AHRS::EKFType last_ahrs_type;
+    } ahrs_check;
+
 #if HAL_LOGGING_ENABLED
 
     // methods for AP_Vehicle:

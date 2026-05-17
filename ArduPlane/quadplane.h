@@ -235,9 +235,6 @@ private:
     // return true if airmode should be active
     bool air_mode_active() const;
 
-    // check for an EKF yaw reset
-    void check_yaw_reset(void);
-    
     // hold hover (for transition)
     void hold_hover(float target_climb_rate_cms);
 
@@ -415,9 +412,6 @@ private:
 
     // return which vfwd method to use
     ActiveFwdThr get_vfwd_method(void) const;
-
-    // time we last got an EKF yaw reset
-    uint32_t ekfYawReset_ms;
 
     struct {
         AP_Float gain;
