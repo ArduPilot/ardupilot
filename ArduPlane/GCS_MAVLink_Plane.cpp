@@ -577,7 +577,7 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     // reject destination if outside the fence
     if (!plane.fence.check_location_within_fence(requested_position)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
-        return MAV_RESULT_DENIED;
+        return MAV_RESULT_FAILED;
     }
 #endif
 
