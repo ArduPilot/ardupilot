@@ -2823,6 +2823,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if m.breach_status == 0:
             raise NotAchievedException("Fence is not breached")
 
+    def GuidedRejectOutsideFence(self):
+        '''ensure a GUIDED destination outside the fence is rejected'''
+        self.set_parameters({
+            "FENCE_TYPE": 2,    # circle only
+            "FENCE_RADIUS": 50,
+            "FENCE_ACTION": 0,  # report only so a breach does not change mode
+            "FENCE_ENABLE": 1,
+        })
+        self.takeoff(10, mode='GUIDED')
+        here = self.mav.location()
+
+        inside_loc = self.offset_location_ne(here, 10, 0)
+        outside_loc = self.offset_location_ne(here, 200, 0)
+
+        self.start_subtest("Reposition inside the fence should be accepted")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            x=int(inside_loc.lat * 1e7),
+            y=int(inside_loc.lng * 1e7),
+            z=here.alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+
+        self.start_subtest("Reposition outside the fence should be rejected")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            x=int(outside_loc.lat * 1e7),
+            y=int(outside_loc.lng * 1e7),
+            z=here.alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.do_RTL()
+
     def BackupFence(self):
         '''ensure the lateral backup fence functionality works'''
         self.set_parameters({
@@ -13859,6 +13895,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.FenceFloorAutoEnableOnArming,
              self.FenceMargin,
              self.FenceUpload_MissionItem,
+             self.GuidedRejectOutsideFence,
              self.AutoTuneSwitch,
              self.AutoTuneAux,
              self.GPSGlitchLoiter,
