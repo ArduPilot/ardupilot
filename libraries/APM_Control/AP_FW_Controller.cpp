@@ -39,8 +39,8 @@ bool AP_FW_Controller::apply_input_shaping() const
         return false;
     }
 
-    // Accel limit and time constant must be set
-    if (!is_positive(accel_limit.get()) || !is_positive(aparm.input_tc.get())) {
+    // Accel limit and angle gain must be set
+    if (!is_positive(accel_limit.get()) || !is_positive(angle_p.get())) {
         return false;
     }
 
@@ -82,7 +82,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     const float dt = AP::scheduler().get_loop_period_s();
 
     const float accel_max = accel_limit.get();
-    const float jerk_limit = accel_max / aparm.input_tc.get();
+    const float jerk_limit = accel_max / MAX(gains.tau.get(), 0.1);
 
     // Ensure the shortest path is taken
     const float angle_error = wrap_180(desired_angle_deg - angle_target_deg);
@@ -108,7 +108,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     angle_err_deg = wrap_180(angle_target_deg - get_measured_angle());
 
     // Apply gain using sqrt controller
-    float desired_rate = sqrt_controller(angle_err_deg, 1.0 / gains.tau.get(), accel_max * 0.5, dt);
+    float desired_rate = sqrt_controller(angle_err_deg, angle_p.get(), accel_max * 0.5, dt);
 
     // Add feed forward rate demand and constrain to rate limit
     desired_rate = rate_limit(desired_rate + rate_target_deg);
@@ -214,8 +214,7 @@ float AP_FW_Controller::run_rate_control(float desired_rate, float scaler)
     angle_target_deg = get_measured_angle();
 
     const float accel_max = accel_limit.get();
-    const float tc = MAX(aparm.input_tc.get(), 0.1);
-    const float jerk_limit = accel_max / tc;
+    const float jerk_limit = accel_max / MAX(gains.tau.get(), 0.1);
 
     // Apply input shaping updating the accel target
     shape_pos_vel_accel(
