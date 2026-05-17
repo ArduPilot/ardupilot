@@ -86,6 +86,7 @@ public:
     // update - to be called periodically at 50Hz
     void update();
 
+#if HAL_GCS_ENABLED
     // handle MAVLink messages from the camera
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
@@ -98,6 +99,13 @@ public:
 
     // send camera information for a specific instance (0-based) to GCS
     void send_camera_information(uint8_t instance, mavlink_channel_t chan);
+#endif  // HAL_GCS_ENABLED
+
+#if HAL_MAVLINK_BINDINGS_ENABLED
+    // methods to handle mavlink-style instance-id (0 meaning all cameras)
+    MAV_RESULT handle_mav_DO_SET_CAM_TRIGG_DISTANCE(uint8_t instance_id, bool trigger, float dist_m);
+    MAV_RESULT handle_mav_SET_CAMERA_ZOOM(uint8_t instance_id, CAMERA_ZOOM_TYPE mav_zoom_type, float zoom_value);
+#endif  // HAL_MAVLINK_BINDINGS_ENABLED
 
     // select which instance to send on the next deferred MSG_CAMERA_INFORMATION send
     void set_camera_information_send_instance(int16_t instance) { _camera_information_send_instance = instance; }
@@ -111,7 +119,6 @@ public:
     void control(uint8_t instance, float session, float zoom_pos, float zoom_step, float focus_lock, int32_t shooting_cmd, int32_t cmd_id);
 
     // set camera trigger distance in a mission
-    void set_trigger_distance(float distance_m);
     void set_trigger_distance(uint8_t instance, float distance_m);
 
     // momentary switch to change camera between picture and video modes
