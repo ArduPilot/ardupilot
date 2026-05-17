@@ -370,7 +370,6 @@ public:
         k_param_quicktune,
         k_param_mode_autoland,
         k_param__gcs,
-        k_param_input_tc
 
     };
 
