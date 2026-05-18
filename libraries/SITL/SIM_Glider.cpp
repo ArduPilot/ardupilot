@@ -482,4 +482,12 @@ bool Glider::update_balloon(float balloon, Vector3f &force, Vector3f &rot_accel)
     return true;
 }
 
+// hook set_pose() so we can update balloon position
+void Glider::set_pose_hook(void)
+{
+    // offset balloon by new position of the aircraft relative to origin
+    balloon_position = position.tofloat();
+    balloon_position.z += initial_balloon_height;
+}
+
 #endif // AP_SIM_GLIDER_ENABLED
