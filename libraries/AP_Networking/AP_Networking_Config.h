@@ -49,7 +49,10 @@
 // This does not mean that the system/OS does not have the ability to set the IP, just that
 // we have no control from this scope. For example, Linux systems (including SITL) have
 // their own DHCP client running but we have no control over it.
-#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED AP_NETWORKING_BACKEND_CHIBIOS
+// When the PPP backend is used on SITL the link IPs are negotiated via IPCP, so we expose
+// the IP params there too so a SITL PPP "server" (e.g. AP_Periph in sitl_periph_PPP) can
+// dictate the link addressing.
+#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED (AP_NETWORKING_BACKEND_CHIBIOS || (AP_NETWORKING_BACKEND_PPP && CONFIG_HAL_BOARD == HAL_BOARD_SITL))
 #endif
 
 #define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP)
