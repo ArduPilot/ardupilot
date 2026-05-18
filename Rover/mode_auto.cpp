@@ -100,7 +100,7 @@ void ModeAuto::update()
             if (!_reached_heading) {
                 // run steering and throttle controllers
                 calc_steering_to_heading(_desired_yaw_cd);
-                calc_throttle(calc_speed_nudge(_desired_speed, is_negative(_desired_speed)), true);
+                calc_throttle(calc_speed_nudge(_desired_velocity, is_negative(_desired_velocity)), true);
                 // check if we have reached within 5 degrees of target
                 _reached_heading = (fabsf(_desired_yaw_cd - ahrs.yaw_sensor) < 500);
             } else {
@@ -356,7 +356,7 @@ bool ModeAuto::set_desired_speed(float speed_ms)
     case SubMode::Stop:
         return g2.wp_nav.set_speed_max(speed_ms);
     case SubMode::HeadingAndSpeed:
-        _desired_speed = speed_ms;
+        _desired_velocity = speed_ms;
         return true;
     case SubMode::RTL:
         return rover.mode_rtl.set_desired_speed(speed_ms);
@@ -812,7 +812,7 @@ void ModeAuto::do_nav_set_yaw_speed(const AP_Mission::Mission_Command& cmd)
 
     // set targets
     const float speed_max = g2.wp_nav.get_default_speed();
-    _desired_speed = constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max);
+    _desired_velocity = constrain_float(cmd.content.set_yaw_speed.speed, -speed_max, speed_max);
     _desired_yaw_cd = desired_heading_cd;
     _reached_heading = false;
     _submode = SubMode::HeadingAndSpeed;

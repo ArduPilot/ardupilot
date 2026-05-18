@@ -367,8 +367,7 @@ private:
     bool waiting_to_start;  // true if waiting for EKF origin before starting mission
     bool auto_triggered;        // true when auto has been triggered to start
 
-    // HeadingAndSpeed sub mode variables
-    float _desired_speed;   // desired speed in HeadingAndSpeed submode
+    float _desired_velocity;
     bool _reached_heading;  // true when vehicle has reached desired heading in TurnToHeading sub mode
 
     // Loiter control
@@ -554,12 +553,9 @@ public:
     bool get_desired_location(Location& destination) const override WARN_IF_UNUSED;
     bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
 
-    // set desired heading and speed
-    void set_desired_heading_and_speed(float yaw_angle_cd, float target_speed);
-
-    // set desired heading-delta, turn-rate and speed
-    void set_desired_heading_delta_and_speed(float yaw_delta_cd, float target_speed);
-    void set_desired_turn_rate_and_speed(float turn_rate_cds, float target_speed);
+    void set_desired_heading_and_velocity(float yaw_angle_cd, float target_velocity);
+    void set_desired_heading_delta_and_velocity(float yaw_delta_cd, float target_velocity);
+    void set_desired_turn_rate_and_velocity(float turn_rate_cds, float target_velocity);
 
     // set steering and throttle (-1 to +1).  Only called from scripts
     void set_steering_and_throttle(float steering, float throttle);
@@ -605,7 +601,7 @@ protected:
     uint32_t _des_att_time_ms;  // system time last call to set_desired_attitude was made (used for timeout)
     float _desired_yaw_rate_cds;// target turn rate centi-degrees per second
     bool send_notification;     // used to send one time notification to ground station
-    float _desired_speed;       // desired speed used only in HeadingAndSpeed submode
+    float _desired_velocity;
 
     // direct steering and throttle control
     bool _have_strthr;          // true if we have a valid direct steering and throttle inputs

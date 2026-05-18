@@ -106,8 +106,8 @@ public:
     // get the slew rate value for speed and steering for oscillation detection in lua scripts
     void get_srate(float &steering_srate, float &speed_srate);
 
-    // get forward speed in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
-    bool get_forward_speed(float &speed) const;
+    // get forward velocity in m/s (earth-frame horizontal velocity but only along vehicle x-axis).  returns true on success
+    bool get_forward_speed(float &forward_velocity) const;
 
     // get throttle/speed controller maximum acceleration (also used for deceleration)
     float get_accel_max() const { return MAX(_throttle_accel_max, 0.0f); }
