@@ -7353,8 +7353,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "MNT1_TYPE": 6,         # MAVLink
             "MNT2_TYPE": 6,         # MAVLink
-            "CAM1_TYPE": 4,         # Mount
-            "CAM2_TYPE": 4,         # Mount
+            "CAM1_TYPE": 6,         # MAVLink
+            "CAM2_TYPE": 6,         # MAVLink
             "SERIAL5_PROTOCOL": 2,  # MAVLink2
             "SERIAL6_PROTOCOL": 2,  # MAVLink2
         })
