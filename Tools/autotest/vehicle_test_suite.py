@@ -215,6 +215,9 @@ class Context(object):
         self.installed_modules = []
         self.overridden_message_rates = {}
         self.raising_debug_trap_on_exceptions = False
+        # files snapshotted via context_backup_file() and restored on
+        # context_pop(); list of (path, original_bytes) tuples
+        self.backup_files = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -6533,6 +6536,18 @@ class TestSuite(abc.ABC):
                 context.collections[t].append(m)
         self.install_message_hook_context(mh)
 
+    def context_backup_file(self, path):
+        '''snapshot file contents and mode; on context_pop() the original
+        bytes are written back with the same permissions. Use this instead
+        of manual shutil.copy save/restore so cleanup is exception-safe.
+        If the path matches the running SITL binary, the harness stops
+        SITL before restoring and restarts it afterwards (avoids ETXTBSY
+        and leaves the next test with the original binary loaded).'''
+        with open(path, "rb") as f:
+            data = f.read()
+        mode = os.stat(path).st_mode
+        self.context_get().backup_files.append((path, data, mode))
+
     def context_collect(self, msg_type):
         '''start collecting messages of type msg_type into context collection'''
         context = self.context_get()
@@ -6588,6 +6603,28 @@ class TestSuite(abc.ABC):
             dead_parameters_dict[p[0]] = p[1]
         if process_interaction_allowed:
             self.set_parameters(dead_parameters_dict, add_to_context=False)
+
+        # restore any files snapshotted via context_backup_file()
+        for path, data, mode in reversed(dead.backup_files):
+            running_binary = getattr(self, 'binary', None)
+            is_running_binary = (
+                running_binary is not None
+                and os.path.exists(running_binary)
+                and os.path.exists(path)
+                and os.path.samefile(path, running_binary)
+            )
+            if is_running_binary and process_interaction_allowed:
+                self.stop_SITL()
+            try:
+                os.unlink(path)  # avoid ETXTBSY when overwriting a running exe
+            except FileNotFoundError:
+                pass
+            with open(path, "wb") as f:
+                f.write(data)
+            os.chmod(path, mode)
+            if is_running_binary and process_interaction_allowed:
+                self.start_SITL(wipe=False)
+                self.set_streamrate(self.sitl_streamrate())
 
         if getattr(self, "old_binary", None) is not None:
             self.stop_SITL()
