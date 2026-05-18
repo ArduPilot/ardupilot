@@ -39,6 +39,14 @@
 #define AP_NETWORKING_BACKEND_SITL (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
 #endif
 
+// optional Linux TAP-device backend for SITL; bridges the lwIP stack of a
+// SITL build to a host TAP interface so developer tools (browsers, curl,
+// etc.) can reach lwIP-served sockets. Disabled by default; enable in a
+// per-board hwdef (e.g. sitl_periph_PPP) when you want host-side reachability.
+#ifndef AP_NETWORKING_BACKEND_SITL_TUN
+#define AP_NETWORKING_BACKEND_SITL_TUN 0
+#endif
+
 #ifndef AP_NETWORKING_SOCKETS_ENABLED
 #define AP_NETWORKING_SOCKETS_ENABLED AP_NETWORKING_ENABLED
 #endif
@@ -55,7 +63,7 @@
 #define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED (AP_NETWORKING_BACKEND_CHIBIOS || (AP_NETWORKING_BACKEND_PPP && CONFIG_HAL_BOARD == HAL_BOARD_SITL))
 #endif
 
-#define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP)
+#define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP || AP_NETWORKING_BACKEND_SITL_TUN)
 
 // ---------------------------
 // IP Features
