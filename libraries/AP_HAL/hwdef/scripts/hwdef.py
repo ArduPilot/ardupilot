@@ -6,6 +6,7 @@ AP_FLAKE8_CLEAN
 
 from __future__ import annotations
 
+import fnmatch
 import os
 import re
 import shlex
@@ -68,6 +69,11 @@ class HWDef:
 
         # output lines:
         self.all_lines = []
+
+        # dictionary of romfs filename -> source filename for files added via
+        # the ROMFS / ROMFS_WILDCARD / ROMFS_DIRECTORY hwdef keywords;
+        # published to env_vars['ROMFS_FILES'] by write_ROMFS()
+        self.romfs = {}
 
         # integer defines
         self.intdefines = {}
@@ -233,6 +239,12 @@ class HWDef:
         # write out hwdef.h
         self.write_hwdef_header(self.get_output_path("hwdef.h"))
 
+        # publish any ROMFS files into env_vars so the waf build picks
+        # them up via process_hwdef_results. Subclasses that override
+        # run() and need ROMFS handling at a specific point in their
+        # flow should call self.write_ROMFS() directly there.
+        self.write_ROMFS()
+
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
         a = shlex.split(line, posix=False)
@@ -255,6 +267,63 @@ class HWDef:
         elif a[0] == 'BARO':
             self.process_line_BARO(line, depth, a)
 
+        elif a[0] == 'ROMFS':
+            self.romfs_add(a[1], a[2])
+
+        elif a[0] == 'ROMFS_WILDCARD':
+            self.romfs_wildcard(a[1])
+
+        elif a[0] == 'ROMFS_DIRECTORY':
+            self.romfs_add_dir([a[1]], relative_to_base=True)
+
+    def romfs_add(self, romfs_filename, filename):
+        '''add a single file to ROMFS at romfs_filename, sourced from filename'''
+        self.romfs[romfs_filename] = filename
+
+    def romfs_wildcard(self, pattern):
+        '''add a set of files to ROMFS matching pattern (e.g. "models/*.parm");
+        the path is taken relative to the ardupilot repo root.'''
+        base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
+        (pattern_dir, pattern) = os.path.split(pattern)
+        for f in os.listdir(os.path.join(base_path, pattern_dir)):
+            if fnmatch.fnmatch(f, pattern):
+                self.romfs[f] = os.path.join(pattern_dir, f)
+
+    def romfs_add_dir(self, subdirs, relative_to_base=False):
+        '''recursively add a directory tree to ROMFS. subdirs are taken
+        relative to the hwdef.dat by default, or to the ardupilot repo
+        root when relative_to_base=True (the ROMFS_DIRECTORY hwdef
+        keyword uses relative_to_base=True).'''
+        for dirname in subdirs:
+            if relative_to_base:
+                romfs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', dirname)
+            else:
+                romfs_dir = os.path.join(os.path.dirname(self.hwdef[0]), dirname)
+            if not os.path.exists(romfs_dir):
+                continue
+            for root, dirs, files in os.walk(romfs_dir):
+                for f in files:
+                    if fnmatch.fnmatch(f, '*~'):
+                        # skip editor backup files
+                        continue
+                    fullpath = os.path.join(root, f)
+                    relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
+                    if relative_to_base:
+                        relpath = relpath[len(dirname)+1:]
+                    self.romfs[relpath] = fullpath
+
+    def write_ROMFS(self):
+        '''publish ROMFS file list to env_vars so the waf build embeds them
+        via process_hwdef_results. Safe to call multiple times; subclasses
+        that need it at a specific point in their run() should call it
+        directly. Does nothing if no ROMFS files have been registered.'''
+        if not self.romfs:
+            return
+        romfs_list = []
+        for k in sorted(self.romfs.keys()):
+            romfs_list.append((k, self.romfs[k]))
+        self.env_vars['ROMFS_FILES'] = romfs_list
+
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
             self.progress("Removing %s" % u)
@@ -272,6 +341,8 @@ class HWDef:
             if u == 'BARO':
                 self.baro_list = []
                 self.seen_BARO_lines = set()
+            if u == 'ROMFS':
+                self.romfs = {}
 
     def process_line_env(self, line, depth, a):
         self.progress("Adding environment %s" % ' '.join(a[1:]))
