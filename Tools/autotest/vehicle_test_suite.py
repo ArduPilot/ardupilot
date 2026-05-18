@@ -218,6 +218,10 @@ class Context(object):
         # files snapshotted via context_backup_file() and restored on
         # context_pop(); list of (path, original_bytes) tuples
         self.backup_files = []
+        # pexpect.spawn child processes (e.g. AP_Periph companions
+        # launched by restart_SITL_frame()) registered via
+        # context_register_periph_child(); terminated on context_pop()
+        self.periph_children = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -3119,6 +3123,88 @@ class TestSuite(abc.ABC):
             self.valgrind_restart_model = model
             self.valgrind_restart_defaults_filepath = defaults_filepath
             self.valgrind_restart_customisations = customisations
+
+    def restart_SITL_frame(self,
+                           frame,
+                           vehicleinfo_key=None,
+                           extra_configure_args=None,
+                           customisations=None,
+                           periph_extra_args=None):
+        '''rebuild + restart SITL for a vehicleinfo.json frame entry,
+        spawning the associated AP_Periph companion (if the frame
+        defines `periph_board`) wired up for automatic cleanup.
+
+        Reads `configure_args`, `periph_board`, `periph_extra_args` and
+        `periph_params_filename` from pysim/vehicleinfo.json. Snapshots
+        the current SITL binary via context_backup_file() so it is
+        restored on context_pop(), then:
+
+          - rebuilds both binaries via util.build_SITL_frame();
+          - if the frame has a periph_board, allocates a TCP port via
+            spare_network_port() and spawns the periph child with its
+            default params + periph_extra_args; the periph is registered
+            for termination on context_pop();
+          - calls customise_SITL_commandline() with `customisations`.
+
+        The literal placeholder `{port}` is substituted with the
+        allocated periph port in both periph_extra_args (from
+        vehicleinfo + caller-supplied) and `customisations`.
+
+        Returns the allocated periph port, or None if the frame has no
+        periph_board.
+        '''
+        if vehicleinfo_key is None:
+            vehicleinfo_key = self.vehicleinfo_key()
+
+        self.context_backup_file(self.binary)
+        frame_opts = util.build_SITL_frame(
+            vehicleinfo_key, frame,
+            extra_configure_args=extra_configure_args,
+            clean=False, configure=True,
+        )
+
+        periph_port = None
+        if frame_opts.get('periph_board') is not None:
+            periph_port = self.spare_network_port()
+
+        # SITL must be listening on the periph TCP port before we spawn the
+        # periph, otherwise the periph's first connection attempts race
+        # against the customise_SITL_commandline restart and the link can
+        # come up only to be torn down by the SITL stop/start.
+        if customisations is not None:
+            if periph_port is not None:
+                customisations = [c.replace('{port}', str(periph_port))
+                                  for c in customisations]
+            self.customise_SITL_commandline(customisations)
+
+        if periph_port is not None:
+            topdir = util.topdir()
+
+            param_files = frame_opts.get(
+                'periph_params_filename', ['default_params/periph.parm'])
+            defaults_paths = [
+                os.path.join(topdir, 'Tools', 'autotest', p)
+                for p in param_files
+            ]
+
+            all_periph_args = list(frame_opts.get('periph_extra_args', []))
+            if periph_extra_args is not None:
+                all_periph_args += list(periph_extra_args)
+            all_periph_args = [a.replace('{port}', str(periph_port))
+                               for a in all_periph_args]
+
+            periph_cmd = ['--defaults', ",".join(defaults_paths)] + all_periph_args
+            periph_bin = os.path.join(
+                topdir, 'build', frame_opts['periph_board'], 'bin', 'AP_Periph')
+            self.progress("Spawning periph: %s %s" %
+                          (periph_bin, " ".join(periph_cmd)))
+            periph = pexpect.spawn(periph_bin, periph_cmd,
+                                   logfile=sys.stdout, encoding='ascii',
+                                   timeout=30)
+            util.pexpect_autoclose(periph)
+            self.context_register_periph_child(periph)
+
+        return periph_port
 
     def default_parameter_list(self):
         ret = {
@@ -6548,6 +6634,12 @@ class TestSuite(abc.ABC):
         mode = os.stat(path).st_mode
         self.context_get().backup_files.append((path, data, mode))
 
+    def context_register_periph_child(self, child):
+        '''register a pexpect.spawn periph subprocess so it is terminated
+        on context_pop(). Mirrors context_backup_file() for child
+        processes (used by restart_SITL_frame()).'''
+        self.context_get().periph_children.append(child)
+
     def context_collect(self, msg_type):
         '''start collecting messages of type msg_type into context collection'''
         context = self.context_get()
@@ -6603,6 +6695,16 @@ class TestSuite(abc.ABC):
             dead_parameters_dict[p[0]] = p[1]
         if process_interaction_allowed:
             self.set_parameters(dead_parameters_dict, add_to_context=False)
+
+        # terminate any periph child processes registered via
+        # context_register_periph_child() before restoring the SITL
+        # binary - the running periph may otherwise reconnect to the
+        # restarted SITL via its still-open TCP socket
+        for child in reversed(dead.periph_children):
+            try:
+                child.terminate(force=True)
+            except pexpect.ExceptionPexpect:
+                pass
 
         # restore any files snapshotted via context_backup_file()
         for path, data, mode in reversed(dead.backup_files):
