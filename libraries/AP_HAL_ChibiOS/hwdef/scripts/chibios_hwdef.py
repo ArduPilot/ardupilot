@@ -92,9 +92,6 @@ class ChibiOSHWDef(hwdef.HWDef):
         # list of WSPI devices
         self.wspidev = []
 
-        # dictionary of ROMFS files
-        self.romfs = {}
-
         # SPI bus list
         self.spi_list = []
 
@@ -2379,13 +2376,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.romfs["bootloader.bin"] = bp
         f.write("#define AP_BOOTLOADER_FLASHING_ENABLED 1\n")
 
-    def write_ROMFS(self):
-        '''create ROMFS embedded header'''
-        romfs_list = []
-        for k in self.romfs.keys():
-            romfs_list.append((k, self.romfs[k]))
-        self.env_vars['ROMFS_FILES'] = romfs_list
-
     def setup_apj_IDs(self):
         '''setup the APJ board IDs'''
         self.env_vars['APJ_BOARD_ID'] = self.get_numeric_board_id()
@@ -2749,42 +2739,14 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         return filepath
 
-    def romfs_add(self, romfs_filename, filename):
-        '''add a file to ROMFS'''
-        self.romfs[romfs_filename] = filename
-
-    def romfs_wildcard(self, pattern):
-        '''add a set of files to ROMFS by wildcard'''
-        base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
-        (pattern_dir, pattern) = os.path.split(pattern)
-        for f in os.listdir(os.path.join(base_path, pattern_dir)):
-            if fnmatch.fnmatch(f, pattern):
-                self.romfs[f] = os.path.join(pattern_dir, f)
-
     def romfs_add_dir(self, subdirs, relative_to_base=False):
-        '''add a filesystem directory to ROMFS'''
+        '''add a filesystem directory to ROMFS; on ChibiOS skipped silently for
+        bootloader builds (which call this anyway for some reason - see FIXME).
+        Everything else is handled by the base class implementation.'''
         if self.is_bootloader_fw():
             # FIXME: why were we called?!
             return
-        for dirname in subdirs:
-            if relative_to_base:
-                romfs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', dirname)
-            else:
-                romfs_dir = os.path.join(os.path.dirname(self.hwdef[0]), dirname)
-            if not os.path.exists(romfs_dir):
-                continue
-
-            if True:
-                for root, dirs, files in os.walk(romfs_dir):
-                    for f in files:
-                        if fnmatch.fnmatch(f, '*~'):
-                            # skip editor backup files
-                            continue
-                        fullpath = os.path.join(root, f)
-                        relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
-                        if relative_to_base:
-                            relpath = relpath[len(dirname)+1:]
-                        self.romfs[relpath] = fullpath
+        super(ChibiOSHWDef, self).romfs_add_dir(subdirs, relative_to_base=relative_to_base)
 
     def valid_type(self, ptype, label):
         '''check type of a pin line is valid'''
@@ -2906,12 +2868,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.dataflash_list.append(a[1:])
         elif a[0] == 'AIRSPEED':
             self.airspeed_list.append(a[1:])
-        elif a[0] == 'ROMFS':
-            self.romfs_add(a[1], a[2])
-        elif a[0] == 'ROMFS_WILDCARD':
-            self.romfs_wildcard(a[1])
-        elif a[0] == 'ROMFS_DIRECTORY':
-            self.romfs_add_dir([a[1]], relative_to_base=True)
         else:
             super(ChibiOSHWDef, self).process_line(line, depth)
 
@@ -2949,8 +2905,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 self.dataflash_list = []
             if u == 'AIRSPEED':
                 self.airspeed_list = []
-            if u == 'ROMFS':
-                self.romfs = {}
 
         super(ChibiOSHWDef, self).process_line_undef(line, depth, a)
 
