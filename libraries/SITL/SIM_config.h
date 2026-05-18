@@ -221,6 +221,11 @@
 #define AP_SIM_MAVLINKGIMBALV2_ENABLED AP_SIM_AVT_CM62_ENABLED
 #endif
 
+// MAVLink Camera Protocol v2 simulation (mixed into combined gimbal+camera devices):
+#ifndef AP_SIM_MAVLINKCAMV2_ENABLED
+#define AP_SIM_MAVLINKCAMV2_ENABLED AP_SIM_AVT_CM62_ENABLED
+#endif
+
 // base class for all simulated gimbal backends:
 #ifndef AP_SIM_MOUNT_ENABLED
 #define AP_SIM_MOUNT_ENABLED (AP_SIM_SIYI_ENABLED || AP_SIM_TOPOTEK_ENABLED || AP_SIM_VIEWPRO_ENABLED || AP_SIM_MAVLINKGIMBALV2_ENABLED)

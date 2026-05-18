@@ -7374,6 +7374,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             trigger_counts[m.cam_idx] += 1
 
         self.install_message_hook_context(trig_counter)
+        self.delay_sim_time(12, "wait for MAVLink camera backends to initialise")
         self.progress("Test triggering of the two cameras")
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_SET_CAM_TRIGG_DIST,
