@@ -268,6 +268,21 @@
                     "default_params/quad-periph.parm"
                 ]
             },
+            "copter-PPP": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-ppp.parm"
+                ],
+                "periph_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-ppp.parm",
+                    "default_params/copter-ppp-periph.parm"
+                ],
+                "periph_board": "sitl_periph_PPP",
+                "periph_extra_args": ["--serial1=tcpclient:127.0.0.1:{port}"],
+                "configure_args": ["--enable-PPP", "--enable-networking-tests"]
+            },
             "freestyle": {
                 "model": "X:@ROMFS/models/freestyle.json",
                 "waf_target": "bin/arducopter",
