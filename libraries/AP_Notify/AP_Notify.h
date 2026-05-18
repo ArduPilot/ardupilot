@@ -214,7 +214,7 @@ public:
     void send_text(const char *str);
     const char* get_text() const { return _send_text; }
     uint32_t get_text_updated_millis() const {return _send_text_updated_millis; }
-
+ 
 #if AP_SCRIPTING_ENABLED
     // send text to the display using scripting
     void send_text_scripting(const char *str, uint8_t r);

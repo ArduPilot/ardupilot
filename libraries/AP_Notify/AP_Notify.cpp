@@ -434,7 +434,7 @@ void AP_Notify::update(void)
     // links are simultaneously absent; this covers the case where the
     // vehicle has flown out of range and the operator cannot trigger the
     // alarm manually via RC sticks
-    if (_lost_alarm_enable != 0 && flags.failsafe_radio && flags.failsafe_gcs) {
+    if (_lost_alarm_enable != 0 && !flags.armed && flags.failsafe_radio && flags.failsafe_gcs) {
         flags.vehicle_lost = true;
     }
 
