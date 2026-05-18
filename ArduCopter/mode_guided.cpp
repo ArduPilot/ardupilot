@@ -493,7 +493,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
 #if HAL_LOGGING_ENABLED
         // log target
-        copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), (dest_loc.get_alt_frame() == Location::AltFrame::ABOVE_TERRAIN), Vector3f(), Vector3f());
+        copter.Log_Write_Guided_Location_Target(guided_mode, dest_loc);
 #endif
 
         send_notification = true;
@@ -542,7 +542,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 
     // log target
 #if HAL_LOGGING_ENABLED
-    copter.Log_Write_Guided_Position_Target(guided_mode, Vector3p(dest_loc.lat, dest_loc.lng, dest_loc.alt), guided_is_terrain_alt, guided_vel_target_ned_ms, guided_accel_target_ned_mss);
+    copter.Log_Write_Guided_Location_Target(guided_mode, dest_loc);
 #endif
 
     send_notification = true;
