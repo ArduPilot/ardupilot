@@ -25,6 +25,7 @@
 #include <SITL/SIM_RF_Ainstein_LR_D1_v19.h>
 #include <SITL/SIM_RF_Benewake_TF02.h>
 #include <SITL/SIM_RF_Benewake_TF03.h>
+#include <SITL/SIM_RF_Benewake_TFA1500.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
 #include <SITL/SIM_RF_BLping.h>
 #include <SITL/SIM_RF_DTS6012M.h>
@@ -55,6 +56,7 @@ static const struct {
     { "ainsteinlrd1_v19", SITL::RF_Ainstein_LR_D1_v19::create },
     { "benewake_tf02", SITL::RF_Benewake_TF02::create },
     { "benewake_tf03", SITL::RF_Benewake_TF03::create },
+    { "benewake_tfa1500", SITL::RF_Benewake_TFA1500::create },
     { "benewake_tfmini", SITL::RF_Benewake_TFmini::create },
     { "blping", SITL::RF_BLping::create },
     { "dts6012m", SITL::RF_DTS6012M::create },

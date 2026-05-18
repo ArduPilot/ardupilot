@@ -40,6 +40,7 @@
 #include "AP_RangeFinder_Wasp.h"
 #include "AP_RangeFinder_Benewake_TF02.h"
 #include "AP_RangeFinder_Benewake_TF03.h"
+#include "AP_RangeFinder_Benewake_TFA1500.h"
 #include "AP_RangeFinder_Benewake_TFMini.h"
 #include "AP_RangeFinder_Benewake_TFMiniPlus.h"
 #include "AP_RangeFinder_Benewake_TFS20L.h"
@@ -495,6 +496,11 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #if AP_RANGEFINDER_TERARANGER_SERIAL_ENABLED
     case Type::TeraRanger_Serial:
         serial_create_fn = AP_RangeFinder_TeraRanger_Serial::create;
+        break;
+#endif
+#if AP_RANGEFINDER_BENEWAKE_TFA1500_ENABLED
+    case Type::BenewakeTFA1500:
+        serial_create_fn = AP_RangeFinder_Benewake_TFA1500::create;
         break;
 #endif
 #if AP_RANGEFINDER_PWM_ENABLED
