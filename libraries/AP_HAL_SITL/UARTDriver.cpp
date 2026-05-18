@@ -457,7 +457,12 @@ void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
 
     constexpr auto one=1;
     int ret;
-    for (int attempt = 0; attempt < 3; ++attempt) {
+    // Retry for up to 30 seconds.  Companion processes (e.g. AP_Periph
+    // connecting to an ArduPlane SITL TCP listener for a PPP link) can be
+    // launched ahead of the peer's socket, so a few seconds of grace is
+    // not enough when the peer is also rebuilding.
+    constexpr uint8_t max_attempts = 30;
+    for (uint8_t attempt = 0; attempt < max_attempts; ++attempt) {
         _fd = socket(AF_INET, SOCK_STREAM, 0);
         if (_fd == -1) {
             fprintf(stderr, "socket failed - %s\n", strerror(errno));
