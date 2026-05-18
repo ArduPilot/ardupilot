@@ -161,7 +161,11 @@ bool WiFiUdpDriver::write_data()
 
     _write_mutex.take_blocking();
     struct sockaddr_in dest_addr;
+#ifdef UDP_TARGET_IP
+    dest_addr.sin_addr.s_addr = inet_addr(UDP_TARGET_IP);
+#else
     dest_addr.sin_addr.s_addr = inet_addr("192.168.4.255");
+#endif
     dest_addr.sin_family = AF_INET;
     dest_addr.sin_port = htons(UDP_PORT);
     int count = _writebuf.peekbytes(_buffer, sizeof(_buffer));
@@ -303,7 +307,16 @@ void WiFiUdpDriver::initialize_wifi()
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
+
+    // WiFi Stability Improvements
+#ifdef WIFI_POWER_SAVE_NONE
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));  // Disable power saving for stability
+#endif
+
     ESP_ERROR_CHECK(esp_wifi_start() );
+
+    // Set WiFi to maintain connection more aggressively (must be after esp_wifi_start)
+    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(78));  // Set max TX power (19.5 dBm)
 
     hal.console->printf("WiFi Station init finished. Connecting:\n");
 
