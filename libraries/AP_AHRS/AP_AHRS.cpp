@@ -2832,18 +2832,22 @@ uint32_t AP_AHRS::getLastPosDownReset(float &posDelta)
     return 0;
 }
 
-// Resets the baro so that it reads zero at the current height
-// Resets the EKF height to zero
-// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-void AP_AHRS::resetHeightDatum(void)
+// Resets the baro so that it reads zero at the current height,
+// and resets the EKF height datum.  See AP_AHRS::resetHeightDatum
+// declaration for the meaning of origin_alt_tolerance_m.
+void AP_AHRS::resetHeightDatum(float origin_alt_tolerance_m)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
 #if HAL_NAVEKF3_AVAILABLE
-    ekf3.resetHeightDatum();
+    // Call the EKF3 instance directly: the AP_AHRS_NavEKF3 shim only
+    // overrides the no-arg form (matching the AP_AHRS_Backend virtual),
+    // so we bypass it here to forward the tolerance value.
+    ekf3.EKF3.resetHeightDatum(origin_alt_tolerance_m);
 #endif
 #if HAL_NAVEKF2_AVAILABLE
+    // EKF2 has no equivalent guard; the tolerance argument is ignored.
     ekf2.resetHeightDatum();
 #endif
 #if AP_AHRS_SIM_ENABLED
