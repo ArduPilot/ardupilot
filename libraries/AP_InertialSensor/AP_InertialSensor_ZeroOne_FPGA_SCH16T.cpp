@@ -94,7 +94,7 @@ static constexpr uint16_t SPI_SOFT_RESET = (0b1010);
 #define SEPARATOR_BYTE (0xff)
 #define DUMMY_BYTE (0xff)
 
-#define SPI_2MHZ 31 // 2M = 1/((31-1) × 16.667ns)
+#define SPI_12MHZ 10 // 12M = 120M/12
 /*
 Addr_R32_Verison
 check the version of FPGA
@@ -190,9 +190,10 @@ AP_InertialSensor_ZeroOne_FPGA_SCH16T::probe(AP_InertialSensor &imu,
         return nullptr;
     }
 
-    auto sensor = NEW_NOTHROW AP_InertialSensor_ZeroOne_FPGA_SCH16T(imu, std::move(dev), rotation);
+    AP_InertialSensor_ZeroOne_FPGA_SCH16T *sensor = NEW_NOTHROW AP_InertialSensor_ZeroOne_FPGA_SCH16T(imu, std::move(dev), rotation);
 
-    if (!sensor) {
+    if (!sensor || !sensor->init()) {
+        delete sensor;
         return nullptr;
     }
 
@@ -227,7 +228,7 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::sensor_ctrl(uint8_t fifo_rst)
     reg |= ((fifo_cmd_num - 1) & 0xff) << CTRL_Shift_CmdNumSub1;
     reg |= ((fifo_baudrate - 1) & 0xff) << CTRL_Shift_BaudSub1;
 
-    SensorCtl sensor_ctl;
+    SensorCtl sensor_ctl{};
 
     sensor_ctl.reg.cmd = FuncBit_Write | FuncBit_Reg | FuncBit_Bit32;
     sensor_ctl.reg.reg_addr_l = Addr_W32_Sch16tCtrl & 0xff;
@@ -240,11 +241,29 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::sensor_ctrl(uint8_t fifo_rst)
     dev->transfer_fullduplex(sensor_ctl.raw, 7);
 }
 
-void AP_InertialSensor_ZeroOne_FPGA_SCH16T::init(void)
+bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::init()
+{
+    WITH_SEMAPHORE(dev->get_semaphore());
+    
+    uint8_t tries = 2;
+    do{
+        hal.scheduler->delay(250);//wait thr fpga power on
+        reset_chip();
+        hal.scheduler->delay(250);//wait thr fpga reset
+    }while(!read_product_id()&&--tries);
+
+    if (tries == 0) {
+        return false;
+    }
+
+    return true;
+}
+
+void AP_InertialSensor_ZeroOne_FPGA_SCH16T::init_fpga()
 {
 
     fifo_cmd_num = 17;
-    fifo_baudrate = SPI_2MHZ;
+    fifo_baudrate = SPI_12MHZ;
 
     fifo_enable = 0;
     direct_mode = CtrlMode_Direct;
@@ -363,12 +382,6 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::fpga_write_cmd(uint32_t addr, uint8_
 void AP_InertialSensor_ZeroOne_FPGA_SCH16T::run_state_machine()
 {
     switch (_state) {
-    case State::PowerOn: {
-        _state = State::Reset;
-        dev->adjust_periodic_callback(periodic_handle, 250000UL);//wait 250ms power on
-        break;
-    }
-
     case State::Reset: {
         failure_count = 0;
         reset_chip();
@@ -378,11 +391,6 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::run_state_machine()
     }
 
     case State::Configure: {
-        if (!read_product_id()) {
-            _state = State::Reset;
-            dev->adjust_periodic_callback(periodic_handle, 2000000UL); //wait 2s restart
-            break;
-        }
         configure_registers();
         _state = State::LockConfiguration;
         dev->adjust_periodic_callback(periodic_handle, 250000UL);
@@ -403,11 +411,11 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::run_state_machine()
         // Check that registers are configured properly and that the sensor status is OK
         if (validate_sensor_status() && validate_register_configuration()) {
             _state = State::Read;
-            init();
+            init_fpga();
             dev->adjust_periodic_callback(periodic_handle, 1000000UL / backend_rate_hz);
 
         } else {
-            _state = State::Reset;
+            _state = State::Configure;
             dev->adjust_periodic_callback(periodic_handle, 250000UL);
         }
         break;
@@ -437,13 +445,12 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::run_state_machine()
 
 bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::collect_and_publish()
 {
-    bool result = read_data();
-    return result;
+    return read_data();
 }
 
 bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::read_data()
 {
-    uint8_t pkt_num;
+    uint8_t pkt_num{};
 
     pkt_num = fpga_read_reg8(Addr_RW8_SensorFifoCtrl);
     //if there is no data to be read,return false
@@ -454,7 +461,7 @@ bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::read_data()
     dev->adjust_periodic_callback(periodic_handle, 1000000UL / backend_rate_hz);
 
     uint8_t buff[32];
-    SensorData data = {};
+    SensorData data{};
     for (; pkt_num>1; pkt_num--) {
         fpga_read_fifo8(Addr_W8_SensorValueFifo8, buff, 24);//one packet contains 24 bytes
         fpga_write_reg8(Addr_RW8_SensorFifoCtrl, 0x01);//notice the fpga to load next packet
@@ -523,7 +530,7 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::configure_registers()
     for (auto &r : _registers) {
         register_write(r.addr, r.value);
     }
-    uint32_t reg_value;
+    uint32_t reg_value{};
     register_read(CTRL_USER_IF, 0);//the FPGA doesn't process the first instruction,it only starts processing after receiving the second instruction,resulting in the same command being sent twice.
     register_read(CTRL_USER_IF, &reg_value);
     reg_value |= DRY_DRV_EN;
@@ -546,7 +553,7 @@ bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::validate_sensor_status()
 
 bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::validate_register_configuration()
 {
-    uint32_t value;
+    uint32_t value{};
 
     for (auto &r : _registers) {
         register_read(r.addr,0); ////the FPGA doesn't process the first instruction,it only starts processing after receiving the second instruction,resulting in the same command being sent twice.
@@ -561,7 +568,7 @@ bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::validate_register_configuration()
 }
 
 
-uint8_t AP_InertialSensor_ZeroOne_FPGA_SCH16T::wait_direct_busy(void)
+uint8_t AP_InertialSensor_ZeroOne_FPGA_SCH16T::wait_direct_busy()
 {
     uint16_t timeout = 0x200;
     while (timeout) {
@@ -575,7 +582,7 @@ uint8_t AP_InertialSensor_ZeroOne_FPGA_SCH16T::wait_direct_busy(void)
 
 uint16_t AP_InertialSensor_ZeroOne_FPGA_SCH16T::_sch16t_read_status(uint16_t addr)
 {
-    uint32_t value;
+    uint32_t value{};
 
     if (register_read(addr, &value) == 0) {
         return 0;
@@ -766,16 +773,16 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::fill_fpga_frame(FpgaFrame& frame, ui
     }
 }
 
-uint8_t AP_InertialSensor_ZeroOne_FPGA_SCH16T::fpga_test(void)
+bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::fpga_test()
 {
     uint16_t wreg, rreg = 0;
     wreg = rand() & 0xffff;
     fpga_write_reg16(Addr_RW16_TestReg, wreg);
     rreg = fpga_read_reg16(Addr_RW16_TestReg);
     if (wreg != rreg) {
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
 }
 
 
