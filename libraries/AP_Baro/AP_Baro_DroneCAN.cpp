@@ -51,7 +51,7 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
                 backend->_ap_dronecan = detected_module.ap_dronecan;
                 backend->_node_id = detected_module.node_id;
 
-                backend->_instance = backend->_frontend.register_sensor();
+                backend->_instance = backend->_frontend.register_sensor(0, "DroneCAN");
                 backend->set_bus_id(backend->_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
                                                                                     detected_module.ap_dronecan->get_driver_index(),
                                                                                     backend->_node_id, 0));

@@ -97,6 +97,7 @@ void AP_BattMonitor_INA239::configure(void)
     }
 
     configured = true;
+    announce_discovery(dev->get_bus_id(), "INA239");
 }
 
 /// read the battery_voltage and current, should be called at 10hz

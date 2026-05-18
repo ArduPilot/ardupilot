@@ -5,7 +5,7 @@
 AP_Baro_Dummy::AP_Baro_Dummy(AP_Baro &baro) :
     AP_Baro_Backend(baro)
 {
-    _instance = _frontend.register_sensor();
+    _instance = _frontend.register_sensor(0, "Dummy");
 }
 
 // Read the sensor

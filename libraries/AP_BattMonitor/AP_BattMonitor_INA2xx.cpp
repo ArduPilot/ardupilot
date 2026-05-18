@@ -375,6 +375,26 @@ void AP_BattMonitor_INA2XX::timer(void)
 
         // Reset failed reads after successful detection
         failed_reads = 0;
+
+        const char *dev_name = "INA2xx";
+        switch (dev_type) {
+        case DevType::INA226: dev_name = "INA226"; break;
+        case DevType::INA228: dev_name = "INA228"; break;
+        case DevType::INA231: dev_name = "INA231"; break;
+        case DevType::INA238: dev_name = "INA238"; break;
+        case DevType::INA260: dev_name = "INA260"; break;
+        case DevType::UNKNOWN: break;
+        }
+        // detect_device() may have probed by cycling dev->set_address(),
+        // which updates the runtime address but leaves the cached bus_id
+        // with the construction-time address (0 when I2C_ADDR is unset).
+        // Rebuild the bus_id with the actual address that responded.
+        const uint8_t probed_addr = (i2c_address.get() != 0)
+            ? uint8_t(i2c_address.get())
+            : i2c_probe_addresses[(i2c_probe_next + sizeof(i2c_probe_addresses) - 1) % sizeof(i2c_probe_addresses)];
+        const int32_t announced_id = AP_HAL::Device::make_bus_id(
+            AP_HAL::Device::BUS_TYPE_I2C, i2c_bus.get(), probed_addr, 0);
+        announce_discovery(announced_id, dev_name);
     }
 
     float voltage = 0, current = 0;

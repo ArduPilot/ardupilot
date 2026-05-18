@@ -18,7 +18,7 @@ AP_Compass_SITL::AP_Compass_SITL(uint8_t _sitl_instance) :
             if (dev_id == 0) {
                 return;
             }
-            if (!register_compass(dev_id)) {
+            if (!register_compass(dev_id, "SITL")) {
                 return;
             }
                 if (_sitl->mag_save_ids) {

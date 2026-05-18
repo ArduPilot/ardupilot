@@ -6,7 +6,7 @@ AP_Baro_MSP::AP_Baro_MSP(AP_Baro &baro, uint8_t _msp_instance) :
     AP_Baro_Backend(baro)
 {
     msp_instance = _msp_instance;
-    instance = _frontend.register_sensor();
+    instance = _frontend.register_sensor(0, "MSP");
     set_bus_id(instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_MSP,0,msp_instance,0));
 }
 

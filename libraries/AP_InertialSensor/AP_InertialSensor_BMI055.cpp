@@ -101,7 +101,7 @@ AP_InertialSensor_BMI055::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_BMI055::start()
 {
-    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI055)) ||
+    if (!_imu.register_accel(accel_instance, ACCEL_BACKEND_SAMPLE_RATE, dev_accel->get_bus_id_devtype(DEVTYPE_INS_BMI055), "BMI055") ||
         !_imu.register_gyro(gyro_instance, GYRO_BACKEND_SAMPLE_RATE,   dev_gyro->get_bus_id_devtype(DEVTYPE_INS_BMI055))) {
         return;
     }
@@ -161,8 +161,6 @@ bool AP_InertialSensor_BMI055::accel_init()
         goto failed;
     }
 
-    DEV_PRINTF("BMI055: found accel\n");
-
     dev_accel->get_semaphore()->give();
     return true;
     
@@ -214,8 +212,6 @@ bool AP_InertialSensor_BMI055::gyro_init()
     if (!dev_gyro->write_register(REGG_FIFO_CONFIG_1, 0x80, true)) {
         goto failed;
     }
-
-    DEV_PRINTF("BMI055: found gyro\n");    
 
     dev_gyro->get_semaphore()->give();
     return true;

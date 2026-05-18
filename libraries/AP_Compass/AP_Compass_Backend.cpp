@@ -205,12 +205,19 @@ void AP_Compass_Backend::set_last_update_usec(uint32_t last_update)
   register a new backend with frontend, returning instance which
   should be used in publish_field()
  */
-bool AP_Compass_Backend::register_compass(int32_t dev_id)
+bool AP_Compass_Backend::register_compass(int32_t dev_id, const char *name)
 {
     if (!_compass.register_compass(dev_id, instance)) {
         return false;
     }
     set_dev_id(dev_id);
+    if (name != nullptr) {
+        DISCOVERY_PRINTF("%s found on bus %u id %u address 0x%02x\n",
+                         name,
+                         AP_HAL::Device::devid_get_bus(dev_id),
+                         unsigned(dev_id),
+                         AP_HAL::Device::devid_get_address(dev_id));
+    }
     return true;
 }
 

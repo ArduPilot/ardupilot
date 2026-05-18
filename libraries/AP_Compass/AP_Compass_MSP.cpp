@@ -35,7 +35,7 @@ AP_Compass_Backend *AP_Compass_MSP::probe(uint8_t _msp_instance)
 bool AP_Compass_MSP::init()
 {
     auto devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_MSP, 0, msp_instance, 0);
-    if (!register_compass(devid)) {
+    if (!register_compass(devid, "MSP")) {
         return false;
     }
 

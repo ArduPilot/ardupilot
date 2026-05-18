@@ -406,11 +406,9 @@ bool AP_Compass_BMM350::init()
 
     /* Register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_BMM350);
-    if (!register_compass(_dev->get_bus_id())) {
+    if (!register_compass(_dev->get_bus_id(), name)) {
         return false;
     }
-
-    // printf("BMM350: Found at address 0x%x as compass %u\n", _dev->get_bus_address(), _compass_instance);
 
     set_rotation(_rotation);
 

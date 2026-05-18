@@ -141,6 +141,7 @@ void AP_BattMonitor_AD7091R5::init()
             //Reset and config device
             if (_initialize()) {
                 _dev->set_retries(2); // drop to 2 retries for runtime
+                announce_discovery(_dev->get_bus_id(), "AD7091R5");
                 _dev->register_periodic_callback(AD7091R5_PERIOD_USEC, FUNCTOR_BIND_MEMBER(&AP_BattMonitor_AD7091R5::_read_adc, void));
             }
         }

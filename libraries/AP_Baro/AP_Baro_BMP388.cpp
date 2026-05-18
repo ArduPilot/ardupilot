@@ -90,12 +90,15 @@ bool AP_Baro_BMP388::init()
         return false;
     }
 
+    const char *name;
     switch (whoami) {
     case BMP388_ID:
         dev->set_device_type(DEVTYPE_BARO_BMP388);
+        name = "BMP388";
         break;
     case BMP390_ID:
         dev->set_device_type(DEVTYPE_BARO_BMP390);
+        name = "BMP390";
         break;
     default:
         return false;
@@ -112,7 +115,7 @@ bool AP_Baro_BMP388::init()
     // normal mode, temp and pressure
     dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
 
-    instance = _frontend.register_sensor();
+    instance = _frontend.register_sensor(dev->get_bus_id(), name);
 
     set_bus_id(instance, dev->get_bus_id());
 

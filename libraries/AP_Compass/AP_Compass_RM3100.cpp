@@ -145,11 +145,9 @@ bool AP_Compass_RM3100::init()
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_RM3100);
-    if (!register_compass(dev->get_bus_id())) {
+    if (!register_compass(dev->get_bus_id(), name)) {
         return false;
     }
-
-    DEV_PRINTF("RM3100: Found at address 0x%x as compass %u\n", dev->get_bus_address(), instance);
 
     set_rotation(rotation);
 

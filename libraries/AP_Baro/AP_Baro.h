@@ -188,8 +188,10 @@ public:
     baro_type_t get_type(uint8_t instance) { return sensors[instance].type; };
 
     // register a new sensor, claiming a sensor slot. If we are out of
-    // slots it will panic
-    uint8_t register_sensor(void);
+    // slots it will panic. Prints a "<name> found on bus N id N
+    // address 0xN" discovery message; name must not be null in normal
+    // callers (a defensive null-check is retained inside).
+    uint8_t register_sensor(int32_t dev_id, const char *name);
 
     // return number of registered sensors
     uint8_t num_instances(void) const { return _num_sensors; }

@@ -4,6 +4,10 @@ class AP_Param;
 
 #include "AP_HAL_Namespace.h"
 
+#if defined(HAL_DISCOVERY_PRINTF_ENABLED) && HAL_DISCOVERY_PRINTF_ENABLED
+#include <stdio.h>
+#endif
+
 #include "AnalogIn.h"
 #include "GPIO.h"
 #include "RCInput.h"
@@ -158,6 +162,17 @@ public:
 # define DEV_PRINTF(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while(0)
 #else
 # define DEV_PRINTF(fmt, args ...)
+#endif
+
+// DISCOVERY_PRINTF is used by sensor backends to announce successful
+// device discovery during boot. Sending these to stdout is not a good
+// idea on STM32, so by default it is a no-op; discovery is still
+// reported to the GCS via GCS_SEND_TEXT. A board can opt in by
+// defining HAL_DISCOVERY_PRINTF_ENABLED in its board header (or hwdef).
+#if defined(HAL_DISCOVERY_PRINTF_ENABLED) && HAL_DISCOVERY_PRINTF_ENABLED
+# define DISCOVERY_PRINTF(fmt, args ...)  do { ::printf(fmt, ## args); } while(0)
+#else
+# define DISCOVERY_PRINTF(fmt, args ...)  do { } while(0)
 #endif
 
 };

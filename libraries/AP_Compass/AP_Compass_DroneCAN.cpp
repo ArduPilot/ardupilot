@@ -91,7 +91,7 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
 bool AP_Compass_DroneCAN::init()
 {
     // Adding 1 is necessary to allow backward compatibility, where this field was set as 1 by default
-    if (!register_compass(_devid)) {
+    if (!register_compass(_devid, "DroneCAN")) {
         return false;
     }
     set_external(true);

@@ -109,11 +109,9 @@ bool AP_Compass_MMC5XX3::init()
 
     /* register the compass instance in the frontend */
     dev->set_device_type(DEVTYPE_MMC5983);
-    if (!register_compass(dev->get_bus_id())) {
+    if (!register_compass(dev->get_bus_id(), name)) {
         return false;
     }
-
-    printf("Found a MMC5983 on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
 
     set_rotation(rotation);
 

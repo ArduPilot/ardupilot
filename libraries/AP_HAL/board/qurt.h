@@ -54,6 +54,9 @@
 
 #define HAL_LOGGING_FILESYSTEM_ENABLED 1
 
+// print sensor device discovery messages to stdout during boot
+#define HAL_DISCOVERY_PRINTF_ENABLED 1
+
 #define AP_FILESYSTEM_POSIX_HAVE_UTIME 0
 #define AP_FILESYSTEM_POSIX_HAVE_FSYNC 0
 #define AP_FILESYSTEM_POSIX_HAVE_STATFS 0

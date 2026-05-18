@@ -59,6 +59,19 @@ AP_BattMonitor_Backend::AP_BattMonitor_Backend(AP_BattMonitor &mon, AP_BattMonit
 {
 }
 
+void AP_BattMonitor_Backend::announce_discovery(int32_t dev_id, const char *name)
+{
+    if (_discovery_announced || name == nullptr) {
+        return;
+    }
+    _discovery_announced = true;
+    DISCOVERY_PRINTF("%s found on bus %u id %u address 0x%02x\n",
+                     name,
+                     AP_HAL::Device::devid_get_bus(dev_id),
+                     unsigned(dev_id),
+                     AP_HAL::Device::devid_get_address(dev_id));
+}
+
 // capacity_remaining_pct - returns true if the battery % is available and writes to the percentage argument
 // return false if the battery is unhealthy, does not have current monitoring, or the pack_capacity is too small
 bool AP_BattMonitor_Backend::capacity_remaining_pct(uint8_t &percentage) const

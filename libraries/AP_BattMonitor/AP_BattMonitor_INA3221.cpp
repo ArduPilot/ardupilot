@@ -251,6 +251,7 @@ void AP_BattMonitor_INA3221::init()
     d->statelist = address_driver_state;
 
     debug("Found INA3221 ch%d@0x%02x on bus %u", dev_channel, dev_address, dev_bus);
+    announce_discovery(d->dev->get_bus_id(), "INA3221");
 
     address_driver_count++;
 
