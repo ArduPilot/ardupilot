@@ -282,12 +282,10 @@ void GPS::simulate_jamming(struct GPS_Data &d)
 {
     auto &jam = jamming[instance];
     const uint32_t now_ms = AP_HAL::millis();
-    if (now_ms - jam.last_jam_ms > 1000) {
-        jam.jam_start_ms = now_ms;
-        jam.latitude = d.latitude;
-        jam.longitude = d.longitude;
-    }
-    jam.last_jam_ms = now_ms;
+
+    const auto rand_delay_ms = [](float hz) {
+        return MAX(1, int((1000.0f/hz) * 2.0f * fabsf(rand_float())));
+    };
 
     // how often each of the key state variables change during jamming
     const float vz_change_hz = 0.5;
@@ -296,13 +294,26 @@ void GPS::simulate_jamming(struct GPS_Data &d)
     const float sats_change_hz = 3;
     const float acc_change_hz = 3;
 
-    if (now_ms - jam.jam_start_ms < unsigned(1000U+(get_random16()%5000))) {
+    if (now_ms - jam.last_jam_ms > 1000) {
+        jam.jam_start_ms = now_ms;
+        jam.initial_loss_duration_ms = 1000 + (get_random16() % 5000);
+        const uint32_t loss_end_ms = jam.jam_start_ms + jam.initial_loss_duration_ms;
+        jam.last_sats_change_ms = loss_end_ms + rand_delay_ms(sats_change_hz);
+        jam.last_vz_change_ms = loss_end_ms + rand_delay_ms(vz_change_hz);
+        jam.last_vel_change_ms = loss_end_ms + rand_delay_ms(vel_change_hz);
+        jam.last_pos_change_ms = loss_end_ms + rand_delay_ms(pos_change_hz);
+        jam.last_acc_change_ms = loss_end_ms + rand_delay_ms(acc_change_hz);
+        jam.latitude = d.latitude;
+        jam.longitude = d.longitude;
+    }
+    jam.last_jam_ms = now_ms;
+
+    if (now_ms - jam.jam_start_ms < jam.initial_loss_duration_ms) {
         // total loss of signal for a period at the start is common
         d.num_sats = 0;
         d.have_lock = false;
     } else {
-        if ((now_ms - jam.last_sats_change_ms)*0.001 > 2*fabsf(rand_float())/sats_change_hz) {
-            jam.last_sats_change_ms = now_ms;
+        while (now_ms >= jam.last_sats_change_ms) {
             d.num_sats = 2 + (get_random16() % 15);
             if (d.num_sats >= 4) {
                 if (get_random16() % 2 == 0) {
@@ -313,26 +324,27 @@ void GPS::simulate_jamming(struct GPS_Data &d)
             } else {
                 d.have_lock = false;
             }
+            jam.last_sats_change_ms += rand_delay_ms(sats_change_hz);
         }
-        if ((now_ms - jam.last_vz_change_ms)*0.001 > 2*fabsf(rand_float())/vz_change_hz) {
-            jam.last_vz_change_ms = now_ms;
+        while (now_ms >= jam.last_vz_change_ms) {
             d.speedD = rand_float() * 400;
+            jam.last_vz_change_ms += rand_delay_ms(vz_change_hz);
         }
-        if ((now_ms - jam.last_vel_change_ms)*0.001 > 2*fabsf(rand_float())/vel_change_hz) {
-            jam.last_vel_change_ms = now_ms;
+        while (now_ms >= jam.last_vel_change_ms) {
             d.speedN = rand_float() * 400;
             d.speedE = rand_float() * 400;
+            jam.last_vel_change_ms += rand_delay_ms(vel_change_hz);
         }
-        if ((now_ms - jam.last_pos_change_ms)*0.001 > 2*fabsf(rand_float())/pos_change_hz) {
-            jam.last_pos_change_ms = now_ms;
+        while (now_ms >= jam.last_pos_change_ms) {
             jam.latitude += rand_float()*200 * LATLON_TO_M_INV * 1e-7;
             jam.longitude += rand_float()*200 * LATLON_TO_M_INV * 1e-7;
+            jam.last_pos_change_ms += rand_delay_ms(pos_change_hz);
         }
-        if ((now_ms - jam.last_acc_change_ms)*0.001 > 2*fabsf(rand_float())/acc_change_hz) {
-            jam.last_acc_change_ms = now_ms;
+        while (now_ms >= jam.last_acc_change_ms) {
             d.vertical_acc = fabsf(rand_float())*300;
             d.horizontal_acc = fabsf(rand_float())*300;
             d.speed_acc = fabsf(rand_float())*50;
+            jam.last_acc_change_ms += rand_delay_ms(acc_change_hz);
         }
     }
 
