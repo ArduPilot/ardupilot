@@ -588,6 +588,12 @@ def do_build(opts, frame_options):
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
 
+    # Per-frame extra configure args from vehicleinfo.json (e.g. quadplane-PPP
+    # implies --enable-PPP so users don't have to pass it manually).
+    for arg in frame_options.get('configure_args', []):
+        if arg not in cmd_configure:
+            cmd_configure.append(arg)
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
