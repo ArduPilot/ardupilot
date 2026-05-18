@@ -392,6 +392,7 @@ public:
         float _yaw_angle_rad;
         float _yaw_rate_rads;
         float _pilot_yaw_rate_rads;
+        float _roi_yaw_offset_rad;  // body-frame yaw offset applied in ROI mode for limited/fixed-yaw mounts
     };
     static AutoYaw auto_yaw;
 

@@ -7,7 +7,7 @@ float Mode::AutoYaw::roi_yaw_rad() const
 {
     Vector2f pos_ne_m;
     if (AP::ahrs().get_relative_position_NE_origin_float(pos_ne_m)){
-        return get_bearing_rad(pos_ne_m, roi_ned_m.xy());
+        return wrap_PI(get_bearing_rad(pos_ne_m, roi_ned_m.xy()) - _roi_yaw_offset_rad);
     }
     return copter.attitude_control->get_att_target_euler_rad().z;
 }
@@ -181,9 +181,18 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
 #endif  // HAL_MOUNT_ENABLED
     } else {
 #if HAL_MOUNT_ENABLED
-        // check if mount type requires us to rotate the quad
-        if (!copter.camera_mount.has_pan_control()) {
+        // yaw vehicle if mount cannot cover the ROI direction on its own
+        float yaw_mid_rad;
+        if (copter.camera_mount.get_mount_type() == AP_Mount::Type::None) {
+            // no mount: yaw vehicle nose directly at ROI
             if (roi_location.get_vector_from_origin_NED_m(roi_ned_m)) {
+                _roi_yaw_offset_rad = 0;
+                auto_yaw.set_mode(Mode::ROI);
+            }
+        } else if (copter.camera_mount.get_yaw_range_mid_rad(yaw_mid_rad)) {
+            // limited yaw range: yaw vehicle toward the midpoint of the mount's range
+            if (roi_location.get_vector_from_origin_NED_m(roi_ned_m)) {
+                _roi_yaw_offset_rad = yaw_mid_rad;
                 auto_yaw.set_mode(Mode::ROI);
             }
         }

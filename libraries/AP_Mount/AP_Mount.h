@@ -151,6 +151,11 @@ public:
     bool has_pan_control() const { return has_pan_control(_primary); }
     bool has_pan_control(uint8_t instance) const;
 
+    // get_yaw_range_mid_rad - fills in the body-frame angle at the centre of the mount's
+    // configured yaw range.  Returns false if the range is full (>=360 deg) or invalid.
+    bool get_yaw_range_mid_rad(float &yaw_mid_rad) const { return get_yaw_range_mid_rad(_primary, yaw_mid_rad); }
+    bool get_yaw_range_mid_rad(uint8_t instance, float &yaw_mid_rad) const;
+
     // get_mode - returns current mode of mount (i.e. Retracted, Neutral, RC_Targeting, GPS Point)
     enum MAV_MOUNT_MODE get_mode() const { return get_mode(_primary); }
     enum MAV_MOUNT_MODE get_mode(uint8_t instance) const;
