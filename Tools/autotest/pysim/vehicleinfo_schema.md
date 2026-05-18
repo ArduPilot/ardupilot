@@ -34,6 +34,7 @@ Top-level keys are vehicle names: `ArduCopter`, `ArduPlane`, `Rover`,
 | `periph_params_filename` | list of strings | no | Default parameter files for the CAN peripheral side of CAN-enabled simulations (`quad-can`, `quadplane-can`). |
 | `periph_board` | string | no | Board name of the companion AP_Periph SITL build to launch alongside the vehicle. Defaults to `sitl_periph_universal`. Used by frames like `quadplane-PPP` that need a non-default periph build (e.g. `sitl_periph_PPP`). |
 | `periph_extra_args` | list of strings | no | Extra command-line arguments appended to the companion AP_Periph SITL invocation, e.g. `["--serial1=tcpclient:127.0.0.1:5765"]` to map a periph UART to a loopback TCP connection. |
+| `configure_args` | list of strings | no | Extra `waf configure` arguments needed for this frame's build, e.g. `["--enable-PPP"]`. Lets a frame that requires non-default build flags work with `sim_vehicle.py -f <frame>` without the user having to add those flags manually. |
 | `external` | bool | no | True when the physics is simulated by an external program (Gazebo, AirSim, X-Plane, JSBSim, Scrimmage, etc.) and SITL is just the autopilot. |
 | `model` | string | no | Override of the physics model string passed to the SITL binary's `--model` argument. Defaults to the frame name. May embed a JSON model path (e.g. `"X:@ROMFS/models/freestyle.json"`). |
 | `frame_example_script` | string | no | Lua script in `libraries/AP_Scripting/examples/` that this frame uses for motor mixing, etc. |
