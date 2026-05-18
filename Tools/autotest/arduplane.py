@@ -8208,6 +8208,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.EK3HeightDatumResetFlushesBuffers,
+            self.PPPPeriph,
         ]
 
     def UTMGlobalPositionWaypoint(self):
@@ -8360,6 +8361,43 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 "Post-reset altitude transient exceeds 0.1 m: %.3f m "
                 "(stale baro buffer not flushed on resetHeightDatum)" %
                 peak_excursion)
+
+    def PPPPeriph(self):
+        '''verify PPP-over-TCP link to an AP_Periph (sitl_periph_PPP) companion'''
+        self.context_collect('STATUSTEXT')
+
+        # Pre-build the plane with PPP + networking-tests, build the matching
+        # AP_Periph (sitl_periph_PPP), spawn the periph child and restart
+        # SITL with SERIAL5 wired to the {port} the helper allocates. The
+        # plane binary is auto-restored and the periph terminated on
+        # implicit context pop.
+        #
+        # CAN_P1_DRIVER=1 is needed so plane publishes the SITL multicast
+        # sim state the periph blocks on at boot.
+        self.set_parameters({
+            "NET_ENABLE": 1,
+            "SERIAL5_PROTOCOL": 48,
+            "CAN_P1_DRIVER": 1,
+        })
+        self.restart_SITL_frame(
+            'quadplane-PPP',
+            extra_configure_args=['--debug'],
+            customisations=['--serial5=tcp:{port}'],
+        )
+
+        # Plane should announce PPP backend init.
+        self.wait_statustext("PPP[0]: started", check_context=True, timeout=30)
+
+        # Pre-IPCP, the first NET: IP message is the static fallback
+        # (192.168.x.x). Wait for an IPCP-assigned address - matched as any
+        # 10.x to decouple this test from the periph param file's exact
+        # numbering but distinct enough to ignore the fallback. The periph
+        # cannot complete IPCP unless its own PPP stack is alive, so seeing
+        # an assigned address on the plane implicitly proves both ends of
+        # the link are running.
+        m = self.wait_statustext(r"NET: IP\s+10\.\d+\.\d+\.\d+",
+                                 check_context=True, regex=True, timeout=30)
+        self.progress("PPP link established: %s" % m.text.strip())
 
     def tests1c(self):
         '''kind of reserved for flapping tests which we still have hopes for'''
