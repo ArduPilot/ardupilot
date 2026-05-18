@@ -8,6 +8,7 @@ AP_FLAKE8_CLEAN
 from __future__ import annotations
 
 import abc
+import collections
 import copy
 import enum
 import errno
@@ -19,6 +20,7 @@ import math
 import operator
 import os
 import pathlib
+import queue
 import random
 import re
 import shutil
@@ -36,6 +38,7 @@ from inspect import currentframe
 from inspect import getframeinfo
 from pathlib import Path
 from typing import Dict
+from typing import Final
 from typing import List
 from typing import Tuple
 
@@ -60,11 +63,6 @@ from pymavlink.rotmat import Vector3
 
 from pysim import util
 from pysim import vehicleinfo
-
-try:
-    import queue as Queue
-except ImportError:
-    import Queue
 
 
 # Enumeration convenience class for mavlink POSITION_TARGET_TYPEMASK
@@ -200,6 +198,52 @@ class PreconditionFailedException(ErrorException):
 class ArmedAtEndOfTestException(ErrorException):
     """Created when test left vehicle armed"""
     pass
+
+
+NUM_RC_CHANNELS: Final[int] = 16
+
+
+class RcValues(collections.UserDict):
+    """A dict for {channel: pwm_value} restricted to valid values.
+
+    Channels range from 1 to NUM_RC_CHANNELS.
+
+    RC Pulse Width Modulated (PWM) values typically range from 1000-2000 (microsec) with 1500
+    representing 'midpoint' but values outside this range are fine too.
+    """
+    def __init__(self, *args, **kwargs) -> None:
+        """Prevent creation of an invalid RcValues dict.
+
+        Note: This is not foolproof.
+        But it helps, and it strongly establishes expectations.
+        """
+        super().__init__(*args, **kwargs)
+
+        if not all(self._channel_is_valid(key) for key in self.keys()):
+            possible_channels = set(range(1, NUM_RC_CHANNELS+1))
+            invalid_channels = set(self.keys()) - possible_channels
+            # Users violating the typehints might be surprised here, but that's an ok risk.
+            raise ValueError(f"Invalid RC channels: {invalid_channels} ({NUM_RC_CHANNELS=}).")
+        if not all(self._value_is_valid(val) for val in self.values()):
+            invalid = {ch: val for ch, val in self.items() if not self._value_is_valid(val)}
+            # Users violating the typehints might be surprised here, but that's an ok risk.
+            raise ValueError(f"These RC (channel, value) pairs are invalid values: {invalid}.")
+
+    def __setitem__(self, channel: int, pwm_value: int) -> None:
+        if not self._channel_is_valid(channel):
+            raise ValueError(f"Invalid RC channel: {channel} ({NUM_RC_CHANNELS=}).")
+        if not self._value_is_valid(pwm_value):
+            raise ValueError(f"Invalid RC pwm value: {pwm_value}.")
+        super().__setitem__(channel, pwm_value)
+
+    @staticmethod
+    def _channel_is_valid(channel: int) -> bool:
+        return isinstance(channel, int) and (1 <= channel <= NUM_RC_CHANNELS)
+
+    @staticmethod
+    def _value_is_valid(value: int) -> bool:
+        """While typical PWM values are ~1000-2000, the 'possibly valid' range is larger."""
+        return isinstance(value, int) and (0 <= value <= 20_000)
 
 
 class Context(object):
@@ -1977,9 +2021,7 @@ class TestSuite(abc.ABC):
         self.gdbserver = gdbserver
         self.breakpoints = breakpoints
         self.disable_breakpoints = disable_breakpoints
-        self.speedup = speedup
-        if self.speedup is None:
-            self.speedup = self.default_speedup()
+        self.speedup: Final = speedup or self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
         self.force_32bit = force_32bit
@@ -2028,9 +2070,9 @@ class TestSuite(abc.ABC):
         self.tlog = None
         self.enable_fgview = enable_fgview
 
-        self.rc_thread = None
-        self.rc_thread_should_quit = False
-        self.rc_queue = Queue.Queue()
+        self.rc_thread: threading.Thread | None = None
+        self.rc_thread_should_quit: bool = False
+        self.rc_queue: queue.Queue[RcValues] = queue.Queue()
 
         self.expect_list = []
 
@@ -5584,31 +5626,11 @@ class TestSuite(abc.ABC):
         return path
 
     def rc_defaults(self):
-        return {
-            1: 1500,
-            2: 1500,
-            3: 1500,
-            4: 1500,
-            5: 1500,
-            6: 1500,
-            7: 1500,
-            8: 1500,
-            9: 1500,
-            10: 1500,
-            11: 1500,
-            12: 1500,
-            13: 1500,
-            14: 1500,
-            15: 1500,
-            16: 1500,
-        }
+        return {channel: 1500 for channel in range(1, NUM_RC_CHANNELS+1)}
 
-    def set_rc_from_map(self, _map, timeout=20, quiet=False):
-        map_copy = _map.copy()
-        for v in map_copy.values():
-            if not isinstance(v, int):
-                raise NotAchievedException("RC values must be integers")
-        self.rc_queue.put(map_copy)
+    def set_rc_from_map(self, map: RcValues, timeout=20, quiet=False):
+        rc_values = map.copy()
+        self.rc_queue.put(rc_values)
 
         if self.rc_thread is None:
             self.rc_thread = threading.Thread(target=self.rc_thread_main, name='RC')
@@ -5624,10 +5646,10 @@ class TestSuite(abc.ABC):
             if m is None:
                 continue
             bad_channels = ""
-            for chan in map_copy:
+            for chan in rc_values:
                 chan_pwm = getattr(m, "chan" + str(chan) + "_raw")
-                if chan_pwm != map_copy[chan]:
-                    bad_channels += " (ch=%u want=%u got=%u)" % (chan, map_copy[chan], chan_pwm)
+                if chan_pwm != rc_values[chan]:
+                    bad_channels += " (ch=%u want=%u got=%u)" % (chan, rc_values[chan], chan_pwm)
                     break
             if len(bad_channels) == 0:
                 if not quiet:
@@ -5639,64 +5661,41 @@ class TestSuite(abc.ABC):
                 raise ValueError("RC thread is dead")  # FIXME: type
 
     def rc_thread_main(self):
-        chan16 = [1000] * 16
-
+        """When this function completes, the thread terminates."""
         sitl_output = mavutil.mavudp("127.0.0.1:%u" % self.sitl_rcin_port(), input=False)
-        buf = None
-
-        while True:
-            if self.rc_thread_should_quit:
-                break
-
-            # the 0.05 here means we're updating the RC values into
-            # the autopilot at 20Hz - that's our 50Hz wallclock, , not
-            # the autopilot's simulated 20Hz, so if speedup is 10 the
-            # autopilot will see ~2Hz.
-            timeout = 0.02
-            # ... and 2Hz is too slow when we now run at 100x speedup:
-            timeout /= (self.speedup / 10.0)
-
+        max_wait_before_sending_values: Final = 0.2 / self.speedup
+        format_str: Final = "<" + "H" * NUM_RC_CHANNELS
+        rc_values = [1000] * NUM_RC_CHANNELS  # (Don't forget this is persistent.)
+        while not self.rc_thread_should_quit:
             try:
-                map_copy = self.rc_queue.get(timeout=timeout)
-
-                # 16 packed entries:
-                for i in range(1, 17):
-                    if i in map_copy:
-                        chan16[i-1] = map_copy[i]
-
-            except Queue.Empty:
+                updates: RcValues = self.rc_queue.get(timeout=max_wait_before_sending_values)
+                for chan, val in updates.items():
+                    rc_values[chan-1] = val
+            except queue.Empty:
                 pass
-
-            buf = struct.pack('<HHHHHHHHHHHHHHHH', *chan16)
-
-            if buf is None:
-                continue
-
-            sitl_output.write(buf)
+            sitl_output.write(struct.pack(format_str, *rc_values))
 
     def set_rc_default(self):
-        """Setup all simulated RC control to 1500."""
+        """Set all channels of simulated RC control to the default value (typically 1500)."""
         _defaults = self.rc_defaults()
-        self.set_rc_from_map(_defaults)
+        self.set_rc_from_map(RcValues(_defaults))
 
     def check_rc_defaults(self):
         """Ensure all rc outputs are at defaults"""
         self.do_timesync_roundtrip()
-        _defaults = self.rc_defaults()
         m = self.assert_receive_message('RC_CHANNELS', timeout=5)
         need_set = {}
-        for chan in _defaults:
-            default_value = _defaults[chan]
+        for chan, default_value in self.rc_defaults().items():
             current_value = getattr(m, "chan" + str(chan) + "_raw")
             if default_value != current_value:
                 self.progress("chan=%u needs resetting is=%u want=%u" %
                               (chan, current_value, default_value))
                 need_set[chan] = default_value
-        self.set_rc_from_map(need_set)
+        self.set_rc_from_map(RcValues(need_set))
 
-    def set_rc(self, chan, pwm, timeout=20):
+    def set_rc(self, chan: int, pwm: int, timeout=20):
         """Setup a simulated RC control to a PWM value"""
-        self.set_rc_from_map({chan: pwm}, timeout=timeout)
+        self.set_rc_from_map(RcValues({chan: pwm}), timeout=timeout)
 
     def set_servo(self, chan, pwm):
         """Replicate the functionality of MAVProxy: servo set <ch> <pwm>"""
@@ -6073,10 +6072,10 @@ class TestSuite(abc.ABC):
         # Different scaling for RC input and servo output means the
         # servo output value isn't the rc input value:
         self.progress("Setting RC to 1200")
-        self.rc_queue.put({2: 1200})
+        self.rc_queue.put(RcValues({2: 1200}))
         self.progress("Waiting for servo of 1260")
         self.cpufailsafe_wait_servo_channel_value(2, 1260)
-        self.rc_queue.put({2: 1700})
+        self.rc_queue.put(RcValues({2: 1700}))
         self.cpufailsafe_wait_servo_channel_value(2, 1660)
         self.reset_SITL_commandline()
 
