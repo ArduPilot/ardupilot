@@ -86,6 +86,10 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED', 'AP_RangeFinder_LightWareGRF::get_reading'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmver_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmepe_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmvel_field',),
+            ('AP_GPS_NMEA_QUECTEL_ENABLED', r'AP_GPS_NMEA::parse_pqtmpvt_field',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
 
             ('AP_OPTICALFLOW_ENABLED', 'AP_OpticalFlow::AP_OpticalFlow',),
