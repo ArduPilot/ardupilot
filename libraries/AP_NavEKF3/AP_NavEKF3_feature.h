@@ -51,3 +51,8 @@
 #ifndef EK3_FEATURE_OPTFLOW_SRTM
 #define EK3_FEATURE_OPTFLOW_SRTM EK3_FEATURE_OPTFLOW_FUSION
 #endif
+
+// IMU-aided AGL Kalman filter decoupled from the main filter's vertical position state
+#ifndef EK3_FEATURE_OPTFLOW_AGL_KF
+#define EK3_FEATURE_OPTFLOW_AGL_KF EK3_FEATURE_OPTFLOW_FUSION
+#endif

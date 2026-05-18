@@ -140,9 +140,6 @@ public:
     ///
     /// mavlink
     ///
-    /// handler for polygon fence messages with GCS
-    void handle_msg(class GCS_MAVLINK &link, const mavlink_message_t& msg);
-
     //  breached() - returns true if the vehicle has breached any fence
     bool breached() const WARN_IF_UNUSED;
     //  returns true if location is outside the boundary also returns the minimum distance to the fence
@@ -375,27 +372,6 @@ private:
                                    const uint8_t vertex_count,
                                    Vector2f *&next_storage_point,
                                    Vector2l *&next_storage_point_lla) WARN_IF_UNUSED;
-
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-    /*
-     * FENCE_POINT protocol compatibility
-     */
-    void handle_msg_fetch_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
-    void handle_msg_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
-    // contains_compatible_fence - returns true if the permanent fence
-    // storage contains fences that are compatible with the old
-    // FENCE_POINT protocol.
-    bool contains_compatible_fence() const WARN_IF_UNUSED;
-
-    // get_or_create_include_fence - returns a point to an include
-    // fence to be used for the FENCE_POINT-supplied polygon.  May
-    // format the storage appropriately.
-    FenceIndex *get_or_create_include_fence();
-    // get_or_create_include_fence - returns a point to a return point
-    // to be used for the FENCE_POINT-supplied return point.  May
-    // format the storage appropriately.
-    FenceIndex *get_or_create_return_point();
-#endif
 
     // primitives to write parts of fencepoints out:
     bool write_type_to_storage(uint16_t &offset, AC_PolyFenceType type) WARN_IF_UNUSED;

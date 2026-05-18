@@ -3099,6 +3099,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
         # process input file
         self.process_hwdefs()
 
+        self.validate_periph_defines()
+
         if "MCU" not in self.config:
             self.error("Missing MCU type in config")
 

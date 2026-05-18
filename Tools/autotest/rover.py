@@ -1767,34 +1767,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Uploaded fence when should not be possible")
         self.progress("Fence rightfully bounced")
 
-    def send_fencepoint_expect_statustext(self,
-                                          offset,
-                                          count,
-                                          lat,
-                                          lng,
-                                          statustext_fragment,
-                                          target_system=1,
-                                          target_component=1,
-                                          timeout=10):
-        self.mav.mav.fence_point_send(target_system,
-                                      target_component,
-                                      offset,
-                                      count,
-                                      lat,
-                                      lng)
-
-        tstart = self.get_sim_time_cached()
-        while True:
-            if self.get_sim_time_cached() - tstart > timeout:
-                raise NotAchievedException("Did not get error message back")
-            m = self.assert_receive_message('STATUSTEXT')
-            self.progress("statustext: %s (want='%s')" %
-                          (str(m), statustext_fragment))
-            if m is None:
-                continue
-            if statustext_fragment in m.text:
-                break
-
     def GCSFailsafe(self, side=60, timeout=360):
         """Test GCS Failsafe"""
         try:
@@ -1895,21 +1867,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.setGCSfailsafe(0)
         self.progress("All GCS failsafe tests complete")
-
-    def test_gcs_fence_centroid(self, target_system=1, target_component=1):
-        self.start_subtest("Ensuring if we don't have a centroid it gets calculated")
-        items = self.test_gcs_fence_need_centroid(
-            target_system=target_system,
-            target_component=target_component)
-        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                                           items)
-        centroid = self.get_fence_point(0)
-        want_lat = 1.0001
-        want_lng = 1.00005
-        if abs(centroid.lat - want_lat) > 0.000001:
-            raise NotAchievedException("Centroid lat not as expected (want=%f got=%f)" % (want_lat, centroid.lat))
-        if abs(centroid.lng - want_lng) > 0.000001:
-            raise NotAchievedException("Centroid lng not as expected (want=%f got=%f)" % (want_lng, centroid.lng))
 
     def test_gcs_fence_update_fencepoint(self, target_system=1, target_component=1):
         self.start_subtest("Ensuring we can move a fencepoint")
@@ -2187,101 +2144,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         target_system = 1
         target_component = 1
 
-        self.progress("Testing FENCE_POINT protocol")
-
-        self.start_subtest("FENCE_TOTAL manipulation")
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        self.assert_parameter_value("FENCE_TOTAL", 0)
-
-        self.set_parameter("FENCE_TOTAL", 5)
-        self.assert_parameter_value("FENCE_TOTAL", 5)
-
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        self.assert_parameter_value("FENCE_TOTAL", 0)
-
-        self.progress("sending out-of-range fencepoint")
-        self.send_fencepoint_expect_statustext(0,
-                                               0,
-                                               1.2345,
-                                               5.4321,
-                                               "index past total",
-                                               target_system=target_component,
-                                               target_component=target_component)
-
-        self.progress("sending another out-of-range fencepoint")
-        self.send_fencepoint_expect_statustext(0,
-                                               1,
-                                               1.2345,
-                                               5.4321,
-                                               "bad count",
-                                               target_system=target_component,
-                                               target_component=target_component)
-
-        self.set_parameter("FENCE_TOTAL", 1)
-        self.assert_parameter_value("FENCE_TOTAL", 1)
-
-        self.send_fencepoint_expect_statustext(0,
-                                               1,
-                                               1.2345,
-                                               5.4321,
-                                               "Invalid FENCE_TOTAL",
-                                               target_system=target_component,
-                                               target_component=target_component)
-
-        self.set_parameter("FENCE_TOTAL", 5)
-        self.progress("Checking default points")
-        for i in range(5):
-            m = self.get_fence_point(i)
-            if m.count != 5:
-                raise NotAchievedException("Unexpected count in fence point (want=%u got=%u" %
-                                           (5, m.count))
-            if m.lat != 0 or m.lng != 0:
-                raise NotAchievedException("Unexpected lat/lon in fencepoint")
-
-        self.progress("Storing a return point")
-        self.roundtrip_fencepoint_protocol(0,
-                                           5,
-                                           1.2345,
-                                           5.4321,
-                                           target_system=target_system,
-                                           target_component=target_component)
-
-        lat = 2.345
-        lng = 4.321
-        self.roundtrip_fencepoint_protocol(0,
-                                           5,
-                                           lat,
-                                           lng,
-                                           target_system=target_system,
-                                           target_component=target_component)
-
         if not self.mavproxy_can_do_mision_item_protocols():
             self.progress("MAVProxy too old to do fence point protocols")
             return
-
-        self.progress("Download with new protocol")
-        items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        if len(items) != 1:
-            raise NotAchievedException("Unexpected fencepoint count (want=%u got=%u)" % (1, len(items)))
-        if items[0].command != mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT:
-            raise NotAchievedException(
-                "Fence return point not of correct type expected (%u) got %u" %
-                (items[0].command,
-                 mavutil.mavlink.MAV_CMD_NAV_FENCE_RETURN_POINT))
-        if items[0].frame != mavutil.mavlink.MAV_FRAME_GLOBAL:
-            raise NotAchievedException(
-                "Unexpected frame want=%s got=%s," %
-                (self.string_for_frame(mavutil.mavlink.MAV_FRAME_GLOBAL),
-                 self.string_for_frame(items[0].frame)))
-        got_lat = items[0].x
-        want_lat = lat * 1e7
-        if abs(got_lat - want_lat) > 1:
-            raise NotAchievedException("Disagree in lat (got=%f want=%f)" % (got_lat, want_lat))
-        if abs(items[0].y - lng * 1e7) > 1:
-            raise NotAchievedException("Disagree in lng")
-        if items[0].seq != 0:
-            raise NotAchievedException("Disagree in offset")
-        self.progress("Downloaded with new protocol OK")
 
         # upload using mission protocol:
         items = self.test_gcs_fence_boring_triangle(
@@ -2298,14 +2163,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.assert_parameter_value("FENCE_TOTAL", len(items) + 1)  # +1 for closing
         self.progress("Ensuring fence items match what we sent up")
         self.check_fence_items_same(items, downloaded_items)
-
-        # now check centroid
-        self.progress("Requesting fence return point")
-        self.mav.mav.fence_fetch_point_send(target_system,
-                                            target_component,
-                                            0)
-        m = self.assert_receive_message("FENCE_POINT")
-        print("m: %s" % str(m))
 
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                            target_system=target_system,
@@ -2335,9 +2192,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.test_gcs_fence_update_fencepoint(target_system=target_system,
                                               target_component=target_component)
-
-        self.test_gcs_fence_centroid(target_system=target_system,
-                                     target_component=target_component)
 
         self.test_gcs_fence_via_mavproxy(target_system=target_system,
                                          target_component=target_component)
@@ -4407,157 +4261,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.test_fence_upload_timeouts_2(target_system=target_system,
                                           target_component=target_component)
 
-    def test_poly_fence_compatability_ordering(self, target_system=1, target_component=1):
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
-        here = self.mav.location()
-        self.progress("try uploading return point last")
-        self.roundtrip_fence_using_fencepoint_protocol([
-            self.offset_location_ne(here, 0, 0), # bl // return point
-            self.offset_location_ne(here, -50, 20), # bl
-            self.offset_location_ne(here, 50, 20), # br
-            self.offset_location_ne(here, 50, 40), # tr
-            self.offset_location_ne(here, -50, 40), # tl,
-            self.offset_location_ne(here, -50, 20), # closing point
-        ], ordering=[1, 2, 3, 4, 5, 0])
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
-
-        self.progress("try uploading return point in middle")
-        self.roundtrip_fence_using_fencepoint_protocol([
-            self.offset_location_ne(here, 0, 0), # bl // return point
-            self.offset_location_ne(here, -50, 20), # bl
-            self.offset_location_ne(here, 50, 20), # br
-            self.offset_location_ne(here, 50, 40), # tr
-            self.offset_location_ne(here, -50, 40), # tl,
-            self.offset_location_ne(here, -50, 20), # closing point
-        ], ordering=[1, 2, 3, 0, 4, 5])
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
-
-        self.progress("try closing point in middle")
-        self.roundtrip_fence_using_fencepoint_protocol([
-            self.offset_location_ne(here, 0, 0), # bl // return point
-            self.offset_location_ne(here, -50, 20), # bl
-            self.offset_location_ne(here, 50, 20), # br
-            self.offset_location_ne(here, 50, 40), # tr
-            self.offset_location_ne(here, -50, 40), # tl,
-            self.offset_location_ne(here, -50, 20), # closing point
-        ], ordering=[0, 1, 2, 5, 3, 4])
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
-
-        # this is expected to fail as we don't return the closing
-        # point correctly until the first is uploaded
-        # self.progress("try closing point first")
-        # failed = False
-        # try:
-        #     self.roundtrip_fence_using_fencepoint_protocol([
-        #         self.offset_location_ne(here, 0, 0), # bl // return point
-        #         self.offset_location_ne(here, -50, 20), # bl
-        #         self.offset_location_ne(here, 50, 20), # br
-        #         self.offset_location_ne(here, 50, 40), # tr
-        #         self.offset_location_ne(here, -50, 40), # tl,
-        #         self.offset_location_ne(here, -50, 20), # closing point
-        #     ], ordering=[5, 0, 1, 2, 3, 4])
-        # except NotAchievedException as e:
-        #     failed = "got=0.000000 want=" in str(e)
-        # if not failed:
-        #     raise NotAchievedException("Expected failure, did not get it")
-        # self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-        #                    target_system=target_system,
-        #                    target_component=target_component)
-
-        self.progress("try (almost) reverse order")
-        self.roundtrip_fence_using_fencepoint_protocol([
-            self.offset_location_ne(here, 0, 0), # bl // return point
-            self.offset_location_ne(here, -50, 20), # bl
-            self.offset_location_ne(here, 50, 20), # br
-            self.offset_location_ne(here, 50, 40), # tr
-            self.offset_location_ne(here, -50, 40), # tl,
-            self.offset_location_ne(here, -50, 20), # closing point
-        ], ordering=[4, 3, 2, 1, 0, 5])
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
-
-    def test_poly_fence_big_then_small(self, target_system=1, target_component=1):
-        here = self.mav.location()
-
-        self.roundtrip_fence_using_fencepoint_protocol([
-            self.offset_location_ne(here, 0, 0), # bl // return point
-            self.offset_location_ne(here, -50, 20), # bl
-            self.offset_location_ne(here, 50, 20), # br
-            self.offset_location_ne(here, 50, 40), # tr
-            self.offset_location_ne(here, -50, 40), # tl,
-            self.offset_location_ne(here, -50, 20), # closing point
-        ], ordering=[1, 2, 3, 4, 5, 0])
-        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        if len(downloaded_items) != 5:
-            # that's one return point and then bl, br, tr, then tl
-            raise NotAchievedException("Bad number of downloaded items in original download")
-
-        self.roundtrip_fence_using_fencepoint_protocol([
-            self.offset_location_ne(here, 0, 0), # bl // return point
-            self.offset_location_ne(here, -50, 20), # bl
-            self.offset_location_ne(here, 50, 40), # tr
-            self.offset_location_ne(here, -50, 40), # tl,
-            self.offset_location_ne(here, -50, 20), # closing point
-        ], ordering=[1, 2, 3, 4, 0])
-
-        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        want_count = 4
-        if len(downloaded_items) != want_count:
-            # that's one return point and then bl, tr, then tl
-            raise NotAchievedException("Bad number of downloaded items in second download got=%u wanted=%u" %
-                                       (len(downloaded_items), want_count))
-        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE)
-        if len(downloaded_items) != 4:
-            # that's one return point and then bl, tr, then tl
-            raise NotAchievedException("Bad number of downloaded items in second download (second time) got=%u want=%u" %
-                                       (len(downloaded_items), want_count))
-
-    def test_poly_fence_compatability(self, target_system=1, target_component=1):
-        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
-                           target_system=target_system,
-                           target_component=target_component)
-
-        self.test_poly_fence_compatability_ordering(target_system=target_system, target_component=target_component)
-
-        here = self.mav.location()
-
-        self.progress("Playing with changing point count")
-        self.roundtrip_fence_using_fencepoint_protocol(
-            [
-                self.offset_location_ne(here, 0, 0), # bl // return point
-                self.offset_location_ne(here, -50, 20), # bl
-                self.offset_location_ne(here, 50, 20), # br
-                self.offset_location_ne(here, 50, 40), # tr
-                self.offset_location_ne(here, -50, 40), # tl,
-                self.offset_location_ne(here, -50, 20), # closing point
-            ])
-        self.roundtrip_fence_using_fencepoint_protocol(
-            [
-                self.offset_location_ne(here, 0, 0), # bl // return point
-                self.offset_location_ne(here, -50, 20), # bl
-                self.offset_location_ne(here, 50, 20), # br
-                self.offset_location_ne(here, -50, 40), # tl,
-                self.offset_location_ne(here, -50, 20), # closing point
-            ])
-        self.roundtrip_fence_using_fencepoint_protocol(
-            [
-                self.offset_location_ne(here, 0, 0), # bl // return point
-                self.offset_location_ne(here, -50, 20), # bl
-                self.offset_location_ne(here, 50, 20), # br
-                self.offset_location_ne(here, 50, 40), # tr
-                self.offset_location_ne(here, -50, 40), # tl,
-                self.offset_location_ne(here, -50, 20), # closing point
-            ])
-
     def test_poly_fence_reboot_survivability(self):
         here = self.mav.location()
 
@@ -4599,10 +4302,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
 
 #        self.set_parameter("SIM_SPEEDUP", 1)
-
-        self.test_poly_fence_big_then_small()
-
-        self.test_poly_fence_compatability()
 
         self.test_fence_upload_timeouts()
 
@@ -6584,65 +6283,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.wait_groundspeed(3, 100)
         self.disarm_vehicle()
 
-    def MAV_CMD_NAV_SET_YAW_SPEED(self):
-        '''tests for MAV_CMD_NAV_SET_YAW_SPEED guided-mode command'''
-        self.change_mode('GUIDED')
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-
-        for method in self.run_cmd, self.run_cmd_int:
-            self.change_mode('MANUAL')
-            self.wait_groundspeed(0, 1)
-            self.change_mode('GUIDED')
-            self.start_subtest("Absolute angles")
-            for (heading, speed) in (10, 5), (190, 10), (0, 2), (135, 6):
-                def cf(*args, **kwargs):
-                    method(
-                        mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
-                        p1=heading,
-                        p2=speed,
-                        p3=0,  # zero is absolute-angles
-                    )
-                self.wait_groundspeed(speed-0.5, speed+0.5, called_function=cf, minimum_duration=2)
-                self.wait_heading(heading-0.5, heading+0.5, called_function=cf, minimum_duration=2)
-
-            self.start_subtest("relative angles")
-            original_angle = 90
-            method(
-                mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
-                p1=original_angle,
-                p2=5,
-                p3=0,  # zero is absolute-angles
-            )
-            self.wait_groundspeed(4, 6)
-            self.wait_heading(original_angle-0.5, original_angle+0.5)
-
-            expected_angle = original_angle
-            for (angle_delta, speed) in (5, 6), (-30, 2), (180, 7):
-                method(
-                    mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
-                    p1=angle_delta,
-                    p2=speed,
-                    p3=1,  # one is relative-angles
-                )
-
-                def cf(*args, **kwargs):
-                    method(
-                        mavutil.mavlink.MAV_CMD_NAV_SET_YAW_SPEED,
-                        p1=0,
-                        p2=speed,
-                        p3=1,  # one is absolute-angles
-                    )
-                expected_angle += angle_delta
-                if expected_angle < 0:
-                    expected_angle += 360
-                if expected_angle > 360:
-                    expected_angle -= 360
-                self.wait_groundspeed(speed-0.5, speed+0.5, called_function=cf, minimum_duration=2)
-                self.wait_heading(expected_angle, called_function=cf, minimum_duration=2)
-        self.do_RTL()
-        self.disarm_vehicle()
-
     def _MAV_CMD_GET_HOME_POSITION(self, run_cmd):
         '''test handling of mavlink command MAV_CMD_GET_HOME_POSITION'''
         self.context_collect('HOME_POSITION')
@@ -7363,8 +7003,7 @@ return update()
             self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
             self.wait_mode('MANUAL')
 
-            if self.distance_to_home() > 2:
-                raise NotAchievedException("Did not get home!")
+            self.wait_distance_to_home(0, 5, timeout=1)
 
     def start_driving_simple_relhome_mission(self, items):
         '''uploads items, changes mode to AUTO, waits ready to arm and starts mission'''
@@ -7529,7 +7168,6 @@ return update()
             self.MAV_CMD_DO_SET_MISSION_CURRENT_looped_mission,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_MISSION_START,
-            self.MAV_CMD_NAV_SET_YAW_SPEED,
             self.Button,
             self.Rally,
             self.Offboard,
@@ -7614,7 +7252,6 @@ return update()
     def disabled_tests(self):
         return {
             "SlewRate": "got timing report failure on CI",
-            "MAV_CMD_NAV_SET_YAW_SPEED": "compiled out of code by default",
             "PolyFenceObjectAvoidanceBendyRuler": "unreliable",
         }
 

@@ -228,6 +228,7 @@ class ExtractFeatures(BuildScriptBase):
             ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
             ('EK3_FEATURE_OPTFLOW_SRTM', r'NavEKF3_core::writeTerrainData'),
+            ('AP_AHRS_EKF_RESET_ENABLED', r'AP_AHRS::reset_configured_backend'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
@@ -247,8 +248,6 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
-            ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
-            ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
             ('AP_ADSB_AVOIDANCE_ENABLED', 'AP_Avoidance::init'),
 
             ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
@@ -262,6 +261,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
             ('AP_MAVLINK_FTP_ENABLED', 'GCS_FTP::init'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
+            ('AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'GCS_MAVLINK::handle_command_get_home_position'),  # noqa
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
             ('AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', r'GCS_MAVLINK::send_rangefinder'),

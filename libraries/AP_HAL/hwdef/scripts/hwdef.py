@@ -279,6 +279,8 @@ class HWDef:
             self.error("Bad env line for %s" % a[0])
         name = a[1]
         value = ' '.join(a[2:])
+        if name == 'OPTIMIZE' and value == '-Os':
+            self.error("'env OPTIMIZE -Os' should not appear in hwdef files, as -Os is the default")
         self.env_vars[name] = value
 
     def get_stale_defines(self):
@@ -302,6 +304,18 @@ class HWDef:
     def assert_good_define(self, name):
         if name in self.stale_defines:
             self.error(self.stale_defines[name])
+
+    def is_periph_fw(self):
+        return False
+
+    def validate_periph_defines(self):
+        '''error if any AP_PERIPH_* define is present on a non-AP_Periph board'''
+        if self.is_periph_fw():
+            return
+
+        for name in self.intdefines:
+            if name.startswith('AP_PERIPH_') and self.intdefines[name]:
+                self.error(f"define {name} is only valid on AP_Periph boards")
 
     def process_line_define(self, line, depth, a):
         # defines are currently written out a little haphazardly, but

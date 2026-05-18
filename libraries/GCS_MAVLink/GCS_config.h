@@ -23,6 +23,15 @@
 #define HAL_HIGH_LATENCY2_ENABLED 1
 #endif
 
+// MAV_CMD_GET_HOME_POSITION is redundant with
+// MAV_CMD_REQUEST_MESSAGE, it is slated for removal:
+// ArduPilot 4.8 allows it to be compiled out
+// ArduPilot 4.9 stops compiling in by default
+// ArduPilot 4.10 removes the code entirely
+#ifndef AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
+#define AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED AP_AHRS_ENABLED
+#endif
+
 // handling of MISSION_SET_CURRENT (the message) is slated to be
 // removed.  It has signficant deficiencies vs MAV_CMD_DO_SET_CURRENT.
 // The command was added to the spec in January 2019 and to MAVLink in
@@ -34,8 +43,11 @@
 // AUTOPILOT_VERSION_REQUEST is slated to be removed; an instance of
 // AUTOPILOT_VERSION can be requested with MAV_CMD_REQUEST_MESSAGE,
 // which gets you an ACK/NACK
+// ArduPilot 4.5 allows to be compiled out
+// ArduPilot 4.8 stops compiling in by default
+// ArduPilot 4.9 removes the code entirely
 #ifndef AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED
-#define AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED 1
+#define AP_MAVLINK_AUTOPILOT_VERSION_REQUEST_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
 #ifndef AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED
@@ -44,8 +56,11 @@
 
 // handling of MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES is slated to be
 // removed; the message can be requested with MAV_CMD_REQUEST_MESSAGE
+// ArduPilot 4.5 allows to be compiled out
+// ArduPilot 4.8 stops compiling in by default
+// ArduPilot 4.9 removes the code entirely
 #ifndef AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
-#define AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED 1
+#define AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
 #ifndef HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
@@ -63,14 +78,6 @@
 // allow removal of developer-centric mavlink commands
 #ifndef AP_MAVLINK_FAILURE_CREATION_ENABLED
 #define AP_MAVLINK_FAILURE_CREATION_ENABLED 1
-#endif
-
-// CODE_REMOVAL
-// ArduPilot 4.6 sends deprecation warnings for RALLY_POINT/RALLY_FETCH_POINT
-// ArduPilot 4.7 stops compiling them in by default
-// ArduPilot 4.8 removes the code entirely
-#ifndef AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
-#define AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED 0
 #endif
 
 // this is for both read and write messages:

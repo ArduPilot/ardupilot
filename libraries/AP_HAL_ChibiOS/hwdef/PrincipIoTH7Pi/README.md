@@ -76,7 +76,7 @@ USART3 is wired to the UART on the 40 pin Raspberry Pi header and the external
 UART connector.
 UART7 is receive only.
 
-## RC input
+## RC Input
 
 The PrincipIoT H7 Pi defaults SERIAL 6 as RC input. It can be used with any
 ArduPilot compatible serial protocol. It does not support PPM protocols.
@@ -92,7 +92,7 @@ SBUS/DSM would connect to UART8 RX input.
 Any other UART can be used for RC system connections in ArduPilot also, see
 [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
-## PWM Outputs
+## PWM Output
 
 The PrincipIoT H7 Pi controller supports up to 8 PWM outputs.
 
@@ -121,7 +121,7 @@ The SH1.0-5P connector supports a connection to a VTX. Protocol defaults to
 DisplayPort. Pin 1 of the connector is +10V so be careful not to connect this
 to a peripheral requiring 5v. DisplayPort OSD is enabled by default on SERIAL5.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 81 controls the VTX BEC output to pins marked "10V" and is included on
 the HD VTX connector. Setting this GPIO high turns off the voltage regulator.
@@ -159,7 +159,7 @@ model or desolder the onboard one.
 |LED0          | 90         |Blue LED        |
 |LED1          | 91         |Green LED       |
 
-## Battery Monitor
+## Battery Monitoring
 
 The board has a internal voltage sensor and connections on the ESC connector
 for an external current sensor input.

@@ -238,7 +238,7 @@ This autopilot has a built-in compass. The compass is the IIS2MDC
 
 This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH.
 
-## Motor Output
+## PWM Output
 
 All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectional-DSHOT. All outputs in the motor groups below must be either PWM or DShot:
 

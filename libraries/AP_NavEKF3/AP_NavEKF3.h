@@ -383,6 +383,10 @@ public:
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const;
 
+    // Do a reset and bootstrap alignment of all EKF cores
+    // return true if successful for all cores
+    bool InitialiseFilterBootstrap();
+
 private:
     class AP_DAL &dal;
 
@@ -475,6 +479,7 @@ private:
         JammingExpected         = (1<<0),
         ManualLaneSwitch        = (1<<1),
         OptflowMayUseTerrainAlt = (1<<2),
+        AglKfForOptflow         = (1<<3),  // Use IMU-aided 2-state AGL KF for optflow scaling
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;

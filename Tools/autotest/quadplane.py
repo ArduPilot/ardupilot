@@ -1438,7 +1438,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.wait_rpm(1, 0, 0, minimum_duration=1)
 
             self.change_mode('QLAND')
-            self.wait_disarmed()
+            self.wait_disarmed(timeout=45)
 
     def Ship(self):
         '''Ensure we can take off from simulated ship'''

@@ -48,9 +48,6 @@
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
-// maximum allowed gyro bias (rad/sec)
-#define GYRO_BIAS_LIMIT 0.5f
-
 // initial accel bias uncertainty as a fraction of the state limit
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
@@ -215,7 +212,7 @@ public:
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
     // Return the last calculated latitude, longitude and height in WGS-84
-    // If a calculated location isn't available, return a raw GPS measurement
+    // If a calculated location isn't available and position source is GPS, return a raw GPS measurement
     // The status will return true if a calculation or raw measurement is available
     // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
     bool getLLH(Location &loc) const;
@@ -488,7 +485,13 @@ public:
     // failure message
     // requires_position should be true if horizontal position configuration should be checked
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
-    
+
+    // clear the statesInitialised status which allows a reset and bootstrap alignment
+    void clearStatesInitialised(void) { statesInitialised = false; }
+
+    // return true if states have been initialised by a bootstrap alignment
+    bool isStatesInitialised(void) const { return statesInitialised; }
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -730,11 +733,13 @@ private:
     // used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
     void CovariancePrediction(Vector3F *rotVarVecPtr);
 
-    // force symmetry on the state covariance matrix
-    void ForceSymmetry();
-
     // constrain variances (diagonal terms) in the state covariance matrix
     void ConstrainVariances();
+
+    // actually do fusion to update statesArray from Kfusion and P from KHP.
+    // returns true and skips fusion if variances would be driven negative.
+    // force skips this negative check; passing true is probably a bug!
+    bool FinishFusion(ftype innov, bool force = false);
 
     // constrain states
     void ConstrainStates();
@@ -920,6 +925,11 @@ private:
 
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
+    void UpdateAglKf();
+#endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION
     // fuse optical flow measurements into the main filter
@@ -1305,6 +1315,18 @@ private:
 #if EK3_FEATURE_OPTFLOW_FUSION
     ftype Popt;                     // Optical flow terrain height state covariance (m^2)
 #endif
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // ---- 2-state AGL Kalman Filter ----
+    // Uses bias-corrected IMU delta-velocity for prediction and downward rangefinder
+    // as measurement, decoupled from the main filter's vertical position state.
+    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up)]
+    ftype aglKfH;                   // AGL height estimate (m, positive up from ground)
+    ftype aglKfV;                   // AGL velocity estimate (m/s, positive = climbing)
+    ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
+    bool  aglKfValid;               // true when RF has been fused within the last 5 s
+    uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
+#endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
     ftype prevPosE;                 // east position at last measurement
@@ -1595,6 +1617,9 @@ private:
 
     // vehicle specific initial gyro bias uncertainty
     ftype InitialGyroBiasUncertainty(void) const;
+
+    // get the gyro bias limit for this core's IMU
+    ftype getGyroBiasLimit(void) const;
 
     /*
       learn magnetometer biases from GPS yaw. Return true if the

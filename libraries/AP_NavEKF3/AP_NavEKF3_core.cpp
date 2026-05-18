@@ -284,6 +284,18 @@ void NavEKF3_core::InitialiseVariables()
     gpsHgtAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     rngOnGnd = 0.05f;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // 2-state AGL KF initialisation
+    // Start with generous uncertainty; the first valid RF measurement will hard-reset the state
+    aglKfH = rngOnGnd;      // assume sitting on ground at minimum range
+    aglKfV = 0.0f;
+    aglKfP[0][0] = 25.0f;   // 5 m initial std-dev in height
+    aglKfP[0][1] = 0.0f;
+    aglKfP[1][0] = 0.0f;
+    aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
+    aglKfValid = false;
+    lastAglRngFuseTime_ms = 0;
+#endif
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
     tiltErrorVariance = sq(M_2PI);
@@ -502,8 +514,22 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
         return false;
     }
 
+    // preserve origin across re-initialisation so a bootstrap reset
+    // does not shift the local NED frame.  On first boot validOrigin
+    // is false and the restore below is a no-op.
+    const bool hadValidOrigin = validOrigin;
+    const Location savedEKFOrigin = EKF_origin;
+
     // set re-used variables to zero
     InitialiseVariables();
+
+    // restore origin so per-core EKF_origin stays consistent with the
+    // shared frontend public_origin
+    if (hadValidOrigin) {
+        EKF_origin = savedEKFOrigin;
+        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+        validOrigin = true;
+    }
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3F initAccVec;
@@ -1754,19 +1780,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         }
     }
 
-    // inactive delta velocity bias states have all covariances zeroed to prevent
-    // interacton with other states
-    if (!inhibitDelVelBiasStates) {
-        for (uint8_t index=0; index<3; index++) {
-            const uint8_t stateIndex = index + 13;
-            if (dvelBiasAxisInhibit[index]) {
-                zeroRows(nextP,stateIndex,stateIndex);
-                zeroCols(nextP,stateIndex,stateIndex);
-                nextP[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
-            }
-        }
-    }
-
     // if the total position variance exceeds 1e4 (100m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
@@ -1790,6 +1803,19 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         // copy off diagonals
         for (uint8_t column = 0 ; column < row; column++) {
             P[row][column] = P[column][row] = nextP[column][row];
+        }
+    }
+
+    // inactive delta velocity bias states have all covariances zeroed to
+    // prevent interaction with other states
+    if (!inhibitDelVelBiasStates) {
+        for (uint8_t index=0; index<3; index++) {
+            const uint8_t stateIndex = index + 13;
+            if (dvelBiasAxisInhibit[index]) {
+                zeroRows(P, stateIndex, stateIndex);
+                zeroCols(P, stateIndex, stateIndex);
+                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+            }
         }
     }
 
@@ -1863,20 +1889,6 @@ void NavEKF3_core::StoreQuatRotate(const QuaternionF &deltaQuat)
         storedOutput[i].quat = storedOutput[i].quat*deltaQuat;
     }
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
-}
-
-// force symmetry on the covariance matrix to prevent ill-conditioning
-void NavEKF3_core::ForceSymmetry()
-{
-    for (uint8_t i=1; i<=stateIndexLim; i++)
-    {
-        for (uint8_t j=0; j<=i-1; j++)
-        {
-            ftype temp = 0.5f*(P[i][j] + P[j][i]);
-            P[i][j] = temp;
-            P[j][i] = temp;
-        }
-    }
 }
 
 // constrain variances (diagonal terms) in the state covariance matrix to  prevent ill-conditioning
@@ -2003,6 +2015,47 @@ void NavEKF3_core::ConstrainVariances()
     }
 }
 
+// actually do fusion to update statesArray from Kfusion and P from KHP.
+// returns true and skips fusion if variances would be driven negative.
+// force skips this negative check; passing true is probably a bug!
+bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
+{
+    if (!force) {
+        // Check that we are not going to drive any variances negative and skip the update if so
+        for (auto s=0; s<=stateIndexLim; s++) {
+            if (KHP[s][s] > P[s][s]) {
+                return true;
+            }
+        }
+    }
+
+    // correct the state vector using kalman gains filled in by caller
+    for (auto s=0; s<=stateIndexLim; s++) {
+        statesArray[s] -= Kfusion[s] * innov;
+    }
+    stateStruct.quat.normalize();
+
+    // update the covariance matrix as P = P - KHP (KHP was filled by caller)
+    for (auto r=0; r<=stateIndexLim; r++) {
+        for (auto c=0; c<=r; c++) {
+            // P must end up symmetric, so average the upper and lower
+            // differences, then store that result in both positions. it would
+            // be faster and more numerically stable to average the KHP entries
+            // instead, but we have no good proof P was symmetric before!
+            const ftype lower = P[r][c] - KHP[r][c];
+            const ftype upper = P[c][r] - KHP[c][r];
+            const ftype res = 0.5f*(lower + upper);
+            P[r][c] = res;
+            P[c][r] = res;
+        }
+    }
+
+    // limit the variances to prevent ill-conditioning
+    ConstrainVariances(); // can change statesArray!!
+
+    return false;
+}
+
 // constrain states using WMM tables and specified limit
 void NavEKF3_core::MagTableConstrain(void)
 {
@@ -2048,7 +2101,8 @@ void NavEKF3_core::ConstrainStates()
     // height limit covers home alt on everest through to home alt at SL and balloon drop
     stateStruct.position.z = constrain_ftype(stateStruct.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit (this needs to be set based on manufacturers specs)
-    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
+    const ftype gyro_bias_limit = getGyroBiasLimit();
+    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-gyro_bias_limit*dtEkfAvg,gyro_bias_limit*dtEkfAvg);
     // the accelerometer bias limit is controlled by a user adjustable parameter
     for (uint8_t i=13; i<=15; i++) statesArray[i] = constrain_ftype(statesArray[i],-frontend->_accBiasLim*dtEkfAvg,frontend->_accBiasLim*dtEkfAvg);
     // earth magnetic field limit

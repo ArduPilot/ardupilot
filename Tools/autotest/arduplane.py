@@ -3026,7 +3026,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.delay_sim_time(10)
         self.change_mode('CIRCLE')
-        self.wait_altitude(alt*0.9, alt*1.1, minimum_duration=10, relative=True)
+        self.wait_altitude(alt*0.9, alt*1.1, minimum_duration=10,
+                           altitude_source="TERRAIN_REPORT.current_height")
         self.fly_home_land_and_disarm()
 
     def fly_generic_mission(self, filename, mission_timeout=60.0, strict=True,
@@ -5190,6 +5191,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
         self.set_parameters({
             "ARSPD_USE": 0.0,
+            "TKOFF_LVL_ALT": 30,
         })
         self.change_mode("TAKEOFF")
 
@@ -5233,7 +5235,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("TAKEOFF")
 
         # waiting for the EKF to be happy won't work
-        self.delay_sim_time(20)
+        self.wait_prearm_sys_status_healthy()
         self.arm_vehicle()
 
         target_alt = self.get_parameter("TKOFF_ALT")
@@ -8205,6 +8207,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.PreflightRebootComponent,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
+            self.EK3HeightDatumResetFlushesBuffers,
         ]
 
     def UTMGlobalPositionWaypoint(self):
@@ -8271,6 +8274,92 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "flight_state": mavutil.mavlink.UTM_FLIGHT_STATE_AIRBORNE,
         }, poll=True)
         self.fly_home_land_and_disarm()
+
+    def EK3HeightDatumResetFlushesBuffers(self):
+        '''Verify resetHeightDatum flushes baro and output observer buffers'''
+        # Plane::update_home() runs every 5 s while disarmed (with
+        # GPS lock) and calls ahrs.resetHeightDatum() after a baro
+        # recalibration.  Without the buffer-flush fix, stale pre-
+        # recalibration baro samples in storedBaro continue to be
+        # fused as delayed observations after the reset, producing
+        # a brief altitude transient (~0.3-0.5 m).  With the fix
+        # storedBaro and the output observer buffers are cleared
+        # so reported altitude stays near zero post-reset.
+        #
+        # The default 5 s update_home cadence does not let drift
+        # accumulate enough to make the transient unambiguous, so
+        # we suspend periodic resets (HOME_RESET_ALT=-1), inject
+        # drift, then re-enable to fire one observable reset.
+        #
+        # resetHeightDatum is a no-op while !onGround in the EKF, so
+        # the test must start from a known on-ground state.  Earlier
+        # tests in PlaneTests1b can leave the simulated aircraft
+        # airborne (e.g. mid-descent), in which case Plane's
+        # barometer.update_calibration() would still run while the
+        # EKF reset was skipped, producing a baro-vs-EKF discontinuity
+        # that the EKF then chases via the slow baroHgtOffset filter
+        # -- exactly the post-reset transient this test is meant to
+        # rule out.  Reboot so the SITL aircraft is reliably on the
+        # ground at the start of the test.
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # suspend periodic resets so baro drift can accumulate
+        self.set_parameter("HOME_RESET_ALT", -1)
+        self.delay_sim_time(2)
+
+        # populate storedBaro with samples offset from where the
+        # post-recalibration ground reference will sit.  4 s of
+        # 0.5 m/s drift offsets the buffer by ~2 m -- well above
+        # natural noise so any post-reset transient is unambiguous.
+        drift_start_us = int(self.get_sim_time() * 1.0e6)
+        self.set_parameter("SIM_BARO_DRIFT", 0.5)
+        self.delay_sim_time(4)
+        self.set_parameter("SIM_BARO_DRIFT", 0)
+
+        # re-enable periodic resets; the next 5 s tick fires
+        # update_home -> resetHeightDatum
+        self.set_parameter("HOME_RESET_ALT", 0)
+        self.delay_sim_time(8)
+
+        # find the reset in the dataflash log: PD jumps by >0.5 m
+        # between adjacent samples when resetHeightDatum fires
+        # (drift makes PD change at ~0.5 m/s, far slower than
+        # one sample interval).  Then measure peak |PD| in the
+        # 2 s window post-reset.
+        dfreader = self.dfreader_for_current_onboard_log()
+        last_pd = None
+        reset_us = None
+        peak_excursion = 0.0
+        while True:
+            m = dfreader.recv_match(type='XKF1', condition='XKF1.C==0')
+            if m is None:
+                break
+            if m.TimeUS < drift_start_us:
+                continue
+            if reset_us is None:
+                if last_pd is not None and abs(m.PD - last_pd) > 0.5:
+                    reset_us = m.TimeUS
+                    self.progress("Reset detected at %.2f s (PD %.3f -> %.3f)" %
+                                  (m.TimeUS / 1.0e6, last_pd, m.PD))
+                last_pd = m.PD
+                continue
+            if m.TimeUS - reset_us > 2.0e6:
+                break
+            peak_excursion = max(peak_excursion, abs(m.PD))
+
+        if reset_us is None:
+            raise NotAchievedException(
+                "Did not detect resetHeightDatum in log "
+                "(was update_home triggered?)")
+
+        self.progress("Peak |XKF1.PD| over 2 s post-reset: %.3f m" %
+                      peak_excursion)
+        if peak_excursion > 0.1:
+            raise NotAchievedException(
+                "Post-reset altitude transient exceeds 0.1 m: %.3f m "
+                "(stale baro buffer not flushed on resetHeightDatum)" %
+                peak_excursion)
 
     def tests1c(self):
         '''kind of reserved for flapping tests which we still have hopes for'''

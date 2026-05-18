@@ -4457,14 +4457,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_command_int(msg);
         break;
 
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-    case MAVLINK_MSG_ID_FENCE_POINT:
-    case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
-        send_received_message_deprecation_warning("FENCE_FETCH_POINT");
-        handle_fence_message(msg);
-        break;
-#endif
-
 #if AP_TERRAIN_AVAILABLE
     case MAVLINK_MSG_ID_TERRAIN_DATA:
     case MAVLINK_MSG_ID_TERRAIN_CHECK: {
@@ -4530,14 +4522,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_PLAY_TUNE:
         // send message to Notify
         AP_Notify::handle_play_tune(msg);
-        break;
-#endif
-
-#if AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED
-    case MAVLINK_MSG_ID_RALLY_POINT:
-    case MAVLINK_MSG_ID_RALLY_FETCH_POINT:
-        send_received_message_deprecation_warning("RALLY_FETCH_POINT");
-        handle_common_rally_message(msg);
         break;
 #endif
 
@@ -5121,7 +5105,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &
     return _set_mode_common(_base_mode, _custom_mode);
 }
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_int_t &packet)
 {
     if (!AP::ahrs().home_is_set()) {
@@ -5138,7 +5122,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_get_home_position(const mavlink_command_i
 
     return MAV_RESULT_ACCEPTED;
 }
-#endif  // AP_AHRS_ENABLED
+#endif  // AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_debug_trap(const mavlink_command_int_t &packet)
 {
@@ -5818,10 +5802,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_flash_bootloader(packet);
 #endif
 
-#if AP_AHRS_ENABLED
+#if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
     case MAV_CMD_GET_HOME_POSITION:
         return handle_command_get_home_position(packet);
-#endif
+#endif  // AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
 
     case MAV_CMD_PREFLIGHT_CALIBRATION:
         return handle_command_preflight_calibration(packet, msg);

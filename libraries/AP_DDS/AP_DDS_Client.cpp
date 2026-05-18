@@ -563,8 +563,8 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
     msg.active_overrides_size = msg.channels_size;
     if (msg.channels_size) {
         for (uint8_t i = 0; i < static_cast<uint8_t>(msg.channels_size); i++) {
-            msg.channels[i] = rc->rc_channel(i)->get_radio_in();
-            msg.active_overrides[i] = rc->rc_channel(i)->has_override();
+            msg.channels[i] = rc->channel(i)->get_radio_in();
+            msg.active_overrides[i] = rc->channel(i)->has_override();
         }
     } else {
         // If no channels are available, the RC is disconnected.

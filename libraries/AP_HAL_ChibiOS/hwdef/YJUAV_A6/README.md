@@ -218,7 +218,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM6         | 55   | PWM13        | 62   |
 | PWM7         | 56   | PWM14        | 63   |
 
-## Analog inputs
+## Analog Inputs
 
 The A6 flight controller has 5 analog inputs
 

@@ -40,28 +40,6 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_fence_enable(const mavlink_command_int
     }
 }
 
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-void GCS_MAVLINK::handle_fence_message(const mavlink_message_t &msg)
-{
-    AC_Fence *fence = AP::fence();
-    if (fence == nullptr) {
-        return;
-    }
-    // send or receive fence points with GCS
-    switch (msg.msgid) {
-    case MAVLINK_MSG_ID_FENCE_POINT:
-    case MAVLINK_MSG_ID_FENCE_FETCH_POINT:
-        fence->polyfence().handle_msg(*this, msg);
-        break;
-    default:
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        AP_HAL::panic("Unhandled common fence message");
-#endif
-        break;
-    }
-}
-#endif  // AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-
 // fence_send_mavlink_status - send fence status to ground station
 void GCS_MAVLINK::send_fence_status() const
 {
