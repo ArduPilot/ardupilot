@@ -1,0 +1,17 @@
+# sitl_periph_PPP companion for the quadplane-PPP frame.
+# Periph runs in PPP-gateway mode: it advertises its own fixed IP and
+# dictates the plane's IP via IPCP. DHCP off; static addresses only.
+
+NET_ENABLE 1
+NET_DHCP 0
+NET_PPP_PORT 1
+NET_OPTIONS 1
+NET_IPADDR0 10
+NET_IPADDR1 77
+NET_IPADDR2 193
+NET_IPADDR3 20
+NET_NETMASK 24
+NET_REMPPP_IP0 10
+NET_REMPPP_IP1 77
+NET_REMPPP_IP2 193
+NET_REMPPP_IP3 10
