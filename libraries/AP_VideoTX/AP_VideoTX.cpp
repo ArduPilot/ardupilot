@@ -276,9 +276,19 @@ void AP_VideoTX::set_power_mw(uint16_t power)
     for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
         if (power == _power_levels[i].mw) {
             _current_power = i;
-            break;
+            return;
         }
     }
+    // Non-standard value (e.g. Tramp 2500 mW). Populate the custom slot
+    // so get_power_mw() reflects what the device reported and the
+    // update_power() equality short-circuit can fire on subsequent calls.
+    PowerLevel &slot = _power_levels[VTX_MAX_POWER_LEVELS - 1];
+    slot.mw = power;
+    slot.dbm = uint8_t(roundf(10.0f * log10f(float(power))));
+    slot.level = 255;
+    slot.dac = 255;
+    slot.active = PowerActive::Active;
+    _current_power = VTX_MAX_POWER_LEVELS - 1;
 }
 
 // set the power "level"
@@ -401,6 +411,13 @@ bool AP_VideoTX::update_power() const {
             && _power_levels[i].active != PowerActive::Inactive) {
             return true;
         }
+    }
+    // Tramp's protocol carries an arbitrary 16-bit mW value with no
+    // table-membership constraint, so allow non-standard values when a
+    // Tramp backend is active. SmartAudio v1/v2 retain the table check;
+    // SA 2.1 will have populated the table dynamically before reaching here.
+    if (_power_mw > 0 && is_provider_enabled(VTXType::Tramp)) {
+        return true;
     }
     // asked for something unsupported - only SA2.1 allows this and will have already provided a list
     return false;

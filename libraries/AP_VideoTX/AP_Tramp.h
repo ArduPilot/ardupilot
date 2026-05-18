@@ -59,8 +59,11 @@ public:
     bool init(void);
     void update();
 
-    uint16_t get_current_actual_power();
-    uint16_t get_current_temp();
+    // actual transmitted power as reported by the VTX in the 'v' response.
+    // May differ from the configured power because some Tramp VTXes have a
+    // hardware power floor or ignore the configured value silently.
+    uint16_t get_current_actual_power() const { return cur_act_power; }
+    int16_t get_current_temp() const { return cur_temp; }
 
 private:
     uint8_t checksum(uint8_t *buf);
@@ -118,9 +121,10 @@ private:
         uint32_t rf_power_max;
     } device_limits;
 
-    uint16_t cur_act_power; // Actual power
-    int16_t cur_temp;
-    uint8_t cur_control_mode;
+    uint16_t cur_act_power {0}; // Actual power
+    int16_t cur_temp {0};
+    uint8_t cur_control_mode {0};
+    bool _act_power_warned {false};
 
     // statistics
     uint16_t _packets_sent;
@@ -135,6 +139,16 @@ private:
 
     // Retry count
     uint8_t retry_count = VTX_TRAMP_MAX_RETRIES;
+
+    // Last user-configured values that were sent to the VTX. The retry
+    // counter is only re-armed when one of these changes, so a VTX that
+    // silently rejects a value can no longer drive an infinite retry loop.
+    uint16_t _last_conf_freq {0};
+    uint16_t _last_conf_power {0};
+    uint16_t _last_conf_options {0};
+    // one-shot warning flag: cleared whenever a configured value changes,
+    // set when we exhaust retries on the same value.
+    bool _power_warn_pending {false};
 
     // Receive state machine
     enum class ReceiveState {
