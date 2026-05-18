@@ -1124,6 +1124,19 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
 
+    #if AP_SIM_CAM_ENABLED && AP_SIM_MAX_CAMERAS > 0
+    // update camera
+    for (uint8_t i = 0; i < ARRAY_SIZE(cameras); i++) {
+        if (cameras[i] == nullptr) {
+            continue;
+        }
+        if (!cameras[i]->is_enabled()) {
+            continue;
+        }
+        cameras[i]->update(input);
+    }
+    #endif
+
     // update sprayer
     if (sprayer && sprayer->is_enabled()) {
         sprayer->update(input);

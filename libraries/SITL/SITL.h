@@ -13,6 +13,7 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "SIM_Buzzer.h"
+#include "SIM_Camera.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
 #include "SIM_I2C.h"
@@ -543,6 +544,9 @@ public:
     }
 
     Sprayer sprayer_sim;
+#if AP_SIM_CAM_ENABLED && AP_SIM_MAX_CAMERAS > 0
+    Camera camera_sim[AP_SIM_MAX_CAMERAS];
+#endif
 
     Gripper_Servo gripper_sim;
     Gripper_EPM gripper_epm_sim;
