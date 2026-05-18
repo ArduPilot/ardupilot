@@ -85,6 +85,27 @@ private:
         mavlink_ais_vessel_t info;
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
         uint32_t last_send_ms; // last time this message was sent via mavlink, stops us spamming the link
+
+        // Set dimensions of vessel
+        void set_dimensions(uint16_t bow, uint16_t stern, uint8_t port, uint8_t star_dim);
+
+        // Set course over ground of vessel
+        void set_cog(uint16_t cog);
+
+        // Set speed over ground of vessel
+        void set_sog(uint16_t sog);
+
+        // Set position accuracy flag of vessel
+        void set_pos_acc(bool pos_acc);
+
+        // Set rate of turn of vessel
+        void set_rot(int8_t rot);
+
+        // Set call sign of vessel
+        void set_callsign(const char* callsign);
+
+        // Set name of vessel
+        void set_name(const char* name);
     };
 
     // list of the vessels that are being tracked
@@ -117,6 +138,7 @@ private:
     bool decode_position_report(const char *payload, uint8_t type) WARN_IF_UNUSED;
     bool decode_base_station_report(const char *payload) WARN_IF_UNUSED;
     bool decode_static_and_voyage_data(const char *payload) WARN_IF_UNUSED;
+    bool decode_class_B_position_report(const char *payload, uint8_t type) WARN_IF_UNUSED;
 
     // read the specified bits from the char array each char giving 6 bits
     void get_char(const char *payload, char *array, uint16_t low, uint16_t high);
