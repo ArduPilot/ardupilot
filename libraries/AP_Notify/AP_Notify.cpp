@@ -208,6 +208,13 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("LED_LEN", 9, AP_Notify, _led_len, NOTIFY_LED_LEN_DEFAULT),
 
+    // @Param: LOST_ALARM
+    // @DisplayName: Lost Vehicle Alarm
+    // @Description: Activate the lost-vehicle alarm automatically when both the RC and GCS links are simultaneously lost. Useful for locating a downed vehicle when manual activation via RC sticks is not possible. This also activates when a crash is detected.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("LOST_ALARM", 10, AP_Notify, _lost_alarm_enable, 1),
+
     AP_GROUPEND
 };
 
@@ -421,6 +428,14 @@ void AP_Notify::update(void)
         if (_devices[i] != nullptr) {
             _devices[i]->update();
         }
+    }
+
+    // automatically activate the lost-vehicle alarm when both RC and GCS
+    // links are simultaneously absent; this covers the case where the
+    // vehicle has flown out of range and the operator cannot trigger the
+    // alarm manually via RC sticks
+    if (_lost_alarm_enable != 0 && flags.failsafe_radio && flags.failsafe_gcs) {
+        flags.vehicle_lost = true;
     }
 
     //reset the events

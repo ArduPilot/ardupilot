@@ -1,5 +1,5 @@
 /*
- *  AP_Notify Library. 
+ *  AP_Notify Library.
  * based upon a prototype library by David "Buzz" Bussenschutt.
  */
 
@@ -49,7 +49,7 @@ protected:
     virtual void _set_rgb(uint8_t red, uint8_t green, uint8_t blue);
 
     void update_override();
-    
+
     // meta-data common to all hw devices
     uint8_t _red_curr, _green_curr, _blue_curr;  // current colours displayed by the led
     uint8_t _led_off;
@@ -62,7 +62,7 @@ protected:
         uint8_t rate_hz;
         uint32_t start_ms;
     } _led_override;
-    
+
 private:
     void update_colours();
     uint32_t get_colour_sequence() const;
@@ -103,6 +103,7 @@ private:
     const uint32_t sequence_disarmed_good_dgps_and_location = DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN,BLACK);
     const uint32_t sequence_disarmed_good_gps_and_location = DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
     const uint32_t sequence_disarmed_bad_gps_or_no_location = DEFINE_COLOUR_SEQUENCE_SLOW(BLUE);
+    const uint32_t sequence_vehicle_lost = DEFINE_COLOUR_SEQUENCE_ALTERNATE(WHITE, BLACK);
 
     uint8_t last_step;
     enum class Source {

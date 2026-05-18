@@ -105,6 +105,12 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_initialising;
     }
 
+    // vehicle lost: override all other patterns with fast bright-white flash
+    // to aid visual recovery regardless of armed/failsafe state
+    if (AP_Notify::flags.vehicle_lost) {
+        return sequence_vehicle_lost;
+    }
+
     // save trim or any calibration pattern
     if (AP_Notify::flags.save_trim ||
         AP_Notify::flags.esc_calibration ||
