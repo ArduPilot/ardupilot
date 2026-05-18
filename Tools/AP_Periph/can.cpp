@@ -1127,7 +1127,7 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
 
 #if DEBUG_PKTS
     if (res < 0) {
-        can_printf("Tx error %d\n", res);
+        can_printf("Tx error %d", res);
     }
 #endif
 #if HAL_ENABLE_SENDING_STATS
@@ -1171,7 +1171,7 @@ bool AP_Periph_FW::canard_respond(CanardInstance* canard_instance,
                                                &transfer_object);
 #if DEBUG_PKTS
     if (res < 0) {
-        can_printf("Tx error %d\n", res);
+        can_printf("Tx error %d", res);
     }
 #endif
 #if HAL_ENABLE_SENDING_STATS
@@ -1505,13 +1505,13 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
         if (flash_bl == 42) {
             // magic developer value to test watchdog support with main loop lockup
             while (true) {
-                can_printf("entering lockup\n");
+                can_printf("entering lockup");
                 hal.scheduler->delay(100);
             }
         }
         if (flash_bl == 43) {
             // magic developer value to test watchdog support with hard fault
-            can_printf("entering fault\n");
+            can_printf("entering fault");
             void *foo = (void*)0xE000ED38;
             typedef void (*fptr)();
             fptr gptr = (fptr) (void *) foo;
@@ -1522,18 +1522,18 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
         AP_HAL::Util::FlashBootloader res = hal.util->flash_bootloader();
         switch (res) {
         case AP_HAL::Util::FlashBootloader::OK:
-            can_printf("Flash bootloader OK\n");
+            can_printf("Flash bootloader OK");
             break;
         case AP_HAL::Util::FlashBootloader::NO_CHANGE:
-            can_printf("Bootloader unchanged\n");
+            can_printf("Bootloader unchanged");
             break;
 #if AP_SIGNED_FIRMWARE
         case AP_HAL::Util::FlashBootloader::NOT_SIGNED:
-            can_printf("Bootloader not signed\n");
+            can_printf("Bootloader not signed");
             break;
 #endif
         default:
-            can_printf("Flash bootloader FAILED\n");
+            can_printf("Flash bootloader FAILED");
             break;
         }
     }

@@ -17,6 +17,15 @@
 
 #if AP_PERIPH_NETWORKING_ENABLED
 
+#if AP_NETWORKING_BACKEND_CHIBIOS
+#include <AP_Networking/AP_Networking_SwitchPort_Ethernet_ChibiOS.h>
+#include <AP_Networking/AP_Networking_SwitchPort_lwIP.h>
+#include <AP_Networking/AP_Networking_SwitchPort_COBS.h>
+#include <AP_Networking/AP_Networking_Switch.h>
+#endif
+
+extern bool periph_debug_switch_pkt_enabled();
+
 const AP_Param::GroupInfo Networking_Periph::var_info[] {
     // @Group:
     // @Path: ../../libraries/AP_Networking/AP_Networking.cpp
@@ -195,6 +204,68 @@ void Networking_Periph::update(void)
         comms->gateway = networking_lib.get_gateway_active();
     }
 #endif // HAL_RAM_RESERVE_START
+
+#if AP_NETWORKING_BACKEND_SWITCH
+    // Periodic stats over CAN (10s period)
+    static uint32_t last_stats_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_stats_ms >= 10000U && periph.debug_option_is_set(AP_Periph_FW::DebugOptions::NETWORK_STATS)) {
+        last_stats_ms = now_ms;
+        auto *hub = networking_lib.get_hub();
+        if (hub != nullptr) {
+            can_printf("NET: SW routed=%lu dropped=%lu",
+                       (unsigned long)hub->get_frames_routed(),
+                       (unsigned long)hub->get_frames_dropped());
+        }
+#if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+        auto *eth = networking_lib.get_port_eth();
+        if (eth != nullptr) {
+            can_printf("NET: ETH rx=%lu tx=%lu rxerr=%lu txerr=%lu link=%u",
+                       (unsigned long)eth->get_rx_count(),
+                       (unsigned long)eth->get_tx_count(),
+                       (unsigned long)eth->get_rx_errors(),
+                       (unsigned long)eth->get_tx_errors(),
+                       eth->is_link_up() ? 1U : 0U);
+        }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+        auto *lwip = networking_lib.get_port_lwip();
+        if (lwip != nullptr) {
+            can_printf("NET: LWIP rx=%lu tx=%lu rxerr=%lu txerr=%lu",
+                       (unsigned long)lwip->get_rx_count(),
+                       (unsigned long)lwip->get_tx_count(),
+                       (unsigned long)lwip->get_rx_errors(),
+                       (unsigned long)lwip->get_tx_errors());
+        }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+
+#if AP_NETWORKING_BACKEND_SWITCHPORT_COBS
+        // COBS bonds
+        const uint8_t n_bonds = networking_lib.get_num_cobs_bonds();
+        for (uint8_t i = 0; i < n_bonds; i++) {
+            auto *g = networking_lib.get_cobs_bond(i);
+            if (g == nullptr) {
+                continue;
+            }
+            can_printf("NET: COBS_G%u(%u) up=%u rx=%lu tx=%lu ka=%lu/%lu",
+                       (unsigned)g->get_bond_id(),
+                       (unsigned)g->get_num_members(),
+                       (unsigned)(g->is_link_up() ? 1 : 0),
+                       (unsigned long)g->get_rx_count(),
+                       (unsigned long)g->get_tx_count(),
+                       (unsigned long)g->get_keepalive_rx(),
+                       (unsigned long)g->get_keepalive_tx());
+        }
+#endif // AP_NETWORKING_BACKEND_SWITCHPORT_COBS
+    }
+#endif // AP_NETWORKING_BACKEND_SWITCH
+}
+
+// Check if hub packet debug (ARP/ICMP) is enabled via DEBUG parameter bit 4
+bool periph_debug_switch_pkt_enabled()
+{
+    return (periph.g.debug & (1U << 4)) != 0;
 }
 
 #endif  // AP_PERIPH_NETWORKING_ENABLED

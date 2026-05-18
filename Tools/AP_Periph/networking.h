@@ -7,7 +7,11 @@
 #include <AP_Networking/AP_Networking.h>
 
 #ifndef HAL_PERIPH_NETWORK_NUM_PASSTHRU
-#define HAL_PERIPH_NETWORK_NUM_PASSTHRU 2
+    #if AP_NETWORKING_BACKEND_IS_MAC_GATEWAY
+    #define HAL_PERIPH_NETWORK_NUM_PASSTHRU 0
+    #else
+    #define HAL_PERIPH_NETWORK_NUM_PASSTHRU 2
+    #endif
 #endif
 
 #ifndef AP_PERIPH_NET_PPP_PORT_DEFAULT

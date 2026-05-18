@@ -12,13 +12,19 @@
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_HAL/utility/RingBuffer.h>
 
+// forward declarations for switch/ports
+class AP_Networking_Switch;
+class AP_Networking_SwitchPort_lwIP;
+class AP_Networking_SwitchPort_Ethernet_ChibiOS;
+class AP_Networking_COBS_Link;
+class AP_Networking_SwitchPort_COBS;
+
 /*
   Note! all uint32_t IPv4 addresses are in host byte order
 */
 
 // declare backend classes
 class AP_Networking_Backend;
-class AP_Networking_ChibiOS;
 
 class SocketAPM;
 
@@ -26,7 +32,6 @@ class AP_Networking
 {
 public:
     friend class AP_Networking_Backend;
-    friend class AP_Networking_ChibiOS;
     friend class AP_Networking_PPP;
     friend class AP_Vehicle;
     friend class Networking_Periph;
@@ -42,6 +47,9 @@ public:
     // update task, called at 10Hz
     void update();
 
+    // print network stats to GCS (for debugging)
+    void send_network_stats();
+
     static AP_Networking *get_singleton(void)
     {
         return singleton;
@@ -55,7 +63,20 @@ public:
     // Networking interface is enabled and initialized
     bool is_healthy() const
     {
+#if AP_NETWORKING_BACKEND_SWITCH
+        return param.enabled && (backend != nullptr || hub != nullptr);
+#else
         return param.enabled && backend != nullptr;
+#endif
+    }
+
+    // returns true if lwIP stack is enabled by parameter
+    bool get_ipstack_enabled() const {
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+        return param.ipstack_enabled;
+#else
+        return true; // always enabled if not switch architecture
+#endif
     }
 
     // returns true if DHCP is enabled
@@ -90,6 +111,15 @@ public:
 #else
         // TODO: ask the OS for the IP address
         return 0;
+#endif
+    }
+
+    // returns IP address as string
+    const char* get_ip_param_str() {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
+        return param.ipaddr.get_str();
+#else
+        return "0.0.0.0";
 #endif
     }
 
@@ -134,6 +164,28 @@ public:
 #endif
     }
 
+    // returns gateway address as string
+    const char* get_gateway_param_str() {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
+        return param.gwaddr.get_str();
+#else
+        return "0.0.0.0";
+#endif
+    }
+
+    // returns true if IP settings can be adjusted via params
+    static bool ip_settings_are_adjustable() { return AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED; }
+
+    // get MAC address into provided buffer
+    void get_macaddr(uint8_t addr[6]) const {
+#if AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED
+        param.macaddr.get_address(addr);
+#else
+        AP_Networking_MAC default_mac{AP_NETWORKING_DEFAULT_MAC_ADDR};
+        default_mac.get_address(addr);
+#endif
+    }
+
     // wait in a thread for network startup
     void startup_wait(void) const;
 
@@ -142,7 +194,11 @@ public:
 
     // address to string using a static return buffer for scripting
     static const char *address_to_str(uint32_t addr);
-    
+    static const char *address_to_str_from_bytes(uint8_t addr0, uint8_t addr1, uint8_t addr2, uint8_t addr3) {
+        const uint32_t addr = UINT32_VALUE(addr0, addr1, addr2, addr3);
+        return AP_Networking::address_to_str(addr);
+    }
+
     // helper functions to convert between 32bit Netmask and counting consecutive bits and back
     static uint32_t convert_netmask_bitcount_to_ip(const uint32_t netmask_bitcount);
     static uint8_t convert_netmask_ip_to_bitcount(const uint32_t netmask_ip);
@@ -173,10 +229,24 @@ public:
 #endif
         PPP_TIMEOUT_DISABLE=(1U<<5),
         PPP_ECHO_LIMIT_DISABLE=(1U<<6),
-#if AP_NETWORKING_CAPTURE_ENABLED
-        CAPTURE_PACKETS=(1U<<7),
+#if AP_NETWORKING_BACKEND_SWITCH
+        DEBUG_MSGS=(1U<<8),
+        DEBUG_SWITCH_PKT=(1U<<9),
 #endif
     };
+#if AP_NETWORKING_CAPTURE_ENABLED
+    enum CAPTURE_MASK {
+        CAPTURE_LWIP      = (1U<<0),
+        CAPTURE_ETHERNET  = (1U<<1),
+        CAPTURE_COBS      = (1U<<2),
+        CAPTURE_MAV_COBS  = (1U<<3),
+        CAPTURE_PPP       = (1U<<4),
+    };
+    bool capture_is_set(CAPTURE_MASK mask) const {
+        return (param.capture_mask.get() & int8_t(mask)) != 0;
+    }
+#endif
+
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
     }
@@ -205,7 +275,13 @@ private:
 #endif
 
         AP_Int8 enabled;
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+        AP_Int8 ipstack_enabled; // enable/disable IP stack (lwIP)
+#endif
         AP_Int32 options;
+#if AP_NETWORKING_CAPTURE_ENABLED
+        AP_Int8 capture_mask;
+#endif
 
 #if AP_NETWORKING_TESTS_ENABLED
         AP_Int32 tests;
@@ -357,6 +433,38 @@ private:
     bool sendfile_thread_started;
 
     void ports_init(void);
+
+#if AP_NETWORKING_BACKEND_SWITCH
+public:
+    // Debug accessors for AP_Periph stats logging
+    AP_Networking_Switch *get_hub() const { return hub; }
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+    AP_Networking_SwitchPort_lwIP *get_port_lwip() const { return port_lwip; }
+#endif
+#if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+    AP_Networking_SwitchPort_Ethernet_ChibiOS *get_port_eth() const { return port_eth; }
+#endif
+    uint8_t get_num_cobs_bonds() const { return num_cobs_bonds; }
+    AP_Networking_SwitchPort_COBS *get_cobs_bond(uint8_t i) const { return (i < num_cobs_bonds) ? cobs_bonds[i] : nullptr; }
+
+private:
+    // Networking switch and ports
+    AP_Networking_Switch *hub;
+#if AP_NETWORKING_BACKEND_SWITCHPORT_LWIP
+    AP_Networking_SwitchPort_lwIP *port_lwip;
+#endif
+#if AP_NETWORKING_BACKEND_SWITCHPORT_ETHERNET
+    AP_Networking_SwitchPort_Ethernet_ChibiOS *port_eth;
+#endif
+
+    // COBS bonds
+    AP_Networking_SwitchPort_COBS *cobs_bonds[AP_NETWORKING_BACKEND_SWITCHPORT_COBS_BOND_INSTANCE_MAX];
+    uint8_t num_cobs_bonds;
+
+    // MAVLink COBS tunnel ports are managed via static registry in
+    // AP_Networking_SwitchPort_MAVLink_COBS, created dynamically when
+    // TUNNEL messages arrive from new (channel, sysid, compid) endpoints
+#endif // AP_NETWORKING_BACKEND_SWITCH
 };
 
 namespace AP

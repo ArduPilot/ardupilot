@@ -7,6 +7,7 @@
 #if AP_NETWORKING_CAN_MCAST_ENABLED
 
 #include "AP_Networking.h"
+#include "AP_Networking_CAN.h"
 
 #include <AP_HAL/utility/Socket.h>
 #include <AP_HAL/CANIface.h>

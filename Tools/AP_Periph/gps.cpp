@@ -12,7 +12,7 @@
 #define DEBUG_PRINTS 0
 
 #if DEBUG_PRINTS
- # define Debug(fmt, args ...)  do {can_printf(fmt "\n", ## args);} while(0)
+ # define Debug(fmt, args ...)  do {can_printf(fmt, ## args);} while(0)
 #else
  # define Debug(fmt, args ...)
 #endif
