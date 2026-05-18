@@ -53,6 +53,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Params::var_info[] = {
     // @Values: 30:INA3221
     // @Values: 31:Analog Current Only
     // @Values: 32:TIBQ76952-I2C (Periph only)
+    // @Values: 33:ACS37800-I2C
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("MONITOR", 1, AP_BattMonitor_Params, _type, int8_t(AP_BattMonitor::Type::NONE), AP_PARAM_FLAG_ENABLE),
