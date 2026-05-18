@@ -190,6 +190,10 @@ uint32_t RGBLed::get_colour_sequence_traffic_light(void) const
         return DEFINE_COLOUR_SEQUENCE(RED,GREEN,BLUE,RED,GREEN,BLUE,RED,GREEN,BLUE,BLACK);
     }
 
+    if (AP_Notify::flags.vehicle_lost) {
+        return sequence_vehicle_lost;
+    }
+
     if (AP_Notify::flags.armed) {
         return DEFINE_COLOUR_SEQUENCE_SLOW(RED);
     }
