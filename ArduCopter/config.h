@@ -178,6 +178,10 @@
 # define MODE_GUIDED_ENABLED 1
 #endif
 
+#ifndef AC_COPTER_MODEGUIDED_ORBIT_ENABLED
+# define AC_COPTER_MODEGUIDED_ORBIT_ENABLED (MODE_GUIDED_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB>1024)
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // GuidedNoGPS mode - control vehicle's angles from GCS
 #ifndef MODE_GUIDED_NOGPS_ENABLED

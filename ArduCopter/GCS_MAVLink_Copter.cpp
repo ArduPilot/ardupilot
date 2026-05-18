@@ -154,6 +154,19 @@ void GCS_MAVLINK_Copter::send_position_target_local_ned()
                     POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE; // ignore everything except velocity & acceleration
         target_accel_ned_mss = copter.mode_guided.get_target_accel_NED_mss();
         break;
+#if AC_COPTER_MODEGUIDED_ORBIT_ENABLED        
+    case ModeGuided::SubMode::Orbit:
+        if (copter.mode_guided.circle_moving_to_edge()) {
+            // moving to edge - report WP position target
+            type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                        POSITION_TARGET_TYPEMASK_AX_IGNORE | POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
+                        POSITION_TARGET_TYPEMASK_YAW_IGNORE| POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE;
+            target_pos_ned_m = copter.mode_guided.get_target_pos_NED_m().tofloat();
+            break;
+        }
+        // orbiting - no local position target to report
+        return;
+#endif  // AC_COPTER_MODEGUIDED_ORBIT_ENABLED
     }
 
     mavlink_msg_position_target_local_ned_send(
@@ -554,6 +567,11 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         return MAV_RESULT_FAILED;
 #endif
 
+#if AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
+    case MAV_CMD_DO_ORBIT:
+        return handle_MAV_CMD_DO_ORBIT(packet);
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
+
     default:
         return GCS_MAVLINK::handle_command_int_packet(packet, msg);
     }
@@ -836,6 +854,52 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_pause_continue(const mavlink_comma
     }
     return MAV_RESULT_DENIED;
 }
+
+#if AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
+MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int_t &packet)
+{
+    // reject if not in Guided mode
+    if (!copter.flightmode->in_guided_mode()) {
+        return MAV_RESULT_FAILED;
+    }
+
+    // param1: radius (m) - positive = CW, negative = CCW (MAVLink spec)
+    if (isnan(packet.param1) || fabsf(packet.param1) < 0.1f) {
+        return MAV_RESULT_DENIED;
+    }
+    const float radius_m = fabsf(packet.param1);
+    const bool ccw = (packet.param1 < 0.0f);
+
+    // param2: tangential velocity (m/s) - optional, 0 or NaN = use default
+    const float speed_ms = (isnan(packet.param2) || is_zero(packet.param2)) ? 0.0f : fabsf(packet.param2);
+
+    // param3: yaw behaviour (ORBIT_YAW_BEHAVIOUR enum), NaN or 0 = face center
+
+    // x/y: center coordinates
+    if (packet.x == INT32_MAX || packet.y == INT32_MAX) {
+        return MAV_RESULT_DENIED;
+    }
+
+    // build center Location from packet
+    if (!check_latlng(packet.x, packet.y)) {
+        return MAV_RESULT_DENIED;
+    }
+    Location circle_center;
+    if (!location_from_command_t(packet, circle_center)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    // param4: Orbit around the centre point for this many radians. 0: Orbit forever
+    // NaN means "do not change" - preserve existing turn count
+    const bool update_turns = !isnan(packet.param4);
+    const float turns = update_turns ? fabsf(packet.param4) : 0.0f;
+    // param3: yaw behaviour (ORBIT_YAW_BEHAVIOUR enum), NaN or 0 = face center
+    const ORBIT_YAW_BEHAVIOUR yaw_behaviour = (isnan(packet.param3) || packet.param3 < 0) ? ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER : (ORBIT_YAW_BEHAVIOUR)(int)packet.param3;
+    copter.mode_guided.orbit_start(circle_center, radius_m, ccw, speed_ms, update_turns, turns, yaw_behaviour);
+
+    return MAV_RESULT_ACCEPTED;
+}
+#endif  // AP_MAVLINK_MAV_CMD_DO_ORBIT_ENABLED
 
 // this is called on receipt of a MANUAL_CONTROL packet and is
 // expected to call manual_override to override RC input on desired
