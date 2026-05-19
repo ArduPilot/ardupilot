@@ -458,7 +458,7 @@ void AP_AHRS::update_state(void)
     state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
     state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
     state.airspeed_TAS_vec_ok = _airspeed_TAS(state.airspeed_TAS_vec);
-    state.quat_ok = _get_quaternion(state.quat);
+    state.quat_ok = active_estimates->get_quaternion(state.quat);
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
     state.location_ok = _get_location(state.location);
@@ -1157,49 +1157,6 @@ bool AP_AHRS::use_compass(void)
     return active_backend->use_compass();
 }
 
-bool AP_AHRS::_get_quaternion(Quaternion &quat) const
-{
-    return _get_quaternion_for_ekf_type(quat, active_EKF_type());
-}
-
-// return the quaternion defining the rotation from NED to XYZ (body) axes
-bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
-{
-    // backends must always return the result in the vehicle body
-    // frame.  A backend using the autopilot sensors will need to
-    // rotate according to the TRIM parameters.  An ExternalAHRS
-    // won't!
-    switch (type) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        quat = dcm_estimates.quaternion;
-        return dcm_estimates.attitude_valid;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        quat = ekf2_estimates.quaternion;
-        return ekf2_estimates.attitude_valid;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        quat = ekf3_estimates.quaternion;
-        return ekf3_estimates.attitude_valid;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        quat = sim_estimates.quaternion;
-        return sim_estimates.attitude_valid;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        quat = external_estimates.quaternion;
-        return external_estimates.attitude_valid;
-#endif
-    }
-
-    return false;
-}
-
 const AP_AHRS_Backend::Estimates *AP_AHRS::get_secondary_estimates() const
 {
     EKFType secondary_ekf_type;
@@ -1256,11 +1213,11 @@ bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
 // return secondary attitude solution if available, as quaternion
 bool AP_AHRS::_get_secondary_quaternion(Quaternion &quat) const
 {
-    EKFType secondary_ekf_type;
-    if (!_get_secondary_EKF_type(secondary_ekf_type)) {
+    const auto *estimates = get_secondary_estimates();
+    if (estimates == nullptr) {
         return false;
     }
-    return _get_quaternion_for_ekf_type(quat, secondary_ekf_type);
+    return estimates->get_quaternion(quat);
 }
 
 // return secondary position solution if available
