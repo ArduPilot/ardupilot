@@ -272,13 +272,19 @@ void AP_Follow::update_estimates()
         // update X/Y position, velocity, acceleration with shaping
         update_pos_vel_accel_xy(_estimate_pos_ned_m.xy(), _estimate_vel_ned_ms.xy(), _estimate_accel_ned_mss.xy(), e_dt, Vector2f(), Vector2f(), Vector2f());
 
-        // update Z axis position, velocity, acceleration without shaping (direct update)
+        // integrate the Z axis estimate forward by e_dt
         update_pos_vel_accel(_estimate_pos_ned_m.z, _estimate_vel_ned_ms.z, _estimate_accel_ned_mss.z, e_dt, 0.0, 0.0, 0.0);
 
         // apply horizontal shaping to refine estimate toward projected target state
         shape_pos_vel_accel_xy(_target_pos_ned_m.xy() + delta_pos_m.xy().topostype(), _target_vel_ned_ms.xy() + delta_vel_ms.xy(), _target_accel_ned_mss.xy(),
                                _estimate_pos_ned_m.xy(), _estimate_vel_ned_ms.xy(), _estimate_accel_ned_mss.xy(),
                                0.0, _accel_max_ne_mss, _jerk_max_ne_msss, e_dt, false);
+
+        // apply vertical shaping to refine the Z estimate toward the projected
+        // target state (jerk-limited, tuned via FOLL__ACCEL_D / FOLL__JERK_D)
+        shape_pos_vel_accel(_target_pos_ned_m.z + delta_pos_m.z, _target_vel_ned_ms.z + delta_vel_ms.z, _target_accel_ned_mss.z,
+                            _estimate_pos_ned_m.z, _estimate_vel_ned_ms.z, _estimate_accel_ned_mss.z,
+                            0.0, 0.0, -_accel_max_d_mss, _accel_max_d_mss, _jerk_max_d_msss, e_dt, false);
 
         // apply angular shaping for heading estimate
         shape_angle_vel_accel(radians(_target_heading_deg) + delta_heading_rad, radians(_target_heading_rate_degs), 0.0,
@@ -870,11 +876,8 @@ void AP_Follow::update_dist_and_bearing_to_target()
         // if unable to retrieve local position, clear distance/bearing info
         clear_dist_and_bearing_to_target();
     } else {
-        // convert vehicle position to NED meters (NEU -> NED and cm -> m)
-        current_position_ned_m.z = -current_position_ned_m.z; // NEU to NED
-        current_position_ned_m *= 0.01;  // convert cm to m
-
-        // calculate distance vectors to target, both with and without offsets
+        // get_relative_position_NED_origin() already returns metres in the NED
+        // frame, matching _ofs_estimate_pos_ned_m, so no conversion is required.
         const Vector3p ofs_dist_vec = _ofs_estimate_pos_ned_m - current_position_ned_m;
 
         // record distance and bearing to target for reporting/logging
