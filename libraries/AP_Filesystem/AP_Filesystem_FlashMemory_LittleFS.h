@@ -20,6 +20,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
+#include <AP_HAL/WSPIDevice.h>
 #include "lfs.h"
 
 class AP_Filesystem_FlashMemory_LittleFS : public AP_Filesystem_Backend
@@ -90,10 +91,15 @@ private:
 
     FileDescriptor* open_files[MAX_OPEN_FILES];
 
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_WSPI_NAND
+    // WSPI device for QUADSPI-connected NAND flash
+    AP_HAL::OwnPtr<AP_HAL::WSPIDevice> wspi_dev;
+#else
     // SPI device that handles the raw flash memory
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
+#endif
 
-    // Semaphore to protect access to the SPI device
+    // Semaphore to protect access to the SPI/WSPI device
     AP_HAL::Semaphore *dev_sem;
 
     // Flag to denote that the underlying flash chip uses 32-bit addresses
@@ -110,12 +116,25 @@ private:
     bool write_enable() WARN_IF_UNUSED;
     bool is_busy();
     bool mount_filesystem();
-    void send_command_addr(uint8_t command, uint32_t addr);
-    void send_command_page(uint8_t command, uint32_t page);
     bool wait_until_device_is_ready() WARN_IF_UNUSED;
-    void write_status_register(uint8_t reg, uint8_t bits);
     void format_handler(void);
     void mark_dead();
+
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_WSPI_NAND
+    // WSPI helper functions for QUADSPI NAND flash
+    bool wspi_command(uint8_t cmd);
+    bool wspi_command_addr8(uint8_t cmd, uint8_t addr);
+    bool wspi_command_addr24(uint8_t cmd, uint32_t addr);
+    bool wspi_read_reg(uint8_t reg, uint8_t &value);
+    bool wspi_write_reg(uint8_t reg, uint8_t value);
+    bool wspi_read_data(uint16_t col_addr, uint8_t dummy_cycles, uint8_t *buf, uint32_t len);
+    bool wspi_write_data(uint16_t col_addr, const uint8_t *buf, uint32_t len);
+#else
+    // SPI helper functions for SPI-connected flash
+    void send_command_addr(uint8_t command, uint32_t addr);
+    void send_command_page(uint8_t command, uint32_t page);
+    void write_status_register(uint8_t reg, uint8_t bits);
+#endif
 };
 
 #endif  // #if AP_FILESYSTEM_LITTLEFS_ENABLED
