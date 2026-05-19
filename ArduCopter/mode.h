@@ -969,6 +969,8 @@ public:
     bool is_autopilot() const override { return false; }
     bool crash_check_enabled() const override { return false; }
 
+    void abandon_flip();
+
 protected:
 
     const char *name() const override { return "Flip"; }
@@ -987,6 +989,7 @@ private:
         Recover,
         Abandon
     };
+    bool abandon_requested;
     FlipState _state;                   // current state of flip
     Mode::Number  orig_control_mode;    // flight mode when flip was initiated
     uint32_t start_time_ms;             // time since flip began
