@@ -65,6 +65,7 @@
 #include "AP_RangeFinder_RDS02UF.h"
 #include "AP_RangeFinder_LightWare_GRF.h"
 #include "AP_RangeFinder_DTS6012M.h"
+#include "AP_RangeFinder_MZBH301_CAN.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -640,6 +641,11 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         break;
 #endif // AP_RANGEFINDER_DTS6012M_ENABLED
 
+#if AP_RANGEFINDER_MZBH301_CAN_ENABLED
+    case Type::MZBH301_CAN:
+        _add_backend(NEW_NOTHROW AP_RangeFinder_MZBH301_CAN(state[instance], params[instance]), instance);
+        break;
+#endif // AP_RANGEFINDER_MZBR21_CAN_ENABLED
     case Type::NONE:
         break;
     }
