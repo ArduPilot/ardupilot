@@ -99,7 +99,7 @@ class TestParamUpgradeTestSuiteSetParameters(TestParamUpgradeTestSuite):
         self.set_parameters(sets)
 
         # stopping SITL too soon can leave eeprom.bin corrupt!
-        self.delay_sim_time(2)  # FIXTHAT, should not be needed!
+        self.delay_sim_time(2, reason="EEPROM write to complete")  # FIXTHAT, should not be needed!
 
         self.stop_SITL()
 
