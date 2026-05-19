@@ -8,8 +8,10 @@
 '''
 
 import copy
+import lzma
 import os
 import re
+import shutil
 import sys
 
 from argparse import ArgumentParser
@@ -54,6 +56,19 @@ parser.add_argument("--format",
                     default='all',
                     choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md'],
                     help="what output format to use")
+parser.add_argument("--git-sha",
+                    dest='git_sha',
+                    default=None,
+                    help="git SHA of the firmware build (optional, included in output metadata)")
+parser.add_argument("--git-tag",
+                    dest='git_tag',
+                    default=None,
+                    help="git tag of the firmware build (optional, included in output metadata when a tag exists)")
+parser.add_argument("--compress",
+                    dest='compress',
+                    action='store_true',
+                    default=False,
+                    help="compress output files using xz (maximum compression) producing <file>.xz alongside the original")
 
 args = parser.parse_args()
 
@@ -731,6 +746,8 @@ for emitter_name in all_emitters.keys():
 for emitter_name in emitters_to_use:
     emit = all_emitters[emitter_name]()
 
+    emit.git_sha = args.git_sha
+    emit.git_tag = args.git_tag
     emit.emit_legacy_params = args.emit_legacy_params
     if emit.emit_legacy_params is None:
         if emitter_name in ('rst', 'rstlatexpdf'):
@@ -766,5 +783,13 @@ for emitter_name in emitters_to_use:
             emit.emit(library)
 
     emit.close()
+
+    if args.compress:
+        fname = emit.output_fname()
+        if fname and os.path.exists(fname):
+            xz_fname = fname + '.xz'
+            with open(fname, 'rb') as f_in:
+                with lzma.open(xz_fname, 'wb', preset=9 | lzma.PRESET_EXTREME) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
 
 sys.exit(error_count)
