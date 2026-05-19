@@ -69,6 +69,8 @@ static const struct {
     { 0.01,  0.01},
     { 0.001, 0.001 }};
 
+constexpr float maximum_permissible_dt = 0.1f; // seconds
+
 /*
   use table to get resting voltage from remaining capacity
  */
@@ -159,11 +161,10 @@ void Battery::consume_energy(float current_amp, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
     float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
-    if (dt > 0.1) {
-        // we stopped updating
-        dt = 0;
-    }
     last_us = now_us;
+    if (dt > maximum_permissible_dt) {
+        return;
+    }
     float delta_Ah = current_amp * dt / 3600;
     remaining_Ah -= delta_Ah;
     remaining_Ah = MAX(0, remaining_Ah);
