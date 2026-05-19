@@ -169,7 +169,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, pwm)
         self.wait_altitude(altitude_min=alt - 1, altitude_max=alt, relative=False, timeout=timeout)
         self.set_rc(Joystick.Throttle, 1500)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="altitude to stabilise")
         self.progress("DIVE COMPLETE")
 
     def AltitudeHold(self):
@@ -182,7 +182,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
 
         # let the vehicle settle (momentum / stopping point shenanigans....)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="vehicle to settle")
 
         self.watch_altitude_maintained()
 
@@ -191,7 +191,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
 
         # let the vehicle settle (momentum / stopping point shenanigans....)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="vehicle to settle")
 
         self.watch_altitude_maintained()
 
@@ -200,7 +200,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
 
         # let the vehicle settle (momentum / stopping point shenanigans....)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="vehicle to settle")
         self.watch_altitude_maintained()
 
         # Make sure the code can handle buoyancy changes
@@ -323,7 +323,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1300)
         self.wait_altitude(altitude_min=-26, altitude_max=-25, relative=False, timeout=60)
         self.set_rc(Joystick.Throttle, 1500)
-        self.delay_sim_time(4)
+        self.delay_sim_time(4, reason="rangefinder target to settle")
         self.wait_statustext('rangefinder target is', check_context=True)
         self.context_clear_collection('STATUSTEXT')
         self.watch_distance_maintained()
@@ -332,13 +332,13 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1300)
         self.wait_altitude(altitude_min=-31, altitude_max=-30, relative=False, timeout=60)
         self.set_rc(Joystick.Throttle, 1500)
-        self.delay_sim_time(4)
+        self.delay_sim_time(4, reason="rangefinder target to settle")
         self.wait_statustext('rangefinder target is', check_context=True)
         self.watch_distance_maintained()
 
         # Disarm, allowing the vehicle to drift up
         self.disarm_vehicle()
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="vehicle to drift upward")
 
         # Re-arm. The vehicle should get a new rangefinder target and maintain distance
         self.arm_vehicle()
@@ -497,27 +497,27 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # dive a bit to make sure we are not surfaced
         self.change_mode('STABILIZE')
         self.set_rc(Joystick.Throttle, 1350)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="vehicle to dive")
         self.set_rc(Joystick.Throttle, 1500)
-        self.delay_sim_time(3)
+        self.delay_sim_time(3, reason="vehicle to settle after dive")
         # start the test itself, go through some modes and check if anything changes
         previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.change_mode('ALT_HOLD')
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="ALT_HOLD to take effect")
         self.change_mode('POSHOLD')
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="POSHOLD to take effect")
         self.change_mode('STABILIZE')
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="STABILIZE to take effect")
         self.change_mode(21)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="SURFTRAK to take effect")
         self.change_mode('ALT_HOLD')
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="ALT_HOLD to take effect")
         self.change_mode('STABILIZE')
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="STABILIZE to take effect")
         self.change_mode('ALT_HOLD')
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="ALT_HOLD to take effect")
         self.change_mode(21)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="SURFTRAK to take effect")
         self.change_mode('MANUAL')
         self.disarm_vehicle()
         final_altitude = self.assert_receive_message('VFR_HUD').alt
@@ -537,16 +537,16 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # dive a little
         self.set_rc(Joystick.Throttle, 1300)
-        self.delay_sim_time(3)
+        self.delay_sim_time(3, reason="vehicle to dive")
         self.set_rc(Joystick.Throttle, 1500)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="vehicle to settle")
 
         # Save starting point
         self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         start_pos = self.mav.location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="position hold measurement period")
         distance_m = self.get_distance(start_pos, self.mav.location())
         if distance_m > 1:
             raise NotAchievedException("Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {} meters".format(distance_m))  # noqa
@@ -555,7 +555,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.progress("Testing position hold in current")
         self.set_parameter("SIM_WIND_SPD", 1)
         self.set_parameter("SIM_WIND_T", 1)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="drift measurement in 1m/s current")
         distance_m = self.get_distance(start_pos, self.mav.location())
         if distance_m > 1:
             raise NotAchievedException("Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {} meters".format(distance_m))  # noqa
@@ -564,7 +564,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         start_pos = self.mav.location()
         self.progress("Testing moving forward in position hold in 1m/s current")
         self.set_rc(Joystick.Forward, 1600)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="forward movement")
         distance_m = self.get_distance(start_pos, self.mav.location())
         bearing = self.get_bearing(start_pos, self.mav.location())
         if distance_m < 2 or (bearing > 30 and bearing < 330):
@@ -896,7 +896,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist_to_final_wp_m=5)
-        self.delay_sim_time(3)
+        self.delay_sim_time(3, reason="final waypoint to settle")
 
         # Expect sub to hover at final altitude
         self.assert_altitude(-36.0)
@@ -951,7 +951,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # This should set the EKF origin, write an ORGN msg to df and a GPS_GLOBAL_ORIGIN msg to MAVLink
         self.mav.mav.set_gps_global_origin_send(1, int(47.607584 * 1e7), int(-122.343911 * 1e7), 0)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="EKF origin to be set")
 
         if not self.current_onboard_log_contains_message('ORGN'):
             raise NotAchievedException("Did not find expected ORGN message")
@@ -1012,10 +1012,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_YAW)
         self.arm_vehicle()
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="mag fusion to switch to FUSE_MAG")
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
         self.disarm_vehicle()
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="mag fusion to revert to FUSE_YAW")
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_YAW)
 
         # AFTER_FIRST_CLIMB: switch to FUSE_MAG after sub is armed and descends 0.5m; switch to FUSE_YAW on disarm
@@ -1030,7 +1030,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
         self.disarm_vehicle()
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="mag fusion to revert to FUSE_YAW")
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_YAW)
 
         # ALWAYS
@@ -1096,7 +1096,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         dprev = 0
 
         while True:
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="movement measurement interval")
 
             dcurr = self.get_distance(lstart, self.mav.location())
 
@@ -1121,9 +1121,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # dive a little
         self.set_rc(Joystick.Throttle, 1300)
-        self.delay_sim_time(3)
+        self.delay_sim_time(3, reason="vehicle to dive")
         self.set_rc(Joystick.Throttle, 1500)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="vehicle to settle")
 
         # hold position
         self.change_mode('POSHOLD')
@@ -1136,7 +1136,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             for pwm in range(1700, 1901, 100):
                 self.progress('PILOT_SPEED %d, forward pwm %d' % (pilot_speed, pwm))
                 self.set_rc(Joystick.Forward, pwm)
-                self.delay_sim_time(3)
+                self.delay_sim_time(3, reason="forward movement")
                 self.set_rc(Joystick.Forward, 1500)
                 self.wait_for_stop()
 
@@ -1152,7 +1152,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.context_push()
         self.set_parameter('LOG_DISARMED', 1)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="temperature data to be logged")
         self.context_pop()
 
         dfreader = self.dfreader_for_current_onboard_log()

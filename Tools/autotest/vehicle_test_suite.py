@@ -3577,7 +3577,7 @@ class TestSuite(abc.ABC):
             raise NotAchievedException("Expected GPS to be OK")
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True)
         self.set_parameter("SIM_GPS1_TYPE", 0)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="GPS disable to take effect")
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, False, False, False)
         m = self.poll_message("HIGH_LATENCY2")
         self.progress(self.dump_message_verbose(m))
@@ -3586,7 +3586,7 @@ class TestSuite(abc.ABC):
 
         self.start_subtest("HIGH_LATENCY2 location")
         self.set_parameter("SIM_GPS1_TYPE", 1)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="GPS to re-enable")
         m = self.poll_message("HIGH_LATENCY2")
         self.progress(self.dump_message_verbose(m))
         loc = mavutil.location(m.latitude, m.longitude, m.altitude, 0)
@@ -3675,7 +3675,7 @@ class TestSuite(abc.ABC):
 
                 self.start_subsubtest("Not get HIGH_LATENCY2 upon HL disable")
                 self.run_cmd_enable_high_latency(False, run_cmd=run_cmd)
-                self.delay_sim_time(10)
+                self.delay_sim_time(10, reason="HIGH_LATENCY2 to stop")
                 self.assert_not_receive_message('HIGH_LATENCY2', mav=self.mav, timeout=10)
                 self.drain_mav(mav2)
                 self.assert_not_receive_message('HIGH_LATENCY2', mav=mav2, timeout=10)
@@ -3698,7 +3698,7 @@ class TestSuite(abc.ABC):
 
             self.start_subsubtest("Not get HIGH_LATENCY2 after disabling after playing with rates")
             self.assert_not_receive_message('HIGH_LATENCY2', mav=self.mav, timeout=10)
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="HIGH_LATENCY2 drain period")
             self.drain_mav(mav2)
             self.assert_not_receive_message('HIGH_LATENCY2', mav=mav2, timeout=10)
 
@@ -3840,9 +3840,9 @@ class TestSuite(abc.ABC):
         def add_and_verify_log(test_log_num):
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="log entry on arm")
             self.disarm_vehicle()
-            self.delay_sim_time(10)
+            self.delay_sim_time(10, reason="log file to be created")
             verify_logs(test_log_num + 1)
 
         def create_and_verify_logs(test_log_num, clear_logsdir=True):
@@ -3886,7 +3886,7 @@ class TestSuite(abc.ABC):
         for i in range(0, 10):
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="log data to accumulate")
             self.disarm_vehicle()
         new_log_list = self.log_list()
         new_log_count = len(new_log_list) - len(original_log_list)
@@ -4094,7 +4094,7 @@ class TestSuite(abc.ABC):
         content = self.download_log(number)
         print(f"Content is of length {len(content)}")
         # current_log_filepath = self.current_onboard_log_filepath()
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="logging to restart")
         new_number = self.current_onboard_log_number()
         if number == new_number:
             raise NotAchievedException("Did not start logging again")
@@ -4159,11 +4159,11 @@ class TestSuite(abc.ABC):
     def save_wp(self, ch=7):
         """Trigger RC Aux to save waypoint."""
         self.set_rc(ch, 1000)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="RC channel to go low")
         self.set_rc(ch, 2000)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="RC channel to go high")
         self.set_rc(ch, 1000)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="RC channel to go low")
 
     def correct_wp_seq_numbers(self, wps):
         # renumber the items:
@@ -4288,9 +4288,9 @@ class TestSuite(abc.ABC):
         """Trigger RC Aux to clear waypoint."""
         self.progress("Clearing waypoints")
         self.set_rc(ch, 1000)
-        self.delay_sim_time(0.5)
+        self.delay_sim_time(0.5, reason="RC channel to go low")
         self.set_rc(ch, 2000)
-        self.delay_sim_time(0.5)
+        self.delay_sim_time(0.5, reason="RC channel to go high")
         self.set_rc(ch, 1000)
         self.assert_mission_count(0)
 
@@ -4484,25 +4484,25 @@ class TestSuite(abc.ABC):
         original_list = self.log_list()
         self.progress("original list: %s" % str(original_list))
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled by the logger code
         new_list = self.log_list()
         self.progress("new list: %s" % str(new_list))
         if len(new_list) - len(original_list) != 1:
             raise NotAchievedException("Got more than one new log")
         self.set_parameter("LOG_DISARMED", 0)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to be disabled") # LOG_DISARMED is polled by the logger code
         new_list = self.log_list()
         if len(new_list) - len(original_list) != 1:
             raise NotAchievedException("Got more or less than one new log after toggling LOG_DISARMED off")
 
         self.start_subtest("Ensuring toggling LOG_DISARMED on and off doesn't increase the number of files")
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled by the logger code
         new_new_list = self.log_list()
         if len(new_new_list) != len(new_list):
             raise NotAchievedException("Got extra files when toggling LOG_DISARMED")
         self.set_parameter("LOG_DISARMED", 0)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to be disabled") # LOG_DISARMED is polled by the logger code
         new_new_list = self.log_list()
         if len(new_new_list) != len(new_list):
             raise NotAchievedException("Got extra files when toggling LOG_DISARMED to 0 again")
@@ -4527,7 +4527,7 @@ class TestSuite(abc.ABC):
         if len(post_disarmed_list) != len(post_armed_list):
             raise NotAchievedException("Log rotated immediately")
         self.progress("Allowing time for post-disarm-logging to occur if it will")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="post-disarm logging to occur")
         post_disarmed_post_delay_list = self.log_list()
         if len(post_disarmed_post_delay_list) != len(post_disarmed_list):
             raise NotAchievedException("Got log rotation when we shouldn't have")
@@ -4541,7 +4541,7 @@ class TestSuite(abc.ABC):
         post_disarmed_list = self.log_list()
         if len(post_disarmed_list) != len(post_armed_list):
             raise NotAchievedException("Log rotated immediately")
-        self.delay_sim_time(30)
+        self.delay_sim_time(30, reason="HAL_LOGGER_ARM_PERSIST period")
         delayed_post_disarmed_list = self.log_list()
         # should *still* not get another log as LOG_DISARMED is false
         if len(post_disarmed_list) != len(delayed_post_disarmed_list):
@@ -4558,31 +4558,31 @@ class TestSuite(abc.ABC):
             raise NotAchievedException(
                 "Unexpected log detected (pre-delay) initial=(%s) restart=(%s)" %
                 (str(sorted(start_list)), str(sorted(restart_list))))
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="log rotation check")
         restart_list = self.log_list()
         if len(start_list) != len(restart_list):
             raise NotAchievedException("Unexpected log detected (post-delay)")
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(5) # LOG_DISARMED is polled
+        self.delay_sim_time(5, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled
         post_log_disarmed_set_list = self.log_list()
         if len(post_log_disarmed_set_list) == len(restart_list):
             raise NotAchievedException("Did not get new log when LOG_DISARMED set")
         self.progress("Ensuring we get a new log after a reboot")
         self.reboot_sitl()
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="logging to start after reboot")
         post_reboot_log_list = self.log_list()
         if len(post_reboot_log_list) == len(post_log_disarmed_set_list):
             raise NotAchievedException("Did not get fresh log-disarmed log after a reboot")
         self.progress("Ensuring no log rotation when we toggle LOG_DISARMED off then on again")
         self.set_parameter("LOG_DISARMED", 0)
         current_log_filepath = self.current_onboard_log_filepath()
-        self.delay_sim_time(10) # LOG_DISARMED is polled
+        self.delay_sim_time(10, reason="LOG_DISARMED disable to take effect") # LOG_DISARMED is polled
         post_toggleoff_list = self.log_list()
         if len(post_toggleoff_list) != len(post_reboot_log_list):
             raise NotAchievedException("Shouldn't get new file yet")
         self.progress("Ensuring log does not grow when LOG_DISARMED unset...")
         current_log_filepath_size = os.path.getsize(current_log_filepath)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="log to stop growing")
         current_log_filepath_new_size = os.path.getsize(current_log_filepath)
         if current_log_filepath_new_size != current_log_filepath_size:
             raise NotAchievedException(
@@ -4590,7 +4590,7 @@ class TestSuite(abc.ABC):
                 (current_log_filepath_new_size, current_log_filepath_size))
         self.progress("Turning LOG_DISARMED back on again")
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(5) # LOG_DISARMED is polled
+        self.delay_sim_time(5, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled
         post_toggleon_list = self.log_list()
         if len(post_toggleon_list) != len(post_toggleoff_list):
             raise NotAchievedException("Log rotated when it shouldn't")
@@ -4634,7 +4634,7 @@ class TestSuite(abc.ABC):
         self.arm_vehicle(force=True)
         # we might be relying on a thread to actually create the log
         # file when doing forced-arming; give the file time to appear:
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="log file to appear after forced arm")
         post_arming_list = self.log_list()
         self.disarm_vehicle()
         if len(post_arming_list) <= len(pre_arming_list):
@@ -4689,7 +4689,7 @@ class TestSuite(abc.ABC):
         self.wait_ready_to_arm()
         for i in range(3):
             self.arm_vehicle()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="log data to accumulate")
             path = self.current_onboard_log_filepath()
             self.disarm_vehicle()
             self.LoggingFormatSanityChecks(path)
@@ -4699,7 +4699,7 @@ class TestSuite(abc.ABC):
         for i in range(3):
             self.set_parameter("LOG_DISARMED", 1)
             self.reboot_sitl()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="logging to start after reboot")
             path = self.current_onboard_log_filepath()
             self.set_parameter("LOG_DISARMED", 0)
             self.LoggingFormatSanityChecks(path)
@@ -4764,7 +4764,7 @@ class TestSuite(abc.ABC):
         # ensure the latest log file is very small:
         self.context_push()
         self.set_parameter('LOG_DISARMED', 1)
-        self.delay_sim_time(15)
+        self.delay_sim_time(15, reason="LOG_DISARMED to take effect")
         self.progress(f"Current onboard log filepath {self.current_onboard_log_filepath()}")
         self.context_pop()
 
@@ -5196,7 +5196,7 @@ class TestSuite(abc.ABC):
         mavproxy = self.start_mavproxy()
         mavproxy.send('rally load %s\n' % path)
         mavproxy.expect("Loaded")
-        self.delay_sim_time(10)  # allow transfer to complete
+        self.delay_sim_time(10, reason="rally point transfer to complete")  # allow transfer to complete
         self.stop_mavproxy(mavproxy)
 
     def load_sample_mission(self):
@@ -5575,7 +5575,7 @@ class TestSuite(abc.ABC):
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="LOG_DISARMED logging period")
         self.set_parameter("LOG_DISARMED", 0)
         path = self.current_onboard_log_filepath()
         self.progress("Rate sample log (%s)" % path)
@@ -5901,7 +5901,7 @@ class TestSuite(abc.ABC):
             )
         except ValueError as e:
             # statustexts are queued; give it a second to arrive:
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="statustext to arrive")
             raise e
         try:
             self.wait_armed()
@@ -8108,7 +8108,7 @@ class TestSuite(abc.ABC):
                           (parameter, v))
             if v == value:
                 return
-            self.delay_sim_time(0.1)
+            self.delay_sim_time(0.1, reason="parameter poll interval")
 
     def wait_parameter_values(self, parameters, timeout=10):
         need_to_see = copy.copy(parameters)
@@ -10573,7 +10573,7 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.send("dataflash_logger set verbose 1\n")
             mavproxy.expect('logging started')
             mavproxy.send("dataflash_logger set verbose 0\n")
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="logging to initialise")
             self.do_timesync_roundtrip()  # drain COMMAND_ACK from that failed arm
             self.arm_vehicle()
             tstart = self.get_sim_time()
@@ -10645,15 +10645,15 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter() or self.is_plane():
                 self.set_autodisarm_delay(0)
             self.arm_vehicle()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="log data to accumulate")
             self.disarm_vehicle()
             # First log created here
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, reason="log to be created")
             self.arm_vehicle()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="log data to accumulate")
             self.disarm_vehicle()
             # Second log created here
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, reason="log to be created")
             mavproxy.send("log list\n")
             mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
             log_num = int(mavproxy.match.group(1))
@@ -10736,7 +10736,7 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.send("log erase\n")
             mavproxy.expect("Chip erase complete")
             self.set_parameter("LOG_DISARMED", 1)
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="LOG_DISARMED to take effect")
             self.set_parameter("LOG_DISARMED", 0)
             mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
@@ -10751,18 +10751,18 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter() or self.is_plane():
                 self.set_autodisarm_delay(0)
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(30, reason="log data for wrap test")
             self.disarm_vehicle()
             # roughly 4mb
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(30, reason="log data for wrap test")
             self.disarm_vehicle()
             # roughly 9mb, should wrap around
             self.arm_vehicle()
-            self.delay_sim_time(50)
+            self.delay_sim_time(50, reason="log data for wrap test")
             self.disarm_vehicle()
             # make sure we have finished logging
-            self.delay_sim_time(15)
+            self.delay_sim_time(15, reason="logging to finish")
             mavproxy.send("log list\n")
             try:
                 mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
@@ -10808,7 +10808,7 @@ Also, ignores heartbeats not from our target system'''
     def ArmFeatures(self):
         '''Arm features'''
         # TEST ARMING/DISARM
-        self.delay_sim_time(12)  # wait for gyros/accels to be happy
+        self.delay_sim_time(12, reason="gyros and accels to stabilise")  # wait for gyros/accels to be happy
         if self.get_parameter("ARMING_SKIPCHK") != 0 and not self.is_sub():
             raise ValueError("Arming skipped checks should be 0")
         if not self.is_sub() and not self.is_tracker():
@@ -10865,7 +10865,7 @@ Also, ignores heartbeats not from our target system'''
             self.set_parameter("RC%d_OPTION" % arming_switch, 153)
             self.set_rc(arming_switch, 1000)
             # delay so a transition is seen by the RC switch code:
-            self.delay_sim_time(0.5)
+            self.delay_sim_time(0.5, reason="RC switch transition to register")
             self.arm_motors_with_switch(arming_switch)
             self.disarm_motors_with_switch(arming_switch)
             self.set_rc(arming_switch, 1000)
@@ -11261,7 +11261,7 @@ Also, ignores heartbeats not from our target system'''
         # 148 is AUTOPILOT_VERSION:
         self.context_collect('AUTOPILOT_VERSION')
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 148)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="AUTOPILOT_VERSION response")
         count = len(self.context_collection('AUTOPILOT_VERSION'))
         if count != 1:
             raise NotAchievedException(f"Did not get single AUTOPILOT_VERSION message (count={count}")
@@ -12667,7 +12667,7 @@ switch value'''
                                                    (str(count), str(expected_count), len(seen_ids.keys())))
                 elif attempt_count != 0:
                     self.progress("Download failed; retrying")
-                    self.delay_sim_time(1)
+                    self.delay_sim_time(1, reason="parameter retry interval")
                     debug = True
                 self.drain_mav()
                 self.mav.mav.param_request_list_send(target_system, target_component)
@@ -12959,7 +12959,7 @@ switch value'''
             "SIM_BARO_DISABLE": 1,
             "SIM_BAR2_DISABLE": 1,
         })
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="baro disable to take effect")
         self.start_subtest("Ensuring breaking GPS does now terminate")
         self.set_parameters({
             "SIM_GPS1_ENABLE": 0,
@@ -12970,7 +12970,7 @@ switch value'''
         tstart = self.get_sim_time_cached()
         while self.get_sim_time_cached() - tstart < seconds:
             self.drain_mav()
-            self.delay_sim_time(0.5)
+            self.delay_sim_time(0.5, reason="drain interval")
 
     def wait_gps_fix_type_gte(self, fix_type, timeout=30, message_type="GPS_RAW_INT", verbose=False):
         tstart = self.get_sim_time()
@@ -13220,7 +13220,7 @@ switch value'''
                     "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
                 })
                 self.reboot_sitl()
-                self.delay_sim_time(5)
+                self.delay_sim_time(5, reason="AHRS to initialise")
                 self.progress("Running accelcal")
                 self.run_cmd(
                     mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
@@ -13265,7 +13265,7 @@ switch value'''
         '''AHRS trim testing'''
         self.start_subtest("Attitude Correctness")
         self.ahrstrim_attitude_correctness()
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="attitude trim test interval")
         self.start_subtest("Preflight Calibration")
         self.ahrstrim_preflight_cal()
 
@@ -13330,7 +13330,7 @@ switch value'''
             self.disarm_vehicle()
             # de-assert the pin:
             self.set_parameter("SIM_PIN_MASK", 0)
-            self.delay_sim_time(1)  # 5Hz update rate on Button library
+            self.delay_sim_time(1, reason="button library update")  # 5Hz update rate on Button library
             self.context_collect("STATUSTEXT")
             # try to arm the vehicle:
             self.run_cmd(
@@ -14441,13 +14441,13 @@ switch value'''
 
             self.progress("Writing vtx_frame")
             crsf.write_data_id(crsf.dataid_vtx_frame)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="VTX frame to be processed")
             self.progress("Writing vtx_telem")
             crsf.write_data_id(crsf.dataid_vtx_telem)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="VTX telem to be processed")
             self.progress("Writing vtx_unknown")
             crsf.write_data_id(crsf.dataid_vtx_unknown)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="VTX data to be processed")
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
@@ -14501,7 +14501,7 @@ switch value'''
         self.wait_ready_to_arm()
         original_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         self.set_parameter("AHRS_ORIENTATION", 16)  # roll-90
-        self.delay_sim_time(2)  # we update this on a timer
+        self.delay_sim_time(2, reason="AHRS_ORIENTATION to update")  # we update this on a timer
         new_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         delta_zacc = original_imu.zacc - new_imu.zacc
         delta_z_g = delta_zacc/1000.0  # milligravities -> gravities
@@ -14513,7 +14513,7 @@ switch value'''
             raise NotAchievedException("Magic AHRS_ORIENTATION update did not work (delta_y_g=%f)" % (delta_y_g,))
         self.context_pop()
         self.reboot_sitl()
-        self.delay_sim_time(2)  # we update orientation on a timer
+        self.delay_sim_time(2, reason="orientation update timer")  # we update orientation on a timer
 
     def GPSTypes(self):
         '''check each simulated GPS works'''
@@ -14688,7 +14688,7 @@ switch value'''
             raise NotAchievedException("alt moved unexpectedly")
         self.progress("Killing first GPS")
         self.set_parameter("SIM_GPS1_ENABLE", 0)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="GPS failover to take effect")
         self.progress("Checking altitude now matches second GPS")
         m = self.assert_receive_message("GLOBAL_POSITION_INT")
         new_gpi_alt2 = m.alt
@@ -15098,7 +15098,7 @@ SERIAL5_BAUD 128
         # wait_disarmed is not sufficient here; it's actually the
         # *motors* being armed which causes the problem, not the
         # vehicle's arm state!  Could we use SYS_STATUS here instead?
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="motors to fully disarm")
         self.end_subtest("Testing PWM output")
 
         self.start_subtest("Testing percentage output")
@@ -15129,7 +15129,7 @@ SERIAL5_BAUD 128
         # wait_disarmed is not sufficient here; it's actually the
         # *motors* being armed which causes the problem, not the
         # vehicle's arm state!  Could we use SYS_STATUS here instead?
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="motors to fully disarm")
         self.end_subtest("Testing percentage output")
 
     def FenceRelative_fly_north_then_descend(self, north_m, timeout=120):
