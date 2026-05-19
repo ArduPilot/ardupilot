@@ -957,7 +957,7 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
     if (msg.msgid == MAVLINK_MSG_ID_MISSION_ITEM) {
         mavlink_mission_item_t mission_item;
         mavlink_msg_mission_item_decode(&msg, &mission_item);
-#if AP_MISSION_ENABLED
+#if AP_MISSION_ITEM_ENABLED
         MAV_MISSION_RESULT ret = AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(mission_item, mission_item_int);
         if (ret != MAV_MISSION_ACCEPTED) {
             const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item_int.mission_type;
@@ -965,14 +965,12 @@ void GCS_MAVLINK::handle_mission_item(const mavlink_message_t &msg)
             return;
         }
 #else
-        // No mission library, so we can't convert from MISSION_ITEM
-        // to MISSION_ITEM_INT.  Since we shouldn't be receiving fence
-        // or rally items via MISSION_ITEM, we don't need to work hard
-        // here, just fail:
+        // No MISSION_ITEM support, so we can't convert from MISSION_ITEM
+        // to MISSION_ITEM_INT.
         const MAV_MISSION_TYPE type = (MAV_MISSION_TYPE)mission_item.mission_type;
         send_mission_ack(msg, type, MAV_MISSION_UNSUPPORTED);
         return;
-#endif
+#endif  // AP_MISSION_ITEM_ENABLED
         send_mission_item_warning = true;
     } else {
         mavlink_msg_mission_item_int_decode(&msg, &mission_item_int);
@@ -4718,11 +4716,19 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         handle_mission_request_int(msg);
         break;
 
-#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
     case MAVLINK_MSG_ID_MISSION_REQUEST:
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
         handle_mission_request(msg);
-        break;
+#else
+        // this is temporary code which is slated to be removed in
+        // ArduPilot-4.10:
+        static bool mission_request_warning_sent;
+        if (!mission_request_warning_sent) {
+            mission_request_warning_sent = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
+        }
 #endif
+        break;
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41

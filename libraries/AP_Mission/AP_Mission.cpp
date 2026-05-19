@@ -1524,6 +1524,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     return MAV_MISSION_ACCEPTED;
 }
 
+#if AP_MISSION_ITEM_ENABLED
 MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_to_MISSION_ITEM_INT(const mavlink_mission_item_t &packet,
         mavlink_mission_item_int_t &mav_cmd)
 {
@@ -1606,6 +1607,7 @@ MAV_MISSION_RESULT AP_Mission::convert_MISSION_ITEM_INT_to_MISSION_ITEM(const ma
 
     return MAV_MISSION_ACCEPTED;
 }
+#endif  // AP_MISSION_ITEM_ENABLED
 
 // mission_cmd_to_mavlink_int - converts an AP_Mission::Mission_Command object to a mavlink message which can be sent to the GCS
 //  return true on success, false on failure
