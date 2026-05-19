@@ -691,14 +691,13 @@ void NavEKF3_core::SelectVelPosFusion()
             }
         } else {
             fusePosData = true;
-            // When stationary on ground or armed before takeoff, fuse zero velocity
+            // When stationary on ground, fuse zero velocity
             // to constrain gyro bias and Z-axis accel bias learning. XY accel biases
             // remain unobservable until the vehicle accelerates and are separately
             // inhibited by dvelBiasAxisInhibit in CovariancePrediction.
             // Use onGroundNotMoving to avoid fusing zero velocity when the vehicle
             // is being moved (e.g. on a boat or carried by hand).
-            // takeoff_expected covers the armed-on-ground case before liftoff.
-            const bool onGroundNotFlying = onGroundNotMoving || dal.get_takeoff_expected();
+            const bool onGroundNotFlying = onGroundNotMoving;
             if (onGroundNotFlying && tiltAlignComplete) {
                 fuseVelData = true;
                 fusingStationaryZeroVel = true;
@@ -724,7 +723,7 @@ void NavEKF3_core::SelectVelPosFusion()
     // when the vehicle is being moved, and takeoff_expected for armed-on-ground.
     // Gate behind fuseHgtData to limit fusion rate to baro rate (~10Hz) and avoid
     // overconstraining the filter by fusing at IMU rate.
-    const bool onGroundNotFlying = onGroundNotMoving || dal.get_takeoff_expected();
+    const bool onGroundNotFlying = onGroundNotMoving;
 
     if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying) {
         // Check if we have recent velocity aiding from any source
