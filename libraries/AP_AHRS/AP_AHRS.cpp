@@ -562,6 +562,19 @@ void AP_AHRS::update(bool skip_ins_update)
 #endif
     }
 
+    update_active_EKF_type();
+
+#if HAL_GCS_ENABLED
+    if (state.active_EKF_type != last_active_ekf_type) {
+        last_active_ekf_type = state.active_EKF_type;
+        const char *shortname = active_backend->shortname();
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
+    }
+#endif // HAL_GCS_ENABLED
+
+    // update published state
+    update_state();
+
     copy_estimates_from_backend_estimates(*active_estimates);
 
 #if AP_MODULE_SUPPORTED
@@ -582,19 +595,6 @@ void AP_AHRS::update(bool skip_ins_update)
 
     // update AOA and SSA
     update_AOA_SSA();
-
-    update_active_EKF_type();
-
-#if HAL_GCS_ENABLED
-    if (state.active_EKF_type != last_active_ekf_type) {
-        last_active_ekf_type = state.active_EKF_type;
-        const char *shortname = active_backend->shortname();
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
-    }
-#endif // HAL_GCS_ENABLED
-
-    // update published state
-    update_state();
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     /*
