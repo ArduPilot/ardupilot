@@ -1123,7 +1123,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.progress("start moving forward a little")
         normal_rc_throttle = 1700
+        normal_rc_yaw = 1200
         self.set_rc(3, normal_rc_throttle)
+        self.set_rc(4, normal_rc_yaw)
         self.wait_groundspeed(5, 100)
 
         self.progress("allow overrides")
@@ -1131,53 +1133,56 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("now override to stop")
         throttle_override_normalized = 0
+        yaw_override_normalized = 0
         expected_throttle = 0 # in VFR_HUD
+        want_yawspeed = 0.0015 # in ATTITUDE
+        want_speed = 5.0
 
         tstart = self.get_sim_time_cached()
         while True:
             if self.get_sim_time_cached() - tstart > 10:
-                raise AutoTestTimeoutException("Did not reach speed")
+                raise AutoTestTimeoutException("Did not reach speed or yaw")
             self.progress("Sending normalized throttle of %d" % (throttle_override_normalized,))
             self.mav.mav.manual_control_send(
                 1, # target system
                 32767, # x (pitch)
                 32767, # y (roll)
                 throttle_override_normalized, # z (thrust)
-                32767, # r (yaw)
+                yaw_override_normalized, # r (yaw)
                 0) # button mask
 
             m = self.assert_receive_message('VFR_HUD')
-            want_speed = 2.0
-            self.progress("Speed=%f want=<%f  throttle=%u want=%u" %
-                          (m.groundspeed, want_speed, m.throttle, expected_throttle))
-            if m.groundspeed < want_speed and m.throttle == expected_throttle:
+            n = self.assert_receive_message('ATTITUDE')
+            self.progress("Speed=%f want=<%f  throttle=%u want=%u yawspeed=%f want_yawspeed=>%f" %
+                          (m.groundspeed, want_speed, m.throttle, expected_throttle, n.yawspeed, want_yawspeed))
+            if m.groundspeed < want_speed and m.throttle == expected_throttle and n.yawspeed > want_yawspeed:
                 break
 
         self.progress("now override to stop - but set the switch on the RC transmitter to deny overrides; this should send the speed back up to 5 metres/second")  # noqa
         self.set_rc(12, 1000)
 
         throttle_override_normalized = 500
+        yaw_override_normalized = 500
         expected_throttle = 36 # in VFR_HUD, corresponding to normal_rc_throttle adjusted for channel min/max
 
         tstart = self.get_sim_time_cached()
         while True:
             if self.get_sim_time_cached() - tstart > 10:
-                raise AutoTestTimeoutException("Did not stop")
+                raise AutoTestTimeoutException("Override did not stop")
             self.progress("Sending normalized throttle of %u" % (throttle_override_normalized,))
             self.mav.mav.manual_control_send(
                 1, # target system
                 32767, # x (pitch)
                 32767, # y (roll)
                 throttle_override_normalized, # z (thrust)
-                32767, # r (yaw)
+                yaw_override_normalized, # r (yaw)
                 0) # button mask
 
             m = self.assert_receive_message('VFR_HUD')
-            want_speed = 5.0
-
-            self.progress("Speed=%f want=>%f  throttle=%u want=%u" %
-                          (m.groundspeed, want_speed, m.throttle, expected_throttle))
-            if m.groundspeed > want_speed and m.throttle == expected_throttle:
+            n = self.assert_receive_message('ATTITUDE')
+            self.progress("Speed=%f want=>%f  throttle=%u want=%u yawspeed=%f want_yawspeed<=%f" %
+                          (m.groundspeed, want_speed, m.throttle, expected_throttle, n.yawspeed, want_yawspeed))
+            if m.groundspeed > want_speed and m.throttle == expected_throttle and n.yawspeed >= want_yawspeed:
                 break
 
         # re-enable RC overrides
