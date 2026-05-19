@@ -44,7 +44,7 @@ bool AP_RangeFinder_MZBH301_CAN::handle_frame(AP_HAL::CANFrame &frame)
     dist_cm=MIN(target1_dist_cm,target2_dist_cm);
     dist_cm=MIN(dist_cm,target3_dist_cm);
 
-    accumulate_distance_m(dist_cm * 0.001);
+    accumulate_distance_m(dist_cm * 0.01);
 
     return true;
 }
