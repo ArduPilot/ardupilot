@@ -2,9 +2,11 @@
 
 #
 # An example script that receives images from a WebotsArduVehicle on port 5599 
-# and displays them overlayed with any ArUco markers using OpenCV.
+# and displays them overlaid with any ArUco markers using OpenCV.
 # Requires opencv-python (`pip3 install opencv-python`)
 #
+
+# flake8: noqa
 
 import cv2
 import socket

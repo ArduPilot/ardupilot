@@ -54,7 +54,7 @@ private:
         };
         uint8_t value;
     } state, last_state;
-    bool overheat:1;
+    bool overheat;
     bool throttle_reversed;
 };
 }

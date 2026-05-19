@@ -42,7 +42,7 @@ int AP_Filesystem_ESP32::close(int fd)
     return ::close(fd);
 }
 
-ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
+int32_t AP_Filesystem_ESP32::read(int fd, void *buf, uint32_t count)
 {
 #if FSDEBUG
     printf("DO read \n");
@@ -50,7 +50,7 @@ ssize_t AP_Filesystem_ESP32::read(int fd, void *buf, size_t count)
     return ::read(fd, buf, count);
 }
 
-ssize_t AP_Filesystem_ESP32::write(int fd, const void *buf, size_t count)
+int32_t AP_Filesystem_ESP32::write(int fd, const void *buf, uint32_t count)
 {
 #if FSDEBUG
     printf("DO write \n");
@@ -133,6 +133,22 @@ int AP_Filesystem_ESP32::closedir(void *dirp)
 
     return ::closedir((DIR*)dirp);
     //	return 0;
+}
+
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// assume that ESP32 is similar to FAT and 4K boundaries are good.
+uint32_t AP_Filesystem_ESP32::bytes_until_fsync(int fd)
+{
+    int32_t pos = ::lseek(fd, 0, SEEK_CUR);
+    if (pos < 0) {
+        return 0;
+    }
+
+    const uint32_t block_size = 4096;
+
+    uint32_t block_pos = (uint32_t)pos % block_size;
+    return block_size - block_pos;
 }
 
 // return free disk space in bytes

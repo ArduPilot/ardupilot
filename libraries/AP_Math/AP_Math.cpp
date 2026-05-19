@@ -25,7 +25,7 @@ template <typename Arithmetic1, typename Arithmetic2>
 typename std::enable_if<std::is_floating_point<typename std::common_type<Arithmetic1, Arithmetic2>::type>::value, bool>::type
 is_equal(const Arithmetic1 v_1, const Arithmetic2 v_2)
 {
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
     typedef typename std::common_type<Arithmetic1, Arithmetic2>::type common_type;
     typedef typename std::remove_cv<common_type>::type common_type_nonconst;
     if (std::is_same<double, common_type_nonconst>::value) {
@@ -67,14 +67,17 @@ template float safe_asin<short>(const short v);
 template float safe_asin<float>(const float v);
 template float safe_asin<double>(const double v);
 
+// sqrt which takes any type and returns 0 if the input is NaN or less than zero
 template <typename T>
 float safe_sqrt(const T v)
 {
-    float ret = sqrtf(static_cast<float>(v));
-    if (isnan(ret)) {
-        return 0;
+    // cast before checking so we sqrtf the same value we check
+    const float val = static_cast<float>(v);
+    // use IEEE-754 compliant function which returns false if val is NaN
+    if (isgreaterequal(val, 0)) {
+        return sqrtf(val);
     }
-    return ret;
+    return 0;
 }
 
 template float safe_sqrt<int>(const int v);
@@ -95,23 +98,23 @@ static void swap_float(float &f1, float &f2)
 /*
  * linear interpolation based on a variable in a range
  */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high)
+float linear_interpolate(float output_low, float output_high,
+                         float input_value,
+                         float input_low, float input_high)
 {
-    if (var_low > var_high) {
+    if (input_low > input_high) {
         // support either polarity
-        swap_float(var_low, var_high);
-        swap_float(low_output, high_output);
+        swap_float(input_low, input_high);
+        swap_float(output_low, output_high);
     }
-    if (var_value <= var_low) {
-        return low_output;
+    if (input_value <= input_low) {
+        return output_low;
     }
-    if (var_value >= var_high) {
-        return high_output;
+    if (input_value >= input_high) {
+        return output_high;
     }
-    float p = (var_value - var_low) / (var_high - var_low);
-    return low_output + p * (high_output - low_output);
+    float p = (input_value - input_low) / (input_high - input_low);
+    return output_low + p * (output_high - output_low);
 }
 
 /* cubic "expo" curve generator
@@ -166,7 +169,7 @@ T wrap_180_cd(const T angle)
 template int wrap_180<int>(const int angle);
 template short wrap_180<short>(const short angle);
 template float wrap_180<float>(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 template double wrap_180<double>(const double angle);
 #endif
 
@@ -174,7 +177,7 @@ template int wrap_180_cd<int>(const int angle);
 template long wrap_180_cd<long>(const long angle);
 template short wrap_180_cd<short>(const short angle);
 template float wrap_180_cd<float>(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 template double wrap_180_cd<double>(const double angle);
 #endif
 
@@ -187,7 +190,7 @@ float wrap_360(const float angle)
     return res;
 }
 
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360(const double angle)
 {
     double res = fmod(angle, 360.0);
@@ -216,7 +219,7 @@ float wrap_360_cd(const float angle)
     return res;
 }
 
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360_cd(const double angle)
 {
     double res = fmod(angle, 36000.0);
@@ -245,23 +248,36 @@ long wrap_360_cd(const long angle)
     return res;
 }
 
-ftype wrap_PI(const ftype radian)
+float wrap_2PI(const float radian)
 {
-    ftype res = wrap_2PI(radian);
-    if (res > M_PI) {
-        res -= M_2PI;
+    float res = fmodf(radian, float(M_2PI));
+    if (res < 0) {
+        res += float(M_2PI);
     }
     return res;
 }
 
-ftype wrap_2PI(const ftype radian)
+double wrap_2PI(const double radian)
 {
-    ftype res = fmodF(radian, M_2PI);
+    double res = fmod(radian, M_2PI);
     if (res < 0) {
         res += M_2PI;
     }
     return res;
 }
+
+template <typename T>
+T wrap_PI(const T radian)
+{
+    T res = wrap_2PI(radian);
+    if (res > T(M_PI)) {
+        res -= T(M_2PI);
+    }
+    return res;
+}
+
+template float wrap_PI<float>(const float radian);
+template double wrap_PI<double>(const double radian);
 
 template <typename T>
 T constrain_value_line(const T amt, const T low, const T high, uint32_t line)
@@ -325,6 +341,8 @@ template unsigned short constrain_value<unsigned short>(const unsigned short amt
 template float constrain_value<float>(const float amt, const float low, const float high);
 template double constrain_value<double>(const double amt, const double low, const double high);
 
+template int8_t constrain_value<int8_t>(const int8_t amt, const int8_t low, const int8_t high);
+template uint8_t constrain_value<uint8_t>(const uint8_t amt, const uint8_t low, const uint8_t high);
 
 /*
   simple 16 bit random number generator
@@ -562,4 +580,16 @@ double uint64_to_double_le(const uint64_t& value)
     // At least it's defined behavior in both c and c++.
     memcpy(&out, &value, sizeof(out));
     return out;
+}
+
+/*
+  get a twos-complement value from the first 'length' bits of a uint32_t
+  With thanks to betaflight
+ */
+int32_t get_twos_complement(uint32_t raw, uint8_t length)
+{
+    if (raw & ((int)1 << (length - 1))) {
+        return ((int32_t)raw) - ((int32_t)1 << length);
+    }
+    return raw;
 }

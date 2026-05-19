@@ -7,8 +7,8 @@ USB_PRODUCT 0x0002
 USB_STRING_MANUFACTURER "ThePeach"
 USB_STRING_PRODUCT "FCC-R1 BL"
 
-# board ID for firmware load
-APJ_BOARD_ID 213
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_THE_PEACH_R1
 
 # crystal frequency
 OSCILLATOR_HZ 24000000

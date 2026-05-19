@@ -18,7 +18,9 @@
   advanced failsafe support for copter
  */
 
-#if ADVANCED_FAILSAFE == ENABLED
+#include "config.h"
+
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
 
 /*
@@ -44,5 +46,5 @@ protected:
     void set_mode_auto(void) override;
 };
 
-#endif // ADVANCED_FAILSAFE
+#endif // AP_COPTER_ADVANCED_FAILSAFE_ENABLED
 

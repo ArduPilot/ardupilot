@@ -6,11 +6,12 @@ undef HAL_WITH_IO_MCU_BIDIR_DSHOT
 undef COMPASS
 undef BARO
 undef DEFAULT_SERIAL7_PROTOCOL
+undef IOMCU_UART
 
 define AP_ADVANCEDFAILSAFE_ENABLED 0
 
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_CUBERED_PERIPH
 
 # setup build for a peripheral firmware
@@ -18,12 +19,8 @@ env AP_PERIPH 1
 
 define AP_CAN_SLCAN_ENABLED 0
 
-define HAL_PERIPH_ENABLE_NETWORKING
-define HAL_PERIPH_ENABLE_SERIAL_OPTIONS
-
-define AP_NETWORKING_BACKEND_PPP 1
-
-define HAL_USE_RTC FALSE
+define AP_PERIPH_NETWORKING_ENABLED 1
+define AP_PERIPH_SERIAL_OPTIONS_ENABLED 1
 
 # use amber LED
 define HAL_GPIO_PIN_LED HAL_GPIO_PIN_FMU_LED_AMBER

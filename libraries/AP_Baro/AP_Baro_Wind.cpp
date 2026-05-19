@@ -80,7 +80,7 @@ float AP_Baro::wind_pressure_correction(uint8_t instance)
 
     // correct for static pressure position errors
     Vector3f airspeed_vec_bf;
-    if (!ahrs.airspeed_vector_true(airspeed_vec_bf)) {
+    if (!ahrs.airspeed_vector_TAS(airspeed_vec_bf)) {
         return 0;
     }
 

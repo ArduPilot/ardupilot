@@ -2,7 +2,7 @@
 
 This driver implements support for the ANX CAN battery protocol
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 

@@ -1,20 +1,20 @@
 # iFlight BLITZ F745 Flight Controller
 
-https://shop.iflight.com/electronics-cat27/BLITZ-F745-Flight-Controller-Pro2141
+[iFlight store](https://shop.iflight.com/electronics-cat27/BLITZ-F745-Flight-Controller-Pro2141)
 
 The BLITZ F745 is a flight controller produced by [iFlight](https://shop.iflight-rc.com/).
 
 ## Features
 
- - MCU: BGA-STM32F745, 216MHz
- - Gyro: ICM42688
- - 32Mbytes Onboard Flash
- - BEC output: 5V 2.5A
- - Barometer: DPS310
- - OSD: AT7456E
- - 6 UARTS: (UART1, UART2, UART3, UART4, UART5, UART6)
- - I2C for external compass.
- - 9 PWM outputs (8 motor outputs and 1 LED output)
+- MCU: BGA-STM32F745, 216MHz
+- Gyro: ICM42688
+- 32Mbytes Onboard Flash
+- BEC output: 5V 2.5A
+- Barometer: DPS310
+- OSD: AT7456E
+- 6 UARTS: (UART1, UART2, UART3, UART4, UART5, UART6)
+- I2C for external compass.
+- 9 PWM outputs (8 motor outputs and 1 LED output)
 
 ## Pinout
 
@@ -50,9 +50,9 @@ The BLITZ F745 has 9 PWM outputs. The pads for motor output are M1 to M8 on the 
 
 The PWM are in three groups:
 
- - PWM 1-4 in group1
- - PWM 5-8 in group2
- - PWM 9 in group3
+- PWM 1-4 in group1
+- PWM 5-8 in group2
+- PWM 9 in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -65,11 +65,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT 11
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT 50
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT 11
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

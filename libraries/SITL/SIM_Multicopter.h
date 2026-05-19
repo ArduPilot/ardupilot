@@ -31,6 +31,10 @@ class MultiCopter : public Aircraft {
 public:
     MultiCopter(const char *frame_str);
 
+    ~MultiCopter() {
+        delete frame;
+    }
+
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 

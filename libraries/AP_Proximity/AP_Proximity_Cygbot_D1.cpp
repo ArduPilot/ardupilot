@@ -144,7 +144,7 @@ void AP_Proximity_Cygbot_D1::parse_payload()
         const float corrected_angle = correct_angle_for_orientation(sampled_angle);
         const uint16_t distance_mm = UINT16_VALUE(_msg.payload[i], _msg.payload[i+1]);
         float distance_m = distance_mm * 0.001f;
-        if (distance_m > distance_min() && distance_m < distance_max()) {
+        if (distance_m > distance_min_m() && distance_m < distance_max_m()) {
             if (ignore_reading(corrected_angle, distance_m)) {
                 // ignore this angle
                 sampled_angle += CYGBOT_2D_ANGLE_STEP;

@@ -30,8 +30,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define LOG_TAG "SLCAN"
-
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo SLCAN::CANIface::var_info[] = {
@@ -69,8 +67,6 @@ const AP_Param::GroupInfo SLCAN::CANIface::var_info[] = {
 
 ////////Helper Methods//////////
 
-static bool hex2nibble_error;
-
 static uint8_t nibble2hex(uint8_t x)
 {
     // Allocating in RAM because it's faster
@@ -78,33 +74,6 @@ static uint8_t nibble2hex(uint8_t x)
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
     };
     return ConversionTable[x & 0x0F];
-}
-
-static uint8_t hex2nibble(char c)
-{
-    // Must go into RAM, not flash, because flash is slow
-    static uint8_t NumConversionTable[] = {
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-    };
-
-    static uint8_t AlphaConversionTable[] = {
-        10, 11, 12, 13, 14, 15
-    };
-
-    uint8_t out = 255;
-
-    if (c >= '0' && c <= '9') {
-        out = NumConversionTable[int(c) - int('0')];
-    } else if (c >= 'a' && c <= 'f') {
-        out = AlphaConversionTable[int(c) - int('a')];
-    } else if (c >= 'A' && c <= 'F') {
-        out = AlphaConversionTable[int(c) - int('A')];
-    }
-
-    if (out == 255) {
-        hex2nibble_error = true;
-    }
-    return out;
 }
 
 bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
@@ -124,30 +93,21 @@ bool SLCAN::CANIface::push_Frame(AP_HAL::CANFrame &frame)
 bool SLCAN::CANIface::handle_FrameDataExt(const char* cmd, bool canfd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
     f.canfd = canfd;
-    f.id = f.FlagEFF |
-           (hex2nibble(cmd[1]) << 28) |
-           (hex2nibble(cmd[2]) << 24) |
-           (hex2nibble(cmd[3]) << 20) |
-           (hex2nibble(cmd[4]) << 16) |
-           (hex2nibble(cmd[5]) << 12) |
-           (hex2nibble(cmd[6]) <<  8) |
-           (hex2nibble(cmd[7]) <<  4) |
-           (hex2nibble(cmd[8]) <<  0);
-    f.dlc = hex2nibble(cmd[9]);
-    if (hex2nibble_error || f.dlc > (canfd?15:8)) {
+    uint32_t id;
+    if (!hex_chars_to_uint32(&cmd[1], 8, id)) {
         return false;
     }
-    {
-        const char* p = &cmd[10];
-        const uint8_t dlen = AP_HAL::CANFrame::dlcToDataLength(f.dlc);
-        for (unsigned i = 0; i < dlen; i++) {
-            f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
-            p += 2;
-        }
+    f.id = f.FlagEFF | id;
+    if (!hex_char_to_nibble(cmd[9], f.dlc)) {
+        return false;
     }
-    if (hex2nibble_error) {
+    if (f.dlc > (canfd?15:8)) {
+        // invalid dlc in frame
+        return false;
+    }
+    const uint8_t dlen = AP_HAL::CANFrame::dlcToDataLength(f.dlc);
+    if (!hex_charpairs_to_uint8s(&cmd[10], dlen, f.data)) {
         return false;
     }
     return push_Frame(f);
@@ -164,29 +124,16 @@ bool SLCAN::CANIface::handle_FDFrameDataExt(const char* cmd)
     return false;
 #else
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
     f.canfd = true;
-    f.id = f.FlagEFF |
-           (hex2nibble(cmd[1]) << 28) |
-           (hex2nibble(cmd[2]) << 24) |
-           (hex2nibble(cmd[3]) << 20) |
-           (hex2nibble(cmd[4]) << 16) |
-           (hex2nibble(cmd[5]) << 12) |
-           (hex2nibble(cmd[6]) <<  8) |
-           (hex2nibble(cmd[7]) <<  4) |
-           (hex2nibble(cmd[8]) <<  0);
-    f.dlc = hex2nibble(cmd[9]);
-    if (f.dlc > AP_HAL::CANFrame::dataLengthToDlc(AP_HAL::CANFrame::MaxDataLen)) {
+    uint32_t id;
+    if (!hex_chars_to_uint32(&cmd[1], 8, id)) {
         return false;
     }
-    {
-        const char* p = &cmd[10];
-        for (unsigned i = 0; i < AP_HAL::CANFrame::dlcToDataLength(f.dlc); i++) {
-            f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
-            p += 2;
-        }
+    f.id = f.FlagEFF | id;
+    if (!hex_char_to_nibble(cmd[9], f.dlc) || f.dlc > AP_HAL::CANFrame::dataLengthToDlc(AP_HAL::CANFrame::MaxDataLen)) {
+        return false;
     }
-    if (hex2nibble_error) {
+    if (!hex_charpairs_to_uint8s(&cmd[10], AP_HAL::CANFrame::dlcToDataLength(f.dlc), f.data)) {
         return false;
     }
     return push_Frame(f);
@@ -196,10 +143,9 @@ bool SLCAN::CANIface::handle_FDFrameDataExt(const char* cmd)
 bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
-    f.id = (hex2nibble(cmd[1]) << 8) |
-           (hex2nibble(cmd[2]) << 4) |
-           (hex2nibble(cmd[3]) << 0);
+    if (!hex_chars_to_uint32(&cmd[1], 3, f.id)) {
+        return false;
+    }
     if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
@@ -207,14 +153,7 @@ bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
     if (f.dlc > AP_HAL::CANFrame::NonFDCANMaxDataLen) {
         return false;
     }
-    {
-        const char* p = &cmd[5];
-        for (unsigned i = 0; i < f.dlc; i++) {
-            f.data[i] = (hex2nibble(*p) << 4) | hex2nibble(*(p + 1));
-            p += 2;
-        }
-    }
-    if (hex2nibble_error) {
+    if (!hex_charpairs_to_uint8s(&cmd[5], f.dlc, f.data)) {
         return false;
     }
     return push_Frame(f);
@@ -223,25 +162,16 @@ bool SLCAN::CANIface::handle_FrameDataStd(const char* cmd)
 bool SLCAN::CANIface::handle_FrameRTRExt(const char* cmd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
-    f.id = f.FlagEFF | f.FlagRTR |
-           (hex2nibble(cmd[1]) << 28) |
-           (hex2nibble(cmd[2]) << 24) |
-           (hex2nibble(cmd[3]) << 20) |
-           (hex2nibble(cmd[4]) << 16) |
-           (hex2nibble(cmd[5]) << 12) |
-           (hex2nibble(cmd[6]) <<  8) |
-           (hex2nibble(cmd[7]) <<  4) |
-           (hex2nibble(cmd[8]) <<  0);
+    uint32_t id;
+    if (!hex_chars_to_uint32(&cmd[1], 8, id)) {
+        return false;
+    }
+    f.id = f.FlagEFF | f.FlagRTR | id;
     if (cmd[9] < '0' || cmd[9] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[9] - '0';
-
     if (f.dlc > AP_HAL::CANFrame::NonFDCANMaxDataLen) {
-        return false;
-    }
-    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);
@@ -250,19 +180,15 @@ bool SLCAN::CANIface::handle_FrameRTRExt(const char* cmd)
 bool SLCAN::CANIface::handle_FrameRTRStd(const char* cmd)
 {
     AP_HAL::CANFrame f {};
-    hex2nibble_error = false;
-    f.id = f.FlagRTR |
-           (hex2nibble(cmd[1]) << 8) |
-           (hex2nibble(cmd[2]) << 4) |
-           (hex2nibble(cmd[3]) << 0);
+    if (!hex_chars_to_uint32(&cmd[1], 3, f.id)) {
+        return false;
+    }
+    f.id |= f.FlagRTR;
     if (cmd[4] < '0' || cmd[4] > ('0' + AP_HAL::CANFrame::NonFDCANMaxDataLen)) {
         return false;
     }
     f.dlc = cmd[4] - '0';
     if (f.dlc <= AP_HAL::CANFrame::NonFDCANMaxDataLen) {
-        return false;
-    }
-    if (hex2nibble_error) {
         return false;
     }
     return push_Frame(f);
@@ -285,9 +211,7 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
     _can_iface = hal.can[i];
     _iface_num = _slcan_can_port - 1;
     _prev_ser_port = -1;
-#if HAL_CANMANAGER_ENABLED
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port - 1);
-#endif
+
     return true;
 }
 
@@ -304,7 +228,7 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
  */
 int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t timestamp_usec)
 {
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return -1;
     }
 #if HAL_CANFD_SUPPORTED
@@ -394,7 +318,7 @@ int16_t SLCAN::CANIface::reportFrame(const AP_HAL::CANFrame& frame, uint64_t tim
 const char* SLCAN::CANIface::processCommand(char* cmd)
 {
 
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return nullptr;
     }
 
@@ -478,7 +402,7 @@ const char* SLCAN::CANIface::processCommand(char* cmd)
 // add bytes to parse the received SLCAN Data stream
 inline void SLCAN::CANIface::addByte(const uint8_t byte)
 {
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return;
     }
     if ((byte >= 32 && byte <= 126)) {  // Normal printable ASCII character
@@ -514,18 +438,20 @@ void SLCAN::CANIface::update_slcan_port()
 {
     const bool armed = hal.util->get_soft_armed();
     if (_set_by_sermgr) {
-        if (armed && _port != nullptr) {
+        if (armed && is_enabled()) {
             // auto-disable when armed
             _port->lock_port(0, 0);
-            _port = nullptr;
+            _enabled = false;
             _set_by_sermgr = false;
         }
         return;
     }
-    if (_port == nullptr && !armed) {
-         _port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
-        if (_port != nullptr) {
+    if (!is_enabled() && !armed) {
+        auto new_port = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_SLCAN, 0);
+        if (new_port != nullptr) {
+            _port = new_port;
             _port->lock_port(_serial_lock_key, _serial_lock_key);
+            _enabled = true;
             _set_by_sermgr = true;
             return;
         }
@@ -538,23 +464,25 @@ void SLCAN::CANIface::update_slcan_port()
         if (((AP_HAL::millis() - _slcan_start_req_time) < ((uint32_t)_slcan_start_delay*1000))) {
             return;
         }
-        _port = AP::serialmanager().get_serial_by_id(_slcan_ser_port);
-        if (_port == nullptr) {
+        auto new_port = AP::serialmanager().get_serial_by_id(_slcan_ser_port);
+        if (new_port == nullptr) {
             _slcan_ser_port.set_and_save(-1);
             return;
         }
+        _port = new_port;
         _port->lock_port(_serial_lock_key, _serial_lock_key);
+        _enabled = true;
         _prev_ser_port = _slcan_ser_port;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "CANManager: Starting SLCAN Passthrough on Serial %d with CAN%d", _slcan_ser_port.get(), _iface_num);
         _last_had_activity = AP_HAL::millis();
     }
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return;
     }
     if (((AP_HAL::millis() - _last_had_activity) > ((uint32_t)_slcan_timeout*1000)) &&
         (uint32_t)_slcan_timeout != 0) {
         _port->lock_port(0, 0);
-        _port = nullptr;
+        _enabled = false;
         _slcan_ser_port.set_and_save(-1);
         _prev_ser_port = -1;
         _slcan_start_req = false;
@@ -568,15 +496,6 @@ bool SLCAN::CANIface::set_event_handle(AP_HAL::BinarySemaphore *sem_handle)
         return _can_iface->set_event_handle(sem_handle);
     }
     return false;
-}
-
-uint16_t SLCAN::CANIface::getNumFilters() const
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->getNumFilters();
-    }
-    return 0;
 }
 
 uint32_t SLCAN::CANIface::getErrorCount() const
@@ -603,15 +522,6 @@ bool SLCAN::CANIface::is_busoff() const
         return _can_iface->is_busoff();
     }
     return false;
-}
-
-bool SLCAN::CANIface::configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->configureFilters(filter_configs, num_configs);
-    }
-    return true;
 }
 
 void SLCAN::CANIface::flush_tx()
@@ -654,7 +564,7 @@ bool SLCAN::CANIface::select(bool &read, bool &write, const AP_HAL::CANFrame* co
         ret = _can_iface->select(read, write, pending_tx, blocking_deadline);
     }
 
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return ret;
     }
 
@@ -682,7 +592,7 @@ int16_t SLCAN::CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadlin
         ret = _can_iface->send(frame, tx_deadline, flags);
     }
 
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return ret;
     }
 
@@ -716,7 +626,7 @@ int16_t SLCAN::CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& rx_time,
     }
 
     // We found nothing in HAL's CANIface receive, so look in SLCANIface
-    if (_port == nullptr) {
+    if (!is_enabled()) {
         return 0;
     }
 

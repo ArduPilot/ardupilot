@@ -291,14 +291,14 @@ local function update_EFI()
    local cylinder_state = Cylinder_Status()
    local efi_state = EFI_State()
 
-   cylinder_state:cylinder_head_temperature(state.tmp0)
-   cylinder_state:exhaust_gas_temperature(state.tmp1)
+   cylinder_state:cylinder_head_temperature(state.tmp0+273.15)
+   cylinder_state:exhaust_gas_temperature(state.tmp1+273.15)
    cylinder_state:injection_time_ms(state.inj1_ms)
 
    efi_state:engine_speed_rpm(state.rpm_out)
 
    efi_state:atmospheric_pressure_kpa(state.pre_gas*0.01)
-   efi_state:intake_manifold_temperature(state.tmp2)
+   efi_state:intake_manifold_temperature(state.tmp2+273.15)
    efi_state:throttle_position_percent(math.floor(state.bus_thr*0.1))
    efi_state:ignition_voltage(state.vol_power)
 

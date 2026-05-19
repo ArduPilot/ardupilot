@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3
 
+# flake8: noqa
+
 import argparse
 import fcntl
 import os
@@ -11,7 +13,7 @@ import time
 
 try:
     import argcomplete
-except:
+except ImportError:
     pass
 
 SYSTEM_RESET  = struct.pack('B' * 4, 0x5A, 0x04, 0x02, 0x60)

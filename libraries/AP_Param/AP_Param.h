@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <cmath>
+#include <type_traits>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -51,7 +52,7 @@
  */
 #ifndef AP_PARAM_MAX_EMBEDDED_PARAM
   #if FORCE_APJ_DEFAULT_PARAMETERS
-    #if BOARD_FLASH_SIZE <= 1024
+    #if HAL_PROGRAM_SIZE_LIMIT_KB <= 1024
       #define AP_PARAM_MAX_EMBEDDED_PARAM 1024
     #else
       #define AP_PARAM_MAX_EMBEDDED_PARAM 8192
@@ -121,13 +122,19 @@
 #define AP_PARAM_FRAME_HELI         (1<<5)
 #define AP_PARAM_FRAME_BLIMP        (1<<6)
 
-// a variant of offsetof() to work around C++ restrictions.
-// this can only be used when the offset of a variable in a object
-// is constant and known at compile time
-#define AP_VAROFFSET(type, element) (((ptrdiff_t)(&((const type *)1)->element))-1)
+// use __builtin_offsetof which is more or less defined by Clang and GCC to work
+// on non-standard-layout C++ classes, and works in constexpr. as that isn't
+// standard-compliant, it raises "-Winvalid-offsetof" which we globally disable.
+// https://github.com/llvm/llvm-project/blob/5fa5ffeb6cb5bc9aa414c02513e44b8405f0e7cc/libcxx/include/__type_traits/datasizeof.h#L51
+// the first comma operator operand makes the compiler see element as used by
+// conjuring a class instance and passing element to an unevaluating function.
+#define AP_VAROFFSET(clazz, element) ((void)sizeof(std::declval<clazz>().element), (ptrdiff_t)__builtin_offsetof(clazz, element))
 
-// find the type of a variable given the class and element
-#define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
+// get the internal type of an AP_Param variable given an arbitrary class and an
+// element on it. convert the element, which must be of type AP_Param or a
+// subclass, into a non-reference type. then get AP_Param's vtype member, which
+// is static const but varies depending on the subclass. works in constexpr!
+#define AP_CLASSTYPE(clazz, element) ((uint8_t)(std::remove_reference<decltype(clazz::element)>::type::vtype))
 
 // declare a group var_info line
 #define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { name, AP_VAROFFSET(clazz, element), {def_value : def}, flags, idx, AP_CLASSTYPE(clazz, element)}
@@ -173,16 +180,16 @@
 #define GOBJECTN(v, pname, name, class)      { name, (const void *)&AP_PARAM_VEHICLE_NAME.v,       {group_info : class::var_info},      0,                                                  Parameters::k_param_ ## pname,      AP_PARAM_GROUP }
 #define PARAM_VEHICLE_INFO                   { "",   (const void *)&AP_PARAM_VEHICLE_NAME,         {group_info : AP_Vehicle::var_info}, 0,                                                  Parameters::k_param_vehicle,        AP_PARAM_GROUP }
 #define AP_VAREND                            { "",   nullptr,                                      {group_info : nullptr },             0,                                                  0,                                  AP_PARAM_NONE }
-
+#define AP_GROUP_ELEM_IDX(subgrp_idx, grp_idx) (grp_idx << 6 | subgrp_idx)
 
 enum ap_var_type {
     AP_PARAM_NONE    = 0,
-    AP_PARAM_INT8,
-    AP_PARAM_INT16,
-    AP_PARAM_INT32,
-    AP_PARAM_FLOAT,
-    AP_PARAM_VECTOR3F,
-    AP_PARAM_GROUP
+    AP_PARAM_INT8    = 1,
+    AP_PARAM_INT16   = 2,
+    AP_PARAM_INT32   = 3,
+    AP_PARAM_FLOAT   = 4,
+    AP_PARAM_VECTOR3F= 5,
+    AP_PARAM_GROUP   = 6,
 };
 
 
@@ -384,14 +391,6 @@ public:
     static bool find_top_level_key_by_pointer(const void *ptr, uint16_t &key);
 
 
-    /// Find a object in the top level var_info table
-    ///
-    /// If the variable has no name, it cannot be found by this interface.
-    ///
-    /// @param  name            The full name of the variable to be found.
-    ///
-    static AP_Param * find_object(const char *name);
-
     /// Notify GCS of current parameter value
     ///
     void notify() const;
@@ -436,7 +435,7 @@ public:
     }
 
     // returns storage space used:
-    static uint16_t storage_used() { return sentinal_offset; }
+    static uint16_t storage_used() { return sentinel_offset; }
 
     // returns storage space :
     static uint16_t storage_size() { return _storage.size(); }
@@ -522,14 +521,14 @@ public:
     // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
     static void         convert_class(uint16_t param_key, void *object_pointer,
                                         const struct AP_Param::GroupInfo *group_info,
-                                        uint16_t old_index, bool is_top_level);
+                                        uint16_t old_index, bool is_top_level, bool recurse_sub_groups = false);
 
     /*
       fetch a parameter value based on the index within a group. This
       is used to find the old value of a parameter that has been
       removed from an object.
     */
-    static bool get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_ptype, void *pvalue);
+    static bool get_param_by_index(void *obj_ptr, uint32_t idx, ap_var_type old_ptype, void *pvalue);
     
     /// Erase all variables in EEPROM.
     ///
@@ -568,7 +567,11 @@ public:
 
     // return the persistent top level key for the ParamToken key
     static uint16_t get_persistent_key(uint16_t key) { return var_info(key).key; }
-    
+
+    // returns true if this parameter should be settable via the
+    // MAVLink interface:
+    bool allow_set_via_mavlink(uint16_t flags) const;
+
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
@@ -634,7 +637,7 @@ private:
     };
     static_assert(sizeof(struct EEPROM_header) == 4, "Bad EEPROM_header size!");
 
-    static uint16_t sentinal_offset;
+    static uint16_t sentinel_offset;
 
 /* This header is prepended to a variable stored in EEPROM.
  *  The meaning is as follows:
@@ -661,9 +664,9 @@ private:
     static const uint8_t        _group_level_shift = 6;
     static const uint8_t        _group_bits  = 18;
 
-    static const uint16_t       _sentinal_key   = 0x1FF;
-    static const uint8_t        _sentinal_type  = 0x1F;
-    static const uint8_t        _sentinal_group = 0xFF;
+    static const uint16_t       _sentinel_key   = 0x1FF;
+    static const uint8_t        _sentinel_type  = 0x1F;
+    static const uint8_t        _sentinel_group = 0xFF;
 
     static uint16_t             _frame_type_flags;
 
@@ -740,10 +743,10 @@ private:
                                     ptrdiff_t group_offset,
                                     const struct GroupInfo *group_info,
                                     enum ap_var_type *ptype);
-    static void                 write_sentinal(uint16_t ofs);
+    static void                 write_sentinel(uint16_t ofs);
     static uint16_t             get_key(const Param_header &phdr);
     static void                 set_key(Param_header &phdr, uint16_t key);
-    static bool                 is_sentinal(const Param_header &phrd);
+    static bool                 is_sentinel(const Param_header &phrd);
     static bool                 scan(
                                     const struct Param_header *phdr,
                                     uint16_t *pofs);
@@ -880,14 +883,14 @@ namespace AP {
 
 /// Template class for scalar variables.
 ///
-/// Objects of this type have a value, and can be treated in many ways as though they
-/// were the value.
+/// Objects of this type have a value, though the infrastructure to actually
+/// treat them as a value is delegated to a type-specialized subclass.
 ///
 /// @tparam T			The scalar type of the variable
 /// @tparam PT			The AP_PARAM_* type
 ///
 template<typename T, ap_var_type PT>
-class AP_ParamT : public AP_Param
+class AP_ParamTBase : public AP_Param
 {
 public:
     static const ap_var_type        vtype = PT;
@@ -930,15 +933,7 @@ public:
     /// updated correctly.
     void set_and_save_ifchanged(const T &v);
 
-    /// Conversion to T returns a reference to the value.
-    ///
-    /// This allows the class to be used in many situations where the value would be legal.
-    ///
-    operator const T &() const {
-        return _value;
-    }
-
-    /// AP_ParamT types can implement AP_Param::cast_to_float
+    /// AP_ParamTBase types can implement AP_Param::cast_to_float
     ///
     float cast_to_float(void) const;
 
@@ -946,11 +941,91 @@ protected:
     T _value;
 };
 
+template<typename T, ap_var_type PT>
+class AP_ParamT : public AP_ParamTBase<T, PT> // for int and smaller types
+{
+public:
+    /// Conversion to T returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
+    ///
+    /// This allows the class to be used in many situations where the value
+    /// would be legal.
+    ///
+    /// Note that this can cause strange conversions: the value can be silently
+    /// converted to a smaller type, causing unexpected truncation in an
+    /// expression like `int16_t v = true ? int16_param : (int8_t)0`.
+    ///
+    /// C numeric conversion rules can be reinstated where needed by simply
+    /// calling `.get()` on the value.
+    ///
+    operator const T &() const {
+        return this->_value;
+    }
+};
 
-/// Template class for non-scalar variables.
+template<>
+class AP_ParamT<float, AP_PARAM_FLOAT> : public AP_ParamTBase<float, AP_PARAM_FLOAT>
+{
+public:
+    /// Conversion to float returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
+    ///
+    /// This allows the class to be used in many situations where the value
+    /// would be legal.
+    ///
+    /// We must return a float and specifically make this function a template to
+    /// forbid further conversions: paraphrasing [over.ics.user] clause 3,
+    /// templated user-defined conversion functions require that a further
+    /// conversion be an exact match. This prevents the value from silently
+    /// converting to an int and causing unexpected truncation in an expression
+    /// like `float v = true ? float_param : 0`.
+    ///
+    /// This does also prevent implicit conversion to double, but that is a
+    /// relatively small price to pay. C numeric conversion rules can be
+    /// reinstated where needed by simply calling `.get()` on the value, or by
+    /// manually casting to `double` or `int`.
+    ///
+    template<bool X = true>
+    operator const float &() const {
+        return this->_value;
+    }
+
+    explicit operator int () const { // convenience function for int casts
+        return (int)this->_value;
+    }
+
+    explicit operator double () const { // convenience function for double casts
+        return (double)this->_value;
+    }
+
+#if defined(__clang__)
+    // inexplicably, clang will not use the built-in operator implementations
+    // for floats on two AP_ParamT<float>s, so provide them for it.
+
+    float operator -() const { return -this->_value; } // unary minus
+
+#define PARAM_SELF_OPER(R, OP) \
+    R operator OP (const AP_ParamT<float, AP_PARAM_FLOAT>& other) const { return this->_value OP other._value; }
+
+    PARAM_SELF_OPER(float, +);
+    PARAM_SELF_OPER(float, -);
+    PARAM_SELF_OPER(float, *);
+    PARAM_SELF_OPER(float, /);
+    PARAM_SELF_OPER(bool, >);
+    PARAM_SELF_OPER(bool, <);
+    PARAM_SELF_OPER(bool, <=);
+    PARAM_SELF_OPER(bool, >=);
+    // != and == are unsafe on floats
+
+#undef PARAM_SELF_OPER
+
+#endif
+};
+
+/// Template class for non-scalar variables, intended for non-C types.
 ///
-/// Objects of this type have a value, and can be treated in many ways as though they
-/// were the value.
+/// Objects of this type have an object value, and can be treated in many ways
+/// as though they were the value.
 ///
 /// @tparam T			The scalar type of the variable
 /// @tparam PT			AP_PARAM_* type
@@ -990,9 +1065,12 @@ public:
     void set_and_save_ifchanged(const T &v);
 
 
-    /// Conversion to T returns a reference to the value.
+    /// Conversion to T returns a reference to the value. A reference is
+    /// necessary as some users expect to pass a reference around.
     ///
-    /// This allows the class to be used in many situations where the value would be legal.
+    /// This allows the class to be used in many situations where the value
+    /// would be legal. As T is a user-defined class and not a C type, we don't
+    /// have to worry about weird numeric conversions.
     ///
     operator const T &() const {
         return _value;
@@ -1003,61 +1081,6 @@ protected:
 };
 
 
-/// Template class for array variables.
-///
-/// Objects created using this template behave like arrays of the type T,
-/// but are stored like single variables.
-///
-/// @tparam T           The scalar type of the variable
-/// @tparam N           number of elements
-/// @tparam PT          the AP_PARAM_* type
-///
-template<typename T, uint8_t N, ap_var_type PT>
-class AP_ParamA : public AP_Param
-{
-public:
-
-    static const ap_var_type vtype = PT;
-
-    /// Array operator accesses members.
-    ///
-    /// @note It would be nice to range-check i here, but then what would we return?
-    ///
-    const T & operator[](uint8_t i) {
-        return _value[i];
-    }
-
-    const T & operator[](int8_t i) {
-        return _value[(uint8_t)i];
-    }
-
-    /// Value getter
-    ///
-    /// @note   Returns zero for index values out of range.
-    ///
-    T get(uint8_t i) const {
-        if (i < N) {
-            return _value[i];
-        } else {
-            return (T)0;
-        }
-    }
-
-    /// Value setter
-    ///
-    /// @note   Attempts to set an index out of range are discarded.
-    ///
-    void  set(uint8_t i, const T &v) {
-        if (i < N) {
-            _value[i] = v;
-        }
-    }
-
-protected:
-    T _value[N];
-};
-
-
 /// Convenience macro for defining instances of the AP_ParamT template.
 ///
 // declare a scalar type
@@ -1065,7 +1088,7 @@ protected:
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEF(_t, _suffix, _pt)   typedef AP_ParamT<_t, _pt> AP_ ## _suffix;
-AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float
+AP_PARAMDEF(float, Float, AP_PARAM_FLOAT);    // defines AP_Float, requires specialization!
 AP_PARAMDEF(int8_t, Int8, AP_PARAM_INT8);     // defines AP_Int8
 AP_PARAMDEF(int16_t, Int16, AP_PARAM_INT16);  // defines AP_Int16
 AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
@@ -1076,6 +1099,9 @@ AP_PARAMDEF(int32_t, Int32, AP_PARAM_INT32);  // defines AP_Int32
 // _suffix is the suffix on the AP_* type name
 // _pt is the enum ap_var_type type
 #define AP_PARAMDEFV(_t, _suffix, _pt)   typedef AP_ParamV<_t, _pt> AP_ ## _suffix;
+
+// see comment in the AP_ParamT float specialization
+static_assert(not std::is_convertible<AP_Float, int>::value, "illegal conversion possible");
 
 /*
   template class for enum types based on AP_Int8
@@ -1090,6 +1116,9 @@ public:
     void set(eclass v) {
         AP_Int8::set(int8_t(v));
     }
+    void set_and_save(eclass v) {
+        AP_Int8::set_and_save(int8_t(v));
+    }
 };
 
 template<typename eclass>
@@ -1101,5 +1130,8 @@ public:
     }
     void set(eclass v) {
         AP_Int16::set(int16_t(v));
+    }
+    void set_and_save(eclass v) {
+        AP_Int16::set_and_save(int16_t(v));
     }
 };

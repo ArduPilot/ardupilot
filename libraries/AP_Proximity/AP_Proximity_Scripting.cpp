@@ -65,7 +65,7 @@ bool AP_Proximity_Scripting::handle_script_distance_msg(float dist_m, float yaw_
     Matrix3f body_to_ned;
     const bool database_ready = database_prepare_for_push(current_pos, body_to_ned);
 
-    if (dist_m < distance_min() || dist_m > distance_max() || is_zero(dist_m)) {
+    if (dist_m < distance_min_m() || dist_m > distance_max_m() || is_zero(dist_m)) {
         // message isn't healthy
         return false;
     }

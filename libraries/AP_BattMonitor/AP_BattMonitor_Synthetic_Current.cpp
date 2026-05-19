@@ -27,7 +27,7 @@ const AP_Param::GroupInfo AP_BattMonitor_Synthetic_Current::var_info[] = {
     // also inherit analog backend parameters
     AP_SUBGROUPEXTENSION("", 51, AP_BattMonitor_Synthetic_Current, AP_BattMonitor_Analog::var_info),
 
-    // Param indexes must be between 50 and 55 to avoid conflict with other battery monitor param tables loaded by pointer
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };
@@ -58,9 +58,6 @@ AP_BattMonitor_Synthetic_Current::read()
     // calculate time since last current read
     const uint32_t tnow = AP_HAL::micros();
     const uint32_t dt_us = tnow - _state.last_time_micros;
-
-    // this copes with changing the pin at runtime
-    _state.healthy &= _curr_pin_analog_source->set_pin(_curr_pin);
 
     // read current
     _state.current_amps = ((_state.voltage/_max_voltage)*sq(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)) * 0.0001 * _curr_amp_per_volt) + _curr_amp_offset ;

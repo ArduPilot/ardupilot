@@ -35,6 +35,47 @@ void GPS_UBlox::send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size)
     write_to_autopilot((char*)chk, sizeof(chk));
 }
 
+void GPS_UBlox::update_relposned(ubx_nav_relposned &relposned, uint32_t tow_ms, float yaw_deg)
+{
+    Vector3f ant1_pos { NaNf, NaNf, NaNf };
+
+    // find our partner:
+    for (uint8_t i=0; i<ARRAY_SIZE(_sitl->gps); i++) {
+        if (i == instance) {
+            // this shouldn't matter as our heading type should never be base
+            continue;
+        }
+        if (_sitl->gps[i].hdg_enabled != SITL::SIM::GPS_HEADING_BASE) {
+            continue;
+        }
+        ant1_pos = _sitl->gps[i].pos_offset.get();
+        break;
+    }
+    if (ant1_pos.is_nan()) {
+        return;
+    }
+
+    const Vector3f ant2_pos = _sitl->gps[instance].pos_offset.get();
+    Vector3f rel_antenna_pos = ant2_pos - ant1_pos;
+    Matrix3f rot;
+    // project attitude back using gyros to get antenna orientation at time of GPS sample
+    Vector3f gyro(radians(_sitl->state.rollRate),
+                  radians(_sitl->state.pitchRate),
+                  radians(_sitl->state.yawRate));
+    rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(yaw_deg));
+    const float lag = _sitl->gps[instance].delay_ms * 0.001;
+    rot.rotate(gyro * (-lag));
+    rel_antenna_pos = rot * rel_antenna_pos;
+    relposned.version = 1;
+    relposned.iTOW = tow_ms;
+    relposned.relPosN = rel_antenna_pos.x * 100;
+    relposned.relPosE = rel_antenna_pos.y * 100;
+    relposned.relPosD = rel_antenna_pos.z * 100;
+    relposned.relPosLength = rel_antenna_pos.length() * 100;
+    relposned.relPosHeading = degrees(Vector2f(rel_antenna_pos.x, rel_antenna_pos.y).angle()) * 1.0e5;
+    relposned.flags = gnssFixOK | diffSoln | carrSolnFixed | isMoving | relPosValid | relPosHeadingValid;
+}
+
 /*
   send a new set of GPS UBLOX packets
  */
@@ -121,6 +162,14 @@ void GPS_UBlox::publish(const GPS_Data *d)
         uint32_t headVeh;
         uint8_t reserved2[4];
     } pvt {};
+    struct PACKED ubx_nav_timegps {
+        uint32_t itow;
+        int32_t ftow;
+        uint16_t week;
+        int8_t leapS;
+        uint8_t valid; //  leapsvalid | weekvalid | tow valid;
+        uint32_t tAcc;
+    } timegps {};
     const uint8_t SV_COUNT = 10;
     struct PACKED ubx_nav_svinfo {
         uint32_t itow;
@@ -139,53 +188,19 @@ void GPS_UBlox::publish(const GPS_Data *d)
             int32_t prRes;
         } sv[SV_COUNT];
     } svinfo {};
-    enum RELPOSNED {
-        gnssFixOK          = 1U << 0,
-        diffSoln           = 1U << 1,
-        relPosValid        = 1U << 2,
-        carrSolnFloat      = 1U << 3,
-
-        carrSolnFixed      = 1U << 4,
-        isMoving           = 1U << 5,
-        refPosMiss         = 1U << 6,
-        refObsMiss         = 1U << 7,
-
-        relPosHeadingValid = 1U << 8,
-        relPosNormalized   = 1U << 9
-    };
-    struct PACKED ubx_nav_relposned {
-        uint8_t version;
-        uint8_t reserved1;
-        uint16_t refStationId;
-        uint32_t iTOW;
-        int32_t relPosN;
-        int32_t relPosE;
-        int32_t relPosD;
-        int32_t relPosLength;
-        int32_t relPosHeading;
-        uint8_t reserved2[4];
-        int8_t relPosHPN;
-        int8_t relPosHPE;
-        int8_t relPosHPD;
-        int8_t relPosHPLength;
-        uint32_t accN;
-        uint32_t accE;
-        uint32_t accD;
-        uint32_t accLength;
-        uint32_t accHeading;
-        uint8_t reserved3[4];
-        uint32_t flags;
-    } relposned {};
-
+    ubx_nav_relposned relposned {};
     const uint8_t MSG_POSLLH = 0x2;
     const uint8_t MSG_STATUS = 0x3;
     const uint8_t MSG_DOP = 0x4;
     const uint8_t MSG_VELNED = 0x12;
     const uint8_t MSG_SOL = 0x6;
     const uint8_t MSG_PVT = 0x7;
+    const uint8_t MSG_TIMEGPS = 0x20;
     const uint8_t MSG_SVINFO = 0x30;
     const uint8_t MSG_RELPOSNED = 0x3c;
 
+    // Note: This variable is actually a bug but removing it causes some CI failures.
+    // Keep this here for now pending further investigation.
     uint32_t _next_nav_sv_info_time = 0;
 
     const auto gps_tow = gps_time();
@@ -212,7 +227,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     velned.ned_down  = 100.0f * d->speedD;
     velned.speed_2d = norm(d->speedN, d->speedE) * 100;
     velned.speed_3d = norm(d->speedN, d->speedE, d->speedD) * 100;
-    velned.heading_2d = ToDeg(atan2f(d->speedE, d->speedN)) * 100000.0f;
+    velned.heading_2d = degrees(atan2f(d->speedE, d->speedN)) * 100000.0f;
     if (velned.heading_2d < 0.0f) {
         velned.heading_2d += 360.0f * 100000.0f;
     }
@@ -220,9 +235,44 @@ void GPS_UBlox::publish(const GPS_Data *d)
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
-    sol.fix_type = d->have_lock?3:0;
+    if (d->have_lock) {
+        sol.satellites = d->num_sats;
+        switch(d->fix_type) {
+            // https://content.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf?utm_content=UBX-13003221
+            // See page 377, 32.17.17 UBX-NAV-PVT
+            case 0: // no gps - don't publish data.
+                return;
+            case 1: // no lock
+                pvt.flags = 0b00000000;
+                sol.fix_type = 0;
+                break;
+            case 2: // 2d
+                sol.fix_type = 2;
+                pvt.flags = 0b00000001;
+                break;
+            case 3: // 3d
+                sol.fix_type = 3;
+                pvt.flags = 0b00000001;
+                break;
+            case 4: // dgps
+                sol.fix_type = 3;
+                pvt.flags = 0b00000011;
+                break;
+            case 5: // rtk float
+                sol.fix_type = 3;
+                pvt.flags = 0b01000011;
+                break;
+            case 6: // rtk fixed
+                sol.fix_type = 3;
+                pvt.flags = 0b10000011;
+                break;
+        }
+    } else {
+        sol.fix_type = 0;
+        pvt.flags = 0b00000000;
+        sol.satellites = 3;
+    }
     sol.fix_status = 221;
-    sol.satellites = d->have_lock ? d->num_sats : 3;
     sol.time = gps_tow.ms;
     sol.week = gps_tow.week;
 
@@ -245,8 +295,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.valid = 0; // invalid utc date
     pvt.t_acc = 0;
     pvt.nano = 0;
-    pvt.fix_type = d->have_lock? 0x3 : 0;
-    pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
+    pvt.fix_type = sol.fix_type;
     pvt.flags2 =0;
     pvt.num_sv = d->have_lock ? d->num_sats : 3;
     pvt.lon = d->longitude * 1.0e7;
@@ -259,7 +308,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.velE = 1000.0f * d->speedE;
     pvt.velD = 1000.0f * d->speedD;
     pvt.gspeed = norm(d->speedN, d->speedE) * 1000;
-    pvt.head_mot = ToDeg(atan2f(d->speedE, d->speedN)) * 1.0e5;
+    pvt.head_mot = degrees(atan2f(d->speedE, d->speedN)) * 1.0e5;
     pvt.s_acc = velned.speed_accuracy;
     pvt.head_acc = 38 * 1.0e5;
     pvt.p_dop = 65535;
@@ -267,36 +316,42 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.headVeh = 0;
     memset(pvt.reserved2, '\0', ARRAY_SIZE(pvt.reserved2));
 
-    if (_sitl->gps_hdg_enabled[instance] > SITL::SIM::GPS_HEADING_NONE) {
-        const Vector3f ant1_pos = _sitl->gps_pos_offset[instance^1].get();
-        const Vector3f ant2_pos = _sitl->gps_pos_offset[instance].get();
-        Vector3f rel_antenna_pos = ant2_pos - ant1_pos;
-        Matrix3f rot;
-        // project attitude back using gyros to get antenna orientation at time of GPS sample
-        Vector3f gyro(radians(_sitl->state.rollRate),
-                      radians(_sitl->state.pitchRate),
-                      radians(_sitl->state.yawRate));
-        rot.from_euler(radians(_sitl->state.rollDeg), radians(_sitl->state.pitchDeg), radians(d->yaw_deg));
-        const float lag = _sitl->gps_delay_ms[instance] * 0.001;
-        rot.rotate(gyro * (-lag));
-        rel_antenna_pos = rot * rel_antenna_pos;
-        relposned.version = 1;
-        relposned.iTOW = gps_tow.ms;
-        relposned.relPosN = rel_antenna_pos.x * 100;
-        relposned.relPosE = rel_antenna_pos.y * 100;
-        relposned.relPosD = rel_antenna_pos.z * 100;
-        relposned.relPosLength = rel_antenna_pos.length() * 100;
-        relposned.relPosHeading = degrees(Vector2f(rel_antenna_pos.x, rel_antenna_pos.y).angle()) * 1.0e5;
-        relposned.flags = gnssFixOK | diffSoln | carrSolnFixed | isMoving | relPosValid | relPosHeadingValid;
+    timegps.itow = gps_tow.ms;
+    timegps.ftow = 0;                 // we don't simulate fractional ns
+    timegps.week = gps_tow.week;
+    timegps.leapS = 0;
+    timegps.valid = d->have_lock ? 0x03 : 0x00; // tow valid|week valid
+    timegps.tAcc  = 0;
+
+    switch (_sitl->gps[instance].hdg_enabled) {
+    case SITL::SIM::GPS_HEADING_NONE:
+    case SITL::SIM::GPS_HEADING_BASE:
+        break;
+    case SITL::SIM::GPS_HEADING_THS:
+    case SITL::SIM::GPS_HEADING_KSXT:
+    case SITL::SIM::GPS_HEADING_HDT:
+        update_relposned(relposned, gps_tow.ms, d->yaw_deg);
+        break;
     }
 
     send_ubx(MSG_POSLLH, (uint8_t*)&pos, sizeof(pos));
     send_ubx(MSG_STATUS, (uint8_t*)&status, sizeof(status));
     send_ubx(MSG_VELNED, (uint8_t*)&velned, sizeof(velned));
-    send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
+    const bool is_f9p = (_sitl->gps[instance].options & static_cast<int32_t>(SITL::SIM::GPSOptions::UBX_IS_F9P)) != 0;
+
+    if (is_f9p) {
+        const uint32_t now_ms = AP_HAL::millis();
+        if ((int32_t)(now_ms - _next_timegps_send_ms) >= 0) {
+            _next_timegps_send_ms = now_ms + 1000;
+            send_ubx(MSG_TIMEGPS, (uint8_t*)&timegps, sizeof(timegps));
+        }
+    } else {
+        // F9P and later use TIMEGPS to set week number, older u-blox use SOL
+        send_ubx(MSG_SOL,    (uint8_t*)&sol, sizeof(sol));
+    }
     send_ubx(MSG_DOP,    (uint8_t*)&dop, sizeof(dop));
     send_ubx(MSG_PVT,    (uint8_t*)&pvt, sizeof(pvt));
-    if (_sitl->gps_hdg_enabled[instance] > SITL::SIM::GPS_HEADING_NONE) {
+    if (_sitl->gps[instance].hdg_enabled > SITL::SIM::GPS_HEADING_NONE) {
         send_ubx(MSG_RELPOSNED,    (uint8_t*)&relposned, sizeof(relposned));
     }
 

@@ -1,5 +1,6 @@
 local SERIAL_CONTROL = {}
 SERIAL_CONTROL.id = 126
+SERIAL_CONTROL.crc_extra = 220
 SERIAL_CONTROL.fields = {
              { "baudrate", "<I4" },
              { "timeout", "<I2" },

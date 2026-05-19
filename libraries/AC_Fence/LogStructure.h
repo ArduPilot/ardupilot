@@ -29,10 +29,10 @@ struct PACKED log_Fence {
     float radius;
 };
 
-#if !AP_FENCE_ENABLED
-#define LOG_STRUCTURE_FROM_FENCE
-#else
+#if AP_FENCE_ENABLED
 #define LOG_STRUCTURE_FROM_FENCE \
     { LOG_FENCE_MSG, sizeof(log_Fence), \
       "FNCE", "QBBBLLBf", "TimeUS,Tot,Seq,Type,Lat,Lng,Count,Radius", "s---DU-m", "F---GG--" },
+#else
+#define LOG_STRUCTURE_FROM_FENCE
 #endif

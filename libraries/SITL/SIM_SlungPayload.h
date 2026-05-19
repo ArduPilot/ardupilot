@@ -37,8 +37,8 @@ public:
     // constructor
     SlungPayloadSim();
 
-    // update the SlungPayloadSim's state using thevehicle's earth-frame position, velocity and acceleration
-    void update(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef);
+    // update the SlungPayloadSim's state using thevehicle's earth-frame position, velocity, acceleration and wind
+    void update(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef, const Vector3f& wind_ef);
 
     // get earth-frame forces on the vehicle from slung payload
     // returns true on success and fills in forces_ef argument, false on failure
@@ -67,8 +67,9 @@ private:
     bool get_payload_location(Location& payload_loc) const;
 
     // update the slung payload's position, velocity, acceleration
-    // vehicle position, velocity and acceleration should be in earth-frame NED frame
-    void update_payload(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef, float dt);
+    // vehicle position, velocity, acceleration and wind should be in earth-frame NED frame
+    void update_payload(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef,
+                        const Vector3f& wind_ef, float dt);
 
     // returns true if the two vectors point in the same direction, false if perpendicular or opposite
     bool vectors_same_direction(const Vector3f& v1, const Vector3f& v2) const;
@@ -81,7 +82,7 @@ private:
     uint32_t last_update_us;    // system time of last update
 
     // mavlink reporting variables
-    const float reporting_period_ms = 200;  // reporting period in ms
+    const float reporting_period_ms = 100;  // reporting period in ms
     uint32_t last_report_ms;                // system time of last MAVLink report sent to GCS
     uint32_t last_heartbeat_ms;             // system time of last MAVLink heartbeat sent to GCS
     bool mavlink_connected;                 // true if a mavlink connection has been established

@@ -20,21 +20,29 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
-#include <setjmp.h>
+#include <AP_HAL/ap_setjmp.h>
 
 #include <AP_Filesystem/posix_compat.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/Semaphores.h>
-#include <AP_Common/MultiHeap.h>
+#include <AP_MultiHeap/AP_MultiHeap.h>
 #include "lua_common_defs.h"
 
 #include "lua/src/lua.hpp"
 
+class lua_scripts;
+
+static inline lua_scripts* ls_object_from_state(lua_State *L) {
+    // the state extra space stores a pointer to the lua_scripts object the
+    // state is a part of, used for ls_* callback trampolines.
+    return *static_cast<lua_scripts**>(lua_getextraspace(L));
+}
+
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, const AP_Int8 &debug_options);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_Int8 &debug_options);
 
     ~lua_scripts();
 
@@ -48,16 +56,12 @@ public:
 
     static bool overtime; // script exceeded it's execution slot, and we are bailing out
 
-    enum class DebugLevel {
-        NO_SCRIPTS_TO_RUN = 1U << 0,
-        RUNTIME_MSG = 1U << 1,
-        SUPPRESS_SCRIPT_LOG = 1U << 2,
-        LOG_RUNTIME = 1U << 3,
-        DISABLE_PRE_ARM = 1U << 4,
-        SAVE_CHECKSUM = 1U << 5,
-    };
-
 private:
+
+    static int ls_run_engine(lua_State *L) {
+        return ls_object_from_state(L)->run_engine(L);
+    };
+    int run_engine(lua_State *L);
 
     void create_sandbox(lua_State *L);
 
@@ -70,7 +74,7 @@ private:
        script_info *next;
     } script_info;
 
-    script_info *load_script(lua_State *L, char *filename);
+    bool load_script(lua_State *L, script_info *new_script);
 
     void reset_loop_overtime(lua_State *L);
 
@@ -89,14 +93,12 @@ private:
     // it must be static to be passed to the C API
     static void hook(lua_State *L, lua_Debug *ar);
 
-    // lua panic handler, will jump back to the start of run
-    static int atpanic(lua_State *L);
-    static jmp_buf panic_jmp;
-
-    lua_State *lua_state;
-
     const AP_Int32 & _vm_steps;
-    const AP_Int8 & _debug_options;
+    AP_Int8 & _debug_options;
+
+    bool option_is_set(AP_Scripting::DebugOption option) const {
+        return (uint8_t(_debug_options.get()) & uint8_t(option)) != 0;
+    }
 
     static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
 
@@ -105,7 +107,7 @@ private:
     // helper for print and log of runtime stats
     void update_stats(const char *name, uint32_t run_time, int total_mem, int run_mem);
 
-    // must be static for use in atpanic
+    // must be static for bindings
     static void print_error(MAV_SEVERITY severity);
     static char *error_msg_buf;
     static HAL_Semaphore error_msg_buf_sem;
@@ -118,7 +120,7 @@ private:
     static HAL_Semaphore crc_sem;
 
 public:
-    // must be static for use in atpanic, public to allow bindings to issue none fatal warnings
+    // must be static and public to allow bindings to issue non-fatal warnings
     static void set_and_print_new_error_message(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2,3);
 
     // return last error message, nullptr if none, must use semaphore as this is updated in the scripting thread

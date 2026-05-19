@@ -1,6 +1,8 @@
-#include "AP_Mount_Topotek.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_TOPOTEK_ENABLED
+
+#include "AP_Mount_Topotek.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -31,7 +33,7 @@ extern const AP_HAL::HAL& hal;
 # define AP_MOUNT_TOPOTEK_ID3CHAR_START_TRACKING "LOC"          // start image tracking
 # define AP_MOUNT_TOPOTEK_ID3CHAR_LRF           "LRF"           // laser rangefinder control, data bytes: 00:ranging stop, 01:ranging start, 02:single measurement, 03:continuous measurement
 # define AP_MOUNT_TOPOTEK_ID3CHAR_PIP           "PIP"           // set picture-in-picture setting, data bytes: // 00:main only, 01:main+sub, 02:sub+main, 03:sub only, 0A:next
-# define AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_ATT    "GAA"           // get gimbal attitude, data bytes: 00:stop, 01:start
+# define AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_ATT    "GIA"           // get gimbal attitude, data bytes: 00:stop, 01:start
 # define AP_MOUNT_TOPOTEK_ID3CHAR_SD_CARD       "SDC"           // get SD card state, data bytes: 00:get remaining capacity, 01:get total capacity
 # define AP_MOUNT_TOPOTEK_ID3CHAR_TIME          "UTC"           // set time and date, data bytes: HHMMSSDDMMYY
 # define AP_MOUNT_TOPOTEK_ID3CHAR_GET_VERSION   "VSN"           // get firmware version, data bytes always 00
@@ -55,6 +57,8 @@ const char* AP_Mount_Topotek::send_message_prefix = "Mount: Topotek";
 // update mount position - should be called periodically
 void AP_Mount_Topotek::update()
 {
+    AP_Mount_Backend::update();
+
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -118,9 +122,6 @@ void AP_Mount_Topotek::update()
         break;
     }
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
     // handle tracking state
     if (_is_tracking) {
         // cancel tracking if mode has changed
@@ -133,80 +134,10 @@ void AP_Mount_Topotek::update()
     _last_mode = _mode;
 
     // update based on mount mode
-    switch (get_mode()) {
-        // move mount to a "retracted" position.  To-Do: remove support and replace with a relaxed mode?
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        // move mount to a neutral position, typically pointing forward
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        // point to the angles given by a mavlink message
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING:
-            // mavlink targets are stored while handling the incoming message
-            break;
-
-        // RC radio manual angle control, but with stabilization from the AHRS
-        case MAV_MOUNT_MODE_RC_TARGETING: {
-            // update targets using pilot's RC inputs
-            MountTarget rc_target;
-            get_rc_target(mnt_target.target_type, rc_target);
-            switch (mnt_target.target_type) {
-            case MountTargetType::ANGLE:
-                mnt_target.angle_rad = rc_target;
-                break;
-            case MountTargetType::RATE:
-                mnt_target.rate_rads = rc_target;
-                break;
-            }
-            break;
-        }
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_angle_target(mnt_target.angle_rad);
-            break;
-        case MountTargetType::RATE:
-            send_rate_target(mnt_target.rate_rads);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -514,50 +445,6 @@ bool AP_Mount_Topotek::set_camera_source(uint8_t primary_source, uint8_t seconda
 }
 #endif  // HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 
-// send camera information message to GCS
-void AP_Mount_Topotek::send_camera_information(mavlink_channel_t chan) const
-{
-    // exit immediately if not initialised
-    if (!_initialised) {
-        return;
-    }
-
-    static const uint8_t vendor_name[32] = "Topotek";
-    static uint8_t model_name[32] {};
-    const char cam_definition_uri[140] {};
-
-    // copy model name if available
-    if (_got_gimbal_model_name) {
-        strncpy((char*)model_name, (const char*)_model_name, ARRAY_SIZE(model_name));
-    }
-
-    // capability flags
-    const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
-                           CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS |
-                           CAMERA_CAP_FLAGS_HAS_TRACKING_POINT |
-                           CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE;
-
-    // send CAMERA_INFORMATION message
-    mavlink_msg_camera_information_send(
-        chan,
-        AP_HAL::millis(),       // time_boot_ms
-        vendor_name,            // vendor_name uint8_t[32]
-        model_name,             // model_name uint8_t[32]
-        _firmware_ver,          // firmware version uint32_t
-        0,                      // focal_length float (mm)
-        0,                      // sensor_size_h float (mm)
-        0,                      // sensor_size_v float (mm)
-        0,                      // resolution_h uint16_t (pix)
-        0,                      // resolution_v uint16_t (pix)
-        0,                      // lens_id uint8_t
-        flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
-        0,                      // cam_definition_version uint16_t
-        cam_definition_uri,     // cam_definition_uri char[140]
-        _instance + 1);         // gimbal_device_id uint8_t
-}
-
 // send camera settings message to GCS
 void AP_Mount_Topotek::send_camera_settings(mavlink_channel_t chan) const
 {
@@ -566,15 +453,13 @@ void AP_Mount_Topotek::send_camera_settings(mavlink_channel_t chan) const
         return;
     }
 
-    const float NaN = nanf("0x4152");
-
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
         chan,
         AP_HAL::millis(),   // time_boot_ms
         _recording ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
-        NaN,                // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaN);               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // zoomLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
 }
 
 // get rangefinder distance.  Returns true on success
@@ -674,15 +559,17 @@ void AP_Mount_Topotek::read_incoming_packets()
             reset_parser = true;
             break;
 
-        case ParseState::WAITING_FOR_DATALEN:
+        case ParseState::WAITING_FOR_DATALEN: {
             // sanity check data length
-            _parser.data_len = (uint8_t)char_to_hex(b);
-            if (_parser.data_len <= AP_MOUNT_TOPOTEK_DATALEN_MAX) {
+            uint8_t data_len;
+            if (hex_char_to_nibble(b, data_len) && data_len <= AP_MOUNT_TOPOTEK_DATALEN_MAX) {
+                _parser.data_len = data_len;
                 _parser.state = ParseState::WAITING_FOR_CONTROL;
                 break;
             }
             reset_parser = true;
             break;
+        }
 
         case ParseState::WAITING_FOR_CONTROL:
             // r or w
@@ -767,7 +654,7 @@ void AP_Mount_Topotek::read_incoming_packets()
 // request gimbal attitude
 void AP_Mount_Topotek::request_gimbal_attitude()
 {
-    // sample command: #TPUG2wGAA01
+    // sample command: #TPUG2wGIA01
     send_fixedlen_packet(AddressByte::GIMBAL, AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_ATT, true, 1);
 }
 
@@ -803,7 +690,7 @@ void AP_Mount_Topotek::request_gimbal_model_name()
 }
 
 // send angle target in radians to gimbal
-void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
+void AP_Mount_Topotek::send_target_angles(const MountAngleTarget& angle_rad)
 {
     // gimbal's earth-frame angle control drifts so always use body frame
     // set gimbal's lock state if it has changed
@@ -813,7 +700,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
 
     // calculate and send yaw target
     // sample command #tpUG6wGIY
-    const char* format_str = "%04x%02x";
+    const char* format_str = "%04X%02X";
     const uint8_t speed = 99;
     const uint16_t yaw_angle_cd = (uint16_t)constrain_int16(degrees(angle_rad.get_bf_yaw()) * 100, MAX(-18000, _params.yaw_angle_min * 100), MIN(18000, _params.yaw_angle_max * 100));
 
@@ -847,7 +734,7 @@ void AP_Mount_Topotek::send_angle_target(const MountTarget& angle_rad)
 }
 
 // send rate target in rad/s to gimbal
-void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
+void AP_Mount_Topotek::send_target_rates(const MountRateTarget& rate_rads)
 {
     // set gimbal's lock state if it has changed
     if (!set_gimbal_lock(rate_rads.yaw_is_ef)) {
@@ -856,7 +743,7 @@ void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
 
     // convert and constrain rates
     const uint8_t roll_angle_speed = constrain_int16(degrees(rate_rads.roll) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
-    const uint8_t pitch_angle_speed = constrain_int16(degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
+    const uint8_t pitch_angle_speed = constrain_int16(-degrees(rate_rads.pitch) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
     const uint8_t yaw_angle_speed = constrain_int16(degrees(rate_rads.yaw) * ANGULAR_VELOCITY_CONVERSION, -99, 99);
 
     // send stop rotation command three times if target roll, pitch and yaw are zero
@@ -874,7 +761,7 @@ void AP_Mount_Topotek::send_rate_target(const MountTarget& rate_rads)
     // prepare and send command
     // sample command: #tpUG6wYPR
     uint8_t databuff[7];
-    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02x%02x%02x", yaw_angle_speed, pitch_angle_speed, roll_angle_speed);
+    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02X%02X%02X", yaw_angle_speed, pitch_angle_speed, roll_angle_speed);
     send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::GIMBAL, AP_MOUNT_TOPOTEK_ID3CHAR_YPR_RATE, true, databuff, ARRAY_SIZE(databuff)-1);
 }
 
@@ -952,7 +839,7 @@ bool AP_Mount_Topotek::send_location_info()
 
     // prepare and send vehicle yaw
     // sample command: #tpUD5wAZI359.9, similar format to $GPRMC
-    const float veh_yaw_deg = wrap_360(degrees(AP::ahrs().get_yaw()));
+    const float veh_yaw_deg = AP::ahrs().get_yaw_deg();
     uint8_t databuff_azimuth[6];
     hal.util->snprintf((char*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth), "%05.1f", veh_yaw_deg);
     if (!send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::SYSTEM_AND_IMAGE, AP_MOUNT_TOPOTEK_ID3CHAR_SET_AZIMUTH, true, (uint8_t*)databuff_azimuth, ARRAY_SIZE(databuff_azimuth)-1)) {
@@ -966,14 +853,20 @@ bool AP_Mount_Topotek::send_location_info()
 void AP_Mount_Topotek::gimbal_angle_analyse()
 {
     // consume current angles
-    int16_t yaw_angle_cd = wrap_180_cd(hexchar4_to_int16(_msg_buff[10], _msg_buff[11], _msg_buff[12], _msg_buff[13]));
-    int16_t pitch_angle_cd = -hexchar4_to_int16(_msg_buff[14], _msg_buff[15], _msg_buff[16], _msg_buff[17]);
-    int16_t roll_angle_cd = hexchar4_to_int16(_msg_buff[18], _msg_buff[19], _msg_buff[20], _msg_buff[21]);
+    uint32_t yaw_raw, pitch_raw, roll_raw;
+    if (!hex_chars_to_uint32((const char*)&_msg_buff[10], 4, yaw_raw) ||
+        !hex_chars_to_uint32((const char*)&_msg_buff[14], 4, pitch_raw) ||
+        !hex_chars_to_uint32((const char*)&_msg_buff[18], 4, roll_raw)) {
+        return;
+    }
+    const int16_t yaw_angle_cd = wrap_180_cd((int16_t)yaw_raw);
+    const int16_t pitch_angle_cd = -(int16_t)pitch_raw;
+    const int16_t roll_angle_cd = (int16_t)roll_raw;
 
     // convert cd to radians
-    _current_angle_rad.x = radians(roll_angle_cd * 0.01);
-    _current_angle_rad.y = radians(pitch_angle_cd * 0.01);
-    _current_angle_rad.z = radians(yaw_angle_cd * 0.01);
+    _current_angle_rad.x = cd_to_rad(roll_angle_cd);
+    _current_angle_rad.y = cd_to_rad(pitch_angle_cd);
+    _current_angle_rad.z = cd_to_rad(yaw_angle_cd);
     _last_current_angle_ms = AP_HAL::millis();
 
     return;
@@ -1031,6 +924,9 @@ void AP_Mount_Topotek::gimbal_track_analyse()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s started", send_message_prefix, tracking_str);
         _is_tracking = true;
         break;
+    case TrackingStatus::LENS_UNSUPPORT_TRACK:
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s unsupported lens", send_message_prefix, tracking_str);
+        break;
     }
 }
 
@@ -1043,12 +939,16 @@ void AP_Mount_Topotek::gimbal_dist_info_analyse()
     }
 
     // distance is in meters in the format, "12345.6" where each digit is in decimal
-    _measure_dist_m = char_to_hex(_msg_buff[10]) * 10000.0 +
-                      char_to_hex(_msg_buff[11]) * 1000.0 +
-                      char_to_hex(_msg_buff[12]) * 100.0 +
-                      char_to_hex(_msg_buff[13]) * 10.0 +
-                      char_to_hex(_msg_buff[14]) +
-                      char_to_hex(_msg_buff[16]) * 0.1;
+    uint8_t d0, d1, d2, d3, d4, d5;
+    if (!hex_char_to_nibble(_msg_buff[10], d0) ||
+        !hex_char_to_nibble(_msg_buff[11], d1) ||
+        !hex_char_to_nibble(_msg_buff[12], d2) ||
+        !hex_char_to_nibble(_msg_buff[13], d3) ||
+        !hex_char_to_nibble(_msg_buff[14], d4) ||
+        !hex_char_to_nibble(_msg_buff[16], d5)) {
+        return;
+    }
+    _measure_dist_m = d0 * 10000.0 + d1 * 1000.0 + d2 * 100.0 + d3 * 10.0 + d4 + d5 * 0.1;
 }
 
 // gimbal basic information analysis
@@ -1059,7 +959,10 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 
     // extract firmware version
     // the version can be in the format "1.2.3" or "123"
-    const uint8_t data_buf_len = char_to_hex(_msg_buff[5]);
+    uint8_t data_buf_len;
+    if (!hex_char_to_nibble(_msg_buff[5], data_buf_len)) {
+        return;
+    }
 
     // check for "."
     bool contains_period = false;
@@ -1073,7 +976,11 @@ void AP_Mount_Topotek::gimbal_version_analyse()
     if (contains_period) {
         for (uint8_t i = 0; i < data_buf_len; i++) {
             if (_msg_buff[10 + i] != '.') {
-                ver_num = ver_num * 10 + char_to_hex(_msg_buff[10 + i]);
+                uint8_t digit;
+                if (!hex_char_to_nibble(_msg_buff[10 + i], digit)) {
+                    return;
+                }
+                ver_num = ver_num * 10 + digit;
             } else {
                 version[ver_count++] = ver_num;
                 ver_num = 0;
@@ -1083,14 +990,18 @@ void AP_Mount_Topotek::gimbal_version_analyse()
             }
         }
     } else {
+        uint8_t d;
         if (data_buf_len >= 1) {
-            version[0] = char_to_hex(_msg_buff[10]);
+            if (!hex_char_to_nibble(_msg_buff[10], d)) { return; }
+            version[0] = d;
         }
         if (data_buf_len >= 2) {
-            version[1] = char_to_hex(_msg_buff[11]);
+            if (!hex_char_to_nibble(_msg_buff[11], d)) { return; }
+            version[1] = d;
         }
         if (data_buf_len >= 3) {
-            version[2] = char_to_hex(_msg_buff[12]);
+            if (!hex_char_to_nibble(_msg_buff[12], d)) { return; }
+            version[2] = d;
         }
     }
     _firmware_ver = (version[2] << 16) | (version[1] << 8) | (version[0]);
@@ -1108,7 +1019,12 @@ void AP_Mount_Topotek::gimbal_version_analyse()
 // gimbal model name message analysis
 void AP_Mount_Topotek::gimbal_model_name_analyse()
 {
-    strncpy((char *)_model_name, (const char *)_msg_buff + 10, char_to_hex(_msg_buff[5]));
+    uint8_t len;
+    if (!hex_char_to_nibble(_msg_buff[5], len)) {
+        return;
+    }
+    memset(_model_name, 0, sizeof(_model_name));
+    memcpy(_model_name, _msg_buff + 10, MIN((uint8_t)(sizeof(_model_name)-1), len));
 
     // display gimbal model name to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_message_prefix, _model_name);
@@ -1136,23 +1052,12 @@ uint8_t AP_Mount_Topotek::hex2char(uint8_t data) const
     }
 }
 
-// convert a 4 character hex number to an integer
-// the characters are in the format "1234" where the most significant digit is first
-int16_t AP_Mount_Topotek::hexchar4_to_int16(char high, char mid_high, char mid_low, char low) const
-{
-    const int16_t value = (char_to_hex(high) << 12) |
-                          (char_to_hex(mid_high) << 8) |
-                          (char_to_hex(mid_low) << 4) |
-                          (char_to_hex(low));
-
-    return value;
-}
 
 // send a fixed length packet
 bool AP_Mount_Topotek::send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value)
 {
     uint8_t databuff[3];
-    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02x", value);
+    hal.util->snprintf((char *)databuff, ARRAY_SIZE(databuff), "%02X", value);
     return send_variablelen_packet(HeaderType::FIXED_LEN, address, id, write, databuff, ARRAY_SIZE(databuff)-1);
 }
 

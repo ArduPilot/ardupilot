@@ -10,9 +10,6 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 void setup();
@@ -22,9 +19,9 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 // sensor declaration
 static AP_InertialSensor ins;
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
  static AP_ExternalAHRS eAHRS;
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 static AP_GPS gps;
 static AP_Baro baro;
 static AP_SerialManager serial_manager;

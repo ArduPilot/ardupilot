@@ -22,6 +22,10 @@
 #include "SIM_Motor.h"
 #include <AP_JSON/AP_JSON.h>
 
+#ifndef SIM_FRAME_MAX_ACTUATORS
+#define SIM_FRAME_MAX_ACTUATORS 32
+#endif
+
 namespace SITL {
 
 /*
@@ -41,11 +45,11 @@ public:
           motors(_motors) {}
 
 #if AP_SIM_ENABLED
-    // find a frame by name
-    static Frame *find_frame(const char *name);
+    // create a frame by name from its template
+    static Frame *create_frame(const char *name);
     
     // initialise frame
-    void init(const char *frame_str, Battery *_battery);
+    void init(const char *frame_str);
 
     // calculate rotational and linear accelerations
     void calculate_forces(const Aircraft &aircraft,
@@ -58,8 +62,7 @@ public:
     float terminal_rotation_rate;
     uint8_t motor_offset;
 
-    // calculate current and voltage
-    void current_and_voltage(float &voltage, float &current);
+    float get_current_amp(void);
 
     // get mass in kg
     float get_mass(void) const {
@@ -70,6 +73,10 @@ public:
     void set_mass(float new_mass) {
         mass = new_mass;
     }
+
+    float get_model_batt_max_voltage(void) const { return model.maxVoltage; }
+    float get_model_batt_capacity_ah(void) const { return model.battCapacityAh; }
+    float get_model_batt_resistance_ohm(void) const { return model.refBatRes; }
     
 private:
     /*
@@ -92,7 +99,9 @@ private:
         float refCurrent = 29.3; // Amps
         float refAlt = 593; // altitude AMSL
         float refTempC = 25; // temperature C
-        float refBatRes = 0.01; // BAT.Res
+
+        // battery resistance reference value in Ohms
+        float refBatRes = 0.01;
 
         // full pack voltage
         float maxVoltage = 4.2*3;
@@ -132,10 +141,9 @@ private:
         // if zero value will be estimated from mass
         Vector3f moment_of_inertia;
 
-        // if zero will no be used
-        Vector3f motor_pos[12];
-        Vector3f motor_thrust_vec[12];
-        float yaw_factor[12] = {0};
+        Vector3f motor_pos[SIM_FRAME_MAX_ACTUATORS];
+        Vector3f motor_thrust_vec[SIM_FRAME_MAX_ACTUATORS];
+        float yaw_factor[SIM_FRAME_MAX_ACTUATORS] {0,};
 
         // number of motors
         float num_motors = 4;
@@ -155,10 +163,6 @@ private:
     // exposed area times coefficient of drag
     float areaCd;
     float mass;
-    float last_param_voltage;
-#if AP_SIM_ENABLED
-    Battery *battery;
-#endif
 
     // json parsing helpers
     void parse_float(AP_JSON::value val, const char* label, float &param);

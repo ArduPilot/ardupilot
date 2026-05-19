@@ -46,6 +46,9 @@ $(which -s brew) ||
 } 
 echo "Homebrew installed"
 
+# Detect Homebrew prefix (different on Apple Silicon vs Intel)
+HOMEBREW_PREFIX="$(brew --prefix)"
+
 #install command line tools
 echo "Checking CLI Tools installed..."
 {
@@ -78,9 +81,9 @@ function install_arm_none_eabi_toolchain() {
         )
     fi
     echo "Registering STM32 Toolchain for ccache"
-    sudo mkdir -p /usr/local/opt/ccache/libexec
-    sudo ln -s -f $CCACHE_PATH /usr/local/opt/ccache/libexec/arm-none-eabi-g++
-    sudo ln -s -f $CCACHE_PATH /usr/local/opt/ccache/libexec/arm-none-eabi-gcc
+    sudo mkdir -p $HOMEBREW_PREFIX/opt/ccache/libexec
+    sudo ln -s -f $CCACHE_PATH $HOMEBREW_PREFIX/opt/ccache/libexec/arm-none-eabi-g++
+    sudo ln -s -f $CCACHE_PATH $HOMEBREW_PREFIX/opt/ccache/libexec/arm-none-eabi-gcc
     echo "Done!"
 }
 
@@ -102,13 +105,16 @@ function maybe_prompt_user() {
 # auto-updates things when you install other packages which depend on
 # more recent versions.
 # see https://github.com/orgs/Homebrew/discussions/3895
-find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
+# Note: /usr/local/bin may not exist on Apple Silicon Macs
+if [ -d /usr/local/bin ]; then
+    find /usr/local/bin -lname '*/Library/Frameworks/Python.framework/*' -delete
+fi
 
 # brew update randomly failing on CI, so ignore errors:
 brew update
-brew install --force --overwrite gawk curl coreutils wget
+brew install --force --overwrite gawk coreutils wget
 
-PIP=pip
+PIP="python3 -m pip"
 if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
     echo "Checking pyenv..."
     {
@@ -120,7 +126,7 @@ if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
 
         pushd $HOME/.pyenv
         git fetch --tags
-        git checkout v2.3.12
+        git checkout v2.6.7
         popd
         exportline="export PYENV_ROOT=\$HOME/.pyenv"
         echo $exportline >> ~/$SHELL_LOGIN
@@ -134,10 +140,10 @@ if maybe_prompt_user "Install python using pyenv [N/y]?" ; then
     }
     echo "pyenv installed"
     {
-        $(pyenv global 3.10.4)
+        $(pyenv global 3.10.18)
     } || {
-        env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install 3.10.4
-        pyenv global 3.10.4
+        env PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install 3.10.18
+        pyenv global 3.10.18
     }
 fi
 
@@ -152,7 +158,7 @@ echo "Checking ccache..."
 } ||
 {
     brew install ccache
-    exportline="export PATH=/usr/local/opt/ccache/libexec:\$PATH";
+    exportline="export PATH=$HOMEBREW_PREFIX/opt/ccache/libexec:\$PATH";
     eval $exportline
 }
 CCACHE_PATH=$(which ccache)
@@ -161,7 +167,7 @@ if [[ $DO_AP_STM_ENV -eq 1 ]]; then
     install_arm_none_eabi_toolchain
 fi
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect geocoder flake8 junitparser empy==3.3.4 dronecan"
+PYTHON_PKGS="setuptools lxml matplotlib pymavlink MAVProxy pexpect geocoder flake8 junitparser empy==3.3.4 dronecan"
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
     PYTHON_PKGS="$PYTHON_PKGS intelhex gnureadline"
@@ -172,7 +178,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
 fi
 
 $PIP install --upgrade pip
-$PIP install wheel
+$PIP install --force-reinstall wheel
 $PIP install $PYTHON_PKGS
 
 echo "Adding ArduPilot Tools to environment"
@@ -214,7 +220,7 @@ grep -Fxq "$exportline3" ~/$SHELL_LOGIN 2>/dev/null || {
 }
 fi
 
-exportline4="export PATH=/usr/local/opt/ccache/libexec:\$PATH";
+exportline4="export PATH=$HOMEBREW_PREFIX/opt/ccache/libexec:\$PATH";
 grep -Fxq "$exportline4" ~/$SHELL_LOGIN 2>/dev/null || {
     if maybe_prompt_user "Append CCache to your PATH [N/y]?" ; then
         echo $exportline4 >> ~/$SHELL_LOGIN

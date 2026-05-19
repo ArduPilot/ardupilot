@@ -13,6 +13,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <SRV_Channel/SRV_Channel.h>
 
 #include "AP_Airspeed.h"
 
@@ -25,7 +26,6 @@ Airspeed_Calibration::Airspeed_Calibration()
     , Q0(0.01f)
     , Q1(0.0000005f)
     , state(0, 0, 0)
-    , DT(1)
 {
 }
 
@@ -122,6 +122,13 @@ void AP_Airspeed::update_calibration(uint8_t i, const Vector3f &vground, int16_t
         return;
     }
 
+    if (param[i].use == 2 && !is_zero(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle))) {
+        // special case for gliders with airspeed sensors behind the
+        // propeller. Allow airspeed to be disabled when throttle is
+        // running
+        return;
+    }
+
     // set state.z based on current ratio, this allows the operator to
     // override the current ratio in flight with autocal, which is
     // very useful both for testing and to force a reasonable value.
@@ -164,32 +171,43 @@ void AP_Airspeed::update_calibration(const Vector3f &vground, int16_t max_airspe
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         update_calibration(i, vground, max_airspeed_allowed_during_cal);
     }
+#if HAL_GCS_ENABLED && AP_AIRSPEED_AUTOCAL_ENABLE
     send_airspeed_calibration(vground);
+#endif
 }
 
 
-#if HAL_GCS_ENABLED
+#if HAL_GCS_ENABLED && AP_AIRSPEED_AUTOCAL_ENABLE
 void AP_Airspeed::send_airspeed_calibration(const Vector3f &vground)
 {
-#if AP_AIRSPEED_AUTOCAL_ENABLE
-    const mavlink_airspeed_autocal_t packet{
+    /*
+      the AIRSPEED_AUTOCAL message doesn't have an instance number
+      so we can only send it for one sensor at a time
+     */
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if (!param[i].autocal && !calibration_enabled) {
+            // auto-calibration not enabled on this sensor
+            continue;
+        }
+        const mavlink_airspeed_autocal_t packet{
         vx: vground.x,
         vy: vground.y,
         vz: vground.z,
-        diff_pressure: get_differential_pressure(primary),
+        diff_pressure: get_differential_pressure(i),
         EAS2TAS: AP::ahrs().get_EAS2TAS(),
-        ratio: param[primary].ratio.get(),
-        state_x: state[primary].calibration.state.x,
-        state_y: state[primary].calibration.state.y,
-        state_z: state[primary].calibration.state.z,
-        Pax: state[primary].calibration.P.a.x,
-        Pby: state[primary].calibration.P.b.y,
-        Pcz: state[primary].calibration.P.c.z
-    };
-    gcs().send_to_active_channels(MAVLINK_MSG_ID_AIRSPEED_AUTOCAL,
-                                  (const char *)&packet);
-#endif // AP_AIRSPEED_AUTOCAL_ENABLE
+        ratio: param[i].ratio.get(),
+        state_x: state[i].calibration.state.x,
+        state_y: state[i].calibration.state.y,
+        state_z: state[i].calibration.state.z,
+        Pax: state[i].calibration.P.a.x,
+        Pby: state[i].calibration.P.b.y,
+        Pcz: state[i].calibration.P.c.z
+        };
+        gcs().send_to_active_channels(MAVLINK_MSG_ID_AIRSPEED_AUTOCAL,
+                                      (const char *)&packet);
+        break; // we can only send for one sensor
+    }
 }
-#endif  // HAL_GCS_ENABLED
+#endif  // HAL_GCS_ENABLED && AP_AIRSPEED_AUTOCAL_ENABLE
 
 #endif  // AP_AIRSPEED_ENABLED

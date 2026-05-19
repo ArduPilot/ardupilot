@@ -123,8 +123,8 @@ SPIDesc SPIDeviceManager::device_table[] = {
     { "dataflash", 1, 0}
 };
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
     // this was swiped from AP_HAL_ChibiOS
 
@@ -136,7 +136,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_table)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     SPIDesc &desc = device_table[i];
@@ -160,7 +160,7 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
+    return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
 // void SPIDeviceManager::_timer_tick()

@@ -13,6 +13,68 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
+ * Architectural Principles of CRSF Scripted Menu Support
+ *
+ * The CRSF scripted menu system provides a mechanism for Lua scripts to create and manage
+ * custom menu hierarchies on a CRSF-compatible transmitter. The architecture is a hybrid
+ * model where the C++ backend manages the menu structure, navigation, and response
+ * generation for folders, while the Lua script handles the content of "leaf" parameters
+ * (like selections, commands, and numbers).
+ *
+ * The entire menu system is built on two main C++ classes: `ScriptedMenu` and
+ * `ScriptedParameter`.
+ *
+ * 1.  Global Menu List - All `ScriptedMenu` objects, regardless of their position in the
+ * hierarchy, are stored in a single, flat, singly-linked list. The list is anchored
+ * at the `scripted_menus` object. This flat structure is crucial for the global lookup
+ * functions (`find_menu` and `find_parameter`).
+ *
+ * 2. Parent-Child Hierarchy - The hierarchical relationship between menus is established
+ * using a "parameter-as-a-shortcut" or "symbolic link" pattern:
+ * - Each `ScriptedMenu` object contains a `parent_id` member that correctly stores the
+ * ID of its parent menu. This is used when generating responses for "back" navigation.
+ * - To make a sub-menu appear inside a parent, a special `ScriptedParameter` object is
+ * created within the parent's `params` array.
+ * - The `id` of this special "parameter-link" is manually set to be identical to the
+ * `id` of the sub-menu object it points to.
+ *
+ * This dual-representation (an ID belonging to both a menu object and a parameter-link) is
+ * the key to the entire architecture.
+ *
+ * The interaction to navigate into a sub-menu is a multi-step process that relies on
+ * careful request routing within the C++ backend.
+ *
+ * 1.  Transmitter Request - When a user selects a sub-menu (e.g., "Roll Tuning" with ID 62),
+ * the transmitter sends a `AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ` request for that ID. It does not
+ * know whether the ID represents a parameter or a menu.
+ *
+ * 2.  Initial Routing (`process_scripted_param_read`) - This is the central routing function.
+ * - It first calls `find_parameter(62)`. This function searches the *entire global list* of
+ * menus, checking the `params` array of each one. It successfully finds the "parameter-link"
+ * with ID 62 inside the "Gain Tuner" menu object.
+ * - Having found a parameter, it then performs a second check: `find_menu(62)`. This also
+ * succeeds because a `ScriptedMenu` object with ID 62 exists.
+ * - Because *both* lookups succeeded, the function knows this is a sub-menu navigation request.
+ * It returns `false` to delegate the request to the generic C++ handler.
+ * - If only the `find_parameter` call had succeeded, it would be a regular "leaf" parameter,
+ * and the function would return `true` to send the event to the Lua script for handling.
+ *
+ * 3.  Response Generation (`calc_parameter`) - 
+ * - The delegated request is handled by `calc_parameter`. It calls `find_menu(62)` to get the
+ * `ScriptedMenu` object for "Roll Tuning".
+ * - It then constructs a `FOLDER` type response (`0x2B Parameter settings (entry)`).
+ * - Critically, it packs the `parent_id` (e.g., 41) from the found menu object into the response
+ * payload.
+ * - It also includes the list of child parameter IDs from that menu's `params` array.
+ * - This response is sent to the transmitter, which uses the `parent_id` for "back" navigation
+ * and the child list to populate the new menu screen.
+ *
+ * This architecture ensures a clean separation of concerns: C++ handles the complex and
+ * stateful task of menu navigation, while Lua provides the dynamic content for the final
+ * user-interactive elements.
+ */
+
 #include "AP_RCTelemetry_config.h"
 
 #if HAL_CRSF_TELEM_ENABLED
@@ -93,6 +155,7 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(50, 100);   // heartbeat        10Hz
     add_scheduler_entry(5, 20);     // parameters       50Hz (generally not active unless requested by the TX)
     add_scheduler_entry(50, 200);   // baro_vario        5Hz
+    add_scheduler_entry(50, 200);   // vario             5Hz
     add_scheduler_entry(50, 120);   // Attitude and compass 8Hz
     add_scheduler_entry(200, 1000); // VTX parameters    1Hz
     add_scheduler_entry(1300, 500); // battery           2Hz
@@ -112,7 +175,14 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         return;
     }
 
+    // we need crossfire firmware version
+    if (_crsf_version.pending) {
+        return;
+    }
+
     if (!rc().option_is_enabled(RC_Channels::Option::CRSF_CUSTOM_TELEMETRY)) {
+       _custom_telem.init_done = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: bootstrap complete, fw %d.%02d", get_protocol_string(), _crsf_version.major, _crsf_version.minor);
         return;
     }
 
@@ -122,11 +192,6 @@ void AP_CRSF_Telem::setup_custom_telemetry()
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "%s: passthrough telemetry conflict on SERIAL%d", get_protocol_string(), frsky_port);
        _custom_telem.init_done = true;
        return;
-    }
-
-    // we need crossfire firmware version
-    if (_crsf_version.pending) {
-        return;
     }
 
     AP_Frsky_SPort_Passthrough* passthrough = AP::frsky_passthrough_telem();
@@ -255,9 +320,9 @@ uint8_t AP_CRSF_Telem::get_custom_telem_frame_id() const
     if (!_crsf_version.pending &&
         ((_crsf_version.major > 4 || (_crsf_version.major == 4 && _crsf_version.minor >= 6))
             || is_elrs())) {
-        return AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM;
+        return AP_CRSF_Protocol::CRSF_FRAMETYPE_AP_CUSTOM_TELEM;
     }
-    return AP_RCProtocol_CRSF::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY;
+    return AP_CRSF_Protocol::CRSF_FRAMETYPE_AP_CUSTOM_TELEM_LEGACY;
 }
 
 AP_RCProtocol_CRSF::RFMode AP_CRSF_Telem::get_rf_mode() const
@@ -298,7 +363,7 @@ AP_RCProtocol_CRSF::RFMode AP_CRSF_Telem::get_rf_mode() const
 
 bool AP_CRSF_Telem::is_high_speed_telemetry(const AP_RCProtocol_CRSF::RFMode rf_mode) const
 {
-    if (_crsf_version.protocol != AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS) {
+    if (_crsf_version.protocol != AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS) {
         return rf_mode == AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_150HZ || rf_mode == AP_RCProtocol_CRSF::RFMode::CRSF_RF_MODE_250HZ;
     }
     return get_telemetry_rate() > 30;
@@ -306,7 +371,7 @@ bool AP_CRSF_Telem::is_high_speed_telemetry(const AP_RCProtocol_CRSF::RFMode rf_
 
 uint16_t AP_CRSF_Telem::get_telemetry_rate() const
 {
-    if (_crsf_version.protocol != AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS) {
+    if (_crsf_version.protocol != AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS) {
         return get_avg_packet_rate();
     }
     AP_RCProtocol_CRSF* crsf = AP::crsf();
@@ -378,6 +443,23 @@ void AP_CRSF_Telem::exit_scheduler_params_mode()
     enable_tx_entries();
 }
 
+bool AP_CRSF_Telem::should_enter_scheduler_params_mode() const
+{
+    if (hal.util->get_soft_armed()) {
+        return false;
+    }
+
+    if (_pending_request.frame_type > 0 && _pending_request.frame_type != AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_INFO) {
+        return true;
+    }
+#if AP_CRSF_SCRIPTING_ENABLED
+    if (!ready_params.is_empty()) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
 {
     uint32_t now_ms = AP_HAL::millis();
@@ -389,10 +471,7 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
      We start a "fast parameter window" that we close after 5sec
     */
     bool expired = (now_ms - _custom_telem.params_mode_start_ms) > 5000;
-    if (!_custom_telem.params_mode_active
-        && _pending_request.frame_type > 0
-        && _pending_request.frame_type != AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO
-        && !hal.util->get_soft_armed()) {
+    if (!_custom_telem.params_mode_active && should_enter_scheduler_params_mode()) {
         // fast window start
         _custom_telem.params_mode_start_ms = now_ms;
         _custom_telem.params_mode_active = true;
@@ -407,13 +486,21 @@ void AP_CRSF_Telem::adjust_packet_weight(bool queue_empty)
 // WFQ scheduler
 bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
 {
-    if (!process_rf_mode_changes()) {
+    if (!process_rf_mode_changes() && !_bind_request_pending) {
         return false;
     }
 
     switch (idx) {
     case PARAMETERS:
-        return _pending_request.frame_type > 0;
+        if (_pending_request.frame_type > 0) {
+            return true;
+        }
+#if AP_CRSF_SCRIPTING_ENABLED
+        if (!ready_params.is_empty()) {
+            return true;
+        }
+#endif
+        return false;
     case VTX_PARAMETERS:
 #if AP_VIDEOTX_ENABLED
         return AP::vtx().have_params_changed() ||_vtx_power_change_pending || _vtx_freq_change_pending || _vtx_options_change_pending;
@@ -502,7 +589,7 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
                 disable_scheduler_entry(VERSION_PING);
                 GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"%s: RX device ping failed", get_protocol_string());
             } else {
-                calc_device_ping(AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER);
+                calc_device_ping(AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER);
                 uint32_t tnow_ms = AP_HAL::millis();
                 if ((tnow_ms - _crsf_version.last_request_info_ms) > 5000) {
                     _crsf_version.last_request_info_ms = tnow_ms;
@@ -511,7 +598,7 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
             }
             break;
         case DEVICE_PING:
-            calc_device_ping(AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER);
+            calc_device_ping(AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER);
             break;
         default:
             break;
@@ -519,42 +606,43 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
 }
 
 // Process a frame from the CRSF protocol decoder
-bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data) {
+bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length) {
     switch (frame_type) {
     // this means we are connected to an RC receiver and can send telemetry
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
     // the EVO sends battery frames and we should send telemetry back to populate the OSD
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_BATTERY_SENSOR:
         _enable_telemetry = true;
         break;
 
 #if AP_VIDEOTX_ENABLED
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_VTX:
         process_vtx_frame((VTXFrame*)data);
         break;
 
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VTX_TELEM:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_VTX_TELEM:
         process_vtx_telem_frame((VTXTelemetryFrame*)data);
         break;
 #endif
 
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
         process_ping_frame((ParameterPingFrame*)data);
         break;
 
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ:
         process_param_read_frame((ParameterSettingsReadFrame*)data);
         break;
 
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_WRITE:
-        process_param_write_frame((ParameterSettingsWriteFrame*)data);
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
+        process_param_write_frame((ParameterSettingsWriteFrame*)data, length);
         break;
 
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
         process_device_info_frame((ParameterDeviceInfoFrame*)data);
         break;
 
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
         process_command_frame((CommandFrame*)data);
         break;
 
@@ -659,12 +747,12 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
 void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
 {
     debug("process_ping_frame: %d -> %d", ping->origin, ping->destination);
-    if (ping->destination != 0 && ping->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+    if (ping->destination != 0 && ping->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return; // request was not for us
     }
 
     _param_request.origin = ping->origin;
-    _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
+    _pending_request.frame_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
     _pending_request.destination = ping->origin;
 }
 
@@ -672,12 +760,12 @@ void AP_CRSF_Telem::process_ping_frame(ParameterPingFrame* ping)
 void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
 {
     debug("process_device_info_frame: 0x%x -> 0x%x", info->origin, info->destination);
-    if (info->destination != 0 && info->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+    if (info->destination != 0 && info->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return; // request was not for us
     }
 
     // we are only interested in RC device info for firmware version detection
-    if (info->origin != 0 && info->origin != AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER) {
+    if (info->origin != 0 && info->origin != AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER) {
         return;
     }
     /*
@@ -692,11 +780,11 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
     // get the terminator of the device name string
     const uint8_t offset = strnlen((char*)info->payload,42U);
     if (strncmp((char*)info->payload, "Tracer", 6) == 0) {
-        _crsf_version.protocol = AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_TRACER;
+        _crsf_version.protocol = AP_CRSF_Protocol::ProtocolType::PROTOCOL_TRACER;
     } else if (strncmp((char*)&info->payload[offset+1], "ELRS", 4) == 0) {
         // ELRS magic number is ELRS encoded in the serial number
         // 0x45 'E' 0x4C 'L' 0x52 'R' 0x53 'S'
-        _crsf_version.protocol = AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS;
+        _crsf_version.protocol = AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS;
     }
 
     if (!is_elrs()) {
@@ -725,17 +813,17 @@ void AP_CRSF_Telem::process_device_info_frame(ParameterDeviceInfoFrame* info)
 void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
 {
     debug("process_command_frame: 0x%x -> 0x%x: 0x%x", command->origin, command->destination, command->payload[0]);
-    if (command->destination != 0 && command->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+    if (command->destination != 0 && command->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return; // request was not for us
     }
 
     // we are only interested in commands from the RX
-    if (command->origin != 0 && command->origin != AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER) {
+    if (command->origin != 0 && command->origin != AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER) {
         return;
     }
 
     switch (command->payload[0]) {
-        case AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL_CRSF_SPEED_PROPOSAL: {
+        case AP_CRSF_Protocol::CRSF_COMMAND_GENERAL_CRSF_SPEED_PROPOSAL: {
             uint32_t baud_rate = command->payload[2] << 24 | command->payload[3] << 16
                 | command->payload[4] << 8 | command->payload[5];
             _baud_rate_request.port_id = command->payload[1];
@@ -751,30 +839,53 @@ void AP_CRSF_Telem::process_command_frame(CommandFrame* command)
 
 void AP_CRSF_Telem::process_param_read_frame(ParameterSettingsReadFrame* read_frame)
 {
-    debug("process_param_read_frame: %d -> %d for %d[%d]", read_frame->origin, read_frame->destination,
-        read_frame->param_num, read_frame->param_chunk);
-    if (read_frame->destination != 0 && read_frame->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+    if (read_frame->destination != 0 && read_frame->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+        debug("process_param_read_frame: %d -> %d for %d[%d]: NAK", read_frame->origin, read_frame->destination,
+               read_frame->param_num, read_frame->param_chunk);
         return; // request was not for us
     }
+#if AP_CRSF_SCRIPTING_ENABLED
+    // write parameter in scripted menus
+    if (process_scripted_param_read(read_frame)) {
+        debug("process_param_read_frame: %d -> %d for %d[%d]: scripted response OK", read_frame->origin, read_frame->destination,
+            read_frame->param_num, read_frame->param_chunk);
+        return;
+    }
+#endif // AP_CRSF_SCRIPTING_ENABLED
+    debug("process_param_read_frame: %d -> %d for %d[%d]: generic response", read_frame->origin, read_frame->destination,
+        read_frame->param_num, read_frame->param_chunk);
+    _param_request.origin = read_frame->origin;
+    _param_request.destination = read_frame->destination;
+    _param_request.param_num = read_frame->param_num;
+    _param_request.param_chunk = read_frame->param_chunk;
+    _param_request.payload.payload_length = 0;
 
-    _param_request = *read_frame;
-    _pending_request.frame_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ;
+    _pending_request.frame_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ;
 }
 
 void AP_CRSF_Telem::process_pending_requests()
 {
+#if AP_CRSF_SCRIPTING_ENABLED
+    // handle SCRIPTED parameter requests first, as they are now self-contained
+    if (_pending_request.frame_type == 0 && calc_scripted_parameter()) {
+        // scripted request was popped from outbound_params and handled.
+        _custom_telem.params_mode_start_ms = AP_HAL::millis();
+        return;
+    }
+#endif
     // handle general parameter requests
     switch (_pending_request.frame_type) {
     // construct a response to a ping frame
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_INFO:
         _custom_telem.params_mode_start_ms = AP_HAL::millis();
         calc_device_info();
         break;
     // construct a ping frame originating here
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_PING:
         calc_device_ping(_pending_request.destination);
         break;
-    case AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_READ:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ:
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
         // reset parameter passthrough timeout
         _custom_telem.params_mode_start_ms = AP_HAL::millis();
         calc_parameter();
@@ -819,36 +930,36 @@ void AP_CRSF_Telem::update_vtx_params()
             vtx.get_power_mw(), vtx.get_configured_power_mw(),
             vtx.get_options(), vtx.get_configured_options());
 
-        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND;
-        _telem.ext.command.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_VTX;
-        _telem.ext.command.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
-        _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND;
+        _telem.ext.command.destination = AP_CRSF_Protocol::CRSF_ADDRESS_VTX;
+        _telem.ext.command.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+        _telem.ext.command.command_id = AP_CRSF_Protocol::CRSF_COMMAND_VTX;
 
         uint8_t len = 5;
         // prioritize option changes so that the pilot can get in and out of pitmode
         if (_vtx_options_change_pending) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_PITMODE;
+            _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_PITMODE;
             if (vtx.get_configured_options() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE)) {
                 _telem.ext.command.payload[1] = 1;
             } else {
                 _telem.ext.command.payload[1] = 0;
             }
         } else if (_vtx_freq_change_pending && _vtx_freq_update) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_FREQ;
+            _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_FREQ;
             _telem.ext.command.payload[1] = (vtx.get_frequency_mhz() & 0xFF00) >> 8;
             _telem.ext.command.payload[2] = (vtx.get_frequency_mhz() & 0xFF);
             _vtx_freq_update = false;
             len++;
         } else if (_vtx_freq_change_pending) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_CHANNEL;
+            _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_CHANNEL;
             _telem.ext.command.payload[1] = vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel();
             _vtx_freq_update = true;
         } else if (_vtx_power_change_pending && _vtx_dbm_update) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_POWER_DBM;
+            _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_POWER_DBM;
             _telem.ext.command.payload[1] = vtx.get_configured_power_dbm();
             _vtx_dbm_update = false;
         } else if (_vtx_power_change_pending) {
-            _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_VTX_POWER;
+            _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_POWER;
             if (vtx.get_configured_power_mw() < 26) {
                 vtx.set_configured_power_mw(25);
             } else if (vtx.get_configured_power_mw() < 201) {
@@ -876,7 +987,7 @@ void AP_CRSF_Telem::update_vtx_params()
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
         uint8_t* crcptr = &_telem.ext.command.destination;
-        uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
+        uint8_t crc = crc8_dvb(0, AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND, 0xBA);
         for (uint8_t i = 0; i < len; i++) {
             crc = crc8_dvb(crc, crcptr[i], 0xBA);
         }
@@ -890,9 +1001,9 @@ void AP_CRSF_Telem::update_vtx_params()
 // prepare parameter ping data
 void AP_CRSF_Telem::calc_parameter_ping()
 {
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
-    _telem.ext.ping.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_VTX;
-    _telem.ext.ping.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
+    _telem.ext.ping.destination = AP_CRSF_Protocol::CRSF_ADDRESS_VTX;
+    _telem.ext.ping.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
     _telem_size = sizeof(ParameterPingFrame);
     _telem_pending = true;
 }
@@ -900,9 +1011,9 @@ void AP_CRSF_Telem::calc_parameter_ping()
 // prepare qos data - mandatory frame that must be sent periodically
 void AP_CRSF_Telem::calc_heartbeat()
 {
-    _telem.bcast.heartbeat.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.bcast.heartbeat.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
     _telem_size = sizeof(HeartbeatFrame);
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_HEARTBEAT;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_HEARTBEAT;
     _telem_pending = true;
 }
 
@@ -935,7 +1046,7 @@ void AP_CRSF_Telem::calc_battery()
     _telem.bcast.battery.capacity[2] = (capacity & 0xFF);
 
     _telem_size = sizeof(BatteryFrame);
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BATTERY_SENSOR;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_BATTERY_SENSOR;
 
     _telem_pending = true;
 }
@@ -965,21 +1076,21 @@ uint16_t AP_CRSF_Telem::get_altitude_packed()
 int8_t AP_CRSF_Telem::get_vertical_speed_packed()
 {
     float vspeed = get_vspeed_ms();
-    float vertical_speed_cm_s = vspeed * 100.0f;
+    float vertical_speed_cms = vspeed * 100.0f;
     const int16_t Kl = 100; // linearity constant;
-    const float Kr = .026f; // range constant;
-    int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cm_s)/Kl + 1)/Kr);
-    return vspeed_packed * (is_negative(vertical_speed_cm_s) ? -1 : 1);
+    const float Kr = 0.026f; // range constant;
+    int8_t vspeed_packed = int8_t(logf(fabsf(vertical_speed_cms)/Kl + 1)/Kr);
+    return vspeed_packed * (is_negative(vertical_speed_cms) ? -1 : 1);
 }
 
 // prepare vario data
 void AP_CRSF_Telem::calc_baro_vario()
 {
-    _telem.bcast.baro_vario.altitude_packed = get_altitude_packed();
+    _telem.bcast.baro_vario.altitude_packed = htobe16(get_altitude_packed());
     _telem.bcast.baro_vario.vertical_speed_packed = get_vertical_speed_packed();
 
     _telem_size = sizeof(BaroVarioFrame);
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_BARO_VARIO;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_BARO_VARIO;
 
     _telem_pending = true;
 }
@@ -987,9 +1098,9 @@ void AP_CRSF_Telem::calc_baro_vario()
 // prepare vario data
 void AP_CRSF_Telem::calc_vario()
 {
-    _telem.bcast.vario.v_speed = int16_t(get_vspeed_ms() * 100.0f);
+    _telem.bcast.vario.v_speed = htobe16(int16_t(get_vspeed_ms() * 100.0f));
     _telem_size = sizeof(VarioFrame);
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_VARIO;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_VARIO;
 
     _telem_pending = true;
 }
@@ -1001,13 +1112,13 @@ void AP_CRSF_Telem::calc_gps()
 
     _telem.bcast.gps.latitude = htobe32(loc.lat);
     _telem.bcast.gps.longitude = htobe32(loc.lng);
-    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 100000 / 3600));
+    _telem.bcast.gps.groundspeed = htobe16(roundf(AP::gps().ground_speed() * 36.0f));
     _telem.bcast.gps.altitude = htobe16(constrain_int16(loc.alt / 100, 0, 5000) + 1000);
     _telem.bcast.gps.gps_heading = htobe16(roundf(AP::gps().ground_course() * 100.0f));
     _telem.bcast.gps.satellites = AP::gps().num_sats();
 
     _telem_size = sizeof(AP_CRSF_Telem::GPSFrame);
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_GPS;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_GPS;
 
     _telem_pending = true;
 }
@@ -1020,12 +1131,12 @@ void AP_CRSF_Telem::calc_attitude()
 
     const int16_t INT_PI = 31415;
     // units are radians * 10000
-    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch()) * 10000.0f), -INT_PI, INT_PI));
-    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.roll_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_roll_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.pitch_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_pitch_rad()) * 10000.0f), -INT_PI, INT_PI));
+    _telem.bcast.attitude.yaw_angle = htobe16(constrain_int16(roundf(wrap_PI(_ahrs.get_yaw_rad()) * 10000.0f), -INT_PI, INT_PI));
 
     _telem_size = sizeof(AP_CRSF_Telem::AttitudeFrame);
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_ATTITUDE;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_ATTITUDE;
 
     _telem_pending = true;
 }
@@ -1045,7 +1156,7 @@ void AP_CRSF_Telem::calc_flight_mode()
         );
         // Note: strlen(_telem.bcast.flightmode.flight_mode) is safe because called on a guaranteed null terminated string
         _telem_size = strlen(_telem.bcast.flightmode.flight_mode) + 1; //send the terminator as well
-        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_FLIGHT_MODE;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_FLIGHT_MODE;
         _telem_pending = true;
     }
 }
@@ -1054,7 +1165,7 @@ void AP_CRSF_Telem::calc_flight_mode()
 void AP_CRSF_Telem::calc_device_info() {
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     _telem.ext.info.destination = _param_request.origin;
-    _telem.ext.info.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.info.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
 
     const AP_FWVersion &fwver = AP::fwversion();
     // write out the name with version, max width is 60 - 18 = the meaning of life
@@ -1071,14 +1182,20 @@ void AP_CRSF_Telem::calc_device_info() {
     put_be32_ptr(&_telem.ext.info.payload[n], fwver.os_sw_version);   // software id
     n += 4;
 #if OSD_PARAM_ENABLED
-    _telem.ext.info.payload[n++] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; // param count
+    _telem.ext.info.payload[n] = AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; // param count
+#if AP_CRSF_SCRIPTING_ENABLED
+    for (ScriptedMenu* m = &scripted_menus; m != nullptr; m = m->next_menu) {
+        _telem.ext.info.payload[n] += m->num_params;
+    }
+#endif // AP_CRSF_SCRIPTING_ENABLED
+    n++;
 #else
     _telem.ext.info.payload[n++] = 0; // param count
 #endif
     _telem.ext.info.payload[n++] = 0;   // param version
 
     _telem_size = n + 2;
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_INFO;
 
     _pending_request.frame_type = 0;
     _telem_pending = true;
@@ -1088,9 +1205,9 @@ void AP_CRSF_Telem::calc_device_info() {
 // send a device ping
 void AP_CRSF_Telem::calc_device_ping(uint8_t destination) {
     _telem.ext.ping.destination = destination;
-    _telem.ext.ping.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.ping.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
     _telem_size = 2;
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAM_DEVICE_PING;
     _pending_request.frame_type = 0;
 
     _telem_pending = true;
@@ -1098,18 +1215,18 @@ void AP_CRSF_Telem::calc_device_ping(uint8_t destination) {
 
 // send a command response
 void AP_CRSF_Telem::calc_command_response() {
-    _telem.ext.command.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
-    _telem.ext.command.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
-    _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL;
-    _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_GENERAL_CRSF_SPEED_RESPONSE;
+    _telem.ext.command.destination = AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER;
+    _telem.ext.command.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.command.command_id = AP_CRSF_Protocol::CRSF_COMMAND_GENERAL;
+    _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_GENERAL_CRSF_SPEED_RESPONSE;
     _telem.ext.command.payload[1] = _baud_rate_request.port_id;
     _telem.ext.command.payload[2] = _baud_rate_request.valid;
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND;
 
     // calculate command crc
     uint8_t len = 6;
     uint8_t* crcptr = &_telem.ext.command.destination;
-    uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
+    uint8_t crc = crc8_dvb(0, AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND, 0xBA);
     for (uint8_t i = 0; i < len; i++) {
         crc = crc8_dvb(crc, crcptr[i], 0xBA);
     }
@@ -1125,16 +1242,16 @@ void AP_CRSF_Telem::calc_command_response() {
 
 // send a command response
 void AP_CRSF_Telem::calc_bind() {
-    _telem.ext.command.destination = AP_RCProtocol_CRSF::CRSF_ADDRESS_CRSF_RECEIVER;
-    _telem.ext.command.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
-    _telem.ext.command.command_id = AP_RCProtocol_CRSF::CRSF_COMMAND_RX;
-    _telem.ext.command.payload[0] = AP_RCProtocol_CRSF::CRSF_COMMAND_RX_BIND;
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND;
+    _telem.ext.command.destination = AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER;
+    _telem.ext.command.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.command.command_id = AP_CRSF_Protocol::CRSF_COMMAND_RX;
+    _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_RX_BIND;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND;
 
     // calculate command crc
     uint8_t len = 4;
     uint8_t* crcptr = &_telem.ext.command.destination;
-    uint8_t crc = crc8_dvb(0, AP_RCProtocol_CRSF::CRSF_FRAMETYPE_COMMAND, 0xBA);
+    uint8_t crc = crc8_dvb(0, AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND, 0xBA);
     for (uint8_t i = 0; i < len; i++) {
         crc = crc8_dvb(crc, crcptr[i], 0xBA);
     }
@@ -1151,8 +1268,12 @@ void AP_CRSF_Telem::calc_bind() {
 // return parameter information
 void AP_CRSF_Telem::calc_parameter() {
 #if OSD_PARAM_ENABLED
+#if AP_CRSF_SCRIPTING_ENABLED
+    WITH_SEMAPHORE(scr_sem);
+#endif
+
     _telem.ext.param_entry.header.destination = _param_request.origin;
-    _telem.ext.param_entry.header.origin = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.param_entry.header.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
     size_t idx = 0;
 
     // root folder request
@@ -1167,18 +1288,85 @@ void AP_CRSF_Telem::calc_parameter() {
         _telem.ext.param_entry.payload[idx++] = 't';
         _telem.ext.param_entry.payload[idx++] = 0; // null terminator
 
-        // write out all of the ids we are going to send
-        for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
-            _telem.ext.param_entry.payload[idx++] = i + 1;
+#if AP_CRSF_SCRIPTING_ENABLED
+        if (scripted_menus.next_menu != nullptr) {
+            _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID; // root parameter screen ardupilot menu
+            for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
+                if (m->parent_id == 0) {
+                    _telem.ext.param_entry.payload[idx++] = m->id;   // scripted menus
+                }
+            }
+        } else
+#endif // AP_CRSF_SCRIPTING_ENABLED
+        {
+            // write out all of the ids we are going to send
+            for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
+                _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID + i + 1;
+            }
         }
         _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
 
         _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
-        _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
         _pending_request.frame_type = 0;
         _telem_pending = true;
         return;
     }
+
+#if AP_CRSF_SCRIPTING_ENABLED
+    // root folder request
+    if (scripted_menus.next_menu != nullptr && _param_request.param_num == PARAMETER_MENU_ID) {
+        _telem.ext.param_entry.header.param_num = PARAMETER_MENU_ID;
+        _telem.ext.param_entry.header.chunks_left = 0;
+        _telem.ext.param_entry.payload[idx++] = 0; // parent folder
+        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
+        // name
+        strncpy((char*)&_telem.ext.param_entry.payload[idx], "Parameters", ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1);
+        idx += strlen("Parameters");
+        _telem.ext.param_entry.payload[idx++] = 0; // null terminator
+        // write out all of the ids we are going to send
+        for (uint8_t i = 0; i < AP_OSD_ParamScreen::NUM_PARAMS * AP_OSD_NUM_PARAM_SCREENS; i++) {
+            _telem.ext.param_entry.payload[idx++] = PARAMETER_MENU_ID + i + 1;
+        }
+        _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
+
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        _pending_request.frame_type = 0;
+        _telem_pending = true;
+        return;
+    }
+
+    // scripted menu folder request indexed as the set of parameter ids from SCRIPTED_MENU_START_ID
+    AP_CRSF_Telem::ScriptedMenu* menu = scripted_menus.find_menu(_param_request.param_num);
+
+    if (menu != nullptr) {
+        debug("menu request %d -> %s[%d]", _param_request.param_num, menu->name, menu->num_params);
+
+        _telem.ext.param_entry.header.param_num = _param_request.param_num;
+        _telem.ext.param_entry.header.chunks_left = 0;  // assume menus fit in a single chunk
+
+        _telem.ext.param_entry.payload[idx++] = menu->parent_id; // parent folder
+        _telem.ext.param_entry.payload[idx++] = ParameterType::FOLDER; // type
+        // name
+        const uint8_t namelen = ARRAY_SIZE(_telem.ext.param_entry.payload) - idx - 1;
+        strncpy((char*)&_telem.ext.param_entry.payload[idx], menu->name, namelen);
+        idx += strnlen(menu->name, namelen);
+        _telem.ext.param_entry.payload[idx++] = 0; // null terminator
+
+        // menu entries of parameter ids
+        for (uint8_t i = 0; i < menu->num_params; i++) {
+            _telem.ext.param_entry.payload[idx++] = menu->params[i].id;
+        }
+        _telem.ext.param_entry.payload[idx] = 0xFF; // terminator
+
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+        _pending_request.frame_type = 0;
+        _telem_pending = true;
+        return;
+    }
+#endif // AP_CRSF_SCRIPTING_ENABLED
 
     AP_OSD* osd = AP::osd();
 
@@ -1186,54 +1374,54 @@ void AP_CRSF_Telem::calc_parameter() {
         return;
     }
 
-    AP_OSD_ParamSetting* param = osd->get_setting((_param_request.param_num - 1) / AP_OSD_ParamScreen::NUM_PARAMS,
-        (_param_request.param_num - 1) % AP_OSD_ParamScreen::NUM_PARAMS);
+    AP_OSD_ParamSetting* setting = osd->get_setting((_param_request.param_num - (PARAMETER_MENU_ID + 1)) / AP_OSD_ParamScreen::NUM_PARAMS,
+        (_param_request.param_num - (PARAMETER_MENU_ID + 1)) % AP_OSD_ParamScreen::NUM_PARAMS);
 
-    if (param == nullptr) {
+    if (setting == nullptr) {
         return;
     }
 
     _telem.ext.param_entry.header.param_num = _param_request.param_num;
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
-    if (param->get_custom_metadata() != nullptr) {
-        calc_text_selection(param, _param_request.param_chunk);
+    if (setting->get_custom_metadata() != nullptr) {
+        calc_text_selection(setting, _param_request.param_chunk);
         return;
     }
 #endif
     _telem.ext.param_entry.header.chunks_left = 0;
     _telem.ext.param_entry.payload[idx++] = 0; // parent folder
     idx++;  // leave a gap for the type
-    param->copy_name_camel_case((char*)&_telem.ext.param_entry.payload[idx], 17);
+    setting->copy_name_camel_case((char*)&_telem.ext.param_entry.payload[idx], 17);
     idx += strnlen((char*)&_telem.ext.param_entry.payload[idx], 16) + 1;
 
-    switch (param->_param_type) {
+    switch (setting->_param_type) {
     case AP_PARAM_INT8: {
-        AP_Int8* p = (AP_Int8*)param->_param;
+        AP_Int8* p = (AP_Int8*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::INT8;
         _telem.ext.param_entry.payload[idx] = p->get();  // value
-        _telem.ext.param_entry.payload[idx+1] = int8_t(param->_param_min);  // min
-        _telem.ext.param_entry.payload[idx+2] = int8_t(param->_param_max); // max
+        _telem.ext.param_entry.payload[idx+1] = int8_t(setting->_param_min.get());  // min
+        _telem.ext.param_entry.payload[idx+2] = int8_t(setting->_param_max.get()); // max
         _telem.ext.param_entry.payload[idx+3] = int8_t(0);  // default
         idx += 4;
         break;
     }
     case AP_PARAM_INT16: {
-        AP_Int16* p = (AP_Int16*)param->_param;
+        AP_Int16* p = (AP_Int16*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::INT16;
         put_be16_ptr(&_telem.ext.param_entry.payload[idx], p->get());  // value
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+2], param->_param_min);  // min
-        put_be16_ptr(&_telem.ext.param_entry.payload[idx+4], param->_param_max); // max
+        put_be16_ptr(&_telem.ext.param_entry.payload[idx+2], setting->_param_min.get());  // min
+        put_be16_ptr(&_telem.ext.param_entry.payload[idx+4], setting->_param_max.get()); // max
         put_be16_ptr(&_telem.ext.param_entry.payload[idx+6], 0);  // default
         idx += 8;
         break;
     }
     case AP_PARAM_INT32: {
-        AP_Int32* p = (AP_Int32*)param->_param;
+        AP_Int32* p = (AP_Int32*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::FLOAT;
 #define FLOAT_ENCODE(f) (int32_t(roundf(f)))
         put_be32_ptr(&_telem.ext.param_entry.payload[idx], p->get());  // value
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+4], FLOAT_ENCODE(param->_param_min));  // min
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+8], FLOAT_ENCODE(param->_param_max)); // max
+        put_be32_ptr(&_telem.ext.param_entry.payload[idx+4], FLOAT_ENCODE(setting->_param_min));  // min
+        put_be32_ptr(&_telem.ext.param_entry.payload[idx+8], FLOAT_ENCODE(setting->_param_max)); // max
         put_be32_ptr(&_telem.ext.param_entry.payload[idx+12], FLOAT_ENCODE(0.0f));  // default
 #undef FLOAT_ENCODE
         _telem.ext.param_entry.payload[idx+16] = 0; // decimal point
@@ -1242,10 +1430,10 @@ void AP_CRSF_Telem::calc_parameter() {
         break;
     }
     case AP_PARAM_FLOAT: {
-        AP_Float* p = (AP_Float*)param->_param;
+        AP_Float* p = (AP_Float*)setting->_param;
         _telem.ext.param_entry.payload[1] = ParameterType::FLOAT;
         uint8_t digits = 0;
-        const float incr = MAX(0.001f, param->_param_incr); // a bug in OpenTX prevents this going any smaller
+        const float incr = MAX(0.001f, setting->_param_incr); // a bug in OpenTX prevents this going any smaller
 
         for (float floatp = incr; floatp < 1.0f; floatp *= 10) {
             digits++;
@@ -1253,8 +1441,8 @@ void AP_CRSF_Telem::calc_parameter() {
         const float mult = powf(10, digits);
 #define FLOAT_ENCODE(f) (int32_t(roundf(mult * f)))
         put_be32_ptr(&_telem.ext.param_entry.payload[idx], FLOAT_ENCODE(p->get()));  // value
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+4], FLOAT_ENCODE(param->_param_min));  // min
-        put_be32_ptr(&_telem.ext.param_entry.payload[idx+8], FLOAT_ENCODE(param->_param_max)); // max
+        put_be32_ptr(&_telem.ext.param_entry.payload[idx+4], FLOAT_ENCODE(setting->_param_min));  // min
+        put_be32_ptr(&_telem.ext.param_entry.payload[idx+8], FLOAT_ENCODE(setting->_param_max)); // max
         put_be32_ptr(&_telem.ext.param_entry.payload[idx+12], FLOAT_ENCODE(0.0f));  // default
         _telem.ext.param_entry.payload[idx+16] = digits; // decimal point
         put_be32_ptr(&_telem.ext.param_entry.payload[idx+17], FLOAT_ENCODE(incr));  // step size
@@ -1272,12 +1460,72 @@ void AP_CRSF_Telem::calc_parameter() {
     _telem.ext.param_entry.payload[idx] = 0; // units
 
     _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + 1 + idx;
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
 
     _pending_request.frame_type = 0;
     _telem_pending = true;
 #endif  // OSD_PARAM_ENABLED
 }
+
+#if AP_CRSF_SCRIPTING_ENABLED
+// process a completed scripted parameter request from the outbound queue
+bool AP_CRSF_Telem::calc_scripted_parameter()
+{
+    WITH_SEMAPHORE(scr_sem);
+    ScriptedParameterWrite spw;
+    // Check if there's a fully-formed scripted request to process from a Lua script.
+    // This is the new thread-safe path that avoids using shared global variables.
+    if (!ready_params.pop(spw)) {
+        return false;
+    }
+
+    // The spw object now contains all context needed to build the response.
+    size_t idx = 0;
+    _telem.ext.param_entry.header.destination = spw.origin;
+    _telem.ext.param_entry.header.origin = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    _telem.ext.param_entry.header.param_num = spw.param_num;
+
+    // For a WRITE to a non-COMMAND parameter, the response type is PARAMETER_WRITE (0x2D).
+    if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE &&
+        !(spw.param->length > 0 && spw.param->data[0] == ParameterType::COMMAND)) {
+
+        memcpy((uint8_t*)_telem.ext.param_write.payload, spw.payload.payload, MIN(spw.payload.payload_length, 57));
+        idx += spw.payload.payload_length;
+
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsHeader) + idx;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE;
+
+    } else {
+        // For a READ, or a WRITE to a COMMAND parameter, the response is a SETTINGS_ENTRY (0x2B).
+
+        if (spw.type == ScriptedParameterEvents::PARAMETER_WRITE) { // COMMAND type
+            _telem.ext.param_entry.header.chunks_left = 0;
+            _telem.ext.param_entry.payload[idx++] = spw.param->parent_id;
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx], spw.payload.payload, MIN(spw.payload.payload_length, 57-idx));
+            idx += spw.payload.payload_length;
+        } else { // READ type
+            const uint8_t CHUNK_SIZE = 55;  // This wastes a byte on chunks > 0 but makes the maths easier
+            const uint8_t chunks = ((spw.param->length) / CHUNK_SIZE) + 1;  // includes the extra byte for the parent folder id
+            _telem.ext.param_entry.header.chunks_left = (chunks - 1) - spw.param_chunk;
+
+            if (spw.param_chunk == 0) {
+                _telem.ext.param_entry.payload[idx++] = spw.param->parent_id; // parent folder only in first chunk
+            }
+
+            const uint8_t chunk_len = _telem.ext.param_entry.header.chunks_left > 0 ? CHUNK_SIZE : (spw.param->length + 1) % CHUNK_SIZE;
+            memcpy((uint8_t*)&_telem.ext.param_entry.payload[idx],
+                    &spw.param->data[spw.param_chunk * CHUNK_SIZE], chunk_len);
+            idx += chunk_len;
+        }
+        _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + idx;
+        _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+    }
+
+    _pending_request.frame_type = 0;
+    _telem_pending = true;
+    return true; // Scripted request handled.
+}
+#endif // AP_CRSF_SCRIPTING_ENABLED
 
 #if HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
 // class that spits out a chunk of data from a larger stream of contiguous chunks
@@ -1288,8 +1536,13 @@ void AP_CRSF_Telem::calc_parameter() {
 class BufferChunker {
 public:
     BufferChunker(uint8_t* buf, uint16_t chunk_size, uint16_t start_chunk) :
-        _buf(buf), _idx(0), _start_chunk(start_chunk), _chunk_size(chunk_size), _chunk(0), _bytes(0) {
-    }
+        _buf(buf),
+        _idx(0),
+        _bytes(0),
+        _chunk(0),
+        _start_chunk(start_chunk),
+        _chunk_size(chunk_size)
+    { }
 
     // accumulate a string, writing to the underlying buffer as required
     void put_string(const char* str, uint16_t str_len) {
@@ -1421,7 +1674,7 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
     _telem.ext.param_entry.header.chunks_left = chunker.chunks_remaining();
 
     _telem_size = sizeof(AP_CRSF_Telem::ParameterSettingsEntryHeader) + chunker.bytes_written();
-    _telem_type = AP_RCProtocol_CRSF::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
+    _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY;
 
     _pending_request.frame_type = 0;
     _telem_pending = true;
@@ -1429,12 +1682,18 @@ void AP_CRSF_Telem::calc_text_selection(AP_OSD_ParamSetting* param, uint8_t chun
 #endif  // HAL_CRSF_TELEM_TEXT_SELECTION_ENABLED
 
 // write parameter information back into AP - assumes we already know the encoding for floats
-void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write_frame)
+void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write_frame, uint8_t length)
 {
     debug("process_param_write_frame: %d -> %d", write_frame->origin, write_frame->destination);
-    if (write_frame->destination != AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
+    if (write_frame->destination != AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER) {
         return; // request was not for us
     }
+#if AP_CRSF_SCRIPTING_ENABLED
+    // write paramter in scripted menus
+    if (process_scripted_param_write(write_frame, length)) {
+        return;
+    }
+#endif
 #if OSD_PARAM_ENABLED
     AP_OSD* osd = AP::osd();
 
@@ -1442,8 +1701,8 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
         return;
     }
 
-    AP_OSD_ParamSetting* param = osd->get_setting((write_frame->param_num - 1) / AP_OSD_ParamScreen::NUM_PARAMS,
-        (write_frame->param_num - 1) % AP_OSD_ParamScreen::NUM_PARAMS);
+    AP_OSD_ParamSetting* param = osd->get_setting((write_frame->param_num - (PARAMETER_MENU_ID + 1)) / AP_OSD_ParamScreen::NUM_PARAMS,
+        (write_frame->param_num - (PARAMETER_MENU_ID + 1)) % AP_OSD_ParamScreen::NUM_PARAMS);
 
     if (param == nullptr) {
         return;
@@ -1499,13 +1758,427 @@ void AP_CRSF_Telem::process_param_write_frame(ParameterSettingsWriteFrame* write
 #endif  // OSD_PARAM_ENABLED
 }
 
+#if AP_CRSF_SCRIPTING_ENABLED
+
+// get a menu event filtered by event type, this adds the event to the outbound queue for processing
+// called from lua
+uint8_t AP_CRSF_Telem::get_menu_event(uint8_t menu_events, uint8_t& param_id, ScriptedPayload& payload)
+{
+    WITH_SEMAPHORE(scr_sem);
+
+    uint8_t events = 0;
+    ScriptedParameterWrite spw;
+    if (inbound_params.pop(spw)) {
+        // not listening for the event, send a response directly
+        if ((spw.type & menu_events) == 0) {
+            ready_params.push(spw);
+            return 0;
+        }
+        switch (spw.type) {
+        case ScriptedParameterEvents::PARAMETER_WRITE:
+            events |= PARAMETER_WRITE;
+            payload = spw.payload;
+            param_id = spw.param->id;
+            break;
+        case ScriptedParameterEvents::PARAMETER_READ:
+            events |= PARAMETER_READ;
+            payload.payload_length = 0;
+            param_id = spw.param->id;
+            break;
+        default:
+            break;
+        }
+        // respond with parameter entry
+        outbound_params.push(spw);
+        debug("get_menu_event(%u) -> %s", param_id, spw.type == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ");
+    }
+
+    return events;
+}
+
+// peek for a menu event filtered by event type, this makes no changes to the outbound queue
+// called from lua
+uint8_t AP_CRSF_Telem::peek_menu_event(uint8_t& param_id, ScriptedPayload& payload, uint8_t& events)
+{
+    WITH_SEMAPHORE(scr_sem);
+
+    ScriptedParameterWrite spw;
+    if (!inbound_params.peek(spw)) {
+        events = 0;
+        param_id = 0;
+        payload.payload_length = 0;
+        return 0;
+    }
+
+    switch (spw.type) {
+        case ScriptedParameterEvents::PARAMETER_WRITE:
+            payload = spw.payload;
+            break;
+        case ScriptedParameterEvents::PARAMETER_READ:
+            payload.payload_length = 0;
+            break;
+        default:
+            break;
+    }
+    events = spw.type;
+    param_id = spw.param->id;
+
+    debug("peek_menu_event(%u) -> %s, size: %u", param_id, events == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ", payload.payload_length);
+
+    return inbound_params.available();
+}
+
+// pop a menu event from the inbound queue and add to the outbound queue for processing via lua
+// called from lua
+void AP_CRSF_Telem::pop_menu_event()
+{
+    ScriptedParameterWrite spw;
+    // Pop the event from the queue. We must check if it's empty in case of a race condition
+    // where another script handled the event between our peek and pop.
+    if (inbound_params.pop(spw)) {
+        debug("pop_menu_event(%u) -> %s", spw.param->id, spw.type == ScriptedParameterEvents::PARAMETER_WRITE ? "WRITE" : "READ");
+        // respond with parameter entry
+        outbound_params.push(spw);
+    } else {
+        debug("pop_menu_event(): EMPTY");
+    }
+}
+
+// send a new response from the first item in the outbound queue
+// called from lua
+bool AP_CRSF_Telem::send_write_response(uint8_t length, const char* data)
+{
+    WITH_SEMAPHORE(scr_sem);
+
+    ScriptedParameterWrite spw;
+    if (!outbound_params.pop(spw)) {
+        // another script might have handled it
+        return false;
+    }
+
+    switch (spw.type) {
+    case ScriptedParameterEvents::PARAMETER_READ:
+        // For a READ response, Lua provides the full data payload to be sent.
+        // We update the parameter's data buffer directly.
+        if (length > spw.param->length) {
+            spw.param->data = (const char*)mem_realloc((char*)spw.param->data, 0, length);
+        }
+        if (spw.param->data == nullptr) {
+            // failed to realloc
+            return false;
+        }
+        memcpy((char*)spw.param->data, data, length);
+        spw.param->length = length;
+        break;
+    case ScriptedParameterEvents::PARAMETER_WRITE:
+        // For a WRITE response, Lua provides the data for the response packet.
+        // This is stored in the payload field of the queued request.
+        memcpy(spw.payload.payload, data, MIN(length, sizeof(spw.payload.payload)));
+        spw.payload.payload_length = MIN(length, sizeof(spw.payload.payload));
+        break;
+    }
+
+    // Update the object in the queue with the new data
+    ready_params.push(spw);
+
+    // The scheduler will now be triggered by the is_packet_ready() check on ready_params
+    // and process this request in calc_parameter().
+    return true;
+}
+
+// send a generic response from the first item in the outbound queue
+// called from lua
+bool AP_CRSF_Telem::send_response()
+{
+    ScriptedParameterWrite spw;
+    if (outbound_params.pop(spw)) {
+        // Update the object in the queue with the new data
+        ready_params.push(spw);
+        return true;
+    }
+    return false;
+}
+
+AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::find_parameter(uint8_t param_num)
+{
+    // This function is called on the root, so loop through all menus.
+    for (ScriptedMenu* m = next_menu; m != nullptr; m = m->next_menu) {
+        // Search all parameters within the current menu 'm'.
+        for (uint8_t i = 0; i < m->num_params; i++) {
+            if (m->params[i].id == param_num) {
+                // Found the parameter (or menu link).
+                return &m->params[i];
+            }
+        }
+    }
+
+    // Parameter was not found in any menu.
+    return nullptr;
+}
+
+// called from lua
+AP_CRSF_Telem::ScriptedParameter* AP_CRSF_Telem::ScriptedMenu::add_parameter(uint8_t length, const char* data)
+{
+    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
+
+    ScriptedParameter* new_params = (ScriptedParameter*)mem_realloc(params,
+        sizeof(ScriptedParameter) * num_params,
+        sizeof(ScriptedParameter) * (num_params+1));
+    if (new_params == nullptr) {
+        return nullptr;
+    }
+    num_params++;
+    params = new_params;
+    ScriptedParameter& param = params[num_params-1];
+    param.id = id + num_params;
+    param.parent_id = id;
+    param.length = length;
+    if (length > 0) {
+        param.data = (const char*)malloc(length);
+
+        if (param.data == nullptr) {
+            num_params--;
+            return nullptr;
+        }
+
+        memcpy((char*)param.data, data, length);
+    }
+    debug("adding menu item %d", param.id);
+
+    return &param;
+}
+
+AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::find_menu(uint8_t param_num)
+{
+    // find the parameter to write
+    for (ScriptedMenu* m = next_menu; m != nullptr; m = m->next_menu) {
+        if (m->id == param_num) {
+            return m;
+        }
+    }
+    return nullptr;
+}
+
+bool AP_CRSF_Telem::ScriptedMenu::remove_menu(uint8_t param_num)
+{
+    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
+
+    // find the parameter to write
+    ScriptedMenu* prev = this;
+    for (ScriptedMenu* m = next_menu; m != nullptr; m = m->next_menu) {
+        if (m->id == param_num) {
+            prev->next_menu = m->next_menu;
+            delete m;
+            return true;
+        }
+    }
+    return false;
+}
+
+AP_CRSF_Telem::ScriptedMenu::~ScriptedMenu()
+{
+    if (params != nullptr) {
+        for (uint8_t i = 0; i < num_params; i++) {
+            free((char*)params[i].data);
+        }
+        free(params);
+    }
+    if (name != nullptr) {
+        free((char*)name);
+    }
+}
+
+// add a scripted sub-menu to this menu
+// called from lua
+AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* menu_name, uint8_t size, uint8_t parent_menu)
+{
+    WITH_SEMAPHORE(AP::crsf_telem()->get_semaphore());
+
+    // find the menu to create
+    ScriptedMenu* tail = this;
+    for (; tail->next_menu != nullptr; tail = tail->next_menu) {
+    }
+
+    ScriptedMenu* menu = NEW_NOTHROW ScriptedMenu(menu_name, size, parent_menu);
+    if (menu == nullptr) {
+        return nullptr;
+    }
+
+    menu->id = tail->id == 0 ? SCRIPTED_MENU_START_ID : tail->id + MAX_SCRIPTED_MENU_SIZE + 1;
+    tail->next_menu = menu;
+
+    // dummy parameter for a submenu
+    if (parent_menu != 0) {
+        ScriptedParameter* param = add_parameter(0, nullptr);
+        param->id = menu->id;
+    }
+    return menu;
+}
+
+AP_CRSF_Telem::ScriptedMenu::ScriptedMenu(const char* menu_name, uint8_t size, uint8_t parent_menu)
+{
+    parent_id = parent_menu;
+    name = (const char*)malloc(MAX_SCRIPTED_MENU_NAME_LEN+1);
+    strncpy((char*)name, menu_name, MAX_SCRIPTED_MENU_NAME_LEN);
+//    num_params = size;
+    params = (ScriptedParameter*)calloc(size, sizeof(ScriptedParameter));
+}
+
+bool AP_CRSF_Telem::process_scripted_param_write(ParameterSettingsWriteFrame* write_frame, uint8_t length)
+{
+    if (write_frame->param_num < SCRIPTED_MENU_START_ID) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(scr_sem);   // not called from lua, but interacting with data structures that might change
+
+    // find the parameter to write
+    ScriptedParameter* param = scripted_menus.find_parameter(write_frame->param_num);
+
+    if (param == nullptr || length < 3) {
+        return false;
+    }
+    ScriptedParameterWrite spw {
+        ScriptedParameterEvents::PARAMETER_WRITE,
+        write_frame->destination,
+        write_frame->origin,
+        write_frame->param_num,
+        0,
+        param
+    };
+
+    spw.payload.payload_length = uint8_t(length - 3U);  // remove destination, origin and param number from payload length
+    memcpy(spw.payload.payload, write_frame->payload, spw.payload.payload_length);
+    inbound_params.push(spw); // payload size in frame
+
+    return true;
+}
+
+bool AP_CRSF_Telem::process_scripted_param_read(ParameterSettingsReadFrame* read_frame)
+{
+    if (read_frame->param_num < SCRIPTED_MENU_START_ID) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(scr_sem);   // not called from lua, but interacting with data structures that might change
+
+    if (scripted_menus.find_menu(read_frame->param_num) != nullptr) {
+        // This is a request for a menu folder, not a leaf parameter.
+        // The exception is if it's a multi-chunk read for a parameter that happens
+        // to have the same ID as a menu (which is the case for submenu links).
+        // If it's a chunked read, we must handle it as a scripted param read.
+        if (read_frame->param_chunk == 0) {
+            return false;
+        }
+    }
+
+    // First, check if the requested ID corresponds to a parameter link.
+    ScriptedParameter* param = scripted_menus.find_parameter(read_frame->param_num);
+
+    if (param != nullptr) {
+        // We found a parameter. NOW, we must check if this parameter's ID
+        // ALSO corresponds to a menu object. If it does, it's a sub-menu link.
+        if (scripted_menus.find_menu(read_frame->param_num) != nullptr) {
+            // This is a sub-menu link. Return false to let the C++ 'calc_parameter'
+            // function handle it as a FOLDER request.
+            return false;
+        }
+
+        ScriptedParameterWrite spw{
+            ScriptedParameterEvents::PARAMETER_READ,
+            read_frame->destination,
+            read_frame->origin,
+            read_frame->param_num,
+            read_frame->param_chunk,
+            param
+        };
+
+        if (read_frame->param_chunk > 0) {
+            ready_params.push(spw); // handle directly - no need to involve lua
+        } else {
+            // This is a regular parameter (not a menu link). Handle it in Lua.
+            inbound_params.push(spw);
+        }
+        return true;
+    }
+
+    // If it's not a parameter at all, check if it's a top-level menu request.
+    if (scripted_menus.find_menu(read_frame->param_num) != nullptr) {
+        return false; // Delegate to C++ handler.
+    }
+
+    return false;
+}
+
+// add a scripted top-level menu
+// called from lua
+AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::add_menu(const char* name)
+{
+    WITH_SEMAPHORE(scr_sem);
+
+    // create a new menu
+    ScriptedMenu* new_menu = scripted_menus.add_menu(name, 2, 0);
+    debug("adding menu %d", new_menu->id);
+    return new_menu;
+}
+
+// called from lua
+void AP_CRSF_Telem::clear_menus()
+{
+    WITH_SEMAPHORE(scr_sem);
+
+#ifdef CRSF_DEBUG
+    dump_menu_structure();
+#endif
+    for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; ) {
+        ScriptedMenu* next = m->next_menu;
+        delete m;
+        m = next;
+    }
+    scripted_menus.next_menu = nullptr;
+}
+
+#ifdef CRSF_DEBUG
+void AP_CRSF_Telem::dump_menu_structure()
+{
+    for (ScriptedMenu* m = scripted_menus.next_menu; m != nullptr; m = m->next_menu) {
+        if (m->parent_id == 0) {
+            m->dump_structure(0);
+        }
+    }
+}
+
+void AP_CRSF_Telem::ScriptedMenu::dump_structure(uint8_t indent)
+{
+    char indent_str[] = "                 ";
+    indent_str[indent] = '\0';
+    hal.console->printf("%s[\'%s\': id: %d, parent: %d\n", indent_str, name, id, parent_id);
+    for (uint8_t i = 0; i<num_params; i++) {
+        if (params[i].length == 0) {
+            ScriptedMenu* menu = find_menu(params[i].id);
+            if (menu != nullptr) {
+                menu->dump_structure(indent+1);
+            } else {
+                hal.console->printf("No menu %d!\n", params[i].id);
+            }
+        } else {
+            hal.console->printf("%s \'%s\': id:%d, parent:%d, len:%d\n", indent_str, &params[i].data[1], params[i].id, params[i].parent_id, params[i].length);
+        }
+    }
+    hal.console->printf("%s]\n", indent_str);
+}
+
+#endif
+
+#endif //AP_CRSF_SCRIPTING_ENABLED
+
 // get status text data
 void AP_CRSF_Telem::calc_status_text()
 {
     if (!_statustext.available) {
         WITH_SEMAPHORE(_statustext.sem);
         // check link speed
-        if (_crsf_version.protocol != AP_RCProtocol_CRSF::ProtocolType::PROTOCOL_ELRS
+        if (_crsf_version.protocol != AP_CRSF_Protocol::ProtocolType::PROTOCOL_ELRS
                 && !is_high_speed_telemetry(_telem_rf_mode)) {
             // keep only warning/error/critical/alert/emergency status text messages
             bool got_message = false;
@@ -1606,7 +2279,7 @@ bool AP_CRSF_Telem::_get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_
         return false;
     }
     memcpy(data->payload, &_telem, _telem_size);
-    data->device_address = AP_RCProtocol_CRSF::CRSF_ADDRESS_FLIGHT_CONTROLLER;  // sync byte
+    data->device_address = AP_CRSF_Protocol::CRSF_ADDRESS_FLIGHT_CONTROLLER;  // sync byte
     data->length = _telem_size + 2;
     data->type = _telem_type;
 
@@ -1617,12 +2290,12 @@ bool AP_CRSF_Telem::_get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_
 /*
   fetch data for an external transport, such as CRSF
  */
-bool AP_CRSF_Telem::process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data)
+bool AP_CRSF_Telem::process_frame(AP_RCProtocol_CRSF::FrameType frame_type, void* data, uint8_t length)
 {
     if (!get_singleton()) {
         return false;
     }
-    return singleton->_process_frame(frame_type, data);
+    return singleton->_process_frame(frame_type, data, length);
 }
 
 /*
@@ -1656,3 +2329,5 @@ namespace AP {
 };
 
 #endif  // HAL_CRSF_TELEM_ENABLED
+
+

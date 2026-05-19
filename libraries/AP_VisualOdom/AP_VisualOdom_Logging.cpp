@@ -47,7 +47,7 @@ void AP_VisualOdom_Backend::Write_VisualPosition(uint64_t remote_time_us, uint32
 }
 
 // Write visual velocity sensor data, velocity in NED meters per second
-void AP_VisualOdom_Backend::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, bool ignored, int8_t quality)
+void AP_VisualOdom_Backend::Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, bool ignored, int8_t quality)
 {
     const struct log_VisualVelocity pkt_visualvel {
         LOG_PACKET_HEADER_INIT(LOG_VISUALVEL_MSG),
@@ -57,7 +57,7 @@ void AP_VisualOdom_Backend::Write_VisualVelocity(uint64_t remote_time_us, uint32
         vel_x           : vel.x,
         vel_y           : vel.y,
         vel_z           : vel.z,
-        vel_err         : _frontend.get_vel_noise(),
+        vel_err         : vel_err,
         reset_counter   : reset_counter,
         ignored         : (uint8_t)ignored,
         quality         : quality

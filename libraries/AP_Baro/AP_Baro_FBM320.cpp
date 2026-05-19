@@ -20,7 +20,6 @@
 
 #if AP_BARO_FBM320_ENABLED
 
-#include <utility>
 #include <stdio.h>
 #include <AP_Math/definitions.h>
 
@@ -35,20 +34,15 @@ extern const AP_HAL::HAL &hal;
 
 #define FBM320_WHOAMI 0x42
 
-AP_Baro_FBM320::AP_Baro_FBM320(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_FBM320::AP_Baro_FBM320(AP_Baro &baro, AP_HAL::Device &_dev)
     : AP_Baro_Backend(baro)
-    , dev(std::move(_dev))
+    , dev(&_dev)
 {
 }
 
-AP_Baro_Backend *AP_Baro_FBM320::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_Backend *AP_Baro_FBM320::probe(AP_Baro &baro, AP_HAL::Device &_dev)
 {
-    if (!_dev) {
-        return nullptr;
-    }
-
-    AP_Baro_FBM320 *sensor = NEW_NOTHROW AP_Baro_FBM320(baro, std::move(_dev));
+    AP_Baro_FBM320 *sensor = NEW_NOTHROW AP_Baro_FBM320(baro, _dev);
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;

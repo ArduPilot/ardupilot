@@ -13,11 +13,6 @@ void Rover::init_ardupilot()
 
     battery.init();
 
-#if AP_RPM_ENABLED
-    // Initialise RPM sensor
-    rpm_sensor.init();
-#endif
-
 #if AP_RSSI_ENABLED
     rssi.init();
 #endif
@@ -70,7 +65,7 @@ void Rover::init_ardupilot()
 
     init_rc_in();            // sets up rc channels deadzone
     g2.motors.init(get_frame_type());        // init motors including setting servo out channels ranges
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     // init wheel encoders
     g2.wheel_encoder.init();
@@ -125,6 +120,9 @@ void Rover::init_ardupilot()
 #if AP_MISSION_ENABLED
     // initialise mission library
     mode_auto.mission.init();
+#if HAL_LOGGING_ENABLED
+    mode_auto.mission.set_log_start_mission_item_bit(MASK_LOG_CMD);
+#endif
 #endif
 
     // initialise AP_Logger library
@@ -209,6 +207,48 @@ bool Rover::gcs_mode_enabled(const Mode::Number mode_num) const
     return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
 }
 
+// Return mask of enabled modes, order does not matter, its just for tracking changes
+uint32_t Rover::get_available_mode_enabled_mask() const
+{
+    const Mode* flight_modes[] {
+        &rover.mode_manual,
+        &rover.mode_acro,
+        &rover.mode_steering,
+        &rover.mode_hold,
+        &rover.mode_loiter,
+#if MODE_FOLLOW_ENABLED
+        &rover.mode_follow,
+#endif
+        &rover.mode_simple,
+        &rover.g2.mode_circle,
+        &rover.mode_auto,
+        &rover.mode_rtl,
+        &rover.mode_smartrtl,
+        &rover.mode_guided,
+        &rover.mode_initializing,
+#if MODE_DOCK_ENABLED
+        (Mode *)rover.g2.mode_dock_ptr,
+#endif
+    };
+
+    static_assert(ARRAY_SIZE(flight_modes) <= 32, "Flight modes must fit in 32 bit bitmask");
+
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < ARRAY_SIZE(flight_modes); i++) {
+        const Mode* mode = flight_modes[i];
+
+        // the check here must be the same as the one in `send_available_mode`
+        const bool user_selectable = mode->enabled() && rover.gcs_mode_enabled(mode->mode_number());
+
+        if (user_selectable) {
+            mask |= 1U << i;
+        }
+    }
+
+    return mask;
+}
+
+
 bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 {
     if (control_mode == &new_mode) {
@@ -218,7 +258,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled((Mode::Number)new_mode.mode_number())) {
-        gcs().send_text(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name4());
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE,"Mode change to %s denied, GCS entry disabled (FLTMODE_GCSBLOCK)", new_mode.name());
         return false;
     }
 
@@ -227,7 +267,7 @@ bool Rover::set_mode(Mode &new_mode, ModeReason reason)
         // Log error that we failed to enter desired flight mode
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE,
                            LogErrorCode(new_mode.mode_number()));
-        gcs().send_text(MAV_SEVERITY_WARNING, "Flight mode change failed");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Flight mode change failed");
         return false;
     }
 
@@ -274,7 +314,7 @@ bool Rover::set_mode(Mode::Number new_mode, ModeReason reason)
 
 void Rover::startup_INS(void)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Beginning INS calibration. Do not move vehicle");
     hal.scheduler->delay(100);
 
     ahrs.init();
@@ -326,8 +366,7 @@ bool Rover::is_boat() const
 }
 
 #include <AP_Avoidance/AP_Avoidance.h>
-#include <AP_ADSB/AP_ADSB.h>
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
-#endif
+#endif  // AP_ADSB_AVOIDANCE_ENABLED

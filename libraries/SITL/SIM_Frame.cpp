@@ -22,6 +22,8 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "SIM_Aircraft.h"
 
+#include "SIM_config.h"
+
 #include <stdio.h>
 #include <sys/stat.h>
 
@@ -80,6 +82,52 @@ static Motor quad_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
     Motor(AP_MOTORS_MOT_4,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
 };
+
+#if AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
+static Motor dotriaconta_octaquad_x_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,   1),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  17),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   25),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    9),
+
+    Motor(AP_MOTORS_MOT_5,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,    2),
+    Motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   18),
+    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  26),
+    Motor(AP_MOTORS_MOT_8,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  10),
+
+    Motor(AP_MOTORS_MOT_9,    45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
+    Motor(AP_MOTORS_MOT_10, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 19),
+    Motor(AP_MOTORS_MOT_11,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  27),
+    Motor(AP_MOTORS_MOT_12,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  11),
+
+    Motor(AP_MOTORS_MOT_13,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
+    Motor(AP_MOTORS_MOT_14, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  20),
+    Motor(AP_MOTORS_MOT_15,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 28),
+    Motor(AP_MOTORS_MOT_16,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 12),
+
+    Motor(AP_MOTORS_MOT_17,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  5),
+    Motor(AP_MOTORS_MOT_18, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 21),
+    Motor(AP_MOTORS_MOT_19,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  29),
+    Motor(AP_MOTORS_MOT_20,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  13),
+
+    Motor(AP_MOTORS_MOT_21,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   6),
+    Motor(AP_MOTORS_MOT_22, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  22),
+    Motor(AP_MOTORS_MOT_23,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 30),
+    Motor(AP_MOTORS_MOT_24,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 14),
+
+    Motor(AP_MOTORS_MOT_25,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
+    Motor(AP_MOTORS_MOT_26, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 23),
+    Motor(AP_MOTORS_MOT_27,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  31),
+    Motor(AP_MOTORS_MOT_28,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  15),
+
+    Motor(AP_MOTORS_MOT_29,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
+    Motor(AP_MOTORS_MOT_30, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  24),
+    Motor(AP_MOTORS_MOT_31,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 32),
+    Motor(AP_MOTORS_MOT_32,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 16),
+};
+#endif  // AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
+
 
 static Motor tiltquad_h_vectored_motors[] =
 {
@@ -185,6 +233,30 @@ static Motor octa_quad_motors[] =
     Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6)
 };
 
+static Motor octa_quad_corotating_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_3, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_5,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8),
+    Motor(AP_MOTORS_MOT_6,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_7,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_8, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6)
+};
+
+static Motor octa_quad_cw_corotating_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
+    Motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 2),
+    Motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_5, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
+    Motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 6),
+    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8),
+};
+
 static Motor octa_quad_cw_x_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
@@ -196,6 +268,7 @@ static Motor octa_quad_cw_x_motors[] =
     Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
     Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
 };
+
 
 static Motor dodeca_hexa_motors[] =
 {
@@ -211,6 +284,46 @@ static Motor dodeca_hexa_motors[] =
     Motor(AP_MOTORS_MOT_10, -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   10),
     Motor(AP_MOTORS_MOT_11, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   11),
     Motor(AP_MOTORS_MOT_12, -30, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  12)
+};
+
+static Motor hexadeca_octa_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1),
+    Motor(AP_MOTORS_MOT_2,     0, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  2),
+    Motor(AP_MOTORS_MOT_3,    45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
+    Motor(AP_MOTORS_MOT_4,    45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
+    Motor(AP_MOTORS_MOT_5,    90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   5),
+    Motor(AP_MOTORS_MOT_6,    90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  6),
+    Motor(AP_MOTORS_MOT_7,   135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
+    Motor(AP_MOTORS_MOT_8,   135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
+    Motor(AP_MOTORS_MOT_9,   180, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   9),
+    Motor(AP_MOTORS_MOT_10,  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 10),
+    Motor(AP_MOTORS_MOT_11, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 11),
+    Motor(AP_MOTORS_MOT_12, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  12),
+    Motor(AP_MOTORS_MOT_13,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  13),
+    Motor(AP_MOTORS_MOT_14,  -90, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 14),
+    Motor(AP_MOTORS_MOT_15,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 15),
+    Motor(AP_MOTORS_MOT_16,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  16)
+};
+
+static Motor hexadeca_octa_cw_x_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,    22.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1),
+    Motor(AP_MOTORS_MOT_2,    22.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  2),
+    Motor(AP_MOTORS_MOT_3,    67.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
+    Motor(AP_MOTORS_MOT_4,    67.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4),
+    Motor(AP_MOTORS_MOT_5,   112.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,   5),
+    Motor(AP_MOTORS_MOT_6,   112.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  6),
+    Motor(AP_MOTORS_MOT_7,   157.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  7),
+    Motor(AP_MOTORS_MOT_8,   157.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,   8),
+    Motor(AP_MOTORS_MOT_9,  -157.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,   9),
+    Motor(AP_MOTORS_MOT_10, -157.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 10),
+    Motor(AP_MOTORS_MOT_11, -112.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 11),
+    Motor(AP_MOTORS_MOT_12, -112.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  12),
+    Motor(AP_MOTORS_MOT_13,  -67.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  13),
+    Motor(AP_MOTORS_MOT_14,  -67.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 14),
+    Motor(AP_MOTORS_MOT_15,  -22.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 15),
+    Motor(AP_MOTORS_MOT_16,  -22.5f,  AP_MOTORS_MATRIX_YAW_FACTOR_CW,  16)
 };
 
 static Motor deca_motors[] =
@@ -285,39 +398,52 @@ static Motor firefly_motors[] =
     Motor(AP_MOTORS_MOT_6, -60, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6, -1, 0, 0, 6, 0, -90)
 };
 
+typedef struct {
+    const char *name;
+    uint8_t num_motors;
+    Motor *motors;
+} FrameTemplate;
+
 /*
   table of supported frame types. String order is important for
   partial name matching
  */
-static Frame supported_frames[] =
+static const FrameTemplate supported_frame_templates[] =
 {
-    Frame("+",         4, quad_plus_motors),
-    Frame("quad",      4, quad_plus_motors),
-    Frame("copter",    4, quad_plus_motors),
-    Frame("x",         4, quad_x_motors),
-    Frame("bfxrev",    4, quad_bf_x_rev_motors),
-    Frame("bfx",       4, quad_bf_x_motors),
-    Frame("djix",      4, quad_dji_x_motors),
-    Frame("cwx",       4, quad_cw_x_motors),
-    Frame("tilthvec",  4, tiltquad_h_vectored_motors),
-    Frame("hexax",     6, hexax_motors),
-    Frame("hexa-cwx",  6, hexa_cw_x_motors),
-    Frame("hexa-dji",  6, hexa_dji_x_motors),
-    Frame("hexa",      6, hexa_motors),
-    Frame("octa-cwx",  8, octa_cw_x_motors),
-    Frame("octa-dji",  8, octa_dji_x_motors),
-    Frame("octa-quad-cwx",8, octa_quad_cw_x_motors),
-    Frame("octa-quad", 8, octa_quad_motors),
-    Frame("octa",      8, octa_motors),
-    Frame("deca",     10, deca_motors),
-    Frame("deca-cwx", 10, deca_cw_x_motors),
-    Frame("dodeca-hexa", 12, dodeca_hexa_motors),
-    Frame("tri",       3, tri_motors),
-    Frame("tilttrivec",3, tilttri_vectored_motors),
-    Frame("tilttri",   3, tilttri_motors),
-    Frame("y6",        6, y6_motors),
-    Frame("firefly",   6, firefly_motors),
-    Frame("tilt",      4, tiltquad),
+    {"+",         4, quad_plus_motors},
+    {"quad",      4, quad_plus_motors},
+    {"copter",    4, quad_plus_motors},
+    {"x",         4, quad_x_motors},
+    {"bfxrev",    4, quad_bf_x_rev_motors},
+    {"bfx",       4, quad_bf_x_motors},
+#if AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
+    {"dotriaconta", 32, dotriaconta_octaquad_x_motors},
+#endif  // AP_SIM_FRAME_COPTER_DOTRIACONTA_OCTAQUAD_X_ENABLED
+    {"djix",      4, quad_dji_x_motors},
+    {"cwx",       4, quad_cw_x_motors},
+    {"tilthvec",  4, tiltquad_h_vectored_motors},
+    {"hexadeca-octa", 16, hexadeca_octa_motors},
+    {"hexadeca-octa-cwx", 16, hexadeca_octa_cw_x_motors},
+    {"hexax",     6, hexax_motors},
+    {"hexa-cwx",  6, hexa_cw_x_motors},
+    {"hexa-dji",  6, hexa_dji_x_motors},
+    {"hexa",      6, hexa_motors},
+    {"octa-cwx",  8, octa_cw_x_motors},
+    {"octa-dji",  8, octa_dji_x_motors},
+    {"octa-quad-cwx",8, octa_quad_cw_x_motors},
+    {"octa-quad-cor", 8, octa_quad_corotating_motors},
+    {"octa-quad-cw-cor", 8, octa_quad_cw_corotating_motors},
+    {"octa-quad", 8, octa_quad_motors},
+    {"octa",      8, octa_motors},
+    {"deca",     10, deca_motors},
+    {"deca-cwx", 10, deca_cw_x_motors},
+    {"dodeca-hexa", 12, dodeca_hexa_motors},
+    {"tri",       3, tri_motors},
+    {"tilttrivec",3, tilttri_vectored_motors},
+    {"tilttri",   3, tilttri_motors},
+    {"y6",        6, y6_motors},
+    {"firefly",   6, firefly_motors},
+    {"tilt",      4, tiltquad},
 };
 
 // get air density in kg/m^3
@@ -338,15 +464,15 @@ void Frame::load_frame_params(const char *model_json)
     } else {
         IGNORE_RETURN(asprintf(&fname, "@ROMFS/models/%s", model_json));
         if (AP::FS().stat(model_json, &st) != 0) {
-            AP_HAL::panic("%s failed to load\n", model_json);
+            AP_HAL::panic("%s failed to load", model_json);
         }
     }
     if (fname == nullptr) {
-        AP_HAL::panic("%s failed to load\n", model_json);
+        AP_HAL::panic("%s failed to load", model_json);
     }
     AP_JSON::value *obj = AP_JSON::load_json(model_json);
     if (obj == nullptr) {
-        AP_HAL::panic("%s failed to load\n", model_json);
+        AP_HAL::panic("%s failed to load", model_json);
     }
 
     enum class VarType {
@@ -409,7 +535,7 @@ void Frame::load_frame_params(const char *model_json)
     };
     char label_name[20];
     for (uint8_t i=0; i<ARRAY_SIZE(per_motor_vars); i++) {
-        for (uint8_t j=0; j<12; j++) {
+        for (uint8_t j=0; j<SIM_FRAME_MAX_ACTUATORS; j++) {
             snprintf(label_name, 20, "motor%i_%s", j+1, per_motor_vars[i].label);
             auto v = obj->get(label_name);
             if (v.is<AP_JSON::null>()) {
@@ -451,10 +577,9 @@ void Frame::parse_vector3(AP_JSON::value val, const char* label, Vector3f &param
 /*
   initialise the frame
  */
-void Frame::init(const char *frame_str, Battery *_battery)
+void Frame::init(const char *frame_str)
 {
     model = default_model;
-    battery = _battery;
 
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
@@ -494,8 +619,6 @@ void Frame::init(const char *frame_str, Battery *_battery)
     // power_factor is ratio of power consumed per newton of thrust
     float power_factor = hover_power / hover_thrust;
 
-    battery->setup(model.battCapacityAh, model.refBatRes, model.maxVoltage);
-
     if (uint8_t(model.num_motors) != num_motors) {
         ::printf("Warning model expected %u motors and got %u\n", uint8_t(model.num_motors), num_motors);
     }
@@ -523,14 +646,15 @@ void Frame::init(const char *frame_str, Battery *_battery)
 }
 
 /*
-  find a frame by name
+  create a frame by name from its template
  */
-Frame *Frame::find_frame(const char *name)
+Frame *Frame::create_frame(const char *name)
 {
-    for (uint8_t i=0; i < ARRAY_SIZE(supported_frames); i++) {
+    for (uint8_t i=0; i < ARRAY_SIZE(supported_frame_templates); i++) {
+        auto &tplate = supported_frame_templates[i]; // `template` is a reserved word
         // do partial name matching to allow for frame variants
-        if (strncasecmp(name, supported_frames[i].name, strlen(supported_frames[i].name)) == 0) {
-            return &supported_frames[i];
+        if (strncasecmp(name, tplate.name, strlen(tplate.name)) == 0) {
+            return NEW_NOTHROW Frame(tplate.name, tplate.num_motors, tplate.motors);
         }
     }
     return nullptr;
@@ -555,7 +679,8 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage(), use_drag);
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf,
+                                   gyro, air_density, aircraft.get_battery_voltage(), use_drag);
         torque += mtorque;
         thrust += mthrust;
         // simulate motor rpm
@@ -600,19 +725,13 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     body_accel = thrust/aircraft.gross_mass();
 }
 
-
-// calculate current and voltage
-void Frame::current_and_voltage(float &voltage, float &current)
+// computes (total) instantaneous current
+float Frame::get_current_amp(void)
 {
-    float param_voltage = AP::sitl()->batt_voltage;
-    if (!is_equal(last_param_voltage,param_voltage)) {
-        battery->init_voltage(param_voltage);
-        last_param_voltage = param_voltage;
-    }
-    voltage = battery->get_voltage();
-    current = 0;
+    float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         current += motors[i].get_current();
     }
+    return current;
 }
 #endif // AP_SIM_ENABLED

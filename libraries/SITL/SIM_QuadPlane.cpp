@@ -31,7 +31,11 @@ QuadPlane::QuadPlane(const char *frame_str) :
 
     ground_behavior = GROUND_BEHAVIOR_NO_MOVEMENT;
 
-    if (strstr(frame_str, "-octa-quad")) {
+    if (strstr(frame_str, "-octa-quad-cor")) {
+        frame_type = "octa-quad-cor";
+    } else if (strstr(frame_str, "-octa-quad-cw-cor")) {
+        frame_type = "octa-quad-cw-cor";
+    } else if (strstr(frame_str, "-octa-quad")) {
         frame_type = "octa-quad";
     } else if (strstr(frame_str, "-octaquad")) {
         frame_type = "octa-quad";
@@ -79,9 +83,9 @@ QuadPlane::QuadPlane(const char *frame_str) :
         ground_behavior = GROUND_BEHAVIOR_TAILSITTER;
         thrust_scale *= 1.5;
     }
-    frame = Frame::find_frame(frame_type);
+    frame = Frame::create_frame(frame_type);
     if (frame == nullptr) {
-        printf("Failed to find frame '%s'\n", frame_type);
+        printf("Failed to find frame '%s' or insufficient memory\n", frame_type);
         exit(1);
     }
 
@@ -97,7 +101,10 @@ QuadPlane::QuadPlane(const char *frame_str) :
     frame->motor_offset = motor_offset;
 
     // we use zero terminal velocity to let the plane model handle the drag
-    frame->init(frame_str, &battery);
+    frame->init(frame_str);
+    battery.setup(frame->get_model_batt_capacity_ah(),
+                  frame->get_model_batt_resistance_ohm(),
+                  frame->get_model_batt_max_voltage());
 
     // increase mass for plane components
     mass = frame->get_mass() * 1.5;
@@ -131,10 +138,12 @@ void QuadPlane::update(const struct sitl_input &input)
         quad_accel_body.rotate(ROTATION_PITCH_270);
     }
 
-    // estimate voltage and current
-    frame->current_and_voltage(battery_voltage, battery_current);
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_voltage = battery.get_voltage();
+    battery_current = frame->get_current_amp();
 
-    battery.set_current(battery_current);
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.consume_energy(battery_current, now_us);
 
     float throttle;
     if (reverse_thrust) {

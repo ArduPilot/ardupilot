@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Create directory for APM use
+cd /data
+mkdir -p APM
+chown system:system APM
+
+# Make sure the run scripts are executable
+cd /usr/bin
+chmod a+x voxl-ardupilot
+
+# Check to see if a DSP test signature exists
+if /bin/ls /usr/lib/rfsa/adsp/testsig-*.so &> /dev/null; then
+    /bin/echo "Found DSP signature file"
+else
+    /bin/echo "Could not find DSP signature file"
+    # Look for the DSP signature generation script
+    if [ -f /share/modalai/qrb5165-slpi-test-sig/generate-test-sig.sh ]; then
+        /bin/echo "Attempting to generate the DSP signature file"
+        # Automatically generate the test signature so that px4 can run on SLPI DSP
+        /share/modalai/qrb5165-slpi-test-sig/generate-test-sig.sh
+    else
+        /bin/echo "Could not find the DSP signature file generation script"
+    fi
+fi
+
+# Always flush all changes to disk
+/bin/sync
+
+cd -
+
+# try to reload services, but don't fail if it can't
+set +e
+if [ -f /bin/systemctl ]; then
+	systemctl daemon-reload
+fi
+
+# exit 0 even if systemctl failed
+exit 0

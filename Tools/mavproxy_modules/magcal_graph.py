@@ -12,6 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
 '''
 This module shows the geodesic sections hit by the samples collected during
 compass calibration, and also some status data. The objective of this module is

@@ -94,17 +94,7 @@ PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to defaul
 
 # echo $RELEASE_CODENAME
 
-if [ ${RELEASE_CODENAME} == 'bionic' ] ; then
-    #Ubuntu 18.04 - Melodic
-    ROS_VERSION="melodic"
-    PYTHON_V="python2"
-    heading "${green}Detected Ubuntu 18.04, installing ROS Melodic${reset}"
-elif [ ${RELEASE_CODENAME} == 'buster' ]; then
-    #RPi Buster - Melodic
-    ROS_VERSION="melodic"
-    PYTHON_V="python2"
-    heading "${green}Detected RPi Buster, installing ROS Melodic${reset}"
-elif [ ${RELEASE_CODENAME} == 'focal' ]; then
+if [ ${RELEASE_CODENAME} == 'focal' ]; then
     #Ubuntu 20.04 - Noetic
     ROS_VERSION="noetic"
     PYTHON_V="python3"

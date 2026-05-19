@@ -47,17 +47,13 @@ static const uint8_t MCP9601_WHOAMI                 = 0x41;
 
 
 #define MCP9600_ADDR_LOW        0x60    // ADDR pin pulled low
-#define MCP9600_ADDR_HIGH       0x66    // ADDR pin pulled high
+#define MCP9600_ADDR_HIGH       0x67    // ADDR pin pulled high
 
 #define AP_TemperatureSensor_MCP9600_UPDATE_INTERVAL_MS     500
 #define AP_TemperatureSensor_MCP9600_SCALE_FACTOR           (0.0625f)
 
 #ifndef AP_TemperatureSensor_MCP9600_ADDR_DEFAULT
     #define AP_TemperatureSensor_MCP9600_ADDR_DEFAULT    MCP9600_ADDR_LOW
-#endif
-
-#ifndef AP_TemperatureSensor_MCP9600_ENFORCE_KNOWN_VALID_I2C_ADDRESS
-#define AP_TemperatureSensor_MCP9600_ENFORCE_KNOWN_VALID_I2C_ADDRESS 1
 #endif
 
 #ifndef AP_TemperatureSensor_MCP9600_Filter
@@ -68,14 +64,7 @@ void AP_TemperatureSensor_MCP9600::init()
 {
     constexpr char name[] = "MCP9600";
 
-#if AP_TemperatureSensor_MCP9600_ENFORCE_KNOWN_VALID_I2C_ADDRESS
-    // I2C Address: Default to using MCP9600_ADDR_LOW if it's out of range
-    if ((_params.bus_address < MCP9600_ADDR_LOW) || ( _params.bus_address > MCP9600_ADDR_HIGH)) {
-        _params.bus_address.set(MCP9600_ADDR_LOW);
-    }
-#endif
-
-    _dev = std::move(hal.i2c_mgr->get_device(_params.bus, _params.bus_address));
+    _dev = hal.i2c_mgr->get_device_ptr(_params.bus, _params.bus_address);
     if (!_dev) {
         // device not found
         return;
@@ -137,12 +126,12 @@ bool AP_TemperatureSensor_MCP9600::read_temperature(float &temperature)
     if ((data[0] & MCP9600_CMD_STATUS_UPDATE_READY) == 0) {
         return false;
     }
-    // clear update bit:
-    if (!_dev->write_register(0x04, data[0] & ~MCP9600_CMD_STATUS_UPDATE_READY)) {
-        return false;
-    }
     // read temperature:
     if (!_dev->read_registers(MCP9600_CMD_HOT_JUNCT_TEMP, data, 2)) {
+        return false;
+    }
+    // clear update bit:
+    if (!_dev->write_register(0x04, data[0] & ~MCP9600_CMD_STATUS_UPDATE_READY)) {
         return false;
     }
 

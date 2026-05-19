@@ -13,6 +13,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma GCC optimize("Os")
+
 #include "AP_Generator_IE_FuelCell.h"
 
 #if AP_GENERATOR_IE_ENABLED
@@ -33,7 +35,7 @@ void AP_Generator_IE_FuelCell::init()
     _health_warn_last_ms = AP_HAL::millis();
 }
 
-// Update fuelcell, expected to be called at 20hz
+// Update fuelcell, expected to be called at 10hz
 void AP_Generator_IE_FuelCell::update()
 {
     if (_uart == nullptr) {
@@ -42,8 +44,8 @@ void AP_Generator_IE_FuelCell::update()
 
     const uint32_t now = AP_HAL::millis();
 
-   // Read any available data
-    for (uint8_t i=0; i<30; i++) {  // process at most n bytes
+    // Read any available data
+    for (uint8_t i = 0; i < UINT8_MAX; i++) {  // process at most n bytes
         uint8_t c;
         if (!_uart->read(c)) {
             break;

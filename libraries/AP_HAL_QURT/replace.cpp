@@ -151,7 +151,6 @@ typedef void (*mavlink_data_callback_t)(const struct qurt_rpc_msg *msg, void* p)
 
 static mavlink_data_callback_t mav_cb[MAX_MAVLINK_INSTANCES];
 static void *mav_cb_ptr[MAX_MAVLINK_INSTANCES];
-static uint32_t expected_seq;
 
 void register_mavlink_data_callback(uint8_t instance, mavlink_data_callback_t func, void *p)
 {
@@ -172,10 +171,6 @@ int slpi_link_client_receive(const uint8_t *data, int data_len_in_bytes)
     if (msg->data_length + QURT_RPC_MSG_HEADER_LEN != data_len_in_bytes) {
         return 0;
     }
-    if (msg->seq != expected_seq) {
-        HAP_PRINTF("Bad sequence %u %u", msg->seq, expected_seq);
-    }
-    expected_seq = msg->seq + 1;
 
     switch (msg->msg_id) {
     case QURT_MSG_ID_MAVLINK_MSG: {
@@ -192,6 +187,24 @@ int slpi_link_client_receive(const uint8_t *data, int data_len_in_bytes)
     return 0;
 }
 
+/*
+  forward a pre-formatted string to the apps proc console over RPC
+ */
+void qurt_printf_to_host(const char *buf)
+{
+    struct qurt_rpc_msg msg;
+    const auto len = strnlen(buf, sizeof(msg.data));
+    if (len > sizeof(msg.data)) {
+        return;
+    }
+    msg.msg_id = QURT_MSG_ID_PRINTF;
+    msg.inst = 0;
+    msg.seq = 0;
+    msg.data_length = len;
+    memcpy(msg.data, buf, len);
+    qurt_rpc_send(msg);
+}
+
 int __wrap_printf(const char *fmt, ...)
 {
     va_list ap;
@@ -201,6 +214,7 @@ int __wrap_printf(const char *fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     HAP_PRINTF(buf);
+    qurt_printf_to_host(buf);
 
     return 0;
 }

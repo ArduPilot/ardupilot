@@ -34,21 +34,14 @@ extern const AP_HAL::HAL& hal;
 
 #define APM_LINUX_TIMER_RATE            1000
 #define APM_LINUX_UART_RATE             100
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO ||    \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBRAIN2 || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BH || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DARK || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXFMINI || \
-    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_CANZERO
-#define APM_LINUX_RCIN_RATE             500
-#define APM_LINUX_IO_RATE               50
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
-#define APM_LINUX_RCIN_RATE             50
-#define APM_LINUX_IO_RATE               50
-#else
+
+#ifndef APM_LINUX_RCIN_RATE
 #define APM_LINUX_RCIN_RATE             100
+#endif  // APM_LINUX_RCIN_RATE
+
+#ifndef APM_LINUX_IO_RATE
 #define APM_LINUX_IO_RATE               50
-#endif
+#endif  // APM_LINUX_IO_RATE
 
 #define SCHED_THREAD(name_, UPPER_NAME_)                        \
     {                                                           \

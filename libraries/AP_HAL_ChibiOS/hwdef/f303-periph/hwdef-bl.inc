@@ -9,8 +9,8 @@ FLASH_BOOTLOADER_LOAD_KB 22
 # reserve some space for params
 APP_START_OFFSET_KB 4
 
-# board ID for firmware load
-APJ_BOARD_ID 1004
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F303_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -29,7 +29,6 @@ STDOUT_BAUDRATE 57600
 
 # order of UARTs
 SERIAL_ORDER
-define HAL_USE_UART FALSE
 
 PA4 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 1
@@ -48,7 +47,6 @@ define STM32_SERIAL_USE_USART1 TRUE
 define STM32_SERIAL_USE_USART2 TRUE
 define STM32_SERIAL_USE_USART3 FALSE
 
-define HAL_NO_GPIO_IRQ
 define CH_CFG_ST_TIMEDELTA 0
 #define CH_CFG_USE_DYNAMIC FALSE
 define SERIAL_BUFFERS_SIZE 32

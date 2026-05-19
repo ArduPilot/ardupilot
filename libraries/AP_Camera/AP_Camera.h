@@ -23,6 +23,7 @@ class AP_Camera_Mount;
 class AP_Camera_MAVLink;
 class AP_Camera_MAVLinkCamV2;
 class AP_Camera_Scripting;
+class AP_RunCam;
 
 /// @class	Camera
 /// @brief	Object managing a Photo or video camera
@@ -37,6 +38,7 @@ class AP_Camera {
     friend class AP_Camera_MAVLink;
     friend class AP_Camera_MAVLinkCamV2;
     friend class AP_Camera_Scripting;
+    friend class AP_RunCam;
 
 public:
 
@@ -73,6 +75,9 @@ public:
 #if AP_CAMERA_SCRIPTING_ENABLED
         SCRIPTING = 7,  // Scripting backend
 #endif
+#if AP_CAMERA_RUNCAM_ENABLED
+        RUNCAM = 8,  // RunCam backend
+#endif
     };
 
     // detect and initialise backends
@@ -90,6 +95,12 @@ public:
     // send a mavlink message; returns false if there was not space to
     // send the message, true otherwise
     bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id);
+
+    // send camera information for a specific instance (0-based) to GCS
+    void send_camera_information(uint8_t instance, mavlink_channel_t chan);
+
+    // select which instance to send on the next deferred MSG_CAMERA_INFORMATION send
+    void set_camera_information_send_instance(int16_t instance) { _camera_information_send_instance = instance; }
 
     // configure camera
     void configure(float shooting_mode, float shutter_speed, float aperture, float ISO, int32_t exposure_type, int32_t cmd_id, float engine_cutoff_time);
@@ -186,6 +197,14 @@ public:
     bool change_setting(uint8_t instance, CameraSetting setting, float value);
 #endif
 
+#if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    void set_camera_information(mavlink_camera_information_t camera_info);
+    void set_camera_information(uint8_t instance, mavlink_camera_information_t camera_info);
+
+    void set_stream_information(mavlink_video_stream_information_t camera_info);
+    void set_stream_information(uint8_t instance, mavlink_video_stream_information_t camera_info);
+#endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+
     // Return true and the relay index if relay camera backend is selected, used for conversion to relay functions
     bool get_legacy_relay_index(int8_t &index) const;
 
@@ -208,6 +227,11 @@ protected:
 
     // parameters for backends
     AP_Camera_Params _params[AP_CAMERA_MAX_INSTANCES];
+#if AP_CAMERA_RUNCAM_ENABLED
+    // var info pointer for RunCam
+    static const struct AP_Param::GroupInfo *_backend_var_info[AP_CAMERA_MAX_INSTANCES];
+    uint8_t _runcam_instances;
+#endif
 
 private:
 
@@ -222,12 +246,19 @@ private:
 
     // perform any required parameter conversion
     void convert_params();
+#if AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
+    void convert_runcam_params();
+#endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
 
     // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
 
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan);
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    void send_video_stream_information(mavlink_channel_t chan);
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan);
@@ -240,11 +271,20 @@ private:
     // send camera capture status message to GCS
     void send_camera_capture_status(mavlink_channel_t chan);
 
+#if AP_CAMERA_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(mavlink_channel_t chan);
+#endif
+
     HAL_Semaphore _rsem;                // semaphore for multi-thread access
     AP_Camera_Backend *primary;         // primary camera backed
     bool _is_in_auto_mode;              // true if in AUTO mode
     uint32_t log_camera_bit;            // logging bit (from LOG_BITMASK) to enable camera logging
     AP_Camera_Backend *_backends[AP_CAMERA_MAX_INSTANCES];  // pointers to instantiated backends
+    // Stashes the 0-based instance requested by MAV_CMD_REQUEST_MESSAGE(CAMERA_INFORMATION, param2).
+    // Used to pass the target instance through the deferred-message path so that COMMAND_ACK is
+    // transmitted before the CAMERA_INFORMATION response.  -1 means send for all instances.
+    int16_t _camera_information_send_instance = -1;
 };
 
 namespace AP {

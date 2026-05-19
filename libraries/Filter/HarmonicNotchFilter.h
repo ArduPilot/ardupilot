@@ -114,6 +114,7 @@ public:
         EnableOnAllIMUs = 1<<3,
         TripleNotch = 1<<4,
         TreatLowAsMin = 1<<5,
+        QuintupleNotch = 1<<6,
     };
 
     HarmonicNotchFilterParams(void);
@@ -161,9 +162,7 @@ public:
     void save_params();
 
     // return the number of composite notches given the options
-    uint8_t num_composite_notches(void) const {
-        return hasOption(Options::DoubleNotch) ? 2 : hasOption(Options::TripleNotch) ? 3: 1;
-    }
+    uint8_t num_composite_notches(void) const;
 
 private:
     // configured notch harmonics

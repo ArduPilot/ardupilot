@@ -9,6 +9,8 @@
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_SITL/Storage.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_JSON/AP_JSON.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #include <SITL/SIM_Multicopter.h>
 #include <SITL/SIM_Helicopter.h>
@@ -86,7 +88,6 @@ void SITL_State::_usage(void)
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
-           // "\t--param|-P NAME=VALUE    set some param\n"  CURRENTLY BROKEN!
            "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set start location (lat,lng,alt,yaw) or location name\n"
            "\t--model|-M MODEL         set simulation model\n"
@@ -96,6 +97,7 @@ void SITL_State::_usage(void)
            "\t--gimbal                 enable simulated MAVLink gimbal\n"
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
+           "\t--list-models            list embedded vehicleinfo.json models and exit\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -107,7 +109,6 @@ void SITL_State::_usage(void)
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
            "\t--uartA device           alias for --serial0 (do not use)\n"
-           "\t--rtscts                 enable rtscts on serial ports (default false)\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
            "\t--sim-address ADDR       set address string for simulator\n"
@@ -115,7 +116,7 @@ void SITL_State::_usage(void)
            "\t--sim-port-out PORT      set port num for simulator out\n"
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
-           "\t--sysid ID               set SYSID_THISMAV\n"
+           "\t--sysid ID               set MAV_SYSID\n"
            "\t--slave number           set the number of JSON slaves\n"
         );
 }
@@ -125,7 +126,9 @@ static const struct {
     Aircraft *(*constructor)(const char *frame_str);
 } model_constructors[] = {
     { "quadplane",          QuadPlane::create },
+#if AP_SIM_XPLANE_ENABLED
     { "xplane",             XPlane::create },
+#endif  // AP_SIM_XPLANE_ENABLED
     { "firefly",            QuadPlane::create },
     { "+",                  MultiCopter::create },
     { "quad",               MultiCopter::create },
@@ -143,7 +146,10 @@ static const struct {
     { "octa-cwx",           MultiCopter::create },
     { "octa-dji",           MultiCopter::create },
     { "octa-quad-cwx",      MultiCopter::create },
+    { "dotriaconta_octaquad_x", MultiCopter::create },
     { "dodeca-hexa",        MultiCopter::create },
+    { "hexadeca-octa",      MultiCopter::create },
+    { "hexadeca-octa-cwx",  MultiCopter::create },
     { "tri",                MultiCopter::create },
     { "y6",                 MultiCopter::create },
     { "deca",               MultiCopter::create },
@@ -158,11 +164,21 @@ static const struct {
     { "balancebot",         BalanceBot::create },
     { "sailboat",           Sailboat::create },
     { "motorboat",          MotorBoat::create },
+#if AP_SIM_CRRCSIM_ENABLED
     { "crrcsim",            CRRCSim::create },
+#endif  // AP_SIM_CRRCSIM_ENABLED
+#if AP_SIM_JSBSIM_ENABLED
     { "jsbsim",             JSBSim::create },
+#endif  // AP_SIM_JSBSIM_ENABLED
+#if AP_SIM_FLIGHTAXIS_ENABLED
     { "flightaxis",         FlightAxis::create },
+#endif  // AP_SIM_FLIGHTAXIS_ENABLED
+#if AP_SIM_GAZEBO_ENABLED
     { "gazebo",             Gazebo::create },
+#endif  // AP_SIM_GAZEBO_ENABLED
+#if AP_SIM_LAST_LETTER_ENABLED
     { "last_letter",        last_letter::create },
+#endif  // AP_SIM_LAST_LETTER_ENABLED
     { "tracker",            Tracker::create },
     { "balloon",            Balloon::create },
     { "glider",             Glider::create },
@@ -170,13 +186,25 @@ static const struct {
     { "calibration",        Calibration::create },
     { "vectored",           Submarine::create },
     { "vectored_6dof",      Submarine::create },
+#if AP_SIM_SILENTWINGS_ENABLED
     { "silentwings",        SilentWings::create },
+#endif  // AP_SIM_SILENTWINGS_ENABLED
+#if AP_SIM_MORSE_ENABLED
     { "morse",              Morse::create },
+#endif  // AP_SIM_MORSE_ENABLED
+#if AP_SIM_AIRSIM_ENABLED
     { "airsim",             AirSim::create},
+#endif  // AP_SIM_AIRSIM_ENABLED
+#if AP_SIM_SCRIMMAGE_ENABLED
     { "scrimmage",          Scrimmage::create },
+#endif  // AP_SIM_SCRIMMAGE_ENABLED
     { "webots-python",      WebotsPython::create },
+#if AP_SIM_WEBOTS_ENABLED
     { "webots",             Webots::create },
+#endif  // AP_SIM_WEBOTS_ENABLED
+#if AP_SIM_JSON_ENABLED
     { "JSON",               JSON::create },
+#endif  // AP_SIM_JSON_ENABLED
     { "blimp",              Blimp::create },
     { "novehicle",          NoVehicle::create },
 #if AP_SIM_STRATOBLIMP_ENABLED
@@ -209,7 +237,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     float speedup = 1.0f;
     float sim_rate_hz = 0;
     _instance = 0;
-    _synthetic_clock_mode = false;
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
@@ -267,7 +294,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SERIAL7,
         CMDLINE_SERIAL8,
         CMDLINE_SERIAL9,
-        CMDLINE_RTSCTS,
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
         CMDLINE_SIM_ADDRESS,
@@ -277,6 +303,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_START_TIME,
         CMDLINE_SYSID,
         CMDLINE_SLAVE,
+        CMDLINE_LIST_MODELS,
 #if STORAGE_USE_FLASH
         CMDLINE_SET_STORAGE_FLASH_ENABLED,
 #endif
@@ -296,7 +323,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"rate",            true,   0, 'r'},
         {"console",         false,  0, 'C'},
         {"instance",        true,   0, 'I'},
-        {"param",           true,   0, 'P'},
         {"synthetic-clock", false,  0, 'S'},
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
@@ -327,7 +353,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"serial7",         true,   0, CMDLINE_SERIAL7},
         {"serial8",         true,   0, CMDLINE_SERIAL8},
         {"serial9",         true,   0, CMDLINE_SERIAL9},
-        {"rtscts",          false,  0, CMDLINE_RTSCTS},
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
         {"sim-address",     true,   0, CMDLINE_SIM_ADDRESS},
@@ -337,6 +362,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"start-time",      true,   0, CMDLINE_START_TIME},
         {"sysid",           true,   0, CMDLINE_SYSID},
         {"slave",           true,   0, CMDLINE_SLAVE},
+        {"list-models",     false,  0, CMDLINE_LIST_MODELS},
 #if STORAGE_USE_FLASH
         {"set-storage-flash-enabled", true,   0, CMDLINE_SET_STORAGE_FLASH_ENABLED},
 #endif
@@ -418,11 +444,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             }
         }
         break;
-        case 'P':
-            _set_param_default(gopt.optarg);
-            break;
         case 'S':
-            _synthetic_clock_mode = true;
+            printf("Ignoring stale command-line parameter '-S'");
             break;
         case 'O':
             home_str = gopt.optarg;
@@ -484,9 +507,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL9:
             _serial_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
             break;
-        case CMDLINE_RTSCTS:
-            _use_rtscts = true;
-            break;
         case CMDLINE_BASE_PORT:
             _base_port = atoi(gopt.optarg);
             break;
@@ -514,9 +534,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
                 fprintf(stderr, "You must specify a SYSID greater than 0 and less than 256\n");
                 exit(1);
             }
-            temp_cmdline_param = {"SYSID_THISMAV", static_cast<float>(sysid)};
+            temp_cmdline_param = {"MAV_SYSID", static_cast<float>(sysid)};
             cmdline_param.push(temp_cmdline_param);
-            printf("Setting SYSID_THISMAV=%d\n", sysid);
+            printf("Setting MAV_SYSID=%d\n", sysid);
             break;
         }
 #if STORAGE_USE_POSIX
@@ -538,19 +558,28 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _usage();
             exit(0);
         case CMDLINE_SLAVE: {
-#if HAL_SIM_JSON_MASTER_ENABLED
+#if AP_SIM_JSON_MASTER_ENABLED
             const int32_t slaves = atoi(gopt.optarg);
             if (slaves > 0) {
                 ride_along.init(slaves);
             }
-#endif
+#endif  // AP_SIM_JSON_MASTER_ENABLED
             break;
         }
+        case CMDLINE_LIST_MODELS:
+            list_models_and_exit();
+            break;
         default:
             _usage();
             exit(1);
         }
     }
+
+    // if no explicit --defaults was given, try resolving via the embedded
+    // vehicleinfo.json. This makes the binary self-sufficient: a user
+    // running `arduplane --model=quadplane-tilt` from a directory without
+    // the source tree gets the right parameter defaults from ROMFS.
+    resolve_defaults_from_romfs(model_str, vehicle_str);
 
     if (!model_str) {
         printf("You must specify a vehicle model.  Options are:\n");
@@ -561,6 +590,10 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         // scrolled off the screen:
         printf("You must specify a vehicle model.\n");
         exit(1);
+    }
+
+    if (AP::sitl() != nullptr) {  // some examples don't instantiate this object
+        AP::sitl()->init();
     }
 
     for (uint8_t i=0; i < ARRAY_SIZE(model_constructors); i++) {
@@ -586,7 +619,6 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             sitl_model->set_config(config);
-            _synthetic_clock_mode = true;
             break;
         }
     }
@@ -722,5 +754,136 @@ bool SITL_State::lookup_location(const char *home_str, Location &loc, float &yaw
     ::printf("Failed to find location '%s'\n", home_str);
     return false;
 }
-    
+
+/*
+  append one parm filename to the comma-separated @ROMFS/... list
+ */
+static void append_romfs_path(std::string &joined, const std::string &name)
+{
+    if (!joined.empty()) {
+        joined += ",";
+    }
+    joined += "@ROMFS/";
+    joined += name;
+}
+
+/*
+  given a frame object from vehicleinfo.json, append its
+  default_params_filename entries (string or array) to joined.
+ */
+static void append_frame_defaults(std::string &joined, const AP_JSON::value &frame)
+{
+    const AP_JSON::value &dpf = frame.get("default_params_filename");
+    if (dpf.is<AP_JSON::null>()) {
+        return;
+    }
+    if (dpf.is<std::string>()) {
+        append_romfs_path(joined, dpf.get<std::string>());
+        return;
+    }
+    if (dpf.is<AP_JSON::value::array>()) {
+        const AP_JSON::value::array &arr = dpf.get<AP_JSON::value::array>();
+        for (const auto &v : arr) {
+            if (v.is<std::string>()) {
+                append_romfs_path(joined, v.get<std::string>());
+            }
+        }
+    }
+}
+
+/*
+  search a single vehicle entry for a frame matching model_str. Returns
+  true and fills `joined` if found.
+ */
+static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
+                                     const char *model_str,
+                                     std::string &joined)
+{
+    if (!vehicle.is<AP_JSON::value::object>()) {
+        return false;
+    }
+    const AP_JSON::value &frames = vehicle.get("frames");
+    if (!frames.is<AP_JSON::value::object>()) {
+        return false;
+    }
+    if (frames.contains(std::string(model_str))) {
+        append_frame_defaults(joined, frames.get(std::string(model_str)));
+        return true;
+    }
+    return false;
+}
+
+/*
+  look up the model in @ROMFS/vehicleinfo.json and prepend the matching
+  @ROMFS/<path>,@ROMFS/<path>... list to defaults_path. AP_Param reads
+  the comma-separated list left-to-right with later files overriding
+  earlier ones, so any user-supplied --defaults paths layer on top of
+  the embedded per-frame defaults.
+
+  We first look under the binary's own vehicle (AP_BUILD_TARGET_NAME)
+  and fall back to scanning every top-level vehicle. The scan covers
+  the case where a heli binary (AP_BUILD_TARGET_NAME=ArduCopter) is
+  asked for a frame that lives under "Helicopter" in the JSON.
+ */
+void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str)
+{
+    if (model_str == nullptr) {
+        return;
+    }
+
+    AP_JSON::value *root = AP_JSON::load_json("@ROMFS/vehicleinfo.json");
+    if (root == nullptr) {
+        return;     // no embedded data — graceful no-op
+    }
+
+    std::string joined;
+    bool found = false;
+
+    if (vehicle_str != nullptr && root->contains(std::string(vehicle_str))) {
+        found = resolve_frame_in_vehicle(root->get(std::string(vehicle_str)),
+                                         model_str, joined);
+    }
+
+    if (!found && root->is<AP_JSON::value::object>()) {
+        const AP_JSON::value::object &top = root->get<AP_JSON::value::object>();
+        for (const auto &kv : top) {
+            if (vehicle_str != nullptr && kv.first == vehicle_str) {
+                continue;       // already tried
+            }
+            if (resolve_frame_in_vehicle(kv.second, model_str, joined)) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    if (found && !joined.empty()) {
+        if (defaults_path != nullptr) {
+            // prepend ROMFS list so explicit --defaults files override
+            std::string combined = joined + "," + defaults_path;
+            defaults_path = strdup(combined.c_str());
+        } else {
+            defaults_path = strdup(joined.c_str());
+        }
+    }
+
+    delete root;
+}
+
+/*
+  Implementation of --list-models: dump the embedded vehicleinfo.json
+  to stdout so a GCS can enumerate which models the binary supports.
+ */
+void SITL_State::list_models_and_exit(void)
+{
+    FileData *fd = AP::FS().load_file("@ROMFS/vehicleinfo.json");
+    if (fd == nullptr) {
+        ::fprintf(stderr, "vehicleinfo.json not embedded in this binary\n");
+        exit(1);
+    }
+    fwrite(fd->data, 1, fd->length, stdout);
+    delete fd;
+    exit(0);
+}
+
 #endif

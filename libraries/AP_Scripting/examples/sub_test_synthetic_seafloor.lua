@@ -8,9 +8,10 @@
 -- in the perpendicular direction to define a 2-D height function (h=f(x,y)).
 --
 -- The following Parameters can be set by the test script to control how this driver behaves
---  SCR_USER1 is an index into a table of configuration bundles.
+--  SCR_USER1 is an index into a table of configuration bundles
 --  SCR_USER2 is the average bottom depth in meters
---  SCR_USER3 is a bit field that controls driver logging.
+--  SCR_USER3 is a bit field that controls driver logging
+--  SRC_USER4 is the rangefinder target in meters
 --
 
 ---@diagnostic disable: param-type-mismatch
@@ -33,6 +34,8 @@ local RNGFND_STATUS_GOOD = 4
 -- Copied from libraries/AP_RangeFinder/AP_RangeFinder.h
 local SIGNAL_QUALITY_MIN = 0
 local SIGNAL_QUALITY_MAX = 100
+-- Copied from ArduSub/mode.h enum Mode::Number {}.
+local MODE_SURFTRAK = 21
 
 
 
@@ -536,7 +539,7 @@ local rngfnd_backend
 local range_model
 
 local measurement_noise_func
-local signal_quality_noise_func
+local signal_quality_func
 
 
 
@@ -560,7 +563,7 @@ local function range_finder_driver(sub_loc)
     -- Generate a simulated range measurement
     local true_range_m = range_model:get_range(sub_loc)
     local range_m = measurement_noise_func(true_range_m)
-    local signal_quality = signal_quality_noise_func(SIGNAL_QUALITY_MAX)
+    local signal_quality = signal_quality_func(range_m, true_range_m)
 
     -- Return this measurement to the range finder backend
     rf_state:status(RNGFND_STATUS_GOOD)
@@ -627,16 +630,7 @@ local function initialize_model()
         outlier_rate_ops = 0.0,
         outlier_mean = 0.0,
         outlier_std_dev = 0.0,
-        delay_s = 0.0,
-        callback_interval_ms = UPDATE_PERIOD_MS,
-    }
-
-    local config_signal_quality_noise = {
-        mean = 0.0,
-        std_dev = 0.0,
-        outlier_rate_ops = 0.0,
-        outlier_mean = 0.0,
-        outlier_std_dev = 0.0,
+        outlier_good_sq_limit = 0.0,
         delay_s = 0.0,
         callback_interval_ms = UPDATE_PERIOD_MS,
     }
@@ -649,6 +643,7 @@ local function initialize_model()
         config_measurement_noise.outlier_rate_ops = .2
         config_measurement_noise.outlier_mean = 5
         config_measurement_noise.outlier_std_dev = 2
+        config_measurement_noise.outlier_good_sq_limit = 1
         config_measurement_noise.delay_s = 0.00
     end
 
@@ -657,17 +652,15 @@ local function initialize_model()
     measurement_noise_func = add_noise_funcfactory(config_measurement_noise)
 
 
-    -- Constrain signal quality values
-    local signal_quality_noise_pre = add_noise_funcfactory(config_signal_quality_noise)
-    signal_quality_noise_func = function(m)
-        m = signal_quality_noise_pre(m)
-        if m > SIGNAL_QUALITY_MAX then
+    -- A rapid series of large outliers can cause test failure
+    -- Mark large outliers with a poor signal quality to minimize flakiness
+    -- This also exercises signal_quality handling
+    signal_quality_func = function(m, true_m)
+        if math.abs(m - true_m) > config_measurement_noise.outlier_good_sq_limit then
+            return 50
+        else
             return SIGNAL_QUALITY_MAX
         end
-        if m < SIGNAL_QUALITY_MIN then
-            return SIGNAL_QUALITY_MIN
-        end
-        return m
     end
 
 end
@@ -675,6 +668,13 @@ end
 -------------------------------------------------------------------------------
 
 -- update functions
+
+
+-- SCR_USER4 is the rangefinder target in meters
+local rf_target_cm = param:get('SCR_USER4') * 100
+if not rf_target_cm or rf_target_cm < 50 or rf_target_cm > 5000 then
+    rf_target_cm = 1500
+end
 
 local function update_run()
 
@@ -691,6 +691,12 @@ local function update_run()
             send("Stopping sea floor model range data. Starting to use flat sea floor for range data.")
             range_model.set_origin(nil)
         end
+    end
+
+    -- Check if we have to set the rangefinder target
+    if vehicle:get_mode() == MODE_SURFTRAK and sub:get_rangefinder_target_cm() ~= rf_target_cm then
+        gcs:send_text(6, string.format("Set rangefinder target to %g cm", rf_target_cm))
+        sub:set_rangefinder_target_cm(rf_target_cm)
     end
 
     -- Update with range finder driver
@@ -716,7 +722,7 @@ local function update_init()
 
     initialize_model()
 
-    if not range_model or not measurement_noise_func or not signal_quality_noise_func then
+    if not range_model or not measurement_noise_func or not signal_quality_func then
         return fatal_error("Could not initialize model")
      end
 

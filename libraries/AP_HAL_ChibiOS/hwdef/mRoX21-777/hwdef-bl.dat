@@ -12,8 +12,8 @@ MCU STM32F7xx STM32F777xx
 # crystal frequency
 OSCILLATOR_HZ 24000000
 
-# board ID for firmware load
-APJ_BOARD_ID 136
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MRO_X2V1_777
 
 
 # flash size

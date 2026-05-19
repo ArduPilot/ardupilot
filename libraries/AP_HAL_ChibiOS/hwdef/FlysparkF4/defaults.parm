@@ -1,0 +1,6 @@
+# setup for LED
+SERVO9_FUNCTION 120
+
+#enable DisplayPort OSD
+OSD_TYPE2 5
+

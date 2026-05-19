@@ -38,7 +38,7 @@ void AP_WheelEncoder_SITL_Quadrature::update(void)
 
     // calculate dt
     const uint32_t time_now = AP_HAL::millis();
-    const double dt = (time_now - _state.last_reading_ms)/1000.0f;
+    const double dt = (time_now - _state.last_reading_ms)*0.001f;
     if (is_zero(dt)) { // sanity check
         return;
     }

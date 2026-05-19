@@ -1,3 +1,5 @@
+# flake8: noqa
+
 import json
 import copy
 from emit import Emit
@@ -34,6 +36,8 @@ class JSONEmit(Emit):
 
         # Check all params available
         for param in g.params:
+            if not self.should_emit_param(param):
+                continue
             param_json = {}
 
             # Get display name
@@ -56,6 +60,9 @@ class JSONEmit(Emit):
                 name = name.split(':')[1]
 
             # Remove various unwanted keys
+            for key in list(param.__dict__.keys()):
+                if not self.should_emit_field(param, key):
+                    param.__dict__.pop(key)
             for key in 'real_path', 'SortValues', '__field_text':
                 try:
                     param.__dict__.pop(key)

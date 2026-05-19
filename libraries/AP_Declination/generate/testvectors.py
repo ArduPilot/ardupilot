@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
 '''
 generate some test vectors for autotest
 '''

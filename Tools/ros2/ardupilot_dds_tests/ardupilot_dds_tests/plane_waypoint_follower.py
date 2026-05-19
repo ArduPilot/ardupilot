@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+# flake8: noqa
+
 """
 Run a single-waypoint mission on Plane.
 
@@ -23,16 +25,15 @@ Warning - This is NOT production code; it's a simple demo of capability.
 import math
 import rclpy
 import time
-import errno
 
 from rclpy.node import Node
-from builtin_interfaces.msg import Time
 from ardupilot_msgs.msg import GlobalPosition
 from geographic_msgs.msg import GeoPoseStamped
 from geopy import distance
 from geopy import point
 from ardupilot_msgs.srv import ArmMotors
 from ardupilot_msgs.srv import ModeSwitch
+from geographic_msgs.msg import GeoPointStamped
 
 
 PLANE_MODE_TAKEOFF = 13
@@ -79,6 +80,17 @@ class PlaneWaypointFollower(Node):
         self._subscription_geopose = self.create_subscription(GeoPoseStamped, self._geopose_topic, self.geopose_cb, qos)
         self._cur_geopose = GeoPoseStamped()
 
+        self.declare_parameter("goal_topic", "/ap/goal_lla")
+        self._goal_topic = self.get_parameter("goal_topic").get_parameter_value().string_value
+        qos = rclpy.qos.QoSProfile(
+            reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+            durability=rclpy.qos.DurabilityPolicy.TRANSIENT_LOCAL,
+            depth=1,
+        )
+
+        self._subscription_goal = self.create_subscription(GeoPointStamped, self._goal_topic, self.goal_cb, qos)
+        self._cur_goal = GeoPointStamped()
+
     def geopose_cb(self, msg: GeoPoseStamped):
         """Process a GeoPose message."""
         stamp = msg.header.stamp
@@ -87,6 +99,18 @@ class PlaneWaypointFollower(Node):
 
             # Store current state
             self._cur_geopose = msg
+
+    def goal_cb(self, msg: GeoPointStamped):
+        """Process a Goal message."""
+        stamp = msg.header.stamp
+        self.get_logger().info(
+            "From AP : Goal [sec:{}, nsec: {}, lat:{} lon:{}]".format(
+                stamp.sec, stamp.nanosec, msg.position.latitude, msg.position.longitude
+            )
+        )
+
+        # Store current state
+        self._cur_goal = msg
 
     def arm(self):
         req = ArmMotors.Request()
@@ -128,6 +152,10 @@ class PlaneWaypointFollower(Node):
         """Return latest geopose."""
         return self._cur_geopose
 
+    def get_cur_goal(self):
+        """Return latest goal."""
+        return self._cur_goal
+
     def send_goal_position(self, goal_global_pos):
         """Send goal position. Must be in guided for this to work."""
         self._global_pos_pub.publish(goal_global_pos)
@@ -147,6 +175,17 @@ def achieved_goal(goal_global_pos, cur_geopose):
     euclidian_distance = math.sqrt(flat_distance**2 + (p2[2] - p1[2]) ** 2)
     print(f"Goal is {euclidian_distance} meters away")
     return euclidian_distance < 150
+
+
+def going_to_goal(goal_global_pos, cur_goal):
+    p1 = (goal_global_pos.latitude, goal_global_pos.longitude, goal_global_pos.altitude)
+    cur_pos_lla = cur_goal.position
+    p2 = (cur_pos_lla.latitude, cur_pos_lla.longitude, cur_pos_lla.altitude)
+
+    flat_distance = distance.distance(p1[:2], p2[:2]).m
+    euclidian_distance = math.sqrt(flat_distance**2 + (p2[2] - p1[2]) ** 2)
+    print(f"Commanded and received goal are {euclidian_distance} meters away")
+    return euclidian_distance < 1
 
 
 def main(args=None):
@@ -191,11 +230,15 @@ def main(args=None):
 
         start = node.get_clock().now()
         has_achieved_goal = False
+        is_going_to_goal = False
         while not has_achieved_goal and node.get_clock().now() - start < rclpy.duration.Duration(seconds=120):
             rclpy.spin_once(node)
+            is_going_to_goal = going_to_goal(goal_pos, node.get_cur_goal())
             has_achieved_goal = achieved_goal(goal_pos, node.get_cur_geopose())
             time.sleep(1.0)
 
+        if not is_going_to_goal:
+            raise RuntimeError("Unable to go to goal location")
         if not has_achieved_goal:
             raise RuntimeError("Unable to achieve goal location")
 

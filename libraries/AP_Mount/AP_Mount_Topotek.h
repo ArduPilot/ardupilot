@@ -85,8 +85,27 @@ public:
     bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
 #endif
 
-    // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const override;
+    bool has_camera_information() const override { return true; }
+    // return camera vendor name
+    void get_camera_vendor_name(char *buf, uint8_t buflen) const override { strncpy(buf, "Topotek", buflen); }
+    // return camera model name
+    void get_camera_model_name(char *buf, uint8_t buflen) const override {
+        if (!_got_gimbal_model_name) {
+            return;
+        }
+        strncpy(buf, _model_name, buflen);
+    }
+    // return camera firmware version
+    uint32_t get_camera_firmware_version() const override { return _firmware_ver; }
+    // return camera capability flags
+    uint32_t get_camera_cap_flags() const override {
+        return (CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
+                CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
+                CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
+                CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS |
+                CAMERA_CAP_FLAGS_HAS_TRACKING_POINT |
+                CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE);
+    }
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
@@ -105,6 +124,11 @@ protected:
 
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
+
+    // Topotek can send either rates or angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_AND_RATES_ONLY;
+    };
 
 private:
 
@@ -154,7 +178,8 @@ private:
     enum class TrackingStatus : uint8_t {
         STOPPED_TRACKING = 0x30,                // not tracking
         WAITING_FOR_TRACKING = 0x31,            // wait to track command status
-        TRACKING_IN_PROGRESS = 0x32             // the status is being tracked.
+        TRACKING_IN_PROGRESS = 0x32,            // the status is being tracked
+        LENS_UNSUPPORT_TRACK = 0x34,            // this lens does not support tracking
     };
 
     // identifier bytes
@@ -182,10 +207,10 @@ private:
     void request_gimbal_model_name();
 
     // send angle target in radians to gimbal
-    void send_angle_target(const MountTarget& angle_rad);
+    void send_target_angles(const MountAngleTarget& angle_rad) override;
 
     // send rate target in rad/s to gimbal
-    void send_rate_target(const MountTarget& rate_rads);
+    void send_target_rates(const MountRateTarget& rate_rads) override;
 
     // send time and date to gimbal
     bool send_time_to_gimbal();
@@ -220,10 +245,6 @@ private:
     // hexadecimal to character conversion
     uint8_t hex2char(uint8_t data) const;
 
-    // convert a 4 character hex number to an integer
-    // the characters are in the format "1234" where the most significant digit is first
-    int16_t hexchar4_to_int16(char high, char mid_high, char mid_low, char low) const;
-
     // send a fixed length packet to gimbal
     // returns true on success, false if serial port initialization failed
     bool send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value);
@@ -248,7 +269,7 @@ private:
     bool _got_gimbal_model_name;                                // true if gimbal's model name has been received
     bool _last_zoom_stop;                                       // true if zoom has been stopped (used to re-send in order to handle lost packets)
     bool _last_focus_stop;                                      // true if focus has been stopped (used to re-sent in order to handle lost packets)
-    uint8_t _model_name[16];                                    // gimbal model name
+    char _model_name[16];                                       // gimbal model name, always null-terminated
     uint8_t _sent_time_count;                                   // count of current time messages sent to gimbal
     uint32_t _firmware_ver;                                     // firmware version
     Vector3f _current_angle_rad;                                // current angles in radians received from gimbal (x=roll, y=pitch, z=yaw)
@@ -272,7 +293,7 @@ private:
 
     // stores command ID and corresponding member functions that are compared with the command received by the gimbal
     UartCmdFunctionHandler uart_recv_cmd_compare_list[AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM] = {
-        {{"GAC"}, &AP_Mount_Topotek::gimbal_angle_analyse},
+        {{"GIA"}, &AP_Mount_Topotek::gimbal_angle_analyse},
         {{"REC"}, &AP_Mount_Topotek::gimbal_record_analyse},
         {{"SDC"}, &AP_Mount_Topotek::gimbal_sdcard_analyse},
         {{"LRF"}, &AP_Mount_Topotek::gimbal_dist_info_analyse},

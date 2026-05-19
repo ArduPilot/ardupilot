@@ -51,8 +51,8 @@ void AP_Proximity_RangeFinder::update(void)
                 const AP_Proximity_Boundary_3D::Face face = frontend.boundary.get_face(angle);
                 // distance in meters
                 const float distance = sensor->distance();
-                _distance_min = sensor->min_distance_cm() * 0.01f;
-                _distance_max = sensor->max_distance_cm() * 0.01f;
+                _distance_min = sensor->min_distance();
+                _distance_max = sensor->max_distance();
                 if ((distance <= _distance_max) && (distance >= _distance_min) && !ignore_reading(angle, distance, false)) {
                     frontend.boundary.set_face_attributes(face, angle, distance, state.instance);
                     // update OA database
@@ -64,11 +64,11 @@ void AP_Proximity_RangeFinder::update(void)
             }
             // check upward facing range finder
             if (sensor->orientation() == ROTATION_PITCH_90) {
-                int16_t distance_upward = sensor->distance_cm();
-                int16_t up_distance_min = sensor->min_distance_cm();
-                int16_t up_distance_max = sensor->max_distance_cm();
+                const float distance_upward = sensor->distance();
+                const float up_distance_min = sensor->min_distance();
+                const float up_distance_max = sensor->max_distance();
                 if ((distance_upward >= up_distance_min) && (distance_upward <= up_distance_max)) {
-                    _distance_upward = distance_upward * 0.01f;
+                    _distance_upward = distance_upward;
                 } else {
                     _distance_upward = -1.0; // mark an valid reading
                 }

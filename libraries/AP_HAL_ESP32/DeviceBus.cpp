@@ -16,7 +16,6 @@
 #include "DeviceBus.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <stdio.h>
 
 #include "Scheduler.h"
@@ -31,7 +30,8 @@ using namespace ESP32;
 extern const AP_HAL::HAL& hal;
 
 DeviceBus::DeviceBus(uint8_t _thread_priority) :
-    thread_priority(_thread_priority), semaphore()
+    semaphore(),
+    thread_priority(_thread_priority)
 {
 #ifdef BUSDEBUG
     printf("%s:%d \n", __PRETTY_FUNCTION__, __LINE__);

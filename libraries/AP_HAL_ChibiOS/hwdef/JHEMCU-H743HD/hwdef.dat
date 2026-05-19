@@ -6,8 +6,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1411
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_JHEMCU-H743HD
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -145,8 +145,7 @@ define HAL_GPIO_B_LED_PIN 91
 
 # Dataflash setup
 SPIDEV dataflash SPI3 DEVID1 FLASH1_CS     MODE3 104*MHZ 104*MHZ
-define HAL_LOGGING_DATAFLASH_DRIVER AP_Logger_W25NXX
-define HAL_LOGGING_DATAFLASH_ENABLED 1
+DATAFLASH littlefs:w25nxx
 
 # OSD setup
 SPIDEV osd SPI2 DEVID1 OSD1_CS   MODE0  10*MHZ  10*MHZ
@@ -173,9 +172,10 @@ DMA_PRIORITY TIM5_UP TIM3_UP TIM8_UP SPI1* SPI4*
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 # Motor order implies Betaflight/X for standard ESCs
 define HAL_FRAME_TYPE_DEFAULT 12
+define DEFAULT_NTF_LED_TYPES 455

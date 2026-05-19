@@ -24,7 +24,7 @@
 
 using namespace SITL;
 
-uint32_t RF_BLping::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_BLping::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
 #define BLPING_MSGID_ACK                    1
 #define BLPING_MSGID_NACK                   2
@@ -33,7 +33,7 @@ uint32_t RF_BLping::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buf
 #define BLDPIN_MSGID_DISTANCE_SIMPLE        1211
 #define BLPING_MSGID_CONTINUOUS_START       1400
 
-    const uint32_t alt_mm = uint32_t(alt_cm * 10);
+    const uint32_t alt_mm = uint32_t(alt_m * 1000);
     const uint8_t payload[] = {
         uint8_t(alt_mm & 0xff),
         uint8_t((alt_mm >> 8) & 0xff),

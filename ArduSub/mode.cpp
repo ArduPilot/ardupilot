@@ -6,7 +6,6 @@
 Mode::Mode(void) :
     g(sub.g),
     g2(sub.g2),
-    inertial_nav(sub.inertial_nav),
     ahrs(sub.ahrs),
     motors(sub.motors),
     channel_roll(sub.channel_roll),
@@ -95,9 +94,9 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
 
     // check for valid altitude if old mode did not require it but new one does
     // we only want to stop changing modes if it could make things worse
-    if (!sub.control_check_barometer() && // maybe use ekf_alt_ok() instead?
-        flightmode->has_manual_throttle() &&
-        !new_flightmode->has_manual_throttle()) {
+    if (!flightmode->requires_altitude() &&
+        new_flightmode->requires_altitude() &&
+        !sub.control_check_barometer()) { // maybe use ekf_alt_ok() instead?
         gcs().send_text(MAV_SEVERITY_WARNING, "Mode change failed: %s need alt estimate", new_flightmode->name());
         LOGGER_WRITE_ERROR(LogErrorSubsystem::FLIGHT_MODE, LogErrorCode(mode));
         return false;
@@ -112,7 +111,7 @@ bool Sub::set_mode(Mode::Number mode, ModeReason reason)
     // perform any cleanup required by previous flight mode
     exit_mode(flightmode, new_flightmode);
 
-    // store previous flight mode (only used by tradeheli's autorotation)
+    // store previous flight mode
     prev_control_mode = control_mode;
 
     // update flight mode
@@ -143,6 +142,7 @@ void Sub::exit_mode(Mode::Number old_control_mode, Mode::Number new_control_mode
         camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
     }
+    motors.set_max_throttle(1.0f);
 }
 
 bool Sub::set_mode(const uint8_t new_mode, const ModeReason reason)
@@ -163,6 +163,7 @@ void Sub::exit_mode(Mode *&old_flightmode, Mode *&new_flightmode){
 #if HAL_MOUNT_ENABLED
         camera_mount.set_mode_to_default();
 #endif  // HAL_MOUNT_ENABLED
+    motors.set_max_throttle(1.0f);
 }
 
 // notify_flight_mode - sets notify object based on current flight mode.  Only used for OreoLED notify device
@@ -234,22 +235,23 @@ void Mode::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int1
         rate_ef_level.z = 0;
 
         // Calculate angle limiting earth frame rate commands
+        const float angle_max_cd = attitude_control->lean_angle_max_cd();
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {
-            if (roll_angle > sub.aparm.angle_max) {
-                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle-sub.aparm.angle_max);
-            } else if (roll_angle < -sub.aparm.angle_max) {
-                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle+sub.aparm.angle_max);
+            if (roll_angle > angle_max_cd) {
+                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle-angle_max_cd);
+            } else if (roll_angle < -angle_max_cd) {
+                rate_ef_level.x -=  g.acro_balance_roll*(roll_angle+angle_max_cd);
             }
 
-            if (pitch_angle > sub.aparm.angle_max) {
-                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle-sub.aparm.angle_max);
-            } else if (pitch_angle < -sub.aparm.angle_max) {
-                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle+sub.aparm.angle_max);
+            if (pitch_angle > angle_max_cd) {
+                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle-angle_max_cd);
+            } else if (pitch_angle < -angle_max_cd) {
+                rate_ef_level.y -=  g.acro_balance_pitch*(pitch_angle+angle_max_cd);
             }
         }
 
         // convert earth-frame level rates to body-frame level rates
-        attitude_control->euler_rate_to_ang_vel(attitude_control->get_attitude_target_quat(), rate_ef_level, rate_bf_level);
+        attitude_control->euler_derivative_to_body(attitude_control->get_attitude_target_quat(), rate_ef_level, rate_bf_level);
 
         // combine earth frame rate corrections with rate requests
         if (g.acro_trainer == ACRO_TRAINER_LIMITED) {

@@ -20,6 +20,8 @@
 #include "location.h"
 #include "control.h"
 
+static const float NaNf = nanf("0x4152");
+
 #if HAL_WITH_EKF_DOUBLE
 typedef Vector2<double> Vector2F;
 typedef Vector3<double> Vector3F;
@@ -32,7 +34,7 @@ typedef Matrix3<float> Matrix3F;
 typedef Quaternion QuaternionF;
 #endif
 
-// define AP_Param types AP_Vector3f and Ap_Matrix3f
+// define AP_Param type AP_Vector3f
 AP_PARAMDEFV(Vector3f, Vector3f, AP_PARAM_VECTOR3F);
 
 /*
@@ -139,7 +141,7 @@ T wrap_180_cd(const T angle);
  * 100 == centi.
  */
 float wrap_360(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360(const double angle);
 #endif
 int wrap_360(const int angle);
@@ -147,20 +149,22 @@ int wrap_360(const int angle);
 int wrap_360_cd(const int angle);
 long wrap_360_cd(const long angle);
 float wrap_360_cd(const float angle);
-#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#if AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 double wrap_360_cd(const double angle);
 #endif
 
 
 /*
-  wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
+  wrap an angle in radians to 0..2PI
  */
-ftype wrap_PI(const ftype radian);
+float wrap_2PI(const float radian);
+double wrap_2PI(const double radian);
 
 /*
- * wrap an angle in radians to 0..2PI
+  wrap an angle in radians to -PI ~ PI (equivalent to +- 180 degrees)
  */
-ftype wrap_2PI(const ftype radian);
+template <typename T>
+T wrap_PI(const T radian);
 
 /*
  * Constrain a value to be within the range: low and high
@@ -173,6 +177,16 @@ T constrain_value_line(const T amt, const T low, const T high, uint32_t line);
 
 #define constrain_float(amt, low, high) constrain_value_line(float(amt), float(low), float(high), uint32_t(__AP_LINE__))
 #define constrain_ftype(amt, low, high) constrain_value_line(ftype(amt), ftype(low), ftype(high), uint32_t(__AP_LINE__))
+
+inline int8_t constrain_int8(const int8_t amt, const int8_t low, const int8_t high)
+{
+    return constrain_value(amt, low, high);
+}
+
+inline uint8_t constrain_uint8(const uint8_t amt, const uint8_t low, const uint8_t high)
+{
+    return constrain_value(amt, low, high);
+}
 
 inline int16_t constrain_int16(const int16_t amt, const int16_t low, const int16_t high)
 {
@@ -210,9 +224,31 @@ inline double constrain_double(const double amt, const double low, const double 
 }
 
 // degrees -> radians
-static inline constexpr ftype radians(ftype deg)
+static inline constexpr double radians(double deg)
 {
     return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(float deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+static inline constexpr float radians(int deg)
+{
+    return deg * DEG_TO_RAD;
+}
+
+// centidegrees -> radians
+static inline constexpr float cd_to_rad(float cdeg)
+{
+    return cdeg * CDEG_TO_RAD;
+}
+
+// radians -> centidegrees
+static inline constexpr float rad_to_cd(float rad)
+{
+    return rad * RAD_TO_CDEG;
 }
 
 // radians -> degrees
@@ -250,6 +286,13 @@ template<typename T, typename U, typename... Params>
 ftype norm(const T first, const U second, const Params... parameters)
 {
     return sqrtF(sq(first, second, parameters...));
+}
+
+inline float norm(const float first, const float second) {
+    return sqrtf(sq(first) + sq(second));
+}
+inline float norm(const float first, const float second, const float third) {
+    return sqrtf(sq(first) + sq(second) + sq(third));
 }
 
 #undef MIN
@@ -298,13 +341,18 @@ inline constexpr uint32_t usec_to_hz(uint32_t usec)
 
 /*
   linear interpolation based on a variable in a range
-  return value will be in the range [var_low,var_high]
+  return value will be in the range [output_low,output_high]
 
-  Either polarity is supported, so var_low can be higher than var_high
+  Either polarity is supported, so input_low can be higher than input_high
+
+  Read this as, "Take the value 'input_value' as a value between
+  'input_low' and 'input_high'.  Return a value between 'output_low'
+  and 'output_high' proportonal to the position of 'input_value'
+  between 'input_low' and 'input_high'"
  */
-float linear_interpolate(float low_output, float high_output,
-                         float var_value,
-                         float var_low, float var_high);
+float linear_interpolate(float output_low, float output_high,
+                         float input_value,
+                         float input_low, float input_high);
 
 /* cubic "expo" curve generator 
  * alpha range: [0,1] min to max expo
@@ -389,3 +437,9 @@ float int32_to_float_le(const uint32_t& value) WARN_IF_UNUSED;
   Convert from uint64_t to double without breaking Wstrict-aliasing due to type punning
 */
 double uint64_to_double_le(const uint64_t& value) WARN_IF_UNUSED;
+
+/*
+  get a twos-complement value from the first 'length' bits of a uint32_t
+  With thanks to betaflight
+ */
+int32_t get_twos_complement(uint32_t raw, uint8_t length) WARN_IF_UNUSED;

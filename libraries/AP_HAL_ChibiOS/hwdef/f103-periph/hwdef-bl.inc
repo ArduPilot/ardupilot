@@ -9,8 +9,8 @@ FLASH_BOOTLOADER_LOAD_KB 23
 # reserve some space for params
 APP_START_OFFSET_KB 2
 
-# board ID for firmware load
-APJ_BOARD_ID 1000
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F103_PERIPH
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1
@@ -23,13 +23,11 @@ define CH_CFG_ST_FREQUENCY 1000
 # assume 128k flash part
 FLASH_SIZE_KB 128
 
-define HAL_USE_UART FALSE
 define HAL_USE_SERIAL FALSE
 
 PA4 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 1
 
-define HAL_NO_GPIO_IRQ
 define CH_CFG_ST_TIMEDELTA 0
 #define CH_CFG_USE_DYNAMIC FALSE
 define HAL_USE_EMPTY_IO TRUE

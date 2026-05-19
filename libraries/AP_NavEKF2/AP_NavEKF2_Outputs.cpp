@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
+#include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_DAL/AP_DAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -66,7 +67,7 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
             // we really, really shouldn't be here.
             return false;
         }
-        height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(_rng->max_distance_orient(ROTATION_PITCH_270)) * 0.7f - 1.0f, 1.0f);
 #else
         return false;
 #endif
@@ -209,7 +210,7 @@ void NavEKF2_core::getAccelZBias(float &zbias) const {
 
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
-bool NavEKF2_core::getPosNE(Vector2f &posNE) const
+bool NavEKF2_core::getPosNE(Vector2p &posNE) const
 {
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     if (PV_AidingMode != AID_NONE) {
@@ -222,12 +223,10 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
-            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_GPS_FixType::FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = dal.gps().location();
-                const Vector2F tempPosNE = EKF_origin.get_distance_NE_ftype(gpsloc);
-                posNE.x = tempPosNE.x;
-                posNE.y = tempPosNE.y;
+                posNE = EKF_origin.get_distance_NE_postype(gpsloc);
                 return false;
             } else if (rngBcnAlignmentStarted) {
                 // If we are attempting alignment using range beacon data, then report the position
@@ -252,7 +251,7 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
 
 // Write the last calculated D position of the body frame origin relative to the EKF origin (m).
 // Return true if the estimate is valid
-bool NavEKF2_core::getPosD(float &posD) const
+bool NavEKF2_core::getPosD(postype_t &posD) const
 {
     // The EKF always has a height estimate regardless of mode of operation
     // Correct for the IMU offset in body frame (EKF calculations are at the IMU)
@@ -288,7 +287,7 @@ bool NavEKF2_core::getLLH(Location &loc) const
 {
     const auto &gps = dal.gps();
     Location origin;
-    float posD;
+    postype_t posD;
 
     if(getPosD(posD) && getOriginLLH(origin)) {
         // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
@@ -304,7 +303,7 @@ bool NavEKF2_core::getLLH(Location &loc) const
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
-            if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status() >= AP_GPS_FixType::FIX_2D)) {
                 // we have a GPS position fix to return
                 const Location &gpsloc = gps.location();
                 loc.lat = gpsloc.lat;
@@ -326,7 +325,7 @@ bool NavEKF2_core::getLLH(Location &loc) const
     } else {
         // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
         // GPS reading if available and return false
-        if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+        if ((gps.status() >= AP_GPS_FixType::FIX_3D)) {
             loc = gps.location();
         }
         return false;

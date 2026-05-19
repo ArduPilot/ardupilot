@@ -31,6 +31,10 @@ class QuadPlane : public Plane {
 public:
     QuadPlane(const char *frame_str);
 
+    ~QuadPlane() {
+        delete frame;
+    }
+
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 

@@ -4,6 +4,10 @@
 
 #include "AP_HAL_Linux.h"
 
+#ifndef AP_RCPROTOCOL_ZYNQ_ENABLED
+#define AP_RCPROTOCOL_ZYNQ_ENABLED 0
+#endif  // AP_RCPROTOCOL_ZYNQ_ENABLED
+
 #define LINUX_RC_INPUT_NUM_CHANNELS 16
 
 namespace Linux {

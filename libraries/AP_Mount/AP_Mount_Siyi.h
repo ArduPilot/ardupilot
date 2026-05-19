@@ -19,9 +19,11 @@
 
 #pragma once
 
-#include "AP_Mount_Backend_Serial.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_SIYI_ENABLED
+
+#include "AP_Mount_Backend_Serial.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
@@ -76,11 +78,32 @@ public:
     // primary and secondary sources use the AP_Camera::CameraSource enum cast to uint8_t
     bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
 
-    // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const override;
+    bool has_camera_information() const override { return true; }
+    // return camera vendor name
+    void get_camera_vendor_name(char *buf, uint8_t buflen) const override { strncpy(buf, "Siyi", buflen); }
+    // return camera model name
+    void get_camera_model_name(char *buf, uint8_t buflen) const override { strncpy(buf, get_model_name(), buflen); }
+    // return camera firmware version
+    uint32_t get_camera_firmware_version() const override {
+        return _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
+    }
+    // return focal length in mm for the current hardware model
+    float get_camera_focal_length_mm() const override;
+    // return camera capability flags
+    uint32_t get_camera_cap_flags() const override {
+        return (CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
+                CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
+                CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
+                CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS);
+    }
 
     // send camera settings message to GCS
     void send_camera_settings(mavlink_channel_t chan) const override;
+
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // send camera thermal range message to GCS
+    void send_camera_thermal_range(mavlink_channel_t chan) const override;
+#endif
 
     // change camera settings not normally used by autopilot
     // THERMAL_PALETTE: 0:WhiteHot, 2:Sepia, 3:IronBow, 4:Rainbow, 5:Night, 6:Aurora, 7:RedHot, 8:Jungle, 9:Medical, 10:BlackHot, 11:GloryHot
@@ -123,6 +146,7 @@ private:
         ACQUIRE_GIMBAL_ATTITUDE = 0x0D,
         ABSOLUTE_ZOOM = 0x0F,
         SET_CAMERA_IMAGE_TYPE = 0x11,
+        GET_TEMP_FULL_IMAGE = 0x14,
         READ_RANGEFINDER = 0x15,
         SET_THERMAL_PALETTE = 0x1B,
         EXTERNAL_ATTITUDE = 0x22,
@@ -274,13 +298,16 @@ private:
     // Returns true if message successfully sent to Gimbal
     bool set_motion_mode(const GimbalMotionMode mode, const bool force=false);
 
+    // Siyi can send either rates or angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_AND_RATES_ONLY;
+    };
+
     // send target pitch and yaw rates to gimbal
-    // yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-    void send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef);
+    void send_target_rates(const MountRateTarget &rate_rads) override;
 
     // send target pitch and yaw angles to gimbal
-    // yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-    void send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef);
+    void send_target_angles(const MountAngleTarget &angle_rad) override;
 
     // send zoom rate command to camera. zoom out = -1, hold = 0, zoom in = 1
     bool send_zoom_rate(float zoom_value);
@@ -300,6 +327,11 @@ private:
     // Checks that the firmware version on the Gimbal meets the minimum supported version.
     void check_firmware_version() const;
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // get thermal min/max if available at 5hz
+    void request_thermal_minmax();
+#endif
+
     // internal variables
     bool _got_hardware_id;                          // true once hardware id ha been received
 
@@ -308,7 +340,7 @@ private:
     // buffer holding bytes from latest packet.  This is only used to calculate the crc
     uint8_t _msg_buff[AP_MOUNT_SIYI_PACKETLEN_MAX];
     uint8_t _msg_buff_len;
-    const uint8_t _msg_buff_data_start = 8;         // data starts at this byte of _msg_buff
+    static constexpr uint8_t _msg_buff_data_start = 8;         // data starts at this byte of _msg_buff
 
     // parser state and unpacked fields
     struct PACKED {
@@ -354,8 +386,20 @@ private:
     };
     static const HWInfo hardware_lookup_table[];
 
+#if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
+    // thermal variables
+    struct {
+        uint32_t last_req_ms;       // system time of last request for thermal min/max temperatures
+        uint32_t last_update_ms;    // system time of last update of thermal min/max temperatures
+        float max_C;                // thermal max temp in C
+        float min_C;                // thermal min temp in C
+        Vector2ui max_pos;          // thermal max temp position on image in pixels. x=0 is left, y=0 is top
+        Vector2ui min_pos;          // thermal min temp position on image in pixels. x=0 is left, y=0 is top
+    } _thermal;
+#endif
+
     // count of SET_TIME packets, we send 5 times to cope with packet loss
     uint8_t sent_time_count;
 };
 
-#endif // HAL_MOUNT_SIYISERIAL_ENABLED
+#endif // HAL_MOUNT_SIYI_ENABLED

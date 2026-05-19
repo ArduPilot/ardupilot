@@ -242,7 +242,7 @@ bool AP_InertialSensor_BMI270::read_registers(uint8_t reg, uint8_t *data, uint8_
     uint8_t b[len+2];
     b[0] = reg | 0x80;
     memset(&b[1], 0, len+1);
-    if (!_dev->transfer(b, len+2, b, len+2)) {
+    if (!_dev->transfer_fullduplex(b, len+2)) {
         return false;
     }
     memcpy(data, &b[2], len);
@@ -542,8 +542,9 @@ bool AP_InertialSensor_BMI270::hardware_init()
         // successfully identified the chip, proceed with initialisation
         read_chip_id = true;
 
-        // disable power save
-        write_register(BMI270_REG_PWR_CONF, 0x00);
+        // disable power save - use _dev->write_register directly to avoid
+        // readback retry loop which interferes with the init sequence
+        _dev->write_register(BMI270_REG_PWR_CONF, 0x00);
         hal.scheduler->delay(1); // needs to be at least 450us
 
         // upload config

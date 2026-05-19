@@ -1,6 +1,9 @@
-#include <AP_HAL/AP_HAL.h>
-
 #include "AP_NavEKF2_core.h"
+
+#include "AP_NavEKF2.h"
+
+#include <AP_DAL/AP_DAL.h>
+#include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -480,7 +483,7 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
 
     // @Param: RNG_USE_HGT
     // @DisplayName: Range finder switch height percentage
-    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFND_MAX_CM). This will not work unless Baro or GPS height is selected as the primary height source vis EK2_ALT_SOURCE = 0 or 2 respectively.  This feature should not be used for terrain following as it is designed  for vertical takeoff and landing with climb above  the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point.
+    // @Description: Range finder can be used as the primary height source when below this percentage of its maximum range (see RNGFND*_MAX). This will not work unless Baro or GPS height is selected as the primary height source vis EK2_ALT_SOURCE = 0 or 2 respectively.  This feature should not be used for terrain following as it is designed  for vertical takeoff and landing with climb above  the range finder use height before commencing the mission, and with horizontal position changes below that height being limited to a flat region around the takeoff and landing point.
     // @Range: -1 70
     // @Increment: 1
     // @User: Advanced
@@ -627,7 +630,7 @@ bool NavEKF2::InitialiseFilter(void)
 
     initFailure = InitFailures::UNKNOWN;
     if (_enable == 0) {
-        if (AP::dal().get_ekf_type() == 2) {
+        if (AP::dal().configured_ekf_type() == 2) {
             initFailure = InitFailures::NO_ENABLE;
         }
         return false;
@@ -922,7 +925,7 @@ int8_t NavEKF2::getPrimaryCoreIMUIndex(void) const
 // Write the last calculated NE position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF2::getPosNE(Vector2f &posNE) const
+bool NavEKF2::getPosNE(Vector2p &posNE) const
 {
     if (!core) {
         return false;
@@ -933,7 +936,7 @@ bool NavEKF2::getPosNE(Vector2f &posNE) const
 // Write the last calculated D position relative to the reference point (m).
 // If a calculated solution is not available, use the best available data and return false
 // If false returned, do not use for flight control
-bool NavEKF2::getPosD(float &posD) const
+bool NavEKF2::getPosD(postype_t &posD) const
 {
     if (!core) {
         return false;
@@ -1096,6 +1099,10 @@ bool NavEKF2::getOriginLLH(Location &loc) const
     if (!core) {
         return false;
     }
+    if (common_origin_valid) {
+        loc = common_EKF_origin;
+        return true;
+    }
     return core[primary].getOriginLLH(loc);
 }
 
@@ -1110,11 +1117,9 @@ bool NavEKF2::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    if (_fusionModeGPS != 3 || common_origin_valid) {
-        // we don't allow setting of the EKF origin if using GPS
-        // or if the EKF origin has already been set.
-        // This is to prevent accidental setting of EKF origin with an
-        // invalid position or height or causing upsets from a shifting origin.
+    if (common_origin_valid) {
+        // we don't allow setting of the EKF origin if the EKF origin
+        // has already been set.
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 refusing set origin");
         return false;
     }
@@ -1199,6 +1204,12 @@ bool NavEKF2::use_compass(void) const
         return false;
     }
     return core[primary].use_compass();
+}
+
+// are we using a gps?
+bool NavEKF2::using_gps(void) const
+{
+    return _fusionModeGPS != 3;
 }
 
 // write the raw optical flow measurements
@@ -1455,7 +1466,8 @@ void NavEKF2::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_prim
 // update the position reset data to capture changes due to a lane switch
 void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    Vector2f pos_old_primary, pos_new_primary, old_pos_delta;
+    Vector2p pos_old_primary, pos_new_primary;
+    Vector2f old_pos_delta;
 
     // If core position reset data has been consumed reset delta to zero
     if (!pos_reset_data.core_changed) {
@@ -1471,7 +1483,7 @@ void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
     // Add current delta in case it hasn't been consumed yet
     core[old_primary].getPosNE(pos_old_primary);
     core[new_primary].getPosNE(pos_new_primary);
-    pos_reset_data.core_delta = pos_new_primary - pos_old_primary + pos_reset_data.core_delta;
+    pos_reset_data.core_delta = (pos_new_primary - pos_old_primary).tofloat() + pos_reset_data.core_delta;
     pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_reset_data.core_changed = true;
 
@@ -1482,7 +1494,8 @@ void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
 // new primary EKF update has been run
 void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
 {
-    float posDownOldPrimary, posDownNewPrimary, oldPosDownDelta;
+    postype_t posDownOldPrimary, posDownNewPrimary;
+    float oldPosDownDelta;
 
     // If core position reset data has been consumed reset delta to zero
     if (!pos_down_reset_data.core_changed) {

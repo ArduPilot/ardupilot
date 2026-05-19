@@ -143,6 +143,8 @@ char AP_Tramp::handle_response(void)
             debug("device config: freq: %u, cfg pwr: %umw, act pwr: %umw, pitmode: %u",
                 unsigned(freq), unsigned(power), unsigned(cur_act_power), unsigned(pit_mode));
 
+            // update the "_configuration_finished" flag, otherwise OSD item VTX_POWER blinks forever
+            vtx.set_configuration_finished(!update_pending);
 
             return 'v';
         }

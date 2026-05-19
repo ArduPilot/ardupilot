@@ -5,11 +5,9 @@ cmd = 3: rolling circle, arg1 = yaw rate, arg2 = roll rate
 cmd = 4: knife edge at any angle, arg1 = roll angle to hold, arg2 = duration
 cmd = 5: pause, holding heading and alt to allow stabilization after a move, arg1 = duration in seconds
 ]]--
--- luacheck: only 0
 ---@diagnostic disable: param-type-mismatch
 ---@diagnostic disable: need-check-nil
 ---@diagnostic disable: cast-local-type
----@diagnostic disable: undefined-global
 
 DO_JUMP = 177
 k_throttle = 70
@@ -29,13 +27,12 @@ local HGT_P = bind_add_param('HGT_P',1,1) -- height P gain
 local HGT_I = bind_add_param("HGT_I",2,1) -- height I gain
 local HGT_KE_BIAS = bind_add_param("KE_ADD",3,20) -- height knifeedge addition for pitch
 local THR_PIT_FF = bind_add_param("PIT_FF",4,80) -- throttle FF from pitch
-local SPD_P = bind_add_param("SPD_P",5,5) -- speed P gain
-local SPD_I = bind_add_param("SPD_I",6,25) -- speed I gain
+-- 5 was "SPD_P" speed P gain
+-- 6 was "SPD_I" speed I gain
 local TRIM_THROTTLE = Parameter("TRIM_THROTTLE")
 local RLL2SRV_TCONST = Parameter("RLL2SRV_TCONST")
 local PITCH_TCONST = Parameter("PTCH2SRV_TCONST")
 
-local last_roll_err = 0.0
 local last_id = 0
 local initial_yaw_deg = 0
 local wp_yaw_deg = 0
@@ -65,10 +62,10 @@ function bind_add_param2(name, idx, default_value)
     assert(param:add_param(PARAM_TABLE_KEY2, idx, name, default_value), string.format('could not add param %s', name))
     return Parameter(PARAM_TABLE_PREFIX2 .. name)
 end
-local TRICKS = nil
-local TRIK_SEL_FN = nil
-local TRIK_ACT_FN = nil
-local TRIK_COUNT  = nil
+local TRICKS
+local TRIK_SEL_FN
+local TRIK_ACT_FN
+local TRIK_COUNT
 
 -- constrain a value between limits
 function constrain(v, vmin, vmax)
@@ -130,8 +127,8 @@ end
     
 --roll controller to keep wings level in earth frame. if arg is 0 then level is at only 0 deg, otherwise its at 180/-180 roll also for loops
 function earth_frame_wings_level(arg)
-   local roll_deg = math.deg(ahrs:get_roll())
-   local roll_angle_error = 0.0
+   local roll_deg = math.deg(ahrs:get_roll_rad())
+   local roll_angle_error
    if (roll_deg > 90 or roll_deg < -90) and arg ~= 0 then
     roll_angle_error = 180 - roll_deg
    else
@@ -166,7 +163,6 @@ local function PI_controller(kP,kI,iMax)
    -- private fields as locals
    local _kP = kP or 0.0
    local _kI = kI or 0.0
-   local _kD = kD or 0.0
    local _iMax = iMax
    local _last_t = nil
    local _I = 0
@@ -237,7 +233,7 @@ local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
 
    function self.update(target)
       local target_pitch = PI.update(target, ahrs:get_position():alt()*0.01)
-      local roll_rad = ahrs:get_roll()
+      local roll_rad = ahrs:get_roll_rad()
       local ke_add = math.abs(math.sin(roll_rad)) * KnifeEdge:get()
       target_pitch = target_pitch + ke_add
       PI.log("HPI", ke_add)
@@ -245,7 +241,7 @@ local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
    end
 
    function self.reset()
-      PI.reset(math.max(math.deg(ahrs:get_pitch()), 3.0))
+      PI.reset(math.max(math.deg(ahrs:get_pitch_rad()), 3.0))
       PI.set_P(kP:get())
       PI.set_I(kI:get())
    end
@@ -254,14 +250,13 @@ local function height_controller(kP_param,kI_param,KnifeEdge_param,Imax)
 end
 
 local height_PI = height_controller(HGT_P, HGT_I, HGT_KE_BIAS, 20.0)
-local speed_PI = PI_controller(SPD_P:get(), SPD_I:get(), 100.0)
 
 -- a controller to target a zero pitch angle and zero heading change, used in a roll
 -- output is a body frame pitch rate, with convergence over time tconst in seconds
 function pitch_controller(target_pitch_deg, target_yaw_deg, tconst)
-   local roll_deg = math.deg(ahrs:get_roll())
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local yaw_deg = math.deg(ahrs:get_yaw())
+   local roll_deg = math.deg(ahrs:get_roll_rad())
+   local pitch_deg = math.deg(ahrs:get_pitch_rad())
+   local yaw_deg = math.deg(ahrs:get_yaw_rad())
 
    -- get earth frame pitch and yaw rates
    local ef_pitch_rate = (target_pitch_deg - pitch_deg) / tconst
@@ -274,7 +269,7 @@ end
 
 -- a controller for throttle to account for pitch
 function throttle_controller()
-   local pitch_rad = ahrs:get_pitch()
+   local pitch_rad = ahrs:get_pitch_rad()
    local thr_ff = THR_PIT_FF:get()
    local throttle = TRIM_THROTTLE:get() + math.sin(pitch_rad) * thr_ff
    return constrain(throttle, 0, 100.0)
@@ -305,8 +300,7 @@ function do_axial_roll(arg1, arg2)
       gcs:send_text(5, string.format("Starting %d Roll(s)", arg2))
    end
    local roll_rate = arg1
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
+   local roll_deg = math.deg(ahrs:get_roll_rad())
 
    if trick_stage == 0 then
       if roll_deg > 45 then
@@ -360,11 +354,11 @@ function do_loop(arg1, arg2)
    end
 
    local throttle = throttle_controller()
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
+   local pitch_deg = math.deg(ahrs:get_pitch_rad())
+   local roll_deg = math.deg(ahrs:get_roll_rad())
    local vel = ahrs:get_velocity_NED():length()
    local pitch_rate = arg1
-   local pitch_rate = pitch_rate * (1+ 2*((vel/target_vel)-1)) --increase/decrease rate based on velocity to round loop
+   pitch_rate = pitch_rate * (1+ 2*((vel/target_vel)-1)) --increase/decrease rate based on velocity to round loop
    pitch_rate = constrain(pitch_rate,.5 * arg1, 3 * arg1)
    
    if trick_stage == 0 then
@@ -400,7 +394,6 @@ function do_loop(arg1, arg2)
        return
     end
   end
-  throttle = throttle_controller()
   if trick_stage == 2 or trick_stage == 0 then 
      level_type = 0
   else
@@ -430,9 +423,6 @@ function do_rolling_circle(arg1, arg2)
    end
    local yaw_rate_dps = arg1
    local roll_rate_dps = arg2
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
-   local yaw_deg = math.deg(ahrs:get_yaw())
    local now_ms = millis()
    local dt = (now_ms - circle_last_ms):tofloat() * 0.001
    circle_last_ms = now_ms
@@ -467,7 +457,7 @@ function do_rolling_circle(arg1, arg2)
    end
 end
 
-local knife_edge_ms = 0
+local knife_edge_s = 0
 function do_knife_edge(arg1,arg2)
   -- arg1 is angle +/-180, duration is arg2
     local now = millis():tofloat() * 0.001
@@ -477,9 +467,8 @@ function do_knife_edge(arg1,arg2)
         knife_edge_s = now
         gcs:send_text(5, string.format("Starting %d Knife Edge", arg1))
     end
-    local i=0
     if (now - knife_edge_s) < arg2 then
-        local roll_deg = math.deg(ahrs:get_roll())
+        local roll_deg = math.deg(ahrs:get_roll_rad())
         local roll_angle_error = (arg1 - roll_deg)
         if math.abs(roll_angle_error) > 180 then
          if roll_angle_error > 0 then
@@ -506,7 +495,7 @@ function do_knife_edge(arg1,arg2)
 end
 
 -- fly level for a time..allows full altitude recovery after trick
-function do_pause(arg1,arg2)
+function do_pause(arg1,_)
     -- arg1 is time of pause in sec, arg2 is unused
     local now = millis():tofloat() * 0.001
     if not running then
@@ -515,7 +504,6 @@ function do_pause(arg1,arg2)
         knife_edge_s = now
         gcs:send_text(5, string.format("%d sec Pause", arg1))
     end
-    local i=0
     if (now - knife_edge_s) < arg1 then
         roll_rate = earth_frame_wings_level(0)
         target_pitch = height_PI.update(initial_height)
@@ -534,11 +522,7 @@ function do_pause(arg1,arg2)
     end
 end
 
-
-local circle_yaw = 0
-local circle_last_ms = 0
-
-function do_knifedge_circle(arg1, arg2)
+function do_knifedge_circle(arg1, _)
    -- constant roll angle circle , arg1 yaw rate, positive to right, neg to left, arg2 is not used
    if not running then
       running = true
@@ -549,8 +533,6 @@ function do_knifedge_circle(arg1, arg2)
       gcs:send_text(5, string.format("Staring KnifeEdge Circle"))
    end
    local yaw_rate_dps = arg1
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local yaw_deg = math.deg(ahrs:get_yaw())
    local now_ms = millis()
    local dt = (now_ms - circle_last_ms):tofloat() * 0.001
    circle_last_ms = now_ms
@@ -574,7 +556,7 @@ function do_knifedge_circle(arg1, arg2)
       end
    end
    if trick_stage < 2 then
-        local roll_deg = math.deg(ahrs:get_roll())
+        local roll_deg = math.deg(ahrs:get_roll_rad())
         if arg1 >0 then
            angle = 90
         else
@@ -599,7 +581,7 @@ function do_knifedge_circle(arg1, arg2)
 end
 
 function hold_roll_angle (angle)
-   local roll_deg = math.deg(ahrs:get_roll())
+   local roll_deg = math.deg(ahrs:get_roll_rad())
    local roll_angle_error = (angle - roll_deg)
    if math.abs(roll_angle_error) > 180 then
       if roll_angle_error > 0 then
@@ -621,8 +603,7 @@ function do_4point_roll(arg1, arg2)
       height_PI.reset()
       gcs:send_text(5, string.format("Starting 4pt Roll"))
    end
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
+   local roll_deg = math.deg(ahrs:get_roll_rad())
 
    if trick_stage == 0 then
       roll_rate = arg1
@@ -687,11 +668,11 @@ function do_split_s(arg1, arg2)
       height_PI.reset()
       gcs:send_text(5, string.format("Starting Split-S"))
    end
-   local pitch_deg = math.deg(ahrs:get_pitch())
-   local roll_deg = math.deg(ahrs:get_roll())
+   local pitch_deg = math.deg(ahrs:get_pitch_rad())
+   local roll_deg = math.deg(ahrs:get_roll_rad())
    if trick_stage == 0 then 
       roll_rate = arg2
-      wp_yaw_deg = math.deg(ahrs:get_yaw())
+      wp_yaw_deg = math.deg(ahrs:get_yaw_rad())
       target_pitch = height_PI.update(initial_height)
       pitch_rate, yaw_rate = pitch_controller(target_pitch, wp_yaw_deg, PITCH_TCONST:get())   
       if roll_deg >=175 or roll_deg <= -175 then
@@ -750,7 +731,7 @@ function check_auto_mission()
          running = false
          last_id = id
          repeat_count = 0
-         initial_yaw_deg = math.deg(ahrs:get_yaw())
+         initial_yaw_deg = math.deg(ahrs:get_yaw_rad())
          initial_height = ahrs:get_position():alt()*0.01
          -- work out yaw between previous WP and next WP
          local cnum = mission:get_current_nav_index()
@@ -844,7 +825,7 @@ function check_trick()
          gcs:send_text(0, string.format("No trick selected"))
          return 0
       end
-      local id = TRICKS[selection].id:get()    
+      id = TRICKS[selection].id:get()
       if action == 1 then
          gcs:send_text(5, string.format("Trick %u selected (%s)", id, name[id]))
          return 0
@@ -857,7 +838,7 @@ function check_trick()
             gcs:send_text(0, string.format("Tricks not available in this mode"))
             return 0
          end
-         wp_yaw_deg = math.deg(ahrs:get_yaw())
+         wp_yaw_deg = math.deg(ahrs:get_yaw_rad())
          initial_height = ahrs:get_position():alt()*0.01
          return selection     
       end

@@ -1,0 +1,76 @@
+# makerfabs esp32 imu module v1.1
+
+# modified from esp32buzz.h - nkruzan
+
+define HAL_ESP32_BOARD_NAME "esp32imu_module_v11"
+
+# one IMU:
+define HAL_INS_DEFAULT HAL_INS_MPU60XX_I2C
+IMU Invensense I2C:0:0x68 ROTATION_NONE
+
+# here for binary compatibility:
+define INS_MAX_INSTANCES 3
+
+define AP_COMPASS_PROBING_ENABLED 1
+
+# one Baro:
+BARO BMP280 I2C:0:0x77
+define HAL_PROBE_EXTERNAL_I2C_BAROS 1
+
+# allow boot without a baro
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# ADC is available on lots of pins on the esp32, 
+# but adc2 cant co-exist with wifi we choose to allow ADC on :
+# #define AP_HAL_ANALOGIN_ENABLED 0
+
+# the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
+#-----ADC-----
+#             PORT        RXPIN        TXPIN
+ESP32_ADC_PIN ADC1_GPIO35_CHANNEL 11   35
+ESP32_ADC_PIN ADC1_GPIO34_CHANNEL 11   34
+ESP32_ADC_PIN ADC1_GPIO39_CHANNEL 11   39
+ESP32_ADC_PIN ADC1_GPIO36_CHANNEL 11   36
+
+# 2 use udp, 1 use tcp...  for udp,client needs to connect as UDP in missionplanner etc to 192.168.4.1 port 14550
+define HAL_ESP32_WIFI 1
+
+define WIFI_SSID "ardupilot123"
+define WIFI_PWD "ardupilot123"
+
+# RCOUT which pins are used?
+
+ESP32_RCOUT GPIO_NUM_33
+ESP32_RCOUT GPIO_NUM_25
+ESP32_RCOUT GPIO_NUM_32
+ESP32_RCOUT GPIO_NUM_26
+ESP32_RCOUT GPIO_NUM_27
+ESP32_RCOUT GPIO_NUM_23
+
+# SPI BUS setup, including gpio, dma, etc
+
+# SPI per-device setup, including speeds, etc.
+
+# i2c Buses
+#             Port       SDA         SCL          SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_4  GPIO_NUM_5   400*KHZ  true     false
+
+# rcin on what pin?
+define HAL_ESP32_RCIN GPIO_NUM_13
+define HAL_ESP32_RMT_RX_PIN_NUMBER			13
+
+#-----UARTS-----
+ESP32_SERIAL  UART_NUM_0  GPIO_NUM_3   GPIO_NUM_1
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_19   GPIO_NUM_18
+
+define HAL_LOGGING_FILESYSTEM_ENABLED 0
+define HAL_LOGGING_DATAFLASH_ENABLED 0
+define HAL_LOGGING_MAVLINK_ENABLED 1
+
+define HAL_LOGGING_BACKENDS_DEFAULT 1
+
+# SD CARD SUPPORT
+define HAL_ESP32_SDCARD 0
+
+# SDMMC mode
+define HAL_ESP32_SDMMC 0

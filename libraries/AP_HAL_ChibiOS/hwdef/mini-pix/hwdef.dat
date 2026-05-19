@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 3
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID EXT_HW_RADIOLINK_MINI_PIX
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -124,12 +124,12 @@ IMU Invensense SPI:mpu6000 ROTATION_PITCH_180
 
 # one internal compass, plus external probe
 COMPASS QMC5883L I2C:0:0x0D false ROTATION_PITCH_180_YAW_270
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 1
 
 define HAL_STORAGE_SIZE        16384
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 
 # enable FAT filesystem

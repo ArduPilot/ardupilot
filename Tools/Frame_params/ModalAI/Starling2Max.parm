@@ -1,0 +1,62 @@
+# Parameters for Starling 2 Max drone
+# https://www.modalai.com/products/starling-2-max?variant=48172375310640
+
+# IMU orientation is ROLL_180
+AHRS_ORIENTATION 8
+
+# Mag orientation is ROLL_180
+COMPASS_ORIENT 8
+
+# quad-X
+FRAME_CLASS      1
+
+# R/C inputs
+RC1_DZ 40
+RC2_DZ 40
+RC2_REVERSED 1
+RC4_DZ 40
+
+# Left 3-pos switch is RC6
+FLTMODE_CH 6
+
+# Flight mode channel mapping
+FLTMODE1 0
+FLTMODE3 2
+FLTMODE6 5
+
+# Motor mapping
+SERVO1_FUNCTION 34
+SERVO2_FUNCTION 35
+SERVO3_FUNCTION 33
+SERVO4_FUNCTION 36
+
+# Motor spin
+MOT_SPIN_ARM 0.05
+MOT_SPIN_MIN 0.15
+
+# Visual Inertial Odometry setup
+VISO_TYPE 3
+EK3_SRC1_POSXY 6
+EK3_SRC1_VELXY 6
+EK3_SRC1_POSZ 6
+EK3_SRC1_VELZ 6
+EK3_SRC1_YAW 6
+
+# To improve Mavlink connection disable forwarding from camera/viso
+SERIAL2_OPTIONS 1024
+
+# PID tuning
+ATC_RAT_RLL_P 0.07
+ATC_RAT_RLL_I 0.07
+ATC_RAT_RLL_D 0.0015
+ATC_RAT_PIT_P 0.07
+ATC_RAT_PIT_I 0.07
+ATC_RAT_PIT_D 0.0015
+
+# battery setup
+BATT_LOW_VOLT    14.2
+BATT_OPTIONS     64
+
+# 4S battery range
+MOT_BAT_VOLT_MAX 16.800000
+MOT_BAT_VOLT_MIN 13.200000

@@ -35,16 +35,16 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
 {
     mavlink_device_op_read_t packet;
     mavlink_msg_device_op_read_decode(&msg, &packet);
-    AP_HAL::OwnPtr<AP_HAL::Device> dev = nullptr;
+    AP_HAL::Device *dev = nullptr;
     uint8_t retcode = 0;
     uint8_t data[sizeof(mavlink_device_op_read_reply_t::data)] {};
     bool ret = false;
     uint8_t regstart = packet.regstart;
 
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
-        dev = hal.i2c_mgr->get_device(packet.bus, packet.address);
+        dev = hal.i2c_mgr->get_device_ptr(packet.bus, packet.address);
     } else if (packet.bustype == DEVICE_OP_BUSTYPE_SPI) {
-        dev = hal.spi->get_device(packet.busname);
+        dev = hal.spi->get_device_ptr(packet.busname);
     } else {
         retcode = 1;
         goto fail;
@@ -82,6 +82,7 @@ void GCS_MAVLINK::handle_device_op_read(const mavlink_message_t &msg)
         packet.count,
         data,
         packet.bank);
+    delete dev;
     return;
 
 fail:
@@ -93,6 +94,7 @@ fail:
         0,
         nullptr,
         packet.bank);
+    delete dev;
 }
 
 /*
@@ -102,13 +104,13 @@ void GCS_MAVLINK::handle_device_op_write(const mavlink_message_t &msg)
 {
     mavlink_device_op_write_t packet;
     mavlink_msg_device_op_write_decode(&msg, &packet);
-    AP_HAL::OwnPtr<AP_HAL::Device> dev = nullptr;
+    AP_HAL::Device *dev = nullptr;
     uint8_t retcode = 0;
     
     if (packet.bustype == DEVICE_OP_BUSTYPE_I2C) {
-        dev = hal.i2c_mgr->get_device(packet.bus, packet.address);
+        dev = hal.i2c_mgr->get_device_ptr(packet.bus, packet.address);
     } else if (packet.bustype == DEVICE_OP_BUSTYPE_SPI) {
-        dev = hal.spi->get_device(packet.busname);
+        dev = hal.spi->get_device_ptr(packet.busname);
     } else {
         retcode = 1;
         goto fail;
@@ -141,6 +143,8 @@ fail:
         chan,
         packet.request_id,
         retcode);
+
+    delete dev;
 }
 
 #endif  // AP_MAVLINK_MSG_DEVICE_OP_ENABLED

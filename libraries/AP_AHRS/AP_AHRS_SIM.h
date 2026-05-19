@@ -51,6 +51,8 @@ public:
 
     CLASS_NO_COPY(AP_AHRS_SIM);
 
+    const char *shortname() const override { return "SIM"; }
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override {};
@@ -68,28 +70,19 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_estimate(float &airspeed_ret) const override;
+    bool airspeed_EAS(float &airspeed_ret) const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate from a specific sensor index
-    bool airspeed_estimate(uint8_t airspeed_index, float &airspeed_ret) const override;
+    bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
     // return a ground vector estimate in meters/second, in North/East order
     Vector2f groundspeed_vector() override;
 
     bool            use_compass() override { return true; }
 
-    // return the quaternion defining the rotation from NED to XYZ (body) axes
-    bool get_quaternion(Quaternion &quat) const override WARN_IF_UNUSED;
-
     // is the AHRS subsystem healthy?
     bool healthy() const override { return true; }
-
-    bool get_velocity_NED(Vector3f &vec) const override;
-
-    // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
-    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
-    bool get_vert_pos_rate_D(float &velocity) const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
@@ -98,15 +91,11 @@ public:
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const override;
 
-    // get compass offset estimates
-    // true if offsets are valid
-    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override;
-
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3f &vec) const override;
-    bool get_relative_position_NE_origin(Vector2f &posNE) const override;
-    bool get_relative_position_D_origin(float &posD) const override;
+    bool get_relative_position_NED_origin(Vector3p &vec) const override;
+    bool get_relative_position_NE_origin(Vector2p &posNE) const override;
+    bool get_relative_position_D_origin(postype_t &posD) const override;
 
     void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 

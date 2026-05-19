@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef.h>
+
 #define HAL_BOARD_NAME "SITL"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
@@ -29,8 +31,8 @@
 #define HAL_FLASH_ALLOW_UPDATE 0
 #endif
 
-#ifndef BOARD_FLASH_SIZE
-#define BOARD_FLASH_SIZE 4096
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 4096
 #endif
 
 #ifndef HAL_STORAGE_SIZE
@@ -42,7 +44,6 @@
 #define HAL_BOARD_TERRAIN_DIRECTORY "terrain"
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #define HAL_INS_DEFAULT HAL_INS_NONE
-#define HAL_BARO_DEFAULT HAL_BARO_NONE
 
 // simulated LEDs are disabled by default as they lead to a large
 // amount of SIM_GPIO_MASK mavlink traffic
@@ -96,3 +97,30 @@
 #endif
 
 #define HAL_SOLO_GIMBAL_ENABLED 1
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 1
+#endif
+
+#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
+
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#define AP_NOTIFY_TONEALARM_ENABLED 1
+#endif
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif
+
+#ifndef AP_AHRS_EKF_RESET_ENABLED
+#define AP_AHRS_EKF_RESET_ENABLED 1
+#endif
+
+#define HAL_BATT_VOLT_PIN                  13
+#define HAL_BATT_CURR_PIN                  12
+#define HAL_BATT_VOLT_SCALE                10.1f
+#define HAL_BATT_CURR_SCALE                17.0f
+
+#define RELAY1_PIN_DEFAULT 13

@@ -46,7 +46,7 @@ TO_MAN= lua.1 luac.1
 
 # Lua version and release.
 V= 5.3
-R= $V.4
+R= $V.6
 
 # Targets start here.
 all:	$(PLAT)

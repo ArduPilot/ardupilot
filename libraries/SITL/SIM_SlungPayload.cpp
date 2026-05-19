@@ -79,8 +79,8 @@ SlungPayloadSim::SlungPayloadSim()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-// update the SlungPayloadSim's state using the vehicle's earth-frame position, velocity and acceleration
-void SlungPayloadSim::update(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef)
+// update the SlungPayloadSim's state using the vehicle's earth-frame position, velocity, acceleration and wind
+void SlungPayloadSim::update(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef, const Vector3f& wind_ef)
 {
     if (!enable) {
         return;
@@ -104,7 +104,7 @@ void SlungPayloadSim::update(const Vector3p& veh_pos, const Vector3f& veh_vel_ef
     // calculate dt and update slung payload
     const float dt = (now_us - last_update_us)*1.0e-6;
     last_update_us = now_us;
-    update_payload(veh_pos, veh_vel_ef, veh_accel_ef, dt);
+    update_payload(veh_pos, veh_vel_ef, veh_accel_ef, wind_ef, dt);
 
     // send payload location to GCS at 5hz
     const uint32_t now_ms = AP_HAL::millis();
@@ -289,8 +289,9 @@ bool SlungPayloadSim::get_payload_location(Location& payload_loc) const
 }
 
 // update the slung payloads position, velocity, acceleration
-// vehicle position, velocity and acceleration should be in earth-frame NED frame
-void SlungPayloadSim::update_payload(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef, float dt)
+// vehicle position, velocity, acceleration and wind should be in earth-frame NED frame
+void SlungPayloadSim::update_payload(const Vector3p& veh_pos, const Vector3f& veh_vel_ef, const Vector3f& veh_accel_ef,
+                                     const Vector3f& wind_ef, float dt)
 {
     // how we calculate the payload's position, velocity and acceleration
     //   1. update the payload's position, velocity using the previous iterations acceleration
@@ -373,11 +374,15 @@ void SlungPayloadSim::update_payload(const Vector3p& veh_pos, const Vector3f& ve
 
     // calculate drag force (0.5 * drag_coef * air_density * velocity^2 * surface area)
     Vector3f force_drag_NED;
-    if (drag_coef > 0 && !velocity_NED.is_zero()) {
+    Vector3f velocity_air_NED = velocity_NED;
+    if (!landed) {
+        velocity_air_NED -= wind_ef;
+    }
+    if (drag_coef > 0 && !velocity_air_NED.is_zero()) {
         const float air_density = 1.225;    // 1.225 kg/m^3 (standard sea-level density)
         const float surface_area_m2 = 0.07; // 30cm diameter sphere
-        const float drag_force = 0.5 * drag_coef * air_density * velocity_NED.length_squared() * surface_area_m2;
-        force_drag_NED = -velocity_NED.normalized() * drag_force;
+        const float drag_force = 0.5 * drag_coef * air_density * velocity_air_NED.length_squared() * surface_area_m2;
+        force_drag_NED = -velocity_air_NED.normalized() * drag_force;
     }
 
     // sanity check payload distance from vehicle and calculate tension force

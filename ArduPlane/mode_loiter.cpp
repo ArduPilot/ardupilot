@@ -69,7 +69,7 @@ bool ModeLoiter::isHeadingLinedUp(const Location loiterCenterLoc, const Location
     if (target_dist >= loiter_radius) {
         // Destination outside loiter radius, heading will always line up with destination
 
-        // Vector from between projected vehicle position and target postion
+        // Vector from between projected vehicle position and target position
         const Vector2f pos_to_target = target_pos - projected_pos;
         target_bearing_cd = degrees(pos_to_target.angle()) * 100;
 

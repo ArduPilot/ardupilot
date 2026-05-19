@@ -3,7 +3,7 @@
   Andrew Tridgell September 2011
 */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include <cmath>
 
@@ -20,7 +20,9 @@
 #endif
 #include <hrt.h>
 #include <ch.h>
-#endif // HAL_BOARD_CHIBIOS
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <fenv.h>
+#endif  // HAL_BOARD_CHIBIOS
 
 void setup();
 void loop();
@@ -105,7 +107,12 @@ volatile uint8_t mbuf1[128], mbuf2[128];
 volatile uint64_t v_64 = 1;
 volatile uint64_t v_out_64 = 1;
 
+//Main loop where the action takes place
+#if defined(__clang_major__)
+// clang doesn't understand -Wframe-larger-than=
+#else
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
+#endif
 static void show_timings(void)
 {
 
@@ -212,13 +219,13 @@ static void test_div1000(void)
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
-            AP_HAL::panic("ERROR: div1000 no random\n");
+            AP_HAL::panic("ERROR: div1000 no random");
             break;
         }
         uint64_t v1 = v / 1000ULL;
         uint64_t v2 = uint64_div1000(v);
         if (v1 != v2) {
-            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
+            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
                           (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
             return;
         }
@@ -228,7 +235,7 @@ static void test_div1000(void)
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
-            AP_HAL::panic("ERROR: div1000 no random\n");
+            AP_HAL::panic("ERROR: div1000 no random");
             break;
         }
         chSysLock();
@@ -236,7 +243,7 @@ static void test_div1000(void)
         uint64_t v2 = uint64_div1000(v);
         chSysUnlock();
         if (v1 != v2) {
-            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx\n",
+            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
                           (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
             return;
         }
@@ -247,6 +254,10 @@ static void test_div1000(void)
 
 void loop()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // pretend we are embedded so that 1.0/0 "works"
+    fedisableexcept(FE_ALL_EXCEPT);
+#endif
     show_sizes();
     hal.console->printf("\n");
     show_timings();

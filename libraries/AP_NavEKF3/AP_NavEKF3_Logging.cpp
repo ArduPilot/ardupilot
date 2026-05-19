@@ -16,8 +16,8 @@ void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
 {
     // Write first EKF packet
     Vector3f euler;
-    Vector2f posNE;
-    float posD;
+    Vector2p posNE;
+    postype_t posD;
     Vector3f velNED;
     Vector3f gyroBias;
     float posDownDeriv;
@@ -165,11 +165,11 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         LOG_PACKET_HEADER_INIT(LOG_XKF4_MSG),
         time_us : time_us,
         core    : DAL_CORE(core_index),
-        sqrtvarV : (uint16_t)(100*velVar),
-        sqrtvarP : (uint16_t)(100*posVar),
-        sqrtvarH : (uint16_t)(100*hgtVar),
-        sqrtvarM : (uint16_t)(100*tempVar),
-        sqrtvarVT : (uint16_t)(100*tasVar),
+        sqrtvarV : (int16_t)(100*velVar),
+        sqrtvarP : (int16_t)(100*posVar),
+        sqrtvarH : (int16_t)(100*hgtVar),
+        sqrtvarM : (int16_t)(100*tempVar),
+        sqrtvarVT : (int16_t)(100*tasVar),
         tiltErr : sqrtF(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
         offsetNorth : offset.x,
         offsetEast : offset.y,
@@ -199,7 +199,7 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
         FIY : (int16_t)(1000*flowInnov[1]),  // optical flow LOS rate vector innovations from the main nav filter
         AFI : (int16_t)(1000 * auxFlowObsInnov.length()),  // optical flow LOS rate innovation from terrain offset estimator
         HAGL : float_to_int16(100*(terrainState - stateStruct.position.z)),    // height above ground level
-        offset : (int16_t)(100*terrainState),           // filter ground offset state error
+        terrOffset : (int16_t)(100*terrainState),       // filter ground offset state error
         RI : (int16_t)(100*innovRng),                   // range finder innovations
         meaRng : (uint16_t)(100*rangeDataDelayed.rng),  // measured range
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -209,9 +209,27 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
 #endif
         angErr : (float)outputTrackError.x,             // output predictor angle error
         velErr : (float)outputTrackError.y,             // output predictor velocity error
-        posErr : (float)outputTrackError.z              // output predictor position tracking error
+        posErr : (float)outputTrackError.z,             // output predictor position tracking error
+        baroOffset : (float)baroHgtOffset               // barometer height offset subtracted from raw baro measurement when fusing baro height
     };
     AP::logger().WriteBlock(&pkt5, sizeof(pkt5));
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // log the optional "special" KF for HAGL estimation directly via RangeFinder + IMU
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+        const struct log_XKFA pktfA{
+            LOG_PACKET_HEADER_INIT(LOG_XKFA_MSG),
+            time_us : time_us,
+            core    : DAL_CORE(core_index),
+            hAgl    : (float)aglKfH,                // AGL height estimate (m)
+            vAgl    : (float)aglKfV,                // AGL velocity estimate (m/s, +ve = climbing)
+            hAglStd : (float)sqrtF(aglKfP[0][0]),   // std-dev of h_agl (m)
+            vAglStd : (float)sqrtF(aglKfP[1][1]),   // std-dev of v_agl (m/s)
+            valid   : (uint8_t)aglKfValid            // 1 when RF fused within last 5 s
+        };
+        AP::logger().WriteBlock(&pktfA, sizeof(pktfA));
+    }
+#endif
 }
 
 void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const

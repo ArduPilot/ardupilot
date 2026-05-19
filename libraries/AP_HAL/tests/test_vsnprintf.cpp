@@ -35,14 +35,19 @@ TEST(vsnprintf_Test, Basic)
         EXPECT_EQ(bytes_required, 8);
     }
     { // ensure rest of buffer survives
-        memset(output, 'A', 10);
+//Main loop where the action takes place
 #pragma GCC diagnostic push
+#if defined(__clang_major__)
+// clang doesn't understand -Wformat-truncation
+#else
 #pragma GCC diagnostic ignored "-Wformat-truncation"
+        memset(output, 'A', 10);
         const int bytes_required = snprintf(output, 5, "012345678");
-#pragma GCC diagnostic pop
         EXPECT_TRUE(streq(output, "0123"));
         EXPECT_EQ(bytes_required, 9);
         EXPECT_EQ(output[6], 'A');
+#endif
+#pragma GCC diagnostic pop
     }
     { // simple float
         const int bytes_required = hal.util->snprintf(output, ARRAY_SIZE(output), "%f", 1/3.0);
@@ -61,5 +66,56 @@ TEST(vsnprintf_Test, Basic)
         EXPECT_TRUE(streq(output, "ABC DEF x"));
     }
 }
+
+static const char* do_subnormal_format(uint32_t val_hex) {
+    // format float represented as a hex number long enough to see all digits
+
+    // note that something else is wrong here and all the strings should be the
+    // same width of 99 chars (or whatever the format string means)! when that
+    // is fixed, update the test and add an assert here.
+
+    static char buf[256];
+
+    float val;
+    static_assert(sizeof(uint32_t) == sizeof(float));
+    memcpy(&val, &val_hex, sizeof(float));
+
+    hal.util->snprintf(buf, ARRAY_SIZE(buf), "%.99f", val);
+
+    return buf;
+}
+
+TEST(vsnprintf_Test, SubnormalFormat)
+{
+    // arbitrary small number (1e-31)
+    // EXPECT_STREQ("0.000000000000000000000000000000099999998000000000000000000000000000000000000000000000000000000000000",
+    EXPECT_STREQ("0.0000000000000000000000000000001000000",
+        do_subnormal_format(0x0C01CEB3));
+
+    // smallest normal (1.1754944e-38)
+    // EXPECT_STREQ("0.000000000000000000000000000000000000011754944000000000000000000000000000000000000000000000000000000",
+    EXPECT_STREQ("0.00000000000000000000000000000000000001175494",
+        do_subnormal_format(0x00800000));
+
+    // largest subnormal (1.1754942e-38)
+    // EXPECT_STREQ("0.000000000000000000000000000000000000011754942000000000000000000000000000000000000000000000000000000",
+    EXPECT_STREQ("0.00000000000000000000000000000000000001175494", // !! same as above
+        do_subnormal_format(0x007FFFFF));
+
+    // moderate subnormal (1.1478e-41)
+    // EXPECT_STREQ("0.000000000000000000000000000000000000000011478036000000000000000000000000000000000000000000000000000",
+    EXPECT_STREQ("0.00000000000000000000000000000000000000001147804",
+        do_subnormal_format(0x00001FFF));
+
+    // smallest subnormal (1e-45)
+    // EXPECT_STREQ("0.000000000000000000000000000000000000000000001401290000000000000000000000000000000000000000000000000",
+    EXPECT_STREQ("0.00000000000000000000000000000000000000000000140130",
+        do_subnormal_format(0x00000001));
+
+    // zero
+    EXPECT_STREQ("0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        do_subnormal_format(0x00000000));
+}
+
 
 AP_GTEST_MAIN()

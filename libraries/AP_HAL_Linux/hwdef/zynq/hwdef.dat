@@ -1,0 +1,15 @@
+# Stub the sensors out for now, at least we can build and run
+define HAL_INS_DEFAULT HAL_INS_NONE
+
+# only external compasses
+define AP_COMPASS_PROBING_ENABLED 1
+
+# MPU9250 is restricted to 1MHz for non-data and interrupt registers
+#            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
+LINUX_SPIDEV "mpu9250" 1   0      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+LINUX_SPIDEV "ms5611"  1   1      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  10*MHZ
+
+env TOOLCHAIN 'arm-xilinx-linux-gnueabi'
+
+define AP_RCPROTOCOL_ZYNQ_ENABLED 1
+define AP_RCOUTPUT_ZYNQ_ENABLED 1

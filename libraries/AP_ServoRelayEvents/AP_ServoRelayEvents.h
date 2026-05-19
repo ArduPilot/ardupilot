@@ -36,7 +36,9 @@ public:
     bool do_set_relay(uint8_t relay_num, uint8_t state);
 #endif
     bool do_repeat_servo(uint8_t channel, uint16_t servo_value, int16_t repeat, uint16_t delay_time_ms);
+#if AP_RELAY_ENABLED
     bool do_repeat_relay(uint8_t relay_num, int16_t count, uint32_t period_ms);
+#endif
     void update_events(void);
 
 private:

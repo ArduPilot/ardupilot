@@ -27,8 +27,8 @@ The control modes set by the 3-pos switch are as follows:
 - If you have not done so already, follow the instructions on ArduPilot's wiki page to enable auto camera and gimbal control.
 
 - Also configure channels for manual control.
- 
-- For example I then have (to convert the values use https://ardupilot.org/copter/docs/parameters.html):
+
+- For example I then have (to convert the values use the [ArduPilot documentation](https://ardupilot.org/copter/docs/parameters.html)):
 
   - SERVO8_FUNCTION = 7 (mount_tilt)   leads to   MNT_RC_IN_TILT = 9 (RC9)     and to   RCIN9  (59)
 

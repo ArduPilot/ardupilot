@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_PERIPH_RPM_STREAM_ENABLED
 
 #include <dronecan_msgs.h>
 
@@ -52,4 +52,4 @@ void AP_Periph_FW::rpm_sensor_send(void)
     }
 }
 
-#endif // HAL_PERIPH_ENABLE_RPM_STREAM
+#endif // AP_PERIPH_RPM_STREAM_ENABLED

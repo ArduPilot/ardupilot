@@ -77,11 +77,11 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
     if (strcmp(path, "GPS1") == 0) {
         /* gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:1", "", _portNumber);
+        _sim_serial_device = _sitlState->create_serial_sim("gps", "1", _portNumber);
     } else if (strcmp(path, "GPS2") == 0) {
         /* 2nd gps */
         _connected = true;
-        _sim_serial_device = _sitlState->create_serial_sim("gps:2", "", _portNumber);
+        _sim_serial_device = _sitlState->create_serial_sim("gps", "2", _portNumber);
     } else {
         /* parse type:args:flags string for path. 
            For example:
@@ -124,8 +124,10 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             _tcp_start_client(args1, port);
         } else if (strcmp(devtype, "uart") == 0) {
             uint32_t baudrate = args2? atoi(args2) : baud;
-            ::printf("UART connection %s:%u\n", args1, baudrate);
-            _uart_path = strdup(args1);
+            if (_uart_path == nullptr) {
+                ::printf("UART connection %s:%u\n", args1, baudrate);
+                _uart_path = strdup(args1);
+            }
             _uart_baudrate = baudrate;
             _uart_start_connection();
         } else if (strcmp(devtype, "sim") == 0) {
@@ -224,6 +226,36 @@ uint32_t UARTDriver::txspace(void)
         return 0;
     }
     return _writebuffer.space();
+}
+
+void UARTDriver::set_flow_control(enum flow_control flow_control_setting)
+{
+    _flow_control = flow_control_setting;
+    if (_flow_control == FLOW_CONTROL_AUTO) {
+        // reset auto-detection state
+        _auto_flow_start_ms = 0;
+        _auto_flow_detected = false;
+    }
+    // If already connected on a real UART path, apply immediately
+    if (_uart_path && _connected && _fd != -1) {
+        struct termios t {};
+        if (tcgetattr(_fd, &t) == 0) {
+            if (_flow_control != FLOW_CONTROL_DISABLE) {
+                t.c_cflag |= CRTSCTS;
+            } else {
+                t.c_cflag &= ~CRTSCTS;
+            }
+            tcsetattr(_fd, TCSANOW, &t);
+        }
+    }
+}
+
+enum AP_HAL::UARTDriver::flow_control UARTDriver::get_flow_control(void)
+{
+    if (_uart_path) {
+        return _flow_control;
+    }
+    return FLOW_CONTROL_ENABLE;
 }
 
 ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
@@ -635,7 +667,7 @@ void UARTDriver::_uart_start_connection(void)
     t.c_oflag &= ~(OPOST | ONLCR);
     t.c_lflag &= ~(ISIG | ICANON | IEXTEN | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE);
     t.c_cc[VMIN] = 0;
-    if (_sitlState->use_rtscts()) {
+    if (_flow_control != FLOW_CONTROL_DISABLE) {
         t.c_cflag |= CRTSCTS;
     }
     tcsetattr(_fd, TCSANOW, &t);
@@ -714,6 +746,8 @@ bool UARTDriver::set_unbuffered_writes(bool on) {
     v &= ~O_NONBLOCK;
 #if defined(__APPLE__) && defined(__MACH__)
     fcntl(_fd, F_SETFL | F_NOCACHE, v | O_SYNC);
+#elif defined(__OpenBSD__)
+    fcntl(_fd, F_SETFL, v | O_SYNC);
 #else
     fcntl(_fd, F_SETFL, v | O_DIRECT | O_SYNC);
 #endif
@@ -762,7 +796,7 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
             }
 
             // feed data into CSV Reader, handle new state:
-            const auto retcode = logic_async_csv.csvreader.feed(c);
+            auto retcode = logic_async_csv.csvreader.feed(c);
             switch (retcode) {
             case AP_CSVReader::RetCode::OK:
                 continue;
@@ -781,7 +815,11 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
                     if (!logic_async_csv.done_first_line) {
                         break;
                     }
-                    logic_async_csv.loaded_data.b = (char_to_hex(logic_async_csv.term[2]) << 4) | char_to_hex(logic_async_csv.term[3]);
+                    if (!hex_twochars_to_uint8((const char*)&logic_async_csv.term[2], logic_async_csv.loaded_data.b)) {
+                        // invalid character
+                        retcode = AP_CSVReader::RetCode::ERROR;
+                        return 0;
+                    }
                     break;
                 case 2:  // error
                 case 3:  // framing error
@@ -822,7 +860,7 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
         _check_reconnect();
         return;
     }
-    ssize_t nwritten;
+    ssize_t nwritten = 0;
     uint32_t max_bytes = 10000;
 #if !defined(HAL_BUILD_AP_PERIPH)
     SITL::SIM *_sitl = AP::sitl();
@@ -861,11 +899,41 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
             if (_sim_serial_device != nullptr) {
                 nwritten = _sim_serial_device->write_to_device((const char*)readptr, navail);
             } else if (!_use_send_recv) {
-                nwritten = ::write(_fd, readptr, navail);
-                if (nwritten == -1 && errno != EAGAIN && _uart_path) {
-                    close(_fd);
-                    _fd = -1;
-                    _connected = false;
+                // For ENABLE/AUTO modes on a real UART, check CTS via ioctl
+                // before writing. This provides reliable flow control on
+                // platforms where kernel CRTSCTS may not work (e.g. macOS
+                // with USB-serial adapters).
+                bool cts_blocked = false;
+                if (_flow_control != FLOW_CONTROL_DISABLE) {
+                    int modem_bits = 0;
+                    if (ioctl(_fd, TIOCMGET, &modem_bits) == 0 &&
+                        !(modem_bits & TIOCM_CTS)) {
+                        // CTS deasserted - remote end asked us to stop sending
+                        cts_blocked = true;
+                    }
+                }
+                if (!cts_blocked) {
+                    nwritten = ::write(_fd, readptr, navail);
+                    if (nwritten == -1 && errno != EAGAIN && _uart_path) {
+                        close(_fd);
+                        _fd = -1;
+                        _connected = false;
+                    }
+                }
+                // AUTO flow control detection: mirror ChibiOS 500ms timeout logic
+                if (_flow_control == FLOW_CONTROL_AUTO && _uart_path) {
+                    if (_auto_flow_start_ms == 0) {
+                        _auto_flow_start_ms = AP_HAL::millis();
+                    }
+                    if (nwritten > 0 && !_auto_flow_detected) {
+                        // first successful write - CTS active
+                        ::printf("SERIAL%u: hardware flow control enabled\n", _portNumber);
+                        _auto_flow_detected = true;
+                    } else if (!_auto_flow_detected && AP_HAL::millis() - _auto_flow_start_ms > 500U) {
+                        // CTS never seen since AUTO was set - actually disable
+                        ::printf("SERIAL%u: hardware flow control not detected, disabled\n", _portNumber);
+                        set_flow_control(FLOW_CONTROL_DISABLE);
+                    }
                 }
             } else {
                 nwritten = send(_fd, readptr, navail, MSG_DONTWAIT);

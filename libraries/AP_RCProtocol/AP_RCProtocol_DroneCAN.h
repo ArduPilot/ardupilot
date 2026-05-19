@@ -18,7 +18,7 @@ public:
         _singleton = this;
     }
 
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
+    static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
     void update() override;
 
@@ -30,6 +30,14 @@ private:
 
     static AP_RCProtocol_DroneCAN* get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id);
 
+    enum QualityType {
+        RSSI = 0,
+        LQ_ACTIVE_ANTENNA = 1,
+        RSSI_DBM = 2,
+        SNR = 3,
+        TX_POWER = 4
+    };
+
     struct {
         uint8_t quality;
         union {
@@ -37,6 +45,7 @@ private:
             struct {
                 uint8_t QUALITY_VALID : 1;
                 uint8_t FAILSAFE : 1;
+                uint8_t QUALITY_TYPE : 3;
             } bits;
         };
         uint8_t num_channels;
@@ -45,6 +54,8 @@ private:
         uint32_t last_sample_time_ms;
         HAL_Semaphore sem;
     } rcin;
+
+    int16_t _rssi = -1;
 
     // Module Detection Registry
     static struct Registry {

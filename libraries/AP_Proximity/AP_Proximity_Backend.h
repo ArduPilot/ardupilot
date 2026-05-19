@@ -34,8 +34,8 @@ public:
     virtual void update() = 0;
 
     // get maximum and minimum distances (in meters) of sensor
-    virtual float distance_max() const = 0;
-    virtual float distance_min() const = 0;
+    virtual float distance_max_m() const = 0;
+    virtual float distance_min_m() const = 0;
 
     // get distance upwards in meters. returns true on success
     virtual bool get_upward_distance(float &distance) const { return false; }

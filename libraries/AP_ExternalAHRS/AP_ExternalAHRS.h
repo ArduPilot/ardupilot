@@ -20,12 +20,13 @@
 
 #include "AP_ExternalAHRS_config.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
+#include <AP_GPS/AP_GPS_FixType.h>
 
 class AP_ExternalAHRS_backend;
 
@@ -33,7 +34,9 @@ class AP_ExternalAHRS {
 
 public:
     friend class AP_ExternalAHRS_backend;
+    friend class AP_ExternalAHRS_SBG;
     friend class AP_ExternalAHRS_VectorNav;
+    friend class AP_ExternalAHRS_SensAItion;
 
     AP_ExternalAHRS();
 
@@ -49,18 +52,26 @@ public:
 #if AP_EXTERNAL_AHRS_MICROSTRAIN5_ENABLED
         MicroStrain5 = 2,
 #endif
+        // 3 reserved for AdNav
+        // 4 reserved for CINS
 #if AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED
         InertialLabs = 5,
 #endif
-        // 3 reserved for AdNav
-        // 4 reserved for CINS
-        // 6 reserved for Trimble
+#if AP_EXTERNAL_AHRS_GSOF_ENABLED
+        // Trimble PX-1 RTX uses the GSOF protocol.
+        GSOF = 6,
+#endif
 #if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
         MicroStrain7 = 7,
 #endif
-        // 8 reserved for SBG
+#if AP_EXTERNAL_AHRS_SBG_ENABLED
+        SBG = 8,
+#endif
         // 9 reserved for EulerNav
         // 10 reserved for Aeron
+#if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
+        SensAItion = 11,
+#endif
     };
 
     static AP_ExternalAHRS *get_singleton(void) {
@@ -109,6 +120,7 @@ public:
     bool initialised(void) const;
     bool get_quaternion(Quaternion &quat);
     bool get_origin(Location &loc);
+    bool set_origin(const Location &loc);
     bool get_location(Location &loc);
     Vector2f get_groundspeed_vector();
     bool get_velocity_NED(Vector3f &vel);
@@ -118,6 +130,7 @@ public:
     bool get_gyro(Vector3f &gyro);
     bool get_accel(Vector3f &accel);
     void send_status_report(class GCS_MAVLINK &link) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
     // update backend
     void update();
@@ -132,13 +145,13 @@ public:
     } baro_data_message_t;
 
     typedef struct {
-        Vector3f field;
+        Vector3f field; // Magnetic flux density (mgauss)
     } mag_data_message_t;
 
     typedef struct {
-        uint16_t gps_week;                   // GPS week, 0xFFFF if not available
+        uint16_t gps_week;
         uint32_t ms_tow;
-        uint8_t  fix_type;
+        AP_GPS_FixType  fix_type;
         uint8_t  satellites_in_view;
         float horizontal_pos_accuracy;
         float vertical_pos_accuracy;
@@ -169,10 +182,17 @@ public:
         gnss_is_disabled = disable;
     }
 
+    // check if a sensor type is enabled
+    bool has_sensor(AvailableSensor sensor) const {
+        return (uint16_t(sensors.get()) & uint16_t(sensor)) != 0;
+    }
+
 protected:
 
     enum class OPTIONS {
         VN_UNCOMP_IMU = 1U << 0,
+        SBG_EKF_AS_GNSS = 1U << 1,
+        SENSAITION_INS = 1U << 2,
     };
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 
@@ -186,11 +206,6 @@ private:
     AP_Int16         sensors;
 
     static AP_ExternalAHRS *_singleton;
-
-    // check if a sensor type is enabled
-    bool has_sensor(AvailableSensor sensor) const {
-        return (uint16_t(sensors.get()) & uint16_t(sensor)) != 0;
-    }
 
     // set default of EAHRS_SENSORS
     void set_default_sensors(uint16_t _sensors) {
@@ -207,5 +222,5 @@ namespace AP {
     AP_ExternalAHRS &externalAHRS();
 };
 
-#endif  // HAL_EXTERNAL_AHRS_ENABLED
+#endif  // AP_EXTERNAL_AHRS_ENABLED
 

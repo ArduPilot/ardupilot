@@ -5,13 +5,13 @@
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
 {
     // sanity check angle max parameter
-    aparm.angle_max.set(constrain_int16(aparm.angle_max,1000,8000));
+    const float angle_max_cd = attitude_control.lean_angle_max_cd();
 
     // limit max lean angle
-    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
+    angle_max = constrain_float(angle_max, 1000, angle_max_cd);
 
-    // scale roll_in, pitch_in to ANGLE_MAX parameter range
-    float scaler = aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    // scale roll_in, pitch_in to ATC_ANGLE_MAX parameter range
+    float scaler = angle_max_cd/(float)ROLL_PITCH_INPUT_MAX;
     roll_in *= scaler;
     pitch_in *= scaler;
 
@@ -64,7 +64,7 @@ float Sub::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position_xy_cm(), roi_WP.xy());
+        yaw_look_at_WP_bearing = get_bearing_cd((pos_control.get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), roi_WP.xy());
     }
 
     return yaw_look_at_WP_bearing;
@@ -72,7 +72,8 @@ float Sub::get_roi_yaw()
 
 float Sub::get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
+    Vector3f vel = (pos_control.get_vel_estimate_NED_ms() * 100.0f).tofloat();
+    vel.z = -vel.z;
     const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {
@@ -94,33 +95,54 @@ float Sub::get_pilot_desired_climb_rate(float throttle_control)
         return 0.0f;
     }
 
-    float desired_rate = 0.0f;
-    float mid_stick = channel_throttle->get_control_mid();
-    float deadband_top = mid_stick + g.throttle_deadzone * gain;
-    float deadband_bottom = mid_stick - g.throttle_deadzone * gain;
-
     // ensure a reasonable throttle value
     throttle_control = constrain_float(throttle_control,0.0f,1000.0f);
 
     // ensure a reasonable deadzone
     g.throttle_deadzone.set(constrain_int16(g.throttle_deadzone, 0, 400));
 
+    float mid_stick = channel_throttle->get_control_mid();
+    float deadband_top = mid_stick + g.throttle_deadzone * gain;
+    float deadband_bottom = mid_stick - g.throttle_deadzone * gain;
+
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate = get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
+        return get_pilot_speed_dn() * (throttle_control-deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate = g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
+        return g.pilot_speed_up * (throttle_control-deadband_top) / (1000.0f-deadband_top);
     } else {
         // must be in the deadband
-        desired_rate = 0.0f;
+        return 0.0f;
+    }
+}
+
+// behavior is similar to Sub::get_pilot_desired_climb_rate
+float Sub::get_pilot_desired_horizontal_rate(RC_Channel *channel) const
+{
+    if (failsafe.pilot_input) {
+        return 0;
     }
 
-    // desired climb rate for logging
-    desired_climb_rate = desired_rate;
+    // forward and lateral sticks have center trim, unlike throttle
+    auto control = channel->norm_input();
 
-    return desired_rate;
+    // normalize deadzone
+    auto dz = (float)g.throttle_deadzone * 2.0f / (float)(channel->get_radio_max() - channel->get_radio_min());
+    auto deadband_top = dz * gain;
+    auto deadband_bottom = -dz * gain;
+
+    if (control < deadband_bottom) {
+        // below the deadband
+        return (float)g.pilot_speed * (control - deadband_bottom);
+    } else if (control > deadband_top) {
+        // above the deadband
+        return (float)g.pilot_speed * (control - deadband_top);
+    } else {
+        // must be in the deadband
+        return 0;
+    }
 }
 
 // rotate vector from vehicle's perspective to North-East frame

@@ -39,8 +39,6 @@ extern const AP_HAL::HAL& hal;
 #define MAX_NODE_ID    125
 #define NODERECORD_LOC(node_id) ((node_id * sizeof(NodeRecord)) + NODERECORD_MAGIC_LEN)
 
-#define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
-
 // database is currently shared by all DNA servers
 AP_DroneCAN_DNA_Server::Database AP_DroneCAN_DNA_Server::db;
 
@@ -89,21 +87,15 @@ void AP_DroneCAN_DNA_Server::Database::reset()
 }
 
 // handle initializing the server with its own node ID and unique ID
-void AP_DroneCAN_DNA_Server::Database::init_server(uint8_t node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len)
+void AP_DroneCAN_DNA_Server::Database::init_server(uint8_t own_node_id, const uint8_t own_unique_id[], uint8_t own_unique_id_len)
 {
     WITH_SEMAPHORE(sem);
 
-    // ensure that its node ID and unique ID match in the database
-    const uint8_t stored_own_node_id = find_node_id(own_unique_id, own_unique_id_len);
-    static bool reset_done;
-    if (stored_own_node_id != node_id) { // cannot match if its unique ID was not found
-        // we have no record of its unique ID, do a reset
-        if (!reset_done) {
-            // only reset once per power cycle else we could wipe other servers' registrations
-            reset();
-            reset_done = true;
-        }
-        create_registration(node_id, own_unique_id, own_unique_id_len);
+    // register server node ID and unique ID if not correctly registered. note
+    // that ardupilot mixes the node ID into the unique ID so changing the node
+    // ID will "leak" the old node ID
+    if (own_node_id != find_node_id(own_unique_id, own_unique_id_len)) {
+        register_uid(own_node_id, own_unique_id, own_unique_id_len);
     }
 }
 
@@ -118,59 +110,32 @@ bool AP_DroneCAN_DNA_Server::Database::handle_node_info(uint8_t source_node_id, 
             return true; // so raise as duplicate
         }
     } else {
-        // we don't know about this node ID, let's register it
-        uint8_t prev_node_id = find_node_id(unique_id, 16); // have we registered this unique ID under a different node ID?
-        if (prev_node_id != 0) {
-            delete_registration(prev_node_id); // yes, delete old registration
-        }
-        create_registration(source_node_id, unique_id, 16);
+        register_uid(source_node_id, unique_id, 16); // we don't know about this node ID, let's register it
     }
     return false; // not a duplicate
 }
 
 // handle the allocation message. returns the allocated node ID, or 0 if allocation failed
-uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(uint8_t node_id, const uint8_t unique_id[])
+uint8_t AP_DroneCAN_DNA_Server::Database::handle_allocation(const uint8_t unique_id[])
 {
     WITH_SEMAPHORE(sem);
 
     uint8_t resp_node_id = find_node_id(unique_id, 16);
     if (resp_node_id == 0) {
-        resp_node_id = find_free_node_id(node_id > MAX_NODE_ID ? 0 : node_id);
+        // find free node ID, starting at the max as prescribed by the standard
+        resp_node_id = MAX_NODE_ID;
+        while (resp_node_id > 0) {
+            if (!node_registered.get(resp_node_id)) {
+                break;
+            }
+            resp_node_id--;
+        }
+
         if (resp_node_id != 0) {
             create_registration(resp_node_id, unique_id, 16);
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UC Node Alloc Failed!");
         }
     }
     return resp_node_id; // will be 0 if not found and not created
-}
-
-// search for a free node ID, starting at the preferred ID (which can be 0 if
-// none are preferred). returns 0 if none found. based on pseudocode in
-// uavcan/protocol/dynamic_node_id/1.Allocation.uavcan
-uint8_t AP_DroneCAN_DNA_Server::Database::find_free_node_id(uint8_t preferred)
-{
-    if (preferred == 0) {
-        preferred = MAX_NODE_ID;
-    }
-    // search for an ID >= preferred
-    uint8_t candidate = preferred;
-    while (candidate <= MAX_NODE_ID) {
-        if (!node_registered.get(candidate)) {
-            return candidate;
-        }
-        candidate++;
-    }
-    // search for an ID <= preferred
-    candidate = preferred;
-    while (candidate > 0) {
-        if (!node_registered.get(candidate)) {
-            return candidate;
-        }
-        candidate--;
-    }
-    // no IDs free
-    return 0;
 }
 
 // retrieve node ID that matches the given unique ID. returns 0 if not found
@@ -203,6 +168,17 @@ void AP_DroneCAN_DNA_Server::Database::compute_uid_hash(NodeRecord &record, cons
     for (uint8_t i=0; i<6; i++) {
         record.uid_hash[i] = (hash >> (8*i)) & 0xff;
     }
+}
+
+// register a given unique ID to a given node ID, deleting any existing registration for the unique ID
+void AP_DroneCAN_DNA_Server::Database::register_uid(uint8_t node_id, const uint8_t unique_id[], uint8_t size)
+{
+    uint8_t prev_node_id = find_node_id(unique_id, size); // have we registered this unique ID under a different node ID?
+    if (prev_node_id != 0) {
+        delete_registration(prev_node_id); // yes, delete old node ID's registration
+    }
+    // overwrite an existing registration with this node ID, if any
+    create_registration(node_id, unique_id, size);
 }
 
 // create the registration for the given node ID and set its record's unique ID
@@ -269,9 +245,9 @@ void AP_DroneCAN_DNA_Server::Database::write_record(const NodeRecord &record, ui
 
 
 AP_DroneCAN_DNA_Server::AP_DroneCAN_DNA_Server(AP_DroneCAN &ap_dronecan, CanardInterface &canard_iface, uint8_t driver_index) :
+    storage(StorageManager::StorageCANDNA),
     _ap_dronecan(ap_dronecan),
     _canard_iface(canard_iface),
-    storage(StorageManager::StorageCANDNA),
     allocation_sub(allocation_cb, driver_index),
     node_status_sub(node_status_cb, driver_index),
     node_info_client(_canard_iface, node_info_cb) {}
@@ -354,6 +330,80 @@ void AP_DroneCAN_DNA_Server::verify_nodes()
     }
 }
 
+#if HAL_LOGGING_ENABLED
+// Find the node status item for the given node id, will add new item if no existing item can be found
+AP_DroneCAN_DNA_Server::node_status_log_data * AP_DroneCAN_DNA_Server::find_node_status_item(const uint8_t source_node_id)
+{
+    // Search exiting items
+    for (auto *node = node_status_list; node != nullptr; node = node->next) {
+        if (node->id == source_node_id) {
+            // Return match
+            return node;
+        }
+    }
+
+    // Add new item
+    auto *node = NEW_NOTHROW node_status_log_data(source_node_id);
+    if (node == nullptr) {
+        return nullptr;
+    }
+
+    // link into the list
+    node->next = node_status_list;
+    node_status_list = node;
+
+    // Return item
+    return node;
+}
+
+// Update node status linked list and log
+void AP_DroneCAN_DNA_Server::update_node_status(const uint8_t source_node_id, const uavcan_protocol_NodeStatus& msg)
+{
+    AP_DroneCAN_DNA_Server::node_status_log_data *node = find_node_status_item(source_node_id);
+    if (node == nullptr) {
+        return;
+    }
+
+    // Rate limit logs to no more than 1.1Hz. AP_Periph sends at 1Hz, the head room is to
+    // make sure that timing jitter does not result in skipping every other message
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((now_ms - node->last_log_ms) >= 900) {
+        node->last_log_ms = now_ms;
+
+        // @LoggerMessage: CANH
+        // @Description: DroneCAN heartbeat status
+        // @Field: TimeUS: Time since system startup
+        // @Field: Driver: Driver index
+        // @Field: NodeId: Node ID
+        // @Field: UpTime: Time since node startup
+        // @Field: Health: 0:Ok, 1:Warning, 2:Error, 3:Critical
+        // @Field: Mode: 0:Operational, 1:Initialization, 2:Maintenance, 3:Software update, 7:Offline
+        // @Field: SubMode: Expected to be 0
+        // @Field: VendorCode: vendor specific code. In AP_Periph this is available memory in bytes.
+
+        AP::logger().WriteStreaming("CANH",
+                                    "TimeUS,Driver,NodeId,UpTime,Health,Mode,SubMode,VendorCode",
+                                    "s-#s----",
+                                    "F-------",
+                                    "QBBIBBBH",
+                                    AP_HAL::micros64(),
+                                    _ap_dronecan._driver_index,
+                                    source_node_id,
+                                    msg.uptime_sec,
+                                    msg.health,
+                                    msg.mode,
+                                    msg.sub_mode,
+                                    msg.vendor_specific_status_code);
+    }
+
+    // If uptime goes backwards re-trigger node info log
+    if (node->last_uptime_sec > msg.uptime_sec) {
+        node_logged.clear(source_node_id);
+    }
+    node->last_uptime_sec = msg.uptime_sec;
+}
+#endif // HAL_LOGGING_ENABLED
+
 /* Handles Node Status Message, adds to the Seen Node list
 Also starts the Service call for Node Info to complete the
 Verification process. */
@@ -382,6 +432,11 @@ void AP_DroneCAN_DNA_Server::handleNodeStatus(const CanardRxTransfer& transfer, 
     }
     //Add node to seen list if not seen before
     node_seen.set(transfer.source_node_id);
+
+#if HAL_LOGGING_ENABLED
+    // Update status data for logging
+    update_node_status(transfer.source_node_id, msg);
+#endif // HAL_LOGGING_ENABLED
 }
 
 /* Node Info message handler
@@ -424,7 +479,10 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
                            rsp.software_version.minor,
                            rsp.software_version.vcs_commit);
     }
-#endif
+
+    // Update status data for logging
+    update_node_status(transfer.source_node_id, rsp.status);
+#endif // HAL_LOGGING_ENABLED
 
     bool duplicate = db.handle_node_info(transfer.source_node_id, rsp.hardware_version.unique_id);
     if (duplicate) {
@@ -444,68 +502,58 @@ void AP_DroneCAN_DNA_Server::handleNodeInfo(const CanardRxTransfer& transfer, co
     }
 }
 
-/* Handle the allocation message from the devices supporting
-dynamic node allocation. */
-void AP_DroneCAN_DNA_Server::handleAllocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
+// process node ID allocation messages for DNA
+void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer, const uavcan_protocol_dynamic_node_id_Allocation& msg)
 {
     if (transfer.source_node_id != 0) {
-        //Ignore Allocation messages that are not DNA requests
-        return;
+        return; // ignore allocation messages that are not DNA requests
     }
     uint32_t now = AP_HAL::millis();
 
-    if (rcvd_unique_id_offset == 0 ||
-        (now - last_alloc_msg_ms) > 500) {
-        if (msg.first_part_of_unique_id) {
-            rcvd_unique_id_offset = 0;
-            memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
-        } else {
-            //we are only accepting first part
-            return;
-        }
-    } else if (msg.first_part_of_unique_id) {
-        // we are only accepting follow up messages
-        return;
+    if ((now - last_alloc_msg_ms) > UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_FOLLOWUP_TIMEOUT_MS) {
+        rcvd_unique_id_offset = 0; // reset state, timed out
     }
 
-    if (rcvd_unique_id_offset) {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting Followup part! %u\n",
-                     (long int)AP_HAL::millis(),
-                     unsigned((now - last_alloc_msg_ms)));
-    } else {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %ld  -- Accepting First part! %u\n",
-                     (long int)AP_HAL::millis(),
-                     unsigned((now - last_alloc_msg_ms)));
+    if (msg.first_part_of_unique_id) {
+        // nodes waiting to send a follow up will instead send a first part
+        // again if they see another allocation message. therefore we should
+        // always reset and process a received first part, since any node we
+        // were allocating will never send its follow up and we'd just time out
+        rcvd_unique_id_offset = 0;
+    } else if (rcvd_unique_id_offset == 0) {
+        return; // not first part but we are expecting one, ignore
     }
 
     last_alloc_msg_ms = now;
-    if ((rcvd_unique_id_offset + msg.unique_id.len) > 16) {
-        //This request is malformed, Reset!
-        rcvd_unique_id_offset = 0;
-        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
+    if ((rcvd_unique_id_offset + msg.unique_id.len) > sizeof(rcvd_unique_id)) {
+        rcvd_unique_id_offset = 0; // reset state, request contains an over-long ID
         return;
     }
 
-    //copy over the unique_id
-    for (uint8_t i=rcvd_unique_id_offset; i<(rcvd_unique_id_offset + msg.unique_id.len); i++) {
-        rcvd_unique_id[i] = msg.unique_id.data[i - rcvd_unique_id_offset];
-    }
+    // save the new portion of the unique ID
+    memcpy(&rcvd_unique_id[rcvd_unique_id_offset], msg.unique_id.data, msg.unique_id.len);
     rcvd_unique_id_offset += msg.unique_id.len;
 
-    //send follow up message
+    // respond with the message containing the received unique ID so far, or
+    // with the node ID if we successfully allocated one
     uavcan_protocol_dynamic_node_id_Allocation rsp {};
-
-    /* Respond with the message containing the received unique ID so far
-    or with node id if we successfully allocated one. */
     memcpy(rsp.unique_id.data, rcvd_unique_id, rcvd_unique_id_offset);
     rsp.unique_id.len = rcvd_unique_id_offset;
 
-    if (rcvd_unique_id_offset == 16) {
-        //We have received the full Unique ID, time to do allocation
-        rsp.node_id = db.handle_allocation(msg.node_id, (const uint8_t*)rcvd_unique_id);
-        //reset states as well        
-        rcvd_unique_id_offset = 0;
-        memset(rcvd_unique_id, 0, sizeof(rcvd_unique_id));
+    if (rcvd_unique_id_offset == sizeof(rcvd_unique_id)) { // full unique ID received, allocate it!
+        // we ignore the preferred node ID as it seems nobody uses the feature
+        // and we couldn't guarantee it anyway. we will always remember and
+        // re-assign node IDs consistently, so the node could send a status
+        // with a particular ID once then switch back to no preference for DNA
+        rsp.node_id = db.handle_allocation(rcvd_unique_id);
+        rcvd_unique_id_offset = 0; // reset state for next allocation
+        if (rsp.node_id == 0) { // allocation failed
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "DroneCAN DNA allocation failed; database full");
+            // don't send reply with a failed ID in case the allocatee does
+            // silly things, though it is technically legal. the allocatee will
+            // then time out and try again (though we still won't have an ID!)
+            return;
+        }
     }
 
     allocation_pub.broadcast(rsp, false); // never publish allocation message with CAN FD

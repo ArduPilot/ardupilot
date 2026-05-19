@@ -3,7 +3,7 @@
 #define AP_PARAM_VEHICLE_NAME blimp
 
 #include <AP_Common/AP_Common.h>
-#include "RC_Channel.h"
+#include "RC_Channel_Blimp.h"
 #include <SRV_Channel/SRV_Channel.h>
 
 // Global parameter class.
@@ -128,18 +128,18 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,
-        k_param_gcs1,
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
-        k_param_telem_delay,
-        k_param_gcs2,
+        k_param_gcs0_unused = 110,        // unused in ArduPilot-4.7
+        k_param_gcs1_unused,              // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
+        k_param_telem_delay_old,          // used for conversion in ArduPilot-4.7
+        k_param_gcs2_unused,              // unused in ArduPilot-4.7
         k_param_serial_manager_old,
-        k_param_gcs3,
+        k_param_gcs3_unused,              // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,              // unused in ArduPilot-4.7
+        k_param_gcs5_unused,              // unused in ArduPilot-4.7
+        k_param_gcs6_unused,              // unused in ArduPilot-4.7
 
         //
         // 135 : reserved for Solo until features merged with master
@@ -182,12 +182,12 @@ public:
         //
         // 200: flight modes
         //
-        k_param_flight_mode1 = 200,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
+        k_param_flight_modes0 = 200,
+        k_param_flight_modes1,
+        k_param_flight_modes2,
+        k_param_flight_modes3,
+        k_param_flight_modes4,
+        k_param_flight_modes5,
         k_param_flight_mode_chan,
         k_param_initial_mode,
 
@@ -200,17 +200,12 @@ public:
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
 
         // the k_param_* space is 9-bits in size
     };
 
     AP_Int16        format_version;
-
-    // Telemetry control
-    //
-    AP_Int16        sysid_this_mav;
-    AP_Int16        sysid_my_gcs;
-    AP_Int8         telem_delay;
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
@@ -226,12 +221,7 @@ public:
 
     // Flight modes
     //
-    AP_Int8         flight_mode1;
-    AP_Int8         flight_mode2;
-    AP_Int8         flight_mode3;
-    AP_Int8         flight_mode4;
-    AP_Int8         flight_mode5;
-    AP_Int8         flight_mode6;
+    AP_Int8         flight_modes[6];
     AP_Int8         flight_mode_chan;
     AP_Int8         initial_mode;
 
@@ -280,9 +270,6 @@ public:
 
     // altitude at which nav control can start in takeoff
     AP_Float wp_navalt_min;
-
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
 
     // developer options
     AP_Int32 dev_options;

@@ -53,8 +53,8 @@ Flow_PX4::Flow_PX4(uint32_t width, uint32_t bytesperline,
                    float bottom_flow_feature_threshold,
                    float bottom_flow_value_threshold) :
     _width(width),
-    _bytesperline(bytesperline),
     _search_size(max_flow_pixel),
+    _bytesperline(bytesperline),
     _bottom_flow_feature_threshold(bottom_flow_feature_threshold),
     _bottom_flow_value_threshold(bottom_flow_value_threshold)
 {

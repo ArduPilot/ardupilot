@@ -181,6 +181,11 @@ void LR_MsgHandler_RISI::process_message(uint8_t *msgbytes)
     MSG_CREATE(RISI, msgbytes);
     AP::dal().handle_message(msg);
 }
+void LR_MsgHandler_RISJ::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RISJ, msgbytes);
+    AP::dal().handle_message(msg);
+}
 
 void LR_MsgHandler_RASH::process_message(uint8_t *msgbytes)
 {
@@ -329,4 +334,10 @@ void LR_MsgHandler_PARM::process_message(uint8_t *msg)
 
     float value = require_field_float(msg, "Value");
     set_parameter(parameter_name, value);
+}
+
+void LR_MsgHandler_RTER::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RTER, msgbytes);
+    AP::dal().handle_message(msg, ekf2, ekf3);
 }

@@ -57,9 +57,16 @@ void NavEKF3_core::SelectFlowFusion()
         EstimateTerrainOffset(ofDataDelayed);
     }
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Update the IMU-aided AGL KF every IMU step when enabled, regardless of flow/RF data presence.
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+        UpdateAglKf();
+    }
+#endif
+
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
-        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW);
+        const bool fuse_optflow = (frontend->_flowUse == FLOW_USE_NAV) && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index);
         // Set the flow noise used by the fusion processes
         R_LOS = sq(MAX(frontend->_flowNoise, 0.05f));
         // Fuse the optical flow X and Y axis data into the main filter sequentially
@@ -121,7 +128,7 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
             ftype q3 = stateStruct.quat[3]; // quaternion at optical flow measurement time
 
             // Set range finder measurement noise variance. TODO make this a function of range and tilt to allow for sensor, alignment and AHRS errors
-            ftype R_RNG = frontend->_rngNoise;
+            ftype R_RNG = frontend->_rngNoise.get();
 
             // calculate Kalman gain
             ftype SK_RNG = sq(q0) - sq(q1) - sq(q2) + sq(q3);
@@ -294,8 +301,26 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     ftype vd = stateStruct.velocity.z;
     ftype pd = stateStruct.position.z;
 
+    // Default is the terrain estimator AGL (terrainState - pd, where pd is the main filter's vertical position)
     // constrain height above ground to be above range measured on ground
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // if ground offset (aka terrainState) is not valid, use SRTM altitude
+    terrain_srtm_alt_valid = ((imuSampleTime_ms - terrain_srtm_alt_ms) < 5000);
+    if (!gndOffsetValid && terrain_srtm_alt_valid) {
+        heightAboveGndEst = MAX((terrain_srtm_alt - pd), rngOnGnd);
+    }
+#endif
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // AGL KF override: use the IMU-aided AGL KF estimate when enabled and valid,
+    // instead of terrainState-pd which can drift when the main filter's vertical position
+    // state is unreliable (e.g. poor altitude source, sensor outage, or ground effect).
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+        heightAboveGndEst = MAX(aglKfH, rngOnGnd);
+    }
+#endif
 
     // calculate range from ground plain to centre of sensor fov assuming flat earth
     ftype range = constrain_ftype((heightAboveGndEst/prevTnb.c.z),rngOnGnd,1000.0f);
@@ -457,53 +482,38 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             Kfusion[4] = t78*(-t90+P[4][0]*t2*t5+P[4][1]*t2*t15+P[4][6]*t2*t10+P[4][2]*t2*t19-P[4][3]*t2*t22+P[4][5]*t2*t27);
             Kfusion[5] = t78*(t61+P[5][0]*t2*t5-P[5][4]*t2*t7+P[5][1]*t2*t15+P[5][6]*t2*t10+P[5][2]*t2*t19-P[5][3]*t2*t22);
             Kfusion[6] = t78*(t70+P[6][0]*t2*t5-P[6][4]*t2*t7+P[6][1]*t2*t15+P[6][2]*t2*t19-P[6][3]*t2*t22+P[6][5]*t2*t27);
-            Kfusion[7] = t78*(P[7][0]*t2*t5-P[7][4]*t2*t7+P[7][1]*t2*t15+P[7][6]*t2*t10+P[7][2]*t2*t19-P[7][3]*t2*t22+P[7][5]*t2*t27);
-            Kfusion[8] = t78*(P[8][0]*t2*t5-P[8][4]*t2*t7+P[8][1]*t2*t15+P[8][6]*t2*t10+P[8][2]*t2*t19-P[8][3]*t2*t22+P[8][5]*t2*t27);
-            Kfusion[9] = t78*(P[9][0]*t2*t5-P[9][4]*t2*t7+P[9][1]*t2*t15+P[9][6]*t2*t10+P[9][2]*t2*t19-P[9][3]*t2*t22+P[9][5]*t2*t27);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t78*(P[10][0]*t2*t5-P[10][4]*t2*t7+P[10][1]*t2*t15+P[10][6]*t2*t10+P[10][2]*t2*t19-P[10][3]*t2*t22+P[10][5]*t2*t27);
-                Kfusion[11] = t78*(P[11][0]*t2*t5-P[11][4]*t2*t7+P[11][1]*t2*t15+P[11][6]*t2*t10+P[11][2]*t2*t19-P[11][3]*t2*t22+P[11][5]*t2*t27);
-                Kfusion[12] = t78*(P[12][0]*t2*t5-P[12][4]*t2*t7+P[12][1]*t2*t15+P[12][6]*t2*t10+P[12][2]*t2*t19-P[12][3]*t2*t22+P[12][5]*t2*t27);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t78*(P[stateIndex][0]*t2*t5-P[stateIndex][4]*t2*t7+P[stateIndex][1]*t2*t15+P[stateIndex][6]*t2*t10+P[stateIndex][2]*t2*t19-P[stateIndex][3]*t2*t22+P[stateIndex][5]*t2*t27);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t78*(P[16][0]*t2*t5-P[16][4]*t2*t7+P[16][1]*t2*t15+P[16][6]*t2*t10+P[16][2]*t2*t19-P[16][3]*t2*t22+P[16][5]*t2*t27);
-                Kfusion[17] = t78*(P[17][0]*t2*t5-P[17][4]*t2*t7+P[17][1]*t2*t15+P[17][6]*t2*t10+P[17][2]*t2*t19-P[17][3]*t2*t22+P[17][5]*t2*t27);
-                Kfusion[18] = t78*(P[18][0]*t2*t5-P[18][4]*t2*t7+P[18][1]*t2*t15+P[18][6]*t2*t10+P[18][2]*t2*t19-P[18][3]*t2*t22+P[18][5]*t2*t27);
-                Kfusion[19] = t78*(P[19][0]*t2*t5-P[19][4]*t2*t7+P[19][1]*t2*t15+P[19][6]*t2*t10+P[19][2]*t2*t19-P[19][3]*t2*t22+P[19][5]*t2*t27);
-                Kfusion[20] = t78*(P[20][0]*t2*t5-P[20][4]*t2*t7+P[20][1]*t2*t15+P[20][6]*t2*t10+P[20][2]*t2*t19-P[20][3]*t2*t22+P[20][5]*t2*t27);
-                Kfusion[21] = t78*(P[21][0]*t2*t5-P[21][4]*t2*t7+P[21][1]*t2*t15+P[21][6]*t2*t10+P[21][2]*t2*t19-P[21][3]*t2*t22+P[21][5]*t2*t27);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t78*(P[22][0]*t2*t5-P[22][4]*t2*t7+P[22][1]*t2*t15+P[22][6]*t2*t10+P[22][2]*t2*t19-P[22][3]*t2*t22+P[22][5]*t2*t27);
-                Kfusion[23] = t78*(P[23][0]*t2*t5-P[23][4]*t2*t7+P[23][1]*t2*t15+P[23][6]*t2*t10+P[23][2]*t2*t19-P[23][3]*t2*t22+P[23][5]*t2*t27);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
             }
 
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t78*(P[i][0]*t2*t5-P[i][4]*t2*t7+P[i][1]*t2*t15+P[i][6]*t2*t10+P[i][2]*t2*t19-P[i][3]*t2*t22+P[i][5]*t2*t27);
+                }
+                Kfusion[i] = res;
+            }
         } else {
 
             // calculate Y axis observation Jacobian
@@ -634,51 +644,37 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             Kfusion[4] = -t78*(t61+P[4][0]*t2*t5+P[4][5]*t2*t8-P[4][6]*t2*t10+P[4][1]*t2*t16-P[4][2]*t2*t19+P[4][3]*t2*t22);
             Kfusion[5] = -t78*(t64+P[5][0]*t2*t5-P[5][6]*t2*t10+P[5][1]*t2*t16-P[5][2]*t2*t19+P[5][3]*t2*t22+P[5][4]*t2*t27);
             Kfusion[6] = -t78*(-t92+P[6][0]*t2*t5+P[6][5]*t2*t8+P[6][1]*t2*t16-P[6][2]*t2*t19+P[6][3]*t2*t22+P[6][4]*t2*t27);
-            Kfusion[7] = -t78*(P[7][0]*t2*t5+P[7][5]*t2*t8-P[7][6]*t2*t10+P[7][1]*t2*t16-P[7][2]*t2*t19+P[7][3]*t2*t22+P[7][4]*t2*t27);
-            Kfusion[8] = -t78*(P[8][0]*t2*t5+P[8][5]*t2*t8-P[8][6]*t2*t10+P[8][1]*t2*t16-P[8][2]*t2*t19+P[8][3]*t2*t22+P[8][4]*t2*t27);
-            Kfusion[9] = -t78*(P[9][0]*t2*t5+P[9][5]*t2*t8-P[9][6]*t2*t10+P[9][1]*t2*t16-P[9][2]*t2*t19+P[9][3]*t2*t22+P[9][4]*t2*t27);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = -t78*(P[10][0]*t2*t5+P[10][5]*t2*t8-P[10][6]*t2*t10+P[10][1]*t2*t16-P[10][2]*t2*t19+P[10][3]*t2*t22+P[10][4]*t2*t27);
-                Kfusion[11] = -t78*(P[11][0]*t2*t5+P[11][5]*t2*t8-P[11][6]*t2*t10+P[11][1]*t2*t16-P[11][2]*t2*t19+P[11][3]*t2*t22+P[11][4]*t2*t27);
-                Kfusion[12] = -t78*(P[12][0]*t2*t5+P[12][5]*t2*t8-P[12][6]*t2*t10+P[12][1]*t2*t16-P[12][2]*t2*t19+P[12][3]*t2*t22+P[12][4]*t2*t27);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = -t78*(P[stateIndex][0]*t2*t5+P[stateIndex][5]*t2*t8-P[stateIndex][6]*t2*t10+P[stateIndex][1]*t2*t16-P[stateIndex][2]*t2*t19+P[stateIndex][3]*t2*t22+P[stateIndex][4]*t2*t27);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = -t78*(P[16][0]*t2*t5+P[16][5]*t2*t8-P[16][6]*t2*t10+P[16][1]*t2*t16-P[16][2]*t2*t19+P[16][3]*t2*t22+P[16][4]*t2*t27);
-                Kfusion[17] = -t78*(P[17][0]*t2*t5+P[17][5]*t2*t8-P[17][6]*t2*t10+P[17][1]*t2*t16-P[17][2]*t2*t19+P[17][3]*t2*t22+P[17][4]*t2*t27);
-                Kfusion[18] = -t78*(P[18][0]*t2*t5+P[18][5]*t2*t8-P[18][6]*t2*t10+P[18][1]*t2*t16-P[18][2]*t2*t19+P[18][3]*t2*t22+P[18][4]*t2*t27);
-                Kfusion[19] = -t78*(P[19][0]*t2*t5+P[19][5]*t2*t8-P[19][6]*t2*t10+P[19][1]*t2*t16-P[19][2]*t2*t19+P[19][3]*t2*t22+P[19][4]*t2*t27);
-                Kfusion[20] = -t78*(P[20][0]*t2*t5+P[20][5]*t2*t8-P[20][6]*t2*t10+P[20][1]*t2*t16-P[20][2]*t2*t19+P[20][3]*t2*t22+P[20][4]*t2*t27);
-                Kfusion[21] = -t78*(P[21][0]*t2*t5+P[21][5]*t2*t8-P[21][6]*t2*t10+P[21][1]*t2*t16-P[21][2]*t2*t19+P[21][3]*t2*t22+P[21][4]*t2*t27);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = -t78*(P[22][0]*t2*t5+P[22][5]*t2*t8-P[22][6]*t2*t10+P[22][1]*t2*t16-P[22][2]*t2*t19+P[22][3]*t2*t22+P[22][4]*t2*t27);
-                Kfusion[23] = -t78*(P[23][0]*t2*t5+P[23][5]*t2*t8-P[23][6]*t2*t10+P[23][1]*t2*t16-P[23][2]*t2*t19+P[23][3]*t2*t22+P[23][4]*t2*t27);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = -t78*(P[i][0]*t2*t5+P[i][5]*t2*t8-P[i][6]*t2*t10+P[i][1]*t2*t16-P[i][2]*t2*t19+P[i][3]*t2*t22+P[i][4]*t2*t27);
+                }
+                Kfusion[i] = res;
             }
         }
 
@@ -694,59 +690,28 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 flowFusionActive = true;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
             }
-            // correct the covariance P = (I - K*H)*P
-            // take advantage of the empty columns in KH to reduce the
-            // number of operations
-            for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                for (uint8_t j = 0; j<=6; j++) {
-                    KH[i][j] = Kfusion[i] * H_LOS[j];
-                }
-                for (uint8_t j = 7; j<=stateIndexLim; j++) {
-                    KH[i][j] = 0.0f;
-                }
-            }
-            for (uint8_t j = 0; j<=stateIndexLim; j++) {
-                for (uint8_t i = 0; i<=stateIndexLim; i++) {
+
+            // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+            // the zero elements of H to reduce the number of operations.
+            for (unsigned i = 0; i<=stateIndexLim; i++) {
+                // j as the inner loop allows the compiler to hoist the KH product
+                // to save computation, and do the inner indexing more efficiently.
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     ftype res = 0;
-                    res += KH[i][0] * P[0][j];
-                    res += KH[i][1] * P[1][j];
-                    res += KH[i][2] * P[2][j];
-                    res += KH[i][3] * P[3][j];
-                    res += KH[i][4] * P[4][j];
-                    res += KH[i][5] * P[5][j];
-                    res += KH[i][6] * P[6][j];
+                    res += (Kfusion[i] * H_LOS[0]) * P[0][j];
+                    res += (Kfusion[i] * H_LOS[1]) * P[1][j];
+                    res += (Kfusion[i] * H_LOS[2]) * P[2][j];
+                    res += (Kfusion[i] * H_LOS[3]) * P[3][j];
+                    res += (Kfusion[i] * H_LOS[4]) * P[4][j];
+                    res += (Kfusion[i] * H_LOS[5]) * P[5][j];
+                    res += (Kfusion[i] * H_LOS[6]) * P[6][j];
                     KHP[i][j] = res;
                 }
             }
 
-            // Check that we are not going to drive any variances negative and skip the update if so
-            bool healthyFusion = true;
-            for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                if (KHP[i][i] > P[i][i]) {
-                    healthyFusion = false;
-                }
-            }
-
-            if (healthyFusion) {
-                // update the covariance matrix
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        P[i][j] = P[i][j] - KHP[i][j];
-                    }
-                }
-
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
-                // correct the state vector
-                for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * flowInnov[obsIndex];
-                }
-                stateStruct.quat.normalize();
-
-            } else {
-                // record bad axis
+            // finish fusion from KHP and Kfusion
+            if (FinishFusion(flowInnov[obsIndex])) {
+                // fault, record bad axis
                 if (obsIndex == 0) {
                     faultStatus.bad_xflow = true;
                 } else if (obsIndex == 1) {
@@ -783,5 +748,175 @@ bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, 
 /********************************************************
 *                   MISC FUNCTIONS                      *
 ********************************************************/
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+/*
+ * 2-state IMU-aided AGL Kalman filter
+ *
+ * State:       x  = [h_agl (m), v_agl (m/s)]'   (AGL is "up")
+ * Transition:  F  = [[1, imuDt], [0, 1]]
+ * Input:       u  = -velDotNED.z * imuDt             (gravity-included accel)
+ * Noise:       Qvel = sq(EK3_ACC_P_NSE * imuDt)
+ *              Qhgt = sq(EK3_TERR_GRAD) * horizDist²
+ *
+ * Prediction:  x(k+1) = F*x(k) + [0, u]'
+ *              P(k+1) = F*P*F' + Q
+ *
+ * Observation: z = rng * prevTnb.c.z,  H = [1, 0],  R = sq(EK3_RNG_M_NSE)
+ * Update:      innov = z - H*x,  innovVar = H*P*H' + R
+ *              K = P*H' / innovVar
+ *              x += K * innov
+ *              P  = (I-KH)*P*(I-KH)' + K*R*K'
+ */
+void NavEKF3_core::UpdateAglKf()
+{
+    const ftype imuDt = imuDataDelayed.delVelDT;
+    const uint32_t aglKfRngTimeout_ms = 5000;   // mark filter invalid / hard-reset after this gap without RF fusion
+
+    // h_agl(k+1) = h_agl(k) + v_agl(k)*imuDt
+    aglKfH += aglKfV * imuDt;
+
+    // v_agl(k+1) = v_agl(k) - velDotNED.z*imuDt
+    // velDotNED.z is NED-down acceleration (positive = downward, includes gravity).
+    // Negate: downward acceleration reduces AGL rate.
+    aglKfV -= velDotNED.z * imuDt;
+
+    // First-order decay of v_agl toward zero when RF is absent (tau = 2 s).
+    // Without range measurements v_agl is unobservable; accumulated IMU bias
+    // error will cause it to drift, pulling h_agl to the floor during
+    // subsequent climbs.  The decay limits that drift.
+    // At the aglKfRngTimeout_ms validity timeout (5 s), |v| is at most
+    // exp(-5/2) ~ 8% of its value at last RF fusion, so the hard reset finds v near zero.
+    if (!rangeDataToFuse) {
+        const ftype tauV = 2.0f;
+        aglKfV *= expf(-imuDt / tauV);
+    }
+
+    // AGL cannot go below the on-ground sensor reading
+    aglKfH = MAX(aglKfH, rngOnGnd);
+
+    // ----- Covariance prediction: P = F*P*F' + Q -----
+    //
+    // F = [[1, imuDt],   state-transition matrix
+    //      [0,  1]]
+    //
+    // Process noise Q:
+    //
+    // Qhgt — terrain-induced AGL uncertainty during forward flight.
+    //   As the vehicle moves horizontally by dist over terrain with unknown gradient "g",
+    //   the true AGL changes by ~g * dist.  Since "g" is unknown, we treat it as zero-mean
+    //   with std-dev terrGradMax, giving variance: Qhgt = terrGradMax² * horizDist²
+    //   horizDist² = (vx²+vy²)*imuDt² is the squared horizontal distance travelled this step.
+    //   Capped at 1 m² so a single large-velocity step can't blow up the covariance.
+    //   The intended effect is that P[0][0] grows quickly during fast horizontal flight over rough terrain,
+    //   allowing the RF measurement to pull h_agl back when the next reading arrives.
+    //
+    // Qvel — unmodelled vertical accelerations (IMU noise, vibration, model error).
+    //   Uses the same accNoise parameter as CovariancePrediction (sq(imuDt*accNoise)),
+    //   so the velocity uncertainty budget is consistent with the main EKF.
+    //   The intended effect is that P[1][1] grows every step when RF is absent, reflecting accumulating IMU integration error in v_agl.
+    //
+    const ftype horizDistSq = MIN(sq(stateStruct.velocity.x * imuDt)
+                                  + sq(stateStruct.velocity.y * imuDt), 1.0f);  // cap at 1 m²
+    const ftype Qvel = sq(frontend->_accNoise * imuDt);   // matches CovariancePrediction: sq(imuDt*accNoise)
+    const ftype Qhgt = sq(frontend->_terrGradMax) * horizDistSq;
+
+    // Capture before overwrite (P is symmetric, so P[0][1] == P[1][0])
+    const ftype P00 = aglKfP[0][0];
+    const ftype P01 = aglKfP[0][1];   // == P[1][0]
+    const ftype P11 = aglKfP[1][1];
+
+    // Expanded F*P*F' + Q:
+    aglKfP[0][0] = P00 + imuDt * (P01 + P01) + sq(imuDt) * P11 + Qhgt;
+    aglKfP[0][1] = aglKfP[1][0] = P01 + imuDt * P11;
+    aglKfP[1][1] = P11 + Qvel;
+
+    // Cap covariance to prevent runaway during prolonged RF absence
+    aglKfP[0][0] = MIN(aglKfP[0][0], 100.0f);  // 10 m std-dev cap
+    aglKfP[1][1] = MIN(aglKfP[1][1], 100.0f);  // 10 m/s std-dev cap
+
+    // mark invalid if RF has been absent too long
+    if (!rangeDataToFuse) {
+        if (imuSampleTime_ms - lastAglRngFuseTime_ms > aglKfRngTimeout_ms) {
+            aglKfValid = false;
+        }
+        return;
+    }
+
+    // Only fuse when vehicle tilt is within acceptable limits
+    if (prevTnb.c.z < frontend->DCM33FlowMin) {
+        return;
+    }
+
+    // After the timeout of IMU-only propagation, vertical velocity drift makes the
+    // prediction unreliable.  Re-initialise directly from the rangefinder.
+    if (imuSampleTime_ms - lastAglRngFuseTime_ms > aglKfRngTimeout_ms) {
+        // Tilt-corrected AGL directly from rangefinder reading
+        aglKfH = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+        aglKfV = 0.0f;                          // assume stationary on reset
+        aglKfP[0][0] = sq(frontend->_rngNoise); // initialise h uncertainty to RF noise
+        aglKfP[0][1] = aglKfP[1][0] = 0.0f;
+        aglKfP[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
+        lastAglRngFuseTime_ms = imuSampleTime_ms;
+        aglKfValid = true;
+        return;  // skip measurement update this cycle (just used the reading for reset)
+    }
+
+    // Measurement update — fuse tilt-corrected rangefinder reading
+    //
+    // Observation model: z = h_agl,  H = [1, 0]
+    //   z_meas = rng * cos(tilt) = rng * prevTnb.c.z
+    //
+    const ftype hgtMeas = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+
+    // Measurement noise variance R (reuse EK3_RNG_M_NSE)
+    const ftype measNoiseVar = sq(frontend->_rngNoise);
+
+    // Innovation and innovation covariance
+    // hgtInnov = hgtMeas - H*x = hgtMeas - h_agl
+    // innovVar = H*P*H' + R    = P[0][0] + R
+    const ftype hgtInnov = hgtMeas - aglKfH;
+    const ftype innovVar = aglKfP[0][0] + measNoiseVar;
+
+    // reject outliers (RF glitches, specular reflections, etc.)
+    // gate is expressed as a multiplier on the 1-sigma bound.
+    const ftype innovGate = MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f);
+    if (sq(hgtInnov) > sq(innovGate) * innovVar) {
+        // Innovation too large, likely a glitch.  Inflate both height and velocity
+        // uncertainty so the next valid reading can correct both states more aggressively.
+        aglKfP[0][0] = MIN(aglKfP[0][0] * 2.0f, 100.0f);
+        aglKfP[1][1] = MIN(aglKfP[1][1] * 2.0f, 100.0f);
+        return;
+    }
+
+    // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
+    // (H = [1, 0], so P*H' = first column of P)
+    const ftype Kh = aglKfP[0][0] / innovVar;
+    const ftype Kv = aglKfP[1][0] / innovVar;
+
+    // State update:  x += K * hgtInnov
+    aglKfH += Kh * hgtInnov;
+    aglKfV += Kv * hgtInnov;
+    aglKfH  = MAX(aglKfH, rngOnGnd);  // enforce physical constraint after update
+
+    // Covariance update P = (I-KH)*P*(I-KH)' + K*R*K'
+    // With H = [1, 0], (I-KH) = [[1-Kh, 0], [-Kv, 1]]:
+    //   P[0][0] = (1-Kh)²*Phh + Kh²*R
+    //   P[0][1] = (1-Kh)*(Phv - Kv*Phh) + Kh*Kv*R
+    //   P[1][1] = Pvv - 2*Kv*Phv + Kv²*innovVar
+    const ftype oneMinusKh = 1.0f - Kh;
+    const ftype Phh = aglKfP[0][0];
+    const ftype Phv = aglKfP[0][1];
+    const ftype Pvv = aglKfP[1][1];
+
+    aglKfP[0][0] = MAX(sq(oneMinusKh) * Phh + sq(Kh) * measNoiseVar, 0.0f);
+    aglKfP[0][1] = aglKfP[1][0] = oneMinusKh * (Phv - Kv * Phh) + Kh * Kv * measNoiseVar;
+    aglKfP[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
+
+    lastAglRngFuseTime_ms = imuSampleTime_ms;
+    aglKfValid = true;
+}
+
+#endif  // EK3_FEATURE_OPTFLOW_AGL_KF
 
 #endif  //  EK3_FEATURE_OPTFLOW_FUSION

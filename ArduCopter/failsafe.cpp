@@ -7,7 +7,7 @@
 //  our failsafe strategy is to detect main loop lockup and disarm the motors
 //
 
-static bool failsafe_enabled = false;
+static bool failsafe_enabled;
 static uint16_t failsafe_last_ticks;
 static uint32_t failsafe_last_timestamp;
 static bool in_failsafe;
@@ -72,7 +72,7 @@ void Copter::failsafe_check()
 }
 
 
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
 /*
   check for AFS failsafe check
 */

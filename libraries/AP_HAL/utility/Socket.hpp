@@ -84,6 +84,10 @@ public:
         return connected;
     }
 
+    bool is_pending(void) const {
+        return pending_connect;
+    }
+    
     // access to inet_ntop
     static const char *inet_addr_to_str(uint32_t addr, char *dst, uint16_t len);
 
@@ -103,6 +107,8 @@ private:
     int fd_in = -1;
 
     bool connected;
+
+    bool pending_connect;
 
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
 };

@@ -1,0 +1,15 @@
+# SPI devices
+#           NAME
+QURT_SPIDEV "INV3"
+
+#  compass list
+#       Driver   BusAndAddr External Rotation
+COMPASS QMC5883L I2C:0:0x0d true     ROTATION_NONE
+
+#  barometer list
+#    Driver   I2C Bus+Addr
+BARO ICP101XX I2C:2:0x63
+
+#  IMU list
+    driver       Bus+Addr   Rotation
+IMU Invensensev3 SPI:INV3   ROTATION_NONE

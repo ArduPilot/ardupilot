@@ -1,0 +1,162 @@
+# hw definition file for Stellar F4 v1.5
+# tested on the Stellar F4
+# with thanks to betaflight for pinout
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_StellarF4
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+define STM32_ST_USE_TIMER 5
+
+FLASH_SIZE_KB 1024
+
+# only one I2C bus
+I2C_ORDER I2C2
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6
+
+# LEDs
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+PC8 LED0 OUTPUT LOW GPIO(90) # green
+define AP_NOTIFY_GPIO_LED_1_PIN 90
+
+# buzzer
+PC5 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+
+# SPI1 bus for IMU
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PA4 GYRO1_CS CS
+
+# SPI2 for OSD and dataflash
+PB13 SPI2_SCK SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+PB12 MAX7456_CS CS
+PA15 FLASH_CS CS
+
+# only one I2C bus in normal config
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# analog pins
+PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC1 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# define default battery setup
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_VOLT_SCALE 11.2 # matched to ESC output
+define HAL_BATT_CURR_SCALE 52.7 # appropriate for a T-Motor F55A Pro II
+
+# analog rssi pin
+# define BOARD_RSSI_ANA_PIN 12
+
+# USART1 (DJI / VTX)
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_DJI_FPV
+
+# USART2 (RCIN)
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
+
+# USART3 (CAM)
+PC10 USART3_TX USART3 NODMA
+PC11 USART3_RX USART3 NODMA
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+
+# UART4 (Bluetooth)
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+
+# UART5 (ESC Telemetry)
+PC12 UART5_TX UART5 NODMA
+PD2  UART5_RX UART5 NODMA
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
+
+# UART6 (GPS)
+PC6 USART6_TX USART6 NODMA
+PC7 USART6_RX USART6 NODMA
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_GPS
+define DEFAULT_SERIAL6_BAUD AP_SERIALMANAGER_GPS_BAUD
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# PWM out pins. Note that channel order follows the ArduPilot motor
+# order conventions
+PB6  TIM4_CH1 TIM4 PWM(1)  GPIO(50) BIDIR # M1
+PB7  TIM4_CH2 TIM4 PWM(2)  GPIO(51)       # M2
+PB8  TIM4_CH3 TIM4 PWM(3)  GPIO(52) BIDIR # M3
+PB9  TIM4_CH4 TIM4 PWM(4)  GPIO(53)       # M4
+PB0  TIM3_CH3 TIM3 PWM(5)  GPIO(54)       # M5
+PB1  TIM3_CH4 TIM3 PWM(6)  GPIO(55)       # M6
+PB5  TIM3_CH2 TIM3 PWM(7)  GPIO(56)       # M7
+PB4  TIM3_CH1 TIM3 PWM(8)  GPIO(57)       # M8
+PA8  TIM1_CH1 TIM1 PWM(9)  GPIO(58)       # S1
+PC9  TIM8_CH4 TIM8 PWM(10) GPIO(59)       # S2
+
+# reserve 16k for bootloader and 32k for flash storage
+FLASH_RESERVE_START_KB 48
+
+# SPI devices
+SPIDEV icm42688  SPI1 DEVID1 GYRO1_CS MODE3 2*MHZ 16*MHZ
+SPIDEV bmi270    SPI1 DEVID1 GYRO1_CS MODE3 1*MHZ 8*MHZ 
+SPIDEV osd       SPI2 DEVID1 MAX7456_CS MODE0 10*MHZ 10*MHZ
+SPIDEV dataflash SPI2 DEVID2 FLASH_CS  MODE0 500*KHZ 25*MHZ
+
+# IMU bmi270 PCB Board V1.1 - 1.2, icm42688 - PCB board V1.3-V1.5
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180
+IMU BMI270 SPI:bmi270 ROTATION_ROLL_180
+
+# built-in barometer
+BARO SPL06  I2C:0:0x76
+BARO DPS310 I2C:0:0x76
+BARO BMP280 I2C:0:0x76
+
+# no built-in compass, but probe the i2c bus for all possible
+# external compass types
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_TYPE_DEFAULT 12
+
+# enable logging to dataflash
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+define HAL_STORAGE_SIZE 15360
+STORAGE_FLASH_PAGE 1
+
+# setup for OSD
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# minimal drivers to reduce flash usage
+include ../include/minimize_fpv_osd.inc
+include ../include/no_bootloader_DFU.inc
+undef AP_BATTERY_SYNTHETIC_CURRENT_ENABLED
+define AP_BATTERY_SYNTHETIC_CURRENT_ENABLED 0
+
+define DEFAULT_NTF_LED_TYPES 257
+
+# CAM switch
+PC03 CAM_SW OUTPUT GPIO(81) LOW
+define RELAY1_PIN_DEFAULT 81
+
+# Prioritize DMA allocation for important peripherals
+DMA_PRIORITY TIM4* SPI1* USART2* USART1*

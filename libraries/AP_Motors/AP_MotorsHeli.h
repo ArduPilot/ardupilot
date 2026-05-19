@@ -27,9 +27,6 @@
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
 
 
-// flybar types
-#define AP_MOTORS_HELI_NOFLYBAR                 0
-
 // rsc function output channels.
 #define AP_MOTORS_HELI_RSC                      CH_8
 
@@ -62,6 +59,9 @@ public:
     // output_min - sets servos to neutral point with motors stopped
     void output_min() override;
 
+    // set_desired_spool_state - set desired spool state with safety constraints
+    void set_desired_spool_state(DesiredSpoolState spool) override;
+
     //
     // heli specific methods
     //
@@ -69,44 +69,27 @@ public:
     //set turbine start flag on to initiaize starting sequence
     void set_turb_start(bool turb_start) { _heliflags.start_engine = turb_start; }
 
-    // has_flybar - returns true if we have a mechical flybar
-    virtual bool has_flybar() const { return AP_MOTORS_HELI_NOFLYBAR; }
-
     // set_collective_for_landing - limits collective from going too low if we know we are landed
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
     // get_rsc_mode - gets the current rotor speed control method
-    uint8_t get_rsc_mode() const { return _main_rotor.get_control_mode(); }
+    uint8_t get_rsc_mode() const { return _main_rotor.get_rsc_control_mode(); }
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
-
-    // arot_man_enabled - gets contents of manual_autorotation_enabled parameter
-    bool arot_man_enabled() const { return (_main_rotor._rsc_arot_man_enable.get() == 1) ? true : false; }
 
     // set_desired_rotor_speed - sets target rotor speed as a number from 0 ~ 1
     virtual void set_desired_rotor_speed(float desired_speed);
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
-    float get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
-
-    // return true if the main rotor is up to speed
-    bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }
+    float get_desired_rotor_speed() const { return _main_rotor.get_desired_rotor_speed(); }
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
     virtual uint32_t get_motor_mask() override;
 
-    virtual void set_acro_tail(bool set) {}
-
-    // ext_gyro_gain - set external gyro gain in range 0 ~ 1
-    virtual void ext_gyro_gain(float gain) {}
-
     // output - sends commands to the motors
     void output() override;
-
-    // supports_yaw_passthrough
-    virtual bool supports_yaw_passthrough() const { return false; }
 
     // update estimated throttle required to hover
     void update_throttle_hover(float dt);
@@ -121,19 +104,28 @@ public:
     // support passing init_targets_on_arming flag to greater code
     bool init_targets_on_arming() const override { return _heliflags.init_targets_on_arming; }
 
-    // set_in_autorotation - allows main code to set when aircraft is in autorotation.
-    void set_in_autorotation(bool autorotation) { _heliflags.in_autorotation = autorotation; }
+    // helper for vehicle code to request autorotation states in the RSC.
+    void set_autorotation_active(bool tf) { _main_rotor.autorotation.set_active(tf, false); }
 
-    // get_in_autorotation - allows main code to determine when aircraft is in autorotation.
-    bool get_in_autorotation() { return _heliflags.in_autorotation; }
+    // helper to force the RSC autorotation state to deactivated
+    void force_deactivate_autorotation(void) { _main_rotor.autorotation.set_active(false, true); }
 
-    // set_enable_bailout - allows main code to set when RSC can immediately ramp engine instantly
-    void set_enable_bailout(bool bailout) { _heliflags.enable_bailout = bailout; }
+    // true if RSC is actively autorotating or bailing out
+    bool in_autorotation(void) const { return _main_rotor.in_autorotation(); }
+
+    // true if bailing out autorotation
+    bool autorotation_bailout(void) const { return _main_rotor.autorotation.bailing_out(); }
+
+    // true if the autorotation functionality within the rsc has been enabled
+    bool rsc_autorotation_enabled(void) const { return _main_rotor.autorotation.enabled(); }
 
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
-	
-	//return zero lift collective position
+
+    // function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
+    void set_coll_from_ang(float col_ang_deg);
+
+    //return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
     // enum for heli optional features
@@ -154,7 +146,7 @@ public:
     void _output_test_seq(uint8_t motor_seq, int16_t pwm) override {};
 
     // Helper function for param conversions to be done in motors class
-    virtual void heli_motors_param_conversions(void) { return; }
+    virtual void heli_motors_param_conversions(void);
 
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -179,10 +171,10 @@ protected:
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
 
     // update_motor_controls - sends commands to motor controllers
-    virtual void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) = 0;
+    virtual void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
 
-    // Converts AP_Motors::SpoolState from _spool_state variable to AP_MotorsHeli_RSC::RotorControlState
-    AP_MotorsHeli_RSC::RotorControlState get_rotor_control_state() const;
+    // update_spool_state - updates the spool state based on the desired state
+    virtual AP_Motors::SpoolState update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
 
     // run spool logic
     void                output_logic();
@@ -202,9 +194,6 @@ protected:
     // init_outputs - initialise Servo/PWM ranges and endpoints.  This
     // method also updates the initialised flag.
     virtual void init_outputs() = 0;
-
-    // calculate_armed_scalars - must be implemented by child classes
-    virtual void calculate_armed_scalars() = 0;
 
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
@@ -248,13 +237,10 @@ protected:
         uint8_t rotor_runup_complete    : 1;    // true if the rotors have had enough time to wind up
         uint8_t init_targets_on_arming  : 1;    // 0 if targets were initialized, 1 if targets were not initialized after arming
         uint8_t save_rsc_mode           : 1;    // used to determine the rsc mode needs to be saved while disarmed
-        uint8_t in_autorotation         : 1;    // true if aircraft is in autorotation
-        uint8_t enable_bailout          : 1;    // true if allowing RSC to quickly ramp up engine
         uint8_t servo_test_running      : 1;    // true if servo_test is running
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
         uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
-        uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely
         uint8_t start_engine            : 1;    // true if turbine start RC option is initiated
     } _heliflags;
 

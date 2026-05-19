@@ -99,7 +99,7 @@ void AP_RangeFinder_HC_SR04::update(void)
     const uint32_t now = AP_HAL::millis();
     if (value_us == 0) {
         // no reading; check for timeout:
-        if (now - last_reading_ms > 1000) {
+        if (now - state.last_reading_ms > 1000) {
             // no reading for a second - something is broken
             state.distance_m = 0.0f;
         }
@@ -125,7 +125,7 @@ void AP_RangeFinder_HC_SR04::update(void)
             glitch_count = 0;
         }
 
-        last_reading_ms = now;
+        state.last_reading_ms = now;
     }
 
     // update range_valid state based on distance measured

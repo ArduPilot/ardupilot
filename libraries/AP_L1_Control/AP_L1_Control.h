@@ -42,7 +42,7 @@ public:
     // return the heading error angle (centi-degrees) +ve to left of track
     int32_t bearing_error_cd(void) const override;
 
-    float crosstrack_error(void) const override { return _crosstrack_error; }
+    float crosstrack_error_m(void) const override { return _crosstrack_error; }
     float crosstrack_error_integrator(void) const override { return _L1_xtrack_i; }
 
     int32_t target_bearing_cd(void) const override;
@@ -123,6 +123,14 @@ private:
     bool _data_is_stale = true;
 
     AP_Float _loiter_bank_limit;
+
+    // remember reached_loiter_target decision
+    struct {
+        uint32_t reached_loiter_target_ms;
+        float radius;
+        int8_t direction;
+        Location center_WP;
+    } _last_loiter;
 
     bool _reverse = false;
     float get_yaw() const;

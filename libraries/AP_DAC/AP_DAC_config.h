@@ -1,0 +1,29 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL_Boards.h>
+
+/*
+  default off, enabled in hwdef.dat
+ */
+#ifndef AP_DAC_ENABLED
+#define AP_DAC_ENABLED 0
+#endif
+
+#ifndef AP_DAC_BACKEND_DEFAULT_ENABLED
+#define AP_DAC_BACKEND_DEFAULT_ENABLED 0
+#endif
+
+#ifndef AP_DAC_MAX_INSTANCES
+#define AP_DAC_MAX_INSTANCES 1
+#endif
+
+#define AP_DAC_TYPE_TIx3204 1
+#define AP_DAC_TYPE_MCP40D1x 2
+
+#ifndef AP_DAC_MCP40D1X_ENABLED
+#define AP_DAC_MCP40D1X_ENABLED (AP_DAC_ENABLED && AP_DAC_BACKEND_DEFAULT_ENABLED)
+#endif
+
+#ifndef AP_DAC_TIX3204_ENABLED
+#define AP_DAC_TIX3204_ENABLED (AP_DAC_ENABLED && AP_DAC_BACKEND_DEFAULT_ENABLED)
+#endif

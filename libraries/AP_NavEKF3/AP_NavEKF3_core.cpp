@@ -9,8 +9,8 @@
 
 // constructor
 NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
-    frontend(_frontend),
     dal(_dal),
+    frontend(_frontend),
     public_origin(frontend->common_EKF_origin)
 {
     firstInitTime_ms = 0;
@@ -47,7 +47,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
                                   ))));
 
     // GPS sensing can have large delays and should not be included if disabled
-    if (frontend->sources.usingGPS()) {
+    if (frontend->sources.usingGPS(core_index)) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
         if (!dal.gps().get_lag(selected_gps, gps_delay_sec)) {
@@ -244,9 +244,7 @@ void NavEKF3_core::InitialiseVariables()
     lastKnownPositionD = 0;
     prevTnb.zero();
     memset(&P[0][0], 0, sizeof(P));
-    memset(&KH[0][0], 0, sizeof(KH));
     memset(&KHP[0][0], 0, sizeof(KHP));
-    memset(&nextP[0][0], 0, sizeof(nextP));
     flowDataValid = false;
     rangeDataToFuse  = false;
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -271,6 +269,7 @@ void NavEKF3_core::InitialiseVariables()
     inFlight = false;
     prevInFlight = false;
     manoeuvring = false;
+    fusingStationaryZeroVel = false;
     inhibitWindStates = true;
     windStateIsObservable = false;
     treatWindStatesAsTruth = false;
@@ -285,6 +284,18 @@ void NavEKF3_core::InitialiseVariables()
     gpsHgtAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     rngOnGnd = 0.05f;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // 2-state AGL KF initialisation
+    // Start with generous uncertainty; the first valid RF measurement will hard-reset the state
+    aglKfH = rngOnGnd;      // assume sitting on ground at minimum range
+    aglKfV = 0.0f;
+    aglKfP[0][0] = 25.0f;   // 5 m initial std-dev in height
+    aglKfP[0][1] = 0.0f;
+    aglKfP[1][0] = 0.0f;
+    aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
+    aglKfValid = false;
+    lastAglRngFuseTime_ms = 0;
+#endif
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
     tiltErrorVariance = sq(M_2PI);
@@ -473,7 +484,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     update_sensor_selection();
 
     // If we are a plane and don't have GPS lock then don't initialise
-    if (assume_zero_sideslip() && dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+    if (assume_zero_sideslip() && dal.gps().status(preferred_gps) < AP_GPS_FixType::FIX_3D) {
         dal.snprintf(prearm_fail_string,
                      sizeof(prearm_fail_string),
                      "EKF3 init failure: No GPS lock");
@@ -503,8 +514,22 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
         return false;
     }
 
+    // preserve origin across re-initialisation so a bootstrap reset
+    // does not shift the local NED frame.  On first boot validOrigin
+    // is false and the restore below is a no-op.
+    const bool hadValidOrigin = validOrigin;
+    const Location savedEKFOrigin = EKF_origin;
+
     // set re-used variables to zero
     InitialiseVariables();
+
+    // restore origin so per-core EKF_origin stays consistent with the
+    // shared frontend public_origin
+    if (hadValidOrigin) {
+        EKF_origin = savedEKFOrigin;
+        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+        validOrigin = true;
+    }
 
     // acceleration vector in XYZ body axes measured by the IMU (m/s^2)
     Vector3F initAccVec;
@@ -544,8 +569,8 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     ResetHeight();
 
     // initialise sources
-    posxy_source_last = frontend->sources.getPosXYSource();
-    yaw_source_last = frontend->sources.getYawSource();
+    posxy_source_last = frontend->sources.getPosXYSource(core_index);
+    yaw_source_last = frontend->sources.getYawSource(core_index);
 
     // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, dal.get_home().lat);
@@ -1002,8 +1027,8 @@ void NavEKF3_core::calcOutputStates()
 
 /*
  * Calculate the predicted state covariance matrix using algebraic equations generated using SymPy
- * See AP_NavEKF3/derivation/main.py for derivation
- * Output for change reference: AP_NavEKF3/derivation/generated/covariance_generated.cpp
+ * See derivation/generate_1.py for derivation
+ * Output for change reference: derivation/generated/covariance_generated.cpp
  * Argument rotVarVecPtr is pointer to a vector defining the earth frame uncertainty variance of the quaternion states
  * used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
 */
@@ -1167,8 +1192,14 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         for (uint8_t stateIndex = 13; stateIndex <= 15; stateIndex++) {
             const uint8_t index = stateIndex - 13;
 
-            // Don't attempt learning of IMU delta velocty bias if on ground and not aligned with the gravity vector
-            const bool is_bias_observable = (fabsF(prevTnb[index][2]) > 0.8f) || !onGround;
+            // Don't attempt learning of IMU delta velocity bias if on ground.
+            // In flight: all axes are observable from velocity/position aiding.
+            // On ground and stationary: only the gravity-aligned axis (Z for a level
+            // vehicle) is observable. XY biases remain unobservable until the vehicle
+            // accelerates horizontally in flight.
+            // On ground and moving (e.g. carried or on a boat): inhibit all axes
+            // to prevent learning biases from external motion accelerations.
+            const bool is_bias_observable = (fabsF(prevTnb[index][2]) > 0.8f && onGroundNotMoving) || !onGround;
 
             if (!is_bias_observable && !dvelBiasAxisInhibit[index]) {
                 // store variances to be reinstated wben learning can commence later
@@ -1180,6 +1211,10 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
             }
         }
     }
+
+    // nextP is a temporary only used in this function, and KHP is a temporary
+    // the same size only used outside of it. save memory by using KHP as nextP.
+    auto& nextP = KHP;
 
     // calculate the predicted covariance due to inertial sensor error propagation
     // we calculate the lower diagonal and copy to take advantage of symmetry
@@ -1745,18 +1780,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         }
     }
 
-    // inactive delta velocity bias states have all covariances zeroed to prevent
-    // interacton with other states
-    if (!inhibitDelVelBiasStates) {
-        for (uint8_t index=0; index<3; index++) {
-            const uint8_t stateIndex = index + 13;
-            if (dvelBiasAxisInhibit[index]) {
-                zeroCols(nextP,stateIndex,stateIndex);
-                nextP[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
-            }
-        }
-    }
-
     // if the total position variance exceeds 1e4 (100m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
@@ -1780,6 +1803,19 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         // copy off diagonals
         for (uint8_t column = 0 ; column < row; column++) {
             P[row][column] = P[column][row] = nextP[column][row];
+        }
+    }
+
+    // inactive delta velocity bias states have all covariances zeroed to
+    // prevent interaction with other states
+    if (!inhibitDelVelBiasStates) {
+        for (uint8_t index=0; index<3; index++) {
+            const uint8_t stateIndex = index + 13;
+            if (dvelBiasAxisInhibit[index]) {
+                zeroRows(P, stateIndex, stateIndex);
+                zeroCols(P, stateIndex, stateIndex);
+                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+            }
         }
     }
 
@@ -1855,24 +1891,26 @@ void NavEKF3_core::StoreQuatRotate(const QuaternionF &deltaQuat)
     outputDataDelayed.quat = outputDataDelayed.quat*deltaQuat;
 }
 
-// force symmetry on the covariance matrix to prevent ill-conditioning
-void NavEKF3_core::ForceSymmetry()
-{
-    for (uint8_t i=1; i<=stateIndexLim; i++)
-    {
-        for (uint8_t j=0; j<=i-1; j++)
-        {
-            ftype temp = 0.5f*(P[i][j] + P[j][i]);
-            P[i][j] = temp;
-            P[j][i] = temp;
-        }
-    }
-}
-
 // constrain variances (diagonal terms) in the state covariance matrix to  prevent ill-conditioning
 // if states are inactive, zero the corresponding off-diagonals
 void NavEKF3_core::ConstrainVariances()
 {
+    // Covariance constraints as of March 2025
+    // This table assumes normal operations, there are additional constraints for specific failure modes like "badIMUdata" and "inhibitDelAngBiasStates".
+    // +----------------------------------------------------------------------------------------------+
+    // | State Index  |      State Name                 |  State Units  | Variance Constraint Range   |
+    // +----------------------------------------------------------------------------------------------+
+    // |  0 .. 3      | Attitude Quaternion             | unitless      | [0.0, 1.0]                  |
+    // |  4 .. 5      | Velocity (North, East)          | m/s           | [1e-4, 1e3]                 |
+    // |  6           | Velocity (Down)                 | m/s           | dynamic                     |
+    // |  7 .. 9      | Position (North, East, Down)    | m             | [1e-4, 1e6]                 |
+    // | 10 .. 12     | Gyro Bias (X, Y, Z)             | rad           | [0.0, (0.175 * dtEkfAvg)^2] |
+    // | 13 .. 15     | Accel Bias (X, Y, Z)            | m/s^2         | dynamic                     |
+    // | 16 .. 18     | Earth Magnetic Field (X, Y, Z)  | Gauss         | [0.0, 0.01]                 |
+    // | 19 .. 21     | Body Magnetic Field (X, Y, Z)   | Gauss         | [0.0, 0.01]                 |
+    // | 22 .. 23     | Wind Velocity (North, East)     | m/s           | [0.0, 400]                  |
+    // +----------------------------------------------------------------------------------------------+
+
     for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_ftype(P[i][i],0.0,1.0); // attitude error
     for (uint8_t i=4; i<=5; i++) P[i][i] = constrain_ftype(P[i][i], VEL_STATE_MIN_VARIANCE, 1.0e3); // NE velocity
 
@@ -1977,6 +2015,47 @@ void NavEKF3_core::ConstrainVariances()
     }
 }
 
+// actually do fusion to update statesArray from Kfusion and P from KHP.
+// returns true and skips fusion if variances would be driven negative.
+// force skips this negative check; passing true is probably a bug!
+bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
+{
+    if (!force) {
+        // Check that we are not going to drive any variances negative and skip the update if so
+        for (auto s=0; s<=stateIndexLim; s++) {
+            if (KHP[s][s] > P[s][s]) {
+                return true;
+            }
+        }
+    }
+
+    // correct the state vector using kalman gains filled in by caller
+    for (auto s=0; s<=stateIndexLim; s++) {
+        statesArray[s] -= Kfusion[s] * innov;
+    }
+    stateStruct.quat.normalize();
+
+    // update the covariance matrix as P = P - KHP (KHP was filled by caller)
+    for (auto r=0; r<=stateIndexLim; r++) {
+        for (auto c=0; c<=r; c++) {
+            // P must end up symmetric, so average the upper and lower
+            // differences, then store that result in both positions. it would
+            // be faster and more numerically stable to average the KHP entries
+            // instead, but we have no good proof P was symmetric before!
+            const ftype lower = P[r][c] - KHP[r][c];
+            const ftype upper = P[c][r] - KHP[c][r];
+            const ftype res = 0.5f*(lower + upper);
+            P[r][c] = res;
+            P[c][r] = res;
+        }
+    }
+
+    // limit the variances to prevent ill-conditioning
+    ConstrainVariances(); // can change statesArray!!
+
+    return false;
+}
+
 // constrain states using WMM tables and specified limit
 void NavEKF3_core::MagTableConstrain(void)
 {
@@ -1996,6 +2075,23 @@ void NavEKF3_core::MagTableConstrain(void)
 // constrain states to prevent ill-conditioning
 void NavEKF3_core::ConstrainStates()
 {
+    // State constraints as of March 2025
+    // This table documents the limits applied to each EKF state.
+    // These are designed to keep state estimates within physically realistic bounds and prevent divergence.
+    // +---------------------------------------------------------------------------------------------------------+
+    // | State Index  |      State Name                 |  State Units  | State Constraint Range                 |
+    // +---------------------------------------------------------------------------------------------------------+
+    // |  0 .. 3      | Attitude Quaternion             | unitless      | [-1.0, 1.0]                            |
+    // |  4 .. 6      | Velocity (North, East, Down)    | m/s           | [-500, 500]                            |
+    // |  7 .. 8      | Position (North, East)          | m             | [-50e6,50e6]                           |
+    // |  9 (z)       | Position (Down / Altitude)      | m             | [-40000, 10000]                        |
+    // | 10 .. 12     | Gyro Bias (X, Y, Z)             | rad           | [-0.5, 0.5] * dtEkfAvg                 |
+    // | 13 .. 15     | Accel Bias (X, Y, Z)            | m/s²          | [-_accBiasLim, _accBiasLim] * dtEkfAvg |
+    // | 16 .. 18     | Earth Magnetic Field (X, Y, Z)  | Gauss         | [-1.0, 1.0]                            | or constrained by MagTableConstrain() if available
+    // | 19 .. 21     | Body Magnetic Field (X, Y, Z)   | Gauss         | [-0.5, 0.5]                            |
+    // | 22 .. 23     | Wind Velocity (North, East)     | m/s           | [-100, 100]                            |
+    // +---------------------------------------------------------------------------------------------------------+
+
     // quaternions are limited between +-1
     for (uint8_t i=0; i<=3; i++) statesArray[i] = constrain_ftype(statesArray[i],-1.0f,1.0f);
     // velocity limit 500 m/sec (could set this based on some multiple of max airspeed * EAS2TAS)
@@ -2005,7 +2101,8 @@ void NavEKF3_core::ConstrainStates()
     // height limit covers home alt on everest through to home alt at SL and balloon drop
     stateStruct.position.z = constrain_ftype(stateStruct.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit (this needs to be set based on manufacturers specs)
-    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
+    const ftype gyro_bias_limit = getGyroBiasLimit();
+    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-gyro_bias_limit*dtEkfAvg,gyro_bias_limit*dtEkfAvg);
     // the accelerometer bias limit is controlled by a user adjustable parameter
     for (uint8_t i=13; i<=15; i++) statesArray[i] = constrain_ftype(statesArray[i],-frontend->_accBiasLim*dtEkfAvg,frontend->_accBiasLim*dtEkfAvg);
     // earth magnetic field limit
@@ -2122,40 +2219,27 @@ void NavEKF3_core::calcTiltErrorVariance()
     const ftype &q2 = stateStruct.quat[2];
     const ftype &q3 = stateStruct.quat[3];
 
-    // equations generated by quaternion_error_propagation(): in AP_NavEKF3/derivation/main.py
+    // equations generated by quaternion_error_propagation(): in derivation/generate_2.py
     // only diagonals have been used
-    // dq0 ... dq3  terms have been zeroed
-    const ftype PS1 = q0*q1 + q2*q3;
-    const ftype PS2 = q1*PS1;
-    const ftype PS4 = sq(q0) - sq(q1) - sq(q2) + sq(q3);
-    const ftype PS5 = q0*PS4;
-    const ftype PS6 = 2*PS2 + PS5;
-    const ftype PS8 = PS1*q2;
-    const ftype PS10 = PS4*q3;
-    const ftype PS11 = PS10 + 2*PS8;
-    const ftype PS12 = PS1*q3;
-    const ftype PS13 = PS4*q2;
-    const ftype PS14 = -2*PS12 + PS13;
-    const ftype PS15 = PS1*q0;
-    const ftype PS16 = q1*PS4;
-    const ftype PS17 = 2*PS15 - PS16;
-    const ftype PS18 = q0*q2 - q1*q3;
-    const ftype PS19 = PS18*q2;
-    const ftype PS20 = 2*PS19 + PS5;
-    const ftype PS22 = q1*PS18;
-    const ftype PS23 = -PS10 + 2*PS22;
-    const ftype PS25 = PS18*q3;
-    const ftype PS26 = PS16 + 2*PS25;
-    const ftype PS28 = PS18*q0;
-    const ftype PS29 = -PS13 + 2*PS28;
-    const ftype PS32 = PS12 + PS28;
-    const ftype PS33 = PS19 + PS2;
-    const ftype PS34 = PS15 - PS25;
-    const ftype PS35 = PS22 - PS8;
+    const ftype PS0 = q0*q1 + q2*q3;
+    const ftype PS1 = PS0*q1;
+    const ftype PS2 = sq(q0) - sq(q1) - sq(q2) + sq(q3);
+    const ftype PS3 = PS2*q0;
+    const ftype PS4 = PS0*q2;
+    const ftype PS5 = PS2*q3;
+    const ftype PS6 = PS0*q3;
+    const ftype PS7 = PS2*q2;
+    const ftype PS8 = PS0*q0;
+    const ftype PS9 = PS2*q1;
+    const ftype PS10 = q0*q2 - q1*q3;
+    const ftype PS11 = PS10*q2;
+    const ftype PS12 = PS10*q3;
+    const ftype PS13 = PS10*q0;
+    const ftype PS14 = PS10*q1;
 
-    tiltErrorVariance  = 4*sq(PS11)*P[2][2] + 4*sq(PS14)*P[3][3] + 4*sq(PS17)*P[0][0] + 4*sq(PS6)*P[1][1];
-    tiltErrorVariance += 4*sq(PS20)*P[2][2] + 4*sq(PS23)*P[1][1] + 4*sq(PS26)*P[3][3] + 4*sq(PS29)*P[0][0];
-    tiltErrorVariance += 16*sq(PS32)*P[1][1] + 16*sq(PS33)*P[3][3] + 16*sq(PS34)*P[2][2] + 16*sq(PS35)*P[0][0];
+    tiltErrorVariance  = 4*P[0][0]*sq(2*PS8 - PS9) + 4*P[1][1]*sq(2*PS1 + PS3) + 4*P[2][2]*sq(2*PS4 + PS5) + 4*P[3][3]*sq(-2*PS6 + PS7);
+    tiltErrorVariance += 4*P[0][0]*sq(2*PS13 - PS7) + 4*P[1][1]*sq(2*PS14 - PS5) + 4*P[2][2]*sq(2*PS11 + PS3) + 4*P[3][3]*sq(2*PS12 + PS9);
+    tiltErrorVariance += 16*P[0][0]*sq(PS14 - PS4) + 16*P[1][1]*sq(PS13 + PS6) + 16*P[2][2]*sq(-PS12 + PS8) + 16*P[3][3]*sq(PS1 + PS11);
 
     tiltErrorVariance = constrain_ftype(tiltErrorVariance, 0.0f, sq(radians(30.0f)));
 }

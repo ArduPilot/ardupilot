@@ -39,10 +39,7 @@ private:
     MAV_MISSION_RESULT replace_item(const mavlink_mission_item_int_t&) override WARN_IF_UNUSED;
     MAV_MISSION_RESULT append_item(const mavlink_mission_item_int_t&) override WARN_IF_UNUSED;
 
-    MAV_MISSION_RESULT get_item(const GCS_MAVLINK &_link,
-                                const mavlink_message_t &msg,
-                                const mavlink_mission_request_int_t &packet,
-                                mavlink_mission_item_int_t &ret_packet) override WARN_IF_UNUSED;
+    MAV_MISSION_RESULT get_item(uint16_t seq, mavlink_mission_item_int_t &ret_packet) override WARN_IF_UNUSED;
 
 };
 

@@ -16,9 +16,11 @@
   simulator connector for webots simulator
 */
 
-#include "SIM_Webots.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_WEBOTS_ENABLED
+#if AP_SIM_WEBOTS_ENABLED
+
+#include "SIM_Webots.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -180,7 +182,7 @@ bool Webots::parse_sensors(const char *json)
         p += strlen(key.key)+3;
         switch (key.type) {
         case DATA_FLOAT:
-            *((float *)key.ptr) = atof(p);
+            *((float *)key.ptr) = strtof(p, nullptr);
             //printf("GOT  %s/%s value: %f\n", key.section, key.key, *((float *)key.ptr));
             break;
 
@@ -265,7 +267,7 @@ bool Webots::parse_sensors(const char *json)
                     v->data = d;
                     v->length = n+1;
                 }
-                v->data[n] = atof(p);
+                v->data[n] = strtof(p, nullptr);
                 n++;
                 p = strchr(p,',');
                 if (!p) {
@@ -535,4 +537,4 @@ void Webots::report_FPS(void)
     // }
 }
 
-#endif // HAL_SIM_WEBOTS_ENABLED
+#endif  // AP_SIM_WEBOTS_ENABLED

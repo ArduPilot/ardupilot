@@ -77,7 +77,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Units: m
     // @Range: 0 10
     // @User: Advanced
-    AP_GROUPINFO_FRAME("_ALT_MIN", 25, AP_Proximity, _alt_min, 1.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+    AP_GROUPINFO_FRAME("_ALT_MIN", 25, AP_Proximity, _alt_min_m, 1.0f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
 
     // @Group: 1
     // @Path: AP_Proximity_Params.cpp
@@ -87,7 +87,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @Path: AP_Proximity_MR72_CAN.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_",  26, AP_Proximity, backend_var_info[0]),
 
-#if PROXIMITY_MAX_INSTANCES > 1
+#if AP_PROXIMITY_MAX_INSTANCES > 1
     // @Group: 2
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[1], "2", 22, AP_Proximity, AP_Proximity_Params),
@@ -97,7 +97,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[1], "2_",  27, AP_Proximity, backend_var_info[1]),
 #endif
 
-#if PROXIMITY_MAX_INSTANCES > 2
+#if AP_PROXIMITY_MAX_INSTANCES > 2
     // @Group: 3
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[2], "3", 23, AP_Proximity, AP_Proximity_Params),
@@ -107,7 +107,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[2], "3_",  28, AP_Proximity, backend_var_info[2]),
 #endif
 
-#if PROXIMITY_MAX_INSTANCES > 3
+#if AP_PROXIMITY_MAX_INSTANCES > 3
     // @Group: 4
     // @Path: AP_Proximity_Params.cpp
     AP_SUBGROUPINFO(params[3], "4", 24, AP_Proximity, AP_Proximity_Params),
@@ -117,10 +117,20 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[3], "4_",  29, AP_Proximity, backend_var_info[3]),
 #endif
 
+#if AP_PROXIMITY_MAX_INSTANCES > 4
+    // @Group: 5
+    // @Path: AP_Proximity_Params.cpp
+    AP_SUBGROUPINFO(params[4], "5", 30, AP_Proximity, AP_Proximity_Params),
+
+    // @Group: 5_
+    // @Path: AP_Proximity_MR72_CAN.cpp
+    AP_SUBGROUPVARPTR(drivers[4], "5_",  31, AP_Proximity, backend_var_info[4]),
+#endif
+
     AP_GROUPEND
 };
 
-const AP_Param::GroupInfo *AP_Proximity::backend_var_info[PROXIMITY_MAX_INSTANCES];
+const AP_Param::GroupInfo *AP_Proximity::backend_var_info[AP_PROXIMITY_MAX_INSTANCES];
 
 AP_Proximity::AP_Proximity()
 {
@@ -145,7 +155,7 @@ void AP_Proximity::init()
     // instantiate backends
     uint8_t serial_instance = 0;
     (void)serial_instance;  // in case no serial backends are compiled in
-    for (uint8_t instance=0; instance<PROXIMITY_MAX_INSTANCES; instance++) {
+    for (uint8_t instance=0; instance<AP_PROXIMITY_MAX_INSTANCES; instance++) {
         switch (get_type(instance)) {
         case Type::None:
             break;
@@ -226,12 +236,17 @@ void AP_Proximity::init()
             drivers[instance] = NEW_NOTHROW AP_Proximity_Scripting(*this, state[instance], params[instance]);
         break;
 #endif
+#if AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_MR72_ENABLED
         case Type::MR72:
+#endif  // AP_PROXIMITY_MR72_ENABLED
+#if AP_PROXIMITY_HEXSOONRADAR_ENABLED
+        case Type::Hexsoon_Radar:
+#endif  // AP_PROXIMITY_HEXSOONRADAR_ENABLED
             state[instance].instance = instance;
             drivers[instance] = NEW_NOTHROW AP_Proximity_MR72_CAN(*this, state[instance], params[instance]);
             break;
-# endif
+#endif  // AP_PROXIMITY_MR72_DRIVER_ENABLED
 #if AP_PROXIMITY_SITL_ENABLED
         case Type::SITL:
             state[instance].instance = instance;
@@ -291,7 +306,7 @@ void AP_Proximity::update()
 
 AP_Proximity::Type AP_Proximity::get_type(uint8_t instance) const
 {
-    if (instance < PROXIMITY_MAX_INSTANCES) {
+    if (instance < AP_PROXIMITY_MAX_INSTANCES) {
         return (Type)((uint8_t)params[instance].type);
     }
     return Type::None;
@@ -351,19 +366,19 @@ bool AP_Proximity::prearm_healthy(char *failure_msg, const uint8_t failure_msg_l
 }
 
 // get maximum and minimum distances (in meters)
-float AP_Proximity::distance_max() const
+float AP_Proximity::distance_max_m() const
 {
     float dist_max = 0;
 
     // return longest distance from all backends
     for (uint8_t i=0; i<num_instances; i++) {
         if (valid_instance(i)) {
-            dist_max = MAX(dist_max, drivers[i]->distance_max());
+            dist_max = MAX(dist_max, drivers[i]->distance_max_m());
         }
     }
     return dist_max;
 }
-float AP_Proximity::distance_min() const
+float AP_Proximity::distance_min_m() const
 {
     float dist_min = 0;
     bool found_dist_min = false;
@@ -371,7 +386,7 @@ float AP_Proximity::distance_min() const
     // calculate shortest distance from all backends
     for (uint8_t i=0; i<num_instances; i++) {
         if (valid_instance(i)) {
-            const float disti_min = drivers[i]->distance_min();
+            const float disti_min = drivers[i]->distance_min_m();
             if (!found_dist_min || (disti_min <= dist_min)) {
                 dist_min = disti_min;
                 found_dist_min = true;
@@ -390,7 +405,7 @@ float AP_Proximity::distance_min() const
 bool AP_Proximity::get_horizontal_distances(Proximity_Distance_Array &prx_dist_array) const
 {
     Proximity_Distance_Array prx_filt_dist_array; // unused
-    return boundary.get_layer_distances(PROXIMITY_MIDDLE_LAYER, distance_max(), prx_dist_array, prx_filt_dist_array);
+    return boundary.get_layer_distances(PROXIMITY_MIDDLE_LAYER, distance_max_m(), prx_dist_array, prx_filt_dist_array);
 }
 
 // get total number of obstacles, used in GPS based Simple Avoidance
@@ -471,21 +486,21 @@ bool AP_Proximity::sensor_failed() const
 }
 
 // get distance in meters upwards, returns true on success
-bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance) const
+bool AP_Proximity::get_upward_distance(uint8_t instance, float &distance_m) const
 {
     if (!valid_instance(instance)) {
         return false;
     }
     // get upward distance from backend
-    return drivers[instance]->get_upward_distance(distance);
+    return drivers[instance]->get_upward_distance(distance_m);
 }
 
-bool AP_Proximity::get_upward_distance(float &distance) const
+bool AP_Proximity::get_upward_distance(float &distance_m) const
 {
     // get upward distance from backend
     for (uint8_t i=0; i<num_instances; i++) {
         // return first good upward distance
-        if (get_upward_distance(i, distance)) {
+        if (get_upward_distance(i, distance_m)) {
             return true;
         }
     }
@@ -505,7 +520,7 @@ void AP_Proximity::log()
     Proximity_Distance_Array filt_dist_array{}; //filtered distances stored here
     auto &logger { AP::logger() };
     for (uint8_t i = 0; i < boundary.get_num_layers(); i++) {
-        const bool active = boundary.get_layer_distances(i, distance_max(), dist_array, filt_dist_array);
+        const bool active = boundary.get_layer_distances(i, distance_max_m(), dist_array, filt_dist_array);
         if (!active) {
             // nothing on this layer
             continue;
@@ -561,7 +576,7 @@ void AP_Proximity::log()
 // return true if the given instance exists
 bool AP_Proximity::valid_instance(uint8_t i) const
 {
-    if (i >= PROXIMITY_MAX_INSTANCES) {
+    if (i >= AP_PROXIMITY_MAX_INSTANCES) {
         return false;
     }
 

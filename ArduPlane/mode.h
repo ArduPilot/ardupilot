@@ -9,6 +9,19 @@
 #include "quadplane.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Mission/AP_Mission.h>
+#include "config.h"
+#include "pullup.h"
+#include "systemid.h"
+
+#ifndef AP_QUICKTUNE_ENABLED
+#define AP_QUICKTUNE_ENABLED HAL_QUADPLANE_ENABLED
+#endif
+
+#ifndef MODE_AUTOLAND_ENABLED
+#define MODE_AUTOLAND_ENABLED 1
+#endif
+
+#include <AP_Quicktune/AP_Quicktune.h>
 
 class AC_PosControl;
 class AC_AttitudeControl_Multi;
@@ -54,6 +67,11 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+#if MODE_AUTOLAND_ENABLED
+        AUTOLAND      = 26,
+#endif
+
+    // Mode number 30 reserved for "offboard" for external/lua control.
     };
 
     // Constructor
@@ -80,7 +98,7 @@ public:
     // returns true if the vehicle can be armed in this mode
     bool pre_arm_checks(size_t buflen, char *buffer) const;
 
-    // Reset rate and steering controllers
+    // Reset rate and steering and TECS controllers
     void reset_controllers();
 
     //
@@ -140,6 +158,27 @@ public:
 
     // true if voltage correction should be applied to throttle
     virtual bool use_battery_compensation() const;
+ 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    virtual bool allows_autoland_direction_capture() const { return false; }
+#endif
+
+#if AP_QUICKTUNE_ENABLED
+    // does this mode support VTOL quicktune?
+    virtual bool supports_quicktune() const { return false; }
+#endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support quadplane vtol systemid?
+    virtual bool supports_vtol_systemid() const { return false; }
+
+    // does this mode support plane or quadplane fixed wing systemid?
+    virtual bool supports_fw_systemid() const { return false; }
+
+    // Return true if fixed wing system ID should be allowed
+    bool allow_fw_systemid() const;
+#endif
 
 protected:
 
@@ -157,6 +196,9 @@ protected:
 
     // Output pilot throttle, this is used in stabilized modes without auto throttle control
     void output_pilot_throttle();
+
+    // makes the initialiser list in the constructor manageable
+    uint8_t unused_integer;
 
 #if HAL_QUADPLANE_ENABLED
     // References for convenience, used by QModes
@@ -176,7 +218,7 @@ friend class ModeQAcro;
 public:
 
     Mode::Number mode_number() const override { return Mode::Number::ACRO; }
-    const char *name() const override { return "ACRO"; }
+    const char *name() const override { return "Acro"; }
     const char *name4() const override { return "ACRO"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -187,6 +229,11 @@ public:
     void stabilize();
 
     void stabilize_quaternion();
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
 protected:
 
@@ -208,9 +255,10 @@ protected:
 class ModeAuto : public Mode
 {
 public:
+    friend class Plane;
 
     Number mode_number() const override { return Number::AUTO; }
-    const char *name() const override { return "AUTO"; }
+    const char *name() const override { return "Auto"; }
     const char *name4() const override { return "AUTO"; }
 
     bool does_automatic_thermal_switch() const override { return true; }
@@ -237,6 +285,20 @@ public:
 
     void run() override;
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
+
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    bool in_pullup() const { return pullup.in_pullup(); }
+#endif
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
 protected:
 
     bool _enter() override;
@@ -257,6 +319,10 @@ private:
         uint8_t stage;
         uint32_t last_ms;
     } wiggle;
+
+#if AP_PLANE_GLIDER_PULLUP_ENABLED
+    GliderPullup pullup;
+#endif // AP_PLANE_GLIDER_PULLUP_ENABLED
 };
 
 
@@ -265,7 +331,7 @@ class ModeAutoTune : public Mode
 public:
 
     Number mode_number() const override { return Number::AUTOTUNE; }
-    const char *name() const override { return "AUTOTUNE"; }
+    const char *name() const override { return "Autotune"; }
     const char *name4() const override { return "ATUN"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -275,6 +341,11 @@ public:
 
     void run() override;
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
@@ -285,7 +356,7 @@ class ModeGuided : public Mode
 public:
 
     Number mode_number() const override { return Number::GUIDED; }
-    const char *name() const override { return "GUIDED"; }
+    const char *name() const override { return "Guided"; }
     const char *name4() const override { return "GUID"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -304,14 +375,27 @@ public:
     // handle a guided target request from GCS
     bool handle_guided_request(Location target_loc) override;
 
+#if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+    // handle a guided airspeed command, typically from companion computer
+    bool handle_change_airspeed(const float airspeed, const float acceleration);
+#endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
+
     void set_radius_and_direction(const float radius, const bool direction_is_ccw);
 
     void update_target_altitude() override;
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
 
 protected:
 
     bool _enter() override;
     bool _pre_arm_checks(size_t buflen, char *buffer) const override { return true; }
+#if AP_QUICKTUNE_ENABLED
+    bool supports_quicktune() const override { return true; }
+#endif
 
 private:
     float active_radius_m;
@@ -322,7 +406,7 @@ class ModeCircle: public Mode
 public:
 
     Number mode_number() const override { return Number::CIRCLE; }
-    const char *name() const override { return "CIRCLE"; }
+    const char *name() const override { return "Circle"; }
     const char *name4() const override { return "CIRC"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -331,6 +415,11 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
 
 protected:
 
@@ -342,7 +431,7 @@ class ModeLoiter : public Mode
 public:
 
     Number mode_number() const override { return Number::LOITER; }
-    const char *name() const override { return "LOITER"; }
+    const char *name() const override { return "Loiter"; }
     const char *name4() const override { return "LOIT"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -366,6 +455,11 @@ public:
     
     bool mode_allows_autotuning() const override { return true; }
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
 protected:
 
     bool _enter() override;
@@ -377,7 +471,7 @@ class ModeLoiterAltQLand : public ModeLoiter
 public:
 
     Number mode_number() const override { return Number::LOITER_ALT_QLAND; }
-    const char *name() const override { return "Loiter to QLAND"; }
+    const char *name() const override { return "Loiter to QLand"; }
     const char *name4() const override { return "L2QL"; }
 
     // handle a guided target request from GCS
@@ -399,7 +493,7 @@ class ModeManual : public Mode
 public:
 
     Number mode_number() const override { return Number::MANUAL; }
-    const char *name() const override { return "MANUAL"; }
+    const char *name() const override { return "Manual"; }
     const char *name4() const override { return "MANU"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -412,6 +506,11 @@ public:
 
     // true if voltage correction should be applied to throttle
     bool use_battery_compensation() const override { return false; }
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
 };
 
@@ -451,13 +550,18 @@ class ModeStabilize : public Mode
 public:
 
     Number mode_number() const override { return Number::STABILIZE; }
-    const char *name() const override { return "STABILIZE"; }
+    const char *name() const override { return "Stabilize"; }
     const char *name4() const override { return "STAB"; }
 
     // methods that affect movement of the vehicle in this mode
     void update() override;
 
     void run() override;
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
 private:
     void stabilize_stick_mixing_direct();
@@ -469,7 +573,7 @@ class ModeTraining : public Mode
 public:
 
     Number mode_number() const override { return Number::TRAINING; }
-    const char *name() const override { return "TRAINING"; }
+    const char *name() const override { return "Training"; }
     const char *name4() const override { return "TRAN"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -477,6 +581,10 @@ public:
 
     void run() override;
 
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 };
 
 class ModeInitializing : public Mode
@@ -484,7 +592,7 @@ class ModeInitializing : public Mode
 public:
 
     Number mode_number() const override { return Number::INITIALISING; }
-    const char *name() const override { return "INITIALISING"; }
+    const char *name() const override { return "Initialising"; }
     const char *name4() const override { return "INIT"; }
 
     bool _enter() override { return false; }
@@ -506,7 +614,7 @@ class ModeFBWA : public Mode
 public:
 
     Number mode_number() const override { return Number::FLY_BY_WIRE_A; }
-    const char *name() const override { return "FLY_BY_WIRE_A"; }
+    const char *name() const override { return "FBWA"; }
     const char *name4() const override { return "FBWA"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -516,6 +624,16 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
+
 };
 
 class ModeFBWB : public Mode
@@ -523,7 +641,7 @@ class ModeFBWB : public Mode
 public:
 
     Number mode_number() const override { return Number::FLY_BY_WIRE_B; }
-    const char *name() const override { return "FLY_BY_WIRE_B"; }
+    const char *name() const override { return "FBWB"; }
     const char *name4() const override { return "FBWB"; }
 
     bool allows_terrain_disable() const override { return true; }
@@ -549,7 +667,7 @@ class ModeCruise : public Mode
 public:
 
     Number mode_number() const override { return Number::CRUISE; }
-    const char *name() const override { return "CRUISE"; }
+    const char *name() const override { return "Cruise"; }
     const char *name4() const override { return "CRUS"; }
 
     bool allows_terrain_disable() const override { return true; }
@@ -567,6 +685,11 @@ public:
 
     void update_target_altitude() override {};
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support fixed wing systemid?
+    bool supports_fw_systemid() const override { return true; }
+#endif
+
 protected:
 
     bool _enter() override;
@@ -582,7 +705,7 @@ class ModeAvoidADSB : public Mode
 public:
 
     Number mode_number() const override { return Number::AVOID_ADSB; }
-    const char *name() const override { return "AVOID_ADSB"; }
+    const char *name() const override { return "Avoid ADSB"; }
     const char *name4() const override { return "AVOI"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -606,7 +729,7 @@ class ModeQStabilize : public Mode
 public:
 
     Number mode_number() const override { return Number::QSTABILIZE; }
-    const char *name() const override { return "QSTABILIZE"; }
+    const char *name() const override { return "QStabilize"; }
     const char *name4() const override { return "QSTB"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -622,6 +745,11 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
+#endif
+    
 protected:
 private:
 
@@ -635,7 +763,7 @@ class ModeQHover : public Mode
 public:
 
     Number mode_number() const override { return Number::QHOVER; }
-    const char *name() const override { return "QHOVER"; }
+    const char *name() const override { return "QHover"; }
     const char *name4() const override { return "QHOV"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -646,9 +774,17 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
+#if AP_QUICKTUNE_ENABLED
+    bool supports_quicktune() const override { return true; }
+#endif
 };
 
 class ModeQLoiter : public Mode
@@ -660,7 +796,7 @@ friend class Plane;
 public:
 
     Number mode_number() const override { return Number::QLOITER; }
-    const char *name() const override { return "QLOITER"; }
+    const char *name() const override { return "QLoiter"; }
     const char *name4() const override { return "QLOT"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -671,17 +807,26 @@ public:
 
     void run() override;
 
+#if AP_PLANE_SYSTEMID_ENABLED
+    // does this mode support quadplane vtol systemid?
+    bool supports_vtol_systemid() const override { return true; }
+#endif
+    
 protected:
 
     bool _enter() override;
     uint32_t last_target_loc_set_ms;
+
+#if AP_QUICKTUNE_ENABLED
+    bool supports_quicktune() const override { return true; }
+#endif
 };
 
 class ModeQLand : public Mode
 {
 public:
     Number mode_number() const override { return Number::QLAND; }
-    const char *name() const override { return "QLAND"; }
+    const char *name() const override { return "QLand"; }
     const char *name4() const override { return "QLND"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -738,7 +883,7 @@ class ModeQAcro : public Mode
 public:
 
     Number mode_number() const override { return Number::QACRO; }
-    const char *name() const override { return "QACRO"; }
+    const char *name() const override { return "QAcro"; }
     const char *name4() const override { return "QACO"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -761,7 +906,7 @@ class ModeQAutotune : public Mode
 public:
 
     Number mode_number() const override { return Number::QAUTOTUNE; }
-    const char *name() const override { return "QAUTOTUNE"; }
+    const char *name() const override { return "QAutotune"; }
     const char *name4() const override { return "QATN"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -787,7 +932,7 @@ public:
     ModeTakeoff();
 
     Number mode_number() const override { return Number::TAKEOFF; }
-    const char *name() const override { return "TAKEOFF"; }
+    const char *name() const override { return "Takeoff"; }
     const char *name4() const override { return "TKOF"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -800,6 +945,11 @@ public:
     bool does_auto_navigation() const override { return true; }
 
     bool does_auto_throttle() const override { return true; }
+
+#if MODE_AUTOLAND_ENABLED   
+    // true if mode allows landing direction to be set on first takeoff after arm in this mode 
+    bool allows_autoland_direction_capture() const override { return true; }
+#endif
 
     // var_info for holding parameter information
     static const struct AP_Param::GroupInfo var_info[];
@@ -823,7 +973,71 @@ private:
     bool have_autoenabled_fences;
 
 };
+#if MODE_AUTOLAND_ENABLED
+class ModeAutoLand: public Mode
+{
+public:
+    ModeAutoLand();
 
+    Number mode_number() const override { return Number::AUTOLAND; }
+    const char *name() const override { return "Autoland"; }
+    const char *name4() const override { return "ALND"; }
+
+    // methods that affect movement of the vehicle in this mode
+    void update() override;
+
+    void navigate() override;
+
+    bool allows_throttle_nudging() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
+
+    bool does_auto_throttle() const override { return true; }
+    
+    bool is_landing() const override;
+    
+    void check_takeoff_direction(void);
+
+    // return true when lined up correctly from the LOITER_TO_ALT
+    bool landing_lined_up(void);
+
+    // see if we should capture the direction
+    void arm_check(void);
+
+    // var_info for holding parameter information
+    static const struct AP_Param::GroupInfo var_info[];
+
+    AP_Int16 final_wp_alt;
+    AP_Int16 final_wp_dist;
+    AP_Int16 landing_dir_off;
+    AP_Int8  options;
+    AP_Int16 terrain_alt_min;
+
+    // Bitfields of AUTOLAND_OPTIONS
+    enum class AutoLandOption {
+        AUTOLAND_DIR_ON_ARM     = (1U << 0), // set dir for autoland on arm if compass in use.
+    };
+
+    enum class AutoLandStage {
+        CLIMB,
+        LOITER,
+        LANDING
+    };
+
+    bool autoland_option_is_set(AutoLandOption option) const {
+        return (options & int8_t(option)) != 0;
+    }
+
+protected:
+    bool _enter() override;
+    AP_Mission::Mission_Command cmd_climb;
+    AP_Mission::Mission_Command cmd_loiter;
+    AP_Mission::Mission_Command cmd_land;
+    Location land_start;
+    AutoLandStage stage;
+    void set_autoland_direction(const float heading);
+};
+#endif
 #if HAL_SOARING_ENABLED
 
 class ModeThermal: public Mode
@@ -831,7 +1045,7 @@ class ModeThermal: public Mode
 public:
 
     Number mode_number() const override { return Number::THERMAL; }
-    const char *name() const override { return "THERMAL"; }
+    const char *name() const override { return "Thermal"; }
     const char *name4() const override { return "THML"; }
 
     // methods that affect movement of the vehicle in this mode

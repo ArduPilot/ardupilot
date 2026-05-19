@@ -28,12 +28,16 @@
 
 class ServoModel {
 public:
+    float angle() const { return filter1p.get(); }
     float filter_angle(uint16_t pwm, float dt);
     float filter_range(uint16_t pwm, float dt);
     void set_pwm_range(uint16_t _pwm_min, uint16_t _pwm_max);
     void set_deflection(float _angle_deg);
 
     static const struct AP_Param::GroupInfo var_info[];
+
+    // return pwm required for current angle
+    float angle_pwm() const;
 
 private:
     float apply_filter(float v, float dt);

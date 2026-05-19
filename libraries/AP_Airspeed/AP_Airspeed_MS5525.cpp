@@ -70,7 +70,7 @@ bool AP_Airspeed_MS5525::init()
         if (_address != MS5525_ADDR_AUTO && i != (uint8_t)_address) {
             continue;
         }
-        dev = hal.i2c_mgr->get_device(get_bus(), addresses[i]);
+        dev = hal.i2c_mgr->get_device_ptr(get_bus(), addresses[i]);
         if (!dev) {
             continue;
         }

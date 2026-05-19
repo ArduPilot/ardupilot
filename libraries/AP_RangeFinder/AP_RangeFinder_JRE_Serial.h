@@ -84,7 +84,7 @@ protected:
 
     int8_t get_signal_quality_pct() const override
     {
-        return no_signal ? RangeFinder::SIGNAL_QUALITY_MIN : RangeFinder::SIGNAL_QUALITY_MAX;
+        return no_signal ? RangeFinder::SIGNAL_QUALITY_MIN : signal_quality_pct;
     }
 
 private:
@@ -98,5 +98,7 @@ private:
     uint8_t data_buff_ofs;      // index where next item will be added in data_buff
 
     bool no_signal;     // true if the latest read attempt found no valid distances
+
+    int8_t signal_quality_pct;
 };
 #endif  // AP_RANGEFINDER_JRE_SERIAL_ENABLED

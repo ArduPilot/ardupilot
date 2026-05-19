@@ -11,11 +11,6 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include "AP_BattMonitor_Params.h"
 
-// maximum number of battery monitors
-#ifndef AP_BATT_MONITOR_MAX_INSTANCES
-#define AP_BATT_MONITOR_MAX_INSTANCES       9
-#endif
-
 // first monitor is always the primary monitor
 #define AP_BATT_PRIMARY_INSTANCE            0
 
@@ -26,7 +21,7 @@
 #define AP_BATT_MONITOR_RES_EST_TC_1        0.5f
 #define AP_BATT_MONITOR_RES_EST_TC_2        0.1f
 
-#if BOARD_FLASH_SIZE > 1024
+#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #define AP_BATT_MONITOR_CELLS_MAX           14
 #else
 #define AP_BATT_MONITOR_CELLS_MAX           12
@@ -70,6 +65,7 @@ class AP_BattMonitor
     friend class AP_BattMonitor_INA239;
     friend class AP_BattMonitor_LTC2946;
     friend class AP_BattMonitor_AD7091R5;
+    friend class AP_BattMonitor_INA3221;
 
     friend class AP_BattMonitor_Torqeedo;
     friend class AP_BattMonitor_FuelLevel_Analog;
@@ -86,37 +82,16 @@ public:
         Critical
     };
 
-    // Battery monitor driver types
-    enum class Type {
-        NONE                           = 0,
-        ANALOG_VOLTAGE_ONLY            = 3,
-        ANALOG_VOLTAGE_AND_CURRENT     = 4,
-        SOLO                           = 5,
-        BEBOP                          = 6,
-        SMBus_Generic                  = 7,
-        UAVCAN_BatteryInfo             = 8,
-        BLHeliESC                      = 9,
-        Sum                            = 10,
-        FuelFlow                       = 11,
-        FuelLevel_PWM                  = 12,
-        SUI3                           = 13,
-        SUI6                           = 14,
-        NeoDesign                      = 15,
-        MAXELL                         = 16,
-        GENERATOR_ELEC                 = 17,
-        GENERATOR_FUEL                 = 18,
-        Rotoye                         = 19,
-        // 20 was MPPT_PacketDigital
-        INA2XX                         = 21,
-        LTC2946                        = 22,
-        Torqeedo                       = 23,
-        FuelLevel_Analog               = 24,
-        Analog_Volt_Synthetic_Current  = 25,
-        INA239_SPI                     = 26,
-        EFI                            = 27,
-        AD7091R5                       = 28,
-        Scripting                      = 29,
+    // power states
+    enum class ChargingState : uint8_t {
+        UNKNOWN = 0,
+        IDLE,
+        CHARGING,
+        DISCHARGING
     };
+
+    // Battery monitor driver types
+    using Type = AP_BattMonitor_Params::Type;
 
     FUNCTOR_TYPEDEF(battery_failsafe_handler_fn_t, void, const char *, const int8_t);
 
@@ -161,6 +136,7 @@ public:
         bool        has_time_remaining;        // time_remaining is only valid if this is true
         uint8_t     state_of_health_pct;       // state of health (SOH) in percent
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
+        ChargingState charging_state;          // Charging state (unknown, idle, charging, discharging)
         uint8_t     instance;                  // instance number of this backend
         Type        type;                      // allocated instance type
         const struct AP_Param::GroupInfo *var_info;
@@ -172,7 +148,7 @@ public:
     uint8_t num_instances(void) const { return _num_instances; }
 
     // detect and initialise any available battery monitors
-    void init();
+    __INITFUNC__ void init();
 
     /// Read the battery voltage and current for all batteries.  Should be called at 10hz
     void read();
@@ -223,11 +199,11 @@ public:
     int8_t get_highest_failsafe_priority(void) const { return _highest_failsafe_priority; };
 
     /// configured_type - returns battery monitor type as configured in parameters
-    enum Type configured_type(uint8_t instance) const {
+    Type configured_type(uint8_t instance) const {
         return (Type)_params[instance]._type.get();
     }
     /// allocated_type - returns battery monitor type as allocated
-    enum Type allocated_type(uint8_t instance) const {
+    Type allocated_type(uint8_t instance) const {
         return state[instance].type;
     }
 
@@ -240,6 +216,14 @@ public:
     /// true when (voltage * current) > watt_max
     bool overpower_detected() const;
     bool overpower_detected(uint8_t instance) const;
+
+#if AP_BATTERY_WATT_MAX_ENABLED
+    /// get_watt_max - returns maximum power in watts
+    float get_watt_max() const { return get_watt_max(AP_BATT_PRIMARY_INSTANCE); }
+    float get_watt_max(uint8_t instance) const {
+        return _params[instance]._watt_max;
+    }
+#endif // AP_BATTERY_WATT_MAX_ENABLED
 
     // cell voltages in millivolts
     bool has_cell_voltages() const { return has_cell_voltages(AP_BATT_PRIMARY_INSTANCE); }
@@ -258,9 +242,9 @@ public:
     bool set_temperature_by_serial_number(const float temperature, const int32_t serial_number);
 #endif
 
-    // MPPT Control (Solar panels)
-    void MPPT_set_powered_state_to_all(const bool power_on);
-    void MPPT_set_powered_state(const uint8_t instance, const bool power_on);
+    // Set powered state (Solar Panels, BMS)
+    void set_powered_state_to_all(const bool power_on);
+    void set_powered_state(const uint8_t instance, const bool power_on);
 
     bool option_is_set(uint8_t instance, AP_BattMonitor_Params::Options option) const;
 
@@ -290,6 +274,10 @@ public:
     // return true if state of health (as a percentage) can be provided and fills in soh_pct argument
     bool get_state_of_health_pct(uint8_t instance, uint8_t &soh_pct) const;
 
+    // get charging state (idle, charging, discharging)
+    ChargingState get_charging_state() const { return get_charging_state(AP_BATT_PRIMARY_INSTANCE); }
+    ChargingState get_charging_state(uint8_t instance) const { return state[instance].charging_state; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 #if AP_BATTERY_SCRIPTING_ENABLED
@@ -308,8 +296,6 @@ private:
     AP_BattMonitor_Backend *drivers[AP_BATT_MONITOR_MAX_INSTANCES];
     uint32_t    _log_battery_bit;
     uint8_t     _num_instances;                                     /// number of monitors
-
-    void convert_dynamic_param_groups(uint8_t instance);
 
     /// returns the failsafe state of the battery
     Failsafe check_failsafe(const uint8_t instance);

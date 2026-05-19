@@ -9,13 +9,26 @@
 // radius looks like an integer as a backwards-compatibility measure.
 // For 4.2 we might consider only loading _INT and always saving as
 // float, and in 4.3 considering _INT invalid
-enum class AC_PolyFenceType {
+
+// CODE_REMOVAL
+// ArduPilot 4.7 no longer stores circle radiuses that look like
+//   integers as integer item types, so any time a fence is saved the
+//   use of the deprecated types is fixed.
+// ArduPilot 4.8 warns if it loads an integer item, warns user to re-upload the fence
+// ArduPilot 4.9 warns if it loads an integer item, warns user to re-upload the fence
+// ArduPilot 4.10 removes support for them
+
+enum class AC_PolyFenceType : uint8_t {
     END_OF_STORAGE        = 99,
     POLYGON_INCLUSION     = 98,
     POLYGON_EXCLUSION     = 97,
+#if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     CIRCLE_EXCLUSION_INT  = 96,
+#endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     RETURN_POINT          = 95,
+#if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     CIRCLE_INCLUSION_INT  = 94,
+#endif // #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
     CIRCLE_EXCLUSION      = 93,
     CIRCLE_INCLUSION      = 92,
 };
@@ -127,13 +140,17 @@ public:
     ///
     /// mavlink
     ///
-    /// handler for polygon fence messages with GCS
-    void handle_msg(class GCS_MAVLINK &link, const mavlink_message_t& msg);
-
     //  breached() - returns true if the vehicle has breached any fence
     bool breached() const WARN_IF_UNUSED;
+    //  returns true if location is outside the boundary also returns the minimum distance to the fence
+    bool breached(const Location& loc, float& distance_outside_fence, Vector2f& fence_direction) const WARN_IF_UNUSED;
     //  breached(Location&) - returns true if location is outside the boundary
-    bool breached(const Location& loc) const WARN_IF_UNUSED;
+    bool breached(const Location& loc) const WARN_IF_UNUSED
+    {
+        float distance_outside_fence;
+        Vector2f breach_direction;
+        return breached(loc, distance_outside_fence, breach_direction);
+    }
 
     // returns true if a polygonal include fence could be returned
     bool inclusion_boundary_available() const WARN_IF_UNUSED {
@@ -162,7 +179,7 @@ public:
     // load polygon points stored in eeprom into
     // _loaded_offsets_from_origin and perform validation.  returns
     // true if load successfully completed
-    bool load_from_eeprom() WARN_IF_UNUSED;
+    bool load_from_storage() WARN_IF_UNUSED;
 
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_loaded_fence_semaphore(void) {
@@ -308,6 +325,7 @@ private:
     // example.
     Vector2f *_loaded_offsets_from_origin;
     Vector2l *_loaded_points_lla;
+    Location loaded_origin; // origin at the time the boundary was loaded
 
     class ExclusionCircle {
     public:
@@ -343,7 +361,7 @@ private:
     // the result into pos_cm.
     bool scale_latlon_from_origin(const Location &origin,
                                   const Vector2l &point,
-                                  Vector2f &pos_cm) WARN_IF_UNUSED;
+                                  Vector2f &pos_cm) const WARN_IF_UNUSED;
    
     // read_polygon_from_storage - reads vertex_count
     // latitude/longitude points from offset in permanent storage,
@@ -354,27 +372,6 @@ private:
                                    const uint8_t vertex_count,
                                    Vector2f *&next_storage_point,
                                    Vector2l *&next_storage_point_lla) WARN_IF_UNUSED;
-
-#if AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT
-    /*
-     * FENCE_POINT protocol compatibility
-     */
-    void handle_msg_fetch_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
-    void handle_msg_fence_point(GCS_MAVLINK &link, const mavlink_message_t& msg);
-    // contains_compatible_fence - returns true if the permanent fence
-    // storage contains fences that are compatible with the old
-    // FENCE_POINT protocol.
-    bool contains_compatible_fence() const WARN_IF_UNUSED;
-
-    // get_or_create_include_fence - returns a point to an include
-    // fence to be used for the FENCE_POINT-supplied polygon.  May
-    // format the storage appropriately.
-    FenceIndex *get_or_create_include_fence();
-    // get_or_create_include_fence - returns a point to a return point
-    // to be used for the FENCE_POINT-supplied return point.  May
-    // format the storage appropriately.
-    FenceIndex *get_or_create_return_point();
-#endif
 
     // primitives to write parts of fencepoints out:
     bool write_type_to_storage(uint16_t &offset, AC_PolyFenceType type) WARN_IF_UNUSED;

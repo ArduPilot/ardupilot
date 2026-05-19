@@ -1,5 +1,6 @@
 local COMMAND_LONG = {}
 COMMAND_LONG.id = 76
+COMMAND_LONG.crc_extra = 152
 COMMAND_LONG.fields = {
              { "param1", "<f" },
              { "param2", "<f" },

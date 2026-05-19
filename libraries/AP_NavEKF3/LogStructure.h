@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include <AP_AHRS/AP_AHRS_config.h>
 
 #define LOG_IDS_FROM_NAVEKF3 \
     LOG_XKF0_MSG, \
@@ -18,7 +19,8 @@
     LOG_XKV1_MSG, \
     LOG_XKV2_MSG, \
     LOG_XKY0_MSG, \
-    LOG_XKY1_MSG
+    LOG_XKY1_MSG, \
+    LOG_XKFA_MSG
 
 // @LoggerMessage: XKF0
 // @Description: EKF3 beacon sensor diagnostics
@@ -103,8 +105,8 @@ struct PACKED log_XKF1 {
 // @Field: AX: Estimated accelerometer X bias
 // @Field: AY: Estimated accelerometer Y bias
 // @Field: AZ: Estimated accelerometer Z bias
-// @Field: VWN: Estimated wind velocity (North component)
-// @Field: VWE: Estimated wind velocity (East component)
+// @Field: VWN: Estimated wind velocity (moving-to-North component)
+// @Field: VWE: Estimated wind velocity (moving-to-East component)
 // @Field: MN: Magnetic field strength (North component)
 // @Field: ME: Magnetic field strength (East component)
 // @Field: MD: Magnetic field strength (Down component)
@@ -187,17 +189,18 @@ struct PACKED log_XKF3 {
 // @Field: FS: Filter fault status
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement, 5:drag measurement)
 // @Field: SS: Filter solution status
+// @FieldBitmaskEnum: SS: NavFilterStatusBit
 // @Field: GPS: Filter GPS status
 // @Field: PI: Primary core index
 struct PACKED log_XKF4 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t core;
-    uint16_t sqrtvarV;
-    uint16_t sqrtvarP;
-    uint16_t sqrtvarH;
-    uint16_t sqrtvarM;
-    uint16_t sqrtvarVT;
+    int16_t sqrtvarV;
+    int16_t sqrtvarP;
+    int16_t sqrtvarH;
+    int16_t sqrtvarM;
+    int16_t sqrtvarVT;
     float   tiltErr;
     float  offsetNorth;
     float  offsetEast;
@@ -218,13 +221,14 @@ struct PACKED log_XKF4 {
 // @Field: FIY: Optical flow LOS rate vector innovations from the main nav filter (Y-axis)
 // @Field: AFI: Optical flow LOS rate innovation from terrain offset estimator
 // @Field: HAGL: Height above ground level
-// @Field: offset: Estimated vertical position of the terrain relative to the nav filter zero datum
+// @Field: TOfs: Estimated vertical position of the terrain relative to the nav filter zero datum
 // @Field: RI: Range finder innovations
 // @Field: rng: Measured range
 // @Field: Herr: Filter ground offset state error
 // @Field: eAng: Magnitude of angular error
 // @Field: eVel: Magnitude of velocity error
 // @Field: ePos: Magnitude of position error
+// @Field: BOf: Barometer offset subtracted from raw baro measurement when fusing baro height
 struct PACKED log_XKF5 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -234,15 +238,36 @@ struct PACKED log_XKF5 {
     int16_t FIY;
     int16_t AFI;
     int16_t HAGL;
-    int16_t offset;
+    int16_t terrOffset;
     int16_t RI;
     uint16_t meaRng;
     uint16_t errHAGL;
     float angErr;
     float velErr;
     float posErr;
+    float baroOffset;
 };
 
+
+// @LoggerMessage: XKFA
+// @Description: EKF3 AGL Kalman Filter state (optionally used in Optical Flow scaling)
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: HAgl: AGL height estimate
+// @Field: VAgl: AGL velocity estimate
+// @Field: HAglStd: Std-dev of AGL height estimate
+// @Field: VAglStd: Std-dev of AGL velocity estimate
+// @Field: Valid: 1 when rangefinder has been fused within the last 5s
+struct PACKED log_XKFA {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    float hAgl;
+    float vAgl;
+    float hAglStd;
+    float vAglStd;
+    uint8_t valid;
+};
 
 // @LoggerMessage: XKFD
 // @Description: EKF3 Body Frame Odometry errors
@@ -379,35 +404,35 @@ struct PACKED log_XKTV {
 // @Description: EKF3 State variances (primary core)
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
-// @Field: V00: Variance for state 0
-// @Field: V01: Variance for state 1
-// @Field: V02: Variance for state 2
-// @Field: V03: Variance for state 3
-// @Field: V04: Variance for state 4
-// @Field: V05: Variance for state 5
-// @Field: V06: Variance for state 6
-// @Field: V07: Variance for state 7
-// @Field: V08: Variance for state 8
-// @Field: V09: Variance for state 9
-// @Field: V10: Variance for state 10
-// @Field: V11: Variance for state 11
+// @Field: V00: Variance for state 0 (attitude quaternion)
+// @Field: V01: Variance for state 1 (attitude quaternion)
+// @Field: V02: Variance for state 2 (attitude quaternion)
+// @Field: V03: Variance for state 3 (attitude quaternion)
+// @Field: V04: Variance for state 4 (velocity-north)
+// @Field: V05: Variance for state 5 (velocity-east)
+// @Field: V06: Variance for state 6 (velocity-down)
+// @Field: V07: Variance for state 7 (position-north)
+// @Field: V08: Variance for state 8 (position-east)
+// @Field: V09: Variance for state 9 (position-down)
+// @Field: V10: Variance for state 10 (delta-angle-bias-x)
+// @Field: V11: Variance for state 11 (delta-angle-bias-y)
 
 // @LoggerMessage: XKV2
 // @Description: more EKF3 State Variances (primary core)
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
-// @Field: V12: Variance for state 12
-// @Field: V13: Variance for state 13
-// @Field: V14: Variance for state 14
-// @Field: V15: Variance for state 15
-// @Field: V16: Variance for state 16
-// @Field: V17: Variance for state 17
-// @Field: V18: Variance for state 18
-// @Field: V19: Variance for state 19
-// @Field: V20: Variance for state 20
-// @Field: V21: Variance for state 21
-// @Field: V22: Variance for state 22
-// @Field: V23: Variance for state 23
+// @Field: V12: Variance for state 12 (delta-angle-bias-z)
+// @Field: V13: Variance for state 13 (delta-velocity-bias-x)
+// @Field: V14: Variance for state 14 (delta-velocity-bias-y)
+// @Field: V15: Variance for state 15 (delta-velocity-bias-z)
+// @Field: V16: Variance for state 16 (Earth-frame mag-field-bias-x)
+// @Field: V17: Variance for state 17 (Earth-frame mag-field-bias-y)
+// @Field: V18: Variance for state 18 (Earth-frame mag-field-bias-z)
+// @Field: V19: Variance for state 19 (body-frame mag-field-bias-x)
+// @Field: V20: Variance for state 20 (body-frame mag-field-bias-y)
+// @Field: V21: Variance for state 21 (body-frame mag-field-bias-z)
+// @Field: V22: Variance for state 22 (wind-north)
+// @Field: V23: Variance for state 23 (wind-east)
 struct PACKED log_XKV {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -437,9 +462,11 @@ struct PACKED log_XKV {
     { LOG_XKF3_MSG, sizeof(log_XKF3), \
       "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGGd?--", "F-BBBBBBCCCBB00" , true }, \
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
-      "XKF4","QBHHHHHfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-BBBBB-??-----" , true }, \
+      "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
-      "XKF5","QBBhhhcccCCfff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,offset,RI,rng,Herr,eAng,eVel,ePos", "s#----m???mrnm", "F-----BBBBB000" , true }, \
+      "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
+    { LOG_XKFA_MSG, sizeof(log_XKFA), \
+      "XKFA","QBffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Valid", "s#mnmn-", "F------", true }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \

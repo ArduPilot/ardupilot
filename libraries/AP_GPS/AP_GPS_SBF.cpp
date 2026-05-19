@@ -31,12 +31,12 @@ extern const AP_HAL::HAL& hal;
 #define SBF_DEBUGGING 0
 
 #if SBF_DEBUGGING
+// INFO rather than debug because MP filters DEBUG
  # define Debug(fmt, args ...)                  \
 do {                                            \
-    hal.console->printf("%s:%d: " fmt "\n",     \
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s:%d: " fmt, \
                         __FUNCTION__, __LINE__, \
                         ## args);               \
-    hal.scheduler->delay(1);                    \
 } while(0)
 #else
  # define Debug(fmt, args ...)
@@ -149,8 +149,10 @@ AP_GPS_SBF::read(void)
                                                             (params.gnss_mode&(1U<<6))!=0 ? ((params.gnss_mode&0x2F)==0  ? "GLONASS" : "+GLONASS") : "") == -1) {
                                         config_string=nullptr;
                                     }
+                                    break;
                                 }
-                                break;
+                                config_step = Config_State::Blob;
+                                FALLTHROUGH;
                             case Config_State::Blob:
                                 if (asprintf(&config_string, "%s\n", _initialisation_blob[_init_blob_index]) == -1) {
                                     config_string = nullptr;
@@ -321,6 +323,14 @@ AP_GPS_SBF::parse(uint8_t temp)
                                      // indicates not enough bytes to do a crc
                 break;
             }
+            if (sbf_msg.length > 256) {
+                // no SBF packet is this big!  serial corruption may
+                // cause the length to get very large; 24320 has been
+                // seen (0x5F00).  Discard and go back to looking for
+                // preamble.
+                sbf_msg.sbf_state = sbf_msg_parser_t::PREAMBLE1;
+                crc_error_counter++; // this is a probable serial corruption
+            }
             break;
         case sbf_msg_parser_t::DATA:
             if (sbf_msg.read < sizeof(sbf_msg.data)) {
@@ -380,6 +390,11 @@ AP_GPS_SBF::parse(uint8_t temp)
                                     config_step = Config_State::Constellation;
                                     break;
                                 case Config_State::Constellation:
+                                    // we can also move to
+                                    // Config_State::Blob if we choose
+                                    // not to update the GPS's
+                                    // constellation configuration
+                                    // (above).
                                     config_step = Config_State::Blob;
                                     break;
                                 case Config_State::Blob:
@@ -425,10 +440,10 @@ AP_GPS_SBF::parse(uint8_t temp)
 
 static bool is_DNU(double value)
 {
-    constexpr double DNU = -2e-10f;
+    constexpr double DNU = -2e10f;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
-    return value != DNU;
+    return value == DNU;
 #pragma GCC diagnostic pop
 }
 
@@ -493,38 +508,38 @@ AP_GPS_SBF::process_message(void)
         Debug("temp.Mode=0x%02x\n", (unsigned)temp.Mode);
         switch (temp.Mode & 15) {
             case 0: // no pvt
-                state.status = AP_GPS::NO_FIX;
+                state.status = AP_GPS_FixType::NONE;
                 break;
             case 1: // standalone
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS_FixType::FIX_3D;
                 break;
             case 2: // dgps
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS_FixType::DGPS;
                 break;
             case 3: // fixed location
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS_FixType::FIX_3D;
                 break;
             case 4: // rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                state.status = AP_GPS_FixType::RTK_FIXED;
                 break;
             case 5: // rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                state.status = AP_GPS_FixType::RTK_FLOAT;
                 break;
             case 6: // sbas
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS_FixType::DGPS;
                 break;
             case 7: // moving rtk fixed
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                state.status = AP_GPS_FixType::RTK_FIXED;
                 break;
             case 8: // moving rtk float
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                state.status = AP_GPS_FixType::RTK_FLOAT;
                 break;
         }
         
         if ((temp.Mode & 64) > 0) { // gps is in base mode
-            state.status = AP_GPS::NO_FIX;
+            state.status = AP_GPS_FixType::NONE;
         } else if ((temp.Mode & 128) > 0) { // gps only has 2d fix
-            state.status = AP_GPS::GPS_OK_FIX_2D;
+            state.status = AP_GPS_FixType::FIX_2D;
         }
                     
         return true;
@@ -575,15 +590,11 @@ AP_GPS_SBF::process_message(void)
 
             check_new_itow(temp.TOW, sbf_msg.length);
 
-            constexpr double floatDNU = -2e-10f;
             constexpr uint8_t errorBits = 0x8F; // Bits 0-1 are aux 1 baseline
                                                 // Bits 2-3 are aux 2 baseline
                                                 // Bit 7 is attitude not requested
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
             if (((temp.Error & errorBits) == 0)
-                && (temp.Cov_HeadHead != floatDNU)) {
-#pragma GCC diagnostic pop
+                && !is_DNU(temp.Cov_HeadHead)) {
                 state.gps_yaw_accuracy = sqrtf(temp.Cov_HeadHead);
                 state.have_gps_yaw_accuracy = true;
             } else {
@@ -613,12 +624,9 @@ AP_GPS_SBF::process_message(void)
     }
     case BaseVectorGeod:
     {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wfloat-equal" // suppress -Wfloat-equal as it's false positive when testing for DNU values
         const msg4028 &temp = sbf_msg.data.msg4028u;
 
         // just breakout any consts we need for Do Not Use (DNU) reasons
-        constexpr double doubleDNU = -2e-10;
         constexpr uint16_t uint16DNU = 65535;
 
         check_new_itow(temp.TOW, sbf_msg.length);
@@ -637,7 +645,7 @@ AP_GPS_SBF::process_message(void)
         state.rtk_age_ms = (temp.info.CorrAge != 65535) ? ((uint32_t)temp.info.CorrAge) * 10 : 0;
 
         // copy the position as long as the data isn't DNU, we require NED, and heading before accepting any of it
-        if ((temp.info.DeltaEast != doubleDNU) && (temp.info.DeltaNorth != doubleDNU) && (temp.info.DeltaUp != doubleDNU) &&
+        if (!is_DNU(temp.info.DeltaEast) && !is_DNU(temp.info.DeltaNorth) && !is_DNU(temp.info.DeltaUp) &&
             (temp.info.Azimuth != uint16DNU)) {
 
             state.rtk_baseline_y_mm = temp.info.DeltaEast * 1e3;
@@ -660,7 +668,6 @@ AP_GPS_SBF::process_message(void)
             state.have_gps_yaw = false;
         }
 
-#pragma GCC diagnostic pop
         break;
     }
     }

@@ -58,36 +58,9 @@ void AP_MotorsHeli_Quad::init_outputs()
     }
 
     // set rotor servo range
-    _main_rotor.init_servo();
+    _main_rotor.initialize();
 
     set_initialised_ok(_frame_class == MOTOR_FRAME_HELI_QUAD);
-}
-
-// calculate_armed_scalars
-void AP_MotorsHeli_Quad::calculate_armed_scalars()
-{
-    // Set rsc mode specific parameters
-    if (_main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_THROTTLECURVE || _main_rotor._rsc_mode.get() == ROTOR_CONTROL_MODE_AUTOTHROTTLE) {
-        _main_rotor.set_throttle_curve();
-    }
-    // keeps user from changing RSC mode while armed
-    if (_main_rotor._rsc_mode.get() != _main_rotor.get_control_mode()) {
-        _main_rotor.reset_rsc_mode_param();
-        _heliflags.save_rsc_mode = true;
-    }
-    // saves rsc mode parameter when disarmed if it had been reset while armed
-    if (_heliflags.save_rsc_mode && !armed()) {
-        _main_rotor._rsc_mode.save();
-        _heliflags.save_rsc_mode = false;
-    }
-
-    if (_heliflags.in_autorotation) {
-        _main_rotor.set_autorotation_flag(_heliflags.in_autorotation);
-        // set bailout ramp time
-        _main_rotor.use_bailout_ramp_time(_heliflags.enable_bailout);
-    }else {
-        _main_rotor.set_autorotation_flag(false);
-    }
 }
 
 // calculate_scalars
@@ -117,9 +90,8 @@ void AP_MotorsHeli_Quad::calculate_scalars()
     // calculate factors based on swash type and servo position
     calculate_roll_pitch_collective_factors();
 
-    // set mode of main rotor controller and trigger recalculation of scalars
-    _main_rotor.set_control_mode(static_cast<RotorControlMode>(_main_rotor._rsc_mode.get()));
-    calculate_armed_scalars();
+    // configure main rotor and update scalars
+    _main_rotor.configure();
 }
 
 // calculate_swash_factors - calculate factors based on swash type and servo position
@@ -145,12 +117,12 @@ void AP_MotorsHeli_Quad::calculate_roll_pitch_collective_factors()
 }
 
 // update_motor_controls - sends commands to motor controllers
-void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlState state)
+void  AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
 {
     // Send state update to motors
-    _main_rotor.output(state);
+    _main_rotor.update(_dt_s);
 
-    if (state == AP_MotorsHeli_RSC::RotorControlState::STOP) {
+    if (state == AP_MotorsHeli_RSC::DesiredRSCSpoolState::SHUT_DOWN) {
         // set engine run enable aux output to not run position to kill engine when disarmed
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MIN);
     } else {
@@ -158,11 +130,21 @@ void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
     }
 
-    // Check if rotors are run-up
-    set_rotor_runup_complete(_main_rotor.is_runup_complete());
+}
 
-    // Check if rotors are spooled down
-    _heliflags.rotor_spooldown_complete = _main_rotor.is_spooldown_complete();
+// update_spool_state - updates the spool state based on the desired state
+AP_Motors::SpoolState AP_MotorsHeli_Quad::update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
+{
+
+    SpoolState main_rotor_state = _main_rotor.update_spool_state(state, _dt_s);
+
+    // Check if main rotor is run-up complete.  Tail rotor run-up is not included in check because currently
+    // the tail rotor in DDVP uses the same ramp and runup time as the main rotor.  This may need changed if 
+    // the RSC is used for DDFP tail rotors.
+    set_rotor_runup_complete(main_rotor_state == AP_MotorsHeli_RSC::RSCSpoolState::THROTTLE_UNLIMITED);
+
+    return main_rotor_state;
+
 }
 
 //
@@ -175,10 +157,6 @@ void AP_MotorsHeli_Quad::update_motor_control(AP_MotorsHeli_RSC::RotorControlSta
 //
 void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float collective_in, float yaw_out)
 {
-    // initialize limits flag
-    limit.throttle_lower = false;
-    limit.throttle_upper = false;
-
     // constrain collective input
     float collective_out = collective_in;
     if (collective_out <= 0.0f) {
@@ -197,11 +175,7 @@ void AP_MotorsHeli_Quad::move_actuators(float roll_out, float pitch_out, float c
     }
 
     // updates below land min collective flag
-    if (collective_out <= _collective_land_min_pct) {
-        _heliflags.below_land_min_coll = true;
-    } else {
-        _heliflags.below_land_min_coll = false;
-    }
+    _heliflags.below_land_min_coll = !is_positive(collective_out - _collective_land_min_pct);
 
     // updates takeoff collective flag based on 50% hover collective
     update_takeoff_collective_flag(collective_out);
@@ -270,7 +244,7 @@ void AP_MotorsHeli_Quad::output_to_motors()
         rc_write_angle(AP_MOTORS_MOT_1+i, _out[i] * QUAD_SERVO_MAX_ANGLE);
     }
 
-    update_motor_control(get_rotor_control_state());
+    _main_rotor.output_to_servo();
 
 }
 

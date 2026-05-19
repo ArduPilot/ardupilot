@@ -53,7 +53,7 @@ void ModeGuided::update()
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
@@ -77,7 +77,7 @@ void ModeGuided::update()
         {
             // stop vehicle if target not updated within 3 seconds
             if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
@@ -112,7 +112,7 @@ void ModeGuided::update()
             // handle timeout
             if (_have_strthr && (AP_HAL::millis() - _strthr_time_ms) > 3000) {
                 _have_strthr = false;
-                gcs().send_text(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
             }
             if (_have_strthr) {
                 // pass latest steering and throttle directly to motors library
@@ -136,7 +136,7 @@ void ModeGuided::update()
             break;
 
         default:
-            gcs().send_text(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Unknown GUIDED mode");
             break;
     }
 }
@@ -180,16 +180,16 @@ float ModeGuided::nav_bearing() const
     return 0.0f;
 }
 
-float ModeGuided::crosstrack_error() const
+float ModeGuided::crosstrack_error_m() const
 {
     switch (_guided_mode) {
     case SubMode::WP:
-        return g2.wp_nav.crosstrack_error();
+        return g2.wp_nav.crosstrack_error_m();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
     case SubMode::Loiter:
-        return rover.mode_loiter.crosstrack_error();
+        return rover.mode_loiter.crosstrack_error_m();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -218,7 +218,7 @@ float ModeGuided::get_desired_lat_accel() const
     return 0.0f;
 }
 
-// return distance (in meters) to destination
+// return straight-line distance (in meters) to destination
 float ModeGuided::get_distance_to_destination() const
 {
     switch (_guided_mode) {
@@ -257,17 +257,17 @@ bool ModeGuided::reached_destination() const
 }
 
 // set desired speed in m/s
-bool ModeGuided::set_desired_speed(float speed)
+bool ModeGuided::set_desired_speed(float speed_ms)
 {
     switch (_guided_mode) {
     case SubMode::WP:
-        return g2.wp_nav.set_speed_max(speed);
+        return g2.wp_nav.set_speed_max(speed_ms);
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         // speed is set from mavlink message
         return false;
     case SubMode::Loiter:
-        return rover.mode_loiter.set_desired_speed(speed);
+        return rover.mode_loiter.set_desired_speed(speed_ms);
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         // no speed control

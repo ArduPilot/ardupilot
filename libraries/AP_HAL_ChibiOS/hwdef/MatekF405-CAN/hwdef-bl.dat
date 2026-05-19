@@ -6,8 +6,8 @@ MCU STM32F4xx STM32F405xx
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-# board ID for firmware load
-APJ_BOARD_ID 1014
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF405_GPS
 
 FLASH_RESERVE_START_KB 0
 FLASH_SIZE_KB 1024

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''A helper script for bisecting common problems when working with ArduPilot
 
@@ -24,7 +24,8 @@ git bisect reset
 git bisect good a7647e77d9 &&
   git bisect bad 153ad9539866f8d93a99e9998118bb090d2f747f &&
   git bisect run /tmp/bisect-helper.py --build \
-    --waf-configure-arg="--board bebop"
+    --waf-configure-arg="--board pixflamingo" \
+    --build-failure-string="note: this is the location of the previous definition"
 
 # Use a failing test to work out which commit broke things:
 cp Tools/autotest/bisect-helper.py /tmp
@@ -32,7 +33,7 @@ git bisect reset
 git bisect start
 git bisect bad
 git bisect good HEAD~1024
-time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test  # noqa
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Plane --autotest-test=NeedEKFToArm --autotest-branch=wip/bisection-using-named-test  # noqa: E501
 
 Work out who overflowed Omnbusf4pro:
 cp -a Tools Tools2
@@ -50,30 +51,28 @@ git bisect good $GOOD &&
 # Use a flapping test to work out which commit broke things.  The
 # "autotest-branch" is the branch containing the flapping test (which
 # may be master)
-rm /tmp/bisect-debug/*; git commit -m "stuff" -a ; cp Tools/autotest/bisect-helper.py /tmp; git bisect reset; git bisect start; git bisect bad d24e569b20; git bisect good 3f6fd49507f286ad8f6ccc9e29b110d5e9fc9207^
-time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Copter --autotest-test=Replay --autotest-branch=wip/bisection-using-flapping-test --autotest-test-passes=40 --autotest-failure-require-string="Mismatch in field XKF1.Pitch" --autotest-failure-ignore-string="HALSITL::SITL_State::_check_rc_input"
+rm /tmp/bisect-debug/*; git commit -m "stuff" -a ; cp Tools/autotest/bisect-helper.py /tmp; git bisect reset; git bisect start; git bisect bad d24e569b20; git bisect good 3f6fd49507f286ad8f6ccc9e29b110d5e9fc9207^  # noqa: E501
+time git bisect run /tmp/bisect-helper.py --autotest --autotest-vehicle=Copter --autotest-test=Replay --autotest-branch=wip/bisection-using-flapping-test --autotest-test-passes=40 --autotest-failure-require-string="Mismatch in field XKF1.Pitch" --autotest-failure-ignore-string="HALSITL::SITL_State::_check_rc_input"  # noqa: E501
 
 AP_FLAKE8_CLEAN
 
-'''
+'''  # noqa:E501
 
 import optparse
 import os
-import subprocess
 import shlex
+import subprocess
 import sys
 import time
 import traceback
 
 
 def get_exception_stacktrace(e):
-    if sys.version_info[0] >= 3:
-        ret = "%s\n" % e
-        ret += ''.join(traceback.format_exception(type(e),
-                                                  value=e,
-                                                  tb=e.__traceback__))
-        return ret
-    return traceback.format_exc(e)
+    ret = "%s\n" % e
+    ret += ''.join(traceback.format_exception(type(e),
+                                              value=e,
+                                              tb=e.__traceback__))
+    return ret
 
 
 class Bisect(object):
@@ -376,7 +375,7 @@ if __name__ == '__main__':
 
 try:
     bisecter.run()
-except Exception as e:
+except Exception as e:  # noqa: BLE001
     print("Caught exception in bisect-helper: %s" % str(e))
     print(get_exception_stacktrace(e))
     sys.exit(129)  # should abort the bisect process

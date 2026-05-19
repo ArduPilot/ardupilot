@@ -1,15 +1,23 @@
 #include "Copter.h"
 
-#if MODE_TURTLE_ENABLED == ENABLED
+#if MODE_TURTLE_ENABLED
 
 #define CRASH_FLIP_EXPO 35.0f
 #define CRASH_FLIP_STICK_MINF 0.15f
 #define power3(x) ((x) * (x) * (x))
 
+// Return true if this mode is enabled, use by MAVLink available modes
+bool ModeTurtle::enabled() const
+{
+    return SRV_Channels::get_dshot_esc_type() != AP_HAL::RCOutput::DshotEscType::DSHOT_ESC_NONE;
+}
+
 bool ModeTurtle::init(bool ignore_checks)
 {
+    WITH_SEMAPHORE(msem);
+
     // do not enter the mode when already armed or when flying
-    if (motors->armed() || SRV_Channels::get_dshot_esc_type() == 0) {
+    if (motors->armed() || !enabled()) {
         return false;
     }
 
@@ -26,14 +34,15 @@ bool ModeTurtle::init(bool ignore_checks)
         return false;
     }
 
-    // turn on notify leds
-    AP_Notify::flags.esc_calibration = true;
+    shutdown = false;
 
     return true;
 }
 
 void ModeTurtle::arm_motors()
 {
+    WITH_SEMAPHORE(msem);
+
     if (hal.util->get_soft_armed()) {
         return;
     }
@@ -45,11 +54,14 @@ void ModeTurtle::arm_motors()
     hal.rcout->disable_channel_mask_updates();
     change_motor_direction(true);
 
-    // disable throttle and gps failsafe
-    g.failsafe_throttle.set(FS_THR_DISABLED);
-    g.failsafe_gcs.set(FS_GCS_DISABLED);
-    g.fs_ekf_action.set(0);
+    // disable throttle and gcs failsafe
+    g.failsafe_throttle.set(Copter::FS_THR_Action::DISABLED);
+    g.failsafe_gcs.set(Copter::FS_GCS_Action::DISABLED);
+    g.fs_ekf_action.set(Copter::FS_EKF_Action::REPORT_ONLY);
 
+    // ensure the arming library is aware of our meddling
+    // even if it fails we don't want to prevent people getting into turtle mode
+    AP::arming().AP_Arming::arm(AP_Arming::Method::TURTLE_MODE, false);
     // arm
     motors->armed(true);
     hal.util->set_soft_armed(true);
@@ -62,6 +74,8 @@ bool ModeTurtle::allows_arming(AP_Arming::Method method) const
 
 void ModeTurtle::exit()
 {
+    shutdown = true;
+
     disarm_motors();
 
     // turn off notify leds
@@ -70,13 +84,17 @@ void ModeTurtle::exit()
 
 void ModeTurtle::disarm_motors()
 {
+    WITH_SEMAPHORE(msem);
+
     if (!hal.util->get_soft_armed()) {
         return;
     }
 
+    // ensure the arming library is aware of our meddling
+    AP::arming().AP_Arming::disarm(AP_Arming::Method::TURTLE_MODE, false);
+
     // disarm
     motors->armed(false);
-    hal.util->set_soft_armed(false);
 
     // un-reverse the motors
     change_motor_direction(false);
@@ -86,6 +104,8 @@ void ModeTurtle::disarm_motors()
     g.failsafe_throttle.load();
     g.failsafe_gcs.load();
     g.fs_ekf_action.load();
+
+    hal.util->set_soft_armed(false);
 }
 
 void ModeTurtle::change_motor_direction(bool reverse)
@@ -113,7 +133,7 @@ void ModeTurtle::change_motor_direction(bool reverse)
 void ModeTurtle::run()
 {
     const float flip_power_factor = 1.0f - CRASH_FLIP_EXPO * 0.01f;
-    const bool norc = copter.failsafe.radio || !rc().has_ever_seen_rc_input();
+    const bool norc = !rc().has_valid_input();
     const float stick_deflection_pitch = norc ? 0.0f : channel_pitch->norm_input_dz();
     const float stick_deflection_roll = norc ? 0.0f : channel_roll->norm_input_dz();
     const float stick_deflection_yaw = norc ? 0.0f : channel_yaw->norm_input_dz();
@@ -169,6 +189,14 @@ void ModeTurtle::run()
 // actually write values to the motors
 void ModeTurtle::output_to_motors()
 {
+    if (shutdown) {
+        disarm_motors();
+
+        // turn off notify leds
+        AP_Notify::flags.esc_calibration = false;
+        return;
+    }
+
     // throttle needs to be raised
     if (is_zero(channel_throttle->norm_input_dz())) {
         const uint32_t now = AP_HAL::millis();
@@ -180,6 +208,9 @@ void ModeTurtle::output_to_motors()
         disarm_motors();
         return;
     }
+
+    // turn on notify leds
+    AP_Notify::flags.esc_calibration = true;
 
     arm_motors();
 

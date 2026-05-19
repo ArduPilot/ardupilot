@@ -42,7 +42,7 @@
 #include "AP_GPS_MSP.h"
 #include "AP_GPS_ExternalAHRS.h"
 #include "GPS_Backend.h"
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 #include "AP_GPS_SITL.h"
 #endif
 
@@ -94,7 +94,7 @@ const char AP_GPS::_initialisation_blob[] =
     ;
 
 #if HAL_GCS_ENABLED
-// ensure that our GPS_Status enumeration is 1:1 with the mavlink
+// ensure that AP_GPS_FixType is 1:1 with the mavlink
 // numbers of the same fix type.  This allows us to do a simple cast
 // from one to the other when sending GPS mavlink messages, rather
 // than having some sort of mapping function from our internal
@@ -104,24 +104,16 @@ const char AP_GPS::_initialisation_blob[] =
 // allows us to build the GPS library without having the mavlink
 // headers built (for example, in AP_Periph we shouldn't need mavlink
 // headers).
-static_assert((uint32_t)AP_GPS::GPS_Status::NO_GPS == (uint32_t)GPS_FIX_TYPE_NO_GPS, "NO_GPS incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::NO_FIX == (uint32_t)GPS_FIX_TYPE_NO_FIX, "NO_FIX incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_2D == (uint32_t)GPS_FIX_TYPE_2D_FIX, "FIX_2D incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint32_t)GPS_FIX_TYPE_3D_FIX, "FIX_3D incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint32_t)GPS_FIX_TYPE_DGPS, "FIX_DGPS incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint32_t)GPS_FIX_TYPE_RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint32_t)GPS_FIX_TYPE_RTK_FIXED, "FIX_RTK_FIXED incorrect");
+static_assert((uint32_t)AP_GPS_FixType::NO_GPS == (uint32_t)GPS_FIX_TYPE_NO_GPS, "NO_GPS incorrect");
+static_assert((uint32_t)AP_GPS_FixType::NONE == (uint32_t)GPS_FIX_TYPE_NO_FIX, "NO_FIX incorrect");
+static_assert((uint32_t)AP_GPS_FixType::FIX_2D == (uint32_t)GPS_FIX_TYPE_2D_FIX, "FIX_2D incorrect");
+static_assert((uint32_t)AP_GPS_FixType::FIX_3D == (uint32_t)GPS_FIX_TYPE_3D_FIX, "FIX_3D incorrect");
+static_assert((uint32_t)AP_GPS_FixType::DGPS == (uint32_t)GPS_FIX_TYPE_DGPS, "FIX_DGPS incorrect");
+static_assert((uint32_t)AP_GPS_FixType::RTK_FLOAT == (uint32_t)GPS_FIX_TYPE_RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
+static_assert((uint32_t)AP_GPS_FixType::RTK_FIXED == (uint32_t)GPS_FIX_TYPE_RTK_FIXED, "FIX_RTK_FIXED incorrect");
+static_assert((uint32_t)AP_GPS_FixType::STATIC == (uint32_t)GPS_FIX_TYPE_STATIC, "FIX_STATIC incorrect");
+static_assert((uint32_t)AP_GPS_FixType::PPP == (uint32_t)GPS_FIX_TYPE_PPP, "FIX_PPP incorrect");
 #endif
-
-// ensure that our own enum-class status is equivalent to the
-// ArduPilot-scoped AP_GPS_FixType enumeration:
-static_assert((uint32_t)AP_GPS::GPS_Status::NO_GPS == (uint8_t)AP_GPS_FixType::NO_GPS, "NO_GPS incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::NO_FIX == (uint8_t)AP_GPS_FixType::NONE, "NO_FIX incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_2D == (uint8_t)AP_GPS_FixType::FIX_2D, "FIX_2D incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D == (uint8_t)AP_GPS_FixType::FIX_3D, "FIX_3D incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS == (uint8_t)AP_GPS_FixType::DGPS, "FIX_DGPS incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT == (uint8_t)AP_GPS_FixType::RTK_FLOAT, "FIX_RTK_FLOAT incorrect");
-static_assert((uint32_t)AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED == (uint8_t)AP_GPS_FixType::RTK_FIXED, "FIX_RTK_FIXED incorrect");
 
 AP_GPS *AP_GPS::_singleton;
 
@@ -203,7 +195,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _AUTO_CONFIG
     // @DisplayName: Automatic GPS configuration
     // @Description: Controls if the autopilot should automatically configure the GPS based on the parameters and default settings
-    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration for Serial GPSes only,2:Enable automatic configuration for DroneCAN as well
+    // @Values: 0:Disables automatic configuration,1:Enable automatic configuration for Serial GPSes only,2:Enable automatic configuration for DroneCAN as well,3:Clear all configurations not set by ardupilot (UBlox only)
     // @User: Advanced
     AP_GROUPINFO("_AUTO_CONFIG", 13, AP_GPS, _auto_config, 1),
 
@@ -239,7 +231,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Param: _DRV_OPTIONS
     // @DisplayName: driver options
     // @Description: Additional backend specific options
-    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel
+    // @Bitmask: 0:Use UART2 for moving baseline on ublox,1:Use base station for GPS yaw on SBF,2:Use baudrate 115200 on ublox,3:Use dedicated CAN port b/w GPSes for moving baseline,4:Use ellipsoid height instead of AMSL, 5:Override GPS satellite health of L5 band from L1 health, 6:Enable RTCM full parse even for a single channel, 7:Disable automatic full RTCM parsing when RTCM seen on more than one channel, 8:Force UBlox Config Get/Set for configuration then automatic configuration for Serial GPSes only
     // @User: Advanced
     AP_GROUPINFO("_DRV_OPTIONS", 22, AP_GPS, _driver_options, 0),
 
@@ -321,6 +313,11 @@ void AP_GPS::init()
     // set the default for the first GPS according to define:
     params[0].type.set_default(HAL_GPS1_TYPE_DEFAULT);
 
+    // PARAMETER_CONVERSION - Added: Jan-2026
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        params[i].gnss_mode.convert_parameter_width(AP_PARAM_INT8);
+    }
+
     convert_parameters();
 
     // Set new primary param based on old auto_switch use second option
@@ -332,7 +329,7 @@ void AP_GPS::init()
     // search for serial ports with gps protocol
     const auto &serial_manager = AP::serialmanager();
     uint8_t uart_idx = 0;
-    for (uint8_t i=0; i<ARRAY_SIZE(params); i++) {
+    for (uint8_t i=0; i<ARRAY_SIZE(params) && i<ARRAY_SIZE(_port); i++) {
         if (needs_uart(params[i].type)) {
             _port[i] = serial_manager.find_serial(AP_SerialManager::SerialProtocol_GPS, uart_idx);
             uart_idx++;
@@ -561,9 +558,9 @@ void AP_GPS::send_blob_start(uint8_t instance)
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
 #endif //AP_GPS_NOVA_ENABLED
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED
         // none of these GPSs have initialisation blobs
         break;
     default:
@@ -585,7 +582,8 @@ void AP_GPS::send_blob_start(uint8_t instance)
 void AP_GPS::send_blob_update(uint8_t instance)
 {
     // exit immediately if no uart for this instance
-    if (_port[instance] == nullptr) {
+    if (instance >= ARRAY_SIZE(_port) ||
+        _port[instance] == nullptr) {
         return;
     }
 
@@ -610,7 +608,7 @@ void AP_GPS::detect_instance(uint8_t instance)
 {
     const uint32_t now = AP_HAL::millis();
 
-    state[instance].status = NO_GPS;
+    state[instance].status = AP_GPS_FixType::NO_GPS;
     state[instance].hdop = GPS_UNKNOWN_DOP;
     state[instance].vdop = GPS_UNKNOWN_DOP;
 
@@ -619,7 +617,7 @@ void AP_GPS::detect_instance(uint8_t instance)
         return;
     }
 
-    state[instance].status = NO_FIX;
+    state[instance].status = AP_GPS_FixType::NONE;
     drivers[instance] = new_gps;
     timing[instance].last_message_time_ms = now;
     timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
@@ -631,11 +629,12 @@ void AP_GPS::detect_instance(uint8_t instance)
   run detection step for one GPS instance. If this finds a GPS then it
   will return it - otherwise nullptr
  */
-AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
+AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
 {
     struct detect_state *dstate = &detect_state[instance];
 
     const auto type = params[instance].type;
+    auto *port = (instance < ARRAY_SIZE(_port)) ? _port[instance] : nullptr;
 
     switch (GPS_Type(type)) {
     // user has to explicitly set the MAV type, do not use AUTO
@@ -660,7 +659,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         dstate->auto_detected_baud = false; // specified, not detected
         return NEW_NOTHROW AP_GPS_MSP(*this, params[instance], state[instance], nullptr);
 #endif
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
         if (AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::GPS) >= 0) {
             dstate->auto_detected_baud = false; // specified, not detected
@@ -671,13 +670,13 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #if AP_GPS_GSOF_ENABLED
     case GPS_TYPE_GSOF:
         dstate->auto_detected_baud = false; // specified, not detected
-        return NEW_NOTHROW AP_GPS_GSOF(*this, params[instance], state[instance], _port[instance]);
+        return NEW_NOTHROW AP_GPS_GSOF(*this, params[instance], state[instance], port);
 #endif //AP_GPS_GSOF_ENABLED
     default:
         break;
     }
 
-    if (_port[instance] == nullptr) {
+    if (port == nullptr) {
         // UART not available
         return nullptr;
     }
@@ -692,7 +691,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         // incrementing like this will skip the first element in array of bauds
         // this is okay, and relied upon
         if (dstate->probe_baud == 0) {
-            dstate->probe_baud = _port[instance]->get_baud_rate();
+            dstate->probe_baud = port->get_baud_rate();
         } else {
             dstate->current_baud++;
             if (dstate->current_baud == ARRAY_SIZE(_baudrates)) {
@@ -707,8 +706,8 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         if (type == GPS_TYPE_UBLOX_RTK_BASE) {
             rx_size = 2048;
         }
-        _port[instance]->begin(dstate->probe_baud, rx_size, tx_size);
-        _port[instance]->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+        port->begin(dstate->probe_baud, rx_size, tx_size);
+        port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
         dstate->last_baud_change_ms = now;
 
         if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
@@ -725,17 +724,17 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     // by default the sbf/trimble gps outputs no data on its port, until configured.
     case GPS_TYPE_SBF:
     case GPS_TYPE_SBF_DUAL_ANTENNA:
-        return NEW_NOTHROW AP_GPS_SBF(*this, params[instance], state[instance], _port[instance]);
+        return NEW_NOTHROW AP_GPS_SBF(*this, params[instance], state[instance], port);
 #endif //AP_GPS_SBF_ENABLED
 #if AP_GPS_NOVA_ENABLED
     case GPS_TYPE_NOVA:
-        return NEW_NOTHROW AP_GPS_NOVA(*this, params[instance], state[instance], _port[instance]);
+        return NEW_NOTHROW AP_GPS_NOVA(*this, params[instance], state[instance], port);
 #endif //AP_GPS_NOVA_ENABLED
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
-        return NEW_NOTHROW AP_GPS_SITL(*this, params[instance], state[instance], _port[instance]);
-#endif  // HAL_SIM_GPS_ENABLED
+        return NEW_NOTHROW AP_GPS_SITL(*this, params[instance], state[instance], port);
+#endif  // AP_SIM_GPS_ENABLED
 
     default:
         break;
@@ -746,10 +745,10 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         return nullptr;
     }
 
-    uint16_t bytecount = MIN(8192U, _port[instance]->available());
+    uint16_t bytecount = MIN(8192U, port->available());
 
     while (bytecount-- > 0) {
-        const uint8_t data = _port[instance]->read();
+        const uint8_t data = port->read();
         (void)data;  // if all backends are compiled out then "data" is unused
 
 #if AP_GPS_UBLOX_ENABLED
@@ -759,7 +758,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
              (_baudrates[dstate->current_baud] >= 115200 && option_set(DriverOptions::UBX_Use115200)) ||
              _baudrates[dstate->current_baud] == 230400) &&
             AP_GPS_UBLOX::_detect(dstate->ublox_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], GPS_ROLE_NORMAL);
+            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], port, GPS_ROLE_NORMAL);
         }
 
         const uint32_t ublox_mb_required_baud = option_set(DriverOptions::UBX_MBUseUart2)?230400:460800;
@@ -773,31 +772,31 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
             } else {
                 role = GPS_ROLE_MB_ROVER;
             }
-            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], _port[instance], role);
+            return NEW_NOTHROW AP_GPS_UBLOX(*this, params[instance], state[instance], port, role);
         }
 #endif  // AP_GPS_UBLOX_ENABLED
 #if AP_GPS_SBP2_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
                  AP_GPS_SBP2::_detect(dstate->sbp2_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_SBP2(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_SBP2(*this, params[instance], state[instance], port);
         }
 #endif //AP_GPS_SBP2_ENABLED
 #if AP_GPS_SBP_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SBP) &&
                  AP_GPS_SBP::_detect(dstate->sbp_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_SBP(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_SBP(*this, params[instance], state[instance], port);
         }
 #endif //AP_GPS_SBP_ENABLED
 #if AP_GPS_SIRF_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_SIRF) &&
                  AP_GPS_SIRF::_detect(dstate->sirf_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_SIRF(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_SIRF(*this, params[instance], state[instance], port);
         }
 #endif
 #if AP_GPS_ERB_ENABLED
         if ((type == GPS_TYPE_AUTO || type == GPS_TYPE_ERB) &&
                  AP_GPS_ERB::_detect(dstate->erb_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_ERB(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_ERB(*this, params[instance], state[instance], port);
         }
 #endif // AP_GPS_ERB_ENABLED
 #if AP_GPS_NMEA_ENABLED
@@ -809,7 +808,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #endif
                     type == GPS_TYPE_ALLYSTAR) &&
                    AP_GPS_NMEA::_detect(dstate->nmea_detect_state, data)) {
-            return NEW_NOTHROW AP_GPS_NMEA(*this, params[instance], state[instance], _port[instance]);
+            return NEW_NOTHROW AP_GPS_NMEA(*this, params[instance], state[instance], port);
         }
 #endif //AP_GPS_NMEA_ENABLED
     }
@@ -817,12 +816,12 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
     return nullptr;
 }
 
-AP_GPS::GPS_Status AP_GPS::highest_supported_status(uint8_t instance) const
+AP_GPS_FixType AP_GPS::highest_supported_status(uint8_t instance) const
 {
     if (instance < GPS_MAX_RECEIVERS && drivers[instance] != nullptr) {
         return drivers[instance]->highest_supported_status();
     }
-    return AP_GPS::GPS_OK_FIX_3D;
+    return AP_GPS_FixType::FIX_3D;
 }
 
 #if HAL_LOGGING_ENABLED
@@ -855,7 +854,7 @@ void AP_GPS::update_instance(uint8_t instance)
     }
     if (type == GPS_TYPE_NONE) {
         // not enabled
-        state[instance].status = NO_GPS;
+        state[instance].status = AP_GPS_FixType::NO_GPS;
         state[instance].hdop = GPS_UNKNOWN_DOP;
         state[instance].vdop = GPS_UNKNOWN_DOP;
         return;
@@ -897,13 +896,13 @@ void AP_GPS::update_instance(uint8_t instance)
                 type == GPS_TYPE_UAVCAN ||
                 type == GPS_TYPE_UAVCAN_RTK_BASE ||
                 type == GPS_TYPE_UAVCAN_RTK_ROVER) {
-                state[instance].status = NO_FIX;
+                state[instance].status = AP_GPS_FixType::NONE;
             } else {
                 // free the driver before we run the next detection, so we
                 // don't end up with two allocated at any time
                 delete drivers[instance];
                 drivers[instance] = nullptr;
-                state[instance].status = NO_GPS;
+                state[instance].status = AP_GPS_FixType::NO_GPS;
             }
             // log this data as a "flag" that the GPS is no longer
             // valid (see PR#8144)
@@ -928,7 +927,7 @@ void AP_GPS::update_instance(uint8_t instance)
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
         // if GPS disabled for flight testing then don't update fix timing value
-        if (state[instance].status >= GPS_OK_FIX_2D && !_force_disable_gps) {
+        if (state[instance].status >= AP_GPS_FixType::FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
         }
 
@@ -982,7 +981,7 @@ void AP_GPS::update_instance(uint8_t instance)
 #endif
 
 #if AP_RTC_ENABLED
-    if (state[instance].status >= GPS_OK_FIX_3D) {
+    if (state[instance].status >= AP_GPS_FixType::FIX_3D) {
         const uint64_t now = time_epoch_usec(instance);
         if (now != 0) {
             AP::rtc().set_utc_usec(now, AP_RTC::SOURCE_GPS);
@@ -1139,7 +1138,7 @@ void AP_GPS::update_primary(void)
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         if (is_rtk_base(i) &&
             is_rtk_rover(i^1) &&
-            ((state[i].status >= GPS_OK_FIX_3D) || (state[i].status >= state[i^1].status))) {
+            ((state[i].status >= AP_GPS_FixType::FIX_3D) || (state[i].status >= state[i^1].status))) {
             if (primary_instance != i) {
                 _last_instance_swap_ms = now;
                 primary_instance = i;
@@ -1169,7 +1168,7 @@ void AP_GPS::update_primary(void)
                 // don't switch to a GPS that has not updated in 400ms
                 continue;
             }
-            if (state[i].status < GPS_OK_FIX_3D) {
+            if (state[i].status < AP_GPS_FixType::FIX_3D) {
                 // don't use a GPS without 3D fix
                 continue;
             }
@@ -1188,7 +1187,7 @@ void AP_GPS::update_primary(void)
 #endif  // AP_GPS_BLENDED_ENABLED
 
     // Use primary if 3D fix or better
-    if (((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_PRIMARY_IF_3D_FIX) && (state[primary_param].status >= GPS_OK_FIX_3D)) {
+    if (((GPSAutoSwitch)_auto_switch.get() == GPSAutoSwitch::USE_PRIMARY_IF_3D_FIX) && (state[primary_param].status >= AP_GPS_FixType::FIX_3D)) {
         // Primary GPS has a least a 3D fix, switch to it if necessary
         if (primary_instance != primary_param) {
             primary_instance = primary_param;
@@ -1281,7 +1280,7 @@ void AP_GPS::handle_msp(const MSP::msp_gps_data_message_t &pkt)
 }
 #endif // HAL_MSP_GPS_ENABLED
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 {
@@ -1297,10 +1296,15 @@ bool AP_GPS::get_first_external_instance(uint8_t& instance) const
 void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, const uint8_t instance)
 {
     if (get_type(instance) == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (pkt.longitude == 0 && pkt.latitude == 0) {
+        AP_HAL::panic("Invalid location passed to AP_GPS::handle_external");
+    }
+#endif
         drivers[instance]->handle_external(pkt);
     }
 }
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 
 /**
    Lock a GPS port, preventing the GPS driver from using it. This can
@@ -1367,8 +1371,14 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
     return yaw_cd;
 }
 
+#if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
+    // Only send if enabled
+    if (get_type(0) == GPS_TYPE_NONE) {
+        return;
+    }
+
     const Location &loc = location(0);
     float hacc = 0.0f;
     float vacc = 0.0f;
@@ -1384,7 +1394,7 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
     mavlink_msg_gps_raw_int_send(
         chan,
         last_fix_time_ms(0)*(uint64_t)1000,
-        status(0),
+        (uint8_t)status(0),
         loc.lat,        // in 1E7 degrees
         loc.lng,        // in 1E7 degrees
         loc.alt * 10UL, // in mm
@@ -1400,8 +1410,9 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
         0,                    // TODO one-sigma heading accuracy standard deviation
         gps_yaw_cdeg(0));
 }
+#endif  // AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 
-#if GPS_MAX_RECEIVERS > 1
+#if AP_GPS_GPS2_RAW_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
     // always send the message if 2nd GPS is configured
@@ -1424,7 +1435,7 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
     mavlink_msg_gps2_raw_send(
         chan,
         last_fix_time_ms(1)*(uint64_t)1000,
-        status(1),
+        (uint8_t)status(1),
         loc.lat,
         loc.lng,
         loc.alt * 10UL,
@@ -1442,9 +1453,9 @@ void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
         sacc * 1000,          // one-sigma standard deviation in mm/s
         0);                    // TODO one-sigma heading accuracy standard deviation
 }
-#endif // GPS_MAX_RECEIVERS
+#endif // AP_GPS_GPS2_RAW_SENDING_ENABLED
 
-#if HAL_GCS_ENABLED
+#if AP_GPS_GPS_RTK_SENDING_ENABLED || AP_GPS_GPS2_RTK_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_rtk(mavlink_channel_t chan, uint8_t inst)
 {
     if (inst >= GPS_MAX_RECEIVERS) {
@@ -1617,7 +1628,7 @@ void AP_GPS::handle_gps_rtcm_data(mavlink_channel_t chan, const mavlink_message_
  */
 bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm_data_t &pkt)
 {
-    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+    if (static_cast<int>(chan) >= MAVLINK_COMM_NUM_BUFFERS) {
         return false;
     }
     if (rtcm.parsers[chan] == nullptr) {
@@ -1638,6 +1649,13 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
             const uint32_t crc = crc_crc32(0, buf, len);
 
 #if HAL_LOGGING_ENABLED
+// @LoggerMessage: RTCM
+// @Description: GPS atmospheric perturbation data
+// @Field: TimeUS: Time since system startup
+// @Field: Chan: mavlink channel number this data was received on
+// @Field: RTCMId: ID field from RTCM packet
+// @Field: Len: RTCM packet length
+// @Field: CRC: calculated crc32 for the packet
             AP::logger().WriteStreaming("RTCM", "TimeUS,Chan,RTCMId,Len,CRC", "s#---", "F----", "QBHHI",
                                         AP_HAL::micros64(),
                                         uint8_t(chan),
@@ -1674,7 +1692,7 @@ bool AP_GPS::parse_rtcm_injection(mavlink_channel_t chan, const mavlink_gps_rtcm
 void AP_GPS::Write_AP_Logger_Log_Startup_messages()
 {
     for (uint8_t instance=0; instance<num_instances; instance++) {
-        if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+        if (drivers[instance] == nullptr || state[instance].status == AP_GPS_FixType::NO_GPS) {
             continue;
         }
         drivers[instance]->Write_AP_Logger_Log_Startup_messages();
@@ -1707,7 +1725,7 @@ bool AP_GPS::get_lag(uint8_t instance, float &lag_sec) const
         lag_sec = 0.001f * (float)params[instance].delay_ms;
         // the user is always right !!
         return true;
-    } else if (drivers[instance] == nullptr || state[instance].status == NO_GPS) {
+    } else if (drivers[instance] == nullptr || state[instance].status == AP_GPS_FixType::NO_GPS) {
         // no GPS was detected in this instance so return the worst possible lag term
         const auto type = params[instance].type;
         if (type == GPS_TYPE_NONE) {
@@ -1908,11 +1926,14 @@ void AP_GPS::Write_GPS(uint8_t i)
 
     /* write auxiliary accuracy information as well */
     float hacc = 0, vacc = 0, sacc = 0;
+    int32_t alt_ellipsoid = INT32_MIN;
     float undulation = 0;
     horizontal_accuracy(i, hacc);
     vertical_accuracy(i, vacc);
     speed_accuracy(i, sacc);
-    get_undulation(i, undulation);
+    if (get_undulation(i, undulation)) {
+        alt_ellipsoid = loc.alt - (undulation*100);
+    }
     struct log_GPA pkt2{
         LOG_PACKET_HEADER_INIT(LOG_GPA_MSG),
         time_us       : time_us,
@@ -1925,7 +1946,7 @@ void AP_GPS::Write_GPS(uint8_t i)
         have_vv       : (uint8_t)have_vertical_velocity(i),
         sample_ms     : last_message_time_ms(i),
         delta_ms      : last_message_delta_time_ms(i),
-        undulation    : undulation,
+        alt_ellipsoid : alt_ellipsoid,
         rtcm_fragments_used: rtcm_stats.fragments_used,
         rtcm_fragments_discarded: rtcm_stats.fragments_discarded
     };
@@ -2002,27 +2023,32 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Values: 0:None,1:AUTO,2:uBlox,5:NMEA,6:SiRF,7:HIL,8:SwiftNav,9:DroneCAN,10:SBF,11:GSOF,13:ERB,14:MAV,15:NOVA,16:HemisphereNMEA,17:uBlox-MovingBaseline-Base,18:uBlox-MovingBaseline-Rover,19:MSP,20:AllyStar,21:ExternalAHRS,22:DroneCAN-MovingBaseline-Base,23:DroneCAN-MovingBaseline-Rover,24:UnicoreNMEA,25:UnicoreMovingBaselineNMEA,26:SBF-DualAntenna
     // @RebootRequired: True
     // @User: Advanced
+    // @Legacy: only included here so GCSs running stable can get the description.  Omitted in the Wiki.
 
     // @Param: _TYPE2
     // @CopyFieldsFrom: GPS_TYPE
     // @DisplayName: 2nd GPS type.Renamed in 4.6 to GPS2_TYPE
     // @Description: GPS type of 2nd GPS
+    // @Legacy: 4.5 param
 
     // @Param: _GNSS_MODE
     // @DisplayName: GNSS system configuration
     // @Description: Bitmask for what GNSS system to use on the first GPS (all unchecked or zero to leave GPS as configured).Renamed in 4.6 and later to GPS1_GNSS_MODE.
+    // @Legacy: 4.5 param
     // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
 
     // @Param: _GNSS_MODE2
     // @DisplayName: GNSS system configuration.
     // @Description: Bitmask for what GNSS system to use on the second GPS (all unchecked or zero to leave GPS as configured). Renamed in 4.6 and later to GPS2_GNSS_MODE
+    // @Legacy: 4.5 param
     // @Bitmask: 0:GPS,1:SBAS,2:Galileo,3:Beidou,4:IMES,5:QZSS,6:GLONASS
     // @User: Advanced
 
     // @Param: _RATE_MS
     // @DisplayName: GPS update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS1_RATE_MS
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -2031,6 +2057,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _RATE_MS2
     // @DisplayName: GPS 2 update rate in milliseconds
     // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS2_RATE_MS
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
@@ -2039,6 +2066,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS1_X
     // @DisplayName: Antenna X position offset
     // @Description: X position of the first GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_X.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2047,6 +2075,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS1_Y
     // @DisplayName: Antenna Y position offset
     // @Description: Y position of the first GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_Y.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2055,6 +2084,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS1_Z
     // @DisplayName: Antenna Z position offset
     // @Description: Z position of the first GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS1_POS_Z.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2063,6 +2093,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS2_X
     // @DisplayName: Antenna X position offset
     // @Description: X position of the second GPS antenna in body frame. Positive X is forward of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_X.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2071,6 +2102,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS2_Y
     // @DisplayName: Antenna Y position offset
     // @Description: Y position of the second GPS antenna in body frame. Positive Y is to the right of the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_Y.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2079,6 +2111,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _POS2_Z
     // @DisplayName: Antenna Z position offset
     // @Description: Z position of the second GPS antenna in body frame. Positive Z is down from the origin. Use antenna phase centroid location if provided by the manufacturer.Renamed in 4.6 and later to GPS2_POS_Z.
+    // @Legacy: 4.5 param
     // @Units: m
     // @Range: -5 5
     // @Increment: 0.01
@@ -2087,6 +2120,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _DELAY_MS
     // @DisplayName: GPS delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.Renamed in 4.6 and later to GPS1_DELAY_MS.
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
@@ -2095,6 +2129,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _DELAY_MS2
     // @DisplayName: GPS 2 delay in milliseconds
     // @Description: Controls the amount of GPS  measurement delay that the autopilot compensates for. Set to zero to use the default delay for the detected GPS type.Renamed in 4.6 and later to GPS2_DELAY_MS.
+    // @Legacy: 4.5 param
     // @Units: ms
     // @Range: 0 250
     // @User: Advanced
@@ -2103,6 +2138,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _COM_PORT
     // @DisplayName: GPS physical COM port
     // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS,Renamed in 4.6 and later to GPS1_COM_PORT.
+    // @Legacy: 4.5 param
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
@@ -2112,6 +2148,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     // @Param: _COM_PORT2
     // @DisplayName: GPS physical COM port
     // @Description: The physical COM port on the connected device, currently only applies to SBF and GSOF GPS.Renamed in 4.6 and later to GPS1_COM_PORT.
+    // @Legacy: 4.5 param
     // @Range: 0 10
     // @Increment: 1
     // @User: Advanced
@@ -2119,19 +2156,23 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
 
     // @Group: _MB1_
     // @Path: MovingBase.cpp
+    // @Legacy: 4.5 param
 
     // @Group: _MB2_
     // @Path: MovingBase.cpp
+    // @Legacy: 4.5 param
 
     // @Param: _CAN_NODEID1
     // @DisplayName: GPS Node ID 1
     // @Description: GPS Node id for first-discovered GPS.Renamed in 4.6 and later to GPS1_CAN_NODEID.
+    // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
 
     // @Param: _CAN_NODEID2
     // @DisplayName: GPS Node ID 2
     // @Description: GPS Node id for second-discovered GPS.Renamed in 4.6 and later to GPS2_CAN_NODEID.
+    // @Legacy: 4.5 param
     // @ReadOnly: True
     // @User: Advanced
 

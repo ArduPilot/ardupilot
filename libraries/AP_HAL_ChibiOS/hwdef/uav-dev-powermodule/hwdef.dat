@@ -1,0 +1,80 @@
+# hw definition for UAV-DEV GmbH powermodule
+
+# MCU class and specific type
+MCU STM32G4xx STM32G474xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_UAV-DEV-PM-G4
+
+# define node name
+define CAN_APP_NODE_NAME "com.uav-dev.powermodule"
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# define flash memory
+FLASH_SIZE_KB 512
+FLASH_RESERVE_START_KB 36
+STORAGE_FLASH_PAGE 16
+define HAL_STORAGE_SIZE 800
+define AP_PARAM_MAX_EMBEDDED_PARAM 256
+
+# use DMA
+DMA_NOSHARE *
+
+# LEDs
+PC13 LED_R OUTPUT OPENDRAIN HIGH GPIO(0)
+PC14 LED_G OUTPUT OPENDRAIN HIGH GPIO(1)
+PC15 LED   OUTPUT OPENDRAIN HIGH GPIO(2)
+
+# order of UARTs
+SERIAL_ORDER USART1
+
+# buffer of UARTs
+define SERIAL_BUFFERS_SIZE 1024
+
+# USART1, debug
+STDOUT_SERIAL SD1
+STDOUT_BAUDRATE 57600
+PB6 USART1_TX USART1 NODMA
+PB7 USART1_RX USART1 NODMA
+
+# CAN bus
+CANFD_SUPPORTED 8
+
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PB4  GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+PB5  GPIO_CAN2_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# I2C busgit 
+I2C_ORDER I2C2
+define HAL_I2C_INTERNAL_MASK 1
+PA8 I2C2_SDA I2C2
+PA9 I2C2_SCL I2C2
+
+# GPIOs
+
+# enable battery monitor
+define AP_PERIPH_BATTERY_ENABLED 1
+define AP_BATTERY_INA2XX_ENABLED 1
+define HAL_BATT_MONITOR_DEFAULT 21
+define AP_PERIPH_BATTERY_MODEL_NAME "uav-dev-powermodule"
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
+
+# disable unused features
+define HAL_NO_RCOUT_THREAD
+define HAL_USE_ADC FALSE

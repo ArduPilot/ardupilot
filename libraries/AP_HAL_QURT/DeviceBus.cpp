@@ -16,7 +16,6 @@
 #include "DeviceBus.h"
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/OwnPtr.h>
 #include <stdio.h>
 
 #include "Scheduler.h"
@@ -27,7 +26,8 @@ using namespace QURT;
 extern const AP_HAL::HAL& hal;
 
 DeviceBus::DeviceBus(AP_HAL::Scheduler::priority_base _thread_priority) :
-    thread_priority(_thread_priority), semaphore()
+    semaphore(),
+    thread_priority(_thread_priority)
 {
 }
 

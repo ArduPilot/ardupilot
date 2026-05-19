@@ -8,6 +8,7 @@
 
 #include <AP_Networking/AP_Networking.h>
 #include <AP_Networking/AP_Networking_ChibiOS.h>
+#include <AP_Networking/AP_Networking_CAN.h>
 
 #include <lwip/ip_addr.h>
 #include <lwip/tcpip.h>
@@ -29,6 +30,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
+#include <AP_HAL_ChibiOS/CANIface.h>
 
 #ifndef AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR
 #define AP_NETWORKING_BOOTLOADER_DEFAULT_MAC_ADDR "C2:AF:51:03:CF:46"
@@ -59,6 +61,8 @@
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
+static AP_Networking_CAN mcast_server;
+
 void BL_Network::link_up_cb(void *p)
 {
     auto *driver = (BL_Network *)p;
@@ -67,6 +71,9 @@ void BL_Network::link_up_cb(void *p)
 #endif
     char ipstr[IP4_STR_LEN];
     can_printf("IP %s", SocketAPM::inet_addr_to_str(ntohl(driver->thisif->ip_addr.addr), ipstr, sizeof(ipstr)));
+
+    // start mcast CAN server
+    mcast_server.start((1U<<HAL_NUM_CAN_IFACES)-1);
 }
 
 void BL_Network::link_down_cb(void *p)
@@ -456,7 +463,11 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     }
     flash_write_flush();
     flash_set_keep_unlocked(false);
+#if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
+#else
+    const auto ok = check_fw_result_t::CHECK_FW_OK;
+#endif
     if (ok == check_fw_result_t::CHECK_FW_OK) {
         need_launch = true;
         status_printf("Flash done: OK");
@@ -621,9 +632,9 @@ void BL_Network::init()
 }
 
 /*
-  save IP address from AP_Periph
+  restore IP address stashed away by AP_Periph
  */
-void BL_Network::save_comms_ip(void)
+void BL_Network::restore_comms_ip(void)
 {
     struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
     if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC && comms->ip != 0) {

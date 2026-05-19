@@ -67,10 +67,10 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
     }
 
     // apply RC skid steer mixing
-    switch ((enum pilot_steer_type_t)g.pilot_steer_type.get())
+    switch ((PilotSteerType)g.pilot_steer_type.get())
     {
-        case PILOT_STEER_TYPE_DEFAULT:
-        case PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING:
+        case PilotSteerType::DEFAULT:
+        case PilotSteerType::DIR_REVERSED_WHEN_REVERSING:
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
             throttle_out = rover.channel_throttle->get_control_in();
@@ -79,7 +79,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
             break;
         }
 
-        case PILOT_STEER_TYPE_TWO_PADDLES: {
+        case PilotSteerType::TWO_PADDLES: {
             // convert the two radio_in values from skid steering values
             // left paddle from steering input channel, right paddle from throttle input channel
             // steering = left-paddle - right-paddle
@@ -92,7 +92,7 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
             break;
         }
 
-        case PILOT_STEER_TYPE_DIR_UNCHANGED_WHEN_REVERSING: {
+        case PilotSteerType::DIR_UNCHANGED_WHEN_REVERSING: {
             throttle_out = rover.channel_throttle->get_control_in();
             steering_out = rover.channel_steer->get_control_in();
             break;
@@ -123,8 +123,8 @@ void Mode::get_pilot_desired_steering_and_throttle(float &steering_out, float &t
     // check for special case of input and output throttle being in opposite directions
     float throttle_out_limited = g2.motors.get_slew_limited_throttle(throttle_out, rover.G_Dt);
     if ((is_negative(throttle_out) != is_negative(throttle_out_limited)) &&
-        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
-         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        (g.pilot_steer_type == PilotSteerType::DEFAULT ||
+         g.pilot_steer_type == PilotSteerType::DIR_REVERSED_WHEN_REVERSING)) {
         steering_out *= -1;
     }
     throttle_out = throttle_out_limited;
@@ -139,8 +139,8 @@ void Mode::get_pilot_desired_steering_and_speed(float &steering_out, float &spee
     // check for special case of input and output throttle being in opposite directions
     float speed_out_limited = g2.attitude_control.get_desired_speed_accel_limited(speed_out, rover.G_Dt);
     if ((is_negative(speed_out) != is_negative(speed_out_limited)) &&
-        ((g.pilot_steer_type == PILOT_STEER_TYPE_DEFAULT) ||
-         (g.pilot_steer_type == PILOT_STEER_TYPE_DIR_REVERSED_WHEN_REVERSING))) {
+        (g.pilot_steer_type == PilotSteerType::DEFAULT ||
+         g.pilot_steer_type == PilotSteerType::DIR_REVERSED_WHEN_REVERSING)) {
         steering_out *= -1;
     }
     speed_out = speed_out_limited;
@@ -167,7 +167,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     float desired_throttle = constrain_float(rover.channel_throttle->norm_input_dz(), -1.0f, 1.0f);
 
     // handle two paddle input
-    if ((enum pilot_steer_type_t)g.pilot_steer_type.get() == PILOT_STEER_TYPE_TWO_PADDLES) {
+    if (g.pilot_steer_type == PilotSteerType::TWO_PADDLES) {
         const float left_paddle = desired_steering;
         const float right_paddle = desired_throttle;
         desired_steering = (left_paddle - right_paddle) * 0.5f;
@@ -175,7 +175,7 @@ void Mode::get_pilot_desired_heading_and_speed(float &heading_out, float &speed_
     }
 
     // calculate angle of input stick vector
-    heading_out = wrap_360_cd(atan2f(desired_steering, desired_throttle) * DEGX100);
+    heading_out = wrap_360_cd(rad_to_cd(atan2f(desired_steering, desired_throttle)));
 
     // calculate throttle using magnitude of input stick vector
     const float throttle = MIN(safe_sqrt(sq(desired_throttle) + sq(desired_steering)), 1.0f);
@@ -228,12 +228,12 @@ float Mode::nav_bearing() const
 }
 
 // return cross track error (i.e. vehicle's distance from the line between waypoints)
-float Mode::crosstrack_error() const
+float Mode::crosstrack_error_m() const
 {
     if (!is_autopilot_mode()) {
         return 0.0f;
     }
-    return g2.wp_nav.crosstrack_error();
+    return g2.wp_nav.crosstrack_error_m();
 }
 
 // return desired lateral acceleration
@@ -292,7 +292,7 @@ void Mode::calc_throttle(float target_speed, bool avoidance_enabled)
 #if AP_AVOIDANCE_ENABLED
     // apply object avoidance to desired speed using half vehicle's maximum deceleration
     if (avoidance_enabled) {
-        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.get_yaw(), target_speed, rover.G_Dt);
+        g2.avoid.adjust_speed(0.0f, 0.5f * attitude_control.get_decel_max(), ahrs.get_yaw_rad(), target_speed, rover.G_Dt);
         if (g2.sailboat.tack_enabled() && g2.avoid.limits_active()) {
             // we are a sailboat trying to avoid fence, try a tack
             if (rover.control_mode != &rover.mode_acro) {
@@ -377,8 +377,8 @@ float Mode::calc_speed_max(float cruise_speed, float cruise_throttle) const
         speed_max = (1.0f / cruise_throttle) * cruise_speed;
     }
 
-    // constrain to 30m/s (108km/h) and return
-    return constrain_float(speed_max, 0.0f, 30.0f);
+    // constrain to 100m/s and return
+    return constrain_float(speed_max, 0.0f, 100.0f);
 }
 
 // calculate pilot input to nudge speed up or down

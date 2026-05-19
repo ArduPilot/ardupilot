@@ -32,7 +32,7 @@ MSPCommandResult AP_MSP_Telem_DisplayPort::msp_process_out_fc_variant(sbuf_t *ds
         return MSP_RESULT_ERROR;
     }
     // do we use backend specific symbols table?
-    if (msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS)) {
+    if (msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS) && !msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS)) {
         sbuf_write_data(dst, BETAFLIGHT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);
     } else {
         sbuf_write_data(dst, ARDUPILOT_IDENTIFIER, FLIGHT_CONTROLLER_IDENTIFIER_LENGTH);

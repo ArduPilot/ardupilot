@@ -19,18 +19,6 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     return true;
 }
 
-bool AP_AHRS_SIM::get_velocity_NED(Vector3f &vec) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-    vec = Vector3f(fdm.speedN, fdm.speedE, fdm.speedD);
-
-    return true;
-}
-
 bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
 {
     if (_sitl == nullptr) {
@@ -41,7 +29,7 @@ bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -52,21 +40,9 @@ bool AP_AHRS_SIM::airspeed_estimate(float &airspeed_ret) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_estimate(uint8_t index, float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
 {
-    return airspeed_estimate(airspeed_ret);
-}
-
-bool AP_AHRS_SIM::get_quaternion(Quaternion &quat) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-    quat = fdm.quaternion;
-
-    return true;
+    return airspeed_EAS(airspeed_ret);
 }
 
 Vector2f AP_AHRS_SIM::groundspeed_vector(void)
@@ -80,17 +56,6 @@ Vector2f AP_AHRS_SIM::groundspeed_vector(void)
     return Vector2f(fdm.speedN, fdm.speedE);
 }
 
-bool AP_AHRS_SIM::get_vert_pos_rate_D(float &velocity) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    velocity = _sitl->state.speedD;
-
-    return true;
-}
-
 bool AP_AHRS_SIM::get_hagl(float &height) const
 {
     if (_sitl == nullptr) {
@@ -102,7 +67,7 @@ bool AP_AHRS_SIM::get_hagl(float &height) const
     return true;
 }
 
-bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3f &vec) const
+bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3p &vec) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -114,27 +79,27 @@ bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3f &vec) const
         return false;
     }
 
-    const Vector2f diff2d = orgn.get_distance_NE(loc);
+    const Vector2p diff2d = orgn.get_distance_NE_postype(loc);
     const struct SITL::sitl_fdm &fdm = _sitl->state;
-    vec = Vector3f(diff2d.x, diff2d.y,
+    vec = Vector3p(diff2d.x, diff2d.y,
                    -(fdm.altitude - orgn.alt*0.01f));
 
     return true;
 }
 
-bool AP_AHRS_SIM::get_relative_position_NE_origin(Vector2f &posNE) const
+bool AP_AHRS_SIM::get_relative_position_NE_origin(Vector2p &posNE) const
 {
     Location loc, orgn;
     if (!get_location(loc) ||
         !get_origin(orgn)) {
         return false;
     }
-    posNE = orgn.get_distance_NE(loc);
+    posNE = orgn.get_distance_NE_postype(loc);
 
     return true;
 }
 
-bool AP_AHRS_SIM::get_relative_position_D_origin(float &posD) const
+bool AP_AHRS_SIM::get_relative_position_D_origin(postype_t &posD) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -170,13 +135,6 @@ void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGain
     // same as EKF2 for no optical flow
     ekfGndSpdLimit = 400.0f;
     ekfNavVelGainScaler = 1.0f;
-}
-
-bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    magOffsets.zero();
-
-    return true;
 }
 
 void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
@@ -245,15 +203,29 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     const struct SITL::sitl_fdm &fdm = _sitl->state;
     const AP_InertialSensor &_ins = AP::ins();
 
-    fdm.quaternion.rotation_matrix(results.dcm_matrix);
-    results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
-    results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
+    results.attitude_valid = true;
+
+    // populate vehicle body attitude:
+    results.quaternion = fdm.quaternion;
+    results.quaternion.rotate(-AP::ahrs().get_trim());
+
+    // update derived attitude values:
+    results.quaternion.rotation_matrix(results.dcm_matrix);
+    results.quaternion.to_euler(results.roll_rad, results.pitch_rad, results.yaw_rad);
 
     results.gyro_estimate = _ins.get_gyro();
     results.gyro_drift.zero();
 
     const Vector3f &accel = _ins.get_accel();
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
+
+    results.velocity_NED = Vector3f(fdm.speedN, fdm.speedE, fdm.speedD);
+    results.velocity_NED_valid = true;
+
+    // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
+    // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
+    results.vert_pos_rate_D_valid = true;
+    results.vert_pos_rate_D = _sitl->state.speedD;
 
     results.location_valid = get_location(results.location);
 

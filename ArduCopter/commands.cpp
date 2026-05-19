@@ -25,12 +25,12 @@ void Copter::set_home_to_current_location_inflight() {
     Location temp_loc;
     Location ekf_origin;
     if (ahrs.get_location(temp_loc) && ahrs.get_origin(ekf_origin)) {
-        temp_loc.alt = ekf_origin.alt;
+        temp_loc.copy_alt_from(ekf_origin);
         if (!set_home(temp_loc, false)) {
             return;
         }
         // we have successfully set AHRS home, set it for SmartRTL
-#if MODE_SMARTRTL_ENABLED == ENABLED
+#if MODE_SMARTRTL_ENABLED
         g2.smart_rtl.set_home(true);
 #endif
     }
@@ -45,7 +45,7 @@ bool Copter::set_home_to_current_location(bool lock) {
             return false;
         }
         // we have successfully set AHRS home, set it for SmartRTL
-#if MODE_SMARTRTL_ENABLED == ENABLED
+#if MODE_SMARTRTL_ENABLED
         g2.smart_rtl.set_home(true);
 #endif
         return true;

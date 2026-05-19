@@ -15,7 +15,7 @@
 
 #include "AP_GPS_SITL.h"
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
 #include <ctype.h>
 #include <stdint.h>
@@ -83,7 +83,7 @@ bool AP_GPS_SITL::read(void)
 
     state.time_week = time_week;
     state.time_week_ms = time_week_ms;
-    state.status = AP_GPS::GPS_OK_FIX_3D;
+    state.status = AP_GPS_FixType::FIX_3D;
     state.num_sats = 15;
 
     state.location = Location{
@@ -117,4 +117,4 @@ bool AP_GPS_SITL::read(void)
     return true;
 }
 
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED

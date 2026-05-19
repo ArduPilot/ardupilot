@@ -232,6 +232,7 @@ bool AP_Parachute::arming_checks(size_t buflen, char *buffer) const
             }
 #else
             hal.util->snprintf(buffer, buflen, "AP_Relay not available");
+            return false;
 #endif
         }
 

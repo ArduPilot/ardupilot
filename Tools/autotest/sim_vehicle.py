@@ -9,28 +9,26 @@ based on sim_vehicle.sh by Andrew Tridgell, October 2011
 AP_FLAKE8_CLEAN
 
 """
-from __future__ import print_function
 
 import atexit
+import binascii
 import datetime
 import errno
+import math
 import optparse
 import os
 import os.path
 import re
+import shlex
 import signal
 import subprocess
 import sys
 import tempfile
 import textwrap
 import time
-import shlex
-import binascii
-import math
 
 from pysim import util
 from pysim import vehicleinfo
-
 
 # List of open terminal windows for macosx
 windowID = []
@@ -175,7 +173,7 @@ def cygwin_pidof(proc_name):
         if cmd == proc_name:
             try:
                 pid = int(line_split[0].strip())
-            except Exception:
+            except ValueError:
                 pid = int(line_split[1].strip())
             if pid not in pids:
                 pids.append(pid)
@@ -192,7 +190,7 @@ def under_macos():
 
 
 def under_vagrant():
-    return os.path.isfile("/ardupilot.vagrant")
+    return os.path.isdir("/vagrant")
 
 
 def under_wsl2():
@@ -201,7 +199,7 @@ def under_wsl2():
 
 
 def wsl2_host_ip():
-    if not under_wsl2():
+    if not under_wsl2() or cmd_opts.no_wsl2_network:
         return None
 
     pipe = subprocess.Popen("ip route show default | awk '{print $3}'",
@@ -257,11 +255,6 @@ def kill_tasks_pkill(victims):
     for victim in victims:  # pkill takes a single pattern, so iterate
         cmd = ["pkill", victim[:15]]  # pkill matches only first 15 characters
         run_cmd_blocking("pkill", cmd, quiet=True)
-
-
-class BobException(Exception):
-    """Handle Bob's Exceptions"""
-    pass
 
 
 def kill_tasks():
@@ -322,7 +315,7 @@ def kill_tasks():
             kill_tasks_psutil(victim_names)
         except ImportError:
             kill_tasks_pkill(victim_names)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         progress("kill_tasks failed: {}".format(str(e)))
 
 
@@ -338,6 +331,181 @@ def wait_unlimited():
 
 
 vinfo = vehicleinfo.VehicleInfo()
+
+
+def run_gui(cmd_opts):
+    try:
+        import wx
+    except ImportError:
+        progress("Error: wxPython could not be imported. GUI cannot start.")
+        sys.exit(1)
+
+    app = wx.App(False)
+    config = wx.Config("ArduPilotSITL")
+
+    locations = []
+    default_location = "CMAC"
+    loc_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'locations.txt')
+
+    if os.path.exists(loc_file):
+        with open(loc_file, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    parts = line.split('=')
+                    if len(parts) > 0:
+                        locations.append(parts[0].strip())
+
+    locations.sort()
+    if default_location not in locations:
+        locations.insert(0, default_location)
+
+    target_location = cmd_opts.location or config.Read("last_location", default_location)
+
+    default_vehicle = cmd_opts.vehicle
+    if default_vehicle and default_vehicle in vinfo.options:
+        available_vehicles = [default_vehicle]
+        if default_vehicle == 'ArduCopter' and 'Helicopter' in vinfo.options:
+            available_vehicles.append('Helicopter')
+    else:
+        available_vehicles = list(vinfo.options.keys())
+
+    frame = wx.Frame(None, title="ArduPilot SITL Launcher")
+    panel = wx.Panel(frame)
+    vbox = wx.BoxSizer(wx.VERTICAL)
+
+    vbox.Add(wx.StaticText(panel, label="Select Vehicle:"), flag=wx.LEFT | wx.TOP, border=10)
+    vehicle_combo = wx.ComboBox(panel, choices=available_vehicles, style=wx.CB_READONLY)
+    if available_vehicles:
+        if len(available_vehicles) == 1:
+            vehicle_combo.SetSelection(0)
+        else:
+            saved_vehicle = config.Read("last_vehicle", "")
+            if saved_vehicle and saved_vehicle in available_vehicles:
+                vehicle_combo.SetStringSelection(saved_vehicle)
+            else:
+                vehicle_combo.SetSelection(0)
+
+    vbox.Add(vehicle_combo, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+
+    vbox.Add(wx.StaticText(panel, label="Starting Location (-L):"), flag=wx.LEFT | wx.TOP, border=10)
+    location_combo = wx.ComboBox(panel, choices=locations, style=wx.CB_DROPDOWN)
+    location_combo.AutoComplete(locations)
+
+    if target_location in locations:
+        location_combo.SetSelection(locations.index(target_location))
+    else:
+        location_combo.SetValue(target_location)
+
+    vbox.Add(location_combo, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+
+    vbox.Add(wx.StaticText(panel, label="Aircraft Scenario (--aircraft):"), flag=wx.LEFT | wx.TOP, border=10)
+    history_str = config.Read("aircraft_history", "")
+    aircraft_history = [h for h in history_str.split(',') if h]
+
+    aircraft_combo = wx.ComboBox(panel, choices=aircraft_history, style=wx.CB_DROPDOWN)
+    aircraft_combo.AutoComplete(aircraft_history)
+    if cmd_opts.aircraft:
+        aircraft_combo.SetValue(cmd_opts.aircraft)
+    elif aircraft_history:
+        aircraft_combo.SetValue(aircraft_history[0])
+
+    vbox.Add(aircraft_combo, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+
+    options_sizer = wx.BoxSizer(wx.VERTICAL)
+
+    chk_mavproxy = wx.CheckBox(panel, label="Enable MAVProxy")
+    mavproxy_default = config.ReadBool("no_mavproxy", False)
+    should_enable = not cmd_opts.no_mavproxy and (cmd_opts.map or cmd_opts.console or not mavproxy_default)
+    chk_mavproxy.SetValue(should_enable)
+
+    chk_map = wx.CheckBox(panel, label="Enable MAVProxy map")
+    chk_map.SetValue(cmd_opts.map or config.ReadBool("map", True))
+
+    chk_console = wx.CheckBox(panel, label="Enable MAVProxy console")
+    chk_console.SetValue(cmd_opts.console or config.ReadBool("console", True))
+
+    chk_osd = wx.CheckBox(panel, label="Enable OSD")
+    chk_osd.SetValue(getattr(cmd_opts, 'OSD', False) or config.ReadBool("osd", False))
+
+    chk_wipe = wx.CheckBox(panel, label="Reset to Default Parameters (-w)")
+    chk_wipe.SetValue(cmd_opts.wipe_eeprom or config.ReadBool("wipe", False))
+
+    def on_mavproxy(event):
+        enabled = chk_mavproxy.GetValue()
+        chk_map.Enable(enabled)
+        chk_console.Enable(enabled)
+        if not enabled:
+            chk_map.SetValue(False)
+            chk_console.SetValue(False)
+        if event:
+            event.Skip()
+
+    chk_mavproxy.Bind(wx.EVT_CHECKBOX, on_mavproxy)
+    on_mavproxy(None)
+
+    options_sizer.Add(chk_mavproxy, flag=wx.ALL, border=5)
+    options_sizer.Add(chk_map, flag=wx.LEFT, border=25)
+    options_sizer.Add(chk_console, flag=wx.LEFT, border=25)
+    options_sizer.Add(chk_osd, flag=wx.ALL, border=5)
+    options_sizer.Add(wx.StaticLine(panel), flag=wx.EXPAND | wx.TOP | wx.BOTTOM, border=10)
+    options_sizer.Add(chk_wipe, flag=wx.ALL, border=5)
+
+    vbox.Add(options_sizer, flag=wx.LEFT | wx.RIGHT | wx.TOP | wx.EXPAND, border=10)
+
+    is_cancelled = True
+
+    def on_launch(event):
+        nonlocal is_cancelled
+        is_cancelled = False
+
+        config.WriteBool("console", chk_console.GetValue())
+        config.WriteBool("map", chk_map.GetValue())
+        config.WriteBool("osd", chk_osd.GetValue())
+        config.WriteBool("no_mavproxy", not chk_mavproxy.GetValue())
+        config.WriteBool("wipe", chk_wipe.GetValue())
+        config.Write("last_location", location_combo.GetValue())
+        config.Write("last_vehicle", vehicle_combo.GetStringSelection())
+
+        new_aircraft = aircraft_combo.GetValue().strip()
+        if new_aircraft:
+            if new_aircraft in aircraft_history:
+                aircraft_history.remove(new_aircraft)
+            aircraft_history.insert(0, new_aircraft)
+            config.Write("aircraft_history", ",".join(aircraft_history[:10]))
+
+        config.Flush()
+
+        if available_vehicles:
+            cmd_opts.vehicle = vehicle_combo.GetStringSelection()
+
+        selected_loc = location_combo.GetValue()
+        if selected_loc:
+            cmd_opts.location = selected_loc
+
+        if new_aircraft:
+            cmd_opts.aircraft = new_aircraft
+
+        cmd_opts.wipe_eeprom = chk_wipe.GetValue()
+        cmd_opts.console = chk_console.GetValue()
+        cmd_opts.map = chk_map.GetValue()
+        cmd_opts.OSD = chk_osd.GetValue()
+        cmd_opts.no_mavproxy = not chk_mavproxy.GetValue()
+
+        frame.Close()
+
+    btn_launch = wx.Button(panel, label="Launch SITL")
+    btn_launch.Bind(wx.EVT_BUTTON, on_launch)
+    vbox.Add(btn_launch, flag=wx.EXPAND | wx.ALL, border=15)
+
+    panel.SetSizer(vbox)
+    vbox.Fit(frame)
+
+    frame.Centre()
+    frame.Show()
+    app.MainLoop()
+
+    return not is_cancelled
 
 
 def do_build(opts, frame_options):
@@ -379,10 +547,10 @@ def do_build(opts, frame_options):
         cmd_configure.append("--enable-math-check-indexes")
 
     if opts.enable_ekf2:
-        cmd_configure.append("--enable-ekf2")
+        cmd_configure.append("--enable-EKF2")
 
     if opts.disable_ekf3:
-        cmd_configure.append("--disable-ekf3")
+        cmd_configure.append("--disable-EKF3")
 
     if opts.postype_single:
         cmd_configure.append("--postype-single")
@@ -408,14 +576,14 @@ def do_build(opts, frame_options):
     for nv in opts.define:
         cmd_configure.append("--define=%s" % nv)
 
-    if opts.enable_dds:
-        cmd_configure.append("--enable-dds")
+    if opts.enable_DDS:
+        cmd_configure.append("--enable-DDS")
 
     if opts.disable_networking:
         cmd_configure.append("--disable-networking")
 
     if opts.enable_ppp:
-        cmd_configure.append("--enable-ppp")
+        cmd_configure.append("--enable-PPP")
 
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
@@ -520,12 +688,29 @@ def find_geocoder_location(locname):
     except ImportError:
         print("geocoder not installed")
         return None
-    j = geocoder.osm(locname)
-    if j is None or not hasattr(j, 'lat') or j.lat is None:
-        print("geocoder failed to find '%s'" % locname)
+    # Step 1: Attempt the lookup
+    try:
+        j = geocoder.osm(locname)
+    except Exception as e:  # noqa: BLE001
+        # Handle network/blocked errors (like 403)
+        err_msg = str(e)
+        if '403' in err_msg:
+            print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        else:
+            print(f"geocoder error: {err_msg}")
         return None
-    lat = j.lat
-    lon = j.lng
+    # Step 2: Validate the response object (Handles status_code 403 if no exception was raised)
+    status_code = getattr(j, 'status_code', None)
+    if status_code == 403:
+        print(f"geocoder access denied (HTTP 403) for '{locname}'")
+        return None
+
+    if j is None or not hasattr(j, 'lat') or j.lat is None:
+        print(f"geocoder failed to find '{locname}'")
+        return None
+    # Step 3: Success logic
+    lat, lon = j.lat, j.lng
+
     from MAVProxy.modules.mavproxy_map import srtm
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
@@ -537,7 +722,7 @@ def find_geocoder_location(locname):
             alt = tile.getAltitudeFromLatLon(lat, lon)
             break
     if alt is None:
-        print("timed out getting altitude for '%s'" % locname)
+        print(f"timed out getting altitude for '{locname}'")
         return None
     return [lat, lon, alt, 0.0]
 
@@ -594,7 +779,7 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
     try:
         p = subprocess.Popen(cmd, **kw)
         ret = os.waitpid(p.pid, 0)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print("[%s] An exception has occurred with command: '%s'" % (what, (' ').join(cmd)))
         print(e)
         sys.exit(1)
@@ -609,7 +794,6 @@ def run_cmd_blocking(what, cmd, quiet=False, check=False, **kw):
 def run_in_terminal_window(name, cmd, **kw):
 
     """Execute the run_in_terminal_window.sh command for cmd"""
-    global windowID
     runme = [os.path.join(autotest_dir, "run_in_terminal_window.sh"), name]
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
@@ -766,7 +950,6 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(strace_options)
 
     cmd.append(binary)
-    cmd.append("-S")
     if opts.wipe_eeprom:
         cmd.append("-w")
     cmd.extend(["--model", stuff["model"]])
@@ -779,24 +962,14 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--enable-fgview"])
     if opts.sitl_instance_args:
         # this could be a lot better:
-        cmd.extend(opts.sitl_instance_args.split(" "))
+        cmd.extend(opts.sitl_instance_args)
     if opts.mavlink_gimbal:
         cmd.append("--gimbal")
+    # the SITL binary resolves the per-frame default parameter files
+    # from its embedded vehicleinfo.json keyed by --model, so we no
+    # longer pass --defaults here. Use --add-param-file or --param to
+    # layer extra parameters on top of the embedded defaults.
     path = None
-    if "default_params_filename" in stuff:
-        paths = stuff["default_params_filename"]
-        if not isinstance(paths, list):
-            paths = [paths]
-        paths = [util.relcurdir(os.path.join(autotest_dir, x)) for x in paths]
-        for x in paths:
-            if not os.path.isfile(x):
-                print("The parameter file (%s) does not exist" % (x,))
-                sys.exit(1)
-        path = ",".join(paths)
-        if cmd_opts.count > 1 or opts.auto_sysid:
-            # we are in a subdirectory when using -n
-            path = os.path.join("..", path)
-        progress("Using defaults from (%s)" % (path,))
     if opts.flash_storage:
         cmd.append("--set-storage-flash-enabled 1")
         cmd.append("--set-storage-posix-enabled 0")
@@ -816,9 +989,31 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                 path = str(file)
 
             progress("Adding parameters from (%s)" % (str(file),))
+    if opts.param:
+        param_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        atexit.register(os.unlink, param_file.name)
+        param_dir = os.path.join(param_file.name)
+        single_params = []
+        for p in opts.param:
+            single_params.extend(p.split(','))
+        for sp in single_params:
+            sp.replace("=", " ")
+            sp = sp.strip()
+            param_file.write(f"{sp}\n")
+        if path is not None:
+            path += "," + str(param_dir)
+        else:
+            path = str(param_dir)
+
     if opts.OSDMSP:
-        path += "," + os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm")
-        path += "," + os.path.join(autotest_dir, "default_params/msposd.parm")
+        osd_paths = [
+            os.path.join(root_dir, "libraries/AP_MSP/Tools/osdtest.parm"),
+            os.path.join(autotest_dir, "default_params/msposd.parm"),
+        ]
+        if path is not None:
+            path += "," + ",".join(osd_paths)
+        else:
+            path = ",".join(osd_paths)
         subprocess.Popen([os.path.join(root_dir, "libraries/AP_MSP/Tools/msposd.py")])
 
     if path is not None and len(path) > 0:
@@ -828,7 +1023,7 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         # Parse start_time into a double precision number specifying seconds since 1900.
         try:
             start_time_UTC = time.mktime(datetime.datetime.strptime(cmd_opts.start_time, '%Y-%m-%d-%H:%M').timetuple())
-        except Exception:
+        except ValueError:
             print("Incorrect start time format - require YYYY-MM-DD-HH:MM (given %s)" % cmd_opts.start_time)
             sys.exit(1)
 
@@ -873,6 +1068,11 @@ def start_mavproxy(opts, stuff):
     else:
         cmd.append("mavproxy.py")
 
+    if opts.valgrind:
+        cmd.extend(['--retries', '10'])
+    else:
+        cmd.extend(['--retries', '5'])
+
     if opts.mcast:
         cmd.extend(["--master", "mcast:"])
 
@@ -905,7 +1105,6 @@ def start_mavproxy(opts, stuff):
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
-        global tracker_serial0
         # tracker_serial0 is set when we start the tracker...
         extra_cmd += ("module load map;"
                       "tracker set port %s; "
@@ -928,7 +1127,7 @@ def start_mavproxy(opts, stuff):
             if '=' in x:
                 mavargs[i] = x.split('=')[0]
                 mavargs.insert(i+1, x.split('=')[1])
-        # Use this flag to tell if parsing character inbetween a pair
+        # Use this flag to tell if parsing character in between a pair
         # of quotation marks
         inString = False
         beginStringIndex = []
@@ -964,6 +1163,8 @@ def start_mavproxy(opts, stuff):
         cmd.extend(['--aircraft', opts.aircraft])
     if opts.moddebug:
         cmd.append('--moddebug=%u' % opts.moddebug)
+    if opts.mavcesium:
+        cmd.extend(["--load-module", "cesium"])
 
     if opts.fresh_params:
         # these were built earlier:
@@ -985,6 +1186,17 @@ def start_mavproxy(opts, stuff):
 
     run_cmd_blocking("Run MavProxy", cmd, env=env)
     progress("MAVProxy exited")
+
+    if opts.gdb:
+        # in the case that MAVProxy exits (as opposed to being
+        # killed), restart it if we are running under GDB.  This
+        # allows ArduPilot to stop (eg. via a very early panic call)
+        # and have you debugging session not be killed.
+        while True:
+            progress("Running under GDB; restarting MAVProxy")
+            run_cmd_blocking("Run MavProxy", cmd, env=env)
+            progress("MAVProxy exited; sleeping 10")
+            time.sleep(10)
 
 
 vehicle_options_string = '|'.join(vinfo.options.keys())
@@ -1047,6 +1259,18 @@ parser.add_option("-C", "--sim_vehicle_sh_compatible",
                   default=False,
                   help="be compatible with the way sim_vehicle.sh works; "
                   "make this the first option")
+
+parser.add_option("-P", "--param",
+                  default=None,
+                  action='append',
+                  help="set some param with the format PARAM=VALUE; "
+                       "layered on top of the per-frame defaults the "
+                       "binary loads from its embedded vehicleinfo.json")
+
+parser.add_option("--gui",
+                  action='store_true',
+                  default=False,
+                  help="start GUI launcher")
 
 group_build = optparse.OptionGroup(parser, "Build options")
 group_build.add_option("-N", "--no-rebuild",
@@ -1161,7 +1385,8 @@ group_sim.add_option("", "--can-peripherals",
                      help="start a DroneCAN peripheral instance")
 group_sim.add_option("-A", "--sitl-instance-args",
                      type='string',
-                     default=None,
+                     default=[],
+                     action="append",
                      help="pass arguments to SITL instance")
 group_sim.add_option("-G", "--gdb",
                      action='store_true',
@@ -1278,12 +1503,19 @@ group_sim.add_option("", "--add-param-file",
                      type='string',
                      action="append",
                      default=None,
-                     help="Add a parameters file to use")
+                     help="Add a parameters file to use; layered on "
+                     "top of the per-frame defaults the binary loads "
+                     "from its embedded vehicleinfo.json")
 group_sim.add_option("", "--no-extra-ports",
                      action='store_true',
                      dest='no_extra_ports',
                      default=False,
                      help="Disable setup of UDP 14550 and 14551 output")
+group_sim.add_option("", "--no-wsl2-network",
+                     action='store_true',
+                     dest='no_wsl2_network',
+                     default=False,
+                     help="Disable setup of WSL2 network for output")
 group_sim.add_option("-Z", "--swarm",
                      type='string',
                      default=None,
@@ -1312,7 +1544,7 @@ group_sim.add_option("", "--start-time",
 group_sim.add_option("", "--sysid",
                      type='int',
                      default=None,
-                     help="Set SYSID_THISMAV")
+                     help="Set MAV_SYSID")
 group_sim.add_option("--postype-single",
                      action='store_true',
                      help="force single precision postype_t")
@@ -1329,12 +1561,12 @@ group_sim.add_option("", "--slave",
 group_sim.add_option("", "--auto-sysid",
                      default=False,
                      action='store_true',
-                     help="Set SYSID_THISMAV based upon instance number")
+                     help="Set MAV_SYSID based upon instance number")
 group_sim.add_option("", "--sim-address",
                      type=str,
                      default="127.0.0.1",
                      help="IP address of the simulator. Defaults to localhost")
-group_sim.add_option("--enable-dds", action='store_true',
+group_sim.add_option("--enable-DDS", action='store_true',
                      help="Enable the dds client to connect with ROS2/DDS")
 group_sim.add_option("--disable-networking", action='store_true',
                      help="Disable networking APIs")
@@ -1362,6 +1594,11 @@ group.add_option("", "--map",
                  default=False,
                  action='store_true',
                  help="load map module on startup")
+group.add_option("", "--mavcesium",
+                 default=False,
+                 action='store_true',
+                 help="load MAVCesium module on startup")
+
 group.add_option("", "--console",
                  default=False,
                  action='store_true',
@@ -1389,6 +1626,35 @@ group_completion.add_option("", "--list-frame",
 parser.add_option_group(group_completion)
 
 cmd_opts, cmd_args = parser.parse_args()
+
+cwd = os.getcwd()
+vehicle_dir_name = os.path.basename(cwd)
+in_vehicle_dir = vehicle_dir_name in vinfo.options
+
+if len(sys.argv) == 1 and not in_vehicle_dir:
+    cmd_opts.gui = True
+
+if cmd_opts.gui:
+    if cmd_opts.vehicle is None:
+        cwd = os.getcwd()
+        while cwd:
+            bname = os.path.basename(cwd)
+            if not bname:
+                break
+            if bname in vinfo.options:
+                cmd_opts.vehicle = bname
+                break
+            cwd = os.path.dirname(cwd)
+
+    launch_continued = run_gui(cmd_opts)
+
+    if not launch_continued:
+        progress("Launch cancelled by user.")
+        sys.exit(0)
+
+    if cmd_opts.vehicle == 'Helicopter':
+        cmd_opts.vehicle = 'ArduCopter'
+        cmd_opts.frame = 'heli'
 
 if cmd_opts.list_vehicle:
     print(' '.join(vinfo.options.keys()))
@@ -1591,9 +1857,11 @@ if cmd_opts.delay_start:
 
 tmp = None
 if cmd_opts.frame in ['scrimmage-plane', 'scrimmage-copter']:
-    # import only here so as to avoid jinja dependency in whole script
-    from jinja2 import Environment, FileSystemLoader
     from tempfile import mkstemp
+
+    # import only here so as to avoid jinja dependency in whole script
+    from jinja2 import Environment
+    from jinja2 import FileSystemLoader
     entities = []
     config = {}
     config['plane'] = cmd_opts.vehicle == 'ArduPlane'

@@ -23,8 +23,10 @@
 
 using namespace SITL;
 
-uint32_t RF_RDS02UF::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_RDS02UF::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
+    const uint16_t alt_cm = alt_m * 100;
+
     const uint16_t fc_code = 0x3ff;  // NFI what this means
     const uint16_t data_fc = 0x70c;  // NFI what this means
 

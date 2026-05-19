@@ -16,27 +16,27 @@ void Copter::failsafe_radio_on_event()
 
     // set desired action based on FS_THR_ENABLE parameter
     FailsafeAction desired_action;
-    switch (g.failsafe_throttle) {
-        case FS_THR_DISABLED:
+    switch ((FS_THR_Action)g.failsafe_throttle) {
+        case FS_THR_Action::DISABLED:
             desired_action = FailsafeAction::NONE;
             break;
-        case FS_THR_ENABLED_ALWAYS_RTL:
-        case FS_THR_ENABLED_CONTINUE_MISSION:
+        case FS_THR_Action::ALWAYS_RTL:
+        case FS_THR_Action::CONTINUE_MISSION:
             desired_action = FailsafeAction::RTL;
             break;
-        case FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_RTL:
+        case FS_THR_Action::ALWAYS_SMARTRTL_OR_RTL:
             desired_action = FailsafeAction::SMARTRTL;
             break;
-        case FS_THR_ENABLED_ALWAYS_SMARTRTL_OR_LAND:
+        case FS_THR_Action::ALWAYS_SMARTRTL_OR_LAND:
             desired_action = FailsafeAction::SMARTRTL_LAND;
             break;
-        case FS_THR_ENABLED_ALWAYS_LAND:
+        case FS_THR_Action::ALWAYS_LAND:
             desired_action = FailsafeAction::LAND;
             break;
-        case FS_THR_ENABLED_AUTO_RTL_OR_RTL:
+        case FS_THR_Action::AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
-        case FS_THR_ENABLED_BRAKE_OR_LAND:
+        case FS_THR_Action::BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
         default:
@@ -126,17 +126,17 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
 void Copter::failsafe_gcs_check()
 {
     // Bypass GCS failsafe checks if disabled or GCS never connected
-    if (g.failsafe_gcs == FS_GCS_DISABLED) {
+    if (g.failsafe_gcs == FS_GCS_Action::DISABLED) {
         return;
     }
 
-    const uint32_t gcs_last_seen_ms = gcs().sysid_myggcs_last_seen_time_ms();
+    const uint32_t gcs_last_seen_ms = gcs().sysid_mygcs_last_seen_time_ms();
     if (gcs_last_seen_ms == 0) {
         return;
     }
 
     // calc time since last gcs update
-    // note: this only looks at the heartbeat from the device id set by g.sysid_my_gcs
+    // note: this only looks at the heartbeat from the device id set by sysid_mygcs
     const uint32_t last_gcs_update_ms = millis() - gcs_last_seen_ms;
     const uint32_t gcs_timeout_ms = uint32_t(constrain_float(g2.fs_gcs_timeout * 1000.0f, 0.0f, UINT32_MAX));
 
@@ -167,27 +167,27 @@ void Copter::failsafe_gcs_on_event(void)
 
     // convert the desired failsafe response to the FailsafeAction enum
     FailsafeAction desired_action;
-    switch (g.failsafe_gcs) {
-        case FS_GCS_DISABLED:
+    switch ((FS_GCS_Action)g.failsafe_gcs) {
+        case FS_GCS_Action::DISABLED:
             desired_action = FailsafeAction::NONE;
             break;
-        case FS_GCS_ENABLED_ALWAYS_RTL:
-        case FS_GCS_ENABLED_CONTINUE_MISSION:
+        case FS_GCS_Action::ALWAYS_RTL:
+        case FS_GCS_Action::CONTINUE_MISSION:
             desired_action = FailsafeAction::RTL;
             break;
-        case FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_RTL:
+        case FS_GCS_Action::ALWAYS_SMARTRTL_OR_RTL:
             desired_action = FailsafeAction::SMARTRTL;
             break;
-        case FS_GCS_ENABLED_ALWAYS_SMARTRTL_OR_LAND:
+        case FS_GCS_Action::ALWAYS_SMARTRTL_OR_LAND:
             desired_action = FailsafeAction::SMARTRTL_LAND;
             break;
-        case FS_GCS_ENABLED_ALWAYS_LAND:
+        case FS_GCS_Action::ALWAYS_LAND:
             desired_action = FailsafeAction::LAND;
             break;
-        case FS_GCS_ENABLED_AUTO_RTL_OR_RTL:
+        case FS_GCS_Action::AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
-        case FS_GCS_ENABLED_BRAKE_OR_LAND:
+        case FS_GCS_Action::BRAKE_OR_LAND:
             desired_action = FailsafeAction::BRAKE_LAND;
             break;
         default: // if an invalid parameter value is set, the fallback is RTL
@@ -281,12 +281,23 @@ void Copter::failsafe_terrain_set_status(bool data_ok)
 void Copter::failsafe_terrain_on_event()
 {
     failsafe.terrain = true;
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain data missing");
+    switch (wp_nav->get_terrain_source()) {
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_TERRAINDATABASE:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "data missing");
+        break;
+    case AC_WPNav::TerrainSource::TERRAIN_FROM_RANGEFINDER:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "Rangefinder Unhealthy");
+        break;
+    case AC_WPNav::TerrainSource::TERRAIN_UNAVAILABLE:
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"Failsafe: Terrain %s", "Unavailable");
+        break;
+    }
+
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_TERRAIN, LogErrorCode::FAILSAFE_OCCURRED);
 
     if (should_disarm_on_failsafe()) {
         arming.disarm(AP_Arming::Method::TERRAINFAILSAFE);
-#if MODE_RTL_ENABLED == ENABLED
+#if MODE_RTL_ENABLED
     } else if (flightmode->mode_number() == Mode::Number::RTL) {
         mode_rtl.restart_without_terrain();
 #endif
@@ -298,9 +309,7 @@ void Copter::failsafe_terrain_on_event()
 // check for gps glitch failsafe
 void Copter::gpsglitch_check()
 {
-    // get filter status
-    nav_filter_status filt_status = inertial_nav.get_filter_status();
-    bool gps_glitching = filt_status.flags.gps_glitching;
+    const bool gps_glitching = AP::ahrs().has_status(AP_AHRS::Status::GPS_GLITCHING);
 
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
     if (ap.gps_glitching != gps_glitching) {
@@ -322,7 +331,7 @@ void Copter::failsafe_deadreckon_check()
     const char* dr_prefix_str = "Dead Reckoning";
 
     // get EKF filter status
-    bool ekf_dead_reckoning = inertial_nav.get_filter_status().flags.dead_reckoning;
+    const bool ekf_dead_reckoning = AP::ahrs().has_status(AP_AHRS::Status::DEAD_RECKONING);
 
     // alert user to start or stop of dead reckoning
     const uint32_t now_ms = AP_HAL::millis();
@@ -358,7 +367,7 @@ void Copter::failsafe_deadreckon_check()
         failsafe.deadreckon = ekf_dead_reckoning;
 
         // only take action in modes requiring position estimate
-        if (failsafe.deadreckon && copter.flightmode->requires_GPS()) {
+        if (failsafe.deadreckon && copter.flightmode->requires_position()) {
 
             // log error
             LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_DEADRECKON, LogErrorCode::FAILSAFE_OCCURRED);
@@ -425,7 +434,7 @@ void Copter::set_mode_SmartRTL_or_RTL(ModeReason reason)
 // This can come from failsafe or RC option
 void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
 {
-#if MODE_AUTO_ENABLED == ENABLED
+#if MODE_AUTO_ENABLED
     if (set_mode(Mode::Number::AUTO_RTL, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
         return;
@@ -440,7 +449,7 @@ void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
 // This can come from failsafe or RC option
 void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
 {
-#if MODE_BRAKE_ENABLED == ENABLED
+#if MODE_BRAKE_ENABLED
     if (set_mode(Mode::Number::BRAKE, reason)) {
         AP_Notify::events.failsafe_mode_change = 1;
         return;
@@ -492,7 +501,7 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
             set_mode_SmartRTL_or_land_with_pause(reason);
             break;
         case FailsafeAction::TERMINATE: {
-#if ADVANCED_FAILSAFE == ENABLED
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
             g2.afs.gcs_terminate(true, "Failsafe");
 #else
             arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);

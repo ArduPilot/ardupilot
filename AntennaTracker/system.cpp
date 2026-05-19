@@ -190,7 +190,7 @@ void Tracker::set_mode(Mode &newmode, const ModeReason reason)
 #endif
     gcs().send_message(MSG_HEARTBEAT);
 
-    nav_status.bearing = ahrs.yaw_sensor * 0.01f;
+    nav_status.bearing = ahrs.get_yaw_deg();
 }
 
 bool Tracker::set_mode(const uint8_t new_mode, const ModeReason reason)
@@ -247,7 +247,7 @@ bool Tracker::should_log(uint32_t mask)
 bool AP_AdvancedFailsafe::gcs_terminate(bool should_terminate, const char *reason) {return false;}
 AP_AdvancedFailsafe *AP::advancedfailsafe() { return nullptr; }
 #endif  // AP_ADVANCEDFAILSAFE_ENABLED
-#if HAL_ADSB_ENABLED
+#if AP_ADSB_AVOIDANCE_ENABLED
 // dummy method to avoid linking AP_Avoidance
 AP_Avoidance *AP::ap_avoidance() { return nullptr; }
 #endif

@@ -26,7 +26,7 @@ public:
         SOURCE_GPS = 0,
         SOURCE_MAVLINK_SYSTEM_TIME = 1,
         SOURCE_HW = 2,
-        SOURCE_NONE,
+        SOURCE_NONE = 3,
     };
 
     /*
@@ -38,6 +38,9 @@ public:
     // something better (according to source_type), this set will be
     // ignored.
     void set_utc_usec(uint64_t time_utc_usec, source_type type);
+
+    // return source type currently in use
+    source_type get_source_type() const { return rtc_source_type; }
 
     /*
       get time in UTC hours, minutes, seconds and milliseconds
@@ -64,6 +67,9 @@ public:
 
     bool clock_s_to_date_fields(const uint32_t utc_sec32, uint16_t& year, uint8_t& month, uint8_t& day, uint8_t &hour, uint8_t &min, uint8_t &sec, uint8_t &wday) const;
     uint32_t date_fields_to_clock_s(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t min, uint8_t sec) const;
+
+    // emit an RTC message to the onboard logs
+    void Log_RTC();
 
 private:
 

@@ -35,7 +35,10 @@ protected:
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> _dev;
+
+    bool configure_dev();
+
+    AP_HAL::I2CDevice *_dev;
     uint8_t _bus;
     uint8_t _addr;
 

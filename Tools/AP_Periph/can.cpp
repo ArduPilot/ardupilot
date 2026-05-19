@@ -80,7 +80,7 @@ extern AP_Periph_FW periph;
     // especially helpful with HAL_GCS_ENABLED where libraries use the mavlink
     // send_text() method where we support strings up to 256 chars by splitting them
     // up into multiple 50 char mavlink packets.
-    #define HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF (BOARD_FLASH_SIZE >= 1024)
+    #define HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF (HAL_PROGRAM_SIZE_LIMIT_KB >= 1024)
 #endif
 
 static struct instance_t {
@@ -125,10 +125,7 @@ HAL_GPIO_PIN_TERMCAN1
 };
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(HAL_GPIO_PIN_TERMCAN1)
 
-#ifndef HAL_CAN_DEFAULT_NODE_ID
-#define HAL_CAN_DEFAULT_NODE_ID CANARD_BROADCAST_NODE_ID
-#endif
-uint8_t PreferredNodeID = HAL_CAN_DEFAULT_NODE_ID;
+uint8_t user_set_node_id = HAL_CAN_DEFAULT_NODE_ID;
 
 #ifndef AP_PERIPH_PROBE_CONTINUOUS
 #define AP_PERIPH_PROBE_CONTINUOUS 0
@@ -349,22 +346,22 @@ void AP_Periph_FW::handle_param_executeopcode(CanardInstance* canard_instance, C
         AP_Param::erase_all();
         AP_Param::load_all();
         AP_Param::setup_sketch_defaults();
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
         AP_Param::setup_object_defaults(&gps, gps.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
         AP_Param::setup_object_defaults(&battery, battery_lib.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
         AP_Param::setup_object_defaults(&compass, compass.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
         AP_Param::setup_object_defaults(&baro, baro.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
         AP_Param::setup_object_defaults(&airspeed, airspeed.var_info);
 #endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
         AP_Param::setup_object_defaults(&rangefinder, rangefinder.var_info);
 #endif
     }
@@ -472,12 +469,12 @@ void AP_Periph_FW::handle_allocation_response(CanardInstance* canard_instance, C
         dronecan.send_next_node_id_allocation_request_at_ms -= UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_MIN_REQUEST_PERIOD_MS;
 
         printf("Matching allocation response: %d\n", msg.unique_id.len);
-    } else {
+    } else if (msg.node_id != CANARD_BROADCAST_NODE_ID) { // new ID valid? (if not we will time out and start over)
         // Allocation complete - copying the allocated node ID from the message
         canardSetLocalNodeID(canard_instance, msg.node_id);
         printf("IF%d Node ID allocated: %d\n", dronecan.dna_interface, msg.node_id);
 
-#if defined(HAL_PERIPH_ENABLE_GPS) && (HAL_NUM_CAN_IFACES >= 2) && GPS_MOVING_BASELINE
+#if AP_PERIPH_GPS_ENABLED && (HAL_NUM_CAN_IFACES >= 2) && GPS_MOVING_BASELINE
         if (g.gps_mb_only_can_port) {
             // we need to assign the unallocated port to be used for Moving Baseline only
             gps_mb_can_port = (dronecan.dna_interface+1)%HAL_NUM_CAN_IFACES;
@@ -495,7 +492,7 @@ void AP_Periph_FW::handle_allocation_response(CanardInstance* canard_instance, C
 }
 
 
-#if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_GPIO_PIN_SAFE_LED) || AP_PERIPH_RC_OUT_ENABLED
 static uint8_t safety_state;
 
 /*
@@ -527,23 +524,38 @@ void AP_Periph_FW::handle_arming_status(CanardInstance* canard_instance, CanardR
 }
 
 
+#if AP_PERIPH_RTC_GLOBALTIME_ENABLED
+/*
+  handle GlobalTime
+ */
+void AP_Periph_FW::handle_globaltime(CanardInstance* canard_instance, CanardRxTransfer* transfer)
+{
+    dronecan_protocol_GlobalTime req;
+    if (dronecan_protocol_GlobalTime_decode(transfer, &req)) {
+        return;
+    }
+    AP::rtc().set_utc_usec(req.timestamp.usec, AP_RTC::source_type::SOURCE_GPS);
+}
+#endif // AP_PERIPH_RTC_GLOBALTIME_ENABLED
 
-#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+
+
+#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY || AP_PERIPH_NOTIFY_ENABLED
 void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
 {
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     notify.handle_rgb(red, green, blue);
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     rcout_has_new_data_to_update = true;
-#endif // HAL_PERIPH_ENABLE_RC_OUT
-#endif // HAL_PERIPH_ENABLE_NOTIFY
+#endif // AP_PERIPH_RC_OUT_ENABLED
+#endif // AP_PERIPH_NOTIFY_ENABLED
 
 #ifdef HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
     hal.rcout->set_serial_led_rgb_data(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY, -1, red, green, blue);
     hal.rcout->serial_led_send(HAL_PERIPH_NEOPIXEL_CHAN_WITHOUT_NOTIFY);
 #endif // HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY
 
-#ifdef HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED
     {
         const uint8_t i2c_address = 0x38;
         static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
@@ -561,9 +573,9 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         v = 0x80 | blue >> 3; // blue
         dev->transfer(&v, 1, nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_NCP5623_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_NCP5623_LED_WITHOUT_NOTIFY_ENABLED
 
-#ifdef HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY
+#if AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED
     {
         const uint8_t i2c_address = 0x38;
         static AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
@@ -581,8 +593,8 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         v = 0x80 | red >> 3; // red
         dev->transfer(&v, 1, nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_NCP5623_BGR_LED_WITHOUT_NOTIFY
-#ifdef HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_NCP5623_BGR_LED_WITHOUT_NOTIFY_ENABLED
+#if AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED
     {
 #define TOSHIBA_LED_PWM0    0x01    // pwm0 register
 #define TOSHIBA_LED_ENABLE  0x04    // enable register
@@ -607,7 +619,7 @@ void AP_Periph_FW::set_rgb_led(uint8_t red, uint8_t green, uint8_t blue)
         };
         dev_toshiba->transfer(val, sizeof(val), nullptr, 0);
     }
-#endif // HAL_PERIPH_ENABLE_TOSHIBA_LED_WITHOUT_NOTIFY
+#endif // AP_PERIPH_TOSHIBA_LED_WITHOUT_NOTIFY_ENABLED
 }
 
 /*
@@ -626,9 +638,9 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
         uint8_t red = cmd.color.red<<3U;
         uint8_t green = (cmd.color.green>>1U)<<3U;
         uint8_t blue = cmd.color.blue<<3U;
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
         const int8_t brightness = notify.get_rgb_led_brightness_percent();
-#elif defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY)
+#elif AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
         const int8_t brightness = g.led_brightness;
 #endif
         if (brightness != 100 && brightness >= 0) {
@@ -642,7 +654,7 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
 }
 #endif // AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 void AP_Periph_FW::handle_esc_rawcommand(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     uavcan_equipment_esc_RawCommand cmd;
@@ -663,21 +675,28 @@ void AP_Periph_FW::handle_act_command(CanardInstance* canard_instance, CanardRxT
         return;
     }
 
+    bool valid_output = false;
     for (uint8_t i=0; i < cmd.commands.len; i++) {
         const auto &c = cmd.commands.data[i];
         switch (c.command_type) {
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_UNITLESS:
             rcout_srv_unitless(c.actuator_id, c.command_value);
+            valid_output = true;
             break;
         case UAVCAN_EQUIPMENT_ACTUATOR_COMMAND_COMMAND_TYPE_PWM:
             rcout_srv_PWM(c.actuator_id, c.command_value);
+            valid_output = true;
             break;
         }
     }
-}
-#endif // HAL_PERIPH_ENABLE_RC_OUT
 
-#if defined(HAL_PERIPH_ENABLE_NOTIFY)
+    if (valid_output) {
+        actuator.last_command_ms = AP_HAL::millis();
+    }
+}
+#endif // AP_PERIPH_RC_OUT_ENABLED
+
+#if AP_PERIPH_NOTIFY_ENABLED
 void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
     ardupilot_indication_NotifyState msg;
@@ -690,9 +709,9 @@ void AP_Periph_FW::handle_notify_state(CanardInstance* canard_instance, CanardRx
         yaw_earth = radians((float)tmp * 0.01f);
     }
     vehicle_state = msg.vehicle_state;
-    last_vehicle_state = AP_HAL::millis();
+    last_vehicle_state_ms = AP_HAL::millis();
 }
-#endif // HAL_PERIPH_ENABLE_NOTIFY
+#endif // AP_PERIPH_NOTIFY_ENABLED
 
 #ifdef HAL_GPIO_PIN_SAFE_LED
 /*
@@ -800,15 +819,23 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_begin_firmware_update(canard_instance, transfer);
         break;
 
-    case UAVCAN_PROTOCOL_RESTARTNODE_ID:
-        printf("RestartNode\n");
-        hal.scheduler->delay(10);
-        prepare_reboot();
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        NVIC_SystemReset();
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        HAL_SITL::actually_reboot();
-#endif
+    case UAVCAN_PROTOCOL_RESTARTNODE_ID: {
+            printf("RestartNode\n");
+            uavcan_protocol_RestartNodeResponse pkt {
+                ok: true,
+            };
+            uint8_t buffer[UAVCAN_PROTOCOL_RESTARTNODE_RESPONSE_MAX_SIZE];
+            uint16_t total_size = uavcan_protocol_RestartNodeResponse_encode(&pkt, buffer, !canfdout());
+            canard_respond(canard_instance,
+                    transfer,
+                    UAVCAN_PROTOCOL_RESTARTNODE_SIGNATURE,
+                    UAVCAN_PROTOCOL_RESTARTNODE_ID,
+                    &buffer[0],
+                    total_size);
+
+            // schedule a reboot to occur
+            reboot_request_ms = AP_HAL::millis();
+        }
         break;
 
     case UAVCAN_PROTOCOL_PARAM_GETSET_ID:
@@ -819,13 +846,13 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_param_executeopcode(canard_instance, transfer);
         break;
 
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         handle_beep_command(canard_instance, transfer);
         break;
 #endif
 
-#if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_GPIO_PIN_SAFE_LED) || AP_PERIPH_RC_OUT_ENABLED
     case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
         handle_safety_state(canard_instance, transfer);
         break;
@@ -835,7 +862,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_arming_status(canard_instance, transfer);
         break;
 
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
         handle_RTCMStream(canard_instance, transfer);
         break;
@@ -845,7 +872,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         handle_MovingBaselineData(canard_instance, transfer);
         break;
 #endif
-#endif // HAL_PERIPH_ENABLE_GPS
+#endif // AP_PERIPH_GPS_ENABLED
 
 #if AP_UART_MONITOR_ENABLED
     case UAVCAN_TUNNEL_TARGETTED_ID:
@@ -853,13 +880,13 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         break;
 #endif
 
-#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         handle_lightscommand(canard_instance, transfer);
         break;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     case UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID:
         handle_esc_rawcommand(canard_instance, transfer);
         break;
@@ -869,15 +896,20 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
         break;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_NOTIFY
+#if AP_PERIPH_NOTIFY_ENABLED
     case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
         handle_notify_state(canard_instance, transfer);
         break;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
     case UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID:
         handle_hardpoint_command(canard_instance, transfer);
+        break;
+#endif
+#if AP_PERIPH_RTC_GLOBALTIME_ENABLED
+    case DRONECAN_PROTOCOL_GLOBALTIME_ID:
+        handle_globaltime(canard_instance, transfer);
         break;
 #endif
 
@@ -940,12 +972,12 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
     case UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_ID:
         *out_data_type_signature = UAVCAN_PROTOCOL_PARAM_EXECUTEOPCODE_SIGNATURE;
         return true;
-#if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_BEEPCOMMAND_SIGNATURE;
         return true;
 #endif
-#if defined(HAL_GPIO_PIN_SAFE_LED) || defined(HAL_PERIPH_ENABLE_RC_OUT)
+#if defined(HAL_GPIO_PIN_SAFE_LED) || AP_PERIPH_RC_OUT_ENABLED
     case ARDUPILOT_INDICATION_SAFETYSTATE_ID:
         *out_data_type_signature = ARDUPILOT_INDICATION_SAFETYSTATE_SIGNATURE;
         return true;
@@ -953,12 +985,12 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
     case UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_SIGNATURE;
         return true;
-#if defined(AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY) || defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_HAVE_LED_WITHOUT_NOTIFY || AP_PERIPH_NOTIFY_ENABLED
     case UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_INDICATION_LIGHTSCOMMAND_SIGNATURE;
         return true;
 #endif
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
     case UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_GNSS_RTCMSTREAM_SIGNATURE;
         return true;
@@ -968,7 +1000,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         *out_data_type_signature = ARDUPILOT_GNSS_MOVINGBASELINEDATA_SIGNATURE;
         return true;
 #endif
-#endif // HAL_PERIPH_ENABLE_GPS
+#endif // AP_PERIPH_GPS_ENABLED
 
 #if AP_UART_MONITOR_ENABLED
     case UAVCAN_TUNNEL_TARGETTED_ID:
@@ -976,7 +1008,7 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         return true;
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
     case UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_ESC_RAWCOMMAND_SIGNATURE;
         return true;
@@ -985,14 +1017,19 @@ bool AP_Periph_FW::shouldAcceptTransfer(const CanardInstance* canard_instance,
         *out_data_type_signature = UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_SIGNATURE;
         return true;
 #endif
-#if defined(HAL_PERIPH_ENABLE_NOTIFY)
+#if AP_PERIPH_NOTIFY_ENABLED
     case ARDUPILOT_INDICATION_NOTIFYSTATE_ID:
         *out_data_type_signature = ARDUPILOT_INDICATION_NOTIFYSTATE_SIGNATURE;
         return true;
 #endif
-#ifdef HAL_PERIPH_ENABLE_RELAY
+#if AP_PERIPH_RELAY_ENABLED
     case UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_ID:
         *out_data_type_signature = UAVCAN_EQUIPMENT_HARDPOINT_COMMAND_SIGNATURE;
+        return true;
+#endif
+#if AP_PERIPH_RTC_GLOBALTIME_ENABLED
+    case DRONECAN_PROTOCOL_GLOBALTIME_ID:
+        *out_data_type_signature = DRONECAN_PROTOCOL_GLOBALTIME_SIGNATURE;
         return true;
 #endif
     default:
@@ -1058,6 +1095,7 @@ bool AP_Periph_FW::canard_broadcast(uint64_t data_type_signature,
                                     uint16_t payload_len,
                                     uint8_t iface_mask)
 {
+    WITH_SEMAPHORE(canard_broadcast_semaphore);
     const bool is_dna = data_type_id == UAVCAN_PROTOCOL_DYNAMIC_NODE_ID_ALLOCATION_ID;
     if (!is_dna && canardGetLocalNodeID(&dronecan.canard) == CANARD_BROADCAST_NODE_ID) {
         return false;
@@ -1218,38 +1256,38 @@ void AP_Periph_FW::processTx(void)
 #if HAL_ENABLE_SENDING_STATS
 void AP_Periph_FW::update_rx_protocol_stats(int16_t res)
 {
-    switch (res) {
+    switch (-res) {
     case CANARD_OK:
         protocol_stats.rx_frames++;
         break;
-    case -CANARD_ERROR_OUT_OF_MEMORY:
+    case CANARD_ERROR_OUT_OF_MEMORY:
         protocol_stats.rx_error_oom++;
         break;
-    case -CANARD_ERROR_INTERNAL:
+    case CANARD_ERROR_INTERNAL:
         protocol_stats.rx_error_internal++;
         break;
-    case -CANARD_ERROR_RX_INCOMPATIBLE_PACKET:
+    case CANARD_ERROR_RX_INCOMPATIBLE_PACKET:
         protocol_stats.rx_ignored_not_wanted++;
         break;
-    case -CANARD_ERROR_RX_WRONG_ADDRESS:
+    case CANARD_ERROR_RX_WRONG_ADDRESS:
         protocol_stats.rx_ignored_wrong_address++;
         break;
-    case -CANARD_ERROR_RX_NOT_WANTED:
+    case CANARD_ERROR_RX_NOT_WANTED:
         protocol_stats.rx_ignored_not_wanted++;
         break;
-    case -CANARD_ERROR_RX_MISSED_START:
+    case CANARD_ERROR_RX_MISSED_START:
         protocol_stats.rx_error_missed_start++;
         break;
-    case -CANARD_ERROR_RX_WRONG_TOGGLE:
+    case CANARD_ERROR_RX_WRONG_TOGGLE:
         protocol_stats.rx_error_wrong_toggle++;
         break;
-    case -CANARD_ERROR_RX_UNEXPECTED_TID:
+    case CANARD_ERROR_RX_UNEXPECTED_TID:
         protocol_stats.rx_ignored_unexpected_tid++;
         break;
-    case -CANARD_ERROR_RX_SHORT_FRAME:
+    case CANARD_ERROR_RX_SHORT_FRAME:
         protocol_stats.rx_error_short_frame++;
         break;
-    case -CANARD_ERROR_RX_BAD_CRC:
+    case CANARD_ERROR_RX_BAD_CRC:
         protocol_stats.rx_error_bad_crc++;
         break;
     default:
@@ -1449,8 +1487,9 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
          * record the worst case memory usage.
          */
 
-        if (pool_peak_percent() > 70) {
-            printf("WARNING: ENLARGE MEMORY POOL\n");
+        const float pool_pct = pool_peak_percent();
+        if (pool_pct > 70) {
+            printf("WARNING: ENLARGE MEMORY POOL (peak=%f%%)\n", pool_pct);
         }
     }
 
@@ -1550,7 +1589,7 @@ bool AP_Periph_FW::can_do_dna()
     // Structure of the request is documented in the DSDL definition
     // See http://uavcan.org/Specification/6._Application_level_functions/#dynamic-node-id-allocation
     uint8_t allocation_request[CANARD_CAN_FRAME_MAX_DATA_LEN - 1];
-    allocation_request[0] = (uint8_t)(PreferredNodeID << 1U);
+    allocation_request[0] = 0; // we are only called if the user has not set an ID, so request any ID
 
     if (dronecan.node_id_allocation_unique_id_offset == 0) {
         allocation_request[0] |= 1;     // First part of unique ID
@@ -1590,7 +1629,7 @@ void AP_Periph_FW::can_start()
     node_status.uptime_sec = AP_HAL::millis() / 1000U;
 
     if (g.can_node >= 0 && g.can_node < 128) {
-        PreferredNodeID = g.can_node;
+        user_set_node_id = g.can_node;
     }
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
@@ -1605,20 +1644,50 @@ void AP_Periph_FW::can_start()
         }
     }
     if (!has_uavcan_at_1MHz) {
-        g.can_protocol[0].set_and_save(uint8_t(AP_CAN::Protocol::DroneCAN));
+        g.can_protocol[0].set_and_save(AP_CAN::Protocol::DroneCAN);
         g.can_baudrate[0].set_and_save(1000000);
     }
 #endif // HAL_PERIPH_ENFORCE_AT_LEAST_ONE_PORT_IS_UAVCAN_1MHz
 
+    {
+        /*
+          support termination parameters, and also a hardware switch
+          to force termination and an LED to indicate if termination
+          is active
+         */
 #ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM
-    palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM, g.can_terminate[0]);
+        bool can1_term = g.can_terminate[0];
+# ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH
+        can1_term |= palReadLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_SWITCH);
+# endif
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM, can1_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN1_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN1_TERM_LED, can1_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
 #endif
+
 #ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM
-    palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM, g.can_terminate[1]);
+        bool can2_term = g.can_terminate[1];
+# ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH
+        can2_term |= palReadLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_SWITCH);
+# endif
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM, can2_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN2_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN2_TERM_LED, can2_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
 #endif
+
 #ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM
-    palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM, g.can_terminate[2]);
+        bool can3_term = g.can_terminate[2];
+# ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH
+        can3_term |= palReadLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_SWITCH);
+# endif
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM, can3_term);
+# ifdef HAL_GPIO_PIN_GPIO_CAN3_TERM_LED
+        palWriteLine(HAL_GPIO_PIN_GPIO_CAN3_TERM_LED, can3_term? HAL_LED_ON : !HAL_LED_ON);
+# endif
 #endif
+    }
 
     for (uint8_t i=0; i<HAL_NUM_CAN_IFACES; i++) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -1639,9 +1708,9 @@ void AP_Periph_FW::can_start()
 #endif
         if (can_iface_periph[i] != nullptr) {
 #if HAL_CANFD_SUPPORTED
-            can_iface_periph[i]->init(g.can_baudrate[i], g.can_fdbaudrate[i]*1000000U, AP_HAL::CANIface::NormalMode);
+            can_iface_periph[i]->init(g.can_baudrate[i], g.can_fdbaudrate[i]*1000000U);
 #else
-            can_iface_periph[i]->init(g.can_baudrate[i], AP_HAL::CANIface::NormalMode);
+            can_iface_periph[i]->init(g.can_baudrate[i]);
 #endif
         }
     }
@@ -1662,13 +1731,13 @@ void AP_Periph_FW::can_start()
     canardInit(&dronecan.canard, (uint8_t *)dronecan.canard_memory_pool, sizeof(dronecan.canard_memory_pool),
                onTransferReceived_trampoline, shouldAcceptTransfer_trampoline, this);
 
-    if (PreferredNodeID != CANARD_BROADCAST_NODE_ID) {
-        canardSetLocalNodeID(&dronecan.canard, PreferredNodeID);
+    if (user_set_node_id != CANARD_BROADCAST_NODE_ID) {
+        canardSetLocalNodeID(&dronecan.canard, user_set_node_id);
     }
 }
 
 
-#ifdef HAL_PERIPH_ENABLE_RC_OUT
+#if AP_PERIPH_RC_OUT_ENABLED
 #if HAL_WITH_ESC_TELEM
 // try to map the ESC number to a motor number. This is needed
 // for when we have multiple CAN nodes, one for each ESC
@@ -1689,6 +1758,9 @@ uint8_t AP_Periph_FW::get_motor_number(const uint8_t esc_number) const
  */
 void AP_Periph_FW::esc_telem_update()
 {
+    // update telem lib, this invalidates stale data
+    esc_telem.update();
+
     uint32_t mask = esc_telem.get_active_esc_mask();
     while (mask != 0) {
         int8_t i = __builtin_ffs(mask) - 1;
@@ -1712,8 +1784,10 @@ void AP_Periph_FW::esc_telem_update()
             pkt.temperature = nan;
         }
         float rpm;
-        if (esc_telem.get_raw_rpm(i, rpm)) {
+        float error_rate;
+        if (esc_telem.get_raw_rpm_and_error_rate(i, rpm, error_rate)) {
             pkt.rpm = rpm;
+            pkt.error_count = error_rate;
         }
 
 #if AP_EXTENDED_ESC_TELEM_ENABLED
@@ -1722,8 +1796,6 @@ void AP_Periph_FW::esc_telem_update()
             pkt.power_rating_pct = power_rating_pct;
         }
 #endif
-
-        pkt.error_count = 0;
 
         uint8_t buffer[UAVCAN_EQUIPMENT_ESC_STATUS_MAX_SIZE];
         uint16_t total_size = uavcan_equipment_esc_Status_encode(&pkt, buffer, !canfdout());
@@ -1803,7 +1875,7 @@ void AP_Periph_FW::esc_telem_extended_update(const uint32_t &now_ms)
 }
 #endif
 
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
 void AP_Periph_FW::apd_esc_telem_update()
 {
     for(uint8_t i = 0; i < ARRAY_SIZE(apd_esc_telem); i++) {
@@ -1836,8 +1908,8 @@ void AP_Periph_FW::apd_esc_telem_update()
     }
 
 }
-#endif // HAL_PERIPH_ENABLE_ESC_APD
-#endif // HAL_PERIPH_ENABLE_RC_OUT
+#endif // AP_PERIPH_ESC_APD_ENABLED
+#endif // AP_PERIPH_RC_OUT_ENABLED
 
 void AP_Periph_FW::can_update()
 {
@@ -1876,31 +1948,31 @@ void AP_Periph_FW::can_update()
     if (!hal.run_in_maintenance_mode())
 #endif
     {
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
         can_mag_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_GPS
+#if AP_PERIPH_GPS_ENABLED
         can_gps_update();
 #endif
 #if AP_UART_MONITOR_ENABLED
         send_serial_monitor_data();
 #endif
-#ifdef HAL_PERIPH_ENABLE_BATTERY
+#if AP_PERIPH_BATTERY_ENABLED
         can_battery_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_BARO
+#if AP_PERIPH_BARO_ENABLED
         can_baro_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_AIRSPEED
+#if AP_PERIPH_AIRSPEED_ENABLED
         can_airspeed_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_RANGEFINDER
+#if AP_PERIPH_RANGEFINDER_ENABLED
         can_rangefinder_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_PROXIMITY
+#if AP_PERIPH_PROXIMITY_ENABLED
         can_proximity_update();
 #endif
-    #if defined(HAL_PERIPH_ENABLE_BUZZER_WITHOUT_NOTIFY) || defined (HAL_PERIPH_ENABLE_NOTIFY)
+    #if AP_PERIPH_BUZZER_WITHOUT_NOTIFY_ENABLED || AP_PERIPH_NOTIFY_ENABLED
         can_buzzer_update();
     #endif
     #ifdef HAL_GPIO_PIN_SAFE_LED
@@ -1909,29 +1981,32 @@ void AP_Periph_FW::can_update()
     #ifdef HAL_GPIO_PIN_SAFE_BUTTON
         can_safety_button_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_PWM_HARDPOINT
+    #if AP_PERIPH_PWM_HARDPOINT_ENABLED
         pwm_hardpoint_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_HWESC
+    #if AP_PERIPH_HOBBYWING_ESC_ENABLED
         hwesc_telem_update();
     #endif
-#ifdef HAL_PERIPH_ENABLE_ESC_APD
+#if AP_PERIPH_ESC_APD_ENABLED
         apd_esc_telem_update();
 #endif
-    #ifdef HAL_PERIPH_ENABLE_MSP
+    #if AP_PERIPH_MSP_ENABLED
         msp_sensor_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_RC_OUT
+    #if AP_PERIPH_RC_OUT_ENABLED
         rcout_update();
     #endif
-    #ifdef HAL_PERIPH_ENABLE_EFI
+    #if AP_PERIPH_EFI_ENABLED
         can_efi_update();
     #endif
-#ifdef HAL_PERIPH_ENABLE_DEVICE_TEMPERATURE
+#if AP_PERIPH_DEVICE_TEMPERATURE_ENABLED
         temperature_sensor_update();
 #endif
-#ifdef HAL_PERIPH_ENABLE_RPM_STREAM
+#if AP_PERIPH_RPM_STREAM_ENABLED
         rpm_sensor_send();
+#endif
+#if AP_SERVO_TELEM_ENABLED
+        servo_telem_update();
 #endif
     }
     const uint32_t now_us = AP_HAL::micros();
@@ -1942,12 +2017,25 @@ void AP_Periph_FW::can_update()
         // allow for user enabling/disabling CANFD at runtime
         dronecan.canard.tao_disabled = g.can_fdmode == 1;
 #endif
-
-        processTx();
-        processRx();
+        {
+            WITH_SEMAPHORE(canard_broadcast_semaphore);
+            processTx();
+            processRx();
 #if HAL_PERIPH_CAN_MIRROR
-        processMirror();
+            processMirror();
 #endif // HAL_PERIPH_CAN_MIRROR
+
+        }
+    }
+
+    // if there is a reboot scheduled, do it 1 second after request to allow the acknowledgement to be sent
+    if (reboot_request_ms != 0 && (AP_HAL::millis() - reboot_request_ms > 1000)) {
+        prepare_reboot();
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+        NVIC_SystemReset();
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        HAL_SITL::actually_reboot();
+#endif
     }
 }
 

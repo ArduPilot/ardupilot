@@ -227,14 +227,6 @@ bool Matrix3<T>::invert()
     return success;
 }
 
-template <typename T>
-void Matrix3<T>::zero(void)
-{
-    a.x = a.y = a.z = 0;
-    b.x = b.y = b.z = 0;
-    c.x = c.y = c.z = 0;
-}
-
 // create rotation matrix for rotation about the vector v by angle theta
 // See: http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/
 template <typename T>

@@ -1,0 +1,26 @@
+include ../MatekL431/hwdef.inc
+
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+define HAL_DISABLE_ADC_DRIVER TRUE
+
+# ------------------ I2C airspeed -------------------------
+define AP_PERIPH_AIRSPEED_ENABLED 1
+
+# 30" AUAV sensor by default
+define HAL_AIRSPEED_TYPE_DEFAULT 19  
+define AIRSPEED_MAX_SENSORS 1
+
+# enable Baro on AUAV
+define AP_PERIPH_BARO_ENABLED 1
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_AUAV_ENABLED 1
+define BARO_MAX_INSTANCES 1
+BARO AUAV I2C:0:0x27
+
+# ----------- MSP -------------------
+define AP_PERIPH_MSP_ENABLED 1
+define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 1
+
+USE_BOOTLOADER_FROM_BOARD MatekL431

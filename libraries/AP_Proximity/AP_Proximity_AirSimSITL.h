@@ -34,8 +34,8 @@ public:
     void update(void) override;
 
     // get maximum and minimum distances (in meters) of sensor
-    float distance_max() const override;
-    float distance_min() const override;
+    float distance_max_m() const override;
+    float distance_min_m() const override;
 
     // get distance upwards in meters. returns true on success
     bool get_upward_distance(float &distance) const override;

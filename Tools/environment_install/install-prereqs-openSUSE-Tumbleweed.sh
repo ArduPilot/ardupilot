@@ -35,9 +35,9 @@ ZYPPER="sudo zypper in --no-recommends"
 if $ASSUME_YES; then
     ZYPPER="sudo zypper in -y --no-recommends"
 fi
-PIP3=pip3
+PIP3="python3 -m pip"
 if $QUIET; then
-    PIP3="pip3 -q"
+    PIP3="$PIP3 -q"
 fi
 
 function package_is_installed() {
@@ -59,7 +59,7 @@ PYPKGVER=python$(python3 --version | cut -d' ' -f2 | awk -F. '{print $1$2}')
 BASE_PKGS="patterns-devel-base-devel_basis ccache git axel valgrind screen gcc-c++ xterm free-ttf-fonts sfml2-devel zip glibc-devel-static rsync"
 SITL_PKGS="${PYPKGVER}-pip ${PYPKGVER}-devel ${PYPKGVER}-setuptools ${PYPKGVER}-wheel ${PYPKGVER}-lxml ${PYPKGVER}-pyaml ${PYPKGVER}-wxPython ${PYPKGVER}-pyparsing ${PYPKGVER}-opencv ${PYPKGVER}-numpy ${PYPKGVER}-scipy ${PYPKGVER}-matplotlib"
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect argparse pyparsing geocoder pyserial empy==3.3.4 ptyprocess dronecan"
+PYTHON_PKGS="lxml pymavlink MAVProxy pexpect argparse pyparsing geocoder pyserial empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS+=" flake8 junitparser pygame intelhex psutil pyyaml"
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)
@@ -102,6 +102,8 @@ if ! grep -Fxq "$SOURCE_LINE" ~/.bashrc; then
 
     if [[ $DO_PYTHON_VENV_ENV -eq 1 ]]; then
         echo $SOURCE_LINE >> ~/.bashrc
+    else
+        echo "Please use \`$SOURCE_LINE\` to activate the ArduPilot venv"
     fi
 fi
 

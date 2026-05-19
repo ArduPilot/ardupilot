@@ -13,10 +13,24 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simple particle sensor simulation
+  VICON (visual positioning) simulation
+
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --serial5=sim:vicon:
+param set SERIAL5_PROTOCOL 1
+graph SIMSTATE.lat-GPS_GLOBAL_ORIGIN.latitude SIMSTATE.lng-GPS_GLOBAL_ORIGIN.longitude
+reboot
+
+mavproxy.py --master tcp:localhost:5763 --source-system=72
+vehicle 17
+graph VISION_POSITION_ESTIMATE.x VISION_POSITION_ESTIMATE.y
+
 */
 
 #pragma once
+
+#include "SIM_config.h"
+
+#if AP_SIM_VICON_ENABLED
 
 #include "SIM_Aircraft.h"
 
@@ -61,7 +75,7 @@ private:
     };
 
     // return true if the given message type should be sent
-    bool should_send(ViconTypeMask type_mask) const { return (((uint8_t)type_mask & _sitl->vicon_type_mask.get()) > 0); }
+    bool should_send(ViconTypeMask type_mask) const { return (((uint8_t)type_mask & _sitl->vicon.type_mask.get()) > 0); }
 
     // get unused index in msg_buf
     bool get_free_msg_buf_index(uint8_t &index);
@@ -82,3 +96,5 @@ private:
 };
 
 }
+
+#endif  // AP_SIM_VICON_ENABLED

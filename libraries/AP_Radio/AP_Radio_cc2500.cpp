@@ -85,7 +85,7 @@ bool AP_Radio_cc2500::init(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (_irq_handler_ctx != nullptr) {
-        AP_HAL::panic("AP_Radio_cc2500: double instantiation of irq_handler\n");
+        AP_HAL::panic("AP_Radio_cc2500: double instantiation of irq_handler");
     }
     chVTObjectInit(&timeout_vt);
     _irq_handler_ctx = chThdCreateFromHeap(NULL,
@@ -653,8 +653,8 @@ static const uint8_t wifi_chan_map[14] = {
 void AP_Radio_cc2500::setup_hopping_table_SRT(void)
 {
     uint8_t val;
-    uint8_t channel = bindTxId[0] % 127;
-    uint8_t channel_spacing = bindTxId[1] % 127;
+    uint8_t channel = bindTxId[0] % INT8_MAX;
+    uint8_t channel_spacing = bindTxId[1] % INT8_MAX;
     uint8_t i;
     uint8_t wifi_chan = t_status.wifi_chan;
     uint8_t cc_wifi_mid, cc_wifi_low, cc_wifi_high;
@@ -1426,7 +1426,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
     pkt.length = sizeof(pkt)-1;
 
     t_status.flags = 0;
-    t_status.flags |= AP_Notify::flags.gps_status >= 3?TELEM_FLAG_GPS_OK:0;
+    t_status.flags |= AP_Notify::flags.gps_status >= AP_GPS_FixType::FIX_3D?TELEM_FLAG_GPS_OK:0;
     t_status.flags |= AP_Notify::flags.pre_arm_check?TELEM_FLAG_ARM_OK:0;
     t_status.flags |= AP_Notify::flags.failsafe_battery?0:TELEM_FLAG_BATT_OK;
     t_status.flags |= hal.util->get_soft_armed()?TELEM_FLAG_ARMED:0;

@@ -46,12 +46,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-#if HAL_CANMANAGER_ENABLED
-#define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANLinuxIface", fmt, ##args); } while (0)
-#else
-#define Debug(fmt, args...)
-#endif
-
 static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
     can_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, uavcan_frame.dlc, { } };
@@ -222,43 +216,6 @@ void CANIface::_poll(bool read, bool write)
     }
 }
 
-bool CANIface::configureFilters(const CanFilterConfig* const filter_configs,
-                              const uint16_t num_configs)
-{
-    if (filter_configs == nullptr || mode_ != FilteredMode) {
-        return false;
-    }
-    _hw_filters_container.clear();
-    _hw_filters_container.resize(num_configs);
-
-    for (unsigned i = 0; i < num_configs; i++) {
-        const CanFilterConfig& fc = filter_configs[i];
-        _hw_filters_container[i].can_id   = fc.id   & AP_HAL::CANFrame::MaskExtID;
-        _hw_filters_container[i].can_mask = fc.mask & AP_HAL::CANFrame::MaskExtID;
-        if (fc.id & AP_HAL::CANFrame::FlagEFF) {
-            _hw_filters_container[i].can_id |= CAN_EFF_FLAG;
-        }
-        if (fc.id & AP_HAL::CANFrame::FlagRTR) {
-            _hw_filters_container[i].can_id |= CAN_RTR_FLAG;
-        }
-        if (fc.mask & AP_HAL::CANFrame::FlagEFF) {
-            _hw_filters_container[i].can_mask |= CAN_EFF_FLAG;
-        }
-        if (fc.mask & AP_HAL::CANFrame::FlagRTR) {
-            _hw_filters_container[i].can_mask |= CAN_RTR_FLAG;
-        }
-    }
-
-    return true;
-}
-
-/**
- * SocketCAN emulates the CAN filters in software, so the number of filters is virtually unlimited.
- * This method returns a constant value.
- */
-static constexpr unsigned NumFilters = CAN_FILTER_NUMBER;
-uint16_t CANIface::getNumFilters() const { return NumFilters; }
-
 uint32_t CANIface::getErrorCount() const
 {
     uint32_t ec = 0;
@@ -270,6 +227,9 @@ void CANIface::_pollWrite()
 {
     while (_hasReadyTx()) {
         WITH_SEMAPHORE(sem);
+        if (!_hasReadyTx()) {
+            break;
+        }
         const CanTxItem tx = _tx_queue.top();
         uint64_t curr_time = AP_HAL::micros64();
         if (tx.deadline >= curr_time) {
@@ -384,7 +344,7 @@ int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopb
      */
     loopback = (msg.msg_flags & static_cast<int>(MSG_CONFIRM)) != 0;
 
-    if (!loopback && !_checkHWFilters(sockcan_frame)) {
+    if (!loopback) {
         return 0;
     }
 
@@ -435,20 +395,6 @@ bool CANIface::_wasInPendingLoopbackSet(const AP_HAL::CANFrame& frame)
     return false;
 }
 
-bool CANIface::_checkHWFilters(const can_frame& frame) const
-{
-    if (!_hw_filters_container.empty()) {
-        for (auto& f : _hw_filters_container) {
-            if (((frame.can_id & f.can_mask) ^ f.can_id) == 0) {
-                return true;
-            }
-        }
-        return false;
-    } else {
-        return true;
-    }
-}
-
 void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 {
     if (!_down && (pfd.revents & POLLERR)) {
@@ -458,11 +404,10 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 
         _down= error == ENETDOWN || error == ENODEV;
         stats.num_downs++;
-        Debug("Iface %d is dead; error %d", _fd, error);
     }
 }
 
-bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
+bool CANIface::init(const uint32_t bitrate)
 {
     char iface_name[16];
 #if HAL_LINUX_USE_VIRTUAL_CAN
@@ -474,10 +419,8 @@ bool CANIface::init(const uint32_t bitrate, const OperatingMode mode)
         return _initialized;
     }
     bitrate_ = bitrate;
-    mode_ = mode;
     // TODO: Add possibility change bitrate
     _fd = _openSocket(iface_name);
-    Debug("Socket opened iface_name: %s fd: %d", iface_name, _fd);
     if (_fd > 0) {
         _bitrate = bitrate;
         _initialized = true;

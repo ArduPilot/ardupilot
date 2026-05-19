@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 
 '''
 check that replay produced identical results
 '''
-
-from __future__ import print_function
 
 def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0, ignores=set()):
     '''check replay log for matching output'''
@@ -20,7 +20,7 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
     mlog = mavutil.mavlink_connection(logfile)
 
     ek2_list = ['NKF1','NKF2','NKF3','NKF4','NKF5','NKF0','NKQ', 'NKY0', 'NKY1']
-    ek3_list = ['XKF1','XKF2','XKF3','XKF4','XKF0','XKFS','XKQ','XKFD','XKV1','XKV2','XKY0','XKY1']
+    ek3_list = ['XKF1','XKF2','XKF3','XKF4','XKF5','XKFA','XKF0','XKFS','XKQ','XKFD','XKV1','XKV2','XKY0','XKY1']
     
     if ekf2_only:
         mlist = ek2_list

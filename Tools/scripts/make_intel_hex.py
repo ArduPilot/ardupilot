@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# flake8: noqa
+
 import sys, os, shutil, struct
 import intelhex
 

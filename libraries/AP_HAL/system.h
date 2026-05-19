@@ -19,6 +19,7 @@ uint16_t millis16();
 uint64_t micros64();
 uint64_t millis64();
 
+// only defined and used on SITL, but declared here for historical reasons
 void dump_stack_trace();
 void dump_core_file();
 

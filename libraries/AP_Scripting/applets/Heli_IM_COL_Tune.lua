@@ -4,8 +4,6 @@
 -- this pot to adjust the sensitivity of the collective about the collective midstick.  The 2nd Pot then controls
 -- the value of the 50% point on the curve.  This can be used to set the collective position to aid with hovering 
 -- at the midstick.
--- luacheck: only 0
----@diagnostic disable: cast-local-type
 
 -- Tested and working as of 25th Aug 2020 (Copter Dev)
 
@@ -83,8 +81,7 @@ end
 
 -- Get parameter value and perform checks to ensure successful
 function get_im_val(param_name,disp)
-    local value = -1
-    value = param:get(param_name)
+    local value = param:get(param_name)
 
     if value >= 0 then
         if disp then

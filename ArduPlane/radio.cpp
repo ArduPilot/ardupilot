@@ -8,16 +8,17 @@
  */
 void Plane::set_control_channels(void)
 {
+    // the library guarantees that these are non-nullptr:
     if (g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
         // same.
-        channel_roll = RC_Channels::rc_channel(rcmap.yaw()-1);
+        channel_roll = &rc().get_yaw_channel();
     } else {
-        channel_roll = RC_Channels::rc_channel(rcmap.roll()-1);
+        channel_roll = &rc().get_roll_channel();
     }
-    channel_pitch    = RC_Channels::rc_channel(rcmap.pitch()-1);
-    channel_throttle = RC_Channels::rc_channel(rcmap.throttle()-1);
-    channel_rudder   = RC_Channels::rc_channel(rcmap.yaw()-1);
+    channel_pitch    = &rc().get_pitch_channel();
+    channel_throttle = &rc().get_throttle_channel();
+    channel_rudder   = &rc().get_yaw_channel();
 
     // set rc channel ranges
     channel_roll->set_angle(SERVO_MAX);
@@ -57,6 +58,8 @@ void Plane::set_control_channels(void)
         // setup correct scaling for ESCs like the UAVCAN ESCs which
         // take a proportion of speed. For quadplanes we use AP_Motors
         // scaling
+        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttleLeft);
+        g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttleRight);
         g2.servo_channels.set_esc_scaling_for(SRV_Channel::k_throttle);
     }
 }
@@ -104,67 +107,13 @@ void Plane::init_rc_out_main()
  */
 void Plane::init_rc_out_aux()
 {
-    SRV_Channels::enable_aux_servos();
+    AP::srv().enable_aux_servos();
 
     servos_output();
     
     // setup PWM values to send if the FMU firmware dies
     // allows any VTOL motors to shut off
     SRV_Channels::setup_failsafe_trim_all_non_motors();
-}
-
-/*
-  check for pilot input on rudder stick for arming/disarming
-*/
-void Plane::rudder_arm_disarm_check()
-{
-    const int16_t rudder_in = channel_rudder->get_control_in();
-    if (rudder_in == 0) {
-        // remember if we've seen neutral rudder, used for VTOL auto-takeoff
-        seen_neutral_rudder = true;
-    }
-	if (!arming.is_armed()) {
-		// when not armed, full right rudder starts arming counter
-        if (rudder_in > 4000) {
-			uint32_t now = millis();
-
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-
-				if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-			} else {
-				//time to arm!
-				arming.arm(AP_Arming::Method::RUDDER);
-                rudder_arm_timer = 0;
-                seen_neutral_rudder = false;
-                takeoff_state.rudder_takeoff_warn_ms = now;
-            }
-		} else {
-			// not at full right rudder
-			rudder_arm_timer = 0;
-		}
-	} else {
-		// full left rudder starts disarming counter
-        if (rudder_in < -4000) {
-			uint32_t now = millis();
-
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-				if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-			} else {
-				//time to disarm!
-				arming.disarm(AP_Arming::Method::RUDDER);
-				rudder_arm_timer = 0;
-			}
-		} else {
-			// not at full left rudder
-			rudder_arm_timer = 0;
-		}
-    }
 }
 
 void Plane::read_radio()
@@ -196,14 +145,12 @@ void Plane::read_radio()
         && channel_throttle->get_control_in() > 50
         && stickmixing) {
         float nudge = (channel_throttle->get_control_in() - 50) * 0.02f;
-        if (ahrs.using_airspeed_sensor()) {
+        if (TECS_controller.use_airspeed()) {
             airspeed_nudge_cm = (aparm.airspeed_max - aparm.airspeed_cruise) * nudge * 100;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }
     }
-
-    rudder_arm_disarm_check();
 
 #if HAL_QUADPLANE_ENABLED
     // potentially swap inputs for tailsitters
@@ -282,8 +229,9 @@ void Plane::control_failsafe()
 
     const bool allow_failsafe_bypass = !arming.is_armed() && !is_flying() && (rc().enabled_protocols() != 0);
     const bool has_had_input = rc().has_had_rc_receiver() || rc().has_had_rc_override();
-    if ((ThrFailsafe(g.throttle_fs_enabled.get()) != ThrFailsafe::Enabled) || (allow_failsafe_bypass && !has_had_input)) {
-        // If not flying and disarmed don't trigger failsafe until RC has been received for the fist time
+    if ((g.throttle_fs_enabled != ThrFailsafe::Enabled && !failsafe.rc_failsafe) || (allow_failsafe_bypass && !has_had_input)) {
+        // If throttle fs not enabled and not in failsafe, or 
+        // not flying and disarmed, don't trigger failsafe check until RC has been received for the first time  
         return;
     }
 
@@ -384,7 +332,7 @@ void Plane::trim_radio()
  */
 bool Plane::rc_throttle_value_ok(void) const
 {
-    if (ThrFailsafe(g.throttle_fs_enabled.get()) == ThrFailsafe::Disabled) {
+    if (g.throttle_fs_enabled == ThrFailsafe::Disabled) {
         return true;
     }
     if (channel_throttle->get_reverse()) {
@@ -402,8 +350,8 @@ bool Plane::rc_failsafe_active(void) const
     if (!rc_throttle_value_ok()) {
         return true;
     }
-    if (millis() - failsafe.last_valid_rc_ms > 1000) {
-        // we haven't had a valid RC frame for 1 seconds
+    if (millis() - failsafe.last_valid_rc_ms > rc().get_fs_timeout_ms()) {
+        // we haven't had a valid RC frame for RC_FS_TIMEOUT seconds
         return true;
     }
     return false;

@@ -9,7 +9,7 @@ void RmtSigReader::init()
 {
     rmt_config_t config;
     config.rmt_mode = RMT_MODE_RX;
-    config.channel = RMT_CHANNEL_0;
+    config.channel = RMT_CHANNEL_4; // On S3, Channel 0 ~ 3 (TX channel) are dedicated to sending signals. Channel 4 ~ 7 (RX channel) are dedicated to receiving signals, so this pin choice is compatible with both.
     config.clk_div = 80;   //80MHZ APB clock to the 1MHZ target frequency
     config.gpio_num = HAL_ESP32_RCIN;
     config.mem_block_num = 2; //each block could store 64 pulses

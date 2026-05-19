@@ -136,6 +136,7 @@ void UARTDriver_Console::printf(const char *fmt, ...)
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
     HAP_PRINTF(buf);
+    qurt_printf_to_host(buf);
 }
 
 
@@ -150,9 +151,19 @@ UARTDriver_MAVLinkUDP::UARTDriver_MAVLinkUDP(uint8_t instance) : inst(instance)
     register_mavlink_data_callback(instance, _mavlink_data_cb, (void *) this);
 }
 
+void UARTDriver_MAVLinkUDP::check_rx_seq(uint32_t seq)
+{
+	if (seq != rx_seq)
+	{
+		HAP_PRINTF("Sequence mismatch for instance %u. Expected %u, got %u", inst, rx_seq, seq);
+	}
+	rx_seq++;
+}
+
 void UARTDriver_MAVLinkUDP::_mavlink_data_cb(const struct qurt_rpc_msg *msg, void *p)
 {
     auto *driver = (UARTDriver_MAVLinkUDP *)p;
+    driver->check_rx_seq(msg->seq);
     driver->_readbuf.write(msg->data, msg->data_length);
 }
 
@@ -183,7 +194,7 @@ bool UARTDriver_MAVLinkUDP::_write_pending_bytes(void)
     }
     msg.msg_id = QURT_MSG_ID_MAVLINK_MSG;
     msg.inst = inst;
-    msg.seq = seq++;
+    msg.seq = tx_seq++;
     msg.data_length = _writebuf.read(msg.data, n);
 
     return qurt_rpc_send(msg);

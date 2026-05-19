@@ -41,8 +41,6 @@ public:
                                      bool force_external,
                                      enum Rotation rotation);
 
-    void read() override;
-
     static constexpr const char *name = "LIS3MDL";
 
 private:
@@ -58,7 +56,6 @@ private:
     bool init();
     void timer();
 
-    uint8_t compass_instance;
     bool force_external;
     enum Rotation rotation;
 };

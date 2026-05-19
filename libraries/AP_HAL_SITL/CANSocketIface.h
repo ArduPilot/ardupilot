@@ -44,8 +44,8 @@ public:
     ~CANIface() { }
 
     // Initialise CAN Peripheral
-    bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) override;
-    bool init(const uint32_t bitrate, const OperatingMode mode) override;
+    bool init(const uint32_t bitrate, const uint32_t fdbitrate) override;
+    bool init(const uint32_t bitrate) override;
 
     // number of enabled interfaces
     static uint8_t num_interfaces(void) {

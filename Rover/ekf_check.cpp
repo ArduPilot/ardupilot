@@ -57,7 +57,7 @@ void Rover::ekf_check()
                                          LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
+                    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"EKF variance");
                     ekf_check_state.last_warn_time = AP_HAL::millis();
                 }
                 failsafe_ekf_event();
@@ -177,7 +177,7 @@ void Rover::failsafe_ekf_event()
             break;
     }
 
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF failsafe");
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"EKF failsafe");
 }
 
 // failsafe_ekf_off_event - actions to take when EKF failsafe is cleared
@@ -191,5 +191,5 @@ void Rover::failsafe_ekf_off_event(void)
     failsafe.ekf = false;
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV,
                              LogErrorCode::FAILSAFE_RESOLVED);
-    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF failsafe cleared");
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"EKF failsafe cleared");
 }

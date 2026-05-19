@@ -15,7 +15,7 @@
 
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_BATTERY_BALANCE
+#if AP_PERIPH_BATTERY_BALANCE_ENABLED
 
 #include <dronecan_msgs.h>
 
@@ -134,5 +134,5 @@ void AP_Periph_FW::batt_balance_update()
     delete [] buffer;
 }
 
-#endif  // HAL_PERIPH_ENABLE_BATTERY_BALANCE
+#endif  // AP_PERIPH_BATTERY_BALANCE_ENABLED
 

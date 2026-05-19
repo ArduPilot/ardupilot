@@ -16,7 +16,7 @@
   support for serial connected AHRS systems
  */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_ExternalAHRS_config.h"
 
@@ -351,7 +351,10 @@ bool AP_ExternalAHRS_VectorNav::decode(char c)
         }
         if (nmea.term_is_checksum) {
             nmea.sentence_done = true;
-            uint8_t checksum = 16 * char_to_hex(nmea.term[0]) + char_to_hex(nmea.term[1]);
+            uint8_t checksum;
+            if (!hex_twochars_to_uint8(nmea.term, checksum)) {
+                return false;
+            }
             return ((checksum == nmea.checksum) && nmea.sentence_valid);
         }
 
@@ -484,7 +487,7 @@ const char* AP_ExternalAHRS_VectorNav::get_name() const
 }
 
 // Input data struct for EAHA logging message, used by both AHRS mode and INS mode
-struct AP_ExternalAHRS_VectorNav::EAHA {
+struct AP_ExternalAHRS_VectorNav::VNAT {
     uint64_t timeUs;
     float quat[4];
     float ypr[3];
@@ -492,11 +495,11 @@ struct AP_ExternalAHRS_VectorNav::EAHA {
 };
 
 
-void AP_ExternalAHRS_VectorNav::write_eaha(const EAHA& data_to_log) const {
+void AP_ExternalAHRS_VectorNav::write_vnat(const VNAT& data_to_log) const {
 
 #if HAL_LOGGING_ENABLED
-    // @LoggerMessage: EAHA
-    // @Description: External AHRS Attitude data
+    // @LoggerMessage: VNAT
+    // @Description: VectorNav Attitude data
     // @Field: TimeUS: Time since system startup
     // @Field: Q1: Attitude quaternion 1
     // @Field: Q2: Attitude quaternion 2
@@ -509,7 +512,7 @@ void AP_ExternalAHRS_VectorNav::write_eaha(const EAHA& data_to_log) const {
     // @Field: PU: Pitch uncertainty
     // @Field: RU: Roll uncertainty
 
-    AP::logger().WriteStreaming("EAHA", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
+    AP::logger().WriteStreaming("VNAT", "TimeUS,Q1,Q2,Q3,Q4,Yaw,Pitch,Roll,YU,PU,RU",
                        "s----dddddd", "F0000000000",
                        "Qffffffffff",
                        data_to_log.timeUs,
@@ -573,8 +576,8 @@ void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
     }
 
 #if HAL_LOGGING_ENABLED
-    // @LoggerMessage: EAHI
-    // @Description: External AHRS IMU data
+    // @LoggerMessage: VNIM
+    // @Description: VectorNav IMU data
     // @Field: TimeUS: Time since system startup
     // @Field: Temp: Temprature
     // @Field: Pres: Pressure
@@ -588,7 +591,7 @@ void AP_ExternalAHRS_VectorNav::process_imu_packet(const uint8_t *b)
     // @Field: GY: Rotation rate Y-axis
     // @Field: GZ: Rotation rate Z-axis
 
-    AP::logger().WriteStreaming("EAHI", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
+    AP::logger().WriteStreaming("VNIM", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ",
                        "sdPGGGoooEEE", "F00000000000",
                        "Qfffffffffff",
                        AP_HAL::micros64(),
@@ -610,13 +613,13 @@ void AP_ExternalAHRS_VectorNav::process_ahrs_ekf_packet(const uint8_t *b) {
     state.have_quaternion = true;
 
 #if HAL_LOGGING_ENABLED
-    EAHA data_to_log;
+    VNAT data_to_log;
     data_to_log.timeUs = AP_HAL::micros64();
     memcpy(data_to_log.quat, pkt.quaternion, sizeof(pkt.quaternion));
     memcpy(data_to_log.ypr, pkt.ypr, sizeof(pkt.ypr));
     memcpy(data_to_log.yprU, pkt.yprU, sizeof(pkt.yprU));
 
-    write_eaha(data_to_log);
+    write_vnat(data_to_log);
 #endif  // HAL_LOGGING_ENABLED
 }
 
@@ -638,16 +641,16 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     state.have_location           = true;
 
 #if HAL_LOGGING_ENABLED
-    EAHA data_to_log;
+    VNAT data_to_log;
     auto now =  AP_HAL::micros64();
     data_to_log.timeUs = now;
     memcpy(data_to_log.quat, pkt.quaternion, sizeof(pkt.quaternion));
     memcpy(data_to_log.ypr, pkt.ypr, sizeof(pkt.ypr));
     memcpy(data_to_log.yprU, pkt.yprU, sizeof(pkt.yprU));
-    write_eaha(data_to_log);
+    write_vnat(data_to_log);
 
-    // @LoggerMessage: EAHK
-    // @Description: External AHRS INS Kalman Filter data
+    // @LoggerMessage: VNKF
+    // @Description: VectorNav INS Kalman Filter data
     // @Field: TimeUS: Time since system startup
     // @Field: InsStatus: VectorNav INS health status
     // @Field: Lat: Latitude
@@ -659,7 +662,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
     // @Field: PosU: Filter estimated position uncertainty
     // @Field: VelU: Filter estimated Velocity uncertainty
 
-    AP::logger().WriteStreaming("EAHK", "TimeUS,InsStatus,Lat,Lon,Alt,VelN,VelE,VelD,PosU,VelU",
+    AP::logger().WriteStreaming("VNKF", "TimeUS,InsStatus,Lat,Lon,Alt,VelN,VelE,VelD,PosU,VelU",
                        "s-ddmnnndn", "F000000000",
                        "QHdddfffff",
                        now,
@@ -683,7 +686,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_gnss_packet(const uint8_t *b) {
     // get ToW in milliseconds
     gps.gps_week           = pkt.timeGps / (AP_MSEC_PER_WEEK * 1000000ULL);
     gps.ms_tow             = (pkt.timeGps / 1000000ULL) % (60 * 60 * 24 * 7 * 1000ULL);
-    gps.fix_type           = pkt.fix1;
+    gps.fix_type           = AP_GPS_FixType(pkt.fix1);
     gps.satellites_in_view = pkt.numSats1;
 
     gps.horizontal_pos_accuracy = pkt.posU1[0];
@@ -701,7 +704,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_gnss_packet(const uint8_t *b) {
     gps.ned_vel_east  = pkt.velNed1[1];
     gps.ned_vel_down  = pkt.velNed1[2];
 
-    if (!state.have_origin && gps.fix_type >= 3) {
+    if (!state.have_origin && gps.fix_type >= AP_GPS_FixType::FIX_3D) {
         WITH_SEMAPHORE(state.sem);
         state.origin = Location{int32_t(pkt.posLla1[0] * 1.0e7), int32_t(pkt.posLla1[1] * 1.0e7),
                                 int32_t(pkt.posLla1[2] * 1.0e2), Location::AltFrame::ABSOLUTE};
@@ -788,59 +791,15 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
     }
 }
 
-// send an EKF_STATUS message to GCS
-void AP_ExternalAHRS_VectorNav::send_status_report(GCS_MAVLINK &link) const
+// get variances
+bool AP_ExternalAHRS_VectorNav::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
-    if (!latest_ins_ekf_packet) {
-        return;
-    }
-    // prepare flags
-    uint16_t flags = 0;
-    nav_filter_status filterStatus;
-    get_filter_status(filterStatus);
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // send message
     const struct VN_INS_ekf_packet &pkt = *(struct VN_INS_ekf_packet *)latest_ins_ekf_packet;
-    const float vel_gate = 5;
-    const float pos_gate = 5;
-    const float hgt_gate = 5;
-    const float mag_var = 0;
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       pkt.velU / vel_gate, pkt.posU / pos_gate, pkt.posU / hgt_gate,
-                                       mag_var, 0, 0);
+    velVar = pkt.velU * vel_gate_scale;
+    posVar = pkt.posU * pos_gate_scale;
+    hgtVar = pkt.posU * hgt_gate_scale;
+    tasVar = 0;
+    return true;
 }
 
 #endif  // AP_EXTERNAL_AHRS_VECTORNAV_ENABLED

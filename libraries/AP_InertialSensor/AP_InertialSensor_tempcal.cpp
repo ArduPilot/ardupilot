@@ -307,6 +307,16 @@ void AP_InertialSensor_TCal::Learn::add_sample(const Vector3f &sample, float tem
 
     const float tdiff = T - TEMP_REFERENCE;
 #if HAL_LOGGING_ENABLED
+    // @LoggerMessage: TCLR
+    // @Description: Temperature Calibration Information
+    // @Field: TimeUS: Time since system startup
+    // @Field: I: temperature calibration instance number
+    // @Field: SType: sensor type (0==accel, 1==gyro)
+    // @Field: Temp: current temperature
+    // @Field: X: x-axis sample sum
+    // @Field: Y: y-axis sample sum
+    // @Field: Z: z-axis sample sum
+    // @Field: NSamp: sample count
     AP::logger().Write("TCLR", "TimeUS,I,SType,Temp,X,Y,Z,NSamp",
                        "s#------",
                        "F000000-",

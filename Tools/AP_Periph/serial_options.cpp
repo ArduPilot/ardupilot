@@ -18,7 +18,7 @@
 
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#if AP_PERIPH_SERIAL_OPTIONS_ENABLED
 
 #include "serial_options.h"
 #include <AP_SerialManager/AP_SerialManager_config.h>
@@ -107,4 +107,4 @@ void SerialOptions::init(void)
     }
 }
 
-#endif  // HAL_PERIPH_ENABLE_SERIAL_OPTIONS
+#endif  // AP_PERIPH_SERIAL_OPTIONS_ENABLED

@@ -24,7 +24,7 @@ The y axis points to the right (geometrically) (= pitch axis)
 The z axis points downwards (geometrically) (= yaw axis)
 In order to convert from Body Frame to NED what you need to call this function:
 
-copter.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
+copter.ahrs.body_to_earth2D((vel_vector.xy());
 
 
 

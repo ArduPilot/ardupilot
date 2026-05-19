@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef.h>
+
 #include <AP_HAL_QURT/AP_HAL_QURT_Main.h>
 
 #define HAL_BOARD_NAME "QURT"
@@ -7,6 +9,10 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #define HAL_STORAGE_SIZE            32768
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
+
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+#endif
 
 // only include if compiling C++ code
 #ifdef __cplusplus
@@ -69,9 +75,13 @@
 #define HAL_PARAM_DEFAULTS_PATH AP_FILESYSTEM_POSIX_MAP_FILENAME_BASEDIR "/APM/defaults.parm"
 #endif
 
-#define USE_LIBC_REALLOC 1
-
 #define HAL_WITH_ESC_TELEM 1
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 1
+#endif
+
+#define HAL_OS_LITTLEFS_IO 0
 
 /*
   battery monitoring setup, comes in via ESCs
@@ -82,25 +92,7 @@
 #define HAL_BATT_VOLT_SCALE 1
 #define HAL_BATT_CURR_SCALE 1
 
-#define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-
-/*
-  compass list
- */
-#define PROBE_MAG_I2C(driver, bus, addr, args ...) ADD_BACKEND(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args))
-#define HAL_MAG_PROBE_LIST PROBE_MAG_I2C(QMC5883L, 0, 0x0d, true, ROTATION_NONE)
-
-/*
-  barometer list
- */
-#define PROBE_BARO_I2C(driver, bus, addr, args ...) ADD_BACKEND(AP_Baro_ ## driver::probe(*this,std::move(GET_I2C_DEVICE(bus, addr)),##args))
-#define HAL_BARO_PROBE_LIST PROBE_BARO_I2C(ICP101XX, 2, 0x63)
-
-/*
-  IMU list
- */
-#define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
-#define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensensev3, "INV3", ROTATION_NONE)
+#define AP_COMPASS_PROBING_ENABLED 1
 
 /*
   bring in missing standard library functions

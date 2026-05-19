@@ -4,7 +4,7 @@ MCU STM32F4xx STM32F405xx
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-APJ_BOARD_ID 6002
+APJ_BOARD_ID AP_HW_sw-nav-f405
 
 # setup build for a peripheral firmware
 env AP_PERIPH 1

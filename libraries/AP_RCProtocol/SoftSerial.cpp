@@ -22,8 +22,8 @@
 
 SoftSerial::SoftSerial(uint32_t _baudrate, serial_config _config) :
     baudrate(_baudrate),
-    config(_config),
-    half_bit((1000000U / baudrate)/2)
+    half_bit((1000000U / baudrate)/2),
+    config(_config)
 {
     switch (config) {
     case SERIAL_CONFIG_8N1:

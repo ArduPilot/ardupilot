@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "AP_ST",
+            "cwd": "${workspaceFolder}",
+            "executable": "${config:wscript.elf_file_path}",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            },
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "configFiles": [
+                "${workspaceFolder}/build/${config:wscript.board}/openocd.cfg"
+            ]
+        },
+        {
+            "name": "AP_SITL",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${config:wscript.elf_file_path}",
+            "args": [
+                "-S",
+                "--model",
+                "+",
+                "--speedup",
+                "1",
+                "--slave",
+                "0",
+                "--sim-address=127.0.0.1",
+                "-IO"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "${config:wscript.MIMode}",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": false
+                }
+            ]
+        }
+    ]
+}
