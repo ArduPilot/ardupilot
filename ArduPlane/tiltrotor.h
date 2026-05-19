@@ -35,19 +35,26 @@ public:
     void setup();
 
     void slew(float tilt);
+    void slew_rear(float tilt);
     void binary_slew(bool forward);
     void update();
     void continuous_update();
     void binary_update();
     void vectoring();
     void bicopter_output();
-    void tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul);
+    void tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul, float rear_tilted_mul);
     void tilt_compensate(float *thrust, uint8_t num_motors);
     bool tilt_over_max_angle(void) const;
 
     bool is_motor_tilting(uint8_t motor) const {
         return tilt_mask.get() & (1U<<motor);
     }
+
+    bool is_rear_motor_tilting(uint8_t motor) const {
+        return rear_tilt_mask.get() & (1U<<motor);
+    }
+
+    bool rear_tilt_enabled() const { return enabled() && (rear_tilt_mask != 0); }
 
     bool fully_fwd() const;
     bool fully_up() const;
@@ -86,8 +93,11 @@ public:
     AP_Float fixed_angle;
     AP_Float fixed_gain;
     AP_Float flap_angle_deg;
+    AP_Int16 rear_tilt_mask;
+    AP_Int8  rear_max_angle_deg;
 
     float current_tilt;
+    float current_rear_tilt;
     float current_throttle;
     bool _motors_active;
     float transition_yaw_cd;

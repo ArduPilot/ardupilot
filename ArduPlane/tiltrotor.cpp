@@ -82,6 +82,22 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("WING_FLAP", 10, Tiltrotor, flap_angle_deg, 0),
 
+    // @Param: REAR_MASK
+    // @DisplayName: Rear tiltrotor motor mask
+    // @Description: Bitmask of rear motors that tilt independently of front motors. Requires servos assigned to k_tiltMotorRearLeft and k_tiltMotorRearRight. Configure SERVOn_REVERSED=1 on rear tilt servos so they tilt backward (pushing rearward) when front motors tilt forward. 0 disables independent rear tilt.
+    // @Bitmask: 0:Motor 1, 1:Motor 2, 2:Motor 3, 3:Motor 4, 4:Motor 5, 5:Motor 6, 6:Motor 7, 7:Motor 8
+    // @User: Standard
+    AP_GROUPINFO("REAR_MASK", 11, Tiltrotor, rear_tilt_mask, 0),
+
+    // @Param: REAR_MAX
+    // @DisplayName: Rear tiltrotor maximum angle
+    // @Description: Maximum tilt angle for rear motors in degrees. Rear motors tilt in the opposite direction to front motors (backward for pushers), so all motors contribute thrust in forward flight rather than carrying dead weight. Default 90 deg means the rear servo is driven to its full SERVOn_MAX endpoint in forward flight — configure SERVOn_MAX on the rear tilt servo to achieve exactly 90 deg of physical backward tilt. Lower this only if your rear servo physically cannot reach 90 deg. Requires Q_TILT_REAR_MASK to be non-zero.
+    // @Units: deg
+    // @Increment: 1
+    // @Range: 20 90
+    // @User: Standard
+    AP_GROUPINFO("REAR_MAX", 12, Tiltrotor, rear_max_angle_deg, 90),
+
     AP_GROUPEND
 };
 
@@ -142,6 +158,17 @@ void Tiltrotor::setup()
             SRV_Channels::set_range(SRV_Channel::k_tiltMotorRearLeft, 1000);
             SRV_Channels::set_range(SRV_Channel::k_tiltMotorRearRight, 1000);
         }
+        if (rear_tilt_mask != 0 && type != TILT_TYPE_VECTORED_YAW) {
+            // setup rear tilt servo channels for independent rear motor tilt.
+            // All three channels are initialised so the user can assign whichever
+            // servo function(s) match their airframe:
+            //   TiltMotorsRear     (SERVOn_FUNCTION=45) for a single centre rear motor
+            //   TiltMotorRearLeft  (SERVOn_FUNCTION=46) }
+            //   TiltMotorRearRight (SERVOn_FUNCTION=47) } for dual rear motors
+            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRear,      1000);
+            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRearLeft,  1000);
+            SRV_Channels::set_range(SRV_Channel::k_tiltMotorRearRight, 1000);
+        }
     }
 
     transition = NEW_NOTHROW Tiltrotor_Transition(quadplane, motors, *this);
@@ -193,6 +220,48 @@ void Tiltrotor::slew(float newtilt)
 
     // translate to 0..1000 range and output
     SRV_Channels::set_output_scaled(SRV_Channel::k_motor_tilt, 1000 * current_tilt);
+
+    // drive rear motors to same normalized tilt target; slew_rear() is a no-op
+    // when Q_TILT_REAR_MASK is 0 or when vectored yaw type is active
+    slew_rear(newtilt);
+}
+
+/*
+  output a slew limited rear tiltrotor angle. tilt is from 0 to 1.
+  Rear motors tilt in the opposite physical direction to front motors —
+  configure SERVOn_REVERSED=1 on rear tilt servos to achieve backward tilt
+  when this output increases from 0 to 1000.
+
+  Supports both single and dual rear motor configurations:
+    Single rear motor: assign SERVOn_FUNCTION=45 (TiltMotorsRear)
+    Dual rear motors:  assign SERVOn_FUNCTION=46 (TiltMotorRearLeft)
+                            and SERVOn_FUNCTION=47 (TiltMotorRearRight)
+  All three servo channels receive the same output value; only those with
+  an assigned servo function will produce physical output.
+ */
+void Tiltrotor::slew_rear(float newtilt)
+{
+    if (!rear_tilt_enabled()) {
+        return;
+    }
+
+    // Cap target to the rear motors' physical maximum angle.
+    // rear_max_angle_deg / 90 gives the normalised servo limit (0..1).
+    // This allows the rear to have an independent angle range from the front
+    // (e.g. rear_max_angle_deg=90 while front max_angle_deg=45).
+    const float rear_limit = constrain_float(rear_max_angle_deg.get() / 90.0f, 0.0f, 1.0f);
+    const float rear_target = MIN(newtilt, rear_limit);
+
+    float max_change = tilt_max_change(rear_target < current_rear_tilt);
+    current_rear_tilt = constrain_float(rear_target, current_rear_tilt - max_change, current_rear_tilt + max_change);
+
+    // Output to all rear servo channels (0 to 1000).
+    // Only channels that have a servo function assigned will produce output.
+    // Physical reversal (backward tilt) is achieved via SERVOn_REVERSED parameter.
+    const float scaled = 1000 * current_rear_tilt;
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,      scaled);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearLeft,  scaled);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRearRight, scaled);
 }
 
 // return the current tilt value that represents forward flight
@@ -448,16 +517,23 @@ void Tiltrotor::write_log()
   Finally we ensure no requested thrust is over 1 by scaling back all
   motors so the largest thrust is at most 1.0
  */
-void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul)
+void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float non_tilted_mul, float tilted_mul, float rear_tilted_mul)
 {
     float tilt_total = 0;
     uint8_t tilt_count = 0;
     
     // apply tilt_factors first
     for (uint8_t i=0; i<num_motors; i++) {
-        if (!is_motor_tilting(i)) {
+        if (is_rear_motor_tilting(i)) {
+            // Rear tilting motor gets its own multiplier based on rear tilt angle
+            thrust[i] *= rear_tilted_mul;
+            tilt_total += thrust[i];
+            tilt_count++;
+        } else if (!is_motor_tilting(i)) {
+            // Non-tilting motor
             thrust[i] *= non_tilted_mul;
         } else {
+            // Front tilting motor
             thrust[i] *= tilted_mul;
             tilt_total += thrust[i];
             tilt_count++;
@@ -470,10 +546,12 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
     // tilt, so that the scaling of the yaw control is the same at any
     // tilt angle
     const float yaw_gain = sinf(radians(tilt_yaw_angle));
-    const float avg_tilt_thrust = tilt_total / tilt_count;
+    const float avg_tilt_thrust = tilt_count > 0 ? tilt_total / tilt_count : 0;
 
     for (uint8_t i=0; i<num_motors; i++) {
-        if (is_motor_tilting(i)) {
+        // Only apply yaw/roll mixing to FRONT tilting motors, not rear.
+        // Rear motors in a tricopter do not participate in yaw control via differential tilt.
+        if (is_motor_tilting(i) && !is_rear_motor_tilting(i)) {
             // as we tilt we need to reduce the impact of the roll
             // controller. This simple method keeps the same average,
             // but moves us to no roll control as the angle increases
@@ -481,6 +559,9 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
             // add in differential thrust for yaw control, scaled by tilt angle
             const float diff_thrust = motors->get_roll_factor(i) * (motors->get_yaw()+motors->get_yaw_ff()) * sin_tilt * yaw_gain;
             thrust[i] += diff_thrust;
+            largest_tilted = MAX(largest_tilted, thrust[i]);
+        } else if (is_motor_tilting(i)) {
+            // Rear motor: no yaw/roll mixing in tricopter config
             largest_tilted = MAX(largest_tilted, thrust[i]);
         }
     }
@@ -503,22 +584,38 @@ void Tiltrotor::tilt_compensate_angle(float *thrust, uint8_t num_motors, float n
  */
 void Tiltrotor::tilt_compensate(float *thrust, uint8_t num_motors)
 {
-    if (current_tilt <= 0) {
+    // Check if any tilting is happening (front or rear)
+    if (current_tilt <= 0 && !rear_tilt_enabled()) {
         // the motors are not tilted, no compensation needed
         return;
     }
+
     if (quadplane.in_vtol_mode()) {
-        // we are transitioning to VTOL flight
-        const float tilt_factor = cosf(radians(current_tilt*90));
-        tilt_compensate_angle(thrust, num_motors, tilt_factor, 1);
+        // we are transitioning to VTOL flight (back to hover)
+        // Front motors: scale non-tilted by cos(front_tilt) to maintain vertical thrust
+        const float front_tilt_factor = cosf(radians(current_tilt*90));
+        // Rear motors: scale by cos(rear_tilt) — rear also loses vertical thrust as it tilts backward
+        const float rear_tilt_factor = rear_tilt_enabled() ? cosf(radians(current_rear_tilt*90)) : 1.0f;
+        tilt_compensate_angle(thrust, num_motors, front_tilt_factor, 1, rear_tilt_factor);
     } else {
-        float inv_tilt_factor;
+        // we are in forward flight (transitioning to plane mode)
+        // Front motors: boost by 1/cos(front_tilt) to maintain vertical thrust component
+        float front_inv_tilt_factor;
         if (current_tilt > 0.98f) {
-            inv_tilt_factor = 1.0 / cosf(radians(0.98f*90));
+            front_inv_tilt_factor = 1.0 / cosf(radians(0.98f*90));
         } else {
-            inv_tilt_factor = 1.0 / cosf(radians(current_tilt*90));
+            front_inv_tilt_factor = 1.0 / cosf(radians(current_tilt*90));
         }
-        tilt_compensate_angle(thrust, num_motors, 1, inv_tilt_factor);
+        // Rear motors: boost by 1/cos(rear_tilt) — rear also needs compensation as it tilts backward
+        float rear_inv_tilt_factor = 1.0f;
+        if (rear_tilt_enabled()) {
+            if (current_rear_tilt > 0.98f) {
+                rear_inv_tilt_factor = 1.0 / cosf(radians(0.98f*90));
+            } else {
+                rear_inv_tilt_factor = 1.0 / cosf(radians(current_rear_tilt*90));
+            }
+        }
+        tilt_compensate_angle(thrust, num_motors, 1, front_inv_tilt_factor, rear_inv_tilt_factor);
     }
 }
 
