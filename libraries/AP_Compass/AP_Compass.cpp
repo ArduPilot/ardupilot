@@ -769,6 +769,30 @@ void Compass::init()
     }
 #endif  // AP_CUSTOMROTATIONS_ENABLED
 
+    // migrate stored DEVTYPE_IIS2MDC (0x18) device IDs to
+    // DEVTYPE_LIS2MDL (0x19) so that existing mag calibrations are
+    // preserved across the removal of the IIS2MDC driver.
+    // PARAMETER_CONVERSION - Added: May-2026
+    {
+        const uint8_t old_devtype_iis2mdc = 0x18;
+        for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            const uint32_t did = uint32_t(_state[i].dev_id.get());
+            if (did != 0 && AP_HAL::Device::devid_get_devtype(did) == old_devtype_iis2mdc) {
+                _state[i].dev_id.set_and_save(int32_t(
+                    AP_HAL::Device::change_bus_id(did, AP_Compass_Backend::DEVTYPE_LIS2MDL)));
+            }
+        }
+#if COMPASS_MAX_INSTANCES > 1
+        for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
+            const uint32_t pri = uint32_t(_priority_did_stored_list[i].get());
+            if (pri != 0 && AP_HAL::Device::devid_get_devtype(pri) == old_devtype_iis2mdc) {
+                _priority_did_stored_list[i].set_and_save(int32_t(
+                    AP_HAL::Device::change_bus_id(pri, AP_Compass_Backend::DEVTYPE_LIS2MDL)));
+            }
+        }
+#endif
+    }
+
 #if COMPASS_MAX_INSTANCES > 1
     // Look if there was a primary compass setup in previous version
     // if so and the primary compass is not set in current setup
