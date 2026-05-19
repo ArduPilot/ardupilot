@@ -60,6 +60,7 @@ bool ModeFlip::init(bool ignore_checks)
 
     // initialise state
     _state = FlipState::Start;
+    abandon_requested = false;
     start_time_ms = millis();
 
     roll_dir = pitch_dir = 0;
@@ -92,8 +93,9 @@ bool ModeFlip::init(bool ignore_checks)
 void ModeFlip::run()
 {
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+    if (abandon_requested || !motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
         _state = FlipState::Abandon;
+        abandon_requested = false;
     }
 
     // get pilot's desired throttle
@@ -212,6 +214,11 @@ void ModeFlip::run()
 
     // output pilot's throttle without angle boost
     attitude_control->set_throttle_out(throttle_out, false, g.throttle_filt);
+}
+
+void ModeFlip::abandon_flip()
+{
+    abandon_requested = true;
 }
 
 #endif
