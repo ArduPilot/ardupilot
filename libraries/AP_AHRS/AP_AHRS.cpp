@@ -562,6 +562,8 @@ void AP_AHRS::update(bool skip_ins_update)
 #endif
     }
 
+    copy_estimates_from_backend_estimates(*active_estimates);
+
 #if AP_MODULE_SUPPORTED
     // call AHRS_update hook if any
     AP_Module::call_hook_AHRS_update(*this);
@@ -633,15 +635,6 @@ void AP_AHRS::update_DCM()
 {
     dcm.update();
     dcm.get_results(dcm_estimates);
-
-    // we always update the vehicle's canonical roll/pitch/yaw from
-    // DCM.  In normal operation this will usually be over-written by
-    // an EKF or external AHRS.  This is long-held behaviour, but this
-    // really shouldn't be doing this.
-
-    // if (active_EKF_type() == EKFType::DCM) {
-        copy_estimates_from_backend_estimates(dcm_estimates);
-    // }
 }
 #endif
 
@@ -650,10 +643,6 @@ void AP_AHRS::update_SITL(void)
 {
     sim.update();
     sim.get_results(sim_estimates);
-
-    if (_active_EKF_type() == EKFType::SIM) {
-        copy_estimates_from_backend_estimates(sim_estimates);
-    }
 }
 #endif
 
@@ -693,8 +682,6 @@ void AP_AHRS::update_EKF2(void)
         ekf2_estimates = {};
         ekf2.get_results(ekf2_estimates);
         if (_active_EKF_type() == EKFType::TWO) {
-            copy_estimates_from_backend_estimates(ekf2_estimates);
-
             nav_filter_status filt_state;
             ekf2.get_filter_status(filt_state);
             update_notify_from_filter_status(filt_state);
@@ -747,9 +734,6 @@ void AP_AHRS::update_EKF3(void)
         ekf3_estimates = {};
         ekf3.get_results(ekf3_estimates);
         if (_active_EKF_type() == EKFType::THREE) {
-
-            copy_estimates_from_backend_estimates(ekf3_estimates);
-
             nav_filter_status filt_state;
             ekf3.get_filter_status(filt_state);
             update_notify_from_filter_status(filt_state);
@@ -778,10 +762,6 @@ void AP_AHRS::update_external(void)
 {
     external.update();
     external.get_results(external_estimates);
-
-    if (_active_EKF_type() == EKFType::EXTERNAL) {
-        copy_estimates_from_backend_estimates(external_estimates);
-    }
 
     /*
       if we now have an origin then set in all backends
