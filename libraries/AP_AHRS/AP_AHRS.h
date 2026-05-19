@@ -960,13 +960,6 @@ private:
     // returns false if estimate is unavailable
     bool _airspeed_TAS(Vector3f &vec) const;
 
-    // return the quaternion defining the rotation from NED to XYZ (body) axes
-    bool _get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
-
-    // return the quaternion defining the rotation from NED to XYZ
-    // (body) axes for the passed-in type
-    bool _get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const;
-
     // return secondary position solution if available
     bool _get_secondary_position(Location &loc) const;
 
