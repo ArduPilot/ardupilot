@@ -837,6 +837,9 @@ private:
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
 
+    // true when stationary on the ground and synthetic zero velocity should be fused
+    bool onGroundNotFlying() const;
+
 #if EK3_FEATURE_BEACON_FUSION
     // determine when to perform fusion of range measurements take relative to a beacon at a known NED position
     void SelectRngBcnFusion();

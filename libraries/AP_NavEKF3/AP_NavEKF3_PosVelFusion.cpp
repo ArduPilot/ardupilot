@@ -517,6 +517,18 @@ void NavEKF3_core::CalculateVelInnovationsAndVariances(const Vector3F &velocity,
     variances.z = P[6][6] + obs_data_chk;
 }
 
+// Combines onGroundNotMoving (movement check, only valid when onGround is true)
+// and takeoff_expected (covers the armed-on-ground period before liftoff). Gated
+// on !inFlight because Plane can briefly assert takeoff_expected mid-flight (high
+// throttle + transient !is_flying()), and injecting zero velocity into a vehicle
+// that is actually flying corrupts EKF velocity, the wind state and dead
+// reckoning. onGround would be too tight a gate — it goes false the moment motors
+// arm, which excludes the legitimate Copter pre-liftoff case.
+bool NavEKF3_core::onGroundNotFlying() const
+{
+    return !inFlight && (onGroundNotMoving || dal.get_takeoff_expected());
+}
+
 /********************************************************
 *                   FUSE MEASURED_DATA                  *
 ********************************************************/
@@ -700,11 +712,7 @@ void NavEKF3_core::SelectVelPosFusion()
             // to constrain gyro bias and Z-axis accel bias learning. XY accel biases
             // remain unobservable until the vehicle accelerates and are separately
             // inhibited by dvelBiasAxisInhibit in CovariancePrediction.
-            // Use onGroundNotMoving to avoid fusing zero velocity when the vehicle
-            // is being moved (e.g. on a boat or carried by hand).
-            // takeoff_expected covers the armed-on-ground case before liftoff.
-            const bool onGroundNotFlying = onGroundNotMoving || dal.get_takeoff_expected();
-            if (onGroundNotFlying && tiltAlignComplete) {
+            if (onGroundNotFlying() && tiltAlignComplete) {
                 fuseVelData = true;
                 fusingStationaryZeroVel = true;
                 velPosObs[0] = 0.0f;
@@ -725,13 +733,9 @@ void NavEKF3_core::SelectVelPosFusion()
     // PV_AidingMode is AID_RELATIVE but no velocity data is available when stationary
     // have no velocity observations at all, causing unchecked bias drift. The timeout
     // check on each velocity source ensures we only inject zero velocity when no real
-    // sensor data is being fused. Use onGroundNotMoving to avoid injecting zero velocity
-    // when the vehicle is being moved, and takeoff_expected for armed-on-ground.
-    // Gate behind fuseHgtData to limit fusion rate to baro rate (~10Hz) and avoid
-    // overconstraining the filter by fusing at IMU rate.
-    const bool onGroundNotFlying = onGroundNotMoving || dal.get_takeoff_expected();
-
-    if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying) {
+    // sensor data is being fused. Gate behind fuseHgtData to limit fusion rate to baro
+    // rate (~10Hz) and avoid overconstraining the filter by fusing at IMU rate.
+    if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying()) {
         // Check if we have recent velocity aiding from any source
         const uint32_t velAidTimeout_ms = 1000;
         const bool haveRecentGpsVel = (imuSampleTime_ms - lastVelPassTime_ms < velAidTimeout_ms);
