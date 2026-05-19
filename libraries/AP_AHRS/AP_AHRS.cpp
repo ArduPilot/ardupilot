@@ -1199,67 +1199,58 @@ bool AP_AHRS::_get_quaternion_for_ekf_type(Quaternion &quat, EKFType type) const
     return false;
 }
 
-// return secondary attitude solution if available, as eulers in radians
-bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
+const AP_AHRS_Backend::Estimates *AP_AHRS::get_secondary_estimates() const
 {
     EKFType secondary_ekf_type;
     if (!_get_secondary_EKF_type(secondary_ekf_type)) {
-        return false;
+        return nullptr;
     }
+    return estimates_for_type(secondary_ekf_type);
+}
 
-    switch (secondary_ekf_type) {
-
+AP_AHRS_Backend::Estimates *AP_AHRS::estimates_for_type(EKFType type)
+{
+    switch (type) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        // DCM is secondary
-        eulers[0] = dcm_estimates.roll_rad;
-        eulers[1] = dcm_estimates.pitch_rad;
-        eulers[2] = dcm_estimates.yaw_rad;
-        return dcm_estimates.attitude_valid;
+        return &dcm_estimates;
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
-        // EKF2 is secondary
-        eulers[0] = ekf2_estimates.roll_rad;
-        eulers[1] = ekf2_estimates.pitch_rad;
-        eulers[2] = ekf2_estimates.yaw_rad;
-        return ekf2_estimates.attitude_valid;
+        return &ekf2_estimates;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        // EKF3 is secondary
-        eulers[0] = ekf3_estimates.roll_rad;
-        eulers[1] = ekf3_estimates.pitch_rad;
-        eulers[2] = ekf3_estimates.yaw_rad;
-        return ekf3_estimates.attitude_valid;
+        return &ekf3_estimates;
 #endif
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        // SITL is secondary (should never happen)
-        eulers[0] = sim_estimates.roll_rad;
-        eulers[1] = sim_estimates.pitch_rad;
-        eulers[2] = sim_estimates.yaw_rad;
-        return sim_estimates.attitude_valid;
+        return &sim_estimates;
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL: {
-        // External is secondary
-        eulers[0] = external_estimates.roll_rad;
-        eulers[1] = external_estimates.pitch_rad;
-        eulers[2] = external_estimates.yaw_rad;
-        return external_estimates.attitude_valid;
-    }
+    case EKFType::EXTERNAL:
+        return &external_estimates;
 #endif
     }
-
-    // since there is no default case above, this is unreachable
-    return false;
+    return nullptr;
 }
 
+// return secondary attitude solution if available, as eulers in radians
+bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
+{
+    const auto *estimates = get_secondary_estimates();
+    if (estimates == nullptr) {
+        return false;
+    }
+    eulers[0] = estimates->roll_rad;
+    eulers[1] = estimates->pitch_rad;
+    eulers[2] = estimates->yaw_rad;
+    return estimates->attitude_valid;
+}
 
 // return secondary attitude solution if available, as quaternion
 bool AP_AHRS::_get_secondary_quaternion(Quaternion &quat) const
