@@ -299,6 +299,7 @@ void AP_AHRS::update_active_EKF_type()
     if (new_backend != nullptr) {
         state.active_EKF_type = new_type;
         active_backend = new_backend;
+        active_estimates = estimates_for_type(new_type);
         return;
     }
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
