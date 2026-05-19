@@ -56,12 +56,13 @@ void setup(void)
     const float resistance = frame.get_resistance();
     const float max_voltage = frame.get_max_volt();
     const float min_voltage = max_voltage * 0.7;
+    constexpr float ambient_temperature_degC = 0.0f;
 
     ::printf("Simulating %0.2fv, %0.2f ah battery with resistance of %f\n", max_voltage, amp_hour_capacity, resistance);
     ::printf("Voltage from %0.2f to %0.2f with constant current draw of %0.2f\n", max_voltage, min_voltage, current_amps);
 
     // setup battery model
-    battery.setup(amp_hour_capacity, resistance, max_voltage);
+    battery.setup(amp_hour_capacity, resistance, max_voltage, ambient_temperature_degC);
     battery.init_voltage(max_voltage);
 
     uint64_t time_us = 0;
