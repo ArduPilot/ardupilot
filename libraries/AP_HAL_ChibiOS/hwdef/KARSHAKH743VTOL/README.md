@@ -2,7 +2,6 @@
 
 The KARSHAKH743VTOL is a hardware produced by [Karshak Drones Pvt. Ltd.](https://www.karshakdrones.com/) and will be sold on soon enough.
 
-
 ## Features
 
 - STM32H743 microcontroller
@@ -92,7 +91,6 @@ The numbering of the GPIOs for PIN variables in ardupilot is:
 - Mounting: 30.5 x 30.5mm, Φ2mm
 - Dimensions: 60 x 37mm
 - Weight: 16.5g (with onboard buzzer, external IMU connector and USB TypeC port)
-
 
 ## Loading Firmware
 
