@@ -25,23 +25,13 @@ class BatteryTest : public testing::Test {
 protected:
     BatteryTest() {
         small_battery.setup(small_capacity_Ah, low_resistance_ohm, max_voltage);
-        small_battery.init_voltage(max_voltage);
-        small_battery.init_capacity(small_capacity_Ah);
         large_battery.setup(large_capacity_Ah, low_resistance_ohm, max_voltage);
-        large_battery.init_voltage(max_voltage);
-        large_battery.init_capacity(large_capacity_Ah);
         // Recall that capacity==0 means unlimited.
         infinite_battery.setup(0.0f, low_resistance_ohm, max_voltage);
-        infinite_battery.init_voltage(max_voltage);
-        infinite_battery.init_capacity(0.0f);
 
         small_high_resistance_battery.setup(small_capacity_Ah, high_resistance_ohm, max_voltage);
-        small_high_resistance_battery.init_voltage(max_voltage);
-        small_high_resistance_battery.init_capacity(small_capacity_Ah);
         // Recall that capacity==0 means unlimited.
         infinite_high_resistance_battery.setup(0.0f, high_resistance_ohm, max_voltage);
-        infinite_high_resistance_battery.init_voltage(max_voltage);
-        infinite_high_resistance_battery.init_capacity(0.0f);
     }
 
     struct BattAndObservations {
@@ -208,48 +198,45 @@ TEST_F(BatteryTest, Resetting)
     for (auto& b_and_d : batteries_and_data) {
         SITL::Battery& battery = std::ref(*b_and_d.batt);
 
-        const float initial_voltage = battery.get_voltage();
-
-        // Show that voltage-based reset works.
-        use_some_energy(battery);
-        if (is_positive(battery.get_capacity())) {
-            // Show that some voltage has been lost
-            EXPECT_LT(battery.get_voltage(), initial_voltage);
-            // Reset to initial value using voltage
-            battery.init_voltage(initial_voltage);
-            // Show it worked
-            EXPECT_FLOAT_EQ(battery.get_voltage(), initial_voltage);
-        }
-
-        // Show that capacity-based reset does not (instantly) impact voltage.
-        use_some_energy(battery);
-        if (is_positive(battery.get_capacity())) {
-            // Show that some voltage has been lost
-            const float observed_voltage = battery.get_voltage();
-            EXPECT_LT(observed_voltage, initial_voltage);
-            // Reset to initial capacity
-            battery.init_capacity(battery.get_capacity());
-            // Show voltage did not change
-            EXPECT_FLOAT_EQ(battery.get_voltage(), observed_voltage);
-        }
-
-        // Show that reset-to-partial-voltage works.
+        // Show that resetting to some new voltage works.
         const float partial_voltage = 0.8f * max_voltage;
-        battery.init_voltage(partial_voltage);
+        battery.maybe_reset(partial_voltage, battery.get_capacity());
         EXPECT_FLOAT_EQ(battery.get_voltage(), partial_voltage);
 
-        // Show that setting higher-than-max voltage has no effect
-        battery.init_voltage(higher_than_max_voltage);
-        EXPECT_LT(battery.get_voltage(), higher_than_max_voltage);
+        // Show that resetting to zero & negative voltages works.
+        for (auto& voltage : {0.0f, -0.5f}) {
+            battery.maybe_reset(voltage, battery.get_capacity());
+            EXPECT_FLOAT_EQ(battery.get_voltage(), voltage);
+        }
+
+        // Show that resetting to the initial voltage works.
+        battery.maybe_reset(max_voltage, battery.get_capacity());
         EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
+
+        // Show that attempting a reset without changing any batt params is a no-op.
+        use_some_energy(battery);
+        if (is_positive(battery.get_capacity())) {
+            // Show that some voltage has been lost
+            float observed = battery.get_voltage();
+            EXPECT_LT(observed, max_voltage);
+
+            battery.maybe_reset(max_voltage, battery.get_capacity());
+            // Show reset did nothing
+            EXPECT_FLOAT_EQ(battery.get_voltage(), observed);
+        }
+
+        // Show that resetting to higher-than-max voltage resets to max, but not higher
+        battery.maybe_reset(higher_than_max_voltage, battery.get_capacity());
+        EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
+        EXPECT_LT(battery.get_voltage(), higher_than_max_voltage);
 
         // Show that switching from limited to unlimited capacity (or vice versa) works
         if (is_zero(battery.get_capacity())) {
-            battery.init_capacity(small_capacity_Ah);
+            battery.maybe_reset(max_voltage, small_capacity_Ah);
             EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
             EXPECT_FLOAT_EQ(battery.get_capacity(), small_capacity_Ah);
         } else {
-            battery.init_capacity(0.0f);
+            battery.maybe_reset(max_voltage, 0.0f);
             EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
             EXPECT_FLOAT_EQ(battery.get_capacity(), 0.0f);
         }
