@@ -153,16 +153,12 @@ void AP_Baro_BMP581::timer(void)
     if (!_dev->read_registers(BMP581_REG_TEMP_DATA_XLSB, buf, sizeof(buf))) {
         return;
     }
-    if (!_dev->read_registers(BMP581_REG_TEMP_DATA_XLSB, buf2, sizeof(buf2))) {
-        return;
-    }
-    if (memcmp(buf, buf2, ARRAY_SIZE(buf)) != 0) {
-        // we didn't get the same data twice; retry once before rejecting
+    for (uint8_t i = 0; i < 2; i++) {
         if (!_dev->read_registers(BMP581_REG_TEMP_DATA_XLSB, buf2, sizeof(buf2))) {
             return;
         }
-        if (memcmp(buf, buf2, ARRAY_SIZE(buf)) != 0) {
-            // still inconsistent; use first reading anyway
+        if (memcmp(buf, buf2, ARRAY_SIZE(buf)) == 0) {
+            break;
         }
     }
 
