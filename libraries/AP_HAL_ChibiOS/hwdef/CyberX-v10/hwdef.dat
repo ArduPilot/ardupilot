@@ -1,5 +1,5 @@
 # hw definition file for processing by chibios_hwdef.py
-# for the CyberX hardware
+# for the CyberX-v10 hardware
 
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
@@ -26,7 +26,6 @@ FLASH_SIZE_KB 2048
 env USE_ALT_RAM_MAP 1
 
 MCU_CLOCKRATE_MHZ 480
-
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 USART2 USART3 USART1 UART4 UART5 UART8 UART7 OTG2
@@ -78,7 +77,7 @@ PE7 UART7_RX UART7
 # UART8
 PE1 UART8_TX UART8
 PE0 UART8_RX UART8
-# define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_RCIN
 
 # RC input
 PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
@@ -231,8 +230,6 @@ define FATFS_HAL_DEVICE SDCD2
 
 # ID pins
 PG0 HW_VER_REV_DRIVE OUTPUT LOW
-# PH3 HW_VER_SENS ADC3 SCALE(1)
-# PH4 HW_REV_SENS ADC3 SCALE(1)
 
 # safety
 PD10 LED_SAFETY OUTPUT
@@ -325,9 +322,4 @@ env BUILD_ABIN True
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_dshot_lowpolh.bin
 
-#IOMCU 8Mhz
-#ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_8MHz_lowpolh.bin
-#ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_f103_8MHz_dshot_lowpolh.bin
-
-#define HAL_WITH_IO_MCU_BIDIR_DSHOT 1
 define HAL_WITH_IO_MCU_DSHOT 1
