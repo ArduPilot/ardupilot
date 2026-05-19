@@ -1109,8 +1109,14 @@ private:
     const AP_AHRS_Backend *backend_for_type(EKFType type) const {
         return const_cast<AP_AHRS*>(this)->backend_for_type(type);
     }
+    AP_AHRS_Backend::Estimates *estimates_for_type(EKFType type);
+    const AP_AHRS_Backend::Estimates *estimates_for_type(EKFType type) const {
+        return const_cast<AP_AHRS*>(this)->estimates_for_type(type);
+    }
 
     AP_AHRS_Backend *active_backend;
+
+    const AP_AHRS_Backend::Estimates *get_secondary_estimates() const;
 };
 
 namespace AP {
