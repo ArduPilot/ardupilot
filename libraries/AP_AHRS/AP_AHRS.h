@@ -1115,6 +1115,7 @@ private:
     }
 
     AP_AHRS_Backend *active_backend;
+    AP_AHRS_Backend::Estimates *active_estimates;
 
     const AP_AHRS_Backend::Estimates *get_secondary_estimates() const;
 };
