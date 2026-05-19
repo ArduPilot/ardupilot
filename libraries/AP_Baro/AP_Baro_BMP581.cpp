@@ -157,8 +157,13 @@ void AP_Baro_BMP581::timer(void)
         return;
     }
     if (memcmp(buf, buf2, ARRAY_SIZE(buf)) != 0) {
-        // we didn't get the same data twice.  Reject.
-        return;
+        // we didn't get the same data twice; retry once before rejecting
+        if (!_dev->read_registers(BMP581_REG_TEMP_DATA_XLSB, buf2, sizeof(buf2))) {
+            return;
+        }
+        if (memcmp(buf, buf2, ARRAY_SIZE(buf)) != 0) {
+            // still inconsistent; use first reading anyway
+        }
     }
 
     WITH_SEMAPHORE(_sem);
