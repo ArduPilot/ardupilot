@@ -24,7 +24,6 @@
 #include "AP_Compass_BMM150.h"
 #include "AP_Compass_BMM350.h"
 #include "AP_Compass_HMC5843.h"
-#include "AP_Compass_IIS2MDC.h"
 #include "AP_Compass_IST8308.h"
 #include "AP_Compass_IST8310.h"
 #include "AP_Compass_LSM303D.h"
@@ -532,7 +531,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC,23:LIS2MDL
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,23:LIS2MDL
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -1178,25 +1177,6 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
 #endif  // AP_COMPASS_QMC5883P_ENABLED
 
-#if AP_COMPASS_IIS2MDC_ENABLED
-    //external i2c bus
-    FOREACH_I2C_EXTERNAL(i) {
-        probe_i2c_dev(DRIVER_IIS2MDC, AP_Compass_IIS2MDC::probe, i, HAL_COMPASS_IIS2MDC_I2C_ADDR, true, HAL_COMPASS_IIS2MDC_ORIENTATION_EXTERNAL);
-        RETURN_IF_NO_SPACE;
-    }
-
-    // internal i2c bus
-#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
-    if (all_external) {
-        // only probe IIS2MDC on internal if we are treating internals as externals
-        FOREACH_I2C_INTERNAL(i) {
-            probe_i2c_dev(DRIVER_IIS2MDC, AP_Compass_IIS2MDC::probe, i, HAL_COMPASS_IIS2MDC_I2C_ADDR, all_external, all_external?HAL_COMPASS_IIS2MDC_ORIENTATION_EXTERNAL:HAL_COMPASS_IIS2MDC_ORIENTATION_INTERNAL);
-            RETURN_IF_NO_SPACE;
-        }
-    }
-#endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
-#endif  // AP_COMPASS_QMC5883P_ENABLED
-
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
     FOREACH_I2C_EXTERNAL(i) {
@@ -1253,9 +1233,12 @@ void Compass::_probe_external_i2c_compasses(void)
 #endif
     // internal lis2mdl
 #if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
-    FOREACH_I2C_INTERNAL(i) {
-        probe_i2c_dev(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe, i, HAL_COMPASS_LIS2MDL_I2C_ADDR, all_external, ROTATION_NONE);
-        RETURN_IF_NO_SPACE;
+    if (all_external) {
+        // only probe LIS2MDL on internal if we are treating internals as externals
+        FOREACH_I2C_INTERNAL(i) {
+            probe_i2c_dev(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe, i, HAL_COMPASS_LIS2MDL_I2C_ADDR, all_external, ROTATION_NONE);
+            RETURN_IF_NO_SPACE;
+        }
     }
 #endif
 #endif  // AP_COMPASS_LIS2MDL_ENABLED

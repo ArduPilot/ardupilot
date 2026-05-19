@@ -215,7 +215,6 @@ BUILD_OPTIONS = [
     Feature('Compass', 'HMC5843', 'AP_COMPASS_HMC5843_ENABLED', 'Enable HMC5843 compasses', 1, None),
     Feature('Compass', 'ICM20948', 'AP_COMPASS_ICM20948_ENABLED', 'Enable AK0991x on ICM20948 compasses', 1, "AK09916"),
     Feature('Compass', 'IST8308', 'AP_COMPASS_IST8308_ENABLED', 'Enable IST8308 compasses', 1, None),
-    Feature('Compass', 'IIS2MDC', 'AP_COMPASS_IIS2MDC_ENABLED', 'Enable IIS2MDC compasses', 0, None),
     Feature('Compass', 'IST8310', 'AP_COMPASS_IST8310_ENABLED', 'Enable IST8310 compasses', 1, None),
     Feature('Compass', 'LIS3MDL', 'AP_COMPASS_LIS3MDL_ENABLED', 'Enable LIS3MDL compasses', 1, None),
     Feature('Compass', 'LIS2MDL', 'AP_COMPASS_LIS2MDL_ENABLED', 'Enable LIS2MDL compasses', 1, None),

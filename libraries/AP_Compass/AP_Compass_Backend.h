@@ -77,7 +77,6 @@ public:
         DEVTYPE_AK09915 = 0x15,
     	DEVTYPE_QMC5883P = 0x16,
         DEVTYPE_BMM350 = 0x17,
-        DEVTYPE_IIS2MDC = 0x18,
         DEVTYPE_LIS2MDL = 0x19,
     };
 
