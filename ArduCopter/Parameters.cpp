@@ -1169,6 +1169,17 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Increment: 0.1
     AP_GROUPINFO("PILOT_TKO_ALT_M", 20, ParametersG2, pilot_takeoff_alt_m, PILOT_TKO_ALT_M_DEFAULT),
 
+#if MODE_FLIP_ENABLED
+    // @Param: FLIP_RATE
+    // @DisplayName: Flip Mode Rotational Rate
+    // @Description: Rotational Rate for Flip Mode in Deg/s.  Be sure to set a rotational rate that the aircraft can acheive.
+    // @Units: deg/s
+    // @Range: 60 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FLIP_RATE", 21, ParametersG2, flip_rate_dps, 400),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND

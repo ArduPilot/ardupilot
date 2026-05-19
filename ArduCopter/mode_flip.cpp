@@ -91,8 +91,12 @@ bool ModeFlip::init(bool ignore_checks)
 // should be called at 100hz or more
 void ModeFlip::run()
 {
+    // determine flip rotation rate
+    float flip_rate_rads = radians(g2.flip_rate_dps.get());
+    float flip_time_out_ms = 1000.0f * (360.0f / MAX(flip_rate_rads, radians(60.0)) + 1.0);
+
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > flip_time_out_ms)) {
         _state = FlipState::Abandon;
     }
 
@@ -105,11 +109,14 @@ void ModeFlip::run()
     // get corrected angle based on direction and axis of rotation
     // we flip the sign of flip_angle to minimize the code repetition
     float flip_angle_rad;
+    float flip_angle_error_rad;
 
     if (roll_dir != 0) {
         flip_angle_rad = ahrs.get_roll_rad() * roll_dir;
+        flip_angle_error_rad = attitude_control->get_att_target_euler_rad().x - ahrs.get_roll_rad();
     } else {
         flip_angle_rad = ahrs.get_pitch_rad() * pitch_dir;
+        flip_angle_error_rad = attitude_control->get_att_target_euler_rad().y - ahrs.get_pitch_rad();
     }
 
     // state machine
@@ -117,7 +124,7 @@ void ModeFlip::run()
 
     case FlipState::Start:
         // under 45 degrees request 400deg/sec roll or pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(flip_rate_rads * roll_dir, flip_rate_rads * pitch_dir, 0.0);
 
         // increase throttle
         throttle_out += FLIP_THR_INC;
@@ -126,17 +133,24 @@ void ModeFlip::run()
         if (flip_angle_rad >= radians(45.0)) {
             if (roll_dir != 0) {
                 // we are rolling
-            _state = FlipState::Roll;
+                _state = FlipState::Roll;
             } else {
                 // we are pitching
                 _state = FlipState::Pitch_A;
-        }
+            }
         }
         break;
 
     case FlipState::Roll:
-        // between 45deg ~ -90deg request 400deg/sec roll
-        attitude_control->input_rate_bf_roll_pitch_yaw_rads(FLIP_ROTATION_RATE_RADS * roll_dir, 0.0, 0.0);
+        // keep target aircraft from getting too far away from actual aircraft
+        if (flip_angle_error_rad > radians(15.0) && flip_angle_error_rad <= radians(45.0)) {
+            float knock_down = 1.0f - (flip_angle_error_rad - radians(15.0f)) / radians(30.0f);
+            flip_rate_rads = (ahrs.get_gyro().x + knock_down * (flip_rate_rads - ahrs.get_gyro().x)) * roll_dir;
+        } else if (flip_angle_error_rad > radians(45.0)) {
+            flip_rate_rads = ahrs.get_gyro().x * roll_dir;
+        }
+        // between 45deg ~ -90deg request user specified roll rate
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(flip_rate_rads * roll_dir, 0.0, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -148,7 +162,7 @@ void ModeFlip::run()
 
     case FlipState::Pitch_A:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0f, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0f, flip_rate_rads * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
@@ -160,7 +174,7 @@ void ModeFlip::run()
 
     case FlipState::Pitch_B:
         // between 45deg ~ -90deg request 400deg/sec pitch
-        attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0, FLIP_ROTATION_RATE_RADS * pitch_dir, 0.0);
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(0.0, flip_rate_rads * pitch_dir, 0.0);
         // decrease throttle
         throttle_out = MAX(throttle_out - FLIP_THR_DEC, 0.0f);
 
