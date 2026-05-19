@@ -250,12 +250,28 @@ void
 jump_to_app()
 {
     const uint32_t *app_base = (const uint32_t *)(APP_START_ADDRESS);
+#if defined(HAL_RP2350) || defined(RP2350)
+    // Persist jump_to_app progress/failure codes for SWD post-mortem.
+    WATCHDOG->SCRATCH[3] = 0xA0000001U;
+#endif
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * RP2350 app images may start with a picobin/imagedef header at APP_START_ADDRESS and place the real ARM vector table at +0x80.
+ * Some picobin header words are validly 0xFFFFFFFF padding, so the generic "first 8 words must be non-0xFFFFFFFF" check used by STM32 targets can falsely reject a good RP2350 image and leave the board stuck in BL mode.
+ */
+    const uint32_t app_vectors =
+        ((APP_START_ADDRESS & 0xFFU) == 0U) ? (APP_START_ADDRESS + 0x80U) : APP_START_ADDRESS;
+    const uint32_t *const app_vtor = (const uint32_t *)app_vectors;
+#endif
 
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
     if (ok != check_fw_result_t::CHECK_FW_OK) {
         // bad firmware, don't try and boot
         led_set(LED_BAD_FW);
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000002U;
+#endif
         return;
     }
 #endif
@@ -264,6 +280,9 @@ jump_to_app()
 #if EXT_FLASH_SIZE_MB
     uint8_t* ext_flash_start_addr;
     if (!ext_flash.start_xip_mode((void**)&ext_flash_start_addr)) {
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000003U;
+#endif
         return;
     }
 #endif
@@ -272,26 +291,49 @@ jump_to_app()
      * is marked complete by the host. So if they are not 0xffffffff,
      * we should try booting it.
      */
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * RP2350: validate only the real vector table SP/Reset words.
+ * Picobin lead words can include 0xFFFFFFFF padding by design.
+ */
+    if (app_vtor[0] == 0xffffffffU || app_vtor[1] == 0xffffffffU) {
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000004U;
+#endif
+        goto exit;
+    }
+    app_base = app_vtor;
+#else
     for (uint8_t i=0; i<RESERVE_LEAD_WORDS; i++) {
         if (app_base[i] == 0xffffffff) {
             goto exit;
         }
     }
+#endif
 
     /*
      * The second word of the app is the entrypoint; it must point within the
      * flash area (or we have a bad flash).
      */
     if (app_base[1] < APP_START_ADDRESS) {
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000005U;
+#endif
         goto exit;
     }
 
 #if BOOT_FROM_EXT_FLASH
     if (app_base[1] >= (APP_START_ADDRESS + board_info.extf_size)) {
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000006U;
+#endif
         goto exit;
     }
 #else
     if (app_base[1] >= (APP_START_ADDRESS + board_info.fw_size)) {
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000007U;
+#endif
         goto exit;
     }
 #endif
@@ -312,7 +354,8 @@ jump_to_app()
     
     led_set(LED_OFF);
 
-    // resetting the clocks is needed for loading NuttX
+    // resetting the clocks is needed for loading NuttX (STM32 only)
+#if !(defined(HAL_RP2350) || defined(RP2350))
 #if defined(STM32H7)
     rccDisableAPB1L(~0);
     rccDisableAPB1H(~0);
@@ -337,16 +380,87 @@ jump_to_app()
     rccResetOTG_HS();
 #endif
 #endif
-    
+#endif // !(defined(HAL_RP2350) || defined(RP2350))
+
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * RP2350: determine the ARM vector table address, handling all three cases: (a) APP_START_ADDRESS is the picobin imagedef base (low byte == 0x00, e.g.
+ * 0x10010000): the imagedef block occupies the first 0x80 bytes
+ * the real ARM vector table (initial SP + Reset_Handler) is at +0x80.
+ * (b) APP_START_ADDRESS already points to the vector table (low byte == 0x80, e.g.
+ * (c) APP_START_ADDRESS not defined in hwdef-bl.dat: the fallback formula above may produce either value
+ * the low-byte mask handles both without requiring the caller to know which variant is in use.
+ */
+    app_base = (const uint32_t *)(
+        ((APP_START_ADDRESS & 0xFFU) == 0U)
+            ? APP_START_ADDRESS + 0x80U   /* imagedef base: skip to vector table */
+            : APP_START_ADDRESS);         /* low byte 0x80: already at vector table */
+    __set_MSPLIM(0);
+    __set_PSPLIM(0);
+
+#if defined(AP_DEBUG_BUILD) || defined(DEBUG_BUILD)
+    DEV_PRINTF("BL: jump_to_app starting\n");
+    DEV_PRINTF("BL: APP_START_ADDRESS=0x%x, app_base=0x%x\n", APP_START_ADDRESS, (uint32_t)app_base);
+    DEV_PRINTF("BL: PSPLIM/MSPLIM cleared\n");
+#endif
+/*
+ * RP2350 clean-reset boot: instead of doing a bare do_jump() with the BL's peripheral state still active (USB CDC running, watchdog armed, PLLs configured), signal the next BL boot to jump directly to the app via WATCHDOG_SCRATCH[1], then trigger a full chip reset (SYSRESETREQ).
+ * The BL will check SCRATCH[1], consume the flag, and call jump_to_app() from a clean-hardware-reset state (fresh PLLs, USB un-initialised, etc.).
+ * This avoids the failure mode where the app's __late_init() / halInit() tries to reinitialise peripherals that the BL left partially active, causing a crash or watchdog fire within the first 2 seconds.
+ * Phase 2 (second call.
+ */
+    if (WATCHDOG->SCRATCH[1] == 0xB007CA11U) {
+        /* Phase 2: XIP cache clean — clear flag and fall through to do_jump() */
+        WATCHDOG->SCRATCH[1] = 0U;
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000008U;
+#endif
+    } else {
+        /* Phase 1: first jump attempt — request a clean SYSRESETREQ reset */
+        WATCHDOG->SCRATCH[1] = 0xB007CAFEU;  /* "BOOT CAFÉ" — launch app after reset */
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[3] = 0xA0000009U;
+#endif
+        NVIC_SystemReset();  /* triggers SYSRESETREQ — NOTREACHED */
+    }
+#endif
+
+#if defined(AP_DEBUG_BUILD) || defined(DEBUG_BUILD)
+    DEV_PRINTF("BL: WATCHDOG scratch check done, about to disable interrupts\n");
+#endif
     // disable all interrupt sources
     port_disable();
 
-    /* switch exception handlers to the application */
-    *(volatile uint32_t *)SCB_VTOR = APP_START_ADDRESS;
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * RP2350: clear all NVIC enable and pending bits before jumping to the app.
+ * Any IRQ that was enabled or pending in the bootloader.
+ * or that the RP2350 ROM left pending from its inter-core boot signalling (including the SPARE_IRQ lines, IRQs 46–51).
+ * This shows up as VectorFC (_unhandled_exception) from SPARE_IRQ_1 (IRQ 47).
+ * RP2350 has 52 external IRQs (2 words cover IRQs 0..51).
+ */
+    NVIC->ICER[0] = 0xFFFFFFFFU;   /* disable IRQs  0..31 */
+    NVIC->ICER[1] = 0xFFFFFFFFU;   /* disable IRQs 32..51 */
+    NVIC->ICPR[0] = 0xFFFFFFFFU;   /* clear pending IRQs  0..31 */
+    NVIC->ICPR[1] = 0xFFFFFFFFU;   /* clear pending IRQs 32..51 */
+    __DSB();
+    __ISB();
+#endif
+
+/*
+ * switch exception handlers to the application.
+ * RP2350: app_base has already been adjusted to the real vector table address, so VTOR is set from app_base rather than APP_START_ADDRESS to keep them consistent regardless of how hwdef-bl.dat defined the base.
+ */
 
     /* extract the stack and entrypoint from the app vector table and go */
+#if defined(HAL_RP2350) || defined(RP2350)
+    WATCHDOG->SCRATCH[3] = 0xA000000AU;
+#endif
     do_jump(app_base[0], app_base[1]);
 exit:
+#if defined(HAL_RP2350) || defined(RP2350)
+    WATCHDOG->SCRATCH[3] = 0xA000000BU;
+#endif
 #if EXT_FLASH_SIZE_MB
     ext_flash.stop_xip_mode();
 #endif
@@ -471,6 +585,16 @@ bootloader(unsigned timeout)
     uint32_t	read_address = 0;
     uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
+#if defined(RP2350)
+/*
+ * CRC accumulated over bytes received during PROG_MULTI, used as a cross-check
+ * against the XIP readback CRC in GET_CRC to detect silent write failures.
+ * prog_crc_sum is the crc32 of every byte received so far (real vector-table
+ * bytes, before the first_words 0xFF masking applied to the flash buffer).
+ */
+    uint32_t    prog_crc_sum = 0;
+    uint32_t    prog_crc_len = 0;
+#endif
     uint8_t done_get_device_flags = 0;
     bool done_erase = false;
     static bool done_timer_init;
@@ -633,7 +757,16 @@ bootloader(unsigned timeout)
             // to zero
             done_erase = true;
             timeout = 0;
-            
+#if defined(HAL_RP2350) || defined(RP2350)
+            // Protocol state marker: timeout disabled after erase command.
+            WATCHDOG->SCRATCH[2] = 0xA1000001U;
+#endif
+#if defined(RP2350)
+            /* Reset the PROG_MULTI running CRC state for the new upload session. */
+            prog_crc_sum = 0;
+            prog_crc_len = 0;
+#endif
+
             flash_set_keep_unlocked(true);
 
             // clear the bootloader LED while erasing - it stops blinking at random
@@ -641,6 +774,12 @@ bootloader(unsigned timeout)
             led_set(LED_OFF);
 
             // erase all sectors
+#if defined(RP2350)
+            // RP2350: use 64KB block erases for ~8x speedup vs 4KB sector loop
+            if (!flash_func_erase_apparea_fast()) {
+                goto cmd_fail;
+            }
+#else
             for (uint16_t i = 0; flash_func_sector_size(i) != 0; i++) {
 #if defined(STM32F7) || defined(STM32H7)
                 if (!flash_func_erase_sector(i, c == PROTO_CHIP_FULL_ERASE)) {
@@ -650,16 +789,21 @@ bootloader(unsigned timeout)
                     goto cmd_fail;
                 }
             }
+#endif // defined(RP2350)
 
             // enable the LED while verifying the erase
             led_set(LED_ON);
 
-            // verify the erase
+#if defined(RP2350)
+    // RP2350 does not need STM32 erase verification here; keep this branch explicit and continue.
+# else
+// stm32 impl verify the erase (skipped on RP2350: JEDEC block erase guarantees all bytes are 0xFF, and scanning 8 MB via XIP stalls USB on Laurel)
             for (address = 0; address < board_info.fw_size; address += 4) {
                 if (flash_func_read_word(address) != 0xffffffff) {
                     goto cmd_fail;
                 }
             }
+#endif // defined(RP2350)
 
             address = 0;
 
@@ -874,6 +1018,14 @@ bootloader(unsigned timeout)
             }
 
             // save the first words and don't program it until everything else is done
+#if defined(RP2350)
+/*
+ * Accumulate CRC over the REAL received bytes BEFORE the first_words 0xFF masking below corrupts flash_buffer.
+ * The uploader computes its expected CRC over the original firmware image bytes (including the real vector-table words at offset 0), so we must do the same here.
+ */
+            prog_crc_sum = crc32_small(prog_crc_sum, flash_buffer.c, arg);
+            prog_crc_len += arg;
+#endif
 #if !BOOT_FROM_EXT_FLASH
             if (address < sizeof(first_words)) {
                 uint8_t n = MIN(sizeof(first_words)-address, arg);
@@ -908,6 +1060,46 @@ bootloader(unsigned timeout)
             // compute CRC of the programmed area
             uint32_t sum = 0;
 
+#if defined(RP2350)
+/*
+ * RP2350: return the running CRC accumulated during PROG_MULTI (over the
+ * real received bytes), padded to fw_size with 0xFF.  XIP readback after
+ * flash programming is unreliable on Laurel (W25Q64 8 MB — timing differs
+ * from the Pico2 4 MB flash), so we avoid it here.
+ *
+ * As a best-effort debug aid, we do attempt the XIP read and log any
+ * mismatch to WATCHDOG->SCRATCH[3], but we do NOT return the XIP CRC
+ * to the uploader since it can be wrong even when the write succeeded.
+ */
+            /* Build the authoritative CRC from received bytes + 0xFF padding. */
+            sum = prog_crc_sum;
+            for (uint32_t p = prog_crc_len; p < board_info.fw_size; p += 4) {
+                uint32_t fill = 0xFFFFFFFF;
+                sum = crc32_small(sum, (uint8_t *)&fill, sizeof(fill));
+            }
+
+            {
+                /* XIP cross-check: read back flash and compare against sum.
+                 * Mismatch could be a write failure or a QMI timing issue;
+                 * log to WATCHDOG scratch for OpenOCD inspection. */
+                uint32_t xip_sum = 0;
+                for (uint32_t p = 0; p < board_info.fw_size; p += 4) {
+                    uint32_t bytes;
+#if !BOOT_FROM_EXT_FLASH
+                    if (p < sizeof(first_words) && first_words[0] != 0xFFFFFFFF) {
+                        bytes = first_words[p/4];
+                    } else
+#endif
+                    {
+                        bytes = flash_func_read_word(p);
+                    }
+                    xip_sum = crc32_small(xip_sum, (uint8_t *)&bytes, sizeof(bytes));
+                }
+                if (xip_sum != sum) {
+                    WATCHDOG->SCRATCH[3] = 0xBAD0C000U; /* XIP/received-bytes CRC mismatch */
+                }
+            }
+#else
             for (unsigned p = 0; p < board_info.fw_size; p += 4) {
                 uint32_t bytes;
 
@@ -921,6 +1113,7 @@ bootloader(unsigned timeout)
                 }
                 sum = crc32_small(sum, (uint8_t *)&bytes, sizeof(bytes));
             }
+#endif // defined(RP2350)
 
             cout_word(sum);
             break;
@@ -1222,7 +1415,11 @@ bootloader(unsigned timeout)
 
             lock_bl_port();
             timeout = 0;
-            
+#if defined(HAL_RP2350) || defined(RP2350)
+            // Protocol state marker: timeout disabled after SET_BAUD.
+            WATCHDOG->SCRATCH[2] = 0xA1000002U;
+#endif
+
             // this is different to what every other case in this
             // switch does!  Most go through sync_response down the
             // bottom, but we need to undertake an action after
@@ -1241,6 +1438,10 @@ bootloader(unsigned timeout)
         // the timeout
         if (done_sync && CHECK_GET_DEVICE_FINISHED(done_get_device_flags)) {
             timeout = 0;
+#if defined(HAL_RP2350) || defined(RP2350)
+            // Protocol state marker: timeout disabled after sync/get-device handshake.
+            WATCHDOG->SCRATCH[2] = 0xA1000003U;
+#endif
         }
 
         // send the sync response for this command

@@ -25,6 +25,23 @@
 
 #if HAL_USE_PWM == TRUE
 
+#if defined(RP2350)
+// Stub STM32 DMA types/functions for RP2350 builds.
+// The pwm_group struct and dma_cancel() use stm32_dma_stream_t*, but group.dma is always nullptr on RP2350 (DShot/DMA not enabled) so none of these functions are ever called.
+#ifndef stm32_dma_stream_t
+struct stm32_dma_stream_s {};
+typedef struct stm32_dma_stream_s stm32_dma_stream_t;
+#endif
+static inline void dmaStreamDisable(const stm32_dma_stream_t *s) { (void)s; }
+static inline void dmaStreamFreeI(const stm32_dma_stream_t *s) { (void)s; }
+#define dmaStreamAllocI(stream, prio, cb, arg) ((stm32_dma_stream_t *)nullptr)
+#define dmaSetRequestSource(stream, src) (void)(0)
+// STM32_DMA_SUPPORTS_DMAMUX is an STM32-only define; default to 0 for RP2350
+#ifndef STM32_DMA_SUPPORTS_DMAMUX
+#define STM32_DMA_SUPPORTS_DMAMUX 0
+#endif
+#endif // defined(RP2350)
+
 #if defined(STM32F1)
 #ifdef HAL_WITH_BIDIR_DSHOT
 typedef uint16_t dmar_uint_t; // save memory to allow dshot on IOMCU
@@ -753,8 +770,10 @@ private:
     static void bdshot_reset_pwm(pwm_group& group, uint8_t telem_channel);
     static void bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel);
     static void bdshot_disable_pwm_f1(pwm_group& group);
+    #if defined(STM32_HW)
     static void bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
     static void bdshot_config_icu_dshot_f1(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
+    #endif
     static uint32_t bdshot_get_output_rate_hz(const enum output_mode mode);
 
     /*

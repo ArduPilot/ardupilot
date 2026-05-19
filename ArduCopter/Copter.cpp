@@ -198,6 +198,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(loop_rate_logging, LOOP_RATE,    50,  75),
 #endif
     SCHED_TASK(one_hz_loop,            1,    100,  81),
+    SCHED_TASK(perf_report,           0.1,   50,  82),
     SCHED_TASK(ekf_check,             10,     75,  84),
     SCHED_TASK(check_vibration,       10,     50,  87),
     SCHED_TASK(gpsglitch_check,       10,     50,  90),
@@ -776,6 +777,28 @@ uint32_t Copter::ap_value() const
     return ret;
 }
 
+// perf_report - prints main loop rate, rate thread Hz and scheduler CPU load every ~30 s
+void Copter::perf_report()
+{
+    const float main_hz  = AP::scheduler().get_filtered_loop_rate_hz();
+    const float load_pct = AP::scheduler().load_average() * 100.0f;
+    const uint32_t rate_hz = ins.get_raw_gyro_rate_hz() / ins.get_rate_decimation();
+    const float c1_pct = hal.scheduler->get_core1_load_pct();
+    if (c1_pct >= 0.0f) {
+        hal.console->printf("Perf: main=%.0fHz rate=%uHz c0=%.0f%% c1=%.0f%%\n",
+                            main_hz, (unsigned)rate_hz, load_pct, c1_pct);
+        gcs().send_text(MAV_SEVERITY_INFO,
+                        "Perf: main=%.0fHz rate=%uHz c0=%.0f%% c1=%.0f%%",
+                        main_hz, (unsigned)rate_hz, load_pct, c1_pct);
+    } else {
+        hal.console->printf("Perf: main=%.0fHz rate=%uHz load=%.0f%%\n",
+                            main_hz, (unsigned)rate_hz, load_pct);
+        gcs().send_text(MAV_SEVERITY_INFO,
+                        "Perf: main=%.0fHz rate=%uHz load=%.0f%%",
+                        main_hz, (unsigned)rate_hz, load_pct);
+    }
+}
+
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
@@ -823,9 +846,15 @@ void Copter::one_hz_loop()
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     // see if we should have a separate rate thread
     if (!started_rate_thread && get_fast_rate_type() != FastRateType::FAST_RATE_DISABLED) {
-        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
-                                         "rate",
-                                         1536, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
+        // Pin to core1 on SMP-capable targets (ChibiOS override uses thread affinity;
+        // non-SMP HALs fall back to thread_create on core0).
+        // SPI IRQs remain on core0 (the core that started the SPI driver); rate thread
+        // consumes from FastRateBuffer and writes PWM registers directly.
+        const uint8_t rate_core = 1;
+        bool rate_ok = hal.scheduler->thread_create_pinned_to_core(
+                      FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
+                      "rate", 4096, AP_HAL::Scheduler::PRIORITY_RCOUT, 1, rate_core);
+        if (rate_ok) {
             started_rate_thread = true;
         } else {
             AP_BoardConfig::allocation_error("rate thread");

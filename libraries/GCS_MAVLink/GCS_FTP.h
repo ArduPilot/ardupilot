@@ -42,17 +42,17 @@ private:
     };
 
     enum class FTP_ERROR : uint8_t {
-        None = MAV_FTP_ERR_NONE,
-        Fail = MAV_FTP_ERR_FAIL,
-        FailErrno = MAV_FTP_ERR_FAILERRNO,
-        InvalidDataSize = MAV_FTP_ERR_INVALIDDATASIZE,
-        InvalidSession = MAV_FTP_ERR_INVALIDSESSION,
-        NoSessionsAvailable = MAV_FTP_ERR_NOSESSIONSAVAILABLE,
-        EndOfFile = MAV_FTP_ERR_EOF,
-        UnknownCommand = MAV_FTP_ERR_UNKNOWNCOMMAND,
-        FileExists = MAV_FTP_ERR_FILEEXISTS,
-        FileProtected = MAV_FTP_ERR_FILEPROTECTED,
-        FileNotFound = MAV_FTP_ERR_FILENOTFOUND,
+        None = 0,
+        Fail = 1,
+        FailErrno = 2,
+        InvalidDataSize = 3,
+        InvalidSession = 4,
+        NoSessionsAvailable = 5,
+        EndOfFile = 6,
+        UnknownCommand = 7,
+        FileExists = 8,
+        FileProtected = 9,
+        FileNotFound = 10,
     };
 
     struct Transaction {
@@ -76,18 +76,22 @@ private:
 
     ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
+    // signalled by handle_file_transfer_protocol() when a request is pushed;
+    // allows the worker thread to wake immediately instead of polling every 2ms
+    HAL_BinarySemaphore *_requests_sem{nullptr};
+
     bool initialised;
 
     // session specific info
     class Session {
     public:
         int fd = -1;
-        uint32_t last_send_ms;
-        int16_t session_id;
-        FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
-        mavlink_channel_t chan;
-        uint8_t sysid;
-        uint8_t compid;
+        uint32_t last_send_ms = 0;
+        int16_t session_id = -1;
+        FTP_FILE_MODE mode = FTP_FILE_MODE::Read; // work around AP_Filesystem not supporting file modes
+        mavlink_channel_t chan = MAVLINK_COMM_0;
+        uint8_t sysid = 0;
+        uint8_t compid = 0;
 
         bool check_name_len(const Transaction &request);
         int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response

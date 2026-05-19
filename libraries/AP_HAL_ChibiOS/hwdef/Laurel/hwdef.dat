@@ -1,0 +1,377 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Laurel board based on the Raspberry Pi RP2350B (QFN-80)
+
+# Laurel is a Pico2-family RP2350 target with a board-specific pinout,
+# onboard ICM42688P IMU, DPS310 barometer, AT7456E/MAX7456-compatible OSD,
+# four PWM motor outputs, and QFN-80-only ADC pins.
+
+# MCU class and specific type
+MCU PICO2 PICO2
+
+# Laurel uses the RP2350B QFN-80 package: ADC external inputs are GPIO40-47
+# and the internal temperature sensor is ADC channel 8.
+define RP2350B_QFN80 1
+
+# Flash is provided by the RP2350 XIP/QSPI path through the ChibiOS EFL driver.
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+# RP2350 has single-precision hardware FP only; keep EKF precision as float.
+define HAL_WITH_EKF_DOUBLE 0
+# one ekf lane.
+define HAL_EKF_IMU_MASK_DEFAULT 1
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_RASPBERRYPI_LAUREL
+
+# Laurel uses a 12 MHz crystal (same as all standard Pico/Pico2W modules).
+# NOTE: on RP2350 this value is emitted as STM32_HSECLK and does NOT directly
+# drive the ChibiOS hardware — RP_XOSCCLK in board.h (hardcoded 12 MHz via an
+# #if !defined guard) is what the XOSC/PLL init actually uses.  Keeping this
+# correct ensures the RTC2US diagnostic macro in Util.cpp produces accurate
+# timing thresholds for thread-profiling warnings.
+OSCILLATOR_HZ 12000000
+
+# 8MB application flash (W25Q64 on the fixed RP2350 QSPI/XIP interface)
+FLASH_SIZE_KB 8192
+# The ChibiOS EFLv1 driver defaults RP_FLASH_SIZE to 4MB; override it to the
+# actual flash capacity so efl_lld_program and block-erase accept 8MB offsets.
+define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
+# Flash layout:
+#   Bootloader: 0x10000000-0x10007FFF (32KB)
+#   Parameter storage: 0x10008000-0x1000FFFF (32KB)
+#   App: 0x10010000-0x107FFFFF
+FLASH_RESERVE_START_KB 64
+
+# GPIO IRQ handling and early bring-up on RP2350 benefit from a larger MSP.
+# Doubled from 0x1000 → 0x2000: still at 97% (208 B free in live threads.txt).
+# Then 0x3000 (12 KB): ISR used 12064/12288 (98%) — still growing with
+# __RAMFUNC2__
+additions.  Bumped to 0x4000 (16 KB) for headroom.
+# threads.new2.txt: 16168/16384 (98.7%) — bump again to 0x6000 (24 KB).
+MAIN_STACK 0x6000
+
+# USB setup
+USB_STRING_MANUFACTURER "ArduPilot"
+
+# Expose the single onboard I2C bus as hal.i2c bus 0.
+I2C_ORDER I2C0
+
+# order of UARTs (and USB)
+#   SERIAL0: USB CDC console / MAVLink
+#   SERIAL1: DVTX / MSP DisplayPort (real UART0 on PA12/PA13, schematic:UART0/DVTXUART )
+#   SERIAL2: GPS                    (real UART1 on PA8/PA9,   schematic:UART1/GNSSUART )
+#   SERIAL3: CRSF/ELRS                (PIOUART0 on PA20/PA21, schematic:UART2/FTRXUART)
+#   SERIAL4: AUX port                 (PIOUART1 on PA34/PA35, schematic:UART3)
+SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1
+
+# Stream MAVLink on USB immediately.
+define HAL_OTG1_PROTOCOL SerialProtocol_MAVLink2
+define HAL_OTG1_BAUD 115200
+
+# --------------------------------------------------------------------------
+# Pins
+# --------------------------------------------------------------------------
+
+# SPI0 - ICM42688P IMU
+# Verified against Laurel schematic:
+#   CIPO=GPIO4, CSn=GPIO1, SCLK=GPIO2, COPI=GPIO3, IRQn=GPIO22.
+# The IMU CLKIN net is also routed to GPIO23, but this RP2350 port does not
+# currently drive or configure that pin for the ICM42688P.
+PA2  SPI0_SCK SPI0
+PA4  SPI0_RX  SPI0
+PA3  SPI0_TX  SPI0
+PA1  ICM42688_CS CS
+PA22 ICM42688_DRDY INPUT
+
+# SPI1 - shared OSD and microSD bus
+# Verified against Laurel schematic:
+#   SCLK=GPIO26, COPI/CMD=GPIO27, CIPO/DAT0=GPIO24.
+# Laurel cannot use OSD and microSD at the same time on this hardware.
+# This target chooses microSD support and leaves the hardware OSD SPI device
+# disabled.
+# If a user wants hardware OSD instead, keep the shared SPI1 pins as-is,
+# disable the sdcard entries below, and uncomment the OSD lines in this file.
+PA26 SPI1_SCK  SPI1
+PA24 SPI1_MISO SPI1
+PA27 SPI1_MOSI SPI1
+PA17 AT7456E_CS CS
+PA25 SDCARD_CS  CS
+
+# I2C0 - DPS310 barometer and optional external compass
+# Verified against Laurel schematic:
+#   SCL=GPIO45, SDA=GPIO44, with bus pull-ups fitted.
+# DPS310 SDO is strapped low, so the expected I2C address is 0x76.
+PA45 I2C0_SCL I2C0
+PA44 I2C0_SDA I2C0
+
+# USB pins (virtual PB prefix used by chibios_hwdef.py for RP2350 USB)
+PB0 OTG_FS_DM OTG1
+PB1 OTG_FS_DP OTG1
+
+# SWD debug pins intentionally not declared in the application hwdef.
+# Laurel routes SWDIO on GPIO1, which is also the ICM42688 CS line.
+# Declaring SWD here can leave the pin muxed away from GPIO CS behavior,
+# causing IMU WHOAMI reads to return 0x00. Keep SWD use external via probe,
+# and let the application own GPIO1 as ICM42688_CS.
+
+# UART0 - DVTX / MSP DisplayPort
+PA12 UART0_TX UART0
+PA13 UART0_RX UART0
+
+# UART1 - GPS
+PA8 UART1_TX UART1
+PA9 UART1_RX UART1
+
+# PIOUARTs - CRSF/ELRS and AUX
+PA20 PIOUART0_TX INPUT FLOATING
+PA21 PIOUART0_RX INPUT FLOATING
+PA34 PIOUART1_TX INPUT FLOATING
+PA35 PIOUART1_RX INPUT FLOATING
+
+# Motor outputs (PWM slices 6 and 7)
+PA28 PWM6_A TIM6 PWM(1) GPIO(50)
+PA29 PWM6_B TIM6 PWM(2) GPIO(51)
+PA30 PWM7_A TIM7 PWM(3) GPIO(52)
+PA31 PWM7_B TIM7 PWM(4) GPIO(53)
+
+# Status indicators
+# GPIO6 = blue LED, GPIO7 = green LED.  Both are active-LOW (writing 0 illuminates the LED).
+# AP_BoardLED2 uses HAL_GPIO_A_LED_PIN / HAL_GPIO_B_LED_PIN to select the two physical pins
+# and relies on the HAL_GPIO_LED_ON=0 polarity defined in AP_HAL/AP_HAL_Boards.h.
+PA6 LED_BLUE OUTPUT LOW GPIO(90)
+PA7 LED_GREEN OUTPUT LOW GPIO(91)
+define HAL_GPIO_A_LED_PIN 90
+define HAL_GPIO_B_LED_PIN 91
+# Enable the 2-LED board notification driver (AP_BoardLED2).
+# Without this define, AP_Notify skips the LED backend entirely and the LEDs
+# remain driven LOW (both on) at all times with no blinking.
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+
+# Beeper and regulator enables
+# BEC regulator: TI LMR33630BRNX (6–36V input min, 3A max, 5V output, VEN falling @ 5.5V)
+# Enable pins active-HIGH (GPIO14 for 5V BEC, GPIO15 for 9V BEC — held off at boot)
+# Laurel's buzzer on GPIO5: RDTE-4.000-3030-NS1 electromagnetic transducer.
+# This part requires an external square wave at ~4000 Hz — it is NOT self-oscillating.
+# Driven via PWM2_B (slice 2, channel B).  Frequency is clamped to 4000 Hz in
+# toneAlarm_set_buzzer_tone() via HAL_BUZZER_NOMINAL_FREQ_HZ so all ArduPilot
+# notes (262–4000 Hz range) hit the transducer's rated drive frequency instead
+# of off-resonance musical pitches that produce very low SPL.
+# We intentionally do NOT declare GPIO(n) or HAL_BUZZER_PIN here.  Adding
+# GPIO(80) would put the pin in HAL_GPIO_PINS and AP_Notify::Buzzer::init()
+# would call hal.gpio->pinMode(80, OUTPUT), clobbering FUNCSEL to 5 (SIO) and
+# silencing the tone alarm.  With only the ALARM tag, chibios_hwdef.py emits
+# HAL_PWM_ALARM_GPIO_LINE and board.c sets FUNCSEL=4 (PWM) at boot.
+PA5  PWM2_B TIM2 LOW ALARM
+define AP_NOTIFY_TONEALARM_ENABLED 1
+# Lock the PWM tone frequency to the transducer's rated drive frequency.
+# toneAlarm_set_buzzer_tone() uses this to override the musical note frequency
+# while preserving the on/off timing pattern for audible notifications.
+define HAL_BUZZER_NOMINAL_FREQ_HZ 4000
+# Keep 5V peripherals powered during bring-up, but hold the 9V rail off
+# until the Laurel power tree has been validated on hardware.
+PA14 BEC_5V_EN OUTPUT HIGH
+PA15 BEC_9V_EN OUTPUT HIGH
+
+# Analog inputs on RP2350B-only ADC pins
+PA40 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA41 BATT_CURRENT_SENS ADC1 SCALE(1)
+PA42 RSSI_ADC ADC1 SCALE(1)
+
+# Laurel has an onboard single-wire RGB LED on PA39, but RP2350 serial LED
+# output remains disabled in this port, so leave it unbound until a supported
+# backend exists.
+
+# --------------------------------------------------------------------------
+# SPI device table
+# --------------------------------------------------------------------------
+
+SPIDEV icm42688 SPI0 DEVID1 ICM42688_CS MODE3 2*MHZ 8*MHZ
+# SPIDEV osd      SPI1 DEVID4 AT7456E_CS  MODE0 10*MHZ 10*MHZ
+SPIDEV sdcard   SPI1 DEVID3 SDCARD_CS   MODE0 400*KHZ 25*MHZ
+
+# --------------------------------------------------------------------------
+# Feature defaults
+# --------------------------------------------------------------------------
+
+undef HAL_CHIBIOS_ARCH_FMUV3
+define AP_FEATURE_BOARD_DETECT 0
+
+# Main parameter storage remains on the RP2350 XIP flash. The second QSPI flash
+# used for Betaflight blackbox logging is not yet modelled by the RP2350 hwdef.
+define HAL_STORAGE_SIZE 8192
+define HAL_WITH_RAMTRON 0
+STORAGE_FLASH_PAGE 8
+define AP_FLASH_STORAGE_QUAD_PAGE 1
+
+define HAL_HAVE_SAFETY_SWITCH 0
+define HAL_WITH_MCU_MONITORING 1
+define HAL_HAVE_IMU_HEATER 0
+define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 0
+# DO NOT CHANGE AP_SCHEDULER_FAST_TASK_MODULO NO MATTER WHAT.
+# Reducing EKF/FAST_TASK frequency is not an acceptable workaround.
+# Look for improvements elsewhere (ramfunc, dual-core, etc).
+define AP_SCHEDULER_FAST_TASK_MODULO 2
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
+define HAL_MAIN_LOOP_STUCK_THRESHOLD_MS 1200
+# Enable SPI microSD via the shared SPI1 bus. Storage parameters remain on
+# XIP flash; FATFS is for logs/files only.
+# Laurel has no dedicated SD card-detect GPIO, so the low-level card-detect
+# reports inserted and connect probing is relied on to detect absence.
+# Keep FATFS enabled, but shorten connect-path idle waits so a missing card
+# fails fast without delaying console/MAVLink boot.
+define HAL_OS_FATFS_IO 1
+define MMC_CONNECT_IDLE_TIMEOUT_MS 20
+# On SPI-only card detection (no dedicated CD GPIO), avoid repeated long
+# connect attempts when no card is fitted.
+define HAL_SDCARD_SPI_INIT_TRIES 1
+# SD mount retry: outer Scheduler gate and inner sdcard_retry() gate.
+# Keep both long to avoid SPI bus stalls from repeated failed card probes.
+define HAL_FS_MOUNT_RETRY_MS 30000
+define HAL_SDCARD_RETRY_INTERVAL_MS 30000
+
+# Battery and RSSI channels on RP2350 ADC inputs.
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 0
+define HAL_BATT_CURR_PIN 1
+# Calibrated from live one-shot PA40 ADC read with known VBAT=5.90V:
+# raw=696 -> Vpin=0.5609V, so VBAT/Vpin = 10.519. Use 10.52 default.
+define HAL_BATT_VOLT_SCALE 10.52
+define HAL_BATT_CURR_SCALE 1.0
+define BOARD_RSSI_ANA_PIN 2
+
+define HAL_I2C_MAX_CLOCK 100000
+
+define AP_NOTIFY_OREOLED_ENABLED 0
+define HAL_SOLO_GIMBAL_ENABLED 0
+undef AP_BATTERY_SMBUS_SOLO_ENABLED
+define AP_BATTERY_SMBUS_SOLO_ENABLED 0
+define AP_CRASHDUMP_ENABLED 0
+define HAL_GYROFFT_ENABLED 0
+define HAL_WITH_DSP FALSE
+
+define HAL_USE_PAL                         TRUE
+define HAL_USE_SIO                         TRUE
+define HAL_USE_I2C                         TRUE
+define HAL_USE_SPI                         TRUE
+define RP_SPI_USE_SPI0                     TRUE
+define RP_SPI_USE_SPI1                     TRUE
+define HAL_USE_ADC                         TRUE
+define RP_ADC_USE_ADC1                     TRUE
+define HAL_USE_CAN                         FALSE
+define HAL_USE_CRY                         FALSE
+define HAL_USE_DAC                         FALSE
+define HAL_USE_EFL                         TRUE
+define HAL_USE_GPT                         FALSE
+define HAL_USE_I2S                         FALSE
+define RP_I2C_USE_I2C0                     TRUE
+define HAL_USE_ICU                         FALSE
+define HAL_USE_EICU                        FALSE
+define HAL_USE_MAC                         FALSE
+define HAL_USE_MMC_SPI                     TRUE
+define HAL_USE_PWM                         TRUE
+define HAL_DSHOT_ENABLED                   0
+define HAL_SERIALLED_ENABLED               0
+define HAL_SERIAL_ESC_COMM_ENABLED         0
+define HAL_USE_RTC                         FALSE
+define HAL_USE_SDC                         FALSE
+define HAL_USE_SERIAL                      FALSE
+define HAL_USE_SERIAL_USB                  TRUE
+define HAL_USE_TRNG                        FALSE
+define HAL_USE_UART                        FALSE
+define AP_HAL_UARTDRIVER_ENABLED           1
+define HAL_USE_USB                         TRUE
+define HAL_USE_WDG                         TRUE
+define HAL_WATCHDOG_ENABLED_DEFAULT        0
+define DISABLE_WATCHDOG                    1
+define HAL_MONITOR_THREAD_ENABLED 0
+define HAL_USE_WSPI                        FALSE
+
+# Port roles chosen to match the Laurel carrier wiring.
+define DEFAULT_SERIAL1_PROTOCOL            SerialProtocol_MSP_DisplayPort
+define DEFAULT_SERIAL2_PROTOCOL            SerialProtocol_GPS
+# During RP2350 bring-up, keep PIOUART ports disabled by default.
+# Floating RX inputs on unconnected external headers can generate high-rate
+# IRQ traffic that starves startup progress before ap.initialised_params.
+# Re-enable at runtime after wiring validation:
+#   SERIAL3_PROTOCOL=23 (RCIN) when CRSF/ELRS receiver is attached
+#   SERIAL4_PROTOCOL=2  (MAVLink2) when an AUX telemetry link is attached
+define DEFAULT_SERIAL3_PROTOCOL            SerialProtocol_None
+define DEFAULT_SERIAL4_PROTOCOL            SerialProtocol_None
+
+define PAL_USE_CALLBACKS                   TRUE
+define PAL_USE_WAIT                        TRUE
+define RP_USB_USE_USB1                     TRUE
+# RP2350  is defined elsewhere
+
+define ALLOW_ARM_NO_COMPASS
+# Re-enabled for Laurel diagnostics so the next hardware run can capture
+# exactly which external-compass probe attempt is stretching startup time.
+# AP_Compass.cpp and ArduCopter/system.cpp now emit timing breadcrumbs around
+# each probe and around AP::compass().init().
+undef AP_COMPASS_PROBING_ENABLED
+define AP_COMPASS_PROBING_ENABLED          1
+
+# Laurel startup safeguard: limit external-I2C compass probe fan-out to
+# common field hardware while we root-cause the long probe stall path.
+# This keeps external compass support available but avoids probing uncommon
+# backends that add reset/wait sequences during init on an empty bus.
+define AP_COMPASS_BMM150_ENABLED           0
+define AP_COMPASS_BMM350_ENABLED           0
+define AP_COMPASS_MAG3110_ENABLED          0
+define AP_COMPASS_MMC3416_ENABLED          0
+define AP_COMPASS_MMC5XX3_ENABLED          0
+define AP_COMPASS_RM3100_ENABLED           0
+define AP_COMPASS_LSM303D_ENABLED          0
+define AP_COMPASS_LSM9DS1_ENABLED          0
+
+define HAL_I2C_INTERNAL_MASK               0
+define HAL_COMPASS_AUTO_ROT_DEFAULT        2
+
+# Keep the generic OSD framework enabled because MSP DisplayPort on SERIAL1
+# depends on AP_OSD being built, even when the hardware SPI OSD is not fitted.
+# Uncomment the SPIDEV osd line above, and disable the sdcard path above, if
+# SPI1 is being used for hardware OSD instead of the microSD socket.
+define OSD_ENABLED                         1
+define HAL_OSD_TYPE_DEFAULT                1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+define CH_CFG_SMP_MODE TRUE
+# SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
+define RP_CORE1_START TRUE
+# CPU clock: 375 MHz (1500 MHz VCO / POSTDIV1=4 / POSTDIV2=1 = 375 MHz).
+# The on-chip VREG is raised to 1.30 V (VSEL=0x0f) in software BEFORE the
+# PLL is switched — see rp2350_vreg_init() in rp_clocks.c.  1.30 V supports
+# up to ~384 MHz per community testing (MichaelBell/power.py MicroPython gist)
+# and requires no DISABLE_VOLTAGE_LIMIT flag.
+# Previous attempts:
+#   300 MHz at default 1.1 V (2026-04-12): LOCKUP — VREG not initialized first.
+define RP_PLL_SYS_POSTDIV1 4
+define RP_PLL_SYS_POSTDIV2 1
+# On-chip VREG voltage select: 0x0f = 1.30 V (datasheet Table 481, VREG.VSEL).
+# This is raised in rp_clocks.c before PLL_SYS is started.
+define RP_VREG_VSEL 15
+# QMI flash timing for 375 MHz operation.  At 375 MHz the bootloader's
+# CLKDIV=3 gives SCK = 125 MHz which is over-spec for W25Q32 (80 MHz max).
+# CLKDIV=6 → SCK = 62.5 MHz (safe).  RXDELAY=6 → 8 ns capture delay,
+# covering the W25Q32 tCHQV of ≤7 ns.  Must be applied before PLL switch.
+define RP_QMI_CLKDIV 6
+define RP_QMI_RXDELAY 6
+
+# Board-specific notes:
+# - PA39 is routed to the onboard RGB LED but serial LED support remains
+#   disabled on RP2350.
+# - PA23 is routed to the ICM42688P CLKIN net; left unbound for now.
+# - PA36/PA37 are RX-only board pads (SBUS / ESC telemetry in Betaflight) and
+#   are intentionally not declared until RX-only serial support exists here.
+# - microSD is wired in SPI mode on the shared SPI1 bus with a dedicated
+#   chip-select on PA25.
+# - SPI1 is a hardware either-or choice: microSD or hardware OSD. This target
+#   selects microSD and keeps the hardware OSD SPI device disabled.
+# - The secondary W25Q128 blackbox flash on Laurel is not yet represented in
+#   the RP2350 hwdef path, so only main XIP flash storage plus microSD are
+#   currently enabled.
+
+# Sensors
+define HAL_INS_ALLOW_NO_SENSORS 1
+IMU Invensensev3 SPI:icm42688 ROTATION_NONE
+BARO DPS310 I2C:0:0x76

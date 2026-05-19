@@ -46,8 +46,20 @@ bool GCS_FTP::init(void)
         return true;
     }
 
+    _requests_sem = NEW_NOTHROW HAL_BinarySemaphore(false);
+
+#if defined(RP2350)
+    // Priority 181 (= APM_SPI_PRIORITY, UART base 60 + offset 121): matches
+    // the SPI/RCOUT/timer threads so FTP can preempt the 400 Hz main loop
+    // (priority 180) on single-core RP2350 even when load=100%.  The worker
+    // spends almost all its time blocked in the semaphore wait; when it does
+    // run it yields every 100 µs via delay_microseconds so RCOUT is unaffected.
+    initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
+                                               "FTP", 2560, AP_HAL::Scheduler::PRIORITY_UART, 121);
+#else
     initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
                                                "FTP", 2560, AP_HAL::Scheduler::PRIORITY_IO, 0);
+#endif
     if (!initialised) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "failed to initialize MAVFTP");
     }
@@ -95,15 +107,20 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
         // if the push fails we drop the message
         // we could NACK it, but that can lead to GCS
         // confusion, so we're treating it like lost data
-        ftp->requests.push(request);
+        bool pushed = ftp->requests.push(request);
+        if (pushed && ftp->_requests_sem != nullptr) {
+            ftp->_requests_sem->signal();
+        }
     }
 }
 
 bool GCS_FTP::send_reply(const Transaction &reply)
 {
+#if !defined(RP2350)
     if (!GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
         return false;
     }
+#endif
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
     if (!HAVE_PAYLOAD_SPACE(reply.chan, FILE_TRANSFER_PROTOCOL)) {
         return false;
@@ -143,9 +160,18 @@ bool GCS_FTP::Session::check_name_len(const Transaction &request)
 // send our response back out to the system
 void GCS_FTP::Session::push_reply(Transaction &reply)
 {
-    last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
+    const uint32_t send_start_ms = AP_HAL::millis();
+    last_send_ms = send_start_ms; // Used to detect active FTP session
 
+    uint32_t fail_count = 0;
     while (!send_reply(reply)) {
+        fail_count++;
+        if (AP_HAL::millis() - send_start_ms > FTP_SESSION_TIMEOUT) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FTP:timeout fails=%u", (unsigned)fail_count);
+            // host gone — abandon this session so the worker can serve new clients
+            close();
+            return;
+        }
         hal.scheduler->delay_microseconds(100);
     }
 
@@ -370,6 +396,9 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
         // actually open the file
         fd = AP::FS().open((char *)request.data, O_RDONLY);
         if (fd == -1) {
+            if (errno == ENOMEM) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FTP: open ENOMEM: %s free=%u", (char *)request.data, (unsigned)hal.util->available_memory());
+            }
             GCS_FTP::error(reply, FTP_ERROR::FailErrno);
             break;
         }
@@ -411,6 +440,9 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
         // fill the buffer
         const ssize_t read_bytes = AP::FS().read(fd, reply.data, MIN(sizeof(reply.data),request.size));
         if (read_bytes == -1) {
+            if (errno == ENOMEM) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FTP: ReadFile ENOMEM free=%u", (unsigned)hal.util->available_memory());
+            }
             GCS_FTP::error(reply, FTP_ERROR::FailErrno);
             break;
         }
@@ -597,6 +629,9 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             // fill the buffer
             const ssize_t read_bytes = AP::FS().read(fd, reply.data, MIN(sizeof(reply.data), max_read));
             if (read_bytes == -1) {
+                if (errno == ENOMEM) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FTP: BurstRead ENOMEM free=%u", (unsigned)hal.util->available_memory());
+                }
                 reply.burst_complete = true;
                 GCS_FTP::error(reply, FTP_ERROR::FailErrno);
                 break;
@@ -744,8 +779,15 @@ void GCS_FTP::worker(void)
 
     while (true) {
         while (!requests.pop(request)) {
-            // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
-            hal.scheduler->delay(2);
+            // Wait for a signal from handle_file_transfer_protocol() or a
+            // 100ms timeout for periodic session-cleanup.  On single-core
+            // RP2350 this avoids leaving the thread blocked in a 2ms busy-
+            // poll loop that competes poorly with the 400 Hz main loop.
+            if (_requests_sem != nullptr) {
+                _requests_sem->wait(100 * 1000);
+            } else {
+                hal.scheduler->delay(2);
+            }
 
             // kill any dead sessions
             const uint32_t now = AP_HAL::millis();

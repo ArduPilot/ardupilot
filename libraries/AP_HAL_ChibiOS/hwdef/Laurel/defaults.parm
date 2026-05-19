@@ -1,0 +1,68 @@
+# Laurel defaults tuned for the onboard ICM42688P sensor stack.
+#
+# IMU / rate-loop split — targeting 1 kHz backend and ~333 Hz rate control:
+#
+#   INS_GYRO_RATE=0  → get_fast_sampling_rate()=1, and Laurel keeps the
+#     Invensensev3 SPI FIFO path enabled at the base 1000 Hz backend rate.
+#     Per-sample filter work stays in the IMU interrupt path; ins.update() in
+#     the main loop just reads aggregated output instead of draining queued
+#     samples per iteration (which was causing the 73 Hz main-loop stall).
+#
+#   FSTRATE_ENABLE=1 (FAST_RATE_DYNAMIC): rate thread active, pinned to core1
+#     via ChibiOS SMP thread affinity (THD_DESCRIPTOR_AFFINITY + &ch1).
+#     IMU sample read → rate PID → motors output all run on core1.
+#     SPI IRQs remain on core0 (core that started the SPI driver); rate thread
+#     consumes from FastRateBuffer and writes PWM registers directly.
+#
+#   FSTRATE_DIV=3: rate thread runs at 1000 Hz / 3 ≈ 333 Hz.
+#
+#   SCHED_LOOP_RATE=150: EKF, attitude target, GCS, logging at 150 Hz.
+#     The rate thread remains decoupled from the main loop and now runs at
+#     about 333 Hz independently (FSTRATE_DIV=3) to reduce SPI/backend load.
+#
+#   INS_FAST_SAMPLE=1: enables fast-sample window for the rate thread (required
+#     for AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW).
+SCHED_LOOP_RATE 150
+INS_FAST_SAMPLE 1
+INS_GYRO_RATE 0
+FSTRATE_DIV 3
+FSTRATE_ENABLE 1
+
+# Enable watchdog by default.
+BRD_OPTIONS 1
+
+# Laurel bring-up default: avoid hard pre-arm failure when filesystem logging
+# backend cannot initialise (e.g. no/unstable SPI microSD path).
+# 0 = no logger backend enabled by default.
+LOG_BACKEND_TYPE 0
+
+# Quad-X frame with 4 motors (matches the 4 PWM outputs on GPIO28-31).
+FRAME_CLASS 1
+FRAME_TYPE 1
+
+# Battery scaling values need Laurel hardware calibration.
+
+# Serial port protocol defaults.
+# SERIAL1 (UART0 / DVTX connector): MSP DisplayPort is compiled-in default.
+# SERIAL2 (UART1 / GPS connector): GPS is compiled-in default.
+# SERIAL3 (PIOUART0 / CRSF-ELRS port, GPIO20/21): enable RCIN by default so
+#   PIOUART0 is initialised and the PIO state machine configures GPIO20/21
+#   FUNCSEL=6(PIO0) at boot.  Without a receiver plugged in, the board simply
+#   shows "PreArm: RC not found" (normal behaviour).
+SERIAL3_PROTOCOL 23
+
+# SERIAL4 (PIOUART1 / AUX port, GPIO34/35): MAVLink2 by default so the
+# spare UART connector is ready for a telemetry radio or GCS link.
+# Protocol 2 enables PIOUART1 PIO1 state machines (GPIO34/35 FUNCSEL=7).
+SERIAL4_PROTOCOL 2
+#BATT_AMP_PERVLT 1.0
+#BATT_VOLT_MULT 1.0
+
+EK3_IMU_MASK 1
+
+# Enable task statistics collection from boot so @SYS/tasks.txt is populated on
+# the first FTP request.  SCHED_OPTIONS bit 0 = RECORD_TASK_INFO.  Without this,
+# AP_Scheduler::task_info() enables the option on its first call and returns only
+# the "TasksV2\n" header — the TaskInfo array isn't allocated until the next
+# scheduler loop, so every FTP get @SYS/tasks.txt returns an empty file.
+SCHED_OPTIONS 1

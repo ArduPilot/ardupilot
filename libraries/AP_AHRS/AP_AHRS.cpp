@@ -609,6 +609,19 @@ void AP_AHRS::copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estim
 #if AP_AHRS_DCM_ENABLED
 void AP_AHRS::update_DCM()
 {
+#if defined(RP2350)
+    if (_active_EKF_type() != EKFType::DCM) {
+// RP2350: DCM::Update() costs ~800-1000 µs at 150 Hz — a large fraction of the 6.7 ms budget.
+// When EKF3 is active, DCM is only a fallback; run it at half rate to preserve a fresh
+// fallback solution while halving its Core0 cost. Full rate when DCM is the active estimator.
+        static uint8_t backup_dcm_skip_count;
+        backup_dcm_skip_count ^= 1U;
+        if (backup_dcm_skip_count != 0U) {
+            return;
+        }
+    }
+#endif
+
     dcm.update();
     dcm.get_results(dcm_estimates);
 
@@ -617,9 +630,11 @@ void AP_AHRS::update_DCM()
     // an EKF or external AHRS.  This is long-held behaviour, but this
     // really shouldn't be doing this.
 
-    // if (active_EKF_type() == EKFType::DCM) {
+// Avoid copying DCM outputs into the canonical AHRS state when another estimator is already active
+// EKF/external AHRS will overwrite that state later in the same update cycle anyway.
+    if (_active_EKF_type() == EKFType::DCM) {
         copy_estimates_from_backend_estimates(dcm_estimates);
-    // }
+    }
 }
 #endif
 

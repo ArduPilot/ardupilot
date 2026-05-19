@@ -1,0 +1,80 @@
+TasksV2
+AP_InertialSensor::update*       MIN=  74 MAX=1267 AVG= 151 OVR=  0 SLP=  0, TOT= 1.2%
+Copter::run_rate_controller_main MIN= 125 MAX= 867 AVG= 262 OVR=  0 SLP=  0, TOT= 2.0%
+Copter::motors_output_main*      MIN= 356 MAX=1087 AVG= 704 OVR=  0 SLP=  0, TOT= 5.4%
+Copter::read_AHRS*               MIN=3731 MAX=9574 AVG=5824 OVR=  0 SLP=  0, TOT=44.9%
+Copter::read_inertia*            MIN= 112 MAX= 932 AVG= 309 OVR=  0 SLP=  0, TOT= 2.4%
+Copter::check_ekf_reset*         MIN=  21 MAX= 803 AVG=  82 OVR=  0 SLP=  0, TOT= 0.6%
+Copter::update_flight_mode*      MIN=1418 MAX=2413 AVG=1834 OVR=  0 SLP=  0, TOT=14.1%
+Copter::update_home_from_EKF*    MIN=  20 MAX= 840 AVG=  67 OVR=  0 SLP=  0, TOT= 0.5%
+Copter::update_land_and_crash_de MIN=  70 MAX= 860 AVG= 228 OVR=  0 SLP=  0, TOT= 1.8%
+Copter::update_rangefinder_terra MIN=  45 MAX= 769 AVG= 149 OVR=  0 SLP=  0, TOT= 1.2%
+AP_Mount::update_fast*           MIN=   7 MAX= 647 AVG=  22 OVR=  0 SLP=  0, TOT= 0.1%
+Copter::Log_Video_Stabilisation* MIN=   5 MAX= 606 AVG=  17 OVR=  0 SLP=  0, TOT= 0.1%
+Copter::rc_loop                  MIN=  48 MAX= 815 AVG= 102 OVR=  0 SLP=  0, TOT= 0.7%
+Copter::throttle_loop            MIN=  87 MAX= 671 AVG= 160 OVR=334 SLP=  0, TOT= 0.6%
+Copter::fence_check              MIN=  10 MAX= 519 AVG=  21 OVR=  3 SLP=  0, TOT= 0.1%
+AP_GPS::update                   MIN= 105 MAX=1056 AVG= 234 OVR= 77 SLP=  0, TOT= 0.9%
+AP_OpticalFlow::update           MIN=   8 MAX= 601 AVG=  26 OVR=684 SLP=  0, TOT= 0.2%
+Copter::update_batt_compass      MIN= 218 MAX= 975 AVG= 462 OVR= 83 SLP=  0, TOT= 0.4%
+RC_Channels::read_aux_all        MIN=  14 MAX= 611 AVG=  35 OVR=  4 SLP=  0, TOT= 0.0%
+Copter::auto_disarm_check        MIN=  10 MAX= 564 AVG=  34 OVR=  3 SLP=  0, TOT= 0.0%
+RC_Channels_Copter::auto_trim_ru MIN=   6 MAX=  32 AVG=   9 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::read_rangefinder         MIN= 191 MAX= 970 AVG= 453 OVR=167 SLP=  0, TOT= 0.8%
+AP_Proximity::update             MIN=  14 MAX= 641 AVG=  39 OVR=696 SLP=  0, TOT= 0.3%
+AP_Beacon::update                MIN=   7 MAX= 717 AVG=  16 OVR=683 SLP=  0, TOT= 0.1%
+AP_Airspeed::update              MIN=   6 MAX= 156 AVG=  11 OVR=  1 SLP=  0, TOT= 0.0%
+Copter::update_altitude          MIN= 232 MAX= 897 AVG= 537 OVR= 84 SLP=  0, TOT= 0.5%
+Copter::run_nav_updates          MIN=   7 MAX= 619 AVG=  20 OVR=  8 SLP=  0, TOT= 0.1%
+Copter::update_throttle_hover    MIN=   4 MAX= 621 AVG=  17 OVR=683 SLP=  0, TOT= 0.1%
+ModeSmartRTL::save_position      MIN=  17 MAX= 445 AVG=  58 OVR=  1 SLP=  0, TOT= 0.0%
+AC_Sprayer::update               MIN=   9 MAX= 567 AVG=  36 OVR=  1 SLP=  0, TOT= 0.0%
+Copter::three_hz_loop            MIN=  49 MAX= 752 AVG= 128 OVR=  4 SLP=  0, TOT= 0.0%
+AP_ServoRelayEvents::update_even MIN=   4 MAX= 558 AVG=  16 OVR= 10 SLP=  0, TOT= 0.1%
+Copter::update_precland          MIN=   9 MAX= 696 AVG=  31 OVR=698 SLP=  0, TOT= 0.2%
+Copter::loop_rate_logging        MIN=  13 MAX= 624 AVG=  35 OVR=696 SLP=  0, TOT= 0.2%
+Compass::cal_update              MIN=  18 MAX= 690 AVG=  40 OVR=688 SLP=  0, TOT= 0.3%
+AP_Notify::update                MIN=  74 MAX= 811 AVG= 194 OVR= 59 SLP=  0, TOT= 0.7%
+Copter::one_hz_loop              MIN= 219 MAX= 789 AVG= 370 OVR=  8 SLP=  0, TOT= 0.0%
+Copter::perf_report              MIN=9999 MAX=9999 AVG=9999 OVR=  1 SLP=  0, TOT= 0.1%
+Copter::ekf_check                MIN=  10 MAX= 492 AVG=  29 OVR=  3 SLP=  0, TOT= 0.0%
+Copter::check_vibration          MIN=  53 MAX= 702 AVG= 123 OVR= 83 SLP=  0, TOT= 0.1%
+Copter::gpsglitch_check          MIN=  16 MAX= 616 AVG=  96 OVR= 14 SLP=  0, TOT= 0.1%
+Copter::takeoff_check            MIN=   8 MAX= 558 AVG=  28 OVR= 17 SLP=  0, TOT= 0.1%
+Copter::landinggear_update       MIN=  13 MAX= 612 AVG=  43 OVR=  5 SLP=  0, TOT= 0.0%
+Copter::standby_update           MIN=   4 MAX= 701 AVG=  28 OVR=697 SLP=  0, TOT= 0.2%
+Copter::lost_vehicle_check       MIN=  22 MAX= 591 AVG=  66 OVR=  9 SLP=  0, TOT= 0.1%
+GCS::update_receive              MIN= 332 MAX=3884 AVG= 723 OVR=999 SLP=  0, TOT= 5.6%
+GCS::update_send                 MIN= 172 MAX=6101 AVG= 993 OVR=999 SLP=  0, TOT= 7.6%
+AP_Mount::update                 MIN=   7 MAX= 589 AVG=  22 OVR=  6 SLP=  0, TOT= 0.1%
+AP_Camera::update                MIN=  10 MAX= 596 AVG=  29 OVR= 13 SLP=  0, TOT= 0.1%
+Copter::ten_hz_logging_loop      MIN=1279 MAX=2156 AVG=1609 OVR= 83 SLP=  0, TOT= 1.5%
+Copter::twentyfive_hz_logging    MIN=  16 MAX= 625 AVG=  63 OVR= 12 SLP=  0, TOT= 0.1%
+AP_Logger::periodic_tasks        MIN=  11 MAX= 681 AVG=  48 OVR=697 SLP=  0, TOT= 0.3%
+AP_InertialSensor::periodic      MIN=   5 MAX= 626 AVG=  21 OVR=687 SLP=  0, TOT= 0.1%
+AP_Scheduler::update_logging     MIN=  53 MAX=  53 AVG=  53 OVR=  0 SLP=  0, TOT= 0.0%
+AP_TempCalibration::update       MIN=   5 MAX= 523 AVG=  14 OVR=  1 SLP=  0, TOT= 0.0%
+Copter::avoidance_adsb_update    MIN= 129 MAX= 838 AVG= 269 OVR= 84 SLP=  0, TOT= 0.2%
+Copter::terrain_update           MIN=  75 MAX= 753 AVG= 153 OVR= 19 SLP=  0, TOT= 0.1%
+AP_Winch::update                 MIN=  12 MAX= 643 AVG=  35 OVR= 23 SLP=  0, TOT= 0.1%
+AP_Button::update                MIN=   5 MAX= 235 AVG=  16 OVR=  1 SLP=  0, TOT= 0.0%
+AP_NMEA_Output::update           MIN=   4 MAX= 440 AVG=  17 OVR= 14 SLP=  0, TOT= 0.1%
+Copter::update_dynamic_notch_at_ MIN=   8 MAX= 566 AVG=  26 OVR=685 SLP=  0, TOT= 0.2%
+AP_VideoTX::update               MIN=   5 MAX=  15 AVG=   8 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Tramp::update                 MIN=   3 MAX= 581 AVG=  11 OVR=  5 SLP=  0, TOT= 0.0%
+AP_Vehicle::send_watchdog_reset_ MIN=  13 MAX=  13 AVG=  13 OVR=  0 SLP=  0, TOT= 0.0%
+AP_ESC_Telem::update             MIN=  40 MAX= 727 AVG=  88 OVR=847 SLP=  0, TOT= 0.6%
+AP_Servo_Telem::update           MIN=   7 MAX= 556 AVG=  22 OVR= 13 SLP=  0, TOT= 0.1%
+AP_Generator::update             MIN=   2 MAX= 558 AVG=  15 OVR=  2 SLP=  0, TOT= 0.0%
+AP_RPM::update                   MIN=  10 MAX= 528 AVG=  20 OVR=  8 SLP=  0, TOT= 0.1%
+AP_Vehicle::publish_osd_info     MIN=  39 MAX= 653 AVG= 176 OVR=  9 SLP=  0, TOT= 0.0%
+AP_TemperatureSensor::update     MIN=   5 MAX= 364 AVG=  17 OVR=  1 SLP=  0, TOT= 0.0%
+AP_Vehicle::accel_cal_update     MIN=  12 MAX= 684 AVG=  29 OVR=  2 SLP=  0, TOT= 0.0%
+AC_Fence::update                 MIN=  18 MAX= 487 AVG=  29 OVR=  1 SLP=  0, TOT= 0.0%
+AP_AIS::update                   MIN=   3 MAX=  12 AVG=   4 OVR=  0 SLP=  0, TOT= 0.0%
+AP_EFI::update                   MIN=   4 MAX= 557 AVG=  16 OVR=  9 SLP=  0, TOT= 0.1%
+AP_Gripper::update               MIN=   4 MAX=  77 AVG=   7 OVR=  1 SLP=  0, TOT= 0.0%
+AP_Vehicle::one_Hz_update        MIN= 188 MAX= 718 AVG= 346 OVR=  9 SLP=  0, TOT= 0.0%
+AP_Filters::update               MIN=   9 MAX= 503 AVG=  70 OVR=  1 SLP=  0, TOT= 0.0%
+AP_Stats::update                 MIN=  15 MAX=  34 AVG=  22 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::update_arming        MIN=2686 MAX=3415 AVG=3049 OVR=  9 SLP=  0, TOT= 0.3%

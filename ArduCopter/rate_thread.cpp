@@ -16,6 +16,7 @@
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
+
 #pragma GCC optimize("O2")
 
 /*
@@ -234,6 +235,9 @@ void Copter::rate_controller_thread()
         // wait for an IMU sample
         Vector3f gyro;
         if (!ins.get_next_gyro_sample(gyro)) {
+// get_next_gyro_sample() returned without blocking (no real IMU or fast-rate buffer not yet producing samples).
+// Without this sleep the rate thread spin-loops at high priority, starving USB output entirely.
+            hal.scheduler->delay_microseconds(500);
             continue;   // go around again
         }
 
@@ -246,7 +250,7 @@ void Copter::rate_controller_thread()
         const float sensor_dt = 1.0f * rate_decimation / ins.get_raw_gyro_rate_hz();
         const uint32_t now_us = AP_HAL::micros();
         const uint32_t dt_us = now_us - last_run_us;
-        const float dt = dt_us * 1.0e-6;
+        const float dt = dt_us * 1.0e-6f;
         last_run_us = now_us;
 
         // check if we are falling behind
@@ -262,6 +266,8 @@ void Copter::rate_controller_thread()
         // run the rate controller on all available samples
         // it is important not to drop samples otherwise the filtering will be fubar
         // there is no need to output to the motors more than once for every batch of samples
+        // Rate thread runs on core1 (pinned via ChibiOS SMP thread affinity).
+        // PID math executes directly here — no dispatch needed.
         attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt);
 
 #ifdef RATE_LOOP_TIMING_DEBUG

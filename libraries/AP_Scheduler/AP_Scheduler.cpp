@@ -258,7 +258,11 @@ void AP_Scheduler::run(uint32_t time_available)
                 continue;
             }
         } else {
-            _task_time_allowed = get_loop_period_us();
+            // FAST_TASK: skip on non-zero modulo remainder to reduce per-tick load
+            if (_fast_task_modulo > 1 && (_tick_counter % _fast_task_modulo) != 0) {
+                continue;
+            }
+            _task_time_allowed = get_loop_period_us() * _fast_task_modulo;
         }
 
         // run it
@@ -487,13 +491,19 @@ void AP_Scheduler::task_info(ExpandingString &str)
     // a header to allow for machine parsers to determine format
     str.printf("TasksV2\n");
 
-    // dynamically enable statistics collection
+    // dynamically enable statistics collection; allocate now so the
+    // caller gets a well-formed (but empty-stats) file on the very
+    // first request instead of a header-only stub that the FTP layer
+    // must ENOENT-reject and the user must retry manually.
     if (!(_options & uint8_t(Options::RECORD_TASK_INFO))) {
         _options.set(_options | uint8_t(Options::RECORD_TASK_INFO));
-        return;
+        perf_info.allocate_task_info(_num_tasks);
+    } else if (perf_info.get_task_info(0) == nullptr) {
+        perf_info.allocate_task_info(_num_tasks);
     }
 
     if (perf_info.get_task_info(0) == nullptr) {
+        // allocation failed (OOM) – return header-only
         return;
     }
 

@@ -1,0 +1,806 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Pico2 board by raspberry pi
+
+# This hwdef.dat file contains a lot of comments so it can act as a
+# reference for developers adding new boards.
+
+# The hwdef.dat file defines all the hardware peripherals and pins for
+# a port of ArduPilot to a board using the ChibiOS HAL. You should be
+# able to write the hwdef.dat file for a new board with just the
+# schematic for the board.
+
+# This file is processed by chibios_hwdef.py to create hwdef.h for
+# this board. You may find it useful to run chibios_hwdef.py manually
+# when building this file for a new board. The resulting hwdef.h file
+# is formatted to make it quite readable. It is strongly suggested
+# that you read the resulting hwdef.h file when porting to a new board
+# to make sure it has resulted in what you want.
+
+# You should read this file in conjunction with the schematic for your
+# board, the datasheet for the MCU for your board and the python
+# tables file that we have extracted from the datasheet for your
+# MCU. The python tables file is particularly important, so if you
+# haven't seen it before go and look at it now. For the STM32F427 it
+# it called STM32F427xx.py and it is in the hwdef/script/ directory
+# inside the HAL_ChibiOS directory. That file tells you what each pin
+# can do (the alternate functions table) and what DMA channels can be
+# used for each peripheral type. The alternative functions table is
+# particularly useful when doing a new hwdef.dat file as you can work
+# out peripheral numbers given a port/pin name.
+
+# We need to start off by saying what main CPU is on the board. There
+# are two CPU identifiers that you need to specify. The first is the
+# ChibiOS MCU type. So far we only support STM32F4xx for all STM32F4
+# board types. In the future we will add F7 and other MCU types
+# The second string needs to match the name of a config file in the
+# libraries/AP_HAL_ChibiOS/hwdef/script directory. In this case we are
+# using a F427 MCU, so we select STM32F427xx to match the
+# STM32F427xx.py file in the script directory. If you are supporting a
+# board type that doesn't have a python hardware database file yet
+# then you will need to create one. There are scripts in the scripts
+# directory to help with that by parsing the STM32 datasheets to
+# extract the required DMA and alternate function tables.
+
+# MCU class and specific type
+MCU PICO2 PICO2
+#MCU STM32F4xx STM32F427xx
+
+# flash is now implemented via ChibiOS EFL driver (efl_lld) for RP2350 QSPI flash
+# define HAL_NO_FLASH_SUPPORT 1  -- removed: EFL driver supports flash read/write/erase
+# define HAL_NO_ROMFS_SUPPORT 1  -- removed: ROMFS works as binary-embedded data
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+# RP2350 has single-precision hardware FP only; keep EKF precision as float.
+define HAL_WITH_EKF_DOUBLE 0
+
+# DMA UART is now implemented for RP2350 using the ChibiOS DMAv1 driver (rp_dma.c, 12 channels).
+# WIP: UART DMA has NOT been tested on hardware yet.
+# NOTE: the generated HAL_UART0_CONFIG / HAL_UART1_CONFIG already have dma_rx=false, dma_tx=false,
+# so DMA is NOT active in the current build even though DMA stream IDs are assigned.
+# HAL_UART_NODMA cannot simply be defined here because it removes struct fields from SerialDef
+# while the hwdef.py generator still emits those fields in the config macros, causing a compile
+# error. If you need to force-disable DMA, update hwdef.py to gate DMA field emission on that flag.
+# UARTDriver.cpp has RP2350-specific dmaChannelAllocI/dmaChannelSetMode paths alongside the
+# existing STM32 paths. HAL_USE_SIO=TRUE uses SIODriver (SIOD0/SIOD1) instead of SerialDriver.
+
+# Now we need to specify the APJ_BOARD_ID. This is the ID that the
+# bootloader presents to GCS software so it knows if this firmware is
+# suitable for the board. Please see
+# https://github.com/ArduPilot/Bootloader/blob/master/hw_config.h for
+# a list of current board IDs. If you add a new board type then please
+# get it added to that repository so we don't get conflicts.
+
+# Note that APJ is "ArduPilot JSON Firmware Format".
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+# APJ_BOARD_ID: unique ArduPilot board ID registered in board_types.txt
+APJ_BOARD_ID AP_HW_RASPBERRYPI_PICO2
+
+# Now you need to say what crystal frequency you have for this
+# board. All of the clocks are scaled against this. Typical values are
+# 24000000 or 8000000.
+
+# Pico2 uses a 12 MHz crystal (same as all standard Pico/Pico2W modules).
+# NOTE: on RP2350 this value is emitted as STM32_HSECLK and does NOT directly
+# drive the ChibiOS hardware — RP_XOSCCLK in board.h (hardcoded 12 MHz via an
+# #if !defined guard) is what the XOSC/PLL init actually uses.  Keeping this
+# correct ensures the RTC2US diagnostic macro in Util.cpp produces accurate
+# timing thresholds for thread-profiling warnings.
+OSCILLATOR_HZ 12000000
+
+# On some boards you will need to also set the various PLL values. See
+# the defaults in common/mcuconf.h, and use the define mechanism
+# explained later in this file to override values suitable for your
+# board. Refer to your MCU datasheet or examples from supported boards
+# in ChibiOS for the right values.
+
+# RP2350 uses the TIMERv1 LLD (RP/LLD/TIMERv1/) for system ticks via
+# the ChibiOS SysTick mechanism. STM32_ST_USE_TIMER is not applicable.
+
+# Now the size of flash in kilobytes, for creating the ld.script.
+
+FLASH_SIZE_KB 4096
+# Flash layout:
+#   Bootloader: 0x10000000–0x10007FFF (32 KB)
+#   Parameter storage: 0x10008000–0x1000FFFF (32 KB, pages 8–15, two 16KB halves)
+#   App: 0x10010000–0x103FFFFF (4032 KB)
+FLASH_RESERVE_START_KB 64
+
+# MAIN_STACK is the Cortex-M MSP used for exceptions and slow interrupts.
+# RC input on Pico2 uses GPIO edge IRQ callbacks and needs more than the
+# generic 0x600-byte default during early bring-up and idle-time IRQ bursts.
+# Doubled from 0x1000: live threads.txt showed ISR stack at 95% (208 B free).
+MAIN_STACK 0x2000
+
+# Now define which UART is used for printf(). We rarely use printf()
+# in ChibiOS, so this is really only for debugging very early startup
+# in drivers.
+
+# Serial port for stdout. This is optional. If you leave it out then
+# output from printf() lines will go to the ArduPilot console, which is the
+# first UART in the SERIAL_ORDER list.  But note that some startup code
+# runs before USB is set up.
+# The value for STDOUT_SERIAL is a serial device name, and must be for a
+# serial device for which pins are defined in this file. For example, SD7
+# is for UART1 (SD7 == "serial device 7" in ChibiOS).
+#STDOUT_SERIAL SD7
+#STDOUT_BAUDRATE 57600
+
+# Now the USB setup, if you have USB. All of these settings are
+# option, and the ones below are the defaults. It ends up creating a
+# USB ID on Linux like this:
+# /dev/serial/by-id/usb-ArduPilot_fmuv3_3E0031000B51353233343932-if00
+# If creating a board for a RTF vehicle you may wish to customise these.
+
+# USB setup
+USB_STRING_MANUFACTURER "ArduPilot"
+
+# Now define the order that I2C buses are presented in the hal.i2c API
+# in ArduPilot. For historical reasons inherited from HAL_PX4 the
+# 'external' I2C bus should be bus 1 in hal.i2c, and internal I2C bus
+# should be bus 0. On Pico2 we have only one I2C bus (I2C1 on GPIO 15/18),
+# exposed as hal.i2c bus 0 (external).
+
+# order of I2C buses - Pico2 has only I2C1 hardware wired out
+# I2C_ORDER I2C1  # DISABLED: floating I2C1 pins (GPIO15/18) cause spurious IRQ37 crash
+#                  Re-enable when carrier board with I2C devices is connected.
+
+# Now the serial ordering. These map to the SERIALn_ parameter numbers
+# If you use a shorter list then HAL_Empty::UARTDriver
+# objects are substituted for later UARTs, or you can leave a gap by
+# listing one or more of the uarts as EMPTY.
+
+# The normal usage of this ordering is:
+# 1) SERIAL0: console (primary mavlink, usually USB)
+# 2) SERIAL1: telem1
+# 3) SERIAL2: telem2
+# 4) SERIAL3: primary GPS
+# 5) SERIAL4: GPS2
+# 6) SERIAL5: extra UART (usually RTOS debug console)
+
+# order of UARTs (and USB)
+# SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART1
+# the presence of this OTG1 also enables the usb subsystem.
+# UART0 = serial1 (telem1), UART1 = serial2 (telem2)
+# PIOUART0-1 for SERIAL3-4: GPIO14/17, GPIO19/20 (verified on standard Pico2W).
+# PIOUART2 (SERIAL5) for GPIO21/27 (verified on standard Pico2W with loopback).
+# Note: OTG2 dual-CDC was attempted but abandoned — testing revealed data corruption issues.
+#       Not prioritized for further work due to complexity of fix vs. limited benefit.
+# PIOUART3 disabled: GPIO30/31 exist only on RP2350B carrier boards, not standard Pico2W (QFN-60).
+# HAL_HAVE_PIO_UARTS is auto-derived from the PIOUART count in SERIAL_ORDER.
+SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1 PIOUART2
+
+
+# Force the USB console (OTG1) to stream MAVLink immediately at 115200 baud.
+define HAL_OTG1_PROTOCOL SerialProtocol_MAVLink2
+define HAL_OTG1_BAUD 115200
+
+# If the board has an IOMCU connected via a UART then this defines the
+# UART to talk to that MCU. Leave it out for boards with no IOMCU.
+
+# UART for IOMCU
+#IOMCU_UART USART6
+
+# Now we start on the pin definitions. Every pin used by ArduPilot
+# needs to be in this file. The pins in this file can be defined in any order.
+
+# The format is P+port+pin. So PC4 is portC pin4.
+# For every pin the second column is the label. If this is a
+# peripheral that has an alternate function defined in the STM32
+# datasheet then the label must be the name of that alternative
+# function. The names are looked up in the python database for this
+# MCU. Please see STM32F427xx.py for the F427 database. That database
+# is used to automatically fill in the alternative function (and later
+# for the DMA channels).
+
+# The third column is the peripheral type. This must be one of the
+# following: UARTn, USARTn, OTGn, SPIn, I2Cn, ADCn, TIMn, SWD, SDIO,
+# INPUT, OUTPUT, CS.
+
+# The fourth and later columns are for modifiers on the pin. The
+# possible modifiers are:
+# pin speed: SPEED_VERYLOW, SPEED_LOW, SPEED_MEDIUM, SPEED_HIGH
+# pullup: PULLUP, PULLDOWN, FLOATING
+# out type: OPENDRAIN, PUSHPULL
+# default value: LOW, HIGH
+
+# Additionally, each class of pin peripheral can have extra modifiers
+# suitable for that pin type. For example, for an OUTPUT you can map
+# it to a GPIO number in hal.gpio using the GPIO(n) modifier. For ADC
+# inputs you can apply a scaling factor (to bring it to unit volts)
+# using the SCALE(x) modifier. See the examples below for more
+# modifiers, or read the python code in chibios_hwdef.py.
+
+# Now we define UART4 which is for the GPS. Be careful
+# of the difference between USART and UART. Check the STM32F427xx.py
+# if unsure which it is. For a UART we need to specify at least TX and
+# RX pins.
+
+# UART4 serial GPS
+#PA0 UART4_TX UART4
+#PA1 UART4_RX UART4
+
+# PWM output pins: GPIO 0-7 map to RP2350 PWM slices 0-3 (2 channels each)
+# Type TIMn = PWM slice n (0-3), label PWMn_A = channel A (even GPIO), PWMn_B = channel B (odd GPIO)
+# Labels use RP2350 native AltFunction_map naming (PWMn_A/B) so get_alt_function returns af=4
+# PWM outputs numbered 1-8, GPIO numbers starting at 50 (matching hal convention)
+PA0  PWM0_A TIM0 PWM(1) GPIO(50)
+PA1  PWM0_B TIM0 PWM(2) GPIO(51)
+PA2  PWM1_A TIM1 PWM(3) GPIO(52)
+PA3  PWM1_B TIM1 PWM(4) GPIO(53)
+PA4  PWM2_A TIM2 PWM(5) GPIO(54)
+PA5  PWM2_B TIM2 PWM(6) GPIO(55)
+PA6  PWM3_A TIM3 PWM(7) GPIO(56)
+PA7  PWM3_B TIM3 PWM(8) GPIO(57)
+
+# Now define the primary battery connectors. The labels we choose here
+# are used to create defines for pins in the various drivers, so
+# choose names that match existing board setups where possible. Here
+# we define two pins PA2 and PA3 for voltage and current sensing, with
+# a scale factor of 1.0 and connected on ADC1. The pin number this
+# maps to in hal.adc is automatically determined using the datasheet
+# tables in STM32F427xx.py.
+
+#PA2 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+#PA3 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# Now the VDD sense pin. This is used to sense primary board voltage.
+#PA4 VDD_5V_SENS ADC1 SCALE(2)
+
+# Now the first SPI bus. At minimum you need SCK, MISO and MOSI pin
+definitions. You can add speed modifiers if you want them, otherwise
+the defaults for the peripheral class are used.
+
+PA42 SPI1_SCK SPI1
+PA40 SPI1_MISO SPI1
+PA43 SPI1_MOSI SPI1
+
+# This defines an output pin which will default to output LOW. It is a
+# pin that enables peripheral power on this board.
+
+PA8 nVDD_5V_PERIPH_EN OUTPUT LOW
+
+# This is the pin that senses USB being connected. It is an input pin
+# setup as OPENDRAIN.
+PA9 VBUS INPUT OPENDRAIN
+
+# Now we define the pins that USB is connected on - PB is fake just for usb here.
+PB0 OTG_FS_DM OTG1
+PB1 OTG_FS_DP OTG1
+
+# These are the pins for SWD debugging with a STlinkv2 or black-magic probe.
+PC0 SWCLK SWD
+PC1 SWDIO SWD
+#PC2 RUN INPUT PULLUP
+
+# This defines some input pins, currently unused.
+#PB2 BOOT1 INPUT
+#PB3 FMU_SW0 INPUT
+
+# This defines the pins for the 2nd CAN interface, if available.
+#PB6 CAN2_TX CAN2
+#PB12 CAN2_RX CAN2
+
+# Now the first I2C bus. The pin speeds are automatically setup
+# correctly, but can be overridden here if needed.
+# PA15 I2C1_SCL I2C1  # DISABLED: see I2C_ORDER comment above
+# PA18 I2C1_SDA I2C1  # DISABLED: see I2C_ORDER comment above
+
+# RC input - GPIO edge-capture based pulse decoder (PAL callback, both edges).
+# GPIO16 (PA16) is free on Pico2; PULLDOWN avoids false edges when unconnected.
+PA16 RCININT INPUT PULLDOWN
+
+# the 2nd I2C bus
+#PB10 I2C2_SCL I2C2
+#PB11 I2C2_SDA I2C2
+
+# the 2nd SPI bus
+PA22 SPI0_SCK  SPI0
+PA32 SPI0_RX SPI0
+PA35 SPI0_TX SPI0
+
+# This input pin is used to detect that power is valid on USB.
+#PC0 VBUS_nVALID INPUT PULLUP
+
+# This defines the CS pin for the magnetometer and first IMU. Note
+# that CS pins are software controlled, and are not tied to a particular
+# SPI bus.
+PA23 MAG_CS CS
+PA24 MPU_CS CS
+
+# This defines more ADC inputs.
+#PC3 AUX_POWER ADC1 SCALE(1)
+#PC4 AUX_ADC2 ADC1 SCALE(1)
+
+# And the analog input for airspeed (rarely used these days).
+#PC5 PRESSURE_SENS ADC1 SCALE(2)
+
+# This sets up the UART for talking to the IOMCU. Note that it is
+# vital that this UART has DMA available. See the DMA settings below
+# for more information.
+
+#  USART6 to IO
+#PC6 USART6_TX USART6
+#PC7 USART6_RX USART6
+
+# Now setup the pins for the microSD card, if available.
+#PC8 SDIO_D0 SDIO
+#PC9 SDIO_D1 SDIO
+#PC10 SDIO_D2 SDIO
+#PC11 SDIO_D3 SDIO
+#PC12 SDIO_CK SDIO
+#PD2 SDIO_CMD SDIO
+
+# More CS pins for more sensors. The labels for all CS pins need to
+# match the SPI device table later in this file.
+PA26 GYRO_EXT_CS CS
+PA25 BARO_EXT_CS CS
+#PC15 ACCEL_EXT_CS CS
+#PD7 BARO_CS CS
+#PE4 MPU_EXT_CS CS
+
+# the first CAN bus
+#PD0 CAN1_RX CAN1
+#PD1 CAN1_TX CAN1
+
+# Another USART, this one for telem1. This one has RTS and CTS lines.
+# USART2 serial2 telem1
+#PD3 USART2_CTS USART2
+#PD4 USART2_RTS USART2
+#PD5 USART2_TX USART2
+#PD6 USART2_RX USART2
+
+# The telem2 USART, also with RTS/CTS available.
+# USART3 serial3 telem2
+#PD8 USART3_TX USART3
+#PD9 USART3_RX USART3
+#PD11 USART3_CTS USART3
+#PD12 USART3_RTS USART3
+
+# The CS pin for FRAM (ramtron). This one is marked as using
+# SPEED_VERYLOW, which matches the HAL_PX4 setup.
+#PD10 FRAM_CS CS SPEED_VERYLOW
+
+# Now we start defining some PWM pins. We also map these pins to GPIO
+# values, so users can set BRD_PWM_COUNT to choose how many of the PWM
+# outputs on the primary MCU are setup as PWM and how many as
+# GPIOs. To match HAL_PX4 we number the GPIOs for the PWM outputs
+# starting at 50.
+#PE14 TIM1_CH4 TIM1 PWM(1) GPIO(50)
+#PE13 TIM1_CH3 TIM1 PWM(2) GPIO(51)
+#PE11 TIM1_CH2 TIM1 PWM(3) GPIO(52)
+#PE9  TIM1_CH1 TIM1 PWM(4) GPIO(53)
+#PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
+#PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+
+# This is the invensense data-ready pin. We don't use it in the
+# default driver.
+#PD15 MPU_DRDY INPUT
+
+# the 2nd GPS UART
+# UART8 serial4 GPS2
+#PE0 UART8_RX UART8
+#PE1 UART8_TX UART8
+
+# Now setup SPI bus4.
+#PA38 SPI0_SCK  SPI0
+#PA37 SPI0_MISO SPI0
+#PA36 SPI0_MOSI SPI0
+
+# This is the pin to enable the sensors rail. It can be used to power
+# cycle sensors to recover them in case there are problems with power on
+# timing affecting sensor stability. We pull it high by default.
+#PE3 VDD_3V3_SENSORS_EN OUTPUT HIGH
+
+# UART0 on GPIO12/13 (Pico2 pins 16/17)
+PA12 UART0_TX UART0
+PA13 UART0_RX UART0
+
+# Optional hardware flow-control lines for UART0 (SERIAL1).
+# Keep these on GPIO15/18 so they do not consume PWM pins or SPI pins.
+# Note: GPIO15/18 are currently not used for I2C in this bring-up config.
+PA18 UART0_CTS UART0
+PA15 UART0_RTS UART0
+
+# UART1 on GPIO10/11 (Pico2 pins 14/15)
+PA11 UART1_RX UART1
+PA10 UART1_TX UART1
+
+# PIO UART pseudo-ports: 4 extra UARTs using RP2350 PIO0 (SM0/1, SM2/3) and PIO1 (SM0/1, SM2/3)
+# Pins chosen from GPIOs not committed to any other function.
+# PIOUART pin definitions for SERIAL3/4/5 on standard Pico2W.
+PA14 PIOUART0_TX INPUT FLOATING
+PA17 PIOUART0_RX INPUT FLOATING
+PA19 PIOUART1_TX INPUT FLOATING
+PA20 PIOUART1_RX INPUT FLOATING
+PA21 PIOUART2_TX INPUT FLOATING
+PA27 PIOUART2_RX INPUT FLOATING
+# PIOUART3 (GPIO30/31) disabled: these pins exist only on RP2350B carrier boards (QFN-80),
+# not on standard Pico2W modules (QFN-60). To enable SERIAL6 on a custom RP2350B board,
+# uncomment the pins below and add PIOUART3 back to SERIAL_ORDER above.
+# PA30 PIOUART3_TX INPUT FLOATING
+# PA31 PIOUART3_RX INPUT FLOATING
+# PA28/PA29 are RP2350 ADC2/ADC3 (battery voltage/current sensing).
+PA28 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA29 BATT_CURRENT_SENS ADC1 SCALE(1)
+
+# Define a LED, mapping it to GPIO(0). LOW will illuminate the LED
+#PE12 FMU_LED_AMBER OUTPUT HIGH OPENDRAIN GPIO(0)
+
+# Power flag pins: these tell the MCU the status of the various power
+# supplies that are available. The pin names need to exactly match the
+# names used in AnalogIn.cpp.
+#PB5 VDD_BRICK_nVALID INPUT PULLUP
+#PB7 VDD_BRICK2_nVALID INPUT PULLUP
+#PE10 VDD_5V_HIPOWER_nOC INPUT PULLUP
+#PE15 VDD_5V_PERIPH_nOC INPUT PULLUP
+
+# Now the SPI device table. This table creates all accessible SPI
+# devices, giving the name of the device (which is used by device
+# drivers to open the device), plus which SPI bus it it on, what
+# device ID will be used (which controls the IDs used in parameters
+# such as COMPASS_DEV_ID, so we can detect when the list of devices
+# changes between reboots for calibration purposes), the SPI mode to
+# use, and the low and high speed settings for the device.
+
+# You can define more SPI devices than you actually have, to allow for
+# flexibility in board setup, and the driver code can probe to see
+# which are responding.
+
+# The DEVID values and device names are chosen to match the PX4 port
+# of ArduPilot so users don't need to re-do their accel and compass
+# calibrations when moving to ChibiOS.
+
+#SPIDEV ms5611         SPI1 DEVID3  BARO_CS      MODE3 20*MHZ 20*MHZ
+SPIDEV ms5611_ext     SPI0 DEVID2  BARO_EXT_CS  MODE3 20*MHZ 20*MHZ
+SPIDEV mpu6000        SPI1 DEVID4  MPU_CS       MODE3  2*MHZ  8*MHZ
+#SPIDEV icm20608-am    SPI1 DEVID2  ACCEL_EXT_CS MODE3  4*MHZ  8*MHZ
+SPIDEV mpu9250        SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
+#SPIDEV mpu9250_ext    SPI0 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+SPIDEV icm20948       SPI1 DEVID4  MPU_CS       MODE3  4*MHZ  8*MHZ
+#SPIDEV icm20948_ext   SPI0 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+SPIDEV hmc5843        SPI1 DEVID5  MAG_CS       MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_g      SPI1 DEVID1  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+#SPIDEV lsm9ds0_am     SPI1 DEVID2  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+SPIDEV lsm9ds0_ext_g  SPI0 DEVID4  GYRO_EXT_CS  MODE3 11*MHZ 11*MHZ
+#SPIDEV lsm9ds0_ext_am SPI0 DEVID3  ACCEL_EXT_CS MODE3 11*MHZ 11*MHZ
+SPIDEV icm20602_ext   SPI0 DEVID4  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
+#SPIDEV ramtron        SPI0 DEVID10 FRAM_CS      MODE3  8*MHZ  8*MHZ
+#SPIDEV external0m0    SPI0 DEVID5  MPU_EXT_CS   MODE0  2*MHZ  2*MHZ
+#SPIDEV external0m1    SPI0 DEVID5  MPU_EXT_CS   MODE1  2*MHZ  2*MHZ
+#SPIDEV external0m2    SPI0 DEVID5  MPU_EXT_CS   MODE2  2*MHZ  2*MHZ
+#SPIDEV external0m3    SPI0 DEVID5  MPU_EXT_CS   MODE3  2*MHZ  2*MHZ
+#SPIDEV pixartPC15     SPI0 DEVID13 ACCEL_EXT_CS MODE3  2*MHZ  2*MHZ
+
+# Now some commented out SPI device names which can be used by
+# developers to test that the clock calculations are right for a
+# bus. This is used in conjunction with the mavproxy devop module.
+
+# for SPI clock testing
+#SPIDEV clock500 SPI0 DEVID5  MPU_EXT_CS   MODE0  500*KHZ 500*KHZ # gives 329KHz
+#SPIDEV clock1   SPI0 DEVID5  MPU_EXT_CS   MODE0  1*MHZ 1*MHZ     # gives 657kHz
+#SPIDEV clock2   SPI0 DEVID5  MPU_EXT_CS   MODE0  2*MHZ 2*MHZ     # gives 1.3MHz
+#SPIDEV clock4   SPI0 DEVID5  MPU_EXT_CS   MODE0  4*MHZ 4*MHZ     # gives 2.6MHz
+#SPIDEV clock8   SPI0 DEVID5  MPU_EXT_CS   MODE0  8*MHZ 8*MHZ     # gives 5.5MHz
+#SPIDEV clock16  SPI0 DEVID5  MPU_EXT_CS   MODE0  16*MHZ 16*MHZ   # gives 10.6MHz
+
+# Pico2 is not an FMUv3/Pixhawk2 board; undefine FMUv3 board-detect
+# to avoid spurious SPI WHOAMI probes for mpu6000_ext / lsm9ds0_ext etc.
+# AP_FEATURE_BOARD_DETECT derives from HAL_CHIBIOS_ARCH_FMUV3 via
+# AP_BoardConfig_config.h; explicitly setting it 0 bypasses that guard.
+undef HAL_CHIBIOS_ARCH_FMUV3
+define AP_FEATURE_BOARD_DETECT 0
+
+# Flash parameter storage: 8KB fits within one 16KB QUAD_PAGE logical half.
+# (reserve_size ~8512 bytes < sector_size 16384 — compaction works correctly)
+define HAL_STORAGE_SIZE 8192
+
+# No physical safety switch on Pico2; safety is forced off at boot
+define HAL_HAVE_SAFETY_SWITCH 0
+# Run FAST_TASKs every other tick (~200Hz) to free alternate ticks for GCS/logger/UART
+define AP_SCHEDULER_FAST_TASK_MODULO 2
+
+# No RAMTRON/FRAM fitted on Pico2; flash EFL storage is used instead.
+define HAL_WITH_RAMTRON 0
+
+# Enable MCU temperature monitoring using the RP2350 internal ADC channel 4
+# (temperature sensor). AnalogIn.cpp uses the RP2350-specific formula:
+#   T(°C) = 27 - (Vadc - 0.706) / 0.001721
+# This populates the `mcu_temperature()` API used by flight logging and GCS.
+define HAL_WITH_MCU_MONITORING 1
+
+# IMU temperature monitoring via HAL_HAVE_IMU_HEATER.
+# No physical heating element exists on the standard Pico2; HAL_HEATER_GPIO_PIN
+# is not defined, so no GPIO is toggled. Enabling this provides HEAT log
+# messages (1 Hz) and allows BRD_IMU_TARGTEMP arming-temperature checks.
+define HAL_HAVE_IMU_HEATER 1
+
+# Allow the vehicle to finish initialising even when the SPI baro (MS5611 on
+# SPI0 extended-GPIO pins) is absent. Without this, AP_Baro::init() calls
+# config_error() (NORETURN) and the vehicle never reaches ap.initialised,
+# blocking all post-init telemetry (MCU_STATUS, SYS_STATUS, HEAT logging).
+# Baro absence is still flagged in SYS_STATUS sensor health and arming checks.
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# Allow the vehicle to finish initialising even when the SPI IMU (Invensense
+# on SPI1 extended-GPIO pins) is absent. Without this, AP_InertialSensor
+# calls config_error() (NORETURN) or wait_for_sample() blocks forever.
+# AP_InertialSensor_NONE mock backend (extended from ESP32) is used instead;
+# it registers dummy gyro+accel instances returning near-zero data so
+# wait_for_sample() completes normally. IMU absence is flagged in SYS_STATUS.
+define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
+define HAL_INS_ALLOW_NO_SENSORS 1
+
+# No microSD/SDIO on Pico2. HAL_USE_MMC_SPI could be enabled if an SPI-mode
+# SD card is wired to a free SPI bus, but no SD slot exists on standard Pico2.
+define HAL_OS_FATFS_IO 0
+
+# Now setup the default battery pins driver analog pins and default
+# scaling for the power brick.
+define HAL_BATT_VOLT_PIN 2
+define HAL_BATT_CURR_PIN 3
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+
+# This defines the default maximum clock on I2C devices.
+define HAL_I2C_MAX_CLOCK 100000
+
+
+# We can't share the IO UART (USART6).
+
+
+
+#DMA_NOSHARE USART6_TX ADC1
+#DMA_PRIORITY USART6* SPI*
+
+# Pico2 is not a 3DR Solo; disable Solo/Oreo-specific features explicitly
+# (these were inherited from the CubeBlack hwdef and would be enabled on
+# Pico2 since BOARD_FLASH_SIZE=4096 > 1024).
+define AP_NOTIFY_OREOLED_ENABLED 0
+define HAL_SOLO_GIMBAL_ENABLED 0
+
+undef AP_BATTERY_SMBUS_SOLO_ENABLED
+define AP_BATTERY_SMBUS_SOLO_ENABLED 0
+
+# RP2350 does not have STM32-style crash dump support or DSP library
+define AP_CRASHDUMP_ENABLED 0
+define HAL_GYROFFT_ENABLED 0
+define HAL_WITH_DSP FALSE
+
+
+# chibios drivers for many peripherals on rp2350 are not yet supported or not tested
+# RP2350 capability gap summary:
+#   IMPLEMENTED: flash/param storage (EFL), ROMFS (binary embedded), USB serial, RC Output (PWM)
+#   IMPLEMENTED: RC Output: GPIO 0-7 on PWM slices 0-3 (8 outputs). chibios_hwdef.py extended
+#     for PICO2 PWM group generation. HAL_PWM_GROUP_CHANNELS=2 for RP2350 2-channel slices.
+#   TODO/NEEDS WORK:
+#     RC Output: NOW IMPLEMENTED - see PWM pin definitions above. 8 outputs on GPIO 0-7.
+#       ChibiOS PWMv1 driver used, chibios_hwdef.py extended for PICO2 PWM groups.
+#       RP2350 has 8 PWM slices x 2 channels = 16 possible PWM outputs total.
+#     RC Input: HAL_USE_ICU FALSE, HAL_USE_EICU FALSE. Both ICU/EICU use STM32-specific APIs
+#       (STM32_RCIN_DMA_STREAM, STM32_RCIN_DMA_CHANNEL). Needs RP2350-specific capture timer impl.
+#     CAN: HAL_USE_CAN FALSE. RP2350 has NO hardware CAN. PIO-based CAN would need custom
+#       RP2350 PIO state machine code (no ChibiOS PIO driver exists). Not feasible without
+#       major custom work outside ChibiOS.
+#     Extra UARTs via PIO: No ChibiOS PIO driver. Custom PIO state machine required. Major effort.
+#     DMA for UART: See HAL_UART_NODMA comment above.
+#     Scheduler perf: RP2350 dual Cortex-M33 @ 150MHz vs STM32F4 @ 168MHz; loop times
+#       expected comparable, but profiling needed once more features are enabled.
+define HAL_USE_PAL                         TRUE
+define HAL_USE_SIO                         TRUE
+define HAL_USE_I2C                         TRUE
+define HAL_USE_SPI                         TRUE
+define RP_SPI_USE_SPI0                     TRUE
+define RP_SPI_USE_SPI1                     TRUE
+define HAL_USE_ADC                         TRUE
+define RP_ADC_USE_ADC1                     TRUE
+define HAL_USE_CAN                         FALSE
+define HAL_USE_CRY                         FALSE
+define HAL_USE_DAC                         FALSE
+define HAL_USE_EFL                         TRUE
+STORAGE_FLASH_PAGE 8
+# Parameter storage uses AP_FLASH_STORAGE_QUAD_PAGE=1: two 16KB halves (pages 8–11 and 12–15, 0x10008000–0x1000FFFF).
+# HAL_STORAGE_SIZE=8192 fits in one 16KB half. Wear-leveling compaction is correct.
+define AP_FLASH_STORAGE_QUAD_PAGE 1
+define HAL_USE_GPT                         FALSE
+define HAL_USE_I2S                         FALSE
+#
+# RP2350 ChibiOS I2C LLD defaults to disabled. We use I2C1 on Pico2, so ensure
+# the driver (and its IRQ handler) is enabled to avoid falling into the default
+# unhandled exception handler when I2C1 IRQ fires.
+define RP_I2C_USE_I2C1                     TRUE
+
+# RC input via ICU/EICU: both disabled on RP2350
+# ICU attach_capture_timer uses STM32_RCIN_DMA_STREAM/CHANNEL which don't exist on RP2350.
+# EICU also uses STM32-specific backeneds. A third approach using RP2350 PWM slice capture
+# mode or direct GPIO interrupt timing would be needed.
+define HAL_USE_ICU                         FALSE
+define HAL_USE_EICU                        FALSE
+
+define HAL_USE_MAC                         FALSE
+define HAL_USE_MMC_SPI                     FALSE
+# RC output via PWM: ENABLED on RP2350. ChibiOS PWMv1 driver (hal_pwm_lld.c) in use.
+# 4 groups (slices 0-3), 2 channels each = 8 PWM outputs on GPIO 0-7.
+# chibios_hwdef.py generates RP2350-specific HAL_PWM_GROUP initializers with 2-channel PWMConfig.
+# pico2_gpio_init() in board.c configures GPIO 0-7 to PAL_MODE_ALTERNATE_PWM (function 4).
+define HAL_USE_PWM                         TRUE
+# RP2350 has no STM32-style timer DMA (no DMAR). Disable features that require
+# timer-DMA + STM32 timer registers. Standard PWM servo/ESC output still works.
+define HAL_DSHOT_ENABLED                   0
+define HAL_SERIALLED_ENABLED               0
+define HAL_SERIAL_ESC_COMM_ENABLED         0
+define HAL_USE_RTC                         FALSE
+define HAL_USE_SDC                         FALSE
+define HAL_USE_SERIAL                      FALSE
+define HAL_USE_SERIAL_USB                  TRUE  #false causes SerialUSBDriver type to be missing
+define HAL_USE_TRNG                        FALSE
+define HAL_USE_UART                        FALSE
+define AP_HAL_UARTDRIVER_ENABLED           1
+define HAL_USE_USB                         TRUE  #false causes unknown type name 'USBDriver
+define HAL_USE_WDG                         TRUE
+define HAL_WATCHDOG_ENABLED_DEFAULT         1
+define HAL_USE_WSPI                        FALSE
+#
+# During RP2350 bring-up, leave the hardware UART telemetry ports disabled by
+# default. A floating RX line can generate continuous UART interrupts and
+# interfere with USB CDC startup/throughput. These can be re-enabled at runtime
+# with `SERIAL1_PROTOCOL`/`SERIAL2_PROTOCOL` once external wiring is known-good.
+define DEFAULT_SERIAL1_PROTOCOL             SerialProtocol_None
+define DEFAULT_SERIAL2_PROTOCOL             SerialProtocol_None
+#
+# PAL callbacks and wait are needed for GPIO interrupt handling (GPIO::_attach_interruptI
+# and GPIO::wait_pin). The RP2350 GPIOv1 ChibiOS driver supports both.
+define PAL_USE_CALLBACKS                   TRUE
+define PAL_USE_WAIT                        TRUE
+#
+define RP_USB_USE_USB1                     TRUE
+
+# RP2350 is defined elsewhere for this MCU type1
+
+# RC input via GPIO PAL callbacks (RP2350 native, no ICU/EICU).
+# HAL_RCIN_GPIO_LINE == 16 because PAL_LINE(IOPORT1, 16U) == 16 on RP2350.
+define HAL_RCIN_IS_GPIO 1
+define HAL_RCIN_GPIO_LINE 16
+
+# ---- Pico2 sensor configuration ----
+# Sensors are on the same SPI buses/CS pins as CubeBlack pinout.
+# No hardware isolation mount — ROTATION_NONE for all.
+# ArduPilot probes each SPI slot and skips sensors not responding.
+
+# IMU: probe Invensense family on SPI1 MPU_CS (mpu6000 / mpu9250 / icm20948
+# all share DEVID4 / MPU_CS; driver probes WHOAMI to pick the present chip)
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+# ICM20948 (9-axis, gen-v2 Invensense) on the same MPU_CS pin.
+# If a gen-v1 chip (mpu9250 etc.) is present the check above matches first.
+IMU Invensensev2 SPI:icm20948 ROTATION_NONE
+
+# Barometer: MS5611 on SPI0 BARO_EXT_CS
+BARO MS5611 SPI:ms5611_ext
+
+# Compass: enable probing on I2C buses (most add-on IMU/mag boards are I2C)
+define AP_COMPASS_PROBING_ENABLED 1
+
+# Place hot-path functions in SRAM to eliminate XIP cache misses.
+# On the RP2350, the ArduCopter binary is ~1.5 MB but the XIP instruction
+# cache is only 16 KB. The scheduler loop, timing helpers, and UART ISR
+# thrash the cache heavily every iteration.  By mapping __RAMFUNC2__
+# __FASTRAMFUNC__ to the .ramtext linker section (which the startup code
+# copies from flash to SRAM), these functions execute entirely from SRAM.
+# fallback empty definitions in AP_HAL/AP_HAL_Boards.h use #ifndef guards.
+# RP2350 now sets these centrally in AP_HAL_Boards.h, so no hwdef override
+# is needed here.
+
+# SMP dual-core: both cores run under ChibiOS with hardware spinlocks.
+# c1_main.c is compiled in but core1 participates as a full ChibiOS SMP peer.
+# CH_CFG_SMP_MODE=TRUE: chcoresmp.c owns VectorA4 (SIO FIFO IRQ), spinlocks active.
+# Core1 is launched by hal_lld via start_core1()
+# (gated on RP_CORE1_START=TRUE below).
+define CH_CFG_SMP_MODE TRUE
+
+# SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
+define RP_CORE1_START TRUE
+
+# Overclock the RP2350 from the default 150 MHz to 250 MHz.
+# The PLL_SYS VCO is already set to 1500 MHz in rp_clocks.h.
+# Changing POSTDIV1 from 5 to 3 (and keeping POSTDIV2=2) gives
+# 1500 / (3 × 2) = 250 MHz.  POSTDIV1(3) >= POSTDIV2(2) satisfies the
+# RP2350 constraint, and 250 MHz is a well-tested Pico2 operating point.
+define RP_PLL_SYS_POSTDIV1 3
+
+#        ---------------------------------------------
+#        # if the user has both isolated sensors enabled then force-enable the
+#        #  non-isolated IMU regardless of parameter setting.  This is done in
+#        #  case the isolated board fails.
+#        define AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE 1
+#
+#        env OPTIMIZE -O2
+#
+#        # USB setup
+#        USB_VENDOR 0x2DAE # ONLY FOR USE BY HEX! NOBODY ELSE
+#        USB_PRODUCT 0x1011
+#        USB_STRING_MANUFACTURER "Hex/ProfiCNC"
+#
+#        # remap PB0/1 as ADC's
+#        undef PB0
+#        undef PB1
+#        PB0 PB0_ADC ADC1 SCALE(1)
+#        PB1 PB1_ADC ADC1 SCALE(1)
+#
+#        SPIDEV icm20948_ext   SPI0 DEVID1  MPU_EXT_CS   MODE3  4*MHZ  8*MHZ
+#        SPIDEV icm20602_ext   SPI0 DEVID3  GYRO_EXT_CS  MODE3  4*MHZ  8*MHZ
+#
+#
+#        # Sensor Check alias for validating board type
+#        CHECK_MPU9250           spi_check_register("mpu9250", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)
+#        CHECK_MPU9250_EXT       spi_check_register("mpu9250_ext", MPUREG_WHOAMI, MPU_WHOAMI_MPU9250)
+#        CHECK_ICM20602_EXT      spi_check_register("icm20602_ext", MPUREG_WHOAMI, MPU_WHOAMI_ICM20602)
+#        CHECK_LSM9DS0_EXT_G     spi_check_register("lsm9ds0_ext_g", LSMREG_WHOAMI, LSM_WHOAMI_L3GD20)
+#        CHECK_LSM9DS0_EXT_AM    spi_check_register("lsm9ds0_ext_am", LSMREG_WHOAMI, LSM_WHOAMI_LSM303D)
+#        CHECK_ICM20948_EXT      spi_check_register("icm20948_ext", INV2REG_WHOAMI, INV2_WHOAMI_ICM20948)
+#        CHECK_MS5611            check_ms5611("ms5611")
+#        CHECK_MS5611_EXT        check_ms5611("ms5611_ext")
+#
+#        # Sensor Check Macros to be used for validating board type
+#        CHECK_IMU0_PRESENT   $CHECK_MPU9250_EXT || $CHECK_ICM20602_EXT
+#        CHECK_IMU1_PRESENT   ($CHECK_LSM9DS0_EXT_G && $CHECK_LSM9DS0_EXT_AM) || $CHECK_ICM20948_EXT
+#        CHECK_IMU2_PRESENT   $CHECK_MPU9250
+#        CHECK_BARO0_PRESENT  $CHECK_MS5611
+#        CHECK_BARO1_PRESENT  $CHECK_MS5611_EXT
+#
+#        BOARD_VALIDATE $CHECK_IMU0_PRESENT $CHECK_IMU1_PRESENT $CHECK_IMU2_PRESENT $CHECK_BARO0_PRESENT $CHECK_BARO1_PRESENT
+#
+#        # also define the default board type
+#        define BOARD_TYPE_DEFAULT 3
+#
+#        # three IMUs, but allow for different variants. First two IMUs are
+#        # isolated, 3rd isn't
+#        IMU Invensense SPI:mpu9250_ext ROTATION_PITCH_180
+#
+#        # the 3 rotations for the LSM9DS0 driver are for the accel, the gyro
+#        # and the H variant of the gyro
+#        IMU LSM9DS0 SPI:lsm9ds0_ext_g SPI:lsm9ds0_ext_am ROTATION_ROLL_180_YAW_270 ROTATION_ROLL_180_YAW_90 ROTATION_ROLL_180_YAW_90
+#
+#        # 3rd non-isolated IMU
+#        IMU Invensense SPI:mpu9250 ROTATION_YAW_270
+#
+#        # two baros
+#        BARO MS5611 SPI:ms5611_ext
+#        BARO MS5611 SPI:ms5611
+#
+#        # two compasses. First is in the LSM303D
+#        COMPASS LSM303D SPI:lsm9ds0_ext_am ROTATION_YAW_270
+#        # 2nd compass is part of the 2nd invensense IMU
+#        COMPASS AK8963:probe_mpu9250 1 ROTATION_YAW_270
+#
+#
+#        # also probe for external compasses
+#        define AP_COMPASS_PROBING_ENABLED 1
+#
+#        # This defines an output pin which will default to output HIGH. It is
+#        # a pin that enables peripheral power on this board. It starts in the
+#        # off state, then is pulled low to enable peripherals in
+#        # peripheral_power_enable()
+#        undef PA8
+#        PA8 nVDD_5V_PERIPH_EN OUTPUT HIGH
+#
+#        # This is the pin to enable the sensors rail. It can be used to power
+#        # cycle sensors to recover them in case there are problems with power on
+#        # timing affecting sensor stability. We pull it LOW on startup, which
+#        # means sensors off, then it is pulled HIGH in peripheral_power_enable()
+#        undef PE3
+#        PE3 VDD_3V3_SENSORS_EN OUTPUT LOW
+#
+#        # if you want to enable parameter backup/restore then uncomment the following two lines
+#        # Note: this will use 16k more RAM, so ensure you have enough by looking at MEMINFO messages
+#        # in MAVLink2 or in PM message in logs
+#        # undef HAL_STORAGE_SIZE
+#        # define HAL_STORAGE_SIZE 32768
+#
+#
+#        define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+#
+#        # default the 2nd interface to SLCAN
+#        define HAL_OTG2_PROTOCOL SerialProtocol_SLCAN
+#
+#        define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1
+#        # enable support for dshot on iomcu
+#        define HAL_WITH_IO_MCU_DSHOT 1

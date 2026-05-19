@@ -32,6 +32,7 @@ public:
     bool get_next_gyro_sample(Vector3f& gyro);
     uint32_t get_num_gyro_samples() { return _rate_loop_gyro_window.available(); }
     void set_rate_decimation(uint8_t rdec) { rate_decimation = rdec; }
+    uint8_t get_rate_decimation() const { return rate_decimation; }
     // whether or not to push the current gyro sample
     bool use_rate_loop_gyro_samples() const { return rate_decimation > 0; }
     bool gyro_samples_available() { return  _rate_loop_gyro_window.available() > 0; }

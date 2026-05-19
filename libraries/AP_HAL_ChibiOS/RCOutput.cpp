@@ -72,6 +72,12 @@ extern AP_IOMCU iomcu;
 
 #define TELEM_IC_SAMPLE 16
 
+// Number of PWM channels per timer group.
+// RP2350 PWM slices have 2 channels (HAL_PWM_GROUP_CHANNELS=2 set in hwdef.h).
+#ifndef HAL_PWM_GROUP_CHANNELS
+#define HAL_PWM_GROUP_CHANNELS 4
+#endif
+
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 #if HAL_SERIAL_ESC_COMM_ENABLED
 struct RCOutput::irq_state RCOutput::irq;
@@ -124,7 +130,7 @@ void RCOutput::init()
                 // alarm takes the whole timer
                 group.ch_mask = 0;
                 group.current_mode = MODE_PWM_NONE;
-                for (uint8_t k = 0; k < 4; k++) {
+                for (uint8_t k = 0; k < HAL_PWM_GROUP_CHANNELS; k++) {
                     group.chan[k] = CHAN_DISABLED;
                     group.pwm_cfg.channels[k].mode = PWM_OUTPUT_DISABLED;
                 }
@@ -142,6 +148,15 @@ void RCOutput::init()
 #endif
         }
         if (group.ch_mask != 0) {
+#if defined(RP2350)
+// RP2350 safety net: re-assert per-channel PWM alternate function before starting the timer block.
+// This prevents stale pin mux state from earlier consumers from leaving a channel unrouted.
+            for (uint8_t j = 0; j < HAL_PWM_GROUP_CHANNELS; j++) {
+                if (group.chan[j] != CHAN_DISABLED) {
+                    palSetLineMode(group.pal_lines[j], PAL_MODE_ALTERNATE(group.alt_functions[j]));
+                }
+            }
+#endif
             pwmStart(group.pwm_drv, &group.pwm_cfg);
             group.pwm_started = true;
         }
@@ -395,6 +410,11 @@ void RCOutput::set_freq_group(pwm_group &group)
     // down to 1MHz until it is OK with the hardware timer we
     // are using. If we don't do this we'll hit an assert in
     // the ChibiOS PWM driver on some timers
+#if defined(RP2350)
+    // RP2350 does not use the STM32 prescaler validation path above.
+# else 
+    // STM32-specific: check that PSC value fits in 16-bit TIMx prescaler register.
+    // RP2350 PWM driver computes its own divider dynamically (no pwmp->clock field).
     PWMDriver *pwmp = group.pwm_drv;
     uint32_t psc = (pwmp->clock / pwmp->config->frequency) - 1;
     while ((psc > 0xFFFF || ((psc + 1) * pwmp->config->frequency) != pwmp->clock) &&
@@ -402,6 +422,7 @@ void RCOutput::set_freq_group(pwm_group &group)
         group.pwm_cfg.frequency /= 2;
         psc = (pwmp->clock / pwmp->config->frequency) - 1;
     }
+#endif // defined(RP2350)
 
     if (group.current_mode == MODE_PWM_ONESHOT ||
         group.current_mode == MODE_PWM_ONESHOT125) {
@@ -412,16 +433,20 @@ void RCOutput::set_freq_group(pwm_group &group)
     }
 
     bool force_reconfig = false;
-    for (uint8_t j=0; j<4; j++) {
+    for (uint8_t j=0; j<HAL_PWM_GROUP_CHANNELS; j++) {
         if (group.pwm_cfg.channels[j].mode == PWM_OUTPUT_ACTIVE_LOW) {
             group.pwm_cfg.channels[j].mode = PWM_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
+#if defined(RP2350)
+    // RP2350 does not use STM32 complementary-output timer modes here.
+# else 
+        // complementary outputs only exist on STM32 advanced timers
         if (group.pwm_cfg.channels[j].mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW) {
             group.pwm_cfg.channels[j].mode = PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
-
+#endif // defined(RP2350)
     }
 
     if (old_clock != group.pwm_cfg.frequency ||
@@ -1423,8 +1448,12 @@ void RCOutput::trigger_groups()
             group.current_mode == MODE_PWM_ONESHOT125) {
             const uint8_t i = &group - pwm_group_list;
             if (trigger_groupmask & (1U<<i)) {
+#if defined(RP2350)
+    // RP2350 does not use the STM32 update-event register trigger here.
+# else 
                 // this triggers pulse output for a channel group
                 group.pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
+#endif // defined(RP2350)
             }
         }
     }
@@ -1828,8 +1857,10 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     stm32_cacheBufferFlush(group.dma_buffer, (buffer_length+31)&~31);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length / sizeof(dmar_uint_t));
-#if STM32_DMA_ADVANCED
+#if defined(STM32_DMA_ADVANCED) && STM32_DMA_ADVANCED
     dmaStreamSetFIFO(group.dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
+#else
+#warning "DMA FIFO mode not supported, performance may be poor and DShot may not work at higher bitrates" 
 #endif
     dmaStreamSetMode(group.dma,
                      STM32_DMA_CR_CHSEL(group.dma_up_channel) |
@@ -1851,9 +1882,15 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
                      STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
 
     // setup for burst strided transfers into the timers 4 CCR registers
-    const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4;
-    // burst address (BA) of the CCR register, burst length (BL) of 4 (0b11)
-    group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
+    #if defined(STM32_HW)
+        const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4;
+        // burst address (BA) of the CCR register, burst length (BL) of 4 (0b11)
+        group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
+    #endif
+    #if defined(RP2350)
+        // RP2350  not implemented yet
+    #endif
+
     group.dshot_state = DshotState::SEND_START;
 #ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
@@ -1933,11 +1970,16 @@ void RCOutput::dma_cancel(pwm_group& group)
 #endif
     // normally the CCR registers are reset by the final 0 in the DMA buffer
     // since we are cancelling early they need to be reset to avoid infinite pulses
+#if defined(RP2350)
+    // RP2350 does not use STM32 CCR register writes when cancelling DMA.
+# else 
+  // stm32 impl
     for (uint8_t i = 0; i < 4; i++) {
         if (group.chan[i] != CHAN_DISABLED) {
             group.pwm_drv->tim->CCR[i] = 0;
         }
     }
+#endif // defined(RP2350)
     chVTResetI(&group.dma_timeout);
     chEvtGetAndClearEventsI(group.dshot_event_mask | DSHOT_CASCADE);
 

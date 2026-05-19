@@ -28,14 +28,16 @@
 #include <AP_Common/ExpandingString.h>
 #include "Scheduler.h"
 #include "hwdef/common/stm32_util.h"
+#ifndef HAL_BOOTLOADER_BUILD
 // MAVLink is included to use the MAV_POWER flags for the USB power
 #include <GCS_MAVLink/GCS_MAVLink.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
 
-#ifdef HAL_USB_VENDOR_ID
+#if defined(HAL_USB_VENDOR_ID) && !defined(HAVE_USB_SERIAL)
 // USB has been configured in hwdef.dat
 #define HAVE_USB_SERIAL
 #endif
@@ -50,7 +52,12 @@ using namespace ChibiOS;
 extern ChibiOS::UARTDriver uart_io;
 #endif
 
+#ifdef HAL_BOOTLOADER_BUILD
+// BL uses cout()/cin() via BOOTLOADER_DEV_LIST directly; _serial_tab unused
+const UARTDriver::SerialDef UARTDriver::_serial_tab[] = {};
+#else
 const UARTDriver::SerialDef UARTDriver::_serial_tab[] = { HAL_SERIAL_DEVICE_LIST };
+#endif
 
 // handle for UART handling thread
 thread_t* volatile UARTDriver::uart_rx_thread_ctx;
@@ -201,11 +208,16 @@ void UARTDriver::thread_init(void)
 {
     if (uart_thread_ctx == nullptr) {
         hal.util->snprintf(uart_thread_name, sizeof(uart_thread_name), sdef.is_usb ? "OTG%1u" : "UART%1u", sdef.instance);
+/*
+ * Briefly boost priority so the newly-created UART thread can't run before uart_thread_ctx is assigned.
+ */
+        const tprio_t saved_prio = chThdSetPriority(APM_UART_UNBUFFERED_PRIORITY + 1);
         uart_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(HAL_UART_STACK_SIZE),
                                               uart_thread_name,
                                               unbuffered_writes ? APM_UART_UNBUFFERED_PRIORITY : APM_UART_PRIORITY,
                                               uart_thread_trampoline,
                                               this);
+        chThdSetPriority(saved_prio);
         if (uart_thread_ctx == nullptr) {
             AP_HAL::panic("Could not create UART TX thread");
         }
@@ -243,6 +255,22 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     if (sdef.serial == nullptr) {
         return;
     }
+
+#if HAL_USE_SERIAL_USB
+    if (sdef.is_usb) {
+        _usb_tx_attempts = 0;
+        _usb_tx_bytes_requested = 0;
+        _usb_tx_bytes_accepted = 0;
+        _usb_tx_zero_returns = 0;
+        _usb_tx_poll_calls = 0;
+        _usb_tx_poll_success = 0;
+        _usb_tx_queue_full_events = 0;
+        _usb_tx_backlog_drops = 0;
+        _usb_tx_timer_ticks = 0;
+        _usb_tx_timer_ticks_with_pending = 0;
+    }
+#endif
+
     uint16_t min_tx_buffer = HAL_UART_MIN_TX_SIZE;
     uint16_t min_rx_buffer = HAL_UART_MIN_RX_SIZE;
 
@@ -408,8 +436,10 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     chSysUnlock();
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
-#else
+#elif defined(STM32F1) || defined(STM32F4)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
+#else
+                    #warning "DMA RX peripheral address not defined for this STM32 variant; add a dmaStreamSetPeripheral call to match the USART data register name"
 #endif // STM32F7
 #if STM32_DMA_SUPPORTS_DMAMUX
                     dmaSetRequestSource(rxdma, sdef.dma_rx_channel_id);
@@ -457,7 +487,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             if (tx_dma_enabled) {
                 sercfg.cr3 |= USART_CR3_DMAT;
             }
-            sercfg.irq_cb = rx_irq_cb;
+            // sercfg.irq_cb = rx_irq_cb; // custom ArduPilot ChibiOS extension, removed from submodule
 #if HAL_HAVE_LOW_NOISE_UART
             if (sdef.low_noise_line) {
                 // we can mark UART to sample on one bit instead of default 3 bits
@@ -469,7 +499,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             if (!(sercfg.cr2 & USART_CR2_STOP2_BITS)) {
                 sercfg.cr2 |= USART_CR2_STOP1_BITS;
             }
-            sercfg.ctx = (void*)this;
+            // sercfg.ctx = (void*)this; // custom ArduPilot ChibiOS extension, removed from submodule
 
             sdStart((SerialDriver*)sdef.serial, &sercfg);
 
@@ -486,18 +516,117 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
 #endif // HAL_UART_NODMA
         }
-#endif // HAL_USE_SERIAL
+#elif HAL_USE_SIO == TRUE
+        // RP2350 SIO UART path
+        if (_baudrate != 0) {
+#ifndef HAL_UART_NODMA
+            bool was_initialised = _device_initialised;
+            // setup Rx DMA for RP2350
+            if (!_device_initialised) {
+                if (rx_dma_enabled) {
+                    osalDbgAssert(rxdma == nullptr, "double DMA allocation");
+                    chSysLock();
+                    rxdma = dmaChannelAllocI(sdef.dma_rx_stream_id,
+                                            3,   // IRQ priority
+                                            (rp_dmaisr_t)rxbuff_full_irq,
+                                            (void *)this);
+                    osalDbgAssert(rxdma, "DMA channel alloc failed");
+                    // Set source to UART RX data register (fixed/not-incremented)
+                    dmaChannelSetSourceX(rxdma,
+                        (uint32_t)&((SIODriver*)sdef.serial)->uart->UARTDR);
+                    chSysUnlock();
+                }
+                _device_initialised = true;
+            }
+            if (tx_dma_enabled && dma_handle == nullptr) {
+                // TX DMA channel is managed via Shared_DMA wrapper
+                dma_handle = NEW_NOTHROW Shared_DMA(sdef.dma_tx_stream_id,
+                                            SHARED_DMA_NONE,
+                                            FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_allocate, void, Shared_DMA *),
+                                            FUNCTOR_BIND_MEMBER(&UARTDriver::dma_tx_deallocate, void, Shared_DMA *));
+                if (dma_handle == nullptr) {
+                    tx_dma_enabled = false;
+                }
+            }
+#endif // HAL_UART_NODMA
+
+            // Build RP2350 SIO config with parity and stop bits applied.
+            // parity: 0=none, 1=odd, 2=even (base class). _cr2_options holds stop bits count.
+            uint32_t lcr_h = UART_UARTLCR_H_WLEN_8BITS | UART_UARTLCR_H_FEN;
+            if (parity == 2U) {
+                lcr_h |= UART_UARTLCR_H_PEN | UART_UARTLCR_H_EPS;  // even parity
+            } else if (parity == 1U) {
+                lcr_h |= UART_UARTLCR_H_PEN;  // odd parity
+            }
+            if (_cr2_options == 2U) {
+                lcr_h |= UART_UARTLCR_H_STP2;  // 2 stop bits
+            }
+            SIOConfig siocfg = {
+                .baud      = _baudrate,
+                .UARTLCR_H = lcr_h,
+                .UARTCR    = UART_UARTCR_RXE | UART_UARTCR_TXE | UART_UARTCR_UARTEN,
+                .UARTIFLS  = UART_UARTIFLS_RXIFLSEL_1_4F,
+                .UARTDMACR = 0,
+            };
+#ifndef HAL_UART_NODMA
+            if (rx_dma_enabled) {
+                siocfg.UARTDMACR |= UART_UARTDMACR_RXDMAE;
+            }
+            if (tx_dma_enabled) {
+                siocfg.UARTDMACR |= UART_UARTDMACR_TXDMAE;
+            }
+#endif // HAL_UART_NODMA
+/*
+ * RP2350: Switch UART TX and RX GPIO pins to FUNCSEL=2 (UART alternate function) so the RP2350 IO mux routes those GPIOs to the UART peripheral.
+ * After chip reset the IO_BANK0 GPIO_CTRL register has FUNCSEL=0x1F (NULL/tristate), and nothing else in the startup path (pal_lld_init, sio_lld_start) sets FUNCSEL for UART pins.
+ * Without this the UART peripheral output never reaches the pad and received data is not forwarded to the UART, silently breaking all UART comms.
+ * Applying PUE before sioStart()/nvicEnableVector() ensures the RX line idles HIGH so the UART peripheral doesn't see a permanent BREAK condition during enumeration (which would fire IRQ33 continuously and starve the USB IRQ14 handler).
+ */
+            const uint32_t uart_funcsel = sdef.uart_pin_funcsel ? sdef.uart_pin_funcsel : 2U;
+            if (sdef.tx_line != 0) {
+                /* TX pin: board-specific FUNCSEL (UART alternate function), IE+SCHMITT */
+                palSetLineMode(sdef.tx_line, PAL_MODE_ALTERNATE(uart_funcsel));
+            }
+            if (sdef.rx_line != 0) {
+                /* RX pin: board-specific FUNCSEL, IE+SCHMITT, then add PUE pull-up */
+                palSetLineMode(sdef.rx_line, PAL_MODE_ALTERNATE(uart_funcsel));
+                palLineSetPushPull(sdef.rx_line, PAL_PUSHPULL_PULLUP);
+            }
+            sioStart((SIODriver*)sdef.serial, &siocfg);
+
+// Populate arts_line/acts_line from the config so the set_flow_control() call below can route CTS/RTS correctly.
+// The SIO set_options() path doesn't set these, so we do it here.
+            arts_line = (ioline_t)sdef.rts_line;
+            acts_line = (ioline_t)sdef.cts_line;
+
+#ifndef HAL_UART_NODMA
+            if (rx_dma_enabled && !was_initialised) {
+                dmaChannelDisableX(rxdma);
+                dma_rx_enable();
+            }
+#endif // HAL_UART_NODMA
+        }
+#endif // HAL_USE_SERIAL / HAL_USE_SIO
     }
 
-    if (_writebuf.get_size()) {
-        _tx_initialised = true;
-    }
-    if (_readbuf.get_size()) {
-        _rx_initialised = true;
-    }
+// Only mark active when the underlying device can actually transfer.
+// For non-USB ports with baud=0 we keep RX/TX inactive so the UART worker threads don't touch an unstarted SIO/Serial backend.
+    const bool port_io_enabled = sdef.is_usb || (_baudrate != 0);
+    _tx_initialised = (_writebuf.get_size() > 0) && port_io_enabled;
+    _rx_initialised = (_readbuf.get_size() > 0) && port_io_enabled;
+
     _uart_owner_thd = chThdGetSelfX();
-    // initialize the TX thread if necessary
-    thread_init();
+    // initialize TX thread only when safe on RP2350, else immediately.
+#if defined(RP2350)
+    if ((_tx_initialised || _rx_initialised) &&
+        (sdef.is_usb || hal.scheduler->is_system_initialized())) {
+        thread_init();
+    }
+#else
+    if (_tx_initialised || _rx_initialised) {
+        thread_init();
+    }
+#endif
 
     // setup flow control
     set_flow_control(_flow_control);
@@ -509,7 +638,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 #endif
     }
 
-#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
+#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE && defined(HAL_USE_SERIAL) && (HAL_USE_SERIAL == TRUE)
     if (!err_listener_initialised) {
         chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
                                 &err_listener,
@@ -536,38 +665,76 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
     chSysUnlock();
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
-#else
+#elif defined(STM32F1) || defined(STM32F4)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
+#else
+    #warning "DMA TX peripheral address not defined for this STM32 variant; add a dmaStreamSetPeripheral call to match the USART data register name"
 #endif // STM32F7
 #if STM32_DMA_SUPPORTS_DMAMUX
     dmaSetRequestSource(txdma, sdef.dma_tx_channel_id);
 #endif
-#endif // HAL_USE_SERIAL
+#elif HAL_USE_SIO == TRUE
+    // RP2350 TX DMA allocation
+    if (txdma != nullptr) {
+        return;
+    }
+    chSysLock();
+    txdma = dmaChannelAllocI(sdef.dma_tx_stream_id,
+                             3,  // IRQ priority
+                             (rp_dmaisr_t)tx_complete,
+                             (void *)this);
+    osalDbgAssert(txdma, "DMA channel alloc failed");
+    // Set destination to UART TX data register (fixed/not-incremented)
+    dmaChannelSetDestinationX(txdma,
+        (uint32_t)&((SIODriver*)sdef.serial)->uart->UARTDR);
+    chSysUnlock();
+#endif // HAL_USE_SERIAL / HAL_USE_SIO
 }
 
 #ifndef HAL_UART_NODMA
 void UARTDriver::dma_rx_enable(void)
 {
+    rx_bounce_idx ^= 1;
+#if defined(RP2350)
+    // RP2350: configure RX DMA channel (P2M: UART DR -> bounce buffer)
+    // Source (READ_ADDR) was set once at alloc time; re-set each start
+    dmaChannelSetSourceX(rxdma,
+        (uint32_t)&((SIODriver*)sdef.serial)->uart->UARTDR);
+    dmaChannelSetDestinationX(rxdma, (uint32_t)rx_bounce_buf[rx_bounce_idx]);
+    dmaChannelSetCounterX(rxdma, RX_BOUNCE_BUFSIZE);
+    // TREQ = sdef.dma_rx_channel_id (precomputed TREQ_SEL bits)
+    // INCR_WRITE = increment WRITE_ADDR (memory side), DATA_SIZE = BYTE
+    uint32_t ctrl = sdef.dma_rx_channel_id |
+                    DMA_CTRL_TRIG_DATA_SIZE_BYTE |
+                    DMA_CTRL_TRIG_INCR_WRITE;
+    dmaChannelEnableInterruptX(rxdma);
+    dmaChannelSetModeX(rxdma, ctrl);
+    dmaChannelEnableX(rxdma);
+#else
     uint32_t dmamode = STM32_DMA_CR_DMEIE | STM32_DMA_CR_TEIE;
     dmamode |= STM32_DMA_CR_CHSEL(sdef.dma_rx_channel_id);
     dmamode |= STM32_DMA_CR_PL(0);
 #if defined(STM32H7)
     dmamode |= DMA_SxCR_TRBUFF;   // TRBUFF See 2.3.1 in the H743 errata
 #endif
-    rx_bounce_idx ^= 1;
     stm32_cacheBufferInvalidate(rx_bounce_buf[rx_bounce_idx], RX_BOUNCE_BUFSIZE);
     dmaStreamSetMemory0(rxdma, rx_bounce_buf[rx_bounce_idx]);
     dmaStreamSetTransactionSize(rxdma, RX_BOUNCE_BUFSIZE);
     dmaStreamSetMode(rxdma, dmamode | STM32_DMA_CR_DIR_P2M |
                      STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
     dmaStreamEnable(rxdma);
+#endif // RP2350
 }
 #endif
 
 void UARTDriver::dma_tx_deallocate(Shared_DMA *ctx)
 {
     chSysLock();
+#if defined(RP2350)
+    dmaChannelFreeI(txdma);
+#else
     dmaStreamFreeI(txdma);
+#endif
     txdma = nullptr;
     chSysUnlock();
 }
@@ -638,6 +805,33 @@ __RAMFUNC__ void UARTDriver::rxbuff_full_irq(void* self, uint32_t flags)
     if (uart_drv->_rts_is_active) {
         uart_drv->update_rts_line();
     }
+#elif HAL_USE_SIO == TRUE
+    UARTDriver* uart_drv = (UARTDriver*)self;
+    if (!uart_drv->rx_dma_enabled) {
+        return;
+    }
+    // On RP2350, DMA IRQ fires when the full bounce buffer is received (TRANS_COUNT hits 0)
+    const uint16_t len = RX_BOUNCE_BUFSIZE;
+    const uint8_t bounce_idx = uart_drv->rx_bounce_idx;
+
+    // Restart DMA immediately to minimise dead time, switching to the other bounce buffer
+    dmaChannelDisableX(uart_drv->rxdma);
+    uart_drv->dma_rx_enable();
+
+    if (len > 0) {
+        const uint32_t written = uart_drv->_readbuf.write(uart_drv->rx_bounce_buf[bounce_idx], len);
+        uart_drv->_rx_stats_bytes += len;
+        uart_drv->_rx_stats_dropped_bytes += len - written;
+        uart_drv->receive_timestamp_update();
+    }
+    if (uart_drv->_wait.thread_ctx && uart_drv->_readbuf.available() >= uart_drv->_wait.n) {
+        chSysLockFromISR();
+        chEvtSignalI(uart_drv->_wait.thread_ctx, EVT_DATA);
+        chSysUnlockFromISR();
+    }
+    if (uart_drv->_rts_is_active) {
+        uart_drv->update_rts_line();
+    }
 #endif // HAL_USE_SERIAL
 }
 #endif // HAL_UART_NODMA
@@ -657,6 +851,8 @@ void UARTDriver::_end()
     } else {
 #if HAL_USE_SERIAL == TRUE
         sdStop((SerialDriver*)sdef.serial);
+#elif HAL_USE_SIO == TRUE
+        sioStop((SIODriver*)sdef.serial);
 #endif
     }
 
@@ -664,15 +860,101 @@ void UARTDriver::_end()
     _writebuf.set_size(0);
 }
 
+#ifdef HAVE_USB_SERIAL
+/*
+ * Polling TX drain for USB CDC.
+ * bypasses obnotify (full-buffer only) and SOF interrupt flush entirely.
+ * Worst case spins for ~80 × 125 µs = 10 ms, which covers many 64-byte packets at USB FS 12 Mbit/s.
+ */
+static bool usb_tx_poll_drain(SerialUSBDriver *sdu)
+{
+    bool started_transfer = false;
+
+    for (uint8_t i = 0; i < 80; i++) {
+        osalSysLock();
+        if ((usbGetDriverStateI(sdu->config->usbp) != USB_ACTIVE) ||
+            (sdu->state != SDU_READY)) {
+            osalSysUnlock();
+            return started_transfer;
+        }
+        if (!usbGetTransmitStatusI(sdu->config->usbp, sdu->config->bulk_in)) {
+            /* TX idle — grab next full buffer or force-flush a partial one */
+            size_t n;
+            uint8_t *buf = obqGetFullBufferI(&sdu->obqueue, &n);
+            if (buf == nullptr) {
+                if (obqTryFlushI(&sdu->obqueue)) {
+                    buf = obqGetFullBufferI(&sdu->obqueue, &n);
+                }
+            }
+            if (buf != nullptr) {
+                usbStartTransmitI(sdu->config->usbp, sdu->config->bulk_in, buf, n);
+                started_transfer = true;
+                osalSysUnlock();
+                chThdSleepMicroseconds(125); /* yield — let TX-complete ISR run */
+                continue;
+            }
+            osalSysUnlock();
+            return started_transfer; /* queue empty, all data sent */
+        }
+        osalSysUnlock();
+        chThdSleepMicroseconds(125); /* TX in progress — yield and retry */
+    }
+
+    return started_transfer;
+}
+
+static uint16_t usb_try_write_direct(SerialUSBDriver *sdu, const uint8_t *data, uint16_t len)
+{
+    int ret = chnWriteTimeout(sdu, data, len, TIME_IMMEDIATE);
+    if (ret > 0) {
+        (void)usb_tx_poll_drain(sdu);
+        return ret;
+    }
+
+    return 0;
+}
+
+static void usb_try_read_direct(SerialUSBDriver *sdu, ByteBuffer &readbuf, uint32_t &rx_stats_bytes)
+{
+    ByteBuffer::IoVec vec[2];
+    const auto n_vec = readbuf.reserve(vec, readbuf.space());
+    for (int i = 0; i < n_vec; i++) {
+        const int ret = chnReadTimeout(sdu, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+        if (ret <= 0) {
+            break;
+        }
+        readbuf.commit((unsigned)ret);
+        rx_stats_bytes += ret;
+        if ((unsigned)ret < vec[i].len) {
+            break;
+        }
+    }
+}
+#endif // HAVE_USB_SERIAL
+
 void UARTDriver::_flush()
 {
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-
-        sduSOFHookI((SerialUSBDriver*)sdef.serial);
+        /* Poll-drain bypasses both obnotify (full-buffer only) and SOF flush. */
+#if HAL_USE_SERIAL_USB
+    _usb_tx_poll_calls++;
+    if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
+        _usb_tx_poll_success++;
+    }
+#else
+    usb_tx_poll_drain((SerialUSBDriver*)sdef.serial);
+#endif
 #endif
     } else {
-        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
+#if defined(RP2350)
+        if (uart_thread_ctx == nullptr && hal.scheduler->is_system_initialized()) {
+            thread_init();
+        }
+#endif
+        if (uart_thread_ctx != nullptr) {
+            chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
+        }
     }
 }
 
@@ -710,6 +992,50 @@ uint8_t UARTDriver::get_usb_parity() const
     return 0;
 }
 
+#ifdef HAVE_USB_SERIAL
+bool UARTDriver::is_usb_active() const
+{
+    if (!sdef.is_usb) {
+        return false;
+    }
+    SerialUSBDriver *sdu = (SerialUSBDriver*)sdef.serial;
+    return (sdu->state == SDU_READY) && (usbGetDriverStateI(sdu->config->usbp) == USB_ACTIVE);
+}
+
+bool UARTDriver::is_usb_host_open() const
+{
+#if HAL_USE_SERIAL_USB
+    return is_usb_active() && ::usb_cdc_host_open(sdef.endpoint_id);
+#else
+    return false;
+#endif
+}
+
+void UARTDriver::drop_unopened_usb_tx_backlog()
+{
+#if HAL_USE_SERIAL_USB
+    // Preserve early boot output until USB is active; dropping pre-enumeration
+    // backlog causes one-shot setup printf() output to disappear on late attach.
+    if (!sdef.is_usb || !is_usb_active() || is_usb_host_open()) {
+        return;
+    }
+
+    // If the host has not opened the CDC port then stale queued output has no value.
+    // Drop it so queue-full remains a short transient instead of a persistent wedge.
+    _writebuf.clear();
+    _usb_tx_backlog_drops++;
+
+    auto *sdu = (SerialUSBDriver *)sdef.serial;
+    chSysLock();
+    obqResetI(&sdu->obqueue);
+    if (sdu->config != nullptr && sdu->config->usbp != nullptr && sdu->config->bulk_in > 0) {
+        sdu->config->usbp->transmitting &= ~(1U << (sdu->config->bulk_in - 1U));
+    }
+    chSysUnlock();
+#endif
+}
+#endif
+
 uint32_t UARTDriver::_available()
 {
     if (!_rx_initialised || _uart_owner_thd != chThdGetSelfX()) {
@@ -721,6 +1047,9 @@ uint32_t UARTDriver::_available()
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
             return 0;
         }
+
+        WITH_SEMAPHORE(rx_sem);
+        usb_try_read_direct((SerialUSBDriver*)sdef.serial, _readbuf, _rx_stats_bytes);
 #endif
     }
     return _readbuf.available();
@@ -762,6 +1091,13 @@ ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
         return -1;
     }
 
+    if (sdef.is_usb && _readbuf.available() == 0) {
+#ifdef HAVE_USB_SERIAL
+        WITH_SEMAPHORE(rx_sem);
+        usb_try_read_direct((SerialUSBDriver*)sdef.serial, _readbuf, _rx_stats_bytes);
+#endif
+    }
+
     const uint32_t ret = _readbuf.read(buffer, count);
     if (ret == 0) {
         return 0;
@@ -781,10 +1117,60 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 		return 0;
 	}
 
+#if defined(RP2350)
+    if (uart_thread_ctx == nullptr && (sdef.is_usb || hal.scheduler->is_system_initialized())) {
+        thread_init();
+    }
+#endif
+
     WITH_SEMAPHORE(_write_mutex);
 
+    if (sdef.is_usb && is_usb_active() && !is_usb_host_open() && _writebuf.available() > 0) {
+        drop_unopened_usb_tx_backlog();
+    }
+
+    if (sdef.is_usb && is_usb_host_open() && _usb_tx_attempts == 0 && _writebuf.available() > 0) {
+        // If the host has just opened after a long disconnected period then any residual
+        // buffered bytes are stale. Drop them so new traffic can be transmitted immediately.
+        _writebuf.clear();
+    }
+
+    if (sdef.is_usb && is_usb_active() && size > _writebuf.space()) {
+        drop_unopened_usb_tx_backlog();
+    }
+
+    size_t direct_written = 0;
+    if (sdef.is_usb && is_usb_host_open() && size > 0) {
+        auto *sdu = (SerialUSBDriver *)sdef.serial;
+#if HAL_USE_SERIAL_USB
+        _usb_tx_attempts++;
+        _usb_tx_bytes_requested += size;
+#endif
+        direct_written = usb_try_write_direct(sdu, buffer, size);
+#if HAL_USE_SERIAL_USB
+        if (direct_written == 0) {
+            _usb_tx_zero_returns++;
+        } else {
+            _usb_tx_bytes_accepted += direct_written;
+            _usb_tx_poll_calls++;
+            _usb_tx_poll_success++;
+        }
+#endif
+        if (direct_written > 0) {
+            _last_write_completed_us = AP_HAL::micros();
+            _total_written += direct_written;
+            _tx_stats_bytes += direct_written;
+            if (direct_written == size) {
+                return direct_written;
+            }
+            buffer += direct_written;
+            size -= direct_written;
+        }
+    }
+
     size_t ret = _writebuf.write(buffer, size);
-    if (unbuffered_writes) {
+    ret += direct_written;
+    if (unbuffered_writes && uart_thread_ctx != nullptr) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
     return ret;
@@ -821,12 +1207,17 @@ __RAMFUNC__ void UARTDriver::tx_complete(void* self, uint32_t flags)
     UARTDriver* uart_drv = (UARTDriver*)self;
     chSysLockFromISR();
 
+#if defined(RP2350)
+    dmaChannelDisableX(uart_drv->txdma);
+#else
     // check nothing bad happened
     if ((flags & STM32_DMA_ISR_TEIF) != 0) {
         INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
     }
 
     dmaStreamDisable(uart_drv->txdma);
+#endif
+
     uart_drv->_last_write_completed_us = AP_HAL::micros();
 
     chEvtSignalI(uart_drv->uart_thread_ctx, EVT_TRANSMIT_DMA_COMPLETE);
@@ -902,6 +1293,18 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         }
 
         chSysLock();
+#if defined(RP2350)
+        dmaChannelDisableX(txdma);
+        dmaChannelSetSourceX(txdma, (uint32_t)tx_bounce_buf);
+        dmaChannelSetCounterX(txdma, tx_len);
+        // TREQ in sdef.dma_tx_channel_id, M2P so INCR_READ (memory source increments), DATA_SIZE = BYTE
+        uint32_t dmamode = sdef.dma_tx_channel_id |
+                           DMA_CTRL_TRIG_DATA_SIZE_BYTE |
+                           DMA_CTRL_TRIG_INCR_READ;
+        dmaChannelEnableInterruptX(txdma);
+        dmaChannelSetModeX(txdma, dmamode);
+        dmaChannelEnableX(txdma);
+#else
         dmaStreamDisable(txdma);
         stm32_cacheBufferFlush(tx_bounce_buf, tx_len);
         dmaStreamSetMemory0(txdma, tx_bounce_buf);
@@ -915,6 +1318,7 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
         dmaStreamSetMode(txdma, dmamode | STM32_DMA_CR_DIR_M2P |
                         STM32_DMA_CR_MINC | STM32_DMA_CR_TCIE);
         dmaStreamEnable(txdma);
+#endif // RP2350
         uint32_t timeout_us = ((1000000UL * (tx_len+2) * 10) / _baudrate) + 500;
         // prevent very long timeouts at low baudrates which could cause another thread
         // using begin() to block
@@ -928,9 +1332,15 @@ void UARTDriver::write_pending_bytes_DMA(uint32_t n)
             chSysLock();
             // check whether DMA completion happened in the intervening time
             // first disable the stream to prevent further interrupts
+#if defined(RP2350)
+            dmaChannelDisableX(txdma);
+            const uint32_t tx_size = txdma->channel->TRANS_COUNT;
+
+#else
             dmaStreamDisable(txdma);
 
             const uint32_t tx_size = dmaStreamGetTransactionSize(txdma);
+#endif
 
             if (tx_size >= tx_len) {
                 // we didn't write any of our bytes
@@ -988,13 +1398,83 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
     for (int i = 0; i < n_vec; i++) {
         int ret = -1;
         if (sdef.is_usb) {
+#ifdef HAVE_USB_SERIAL
+            if (is_usb_active() && !is_usb_host_open()) {
+                drop_unopened_usb_tx_backlog();
+                break;
+            }
+#endif
             ret = 0;
 #ifdef HAVE_USB_SERIAL
+#if HAL_USE_SERIAL_USB
+            _usb_tx_attempts++;
+            _usb_tx_bytes_requested += vec[i].len;
+#endif
             ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+
+#if HAL_USE_SERIAL_USB
+            if (ret == 0) {
+                _usb_tx_zero_returns++;
+            }
+#endif
+
+            /* Immediately poll-drain: don't wait for obnotify or SOF ISR */
+#if HAL_USE_SERIAL_USB
+            _usb_tx_poll_calls++;
+            if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
+                _usb_tx_poll_success++;
+            }
+#else
+            usb_tx_poll_drain((SerialUSBDriver*)sdef.serial);
+#endif
+
+// If immediate-write could not enqueue any bytes, yield once and retry.
+// This keeps non-blocking semantics while giving TX completion a chance to release an obqueue buffer under heavy CDC backpressure.
+            if (ret == 0 && is_usb_active()) {
+#if HAL_USE_SERIAL_USB
+                _usb_tx_queue_full_events++;
+#endif
+                drop_unopened_usb_tx_backlog();
+                if (!is_usb_host_open()) {
+                    ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#if HAL_USE_SERIAL_USB
+                    if (ret == 0) {
+                        _usb_tx_zero_returns++;
+                    }
+#endif
+                    _usb_tx_poll_calls++;
+                    if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
+                        _usb_tx_poll_success++;
+                    }
+                }
+            }
+
+            if (ret == 0 && is_usb_active()) {
+                chThdSleepMicroseconds(125);
+                const int retry = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#if HAL_USE_SERIAL_USB
+                if (retry == 0) {
+                    _usb_tx_zero_returns++;
+                }
+#endif
+                if (retry > 0) {
+                    ret = retry;
+                }
+#if HAL_USE_SERIAL_USB
+                _usb_tx_poll_calls++;
+                if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
+                    _usb_tx_poll_success++;
+                }
+#else
+                usb_tx_poll_drain((SerialUSBDriver*)sdef.serial);
+#endif
+            }
 #endif
         } else {
 #if HAL_USE_SERIAL == TRUE
             ret = chnWriteTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#elif HAL_USE_SIO == TRUE
+            ret = chnWriteTimeout((BaseChannel*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
 #endif
         }
         if (ret < 0) {
@@ -1003,6 +1483,11 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
         if (ret > 0) {
             _last_write_completed_us = AP_HAL::micros();
             nwritten += ret;
+#if HAL_USE_SERIAL_USB
+            if (sdef.is_usb) {
+                _usb_tx_bytes_accepted += ret;
+            }
+#endif
         }
         _writebuf.advance(ret);
 
@@ -1057,6 +1542,7 @@ void UARTDriver::write_pending_bytes(void)
         {
             // without DMA we need to look at the number of bytes written into the queue versus the
             // remaining queue space
+#if defined(HAL_USE_SERIAL) && (HAL_USE_SERIAL == TRUE)
             uint32_t space = qSpaceI(&((SerialDriver*)sdef.serial)->oqueue);
             uint32_t used = SERIAL_BUFFERS_SIZE - space;
 
@@ -1075,6 +1561,7 @@ void UARTDriver::write_pending_bytes(void)
                 _flow_control = FLOW_CONTROL_ENABLE;
                 return;
             }
+#endif // HAL_USE_SERIAL
         }
         if (AP_HAL::micros() - _first_write_started_us > 500*1000UL) {
             // it doesn't look like hw flow control is working
@@ -1099,10 +1586,12 @@ void UARTDriver::half_duplex_setup_tx(void)
         // half-duplex transmission is done when both the output is empty and the transmission is ended
         // if we only wait for empty output the line can be setup for receive too soon losing data bits
         hd_tx_active = CHN_TRANSMISSION_END | CHN_OUTPUT_EMPTY;
+#if defined(HAL_USE_SERIAL) && (HAL_USE_SERIAL == TRUE)
         SerialDriver *sd = (SerialDriver*)(sdef.serial);
         sdStop(sd);
         sercfg.cr3 &= ~USART_CR3_HDSEL;
         sdStart(sd, &sercfg);
+#endif // HAL_USE_SERIAL
     }
 }
 
@@ -1119,7 +1608,7 @@ void UARTDriver::_rx_timer_tick(void)
 
     WITH_SEMAPHORE(rx_sem);
 
-#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE
+#if HAL_UART_STATS_ENABLED && CH_CFG_USE_EVENTS == TRUE && defined(HAL_USE_SERIAL) && (HAL_USE_SERIAL == TRUE)
     if (!sdef.is_usb) {
         const auto err_flags = chEvtGetAndClearFlags(&err_listener);
         // count the number of errors
@@ -1138,6 +1627,30 @@ void UARTDriver::_rx_timer_tick(void)
 #ifndef HAL_UART_NODMA
     if (rx_dma_enabled && rxdma) {
         chSysLock();
+#if defined(RP2350)
+// RP2350 has no IDLE interrupt.
+// flush partial receive buffers here (called at 1kHz).
+        if (dmaChannelIsBusyX(rxdma)) {
+            uint32_t remaining = rxdma->channel->TRANS_COUNT;
+            uint8_t len = RX_BOUNCE_BUFSIZE - (uint8_t)remaining;
+            if (len > 0) {
+                dmaChannelAbortX(rxdma);
+                dmaChannelGetAndClearInterrupts(rxdma);
+                const uint32_t written = _readbuf.write(rx_bounce_buf[rx_bounce_idx], len);
+                _rx_stats_bytes += len;
+                _rx_stats_dropped_bytes += len - written;
+                receive_timestamp_update();
+                if (_rts_is_active) {
+                    update_rts_line();
+                }
+                dma_rx_enable();
+            }
+        } else {
+            // DMA completed but was not restarted (e.g. IRQ was missed) — restart now
+            dmaChannelGetAndClearInterrupts(rxdma);
+            dma_rx_enable();
+        }
+#else
         //Check if DMA is enabled
         //if not, it might be because the DMA interrupt was silenced
         //let's handle that here so that we can continue receiving
@@ -1163,6 +1676,7 @@ void UARTDriver::_rx_timer_tick(void)
             dmaStreamDisable(rxdma);
             dma_rx_enable();
         }
+#endif // RP2350
         chSysUnlock();
     }
 #endif
@@ -1208,12 +1722,14 @@ void UARTDriver::read_bytes_NODMA()
         } else {
 #if HAL_USE_SERIAL == TRUE
             ret = chnReadTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#elif HAL_USE_SIO == TRUE
+            ret = chnReadTimeout((BaseChannel*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
 #endif
         }
         if (ret < 0) {
             break;
         }
-#if CH_CFG_USE_EVENTS == TRUE
+#if CH_CFG_USE_EVENTS == TRUE && defined(HAL_USE_SERIAL) && (HAL_USE_SERIAL == TRUE)
         if (parity_enabled && ((chEvtGetAndClearFlags(&ev_listener) & SD_PARITY_ERROR))) {
             // discard bytes with parity error
             ret = -1;
@@ -1243,6 +1759,15 @@ void UARTDriver::_tx_timer_tick(void)
         return;
     }
 
+#if HAL_USE_SERIAL_USB
+    if (sdef.is_usb) {
+        _usb_tx_timer_ticks++;
+        if (_writebuf.available() > 0) {
+            _usb_tx_timer_ticks_with_pending++;
+        }
+    }
+#endif
+
     if (hd_tx_active) {
         WITH_SEMAPHORE(tx_sem);
         hd_tx_active &= ~chEvtGetAndClearFlags(&hd_listener);
@@ -1251,10 +1776,12 @@ void UARTDriver::_tx_timer_tick(void)
               half-duplex transmit has finished. We now re-enable the
               HDSEL bit for receive
             */
+#if defined(HAL_USE_SERIAL) && (HAL_USE_SERIAL == TRUE)
             SerialDriver *sd = (SerialDriver*)(sdef.serial);
             sdStop(sd);
             sercfg.cr3 |= USART_CR3_HDSEL;
             sdStart(sd, &sercfg);
+#endif // HAL_USE_SERIAL
         }
     }
 
@@ -1372,6 +1899,69 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         }
         break;
     }
+#elif HAL_USE_SIO == TRUE
+// RP2350 PL011 hardware flow control.
+// RTS is driven in software by update_rts_line() (same strategy as STM32: hardware RTSEn per-FIFO-level is less flexible).
+    _flow_control = (arts_line == 0) ? FLOW_CONTROL_DISABLE : flowcontrol;
+    if (!is_initialized()) {
+        // Not started yet; variable stored, will be applied by begin() on first use.
+        return;
+    }
+    {
+        // uart_pin_funcsel is the same FUNCSEL index for TX/RX/CTS/RTS on the same UART
+        // (e.g. FUNCSEL=2 for UART0 on GPIO12/13/15/18).
+        const uint32_t uart_funcsel = sdef.uart_pin_funcsel ? sdef.uart_pin_funcsel : 2U;
+        SIODriver *sio = (SIODriver*)sdef.serial;
+        switch (_flow_control) {
+
+        case FLOW_CONTROL_DISABLE:
+            // Return CTS/RTS pins to GPIO mode.  Drive nRTS LOW (asserted) so any
+            // connected peer is always allowed to send.  Disable PL011 CTSEn/RTSEn.
+            if (arts_line != 0) {
+                palSetLineMode(arts_line, PAL_MODE_OUTPUT_PUSHPULL);
+                palClearLine(arts_line);   // active-low: LOW = "I am ready to receive"
+            }
+            _rts_is_active = true;
+            sio->uart->UARTCR &= ~(UART_UARTCR_CTSEN | UART_UARTCR_RTSEN);
+            break;
+
+        case FLOW_CONTROL_AUTO:
+            // Reset the auto-detection timer state then fall through to ENABLE.
+            _first_write_started_us = 0;
+            _last_write_completed_us = 0;
+            FALLTHROUGH;
+
+        case FLOW_CONTROL_ENABLE:
+            // RTS pin: keep as GPIO output (software-driven by update_rts_line()).
+            // CTS pin: route to UART alternate function so the PL011 reads nCTS.
+            if (arts_line != 0) {
+                palSetLineMode(arts_line, PAL_MODE_OUTPUT_PUSHPULL);
+                palClearLine(arts_line);   // assert nRTS initially
+            }
+            if (acts_line != 0) {
+                // CTS is an input to the UART peripheral; FUNCSEL=uart_funcsel routes it.
+                // Pull-up ensures an unconnected pin does not block transmission.
+                palSetLineMode(acts_line, PAL_MODE_ALTERNATE(uart_funcsel));
+                palLineSetPushPull(acts_line, PAL_PUSHPULL_PULLUP);
+            }
+            _rts_is_active = true;
+            // Enable hardware CTS gating in PL011 UARTCR (bit 15).
+            // Leave RTSEn clear so software drives nRTS via arts_line (GPIO).
+            sio->uart->UARTCR |= UART_UARTCR_CTSEN;
+            break;
+
+        case FLOW_CONTROL_RTS_DE:
+            // RS-485 DE mode not supported on RP2350 PL011; fall back to disabled.
+            _flow_control = FLOW_CONTROL_DISABLE;
+            if (arts_line != 0) {
+                palSetLineMode(arts_line, PAL_MODE_OUTPUT_PUSHPULL);
+                palClearLine(arts_line);
+            }
+            _rts_is_active = true;
+            sio->uart->UARTCR &= ~(UART_UARTCR_CTSEN | UART_UARTCR_RTSEN);
+            break;
+        }
+    }
 #endif // HAL_USE_SERIAL
 }
 
@@ -1400,7 +1990,14 @@ __RAMFUNC__ void UARTDriver::update_rts_line(void)
 bool UARTDriver::set_unbuffered_writes(bool on)
 {
     unbuffered_writes = on;
-    chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_UNBUFFERED);
+#if defined(RP2350)
+    if (uart_thread_ctx == nullptr && (sdef.is_usb || hal.scheduler->is_system_initialized())) {
+        thread_init();
+    }
+#endif
+    if (uart_thread_ctx != nullptr) {
+        chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_UNBUFFERED);
+    }
     return true;
 }
 
@@ -1502,6 +2099,9 @@ void UARTDriver::set_stop_bits(int n)
         ((SerialDriver*)sdef.serial)->usart->CR1 &= ~USART_CR1_RXNEIE;
     }
 #endif
+#elif HAL_USE_SIO == TRUE
+    // RP2350: store stop bits count in _cr2_options (not used as STM32 bitmask).
+    _cr2_options = (n == 2) ? 2U : 1U;
 #endif // HAL_USE_SERIAL
 }
 
@@ -1712,6 +2312,33 @@ bool UARTDriver::set_options(uint16_t options)
     if (was_enabled) {
         sd->usart->CR1 |= USART_CR1_UE;
     }
+#elif HAL_USE_SIO == TRUE
+    // RP2350: use GPIO IO_BANK0 INOVER/OUTOVER bits to achieve UART line
+    // inversion without requiring an external hardware inverter chip.
+    arx_line = GPIO::resolve_alt_config(sdef.rx_line, PERIPH_TYPE::UART_RX, sdef.instance);
+    atx_line = GPIO::resolve_alt_config(sdef.tx_line, PERIPH_TYPE::UART_TX, sdef.instance);
+    // Resolve RTS/CTS lines for software/hardware flow control; parallels the
+    // HAL_USE_SERIAL path above so set_flow_control() can route them correctly.
+    arts_line = GPIO::resolve_alt_config(sdef.rts_line, PERIPH_TYPE::OTHER, sdef.instance);
+    acts_line = GPIO::resolve_alt_config(sdef.cts_line, PERIPH_TYPE::OTHER, sdef.instance);
+    if (arx_line != 0) {
+        const uint32_t pad = PAL_PAD(arx_line);
+        uint32_t ctrl = IO_BANK0->GPIO[pad].CTRL;
+        ctrl &= ~(3U << 16U);  // clear INOVER[17:16]
+        ctrl |= (options & OPTION_RXINV) ? PAL_RP_IOCTRL_INOVER_INV : PAL_RP_IOCTRL_INOVER_NOTINV;
+        IO_BANK0->GPIO[pad].CTRL = ctrl;
+    }
+    if (atx_line != 0) {
+        const uint32_t pad = PAL_PAD(atx_line);
+        uint32_t ctrl = IO_BANK0->GPIO[pad].CTRL;
+        ctrl &= ~(3U << 12U);  // clear OUTOVER[13:12]
+        ctrl |= (options & OPTION_TXINV) ? PAL_RP_IOCTRL_OUTOVER_DRVINVPERI : PAL_RP_IOCTRL_OUTOVER_DRVPERI;
+        IO_BANK0->GPIO[pad].CTRL = ctrl;
+    }
+    if (options & OPTION_SWAP) {
+        ret = false;  // pin swap not supported on RP2350 hardware UART
+    }
+    set_pushpull(options);
 #endif // HAL_USE_SERIAL == TRUE
     return ret;
 }

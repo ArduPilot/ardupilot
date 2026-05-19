@@ -695,6 +695,7 @@ private:
     bool _calibrating_accel;
     bool _calibrating_gyro;
     bool _trimming_accel;
+    bool _gyro_cal_save_pending;
 
     // the delta time in seconds for the last sample
     float _delta_time;
@@ -830,8 +831,9 @@ public:
     bool get_next_gyro_sample(Vector3f& gyro);
     // get the number of available gyro samples in the fast rate buffer
     uint32_t get_num_gyro_samples();
-    // set the rate at which samples are collected, unused samples are dropped
+    // set/get the rate at which samples are collected, unused samples are dropped
     void set_rate_decimation(uint8_t rdec);
+    uint8_t get_rate_decimation() const;
     // push a new gyro sample into the fast rate buffer
     bool push_next_gyro_sample(const Vector3f& gyro);
     // run the filter parmeter update code.

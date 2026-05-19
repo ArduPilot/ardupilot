@@ -29,6 +29,7 @@
 
 #include "ch.h"
 #include "hal.h"
+#include "hwdef/common/watchdog.h"
 
 static const struct I2CInfo {
     I2CDriver *i2c;
@@ -248,7 +249,7 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].i2ccfg.timingr = HAL_I2C_G4_400_TIMINGR;
             businfo[i].busclock = 400000;
         }
-#else // F1 or F4
+#elif defined(STM32F1) || defined(STM32F4)
         businfo[i].i2ccfg.op_mode = OPMODE_I2C;
         businfo[i].i2ccfg.clock_speed = businfo[i].busclock;
         if (businfo[i].i2ccfg.clock_speed <= 100000) {
@@ -256,6 +257,11 @@ I2CDeviceManager::I2CDeviceManager(void)
         } else {
             businfo[i].i2ccfg.duty_cycle = FAST_DUTY_CYCLE_2;
         }
+#elif defined(RP2350)
+        // RP2350 I2Cv1 LLD uses a simple baudrate field (no TIMINGR register)
+        businfo[i].i2ccfg.baudrate = businfo[i].busclock;
+#else
+        #warning "I2C timing config not set for this platform"
 #endif
     }
 }
@@ -277,12 +283,17 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
         }
-#else
+#elif defined(STM32F1) || defined(STM32F4)
         bus.i2ccfg.clock_speed = bus_clock;
         bus.busclock = bus_clock;
         if (bus_clock <= 100000) {
             bus.i2ccfg.duty_cycle = STD_DUTY_CYCLE;
         }
+#elif defined(RP2350)
+        bus.i2ccfg.baudrate = bus_clock;
+        bus.busclock = bus_clock;
+#else
+        #warning "I2C timing config not set for this platform"
 #endif
         DEV_PRINTF("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
     }
@@ -325,12 +336,18 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     } else {
         bus.i2ccfg.cr1 &= ~I2C_CR1_SMBHEN;
     }
-#else
+#elif defined(STM32F1) || defined(STM32F4)
     if (_use_smbus) {
         bus.i2ccfg.op_mode = OPMODE_SMBUS_HOST;
     } else {
         bus.i2ccfg.op_mode = OPMODE_I2C;
     }
+#elif defined(RP2350)
+// RP2350 uses Synopsys DesignWare I2C IP via ChibiOS I2Cv1 LLD.
+// SMBus mode vs I2C mode is not selectable via i2ccfg struct fields
+    (void)_use_smbus;
+#else
+    #warning "I2C SMBus mode not set for this platform"
 #endif
 
     if (_split_transfers) {
@@ -381,11 +398,31 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         bus.dma_handle->lock();
 
         i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
+
+#if defined(RP2350)
+/*
+ * RP2350: the LLD doesn't use the extended API, so i2cStart() always transitions the driver to READY.
+ * Use a soft early-out instead of an assert so a misbehaving I2C peripheral can't trigger _unhandled_exception() -> NVIC_SystemReset() on RP2350.
+ */
+        if (I2CD[bus.busnum].i2c->state != I2C_READY) {
+            bus.dma_handle->unlock();
+            continue;
+        }
+#else
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
+#endif
 
         osalSysLock();
         hal.util->persistent_data.i2c_count++;
         osalSysUnlock();
+
+#if defined(RP2350)
+        /* Pat the watchdog ,I2C probing of absent devices can be
+         * slow enough to starve the 2-second watchdog between main-loop iters. */
+        rp2350_watchdog_pat();
+#else
+        stm32_watchdog_pat();
+#endif
 
         if(send_len == 0) {
             ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv, recv_len, chTimeMS2I(timeout_ms));
@@ -394,17 +431,31 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
                                            recv, recv_len, chTimeMS2I(timeout_ms));
         }
 
-        i2cSoftStop(I2CD[bus.busnum].i2c);
-        osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
+        i2cStop(I2CD[bus.busnum].i2c);
+
+#if defined(RP2350)
+/*
+ * RP2350: soft check.
+ * a stuck LLD can't be allowed to panic the board
+ */
+        if (I2CD[bus.busnum].i2c->state != I2C_STOP) {
+            bus.dma_handle->unlock();
+            continue;
+        }
+#else
+        osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStop state");
+#endif
 
         bus.dma_handle->unlock();
 
+#ifdef I2C_ISR_LIMIT
         if (I2CD[bus.busnum].i2c->errors & I2C_ISR_LIMIT) {
             INTERNAL_ERROR(AP_InternalError::error_t::i2c_isr);
             break;
         }
+#endif
 
-#ifdef STM32_I2C_ISR_LIMIT
+#if defined(STM32_I2C_ISR_LIMIT) && defined(I2C_ISR_LIMIT)
         AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
         pd.i2c_isr_count += I2CD[bus.busnum].i2c->isr_count;
 #endif

@@ -82,42 +82,43 @@
 #define STM32_FLASH_BANK2_START (STM32_FLASH_BASE+0x00080000)
 
 #if defined(STM32F4)
-#if BOARD_FLASH_SIZE == 512
-#define STM32_FLASH_NPAGES  8
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64),
-                                                           KB(128), KB(128), KB(128) };
+    #if BOARD_FLASH_SIZE == 512
+    #define STM32_FLASH_NPAGES  8
+    static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64),
+                                                            KB(128), KB(128), KB(128) };
 
-#elif BOARD_FLASH_SIZE == 1024
-#define STM32_FLASH_NPAGES  12
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64),
-                                                           KB(128), KB(128), KB(128), KB(128), KB(128), KB(128), KB(128) };
+    #elif BOARD_FLASH_SIZE == 1024
+    #define STM32_FLASH_NPAGES  12
+    static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64),
+                                                            KB(128), KB(128), KB(128), KB(128), KB(128), KB(128), KB(128) };
 
-#elif BOARD_FLASH_SIZE == 2048
-#define STM32_FLASH_NPAGES  24
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64),
-                                                           KB(128), KB(128), KB(128), KB(128), KB(128), KB(128), KB(128),
-                                                           KB(16), KB(16), KB(16), KB(16), KB(64),
-                                                           KB(128), KB(128), KB(128), KB(128), KB(128), KB(128), KB(128)};
-#else
-#error "BOARD_FLASH_SIZE invalid"
+    #elif BOARD_FLASH_SIZE == 2048
+    #define STM32_FLASH_NPAGES  24
+    static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64),
+                                                            KB(128), KB(128), KB(128), KB(128), KB(128), KB(128), KB(128),
+                                                            KB(16), KB(16), KB(16), KB(16), KB(64),
+                                                            KB(128), KB(128), KB(128), KB(128), KB(128), KB(128), KB(128)};
+    #else
+    #error "BOARD_FLASH_SIZE invalid for F4"
 #endif
 
 #elif defined(STM32F7)
-#if BOARD_FLASH_SIZE == 512
-#define STM32_FLASH_NPAGES  8
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64), KB(128), KB(128), KB(128) };
+    #if BOARD_FLASH_SIZE == 512
+    #define STM32_FLASH_NPAGES  8
+    static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(16), KB(16), KB(16), KB(16), KB(64), KB(128), KB(128), KB(128) };
 
-#elif BOARD_FLASH_SIZE == 1024
-#define STM32_FLASH_NPAGES  8
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(32), KB(128), KB(256), KB(256), KB(256) };
+    #elif BOARD_FLASH_SIZE == 1024
+    #define STM32_FLASH_NPAGES  8
+    static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(32), KB(128), KB(256), KB(256), KB(256) };
 
-#elif BOARD_FLASH_SIZE == 2048
-#define STM32_FLASH_NPAGES  12
-static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(32), KB(128), KB(256), KB(256), KB(256),
-                                                           KB(256), KB(256), KB(256), KB(256) };
-#else
-#error "BOARD_FLASH_SIZE invalid"
+    #elif BOARD_FLASH_SIZE == 2048
+    #define STM32_FLASH_NPAGES  12
+    static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32), KB(32), KB(128), KB(256), KB(256), KB(256),
+                                                            KB(256), KB(256), KB(256), KB(256) };
+    #else
+    #error "BOARD_FLASH_SIZE invalid for F7"
 #endif
+
 #elif defined(STM32H730xx) || defined(STM32H750xx)
 #define STM32_FLASH_NPAGES 1
 #define STM32_FLASH_NBANKS 1
@@ -146,8 +147,11 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/4)
 #define STM32_FLASH_FIXED_PAGE_SIZE 4 
 #elif defined(STM32L4)
-#define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/2)
-#define STM32_FLASH_FIXED_PAGE_SIZE 2
+    #define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/2)
+    #define STM32_FLASH_FIXED_PAGE_SIZE 2
+#elif defined(RP2350)
+    #define PICO_FLASH_NPAGES (BOARD_FLASH_SIZE/4)
+    #define PICO_FLASH_FIXED_PAGE_SIZE 4
 #else
 #error "Unsupported processor for flash.c"
 #endif
@@ -163,18 +167,21 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 
 #if defined(__GNUC__) && __GNUC__ >= 6
 #ifdef STORAGE_FLASH_PAGE
+#if defined(RP2350)
+static_assert(STORAGE_FLASH_PAGE < PICO_FLASH_NPAGES,
+              "STORAGE_FLASH_PAGE out of range");
+#else
 static_assert(STORAGE_FLASH_PAGE < STM32_FLASH_NPAGES,
               "STORAGE_FLASH_PAGE out of range");
 #endif
 #endif
+#endif
 
-// keep a cache of the page addresses
-#ifndef STM32_FLASH_FIXED_PAGE_SIZE
+// keep a cache of the page addresses (only needed for variable-size page STM32 flash)
+#if !defined(STM32_FLASH_FIXED_PAGE_SIZE) && ! defined(RP2350)
 static uint32_t flash_pageaddr[STM32_FLASH_NPAGES];
 static bool flash_pageaddr_initialised;
 #endif
-
-static bool flash_keep_unlocked;
 
 #ifndef FLASH_KEY1
 #define FLASH_KEY1      0x45670123
@@ -219,6 +226,14 @@ static inline void putreg32(uint32_t val, unsigned int addr)
 {
     *(volatile uint32_t *)(addr) = val;
 }
+
+// STM32-only: these helper functions use STM32 FLASH peripheral registers
+// RP2350 uses the EFL driver (efl_lld) which manages flash access internally
+#if defined(RP2350)
+    // RP2350 does not use STM32 FLASH peripheral helpers below.
+# else 
+  // stm32 impl
+static bool flash_keep_unlocked;
 
 static void stm32_flash_wait_idle(void)
 {
@@ -318,6 +333,8 @@ void stm32_flash_lock(void)
 #endif
 }
 
+#endif // defined(RP2350): end of STM32-only flash register helpers
+
 #if (defined(STM32H7) && HAL_FLASH_PROTECTION) || defined(HAL_FLASH_SET_NRST_MODE)
 static void stm32_flash_wait_opt_idle(void)
 {
@@ -386,6 +403,12 @@ static bool stm32_flash_lock_options(void)
  */
 uint32_t stm32_flash_getpageaddr(uint32_t page)
 {
+#if defined(RP2350)
+    if (page >= PICO_FLASH_NPAGES) {
+        return 0;
+    }
+    return RP_FLASH_BASE + page * (uint32_t)(PICO_FLASH_FIXED_PAGE_SIZE * 1024);
+#else
     if (page >= STM32_FLASH_NPAGES) {
         return 0;
     }
@@ -405,6 +428,7 @@ uint32_t stm32_flash_getpageaddr(uint32_t page)
 
     return flash_pageaddr[page];
 #endif
+#endif // defined(RP2350)
 }
 
 /*
@@ -412,7 +436,10 @@ uint32_t stm32_flash_getpageaddr(uint32_t page)
  */
 uint32_t stm32_flash_getpagesize(uint32_t page)
 {
-#if defined(STM32_FLASH_FIXED_PAGE_SIZE)
+#if defined(RP2350)
+    (void)page;
+    return PICO_FLASH_FIXED_PAGE_SIZE * 1024;
+#elif defined(STM32_FLASH_FIXED_PAGE_SIZE)
     (void)page;
     return STM32_FLASH_FIXED_PAGE_SIZE * 1024;
 #else
@@ -425,7 +452,11 @@ uint32_t stm32_flash_getpagesize(uint32_t page)
  */
 uint32_t stm32_flash_getnumpages()
 {
+#if defined(RP2350)
+    return PICO_FLASH_NPAGES;
+#else
     return STM32_FLASH_NPAGES;
+#endif
 }
 
 bool stm32_flash_ispageerased(uint32_t page)
@@ -433,7 +464,11 @@ bool stm32_flash_ispageerased(uint32_t page)
     uint32_t addr;
     uint32_t count;
 
+#if defined(RP2350)
+    if (page >= PICO_FLASH_NPAGES) {
+#else
     if (page >= STM32_FLASH_NPAGES) {
+#endif
         return false;
     }
 
@@ -518,6 +553,34 @@ void stm32_flash_corrupt(uint32_t addr, bool double_bit)
  */
 bool stm32_flash_erasepage(uint32_t page)
 {
+#if defined(RP2350)
+    // RP2350: use ChibiOS EFL driver to erase a 4KB sector
+    if (page >= PICO_FLASH_NPAGES) {
+        return false;
+    }
+#ifndef HAL_BOOTLOADER_BUILD
+    last_erase_ms = hrt_millis32();
+#endif
+    flash_error_t err = efl_lld_start_erase_sector(&EFLD1, (flash_sector_t)page);
+    if (err != FLASH_NO_ERROR) {
+        return false;
+    }
+    // Poll until erase completes (efl_lld_start_erase_sector is asynchronous)
+    uint32_t wait_ms;
+    do {
+        err = efl_lld_query_erase(&EFLD1, &wait_ms);
+        if (err == FLASH_BUSY_ERASING) {
+            chThdSleepMilliseconds(wait_ms > 0 ? wait_ms : 1);
+        }
+    } while (err == FLASH_BUSY_ERASING);
+    if (err != FLASH_NO_ERROR) {
+        return false;
+    }
+#ifndef HAL_BOOTLOADER_BUILD
+    last_erase_ms = hrt_millis32();
+#endif
+    return stm32_flash_ispageerased(page);
+#else
     if (page >= STM32_FLASH_NPAGES) {
         return false;
     }
@@ -623,8 +686,8 @@ bool stm32_flash_erasepage(uint32_t page)
 #endif
 
     return stm32_flash_ispageerased(page);
+#endif // defined(RP2350)
 }
-
 
 #if defined(STM32H7)
 // Check that the flash line is erased as writing to an un-erased line causes flash corruption
@@ -971,7 +1034,33 @@ failed:
 
 bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 {
-#if defined(STM32F1) || defined(STM32F3)
+#if defined(RP2350)
+    // RP2350: use ChibiOS EFL driver; addr is XIP address, convert to EFL offset
+    if (addr < RP_FLASH_BASE || addr + count > RP_FLASH_BASE + (uint32_t)(PICO_FLASH_NPAGES * PICO_FLASH_FIXED_PAGE_SIZE * 1024U)) {
+        return false;
+    }
+/*
+ * Skip the page program command when every byte is 0xFF.
+ * NOR flash cells are erased to 1
+ * programming with all-1s changes nothing.
+ * This is safe because on erased flash 0xFF is always the initial state
+ * no bits can be changed from 0→1 by any PP operation anyway.
+ */
+    {
+        const uint8_t *p = (const uint8_t *)buf;
+        uint32_t i;
+        for (i = 0; i < count; i++) {
+            if (p[i] != 0xFF) {
+                break;
+            }
+        }
+        if (i == count) {
+            return true;  /* all bytes already 0xFF: PP is a no-op, skip it */
+        }
+    }
+    flash_error_t err = efl_lld_program(&EFLD1, (flash_offset_t)(addr - RP_FLASH_BASE), count, (const uint8_t *)buf);
+    return err == FLASH_NO_ERROR;
+#elif defined(STM32F1) || defined(STM32F3)
     return stm32_flash_write_f1(addr, buf, count);
 #elif defined(STM32F4) || defined(STM32F7)
     return stm32_flash_write_f4f7(addr, buf, count);
@@ -986,6 +1075,10 @@ bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 
 void stm32_flash_keep_unlocked(bool set)
 {
+#if defined(RP2350)
+    (void)set;
+    // RP2350 EFL driver manages flash access internally; no unlock/lock needed
+#else
     if (set && !flash_keep_unlocked) {
         stm32_flash_unlock();
         flash_keep_unlocked = true;
@@ -993,6 +1086,7 @@ void stm32_flash_keep_unlocked(bool set)
         flash_keep_unlocked = false;
         stm32_flash_lock();        
     }
+#endif
 }
 
 /**

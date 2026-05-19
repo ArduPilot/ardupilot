@@ -733,6 +733,15 @@ private:
     // used to perform a reset of the quaternion state covariances only. Set to null for normal operation.
     void CovariancePrediction(Vector3F *rotVarVecPtr);
 
+#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE
+    // Core1 FIFO dispatcher entry: static void(*)(void) compatible, dispatches
+    // CovariancePrediction(nullptr) on the stored _c1_cov_core pointer.
+    static void c1_covariance_entry(void);
+#endif
+
+    // force symmetry on the state covariance matrix
+    void ForceSymmetry();
+
     // constrain variances (diagonal terms) in the state covariance matrix
     void ConstrainVariances();
 

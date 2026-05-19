@@ -20,6 +20,12 @@
 #include "stm32_util.h"
 #include "flash.h"
 #include "watchdog.h"
+#include "board.h"
+#include "board_rp2350.h"
+
+#if defined(RP2350)
+#undef STM32_HW
+#endif
 
 
 /*===========================================================================*/
@@ -34,6 +40,7 @@
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
+#if defined(STM32_HW)
 /**
  * @brief   STM32 GPIO static initialization data.
  */
@@ -224,6 +231,7 @@ static void stm32_gpio_init(void) {
 }
 
 #endif //!STM32F100_MCUCONF
+#endif // STM32_HW
 
 /**
  * @brief   Early initialization code.
@@ -234,10 +242,10 @@ static void stm32_gpio_init(void) {
  * You can rely on: 1) const variables or tables 2) flash code 3) automatic variables
  */
 void __early_init(void) {
-#if !defined(STM32F1)
+#if defined(STM32_HW) && !defined(STM32F1)
   stm32_gpio_init();
 #endif
-#if !HAL_XIP_ENABLED || defined(HAL_FORCE_CLOCK_INIT)
+#if defined(STM32_HW) && (!HAL_XIP_ENABLED || defined(HAL_FORCE_CLOCK_INIT))
   // if running from external flash then the clocks must not be reset - instead rely on the bootloader to setup
   stm32_clock_init();
 #endif
@@ -273,11 +281,31 @@ void __early_init(void) {
   stm32_disable_cm4_core(); // disable second core
 #endif
 #endif
+#if defined(RP2350)
+  rp2350_board_early_init();
+#endif
 }
 
 void __late_init(void) {
+#if defined(RP2350)
+  rp2350_board_pre_hal_init();
+#endif
+
   halInit();
+
+#if defined(RP2350)
+  rp2350_board_post_hal_init();
+#endif
+
+#ifdef HAL_USB_PRODUCT_ID
+  setup_usb_strings();
+#endif
+
   chSysInit();
+
+#if defined(RP2350) && HAL_USE_EFL == TRUE
+  eflStart(&EFLD1, NULL);
+#endif
 
   /*
    * Initialize RNG
@@ -288,18 +316,17 @@ void __late_init(void) {
   RNG->CR |= RNG_CR_RNGEN;
 #endif
 
+#if defined(STM32_HW)
   stm32_watchdog_save_reason();
 #ifndef HAL_BOOTLOADER_BUILD
   stm32_watchdog_clear_reason();
 #endif
+#endif
 #if CH_CFG_USE_HEAP == TRUE
   malloc_init();
 #endif
-#ifdef HAL_USB_PRODUCT_ID
-  setup_usb_strings();
-#endif
 
-#ifdef HAL_FLASH_SET_NRST_MODE
+#if defined(STM32_HW) && defined(HAL_FLASH_SET_NRST_MODE)
   // ensure NRST_MODE is set correctly
   stm32_flash_set_NRST_MODE(HAL_FLASH_SET_NRST_MODE);
 #endif
@@ -349,5 +376,8 @@ bool mmc_lld_is_write_protected(MMCDriver *mmcp) {
  * @todo    Add your board-specific code, if any.
  */
 void boardInit(void) {
-  HAL_BOARD_INIT_HOOK_CALL
+#if defined(RP2350)
+  rp2350_board_init();
+#endif
+  HAL_BOARD_INIT_HOOK_CALL;
 }

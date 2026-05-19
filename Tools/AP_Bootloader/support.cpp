@@ -70,9 +70,53 @@ int cin_word(uint32_t *wp, unsigned timeout_ms)
 }
 
 
+#if HAL_USE_SERIAL_USB == TRUE
+/*
+ * Polling TX drain for USB CDC in the bootloader.
+ * After chnWriteTimeout fills the obqueue, the data still needs a USB TX to be started.
+ */
+static void bl_usb_tx_poll_drain(void)
+{
+    SerialUSBDriver *sdu = &SDU1;
+    for (uint8_t i = 0; i < 80; i++) {
+        osalSysLock();
+        if ((usbGetDriverStateI(sdu->config->usbp) != USB_ACTIVE) ||
+            (sdu->state != SDU_READY)) {
+            osalSysUnlock();
+            return;
+        }
+        if (!usbGetTransmitStatusI(sdu->config->usbp, sdu->config->bulk_in)) {
+            size_t n;
+            uint8_t *buf = obqGetFullBufferI(&sdu->obqueue, &n);
+            if (buf == nullptr) {
+                if (obqTryFlushI(&sdu->obqueue)) {
+                    buf = obqGetFullBufferI(&sdu->obqueue, &n);
+                }
+            }
+            if (buf != nullptr) {
+                usbStartTransmitI(sdu->config->usbp, sdu->config->bulk_in, buf, n);
+                osalSysUnlock();
+                chThdSleepMicroseconds(125);
+                continue;
+            }
+            osalSysUnlock();
+            return;
+        }
+        osalSysUnlock();
+        chThdSleepMicroseconds(125);
+    }
+}
+#endif // HAL_USE_SERIAL_USB
+
 void cout(const uint8_t *data, uint32_t len)
 {
     chnWriteTimeout(uarts[last_uart], data, len, chTimeMS2I(100));
+#if HAL_USE_SERIAL_USB == TRUE
+    /* Poll-drain after every write so partial buffers don't wait for SOF */
+    if (uarts[last_uart] == (BaseChannel *)&SDU1) {
+        bl_usb_tx_poll_drain();
+    }
+#endif
 }
 #endif // BOOTLOADER_DEV_LIST
 
@@ -81,7 +125,12 @@ static uint32_t flash_base_page;
 // number of pages for the main firmware
 static uint16_t num_pages;
 // flash address of the main firmware
+// RP2350 XIP flash is mapped at 0x10000000; STM32/others use 0x08000000
+#if defined(RP2350)
+static const uint8_t *flash_base = (const uint8_t *)(0x10000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
+#else
 static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
+#endif
 
 /*
   initialise flash_base_page and num_pages
@@ -161,6 +210,36 @@ bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 #endif
 }
 
+#if defined(RP2350)
+/*
+ * Erase the app area using 64KB block erases.
+ * FLASH_RESERVE_START_KB is always a 64KB multiple on RP2350 boards, so
+ * flash_base_page is always 64KB-aligned — no partial sector erases needed.
+ */
+bool flash_func_erase_apparea_fast(void)
+{
+    const uint32_t PAGE_SIZE = stm32_flash_getpagesize(flash_base_page);
+    const uint32_t BLOCK_SIZE = 64U * 1024U;
+    const uint32_t PAGES_PER_BLOCK = BLOCK_SIZE / PAGE_SIZE;
+
+    for (uint32_t i = flash_base_page; i + PAGES_PER_BLOCK <= (uint32_t)num_pages; i += PAGES_PER_BLOCK) {
+        if (stm32_flash_ispageerased(i)) {
+            continue;
+        }
+        flash_offset_t offset = (flash_offset_t)i * PAGE_SIZE;
+        flash_error_t err = efl_lld_start_erase_block(&EFLD1,
+                                                      RP_FLASH_CMD_BLOCK_ERASE_64K,
+                                                      BLOCK_SIZE,
+                                                      offset / BLOCK_SIZE);
+        if (err != FLASH_NO_ERROR) {
+            return false;
+        }
+    }
+
+    return true;
+}
+#endif // defined(RP2350)
+
 // read one-time programmable memory
 uint32_t flash_func_read_otp(uint32_t idx)
 {
@@ -182,7 +261,14 @@ uint32_t flash_func_read_otp(uint32_t idx)
 // read chip serial number
 uint32_t flash_func_read_sn(uint32_t idx)
 {
+#if defined(RP2350)
+    // RP2350 has no UDID at a simple fixed address; return 0 to avoid
+    // reading from invalid XIP space which would stall the XIP controller.
+    (void)idx;
+    return 0;
+#else
     return *(uint32_t *)(UDID_START + idx);
+#endif
 }
 
 /*
@@ -243,7 +329,11 @@ bool flash_write_buffer(uint32_t address, const uint32_t *v, uint8_t nwords)
 
 uint32_t get_mcu_id(void)
 {
+#if defined(RP2350)
+    return 0;
+#else
     return *(uint32_t *)DBGMCU_BASE;
+#endif
 }
 
 #define REVID_MASK	0xFFFF0000
@@ -251,6 +341,19 @@ uint32_t get_mcu_id(void)
 
 uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
 {
+#if defined(RP2350)
+/*
+ * Return a short comma-separated "family,revision" string as expected by uploader.py.
+ * A zero-length response causes pyserial read(0) to stall when a port timeout is set.
+ */
+    static const char desc[] = "RP2350,B0";
+    uint32_t len = sizeof(desc) - 1;  /* exclude NUL */
+    if (len > max) {
+        len = max;
+    }
+    memcpy(revstr, desc, len);
+    return len;
+#else
     uint32_t idcode = (*(uint32_t *)DBGMCU_BASE);
     int32_t mcuid = idcode & DEVID_MASK;
     uint16_t revid = ((idcode & REVID_MASK) >> 16);
@@ -283,6 +386,7 @@ uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
     }
 
     return  strp - revstr;
+#endif
 }
 
 void led_on(unsigned led)

@@ -22,6 +22,14 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 
+#if defined(HAL_USB_VENDOR_ID) && !defined(HAVE_USB_SERIAL)
+#define HAVE_USB_SERIAL
+#endif
+
+#if defined(RP2350)
+#include "rp_dma.h"
+#endif
+
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
@@ -43,6 +51,10 @@ public:
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
     uint8_t get_usb_parity() const override;
+#ifdef HAVE_USB_SERIAL
+    bool is_usb_active() const;
+    bool is_usb_host_open() const;
+#endif
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
@@ -80,6 +92,12 @@ public:
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
+
+#if HAL_USE_SIO == TRUE
+// RP2350 only: hardware FUNCSEL for TX/RX pins.
+// Most RP2350 GPIO pads have UART TX/RX at FUNCSEL=2, but some pads have UART_TX/RX at a different slot (e.g.
+        uint8_t uart_pin_funcsel;
+#endif
 
 #if HAL_HAVE_LOW_NOISE_UART
         bool low_noise_line;
@@ -195,8 +213,13 @@ private:
     uint32_t _rts_threshold;
     HAL_Semaphore _write_mutex;
 #ifndef HAL_UART_NODMA
+#if defined(RP2350)
+    const rp_dma_channel_t* rxdma;
+    const rp_dma_channel_t* txdma;
+#else
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
+#endif
 #endif
     HAL_Semaphore tx_sem;
     HAL_Semaphore rx_sem;
@@ -223,6 +246,20 @@ private:
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
     uint32_t _rx_stats_dropped_bytes;
+
+#if HAL_USE_SERIAL_USB
+    // USB TX diagnostics used for live GDB inspection during CDC stall analysis.
+    uint32_t _usb_tx_attempts;
+    uint32_t _usb_tx_bytes_requested;
+    uint32_t _usb_tx_bytes_accepted;
+    uint32_t _usb_tx_zero_returns;
+    uint32_t _usb_tx_poll_calls;
+    uint32_t _usb_tx_poll_success;
+    uint32_t _usb_tx_queue_full_events;
+    uint32_t _usb_tx_backlog_drops;
+    uint32_t _usb_tx_timer_ticks;
+    uint32_t _usb_tx_timer_ticks_with_pending;
+#endif
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
@@ -267,6 +304,7 @@ private:
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
     void read_bytes_NODMA();
+    void drop_unopened_usb_tx_backlog();
 
     void receive_timestamp_update(void);
 

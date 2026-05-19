@@ -674,7 +674,6 @@ void NavEKF3_core::UpdateFilter(bool predict)
         // Predict states using IMU data from the delayed time horizon
         UpdateStrapdownEquationsNED();
 
-        // Predict the covariance growth
         CovariancePrediction(nullptr);
 
         // Run the IMU prediction step for the GSF yaw estimator algorithm

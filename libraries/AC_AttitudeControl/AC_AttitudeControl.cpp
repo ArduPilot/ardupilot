@@ -4,6 +4,12 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+
+// Optimize the hot attitude-control path at -O2 (same as the rate thread).
+// On RP2350 these functions are also placed in SRAM via __RAMFUNC2__ registry mapping
+// to eliminate XIP cache-miss latency for the 200 Hz main-loop hot path.
+#pragma GCC optimize("O2")
+
 extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)

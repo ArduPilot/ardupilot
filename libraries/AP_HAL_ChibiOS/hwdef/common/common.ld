@@ -41,15 +41,35 @@ __ram0_size__           = LENGTH(ram0);
 __ram0_end__            = __ram0_start__ + __ram0_size__;
 
 ENTRY(Reset_Handler)
+/*
+ * Force rp2350_imagedef.o to be pulled from libch.a so the PICOBIN IMAGE_DEF block lands in flash.
+ * On non-RP2350 boards the symbol simply doesn't exist and this directive is silently ignored.
+ */
+EXTERN(__embedded_block)
 
 SECTIONS
 {
     . = 0;
     _text = .;
 
-    startup : ALIGN(16) SUBALIGN(16)
+/*
+ * Cortex-M33 VTOR requires bits[6:0] = 0 (128-byte alignment).
+ * Vector table first at flash_base+0x0000 satisfies this without padding.
+ */
+    startup : ALIGN(128) SUBALIGN(16)
     {
+        __vectors_base__ = .;
         KEEP(*(.vectors))
+    } > flash
+
+/*
+ * RP2350 PICOBIN image definition block (empty/absent on non-RP2350 boards).
+ * The bootrom scans the first 4KB of flash for PICOBIN_BLOCK_MARKER_START (0xffffded3).
+ * Placing it after the vector table keeps it well within that window.
+ */
+    embedded_block : ALIGN(4)
+    {
+        KEEP(*(.embedded_block))
     } > flash
 
     constructors : ALIGN(4) SUBALIGN(4)

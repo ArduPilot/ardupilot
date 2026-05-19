@@ -712,7 +712,8 @@ AP_InertialSensor *AP_InertialSensor::_singleton = nullptr;
 
 AP_InertialSensor::AP_InertialSensor() :
     _board_orientation(ROTATION_NONE),
-    _log_raw_bit(-1)
+    _log_raw_bit(-1),
+    _gyro_cal_save_pending(false)
 {
     if (_singleton) {
         AP_HAL::panic("Too many inertial sensors");
@@ -1308,10 +1309,9 @@ AP_InertialSensor::detect_backends(void)
     if (_backend_count == 0) {
 
         // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink
-        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || defined(HAL_INS_ALLOW_NO_SENSORS)
         ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_NONE_SENSOR_A));
         #else
-        DEV_PRINTF("INS: unable to initialise driver\n");
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
         #if !AP_INERTIALSENSOR_ALLOW_NO_SENSORS
         AP_BoardConfig::config_error("INS: unable to initialise driver");
@@ -1397,6 +1397,15 @@ void
 AP_InertialSensor::init_gyro()
 {
     _init_gyro();
+
+#if defined(RP2350)
+    // During early Pico2 boot we defer parameter queueing until the scheduler
+    // reports full system init, to isolate startup-reset sensitivity.
+    if (!hal.scheduler->is_system_initialized()) {
+        _gyro_cal_save_pending = true;
+        return;
+    }
+#endif
 
     // save calibration
     _save_gyro_calibration();
@@ -1484,7 +1493,7 @@ bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint1
 {
 #if AP_SCHEDULER_ENABLED
     const auto gyro_count = get_gyro_count();
-    const auto threshold = 1.8 * _loop_rate;
+    const auto threshold = 1.8f * _loop_rate;
     for (uint8_t i=0; i<gyro_count; i++) {
         if (!_use(i) || _backends[i] == nullptr) {
             continue;
@@ -2013,6 +2022,14 @@ void AP_InertialSensor::update(void)
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
+
+#if defined(RP2350)
+    if (_gyro_cal_save_pending && hal.scheduler->is_system_initialized()) {
+        // Deferred startup save: queue once the platform has completed init.
+        _save_gyro_calibration();
+        _gyro_cal_save_pending = false;
+    }
+#endif
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     if (tcal_learning && !temperature_cal_running()) {

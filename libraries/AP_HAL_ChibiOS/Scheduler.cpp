@@ -38,6 +38,7 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <cstring>
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -58,7 +59,51 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#if defined(RP2350)
+/* RP2350 reset-cause constants live in watchdog.h — include for SCRATCH idx / sentinel defines */
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#endif
+
 using namespace ChibiOS;
+
+extern "C" {
+
+thread_t *ap_chibios_first_thread(void);
+thread_t *ap_chibios_next_thread(thread_t *tp);
+thread_t *ap_chibios_find_thread_by_name(const char *name);
+
+// GDB helper: always-present entry points for thread-registry introspection.
+// We expose these from ArduPilot so debug sessions don't depend on whether specific ChibiOS helper symbols were linked in or dead-stripped.
+thread_t *ap_chibios_first_thread(void)
+{
+    return chRegFirstThread();
+}
+
+thread_t *ap_chibios_next_thread(thread_t *tp)
+{
+    return chRegNextThread(tp);
+}
+
+thread_t *ap_chibios_find_thread_by_name(const char *name)
+{
+    if (name == nullptr) {
+        return nullptr;
+    }
+
+    for (thread_t *tp = chRegFirstThread(); tp != nullptr; tp = chRegNextThread(tp)) {
+        if (tp->name != nullptr && strcmp(tp->name, name) == 0) {
+            return tp;
+        }
+    }
+
+    return nullptr;
+}
+
+}
+
+#ifndef HAL_RCIN_THREAD_ENABLED
+#define HAL_RCIN_THREAD_ENABLED 1
+#endif
 
 #ifndef HAL_MONITOR_THREAD_ENABLED
 #define HAL_MONITOR_THREAD_ENABLED 1
@@ -91,12 +136,21 @@ THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
 #define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 1
 #endif
 
+#ifndef HAL_MAIN_LOOP_STUCK_THRESHOLD_MS
+#define HAL_MAIN_LOOP_STUCK_THRESHOLD_MS 500U
+#endif
+
 Scheduler::Scheduler()
 {
 }
 
 void Scheduler::init()
 {
+// Keep debug helper symbols linked by executing a real call path once.
+// This is side-effect free and guarantees the helpers are available to GDB even with --gc-sections.
+    (void)ap_chibios_first_thread();
+    (void)ap_chibios_find_thread_by_name("nonexistent");
+
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
 
@@ -167,7 +221,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         ticks = 1;
     }
     ticks = MIN(TIME_MAX_INTERVAL, ticks);
-    chThdSleep(MAX(ticks,CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
+    chThdSleep(MAX(ticks, (systime_t)CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
 }
 
 /*
@@ -307,6 +361,11 @@ void Scheduler::reboot(bool hold_in_bootloader)
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif
 
+#if defined(RP2350)
+    // Breadcrumb for distinguishing explicit scheduler reboot from fault loops.
+    WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] = RP2350_RESET_DIAG_SCHEDULER_REBOOT;
+#endif
+
     // disable all interrupt sources
     port_disable();
 
@@ -424,7 +483,13 @@ void Scheduler::_monitor_thread(void *arg)
     while (true) {
         sched->delay(100);
         if (using_watchdog) {
+#if defined(STM32_HW)
             stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+#elif defined(RP2350)
+            // Save persistent data into noinit SRAM on every watchdog pat so
+            // it can be restored after a WD-triggered PSM reset.
+            rp2350_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+#endif
         }
 
         // if running memory guard then check all allocations
@@ -456,7 +521,7 @@ void Scheduler::_monitor_thread(void *arg)
             }
 #endif
         }
-        if (loop_delay >= 500 && !sched->in_expected_delay()) {
+        if (loop_delay >= HAL_MAIN_LOOP_STUCK_THRESHOLD_MS && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
             AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck, hal.util->persistent_data.semaphore_line);
             /*
@@ -573,10 +638,13 @@ void Scheduler::_io_thread(void* arg)
 #endif
 
 #if HAL_LOGGING_ENABLED
+#ifndef HAL_FS_MOUNT_RETRY_MS
+#define HAL_FS_MOUNT_RETRY_MS 3000U
+#endif
         if (!hal.util->get_soft_armed()) {
-            // if sdcard hasn't mounted then retry it every 3s in the IO
-            // thread when disarmed
-            if (now - last_sd_start_ms > 3000) {
+            // if sdcard hasn't mounted then retry it periodically in the IO
+            // thread when disarmed (rate controlled by HAL_FS_MOUNT_RETRY_MS)
+            if (now - last_sd_start_ms > HAL_FS_MOUNT_RETRY_MS) {
                 last_sd_start_ms = now;
                 AP::FS().retry_mount();
             }
@@ -732,6 +800,65 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     return true;
 }
 
+bool Scheduler::thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char *name,
+                                             uint32_t stack_size, priority_base base,
+                                             int8_t priority, uint8_t core)
+{
+#if CH_CFG_SMP_MODE == TRUE
+    // Only core1 pinning is supported; any other core falls back to thread_create().
+    if (core == 1) {
+        AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+        if (!tproc) {
+            return false;
+        }
+        *tproc = proc;
+
+        const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
+        thread_t *thread_ctx = thread_create_alloc_affinity(THD_WORKING_AREA_SIZE(stack_size),
+                                                            name,
+                                                            thread_priority,
+                                                            thread_create_trampoline,
+                                                            tproc,
+                                                            &ch1);
+        if (thread_ctx == nullptr) {
+            free(tproc);
+            return false;
+        }
+        _core1_thread_ctx = thread_ctx;
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+        _core1_last_cumulative = ch1.idlethread.stats.cumulative;
+        _core1_last_us = AP_HAL::micros64();
+#endif
+        return true;
+    }
+#endif
+    return thread_create(proc, name, stack_size, base, priority);
+}
+
+float Scheduler::get_core1_load_pct()
+{
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+    if (_core1_thread_ctx == nullptr) {
+        return -1.0f;
+    }
+    // Measure idle time on ch1 and invert: load = 100% - idle%.
+    // This automatically includes all threads pinned to Core1.
+    const rttime_t cur_idle = ch1.idlethread.stats.cumulative;
+    const uint64_t cur_us = AP_HAL::micros64();
+    const uint64_t elapsed = cur_us - _core1_last_us;
+    if (elapsed == 0) {
+        return 0.0f;
+    }
+    const float idle_pct = (float)(cur_idle - _core1_last_cumulative) * 100.0f / elapsed;
+    _core1_last_cumulative = cur_idle;
+    _core1_last_us = cur_us;
+    return 100.0f - idle_pct;
+#else
+    return -1.0f;
+#endif
+}
+
 /*
   inform the scheduler that we are calling an operation from the
   main thread that may take an extended amount of time. This can
@@ -776,7 +903,11 @@ void Scheduler::expect_delay_ms(uint32_t ms)
 // pat the watchdog
 void Scheduler::watchdog_pat(void)
 {
+#if defined(STM32_HW)
     stm32_watchdog_pat();
+#elif defined(RP2350)
+    rp2350_watchdog_pat();
+#endif
     last_watchdog_pat_ms = AP_HAL::millis();
 #if defined(HAL_GPIO_PIN_EXT_WDOG)
     ext_watchdog_pat(last_watchdog_pat_ms);
@@ -858,7 +989,9 @@ void Scheduler::try_force_mutex(void)
     strncpy(thdname, wtmtx->owner->name, sizeof(thdname)-1);
 
     // we will force release the lock
+#if defined(STM32_HW) && !defined(HAL_LLD_SELECT_SPI_V2)
     chMtxForceReleaseS(wtmtx);
+#endif
     chSysUnlock();
 
     // log a DLCK message with information on the deadlock we have avoided
