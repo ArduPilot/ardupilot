@@ -338,7 +338,10 @@ public:
     void writeTerrainAMSL(float alt_amsl_m);
 
     // get speed limit
-    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const;
+    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const {
+        active_backend->get_control_limits(ekfGndSpdLimit, controlScaleXY);
+    }
+
     float getControlScaleZ(void) const;
 
     // is the AHRS subsystem healthy?
@@ -367,19 +370,27 @@ public:
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng);
+    uint32_t getLastYawResetAngle(float &yawAng) {
+        return active_backend->getLastYawResetAngle(yawAng);
+    }
 
     // return the amount of NE position change in meters due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos);
+    uint32_t getLastPosNorthEastReset(Vector2f &pos) {
+        return active_backend->getLastPosNorthEastReset(pos);
+    }
 
     // return the amount of NE velocity change in meters/sec due to the last reset
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
+    uint32_t getLastVelNorthEastReset(Vector2f &vel) const {
+        return active_backend->getLastVelNorthEastReset(vel);
+    }
 
     // return the amount of vertical position change due to the last reset in meters
     // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta);
+    uint32_t getLastPosDownReset(float &posDelta) {
+        return active_backend->getLastPosDownReset(posDelta);
+    }
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
@@ -784,7 +795,7 @@ private:
     AP_Float _origin_lon;
     AP_Float _origin_alt;
 
-    EKFType active_EKF_type(void) const { return state.active_EKF; }
+    EKFType active_EKF_type(void) const { return state.active_EKF_type; }
 
     bool always_use_EKF() const {
         return _ekf_flags & FLAG_ALWAYS_USE_EKF;
@@ -935,14 +946,11 @@ private:
     // return secondary attitude solution if available, as quaternion
     bool _get_secondary_quaternion(Quaternion &quat) const;
 
-    // get ground speed 2D
-    Vector2f _groundspeed_vector(void);
+    // set state.active_EKF_type and the pointer to the active backend
+    void update_active_EKF_type();
 
     // get active EKF type
     EKFType _active_EKF_type(void) const;
-
-    // return a wind estimation vector, in m/s
-    bool _wind_estimate(Vector3f &wind) const WARN_IF_UNUSED;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
@@ -961,9 +969,6 @@ private:
 
     // return secondary position solution if available
     bool _get_secondary_position(Location &loc) const;
-
-    // return ground speed estimate in meters/second. Used by ground vehicles.
-    float _groundspeed(void);
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     void _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
@@ -1016,7 +1021,7 @@ private:
       state updated at the end of each update() call
      */
     struct {
-        EKFType active_EKF;
+        EKFType active_EKF_type;
         uint8_t primary_IMU;
         uint8_t primary_gyro;
         uint8_t primary_accel;
@@ -1098,6 +1103,14 @@ private:
 
     // true when we have completed the common origin setup
     bool done_common_origin;
+
+    // return a pointer to the backend for supplied type
+    AP_AHRS_Backend *backend_for_type(EKFType type);
+    const AP_AHRS_Backend *backend_for_type(EKFType type) const {
+        return const_cast<AP_AHRS*>(this)->backend_for_type(type);
+    }
+
+    AP_AHRS_Backend *active_backend;
 };
 
 namespace AP {

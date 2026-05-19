@@ -309,17 +309,25 @@ void AP_Follow::update_estimates()
         _ofs_estimate_vel_ned_ms = _estimate_vel_ned_ms;
         _ofs_estimate_accel_ned_mss = _estimate_accel_ned_mss;
     } else {
-        // offsets are in FRD frame: rotate by heading
+        // offsets are in FRD frame: rotate the FRD offset into NED using the target's heading
         offset_m.xy().rotate(_estimate_heading_rad);
         _ofs_estimate_pos_ned_m = _estimate_pos_ned_m + offset_m.topostype();
+        // seed vel/accel with the target's own translational vel/accel; rotational
+        // contributions from the offset rotating with the target are added below
         _ofs_estimate_vel_ned_ms = _estimate_vel_ned_ms;
         _ofs_estimate_accel_ned_mss = _estimate_accel_ned_mss;
-        // with kinematic shaping of heading we can improve our offset velocity and acceleration of the offset
+        // When heading rate/accel are available (kinematic shaping active), the offset
+        // point is fixed in a frame rotating about the NED down-axis at the target's
+        // heading rate (ω) and heading accel (α), at radius r = offset_m, giving:
+        //   v_rot = ω × r
+        //   a_rot = α × r + ω × (ω × r)   (Euler/tangential term + centripetal term)
+        // These are added on top of the target's translational vel/accel set above.
         if (valid_kinematic_params) {
-            Vector3f offset_cross = offset_m.cross(Vector3f{0.0, 0.0, 1.0});
-            float offset_length_m = offset_m.length();
-            _ofs_estimate_vel_ned_ms += offset_cross * offset_length_m * _estimate_heading_rate_rads;
-            _ofs_estimate_accel_ned_mss += offset_cross * offset_length_m * _estimate_heading_accel_radss;
+            const Vector3f angular_vel{0.0f, 0.0f, _estimate_heading_rate_rads};       // ω: heading rate about NED down-axis
+            const Vector3f angular_accel{0.0f, 0.0f, _estimate_heading_accel_radss};   // α: heading angular acceleration
+            const Vector3f vel_due_to_rotation = angular_vel.cross(offset_m);          // ω × r
+            _ofs_estimate_vel_ned_ms += vel_due_to_rotation;
+            _ofs_estimate_accel_ned_mss += angular_accel.cross(offset_m) + angular_vel.cross(vel_due_to_rotation);  // α × r + ω × (ω × r)
         }
     }
 
