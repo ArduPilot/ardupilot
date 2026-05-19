@@ -56,7 +56,7 @@ public:
     void        update(float dt);
 
     // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
-    RSCSpoolState   update_spool_state(float dt, DesiredRSCSpoolState desired_spool_state);
+    RSCSpoolState   update_spool_state(DesiredRSCSpoolState desired_spool_state, float dt);
 
     // output_to_servo - outputs pwm onto output rsc channel.
     void        output_to_servo() { write_rsc(_control_output);}

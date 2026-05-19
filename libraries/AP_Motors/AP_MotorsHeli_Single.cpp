@@ -285,8 +285,8 @@ void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpo
 AP_Motors::SpoolState AP_MotorsHeli_Single::update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
 {
 
-    _tail_rotor.update_spool_state(_dt_s, state);
-    SpoolState main_rotor_state = _main_rotor.update_spool_state(_dt_s, state);
+    _tail_rotor.update_spool_state(state, _dt_s);
+    SpoolState main_rotor_state = _main_rotor.update_spool_state(state, _dt_s);
 
     // Check if main rotor is run-up complete.  Tail rotor run-up is not included in check because currently
     // the tail rotor in DDVP uses the same ramp and runup time as the main rotor.  This may need changed if 

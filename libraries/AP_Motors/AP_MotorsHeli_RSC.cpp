@@ -439,7 +439,7 @@ void AP_MotorsHeli_RSC::update(float dt)
 }
 
 // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
-AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update_spool_state(float dt, AP_MotorsHeli_RSC::DesiredRSCSpoolState desired_spool_state)
+AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState desired_spool_state, float dt)
 {
 
     // if control mode is disabled, then we should always be in SHUT_DOWN spool state and ignore any other desired spool state inputs
