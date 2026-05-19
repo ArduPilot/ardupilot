@@ -23,6 +23,8 @@ IMU3-ICM20689(No vibration isolation)
 Two barometers:Baro1-BMP581 , Baro2-ICP20100
 Magnetometer: builtin IST8310 magnetometer
 
+## Pinout
+<img width="3280" height="2460" alt="CyberX-v10-front" src="https://github.com/user-attachments/assets/eb6d2c0d-1392-493f-8ef0-378db7a0ed23" />
 
 
 ## UART Mapping
