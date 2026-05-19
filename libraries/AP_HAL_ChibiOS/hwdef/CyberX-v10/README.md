@@ -1,6 +1,6 @@
-# CyberX Flight Controller
+# CyberX-v10 Flight Controller
 
-# This firmware is compatible with CyberX.
+# This firmware is compatible with CyberX-v10.
 
 ## Features:
 
@@ -24,7 +24,8 @@ Two barometers:Baro1-BMP581 , Baro2-ICP20100
 Magnetometer: builtin IST8310 magnetometer
 
 ## Pinout
-<img width="3280" height="2460" alt="CyberX-v10-front" src="https://github.com/user-attachments/assets/eb6d2c0d-1392-493f-8ef0-378db7a0ed23" />
+<img width="1011" height="675" alt="CyberX_front" src="https://github.com/user-attachments/assets/2f7dc78e-59b8-4af4-9b64-66e0b5ae3b46" />
+
 
 
 ## UART Mapping
