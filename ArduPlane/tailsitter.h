@@ -137,6 +137,7 @@ public:
     AP_Int8 rpm_based_tilt_scaling;
     AP_Float hover_rpm_tilt_scale;
     AP_Float rpm_scale_low;
+    AP_Float rpm_to_pwm_conversion;
 
     AP_MotorsTailsitter* tailsitter_motors;
 

@@ -228,6 +228,12 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("RPM_SL", 31, Tailsitter, rpm_scale_low, 0.8f),
 
+    // @Param: RPM_CO
+    // @DisplayName: PWM to RPM conversion scale
+    // @Description: Scale factor to convert from PWM to RPM for use in RPM based tilt
+    // @User: Standard
+    AP_GROUPINFO("RPM_CO", 32, Tailsitter, rpm_to_pwm_conversion, 5.76f),
+
     AP_GROUPEND
 };
 
@@ -1297,7 +1303,7 @@ void Tailsitter::get_rpm_based_tilt_scaler(float &scale_l, float &scale_r, float
 void Tailsitter::update_rpm_kalman(RPM_KF &kf,float pwm,float rpm_meas,float dt)
 {
     const float tau  = 0.05f;     // motor time constant (s)
-    const float Kpwm = 5.76f;     // PWM -> RPM gain (calculated from motor test data)
+    const float Kpwm = rpm_to_pwm_conversion;     // PWM -> RPM gain (calculated from motor test data)
     // Noise setup currenly tuned such that we trust meaurements more than model prediction
     const float Q_r    = 20000.0f;  // rpm process noise (Need to tune)
     const float Q_b   = 1.0f;     // bias process noise (small!)
