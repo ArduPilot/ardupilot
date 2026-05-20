@@ -794,6 +794,12 @@ static void append_frame_defaults(std::string &joined, const AP_JSON::value &fra
 /*
   search a single vehicle entry for a frame matching model_str. Returns
   true and fills `joined` if found.
+
+  A frame matches when either its JSON key equals model_str (e.g. "X",
+  "octa-quad") or its explicit "model" field equals model_str (e.g.
+  "Callisto" defines model "octa-quad:@ROMFS/models/Callisto.json").
+  Without the second check, frames with a custom model string would
+  not load their per-frame defaults.
  */
 static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
                                      const char *model_str,
@@ -810,6 +816,42 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
         append_frame_defaults(joined, frames.get(std::string(model_str)));
         return true;
     }
+    const AP_JSON::value::object &frames_obj = frames.get<AP_JSON::value::object>();
+    for (const auto &kv : frames_obj) {
+        if (!kv.second.is<AP_JSON::value::object>()) {
+            continue;
+        }
+        const AP_JSON::value &model_val = kv.second.get("model");
+        if (model_val.is<std::string>() &&
+            model_val.get<std::string>() == model_str) {
+            append_frame_defaults(joined, kv.second);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Search own vehicle first, then all vehicles, for a single candidate string.
+static bool search_once(const AP_JSON::value *root, const char *vehicle_str,
+                        const std::string &candidate, std::string &out)
+{
+    if (vehicle_str != nullptr && root->contains(std::string(vehicle_str))) {
+        if (resolve_frame_in_vehicle(root->get(std::string(vehicle_str)),
+                                     candidate.c_str(), out)) {
+            return true;
+        }
+    }
+    if (root->is<AP_JSON::value::object>()) {
+        const AP_JSON::value::object &top = root->get<AP_JSON::value::object>();
+        for (const auto &kv : top) {
+            if (vehicle_str != nullptr && kv.first == vehicle_str) {
+                continue;       // already tried
+            }
+            if (resolve_frame_in_vehicle(kv.second, candidate.c_str(), out)) {
+                return true;
+            }
+        }
+    }
     return false;
 }
 
@@ -824,6 +866,11 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
   and fall back to scanning every top-level vehicle. The scan covers
   the case where a heli binary (AP_BUILD_TARGET_NAME=ArduCopter) is
   asked for a frame that lives under "Helicopter" in the JSON.
+
+  If the full model string is not found, trailing dash-separated suffixes
+  are stripped and the lookup is retried (e.g. "plane-catapult" falls back
+  to "plane"). This mirrors the model-constructor prefix matching so that
+  physics variants automatically inherit the base frame's defaults.
  */
 void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str)
 {
@@ -838,23 +885,18 @@ void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *
 
     std::string joined;
     bool found = false;
+    std::string candidate = model_str;
 
-    if (vehicle_str != nullptr && root->contains(std::string(vehicle_str))) {
-        found = resolve_frame_in_vehicle(root->get(std::string(vehicle_str)),
-                                         model_str, joined);
-    }
-
-    if (!found && root->is<AP_JSON::value::object>()) {
-        const AP_JSON::value::object &top = root->get<AP_JSON::value::object>();
-        for (const auto &kv : top) {
-            if (vehicle_str != nullptr && kv.first == vehicle_str) {
-                continue;       // already tried
-            }
-            if (resolve_frame_in_vehicle(kv.second, model_str, joined)) {
-                found = true;
-                break;
-            }
+    while (!found) {
+        found = search_once(root, vehicle_str, candidate, joined);
+        if (found) {
+            break;
         }
+        const size_t dash = candidate.rfind('-');
+        if (dash == std::string::npos) {
+            break;
+        }
+        candidate = candidate.substr(0, dash);
     }
 
     if (found && !joined.empty()) {
