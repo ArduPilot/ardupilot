@@ -54,6 +54,9 @@
 #include "rosgraph_msgs/msg/Clock.h"
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 #if AP_DDS_PARAMETER_SERVER_ENABLED
+#if AP_DDS_ODOM_PUB_ENABLED
+#include "nav_msgs/msg/Odometry.h"
+#endif // AP_DDS_ODOM_PUB_ENABLED
 #include "rcl_interfaces/srv/SetParameters.h"
 #include "rcl_interfaces/msg/Parameter.h"
 #include "rcl_interfaces/msg/SetParametersResult.h"
@@ -228,6 +231,15 @@ private:
     void write_static_transforms();
     static void populate_static_transforms(tf2_msgs_msg_TFMessage& msg);
 #endif // AP_DDS_STATIC_TF_PUB_ENABLED
+
+#if AP_DDS_ODOM_PUB_ENABLED
+    nav_msgs_msg_Odometry odom_topic;
+    // The last ms timestamp AP_DDS wrote an Odometry message
+    uint64_t last_odom_time_ms;
+    bool update_topic(nav_msgs_msg_Odometry& msg);
+    //! @brief Serialize the current Odometry data and publish to the IO stream(s)
+    void write_odom_topic();
+#endif // AP_DDS_ODOM_PUB_ENABLED
 
 #if AP_DDS_JOY_SUB_ENABLED
     // incoming joystick data
