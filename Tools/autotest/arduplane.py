@@ -7939,6 +7939,20 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("clear: Motors EStopped", timeout=30, check_context=True, regex=True)
         self.wait_ready_to_arm()
 
+    def FFTPrearms(self):
+        '''check FFT prearms work'''
+        self.set_parameters({
+            "FFT_ENABLE": 1,
+            "FFT_MAXHZ": 1,
+            "FFT_MINHZ": 200,
+        })
+        self.reboot_sitl()
+        self.assert_prearm_failure(
+            "FFT config invalid",
+            other_prearm_failures_fatal=False,
+            timeout=120,
+        )
+
     def ScriptedArmingChecksAppletRally(self):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
@@ -8091,6 +8105,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TerrainMissionInterrupt,
             self.UniversalAutoLandScript,
             self.Replay,
+            self.FFTPrearms,
         ])
         return ret
 
