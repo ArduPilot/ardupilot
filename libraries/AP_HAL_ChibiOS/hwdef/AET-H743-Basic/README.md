@@ -5,7 +5,7 @@ The AET-H743-Basic is a flight controller designed and produced by AeroEggTech
 ## Features
 
 - STM32H743 microcontroller
-- Dual ICM42688P IMUs
+- Dual ICM42688P or BMI088 and BMI270 IMUs
 - 13 PWM / Dshot outputs
 - 8 UARTs, one with CTS/RTS flow control pins
 - 1 CAN
