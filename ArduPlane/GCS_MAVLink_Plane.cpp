@@ -1206,18 +1206,22 @@ uint8_t GCS_MAVLINK_Plane::high_latency_tgt_heading() const
         return wrap_360_cd(nav_controller->target_bearing_cd() ) / 200;
 }
 
-// return units are dm
+// return units are dam (decameters), per MAVLink HIGH_LATENCY2 spec
 uint16_t GCS_MAVLINK_Plane::high_latency_tgt_dist() const
 {
 #if HAL_QUADPLANE_ENABLED
     const QuadPlane &quadplane = plane.quadplane;
     if (quadplane.show_vtol_view()) {
-        bool wp_nav_valid = quadplane.using_wp_nav();
-        return (wp_nav_valid ? MIN(quadplane.wp_nav->get_wp_distance_to_destination_cm(), UINT16_MAX) : 0) / 10;
+        if (!quadplane.using_wp_nav()) {
+            return 0;
+        }
+        // cm -> dam (divide first to avoid the clamp truncating long distances)
+        return MIN(quadplane.wp_nav->get_wp_distance_to_destination_cm() / 1000.0f, (float)UINT16_MAX);
     }
-    #endif
+#endif
 
-    return MIN(plane.auto_state.wp_distance, UINT16_MAX) / 10;
+    // m -> dam
+    return MIN(plane.auto_state.wp_distance / 10.0f, (float)UINT16_MAX);
 }
 
 uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const
