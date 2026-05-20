@@ -38,6 +38,9 @@
 #if AP_DDS_NEEDS_TWIST
 #include "geometry_msgs/msg/TwistStamped.h"
 #endif // AP_DDS_NEEDS_TWIST
+#if AP_DDS_NEEDS_VECTOR3
+#include "geometry_msgs/msg/Vector3Stamped.h"
+#endif // AP_DDS_NEEDS_VECTOR3
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 #include "geographic_msgs/msg/GeoPointStamped.h"
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
@@ -241,6 +244,9 @@ private:
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_GIMBAL_CTRL_ENABLED
+    static geometry_msgs_msg_Vector3Stamped rx_gimbal_control_topic;
+#endif // AP_DDS_GIMBAL_CTRL_ENABLED
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;

@@ -5,6 +5,7 @@
 #include "AP_DDS_ExternalControl.h"
 #include "AP_DDS_Frames.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Mount/AP_Mount.h>
 
 #include <AP_ExternalControl/AP_ExternalControl.h>
 
@@ -85,6 +86,29 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
 
     return false;
 }
+
+bool AP_DDS_External_Control::handle_gimbal_control(geometry_msgs_msg_Vector3Stamped& cmd_gimbal)
+{
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return false;
+    }
+    
+    if (strcmp(cmd_gimbal.header.frame_id, BASE_LINK_FRAME_ID) == 0) {
+        auto &ahrs = AP::ahrs();
+        mount->set_angle_target(ahrs.get_roll_deg() + cmd_gimbal.vector.x, ahrs.get_pitch_deg() + cmd_gimbal.vector.y, cmd_gimbal.vector.z, false);
+        return true;
+    } else if (strcmp(cmd_gimbal.header.frame_id, BASE_LINK_NED_FRAME_ID) == 0) {
+        mount->set_angle_target(cmd_gimbal.vector.x, cmd_gimbal.vector.y, cmd_gimbal.vector.z, false);
+        return true;
+    } else if (strcmp(cmd_gimbal.header.frame_id, MAP_FRAME) == 0) {
+        mount->set_angle_target(cmd_gimbal.vector.x, cmd_gimbal.vector.y, cmd_gimbal.vector.z, true);
+        return true;    
+    }
+
+    return false;
+}
+
 
 bool AP_DDS_External_Control::arm(AP_Arming::Method method, bool do_arming_checks)
 {
