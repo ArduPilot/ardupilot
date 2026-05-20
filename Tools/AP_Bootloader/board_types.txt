@@ -351,6 +351,7 @@ AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
 AP_HW_CBUnmanned-CM405-FC            1301
+AP_HW_CBU_H753-SOM                   1302
 
 AP_HW_KHA_ETH                        1315
 
