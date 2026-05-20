@@ -10,6 +10,9 @@
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 #include "ardupilot_msgs/msg/GlobalPosition.h"
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_LOCAL_POSE_CTRL_ENABLED
+#include "ardupilot_msgs/msg/LocalPosition.h"
+#endif // AP_DDS_LOCAL_POSE_CTRL_ENABLED
 #if AP_DDS_TIME_PUB_ENABLED
 #include "builtin_interfaces/msg/Time.h"
 #endif // AP_DDS_TIME_PUB_ENABLED
@@ -241,6 +244,10 @@ private:
     // incoming REP147 goal interface global position
     static ardupilot_msgs_msg_GlobalPosition rx_global_position_control_topic;
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_LOCAL_POSE_CTRL_ENABLED
+    // incoming REP147 goal interface local position
+    static ardupilot_msgs_msg_LocalPosition rx_local_position_control_topic;
+#endif // AP_DDS_LOCAL_POSE_CTRL_ENABLED
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
