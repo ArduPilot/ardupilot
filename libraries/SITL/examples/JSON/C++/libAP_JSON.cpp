@@ -91,7 +91,7 @@ bool libAP_JSON::ReceiveServoPacket(uint16_t servo_out[]) {
         recvSize = recvSize_last;
     }
     if (counter > 0) {
-        std::cout << "[libAP_JSON] " << "Drained n packets: " << counter << std::endl;
+        std::cout << "[libAP_JSON] " << "Drained packets: " << counter << std::endl;
     }
 
     // didn't receive a packet, increment timeout count if online, then return
