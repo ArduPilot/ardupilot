@@ -11,9 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-/*
-  Driver for the LIS2MDL magnetometer.
+ *
+ * https://www.st.com/resource/en/datasheet/lis2mdl.pdf
  */
 #include "AP_Compass_config.h"
 
@@ -21,30 +20,36 @@
 
 #include "AP_Compass_LIS2MDL.h"
 
-#include <AP_HAL/AP_HAL.h>
-#include <utility>
-#include <AP_Math/AP_Math.h>
-#include <stdio.h>
+// LIS2MDL Registers
+#define LIS2MDL_ADDR_CFG_REG_A  0x60
+#define LIS2MDL_ADDR_CFG_REG_B  0x61
+#define LIS2MDL_ADDR_CFG_REG_C  0x62
+#define LIS2MDL_ADDR_STATUS_REG 0x67
+#define LIS2MDL_ADDR_OUTX_L_REG 0x68
+#define LIS2MDL_ADDR_WHO_AM_I   0x4F
 
-// Register addresses
-#define ADDR_WHO_AM_I       0x4F
-#define ADDR_CFG_REG_A      0x60
-#define ADDR_CFG_REG_B      0x61
-#define ADDR_CFG_REG_C      0x62
-#define ADDR_STATUS_REG     0x67
-#define ADDR_OUT_X_L        0x68
-
-// WHO_AM_I device ID
-#define ID_WHO_AM_I         0x40
+// LIS2MDL Definitions
+#define LIS2MDL_WHO_AM_I         0b01000000
+#define LIS2MDL_STATUS_REG_READY 0b00001111
+// CFG_REG_A
+#define COMP_TEMP_EN    (1 << 7)
+#define MD_CONTINUOUS   (0 << 0)
+#define ODR_100         ((1 << 3) | (1 << 2))
+// CFG_REG_B
+#define OFF_CANC        (1 << 1)
+// CFG_REG_C
+#define BDU             (1 << 4)
 
 AP_Compass_Backend *AP_Compass_LIS2MDL::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                                              bool force_external,
-                                              enum Rotation rotation)
+        bool force_external,
+        enum Rotation rotation)
 {
     if (!dev) {
         return nullptr;
     }
+
     AP_Compass_LIS2MDL *sensor = NEW_NOTHROW AP_Compass_LIS2MDL(std::move(dev), force_external, rotation);
+
     if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
@@ -53,108 +58,104 @@ AP_Compass_Backend *AP_Compass_LIS2MDL::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev
     return sensor;
 }
 
-AP_Compass_LIS2MDL::AP_Compass_LIS2MDL(AP_HAL::OwnPtr<AP_HAL::Device> _dev,
-                                       bool _force_external,
-                                       enum Rotation _rotation)
-    : dev(std::move(_dev))
-    , force_external(_force_external)
-    , rotation(_rotation)
+AP_Compass_LIS2MDL::AP_Compass_LIS2MDL(AP_HAL::OwnPtr<AP_HAL::Device> dev,
+        bool force_external,
+        enum Rotation rotation)
+    : _dev(std::move(dev))
+    , _rotation(rotation)
+    , _force_external(force_external)
 {
 }
 
-// @brief Initialize the sensor
 bool AP_Compass_LIS2MDL::init()
 {
-    WITH_SEMAPHORE(dev->get_semaphore());
+    WITH_SEMAPHORE(_dev->get_semaphore());
 
-    if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
-        // LIS2MDL SPI reads are MSb=1, autoincrement.
-        dev->set_read_flag(0xC0);
-    }
+    _dev->set_retries(10);
 
-    // high retries for init
-    dev->set_retries(10);
-
-    uint8_t whoami;
-    if (!dev->read_registers(ADDR_WHO_AM_I, &whoami, 1) ||
-        whoami != ID_WHO_AM_I) {
-        // not a LIS2MDL
+    if (!check_whoami()) {
         return false;
     }
 
-    dev->setup_checked_registers(3);
+    if (!_dev->write_register(LIS2MDL_ADDR_CFG_REG_A, MD_CONTINUOUS | ODR_100 | COMP_TEMP_EN)) {
+        return false;
+    }
 
-    // Configure for 100Hz continuous mode, with temperature compensation.
-    dev->write_register(ADDR_CFG_REG_A, 0b10001100, true); // ODR=100Hz, continuous mode, temp comp on
+    if (!_dev->write_register(LIS2MDL_ADDR_CFG_REG_B, OFF_CANC)) {
+        return false;
+    }
 
-    // Default settings for CFG_REG_B are fine.
-    dev->write_register(ADDR_CFG_REG_B, 0x00, true);
-
-    // Enable Block Data Update (BDU)
-    dev->write_register(ADDR_CFG_REG_C, 0b00010000, true); 
+    if (!_dev->write_register(LIS2MDL_ADDR_CFG_REG_C, BDU)) {
+        return false;
+    }
 
     // lower retries for run
-    dev->set_retries(3);
+    _dev->set_retries(3);
 
-    /* register the compass instance in the frontend */
-    dev->set_device_type(DEVTYPE_LIS2MDL);
-    if (!register_compass(dev->get_bus_id())) {
+    // register compass instance
+    _dev->set_device_type(DEVTYPE_LIS2MDL);
+
+    if (!register_compass(_dev->get_bus_id())) {
         return false;
     }
 
-    printf("Found a LIS2MDL on 0x%x as compass %u\n", unsigned(dev->get_bus_id()), instance);
+    set_rotation(_rotation);
 
-    set_rotation(rotation);
-
-    if (force_external) {
-        set_external(force_external);
+    if (_force_external) {
+        set_external(true);
     }
 
-    // call timer() at 100Hz
-    dev->register_periodic_callback(1000000U/100U,
-                                    FUNCTOR_BIND_MEMBER(&AP_Compass_LIS2MDL::timer, void));
+    // Enable 100HZ
+    _dev->register_periodic_callback(10000, FUNCTOR_BIND_MEMBER(&AP_Compass_LIS2MDL::timer, void));
 
     return true;
 }
 
-// @brief Read data from the sensor and accumulate it
+bool AP_Compass_LIS2MDL::check_whoami()
+{
+    uint8_t whoami = 0;
+    if (!_dev->read_registers(LIS2MDL_ADDR_WHO_AM_I, &whoami, 1)) {
+        return false;
+    }
+
+    return whoami == LIS2MDL_WHO_AM_I;
+}
+
 void AP_Compass_LIS2MDL::timer()
 {
     struct PACKED {
-        int16_t magx;
-        int16_t magy;
-        int16_t magz;
-    } data;
+        uint8_t xout0;
+        uint8_t xout1;
+        uint8_t yout0;
+        uint8_t yout1;
+        uint8_t zout0;
+        uint8_t zout1;
+        uint8_t tout0;
+        uint8_t tout1;
+    } buffer;
 
-    // Sensitivity is 1.5 mgauss/LSB
-    const float range_scale = 1.5f;
+    const float range_scale = 100.f / 65.535f; // +/- 50,000 milligauss, 16bit
 
-    // check data ready
-    uint8_t status;
-    if (!dev->read_registers(ADDR_STATUS_REG, &status, 1)) {
-        goto check_registers;
-    }
-    if (!(status & 0x08)) { // ZYXDA bit
-        // data not available yet
-        goto check_registers;
-    }
-
-    if (!dev->read_registers(ADDR_OUT_X_L, (uint8_t *)&data, sizeof(data))) {
-        goto check_registers;
+    uint8_t status = 0;
+    if (!_dev->read_registers(LIS2MDL_ADDR_STATUS_REG, &status, 1)) {
+        return;
     }
 
-    {
-        Vector3f field{
-            (float)data.magx * range_scale,
-            (float)data.magy * range_scale,
-            (float)-data.magz * range_scale,    // for unknown reasons the Z axis appears to be reversed, without this it is impossible to orient correctly
-        };
-
-        accumulate_sample(field, instance);
+    if (!(status & LIS2MDL_STATUS_REG_READY)) {
+        return;
     }
 
-check_registers:
-    dev->check_next_register();
+    if (!_dev->read_registers(LIS2MDL_ADDR_OUTX_L_REG, (uint8_t *) &buffer, sizeof(buffer))) {
+        return;
+    }
+
+    const int16_t x = ((buffer.xout1 << 8) | buffer.xout0);
+    const int16_t y = ((buffer.yout1 << 8) | buffer.yout0);
+    const int16_t z = -1 * ((buffer.zout1 << 8) | buffer.zout0);
+
+    Vector3f field{ x * range_scale, y * range_scale, z * range_scale };
+
+    accumulate_sample(field);
 }
 
-#endif  // AP_COMPASS_LIS2MDL_ENABLED
+#endif // AP_COMPASS_LIS2MDL_ENABLED

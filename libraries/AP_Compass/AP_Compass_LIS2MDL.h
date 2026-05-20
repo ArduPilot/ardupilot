@@ -18,16 +18,15 @@
 
 #if AP_COMPASS_LIS2MDL_ENABLED
 
-#include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
-#include <AP_Math/AP_Math.h>
 
 #include "AP_Compass.h"
 #include "AP_Compass_Backend.h"
 
-// LIS2MDL has a fixed I2C address
+#ifndef HAL_COMPASS_LIS2MDL_I2C_ADDR
 #define HAL_COMPASS_LIS2MDL_I2C_ADDR 0x1E
+#endif
 
 class AP_Compass_LIS2MDL : public AP_Compass_Backend
 {
@@ -43,21 +42,14 @@ private:
                        bool force_external,
                        enum Rotation rotation);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
-
-    /**
-     * @brief Initialize the sensor
-     * @return True if successful, false otherwise.
-     */
-    bool init();
-    
-    /**
-     * @brief Device periodic callback to read data from the sensor.
-     */
+    bool check_whoami();
     void timer();
+    bool init();
 
-    bool force_external;
-    enum Rotation rotation;
+    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+
+    enum Rotation _rotation;
+    bool _force_external;
 };
 
 #endif  // AP_COMPASS_LIS2MDL_ENABLED
