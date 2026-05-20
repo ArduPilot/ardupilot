@@ -524,7 +524,9 @@ public:
     void simstate_send(mavlink_channel_t chan) const;
     void sim_state_send(mavlink_channel_t chan) const;
 
+    void log();
     void Log_Write_SIMSTATE();
+    void Log_Write_SIMWIND();
 
     // convert a set of roll rates from earth frame to body frame
     static void convert_body_frame(double rollDeg, double pitchDeg,
