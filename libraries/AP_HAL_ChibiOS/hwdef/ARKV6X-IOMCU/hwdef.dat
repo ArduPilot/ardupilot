@@ -1,0 +1,18 @@
+# ARKV6X variant for carriers that have an IO MCU on USART6
+# (e.g. ARK Jetson PAB V3 Carrier, Holybro Pixhawk6X carrier).
+#
+# Same board ID and bootloader as ARKV6X; the difference is purely
+# in how USART6 is wired downstream of the FMU.
+
+include ../ARKV6X/hwdef.dat
+
+USE_BOOTLOADER_FROM_BOARD ARKV6X
+
+# move USART6 out of the user-visible serial list; it is owned by the IO MCU
+SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
+
+# SERIAL8 is now OTG2, not the USART6 RC input; drop the inherited default
+undef DEFAULT_SERIAL8_PROTOCOL
+
+IOMCU_UART USART6
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
