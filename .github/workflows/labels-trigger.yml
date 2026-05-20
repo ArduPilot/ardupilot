@@ -1,0 +1,24 @@
+name: Labels Trigger
+# Avoid pull_request_target by running the PR-write-access-required part in a follow-on Action.
+# This one just triggers that one and tells it which PR to get filenames for.
+# Note that this decouples success of this Action from whether the labeller actually succeeded.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    runs-on: ubuntu-slim
+    steps:
+      - name: Save PR number
+        run: |
+          mkdir -p ./pr
+          echo ${{ github.event.number }} > ./pr/NR
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: labels-trigger
+          path: |
+            pr/

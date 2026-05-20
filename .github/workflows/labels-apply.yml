@@ -1,0 +1,78 @@
+name: Labels Apply
+# High permissions Action that shouldn't be exposed to / directly runnable from user code.
+# Fetches which PR to apply to from an Artifact output by the PR-triggered labels-trigger Action.
+# Approach from https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+
+on:
+  workflow_run:
+    workflows: ["Labels Trigger"]
+    types:
+      - completed
+
+jobs:
+  labels-by-language:
+    runs-on: ubuntu-slim
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    permissions:
+      pull-requests: write  # So we can add labels to the pull request
+    steps:  # Do NOT "uses: actions/checkout" here!
+      # All this to get the PR number...
+      - name: Download artifact
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const artifacts = await github.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{github.event.workflow_run.id }},
+            });
+            const matchArtifact = artifacts.data.artifacts.filter((artifact) => {
+              return artifact.name == "labels-trigger"
+            })[0];
+            const download = await github.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: matchArtifact.id,
+              archive_format: 'zip',
+            });
+            const fs = require('fs');
+            fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
+      - run: unzip pr.zip
+
+      - name: Retrieve PR Number
+        run: |
+          echo "PR=$(cat pr/pr/NR)" >> $GITHUB_ENV
+
+      # Ok, now for the actual workflow
+      - name: Apply Labels
+        uses: actions/github-script@v9
+        with:
+          script: |
+            // Fetches untrusted user input in a privileged environment - be careful!
+            const filenames = (await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: ${{ env.PR }},
+              per_page: 100,
+            })).map(file => file.filename);
+            console.log(filenames);
+
+            // Process the input into a predefined set of (non-sensitive) labels
+            const labels = new Set();
+            for (const filename of filenames) {
+              if (filename.endsWith('.lua')) labels.add('Scripting');
+              else if (filename.endsWith('.py')) labels.add('Python');
+            }
+            console.log(labels);
+
+            // Values have been sanitized, so can be applied to the PR
+            if (labels.size > 0) {
+              github.rest.issues.addLabels({
+                issue_number: ${{ env.PR }},
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: Array.from(labels),
+              })
+            }
