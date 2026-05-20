@@ -118,6 +118,15 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
         return false;
     }
 
+    // refuse to operate on uninitialised locations. AP_AHRS::update()
+    // asserts the same invariant in SITL but the check is compiled out
+    // of production, so a backend that violates it would otherwise
+    // cause us to seed a cache slot at (0,0) and spam TERRAIN_REQUEST
+    // for that tile.
+    if (!loc.initialised()) {
+        return false;
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     // quick access for home altitude
@@ -370,9 +379,11 @@ void AP_Terrain::update(void)
     float height;
     height_amsl(ahrs.get_home(), height);
 
-    // update the cached current location height
+    // update the cached current location height. An uninitialised
+    // Location is treated as no fix so that update_surrounding_tiles()
+    // doesn't seed neighbour tiles around (0,0).
     Location loc;
-    bool pos_valid = ahrs.get_location(loc);
+    bool pos_valid = ahrs.get_location(loc) && loc.initialised();
     bool terrain_valid = pos_valid && height_amsl(loc, height);
     if (pos_valid && terrain_valid) {
         last_current_loc_height = height;

@@ -119,9 +119,12 @@ void AP_Terrain::send_request(GCS_MAVLINK &link)
     schedule_disk_io();
 
     Location loc;
-    if (!AP::ahrs().get_location(loc)) {
-        // we don't know where we are. Request any cached blocks.
-        // this allows for download of mission items when we have no GPS lock
+    if (!AP::ahrs().get_location(loc) || !loc.initialised()) {
+        // we don't know where we are, or a backend returned an
+        // uninitialised Location. Request any cached blocks. This
+        // allows download of mission items when we have no GPS lock,
+        // and prevents seeding a (0,0) cache slot via find_grid_cache()
+        // when the AHRS reports a default-constructed Location.
         send_cache_request(link);
         return;
     }
