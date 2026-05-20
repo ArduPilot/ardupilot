@@ -44,6 +44,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_RC_PUB_ENABLED
     LOCAL_RC_PUB,
 #endif // AP_DDS_RC_PUB_ENABLED
+#if AP_DDS_GROUNDTRUTH_PUB_ENABLED
+    GROUNDTRUTH_PUB,
+#endif // AP_DDS_GROUNDTRUTH_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     GEOPOSE_PUB,
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -243,6 +246,24 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_RC_PUB_ENABLED
+#if AP_DDS_GROUNDTRUTH_PUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::GROUNDTRUTH_PUB),
+        .pub_id   = to_underlying(TopicIndex::GROUNDTRUTH_PUB),
+        .sub_id   = to_underlying(TopicIndex::GROUNDTRUTH_PUB),
+        .dw_id    = uxrObjectId{.id = to_underlying(TopicIndex::GROUNDTRUTH_PUB), .type = UXR_DATAWRITER_ID},
+        .dr_id    = uxrObjectId{.id = to_underlying(TopicIndex::GROUNDTRUTH_PUB), .type = UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataWriter,
+        .topic_name = "rt/ap/sim/groundtruth",
+        .type_name  = "ardupilot_msgs::msg::dds_::GroundTruth_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_RELIABLE,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 1,
+        },
+    },
+#endif // AP_DDS_GROUNDTRUTH_PUB_ENABLEDs
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::GEOPOSE_PUB),

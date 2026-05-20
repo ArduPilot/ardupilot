@@ -47,6 +47,9 @@
 #if AP_DDS_RC_PUB_ENABLED
 #include "ardupilot_msgs/msg/Rc.h"
 #endif // AP_DDS_RC_PUB_ENABLED
+#if AP_DDS_GROUNDTRUTH_PUB_ENABLED
+#include "ardupilot_msgs/msg/GroundTruth.h"
+#endif // AP_DDS_GROUNDTRUTH_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 #include "geographic_msgs/msg/GeoPoseStamped.h"
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -172,6 +175,15 @@ private:
     void write_tx_local_rc_topic();
     static bool update_topic(ardupilot_msgs_msg_Rc& msg);
 #endif //AP_DDS_RC_PUB_ENABLED
+
+#if AP_DDS_GROUNDTRUTH_PUB_ENABLED
+    ardupilot_msgs_msg_GroundTruth groundtruth_topic;
+    // The last ms timestamp AP_DDS wrote a groundtruth message
+    uint64_t last_groundtruth_time_ms;
+    //! @brief Serialize the current ground truth of sim vehicle and publish to the IO stream(s)
+    void write_groundtruth_topic();
+    static void update_topic(ardupilot_msgs_msg_GroundTruth& msg);
+#endif // AP_DDS_GROUNDTRUTH_PUB_ENABLED
 
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
     sensor_msgs_msg_BatteryState battery_state_topic;

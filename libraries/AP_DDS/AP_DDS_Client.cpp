@@ -76,6 +76,9 @@ static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_
 #if AP_DDS_RC_PUB_ENABLED
 static constexpr uint16_t DELAY_RC_TOPIC_MS = AP_DDS_DELAY_RC_TOPIC_MS;
 #endif // AP_DDS_RC_PUB_ENABLED
+#ifndef AP_DDS_DELAY_GROUNDTRUTH_TOPIC_MS
+static constexpr uint16_t DELAY_RC_TOPIC_MS = AP_DDS_DELAY_GROUNDTRUTH_TOPIC_MS;
+#endif
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
@@ -575,6 +578,105 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
     return msg.is_connected ? true : (counter++ % 10 == 0);
 }
 #endif // AP_DDS_RC_PUB_ENABLED
+
+#if AP_DDS_GROUNDTRUTH_PUB_ENABLED
+void AP_DDS_Client::update_topic(ardupilot_msgs_msg_GroundTruth& msg)
+{
+#if AP_SIM_ENABLED
+    const SITL::SIM *sitl = AP::sitl();
+    if (!sitl) {
+        return;
+    }
+    const auto &s = sitl->state;
+
+    update_topic(msg.header.stamp);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    // Geographic position
+    msg.latitude  = s.latitude;
+    msg.longitude = s.longitude;
+    msg.altitude  = s.altitude;
+
+    // Cartesian position in ENU frame relative to home
+    // ROS REP 103 uses the ENU convention:
+    // X - East
+    // Y - North
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // SITL state uses the NED convention:
+    // X - North
+    // Y - East
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z
+
+    // Location stores lat/lon in 1E7 degrees, altitude in centimeters, conversion on the go
+    Location current_loc(s.latitude * 1e7,s.longitude * 1e7,s.altitude * 100,Location::AltFrame::ABSOLUTE);
+    // get_distance_NED returns vector FROM home TO current location
+    Vector3f pos_ned = s.home.get_distance_NED(current_loc);
+
+    // Cartesion position in ENU frame
+    msg.position.x = pos_ned.y;   // East
+    msg.position.y = pos_ned.x;   // North
+    msg.position.z = -pos_ned.z;  // Up
+
+    // Orientation quaternion
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // SITL provides orientation in NED body frame (FRD):
+    // X - Forward
+    // Y - Right
+    // Z - Down
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z (NED to ENU conversion) as well as a 90 degree rotation in the Z axis
+    // for x to point forward
+    Quaternion orientation(s.quaternion.q1, s.quaternion.q2, s.quaternion.q3, s.quaternion.q4);
+    Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); // NED to ENU transformation
+    Quaternion transformation(sqrtF(2) * 0.5, 0, 0, sqrtF(2) * 0.5); // Z axis 90 degree rotation
+    orientation = aux * transformation;
+    msg.orientation.w = orientation[0];
+    msg.orientation.x = orientation[1];
+    msg.orientation.y = orientation[2];
+    msg.orientation.z = orientation[3];
+
+    // Linear velocity in ENU frame
+    // ROS REP 103 uses the ENU convention:
+    // X - East
+    // Y - North
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // SITL state uses the NED convention:
+    // X - North (speedN)
+    // Y - East (speedE)
+    // Z - Down (speedD)
+    // As a consequence, to follow ROS REP 103, it is necessary to switch X and Y,
+    // as well as invert Z
+    msg.linear_velocity.x = s.speedE;   // East
+    msg.linear_velocity.y = s.speedN;   // North
+    msg.linear_velocity.z = -s.speedD;  // Up
+
+    // Angular velocity in body frame
+    // In ROS REP 103, axis orientation uses the following convention:
+    // X - Forward
+    // Y - Left
+    // Z - Up
+    // https://www.ros.org/reps/rep-0103.html#axis-orientation
+    // The angular rate data is received from SITL in body-frame (FRD):
+    // X - Forward (rollRate)
+    // Y - Right (pitchRate)
+    // Z - Down (yawRate)
+    // As a consequence, to follow ROS REP 103, it is necessary to invert Y and Z
+    // Also convert from degrees/s to radians/s
+    msg.angular_velocity.x = radians(s.rollRate);   // Forward
+    msg.angular_velocity.y = -radians(s.pitchRate); // Left (inverted from Right)
+    msg.angular_velocity.z = -radians(s.yawRate);   // Up (inverted from Down)
+
+#endif // AP_SIM_ENABLED
+}
+#endif // AP_DDS_GROUNDTRUTH_PUB_ENABLED
 
 #if AP_DDS_GEOPOSE_PUB_ENABLED
 void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
@@ -1706,6 +1808,22 @@ void AP_DDS_Client::write_tx_local_rc_topic()
     }
 }
 #endif // AP_DDS_RC_PUB_ENABLED
+#if AP_DDS_GROUNDTRUTH_PUB_ENABLED
+void AP_DDS_Client::write_groundtruth_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub{};
+        const uint32_t topic_size = ardupilot_msgs_msg_GroundTruth_size_of_topic(&groundtruth_topic, 0);
+        uxr_prepare_output_stream(&session,reliable_out,topics[to_underlying(TopicIndex::GROUNDTRUTH_PUB)].dw_id,&ub,topic_size);
+        const bool success = ardupilot_msgs_msg_GroundTruth_serialize_topic(&ub, &groundtruth_topic);
+        if (!success) {
+            // TODO sometimes serialization fails on bootup. Determine why.
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize\n");
+        }
+    }
+}
+#endif // AP_DDS_GROUNDTRUTH_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
 void AP_DDS_Client::write_imu_topic()
 {
@@ -1873,6 +1991,13 @@ void AP_DDS_Client::update()
         write_imu_topic();
     }
 #endif // AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_GROUNDTRUTH_PUB_ENABLED
+    if (cur_time_ms - last_groundtruth_time_ms > AP_DDS_DELAY_GROUNDTRUTH_TOPIC_MS) {
+        update_topic(groundtruth_topic);
+        last_groundtruth_time_ms = cur_time_ms;
+        write_groundtruth_topic();
+    }
+#endif // AP_DDS_GROUNDTRUTH_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
     if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
         update_topic(geo_pose_topic);
