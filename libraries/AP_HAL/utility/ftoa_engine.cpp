@@ -144,7 +144,12 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
     uint8_t outputIdx = 0;
     int64_t decimal = 100000000000000ull;
 
+    uint8_t num_precision_loops = 0;
     do {
+        if (num_precision_loops++ > 128) {
+            // should not happen
+            break;
+        }
         char digit = '0';
         if(decimal == 0) {
             // Abnormal case, can't ever add enough digits to exit the loop,
@@ -152,7 +157,16 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
             // precision == 7.
             break;
         }
+        uint8_t max_find_nonzero_digit_loops = 0;
         while(1) {// find the first nonzero digit or any of the next digits.
+            if (max_find_nonzero_digit_loops++ > 128) {
+                // should not happen
+                break;
+            }
+            if (decimal <= 0) {
+                // should not happen
+                break;
+            }
             while ((prod -= decimal) >= 0)
                 digit++;
             // Now we got too low. Fix it by adding again, once.
