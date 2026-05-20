@@ -183,6 +183,8 @@ Published topics:
 Subscribed topics:
  * /ap/cmd_gps_pose [ardupilot_msgs/msg/GlobalPosition] 1 subscriber
  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
+ * /ap/experimental/cmd_mot [ardupilot_msgs/msg/MotorControl] 1 subscriber
+ * /ap/experimental/cmd_servo [ardupilot_msgs/msg/ServoControl] 1 subscriber
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
 ```
@@ -297,15 +299,34 @@ publisher: beginning loop
 publishing #1: sensor_msgs.msg.Joy(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), axes=[0.0, 0.0, 0.0, 0.0], buttons=[])
 ```
 
-- `/ap/cmd_gps_pose` (type `ardupilot_msgs/msg/GlobalPosition`): sends
-
-a waypoint to head to when the selected mode is GUIDED.
+- `/ap/cmd_gps_pose` (type `ardupilot_msgs/msg/GlobalPosition`): sends a waypoint to head to when the selected mode is GUIDED.
 
 ```bash
 ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34, longitude: 118, altitude: 1000}"
 
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
+```
+
+- `/ap/experimental/cmd_mot` (type `ardupilot_msgs/msg/MotorControl`): sends direct actuator control output to vehicle.
+
+```bash
+ros2 topic pub /ap/experimental/cmd_mot ardupilot_msgs/msg/MotorControl "{timestamp: {sec: 0, nanosec: 0}, actuator: [0.7, 0.7, 0.7, 0.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}"
+
+publisher: beginning loop
+publishing #1: ardupilot_msgs.msg.MotorControl(timestamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), actuator=array([0.7, 0.7, 0.7, 0.7, 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. , 0. ], dtype=float32))
+```
+
+- `/ap/experimental/cmd_servo` (type `ardupilot_msgs/msg/ServoControl`): sends PWM or angle values to servo output channels mapped to scripting functions (`SERVOx_FUNCTION` = script1`..`script16`).
+
+  - **PWM command** (`options` = 1): cmd is PWM in microseconds (clamped to 500-2500).
+  - **Angle command** (`options` = 0): cmd is a scaled value converted to PWM using `SERVOx_MIN/MAX/TRIM` parameters (clamped to -4500 to 4500 centidegrees)
+
+```bash
+ros2 topic pub /ap/experimental/cmd_servo ardupilot_msgs/msg/ServoControl "{timestamp: {sec: 0, nanosec: 0}, options: 1, cmd: [1500, 1500, 1200, 1900, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}"
+
+publisher: beginning loop
+publishing #1: ardupilot_msgs.msg.ServoControl(timestamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), options=1, cmd=array([1500, 1500,    1200,    1900,    0,    0,    0,    0,    0,    0,    0, 0,    0,    0,    0,    0], dtype=int16))
 ```
 
 ## Contributing to `AP_DDS` library
