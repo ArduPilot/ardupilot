@@ -486,20 +486,20 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed();
-    AP_Notify::flags.flying = hal.util->get_soft_armed();
+    AP_Notify::flags.flying = arming.is_armed_and_safety_off();
 
 #if AP_ROVER_AUTO_ARM_ONCE_ENABLED
     handle_auto_arm_once();
 #endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 
     // attempt to update home position and baro calibration if not armed:
-    if (!hal.util->get_soft_armed()) {
+    if (!arming.is_armed_and_safety_off()) {
         update_home();
     }
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
-    set_likely_flying(hal.util->get_soft_armed());
+    set_likely_flying(arming.is_armed_and_safety_off());
 
     // send latest param values to wp_nav
     g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
