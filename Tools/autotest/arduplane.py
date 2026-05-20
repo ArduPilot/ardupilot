@@ -8208,6 +8208,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.EK3HeightDatumResetFlushesBuffers,
+            self.GroundAltitudeWithGPSError,
         ]
 
     def UTMGlobalPositionWaypoint(self):
@@ -8374,6 +8375,30 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
         }
+
+    def GroundAltitudeWithGPSError(self):
+        """Allow the user to manually set correct altitude in case of startup with GPS altitude error"""
+
+        ALT_ERROR = 50  # Observed errors of this magnitude in practice, while lat/lon was good
+
+        self.set_parameter("SIM_GPS1_ALT_OFS", ALT_ERROR)
+        # Ensure the aircraft is on the ground at the start of the test,
+        # and is receiving incorrect GPS altitude since boot
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # Normally GPS is taken as the main altitude source
+        self.assert_altitude(self.sitl_start_location().alt + ALT_ERROR)
+
+        # User manually inputs the correct altitude
+        self.set_parameter("BARO_FIELD_ELV", self.sitl_start_location().alt)
+        self.delay_sim_time(1)
+
+        # This should fix the altitude
+        self.assert_altitude(self.sitl_start_location().alt)
+
+        # Clean up the GPS error for subsequent tests
+        self.set_parameter("SIM_GPS1_ALT_OFS", 0)
 
 
 class AutoTestPlaneTests1a(AutoTestPlane):

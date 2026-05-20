@@ -106,6 +106,8 @@ public:
     float get_altitude_AMSL(uint8_t instance) const { return get_altitude(instance) + _field_elevation_active; }
     float get_altitude_AMSL(void) const { return get_altitude_AMSL(_primary); }
 
+    float get_field_elevation(void) const { return _field_elevation; }
+
     // returns which i2c bus is considered "the" external bus
     uint8_t external_bus() const { return _ext_bus; }
 
@@ -315,7 +317,7 @@ private:
 
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
-    AP_Float                            _field_elevation;       // field elevation in meters
+    AP_Float                            _field_elevation;       // user provided field elevation in meters
     float                               _field_elevation_active;
     uint32_t                            _field_elevation_last_ms;
     AP_Int8                             _primary_baro; // primary chosen by user
