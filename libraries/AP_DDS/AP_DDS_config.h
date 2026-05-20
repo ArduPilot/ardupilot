@@ -3,6 +3,7 @@
 #include <AP_GPS/AP_GPS_config.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Networking/AP_Networking_Config.h>
+#include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_VisualOdom/AP_VisualOdom_config.h>
 #include <RC_Channel/RC_Channel_config.h>
 #include <AP_RSSI/AP_RSSI_config.h>
@@ -127,6 +128,14 @@
 #endif
 #ifndef AP_DDS_STATUS_PUB_ENABLED
 #define AP_DDS_STATUS_PUB_ENABLED 1
+#endif
+
+#ifndef AP_DDS_RANGEFINDER_PUB_ENABLED
+#define AP_DDS_RANGEFINDER_PUB_ENABLED AP_RANGEFINDER_ENABLED
+#endif
+
+#ifndef AP_DDS_DELAY_RANGEFINDER_TOPIC_MS
+#define AP_DDS_DELAY_RANGEFINDER_TOPIC_MS 10
 #endif
 
 #ifndef AP_DDS_JOY_SUB_ENABLED
