@@ -284,9 +284,5 @@ public:
 
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
 
-    // Set to true if the terrain underneath is stable enough to be used as a height reference
-    // this is not related to terrain following
-    virtual void set_terrain_hgt_stable(bool stable) {}
-
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };

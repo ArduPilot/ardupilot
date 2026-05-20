@@ -1671,6 +1671,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     # Tests the motor failsafe
     def TakeoffCheck(self):
         '''Test takeoff check'''
+
+        self.start_subtest("Test blocking doesn't occur with in-range RPM")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            'SIM_ESC_TELEM': 1,
+            'SIM_ESC_ARM_RPM': 1000,
+            'TKOFF_RPM_MIN': 900,
+            'TKOFF_RPM_MAX': 1100,
+        })
+        self.takeoff(10, mode="LOITER")
+        self.land_and_disarm()
+        # ensure no spurious takeoff blocked warnings during spoolup
+        for m in self.context_collection('STATUSTEXT'):
+            if "Takeoff blocked" in m.text:
+                raise NotAchievedException("Spurious takeoff blocked message: %s" % m.text)
+        self.context_pop()
+
         self.set_parameters({
             "AHRS_EKF_TYPE": 10,
             'SIM_ESC_TELEM': 1,
@@ -7353,8 +7372,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "MNT1_TYPE": 6,         # MAVLink
             "MNT2_TYPE": 6,         # MAVLink
-            "CAM1_TYPE": 4,         # Mount
-            "CAM2_TYPE": 4,         # Mount
+            "CAM1_TYPE": 6,         # MAVLink
+            "CAM2_TYPE": 6,         # MAVLink
             "SERIAL5_PROTOCOL": 2,  # MAVLink2
             "SERIAL6_PROTOCOL": 2,  # MAVLink2
         })
@@ -7362,6 +7381,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "--serial5=sim:avt_cm62_gimbal:",
             "--serial6=sim:avt_cm62_gimbal:",
         ])
+
+        # note that CAMERA_FEEDBACK uses instance numbers starting from 0
+        trigger_counts = {}
+
+        def trig_counter(mav, m):
+            if m.get_type() != 'CAMERA_FEEDBACK':
+                return
+            if m.cam_idx not in trigger_counts:
+                trigger_counts[m.cam_idx] = 0
+            trigger_counts[m.cam_idx] += 1
+
+        self.install_message_hook_context(trig_counter)
+        self.delay_sim_time(12, "wait for MAVLink camera backends to initialise")
+        self.progress("Test triggering of the two cameras")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_CAM_TRIGG_DIST,
+            p1=10,  # trigger distance
+            p3=1,   # trigger instantly
+            p4=0,   # 0 means trigger for all cameras
+        )
+        self.delay_sim_time(2, "allow CAMERA_FEEDBACK to come through")
+        for cam in 0, 1:
+            if cam not in trigger_counts:
+                raise NotAchievedException(f"Did not see trigger for cam{cam}")
+            if trigger_counts[cam] != 1:
+                raise NotAchievedException(f"Incorrect trigger count for cam{cam}")
+
+        for cam in 0, 1:
+            self.progress(f"Test triggering of the just cam{cam}")
+            trigger_counts = {}
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_SET_CAM_TRIGG_DIST,
+                p1=10,  # trigger distance
+                p3=1,   # trigger instantly
+                p4=cam+1,
+            )
+            self.delay_sim_time(2, "allow CAMERA_FEEDBACK to come through")
+            if cam not in trigger_counts:
+                raise NotAchievedException(f"Did not see trigger for cam{cam}")
+            if trigger_counts[cam] != 1:
+                raise NotAchievedException(f"Incorrect trigger count for cam{cam}")
 
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''

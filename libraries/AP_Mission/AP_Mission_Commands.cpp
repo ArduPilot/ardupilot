@@ -6,6 +6,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Camera/AP_Camera.h>
+#include <AP_Camera/AP_Camera_Backend.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
@@ -134,21 +135,18 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         return true;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        camera->set_trigger_distance(cmd.content.cam_trigg_dist.meters);
-        if (cmd.content.cam_trigg_dist.trigger == 1) {
-            camera->take_picture();
-        }
-        return true;
+        return camera->handle_mav_DO_SET_CAM_TRIGG_DISTANCE(
+            cmd.content.cam_trigg_dist.camera_id,
+            cmd.content.cam_trigg_dist.trigger,
+            cmd.content.cam_trigg_dist.meters
+        ) == MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_SET_CAMERA_ZOOM:
-        if (cmd.content.set_camera_zoom.zoom_type == ZOOM_TYPE_CONTINUOUS) {
-            return camera->set_zoom(ZoomType::RATE, cmd.content.set_camera_zoom.zoom_value);
-        }
-        if (cmd.content.set_camera_zoom.zoom_type == ZOOM_TYPE_RANGE) {
-            return camera->set_zoom(ZoomType::PCT, cmd.content.set_camera_zoom.zoom_value);
-        }
-        return false;
-
+        return camera->handle_mav_SET_CAMERA_ZOOM(
+            cmd.content.set_camera_zoom.camera_id,
+            (CAMERA_ZOOM_TYPE)cmd.content.set_camera_zoom.zoom_type,
+            cmd.content.set_camera_zoom.zoom_value
+        ) == MAV_RESULT_ACCEPTED;
     case MAV_CMD_SET_CAMERA_FOCUS:
         // accept any of the auto focus types
         if ((cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO) ||

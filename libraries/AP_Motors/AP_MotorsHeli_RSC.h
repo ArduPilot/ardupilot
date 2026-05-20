@@ -53,7 +53,10 @@ public:
     void        configure_armed();
 
     // update - runs RSC logic and outputs to motors, returns current spool state for use in motor output logic
-    RSCSpoolState        update(DesiredRSCSpoolState desired_spool_state);
+    void        update(float dt);
+
+    // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
+    RSCSpoolState   update_spool_state(DesiredRSCSpoolState desired_spool_state, float dt);
 
     // output_to_servo - outputs pwm onto output rsc channel.
     void        output_to_servo() { write_rsc(_control_output);}
@@ -98,9 +101,6 @@ public:
     AP_Int16        _idle_output;             // Rotor control output while at idle
 
 private:
-
-    // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
-    void            update_spool_state();
 
     // set_rsc_control_mode - sets RSC control mode
     void            set_rsc_control_mode(RotorControlMode mode) { _rsc_control_mode = mode; }
