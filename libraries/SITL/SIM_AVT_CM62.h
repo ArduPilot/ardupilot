@@ -48,7 +48,11 @@ private:
     const char *get_camera_vendor_name()      const override { return "AVTA"; }
     const char *get_camera_model_name()       const override { return "SIM_AVTA_CAM"; }
     uint32_t    get_camera_firmware_version() const override { return (3U << 16) | (2U << 8) | 1U; }
-    uint32_t    get_camera_cap_flags()        const override { return CAMERA_CAP_FLAGS_CAPTURE_IMAGE; }
+    uint32_t    get_camera_cap_flags()        const override {
+        return CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
+               CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |   // speculative: unverified on real hardware
+               CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS;   // speculative: unverified on real hardware
+    }
 
     void camera_send_mavlink_message(const mavlink_message_t &msg) override {
         send_mavlink_message(msg);
