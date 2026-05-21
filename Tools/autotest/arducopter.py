@@ -7630,6 +7630,66 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if trigger_counts[cam] != 1:
                 raise NotAchievedException(f"Incorrect trigger count for cam{cam}")
 
+        # Test per-camera zoom and focus levels
+        camera_settings_by_compid = {}
+
+        def camera_settings_hook(mav, m):
+            if m.get_type() != 'CAMERA_SETTINGS':
+                return
+            camera_settings_by_compid[m.get_srcComponent()] = m
+
+        self.install_message_hook_context(camera_settings_hook)
+
+        cam1_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
+        cam2_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA + 1  # MAV_COMP_ID_CAMERA2
+
+        self.progress("Test setting different zoom levels on each camera")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
+            p1=mavutil.mavlink.ZOOM_TYPE_RANGE,
+            p2=30,  # 30%
+            p3=1,   # camera instance 1
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
+            p1=mavutil.mavlink.ZOOM_TYPE_RANGE,
+            p2=70,  # 70%
+            p3=2,   # camera instance 2
+        )
+        self.delay_sim_time(2, "allow CAMERA_SETTINGS to come through")
+        for compid, want_zoom in [(cam1_compid, 30), (cam2_compid, 70)]:
+            if compid not in camera_settings_by_compid:
+                raise NotAchievedException(
+                    f"Did not see CAMERA_SETTINGS from compid {compid}")
+            got = camera_settings_by_compid[compid].zoomLevel
+            if abs(got - want_zoom) > 0.5:
+                raise NotAchievedException(
+                    f"compid {compid} zoom wrong: want={want_zoom} got={got}")
+
+        self.progress("Test setting different focus levels on each camera")
+        camera_settings_by_compid.clear()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
+            p1=mavutil.mavlink.FOCUS_TYPE_RANGE,
+            p2=20,  # 20%
+            p3=1,   # camera instance 1
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
+            p1=mavutil.mavlink.FOCUS_TYPE_RANGE,
+            p2=80,  # 80%
+            p3=2,   # camera instance 2
+        )
+        self.delay_sim_time(2, "allow CAMERA_SETTINGS to come through")
+        for compid, want_focus in [(cam1_compid, 20), (cam2_compid, 80)]:
+            if compid not in camera_settings_by_compid:
+                raise NotAchievedException(
+                    f"Did not see CAMERA_SETTINGS from compid {compid}")
+            got = camera_settings_by_compid[compid].focusLevel
+            if abs(got - want_focus) > 0.5:
+                raise NotAchievedException(
+                    f"compid {compid} focus wrong: want={want_focus} got={got}")
+
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
         got_r, got_p, got_y, yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
