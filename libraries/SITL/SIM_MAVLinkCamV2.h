@@ -44,6 +44,7 @@ protected:
 private:
     void send_camera_heartbeat();
     void send_camera_information(uint8_t target_sysid, uint8_t target_compid);
+    void send_camera_settings();
     void send_camera_command_ack(uint8_t target_sysid, uint8_t target_compid,
                                   MAV_CMD cmd, MAV_RESULT result);
 
