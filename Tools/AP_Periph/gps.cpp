@@ -35,6 +35,18 @@ void AP_Periph_FW::handle_RTCMStream(CanardInstance* canard_instance, CanardRxTr
 #if GPS_MOVING_BASELINE
 void AP_Periph_FW::handle_MovingBaselineData(CanardInstance* canard_instance, CanardRxTransfer* transfer)
 {
+    // latch the first base we hear from; reject any other source so a
+    // misconfigured second base on the same bus cannot interleave its
+    // RTCMv3 stream into our rover.
+    static uint8_t mbl_source_node_id;
+    if (mbl_source_node_id == 0) {
+        mbl_source_node_id = transfer->source_node_id;
+    } else if (transfer->source_node_id != mbl_source_node_id) {
+        Debug("MovingBaselineData: ignoring node %u (bound to %u)\n",
+              transfer->source_node_id, mbl_source_node_id);
+        return;
+    }
+
     ardupilot_gnss_MovingBaselineData msg;
     if (ardupilot_gnss_MovingBaselineData_decode(transfer, &msg)) {
         return;
