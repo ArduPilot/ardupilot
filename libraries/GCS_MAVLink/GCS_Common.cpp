@@ -1562,6 +1562,17 @@ void GCS_MAVLINK_InProgress::check_tasks()
 
 void GCS_MAVLINK::update_send()
 {
+    static uint32_t last_update_send_diag_ms;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (AP_Notify::flags.initialising &&
+        now_ms - last_update_send_diag_ms > 1000) {
+        last_update_send_diag_ms = now_ms;
+        hal.console->printf("gcs_update_send chan=%u txspace=%u pending=%d init=1\n",
+                            (unsigned)chan,
+                            (unsigned)txspace(),
+                            _port->tx_pending());
+    }
+
 #if HAL_LOGGING_ENABLED
     if (!hal.scheduler->in_delay_callback()) {
         // AP_Logger will not send log data if we are armed.
@@ -3157,6 +3168,12 @@ MAV_STATE GCS_MAVLINK::system_status() const
  */
 void GCS_MAVLINK::send_heartbeat() const
 {
+    if (AP_Notify::flags.initialising) {
+        hal.console->printf("gcs_hb chan=%u txspace=%u pending=%d init=1\n",
+                            (unsigned)chan,
+                            (unsigned)txspace(),
+                            _port->tx_pending());
+    }
     mavlink_msg_heartbeat_send(
         chan,
         gcs().frame_type(),

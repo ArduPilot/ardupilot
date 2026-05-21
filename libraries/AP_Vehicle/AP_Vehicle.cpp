@@ -720,7 +720,7 @@ void AP_Vehicle::scheduler_delay_callback()
     return;
 #endif
 
-    static uint32_t last_1hz, last_50hz, last_5s;
+    static uint32_t last_1hz, last_50hz, last_5s, last_diag;
 
 #if HAL_LOGGING_ENABLED
     AP_Logger &logger = AP::logger();
@@ -734,6 +734,10 @@ void AP_Vehicle::scheduler_delay_callback()
         last_1hz = tnow;
         GCS_SEND_MESSAGE(MSG_HEARTBEAT);
         GCS_SEND_MESSAGE(MSG_SYS_STATUS);
+        if (AP::ins().calibrating()) {
+            hal.console->printf("delaycb hb t=%lu ins_cal=1\n",
+                                (unsigned long)tnow);
+        }
     }
     if (tnow - last_50hz > 20) {
         last_50hz = tnow;
@@ -750,6 +754,15 @@ void AP_Vehicle::scheduler_delay_callback()
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Initialising ArduPilot");
         }
+    }
+
+    if (tnow - last_diag > 1000 &&
+        (!hal.scheduler->is_system_initialized() || AP::ins().calibrating())) {
+        last_diag = tnow;
+        hal.console->printf("delaycb t=%lu init=%d ins_cal=%d\n",
+                            (unsigned long)tnow,
+                            hal.scheduler->is_system_initialized(),
+                            AP::ins().calibrating());
     }
 
 #if HAL_LOGGING_ENABLED
