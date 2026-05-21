@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_L1_Control.h"
+#include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -483,6 +484,25 @@ void AP_L1_Control::update_loiter(const Location &center_WP, float radius, int8_
     _last_loiter.center_WP = center_WP;
 
     _data_is_stale = false; // status are correctly updated with current waypoint data
+
+#if HAL_LOGGING_ENABLED
+    AP::logger().Write(
+        "L1C",
+        "TimeUS,Xtrk,Ltrk,xtrkErr,xtrkVel,Nu,Nu2,CircCtr,Circ,CircPD,cap",
+        "Qfffffffffb",
+        AP_HAL::micros64(),
+        xtrackVelCap,
+        ltrackVelCap,
+        xtrackErrCirc,
+        xtrackVelCirc,
+        Nu,
+        _last_Nu,
+        latAccDemCircCtr,
+        latAccDemCirc,
+        latAccDemCircPD,
+        xtrackErrCirc > 0.0f && loiter_direction * latAccDemCap < loiter_direction * latAccDemCirc
+    );
+#endif // HAL_LOGGING_ENABLED
 }
 
 
