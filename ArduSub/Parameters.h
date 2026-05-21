@@ -188,6 +188,10 @@ public:
         k_param_failsafe_pilot_input,
         k_param_failsafe_pilot_input_timeout,
         k_param_failsafe_gcs_timeout,
+        k_param_failsafe_depth_warn,             // warning depth in meters
+        k_param_failsafe_depth_critical,          // maximum depth in meters
+        k_param_failsafe_depth_critical_action,   // action to take at maximum depth
+        k_param_failsafe_depth_warn_action,       // action to take at warning depth
 
 
         // Misc Sub settings
@@ -275,6 +279,10 @@ public:
     AP_Int8         failsafe_pilot_input;       // pilot input failsafe behavior
     AP_Float        failsafe_pilot_input_timeout;
     AP_Float        failsafe_gcs_timeout;       // ground station failsafe timeout (seconds)
+    AP_Float        failsafe_depth_warn;            // warning depth in meters
+    AP_Float        failsafe_depth_critical;         // maximum depth in meters
+    AP_Int8         failsafe_depth_critical_action;  // action to take at maximum depth
+    AP_Int8         failsafe_depth_warn_action;      // action to take at warning depth
 
     AP_Int8         xtrack_angle_limit;
 
