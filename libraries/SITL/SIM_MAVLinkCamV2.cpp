@@ -56,6 +56,8 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
                                 MAV_CMD_IMAGE_START_CAPTURE, MAV_RESULT_ACCEPTED);
         break;
     default:
+        send_camera_command_ack(msg.sysid, msg.compid, (MAV_CMD)cmd.command,
+                                MAV_RESULT_UNSUPPORTED);
         break;
     }
 }
