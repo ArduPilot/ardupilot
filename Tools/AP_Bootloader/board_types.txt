@@ -53,7 +53,6 @@ TARGET_HW_ATL_MANTIS_EDU               97
 TARGET_HW_THE_PEACH_K1                212
 TARGET_HW_THE_PEACH_R1                213
 
-
 Reserved  PX4 [BL] FMU v5X.x           51
 Reserved "PX4 [BL] FMU v6.x"           52
 Reserved "PX4 [BL] FMU v6X.x"          53
@@ -336,6 +335,9 @@ AP_HW_JPilot-C                       1214
 
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
+
+AP_HW_ELARIONH7V1                    1224
+AP_HW_ELARIONF4V1                    1225
 
 AP_HW_ATLAS_CONTROL                  1227
 AP_HW_MatekH7A3_Wing                 1228
