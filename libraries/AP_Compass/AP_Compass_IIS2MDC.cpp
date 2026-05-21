@@ -17,7 +17,7 @@
  */
 #include "AP_Compass_config.h"
 
-#if AP_COMPASS_IIS2MDC_ENABLED
+#if AP_COMPASS_IIS2MDC_ENABLED || AP_COMPASS_LIS2MDL_ENABLED
 
 #include "AP_Compass_IIS2MDC.h"
 
@@ -96,7 +96,7 @@ bool AP_Compass_IIS2MDC::init()
     _dev->set_retries(3);
 
     // register compass instance
-    _dev->set_device_type(DEVTYPE_IIS2MDC);
+    _dev->set_device_type(device_type());
 
     if (!register_compass(_dev->get_bus_id())) {
         return false;
@@ -161,4 +161,4 @@ void AP_Compass_IIS2MDC::timer()
     accumulate_sample(field);
 }
 
-#endif //AP_COMPASS_IIS2MDC_ENABLED
+#endif //AP_COMPASS_IIS2MDC_ENABLED || AP_COMPASS_LIS2MDL_ENABLED
