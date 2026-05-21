@@ -214,10 +214,12 @@ static const struct {
 
 void SITL_State::_set_signal_handlers(void) const
 {
+#ifndef AP_HAL_FPE_ENABLED
     struct sigaction sa_fpe = {};
     sigemptyset(&sa_fpe.sa_mask);
     sa_fpe.sa_handler = _sig_fpe;
     sigaction(SIGFPE, &sa_fpe, nullptr);
+#endif // AP_HAL_FPE_ENABLED
 
     struct sigaction sa_pipe = {};
     sigemptyset(&sa_pipe.sa_mask);

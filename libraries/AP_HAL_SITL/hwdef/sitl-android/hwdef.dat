@@ -1,0 +1,23 @@
+include ../sitl/hwdef.dat
+
+define AP_HAL_FPE_ENABLED 0
+define HAL_CAN_WITH_SOCKETCAN 0
+define AP_NETWORKING_ENABLED 0
+
+# Bypass ArduPilot's toolchain.py cross-compilation checks because
+# Android NDK no longer ships with GCC, which toolchain.py hardcodes.
+env TOOLCHAIN native
+
+# Explicitly set the NDK clang compilers and LLVM tools
+env CC aarch64-linux-android24-clang
+env CXX aarch64-linux-android24-clang++
+env AR llvm-ar
+env NM llvm-nm
+env RANLIB llvm-ranlib
+
+env CXXFLAGS -D__ANDROID__
+
+# Force static linking of Android's libc++
+env CXXFLAGS -static-libstdc++
+env LINKFLAGS -static-libstdc++
+env LDFLAGS -static-libstdc++
