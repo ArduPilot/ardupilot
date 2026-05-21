@@ -18,46 +18,27 @@
 
 #if AP_COMPASS_LIS2MDL_ENABLED
 
-#include <AP_Common/AP_Common.h>
-#include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/Device.h>
-#include <AP_Math/AP_Math.h>
+#include "AP_Compass_IIS2MDC.h"
 
-#include "AP_Compass.h"
-#include "AP_Compass_Backend.h"
+#ifndef HAL_COMPASS_LIS2MDL_I2C_ADDR
+#define HAL_COMPASS_LIS2MDL_I2C_ADDR HAL_COMPASS_IIS2MDC_I2C_ADDR
+#endif
 
-// LIS2MDL has a fixed I2C address
-#define HAL_COMPASS_LIS2MDL_I2C_ADDR 0x1E
-
-class AP_Compass_LIS2MDL : public AP_Compass_Backend
+// LIS2MDL is the consumer-grade variant of the IIS2MDC: same ST silicon,
+// identical WHO_AM_I, register map, I2C address and sensitivity. Inherit
+// the IIS2MDC implementation and only override device_type() so boards
+// declared as LIS2MDL keep their DEVTYPE_LIS2MDL device IDs.
+class AP_Compass_LIS2MDL : public AP_Compass_IIS2MDC
 {
 public:
+    using AP_Compass_IIS2MDC::AP_Compass_IIS2MDC;
+
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                      bool force_external,
                                      enum Rotation rotation);
 
-    static constexpr const char *name = "LIS2MDL";
-
-private:
-    AP_Compass_LIS2MDL(AP_HAL::OwnPtr<AP_HAL::Device> dev,
-                       bool force_external,
-                       enum Rotation rotation);
-
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
-
-    /**
-     * @brief Initialize the sensor
-     * @return True if successful, false otherwise.
-     */
-    bool init();
-    
-    /**
-     * @brief Device periodic callback to read data from the sensor.
-     */
-    void timer();
-
-    bool force_external;
-    enum Rotation rotation;
+protected:
+    DevTypes device_type() const override { return DEVTYPE_LIS2MDL; }
 };
 
 #endif  // AP_COMPASS_LIS2MDL_ENABLED

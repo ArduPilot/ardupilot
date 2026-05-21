@@ -17,7 +17,7 @@
 
 #include "AP_Compass_config.h"
 
-#if AP_COMPASS_IIS2MDC_ENABLED
+#if AP_COMPASS_IIS2MDC_ENABLED || AP_COMPASS_LIS2MDL_ENABLED
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Device.h>
@@ -44,9 +44,7 @@ public:
                                      bool force_external,
                                      enum Rotation rotation);
 
-    static constexpr const char *name = "IIS2MDC";
-
-private:
+protected:
     AP_Compass_IIS2MDC(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                         bool force_external,
                         enum Rotation rotation);
@@ -55,10 +53,12 @@ private:
     void timer();
     bool init();
 
+    virtual DevTypes device_type() const { return DEVTYPE_IIS2MDC; }
+
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     enum Rotation _rotation;
     bool _force_external;
 };
 
-#endif  // AP_COMPASS_IIS2MDC_ENABLED
+#endif  // AP_COMPASS_IIS2MDC_ENABLED || AP_COMPASS_LIS2MDL_ENABLED
