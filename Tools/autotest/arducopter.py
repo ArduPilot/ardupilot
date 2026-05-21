@@ -7555,26 +7555,50 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     f"compid {compid} focus wrong: want={want_focus} got={got}")
 
     def MountAVTCM62DualMission(self):
-        '''test dual AVT CM62 cameras with zoom and focus controlled via
-        mission items (MAV_CMD_SET_CAMERA_ZOOM and MAV_CMD_SET_CAMERA_FOCUS)'''
+        '''test dual AVT CM62 cameras with photo capture, zoom and focus
+        controlled via mission items'''
         self._setup_avt_cm62_dual()
 
         cam1_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
         cam2_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA + 1  # MAV_COMP_ID_CAMERA2
 
+        # img_idx in CAMERA_FEEDBACK is image_index for that backend (0 = no shots yet, 1 = one shot taken, ...).
+        # send_feedback() broadcasts for all backends on each trigger, so we track the max
+        # img_idx seen per cam_idx rather than counting messages.
+        max_img_idx = {}
         camera_settings_by_compid = {}
+
+        def camera_feedback_hook(mav, m):
+            if m.get_type() != 'CAMERA_FEEDBACK':
+                return
+            max_img_idx[m.cam_idx] = max(max_img_idx.get(m.cam_idx, 0), m.img_idx)
 
         def camera_settings_hook(mav, m):
             if m.get_type() != 'CAMERA_SETTINGS':
                 return
             camera_settings_by_compid[m.get_srcComponent()] = m
 
+        self.install_message_hook_context(camera_feedback_hook)
         self.install_message_hook_context(camera_settings_hook)
 
         self.set_parameter("AUTO_OPTIONS", 3)
 
         mission_items = [
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=1,    # camera instance 1
+                p2=0,    # interval (0 = single shot)
+                p3=1,    # total images = 1
+                autocontinue=1,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=2,    # camera instance 2
+                p2=0,    # interval (0 = single shot)
+                p3=1,    # total images = 1
+                autocontinue=1,
+            ),
             self.create_MISSION_ITEM_INT(
                 mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
                 p1=mavutil.mavlink.ZOOM_TYPE_RANGE,
@@ -7608,7 +7632,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
 
         self.fly_simple_relhome_mission(mission_items)
-        self.delay_sim_time(2, "allow CAMERA_SETTINGS to come through after mission")
+        self.delay_sim_time(2, "allow CAMERA_FEEDBACK and CAMERA_SETTINGS to come through after mission")
+
+        self.progress("Verify per-camera shot counts from mission items")
+        for cam_idx, want_shots in [(0, 1), (1, 1)]:
+            got = max_img_idx.get(cam_idx, 0)
+            if got != want_shots:
+                raise NotAchievedException(
+                    f"cam_idx {cam_idx} shots wrong: want={want_shots} got={got}")
 
         self.progress("Verify per-camera zoom levels set by mission items")
         for compid, want_zoom in [(cam1_compid, 25), (cam2_compid, 75)]:
