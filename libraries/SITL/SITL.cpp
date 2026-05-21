@@ -542,6 +542,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: Buyoancy for submarines
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
 
+    // @Param{Sub}: THRUST_ASYM
+    // @DisplayName: Thrust asymmetry
+    // @Description: Ratio of reverse to forward thrust for simulated thrusters. 1.0 means equal thrust, 0.8 means reverse thrust is 80% of forward thrust.
+    // @Range: 0.5 2.0
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("THRUST_ASYM", 16, SIM, thrust_asymmetry, 1.0, AP_PARAM_FRAME_SUB),
+
     // @Param: RATE_HZ
     // @DisplayName: Loop rate
     // @Description: SITL Loop rate
