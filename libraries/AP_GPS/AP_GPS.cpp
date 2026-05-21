@@ -923,6 +923,37 @@ void AP_GPS::update_instance(uint8_t instance)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
         }
 
+        // Reject a fix claim with uninitialised coordinates:
+        // status>=FIX_2D paired with lat==0 && lng==0 is a backend
+        // contract violation (a fix that high should imply a real
+        // location), so we squash it to "no fix" before any consumer
+        // can latch the (0,0) origin.
+        //
+        // Observed in the wild from a ublox M9N behind an AP_GPS_DroneCAN
+        // node during cold start, under GPS jamming/spoofing produced by
+        // an SDR-based GPS simulator leaking into the test bench. The
+        // peripheral published FIX_2D for a brief window with the
+        // coordinates still zeroed -- a receiver bug in that condition.
+        // The same shape is reachable without DroneCAN:
+        //   - AP_GPS_MAV writes status and coordinates from a GPS_INPUT
+        //     packet with no consistency check between the two.
+        //   - AP_GPS_NMEA can update status from a GGA sentence while
+        //     coordinates are still zero from earlier.
+        //   - AP_GPS_Blended picks max(status) across instances but
+        //     copies location from a single weighted instance.
+        //
+        // Catching the violation here keeps AHRS, the EKF, terrain,
+        // arming, set_home, Lua bindings (gps:location() is bound) and
+        // the AP_DroneCAN GPS re-broadcast safe with one check. We use
+        // a direct lat==0 && lng==0 predicate rather than
+        // Location::initialised() because the latter also treats
+        // (0, 0, alt!=0) as initialised, which a spoofer can produce.
+        if (state[instance].status >= AP_GPS_FixType::FIX_2D &&
+            state[instance].location.lat == 0 &&
+            state[instance].location.lng == 0) {
+            state[instance].status = AP_GPS_FixType::NONE;
+        }
+
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
