@@ -189,6 +189,14 @@ bool AP_CheckFirmware::write_bootloader(const struct bl_data *bld)
 
 /*
   check signature in a command against bootloader public keys
+
+  When no public keys are provisioned yet, allow only the
+  SECURE_COMMAND_SET_PUBLIC_KEYS operation through unsigned. This
+  preserves the ability to do first-time provisioning while preventing
+  an attacker from issuing arbitrary signed-firmware operations
+  (GET_SESSION_KEY / REMOVE_PUBLIC_KEYS / future ops) on a board that
+  was built with AP_SIGNED_FIRMWARE but never had keys installed (or
+  had them wiped via REMOVE_PUBLIC_KEYS).
  */
 bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
 {
@@ -197,8 +205,11 @@ bool AP_CheckFirmware::check_signature(const mavlink_secure_command_t &pkt)
         return false;
     }
     if (all_zero_keys(sec_data)) {
-        // allow through if no keys are setup
-        return true;
+        // no keys provisioned: allow ONLY the bootstrap operation that
+        // installs the first key. Every other operation is denied so
+        // that a missing/wiped keystore cannot be used to flash or to
+        // exfiltrate the session key.
+        return pkt.operation == SECURE_COMMAND_SET_PUBLIC_KEYS;
     }
     if (pkt.sig_length != 64) {
         // monocypher signatures are 64 bytes
