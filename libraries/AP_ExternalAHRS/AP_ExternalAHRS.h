@@ -71,7 +71,7 @@ public:
         // 9 reserved for EulerNav
 #if AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
         Aeron = 10,
-#endif
+#endif  //AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
 #if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
         SensAItion = 11,
 #endif

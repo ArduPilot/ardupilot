@@ -22,10 +22,10 @@
   GPS_PARA (0xA2A4), DEV_INFO (0xA2A6), EXTD_GNSS (0xA2A8)
 
   The driver runs a dedicated update thread that reads bytes from the
-  UART, runs them through a state-machine parser, decodes valid frames
-  into stack-local structs, and then briefly takes state.sem to publish
-  into the AP_ExternalAHRS state and the INS / Baro / Compass / GPS
-  frontends.
+  UART, runs them through a state-machine parser, then dispatches each
+  CRC-valid frame to a publisher that re-casts the payload as a packed
+  on-wire struct and pushes the values into the AP_ExternalAHRS state
+  plus the INS / Baro / Compass / GPS frontends.
 
   Recommended usage (Plane / Copter / Quadplane):
 
@@ -219,7 +219,8 @@ private:
     void update_thread();
     void check_and_decode();
     void report_hw_status();
-    bool parse_byte(uint8_t byte);
+    void parse_byte(uint8_t byte, AeronDeferredMsgs &msgs);
+    void handle_chunk_buf_packet(uint16_t prp_id, uint16_t payload_len, AeronDeferredMsgs &msgs);
 
     void publish_nav_para1(const NavPara1Payload &p);
     void publish_nav_para2(const NavPara2Payload &p);
@@ -270,19 +271,18 @@ private:
 
     // parser state
     enum class ParseState : uint8_t {
-        SYNC = 0,
+        RESET = 0,
+        SYNC,
         LEN_HIGH,
         LEN_LOW,
         PAYLOAD,
         CRC,
-        RESET,
     };
 
     ParseState parse_state;
     uint8_t    sync_count;
     uint16_t   pkt_length;
     uint16_t   write_idx;
-    uint16_t   decoded_pkt_len;
     uint8_t    rx_buf[512];
     uint8_t    chunk_buf[512];
 
@@ -308,12 +308,19 @@ private:
     uint32_t last_warned_stat;
     uint32_t last_warned_ms[32];
 
+    // Throttle state for the noisy parser-side GCS messages.
+    uint32_t last_crc_warn_ms;
+    uint32_t last_garbage_warn_ms;
+
     // Per-group staleness deadlines for healthy().
     static constexpr uint32_t SENS_TIMEOUT_MS = 40;
     static constexpr uint32_t NAV_TIMEOUT_MS  = 200;
     static constexpr uint32_t GNSS_TIMEOUT_MS = 500;
 
     static constexpr uint32_t HEALTH_REPEAT_INTERVAL_MS = 10000;
+
+    // Minimum spacing between repeated parser-side telemetry warnings.
+    static constexpr uint32_t WARN_THROTTLE_MS = 5000;
 
     static constexpr uint8_t  SYNC_BYTE                 = 0x05;
     static constexpr uint8_t  SYNC_REQUIRED             = 4;

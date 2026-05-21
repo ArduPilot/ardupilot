@@ -149,7 +149,7 @@ void AP_ExternalAHRS::init(void)
     case DevType::SBG:
         backend = NEW_NOTHROW AP_ExternalAHRS_SBG(this, state);
         return;
-#endif
+#endif  // AP_EXTERNAL_AHRS_SBG_ENABLED
 
 #if AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
     case DevType::Aeron:
