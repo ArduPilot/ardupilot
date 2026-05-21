@@ -22,7 +22,7 @@
 
 #include "AP_ExternalAHRS.h"
 #include "AP_ExternalAHRS_backend.h"
-#include "AP_ExternalAHRS_Aeron.h"
+#include "AP_ExternalAHRS_Aeron_plx.h"
 #include "AP_ExternalAHRS_VectorNav.h"
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
