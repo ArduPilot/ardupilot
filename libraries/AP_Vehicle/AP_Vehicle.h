@@ -190,7 +190,7 @@ public:
       methods to control vehicle for use by scripting
     */
     virtual bool set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt) { return false; }
-    virtual bool set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms) { return false; }
+    virtual bool set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, Location::AltFrame alt_frame = Location::AltFrame::ABOVE_ORIGIN) { return false; }
     virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
     virtual bool set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target = false) { return false; }
     virtual bool set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
