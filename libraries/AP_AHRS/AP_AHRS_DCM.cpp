@@ -160,6 +160,11 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.accel_ef = _accel_ef;
 
     results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);
+
+    // ground velocity estimate in meters/second, in North/East order
+    // note: velocity_NE is significantly different to results.velocity_NED.xy()!
+    results.velocity_NE = groundspeed_vector();
+
     results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
 
     results.location_valid = get_location(results.location);
