@@ -226,6 +226,7 @@ public:
 
     enum Options : uint16_t {
         TreatMS5611AsMS5607     = (1U << 0U),
+        TreatSPA06AsSPL07        = (1U << 1U),
     };
 
     // check if an option is set

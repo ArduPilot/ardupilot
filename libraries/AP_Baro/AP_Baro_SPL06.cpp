@@ -18,9 +18,7 @@
 
 #include <strings.h>
 #include <AP_Math/definitions.h>
-
 extern const AP_HAL::HAL &hal;
-
 #define SPL06_CHIP_ID                          0x10
 #define SPA06_CHIP_ID                          0x11
 
@@ -45,14 +43,15 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_REG_CALIB_COEFFS_START           0x10
 #define SPL06_REG_CALIB_COEFFS_END             0x21
 #define SPA06_REG_CALIB_COEFFS_END             0x24
+#define SPL07_REG_CALIB_COEFFS_END             0x24
 
 // PRESSURE_CFG_REG
 #define SPL06_PRES_RATE_32HZ				   (0x05 << 4)
-
+#define SPL07_PRES_RATE_32HZ				   (0x05 << 4)
 // TEMPERATURE_CFG_REG
 #define SPL06_TEMP_USE_EXT_SENSOR              (1<<7)
 #define SPL06_TEMP_RATE_32HZ				   (0x05 << 4)
-
+#define SPL07_TEMP_RATE_32HZ				   (0x05 << 4)
 // MODE_AND_STATUS_REG
 #define SPL06_MEAS_PRESSURE                    (1<<0)  // measure pressure
 #define SPL06_MEAS_TEMPERATURE                 (1<<1)  // measure temperature
@@ -122,18 +121,23 @@ bool AP_Baro_SPL06::_init()
 				type = Type::SPL06;
 				break;
 			case SPA06_CHIP_ID:
-				type = Type::SPA06;
+#ifdef AP_BARO_SPL07_ENABLED
+                type = Type::SPL07;
+				break; 
+#else
+            if (AP::baro().option_enabled(AP_Baro::Options::TreatSPA06AsSPL07)) {
+                type = Type::SPL07;
+				break; 
+            } else {
+                type = Type::SPA06;
 				break;
-			default:
-				type = Type::UNKNOWN;
-				break;
-			}
+            }  
+#endif  // AP_BARO_SPL07_ENABLED          			
         }
-
         if (type != Type::UNKNOWN)
 			break;
     }
-    
+}
     if (type == Type::UNKNOWN) {
         return false;
     }
@@ -146,6 +150,9 @@ bool AP_Baro_SPL06::_init()
 		break;
 	case Type::SPA06:
 		SPL06_CALIB_COEFFS_LEN = SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+        break;
+	case Type::SPL07:
+		SPL06_CALIB_COEFFS_LEN = SPL07_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
 		break;
 	default:
 		break;
@@ -198,14 +205,14 @@ bool AP_Baro_SPL06::_init()
     // 0x20 c30 [15:8] + 0x21 c30 [7:0]
     _c30 = get_twos_complement(((uint32_t)buf[16] << 8) | (uint32_t)buf[17], 16);
 
-    if(type == Type::SPA06) {
+    if(type == Type::SPA06 || type == Type::SPL07) {
         // 0x23 c31 [3:0] + 0x22 c31 [11:4]
         _c31 = get_twos_complement(((uint32_t)buf[18] << 4) | (((uint32_t)buf[19] >> 4) & 0x0F), 12);
         // 0x23 c40 [11:8] + 0x24 c40 [7:0]
         _c40 = get_twos_complement((((uint32_t)buf[19] & 0x0F) << 8) | (uint32_t)buf[20], 12);
 	}
 
-    const uint8_t tmp_sensor = (type == Type::SPA06 ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
+    const uint8_t tmp_sensor = (type == Type::SPA06 || type == Type::SPL07 ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
 #if AP_BARO_SPL06_BACKGROUND_ENABLE
     // setup temperature and pressure measurements
     _dev->setup_checked_registers(4, 20);
@@ -216,12 +223,17 @@ bool AP_Baro_SPL06::_init()
 
 	//enable background mode
 	_dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_CON_PRE_TEM, true);
-#else
+#else 
+    if(type == Type::SPA06) {
     // setup temperature and pressure measurements
     _dev->setup_checked_registers(3, 20);
-
     _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
     _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
+    } else {
+     _dev->setup_checked_registers(3, 20);
+    _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL07_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
+    _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL07_PRES_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);       
+    }
 #endif //AP_BARO_SPL06_BACKGROUND_ENABLE
 
     uint8_t int_and_fifo_reg_value = 0;
@@ -234,11 +246,12 @@ bool AP_Baro_SPL06::_init()
     _dev->write_register(SPL06_REG_INT_AND_FIFO_CFG, int_and_fifo_reg_value, true);
 
     _instance = _frontend.register_sensor();
-
-    if(type == Type::SPA06) {
-	    _dev->set_device_type(DEVTYPE_BARO_SPA06);
-    } else {
+    if(type == Type::SPL06) {
 	    _dev->set_device_type(DEVTYPE_BARO_SPL06);
+    } else if(type == Type::SPL07) {
+	    _dev->set_device_type(DEVTYPE_BARO_SPL07);
+    } else {
+        _dev->set_device_type(DEVTYPE_BARO_SPA06);
     }
 
     set_bus_id(_instance, _dev->get_bus_id());
@@ -348,7 +361,11 @@ void AP_Baro_SPL06::_update_pressure(int32_t press_raw)
 		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * ((float)_c30 + press_raw_sc * _c40)));
 		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
 		break;
-	default:
+	case Type::SPL07:
+		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * _c30));
+		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
+		break;
+		default:
 		break;
 	}
 

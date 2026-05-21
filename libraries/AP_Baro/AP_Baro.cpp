@@ -253,7 +253,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Param{Copter,Plane}: _OPTIONS
     // @DisplayName: Barometer options
     // @Description: Barometer options
-    // @Bitmask: 0:Treat MS5611 as MS5607
+    // @Bitmask: 0:Treat MS5611 as MS5607,1:Treat SPA06 as SPL07
     // @User: Advanced
     AP_GROUPINFO("_OPTIONS", 24, AP_Baro, _options, 0),
 #endif

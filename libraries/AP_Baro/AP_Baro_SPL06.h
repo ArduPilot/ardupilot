@@ -21,6 +21,7 @@ public:
 		UNKNOWN,
 		SPL06,
 		SPA06,
+        SPL07,
 	};
     AP_Baro_SPL06(AP_Baro &baro, AP_HAL::Device &dev);
 
