@@ -26,7 +26,7 @@
 
 #if AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
 
-#include "AP_ExternalAHRS_Aeron.h"
+#include "AP_ExternalAHRS_Aeron_plx.h"
 
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Compass/AP_Compass.h>
