@@ -26,6 +26,9 @@ public:
     bool in_rc_failsafe() const override;
     // returns true if throttle arming checks should be run
     bool arming_check_throttle() const override;
+
+    bool has_pilot_input_for_override_clear() override;
+
     RC_Channel_Sub obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Sub *channel(const uint8_t chan) override {
         if (chan >= ARRAY_SIZE(obj_channels)) {
