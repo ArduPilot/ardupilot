@@ -9,6 +9,9 @@
 #if AP_DDS_IMU_PUB_ENABLED
 #include "sensor_msgs/msg/Imu.h"
 #endif //AP_DDS_IMU_PUB_ENABLED
+#if AP_DDS_ODOM_SUB_ENABLED
+#include "nav_msgs/msg/Odometry.h"
+#endif // AP_DDS_ODOM_SUB_ENABLED
 
 #include "uxr/client/client.h"
 
@@ -65,6 +68,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
     DYNAMIC_TRANSFORMS_SUB,
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_ODOM_SUB_ENABLED
+    ODOM_SUB,
+#endif // AP_DDS_ODOM_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
     VELOCITY_CONTROL_SUB,
 #endif // AP_DDS_VEL_CTRL_ENABLED
@@ -369,6 +375,24 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_ODOM_SUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::ODOM_SUB),
+        .pub_id = to_underlying(TopicIndex::ODOM_SUB),
+        .sub_id = to_underlying(TopicIndex::ODOM_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::ODOM_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::ODOM_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        .topic_name = "rt/ap/odom",
+        .type_name = "nav_msgs::msg::dds_::Odometry_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif // AP_DDS_ODOM_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
     {
         .topic_id = to_underlying(TopicIndex::VELOCITY_CONTROL_SUB),

@@ -102,6 +102,9 @@ sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_ODOM_SUB_ENABLED
+nav_msgs_msg_Odometry AP_DDS_Client::rx_odom_topic {};
+#endif // AP_DDS_ODOM_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
 geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 #endif // AP_DDS_VEL_CTRL_ENABLED
@@ -862,6 +865,18 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_ODOM_SUB_ENABLED
+    case topics[to_underlying(TopicIndex::ODOM_SUB)].dr_id.id: {
+        const bool success = nav_msgs_msg_Odometry_deserialize_topic(ub, &rx_odom_topic);
+        if (success == false) {
+            break;
+        }
+#if AP_DDS_VISUALODOM_ENABLED
+        AP_DDS_External_Odom::handle_external_odom(rx_odom_topic);
+#endif // AP_DDS_VISUALODOM_ENABLED
+        break;
+    }
+#endif // AP_DDS_ODOM_SUB_ENABLED
 #if AP_DDS_VEL_CTRL_ENABLED
     case topics[to_underlying(TopicIndex::VELOCITY_CONTROL_SUB)].dr_id.id: {
         const bool success = geometry_msgs_msg_TwistStamped_deserialize_topic(ub, &rx_velocity_control_topic);
