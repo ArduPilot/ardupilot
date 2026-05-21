@@ -489,6 +489,12 @@ class Board:
                 env.CFLAGS += [
                     '-Werror=use-after-free',
                 ]
+            if self.cc_version_gte(cfg, 14, 0):
+                env.CXXFLAGS += [
+                    '-Wno-maybe-uninitialized',
+                    '-Wno-error=format-truncation',
+                    '-Wno-error=array-bounds',
+                ]
 
         if cfg.env.TOOLCHAIN == "custom":
             # the QURT board stuff should be extracting the compiler
