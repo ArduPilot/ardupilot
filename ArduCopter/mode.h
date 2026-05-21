@@ -956,7 +956,6 @@ private:
 class ModeFlip : public Mode {
 
 public:
-    // inherit constructor
     using Mode::Mode;
     Number mode_number() const override { return Number::FLIP; }
 
@@ -968,6 +967,8 @@ public:
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return false; }
     bool crash_check_enabled() const override { return false; }
+    // this is made explicit just for defensive programming + clarity
+    bool allows_flip() const override { return false; }
 
     void abandon_flip();
 
@@ -978,7 +979,6 @@ protected:
 
 private:
 
-    // Flip
     Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
@@ -992,9 +992,11 @@ private:
     bool abandon_requested;
     FlipState _state;                   // current state of flip
     Mode::Number  orig_control_mode;    // flight mode when flip was initiated
-    uint32_t start_time_ms;             // time since flip began
-    int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
-    int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+    uint32_t start_time_ms;
+    int8_t roll_dir;                    // (-1 = roll left, 1 = roll right)
+    int8_t pitch_dir;                   // (-1 = pitch forward, 1 = pitch back)
+
+    bool input_is_high_magnitude(RC_Channel *& input) const;
 };
 
 
