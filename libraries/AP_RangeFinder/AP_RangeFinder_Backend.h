@@ -77,13 +77,15 @@ public:
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
     // get temperature reading in C.  returns true on success and populates temp argument
-    virtual bool get_temp(float &temp) const { return false; }
+    bool get_temp(float &temp) const;
 
     // return the actual type of the rangefinder, as opposed to the
     // parameter value which may be changed at runtime.
     RangeFinder::Type allocated_type() const { return _backend_type; }
 
 protected:
+    // get temperature reading in C.  returns true on success and populates temp argument
+    virtual bool _get_temp(float &temp) const { return false; }
 
     // update status based on distance measurement
     void update_status(RangeFinder::RangeFinder_State &state_arg) const;
