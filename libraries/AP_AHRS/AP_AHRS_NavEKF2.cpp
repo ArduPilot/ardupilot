@@ -64,6 +64,9 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.vert_pos_rate_D = EKF2.getPosDownDerivative();
     results.vert_pos_rate_D_valid = true;
 
+    // ground velocity estimate in meters/second, in North/East order
+    results.velocity_NE = results.velocity_NED.xy();
+
     /*
      * position estimates
      */

@@ -62,6 +62,15 @@ public:
         Matrix3f dcm_matrix;
         Quaternion quaternion;
 
+        // backends must always return the result in the vehicle body
+        // frame.  A backend using the autopilot sensors will need to
+        // rotate according to the TRIM parameters.  An ExternalAHRS
+        // won't!
+        bool get_quaternion(Quaternion &quat) const {
+            quat = quaternion;
+            return attitude_valid;
+        }
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
         Vector3f accel_ef;
@@ -78,6 +87,8 @@ public:
             vel = velocity_NED;
             return true;
         };
+        // ground velocity estimate in meters/second, in North/East order
+        Vector2f velocity_NE;
 
         // a derivative of the vertical position in m/s which is
         // kinematically consistent with the vertical position is
@@ -193,9 +204,6 @@ public:
         return false;
     #endif
     }
-
-    // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void) = 0;
 
     virtual bool set_origin(const Location &loc) {
         return false;
