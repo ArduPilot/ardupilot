@@ -17,7 +17,7 @@
 
 /*
   Aeron Systems PLX series INS: External AHRS backend.
-  See AP_ExternalAHRS_Aeron.h for protocol overview and usage.
+  See AP_ExternalAHRS_Aeron_plx.h for protocol overview and usage.
  */
 
 #define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
@@ -98,7 +98,7 @@ void AP_ExternalAHRS_Aeron_plx::update_thread()
     }
 }
 
-// Core pipeline: read -> parse -> decode -> publish -> deferred messages.
+// Core pipeline: read -> parse -> publish -> deferred messages.
 void AP_ExternalAHRS_Aeron_plx::check_and_decode()
 {
     WITH_SEMAPHORE(arn_sem);
@@ -113,6 +113,7 @@ void AP_ExternalAHRS_Aeron_plx::check_and_decode()
     }
 
     const uint16_t n_read = uart->read(chunk_buf, avail);
+
     if (n_read == 0) {
         return;
     }
@@ -124,123 +125,36 @@ void AP_ExternalAHRS_Aeron_plx::check_and_decode()
     }
 
     for (uint16_t index = 0; index < n_read; index++) {
-        if (!parse_byte(chunk_buf[index])) {
-            continue;
-        }
-
-        // parse_byte just confirmed a CRC-valid frame.  The frame sits
-        // in rx_buf[0 .. decoded_pkt_len-1]; PRP_ID is at offset 6..7
-        // (big-endian) and the payload starts at offset 8.  parse_byte
-        // has already reset write_idx so we must consume rx_buf here
-        // before the next byte overwrites it.
-        const uint16_t prp_id      = be16toh_ptr(&rx_buf[6]);
-        const uint16_t payload_len = (decoded_pkt_len > 8) ? (decoded_pkt_len - 8) : 0;
-        const uint8_t *payload     = &rx_buf[8];
-
-        switch (AeronPacketID(prp_id)) {
-        case AeronPacketID::NAV_PARA1:
-            if (payload_len < sizeof(NavPara1Payload)) {
-                msgs.garbage = true;
-                break;
-            }
-            publish_nav_para1(*reinterpret_cast<const NavPara1Payload *>(payload));
-            break;
-
-        case AeronPacketID::NAV_PARA2:
-            if (payload_len < sizeof(NavPara2Payload)) {
-                msgs.garbage = true;
-                break;
-            }
-            publish_nav_para2(*reinterpret_cast<const NavPara2Payload *>(payload));
-            break;
-
-        case AeronPacketID::SENS_PARA:
-            if (payload_len < sizeof(SensParaPayload)) {
-                msgs.garbage = true;
-                break;
-            }
-            publish_sens_para(*reinterpret_cast<const SensParaPayload *>(payload));
-            break;
-
-        case AeronPacketID::GPS_PARA:
-            if (payload_len < sizeof(GpsParaPayload)) {
-                msgs.garbage = true;
-                break;
-            }
-            publish_gps_para(*reinterpret_cast<const GpsParaPayload *>(payload));
-            break;
-
-        case AeronPacketID::EXTD_GNSS:
-            if (payload_len < sizeof(ExtdGnssPayload)) {
-                msgs.garbage = true;
-                break;
-            }
-            publish_extd_gnss(*reinterpret_cast<const ExtdGnssPayload *>(payload));
-            break;
-
-        case AeronPacketID::EXT_SENSORS_MAG: {
-            // Single-byte presence flag. Written under the lock so the
-            // const main-thread reader in healthy() sees a consistent
-            // value.
-            WITH_SEMAPHORE(state.sem);
-            shared.ext_mag_present = payload[0];
-            shared.ext_mag_checked = true;
-            msgs.ext_mag_checked   = true;
-            break;
-        }
-
-        case AeronPacketID::EXT_SENSORS_ASP: {
-            WITH_SEMAPHORE(state.sem);
-            shared.ext_asp_present = payload[0];
-            shared.ext_asp_checked = true;
-            msgs.ext_asp_checked   = true;
-            break;
-        }
-
-        case AeronPacketID::HEADING_S:
-        case AeronPacketID::H_SPEED_S:
-        case AeronPacketID::V_SPEED_S:
-        case AeronPacketID::POSITION_S:
-        case AeronPacketID::ALTITUDE_S:
-        case AeronPacketID::DEV_INFO:
-            // Aiding-status acks and the DEV_INFO handshake reply.
-            // We accept their existence (the CRC-valid frame already
-            // refreshed the stale timestamps inside parse_byte) but
-            // take no further action.
-            break;
-
-        case AeronPacketID::GNSS_PKT:
-        case AeronPacketID::GNSS_FIX_STATUS:
-            // Recognised but unused: detailed GNSS pseudorange / fix
-            // status packets that the PLX may emit if certain config
-            // bits are set. Fused output already reaches us via
-            // NAV_PARA1 and GPS_PARA so these are ignored.
-            break;
-
-        default:
-            msgs.garbage    = true;
-            msgs.unknown_id = prp_id;
-            break;
-        }
+        parse_byte(chunk_buf[index], msgs);
     }
 
     send_deferred_messages(msgs);
 
     // Send the optional external-sensor presence queries once, after the
-    // PLX has had time to boot and start responding to commands.  
-    // Responses arrive as EXT_SENSORS_MAG / ASP
-    // packets and are routed through the switch above.
+    // PLX has had time to boot and start responding to commands.
+    // Responses arrive as EXT_SENSORS_MAG / ASP packets and are routed
+    // through handle_chunk_buf_packet().
     if (!ext_sensor_query_done && AP_HAL::millis() > 10000) {
         query_ext_sensors();
         ext_sensor_query_done = true;
     }
 }
 
-// State-machine parser for the Aeron binary protocol.
-// Returns true only when a full, CRC-valid frame is complete.
-bool AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte)
+// State-machine parser for the Aeron binary protocol.  On a CRC-valid
+// frame, dispatches via handle_chunk_buf_packet() rather than leaving
+// the caller to read implicitly-set member state.  CRC failures and
+// unknown packets are flagged in msgs for the caller to surface as
+// throttled GCS warnings.
+void AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte, AeronDeferredMsgs &msgs)
 {
     switch (parse_state) {
+    case ParseState::RESET:
+        write_idx   = 0;
+        pkt_length  = 0;
+        sync_count  = 0;
+        parse_state = ParseState::SYNC;
+        FALLTHROUGH;
+
     case ParseState::SYNC:
         if (byte == SYNC_BYTE) {
             rx_buf[write_idx++] = byte;
@@ -249,16 +163,15 @@ bool AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte)
                 sync_count  = 0;
             }
         } else {
-            sync_count = 0;
-            write_idx  = 0;
+            parse_state = ParseState::RESET;
         }
-        return false;
+        return;
 
     case ParseState::LEN_HIGH:
-        pkt_length = byte;
+        pkt_length          = byte;
         rx_buf[write_idx++] = byte;
-        parse_state = ParseState::LEN_LOW;
-        return false;
+        parse_state         = ParseState::LEN_LOW;
+        return;
 
     case ParseState::LEN_LOW:
         rx_buf[write_idx++] = byte;
@@ -268,41 +181,118 @@ bool AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte)
         } else {
             parse_state = ParseState::RESET;
         }
-        return false;
+        return;
 
     case ParseState::PAYLOAD:
         rx_buf[write_idx++] = byte;
         if (write_idx >= pkt_length) {
-            decoded_pkt_len = pkt_length;
-            parse_state     = ParseState::CRC;
+            parse_state = ParseState::CRC;
         }
-        return false;
+        return;
 
     case ParseState::CRC: {
         rx_buf[write_idx++] = byte;
         const bool valid = (byte == crc_xor_of_bytes(rx_buf, pkt_length));
-        if (!valid) {
+        if (valid) {
+            const uint16_t prp_id      = be16toh_ptr(&rx_buf[6]);
+            const uint16_t payload_len = (pkt_length > 8) ? (pkt_length - 8) : 0;
+            handle_chunk_buf_packet(prp_id, payload_len, msgs);
+        } else {
             crc_fail_pending = true;
             debug("CRC-ID=0x%04X",
                   (uint16_t(rx_buf[6]) << 8) | rx_buf[7]);
         }
-        parse_state = ParseState::SYNC;
-        write_idx   = 0;
-        pkt_length  = 0;
-        return valid;
-    }
-
-    case ParseState::RESET: {
-        write_idx = 0;
-        pkt_length = 0;
-        parse_state = ParseState::SYNC;
-        return false;
+        parse_state = ParseState::RESET;
+        return;
     }
     }
 
     // Unreachable - all enum values handled above.
     parse_state = ParseState::RESET;
-    return false;
+}
+
+// Dispatch a CRC-valid frame.  The frame sits in rx_buf[0 .. pkt_length-1];
+// PRP_ID is at offset 6..7 (big-endian) and the payload starts at offset 8.
+// Called from inside parse_byte's CRC state so the data hasn't yet been
+// overwritten by the next incoming byte.
+void AP_ExternalAHRS_Aeron_plx::handle_chunk_buf_packet(uint16_t prp_id,
+                                                        uint16_t payload_len,
+                                                        AeronDeferredMsgs &msgs)
+{
+    const uint8_t *payload = &rx_buf[8];
+
+    switch (AeronPacketID(prp_id)) {
+    case AeronPacketID::NAV_PARA1:
+        if (payload_len < sizeof(NavPara1Payload)) {
+            msgs.garbage = true;
+            return;
+        }
+        publish_nav_para1(*reinterpret_cast<const NavPara1Payload *>(payload));
+        return;
+
+    case AeronPacketID::NAV_PARA2:
+        if (payload_len < sizeof(NavPara2Payload)) {
+            msgs.garbage = true;
+            return;
+        }
+        publish_nav_para2(*reinterpret_cast<const NavPara2Payload *>(payload));
+        return;
+
+    case AeronPacketID::SENS_PARA:
+        if (payload_len < sizeof(SensParaPayload)) {
+            msgs.garbage = true;
+            return;
+        }
+        publish_sens_para(*reinterpret_cast<const SensParaPayload *>(payload));
+        return;
+
+    case AeronPacketID::GPS_PARA:
+        if (payload_len < sizeof(GpsParaPayload)) {
+            msgs.garbage = true;
+            return;
+        }
+        publish_gps_para(*reinterpret_cast<const GpsParaPayload *>(payload));
+        return;
+
+    case AeronPacketID::EXTD_GNSS:
+        if (payload_len < sizeof(ExtdGnssPayload)) {
+            msgs.garbage = true;
+            return;
+        }
+        publish_extd_gnss(*reinterpret_cast<const ExtdGnssPayload *>(payload));
+        return;
+
+    case AeronPacketID::EXT_SENSORS_MAG: {
+        WITH_SEMAPHORE(state.sem);
+        shared.ext_mag_present = payload[0];
+        shared.ext_mag_checked = true;
+        msgs.ext_mag_checked   = true;
+        return;
+    }
+
+    case AeronPacketID::EXT_SENSORS_ASP: {
+        WITH_SEMAPHORE(state.sem);
+        shared.ext_asp_present = payload[0];
+        shared.ext_asp_checked = true;
+        msgs.ext_asp_checked   = true;
+        return;
+    }
+
+    case AeronPacketID::HEADING_S:
+    case AeronPacketID::H_SPEED_S:
+    case AeronPacketID::V_SPEED_S:
+    case AeronPacketID::POSITION_S:
+    case AeronPacketID::ALTITUDE_S:
+    case AeronPacketID::DEV_INFO:
+    case AeronPacketID::GNSS_PKT:
+    case AeronPacketID::GNSS_FIX_STATUS:
+        // Recognised but unused.
+        return;
+    }
+
+    // Unknown packet ID - flag as garbage.
+    msgs.garbage    = true;
+    msgs.unknown_id = prp_id;
 }
 
 // NAV_PARA1: velocity, position, euler angles, course
@@ -493,9 +483,12 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
     const uint8_t  jam         = (st & 0x00030000U) >> 16;
     const uint8_t  spf         = (st & 0x000C0000U) >> 18;
 
-    gnss_fix     = fix_present;
-    jam_status   = jam;
-    spoof_status = spf;
+    {
+        WITH_SEMAPHORE(state.sem);
+        gnss_fix     = fix_present;
+        jam_status   = jam;
+        spoof_status = spf;
+    }
 
     // throttled jamming/spoofing warnings - 0.2 Hz
     const uint32_t now = AP_HAL::millis();
@@ -620,12 +613,18 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
 
 void AP_ExternalAHRS_Aeron_plx::send_deferred_messages(const AeronDeferredMsgs &msgs)
 {
-    if (msgs.crc_fail) {
+    const uint32_t now = AP_HAL::millis();
+
+    if (msgs.crc_fail && (now - last_crc_warn_ms) >= WARN_THROTTLE_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Aeron: CRC mismatch");
+        last_crc_warn_ms = now;
     }
-    if (msgs.garbage) {
+
+    if (msgs.garbage && (now - last_garbage_warn_ms) >= WARN_THROTTLE_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Aeron: Unknown packet 0x%04X", msgs.unknown_id);
+        last_garbage_warn_ms = now;
     }
+
     if (msgs.ext_mag_checked) {
         uint8_t present;
         {
@@ -866,15 +865,16 @@ bool AP_ExternalAHRS_Aeron_plx::get_variances(float &velVar, float &posVar,
                                               float &hgtVar, Vector3f &magVar,
                                               float &tasVar) const
 {
-    if (!has_variance_data) {
-        return false;
-    }
-
     float hpa;
     float vpa;
     float hva;
     {
         WITH_SEMAPHORE(state.sem);
+
+        if (!has_variance_data) {
+            return false;
+        }
+
         hpa = shared.cust_hpa_m;
         vpa = shared.cust_vpa_m;
         hva = shared.cust_hva_mps;
