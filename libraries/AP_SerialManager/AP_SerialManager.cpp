@@ -858,6 +858,40 @@ bool AP_SerialManager::pre_arm_checks(char *failure_msg, const uint8_t failure_m
             return false;
         }
     }
+
+#if HAL_GCS_ENABLED
+    // warn if the user has configured more MAVLink-protocol ports than this
+    // build can actually serve (each MAVLink port consumes one comm buffer).
+    uint8_t mavlink_count = 0;
+    for (uint8_t i=0; i<ARRAY_SIZE(state); i++) {
+        const auto p = state[i].protocol;
+        if (p == SerialProtocol_MAVLink ||
+            p == SerialProtocol_MAVLink2 ||
+            p == SerialProtocol_MAVLinkHL) {
+            mavlink_count++;
+        }
+    }
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    {
+        WITH_SEMAPHORE(port_sem);
+        for (auto *rp = registered_ports; rp != nullptr; rp = rp->next) {
+            const auto p = rp->state.protocol;
+            if (p == SerialProtocol_MAVLink ||
+                p == SerialProtocol_MAVLink2 ||
+                p == SerialProtocol_MAVLinkHL) {
+                mavlink_count++;
+            }
+        }
+    }
+#endif
+    if (mavlink_count > MAVLINK_COMM_NUM_BUFFERS) {
+        hal.util->snprintf(failure_msg, failure_msg_len,
+                           "%u MAVLink ports defined, only %u supported",
+                           unsigned(mavlink_count), unsigned(MAVLINK_COMM_NUM_BUFFERS));
+        return false;
+    }
+#endif  // HAL_GCS_ENABLED
+
     return true;
 }
 
