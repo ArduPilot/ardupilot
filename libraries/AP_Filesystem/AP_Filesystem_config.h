@@ -74,6 +74,13 @@
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
 
+// @MAV_LOG exposes the on-disk log directory as a virtual path so
+// GCS tools don't need to know the board-specific path. Only useful
+// when the local filesystem is writable (i.e. logs live there).
+#ifndef AP_FILESYSTEM_MAV_LOG_ENABLED
+#define AP_FILESYSTEM_MAV_LOG_ENABLED AP_FILESYSTEM_FILE_WRITING_ENABLED
+#endif
+
 #ifndef AP_FATFS_MAX_IO_SIZE
 #define AP_FATFS_MAX_IO_SIZE 4096
 #endif
