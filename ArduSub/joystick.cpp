@@ -57,11 +57,6 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
             int16_t aux6)
 {
 
-    float rpyScale = 0.4*gain; // Scale -1000-1000 to -400-400 with gain
-    float throttleScale = 0.8*gain*g.throttle_gain; // Scale 0-1000 to 0-800 times gain
-    int16_t rpyCenter = 1500;
-    int16_t throttleBase = 1500-500*throttleScale;
-
     bool shift = false;
 
 #if HAL_MOUNT_ENABLED
@@ -91,13 +86,6 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     buttons_prev = all_buttons;
 
-    // attitude mode:
-    if (roll_pitch_flag == 1) {
-    // adjust roll/pitch trim with joystick input instead of forward/lateral
-        pitchTrim = -x * rpyScale;
-        rollTrim  =  y * rpyScale;
-    }
-
     uint32_t tnow = AP_HAL::millis();
 
     int16_t zTot;
@@ -116,22 +104,17 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         xTot = x + xTrim;
     }
 
-    channel_pitch->set_override(constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow);
-    channel_roll->set_override(constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow);
+    GCS_MAVLINK *const gcs_mav = gcs().chan(0);
+    
+    gcs_mav->manual_override(channel_pitch, s, pitchTrim + 1000, 2000, tnow);
+    gcs_mav->manual_override(channel_roll, t, rollTrim + 1000, 2000, tnow);
+    // For legacy reasons, throttle input is in the range 0..1000 (not -1000..1000)
+    gcs_mav->manual_override(channel_throttle, zTot, 0, 1000.0f / (gain * g.throttle_gain), tnow);
 
-    channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
-    channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
-
-    // maneuver mode:
-    if (roll_pitch_flag == 0) {
-        // adjust forward and lateral with joystick input instead of roll and pitch
-        channel_forward->set_override(constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow);
-        channel_lateral->set_override(constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow);
-    } else {
-        // neutralize forward and lateral input while we are adjusting roll and pitch
-        channel_forward->set_override(constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow);
-        channel_lateral->set_override(constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow);
-    }
+    float gain_scaled_range = 2000.0f / gain;
+    gcs_mav->manual_override(channel_yaw, r, 1000, gain_scaled_range, tnow);
+    gcs_mav->manual_override(channel_forward, xTot, 1000, gain_scaled_range, tnow);
+    gcs_mav->manual_override(channel_lateral, yTot, 1000, gain_scaled_range, tnow);
 
 #if HAL_MOUNT_ENABLED
     RC_Channel *cam_pan_chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOUNT1_YAW);
@@ -602,15 +585,8 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 #endif  // AP_SERVORELAYEVENTS_ENABLED
 
     case JSButton::button_function_t::k_roll_pitch_toggle:
-        if (!held) {
-            roll_pitch_flag = !roll_pitch_flag;
-            if (roll_pitch_flag) {
-                gcs().send_text(MAV_SEVERITY_INFO, "#Attitude Control");
-            }
-            else {
-                gcs().send_text(MAV_SEVERITY_INFO, "#Movement Control");
-            }
-        }
+        // Deprecated: dynamic axis input remapping should be handled by the joystick or GCS
+        gcs().send_text(MAV_SEVERITY_ERROR, "Axis toggling deprecated. Configure at topside.");
         break;
 
     case JSButton::button_function_t::k_custom_1:
