@@ -770,8 +770,11 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _last_airspeed_TAS = MAX(airspeed.x, 0);
     }
 
-    if (have_gps()) {
-        // use GPS for positioning with any fix, even a 2D fix
+    // allow positioning from any fix (even 2D), but require an initialised
+    // Location -- some backends (notably DroneCAN GPSes during cold start)
+    // briefly publish status>=FIX_2D with lat=lng=0, which would latch
+    // (0,0) as the dead-reckoning origin.
+    if (have_gps() && _gps.location().initialised()) {
         _last_lat = _gps.location().lat;
         _last_lng = _gps.location().lng;
         _last_pos_ms = AP_HAL::millis();
