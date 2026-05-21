@@ -220,6 +220,12 @@ bool AP_Compass_Backend::register_compass(int32_t dev_id)
 void AP_Compass_Backend::set_dev_id(uint32_t dev_id)
 {
     _compass._state[Compass::StateIndex(instance)].dev_id.set_and_notify(dev_id);
+    // Persist the dev_id so that _reorder_compass_params() on the next boot
+    // can match a priority entry back to its state slot, even for compasses
+    // (e.g. DroneCAN) that were detected at runtime and never calibrated.
+    if (!_compass.suppress_devid_save) {
+        _compass._state[Compass::StateIndex(instance)].dev_id.save();
+    }
     _compass._state[Compass::StateIndex(instance)].detected_dev_id = dev_id;
 }
 
