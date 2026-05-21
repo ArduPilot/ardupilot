@@ -1,4 +1,4 @@
-name: ci
+name: Apply PR Labels
 
 # workflow_run is used intentionally here: the elevated-permission step runs
 # in the base-repo context but never checks out PR code, so it is safe.
