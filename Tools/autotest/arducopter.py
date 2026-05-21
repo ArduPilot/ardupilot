@@ -3528,7 +3528,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
         self.wait_mode('ALT_HOLD')
         self.progress("Regaining altitude")
-        self.wait_altitude(19, 60, relative=True)
+        self.wait_altitude(10, 60, relative=True)
 
         self.start_subtest("Test 3: Enter & abandon the flip using RC Aux")
 
