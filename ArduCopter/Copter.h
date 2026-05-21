@@ -971,6 +971,7 @@ private:
 
     // radio.cpp
     void default_dead_zones();
+    void save_trim();
     void init_rc_in();
     void init_rc_out();
     void read_radio();
