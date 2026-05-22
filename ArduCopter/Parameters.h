@@ -82,6 +82,7 @@ public:
 
         // GPS object
         k_param_gps,
+        k_param_fs_gps_spoof_action, // Flight switch action on GPS spoofing
 
         // Parachute object
         k_param_parachute,
@@ -478,7 +479,17 @@ public:
         LAND_EVEN_STABILIZE  = 3,
     };
 
+    // GPS spoofing failsafe definitions (FS_GPS_SPOOF_ACT parameter)
+    enum class FS_GPS_SPOOF_Action {
+        DISABLED             = 0,
+        WARN_ONLY            = 1,
+        LAND                 = 2,
+        ALTHOLD              = 3,
+        RTL                  = 4,
+    };
+
     AP_Enum<FS_EKF_Action> fs_ekf_action;
+    AP_Enum<FS_GPS_SPOOF_Action> fs_gps_spoof_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
