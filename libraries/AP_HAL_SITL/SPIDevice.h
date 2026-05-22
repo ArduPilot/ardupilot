@@ -77,6 +77,8 @@ public:
 
     AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
 
+    void _timer_tick();
+
     static SPIDesc device_table[];
     static SPIBus *buses;
 };
