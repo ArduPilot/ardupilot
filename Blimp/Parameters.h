@@ -195,6 +195,7 @@ public:
         // 220: Misc
         //
         k_param_fs_ekf_action = 220,
+        k_param_fs_gps_spoof_action,
         k_param_arming,
 
         k_param_logger = 253, // 253 - Logging Group
@@ -231,6 +232,7 @@ public:
     AP_Int8         disarm_delay;
 
     AP_Int8         fs_ekf_action;
+    AP_Int8         fs_gps_spoof_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
