@@ -387,6 +387,7 @@ singleton AP_Vehicle method has_ekf_failsafed boolean
 singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
+singleton AP_Vehicle method is_crashed boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
 singleton AP_Vehicle method register_custom_mode AP_Vehicle::custom_mode_state uint8_t'skip_check string string
 
