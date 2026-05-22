@@ -20,7 +20,7 @@ void Compass::cal_update()
     bool running = false;
     uint8_t num_compass = 0;
     uint8_t num_compass_successful = 0;
-    
+
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_calibrator[i] == nullptr) {
             continue;
@@ -54,13 +54,14 @@ void Compass::cal_update()
     if (is_calibrating()) {
         _cal_has_run = true;
         return;
-    } 
+    }
     if (!_cal_has_run) {
         // calibration hasn't started yet
         return;
     }
     if (num_compass != num_compass_successful) {
-        // only reboot if all successful
+        // A failed compass (BAD_OFFSETS, BAD_FITNESS, etc.) means the vehicle
+        // may not be airworthy — do not auto-reboot in that case.
         return;
     }
     if (!_compass_cal_autoreboot) {
@@ -330,6 +331,9 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
         case CompassCalibrator::Status::FAILED:
         case CompassCalibrator::Status::BAD_ORIENTATION:
         case CompassCalibrator::Status::BAD_RADIUS:
+        case CompassCalibrator::Status::BAD_OFFSETS:
+        case CompassCalibrator::Status::BAD_DIAG_SCALING:
+        case CompassCalibrator::Status::BAD_FITNESS:
             // ensure we don't try to send with no space available
             if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
                 return false;
@@ -370,6 +374,9 @@ bool Compass::is_calibrating() const
             case CompassCalibrator::Status::FAILED:
             case CompassCalibrator::Status::BAD_ORIENTATION:
             case CompassCalibrator::Status::BAD_RADIUS:
+            case CompassCalibrator::Status::BAD_OFFSETS:
+            case CompassCalibrator::Status::BAD_DIAG_SCALING:
+            case CompassCalibrator::Status::BAD_FITNESS:
                 // this backend isn't calibrating,
                 // but maybe the next one is:
                 continue;
