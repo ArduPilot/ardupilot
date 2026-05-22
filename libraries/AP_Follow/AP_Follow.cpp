@@ -281,7 +281,7 @@ void AP_Follow::update_estimates()
                                0.0, _accel_max_ne_mss, _jerk_max_ne_msss, e_dt, false);
 
         // apply vertical shaping to refine the Z estimate toward the projected
-        // target state (jerk-limited, tuned via FOLL__ACCEL_D / FOLL__JERK_D)
+        // target state (jerk-limited, tuned via FOLL_ACCEL_D / FOLL_JERK_D)
         shape_pos_vel_accel(_target_pos_ned_m.z + delta_pos_m.z, _target_vel_ned_ms.z + delta_vel_ms.z, _target_accel_ned_mss.z,
                             _estimate_pos_ned_m.z, _estimate_vel_ned_ms.z, _estimate_accel_ned_mss.z,
                             0.0, 0.0, -_accel_max_d_mss, _accel_max_d_mss, _jerk_max_d_msss, e_dt, false);
