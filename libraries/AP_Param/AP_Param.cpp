@@ -2460,6 +2460,10 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
 
     num_param_overrides = num_defaults;
 
+#if AP_PARAM_DEFAULTS_ENABLED
+    purge_defaults_list_overrides();
+#endif
+
     return true;
 }
 #endif // AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
@@ -2589,6 +2593,10 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
         }
     }
     num_param_overrides = num_defaults;
+
+#if AP_PARAM_DEFAULTS_ENABLED
+    purge_defaults_list_overrides();
+#endif
 }
 #endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
 
@@ -2900,6 +2908,36 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
         }
     }
 }
+
+/*
+  Remove default_list entries that are in param_overrides.  Constructors may
+  call add_default() before param_overrides is populated, leaving stale nodes.
+ */
+#if AP_PARAM_DEFAULTS_ENABLED
+void AP_Param::purge_defaults_list_overrides(void)
+{
+    defaults_list **prev = &default_list;
+    defaults_list *item = default_list;
+    while (item != nullptr) {
+        bool found = false;
+        for (uint16_t i = 0; i < num_param_overrides; i++) {
+            if (item->ap == param_overrides[i].object_ptr) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            *prev = item->next;
+            defaults_list *to_delete = item;
+            item = item->next;
+            delete to_delete;
+        } else {
+            prev = &item->next;
+            item = item->next;
+        }
+    }
+}
+#endif // AP_PARAM_DEFAULTS_ENABLED
 
 void AP_Param::add_default(AP_Param *ap, float v)
 {
