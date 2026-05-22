@@ -15,17 +15,10 @@
  # define RANGEFINDER_TILT_CORRECTION 1
 #endif
 
-#ifndef RANGEFINDER_GLITCH_NUM_SAMPLES
- # define RANGEFINDER_GLITCH_NUM_SAMPLES  3 // number of rangefinder glitches in a row to take new reading
-#endif
-
-#ifndef RANGEFINDER_GLITCH_ALT_CM
- # define RANGEFINDER_GLITCH_ALT_M 2.00     // amount of rangefinder change to be considered a glitch
-#endif
-
 #ifndef RANGEFINDER_HEALTH_MIN
  # define RANGEFINDER_HEALTH_MIN 3          // number of good reads that indicates a healthy rangefinder
 #endif
+
 
 void AP_SurfaceDistance::update()
 {
@@ -71,23 +64,23 @@ void AP_SurfaceDistance::update()
     // tilt corrected but unfiltered, not glitch protected alt
     alt_m = tilt_correction * rangefinder->distance_orient(rotation);
 
-    // Glitch Handling. Rangefinder readings more than RANGEFINDER_GLITCH_ALT_M from the last good reading
+    // Glitch Handling. Rangefinder readings more than glitch_alt_m from the last good reading
     // are considered a glitch and glitch_count becomes non-zero
     // glitches clear after RANGEFINDER_GLITCH_NUM_SAMPLES samples in a row.
     // glitch_cleared_ms is set so surface tracking (or other consumers) can trigger a target reset
     const float glitch_m = alt_m - alt_glitch_protected_m;
     bool reset_terrain = false;
-    if (glitch_m >= RANGEFINDER_GLITCH_ALT_M) {
+    if ((glitch_m >= glitch_alt_m) && (glitch_alt_m > 0)) {
         glitch_count = MAX(glitch_count+1, 1);
         status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
-    } else if (glitch_m <= -RANGEFINDER_GLITCH_ALT_M) {
+    } else if ((glitch_m <= -glitch_alt_m) && (glitch_alt_m > 0)) {
         glitch_count = MIN(glitch_count-1, -1);
         status |= (uint8_t)Surface_Distance_Status::Glitch_Detected;
     } else {
         glitch_count = 0;
         alt_glitch_protected_m = alt_m;
     }
-    if (abs(glitch_count) >= RANGEFINDER_GLITCH_NUM_SAMPLES) {
+    if ((abs(glitch_count) >= glitch_num_samples) && (glitch_num_samples > 0)) {
         // clear glitch and record time so consumers (i.e. surface tracking) can reset their target altitudes
         glitch_count = 0;
         alt_glitch_protected_m = alt_m;
