@@ -15152,6 +15152,54 @@ switch value'''
 
         self.progress(f"param.pck: {len(pdata.params)} params OK")
 
+    def MAVFTPBadReadOffset(self):
+        '''ask for a very large offset'''
+
+        # reset sessions
+        op = FTP_OP(
+            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to ResetSessions")
+        seq = reply.seq
+
+        # open file read-only
+        path = "@SYS/storage.bin"
+        path_bytes = bytearray(path.encode('utf-8')) + bytearray([0])
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_OpenFileRO,
+            size=len(path_bytes), req_opcode=0, burst_complete=0,
+            offset=0, payload=path_bytes,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to OpenFileRO")
+        if reply.opcode != mavftp_op.OP_Ack:
+            raise NotAchievedException(f"OpenFileRO failed: opcode={reply.opcode}")
+        seq = reply.seq
+
+        # send burst read request
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_BurstReadFile,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=4294967294, payload=None,
+        )
+        self.ftp_send(op)
+
+        reply = self.ftp_recv(timeout=5)
+
+        if reply is None:
+            raise NotAchievedException("No reply to BurstReadFile with bad offset")
+        if reply.opcode != mavftp_op.OP_Nack:
+            raise NotAchievedException(f"Expected Nack, got opcode={reply.opcode}")
+
+        self.progress("if we got to here we didn't die :-)")
+
     def write_content_to_filepath(self, content, filepath):
         '''write biunary content to filepath'''
         if not isinstance(content, bytes):
