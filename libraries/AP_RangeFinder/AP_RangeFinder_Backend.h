@@ -62,6 +62,17 @@ public:
     RangeFinder::Status status() const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }
 
+    // should return true if max_distance has been filled in to
+    // reflect a reasonable default max distance (in metres)
+    virtual bool max_distance_param_default(float &distance) {
+        return false;
+    }
+    virtual bool min_distance_param_default(float &distance) {
+        // should return true if max_distance has been filled in to
+        // reflect a reasonable default max distance (in metres)
+        return false;
+    }
+
     // true if sensor is returning data
     bool has_data() const;
 
