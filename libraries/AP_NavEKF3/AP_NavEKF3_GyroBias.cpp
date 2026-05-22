@@ -7,8 +7,7 @@
 void NavEKF3_core::resetGyroBias(void)
 {
     stateStruct.gyro_bias.zero();
-    zeroRows(P,10,12);
-    zeroCols(P,10,12);
+    zeroStatesVarCov(10, 12);
 
     P[10][10] = sq(radians(0.5f * dtIMUavg));
     P[11][11] = P[10][10];
