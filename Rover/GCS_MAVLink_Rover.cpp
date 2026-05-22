@@ -572,6 +572,9 @@ void GCS_MAVLINK_Rover::handle_manual_control_axes(const mavlink_manual_control_
 
 void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
 {
+
+    bool doThrottleAndHeading = false;
+
     // decode packet
     mavlink_set_attitude_target_t packet;
     mavlink_msg_set_attitude_target_decode(&msg, &packet);
@@ -583,7 +586,12 @@ void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
 
     // ensure type_mask specifies to use thrust
     if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_THROTTLE_IGNORE) != 0) {
-        return;
+
+        if(rover.mode_guided.closed_loop_heading_only()){
+            doThrottleAndHeading = true;
+        }else{
+            return;
+        }
     }
 
     // convert thrust to ground speed
@@ -594,7 +602,12 @@ void GCS_MAVLINK_Rover::handle_set_attitude_target(const mavlink_message_t &msg)
     if ((packet.type_mask & MAVLINK_SET_ATT_TYPE_MASK_YAW_RATE_IGNORE) != 0) {
         // convert quaternion to heading
         float target_heading_cd = degrees(Quaternion(packet.q[0], packet.q[1], packet.q[2], packet.q[3]).get_euler_yaw()) * 100.0f;
-        rover.mode_guided.set_desired_heading_and_speed(target_heading_cd, target_speed);
+
+        if (doThrottleAndHeading) {//send heading only (throttle is from RC)
+            rover.mode_guided.set_desired_heading(target_heading_cd);
+        }else{//nominal case set speed and heading
+            rover.mode_guided.set_desired_heading_and_speed(target_heading_cd, target_speed);
+        }
     } else {
         // use body_yaw_rate field
         rover.mode_guided.set_desired_turn_rate_and_speed((RAD_TO_DEG * packet.body_yaw_rate) * 100.0f, target_speed);
