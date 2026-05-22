@@ -97,6 +97,28 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
 // would head in an autonomous mode
 bool GCS_MAVLINK_Sub::get_target_location(Location &loc) const
 {
+    // in Guided mode, wp_nav is only used by the Guided_WP submode; the
+    // other submodes keep their own targets, so dispatch on guided_mode
+    if (sub.flightmode == &sub.mode_guided) {
+        switch (sub.guided_mode) {
+        case Guided_WP:
+            return sub.wp_nav.is_active() && sub.wp_nav.get_wp_destination_loc(loc);
+        case Guided_PosVel: {
+            Vector3f pos_neu_cm;
+            if (!sub.mode_guided.get_posvel_target_NEU_cm(pos_neu_cm)) {
+                return false;
+            }
+            loc = Location(pos_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+            return true;
+        }
+        case Guided_Velocity:
+        case Guided_Angle:
+            // no fixed position target to report
+            return false;
+        }
+    }
+
+    // for non-guided modes (Auto, etc.) fall back to wp_nav as before
     return sub.wp_nav.is_active() && sub.wp_nav.get_wp_destination_loc(loc);
 }
 

@@ -274,6 +274,9 @@ public:
     void guided_set_velocity(const Vector3f& velocity);
     void guided_set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
+    // returns the current Guided_PosVel position target (NEU cm relative to
+    // EKF origin) in pos, or false if not in Guided_PosVel submode
+    bool get_posvel_target_NEU_cm(Vector3f &pos) const;
     float get_auto_heading();
     void guided_limit_clear();
     void set_auto_yaw_mode(autopilot_yaw_mode yaw_mode);
