@@ -168,7 +168,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 5
     // @Units: m/s/s
     // @User: Advanced
-    AP_GROUPINFO("_ACCEL_NE", 12, AP_Follow, _accel_max_ne_mss, 2.5),
+    AP_GROUPINFO("_ACCEL_NE", 12, AP_Follow, _accel_max_ne_mss, 5.0),
 
     // @Param: _JERK_NE
     // @DisplayName: Jerk limit for the horizontal kinematic input shaping
@@ -176,7 +176,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 20
     // @Units: m/s/s/s
     // @User: Advanced
-    AP_GROUPINFO("_JERK_NE", 13, AP_Follow, _jerk_max_ne_msss, 5.0),
+    AP_GROUPINFO("_JERK_NE", 13, AP_Follow, _jerk_max_ne_msss, 10.0),
 
     // @Param: _ACCEL_D
     // @DisplayName: Acceleration limit for the vertical kinematic input shaping
@@ -184,7 +184,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 2.5
     // @Units: m/s/s
     // @User: Advanced
-    AP_GROUPINFO("_ACCEL_D", 14, AP_Follow, _accel_max_d_mss, 2.5),
+    AP_GROUPINFO("_ACCEL_D", 14, AP_Follow, _accel_max_d_mss, 5.0),
 
     // @Param: _JERK_D
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
@@ -192,7 +192,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 5
     // @Units: m/s/s/s
     // @User: Advanced
-    AP_GROUPINFO("_JERK_D", 15, AP_Follow, _jerk_max_d_msss, 5.0),
+    AP_GROUPINFO("_JERK_D", 15, AP_Follow, _jerk_max_d_msss, 10.0),
 
     // @Param: _ACCEL_H
     // @DisplayName: Angular acceleration limit for the heading kinematic input shaping
@@ -200,7 +200,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 90
     // @Units: deg/s/s
     // @User: Advanced
-    AP_GROUPINFO("_ACCEL_H", 16, AP_Follow, _accel_max_h_degss, 90.0),
+    AP_GROUPINFO("_ACCEL_H", 16, AP_Follow, _accel_max_h_degss, 360.0),
 
     // @Param: _JERK_H
     // @DisplayName: Angular jerk limit for the heading kinematic input shaping
@@ -208,7 +208,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 360
     // @Units: deg/s/s/s
     // @User: Advanced
-    AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 360.0),
+    AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 720.0),
 
     // @Param: _TIMEOUT
     // @DisplayName: Follow timeout
