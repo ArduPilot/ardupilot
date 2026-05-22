@@ -62,13 +62,18 @@ _SES_FACTORS = [
 
 
 def _ses_max_output(channel_type: int) -> int:
-    """Maximum positive SES output for a given channel type (precomputed for µs scaling)."""
+    """Maximum positive SES output for a given channel type.
+
+    SES_UnpackChannels convention: full deflection (±512 µs) corresponds to
+    raw_mag = sign_bit/2 = 1 << (nb_bits-2), not mag_mask.  Values above
+    half_mag are clamped to full deflection by the MIN() in ses_decode_channels.
+    """
     nb_bits = channel_type & 0xF
     if nb_bits < 2:
         return 1
     factor = _SES_FACTORS[channel_type] if channel_type < 32 else 0
-    max_mag = (1 << (nb_bits - 1)) - 1
-    return max(1, (max_mag * factor + (1 << 15)) >> 16)
+    half_mag = 1 << (nb_bits - 2)
+    return max(1, (half_mag * factor + (1 << 15)) >> 16)
 
 
 def _ses_read_bits(payload: bytes, bit_pos: int, nb_bits: int) -> int:

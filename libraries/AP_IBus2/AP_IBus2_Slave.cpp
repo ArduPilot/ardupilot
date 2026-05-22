@@ -296,7 +296,11 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
 
         const uint32_t factor  = (ct < ARRAY_SIZE(ses_factors)) ? ses_factors[ct] : 0U;
         const uint64_t ses     = ((uint64_t)raw * factor + (1U << 15)) >> 16;
-        const uint64_t max_ses = ((uint64_t)mag_mask * factor + (1U << 15)) >> 16;
+        // SES_UnpackChannels convention: full deflection (±512 µs) corresponds to
+        // raw_mag = sign_bit/2, not mag_mask.  Use half_mag as the denominator so
+        // that raw_mag values above sign_bit/2 are clamped to full deflection.
+        const uint32_t half_mag = sign_bit >> 1U;
+        const uint64_t max_ses = ((uint64_t)half_mag * factor + (1U << 15)) >> 16;
         const uint32_t ms      = MAX(1U, (uint32_t)max_ses);
         const uint32_t sv      = (uint32_t)MIN(ses, (uint64_t)ms);
         const uint32_t offset  = sv * 512U / ms;

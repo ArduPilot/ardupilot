@@ -13706,7 +13706,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # 1500 µs (centre) is exact through SES encode/decode.
         self.set_rc(1, 1500)
         self.assert_rc_channel_value(1, 1500)
-        # ch3 carries throttle-low (1000 µs); SES quantises it to 1001 µs.
+        # ch3 carries throttle-low (1000 µs); round-trips exactly via SES.
         ch3 = self.get_rc_channel_value(3, timeout=2)
         if abs(ch3 - 1000) > 5:
             raise NotAchievedException("ch3 expected ~1000 got %u" % ch3)
@@ -13722,12 +13722,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("IBUS2:", timeout=10, check_context=True)
 
         # Use values that round-trip exactly through SES encode/decode.
-        # 1550 (+50) and 1450 (-50) both map to raw_mag=100, which is not a
-        # failsafe sentinel (1024 or 1025 in 11-bit space).
-        self.set_rc(1, 1550)
-        self.assert_rc_channel_value(1, 1550)
-        self.set_rc(4, 1450)
-        self.assert_rc_channel_value(4, 1450)
+        # abs_offset = 200 µs maps to raw_mag = 200 which decodes back exactly
+        # (offset=200 is one of the exact points; offset=50 is not).
+        self.set_rc(1, 1700)
+        self.assert_rc_channel_value(1, 1700)
+        self.set_rc(4, 1300)
+        self.assert_rc_channel_value(4, 1300)
 
         # Return to centre.
         self.set_rc(1, 1500)
@@ -13735,19 +13735,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(4, 1500)
         self.assert_rc_channel_value(4, 1500)
 
-        # Exercise the negative-offset boundary that previously aliased to the
-        # stop-failsafe sentinel (raw = 1025).  988 µs is the FlySky trim
-        # minimum; the encoder clamp now saturates it to ~989 µs rather than
-        # being silently swallowed.  Push the value through rc_queue directly
-        # because set_rc() loops until RC_CHANNELS reports an exact match,
-        # which 988 µs cannot achieve through SES quantisation.
-        self.rc_queue.put({1: 988})
-        self.delay_sim_time(0.5)
-        ch1 = self.get_rc_channel_value(1, timeout=2)
-        if abs(ch1 - 989) > 2:
-            raise NotAchievedException("ch1 expected ~989 (988µs clamped) got %u" % ch1)
+        # Negative boundary: 988 µs is the FlySky trim minimum.  With the
+        # corrected SES denominator (half_mag = 512) the encoder maps 988 µs to
+        # raw_mag = 512 which decodes back to exactly 988 µs.
+        self.set_rc(1, 988)
+        self.assert_rc_channel_value(1, 988)
 
-        # Positive boundary still round-trips exactly through SES.
+        # Positive boundary.
         self.set_rc(1, 2012)
         self.assert_rc_channel_value(1, 2012)
 
