@@ -34,6 +34,7 @@
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_Volz.h"
 #include "SIM_I2C.h"
+#include "SIM_SPI.h"
 #include "SIM_Buzzer.h"
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
@@ -174,6 +175,7 @@ public:
     void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
     void set_precland(SIM_Precland *_precland);
     void set_i2c(class I2C *_i2c) { i2c = _i2c; }
+    void set_spi(class SPI *_spi) { spi = _spi; }
 #if AP_TEST_DRONECAN_DRIVERS
     void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
 #endif
@@ -422,6 +424,7 @@ private:
     IntelligentEnergy24 *ie24;
     SIM_Precland *precland;
     class I2C *i2c;
+    class SPI *spi;
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice *dronecan;
 #endif
