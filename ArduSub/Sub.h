@@ -232,6 +232,7 @@ private:
         uint8_t internal_temperature : 1; // true if temperature is over threshold
         uint8_t crash                : 1; // true if we are crashed
         uint8_t sensor_health        : 1; // true if at least one sensor has triggered a failsafe (currently only used for depth in depth enabled modes)
+        uint8_t gps_spoof            : 1; // true if GPS spoofing failsafe has occurred
     } failsafe;
 
     bool any_failsafe_triggered() const {
@@ -246,6 +247,7 @@ private:
             || failsafe.internal_temperature
             || failsafe.crash
             || failsafe.sensor_health
+            || failsafe.gps_spoof
         );
     }
 
@@ -449,6 +451,7 @@ private:
     void failsafe_ekf_check(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     void failsafe_gcs_check();
+    void failsafe_gps_spoof_check();
     void failsafe_pilot_input_check(void);
     void set_neutral_controls(void);
     void failsafe_terrain_check();
