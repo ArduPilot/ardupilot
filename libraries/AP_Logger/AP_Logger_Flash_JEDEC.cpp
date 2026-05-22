@@ -155,6 +155,7 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
     case JEDEC_ID_FMSH_FM25Q128A:
     case JEDEC_ID_CYPRESS_S25FL128L:
     case JEDEC_ID_ZBIT_ZB25VQ128:   
+    case JEDEC_ID_GIGA_GD25Q128E:
         blocks = 256;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
