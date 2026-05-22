@@ -2882,6 +2882,10 @@ function vehicle:reboot(hold_in_bootloader) end
 ---@return boolean
 function vehicle:is_taking_off() end
 
+-- Returns true if the vehicle's crash detection has triggered
+---@return boolean
+function vehicle:is_crashed() end
+
 -- desc
 ---@return boolean
 function vehicle:is_landing() end
