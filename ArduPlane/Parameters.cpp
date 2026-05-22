@@ -449,6 +449,13 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(fs_action_long,         "FS_LONG_ACTN",   FS_ACTION_LONG_CONTINUE),
 
+    // @Param: FS_GPS_SPOOF_ACT
+    // @DisplayName: GPS Spoofing Failsafe Action
+    // @Description: Controls the action taken when GPS spoofing is detected
+    // @Values: 0:Disabled/NoAction,1:Warn only,2:Circle,3:RTL
+    // @User: Advanced
+    GSCALAR(fs_gps_spoof_action,        "FS_GPS_SPOOF_ACT",   1),
+
     // @Param: FS_LONG_TIMEOUT
     // @DisplayName: Long failsafe timeout
     // @Description: The time in seconds that a failsafe condition has to persist before a long failsafe event will occur. This defaults to 5 seconds.
