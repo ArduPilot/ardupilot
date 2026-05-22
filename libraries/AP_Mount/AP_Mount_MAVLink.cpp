@@ -5,6 +5,7 @@
 #include "AP_Mount_MAVLink.h"
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Scheduler/AP_Scheduler.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
@@ -198,8 +199,16 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
     if (_link == nullptr) {
         return false;
     }
+
+    // clamp the request to at most half the main loop rate so that
+    // set_message_interval() (which rejects rates faster than 0.8 * loop rate)
+    // does not refuse the request on vehicles with a low SCHED_LOOP_RATE.
+    const uint32_t interval_us = MAX<uint32_t>(AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US,
+                                               2 * AP::scheduler().get_loop_period_us());
+
     // send AUTOPILOT_STATE_FOR_GIMBAL_DEVICE
-    const MAV_RESULT res = _link->set_message_interval(MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US);
+    // set_message_interval() takes int32_t; the clamped interval easily fits
+    const MAV_RESULT res = _link->set_message_interval(MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, static_cast<int32_t>(interval_us));
 
     // return true on success
     return (res == MAV_RESULT_ACCEPTED);
