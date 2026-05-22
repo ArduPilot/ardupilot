@@ -26,11 +26,11 @@ env USE_ALT_RAM_MAP 1
 FLASH_SIZE_KB 2048
 
 
-# order of UARTs (and USB) no IO MCU
+# order of UARTs (and USB)
+# USART6 is the RC input on carriers without an IO MCU. For carriers
+# with an IO MCU on USART6 (e.g. ARK Jetson PAB V3 Carrier, Holybro
+# Pixhawk6X carrier), build the ARKV6X-IOMCU board instead.
 SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 USART6 OTG2
-
-# order of UARTs (and USB) with IO MCU
-# SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3 OTG2
 
 # debug console
 STDOUT_SERIAL SD3
@@ -82,13 +82,10 @@ PH14 UART4_RX UART4
 PD8 USART3_TX USART3
 PD9 USART3_RX USART3
 
-# used for RC SBUS
+# used for RC SBUS (carriers without an IO MCU)
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
 define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_RCIN
-
-# Uncomment this line for carriers boards with an IO MCU
-# IOMCU_UART USART6
 
 # Ethernet
 PB11 ETH_RMII_TX_EN     ETH1
@@ -335,8 +332,6 @@ DMA_PRIORITY SDMMC* USART6* ADC* UART* USART* SPI* TIM*
 
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
-
-ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 
 # enable DFU reboot for installing bootloader
 # note that if firmware is build with --secure-bl then DFU is
