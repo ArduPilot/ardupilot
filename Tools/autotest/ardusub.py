@@ -1178,6 +1178,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def TSYS01(self):
         '''test for the TSYS01 temperature sensor driver'''
+        # The TSYS01 simulator returns ISA air temperature at the simulated
+        # altitude plus a 25 °C board-heating offset, giving ~40 °C at sea level.
         self.temperature_sensor_test({
             'TEMP1_TYPE': 1,
             'TEMP1_BUS': 1,
@@ -1186,6 +1188,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def TSYS03(self):
         '''test for the TSYS03 temperature sensor driver'''
+        # The TSYS03 simulator returns the simulated battery temperature.
+        # The Sub vehicle does not call battery.setup() so resistance_ohm is
+        # zero, no I²R heating occurs, and the battery stays at its default 0 °C.
         self.temperature_sensor_test({
             'TEMP1_TYPE': 4,
             'TEMP1_BUS': 2,
@@ -1194,6 +1199,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def MCP9600(self):
         '''test for the MCP9600 thermocouple temperature sensor driver'''
+        # The MCP9600 simulator has a broken temperature encoding formula
+        # (degrees() radians-to-degrees conversion inflates the oscillation term
+        # to ±916, which wraps through uint16_t and centres near 0 °C).
         self.temperature_sensor_test({
             'TEMP1_TYPE': 2,
             'TEMP1_BUS': 0,
