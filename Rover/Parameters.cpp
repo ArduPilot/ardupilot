@@ -634,6 +634,42 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: mode_circle.cpp
     AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
 
+    // @Param: CRASH_THR_MIN
+    // @DisplayName: Crash throttle minimum
+    // @Description: Throttle above this threshold accompanied by a low speed condition triggers crash detection. Zero disables velocity and turn rate checks.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_THR_MIN", 58, ParametersG2, crash_thr_min, 5),
+
+    // @Param: CRASH_VEL_MIN
+    // @DisplayName: Crash velocity minimum
+    // @Description: Velocity below this threshold with accompanying throttle demand triggers crash detection. Zero disables velocity check.
+    // @Units: m/s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_VEL_MIN", 59, ParametersG2, crash_vel_min, 0.08),
+
+    // @Param: CRASH_TRAT_MIN
+    // @DisplayName: Crash turn rate minimum
+    // @Description: Turn rate below this threshold with accompanying throttle demand triggers crash detection. Zero disables turn rate check.
+    // @Units: deg/s
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_TRAT_MIN", 60, ParametersG2, crash_turn_rate_min, 10.0),
+
+    // @Param: CRASH_TIMEOUT
+    // @DisplayName: Crash timeout
+    // @Description: Crash conditions persisting for this duration trigger crash detection.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_TIMEOUT", 61, ParametersG2, crash_timeout, 2.0),
+
     AP_GROUPEND
 };
 
