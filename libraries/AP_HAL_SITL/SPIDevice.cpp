@@ -42,7 +42,7 @@ public:
     int ioctl(uint8_t cs_pin, uint8_t ioctl_number, void *data) {
         return _ioctl(cs_pin, ioctl_number, data);
     }
-    // void _timer_tick(); // in lieu of a thread-per-bus
+    void _timer_tick(); // in lieu of a thread-per-bus
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb);
 
     class SPIBus *next;
@@ -87,17 +87,17 @@ AP_HAL::Device::PeriodicHandle SPIBus::register_periodic_callback(uint32_t perio
     return callback;
 }
 
-// void SPIBus::_timer_tick()
-// {
-//     const uint64_t now = AP_HAL::micros64();
-//     for (struct callback_info *ci = callbacks; ci != nullptr; ci = ci->next) {
-//         if (ci->next_usec < now) {
-//             WITH_SEMAPHORE(sem);
-//             ci->cb();
-//             ci->next_usec += ci->period_usec;
-//         }
-//     }
-// }
+void SPIBus::_timer_tick()
+{
+    const uint64_t now = AP_HAL::micros64();
+    for (struct callback_info *ci = callbacks; ci != nullptr; ci = ci->next) {
+        if (ci->next_usec < now) {
+            WITH_SEMAPHORE(sem);
+            ci->cb();
+            ci->next_usec += ci->period_usec;
+        }
+    }
+}
 
 /*
  * SPIDeviceManager
@@ -114,13 +114,16 @@ static const struct SPIDriverInfo {
     // uint8_t dma_channel_rx;
     // uint8_t dma_channel_tx;
 } spi_devices[] = {
-    { 0, },
+    { 0, },  // bus 0
+    { 1, },  // bus 1
+    { 2, },  // bus 2
 };
 
 // name, bus, cs_pin
 SPIDesc SPIDeviceManager::device_table[] = {
     { "ramtron", 0, 0 },
-    { "dataflash", 1, 0}
+    { "dataflash", 1, 0},
+    { "max31865", 2, 0 },
 };
 
 AP_HAL::SPIDevice *
@@ -163,12 +166,12 @@ SPIDeviceManager::get_device_ptr(const char *name)
     return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
-// void SPIDeviceManager::_timer_tick()
-// {
-//     for (auto &bus : buses) {
-//         bus._timer_tick();
-//     }
-// }
+void SPIDeviceManager::_timer_tick()
+{
+    for (SPIBus *bus = buses; bus; bus = (SPIBus *)bus->next) {
+        bus->_timer_tick();
+    }
+}
 
 /*
  * SPIDevice

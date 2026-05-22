@@ -124,6 +124,8 @@ void SITL_State::init(int argc, char * const argv[]) {
 
     _sitl->i2c_sim.init();
     sitl_model->set_i2c(&_sitl->i2c_sim);
+    _sitl->spi_sim.init();
+    sitl_model->set_spi(&_sitl->spi_sim);
 }
 
 void SITL_State::wait_clock(uint64_t wait_time_usec)
