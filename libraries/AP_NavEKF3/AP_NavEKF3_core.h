@@ -48,9 +48,6 @@
 
 #define earthRate 0.000072921f // earth rotation rate (rad/sec)
 
-// maximum allowed gyro bias (rad/sec)
-#define GYRO_BIAS_LIMIT 0.5f
-
 // initial accel bias uncertainty as a fraction of the state limit
 #define ACCEL_BIAS_LIM_SCALER 0.2f
 
@@ -488,7 +485,13 @@ public:
     // failure message
     // requires_position should be true if horizontal position configuration should be checked
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
-    
+
+    // clear the statesInitialised status which allows a reset and bootstrap alignment
+    void clearStatesInitialised(void) { statesInitialised = false; }
+
+    // return true if states have been initialised by a bootstrap alignment
+    bool isStatesInitialised(void) const { return statesInitialised; }
+
 private:
     EKFGSF_yaw *yawEstimator;
     AP_DAL &dal;
@@ -923,6 +926,11 @@ private:
     // Estimate terrain offset using a single state EKF
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
+    void UpdateAglKf();
+#endif
+
 #if EK3_FEATURE_OPTFLOW_FUSION
     // fuse optical flow measurements into the main filter
     // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
@@ -951,11 +959,6 @@ private:
 
     // Control reset of yaw and magnetic field states
     void controlMagYawReset();
-
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calculated by the filter will be relative to this location
-    // returns false if the origin has already been set
-    bool setOrigin(const Location &loc);
 
     // Assess GPS data quality and set gpsGoodToAlign
     void calcGpsGoodToAlign(void);
@@ -1307,6 +1310,18 @@ private:
 #if EK3_FEATURE_OPTFLOW_FUSION
     ftype Popt;                     // Optical flow terrain height state covariance (m^2)
 #endif
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // ---- 2-state AGL Kalman Filter ----
+    // Uses bias-corrected IMU delta-velocity for prediction and downward rangefinder
+    // as measurement, decoupled from the main filter's vertical position state.
+    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up)]
+    ftype aglKfH;                   // AGL height estimate (m, positive up from ground)
+    ftype aglKfV;                   // AGL velocity estimate (m/s, positive = climbing)
+    ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
+    bool  aglKfValid;               // true when RF has been fused within the last 5 s
+    uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
+#endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
     ftype prevPosE;                 // east position at last measurement
@@ -1597,6 +1612,9 @@ private:
 
     // vehicle specific initial gyro bias uncertainty
     ftype InitialGyroBiasUncertainty(void) const;
+
+    // get the gyro bias limit for this core's IMU
+    ftype getGyroBiasLimit(void) const;
 
     /*
       learn magnetometer biases from GPS yaw. Return true if the

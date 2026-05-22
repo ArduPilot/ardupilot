@@ -284,6 +284,18 @@ void NavEKF3_core::InitialiseVariables()
     gpsHgtAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
     rngOnGnd = 0.05f;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // 2-state AGL KF initialisation
+    // Start with generous uncertainty; the first valid RF measurement will hard-reset the state
+    aglKfH = rngOnGnd;      // assume sitting on ground at minimum range
+    aglKfV = 0.0f;
+    aglKfP[0][0] = 25.0f;   // 5 m initial std-dev in height
+    aglKfP[0][1] = 0.0f;
+    aglKfP[1][0] = 0.0f;
+    aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
+    aglKfValid = false;
+    lastAglRngFuseTime_ms = 0;
+#endif
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
     tiltErrorVariance = sq(M_2PI);
@@ -562,6 +574,11 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
         inactiveBias[i].gyro_bias.zero();
         inactiveBias[i].accel_bias.zero();
+    }
+
+    // restore the navigation origin from the public origin if possible:
+    if (public_origin.initialised()) {
+        setOriginLLH(public_origin);
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initialised",(unsigned)imu_index);
@@ -1754,19 +1771,6 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         }
     }
 
-    // inactive delta velocity bias states have all covariances zeroed to prevent
-    // interacton with other states
-    if (!inhibitDelVelBiasStates) {
-        for (uint8_t index=0; index<3; index++) {
-            const uint8_t stateIndex = index + 13;
-            if (dvelBiasAxisInhibit[index]) {
-                zeroRows(nextP,stateIndex,stateIndex);
-                zeroCols(nextP,stateIndex,stateIndex);
-                nextP[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
-            }
-        }
-    }
-
     // if the total position variance exceeds 1e4 (100m), then stop covariance
     // growth by setting the predicted to the previous values
     // This prevent an ill conditioned matrix from occurring for long periods
@@ -1790,6 +1794,19 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         // copy off diagonals
         for (uint8_t column = 0 ; column < row; column++) {
             P[row][column] = P[column][row] = nextP[column][row];
+        }
+    }
+
+    // inactive delta velocity bias states have all covariances zeroed to
+    // prevent interaction with other states
+    if (!inhibitDelVelBiasStates) {
+        for (uint8_t index=0; index<3; index++) {
+            const uint8_t stateIndex = index + 13;
+            if (dvelBiasAxisInhibit[index]) {
+                zeroRows(P, stateIndex, stateIndex);
+                zeroCols(P, stateIndex, stateIndex);
+                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+            }
         }
     }
 
@@ -2075,7 +2092,8 @@ void NavEKF3_core::ConstrainStates()
     // height limit covers home alt on everest through to home alt at SL and balloon drop
     stateStruct.position.z = constrain_ftype(stateStruct.position.z,-4.0e4f,1.0e4f);
     // gyro bias limit (this needs to be set based on manufacturers specs)
-    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-GYRO_BIAS_LIMIT*dtEkfAvg,GYRO_BIAS_LIMIT*dtEkfAvg);
+    const ftype gyro_bias_limit = getGyroBiasLimit();
+    for (uint8_t i=10; i<=12; i++) statesArray[i] = constrain_ftype(statesArray[i],-gyro_bias_limit*dtEkfAvg,gyro_bias_limit*dtEkfAvg);
     // the accelerometer bias limit is controlled by a user adjustable parameter
     for (uint8_t i=13; i<=15; i++) statesArray[i] = constrain_ftype(statesArray[i],-frontend->_accBiasLim*dtEkfAvg,frontend->_accBiasLim*dtEkfAvg);
     // earth magnetic field limit

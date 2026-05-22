@@ -51,6 +51,8 @@ public:
 
     CLASS_NO_COPY(AP_AHRS_SIM);
 
+    const char *shortname() const override { return "SIM"; }
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override {};

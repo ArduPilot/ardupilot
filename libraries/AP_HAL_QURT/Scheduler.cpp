@@ -125,7 +125,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
      */
     thread->set_auto_free(true);
 
-    DEV_PRINTF("Starting thread %s: Priority %u\n", name, thread_priority);
+    HAP_PRINTF("Starting thread %s: Priority %u\n", name, thread_priority);
 
     if (!thread->start(name, SCHED_FIFO, thread_priority)) {
         delete thread;

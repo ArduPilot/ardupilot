@@ -718,16 +718,25 @@ void AP_MotorsMulticopter::output_logic()
                 break;
             }
 
-            // constrain ramp value and update mode
-            if (_spin_up_ratio >= 1.0f) {
+            // wait for spin up to complete
+            if (_spin_up_ratio < 1.0f) {
+                _spin_up_complete = false;
+            } else {
                 _spin_up_ratio = 1.0f;
-                if (!get_spoolup_block()) {
-                    // only advance from ground idle when pre-takeoff checks have cleared
-                    // get_spoolup_block() is true while takeoff_check() is blocking spool-up
-                    // (e.g. esc telemetry inactive, rpm not in range, cpu overload, or disarmed)
-                    // must be false to proceed
-                    _spool_state = SpoolState::SPOOLING_UP;
+                if (!_spin_up_complete) {
+                    // Spin up is complete.
+                    // Enable spoolup block to hold the aircraft in GROUND_IDLE.
+                    // Main code should start checks when the block is enabled and remove the lock when ready.
+                    _spin_up_complete = true;
+                    set_spoolup_block(true);
                 }
+            }
+            if (_spin_up_complete && !get_spoolup_block()) {
+                // only advance from ground idle when pre-takeoff checks have cleared
+                // get_spoolup_block() is true while takeoff_check() is blocking spool-up
+                // (e.g. esc telemetry inactive, rpm not in range, cpu overload, or disarmed)
+                // must be false to proceed
+                _spool_state = SpoolState::SPOOLING_UP;
             }
             break;
         }

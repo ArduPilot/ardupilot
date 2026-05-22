@@ -217,7 +217,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         self.send_statustext(short_message_text)
         self.send_statustext(long_message_text)
 
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="statustext to be logged")
         dfreader = self.dfreader_for_current_onboard_log()
         self.reboot_sitl()
 

@@ -588,6 +588,12 @@ def do_build(opts, frame_options):
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
 
+    # Per-frame extra configure args from vehicleinfo.json (e.g. quadplane-PPP
+    # implies --enable-PPP so users don't have to pass it manually).
+    for arg in frame_options.get('configure_args', []):
+        if arg not in cmd_configure:
+            cmd_configure.append(arg)
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -856,8 +862,9 @@ def start_antenna_tracker(opts):
 def start_CAN_Periph(opts, frame_info):
     """Compile and run the sitl_periph"""
 
-    progress("Preparing sitl_periph_universal")
-    options = vinfo.options["sitl_periph_universal"]['frames']['universal']
+    periph_board = frame_info.get('periph_board', 'sitl_periph_universal')
+    progress("Preparing %s" % periph_board)
+    options = vinfo.options[periph_board]['frames']['universal']
     defaults_path = frame_info.get('periph_params_filename', None)
     if defaults_path is None:
         defaults_path = options.get('default_params_filename', None)
@@ -870,9 +877,9 @@ def start_CAN_Periph(opts, frame_info):
 
     if not cmd_opts.no_rebuild:
         do_build(opts, options)
-    exe = os.path.join(root_dir, 'build/sitl_periph_universal', 'bin/AP_Periph')
+    exe = os.path.join(root_dir, 'build', periph_board, 'bin/AP_Periph')
     cmd = ["nice"]
-    cmd_name = "sitl_periph_universal"
+    cmd_name = periph_board
     if opts.valgrind:
         cmd_name += " (valgrind)"
         cmd.append("valgrind")
@@ -895,6 +902,12 @@ def start_CAN_Periph(opts, frame_info):
     if defaults_path is not None:
         cmd.append("--defaults")
         cmd.append(defaults_path)
+    # `{port}` in periph_extra_args is a placeholder for the periph TCP
+    # bridge port. sim_vehicle uses the plane's default SITL SERIAL5
+    # listen port (BASE_PORT + 5 = 5765); restart_SITL_frame() in
+    # vehicle_test_suite.py substitutes a dynamically-allocated port.
+    cmd.extend([a.replace('{port}', '5765')
+                for a in frame_info.get('periph_extra_args', [])])
     run_in_terminal_window(cmd_name, cmd)
 
 

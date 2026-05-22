@@ -286,9 +286,6 @@ public:
     void Write_MISE(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
         Write_Mission_Cmd(mission, cmd, LOG_MISE_MSG);
     }
-    void Write_CMD(const AP_Mission &mission, const AP_Mission::Mission_Command &cmd) {
-        Write_Mission_Cmd(mission, cmd, LOG_CMD_MSG);
-    }
     void Write_Mission_Cmd(const AP_Mission &mission,
                            const AP_Mission::Mission_Command &cmd,
                            LogMessages id);
@@ -482,9 +479,6 @@ private:
     bool fill_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const;
 
     bool _armed;
-
-    // state to help us not log unnecessary RCIN values:
-    bool should_log_rcin2;
 
     void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
 

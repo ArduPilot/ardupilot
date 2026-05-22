@@ -1100,9 +1100,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif  // AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
 #endif
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-        { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
 #if AP_MAVLINK_MSG_WIND_ENABLED
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
 #endif  // AP_MAVLINK_MSG_WIND_ENABLED
@@ -5276,6 +5273,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
 
 bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Location &out)
 {
+    // sanity check location
+    if (!check_latlng(in.x, in.y)) {
+        return false;
+    }
+
     if (!command_long_stores_location((MAV_CMD)in.command)) {
         return false;
     }
@@ -5968,16 +5970,6 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
     return true;
 }
 
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-void GCS_MAVLINK::send_hwstatus()
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
-
 #if AP_RPM_ENABLED
 void GCS_MAVLINK::send_rpm() const
 {
@@ -6628,13 +6620,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         last_heartbeat_time = AP_HAL::millis();
         send_heartbeat();
         break;
-
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        send_hwstatus();
-        break;
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
 
 #if AP_AHRS_ENABLED
     case MSG_LOCATION:

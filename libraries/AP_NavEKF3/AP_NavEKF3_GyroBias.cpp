@@ -1,4 +1,5 @@
 #include "AP_NavEKF3_core.h"
+#include <AP_DAL/AP_DAL.h>
 
 // reset the body axis gyro bias states to zero and re-initialise the corresponding covariances
 // Assume that the calibration is performed to an accuracy of 0.5 deg/sec which will require averaging under static conditions
@@ -15,10 +16,18 @@ void NavEKF3_core::resetGyroBias(void)
 }
 
 /*
-   vehicle specific initial gyro bias uncertainty in deg/sec
+   sensor specific initial gyro bias 1-sigma uncertainty in deg/sec
  */
 ftype NavEKF3_core::InitialGyroBiasUncertainty(void) const
 {
-    return 2.5f;
+    return dal.ins().get_gyro_bias_init_dps(imu_index);
+}
+
+/*
+   get the gyro bias state clamp (rad/s) for this core's IMU
+ */
+ftype NavEKF3_core::getGyroBiasLimit(void) const
+{
+    return dal.ins().get_gyro_bias_limit(imu_index);
 }
 

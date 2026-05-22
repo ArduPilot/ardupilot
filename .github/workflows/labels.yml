@@ -1,22 +1,60 @@
 name: ci
 
+# workflow_run is used intentionally here: the elevated-permission step runs
+# in the base-repo context but never checks out PR code, so it is safe.
 on:
-  pull_request_target:  # pull_request_target, NOT pull_request
-    types: [opened, synchronize, reopened]
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: ["Labels Trigger"]
+    types:
+      - completed
+
+permissions: {}
+
+concurrency:
+  group: labels-apply-${{ github.event.workflow_run.id }}
+  cancel-in-progress: true
 
 jobs:
   labels-by-language:
+    name: labels-by-language
     runs-on: ubuntu-slim
+    if: github.event.workflow_run.conclusion == 'success'
     permissions:
       pull-requests: write  # So we can add labels to the pull request
-    steps:  # Do NOT "uses: actions/checkout" here!
+    steps:
       - uses: actions/github-script@v9
         with:
           script: |
+            // For same-repo PRs the pull_requests array is populated directly.
+            // For fork PRs it is empty, so fall back to a commit-SHA lookup.
+            let prNumber;
+
+            const prs = context.payload.workflow_run.pull_requests;
+            if (prs && prs.length > 0) {
+              prNumber = prs[0].number;
+            } else {
+              // For fork PRs, commits don't exist in the base repo history so
+              // listPullRequestsAssociatedWithCommit returns empty. Use the
+              // head owner + branch from the workflow_run payload instead.
+              const headOwner = context.payload.workflow_run.head_repository.owner.login;
+              const headBranch = context.payload.workflow_run.head_branch;
+              const result = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head: `${headOwner}:${headBranch}`,
+                state: 'open',
+              });
+              if (result.data.length === 0) {
+                core.warning(`No open PR found for ${headOwner}:${headBranch}`);
+                return;
+              }
+              prNumber = result.data[0].number;
+            }
+
             const filenames = (await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.issue.number,
+              pull_number: prNumber,
               per_page: 100,
             })).map(file => file.filename);
             console.log(filenames);
@@ -30,9 +68,9 @@ jobs:
 
             if (labels.size > 0) {
               github.rest.issues.addLabels({
-                issue_number: context.issue.number,
+                issue_number: prNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 labels: Array.from(labels),
-              })
+              });
             }

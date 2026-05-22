@@ -196,6 +196,50 @@ def build_SITL(
     return True
 
 
+def build_SITL_frame(
+        vehicleinfo_key,
+        frame,
+        extra_configure_args: list | None = None,
+        **build_kwargs,
+):
+    '''Build the main vehicle SITL plus (when defined) the AP_Periph
+    companion for a frame entry in pysim/vehicleinfo.json.
+
+    Reads the frame's `waf_target`, `configure_args` and (optional)
+    `periph_board` fields, then runs `build_SITL()` once for the vehicle
+    and (if the frame defines a periph_board) once more for the
+    companion AP_Periph build. `configure_args` are passed through to
+    waf configure for both builds and prepended to any caller-supplied
+    `extra_configure_args`.
+
+    `build_kwargs` are forwarded verbatim to `build_SITL()` (e.g. debug,
+    clean, j, ...).
+
+    Returns the frame's options dict so callers can read
+    `periph_extra_args` / `periph_params_filename` for follow-up work.
+    '''
+    from pysim import vehicleinfo
+    vinfo = vehicleinfo.VehicleInfo()
+    frame_opts = vinfo.options[vehicleinfo_key]['frames'][frame]
+
+    configure_args = list(frame_opts.get('configure_args', []))
+    if extra_configure_args is not None:
+        configure_args += list(extra_configure_args)
+
+    build_SITL(frame_opts['waf_target'],
+               extra_configure_args=configure_args,
+               **build_kwargs)
+
+    periph_board = frame_opts.get('periph_board')
+    if periph_board is not None:
+        build_SITL('bin/AP_Periph',
+                   board=periph_board,
+                   extra_configure_args=configure_args,
+                   **build_kwargs)
+
+    return frame_opts
+
+
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
                    ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
                    num_aux_imus=0, dronecan_tests=False,
