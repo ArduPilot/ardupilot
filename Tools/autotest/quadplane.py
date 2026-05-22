@@ -3272,6 +3272,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksApplet,
             self.TerrainAvoidApplet,
             self.TakeoffCheck,
+            self.MAVFTPBadReadOffset,
             self.FenceRelativePreArms,
             self.FenceRelativeToHomeMaxAlt,
             self.FenceRelativeToHomeMinAlt,
