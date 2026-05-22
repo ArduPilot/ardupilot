@@ -21,10 +21,10 @@ void Blimp::init_rc_in()
     channel_yaw   = &rc().get_yaw_channel();
 
     // set rc channel ranges
-    channel_right->set_angle(RC_SCALE);
-    channel_front->set_angle(RC_SCALE);
-    channel_yaw->set_angle(RC_SCALE);
-    channel_up->set_angle(RC_SCALE);
+    channel_right->set_angle();
+    channel_front->set_angle();
+    channel_yaw->set_angle();
+    channel_up->set_angle();
 
     // set default dead zones
     default_dead_zones();
@@ -59,10 +59,10 @@ void Blimp::read_radio()
         ap.new_radio_frame = true;
 
         set_throttle_and_failsafe(channel_up->get_radio_in());
-        set_throttle_zero_flag(channel_up->get_control_in());
+        set_throttle_zero_flag(channel_up->norm_input_dz());
 
         const float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
-        rc_throttle_control_in_filter.apply(channel_up->get_control_in(), dt);
+        rc_throttle_control_in_filter.apply(channel_up->norm_input_dz(), dt);
         last_radio_update_ms = tnow_ms;
         return;
     }
@@ -138,7 +138,7 @@ void Blimp::set_throttle_and_failsafe(uint16_t throttle_pwm)
 // throttle_zero is used to determine if the pilot intends to shut down the motors
 // Basically, this signals when we are not flying.  We are either on the ground
 // or the pilot has shut down the vehicle in the air and it is free-floating
-void Blimp::set_throttle_zero_flag(int16_t throttle_control)
+void Blimp::set_throttle_zero_flag(float throttle_control)
 {
     static uint32_t last_nonzero_throttle_ms = 0;
     uint32_t tnow_ms = millis();

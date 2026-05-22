@@ -70,10 +70,10 @@ void ModeAlthold::run_pre()
         return;
     }
 
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->get_althold_lean_angle_max_cd());
+    sub.get_pilot_desired_lean_angles(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_roll, target_pitch, attitude_control->get_althold_lean_angle_max_cd());
 
     // get pilot's desired yaw rate
-    float yaw_input = channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * sub.gain, channel_yaw->get_radio_trim());
+    float yaw_input = channel_yaw->norm_input_dz_trim(channel_yaw->get_dead_zone() * sub.gain, channel_yaw->get_radio_trim()) * 4500.0f;
     float target_yaw_rate = sub.get_pilot_desired_yaw_rate(yaw_input);
 
     // call attitude controller
@@ -112,7 +112,7 @@ void ModeAlthold::control_depth() {
     distance_to_surface = constrain_float(distance_to_surface, 0.0f, 1.0f);
     motors.set_max_throttle(g.surface_max_throttle + (1.0f - g.surface_max_throttle) * distance_to_surface);
 
-    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->norm_input_dz());
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
 
     // desired_climb_rate returns 0 when within the deadzone.
