@@ -200,40 +200,32 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
         return -1;
     }
     struct rfile &r = file[fd];
-    const uint32_t length = r.str->get_length();
+
+    int64_t new_ofs = -1;  // -1 being invalid
     switch (seek_from) {
     case SEEK_SET:
-        // Reject negative absolute offsets. The previous code stored
-        // a negative int32_t directly into the uint32_t file_ofs via
-        // MIN(int32_t,int32_t), so an attacker-supplied negative
-        // offset produced file_ofs == 0xFFFFFFFF. The subsequent
-        // read() did MIN(count, length - 0xFFFFFFFF) which underflows
-        // to a huge value and memcpy()'d from get_string()+0xFFFFFFFF
-        // - a wild OOB read whose buffer base can be host RAM
-        // (storage.bin) or 0x08000000 flash (flash.bin).
-        if (offset < 0) {
-            errno = EINVAL;
-            return -1;
-        }
-        r.file_ofs = MIN(uint32_t(offset), length);
+        new_ofs = offset;
         break;
     case SEEK_CUR:
-        // Compute the new offset in signed 64-bit space and clamp
-        // to [0, length] so neither overflow nor underflow can
-        // land file_ofs outside the buffer.
-        {
-            const int64_t new_ofs = int64_t(r.file_ofs) + int64_t(offset);
-            if (new_ofs < 0) {
-                errno = EINVAL;
-                return -1;
-            }
-            r.file_ofs = MIN(uint32_t(MIN<int64_t>(new_ofs, length)), length);
-        }
+        // Compute the new offset in signed 64-bit space to avoid
+        // 32-bit overflows:
+        new_ofs = int64_t(r.file_ofs) + int64_t(offset);
         break;
     case SEEK_END:
+        // we don't support this, leave new_ofs at -1 meaning "invalid"
+        break;
+    }
+
+    if (new_ofs < 0 || new_ofs > r.str->get_length()) {
         errno = EINVAL;
         return -1;
     }
+
+    r.file_ofs = (uint32_t)new_ofs;
+
+    // note conversion from uint32_t to int32_t in return value here.
+    // Above we clamp to r.str->get_length(), so in practise no
+    // truncation can occur here.
     return r.file_ofs;
 }
 
