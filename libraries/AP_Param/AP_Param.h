@@ -873,6 +873,7 @@ private:
     };
     static defaults_list *default_list;
     static void check_default(AP_Param *ap, float *default_value);
+    static void purge_defaults_list_overrides(void);
 
     static bool eeprom_full;
 };
