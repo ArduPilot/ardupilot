@@ -379,11 +379,11 @@ void Aeron::handle_inbound_byte(uint8_t byte)
     case RxParseState::PAYLOAD:
         rx_buf[rx_write_idx++] = byte;
         if (rx_write_idx >= rx_pkt_len) {
-            rx_state = RxParseState::CRC;
+            rx_state = RxParseState::CRC_BYTE;
         }
         return;
 
-    case RxParseState::CRC: {
+    case RxParseState::CRC_BYTE: {
         rx_buf[rx_write_idx++] = byte;
         const bool valid = (byte == crc_xor_of_bytes(rx_buf, rx_pkt_len));
         if (valid) {

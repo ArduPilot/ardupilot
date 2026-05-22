@@ -186,11 +186,11 @@ void AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte, AeronDeferredMsgs &msgs
     case ParseState::PAYLOAD:
         rx_buf[write_idx++] = byte;
         if (write_idx >= pkt_length) {
-            parse_state = ParseState::CRC;
+            parse_state = ParseState::CRC_BYTE;
         }
         return;
 
-    case ParseState::CRC: {
+    case ParseState::CRC_BYTE: {
         rx_buf[write_idx++] = byte;
         const bool valid = (byte == crc_xor_of_bytes(rx_buf, pkt_length));
         if (valid) {

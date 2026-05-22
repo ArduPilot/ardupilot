@@ -276,7 +276,7 @@ private:
         LEN_HIGH,
         LEN_LOW,
         PAYLOAD,
-        CRC,
+        CRC_BYTE,
     };
 
     ParseState parse_state;
