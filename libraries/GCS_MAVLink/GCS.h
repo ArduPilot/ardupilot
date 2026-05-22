@@ -1335,7 +1335,7 @@ private:
 
     static GCS *_singleton;
 
-    void create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart);
+    bool create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) WARN_IF_UNUSED;
 
     char statustext_printf_buffer[256+1];
 
