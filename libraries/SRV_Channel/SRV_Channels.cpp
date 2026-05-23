@@ -558,7 +558,9 @@ void SRV_Channels::zero_rc_outputs()
     auto &srv = AP::srv();
     srv.cork();
     for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        hal.rcout->write(i, 0);
+        if (SRV_Channel::is_motor(channels[i].get_function())) {
+            hal.rcout->write(i, 0);
+        }
     }
     srv.push();
 }
