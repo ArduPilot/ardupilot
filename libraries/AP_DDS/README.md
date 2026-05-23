@@ -183,6 +183,7 @@ Published topics:
 Subscribed topics:
  * /ap/cmd_gps_pose [ardupilot_msgs/msg/GlobalPosition] 1 subscriber
  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
+ * /ap/cmd_loc_pose [ardupilot_msgs/msg/LocalPosition] 1 subscriber
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
 ```
@@ -306,6 +307,18 @@ ros2 topic pub /ap/cmd_gps_pose ardupilot_msgs/msg/GlobalPosition "{latitude: 34
 
 publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
+```
+
+- `/ap/cmd_loc_pose` (type `ardupilot_msgs/msg/LocalPosition`): sends
+trajectory setpoint commands with position, velocity, acceleration, yaw, and yaw_rate
+when the selected mode is GUIDED. Supports map/odom (ENU) and base_link (FLU) frames.
+
+```bash
+# Full trajectory command in map frame (ENU)
+ros2 topic pub --once /ap/cmd_loc_pose ardupilot_msgs/msg/LocalPosition "{header: {frame_id: 'map'}, type_mask: 256, pose: {position: {x: 10.0, y: 5.0, z: 15.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}, twist: {linear: {x: 0.5, y: 0.1, z: 0.2}, angular: {x: 0.0, y: 0.0, z: 0.0}}, accel: {linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}}"
+
+publisher: beginning loop
+publishing #1: ardupilot_msgs.msg.LocalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id='map'), type_mask=256, pose=geometry_msgs.msg.Pose(position=geometry_msgs.msg.Point(x=10.0, y=5.0, z=15.0), orientation=geometry_msgs.msg.Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)), twist=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.5, y=0.1, z=0.2), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), accel=geometry_msgs.msg.Accel(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)))
 ```
 
 ## Contributing to `AP_DDS` library
