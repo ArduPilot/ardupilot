@@ -1313,6 +1313,7 @@ public:
     bool controlling_position() const { return control_position; }
 
     void set_land_pause(bool new_value) { land_pause = new_value; }
+    bool use_pilot_yaw() const override;
 
     // parameter accessors
     float get_land_speed_ms() const { return land_speed_ms.get(); }

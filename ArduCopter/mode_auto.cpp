@@ -668,10 +668,19 @@ void PayloadPlace::start_descent()
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeAuto::use_pilot_yaw(void) const
 {
-    const bool allow_yaw_option = !option_is_enabled(Option::IgnorePilotYaw);
-    const bool rtl_allow_yaw = (_mode == SubMode::RTL) && copter.mode_rtl.use_pilot_yaw();
-    const bool landing = _mode == SubMode::LAND;
-    return allow_yaw_option || rtl_allow_yaw || landing;
+    // use option bit except during land and RTL
+    switch (_mode) {
+        case SubMode::LAND:
+            return copter.mode_land.use_pilot_yaw();
+        case SubMode::RTL:
+            return copter.mode_rtl.use_pilot_yaw();
+#if AC_NAV_GUIDED
+        case SubMode::NAVGUIDED:
+            return copter.mode_guided.use_pilot_yaw();
+#endif
+        default:
+            return !option_is_enabled(Option::IgnorePilotYaw);
+    }
 }
 
 bool ModeAuto::set_speed_NE_ms(float speed_ne_ms)

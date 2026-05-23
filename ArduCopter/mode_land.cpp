@@ -201,6 +201,13 @@ void ModeLand::do_not_use_GPS()
     control_position = false;
 }
 
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool ModeLand::use_pilot_yaw() const
+{
+    // only accept yaw input if repositioning is enabled
+    return g.land_repositioning;
+}
+
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts
 //  this is always called from a failsafe so we trigger notification to pilot
 void Copter::set_mode_land_with_pause(ModeReason reason)
