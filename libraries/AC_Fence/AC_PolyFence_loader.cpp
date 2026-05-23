@@ -809,16 +809,13 @@ bool AC_PolyFence_loader::load_from_storage()
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         case AC_PolyFenceType::CIRCLE_EXCLUSION: {
             ExclusionCircle &circle = _loaded_circle_exclusion_boundary[_num_loaded_circle_exclusion_boundaries];
-            if (!read_latlon_from_storage(storage_offset, circle.point)) {
+            if (!read_latlon_from_storage(storage_offset, circle.point) || 
+                !scale_latlon_from_origin(loaded_origin, circle.point, circle.pos_cm)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: latlon read failed");
                 storage_valid = false;
                 break;
             }
-            if (!scale_latlon_from_origin(loaded_origin, circle.point, circle.pos_cm)) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: latlon read failed");
-                storage_valid = false;
-                break;
-            }
+
             // now read the radius
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
             if (index.type == AC_PolyFenceType::CIRCLE_EXCLUSION_INT) {
@@ -841,16 +838,13 @@ bool AC_PolyFence_loader::load_from_storage()
 #endif  // AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
         case AC_PolyFenceType::CIRCLE_INCLUSION: {
             InclusionCircle &circle = _loaded_circle_inclusion_boundary[_num_loaded_circle_inclusion_boundaries];
-            if (!read_latlon_from_storage(storage_offset, circle.point)) {
+            if (!read_latlon_from_storage(storage_offset, circle.point) || 
+                !scale_latlon_from_origin(loaded_origin, circle.point, circle.pos_cm)) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: latlon read failed");
                 storage_valid = false;
                 break;
             }
-            if (!scale_latlon_from_origin(loaded_origin, circle.point, circle.pos_cm)){
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AC_Fence: latlon read failed");
-                storage_valid = false;
-                break;
-            }
+
             // now read the radius
 #if AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED
             if (index.type == AC_PolyFenceType::CIRCLE_INCLUSION_INT) {
@@ -869,17 +863,14 @@ bool AC_PolyFence_loader::load_from_storage()
             break;
         }
         case AC_PolyFenceType::RETURN_POINT:
-            if (_loaded_return_point != nullptr) {
+            if (_loaded_return_point != nullptr ||
+                _loaded_return_point_lla != nullptr) {
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PolyFence: Multiple return points found");
                 storage_valid = false;
                 break;
             }
             _loaded_return_point = next_storage_point;
-            if (_loaded_return_point_lla != nullptr) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "PolyFence: Multiple return points found");
-                storage_valid = false;
-                break;
-            }
+
             _loaded_return_point_lla = next_storage_point_lla;
             // Read the point from storage
             if (!read_latlon_from_storage(storage_offset, *next_storage_point_lla)) {
