@@ -409,19 +409,41 @@ void AP_OSD::osd_thread()
 
 void AP_OSD::update_osd()
 {
-    for (uint8_t instance = 0; instance < _backend_count; instance++) {
-        _backends[instance]->clear();
+#if AP_OSD_SCREEN_CONCURRENTLY_ENABLED
+	if (rc_channel == 0 
+		&& get_screen(0).enabled && get_screen(1).enabled
+		&& osd_type.get()!=OSD_NONE && osd_type2.get()!=OSD_NONE) {
+		for (uint8_t instance = 0; instance < _backend_count; instance++) {
+			_backends[instance]->clear();
 
-        if (!_disable) {
-            get_screen(current_screen).set_backend(_backends[instance]);
-            // skip drawing for MSP OSD backends to save some resources
-            if (_backends[instance]->get_backend_type() != OSD_MSP) {
-                get_screen(current_screen).draw();
-            }
-        }
+			if (!_disable) {
+				get_screen(current_screen+instance).set_backend(_backends[instance]);
+				// skip drawing for MSP OSD backends to save some resources
+				if (_backends[instance]->get_backend_type() != OSD_MSP) {
+					get_screen(current_screen+instance).draw();
+				}
+			}
 
-        _backends[instance]->flush();
-    }
+			_backends[instance]->flush();
+		}
+	} else {
+#endif /* AP_OSD_SCREEN_CONCURRENTLY_ENABLED */
+	    for (uint8_t instance = 0; instance < _backend_count; instance++) {
+	        _backends[instance]->clear();
+
+	        if (!_disable) {
+	            get_screen(current_screen).set_backend(_backends[instance]);
+	            // skip drawing for MSP OSD backends to save some resources
+	            if (_backends[instance]->get_backend_type() != OSD_MSP) {
+	                get_screen(current_screen).draw();
+	            }
+	        }
+
+	        _backends[instance]->flush();
+	    }
+#if AP_OSD_SCREEN_CONCURRENTLY_ENABLED
+	}
+#endif /* AP_OSD_SCREEN_CONCURRENTLY_ENABLED */
 }
 
 //update maximums and totals
