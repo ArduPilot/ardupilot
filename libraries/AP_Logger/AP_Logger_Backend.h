@@ -235,7 +235,7 @@ protected:
     };
     uint32_t non_messagewriter_message_reserved_space(uint32_t bufsize) const {
         // possibly make this a proportional to buffer size?
-        uint32_t ret = 1024;
+        uint32_t ret = 4096;
         if (ret >= bufsize) {
             // need to allow messages out from the messagewriters.  In
             // this case while you have a messagewriter you won't get
