@@ -117,6 +117,12 @@ protected:
     void check_failsafe_types(bool &low_voltage, bool &low_capacity, bool &critical_voltage, bool &critical_capacity) const;
     void update_consumed(AP_BattMonitor::BattMonitor_State &state, uint32_t dt_us);
 
+    // Announce successful device discovery via DISCOVERY_PRINTF (a no-op
+    // unless the board defines HAL_DISCOVERY_PRINTF_ENABLED). Subsequent
+    // calls on the same backend instance are ignored, so it is safe to
+    // call from probe paths that may run more than once.
+    void announce_discovery(int32_t dev_id, const char *name);
+
 private:
     // resistance estimate
     uint32_t    _resistance_timer_ms;    // system time of last resistance estimate update
@@ -125,6 +131,8 @@ private:
     float       _current_filt_amps;      // filtered current
     float       _resistance_voltage_ref; // voltage used for maximum resistance calculation
     float       _resistance_current_ref; // current used for maximum resistance calculation
+
+    bool        _discovery_announced{false}; // true once announce_discovery() has fired
 };
 
 #if AP_BATTERY_SCRIPTING_ENABLED

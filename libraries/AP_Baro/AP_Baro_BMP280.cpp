@@ -110,7 +110,7 @@ bool AP_Baro_BMP280::_init()
 
     _dev->write_register((BMP280_REG_CONFIG & mask), BMP280_FILTER_COEFFICIENT << 2, true);
 
-    _instance = _frontend.register_sensor();
+    _instance = _frontend.register_sensor(_dev->get_bus_id(), "BMP280");
 
     _dev->set_device_type(DEVTYPE_BARO_BMP280);
     set_bus_id(_instance, _dev->get_bus_id());

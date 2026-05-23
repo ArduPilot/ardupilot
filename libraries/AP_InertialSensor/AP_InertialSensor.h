@@ -80,9 +80,11 @@ public:
     bool get_gyro_instance(uint8_t &instance) const;
 
     /// Register a new gyro/accel driver, allocating an instance
-    /// number
+    /// number. register_accel prints a "<name> found on bus N id N
+    /// address 0xN" discovery message; name must not be null in
+    /// normal callers (a defensive null-check is retained inside).
     bool register_gyro(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
-    bool register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id);
+    bool register_accel(uint8_t &instance, uint16_t raw_sample_rate_hz, uint32_t id, const char *name);
 
     // a function called by the main thread at the main loop rate:
     void periodic();

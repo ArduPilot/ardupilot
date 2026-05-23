@@ -1434,6 +1434,11 @@ AP_GPS_UBLOX::_parse_gps(void)
                                              state.instance + 1,
                                              _version.hwVersion,
                                              _version.swVersion);
+            DISCOVERY_PRINTF("u-blox %s%s%d HW: %s SW: %s\n",
+                             _module, mod != nullptr ? " " : "",
+                             state.instance + 1,
+                             _version.hwVersion,
+                             _version.swVersion);
             // check for F9 and M9. The F9 does not respond to SVINFO,
             // so we need to use MON_VER for hardware generation
             if (strncmp(_version.hwVersion, "00190000", 8) == 0) {

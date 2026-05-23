@@ -127,7 +127,7 @@ bool AP_Baro_ICP201XX::init()
 
     dev->set_retries(0);
 
-    instance = _frontend.register_sensor();
+    instance = _frontend.register_sensor(dev->get_bus_id(), "ICP201XX");
 
     dev->set_device_type(DEVTYPE_BARO_ICP201XX);
     set_bus_id(instance, dev->get_bus_id());

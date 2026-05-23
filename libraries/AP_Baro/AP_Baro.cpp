@@ -1092,10 +1092,17 @@ float AP_Baro::thrust_pressure_correction(uint8_t instance)
 /* register a new sensor, claiming a sensor slot. If we are out of
    slots it will panic
 */
-uint8_t AP_Baro::register_sensor(void)
+uint8_t AP_Baro::register_sensor(int32_t dev_id, const char *name)
 {
     if (_num_sensors >= ARRAY_SIZE(sensors)) {
         AP_HAL::panic("Too many barometers");
+    }
+    if (name != nullptr) {
+        DISCOVERY_PRINTF("%s found on bus %u id %u address 0x%02x\n",
+                         name,
+                         AP_HAL::Device::devid_get_bus(dev_id),
+                         unsigned(dev_id),
+                         AP_HAL::Device::devid_get_address(dev_id));
     }
     return _num_sensors++;
 }

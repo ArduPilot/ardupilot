@@ -921,6 +921,7 @@ void AP_GPS::update_instance(uint8_t instance)
         if (!state[instance].announced_detection) {
             state[instance].announced_detection = true;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
+            DISCOVERY_PRINTF("GPS %d: detected %s\n", instance + 1, drivers[instance]->name());
         }
 
         // delta will only be correct after parsing two messages

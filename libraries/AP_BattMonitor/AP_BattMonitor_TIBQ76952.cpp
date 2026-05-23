@@ -699,6 +699,7 @@ bool AP_BattMonitor_TIBQ76952::configure()
     // mark configuration as complete to prevent repeated attempts
     configured = true;
     Debug("BQ76952: Configuration complete");
+    announce_discovery(dev->get_bus_id(), "BQ76952");
 
     // report success
     return true;

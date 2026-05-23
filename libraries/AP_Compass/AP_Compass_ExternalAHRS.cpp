@@ -25,7 +25,7 @@ AP_Compass_Backend *AP_Compass_ExternalAHRS::probe(uint8_t port)
     if (ret == nullptr) {
         return nullptr;
     }
-    if (!ret->register_compass(devid)) {
+    if (!ret->register_compass(devid, "ExternalAHRS")) {
         delete ret;
         return nullptr;
     }

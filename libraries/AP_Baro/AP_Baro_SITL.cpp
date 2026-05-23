@@ -16,7 +16,7 @@ AP_Baro_SITL::AP_Baro_SITL(AP_Baro &baro) :
     _has_sample(false)
 {
     if (_sitl != nullptr) {
-        _instance = _frontend.register_sensor();
+        _instance = _frontend.register_sensor(0, "SITL");
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
         _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
 #endif
