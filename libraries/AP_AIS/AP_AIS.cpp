@@ -676,9 +676,19 @@ bool AP_AIS::decode_static_and_voyage_data(const char *payload)
         return false;
     }
 
-    char call_sign[8];
-    char name[21];
-    char dest[21];
+    // Strings to use in get_char calls
+    char call_sign[8] = {};
+    char name[21] = {};
+    char dest[21] = {};
+
+    // Make sure the strings are long enough for the bit numbers passed to `get_char`
+    static_assert(sizeof(call_sign) > ((111 - 70) + 1)/6, "Callsign string length error");
+    static_assert(sizeof(name) > ((231 - 112) + 1)/6, "Name string length error");
+    static_assert(sizeof(dest) > ((421 - 302) + 1)/6, "Dest string length error");
+
+    // Make sure the strings are long enough, `set_callsign` and `set_name` assume a fixed size
+    static_assert(sizeof(call_sign) > sizeof(mavlink_ais_vessel_t::callsign), "Callsign string length error");
+    static_assert(sizeof(name) > sizeof(mavlink_ais_vessel_t::name), "Name string length error");
 
     uint8_t repeat      = get_bits(payload, 6, 7);
     uint32_t mmsi       = get_bits(payload, 8, 37);
@@ -869,7 +879,9 @@ bool AP_AIS::decode_class_B_position_report(const char *payload, uint8_t type)
 
     if (type == 19) {
         // Fields only available in the extended message
-        char name[21];
+        char name[21] = {};
+        static_assert(sizeof(name) > sizeof(mavlink_ais_vessel_t::name), "Name string length error");
+        static_assert(sizeof(name) > ((262 - 143) + 1)/6, "Name string length error");
         get_char(payload, name, 143, 262);
         _list[index].set_name(name);
 
