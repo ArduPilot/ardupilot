@@ -80,6 +80,7 @@ private:
     uint8_t _time_delay;
     enum frame_types {
         HELI_FRAME_CONVENTIONAL,
+        HELI_FRAME_CONVENTIONAL_DDVPTAIL,
         HELI_FRAME_DUAL,
         HELI_FRAME_COMPOUND,
         HELI_FRAME_BLADE360,
