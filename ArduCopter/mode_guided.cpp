@@ -767,7 +767,38 @@ void ModeGuided::pos_control_run()
     if (guided_is_terrain_alt) {
         terrain_margin_m = MIN(copter.wp_nav->get_terrain_margin_m(), 0.5 * fabsF(guided_pos_target_ned_m.z));
     }
-    pos_control->input_pos_NED_m(guided_pos_target_ned_m, terrain_d_m, terrain_margin_m);
+    // run object avoidance on the position target so that
+    // BendyRuler / Dijkstra can adjust the path.  Without this,
+    // GUIDED Pos submode sends the target straight to pos_control
+    // and bypasses wp_nav, so OA never runs.
+    Vector3p oa_target = guided_pos_target_ned_m;
+#if AP_OAPATHPLANNER_ENABLED
+    {
+        AP_OAPathPlanner *oa = AP_OAPathPlanner::get_singleton();
+        if (oa != nullptr) {
+            Location current_loc;
+            if (AP::ahrs().get_location(current_loc)) {
+                const Location target_loc = Location::from_ekf_offset_NED_m(
+                    guided_pos_target_ned_m,
+                    guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN
+                                         : Location::AltFrame::ABOVE_ORIGIN);
+                Location oa_origin, oa_dest, oa_next;
+                bool dest_to_next_clear = true;
+                AP_OAPathPlanner::OAPathPlannerUsed planner_used;
+
+                const AP_OAPathPlanner::OA_RetState ret =
+                    oa->mission_avoidance(current_loc, current_loc,
+                                          target_loc, target_loc,
+                                          oa_origin, oa_dest, oa_next,
+                                          dest_to_next_clear, planner_used);
+                if (ret == AP_OAPathPlanner::OA_SUCCESS) {
+                    oa_dest.get_vector_from_origin_NED_m(oa_target);
+                }
+            }
+        }
+    }
+#endif
+    pos_control->input_pos_NED_m(oa_target, terrain_d_m, terrain_margin_m);
 
     // run position controllers
     pos_control->NE_update_controller();
