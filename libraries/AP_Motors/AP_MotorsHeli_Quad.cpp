@@ -92,6 +92,9 @@ void AP_MotorsHeli_Quad::calculate_scalars()
 
     // configure main rotor and update scalars
     _main_rotor.configure();
+
+    // calculate armed scalars for rotors
+    calculate_armed_scalars();
 }
 
 // calculate_swash_factors - calculate factors based on swash type and servo position
