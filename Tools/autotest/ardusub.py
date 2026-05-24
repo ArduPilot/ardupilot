@@ -11,6 +11,7 @@ import os
 
 from math import degrees
 from math import radians
+from math import sqrt
 
 from pymavlink import mavextra
 from pymavlink import mavutil
@@ -692,6 +693,47 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.progress("delta=%f (want >10)" % delta)
             if delta > 10:
                 break
+        self.change_mode('MANUAL')
+        self.disarm_vehicle()
+
+    def GuidedVelocityControl(self):
+        """Move vehicle using guided velocity control (SET_POSITION_TARGET_LOCAL_NED)."""
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        startpos = self.assert_receive_message('LOCAL_POSITION_NED')
+
+        # velocity-only mask: ignore position, yaw, yaw rate
+        velocity_only_mask = (0b0000110111000111)
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException('Did not move far enough under velocity control')
+
+            # resend every iteration -- guided velocity times out after 3s without a new command
+            self.mav.mav.set_position_target_local_ned_send(
+                0,  # timestamp
+                1,  # target system_id
+                1,  # target component id
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                velocity_only_mask,
+                0, 0, 0,    # position (ignored)
+                1, 0, 0,    # vx=1 m/s north, vy=0, vz=0
+                0, 0, 0,    # accel (ignored)
+                0, 0,       # yaw, yaw_rate (ignored)
+            )
+
+            pos = self.assert_receive_message('LOCAL_POSITION_NED')
+            delta = sqrt(
+                (pos.x - startpos.x) ** 2 +
+                (pos.y - startpos.y) ** 2
+            )
+            self.progress('delta=%f (want >5)' % delta)
+            if delta > 5:
+                break
+
         self.change_mode('MANUAL')
         self.disarm_vehicle()
 
@@ -1394,6 +1436,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.DoubleCircle,
             self.MotorThrustHoverParameterIgnore,
             self.SET_POSITION_TARGET_GLOBAL_INT,
+            self.GuidedVelocityControl,
             self.TestLogDownloadMAVProxy,
             self.TestLogDownloadMAVProxyNetwork,
             self.TestLogDownloadLogRestart,
