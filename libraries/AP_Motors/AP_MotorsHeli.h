@@ -195,6 +195,9 @@ protected:
     // method also updates the initialised flag.
     virtual void init_outputs() = 0;
 
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    virtual void calculate_armed_scalars();
+
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
 

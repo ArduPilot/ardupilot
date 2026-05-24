@@ -220,6 +220,18 @@ void AP_MotorsHeli_Single::init_outputs()
 }
 
 // calculate_scalars - recalculates various scalers used.
+void AP_MotorsHeli_Single::calculate_armed_scalars()
+{
+    if (use_tail_RSC()) {
+        // configure armed scalars for ddvp tail rotor
+        _tail_rotor.configure_armed();
+    }
+
+    // calculate armed scalars for main rotor
+    AP_MotorsHeli::calculate_armed_scalars();
+}
+
+// calculate_scalars - recalculates various scalers used.
 void AP_MotorsHeli_Single::calculate_scalars()
 {
     // range check collective min, max and zero
@@ -252,9 +264,14 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to DDVP rotor controller and trigger recalculation of scalars
     if (use_tail_RSC()) {
         _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
+        // send rsc setpoints to DDVP tailrotor controller
+        _tail_rotor.set_setpoint_desired_rotor_speed(_direct_drive_tailspeed.get());
     } else {
         _tail_rotor.configure(ROTOR_CONTROL_MODE_DISABLED, 0, 0, 0, 0);
     }
+
+    // calculate armed scalars for both main and tail rotor
+    calculate_armed_scalars();
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
