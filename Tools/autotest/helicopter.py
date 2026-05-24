@@ -68,7 +68,7 @@ class AutoTestHelicopter(AutoTestCopter):
         return chan_pwm
 
     def RotorRunup(self):
-        '''Test rotor runip'''
+        '''Test rotor runup'''
         # Takeoff and landing in Loiter
         TARGET_RUNUP_TIME = 10
         self.zero_throttle()
@@ -225,6 +225,18 @@ class AutoTestHelicopter(AutoTestCopter):
         )
         self.set_parameter("H_RSC_MODE", 4)
         self.takeoff(10)
+        self.do_RTL()
+
+    def DDVPTail(self):
+        '''Test DDVP Tail Rotor'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-ddvptail'),
+            model="heli-ddvptail",
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.wait_servo_channel_value(7, 2000, timeout=10)
         self.do_RTL()
 
     def hover(self):
@@ -1210,6 +1222,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.NastyMission,
             self.PIDNotches,
             self.AutoTune,
+            self.DDVPTail,
             self.MountFailsafeAction,
         ])
         return ret
