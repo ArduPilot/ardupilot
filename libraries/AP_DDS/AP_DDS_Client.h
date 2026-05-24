@@ -359,6 +359,44 @@ public:
     //! @brief Use namespace when enabled
     AP_Int8 use_ns;
 
+    //! @brief Publish rate (Hz) per topic. 0 disables a topic.
+#if AP_DDS_TIME_PUB_ENABLED
+    AP_Int16 rate_time_hz;
+#endif
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
+    AP_Int16 rate_battery_hz;
+#endif
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
+    AP_Int16 rate_local_pose_hz;
+#endif
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
+    AP_Int16 rate_local_vel_hz;
+#endif
+#if AP_DDS_AIRSPEED_PUB_ENABLED
+    AP_Int16 rate_airspeed_hz;
+#endif
+#if AP_DDS_RC_PUB_ENABLED
+    AP_Int16 rate_rc_hz;
+#endif
+#if AP_DDS_IMU_PUB_ENABLED
+    AP_Int16 rate_imu_hz;
+#endif
+#if AP_DDS_GEOPOSE_PUB_ENABLED
+    AP_Int16 rate_geo_pose_hz;
+#endif
+#if AP_DDS_CLOCK_PUB_ENABLED
+    AP_Int16 rate_clock_hz;
+#endif
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+    AP_Int16 rate_gps_origin_hz;
+#endif
+#if AP_DDS_GOAL_PUB_ENABLED
+    AP_Int16 rate_goal_hz;
+#endif
+#if AP_DDS_STATUS_PUB_ENABLED
+    AP_Int16 rate_status_hz;
+#endif
+
     //! @brief Enum used to mark a topic as a data reader or writer
     enum class Topic_rw : uint8_t {
         DataReader = 0,
