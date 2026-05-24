@@ -1334,7 +1334,7 @@ uint8_t GCS_MAVLINK_Copter::high_latency_wind_direction() const
     if (AP::ahrs().airspeed_vector_TAS(airspeed_vec_bf)) {
         wind = AP::ahrs().wind_estimate();
         // need to convert -180->180 to 0->360/2
-        return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
+        return wrap_360(degrees(atan2f(-wind.y, -wind.x))) * 0.5f;
     }
     return 0;
 }
