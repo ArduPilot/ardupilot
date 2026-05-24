@@ -44,6 +44,13 @@ bool ModeGuided::init(bool ignore_checks)
     // clear pause state when entering guided mode
     _paused = false;
 
+    // no yaw has been commanded yet, so report it as ignored in
+    // POSITION_TARGET_LOCAL_NED until a target sets it (issue #13932)
+    _reported_yaw_ignore = true;
+    _reported_yaw_rate_ignore = true;
+    _reported_yaw_rad = 0.0f;
+    _reported_yaw_rate_rads = 0.0f;
+
     return true;
 }
 
