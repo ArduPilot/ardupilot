@@ -6270,14 +6270,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             target_yaw_rad, # yaw
             0, # yawrate
         )
-        m = self.assert_receive_message('POSITION_TARGET_LOCAL_NED', timeout=2)
-        self.progress("Received local target with yaw: %s" % str(m))
-
-        if m.type_mask & MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE:
-            raise NotAchievedException("YAW_IGNORE should be clear when a yaw is commanded: got mask=%u" % m.type_mask)
-
-        if abs(m.yaw - target_yaw_rad) > math.radians(1):
-            raise NotAchievedException("Did not receive commanded yaw: wanted=%f got=%f" % (target_yaw_rad, m.yaw))
+        self.wait_position_target_yaw(target_yaw_rad)
 
     def test_guided_local_velocity_target(self, vx, vy, vz_up, timeout=3):
         " Check local target velocity being received by vehicle "
@@ -6383,6 +6376,64 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_not_receiving_message('POSITION_TARGET_LOCAL_NED')
 
         self.progress("Did not receive any POSITION_TARGET_LOCAL_NED message in LOITER mode. Success")
+
+    def wait_position_target_yaw(self, target_yaw_rad, timeout=2):
+        '''wait for POSITION_TARGET_LOCAL_NED to reflect a commanded yaw'''
+        tstart = time.time()
+        last_msg = None
+        while time.time() - tstart < timeout:
+            last_msg = self.assert_receive_message('POSITION_TARGET_LOCAL_NED', timeout=timeout)
+            self.progress("Received local target with yaw: %s" % str(last_msg))
+            if last_msg.type_mask & MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE:
+                continue
+            if abs(last_msg.yaw - target_yaw_rad) <= math.radians(1):
+                return last_msg
+
+        raise NotAchievedException("Did not receive commanded yaw: wanted=%f last=%s" % (target_yaw_rad, last_msg))
+
+    def wait_position_target_yaw_ignored(self, timeout=2):
+        '''wait for POSITION_TARGET_LOCAL_NED to report yaw ignored'''
+        tstart = time.time()
+        last_msg = None
+        while time.time() - tstart < timeout:
+            last_msg = self.assert_receive_message('POSITION_TARGET_LOCAL_NED', timeout=timeout)
+            self.progress("Received local target with ignored yaw: %s" % str(last_msg))
+            if not (last_msg.type_mask & MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE):
+                continue
+            if abs(last_msg.yaw) <= math.radians(1):
+                return last_msg
+
+        raise NotAchievedException("Did not receive ignored yaw target: last=%s" % last_msg)
+
+    def test_guided_yaw_target_reset_on_entry(self):
+        '''ensure POSITION_TARGET_LOCAL_NED reports yaw as ignored after
+        re-entering guided, until a new target commands it (issue #13932)'''
+        self.change_mode('GUIDED')
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
+
+        # command a yaw so the reported yaw state becomes non-ignored
+        target_typemask = (MAV_POS_TARGET_TYPE_MASK.VEL_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE |
+                           MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+        self.mav.mav.set_position_target_local_ned_send(
+            0, 1, 1,
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            target_typemask | MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
+            5, 5, -10,        # x, y, z
+            0, 0, 0,          # vx, vy, vz
+            0, 0, 0,          # afx, afy, afz
+            math.radians(42), # yaw
+            0,                # yawrate
+        )
+        self.wait_position_target_yaw(math.radians(42))
+
+        # leave and re-enter guided; the reported yaw should reset to ignored
+        # rather than reporting the stale target from the previous session
+        self.change_mode('LOITER')
+        self.change_mode('GUIDED')
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_POSITION_TARGET_LOCAL_NED, 10)
+
+        self.wait_position_target_yaw_ignored()
 
     def earth_to_body(self, vector):
         r = mavextra.rotation(self.mav.messages["ATTITUDE"]).invert()
@@ -6671,6 +6722,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.test_guided_local_position_target(5, 5, 10)
         self.test_guided_local_velocity_target(2, 2, 1)
         self.test_position_target_message_mode()
+        self.test_guided_yaw_target_reset_on_entry()
 
         self.do_RTL()
 
