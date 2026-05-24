@@ -215,6 +215,13 @@
                     "default_params/copter-heli-gas.parm"
                 ]
             },
+            "heli-ddvptail": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heli-ddvptail.parm"
+                ]
+            },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": [
@@ -306,6 +313,13 @@
                 "default_params_filename": [
                     "default_params/copter-heli.parm",
                     "default_params/copter-heli-gas.parm"
+                ]
+            },
+            "heli-ddvptail": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heli-ddvptail.parm"
                 ]
             },
             "heli-dual": {
