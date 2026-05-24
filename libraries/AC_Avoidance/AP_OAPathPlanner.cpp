@@ -403,6 +403,14 @@ void AP_OAPathPlanner::avoidance_thread()
 
         } // switch
 
+        // when avoidance is not required the path to the next
+        // destination is clear.  Only Dijkstra's sets
+        // dest_to_next_dest_clear; BendyRuler leaves it false which
+        // causes AC_WPNav_OA to force-stop at every waypoint.
+        if (res == OA_NOT_REQUIRED) {
+            dest_to_next_dest_clear = true;
+        }
+
         {
             // give the main thread the avoidance result
             WITH_SEMAPHORE(_rsem);
