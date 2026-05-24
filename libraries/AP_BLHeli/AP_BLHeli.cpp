@@ -418,7 +418,15 @@ void AP_BLHeli::msp_process_command(void)
     case MSP_UID:
         // MCU identifier
         debug("MSP_UID");
+#ifdef UDID_START
         msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
+#else
+        {
+            // boards without a fixed UID address (e.g. SITL) reply with zeros
+            const uint8_t zero_uid[12] = {0};
+            msp_send_reply(msp.cmdMSP, zero_uid, sizeof(zero_uid));
+        }
+#endif
         break;
 
         // a literal "4" is used for the PWMType here to allow Rover
@@ -1504,7 +1512,7 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
         }
     }
     motor_mask = mask;
-    debug("ESC: %u motors mask=0x%08lx", num_motors, digital_mask);
+    debug("ESC: %u motors mask=0x%08lx", num_motors, (unsigned long)digital_mask);
 
     // check if we have a combination of reversible and normal
     mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);
