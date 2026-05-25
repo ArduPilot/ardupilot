@@ -148,6 +148,13 @@ const AP_Param::GroupInfo AP_Doppler_Parameters::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("SIM_QUAL", 13, AP_Doppler_Parameters, _sim_quality, 100.0f),
 
+    // @Param: DEBUG
+    // @DisplayName: DVL debug logging enable
+    // @Description: Enable DVL driver debug text messages for startup command retries and parsed EPD6 data frames
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("DEBUG", 14, AP_Doppler_Parameters, _debug, 0),
+
     AP_GROUPEND
 };
 

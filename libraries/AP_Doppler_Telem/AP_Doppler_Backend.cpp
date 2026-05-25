@@ -1,4 +1,5 @@
 #include "AP_Doppler_Backend.h"
+#include "AP_Doppler_Parameters.h"
 
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
@@ -11,6 +12,10 @@ extern const AP_HAL::HAL& hal;
 
 namespace {
 constexpr uint8_t AP_DOPPLER_LINE_BUFFER_SIZE = 128;
+constexpr uint32_t AP_DOPPLER_IDLE_DELAY_MS = 10;
+constexpr uint32_t AP_DOPPLER_STARTUP_RETRY_MS = 5000;
+constexpr size_t AP_DOPPLER_SET_EPD6_LEN = sizeof(AP_DOPPLER_SET_EPD6) - 1;
+constexpr size_t AP_DOPPLER_LAUNCH_LEN = sizeof(AP_DOPPLER_LAUNCH) - 1;
 
 static inline uint32_t parse_u32(const char *&p)
 {
@@ -83,7 +88,9 @@ bool AP_Doppler_Backend::init_serial_port()
         return false;
     }
     _port->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
-    gcs().send_text(MAV_SEVERITY_INFO, "Doppler Telemetry Initialized");
+    if (_params.debug_enabled()) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Doppler Telemetry Initialized");
+    }
     return true;
 }
 
@@ -99,16 +106,24 @@ void AP_Doppler_Backend::loop(void)
     char buffer[AP_DOPPLER_LINE_BUFFER_SIZE];
     uint8_t idx = 0;
     bool in_frame = false;
+    uint32_t last_rx_ms = AP_HAL::millis();
+    uint32_t last_startup_ms = last_rx_ms;
 
     while (true) {
         if (_port->available() == 0) {
-            _port->write((const uint8_t *)AP_DOPPLER_LAUNCH, AP_DOPPLER_CMD_LENGTH);
-            hal.scheduler->delay(100);
+            const uint32_t now_ms = AP_HAL::millis();
+            if ((now_ms - last_rx_ms) >= AP_DOPPLER_STARTUP_RETRY_MS &&
+                (now_ms - last_startup_ms) >= AP_DOPPLER_STARTUP_RETRY_MS) {
+                send_epd6_startup_commands();
+                last_startup_ms = now_ms;
+            }
+            hal.scheduler->delay(AP_DOPPLER_IDLE_DELAY_MS);
             continue;
         }
 
         while (_port->available() != 0) {
             const char c = _port->read();
+            last_rx_ms = AP_HAL::millis();
 
             if (!in_frame) {
                 if (c == AP_DOPPLER_START_BYTE) {
@@ -254,15 +269,39 @@ bool AP_Doppler_Backend::get_velocity_sample(EPD6VelocitySample &sample, bool al
     return false;
 }
 
+bool AP_Doppler_Backend::should_send_debug(uint32_t &last_ms, uint32_t interval_ms)
+{
+    if (!_params.debug_enabled()) {
+        return false;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    if (last_ms != 0 && (now_ms - last_ms) < interval_ms) {
+        return false;
+    }
+
+    last_ms = now_ms;
+    return true;
+}
+
 void AP_Doppler_Backend::send_epd6_startup_commands()
 {
     if (_port == nullptr) {
         return;
     }
 
-    _port->write((const uint8_t *)AP_DOPPLER_SET_EPD6, AP_DOPPLER_CMD_LENGTH);
+    if (_port->txspace() < AP_DOPPLER_SET_EPD6_LEN) {
+        return;
+    }
+
+    _port->write((const uint8_t *)AP_DOPPLER_SET_EPD6, AP_DOPPLER_SET_EPD6_LEN);
     hal.scheduler->delay(50);
-    _port->write((const uint8_t *)AP_DOPPLER_LAUNCH, AP_DOPPLER_CMD_LENGTH);
+    if (_port->txspace() >= AP_DOPPLER_LAUNCH_LEN) {
+        _port->write((const uint8_t *)AP_DOPPLER_LAUNCH, AP_DOPPLER_LAUNCH_LEN);
+        if (should_send_debug(_last_startup_debug_ms, 5000)) {
+            gcs().send_text(MAV_SEVERITY_INFO, "DVL startup cmds sent");
+        }
+    }
 }
 
 static inline float parse_float(const char *&p)
@@ -364,6 +403,10 @@ void AP_Doppler_Backend::parse_epd6_ts(const char *payload)
     _epd6_ts.protocol_version[0] = (status_len > 1) ? status_buf[1] : '\0';
     _epd6_ts.protocol_version[1] = (status_len > 2) ? status_buf[2] : '\0';
     _epd6_ts.protocol_version[2] = '\0';
+
+    if (should_send_debug(_last_ts_debug_ms, 2000)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "DVL TS d=%.1f t=%.1f f=%u", _epd6_ts.deep_m, _epd6_ts.temperature_C, unsigned(_epd6_ts.fault_code));
+    }
 }
 
 void AP_Doppler_Backend::parse_epd6_bi(const char *payload)
@@ -381,17 +424,21 @@ void AP_Doppler_Backend::parse_epd6_bi(const char *payload)
         _epd6_bi.velocity_error_mm_s = velocity_error_mm_s;
     }
 
-    WITH_SEMAPHORE(_sample_sem);
-    bi_msg.time_usec = AP_HAL::micros64();
-    bi_msg.sequence++;
-    bi_msg.valid = (_epd6_bi.status == EPD6_STATUS_ACQUIRING);
-    bi_msg.status = uint8_t(_epd6_bi.status);
-    bi_msg.vx_mps = x_velocity_mm_s * 0.001f;
-    bi_msg.vy_mps = y_velocity_mm_s * 0.001f;
-    bi_msg.vz_mps = z_velocity_mm_s * 0.001f;
-    bi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
+    {
+        WITH_SEMAPHORE(_sample_sem);
+        bi_msg.time_usec = AP_HAL::micros64();
+        bi_msg.sequence++;
+        bi_msg.valid = (_epd6_bi.status == EPD6_STATUS_ACQUIRING);
+        bi_msg.status = uint8_t(_epd6_bi.status);
+        bi_msg.vx_mps = x_velocity_mm_s * 0.001f;
+        bi_msg.vy_mps = y_velocity_mm_s * 0.001f;
+        bi_msg.vz_mps = z_velocity_mm_s * 0.001f;
+        bi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
+    }
 
-//    gcs().send_text(MAV_SEVERITY_CRITICAL, "Doppler Telemetry: BI: %f %f %f", bi_msg.vx_mps, bi_msg.vy_mps, bi_msg.vz_mps);
+    if (should_send_debug(_last_bi_debug_ms, 1000)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "DVL BI %c %.2f %.2f %.2f", char(_epd6_bi.status), x_velocity_mm_s * 0.001f, y_velocity_mm_s * 0.001f, z_velocity_mm_s * 0.001f);
+    }
 }
 
 void AP_Doppler_Backend::parse_epd6_bs(const char *payload)
@@ -406,6 +453,10 @@ void AP_Doppler_Backend::parse_epd6_bs(const char *payload)
         _epd6_bs.y_velocity_mm_s = y_velocity_mm_s;
         _epd6_bs.z_velocity_mm_s = z_velocity_mm_s;
         update_epd6_velocity_sample(_epd6_bottom_track_velocity_sample, x_velocity_mm_s, y_velocity_mm_s, z_velocity_mm_s, 0.0f, DVL_LockState::BOTTOM_LOCK);
+    }
+
+    if (should_send_debug(_last_bs_debug_ms, 1000)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "DVL BS %c %.2f %.2f %.2f", char(_epd6_bs.status), x_velocity_mm_s * 0.001f, y_velocity_mm_s * 0.001f, z_velocity_mm_s * 0.001f);
     }
 }
 
@@ -459,15 +510,21 @@ void AP_Doppler_Backend::parse_epd6_wi(const char *payload)
         _epd6_wi.velocity_error_mm_s = velocity_error_mm_s;
     }
 
-    WITH_SEMAPHORE(_sample_sem);
-    wi_msg.time_usec = AP_HAL::micros64();
-    wi_msg.sequence++;
-    wi_msg.valid = (_epd6_wi.status == EPD6_STATUS_ACQUIRING);
-    wi_msg.status = uint8_t(_epd6_wi.status);
-    wi_msg.vx_mps = x_velocity_mm_s * 0.001f;
-    wi_msg.vy_mps = y_velocity_mm_s * 0.001f;
-    wi_msg.vz_mps = z_velocity_mm_s * 0.001f;
-    wi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
+    {
+        WITH_SEMAPHORE(_sample_sem);
+        wi_msg.time_usec = AP_HAL::micros64();
+        wi_msg.sequence++;
+        wi_msg.valid = (_epd6_wi.status == EPD6_STATUS_ACQUIRING);
+        wi_msg.status = uint8_t(_epd6_wi.status);
+        wi_msg.vx_mps = x_velocity_mm_s * 0.001f;
+        wi_msg.vy_mps = y_velocity_mm_s * 0.001f;
+        wi_msg.vz_mps = z_velocity_mm_s * 0.001f;
+        wi_msg.vel_error_mps = velocity_error_mm_s * 0.001f;
+    }
+
+    if (should_send_debug(_last_wi_debug_ms, 1000)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "DVL WI %c %.2f %.2f %.2f", char(_epd6_wi.status), x_velocity_mm_s * 0.001f, y_velocity_mm_s * 0.001f, z_velocity_mm_s * 0.001f);
+    }
 }
 
 void AP_Doppler_Backend::parse_epd6_ws(const char *payload)
@@ -519,15 +576,21 @@ void AP_Doppler_Backend::parse_epd6_ua(const char *payload)
     const EPD6_Status status = static_cast<EPD6_Status>(parse_char(p));
     update_epd6_beam_sample(_epd6_beam_samples[0], velocity_mm_s, distance_m, rssi, nsd, status);
 
-    WITH_SEMAPHORE(_sample_sem);
-    ua_msg.time_usec = AP_HAL::micros64();
-    ua_msg.sequence++;
-    ua_msg.valid = (status == EPD6_STATUS_ACQUIRING);
-    ua_msg.status = uint8_t(status);
-    ua_msg.velocity_mps = velocity_mm_s * 0.001f;
-    ua_msg.distance_m = distance_m;
-    ua_msg.rssi = rssi;
-    ua_msg.nsd = nsd;
+    {
+        WITH_SEMAPHORE(_sample_sem);
+        ua_msg.time_usec = AP_HAL::micros64();
+        ua_msg.sequence++;
+        ua_msg.valid = (status == EPD6_STATUS_ACQUIRING);
+        ua_msg.status = uint8_t(status);
+        ua_msg.velocity_mps = velocity_mm_s * 0.001f;
+        ua_msg.distance_m = distance_m;
+        ua_msg.rssi = rssi;
+        ua_msg.nsd = nsd;
+    }
+
+    if (should_send_debug(_last_beam_debug_ms, 1000)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "DVL UA %c v=%.2f d=%.2f", char(status), velocity_mm_s * 0.001f, distance_m);
+    }
 }
 
 void AP_Doppler_Backend::parse_epd6_ub(const char *payload)

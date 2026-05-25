@@ -6,12 +6,13 @@
 #include <AP_Math/AP_Math.h>
 #include <cstring>
 
+class AP_Doppler_Parameters;
+
 #define AP_DOPPLER_BAUD 115200
 #define AP_DOPPLER_BUFSIZE_RX 512
 #define AP_DOPPLER_BUFSIZE_TX 512
 #define AP_DOPPLER_START_BYTE ':'
-#define AP_DOPPLER_CMD_LENGTH 16
-#define AP_DOPPLER_SET_EPD6   "DF 3\r000000000000"
+#define AP_DOPPLER_SET_EPD6   "DF 3\r00000000000"
 #define AP_DOPPLER_LAUNCH     "CS \r000000000000"
 
 enum class DVL_LockState : uint8_t {
@@ -78,8 +79,9 @@ struct DVL_U_Msg {
 class AP_Doppler_Backend
 {
 public:
-    AP_Doppler_Backend(AP_HAL::UARTDriver *port) :
-        _port(port) { }
+    AP_Doppler_Backend(AP_HAL::UARTDriver *port, const AP_Doppler_Parameters &params) :
+        _port(port),
+        _params(params) { }
 
     virtual ~AP_Doppler_Backend() {}
 
@@ -112,6 +114,7 @@ public:
 
 protected:
     AP_HAL::UARTDriver *_port;
+    const AP_Doppler_Parameters &_params;
 
     virtual bool init_serial_port();
 
@@ -239,6 +242,7 @@ private:
     void parse_epd6_ud(const char *payload);
     void parse_epd6_td(const char *payload);
     void send_epd6_startup_commands();
+    bool should_send_debug(uint32_t &last_ms, uint32_t interval_ms);
     void update_epd6_velocity_sample(EPD6VelocitySample &sample, float x_velocity_mm_s, float y_velocity_mm_s, float z_velocity_mm_s, float vel_error_mm_s, DVL_LockState lock);
     void update_epd6_beam_sample(EPD6BeamSample &sample, float velocity_mm_s, float distance_m, float rssi, float nsd, EPD6_Status status);
 
@@ -256,4 +260,11 @@ private:
     DVL_U_Msg ub_msg {};
     DVL_U_Msg uc_msg {};
     DVL_U_Msg ud_msg {};
+
+    uint32_t _last_startup_debug_ms = 0;
+    uint32_t _last_ts_debug_ms = 0;
+    uint32_t _last_bi_debug_ms = 0;
+    uint32_t _last_bs_debug_ms = 0;
+    uint32_t _last_wi_debug_ms = 0;
+    uint32_t _last_beam_debug_ms = 0;
 };

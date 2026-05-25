@@ -48,10 +48,14 @@ AP_Doppler_Telem::~AP_Doppler_Telem(void)
  */
 bool AP_Doppler_Telem::init(const AP_SerialManager &serial_manager)
 {
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "Doppler INIT");
+    if (_doppler_parameters->debug_enabled()) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Doppler INIT");
+    }
 
     if (_doppler_parameters->sim_enabled()) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Doppler SIM ENABLED");
+        if (_doppler_parameters->debug_enabled()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Doppler SIM ENABLED");
+        }
         return true;
     }
 
@@ -59,8 +63,10 @@ bool AP_Doppler_Telem::init(const AP_SerialManager &serial_manager)
 
     if ((port = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Doppler, 0)))
     {
-        _backend = new AP_Doppler_Backend(port);
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "Doppler FIND SERIAL");
+        _backend = new AP_Doppler_Backend(port, *_doppler_parameters);
+        if (_doppler_parameters->debug_enabled()) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Doppler FIND SERIAL");
+        }
     }
 
     if (_backend == nullptr) {
@@ -75,7 +81,9 @@ bool AP_Doppler_Telem::init(const AP_SerialManager &serial_manager)
         return false;
     }
     
-    gcs().send_text(MAV_SEVERITY_CRITICAL, "OK");
+    if (_doppler_parameters->debug_enabled()) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "OK");
+    }
     return true;
 }
 

@@ -51,6 +51,7 @@ public:
     const Vector3f &sim_velocity() const { return _sim_velocity; }
     float sim_altitude_m() const { return MAX(_sim_altitude_m.get(), 0.1f); }
     float sim_quality() const { return constrain_float(_sim_quality.get(), 0.0f, 100.0f); }
+    bool debug_enabled() const { return _debug.get() != 0; }
 
 
 private:
@@ -67,6 +68,7 @@ private:
     AP_Vector3f _sim_velocity;
     AP_Float _sim_altitude_m;
     AP_Float _sim_quality;
+    AP_Int8 _debug;
 
     // settable parameters
 
