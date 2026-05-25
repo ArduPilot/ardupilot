@@ -113,7 +113,7 @@ local function crc16(bytes)
 end
 
 local function farenheight_to_Kelvin(v)
-   return (v + 459.67) * 0.55556 + 273.15
+   return (v - 32) / 1.8 + 273.15
 end
 
 --[[
