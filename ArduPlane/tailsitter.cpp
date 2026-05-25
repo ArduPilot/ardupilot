@@ -570,7 +570,7 @@ void Tailsitter::output(void)
             quadplane.weathervane->reset();
         } else if (pitch_rate_effort < pitch_rate_effort_hi && pitch_rate_effort > pitch_rate_effort_low) {
             // scale from max_gain to 0 between high and low while preventing div by zero
-            control_effort_gain_slope = (pitch_rate_effort - pitch_rate_effort_low) / (pitch_rate_effort_hi - pitch_rate_effort_low + FLT_EPSILON);
+            control_effort_gain_slope = 1.0 - ((pitch_rate_effort - pitch_rate_effort_low) / (pitch_rate_effort_hi - pitch_rate_effort_low + FLT_EPSILON));
             weathervane_gain = (weathervane_gain) * control_effort_gain_slope;
         }
         quadplane.weathervane->set_gain(weathervane_gain);
