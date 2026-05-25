@@ -17,10 +17,11 @@ The SkySakura H743 is a flight controller produced by [SkySakuraRC]
 - 2 I2C, I2C1 is used internally.
 - 13 PWM outputs (12 motor outputs, 1 led)
 - 4-12s wide voltage support
+- 1 external spi bus (Default configured as analog OSD)
 
 ## Pinout
 
-![SkySakura H743 Board](SkySakuraH743_top.png "SkySakura H743")
+![SkySakura H743 Board](<SkySakuraH743 Wiring Diagram-1.png> "SkySakura H743")
 
 ## UART Mapping
 
@@ -51,7 +52,9 @@ RC input is configured on UART4 with an sh1.0 connector. It supports all RC prot
 
 ## OSD Support
 
-SkySakura H743  supports HD OSD through UART6 by default.
+SkySakura H743  supports HD OSD through UART6 by default. External spi bus is default configured as analog OSD, connect a 7456 module and set
+
+- OSD_TYPE 1
 
 ## VTX Power Control
 
