@@ -299,7 +299,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                              origin.longitude,
                                              final_alt)
 
-    def change_alt(self, alt_min, climb_throttle=1920, descend_throttle=1080):
+    def change_alt(self, alt_min, *,
+                   threshold_below_m=5.0, threshold_above_m=0.0,
+                   climb_throttle=1920, descend_throttle=1080):
         """Change altitude."""
         def adjust_altitude(current_alt, target_alt, accuracy):
             if math.fabs(current_alt - target_alt) <= accuracy:
@@ -309,8 +311,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             else:
                 self.set_rc(3, descend_throttle)
         self.wait_altitude(
-            (alt_min - 5),
-            alt_min,
+            (alt_min - threshold_below_m),
+            (alt_min + threshold_above_m),
             relative=True,
             called_function=lambda current_alt, target_alt: adjust_altitude(current_alt, target_alt, 1)
         )
@@ -3450,13 +3452,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     self.mode_was_observed = True
 
         self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 100)
+        pre_flip_altitude_m = 20.0
 
-        self.takeoff(20)
+        def get_ready_for_flip():
+            """Ensure copter gets to the proper preconditions to test a flip."""
+            self.progress("Regaining altitude")
+            self.change_alt(pre_flip_altitude_m, threshold_below_m=1.0, threshold_above_m=1.0)
 
-        # Specify this starting mode in order to confirm it is reselected after FLIP mode.
+        acceptable_altitude_loss_during_flip_m = 10.0
+        self.takeoff(pre_flip_altitude_m)
         self.change_mode('ALT_HOLD')
 
-        # Test 1: default flip initialized by RC Aux.
+        get_ready_for_flip()
+        self.start_subtest("Test 1: default flip (roll-right) initialized by RC Aux.")
+
         def wait_for_roll_right_flip():
             """These checkpoints and thresholds need hand-tuning to avoid flakes.
 
@@ -3469,7 +3478,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_attitude(despitch=0, desroll=-30, tolerance=30)
             self.wait_attitude(despitch=0, desroll=0, tolerance=30)
 
-        self.progress("Flipping in roll (default = roll-right)")
         flip_mode_watcher = WatchForMode(self, 'FLIP')
         self.install_message_hook(flip_mode_watcher)
         neutral_stick = 1500
@@ -3491,10 +3499,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not flip_mode_watcher.mode_was_observed:
             raise NotAchievedException("Flip mode did not occur as expected.")
         self.remove_message_hook(flip_mode_watcher)
-        self.progress("Regaining altitude")
-        self.wait_altitude(19, 60, relative=True)
+        self.wait_altitude(
+            pre_flip_altitude_m - acceptable_altitude_loss_during_flip_m,
+            pre_flip_altitude_m + acceptable_altitude_loss_during_flip_m,
+            relative=True,
+        )
 
-        # Test 2: flip in a pilot-directed direction initialized by mode-change to FLIP.
+        self.start_subtest("Test 2: flip in a pilot-directed direction initialized by mode-change to FLIP.")
+        get_ready_for_flip()
+
         def wait_for_pitch_back_flip():
             """These checkpoints and thresholds need hand-tuning to avoid flakes.
 
@@ -3527,10 +3540,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, neutral_stick)
         self.wait_attitude(despitch=0, desroll=0, tolerance=5)
         self.wait_mode('ALT_HOLD')
-        self.progress("Regaining altitude")
-        self.wait_altitude(19, 60, relative=True)
+        self.wait_altitude(
+            pre_flip_altitude_m - acceptable_altitude_loss_during_flip_m,
+            pre_flip_altitude_m + acceptable_altitude_loss_during_flip_m,
+            relative=True,
+        )
 
         self.start_subtest("Test 3: Enter & abandon the flip using RC Aux")
+        get_ready_for_flip()
 
         def df_log_shows_a_flip_was_abandoned() -> bool:
             """Returns true if the dataflash log shows a flip mode was abandoned."""

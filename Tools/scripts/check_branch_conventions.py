@@ -9,6 +9,8 @@ Validates:
   - commit messages have a well-formed subsystem prefix before ':'
   - commit subject lines are <= 160 characters
   - changed markdown files pass markdownlint-cli2
+  - new hwdef board directories include a README.md
+  - new hwdef board READMEs contain at least one local image added in the PR
 
 AP_FLAKE8_CLEAN
 '''
@@ -464,6 +466,127 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         print(f"{PASS} No setext/RST underline headings in changed markdown files.")
         return True
 
+    def check_new_board_has_readme(self) -> bool:
+        '''Every new hwdef board directory must include a README.md.'''
+
+        added_raw = self.run_git(
+            ["diff", "--name-only", "--diff-filter=A",
+             f"{self.base_branch}...HEAD"],
+            show_output=False,
+        ).strip()
+        added_files = set(added_raw.splitlines()) if added_raw else set()
+
+        hwdef_prefix = "libraries/AP_HAL_ChibiOS/hwdef/"
+        # Board dirs that have at least one newly added file at depth 1 under hwdef/
+        candidate_boards = {
+            f.split("/")[3]
+            for f in added_files
+            if f.startswith(hwdef_prefix) and f.count("/") == 4
+        }
+
+        if not candidate_boards:
+            print(f"{PASS} No new hwdef board directories added.")
+            return True
+
+        # Determine which of those dirs are genuinely new (absent in base branch)
+        existing_raw = self.run_git(
+            ["ls-tree", "--name-only", self.base_branch,
+             hwdef_prefix],
+            show_output=False,
+        ).strip()
+        existing_boards = {
+            os.path.basename(p)
+            for p in existing_raw.splitlines()
+            if p.strip()
+        }
+
+        new_boards = sorted(candidate_boards - existing_boards)
+        if not new_boards:
+            print(f"{PASS} No new hwdef board directories added.")
+            return True
+
+        ok = True
+        for board_name in new_boards:
+            board_prefix = f"{hwdef_prefix}{board_name}/"
+            has_readme = any(
+                os.path.basename(f) == "README.md"
+                for f in added_files
+                if f.startswith(board_prefix)
+            )
+            if has_readme:
+                print(f"{PASS} {board_name}: README.md present.")
+            else:
+                print(f"{FAIL} {board_name}: new board directory has no README.md.")
+                ok = False
+
+        return ok
+
+    def check_new_board_images(self) -> bool:
+        '''For each newly added hwdef board README, verify it contains at least one
+        local image reference that is also a newly added file in the PR.'''
+
+        # All files added (not modified) in this PR
+        added_raw = self.run_git(
+            ["diff", "--name-only", "--diff-filter=A",
+             f"{self.base_branch}...HEAD"],
+            show_output=False,
+        ).strip()
+        added_files = set(added_raw.splitlines()) if added_raw else set()
+
+        hwdef_prefix = "libraries/AP_HAL_ChibiOS/hwdef/"
+        # New READMEs exactly one directory level under hwdef/
+        # e.g. libraries/AP_HAL_ChibiOS/hwdef/NewBoard/README.md → 4 slashes
+        new_readmes = sorted(
+            f for f in added_files
+            if f.startswith(hwdef_prefix)
+            and os.path.basename(f) == "README.md"
+            and f.count("/") == 4
+        )
+
+        if not new_readmes:
+            print(f"{PASS} No new hwdef board READMEs added.")
+            return True
+
+        img_md_re = re.compile(r'!\[[^\]]*\]\(([^)#?\s]+)')
+
+        ok = True
+        for readme_path in new_readmes:
+            board_name = readme_path.split("/")[3]
+
+            if not os.path.exists(readme_path):
+                print(f"{SKIP} {board_name}: README not present locally, skipping image check.")
+                continue
+
+            with open(readme_path, encoding="utf-8", errors="replace") as fh:
+                content = fh.read()
+
+            readme_dir = os.path.dirname(readme_path)
+            local_refs = []
+            for m in img_md_re.finditer(content):
+                src = m.group(1).strip()
+                if not src.startswith(("http://", "https://", "//")):
+                    local_refs.append(src)
+
+            if not local_refs:
+                print(f"{FAIL} {board_name}: README.md contains no local image references.")
+                ok = False
+                continue
+
+            found = any(
+                os.path.normpath(os.path.join(readme_dir, src)) in added_files
+                for src in local_refs
+            )
+            if found:
+                print(f"{PASS} {board_name}: README.md includes at least one image added in this PR.")
+            else:
+                print(f"{FAIL} {board_name}: README.md has no local images added in this PR.")
+                for src in local_refs:
+                    resolved = os.path.normpath(os.path.join(readme_dir, src))
+                    print(f"         {src!r} → {resolved}")
+                ok = False
+
+        return ok
+
     def check_markdown(self) -> bool:
         changed_md = self.run_git(
             ["diff", "--name-only", "--diff-filter=AM",
@@ -508,6 +631,8 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_author_emails(),
             self.check_submodule_isolation(),
             self.check_submodule_references_exist(),
+            self.check_new_board_has_readme(),
+            self.check_new_board_images(),
             self.check_markdown(),
             self.check_markdown_rst_hyperlinks(),
             self.check_markdown_rst_underlines(),
