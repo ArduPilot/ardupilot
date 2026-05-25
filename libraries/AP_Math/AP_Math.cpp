@@ -506,7 +506,7 @@ float fixedwing_turn_rate(float bank_angle_deg, float airspeed)
     return degrees(GRAVITY_MSS*tanf(radians(bank_angle_deg))/MAX(airspeed,1));
 }
 
-// convert degrees farenheight to Kelvin
+// convert degrees fahrenheit to Kelvin
 float degF_to_Kelvin(float temp_f)
 {
     return (temp_f + 459.67) * 0.55556;
