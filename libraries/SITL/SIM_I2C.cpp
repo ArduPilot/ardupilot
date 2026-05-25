@@ -194,7 +194,7 @@ struct i2c_device_at_address {
     { 1, 0x42, ina3221 },
 #endif
 #if AP_SIM_TEMPERATURE_TSYS01_ENABLED
-    { 1, 0x77, tsys01 },
+    { 0, 0x77, tsys01 },
 #endif
 #if AP_SIM_BATT_MONITOR_SMBUS_ROTOYE_ENABLED
     { 1, 0x0B, rotoye },        // Rotoye: BATTx_MONITOR 19, BATTx_I2C_ADDR 13
