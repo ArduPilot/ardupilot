@@ -1182,7 +1182,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # altitude plus a 25 °C board-heating offset, giving ~40 °C at sea level.
         self.temperature_sensor_test({
             'TEMP1_TYPE': 1,
-            'TEMP1_BUS': 1,
+            'TEMP1_BUS': 0,
             'TEMP1_ADDR': 0x77,
         }, sensor_name="TSYS01", temp_min=39, temp_max=41)
 
