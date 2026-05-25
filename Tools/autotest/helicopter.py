@@ -227,7 +227,21 @@ class AutoTestHelicopter(AutoTestCopter):
         self.takeoff(10)
         self.do_RTL()
 
+    def DDFPTail(self):
+        # simple check to ensure servo output to DDFP tail is working
+        '''Test DDFP Tail Rotor'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-ddfptail'),
+            model="heli-ddfptail",
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.wait_servo_channel_value(4, 1403, timeout=10)
+        self.do_RTL()
+
     def DDVPTail(self):
+        # simple check to ensure servo output to DDVP tail is working
         '''Test DDVP Tail Rotor'''
         self.customise_SITL_commandline(
             [],
@@ -1222,6 +1236,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.NastyMission,
             self.PIDNotches,
             self.AutoTune,
+            self.DDFPTail,
             self.DDVPTail,
             self.MountFailsafeAction,
         ])
