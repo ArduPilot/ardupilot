@@ -91,7 +91,7 @@ class BuildScriptBase:
             except Exception:  # noqa: BLE001 — best-effort debug-file write
                 self.progress("Writing process failure file failed")
             raise subprocess.CalledProcessError(
-                returncode, cmd_list)
+                status, cmd_list)
         return output
 
     def find_current_git_branch_or_sha1(self):
