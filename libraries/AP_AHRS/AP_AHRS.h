@@ -109,7 +109,7 @@ public:
     bool get_location(Location &loc) const WARN_IF_UNUSED;
 
     // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const WARN_IF_UNUSED;
+    bool get_hagl(float &hagl) const WARN_IF_UNUSED { return active_estimates->get_hagl(hagl); }
 
     // status reporting of estimated error
     float           get_error_rp() const;

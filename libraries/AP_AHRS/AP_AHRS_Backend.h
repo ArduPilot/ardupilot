@@ -53,6 +53,13 @@ public:
 
     // structure to retrieve results from backends:
     struct Estimates {
+        // allow backends to set the private members:
+        friend class AP_AHRS_DCM;
+        friend class AP_AHRS_SIM;
+        friend class AP_AHRS_External;
+        friend class AP_AHRS_NavEKF2;
+        friend class AP_AHRS_NavEKF3;
+
         // if attitude_valid is true then all of the
         // eulers/quaternion/matrix must be valid:
         bool attitude_valid;
@@ -112,6 +119,9 @@ public:
             return true;
         }
 
+        /*
+         * position estimates
+         */
         Location location;
         bool location_valid;
 
@@ -119,6 +129,15 @@ public:
             loc = location;
             return location_valid;
         };
+
+        bool get_hagl(float &height) const WARN_IF_UNUSED {
+            height = hagl;
+            return hagl_valid;
+        }
+
+    private:
+        bool hagl_valid;
+        float hagl;
     };
 
     // init sets up INS board orientation
@@ -157,9 +176,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // get latest altitude estimate above ground level in meters and validity flag
-    virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
     // return a wind estimation vector, in m/s
     virtual bool wind_estimate(Vector3f &wind) const = 0;

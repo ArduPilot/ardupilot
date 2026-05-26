@@ -167,7 +167,14 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
 
+    /*
+     * position estimates
+     */
     results.location_valid = get_location(results.location);
+
+    // hagl is not supplied:
+    // results.hagl_valid = false;
+    // results.hagl = 0;
 }
 
 /*

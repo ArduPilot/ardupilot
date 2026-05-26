@@ -121,11 +121,6 @@ public:
         EKF2.requestYawReset();
     }
 
-    // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override WARN_IF_UNUSED {
-        return EKF2.getHAGL(hagl);
-    }
-
     // this is out here so parameters can be poked into it
     static NavEKF2 EKF2;
 

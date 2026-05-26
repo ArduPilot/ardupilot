@@ -71,6 +71,8 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
      * position estimates
      */
     results.location_valid = EKF2.getLLH(results.location);
+
+    results.hagl_valid = EKF2.getHAGL(results.hagl);
 }
 
 bool AP_AHRS_NavEKF2::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
