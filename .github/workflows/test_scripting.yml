@@ -40,6 +40,13 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Checkout waf submodule
+        run: git submodule update --init --recursive --depth 1 modules/waf
+
+      - name: Install pip dependencies
+        run: |
+          python3 -m pip install github-release-downloader empy==3.3.4
+
       - name: Register lua check problem matcher
         run: |
           echo "::add-matcher::.github/problem-matchers/Lua.json"
@@ -60,7 +67,6 @@ jobs:
       - name: Language server check
         shell: bash
         run: |
-          python3 -m pip install github-release-downloader
           python3 ./Tools/scripts/run_lua_language_check.py --debugLogging
 
       - name: Remove problem matchers
