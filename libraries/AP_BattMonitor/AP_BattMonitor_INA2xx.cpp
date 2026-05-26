@@ -82,7 +82,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 // list of addresses to probe if I2C_ADDR is zero
-const uint8_t AP_BattMonitor_INA2XX::i2c_probe_addresses[] { 0x41, 0x44, 0x45 };
+const uint8_t AP_BattMonitor_INA2XX::i2c_probe_addresses[] { 0x40, 0x41, 0x44, 0x45 };
 
 const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
@@ -96,7 +96,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
-    // @Description: Battery monitor I2C address. If this is zero then probe list of supported addresses
+    // @Description: Battery monitor I2C address in decimal. If this is zero then probe list of supported addresses
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True

@@ -613,10 +613,11 @@ float ModeRTL::wp_bearing_deg() const
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeRTL::use_pilot_yaw(void) const
 {
-    const bool allow_yaw_option = !option_is_enabled(Option::IgnorePilotYaw);
-    const bool land_repositioning = g.land_repositioning && (_state == SubMode::FINAL_DESCENT);
-    const bool final_landing = _state == SubMode::LAND;
-    return allow_yaw_option || land_repositioning || final_landing;
+    // use land mode setting during descent
+    if (_state == SubMode::FINAL_DESCENT || _state == SubMode::LAND) {
+        return copter.mode_land.use_pilot_yaw();
+    }
+    return !option_is_enabled(Option::IgnorePilotYaw);
 }
 
 bool ModeRTL::set_speed_NE_ms(float speed_ne_ms)

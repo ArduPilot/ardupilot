@@ -70,12 +70,6 @@ public:
         return true;
     }
 
-    Vector2f groundspeed_vector(void) override {
-        Vector3f vec;
-        EKF2.getVelNED(vec);
-        return vec.xy();
-    }
-
     bool use_compass() override {
         return EKF2.use_compass();
     }
