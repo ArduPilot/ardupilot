@@ -704,6 +704,20 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
+
+class ScriptingDocsCtx(Build.BuildContext):
+    '''generate scripting docs'''
+    cmd = 'scripting_docs'
+    fun = 'scripting_docs'
+
+
+def scripting_docs(bld):
+    '''Generate Lua scripting docs by reusing the AP_Scripting build() tasks'''
+    bld.add_group('dynamic_sources')
+    bld.options.scripting_docs = True
+    bld.options.enable_scripting = True
+    bld.recurse('libraries/AP_Scripting', name='build')
+
 def list_ap_periph_boards(ctx):
     print(*boards.get_ap_periph_boards())
 
