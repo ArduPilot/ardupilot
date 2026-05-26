@@ -1453,38 +1453,6 @@ bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
     return active_estimates->get_vert_pos_rate_D(velocity);
 }
 
-// get latest height above ground level estimate in metres and a validity flag
-bool AP_AHRS::get_hagl(float &height) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return false;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.get_hagl(height);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.get_hagl(height);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_hagl(height);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL: {
-        return false;
-    }
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
-}
-
 /*
   return a relative NED position from the origin in meters
 */

@@ -53,7 +53,14 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // ground velocity estimate in meters/second, in North/East order
     results.velocity_NE = AP::externalAHRS().get_groundspeed_vector();
 
+    /*
+     * position estimates
+     */
     results.location_valid = AP::externalAHRS().get_location(results.location);
+
+    // hagl is not supplied:
+    // results.hagl_valid = false;
+    // results.hagl = 0;
 }
 
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3p &vec) const
