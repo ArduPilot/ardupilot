@@ -18,7 +18,9 @@
 
 #include <strings.h>
 #include <AP_Math/definitions.h>
+
 extern const AP_HAL::HAL &hal;
+
 #define SPL06_CHIP_ID                          0x10
 #define SPA06_CHIP_ID                          0x11
 
@@ -43,7 +45,6 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_REG_CALIB_COEFFS_START           0x10
 #define SPL06_REG_CALIB_COEFFS_END             0x21
 #define SPA06_REG_CALIB_COEFFS_END             0x24
-#define SPL07_REG_CALIB_COEFFS_END             0x24
 
 // PRESSURE_CFG_REG
 #define SPL06_PRES_RATE_32HZ				   (0x05 << 4)
@@ -78,6 +79,10 @@ extern const AP_HAL::HAL &hal;
 // enable Background Mode for continuous measurement
 #ifndef AP_BARO_SPL06_BACKGROUND_ENABLE
 #define AP_BARO_SPL06_BACKGROUND_ENABLE 1
+#endif
+
+#ifndef AP_BARO_SPL07_ENABLED
+#define AP_BARO_SPL07_ENABLED 0
 #endif
 
 AP_Baro_SPL06::AP_Baro_SPL06(AP_Baro &baro, AP_HAL::Device &dev)
@@ -121,23 +126,25 @@ bool AP_Baro_SPL06::_init()
 				type = Type::SPL06;
 				break;
 			case SPA06_CHIP_ID:
-#ifdef AP_BARO_SPL07_ENABLED
+#if AP_BARO_SPL07_ENABLED
                 type = Type::SPL07;
 				break; 
 #else
-            if (AP::baro().option_enabled(AP_Baro::Options::TreatSPA06AsSPL07)) {
-                type = Type::SPL07;
-				break; 
-            } else {
-                type = Type::SPA06;
-				break;
-            }  
+                if (AP::baro().option_enabled(AP_Baro::Options::TreatSPA06AsSPL07)) {
+                    type = Type::SPL07;
+                    break; 
+                } else {
+                    type = Type::SPA06;
+                    break;
+                }  
 #endif  // AP_BARO_SPL07_ENABLED          			
+            }
         }
+
         if (type != Type::UNKNOWN)
 			break;
     }
-}
+
     if (type == Type::UNKNOWN) {
         return false;
     }
@@ -152,7 +159,7 @@ bool AP_Baro_SPL06::_init()
 		SPL06_CALIB_COEFFS_LEN = SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
         break;
 	case Type::SPL07:
-		SPL06_CALIB_COEFFS_LEN = SPL07_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+		SPL06_CALIB_COEFFS_LEN = SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
 		break;
 	default:
 		break;
@@ -224,15 +231,20 @@ bool AP_Baro_SPL06::_init()
 	//enable background mode
 	_dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_CON_PRE_TEM, true);
 #else 
-    if(type == Type::SPA06) {
+    switch(type) {
+    case Type::SPA06:
     // setup temperature and pressure measurements
     _dev->setup_checked_registers(3, 20);
     _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
     _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
-    } else {
+        break;
+    case Type::SPL07:
      _dev->setup_checked_registers(3, 20);
     _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL07_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
     _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL07_PRES_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);       
+        break;
+    default:
+        break; 
     }
 #endif //AP_BARO_SPL06_BACKGROUND_ENABLE
 
@@ -246,12 +258,18 @@ bool AP_Baro_SPL06::_init()
     _dev->write_register(SPL06_REG_INT_AND_FIFO_CFG, int_and_fifo_reg_value, true);
 
     _instance = _frontend.register_sensor();
-    if(type == Type::SPL06) {
-	    _dev->set_device_type(DEVTYPE_BARO_SPL06);
-    } else if(type == Type::SPL07) {
-	    _dev->set_device_type(DEVTYPE_BARO_SPL07);
-    } else {
+    switch(type) {
+    case Type::SPL06:
+        _dev->set_device_type(DEVTYPE_BARO_SPL06);
+		break;
+    case Type::SPA06:
         _dev->set_device_type(DEVTYPE_BARO_SPA06);
+        break;
+    case Type::SPL07:
+        _dev->set_device_type(DEVTYPE_BARO_SPL07);
+        break;
+    default:
+        break;       
     }
 
     set_bus_id(_instance, _dev->get_bus_id());
@@ -365,7 +383,7 @@ void AP_Baro_SPL06::_update_pressure(int32_t press_raw)
 		pressure_cal = (float)_c00 + press_raw_sc * ((float)_c10 + press_raw_sc * ((float)_c20 + press_raw_sc * _c30));
 		press_temp_comp = _temp_raw * ((float)_c01 + press_raw_sc * ((float)_c11 + press_raw_sc * ((float)_c21) + press_raw_sc * _c31));
 		break;
-		default:
+	default:
 		break;
 	}
 
