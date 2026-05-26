@@ -216,6 +216,7 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
         break;
     }
 
+    // special semantics for Sysfs - don't allow seeking outside the file
     if (new_ofs < 0 || new_ofs > r.str->get_length()) {
         errno = EINVAL;
         return -1;
