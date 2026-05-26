@@ -14,6 +14,9 @@ import subprocess
 import sys
 import time
 
+from abc import ABC
+from abc import abstractmethod
+
 import board_list
 
 # map from vehicle names to binary names
@@ -31,7 +34,7 @@ VEHICLE_MAP = {
 }
 
 
-class BuildScriptBase:
+class BuildScriptBase(ABC):
     """Base class for build scripts with common utilities for running programs"""
 
     def __init__(self):
@@ -231,6 +234,10 @@ class BuildScriptBase:
                     break
 
         return sorted(modified_board_names, key=lambda x: x.lower())
+
+    @abstractmethod
+    def progress_prefix(self) -> str:
+        '''return a short prefix string identifying this script in log output'''
 
     def progress(self, string):
         '''pretty-print progress'''
