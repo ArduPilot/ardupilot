@@ -3902,6 +3902,14 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
     mavlink_msg_named_value_float_decode(&msg, &p);
     char s[11] {};
     strncpy(s, p.name, sizeof(s)-1);
+// @LoggerMessage: NVAL
+// @Description: Named values received via MAVLink NAMED_VALUE_FLOAT
+// @Field: TimeUS: Time since system startup
+// @Field: TimeBootMS: Time since boot from the incoming message
+// @Field: Name: Name of value
+// @Field: Value: Float value
+// @Field: SSys: MAVLink source system ID
+// @Field: SCom: MAVLink source component ID
     logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
                   AP_HAL::micros64(),
                   p.time_boot_ms,
