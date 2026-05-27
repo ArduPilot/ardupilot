@@ -73,7 +73,7 @@ public:
         // frame.  A backend using the autopilot sensors will need to
         // rotate according to the TRIM parameters.  An ExternalAHRS
         // won't!
-        bool get_quaternion(Quaternion &quat) const {
+        bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED {
             quat = quaternion;
             return attitude_valid;
         }
@@ -83,9 +83,9 @@ public:
         Vector3f accel_ef;
         Vector3f accel_bias;
 
-        // a ground velocity in meters/second, North/East/Down
-        Vector3f velocity_NED;
-        bool velocity_NED_valid;
+        /*
+         * linear velocity estimates
+         */
         // return a ground velocity in meters/second, North/East/Down
         bool get_velocity_NED(Vector3f &vel) const WARN_IF_UNUSED {
             if (!velocity_NED_valid) {
@@ -97,21 +97,13 @@ public:
         // ground velocity estimate in meters/second, in North/East order
         Vector2f velocity_NE;
 
-        // a derivative of the vertical position in m/s which is
-        // kinematically consistent with the vertical position is
-        // required by some control loops.
-        // This is different to the vertical velocity from the EKF
-        // which is not always consistent with the vertical position
-        // due to the various errors that are being corrected for.
-        float vert_pos_rate_D;
-        bool vert_pos_rate_D_valid;
         // Get a derivative of the vertical position in m/s which is
         // kinematically consistent with the vertical position is
         // required by some control loops.
         // This is different to the vertical velocity from the EKF
         // which is not always consistent with the vertical position
         // due to the various errors that are being corrected for.
-        bool get_vert_pos_rate_D(float &velocity) const {
+        bool get_vert_pos_rate_D(float &velocity) const WARN_IF_UNUSED {
             if (!vert_pos_rate_D_valid) {
                 return false;
             }
@@ -122,10 +114,7 @@ public:
         /*
          * position estimates
          */
-        Location location;
-        bool location_valid;
-
-        bool get_location(Location &loc) const {
+        bool get_location(Location &loc) const WARN_IF_UNUSED {
             loc = location;
             return location_valid;
         };
@@ -136,6 +125,29 @@ public:
         }
 
     private:
+
+        /*
+         * linear velocity estimates
+         */
+        // a ground velocity in meters/second, North/East/Down
+        Vector3f velocity_NED;
+        bool velocity_NED_valid;
+
+        // a derivative of the vertical position in m/s which is
+        // kinematically consistent with the vertical position is
+        // required by some control loops.
+        // This is different to the vertical velocity from the EKF
+        // which is not always consistent with the vertical position
+        // due to the various errors that are being corrected for.
+        float vert_pos_rate_D;
+        bool vert_pos_rate_D_valid;
+
+        /*
+         * position estimates
+         */
+        Location location;
+        bool location_valid;
+
         bool hagl_valid;
         float hagl;
     };
