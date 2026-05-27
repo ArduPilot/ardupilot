@@ -924,13 +924,6 @@ private:
     // poke AP_Notify based on values from status
     void update_notify_from_filter_status(const nav_filter_status &status);
 
-    /*
-     * copy results from a backend over AP_AHRS canonical results.
-     * This updates member variables like roll and pitch, as well as
-     * updating derived values like sin_roll and sin_pitch.
-     */
-    void copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estimates &results);
-
     // write out secondary estimates:
     void Write_AHRS2(void) const;
     // write POS (canonical vehicle position) message out:
