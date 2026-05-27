@@ -15,13 +15,61 @@
 
 // Vehicle-agnostic ground-effect takeoff/touchdown detector. Decides when
 // the EKF should be told to expect baro disturbance from rotor downwash
-// near the ground, and pushes that signal to AP_AHRS.
+// near the ground, and pushes that signal to AP_AHRS via
+// set_takeoff_expected / set_touchdown_expected. The vehicle wires an
+// AC_PosControl in once and the library queries it (and AP::ahrs())
+// directly each tick. Per-cycle vehicle state the takeoff window needs
+// is passed straight to update(); mode-conditional or sensor-derived
+// flags use setters so the vehicle only updates them when the underlying
+// signal actually changes.
 //
-// The vehicle wires an AC_PosControl in once and the library queries it
-// (and AP::ahrs()) directly each tick. Per-cycle vehicle state needed by
-// the takeoff window is passed straight to update(); mode-conditional or
-// sensor-derived flags use setters so the vehicle only updates them when
-// the underlying signal actually changes.
+// Two independent signals are emitted:
+//
+//   takeoff_expected   - latched true once the vehicle is armed and
+//                        land_complete, cleared once (a) GNDEFF_TMO has
+//                        elapsed AND height has cleared GNDEFF_ALT, or
+//                        (b) a 5 s hard timeout fires. GNDEFF_TMO
+//                        exists to keep compensation engaged through a
+//                        baro disturbance window even when the EKF
+//                        altitude has already crossed the threshold.
+//
+//   touchdown_expected - re-evaluated every tick from slow horizontal
+//                        speed AND slow descent AND "near ground"
+//                        (defined by GNDEFF_ALT). Never latched: it is
+//                        the instantaneous answer to "does this look
+//                        like a landing approach right now?".
+//
+// Height source (used by both signals via "above GNDEFF_ALT" /
+// "below GNDEFF_ALT" checks) is selected in this order:
+//
+//   1. AP_AHRS::get_hagl()             - rangefinder, or EKF3's
+//                                        optflow AGL Kalman filter
+//   2. AP_Terrain::height_above_terrain()
+//                                      - GPS position plus onboard
+//                                        terrain tiles for current loc
+//   3. relative-to-takeoff (-pos_d minus the altitude latched at
+//                          liftoff) with horizontal position available
+//   4. relative-to-takeoff with no horizontal position (baro-only):
+//                          assumes the ground beneath the vehicle is at
+//                          the takeoff elevation
+//
+// Paths 3 and 4 are not strictly AGL: they trust that the ground has
+// not changed elevation since liftoff. For the takeoff_expected window
+// (which closes within ~5 s of liftoff) that is almost always fine.
+// For touchdown_expected (which the vehicle may evaluate minutes later,
+// hundreds of metres from launch) it is not, so path 3 additionally
+// requires the vehicle to be within
+// AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M of the takeoff XY position before
+// the touchdown altitude gate is allowed to fire. Drift further than
+// that and touchdown_expected stays false regardless of motion, since
+// we have no basis to believe the ground below is at takeoff elevation.
+// Path 4 (no horizontal position at all) cannot apply the drift gate
+// and has to assume flat terrain.
+//
+// GNDEFF_ALT = 0 disables the altitude gate on the touchdown side
+// entirely (matches the legacy "any gentle descent counts" behaviour)
+// while still acting as the takeoff release threshold on the takeoff
+// side.
 
 #pragma once
 
