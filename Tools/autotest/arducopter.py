@@ -12975,7 +12975,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                        (duration, want_lt))
 
     def TakeoffGroundEffectAlt(self):
-        '''Test TKOFF_GNDEFF_ALT and TKOFF_GNDEFF_TMO gate the ground-effect compensation window'''
+        '''Test GNDEFF_ALT and GNDEFF_TMO gate the ground-effect compensation window'''
         # SIM_BARO_GEFF injects a real baro static-pressure error near the
         # ground so the compensation window has something to compensate for;
         # without it the detector parameters would be exercised but the
@@ -12986,8 +12986,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         # Subtest A: large threshold — takeoff_expected persists at 5m
-        self.start_subtest("Large TKOFF_GNDEFF_ALT keeps ground effect at 5m")
-        self.set_parameter("TKOFF_GNDEFF_ALT", 10)
+        self.start_subtest("Large GNDEFF_ALT keeps ground effect at 5m")
+        self.set_parameter("GNDEFF_ALT", 10)
         self.takeoff(5, mode='ALT_HOLD')
         self.delay_sim_time(5)
         self.change_mode('LAND')
@@ -13000,8 +13000,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "takeoff_expected should persist with large threshold (got %fs, want>3)" % total_large)
 
         # Subtest B: small threshold — takeoff_expected clears quickly
-        self.start_subtest("Small TKOFF_GNDEFF_ALT clears ground effect at 5m")
-        self.set_parameter("TKOFF_GNDEFF_ALT", 0.5)
+        self.start_subtest("Small GNDEFF_ALT clears ground effect at 5m")
+        self.set_parameter("GNDEFF_ALT", 0.5)
         self.takeoff(5, mode='ALT_HOLD')
         self.delay_sim_time(5)
         self.change_mode('LAND')
@@ -13016,12 +13016,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Smaller threshold should have shorter ground effect (small=%fs >= large=%fs)"
                 % (total_small, total_large))
 
-        # Subtest C: TKOFF_GNDEFF_TMO requires both timeout AND altitude
+        # Subtest C: GNDEFF_TMO requires both timeout AND altitude
         # With small altitude threshold but timeout set, ground effect should persist longer
-        self.start_subtest("TKOFF_GNDEFF_TMO extends ground effect duration")
+        self.start_subtest("GNDEFF_TMO extends ground effect duration")
         self.set_parameters({
-            "TKOFF_GNDEFF_ALT": 0.5,  # Small threshold - would clear quickly without timeout
-            "TKOFF_GNDEFF_TMO": 3,    # Require 3s timeout as well
+            "GNDEFF_ALT": 0.5,  # Small threshold - would clear quickly without timeout
+            "GNDEFF_TMO": 3,    # Require 3s timeout as well
         })
         self.reboot_sitl()
         self.takeoff(5, mode='ALT_HOLD')
@@ -13035,7 +13035,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # With timeout, ground effect should persist longer than without (even with small alt threshold)
         if total_tmo <= total_small:
             raise NotAchievedException(
-                "TKOFF_GNDEFF_TMO should extend ground effect (tmo=%fs <= no_tmo=%fs)"
+                "GNDEFF_TMO should extend ground effect (tmo=%fs <= no_tmo=%fs)"
                 % (total_tmo, total_small))
 
     def _MAV_CMD_CONDITION_YAW(self, command):
