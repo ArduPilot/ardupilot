@@ -19,10 +19,17 @@
 
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Terrain/AP_Terrain.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 
 // hard cap on the takeoff_expected window, irrespective of GNDEFF_TMO
 #define AP_GROUNDEFFECT_TAKEOFF_MAX_MS 5000U
+
+// once we are using the relative-to-takeoff height fallback with GPS but
+// no rangefinder/terrain, disable the touchdown altitude gate once the
+// vehicle has drifted this far horizontally from where it lifted off, as
+// the terrain elevation under it may differ from the launch site
+#define AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M 20.0f
 
 const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
@@ -80,21 +87,47 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         _state.takeoff_expected = true;
     }
 
+    // Anchor the takeoff timer, altitude and XY position while still on
+    // the ground without throttle up. Only the relative-to-takeoff
+    // fallback consumes these; HAGL / terrain paths ignore them.
     float pos_d_m = 0;
     UNUSED_RESULT(ahrs.get_relative_position_D_origin_float(pos_d_m));
+    Vector2f pos_ne_m;
+    const bool have_pos_ne = ahrs.get_relative_position_NE_origin_float(pos_ne_m);
 
-    // hold the takeoff timer at "now" and capture takeoff altitude until
-    // the pilot commands throttle up while still landed
     if (!throttle_up && land_complete) {
         _state.takeoff_time_ms = tnow_ms;
         _state.takeoff_alt_m = -pos_d_m;
+        _state.takeoff_pos_ne_m = pos_ne_m;
+    }
+
+    // Pick the best available height. EKF HAGL covers rangefinder and
+    // EKF3's optflow AGL KF; terrain database covers GPS + onboard tiles;
+    // otherwise fall back to height-since-takeoff and assume flat ground.
+    float height_m = 0;
+    bool height_is_agl = false;
+    if (ahrs.get_hagl(height_m)) {
+        height_is_agl = true;
+    }
+#if AP_TERRAIN_AVAILABLE
+    if (!height_is_agl) {
+        AP_Terrain *terrain = AP::terrain();
+        // extrapolate=false: with no tiles loaded, height_above_terrain
+        // still "succeeds" by returning the raw AMSL altitude, which we
+        // do not want; require real data.
+        if (terrain != nullptr && terrain->height_above_terrain(height_m, false)) {
+            height_is_agl = true;
+        }
+    }
+#endif
+    if (!height_is_agl) {
+        height_m = -pos_d_m - _state.takeoff_alt_m;
     }
 
     // GNDEFF_TMO is a minimum hold time before the altitude check is
     // allowed to release; the 5s hard timeout still applies unconditionally.
-    const float height_above_takeoff_m = -pos_d_m - _state.takeoff_alt_m;
     const uint32_t min_hold_ms = MIN(uint32_t(_timeout_s * 1000.0f), AP_GROUNDEFFECT_TAKEOFF_MAX_MS);
-    const bool above_alt = height_above_takeoff_m > _alt_m;
+    const bool above_alt = height_m > _alt_m;
     const bool min_hold_elapsed = AP_HAL::timeout_expired(_state.takeoff_time_ms, tnow_ms, min_hold_ms);
     const bool max_timeout = AP_HAL::timeout_expired(_state.takeoff_time_ms, tnow_ms, AP_GROUNDEFFECT_TAKEOFF_MAX_MS);
 
@@ -122,10 +155,24 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
     const bool speed_low_d = ahrs.get_velocity_D(vel_d_ms, _high_vibrations) && fabsf(vel_d_ms) <= 0.6f;
     const bool slow_descent = slow_descent_demanded || (speed_low_d && descent_demanded);
 
-    // when GNDEFF_ALT is zero the touchdown altitude gate is disabled,
-    // preserving the legacy "expect touchdown any time the descent looks
-    // gentle" behaviour
-    const bool near_ground = is_positive(_alt_m) ? (height_above_takeoff_m < _alt_m) : true;
+    // Touchdown altitude gate.
+    //   - GNDEFF_ALT <= 0: legacy behaviour, any gentle descent counts
+    //   - HAGL or terrain height available: trust height_m directly
+    //   - relative-to-takeoff fallback with horizontal position: only
+    //     trust the gate while still within AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M
+    //     of the launch point; further out we cannot assume the ground
+    //     beneath us is at the takeoff elevation
+    //   - baro-only fallback (no horizontal position): assume flat ground
+    bool near_ground;
+    if (!is_positive(_alt_m)) {
+        near_ground = true;
+    } else if (height_is_agl || !have_pos_ne) {
+        near_ground = height_m < _alt_m;
+    } else {
+        const float drift_m = (pos_ne_m - _state.takeoff_pos_ne_m).length();
+        near_ground = (drift_m < AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M)
+                      && (height_m < _alt_m);
+    }
 
     _state.touchdown_expected = slow_horizontal && slow_descent && near_ground;
 
