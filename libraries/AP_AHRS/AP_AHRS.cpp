@@ -438,7 +438,9 @@ void AP_AHRS::reset_gyro_drift(void)
 }
 
 /*
-  update state structure after each update()
+ * copy results from a backend over AP_AHRS canonical results.
+ * This updates member variables like roll and pitch, as well as
+ * updating derived values like sin_roll and sin_pitch.
  */
 void AP_AHRS::update_state(void)
 {
@@ -458,6 +460,22 @@ void AP_AHRS::update_state(void)
     state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
     state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
     state.airspeed_TAS_vec_ok = _airspeed_TAS(state.airspeed_TAS_vec);
+
+    roll = active_estimates->roll_rad;
+    pitch = active_estimates->pitch_rad;
+    yaw = active_estimates->yaw_rad;
+
+    state.dcm_matrix = active_estimates->dcm_matrix;
+
+    state.gyro_estimate = active_estimates->gyro_estimate;
+    state.gyro_drift = active_estimates->gyro_drift;
+
+    state.accel_ef = active_estimates->accel_ef;
+    state.accel_bias = active_estimates->accel_bias;
+
+    update_cd_values();
+    update_trig();
+
     state.quat_ok = active_estimates->get_quaternion(state.quat);
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
@@ -572,10 +590,8 @@ void AP_AHRS::update(bool skip_ins_update)
     }
 #endif // HAL_GCS_ENABLED
 
-    // update published state
+    // update published state, including copying state from the active backend:
     update_state();
-
-    copy_estimates_from_backend_estimates(*active_estimates);
 
 #if AP_MODULE_SUPPORTED
     // call AHRS_update hook if any
@@ -605,29 +621,6 @@ void AP_AHRS::update(bool skip_ins_update)
         hal.scheduler->delay_microseconds(random() % sitl->loop_time_jitter_us);
     }
 #endif
-}
-
-/*
- * copy results from a backend over AP_AHRS canonical results.
- * This updates member variables like roll and pitch, as well as
- * updating derived values like sin_roll and sin_pitch.
- */
-void AP_AHRS::copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estimates &results)
-{
-    roll = results.roll_rad;
-    pitch = results.pitch_rad;
-    yaw = results.yaw_rad;
-
-    state.dcm_matrix = results.dcm_matrix;
-
-    state.gyro_estimate = results.gyro_estimate;
-    state.gyro_drift = results.gyro_drift;
-
-    state.accel_ef = results.accel_ef;
-    state.accel_bias = results.accel_bias;
-
-    update_cd_values();
-    update_trig();
 }
 
 #if AP_AHRS_DCM_ENABLED
