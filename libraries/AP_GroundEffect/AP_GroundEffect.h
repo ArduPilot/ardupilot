@@ -119,6 +119,7 @@ private:
         bool     touchdown_expected;
         uint32_t takeoff_time_ms;
         float    takeoff_alt_m;
+        Vector2f takeoff_pos_ne_m;  // EKF-origin XY at liftoff, used by the relative-to-takeoff fallback
     } _state;
 };
 
