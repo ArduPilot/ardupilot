@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -59,6 +60,8 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
     def __init__(self, base_branch: str | None = None) -> None:
         super().__init__()
         self.base_branch = base_branch
+        repo_root = self.run_git(['rev-parse', '--show-toplevel'], show_output=False).strip()
+        self.board_types_path = pathlib.Path(repo_root, 'Tools', 'AP_Bootloader', 'board_types.txt')
 
     def progress_prefix(self) -> str:
         return "CBC"
@@ -466,6 +469,96 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         print(f"{PASS} No setext/RST underline headings in changed markdown files.")
         return True
 
+    def load_board_types(self) -> dict[str, int]:
+        '''Load symbol -> numeric ID mapping from board_types.txt'''
+        board_ids: dict[str, int] = {}
+        for line in self.board_types_path.read_text(encoding='utf-8').splitlines():
+            parts = line.partition('#')[0].strip().split()
+            if len(parts) == 2:
+                board_ids[parts[0]] = int(parts[1])
+        return board_ids
+
+    def check_board_ids(self) -> bool:
+        '''Check that new/modified entries in board_types.txt use valid IDs:
+        - Non-ODID boards: 1001 <= ID <= 7199
+        - ODID boards (symbol ends with _ODID): ID == base_board_ID + 10000,
+          where base_board_ID is the numeric ID of the same symbol without _ODID
+        '''
+        BOARD_ID_MIN = 1001
+        BOARD_ID_MAX = 7199
+        ODID_OFFSET = 10000
+
+        # Check whether board_types.txt was changed at all
+        changed_raw = self.run_git(
+            ["diff", "--name-only", "--diff-filter=AM",
+             f"{self.base_branch}...HEAD", "--", str(self.board_types_path)],
+            show_output=False,
+        ).strip()
+
+        if not changed_raw:
+            print(f"{PASS} board_types.txt not changed (board ID check).")
+            return True
+
+        # Extract newly added non-comment lines from board_types.txt
+        diff_raw = self.run_git(
+            ["diff", f"{self.base_branch}...HEAD", "--", str(self.board_types_path)],
+            show_output=False,
+        )
+
+        # Collect (symbol, numeric_id) for all added lines
+        added_entries = []
+        for line in diff_raw.splitlines():
+            if not line.startswith('+'):
+                continue
+            # Strip the leading '+' from the diff output
+            content = line[1:].strip()
+            if not content or content.startswith('#'):
+                continue
+            parts = content.split()
+            if len(parts) < 2:
+                continue
+            try:
+                numeric_id = int(parts[1])
+            except ValueError:
+                continue
+            added_entries.append((parts[0], numeric_id))
+
+        if not added_entries:
+            print(f"{PASS} No new board ID entries added to board_types.txt.")
+            return True
+
+        # Also load the full current board_types.txt for ODID base lookups
+        board_ids = self.load_board_types()
+
+        all_board_ids_are_valid = True
+        for sym, numeric_id in added_entries:
+            if sym.endswith('_ODID'):
+                base_sym = sym[:-5]  # strip '_ODID'
+                if base_sym not in board_ids:
+                    print(f"{FAIL} {sym}: ODID entry has no matching base entry "
+                          f"{base_sym!r} in {self.board_types_path}.")
+                    all_board_ids_are_valid = False
+                    continue
+                base_id = board_ids[base_sym]
+                expected_id = base_id + ODID_OFFSET
+                if numeric_id == expected_id:
+                    print(f"{PASS} {sym}: ODID board ID {numeric_id} "
+                          f"== {base_id} + {ODID_OFFSET}.")
+                else:
+                    print(f"{FAIL} {sym}: ODID board ID {numeric_id} should be "
+                          f"{base_id} + {ODID_OFFSET} = {expected_id}.")
+                    all_board_ids_are_valid = False
+            else:
+                if BOARD_ID_MIN <= numeric_id <= BOARD_ID_MAX:
+                    print(f"{PASS} {sym}: board ID {numeric_id} is in valid range "
+                          f"[{BOARD_ID_MIN}, {BOARD_ID_MAX}].")
+                else:
+                    print(f"{FAIL} {sym}: board ID {numeric_id} is outside valid range "
+                          f"[{BOARD_ID_MIN}, {BOARD_ID_MAX}].")
+                    all_board_ids_are_valid = False
+
+        return all_board_ids_are_valid
+
     def check_new_board_has_readme(self) -> bool:
         '''Every new hwdef board directory must include a README.md.'''
 
@@ -633,6 +726,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_submodule_references_exist(),
             self.check_new_board_has_readme(),
             self.check_new_board_images(),
+            self.check_board_ids(),
             self.check_markdown(),
             self.check_markdown_rst_hyperlinks(),
             self.check_markdown_rst_underlines(),
