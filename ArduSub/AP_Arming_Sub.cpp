@@ -32,6 +32,12 @@ bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
     if (armed) {
         return true;
     }
+
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(display_failure, "System not initialised");
+        return false;
+    }
+
     // don't allow arming unless there is a disarm button configured
     if (!has_disarm_function()) {
         check_failed(display_failure, "Must assign a disarm or arm_toggle button or disarm aux function");
