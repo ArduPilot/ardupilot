@@ -1,0 +1,8 @@
+rc 3 1000
+arm throttle
+
+rc 3 1500
+mode guided
+takeoff 10
+
+watch DISTANCE_SENSOR
