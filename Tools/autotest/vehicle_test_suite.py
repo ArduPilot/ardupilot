@@ -9466,7 +9466,7 @@ Also, ignores heartbeats not from our target system'''
                     self.message_hooks.remove(h)
             hooks_removed = True
         self.test_timings[desc] = time.time() - start_time
-        reset_needed = self.contexts[-1].sitl_commandline_customised
+        reset_needed = any(ctx.sitl_commandline_customised for ctx in self.contexts[old_contexts_length:])
 
         passed = True
         if ex is not None:
@@ -9517,8 +9517,13 @@ Also, ignores heartbeats not from our target system'''
                 self.reboot_sitl(startup_location_dist_max=1000000) # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
-            self.progress("Test failed but ArduPilot process alive; rebooting")
-            self.reboot_sitl() # that'll learn it
+            if reset_needed:
+                self.progress("Test failed but ArduPilot process alive; resetting")
+                self.reset_SITL_commandline()
+                reset_needed = False
+            else:
+                self.progress("Test failed but ArduPilot process alive; rebooting")
+                self.reboot_sitl() # that'll learn it
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
