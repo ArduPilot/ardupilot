@@ -33,17 +33,13 @@
 
 const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
-    // @Param: ENABLE
-    // @DisplayName: Ground Effect Compensation Enable/Disable
-    // @Description: Ground Effect Compensation Enable/Disable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLE", 1, AP_GroundEffect, _enabled, 1, AP_PARAM_FLAG_ENABLE),
+    // 1 was ENABLE; the master switch is folded into GNDEFF_ALT
+    // (negative value disables the library)
 
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Altitude threshold (AGL where possible) for the ground-effect signals. On takeoff the EKF compensation flag is cleared once the vehicle climbs above this altitude (subject to GNDEFF_TMO and a 5s hard cap). On approach the touchdown compensation flag is only set when the vehicle is below this altitude. The library prefers HAGL from a rangefinder or onboard terrain data when available; otherwise it uses height-since-takeoff and assumes flat ground (with a 20m XY drift gate disabling the touchdown side if a horizontal position is available). Set to zero to disable the touchdown altitude gate while still using this value as the takeoff release threshold.
-    // @Range: 0 5
+    // @Description: Altitude threshold (AGL where possible) for the ground-effect signals, and master enable. Negative disables the library entirely (no takeoff or touchdown signals). Zero leaves the library enabled but with the touchdown altitude gate disabled, matching the legacy "any gentle descent counts" behaviour; the takeoff release then relies on the 5s hard cap and GNDEFF_TMO. Positive values gate both sides: on takeoff the compensation flag clears once the vehicle climbs above this altitude (subject to GNDEFF_TMO and a 5s hard cap); on approach the touchdown flag only sets when below this altitude. The library prefers HAGL from a rangefinder or onboard terrain data when available; otherwise it uses height-since-takeoff and assumes flat ground (with a 20m XY drift gate disabling the touchdown side once horizontal position is available).
+    // @Range: -1 5
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("ALT", 2, AP_GroundEffect, _alt_m, 0.5),
@@ -68,8 +64,8 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
 {
     AP_AHRS &ahrs = AP::ahrs();
 
-    if (!_enabled || !armed) {
-        // disarmed or disabled - clear state and tell EKF nothing is expected
+    if (is_negative(_alt_m) || !armed) {
+        // disarmed or disabled (GNDEFF_ALT < 0) - clear state and tell EKF nothing is expected
         _state.takeoff_expected = false;
         _state.touchdown_expected = false;
         ahrs.set_takeoff_expected(false);

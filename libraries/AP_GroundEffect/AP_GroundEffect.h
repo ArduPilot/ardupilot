@@ -66,10 +66,13 @@
 // Path 4 (no horizontal position at all) cannot apply the drift gate
 // and has to assume flat terrain.
 //
-// GNDEFF_ALT = 0 disables the altitude gate on the touchdown side
-// entirely (matches the legacy "any gentle descent counts" behaviour)
-// while still acting as the takeoff release threshold on the takeoff
-// side.
+// GNDEFF_ALT carries three regimes:
+//
+//   <  0   library entirely disabled, no signals emitted
+//   == 0   library on; touchdown altitude gate disabled (matches the
+//          legacy "any gentle descent counts" behaviour); takeoff window
+//          relies on the 5 s hard cap (and GNDEFF_TMO if set)
+//   >  0   library on with the threshold actively gating both sides
 
 #pragma once
 
@@ -145,14 +148,15 @@ public:
         return _state.touchdown_expected;
     }
 
+    // returns true when the library is configured to emit signals.
+    // GNDEFF_ALT < 0 is the disable sentinel.
     bool enabled() const
     {
-        return _enabled;
+        return !is_negative(_alt_m);
     }
 
 private:
-    AP_Int8  _enabled;
-    AP_Float _alt_m;       // altitude threshold above which compensation clears
+    AP_Float _alt_m;       // altitude threshold; <0 disables the library entirely
     AP_Float _timeout_s;   // minimum hold time before altitude check is allowed to release
 
     const AC_PosControl *_pos_control;
