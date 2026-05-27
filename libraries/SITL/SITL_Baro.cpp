@@ -73,8 +73,8 @@ const AP_Param::GroupInfo SIM::BaroParm::var_info[] = {
     AP_GROUPINFO("WCF_DN",  12, SIM::BaroParm, wcof_zn, 0.0),
 
     // @Param: GEFF
-    // @DisplayName: Ground effect altitude error
-    // @Description: Maximum baro altitude error from simulated rotor-downwash ground effect, applied when motors are running. Decays linearly to zero at 2m AGL. Set to 0 to disable.
+    // @DisplayName: Barometer ground effect altitude error
+    // @Description: Maximum simulated barometer altitude error from rotor-downwash ground effect, applied when motors are running. Decays linearly to zero at 2m AGL. Set to 0 to disable.
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("GEFF",    13, SIM::BaroParm, ground_effect, 0.0),
