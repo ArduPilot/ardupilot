@@ -13352,6 +13352,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "GNDEFF_TMO should extend ground effect (tmo=%fs <= no_tmo=%fs)"
                 % (total_tmo, total_small))
 
+    def TouchdownGroundEffectAlt(self):
+        '''Test GNDEFF_ALT gates the touchdown ground-effect signal'''
+        # touchdown_expected fires only when slow horizontal motion AND slow
+        # descent AND near-ground (height < GNDEFF_ALT). Exercise the altitude
+        # gate by landing twice from the same altitude with different
+        # GNDEFF_ALT values: a small threshold should only fire near the
+        # ground, a large threshold (>= takeoff altitude) should fire for the
+        # whole descent.
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+
+        # Subtest A: small threshold - touchdown_expected only fires near ground
+        self.start_subtest("Small GNDEFF_ALT only triggers touchdown near ground")
+        self.set_parameter("GNDEFF_ALT", 1.0)
+        self.takeoff(3, mode='GUIDED')
+        self.delay_sim_time(2)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_small = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_small = sum(durations_small)
+        self.progress("touchdown_expected total with GNDEFF_ALT=1.0: %fs" % total_small)
+        if total_small < 0.5:
+            raise NotAchievedException(
+                "touchdown_expected should fire near ground (got %fs, want>0.5)" % total_small)
+
+        # Subtest B: large threshold gates touchdown over the full descent
+        self.start_subtest("Large GNDEFF_ALT triggers touchdown for whole descent")
+        self.set_parameter("GNDEFF_ALT", 5.0)
+        self.takeoff(3, mode='GUIDED')
+        self.delay_sim_time(2)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_large = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_large = sum(durations_large)
+        self.progress("touchdown_expected total with GNDEFF_ALT=5.0: %fs" % total_large)
+
+        # Comparative assertion: a higher threshold catches the descent earlier
+        # so total touchdown_expected duration must be longer.
+        if total_large <= total_small:
+            raise NotAchievedException(
+                "Larger threshold should have longer touchdown (large=%fs <= small=%fs)"
+                % (total_large, total_small))
+
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
         self.takeoff(20, mode='GUIDED')
@@ -14341,6 +14383,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
+             self.TouchdownGroundEffectAlt,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
