@@ -628,7 +628,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, (float)ModeThrow::ThrowType::Upward),
 #endif
 
-    // 5 was GND_EFFECT_COMP, moved into AP_GroundEffect as GNDEFF_ENABLE
+    // 5 was GND_EFFECT_COMP, folded into AP_GroundEffect GNDEFF_ALT (<0 disables)
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
@@ -1334,13 +1334,25 @@ void Copter::load_parameters(void)
     }
 
 #if AP_GROUNDEFFECT_ENABLED
-    // GND_EFFECT_COMP moved into AP_GroundEffect as GNDEFF_ENABLE
+    // GND_EFFECT_COMP was an Int8 0/1 master switch; the disable case
+    // is now folded into GNDEFF_ALT as a negative sentinel. Only the
+    // explicitly-disabled case needs migrating - users at the old
+    // default (=1, enabled) get the new defaults automatically.
     // PARAMETER_CONVERSION - Added: May 2026 for ArduPilot-4.8
     {
-        static const AP_Param::ConversionInfo gndeff_conversion_info[] = {
-            { Parameters::k_param_g2, 5, AP_PARAM_INT8, "GNDEFF_ENABLE" },
+        AP_Int8 old_gndeff;
+        const AP_Param::ConversionInfo info = {
+            Parameters::k_param_g2, 5, AP_PARAM_INT8, nullptr
         };
-        AP_Param::convert_old_parameters(gndeff_conversion_info, ARRAY_SIZE(gndeff_conversion_info));
+        if (AP_Param::find_old_parameter(&info, &old_gndeff)
+            && old_gndeff.configured()
+            && old_gndeff.get() == 0) {
+            enum ap_var_type ptype;
+            AP_Param *p = AP_Param::find("GNDEFF_ALT", &ptype);
+            if (p != nullptr && ptype == AP_PARAM_FLOAT) {
+                ((AP_Float *)p)->set_and_save(-1.0f);
+            }
+        }
     }
 #endif
 
