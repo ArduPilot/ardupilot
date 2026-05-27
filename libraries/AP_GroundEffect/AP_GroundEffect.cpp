@@ -46,11 +46,11 @@ const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: TMO
     // @DisplayName: Takeoff Ground Effect Timeout
-    // @Description: Minimum hold time after liftoff before the takeoff ground-effect signal is allowed to clear on the GNDEFF_ALT altitude check. With this set the signal only clears once BOTH this time has elapsed AND height exceeds GNDEFF_ALT, which prevents premature release when baro disturbance corrupts the altitude estimate during the rotor-wash window. The 5s hard cap on the takeoff window still applies regardless. Zero disables this minimum hold and the altitude check alone releases the signal. Does not affect the touchdown signal.
+    // @Description: Minimum hold time after liftoff before the takeoff ground-effect signal is allowed to clear on the GNDEFF_ALT altitude check. With this set the signal only clears once BOTH this time has elapsed AND height exceeds GNDEFF_ALT, which prevents premature release when baro disturbance corrupts the altitude estimate during the rotor-wash window. The 5s hard cap on the takeoff window still applies regardless. Zero disables this minimum hold and the altitude check alone releases the signal; vehicles with strong propwash baro disturbance benefit from values of 2-5s. Does not affect the touchdown signal.
     // @Range: 0 5
     // @Units: s
     // @User: Advanced
-    AP_GROUPINFO("TMO", 3, AP_GroundEffect, _timeout_s, 0),
+    AP_GROUPINFO("TMO", 3, AP_GroundEffect, _timeout_s, 2),
 
     AP_GROUPEND
 };
