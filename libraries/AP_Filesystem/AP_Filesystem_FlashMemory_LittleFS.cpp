@@ -796,6 +796,7 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     case JEDEC_ID_CYPRESS_S25FL128L:
     case JEDEC_ID_ZBIT_ZB25VQ128:   
     case JEDEC_ID_FMSH_FM25Q128A:
+    case JEDEC_ID_XTX_XT25F128F:
         block_count = 256;    /* 16MiB */
         break;
 
