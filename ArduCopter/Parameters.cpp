@@ -628,12 +628,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, (float)ModeThrow::ThrowType::Upward),
 #endif
 
-    // @Param: GND_EFFECT_COMP
-    // @DisplayName: Ground Effect Compensation Enable/Disable
-    // @Description: Ground Effect Compensation Enable/Disable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 1),
+    // 5 was GND_EFFECT_COMP, moved into AP_GroundEffect as GNDEFF_ENABLE
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
@@ -1073,21 +1068,11 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
 #endif
 
-    // @Param: TKOFF_GNDEFF_ALT
-    // @DisplayName: Takeoff ground effect altitude
-    // @Description: Altitude threshold for ground effect compensation. Takeoff ground effect compensation is cleared once the vehicle climbs above this altitude. Touchdown ground effect compensation is only signalled to the EKF when the vehicle descends below this altitude. Set to zero to disable the touchdown altitude gate.
-    // @Range: 0 5
-    // @Units: m
-    // @User: Advanced
-    AP_GROUPINFO("TKOFF_GNDEFF_ALT", 22, ParametersG2, tkoff_gndeff_alt, 0.5),
-
-    // @Param: TKOFF_GNDEFF_TMO
-    // @DisplayName: Ground Effect Timeout
-    // @Description: Time after throttle up before ground effect compensation can be disabled. When set, ground effect will only be disabled after BOTH this timeout has elapsed AND altitude exceeds TKOFF_GNDEFF_ALT. This prevents premature ground effect disabling when baro noise causes false altitude readings. Set to zero to disable (uses altitude threshold only). Maximum timeout is always 5 seconds regardless of this setting.
-    // @Range: 0 5
-    // @Units: s
-    // @User: Advanced
-    AP_GROUPINFO("TKOFF_GNDEFF_TMO", 23, ParametersG2, tkoff_gndeff_tmo, 0),
+#if AP_GROUNDEFFECT_ENABLED
+    // @Group: GNDEFF_
+    // @Path: ../libraries/AP_GroundEffect/AP_GroundEffect.cpp
+    AP_SUBGROUPINFO(ground_effect, "GNDEFF_", 24, ParametersG2, AP_GroundEffect),
+#endif
 
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
@@ -1347,6 +1332,17 @@ void Copter::load_parameters(void)
         };
         AP_Param::convert_old_parameters_scaled(pilot_conversion_info, ARRAY_SIZE(pilot_conversion_info), 0.01, 0);
     }
+
+#if AP_GROUNDEFFECT_ENABLED
+    // GND_EFFECT_COMP moved into AP_GroundEffect as GNDEFF_ENABLE
+    // PARAMETER_CONVERSION - Added: May 2026 for ArduPilot-4.8
+    {
+        static const AP_Param::ConversionInfo gndeff_conversion_info[] = {
+            { Parameters::k_param_g2, 5, AP_PARAM_INT8, "GNDEFF_ENABLE" },
+        };
+        AP_Param::convert_old_parameters(gndeff_conversion_info, ARRAY_SIZE(gndeff_conversion_info));
+    }
+#endif
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);

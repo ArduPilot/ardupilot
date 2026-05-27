@@ -2,82 +2,24 @@
 
 void Copter::update_ground_effect_detector(void)
 {
-    if(!g2.gndeffect_comp_enabled || !motors->armed()) {
-        // disarmed - disable ground effect and return
-        gndeffect_state.takeoff_expected = false;
-        gndeffect_state.touchdown_expected = false;
-        ahrs.set_takeoff_expected(gndeffect_state.takeoff_expected);
-        ahrs.set_touchdown_expected(gndeffect_state.touchdown_expected);
-        return;
+#if AP_GROUNDEFFECT_ENABLED
+    AP_GroundEffect &gndeff = g2.ground_effect;
+
+    gndeff.set_takeoff_inhibited(flightmode->mode_number() == Mode::Number::THROW);
+    gndeff.set_high_vibrations(vibration_check.high_vibes);
+
+    // ALT_HOLD has manual attitude and no NE controller, so a near-level
+    // attitude target stands in for "pilot is asking for slow horizontal"
+    bool pilot_slow_horizontal = false;
+    if (flightmode->mode_number() == Mode::Number::ALT_HOLD) {
+        const Vector3f angle_target_rad = attitude_control->get_att_target_euler_rad();
+        pilot_slow_horizontal = cosf(angle_target_rad.x) * cosf(angle_target_rad.y) > cosf(radians(7.5f));
     }
+    gndeff.set_pilot_demanding_slow_horizontal(pilot_slow_horizontal);
 
-    // variable initialization
-    uint32_t tnow_ms = millis();
-    float des_speed_ne_ms = 0.0f;
-    float des_climb_rate_ms = pos_control->get_vel_desired_U_ms();
-
-    if (pos_control->NE_is_active()) {
-        des_speed_ne_ms = pos_control->get_vel_target_NED_ms().xy().length();
-    }
-
-    // takeoff logic
-
-    if (flightmode->mode_number() == Mode::Number::THROW) {
-        // throw mode never wants the takeoff expected EKF code
-        gndeffect_state.takeoff_expected = false;
-    } else if (motors->armed() && ap.land_complete) {
-        // if we are armed and haven't yet taken off then we expect an imminent takeoff
-        gndeffect_state.takeoff_expected = true;
-    }
-
-    // get altitude estimate
-    float pos_d_m = 0;
-    UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
-
-    // if we aren't taking off yet, reset the takeoff timer, altitude and complete flag
     const bool throttle_up = flightmode->has_manual_throttle() && channel_throttle->get_control_in() > 0;
-    if (!throttle_up && ap.land_complete) {
-        gndeffect_state.takeoff_time_ms = tnow_ms;
-        gndeffect_state.takeoff_alt_m = -pos_d_m;
-    }
-
-    // if we are in takeoff_expected and we meet the conditions for having taken off
-    // end the takeoff_expected state. TKOFF_GNDEFF_TMO is a minimum hold time
-    // before the altitude check is allowed to release; the 5s hard timeout
-    // still applies unconditionally.
-    const float gndeff_alt_m = g2.tkoff_gndeff_alt;
-    const float height_above_takeoff_m = -pos_d_m - gndeffect_state.takeoff_alt_m;
-    const uint32_t min_hold_ms = MIN(uint32_t(g2.tkoff_gndeff_tmo * 1000.0f), 5000U);
-    const bool above_gndeff_alt = height_above_takeoff_m > gndeff_alt_m;
-    const bool min_hold_elapsed = AP_HAL::timeout_expired(gndeffect_state.takeoff_time_ms, tnow_ms, min_hold_ms);
-    const bool max_timeout = AP_HAL::timeout_expired(gndeffect_state.takeoff_time_ms, tnow_ms, 5000U);
-
-    if (gndeffect_state.takeoff_expected && (max_timeout || (min_hold_elapsed && above_gndeff_alt))) {
-        gndeffect_state.takeoff_expected = false;
-    }
-
-    // landing logic
-    Vector3f angle_target_rad = attitude_control->get_att_target_euler_rad();
-    bool small_angle_request = cosf(angle_target_rad.x) * cosf(angle_target_rad.y) > cosf(radians(7.5f));
-    Vector3f vel_ned_ms;
-    bool xy_speed_low = AP::ahrs().get_velocity_NED(vel_ned_ms) && (vel_ned_ms.xy().length() < 1.25);
-    bool xy_speed_demand_low = pos_control->NE_is_active() && des_speed_ne_ms <= 1.25;
-    bool slow_horizontal = xy_speed_demand_low || (xy_speed_low && !pos_control->NE_is_active()) || (flightmode->mode_number() == Mode::Number::ALT_HOLD && small_angle_request);
-
-    bool descent_demanded = pos_control->D_is_active() && des_climb_rate_ms < 0.0f;
-    bool slow_descent_demanded = descent_demanded && des_climb_rate_ms >= -1.00;
-    bool speed_low_d_ms = AP::ahrs().get_velocity_D(vel_ned_ms.z, vibration_check.high_vibes) && fabsf(vel_ned_ms.z) <= 0.6f;
-    bool slow_descent = (slow_descent_demanded || (speed_low_d_ms && descent_demanded));
-
-    // Only expect touchdown when near ground (below TKOFF_GNDEFF_ALT threshold)
-    // This allows EKF bias learning when hovering at altitude
-    const bool near_ground_for_touchdown = is_positive(g2.tkoff_gndeff_alt) ?
-                                           (height_above_takeoff_m < gndeff_alt_m) : true;
-    gndeffect_state.touchdown_expected = slow_horizontal && slow_descent && near_ground_for_touchdown;
-
-    // Prepare the EKF for ground effect if either takeoff or touchdown is expected.
-    ahrs.set_takeoff_expected(gndeffect_state.takeoff_expected);
-    ahrs.set_touchdown_expected(gndeffect_state.touchdown_expected);
+    gndeff.update(motors->armed(), ap.land_complete, throttle_up);
+#endif
 }
 
 // update ekf terrain height stable setting
