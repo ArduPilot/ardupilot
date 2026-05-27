@@ -42,15 +42,15 @@ const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Altitude threshold for ground effect compensation. Takeoff ground effect compensation is cleared once the vehicle climbs above this altitude. Touchdown ground effect compensation is only signalled to the EKF when the vehicle descends below this altitude. Set to zero to disable the touchdown altitude gate.
+    // @Description: Altitude threshold (AGL where possible) for the ground-effect signals. On takeoff the EKF compensation flag is cleared once the vehicle climbs above this altitude (subject to GNDEFF_TMO and a 5s hard cap). On approach the touchdown compensation flag is only set when the vehicle is below this altitude. The library prefers HAGL from a rangefinder or onboard terrain data when available; otherwise it uses height-since-takeoff and assumes flat ground (with a 20m XY drift gate disabling the touchdown side if a horizontal position is available). Set to zero to disable the touchdown altitude gate while still using this value as the takeoff release threshold.
     // @Range: 0 5
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("ALT", 2, AP_GroundEffect, _alt_m, 0.5),
 
     // @Param: TMO
-    // @DisplayName: Ground effect timeout
-    // @Description: Time after throttle up before ground effect compensation can be disabled. When set, ground effect will only be disabled after BOTH this timeout has elapsed AND altitude exceeds GNDEFF_ALT. This prevents premature ground effect disabling when baro noise causes false altitude readings. Set to zero to disable (uses altitude threshold only). Maximum timeout is always 5 seconds regardless of this setting.
+    // @DisplayName: Takeoff Ground Effect Timeout
+    // @Description: Minimum hold time after liftoff before the takeoff ground-effect signal is allowed to clear on the GNDEFF_ALT altitude check. With this set the signal only clears once BOTH this time has elapsed AND height exceeds GNDEFF_ALT, which prevents premature release when baro disturbance corrupts the altitude estimate during the rotor-wash window. The 5s hard cap on the takeoff window still applies regardless. Zero disables this minimum hold and the altitude check alone releases the signal. Does not affect the touchdown signal.
     // @Range: 0 5
     // @Units: s
     // @User: Advanced
