@@ -33,7 +33,7 @@ The ARKV6S is a low-cost, single-IMU variant of the [ARKV6X](../ARKV6X), based o
 
 ## Pinout
 
-The ARKV6S is a PAB module. For the connector and signal pinout, see the [DS-10 Pixhawk Autopilot Bus Standard](https://github.com/pixhawk/Pixhawk-Standards/blob/master/DS-010%20Pixhawk%20Autopilot%20Bus%20Standard.pdf).
+The ARKV6S pinout conforms to the [Pixhawk V6X standard](https://github.com/pixhawk/Pixhawk-Standards/blob/master/DS-010%20Pixhawk%20Autopilot%20Bus%20Standard.pdf).
 
 ## UART Mapping
 
@@ -50,20 +50,13 @@ The ARKV6S is a PAB module. For the connector and signal pinout, see the [DS-10 
 | SERIAL8 | USART6 (RC Input)     |
 | SERIAL9 | OTG2 (MAVLink2)       |
 
-All UARTs support DMA. Any UART may be re-tasked by changing its protocol parameter.
+All UARTs support DMA. Any UART may be re-tasked by changing its protocol parameter. The Telem1, Telem2, and Telem3 ports have RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
 USART6 may alternatively be wired to an IOMCU on a carrier board. To use it for the IOMCU instead of as a direct serial RC input, edit `hwdef.dat` to uncomment the `IOMCU_UART USART6` line and switch to the alternate `SERIAL_ORDER` line.
 
 ## CAN
 
-The ARKV6S exposes two independent CAN buses on the PAB connector:
-
-| Bus  | TX  | RX  |
-|:-----|:----|:----|
-| CAN1 | PD1 | PD0 |
-| CAN2 | PB13| PB12|
-
-Both CAN drivers are enabled by default (`CAN_P1_DRIVER` = `1`, `CAN_P2_DRIVER` = `1`) for DroneCAN peripherals.
+The ARKV6S exposes two independent CAN buses on the PAB connector. The PHY is held in reset until firmware enables it. Both CAN drivers are enabled by default (`CAN_P1_DRIVER` = `1`, `CAN_P2_DRIVER` = `1`) for DroneCAN peripherals.
 
 ## Ethernet
 
@@ -71,15 +64,15 @@ The ARKV6S has built-in 100 Mbit Ethernet (RMII PHY: Microchip LAN8742A). The PH
 
 ## microSD
 
-A microSD socket on the carrier board is supported via SDMMC2 with the FATFS filesystem, used for parameter and dataflash logging.
+A microSD socket on the carrier board is supported with the FATFS filesystem, used for parameter and dataflash logging.
 
 ## RC Input
 
-By default, RC input is configured on USART6 (`SERIAL8_PROTOCOL` = `23`). It supports all RC protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for a specific RC system.
+By default, RC input is configured on USART6 (`SERIAL8_PROTOCOL` = `23`). It supports all RC protocols except PPM. A separate timer input (TIM8_CH1) is also available for unidirectional RC protocols. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for a specific RC system.
 
 ## Battery Monitoring
 
-The board supports an INA226 digital power monitor on I2C1 (`HAL_BATT_MONITOR_DEFAULT = 21`). Additional analog voltage/current inputs are available on the carrier board.
+The board supports an INA226 digital power monitor on I2C1 (`HAL_BATT_MONITOR_DEFAULT = 21`) by default as the first monitor. Additional analog voltage/current inputs may be available on the carrier board used for this module.
 
 ## Compass
 
@@ -91,7 +84,7 @@ The ARKV6S has a 1W heater that keeps the IIM-42653 IMU warm in extreme conditio
 
 ## PWM Output
 
-PWM outputs are provided through the PAB connector. PWM 1-6 are capable of PWM and DShot (including bi-directional DShot); PWM 7-8 are PWM-only since TIM12 has no DMA. Outputs in the same timer group must use the same protocol:
+PWM outputs are provided through the module connector. PWM 1-6 are capable of PWM and DShot (including bi-directional DShot).  PWM 7-8 are PWM-only since they have no DMA. Outputs in the same timer group must use the same protocol:
 
 - PWM 1-4 Group1 (TIM5)
 - PWM 5-6 Group2 (TIM4)
@@ -99,20 +92,10 @@ PWM outputs are provided through the PAB connector. PWM 1-6 are capable of PWM a
 
 ## Loading Firmware
 
-Initial firmware load can be done with DFU by plugging in USB with the BOOT button pressed. You can then load the bootloader using your favorite DFU tool. The bootloader can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org/Tools/Bootloaders/).
-
-Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the `*.apj` firmware files.
-
-Alternatively you can build the firmware from source:
+The bootloader is flashed with an ST-Link. Pre-built bootloader binaries can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org/Tools/Bootloaders/).
 
 ```bash
-./waf configure --board ARKV6S --bootloader
-./waf bootloader
+st-flash write ARKV6S_bl.bin 0x08000000
 ```
 
-And flash the bootloader with your st-link to `0x08000000`. Then build the firmware and upload it via USB:
-
-```bash
-./waf configure --board ARKV6S
-./waf copter --upload
-```
+Once the bootloader is installed you can update the firmware using any ArduPilot ground station software. Firmware can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org/) in folders labeled "ARKV6S". Updates should be done with the `*.apj` firmware files.
