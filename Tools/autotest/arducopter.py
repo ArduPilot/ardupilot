@@ -15073,6 +15073,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode('RTL')
         self.wait_rtl_complete(check_alt=False)
 
+        # we have set home to a strange place, meaning at the very
+        # least home-relative altitudes are not going to be as
+        # expected.  Reboot so we get a fresh setup for the next test
+        self.reboot_sitl()
+
     def HomeCircleInclusionFence_MultipleHomeCircle(self, target_system=1, target_component=1):
         '''upload multiple circles; should breach passing the innermost'''
         self.set_parameters({
@@ -15174,6 +15179,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(0, 0.5, timeout=15)
         self.set_rc(2, 1500)
         self.do_RTL()
+
+        # we have set home to a strange place, meaning at the very
+        # least home-relative altitudes are not going to be as
+        # expected.  Reboot so we get a fresh setup for the next test
+        self.reboot_sitl()
 
     def MAV_CMD_SET_EKF_SOURCE_SET(self):
         '''test setting of source sets using mavlink command'''
