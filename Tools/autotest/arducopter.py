@@ -13314,8 +13314,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "takeoff_expected should persist with large threshold (got %fs, want>3)" % total_large)
 
         # Subtest B: small threshold — takeoff_expected clears quickly
+        # Pin GNDEFF_TMO=0 explicitly to test the pre-default-bump "legacy"
+        # release behaviour (altitude check alone). The default is non-zero
+        # so the comparison with subtest C below needs an explicit floor.
         self.start_subtest("Small GNDEFF_ALT clears ground effect at 5m")
-        self.set_parameter("GNDEFF_ALT", 0.5)
+        self.set_parameters({
+            "GNDEFF_ALT": 0.5,
+            "GNDEFF_TMO": 0,
+        })
         self.takeoff(5, mode='ALT_HOLD')
         self.delay_sim_time(5)
         self.change_mode('LAND')
