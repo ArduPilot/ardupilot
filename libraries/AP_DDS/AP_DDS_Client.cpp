@@ -18,6 +18,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <SRV_Channel/SRV_Channel.h>
 #if AP_DDS_ARM_SERVER_ENABLED
 #include <AP_Arming/AP_Arming.h>
 # endif // AP_DDS_ARM_SERVER_ENABLED
@@ -108,6 +109,12 @@ geometry_msgs_msg_TwistStamped AP_DDS_Client::rx_velocity_control_topic {};
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
 ardupilot_msgs_msg_GlobalPosition AP_DDS_Client::rx_global_position_control_topic {};
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_MOT_CTRL_ENABLED
+ardupilot_msgs_msg_MotorControl AP_DDS_Client::rx_motor_control_topic {};
+#endif // AP_DDS_MOT_CTRL_ENABLED
+#if AP_DDS_SERVO_CTRL_ENABLED
+ardupilot_msgs_msg_ServoControl AP_DDS_Client::rx_servo_control_topic {};
+#endif // AP_DDS_SERVO_CTRL_ENABLED
 
 // Define the parameter server data members, which are static class scope.
 // If these are created on the stack, then the AP_DDS_Client::on_request
@@ -891,8 +898,40 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_MOT_CTRL_ENABLED
+    case topics[to_underlying(TopicIndex::MOTOR_CONTROL_SUB)].dr_id.id: {
+        const bool success = ardupilot_msgs_msg_MotorControl_deserialize_topic(ub, &rx_motor_control_topic);
+        if (success == false) {
+            break;
+        }
+#if AP_EXTERNAL_CONTROL_ENABLED
+        if (!AP_DDS_External_Control::handle_motor_control(rx_motor_control_topic)) {
+        }
+#endif // AP_EXTERNAL_CONTROL_ENABLED
+        break;
     }
-
+#endif // AP_DDS_MOT_CTRL_ENABLED
+#if AP_DDS_SERVO_CTRL_ENABLED
+    case topics[to_underlying(TopicIndex::SERVO_CONTROL_SUB)].dr_id.id: {
+        const bool success = ardupilot_msgs_msg_ServoControl_deserialize_topic(ub, &rx_servo_control_topic);
+        if (success == false) {
+            break;
+        }
+        constexpr uint16_t MASK_PWM = ServoControl::PWM_INPUT;
+        for (uint8_t i = 0; i < 16; i++) {
+            if (rx_servo_control_topic.options & MASK_PWM) {
+                const int16_t clamped_cmd = constrain_int16(rx_servo_control_topic.cmd[i], 500, 2500);
+                SRV_Channels::set_output_pwm(SRV_Channels::get_scripting_function(i), clamped_cmd);
+            } else {
+                // value is set as a scaled input (centidegrees) and converted to PWM using SERVOx_MIN/MAX/TRIM params
+                const int16_t clamped_cmd = constrain_int16(rx_servo_control_topic.cmd[i], -4500, 4500);
+                SRV_Channels::set_output_scaled(SRV_Channels::get_scripting_function(i), clamped_cmd);
+            }
+        }
+        break;
+    }
+#endif // AP_DDS_SERVO_CTRL_ENABLED
+    }
 }
 
 /*
