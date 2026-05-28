@@ -442,16 +442,17 @@ void AP_AHRS::reset_gyro_drift(void)
  */
 void AP_AHRS::update_state(void)
 {
-    const uint8_t primary_gyro = _get_primary_gyro_index();
+    const uint8_t primary_gyro = active_estimates->primary_gyro;
 #if AP_INERTIALSENSOR_ENABLED
     // tell the IMUS about primary changes
     if (primary_gyro != state.primary_gyro) {
         AP::ins().set_primary(primary_gyro);
     }
 #endif
-    state.primary_IMU = _get_primary_IMU_index();
     state.primary_gyro = primary_gyro;
-    state.primary_accel = _get_primary_accel_index();
+
+    state.primary_accel = active_estimates->primary_accel;
+
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = active_backend->wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
@@ -2804,42 +2805,6 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 #endif // AP_AIRSPEED_ENABLED
 }
 
-// get the index of the current primary IMU
-uint8_t AP_AHRS::_get_primary_IMU_index() const
-{
-    int8_t imu = -1;
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        break;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // let EKF2 choose primary IMU
-        imu = ekf2.EKF2.getPrimaryCoreIMUIndex();
-        break;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // let EKF2 choose primary IMU
-        imu = ekf3.EKF3.getPrimaryCoreIMUIndex();
-        break;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        break;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        break;
-#endif
-    }
-    if (imu == -1) {
-        imu = AP::ins().get_first_usable_gyro();
-    }
-    return imu;
-}
-
 // return the index of the primary core or -1 if no primary core selected
 int8_t AP_AHRS::_get_primary_core_index() const
 {
@@ -2874,18 +2839,6 @@ int8_t AP_AHRS::_get_primary_core_index() const
     // we should never get here
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     return -1;
-}
-
-// get the index of the current primary accelerometer sensor
-uint8_t AP_AHRS::_get_primary_accel_index(void) const
-{
-    return _get_primary_IMU_index();
-}
-
-// get the index of the current primary gyro sensor
-uint8_t AP_AHRS::_get_primary_gyro_index(void) const
-{
-    return _get_primary_IMU_index();
 }
 
 // see if EKF lane switching is possible to avoid EKF failsafe

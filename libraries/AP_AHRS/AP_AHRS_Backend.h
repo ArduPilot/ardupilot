@@ -60,6 +60,9 @@ public:
         friend class AP_AHRS_NavEKF2;
         friend class AP_AHRS_NavEKF3;
 
+        // inertial sensor information
+        uint8_t primary_gyro;
+
         // if attitude_valid is true then all of the
         // eulers/quaternion/matrix must be valid:
         bool attitude_valid;
@@ -80,6 +83,9 @@ public:
 
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
+
+        uint8_t primary_accel;
+
         Vector3f accel_ef;
         Vector3f accel_bias;
 

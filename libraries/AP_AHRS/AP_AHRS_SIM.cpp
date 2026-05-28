@@ -178,6 +178,10 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
         }
     }
 
+    // not using a specific sensor:
+    results.primary_gyro = AP::ins().get_first_usable_gyro();
+    results.primary_accel = AP::ins().get_first_usable_accel();
+
     const struct SITL::sitl_fdm &fdm = _sitl->state;
     const AP_InertialSensor &_ins = AP::ins();
 
