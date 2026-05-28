@@ -251,7 +251,7 @@ void Helicopter::update(const struct sitl_input &input)
         float Zw = -2.25;
 
         // float tailrsc = constrain_float((input.servos[6]-1000) / 1000.0f, 0, 1);
-        float tail_rotor = (_servos_delayed[3]-1000) / 1000.0f;
+        float tail_rotor = (input.servos[6]-1000) / 1000.0f;
 
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
