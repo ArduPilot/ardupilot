@@ -1,6 +1,6 @@
 #include "Sub.h"
 
-#define TEST_ROLL_D 10.0f 
+#define TEST_ROLL_D 5.0f 
 
 bool ModeDamInspection::init(bool ignore_checks) {
 
@@ -38,9 +38,12 @@ bool ModeDamInspection::get_desired_euler_angles_pitch_roll(float& roll_rad, flo
 
 void ModeDamInspection::add_ROV_attitude_to_degrees(float& roll, float& pitch, float& yaw)
 {
-    roll += ahrs.get_roll();
-    pitch += ahrs.get_pitch();
-    yaw += ahrs.get_yaw();
+    q_correction.from_euler(roll, pitch, yaw);
+
+    ahrs.get_quat_body_to_ned(q_current);
+    q_target = q_current * q_correction;
+    q_target.normalize();
+    q_target.to_euler(roll, pitch, yaw);
 
     roll = degrees(roll);
     pitch = degrees(pitch);

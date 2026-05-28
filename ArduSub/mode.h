@@ -327,6 +327,9 @@ private:
     float last_roll = 0.0f;
     float last_pitch = 0.0f;
     float zz_desired_m;
+    Quaternion q_correction;
+    Quaternion q_target;
+    Quaternion q_current;
 
     bool get_desired_euler_angles_pitch_roll(float& roll_d, float& pitch_d);
     void add_ROV_attitude_to_degrees(float& roll, float& pitch, float& yaw);
