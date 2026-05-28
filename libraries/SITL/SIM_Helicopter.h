@@ -20,6 +20,7 @@
 
 #include "SIM_Aircraft.h"
 
+
 namespace SITL {
 
 /*
@@ -88,6 +89,10 @@ private:
     } frame_type = HELI_FRAME_CONVENTIONAL;
     bool gas_heli = false;
     float nominal_rpm;
+
+    // battery resistance reference value in Ohms
+    float refBatRes = 0.01;
+
 };
 
 } // namespace SITL
