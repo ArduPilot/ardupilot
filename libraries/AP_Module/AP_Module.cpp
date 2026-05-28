@@ -203,8 +203,9 @@ void AP_Module::call_hook_AHRS_update(const AP_AHRS &ahrs)
     state.accel_ef[1] = accel_ef[0];
     state.accel_ef[2] = accel_ef[0];
 
-    state.primary_accel = ahrs.get_primary_accel_index();
-    state.primary_gyro = ahrs.get_primary_gyro_index();
+    const uint8_t primary_imu_index = ahrs.get_primary_IMU_index();
+    state.primary_accel = primary_imu_index;
+    state.primary_gyro = primary_imu_index;
 
     const Vector3f &gyro_bias = ahrs.get_gyro_drift();
     state.gyro_bias[0] = gyro_bias[0];
