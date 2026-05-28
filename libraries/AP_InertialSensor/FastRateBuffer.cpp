@@ -76,7 +76,7 @@ bool AP_InertialSensor::is_rate_loop_gyro_enabled(uint8_t instance) const
     if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
         return false;
     }
-    return fast_rate_buffer->use_rate_loop_gyro_samples() && instance == AP::ahrs().get_primary_gyro_index();
+    return fast_rate_buffer->use_rate_loop_gyro_samples() && instance == AP::ahrs().get_primary_IMU_index();
 }
 
 // whether or not to use the dynamic fifo
