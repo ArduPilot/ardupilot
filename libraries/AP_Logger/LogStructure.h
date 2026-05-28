@@ -768,22 +768,6 @@ struct PACKED log_VER {
 // @Field: WeightOnWheels: Weight on wheels state
 // @FieldValueEnum: WeightOnWheels: AP_LandingGear::LG_WOW_State
 
-// @LoggerMessage: MAG
-// @Description: Information received from compasses
-// @Field: TimeUS: Time since system startup
-// @Field: I: magnetometer sensor instance number
-// @Field: MagX: magnetic field strength in body frame
-// @Field: MagY: magnetic field strength in body frame
-// @Field: MagZ: magnetic field strength in body frame
-// @Field: OfsX: magnetic field offset in body frame
-// @Field: OfsY: magnetic field offset in body frame
-// @Field: OfsZ: magnetic field offset in body frame
-// @Field: MOX: motor interference magnetic field offset in body frame
-// @Field: MOY: motor interference magnetic field offset in body frame
-// @Field: MOZ: motor interference magnetic field offset in body frame
-// @Field: Health: true if the compass is considered healthy
-// @Field: S: time measurement was taken
-
 // @LoggerMessage: MAV
 // @Description: GCS MAVLink link statistics
 // @Field: TimeUS: Time since system startup
