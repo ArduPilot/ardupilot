@@ -698,7 +698,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             }
 
             // Compute camera position relative to IMU
-            const Vector3f accel_pos_ned_m = _inertial_data_delayed->Tbn * AP::ins().get_imu_pos_offset(AP::ahrs().get_primary_accel_index());
+            const Vector3f accel_pos_ned_m = _inertial_data_delayed->Tbn * AP::ins().get_imu_pos_offset(AP::ahrs().get_primary_IMU_index());
             const Vector3f cam_pos_ned_rel_imu_ned_m = cam_pos_ned_m - accel_pos_ned_m;
 
             // Compute target position relative to IMU
@@ -736,7 +736,7 @@ void AC_PrecLand::run_output_prediction()
     const AP_AHRS &_ahrs = AP::ahrs();
 
     const Matrix3f& Tbn = (*_inertial_history)[_inertial_history->available()-1]->Tbn;
-    Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(_ahrs.get_primary_accel_index());
+    Vector3f accel_body_offset = AP::ins().get_imu_pos_offset(_ahrs.get_primary_IMU_index());
 
     // Apply position correction for CG offset from IMU
     Vector3f imu_pos_ned = Tbn * accel_body_offset;
