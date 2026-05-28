@@ -143,16 +143,6 @@ public:
     // init sets up INS board orientation
     virtual void init();
 
-    // get the index of the current primary IMU, as determined by good
-    // gyro sensor
-    virtual uint8_t get_primary_IMU_index(void) const {
-#if AP_INERTIALSENSOR_ENABLED
-        return AP::ins().get_first_usable_gyro();
-#else
-        return 0;
-#endif
-    }
-
     // Methods
     virtual void update() = 0;
 
