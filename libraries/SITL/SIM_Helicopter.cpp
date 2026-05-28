@@ -82,6 +82,12 @@ Helicopter::Helicopter(const char *frame_str) :
     lock_step_scheduled = true;
 
     motor_mask |= (1U<<0);
+
+    battery.setup(sitl->batt_capacity_ah,
+                  refBatRes,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
+
 }
 
 /*
@@ -104,6 +110,19 @@ void Helicopter::update(const struct sitl_input &input)
     float eng_torque = 0;
     float lateral_x_thrust = 0;
     float lateral_y_thrust = 0;
+
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_voltage = battery.get_voltage();
+
+    float power = 1.0f;
+    if (motor_interlock) {
+        // calculate current
+        power = 1000.0;
+    }
+    battery_current = power / MAX(battery_voltage, 0.1);
+
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.consume_energy(battery_current, now_us);
 
 
     if (_time_delay == 0) {
@@ -247,7 +266,8 @@ void Helicopter::update(const struct sitl_input &input)
         Vector2f ctrl_pos = Vector2f(roll_cyclic, pitch_cyclic);
         update_rotor_dynamics(gyro, ctrl_pos, _tpp_angle, dt);
 
-        float tail_rotor_torque = (21.6f * 2.96f - 2.96f * gyro.z) * sq(tail_rotor);
+        // tail rotor output is modified by the ratio of current battery voltage to max battery voltage
+        float tail_rotor_torque = (21.6f * 2.96f - 2.96f * gyro.z) * sq(tail_rotor * battery_voltage / sitl->batt_voltage);
         float tail_rotor_thrust =  -1.0f * tail_rotor_torque * izz / tr_dist;  //right pedal produces left body accel
 
         // rotational acceleration, in rad/s/s, in body frame
