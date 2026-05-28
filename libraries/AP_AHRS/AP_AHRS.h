@@ -449,11 +449,8 @@ public:
     // return the index of the primary core or -1 if no primary core selected
     int8_t get_primary_core_index() const { return state.primary_core; }
 
-    // get the index of the current primary accelerometer sensor
-    uint8_t get_primary_accel_index(void) const { return state.primary_accel; }
-
-    // get the index of the current primary gyro sensor
-    uint8_t get_primary_gyro_index(void) const { return state.primary_gyro; }
+    // get the index of the current primary IMU sensor
+    uint8_t get_primary_IMU_index(void) const { return state.primary_IMU; }
 
     // see if EKF lane switching is possible to avoid EKF failsafe
     void check_lane_switch(void);
@@ -688,7 +685,7 @@ public:
 
     // return primary accels
     const Vector3f &get_accel(void) const {
-        return AP::ins().get_accel(_get_primary_accel_index());
+        return AP::ins().get_accel(state.primary_IMU);
     }
 
     // return primary accel bias. This should be subtracted from
@@ -982,12 +979,6 @@ private:
     // return the index of the primary core or -1 if no primary core selected
     int8_t _get_primary_core_index() const;
 
-    // get the index of the current primary accelerometer sensor
-    uint8_t _get_primary_accel_index(void) const;
-
-    // get the index of the current primary gyro sensor
-    uint8_t _get_primary_gyro_index(void) const;
-
     // get the index of the current primary IMU
     uint8_t _get_primary_IMU_index(void) const;
 
@@ -1016,8 +1007,6 @@ private:
     struct {
         EKFType active_EKF_type;
         uint8_t primary_IMU;
-        uint8_t primary_gyro;
-        uint8_t primary_accel;
         uint8_t primary_core;
         Vector3f gyro_estimate;
         Matrix3f dcm_matrix;

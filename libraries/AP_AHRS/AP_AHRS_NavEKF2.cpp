@@ -30,11 +30,11 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * rotational rate estimates:
      */
-    // Use the primary EKF to select the primary gyro
+    // Use the primary EKF to select the primary IMU, falling back to
+    // the IMU with the first usable gyro
     const AP_InertialSensor &_ins = AP::ins();
-    const int8_t primary_imu = EKF2.getPrimaryCoreIMUIndex();
-    const uint8_t primary_gyro = primary_imu>=0?primary_imu:_ins.get_first_usable_gyro();
-    const uint8_t primary_accel = primary_imu>=0?primary_imu:_ins.get_first_usable_accel();
+    const int8_t primary_core = EKF2.getPrimaryCoreIMUIndex();
+    const uint8_t primary_IMU = primary_core>=0?primary_core:_ins.get_first_usable_gyro();
 
     // get gyro bias for primary EKF and change sign to give gyro drift
     // Note sign convention used by EKF is bias = measurement - truth
@@ -43,7 +43,7 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.gyro_drift = -drift;
 
     // use the same IMU as the primary EKF and correct for gyro drift
-    results.gyro_estimate = _ins.get_gyro(primary_gyro) + results.gyro_drift;
+    results.gyro_estimate = _ins.get_gyro(primary_IMU) + results.gyro_drift;
 
     /*
      * acceleration estimates
@@ -51,8 +51,8 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     // get z accel bias estimate from active EKF (this is usually for the primary IMU)
     EKF2.getAccelZBias(results.accel_bias.z);
 
-    // This EKF is currently using primary_imu, and a bias applies to only that IMU
-    Vector3f accel = _ins.get_accel(primary_accel);
+    // This EKF is currently using primary_IMU, and a bias applies to only that IMU
+    Vector3f accel = _ins.get_accel(primary_IMU);
     accel.z -= results.accel_bias.z;
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
 

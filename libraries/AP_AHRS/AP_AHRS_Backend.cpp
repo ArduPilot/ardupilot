@@ -34,8 +34,8 @@ void AP_AHRS_Backend::init()
 // return a smoothed and corrected gyro vector using the latest ins data (which may not have been consumed by the EKF yet)
 Vector3f AP_AHRS::get_gyro_latest(void) const
 {
-    const uint8_t primary_gyro = get_primary_gyro_index();
-    return AP::ins().get_gyro(primary_gyro) + get_gyro_drift();
+    const uint8_t primary_IMU = get_primary_IMU_index();
+    return AP::ins().get_gyro(primary_IMU) + get_gyro_drift();
 }
 
 // set_trim

@@ -442,16 +442,14 @@ void AP_AHRS::reset_gyro_drift(void)
  */
 void AP_AHRS::update_state(void)
 {
-    const uint8_t primary_gyro = _get_primary_gyro_index();
+    const uint8_t primary_IMU = _get_primary_IMU_index();
 #if AP_INERTIALSENSOR_ENABLED
     // tell the IMUS about primary changes
-    if (primary_gyro != state.primary_gyro) {
-        AP::ins().set_primary(primary_gyro);
+    if (primary_IMU != state.primary_IMU) {
+        AP::ins().set_primary(primary_IMU);
     }
 #endif
-    state.primary_IMU = _get_primary_IMU_index();
-    state.primary_gyro = primary_gyro;
-    state.primary_accel = _get_primary_accel_index();
+    state.primary_IMU = primary_IMU;
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = active_backend->wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
@@ -2874,18 +2872,6 @@ int8_t AP_AHRS::_get_primary_core_index() const
     // we should never get here
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     return -1;
-}
-
-// get the index of the current primary accelerometer sensor
-uint8_t AP_AHRS::_get_primary_accel_index(void) const
-{
-    return _get_primary_IMU_index();
-}
-
-// get the index of the current primary gyro sensor
-uint8_t AP_AHRS::_get_primary_gyro_index(void) const
-{
-    return _get_primary_IMU_index();
 }
 
 // see if EKF lane switching is possible to avoid EKF failsafe

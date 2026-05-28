@@ -33,10 +33,10 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
      */
     const AP_InertialSensor &_ins = AP::ins();
 
-    // Use the primary EKF to select the primary gyro
-    const int8_t primary_imu = EKF3.getPrimaryCoreIMUIndex();
-    const uint8_t primary_gyro = primary_imu>=0?primary_imu:_ins.get_first_usable_gyro();
-    const uint8_t primary_accel = primary_imu>=0?primary_imu:_ins.get_first_usable_accel();
+    // Use the primary EKF to select the primary IMU, falling back to
+    // the IMU with the first usable gyro
+    const int8_t primary_core = EKF3.getPrimaryCoreIMUIndex();
+    const uint8_t primary_IMU = primary_core>=0?primary_core:_ins.get_first_usable_gyro();
 
     // get gyro bias for primary EKF and change sign to give gyro drift
     // Note sign convention used by EKF is bias = measurement - truth
@@ -45,7 +45,7 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.gyro_drift = -drift;
 
     // use the same IMU as the primary EKF and correct for gyro drift
-    results.gyro_estimate = _ins.get_gyro(primary_gyro) + results.gyro_drift;
+    results.gyro_estimate = _ins.get_gyro(primary_IMU) + results.gyro_drift;
 
     /*
      * acceleration estimates
@@ -55,7 +55,7 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     EKF3.getAccelBias(-1, results.accel_bias);
 
     // use the primary IMU for accel earth frame
-    Vector3f accel = _ins.get_accel(primary_accel);
+    Vector3f accel = _ins.get_accel(primary_IMU);
     accel -= results.accel_bias;
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
 
