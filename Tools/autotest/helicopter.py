@@ -290,7 +290,7 @@ class AutoTestHelicopter(AutoTestCopter):
             wipe=True,
         )
         self.takeoff(10)
-        self.wait_servo_channel_value(4, 1403, timeout=10)
+        self.wait_servo_channel_value(7, 1403, timeout=10)
         self.do_RTL()
 
     def DDVPTail(self):
