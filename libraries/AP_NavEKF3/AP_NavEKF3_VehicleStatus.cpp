@@ -337,6 +337,7 @@ void NavEKF3_core::detectFlight()
     if (assume_zero_sideslip()) {
         // To be confident we are in the air we use a criteria which combines arm status, ground speed, airspeed and height change
         ftype gndSpdSq = sq(gpsDataNew.vel.x) + sq(gpsDataNew.vel.y);
+        ftype gndSpdErrSq = sq(gpsSpdAccuracy);
         bool highGndSpd = false;
         bool highAirSpd = false;
         bool largeHgtChange = false;
@@ -351,7 +352,18 @@ void NavEKF3_core::detectFlight()
 
         // trigger on ground speed
         const ftype gndSpdThresholdSq = sq(5.0f);
-        if (gndSpdSq > gndSpdThresholdSq + sq(gpsSpdAccuracy)) {
+#if EK3_FEATURE_EXTERNAL_NAV
+        if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) && extNavVelToFuse) {
+            gndSpdSq = sq(extNavVelDelayed.vel.x) + sq(extNavVelDelayed.vel.y);
+            gndSpdErrSq = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f));
+        } else if ((frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV) &&
+                   extNavDataToFuse &&
+                   PV_AidingMode == AID_ABSOLUTE) {
+            gndSpdSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
+            gndSpdErrSq = constrain_ftype(MAX(P[4][4], P[5][5]), sq(0.05f), sq(5.0f));
+        }
+#endif
+        if (gndSpdSq > gndSpdThresholdSq + gndSpdErrSq) {
             highGndSpd = true;
         }
 
