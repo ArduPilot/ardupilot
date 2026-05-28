@@ -23,7 +23,14 @@ bool AP_AHRS_External::healthy() const {
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
     auto &extahrs = AP::externalAHRS();
+
+#if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &_ins = AP::ins();
+    // not using specific sensors:
+    results.primary_gyro = _ins.get_first_usable_gyro();
+    results.primary_accel = _ins.get_first_usable_accel();
+#endif  // AP_INERTIALSENSOR_ENABLED
+
     if (!extahrs.get_quaternion(results.quaternion)) {
         results.attitude_valid = false;
         return;
@@ -34,12 +41,16 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.gyro_drift.zero();
     if (!extahrs.get_gyro(results.gyro_estimate)) {
+#if AP_INERTIALSENSOR_ENABLED
         results.gyro_estimate = _ins.get_gyro();
+#endif  // AP_INERTIALSENSOR_ENABLED
     }
 
     Vector3f accel;
     if (!extahrs.get_accel(accel)) {
+#if AP_INERTIALSENSOR_ENABLED
         accel = _ins.get_accel();
+#endif  // AP_INERTIALSENSOR_ENABLED
     }
 
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
