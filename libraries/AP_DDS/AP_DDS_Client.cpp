@@ -671,10 +671,9 @@ void AP_DDS_Client::update_topic(sensor_msgs_msg_Imu& msg)
         initialize(msg.orientation);
     }
 
-    uint8_t accel_index = ahrs.get_primary_accel_index();
-    uint8_t gyro_index = ahrs.get_primary_gyro_index();
-    const Vector3f accel_data = imu.get_accel(accel_index);
-    const Vector3f gyro_data = imu.get_gyro(gyro_index);
+    const uint8_t imu_index = ahrs.get_primary_IMU_index();
+    const Vector3f accel_data = imu.get_accel(imu_index);
+    const Vector3f gyro_data = imu.get_gyro(imu_index);
 
     // Populate the message fields
     msg.linear_acceleration.x = accel_data.x;
