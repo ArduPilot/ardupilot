@@ -60,6 +60,12 @@ extern const AP_HAL::HAL& hal;
 #define SIM_DEFAULT_ENABLED_RELAY_CHANNELS UINT16_MAX
 #endif
 
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+    #define SIM_DEFAULT_BATT_VOLTAGE 50.4f
+#else
+    #define SIM_DEFAULT_BATT_VOLTAGE 12.6f
+#endif
+
 namespace SITL {
 
 SIM *SIM::_singleton = nullptr;
@@ -117,7 +123,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Simulated battery resting voltage (no load sag). Defaults to and clipped to the battery model's maximum voltage. Changes re-initialize the state of charge, and values below the maximum indicate a partially-charged battery. For batteries with unlimited capacity, see `SIM_BATT_CAP_AH`. Value ignored when receiving battery state updates from an external source.
     // @Units: V
     // @User: Advanced
-    AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
+    AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  SIM_DEFAULT_BATT_VOLTAGE),
     // @Param: BATT_CAP_AH
     // @DisplayName: Simulated battery capacity
     // @Description: Simulated battery capacity. Changes re-initialize the state of charge of the battery. Set to 0 for unlimited capacity. Value ignored when receiving battery state updates from an external source.
