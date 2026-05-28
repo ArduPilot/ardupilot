@@ -128,6 +128,21 @@ char AP_Tramp::handle_response(void)
             }
 
             vtx.set_power_mw(power);
+            vtx.set_actual_power_mw(cur_act_power);
+
+            // VTX-reported rf_power_max is unreliable, so warn on the user cap instead
+            if (!_act_power_warned && cur_act_power != 0) {
+                const uint16_t user_cap = vtx.get_max_power_mw();
+                const bool over_cap = (user_cap != 0 && cur_act_power > user_cap);
+                const bool over_request = (power != 0 && cur_act_power > power + (power / 2));
+                if (over_cap || over_request) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                                  "VTX: requested %umW, actual %umW, cap %umW",
+                                  unsigned(power), unsigned(cur_act_power), unsigned(user_cap));
+                    _act_power_warned = true;
+                }
+            }
+
             if (pit_mode) {
                 vtx.set_options(vtx.get_options() | uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
             } else {
@@ -140,8 +155,9 @@ char AP_Tramp::handle_response(void)
                 vtx.announce_vtx_settings();
             }
 
-            debug("device config: freq: %u, cfg pwr: %umw, act pwr: %umw, pitmode: %u",
-                unsigned(freq), unsigned(power), unsigned(cur_act_power), unsigned(pit_mode));
+            debug("device config: freq: %u, cfg pwr: %umw, act pwr: %umw, pitmode: %u, ctrl: 0x%02x",
+                unsigned(freq), unsigned(power), unsigned(cur_act_power),
+                unsigned(pit_mode), unsigned(cur_control_mode));
 
             // update the "_configuration_finished" flag, otherwise OSD item VTX_POWER blinks forever
             vtx.set_configuration_finished(!update_pending);
@@ -470,20 +486,38 @@ void AP_Tramp::update()
     AP_VideoTX& vtx = AP::vtx();
 
     if (vtx.have_params_changed() && retry_count == 0) {
-        // check changes in the order they will be processed
+        // check changes in the order they will be processed; re-arm retries
+        // only on real changes so a VTX rejecting a value can't loop forever
         if (vtx.update_frequency() || vtx.update_band() || vtx.update_channel()) {
             if (vtx.update_frequency()) {
                 vtx.update_configured_channel_and_band();
             } else {
                 vtx.update_configured_frequency();
             }
-            set_frequency(vtx.get_configured_frequency_mhz());
+            const uint16_t conf_freq = vtx.get_configured_frequency_mhz();
+            if (conf_freq != _last_conf_freq) {
+                _last_conf_freq = conf_freq;
+                set_frequency(conf_freq);
+            }
         }
         else if (vtx.update_power()) {
-            retry_count = VTX_TRAMP_MAX_RETRIES;
+            const uint16_t conf_power = vtx.get_configured_power_mw();
+            if (conf_power != _last_conf_power) {
+                _last_conf_power = conf_power;
+                retry_count = VTX_TRAMP_MAX_RETRIES;
+                _power_warn_pending = true;
+            } else if (_power_warn_pending) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                              "VTX: rejected power %umW", unsigned(conf_power));
+                _power_warn_pending = false;
+            }
         }
         else if (vtx.update_options()) {
-            retry_count = VTX_TRAMP_MAX_RETRIES;
+            const uint16_t conf_options = vtx.get_configured_options();
+            if (conf_options != _last_conf_options) {
+                _last_conf_options = conf_options;
+                retry_count = VTX_TRAMP_MAX_RETRIES;
+            }
         }
     }
 

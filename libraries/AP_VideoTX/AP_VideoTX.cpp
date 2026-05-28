@@ -276,9 +276,22 @@ void AP_VideoTX::set_power_mw(uint16_t power)
     for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
         if (power == _power_levels[i].mw) {
             _current_power = i;
-            break;
+            return;
         }
     }
+    // power 0 (pit mode) should always match the built-in 0mW entry; bail
+    // here so it can never reach log10f below
+    if (power == 0) {
+        return;
+    }
+    // non-standard value (e.g. Tramp 2500mW): stash it in the custom slot
+    PowerLevel &slot = _power_levels[VTX_MAX_POWER_LEVELS - 1];
+    slot.mw = power;
+    slot.dbm = uint8_t(roundf(10.0f * log10f(float(power))));
+    slot.level = 255;
+    slot.dac = 255;
+    slot.active = PowerActive::Active;
+    _current_power = VTX_MAX_POWER_LEVELS - 1;
 }
 
 // set the power "level"
@@ -401,6 +414,10 @@ bool AP_VideoTX::update_power() const {
             && _power_levels[i].active != PowerActive::Inactive) {
             return true;
         }
+    }
+    // Tramp accepts arbitrary mW; the table check above is SmartAudio-only
+    if (_power_mw > 0 && is_provider_enabled(VTXType::Tramp)) {
+        return true;
     }
     // asked for something unsupported - only SA2.1 allows this and will have already provided a list
     return false;
