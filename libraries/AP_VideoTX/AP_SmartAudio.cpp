@@ -479,8 +479,14 @@ void AP_SmartAudio::unpack_settings(Settings *settings, const SettingsExtendedRe
 {
     unpack_settings(settings, &frame->settings);
     settings->power_in_dbm = frame->power_dbm;
-    settings->num_power_levels = frame->num_power_levels + 1;
-    memcpy(settings->power_levels, frame->power_levels, frame->num_power_levels + 1);
+    // the level count comes from the wire; clamp it to the size of the
+    // destination (and source) arrays to avoid overrunning them
+    uint8_t num_power_levels = frame->num_power_levels + 1;
+    if (num_power_levels > sizeof(settings->power_levels)) {
+        num_power_levels = sizeof(settings->power_levels);
+    }
+    settings->num_power_levels = num_power_levels;
+    memcpy(settings->power_levels, frame->power_levels, num_power_levels);
 }
 
 #ifdef SA_DEBUG
