@@ -1142,30 +1142,85 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
-    def SHT3X(self):
-        '''test for the SHT3X temperature/hygro driver'''
-        self.set_parameters({
-            'TEMP1_TYPE': 8,
-            'TEMP1_ADDR': 0x44,
-            'TEMP_LOG': 1,
-        })
-        self.reboot_sitl()
-        self.context_push()
-        self.set_parameter('LOG_DISARMED', 1)
-        self.delay_sim_time(10, reason="temperature data to be logged")
-        self.context_pop()
-
+    def assert_temperature_log_in_range(self, sensor_name, temp_min, temp_max):
+        '''check the onboard log contains a TEMP message with temperature in (temp_min, temp_max)'''
         dfreader = self.dfreader_for_current_onboard_log()
+        m = None
         while True:
             m = dfreader.recv_match(type='TEMP')
             if m is None:
                 break
             self.progress(m)
-            if m.Temp > 15 or m.Temp < 30:
-                # success!
+            if m.Temp > temp_min and m.Temp < temp_max:
                 break
         if m is None:
-            raise NotAchievedException("Did not get good TEMP message")
+            raise NotAchievedException(
+                "Did not get TEMP message in range (%s, %s) from %s" %
+                (temp_min, temp_max, sensor_name))
+
+    def temperature_sensor_test(self, params, sensor_name, temp_min, temp_max):
+        '''configure a temperature sensor, collect 10s of log, verify temperature in range'''
+        self.set_parameters({**params, 'TEMP_LOG': 1})
+        self.reboot_sitl()
+        self.context_push()
+        self.set_parameter('LOG_DISARMED', 1)
+        self.delay_sim_time(10, reason="temperature data to be logged")
+        self.context_pop()
+        self.assert_temperature_log_in_range(sensor_name, temp_min, temp_max)
+
+    def SHT3X(self):
+        '''test for the SHT3X temperature/hygro driver'''
+        self.temperature_sensor_test({
+            'TEMP1_TYPE': 8,
+            'TEMP1_BUS': 1,
+            'TEMP1_ADDR': 0x44,
+        }, sensor_name="SHT3X", temp_min=39, temp_max=41)
+
+    def TSYS01(self):
+        '''test for the TSYS01 temperature sensor driver'''
+        # The TSYS01 simulator returns ISA air temperature at the simulated
+        # altitude plus a 25 °C board-heating offset, giving ~40 °C at sea level.
+        self.temperature_sensor_test({
+            'TEMP1_TYPE': 1,
+            'TEMP1_BUS': 0,
+            'TEMP1_ADDR': 0x77,
+        }, sensor_name="TSYS01", temp_min=39, temp_max=41)
+
+    def TSYS03(self):
+        '''test for the TSYS03 temperature sensor driver'''
+        # The TSYS03 simulator returns the simulated battery temperature.
+        # The Sub vehicle does not call battery.setup() so resistance_ohm is
+        # zero, no I²R heating occurs, and the battery stays at its default 0 °C.
+        self.temperature_sensor_test({
+            'TEMP1_TYPE': 4,
+            'TEMP1_BUS': 2,
+            'TEMP1_ADDR': 0x40,
+        }, sensor_name="TSYS03", temp_min=-2, temp_max=2)
+
+    def MCP9600(self):
+        '''test for the MCP9600 thermocouple temperature sensor driver'''
+        # The MCP9600 simulator has a broken temperature encoding formula
+        # (degrees() radians-to-degrees conversion inflates the oscillation term
+        # to ±916, which wraps through uint16_t and centres near 0 °C).
+        self.temperature_sensor_test({
+            'TEMP1_TYPE': 2,
+            'TEMP1_BUS': 0,
+            'TEMP1_ADDR': 0x60,
+        }, sensor_name="MCP9600", temp_min=-1, temp_max=1)
+
+    def MLX90614(self):
+        '''test for the MLX90614 IR temperature sensor driver'''
+        self.temperature_sensor_test({
+            'TEMP1_TYPE': 7,
+            'TEMP1_BUS': 0,
+            'TEMP1_ADDR': 0x5A,
+        }, sensor_name="MLX90614", temp_min=13, temp_max=16)
+
+    def MAX31865(self):
+        '''test for the MAX31865 RTD temperature sensor driver'''
+        self.temperature_sensor_test({
+            'TEMP1_TYPE': 3,
+        }, sensor_name="MAX31865", temp_min=13, temp_max=16)
 
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
@@ -1359,6 +1414,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.INA3221,
             self.PosHoldBounceBack,
             self.SHT3X,
+            self.TSYS01,
+            self.TSYS03,
+            self.MCP9600,
+            self.MLX90614,
+            self.MAX31865,
             self.SurfaceSensorless,
             self.GPSForYaw,
             self.WaterDepth,

@@ -1147,6 +1147,11 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
         i2c->update(*this);
     }
 
+    // update spi
+    if (spi) {
+        spi->update(*this);
+    }
+
     // update buzzer
     if (buzzer && buzzer->is_enabled()) {
         buzzer->update(input);

@@ -23,8 +23,9 @@
 #include "SIM_SPI.h"
 #include "SIM_SPIDevice.h"
 
-#include "SIM_RAMTRON_FM25V02.h"
 #include "SIM_JEDEC_MX25L3206E.h"
+#include "SIM_RAMTRON_FM25V02.h"
+#include "SIM_Temperature_MAX31865.h"
 
 #include <signal.h>
 
@@ -35,6 +36,9 @@ static RAMTRON_FM25V02 ramtron_FM25V02;  // 32kB 2-byte-addressing
 #endif
 #if AP_SIM_JEDEC_MX25L3206E_ENABLED
 static JEDEC_MX25L3206E jedec_MX25L3206E;
+#endif
+#if AP_SIM_TEMPERATURE_MAX31865_ENABLED
+static MAX31865 max31865;
 #endif
 
 struct spi_device_at_cs_pin {
@@ -47,6 +51,9 @@ struct spi_device_at_cs_pin {
 #endif
 #if AP_SIM_JEDEC_MX25L3206E_ENABLED
     { 1, 0, jedec_MX25L3206E },
+#endif
+#if AP_SIM_TEMPERATURE_MAX31865_ENABLED
+    { 2, 0, max31865 },
 #endif
 };
 
