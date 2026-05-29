@@ -179,6 +179,9 @@ class Board:
             env.AP_LIBRARIES += [
                 'AC_CustomControl'
             ]
+            env.AP_LIBRARIES += [
+                'AP_CustomControl'
+            ]
             cfg.msg("Enabled custom controller", 'yes')
         else:
             env.DEFINES.update(
