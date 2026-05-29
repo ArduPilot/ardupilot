@@ -202,7 +202,10 @@ PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto tabulate"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
+        PYTHON_PKGS="$PYTHON_PKGS pygame"
+    fi
+    PYTHON_PKGS="$PYTHON_PKGS intelhex"
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
