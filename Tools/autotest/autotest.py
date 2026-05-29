@@ -427,6 +427,7 @@ def run_step(step):
         "ubsan_abort" : opts.ubsan_abort,
         "num_aux_imus" : opts.num_aux_imus,
         "dronecan_tests" : opts.dronecan_tests,
+        "asan" : opts.asan,
     }
 
     if opts.Werror:
@@ -509,6 +510,7 @@ def run_step(step):
         "use_map": opts.map,
         "valgrind": opts.valgrind,
         "callgrind": opts.callgrind,
+        "asan": opts.asan,
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
@@ -987,6 +989,10 @@ if __name__ == "__main__":
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under valgrind')
+    group_sim.add_option("--asan",
+                         default=False,
+                         action='store_true',
+                         help='enable ASAN error checking (binary must be built with --asan --debug)')
     group_sim.add_option("", "--callgrind",
                          action='store_true',
                          default=False,
@@ -1067,6 +1073,8 @@ if __name__ == "__main__":
             opts.timeout *= 10
         elif opts.callgrind:
             opts.timeout *= 10
+        elif opts.asan:
+            opts.timeout *= 2
         elif opts.gdb:
             opts.timeout = None
 
