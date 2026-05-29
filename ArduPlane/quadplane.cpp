@@ -3611,6 +3611,7 @@ bool QuadPlane::land_detector(void)
            
     if ((now - landing_detect.land_start_ms) < landing_detect.timeout_ms ||
         (now - landing_detect.lower_limit_start_ms) < (landing_detect.timeout_ms+1000)) {
+        // not landed yet
         return false;
     }
 
