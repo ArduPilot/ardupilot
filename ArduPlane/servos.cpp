@@ -849,14 +849,11 @@ void Plane::force_flare(void)
 
 /* Set the flight control servos based on the current calculated values
 
-  This function operates by first building up output values for
-  channels using set_servo() and set_radio_out(). Using
-  set_radio_out() is for when a raw PWM value of output is given which
-  does not depend on any output scaling. Using set_servo() is for when
-  scaling and mixing will be needed.
+  This function operates by first applying various safeguards on the servo
+  channels.
 
-  Finally servos_output() is called to push the final PWM values
-  for output channels
+  Then servos_output() is called to calculate the mixeras and push the
+  final PWM values for output channels.
 */
 void Plane::set_servos(void)
 {
