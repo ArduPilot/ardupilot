@@ -167,6 +167,14 @@ const AP_Param::GroupInfo AP_MotorsHeli_Single::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("YAW_TRIM", 23,  AP_MotorsHeli_Single, _yaw_trim, 0.0f),
 
+    // @Param: TAIL_RAMP_TIME
+    // @DisplayName: Tail RSC Throttle Ramp Time
+    // @Description: Time in seconds for throttle output (TailHeliRSC servo) to ramp from ground idle (RSC_IDLE) to flight idle throttle setting when motor interlock is enabled (throttle hold off).
+    // @Range: 0 60
+    // @Units: s
+    // @User: Standard
+    AP_GROUPINFO("TAIL_RAMP_TIME", 24, AP_MotorsHeli_Single, _direct_drive_ramp_time, AP_MOTORS_HELI_SINGLE_TAIL_RAMP_TIME_DEFAULT),
+
     AP_GROUPEND
 };
 
@@ -267,9 +275,9 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to DDVP rotor controller or DDFP and trigger recalculation of scalars
     if (use_tail_RSC()) {
         if (get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW || get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW) {
-            _tail_rotor.configure(ROTOR_CONTROL_MODE_DDFP, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
+            _tail_rotor.configure(ROTOR_CONTROL_MODE_DDFP, _direct_drive_ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
         } else if (get_tail_type() == TAIL_TYPE::DIRECTDRIVE_VARPITCH || get_tail_type() == TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV) {
-            _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
+            _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _direct_drive_ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
             _tail_rotor.set_setpoint_desired_rotor_speed(_direct_drive_tailspeed.get());
         }
     } else {
