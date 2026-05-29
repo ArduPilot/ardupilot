@@ -168,11 +168,11 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: _ANGLE_P
     // @DisplayName: Pitch angle P gain
-    // @Description: Pitch angle P gain. Setting to zero disables input shaping. Acceleration limit also must be configured.
+    // @Description: Pitch angle P gain. If zero a gain of (1 / PTCH2SRV_TCONST) wil be used.
     // @Range: 3.000 12.000
     // @Increment: 0.01
     // @User: Advanced
-    AP_GROUPINFO("_ANGLE_P", 13, AP_PitchController, angle_p, 4.5),
+    AP_GROUPINFO("_ANGLE_P", 13, AP_PitchController, angle_p, 0.0),
 
     AP_GROUPEND
 };

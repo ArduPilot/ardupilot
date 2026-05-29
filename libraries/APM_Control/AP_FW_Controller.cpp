@@ -39,8 +39,8 @@ bool AP_FW_Controller::apply_input_shaping() const
         return false;
     }
 
-    // Accel limit and angle gain must be set
-    if (!is_positive(accel_limit.get()) || !is_positive(angle_p.get())) {
+    // Accel limit must be set
+    if (!is_positive(accel_limit.get())) {
         return false;
     }
 
@@ -107,8 +107,14 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     // Calculate angle error
     angle_err_deg = wrap_180(angle_target_deg - get_measured_angle());
 
+    // Use 1 / tau if angle gain is not set
+    float angle_gain = 1.0 / gains.tau.get();
+    if (is_positive(angle_p.get())) {
+        angle_gain = angle_p.get();
+    }
+
     // Apply gain using sqrt controller
-    float desired_rate = sqrt_controller(angle_err_deg, angle_p.get(), accel_max * 0.5, dt);
+    float desired_rate = sqrt_controller(angle_err_deg, angle_gain, accel_max * 0.5, dt);
 
     // Add feed forward rate demand and offset then constrain to rate limit
     desired_rate = rate_limit(desired_rate + rate_target_deg + get_rate_target_offset());
