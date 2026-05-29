@@ -96,8 +96,8 @@ protected:
     // Apply positive and negative rate limits to passed in value
     float rate_limit(float rate) const;
 
-    // Return feed forward rate target in deg per second, this is used in angle control
-    virtual float get_ff_rate_target() const { return 0.0; }
+    // Return rate target offset in deg per second, this is used in angle control
+    virtual float get_rate_target_offset() const { return 0.0; }
 
     // Return positive rate limit in deg per second, zero if disabled
     virtual float get_positive_rate_limit() const = 0;

@@ -239,7 +239,7 @@ bool AP_PitchController::apply_rate_limits() const
 }
 
 // get the rate offset in degrees/second needed for pitch in body frame to maintain height in a coordinated turn.
-float AP_PitchController::get_ff_rate_target() const
+float AP_PitchController::get_rate_target_offset() const
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 

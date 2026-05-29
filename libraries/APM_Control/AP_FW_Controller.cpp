@@ -64,7 +64,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     if (!apply_input_shaping()) {
         // Calculate rate directly from angle error with no input shaping
         angle_err_deg = wrap_180(desired_angle_deg - get_measured_angle());
-        float desired_rate = (angle_err_deg / gains.tau) + get_ff_rate_target();
+        float desired_rate = (angle_err_deg / gains.tau) + get_rate_target_offset();
 
         // Apply rate limits if enabled
         if (apply_rate_limits()) {
@@ -89,7 +89,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
 
     // Apply input shaping updating the accel target
     shape_pos_vel_accel(
-        angle_error, get_ff_rate_target(), 0.0, // desired pos, vel and accel
+        angle_error, 0.0, 0.0, // desired pos, vel and accel
         0.0, rate_target_deg, accel_target_deg, // current shaped target
         -get_negative_rate_limit(), get_positive_rate_limit(), // velocity limits
         -accel_max, accel_max, // accel limits
@@ -110,8 +110,8 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     // Apply gain using sqrt controller
     float desired_rate = sqrt_controller(angle_err_deg, angle_p.get(), accel_max * 0.5, dt);
 
-    // Add feed forward rate demand and constrain to rate limit
-    desired_rate = rate_limit(desired_rate + rate_target_deg);
+    // Add feed forward rate demand and offset then constrain to rate limit
+    desired_rate = rate_limit(desired_rate + rate_target_deg + get_rate_target_offset());
 
     // Run rate controller
     return run_axis_rate_control(desired_rate, scaler, disable_integrator, ground_mode);

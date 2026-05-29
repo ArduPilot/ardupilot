@@ -31,8 +31,8 @@ private:
     // Return true if rate limits should be applied
     bool apply_rate_limits() const override;
 
-    // Return feed forward rate target in deg per second, this is used in angle control
-    float get_ff_rate_target() const override;
+    // Return rate target offset in deg per second, this is used in angle control
+    float get_rate_target_offset() const override;
 
     // Return positive rate limit in deg per second, zero if disabled
     float get_positive_rate_limit() const override;
