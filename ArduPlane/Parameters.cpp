@@ -987,6 +987,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    // @Group: CP
+    // @Path: ../libraries/AP_CustomControl/AP_CustomControl.cpp
+    GOBJECT(custom_control, "CP", AP_CustomControl),
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
+
     AP_VAREND
 };
 
