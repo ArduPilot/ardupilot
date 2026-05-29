@@ -2555,6 +2555,7 @@ class TestSuite(abc.ABC):
             "BATT2_MONITOR": 4,   # AP_BattMonitor: instance 1 (Analog V+I)
             "FILT1_TYPE": 1,      # AP_Filter: NotchFilter backend
             "TEMP1_TYPE": 8,      # AP_TemperatureSensor: SHT3X (simulated in SITL)
+            "TEMP1_ADDR": 0x44,   # SHT3X I2C address (avoid conflicting with TSYS01 at 0x77)
             "GEN_TYPE": 1,        # AP_Generator: IE_650_800 backend
             "CC_TYPE": 2,         # AC_CustomControl: PID backend (ArduCopter)
         }
