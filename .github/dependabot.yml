@@ -1,0 +1,13 @@
+# Keep GitHub Actions up to date with GitHub's Dependabot.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    commit-message:
+      prefix: .github
+    directory: /
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    schedule:
+      interval: weekly
