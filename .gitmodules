@@ -6,7 +6,8 @@
 	url = https://github.com/google/benchmark.git
 [submodule "modules/mavlink"]
 	path = modules/mavlink
-	url = https://github.com/ArduPilot/mavlink
+	url = https://github.com/yz-gg/ardupilot.git
+	branch = mavlink/add-dvl-epd6-messages
 [submodule "gtest"]
 	path = modules/gtest
 	url = https://github.com/ArduPilot/googletest
