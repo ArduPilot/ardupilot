@@ -719,9 +719,10 @@ arducopter and upload it to my board".
 
     g.add_option('--asan',
         action='store_true',
-        help='''Build using the macOS clang Address Sanitizer. In order to run with
-Address Sanitizer support llvm-symbolizer is required to be on the PATH.
-This option is only supported on macOS versions of clang.
+        help='''Build using the clang Address Sanitizer (Linux and macOS). Requires
+clang to be selected via the CXX/CC environment variables, e.g.:
+  CXX=clang++-19 CC=clang-19 ./waf configure --board sitl --asan
+llvm-symbolizer must be on the PATH for symbolised reports.
 ''')
 
     g.add_option('--ubsan',

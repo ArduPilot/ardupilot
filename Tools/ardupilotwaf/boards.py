@@ -875,7 +875,9 @@ class SITLBoard(Board):
                 '-O3',
             ]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            if not cfg.env.DEBUG:
+                cfg.fatal('--asan requires --debug for reliable instrumentation')
             env.CXXFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
@@ -890,8 +892,8 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
-             env.LINKFLAGS += ['-fsanitize=address']
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
