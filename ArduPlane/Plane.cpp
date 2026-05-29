@@ -21,6 +21,7 @@
  */
 
 #include "Plane.h"
+#include "AP_CustomControl/AP_CustomControl.h"
 
 #define FORCE_VERSION_H_INCLUDE
 #include "version.h"
@@ -64,6 +65,9 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     FAST_TASK(ahrs_update),
     FAST_TASK(update_control_mode),
     FAST_TASK(stabilize),
+#if AP_CUSTOMCONTROL_PLANE_ENABLED
+    FAST_TASK(run_custom_controller),
+#endif // AP_CUSTOMCONTROL_PLANE_ENABLED
     FAST_TASK(set_servos),
     SCHED_TASK(read_radio,             50,    100,   6),
     SCHED_TASK(check_short_rc_failsafe,   50,    100,   9),
@@ -413,6 +417,9 @@ void Plane::one_second_loop()
     rollController.set_notch_sample_rate(loop_rate);
     pitchController.set_notch_sample_rate(loop_rate);
     yawController.set_notch_sample_rate(loop_rate);
+#if AP_CUSTOMCONTROL_PLANE_ENABLED
+    custom_control.set_notch_sample_rate(loop_rate);
+#endif // AP_CUSTOMCONTROL_PLANE_ENABLED
 }
 
 void Plane::three_hz_loop()
@@ -1094,6 +1101,41 @@ void Plane::update_quicktune(void)
     quicktune.update(control_mode->supports_quicktune());
 }
 #endif
+
+#if AP_CUSTOMCONTROL_PLANE_ENABLED
+void Plane::run_custom_controller()
+{
+    // Provide necessary information.
+    custom_control.roll_target_deg = nav_roll_cd * 0.01f;
+    custom_control.pitch_target_deg = nav_pitch_cd * 0.01f;
+    custom_control.pitch_trim_deg = g.pitch_trim;
+    custom_control.is_flying = is_flying();
+    custom_control.ground_mode = ground_mode;
+    custom_control.flight_mode = get_mode();
+
+    // Run the controller.
+    custom_control.update();
+
+    // Reset stock controllers as needed.
+    if (custom_control.needs_reset_roll()) {
+        rollController.reset_I();
+    }
+    if (custom_control.needs_reset_pitch()) {
+        pitchController.reset_I();
+    }
+    if (custom_control.needs_reset_yaw()) {
+        yawController.reset_I();
+        yawController.reset_rate_PID();
+    }
+    if (custom_control.needs_reset_steer()) {
+        plane.steer_state.locked_course = false;
+        plane.steer_state.locked_course_err = 0;
+    }
+    if (custom_control.needs_reset_throttle()) {
+        plane.TECS_controller.reset();
+    }
+}
+#endif // AP_CUSTOMCONTROL_PLANE_ENABLED
 
 /*
   constructor for main Plane class
