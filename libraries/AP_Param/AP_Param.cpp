@@ -694,7 +694,9 @@ const struct AP_Param::Info *AP_Param::find_var_info_token(const ParamToken &tok
     return nullptr;
 }
 
-// return the storage size for a AP_PARAM_* type
+// return the storage size for a AP_PARAM_* type.
+// NOTE: if you add a type here, also add it to AP_Param_value_storage
+// (below) so the value buffers used during conversion stay big enough.
 uint8_t AP_Param::type_size(enum ap_var_type type)
 {
     switch (type) {
@@ -715,6 +717,23 @@ uint8_t AP_Param::type_size(enum ap_var_type type)
     Debug("unknown type %d\n", type);
     return 0;
 }
+
+// a union of every storable parameter type; an object of this type is
+// large enough and suitably aligned to hold the value of any single
+// parameter without assuming which type is largest.  Used as a value
+// buffer during parameter conversion.  Keep the members in sync with
+// type_size().
+union AP_Param_value_storage {
+    // Vector3f has a non-trivial constructor, so the union's default
+    // constructor would otherwise be deleted; the value is always filled
+    // in (read from EEPROM) before use.
+    AP_Param_value_storage() {}
+    int8_t i8;
+    int16_t i16;
+    int32_t i32;
+    float f;
+    Vector3f v3f;
+};
 
 /*
   extract 9 bit key from Param_header
@@ -1985,8 +2004,10 @@ bool AP_Param::find_old_parameter(const struct ConversionInfo *info, AP_Param *v
 // convert one old vehicle parameter to new object parameter
 void AP_Param::convert_old_parameter(const struct ConversionInfo *info, float scaler, uint8_t flags)
 {
-    uint8_t old_value[type_size(info->type)];
-    AP_Param *ap = (AP_Param *)&old_value[0];
+    // a buffer large enough (and aligned) for any parameter value, which
+    // also avoids a VLA here
+    AP_Param_value_storage old_value;
+    AP_Param *ap = (AP_Param *)&old_value;
 
     if (!find_old_parameter(info, ap)) {
         // the old parameter isn't saved in the EEPROM. It was
@@ -2087,9 +2108,11 @@ void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
 
         info.old_group_element = (idx << group_shift) + old_index;
 
-        uint8_t old_value[type_size(info.type)];
-        AP_Param *ap = (AP_Param *)&old_value[0];
-        
+        // a buffer large enough (and aligned) for any parameter value,
+        // which also avoids a VLA here
+        AP_Param_value_storage old_value;
+        AP_Param *ap = (AP_Param *)&old_value;
+
         if (!AP_Param::find_old_parameter(&info, ap)) {
             // the parameter wasn't set in the old eeprom
             continue;
@@ -2175,11 +2198,12 @@ bool AP_Param::_convert_parameter_width(ap_var_type old_ptype, float scale_facto
         return false;
     }
 
-    // load the old value from EEPROM
-    uint8_t old_value[type_size(old_ptype)];
-    _storage.read_block(old_value, pofs+sizeof(phdr), sizeof(old_value));
-    
-    AP_Param *old_ap = (AP_Param *)&old_value[0];
+    // load the old value from EEPROM.  a buffer large enough (and aligned)
+    // for any parameter value also avoids a VLA here
+    AP_Param_value_storage old_value;
+    _storage.read_block(&old_value, pofs+sizeof(phdr), type_size(old_ptype));
+
+    AP_Param *old_ap = (AP_Param *)&old_value;
 
     if (!bitmask) {
         // Numeric conversion
