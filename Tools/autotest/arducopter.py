@@ -279,14 +279,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def ModeAltHold(self):
         '''Test AltHold Mode'''
         self.takeoff(10, mode="ALT_HOLD")
-        self.watch_altitude_maintained(altitude_min=9, altitude_max=11)
+        self.wait_altitude(
+            altitude_min=9,
+            altitude_max=11,
+            relative=True,
+            minimum_duration=5,
+            timeout=6,
+        )
         # feed in full elevator and aileron input and make sure we
         # retain altitude:
         self.set_rc_from_map({
             1: 1000,
             2: 1000,
         })
-        self.watch_altitude_maintained(altitude_min=9, altitude_max=11)
+        self.wait_altitude(
+            altitude_min=9,
+            altitude_max=11,
+            relative=True,
+            minimum_duration=5,
+            timeout=6,
+        )
         self.set_rc_from_map({
             1: 1500,
             2: 1500,
@@ -4727,11 +4739,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             })
         self.wait_statustext("EKF3 lane switch 1", timeout=10, check_context=True)
 
-        self.watch_altitude_maintained(
+        self.wait_altitude(
             altitude_min=gps_alt-2,
             altitude_max=gps_alt+2,
+            relative=True,
             altitude_source='GPS_RAW_INT.alt',
             minimum_duration=10,
+            timeout=11,
         )
 
         self.disarm_vehicle(force=True)
@@ -6933,7 +6947,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode("STABILIZE")
         self.change_mode("GUIDED")
         self.set_rc(3, 1700)
-        self.watch_altitude_maintained(altitude_min=-1, altitude_max=0.2) # should not take off in guided
+        # should not take off in guided:
+        self.wait_altitude(
+            altitude_min=-1,
+            altitude_max=0.2,
+            relative=True,
+            minimum_duration=5,
+            timeout=6,
+        )
         self.run_cmd_do_set_mode(
             "ACRO",
             want_result=mavutil.mavlink.MAV_RESULT_FAILED)
@@ -11235,19 +11256,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("absolute_alt=%f" % absolute_alt)
         epsilon = 4  # SIM_STATE and vehicle state can be off by a bit...
         for source in ['GLOBAL_POSITION_INT.alt', 'SIM_STATE.alt', 'GPS_RAW_INT.alt']:
-            self.watch_altitude_maintained(
+            self.wait_altitude(
                 absolute_alt-epsilon,
                 absolute_alt+epsilon,
-                altitude_source=source
+                relative=True,
+                altitude_source=source,
+                minimum_duration=5,
+                timeout=6,
             )
 
         self.progress("Testing absolute altitudes")
         relative_alt = self.get_altitude(relative=True)
         for source in ['GLOBAL_POSITION_INT.relative_alt']:
-            self.watch_altitude_maintained(
+            self.wait_altitude(
                 relative_alt-epsilon,
                 relative_alt+epsilon,
-                altitude_source=source
+                relative=True,
+                altitude_source=source,
+                minimum_duration=5,
+                timeout=6,
             )
 
         self.do_RTL()
