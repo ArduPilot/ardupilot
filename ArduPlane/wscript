@@ -10,6 +10,7 @@ def build(bld):
             'AP_AdvancedFailsafe',
             'AP_Avoidance',
             'AP_Camera',
+            'AP_CustomControl',
             'AP_L1_Control',
             'AP_Navigation',
             'AP_TECS',

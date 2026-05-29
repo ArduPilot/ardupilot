@@ -135,6 +135,10 @@ void Plane::init_ardupilot()
         );
 #endif
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    custom_control.init();
+#endif
+
     // reset last heartbeat time, so we don't trigger failsafe on slow
     // startup
     gcs().sysid_mygcs_seen(AP_HAL::millis());
