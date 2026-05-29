@@ -123,6 +123,7 @@ private:
     uint32_t _get_log_time(const uint16_t log_num);
 
     void stop_logging(void) override;
+    void stop_logging_async(void) override;
 
     uint32_t last_messagewrite_message_sent;
 
@@ -158,6 +159,8 @@ private:
     const char *last_io_operation = "";
 
     bool start_new_log_pending;
+    // stop_logging() was requested asynchronously; io_timer() will close the fd
+    bool stop_log_pending;
 };
 
 #endif // HAL_LOGGING_FILESYSTEM_ENABLED

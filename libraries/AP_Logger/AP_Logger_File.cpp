@@ -711,16 +711,31 @@ uint16_t AP_Logger_File::get_num_logs()
  */
 void AP_Logger_File::stop_logging(void)
 {
+    // cancel any pending async stop so we don't double-close
+    stop_log_pending = false;
     // best-case effort to avoid annoying the IO thread
     const bool have_sem = write_fd_semaphore.take(hal.util->get_soft_armed()?1:20);
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
+        last_io_operation = "close";
         AP::FS().close(fd);
+        last_io_operation = "";
     }
     if (have_sem) {
         write_fd_semaphore.give();
     }
+}
+
+/*
+  request that the IO thread close the log file. This avoids blocking
+  the main thread on a potentially slow filesystem close() call, which
+  can stall the scheduler long enough to cause GPS UART buffer overflows
+  and EKF variance explosions (especially with LOG_FILE_DSRMROT=1).
+ */
+void AP_Logger_File::stop_logging_async(void)
+{
+    stop_log_pending = true;
 }
 
 /*
@@ -915,6 +930,11 @@ void AP_Logger_File::io_timer(void)
     if (start_new_log_pending) {
         start_new_log();
         start_new_log_pending = false;
+    }
+
+    if (stop_log_pending) {
+        stop_log_pending = false;
+        stop_logging();
     }
 
     if (erase.log_num != 0) {
