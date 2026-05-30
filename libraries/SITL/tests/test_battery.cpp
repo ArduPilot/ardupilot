@@ -38,7 +38,7 @@ protected:
     }
 
     struct BattAndObservations {
-        SITL::Battery* batt;
+        SITL::Battery& batt;
         float min_observed_voltage;
         float final_observed_voltage;
     };
@@ -58,11 +58,11 @@ protected:
     };
 
     BattAndObservations batteries_and_data[5] = {
-        { &small_battery, -1.0f, -2.0f },
-        { &large_battery, -1.0f, -2.0f },
-        { &infinite_battery, -1.0f, -2.0f },
-        { &small_high_resistance_battery, -1.0f, -2.0f },
-        { &infinite_high_resistance_battery, -1.0f, -2.0f },
+        { small_battery, -1.0f, -2.0f },
+        { large_battery, -1.0f, -2.0f },
+        { infinite_battery, -1.0f, -2.0f },
+        { small_high_resistance_battery, -1.0f, -2.0f },
+        { infinite_high_resistance_battery, -1.0f, -2.0f },
     };
 
     // These are just syntactic sugar.
@@ -81,7 +81,7 @@ TEST_F(BatteryTest, EnergyConsumption)
     constexpr float dt_sec = 0.01f;
 
     for (auto& b_and_d : batteries_and_data) {
-        SITL::Battery& battery = std::ref(*b_and_d.batt);
+        SITL::Battery& battery = b_and_d.batt;
         float& min_observed_voltage = b_and_d.min_observed_voltage;
 
         const float initial_voltage = battery.get_voltage();
@@ -192,7 +192,7 @@ TEST_F(BatteryTest, MaximumDeltaTime)
     constexpr float current_amp = 25.0f; // This value is arbitrary
 
     for (auto& b_and_d : batteries_and_data) {
-        SITL::Battery& battery = std::ref(*b_and_d.batt);
+        SITL::Battery& battery = b_and_d.batt;
         const float initial_voltage = battery.get_voltage();
         const float initial_temperature_degC = battery.get_temperature_degC();
 
@@ -224,7 +224,7 @@ void use_some_energy(SITL::Battery& battery) {
 TEST_F(BatteryTest, Resetting)
 {
     for (auto& b_and_d : batteries_and_data) {
-        SITL::Battery& battery = std::ref(*b_and_d.batt);
+        SITL::Battery& battery = b_and_d.batt;
 
         // Show that resetting to some new voltage works.
         const float partial_voltage = 0.8f * max_voltage;
