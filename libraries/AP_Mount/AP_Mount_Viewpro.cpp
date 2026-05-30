@@ -475,7 +475,6 @@ void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
 {
     const float pitch_rad = angle_rad.pitch;
     const float yaw_rad = angle_rad.yaw;
-    bool yaw_is_ef = angle_rad.yaw_is_ef;
 
     // gimbal does not support lock in angle control mode
     if (!set_lock(false)) {
@@ -483,14 +482,13 @@ void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
     }
 
     // convert yaw angle to body-frame
-    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
+    float yaw_bf_rad = angle_rad.yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
 
     // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
     const float yaw_bf_min = radians(_params.yaw_angle_min);
     const float yaw_bf_max = radians(_params.yaw_angle_max);
     if (yaw_bf_rad < yaw_bf_min || yaw_bf_rad > yaw_bf_max) {
         yaw_bf_rad = constrain_float(yaw_bf_rad, yaw_bf_min, yaw_bf_max);
-        yaw_is_ef = false;
     }
 
     // scale pitch and yaw to values gimbal understands
