@@ -325,7 +325,7 @@ bool AP_Arming_Blimp::arm(const AP_Arming::Method method, const bool do_arming_c
         AP::notify().update();
     }
 
-    send_arm_disarm_statustext("Arming motors"); //MIR kept in - usually only in SITL
+    send_arm_disarm_statustext("Arming motors"); //Kept in - usually only in SITL
 
     auto &ahrs = AP::ahrs();
 
@@ -386,7 +386,7 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
         return false;
     }
 
-    send_arm_disarm_statustext("Disarming motors"); //MIR keeping in - usually only in SITL
+    send_arm_disarm_statustext("Disarming motors"); //Keeping in - usually only in SITL
 
     auto &ahrs = AP::ahrs();
 
