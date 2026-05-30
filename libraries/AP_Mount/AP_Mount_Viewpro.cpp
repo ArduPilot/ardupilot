@@ -490,7 +490,6 @@ void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
     const float yaw_bf_max = radians(_params.yaw_angle_max);
     if (yaw_bf_rad < yaw_bf_min || yaw_bf_rad > yaw_bf_max) {
         yaw_bf_rad = constrain_float(yaw_bf_rad, yaw_bf_min, yaw_bf_max);
-        yaw_is_ef = false;
     }
 
     // scale pitch and yaw to values gimbal understands
