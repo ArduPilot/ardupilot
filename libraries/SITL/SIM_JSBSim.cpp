@@ -191,6 +191,9 @@ bool JSBSim::start_JSBSim(void)
 
     int p[2];
     int devnull = open("/dev/null", O_RDWR|O_CLOEXEC);
+    if (devnull == -1) {
+        AP_HAL::panic("Unable to open /dev/null");
+    }
     if (pipe(p) != 0) {
         AP_HAL::panic("Unable to create pipe");
     }
