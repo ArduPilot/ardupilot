@@ -64,15 +64,18 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     if (!apply_input_shaping()) {
         // Calculate rate directly from angle error with no input shaping
         angle_err_deg = wrap_180(desired_angle_deg - get_measured_angle());
-        float desired_rate = (angle_err_deg / gains.tau) + get_rate_target_offset();
+        float desired_rate = angle_err_deg / gains.tau;
+
+        // Reset input shaping set points
+        reset_input_shaping(desired_angle_deg, desired_rate);
+
+        // Add coordination offset
+        desired_rate += get_rate_target_offset();
 
         // Apply rate limits if enabled
         if (apply_rate_limits()) {
             desired_rate = rate_limit(desired_rate);
         }
-
-        // Reset input shaping set points
-        reset_input_shaping(desired_angle_deg, desired_rate);
 
         // Run rate controller
         return run_axis_rate_control(desired_rate, scaler, disable_integrator, ground_mode);
