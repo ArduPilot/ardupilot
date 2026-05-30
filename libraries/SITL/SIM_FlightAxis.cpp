@@ -356,7 +356,7 @@ void FlightAxis::start_controller()
 <RestoreOriginalControllerDevice><a>1</a><b>2</b></RestoreOriginalControllerDevice>
 </soap:Body>
 </soap:Envelope>)");
-    soap_request_end(1000UL);
+    free(soap_request_end(1000UL));
     if(option_is_set(Option::ResetPosition)) {
         soap_request_start("ResetAircraft", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
@@ -364,7 +364,7 @@ void FlightAxis::start_controller()
 <ResetAircraft><a>1</a><b>2</b></ResetAircraft>
 </soap:Body>
 </soap:Envelope>)");
-        soap_request_end(1000UL);
+        free(soap_request_end(1000UL));
     }
     soap_request_start("InjectUAVControllerInterface", R"(<?xml version='1.0' encoding='UTF-8'?>
 <soap:Envelope xmlns:soap='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
@@ -372,7 +372,7 @@ void FlightAxis::start_controller()
 <InjectUAVControllerInterface><a>1</a><b>2</b></InjectUAVControllerInterface>
 </soap:Body>
 </soap:Envelope>)");
-    soap_request_end(1000UL);
+    free(soap_request_end(1000UL));
     activation_frame_counter = frame_counter;
     controller_started = true;
 }
