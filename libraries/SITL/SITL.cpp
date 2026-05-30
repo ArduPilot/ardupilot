@@ -1776,6 +1776,11 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
     Vector2f ray_endpos_cm;
     if (!location2.get_vector_xy_from_origin_NE_cm(ray_endpos_cm)) {
         // should probably use SITL variables...
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (rayfile != nullptr) {
+            fclose(rayfile);
+        }
+#endif
         return 0.0f;
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
