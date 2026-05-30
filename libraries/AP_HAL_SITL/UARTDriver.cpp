@@ -821,9 +821,9 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
                         break;
                     }
                     if (!hex_twochars_to_uint8((const char*)&logic_async_csv.term[2], logic_async_csv.loaded_data.b)) {
-                        // invalid character
-                        retcode = AP_CSVReader::RetCode::ERROR;
-                        return 0;
+                        // invalid character; panic as we do for other
+                        // malformed-CSV cases rather than silently stopping
+                        AP_HAL::panic("Malformed CSV?");
                     }
                     break;
                 case 2:  // error
