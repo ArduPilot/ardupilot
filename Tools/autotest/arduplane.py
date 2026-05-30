@@ -6983,7 +6983,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def GuidedAttitudeNoGPS(self):
         '''test that guided-attitude still works with no GPS'''
-        self.takeoff(50)
+        self.takeoff(30)
         self.change_mode('GUIDED')
         self.context_push()
         self.set_parameter('SIM_GPS1_ENABLE', 0)
