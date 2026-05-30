@@ -47,27 +47,6 @@
   #define Debug(level, fmt, args ...)
 #endif
 
-#define COMM_ACTIVITY_TIMEOUT_MS        200
-
-// Commands
-//-----------------------------------------
-
-// Commands without payload and response
-#define RPLIDAR_PREAMBLE               0xA5
-#define RPLIDAR_CMD_STOP               0x25
-#define RPLIDAR_CMD_SCAN               0x20
-#define RPLIDAR_CMD_FORCE_SCAN         0x21
-#define RPLIDAR_CMD_RESET              0x40
-
-// Commands without payload but have response
-#define RPLIDAR_CMD_GET_DEVICE_INFO    0x50
-#define RPLIDAR_CMD_GET_DEVICE_HEALTH  0x52
-
-#if AP_PROXIMITY_RPLIDAR_EXPRESSSCAN_ENABLED
-// Commands with payload and have response
-#define RPLIDAR_CMD_EXPRESS_SCAN       0x82
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 void AP_Proximity_RPLidarA2::update(void)
@@ -323,21 +302,7 @@ void AP_Proximity_RPLidarA2::get_readings()
             if (_byte_count < sizeof(_descriptor)) {
                 return;
             }
-            // identify the payload data after the descriptor
-            static const _descriptor SCAN_DATA_DESCRIPTOR[] {
-                { RPLIDAR_PREAMBLE, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81 }
-            };
-            static const _descriptor HEALTH_DESCRIPTOR[] {
-                { RPLIDAR_PREAMBLE, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06 }
-            };
-            static const _descriptor DEVICE_INFO_DESCRIPTOR[] {
-                { RPLIDAR_PREAMBLE, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04 }
-            };
-#if AP_PROXIMITY_RPLIDAR_EXPRESSSCAN_ENABLED
-            static const _descriptor EXPRESS_DATA_DESCRIPTOR[] {
-                { RPLIDAR_PREAMBLE, 0x5A, 0x54, 0x00, 0x00, 0x40, 0x85 }
-            };
-#endif
+
             Debug(2,"LIDAR descriptor found");
             if (memcmp((void*)&_payload[0], SCAN_DATA_DESCRIPTOR, sizeof(_descriptor)) == 0) {
                 _state = State::AWAITING_SCAN_DATA;

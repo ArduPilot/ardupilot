@@ -48,6 +48,27 @@ reboot
 
 #include "AP_Proximity_Backend_Serial.h"
 
+#define COMM_ACTIVITY_TIMEOUT_MS        200
+
+// Commands
+//-----------------------------------------
+
+// Commands without payload and response
+#define RPLIDAR_PREAMBLE               0xA5
+#define RPLIDAR_CMD_STOP               0x25
+#define RPLIDAR_CMD_SCAN               0x20
+#define RPLIDAR_CMD_FORCE_SCAN         0x21
+#define RPLIDAR_CMD_RESET              0x40
+
+// Commands without payload but have response
+#define RPLIDAR_CMD_GET_DEVICE_INFO    0x50
+#define RPLIDAR_CMD_GET_DEVICE_HEALTH  0x52
+
+#if AP_PROXIMITY_RPLIDAR_EXPRESSSCAN_ENABLED
+// Commands with payload and have response
+#define RPLIDAR_CMD_EXPRESS_SCAN       0x82
+#endif
+
 class AP_Proximity_RPLidarA2 : public AP_Proximity_Backend_Serial
 {
 
@@ -210,6 +231,23 @@ private:
     } model = Model::UNKNOWN;
 
     bool make_first_byte_in_payload(uint8_t desired_byte);
+
+    // identify the payload data after the descriptor
+    inline static constexpr _descriptor SCAN_DATA_DESCRIPTOR[7] {
+        { RPLIDAR_PREAMBLE, 0x5A, 0x05, 0x00, 0x00, 0x40, 0x81 }
+    };
+    inline static constexpr _descriptor HEALTH_DESCRIPTOR[7] {
+        { RPLIDAR_PREAMBLE, 0x5A, 0x03, 0x00, 0x00, 0x00, 0x06 }
+    };
+    inline static constexpr _descriptor DEVICE_INFO_DESCRIPTOR[7] {
+        { RPLIDAR_PREAMBLE, 0x5A, 0x14, 0x00, 0x00, 0x00, 0x04 }
+    };
+#if AP_PROXIMITY_RPLIDAR_EXPRESSSCAN_ENABLED
+    inline static constexpr _descriptor EXPRESS_DATA_DESCRIPTOR[7] {
+        { RPLIDAR_PREAMBLE, 0x5A, 0x54, 0x00, 0x00, 0x40, 0x85 }
+    };
+#endif
+
 };
 
 #endif // AP_PROXIMITY_RPLIDARA2_ENABLED
