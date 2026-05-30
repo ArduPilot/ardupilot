@@ -142,7 +142,7 @@ __attribute__((used)) int __wrap_fprintf(void *f, const char *fmt, ...)
 }
 
 //just a stub for scanf
-int __wrap_scanf(const char *fmt, ...)
+__attribute__((used)) int __wrap_scanf(const char *fmt, ...)
 {
     (void)fmt;
     return 0;
