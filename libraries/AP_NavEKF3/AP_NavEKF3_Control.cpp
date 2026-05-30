@@ -97,9 +97,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
         } else {
             // set the variances using a typical max wind speed for small UAV operation
             zeroStatesVarCov(22, 23);
-            for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(WIND_VEL_VARIANCE_MAX);
-            }
+            P[22][22] = (P[23][23] = sq(WIND_VEL_VARIANCE_MAX));
         }
     }
 
