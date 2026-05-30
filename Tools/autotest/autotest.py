@@ -164,7 +164,19 @@ def run_clang_scan_build():
         print("Failed scan-build-clean")
         return False
 
-    if util.run_cmd("scan-build python3 waf build",
+    # directories we never want in the reports: git submodules, vendored
+    # third-party code and machine-generated sources.  --exclude keeps them
+    # out of the browsable HTML; process_scan_build_output.py filters the
+    # same list (EXCLUDE_DIRS) out of the plists, which is what the ratchet
+    # counts.
+    from scan_build_suppressions import EXCLUDE_DIRS
+    exclude_args = ' '.join(
+        '--exclude %s' % util.reltopdir(d.rstrip('/')) for d in EXCLUDE_DIRS
+    )
+    # -plist-html emits both the browsable HTML reports and .plist files;
+    # the .plist files carry issue_hash_content_of_line_in_context, a
+    # line-number-independent hash used to match the suppressions list.
+    if util.run_cmd("scan-build -plist-html %s python3 waf build" % exclude_args,
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-build")
         return False
