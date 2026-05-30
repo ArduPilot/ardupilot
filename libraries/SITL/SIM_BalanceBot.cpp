@@ -119,10 +119,9 @@ void BalanceBot::update(const struct sitl_input &input)
     // accel in body frame due to motor
     accel_body = Vector3f(accel_vf_x*cos(theta), 0, -accel_vf_x*sin(theta));
 
-    // update theta and angular velocity
+    // update angular velocity (theta is re-derived from the attitude each
+    // step via the DCM below, so it is not integrated here)
     ang_vel += angular_accel_bf_y * delta_time;
-    theta += ang_vel * delta_time;
-    theta = fmod(theta, radians(360));
 
     gyro = Vector3f(0, ang_vel, radians(yaw_rate));
 
