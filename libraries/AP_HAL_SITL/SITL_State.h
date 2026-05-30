@@ -25,10 +25,6 @@ public:
         return _base_port;
     }
 
-    bool use_rtscts(void) const {
-        return _use_rtscts;
-    }
-    
     // paths for UART devices
     const char *_serial_path[9] {
         "tcp:0:wait",
@@ -58,6 +54,18 @@ public:
 private:
     void _parse_command_line(int argc, char * const argv[]);
     void _usage(void);
+
+    /*
+      look up the model/vehicle in @ROMFS/vehicleinfo.json and set
+      defaults_path to the matching comma-separated @ROMFS/... list
+      so AP_Param can load them. No-op if defaults_path is already
+      set or if no embedded JSON is found.
+    */
+    void resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str);
+
+    /* dump @ROMFS/vehicleinfo.json to stdout (for --list-models) */
+    static void list_models_and_exit(void);
+
     void _sitl_setup();
     void _setup_timer(void);
     void _setup_adc(void);
@@ -86,7 +94,6 @@ private:
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
 
-    bool _use_rtscts;
     bool _use_fg_view;
     
     const char *_fg_address;

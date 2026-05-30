@@ -108,6 +108,18 @@
 
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
 
+// note the compatability code here which only defaults the thread
+// enabled if AP_RCProtocol is enabled.  This is to prevent hwdefs
+// being merged enabling the thread when it is not needed.  It should
+// be removed in the future.
+#ifndef HAL_RCIN_THREAD_ENABLED
+#if defined(AP_RCPROTOCOL_ENABLED) && !AP_RCPROTOCOL_ENABLED
+#define HAL_RCIN_THREAD_ENABLED 0
+#else
+#define HAL_RCIN_THREAD_ENABLED 1
+#endif
+#endif
+
 // we support RC serial for BLHeli pass-thru
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL 1

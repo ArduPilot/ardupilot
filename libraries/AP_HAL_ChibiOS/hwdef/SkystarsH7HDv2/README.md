@@ -78,13 +78,13 @@ The correct battery setting parameters are:
 
 The Skystars H7HDv2 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## VTX power control
+## VTX Power Control
 
 If the JP jumper is bridged to PIT then GPIO 81 controls the VTX BEC output to pins marked "10V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad. RELAY2 is configured by default to control this GPIO and is high by default.
 
 GPIO 82 controls the analogue camera outputs. Setting this GPIO high selects Camera 1, low selects Camera 2. RELAY3 is configured by default to control this GPIO and is high by default.
 
-## Camera control
+## Camera Control
 
 GPIO 83 is marked as "OSD". It can be used as a general GPIO pin. By default RELAY4 is configured to control this pin and sets the GPIO high.
 

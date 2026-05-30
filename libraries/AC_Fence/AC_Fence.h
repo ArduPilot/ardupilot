@@ -124,8 +124,8 @@ public:
     /// disabled_fences can be used to disable fences for certain conditions (e.g. landing)
     uint8_t check(bool disable_auto_fence = false);
 
-    // returns true if the destination is within fence (used to reject waypoints outside the fence)
-    bool check_destination_within_fence(const class Location& loc);
+    // returns true if the location is within fence (used to reject waypoints outside the fence)
+    bool check_location_within_fence(const class Location& loc);
 
     /// get_breaches - returns bit mask of the fence types that have been breached
     uint8_t get_breaches() const { return _breached_fences; }

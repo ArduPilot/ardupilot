@@ -424,7 +424,7 @@ void AC_AttitudeControl_Heli::rate_bf_to_motor_roll_pitch(const Vector3f &rate_r
 // rate_bf_to_motor_yaw - ask the rate controller to calculate the motor outputs to achieve the target rate in radians/second
 float AC_AttitudeControl_Heli::rate_target_to_motor_yaw(float rate_yaw_actual_rads, float rate_target_rads)
 {
-    if (!((AP_MotorsHeli&)_motors).rotor_runup_complete()) {
+    if (_motors.get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         _pid_rate_yaw.update_leaky_i(AC_ATTITUDE_HELI_RATE_INTEGRATOR_LEAK_RATE);
     }
 

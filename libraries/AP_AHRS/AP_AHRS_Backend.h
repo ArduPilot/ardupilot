@@ -49,8 +49,17 @@ public:
 
     CLASS_NO_COPY(AP_AHRS_Backend);
 
+    virtual const char *shortname() const = 0;
+
     // structure to retrieve results from backends:
     struct Estimates {
+        // allow backends to set the private members:
+        friend class AP_AHRS_DCM;
+        friend class AP_AHRS_SIM;
+        friend class AP_AHRS_External;
+        friend class AP_AHRS_NavEKF2;
+        friend class AP_AHRS_NavEKF3;
+
         // if attitude_valid is true then all of the
         // eulers/quaternion/matrix must be valid:
         bool attitude_valid;
@@ -59,6 +68,15 @@ public:
         float yaw_rad;
         Matrix3f dcm_matrix;
         Quaternion quaternion;
+
+        // backends must always return the result in the vehicle body
+        // frame.  A backend using the autopilot sensors will need to
+        // rotate according to the TRIM parameters.  An ExternalAHRS
+        // won't!
+        bool get_quaternion(Quaternion &quat) const {
+            quat = quaternion;
+            return attitude_valid;
+        }
 
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
@@ -76,6 +94,8 @@ public:
             vel = velocity_NED;
             return true;
         };
+        // ground velocity estimate in meters/second, in North/East order
+        Vector2f velocity_NE;
 
         // a derivative of the vertical position in m/s which is
         // kinematically consistent with the vertical position is
@@ -99,6 +119,9 @@ public:
             return true;
         }
 
+        /*
+         * position estimates
+         */
         Location location;
         bool location_valid;
 
@@ -106,6 +129,15 @@ public:
             loc = location;
             return location_valid;
         };
+
+        bool get_hagl(float &height) const WARN_IF_UNUSED {
+            height = hagl;
+            return hagl_valid;
+        }
+
+    private:
+        bool hagl_valid;
+        float hagl;
     };
 
     // init sets up INS board orientation
@@ -144,9 +176,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // get latest altitude estimate above ground level in meters and validity flag
-    virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
     // return a wind estimation vector, in m/s
     virtual bool wind_estimate(Vector3f &wind) const = 0;
@@ -191,9 +220,6 @@ public:
         return false;
     #endif
     }
-
-    // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void) = 0;
 
     virtual bool set_origin(const Location &loc) {
         return false;
@@ -281,10 +307,6 @@ public:
     }
 
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
-
-    // Set to true if the terrain underneath is stable enough to be used as a height reference
-    // this is not related to terrain following
-    virtual void set_terrain_hgt_stable(bool stable) {}
 
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };

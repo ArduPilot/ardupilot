@@ -720,7 +720,9 @@ protected:
     MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);
+#if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
     MAV_RESULT handle_command_get_home_position(const mavlink_command_int_t &packet);
+#endif  // AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_int_t &packet);
@@ -752,9 +754,6 @@ protected:
 
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-    void send_hwstatus();
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
     void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
@@ -772,7 +771,7 @@ protected:
 #if HAL_HIGH_LATENCY2_ENABLED
     virtual int16_t high_latency_target_altitude() const { return 0; }
     virtual uint8_t high_latency_tgt_heading() const { return 0; }
-    virtual uint16_t high_latency_tgt_dist() const { return 0; }
+    virtual uint16_t high_latency_tgt_dist_dam() const { return 0; }
     virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
     virtual uint8_t high_latency_wind_speed() const { return 0; }
     virtual uint8_t high_latency_wind_direction() const { return 0; }
@@ -1336,7 +1335,7 @@ private:
 
     static GCS *_singleton;
 
-    void create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart);
+    bool create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) WARN_IF_UNUSED;
 
     char statustext_printf_buffer[256+1];
 

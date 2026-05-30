@@ -215,6 +215,13 @@ class Context(object):
         self.installed_modules = []
         self.overridden_message_rates = {}
         self.raising_debug_trap_on_exceptions = False
+        # files snapshotted via context_backup_file() and restored on
+        # context_pop(); list of (path, original_bytes) tuples
+        self.backup_files = []
+        # pexpect.spawn child processes (e.g. AP_Periph companions
+        # launched by restart_SITL_frame()) registered via
+        # context_register_periph_child(); terminated on context_pop()
+        self.periph_children = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -2221,73 +2228,6 @@ class TestSuite(abc.ABC):
 #        self.mavproxy.expect("Loaded %u (geo-)?fence" % count)
         self.wait_parameter_value("FENCE_TOTAL", count, timeout=20)
 
-    def get_fence_point(self, idx, target_system=1, target_component=1):
-        self.mav.mav.fence_fetch_point_send(target_system,
-                                            target_component,
-                                            idx)
-        m = self.assert_receive_message("FENCE_POINT", timeout=2)
-        self.progress("m: %s" % str(m))
-        if m.idx != idx:
-            raise NotAchievedException("Invalid idx returned (want=%u got=%u)" %
-                                       (idx, m.seq))
-        return m
-
-    def fencepoint_protocol_epsilon(self):
-        return 0.00002
-
-    def roundtrip_fencepoint_protocol(self, offset, count, lat, lng, target_system=1, target_component=1):
-        self.progress("Sending FENCE_POINT offs=%u count=%u" % (offset, count))
-        self.mav.mav.fence_point_send(target_system,
-                                      target_component,
-                                      offset,
-                                      count,
-                                      lat,
-                                      lng)
-
-        self.progress("Requesting fence point")
-        m = self.get_fence_point(offset, target_system=target_system, target_component=target_component)
-        if abs(m.lat - lat) > self.fencepoint_protocol_epsilon():
-            raise NotAchievedException("Did not get correct lat in fencepoint: got=%f want=%f" % (m.lat, lat))
-        if abs(m.lng - lng) > self.fencepoint_protocol_epsilon():
-            raise NotAchievedException("Did not get correct lng in fencepoint: got=%f want=%f" % (m.lng, lng))
-        self.progress("Roundtrip OK")
-
-    def roundtrip_fence_using_fencepoint_protocol(self, loc_list, target_system=1, target_component=1, ordering=None):
-        count = len(loc_list)
-        offset = 0
-        self.set_parameter("FENCE_TOTAL", count)
-        if ordering is None:
-            ordering = range(count)
-        elif len(ordering) != len(loc_list):
-            raise ValueError("ordering list length mismatch")
-
-        for offset in ordering:
-            loc = loc_list[offset]
-            self.roundtrip_fencepoint_protocol(offset,
-                                               count,
-                                               loc.lat,
-                                               loc.lng,
-                                               target_system,
-                                               target_component)
-
-        self.progress("Validating uploaded fence")
-        returned_count = self.get_parameter("FENCE_TOTAL")
-        if returned_count != count:
-            raise NotAchievedException("Returned count mismatch (want=%u got=%u)" %
-                                       (count, returned_count))
-        for i in range(count):
-            self.progress("Requesting fence point")
-            m = self.get_fence_point(offset, target_system=target_system, target_component=target_component)
-            if abs(m.lat-loc.lat) > self.fencepoint_protocol_epsilon():
-                raise NotAchievedException("Returned lat mismatch (want=%f got=%f" %
-                                           (loc.lat, m.lat))
-            if abs(m.lng-loc.lng) > self.fencepoint_protocol_epsilon():
-                raise NotAchievedException("Returned lng mismatch (want=%f got=%f" %
-                                           (loc.lng, m.lng))
-            if m.count != count:
-                raise NotAchievedException("Count mismatch (want=%u got=%u)" %
-                                           (count, m.count))
-
     def load_fence(self, filename):
         filepath = os.path.join(testdir, self.current_test_name_directory, filename)
         if not os.path.exists(filepath):
@@ -2301,23 +2241,6 @@ class TestSuite(abc.ABC):
             if m is None:
                 raise ValueError("Did not match (%s)" % line)
             locs.append(mavutil.location(float(m.group(1)), float(m.group(2)), 0, 0))
-        if self.is_plane():
-            # create return point as the centroid:
-            total_lat = 0
-            total_lng = 0
-            total_cnt = 0
-            for loc in locs:
-                total_lat += loc.lat
-                total_lng += loc.lng
-                total_cnt += 1
-            locs2 = [mavutil.location(total_lat/total_cnt,
-                                      total_lng/total_cnt,
-                                      0,
-                                      0)]  # return point
-            locs2.extend(locs)
-            locs2.append(copy.copy(locs2[1]))
-            return self.roundtrip_fence_using_fencepoint_protocol(locs2)
-
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, locs),
         ])
@@ -3201,6 +3124,88 @@ class TestSuite(abc.ABC):
             self.valgrind_restart_defaults_filepath = defaults_filepath
             self.valgrind_restart_customisations = customisations
 
+    def restart_SITL_frame(self,
+                           frame,
+                           vehicleinfo_key=None,
+                           extra_configure_args=None,
+                           customisations=None,
+                           periph_extra_args=None):
+        '''rebuild + restart SITL for a vehicleinfo.json frame entry,
+        spawning the associated AP_Periph companion (if the frame
+        defines `periph_board`) wired up for automatic cleanup.
+
+        Reads `configure_args`, `periph_board`, `periph_extra_args` and
+        `periph_params_filename` from pysim/vehicleinfo.json. Snapshots
+        the current SITL binary via context_backup_file() so it is
+        restored on context_pop(), then:
+
+          - rebuilds both binaries via util.build_SITL_frame();
+          - if the frame has a periph_board, allocates a TCP port via
+            spare_network_port() and spawns the periph child with its
+            default params + periph_extra_args; the periph is registered
+            for termination on context_pop();
+          - calls customise_SITL_commandline() with `customisations`.
+
+        The literal placeholder `{port}` is substituted with the
+        allocated periph port in both periph_extra_args (from
+        vehicleinfo + caller-supplied) and `customisations`.
+
+        Returns the allocated periph port, or None if the frame has no
+        periph_board.
+        '''
+        if vehicleinfo_key is None:
+            vehicleinfo_key = self.vehicleinfo_key()
+
+        self.context_backup_file(self.binary)
+        frame_opts = util.build_SITL_frame(
+            vehicleinfo_key, frame,
+            extra_configure_args=extra_configure_args,
+            clean=False, configure=True,
+        )
+
+        periph_port = None
+        if frame_opts.get('periph_board') is not None:
+            periph_port = self.spare_network_port()
+
+        # SITL must be listening on the periph TCP port before we spawn the
+        # periph, otherwise the periph's first connection attempts race
+        # against the customise_SITL_commandline restart and the link can
+        # come up only to be torn down by the SITL stop/start.
+        if customisations is not None:
+            if periph_port is not None:
+                customisations = [c.replace('{port}', str(periph_port))
+                                  for c in customisations]
+            self.customise_SITL_commandline(customisations)
+
+        if periph_port is not None:
+            topdir = util.topdir()
+
+            param_files = frame_opts.get(
+                'periph_params_filename', ['default_params/periph.parm'])
+            defaults_paths = [
+                os.path.join(topdir, 'Tools', 'autotest', p)
+                for p in param_files
+            ]
+
+            all_periph_args = list(frame_opts.get('periph_extra_args', []))
+            if periph_extra_args is not None:
+                all_periph_args += list(periph_extra_args)
+            all_periph_args = [a.replace('{port}', str(periph_port))
+                               for a in all_periph_args]
+
+            periph_cmd = ['--defaults', ",".join(defaults_paths)] + all_periph_args
+            periph_bin = os.path.join(
+                topdir, 'build', frame_opts['periph_board'], 'bin', 'AP_Periph')
+            self.progress("Spawning periph: %s %s" %
+                          (periph_bin, " ".join(periph_cmd)))
+            periph = pexpect.spawn(periph_bin, periph_cmd,
+                                   logfile=sys.stdout, encoding='ascii',
+                                   timeout=30)
+            util.pexpect_autoclose(periph)
+            self.context_register_periph_child(periph)
+
+        return periph_port
+
     def default_parameter_list(self):
         ret = {
             'LOG_DISARMED': 1,
@@ -3661,7 +3666,7 @@ class TestSuite(abc.ABC):
             raise NotAchievedException("Expected GPS to be OK")
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True)
         self.set_parameter("SIM_GPS1_TYPE", 0)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="GPS disable to take effect")
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, False, False, False)
         m = self.poll_message("HIGH_LATENCY2")
         self.progress(self.dump_message_verbose(m))
@@ -3670,7 +3675,7 @@ class TestSuite(abc.ABC):
 
         self.start_subtest("HIGH_LATENCY2 location")
         self.set_parameter("SIM_GPS1_TYPE", 1)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="GPS to re-enable")
         m = self.poll_message("HIGH_LATENCY2")
         self.progress(self.dump_message_verbose(m))
         loc = mavutil.location(m.latitude, m.longitude, m.altitude, 0)
@@ -3759,7 +3764,7 @@ class TestSuite(abc.ABC):
 
                 self.start_subsubtest("Not get HIGH_LATENCY2 upon HL disable")
                 self.run_cmd_enable_high_latency(False, run_cmd=run_cmd)
-                self.delay_sim_time(10)
+                self.delay_sim_time(10, reason="HIGH_LATENCY2 to stop")
                 self.assert_not_receive_message('HIGH_LATENCY2', mav=self.mav, timeout=10)
                 self.drain_mav(mav2)
                 self.assert_not_receive_message('HIGH_LATENCY2', mav=mav2, timeout=10)
@@ -3782,7 +3787,7 @@ class TestSuite(abc.ABC):
 
             self.start_subsubtest("Not get HIGH_LATENCY2 after disabling after playing with rates")
             self.assert_not_receive_message('HIGH_LATENCY2', mav=self.mav, timeout=10)
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="HIGH_LATENCY2 drain period")
             self.drain_mav(mav2)
             self.assert_not_receive_message('HIGH_LATENCY2', mav=mav2, timeout=10)
 
@@ -3924,9 +3929,9 @@ class TestSuite(abc.ABC):
         def add_and_verify_log(test_log_num):
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="log entry on arm")
             self.disarm_vehicle()
-            self.delay_sim_time(10)
+            self.delay_sim_time(10, reason="log file to be created")
             verify_logs(test_log_num + 1)
 
         def create_and_verify_logs(test_log_num, clear_logsdir=True):
@@ -3970,7 +3975,7 @@ class TestSuite(abc.ABC):
         for i in range(0, 10):
             self.wait_ready_to_arm()
             self.arm_vehicle()
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="log data to accumulate")
             self.disarm_vehicle()
         new_log_list = self.log_list()
         new_log_count = len(new_log_list) - len(original_log_list)
@@ -4178,7 +4183,7 @@ class TestSuite(abc.ABC):
         content = self.download_log(number)
         print(f"Content is of length {len(content)}")
         # current_log_filepath = self.current_onboard_log_filepath()
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="logging to restart")
         new_number = self.current_onboard_log_number()
         if number == new_number:
             raise NotAchievedException("Did not start logging again")
@@ -4243,11 +4248,11 @@ class TestSuite(abc.ABC):
     def save_wp(self, ch=7):
         """Trigger RC Aux to save waypoint."""
         self.set_rc(ch, 1000)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="RC channel to go low")
         self.set_rc(ch, 2000)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="RC channel to go high")
         self.set_rc(ch, 1000)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="RC channel to go low")
 
     def correct_wp_seq_numbers(self, wps):
         # renumber the items:
@@ -4372,9 +4377,9 @@ class TestSuite(abc.ABC):
         """Trigger RC Aux to clear waypoint."""
         self.progress("Clearing waypoints")
         self.set_rc(ch, 1000)
-        self.delay_sim_time(0.5)
+        self.delay_sim_time(0.5, reason="RC channel to go low")
         self.set_rc(ch, 2000)
-        self.delay_sim_time(0.5)
+        self.delay_sim_time(0.5, reason="RC channel to go high")
         self.set_rc(ch, 1000)
         self.assert_mission_count(0)
 
@@ -4568,25 +4573,25 @@ class TestSuite(abc.ABC):
         original_list = self.log_list()
         self.progress("original list: %s" % str(original_list))
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled by the logger code
         new_list = self.log_list()
         self.progress("new list: %s" % str(new_list))
         if len(new_list) - len(original_list) != 1:
             raise NotAchievedException("Got more than one new log")
         self.set_parameter("LOG_DISARMED", 0)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to be disabled") # LOG_DISARMED is polled by the logger code
         new_list = self.log_list()
         if len(new_list) - len(original_list) != 1:
             raise NotAchievedException("Got more or less than one new log after toggling LOG_DISARMED off")
 
         self.start_subtest("Ensuring toggling LOG_DISARMED on and off doesn't increase the number of files")
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled by the logger code
         new_new_list = self.log_list()
         if len(new_new_list) != len(new_list):
             raise NotAchievedException("Got extra files when toggling LOG_DISARMED")
         self.set_parameter("LOG_DISARMED", 0)
-        self.delay_sim_time(1) # LOG_DISARMED is polled by the logger code
+        self.delay_sim_time(1, reason="LOG_DISARMED to be disabled") # LOG_DISARMED is polled by the logger code
         new_new_list = self.log_list()
         if len(new_new_list) != len(new_list):
             raise NotAchievedException("Got extra files when toggling LOG_DISARMED to 0 again")
@@ -4611,7 +4616,7 @@ class TestSuite(abc.ABC):
         if len(post_disarmed_list) != len(post_armed_list):
             raise NotAchievedException("Log rotated immediately")
         self.progress("Allowing time for post-disarm-logging to occur if it will")
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="post-disarm logging to occur")
         post_disarmed_post_delay_list = self.log_list()
         if len(post_disarmed_post_delay_list) != len(post_disarmed_list):
             raise NotAchievedException("Got log rotation when we shouldn't have")
@@ -4625,7 +4630,7 @@ class TestSuite(abc.ABC):
         post_disarmed_list = self.log_list()
         if len(post_disarmed_list) != len(post_armed_list):
             raise NotAchievedException("Log rotated immediately")
-        self.delay_sim_time(30)
+        self.delay_sim_time(30, reason="HAL_LOGGER_ARM_PERSIST period")
         delayed_post_disarmed_list = self.log_list()
         # should *still* not get another log as LOG_DISARMED is false
         if len(post_disarmed_list) != len(delayed_post_disarmed_list):
@@ -4642,31 +4647,31 @@ class TestSuite(abc.ABC):
             raise NotAchievedException(
                 "Unexpected log detected (pre-delay) initial=(%s) restart=(%s)" %
                 (str(sorted(start_list)), str(sorted(restart_list))))
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="log rotation check")
         restart_list = self.log_list()
         if len(start_list) != len(restart_list):
             raise NotAchievedException("Unexpected log detected (post-delay)")
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(5) # LOG_DISARMED is polled
+        self.delay_sim_time(5, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled
         post_log_disarmed_set_list = self.log_list()
         if len(post_log_disarmed_set_list) == len(restart_list):
             raise NotAchievedException("Did not get new log when LOG_DISARMED set")
         self.progress("Ensuring we get a new log after a reboot")
         self.reboot_sitl()
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="logging to start after reboot")
         post_reboot_log_list = self.log_list()
         if len(post_reboot_log_list) == len(post_log_disarmed_set_list):
             raise NotAchievedException("Did not get fresh log-disarmed log after a reboot")
         self.progress("Ensuring no log rotation when we toggle LOG_DISARMED off then on again")
         self.set_parameter("LOG_DISARMED", 0)
         current_log_filepath = self.current_onboard_log_filepath()
-        self.delay_sim_time(10) # LOG_DISARMED is polled
+        self.delay_sim_time(10, reason="LOG_DISARMED disable to take effect") # LOG_DISARMED is polled
         post_toggleoff_list = self.log_list()
         if len(post_toggleoff_list) != len(post_reboot_log_list):
             raise NotAchievedException("Shouldn't get new file yet")
         self.progress("Ensuring log does not grow when LOG_DISARMED unset...")
         current_log_filepath_size = os.path.getsize(current_log_filepath)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="log to stop growing")
         current_log_filepath_new_size = os.path.getsize(current_log_filepath)
         if current_log_filepath_new_size != current_log_filepath_size:
             raise NotAchievedException(
@@ -4674,7 +4679,7 @@ class TestSuite(abc.ABC):
                 (current_log_filepath_new_size, current_log_filepath_size))
         self.progress("Turning LOG_DISARMED back on again")
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(5) # LOG_DISARMED is polled
+        self.delay_sim_time(5, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled
         post_toggleon_list = self.log_list()
         if len(post_toggleon_list) != len(post_toggleoff_list):
             raise NotAchievedException("Log rotated when it shouldn't")
@@ -4718,7 +4723,7 @@ class TestSuite(abc.ABC):
         self.arm_vehicle(force=True)
         # we might be relying on a thread to actually create the log
         # file when doing forced-arming; give the file time to appear:
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="log file to appear after forced arm")
         post_arming_list = self.log_list()
         self.disarm_vehicle()
         if len(post_arming_list) <= len(pre_arming_list):
@@ -4773,7 +4778,7 @@ class TestSuite(abc.ABC):
         self.wait_ready_to_arm()
         for i in range(3):
             self.arm_vehicle()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="log data to accumulate")
             path = self.current_onboard_log_filepath()
             self.disarm_vehicle()
             self.LoggingFormatSanityChecks(path)
@@ -4783,7 +4788,7 @@ class TestSuite(abc.ABC):
         for i in range(3):
             self.set_parameter("LOG_DISARMED", 1)
             self.reboot_sitl()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="logging to start after reboot")
             path = self.current_onboard_log_filepath()
             self.set_parameter("LOG_DISARMED", 0)
             self.LoggingFormatSanityChecks(path)
@@ -4848,7 +4853,7 @@ class TestSuite(abc.ABC):
         # ensure the latest log file is very small:
         self.context_push()
         self.set_parameter('LOG_DISARMED', 1)
-        self.delay_sim_time(15)
+        self.delay_sim_time(15, reason="LOG_DISARMED to take effect")
         self.progress(f"Current onboard log filepath {self.current_onboard_log_filepath()}")
         self.context_pop()
 
@@ -5280,7 +5285,7 @@ class TestSuite(abc.ABC):
         mavproxy = self.start_mavproxy()
         mavproxy.send('rally load %s\n' % path)
         mavproxy.expect("Loaded")
-        self.delay_sim_time(10)  # allow transfer to complete
+        self.delay_sim_time(10, reason="rally point transfer to complete")  # allow transfer to complete
         self.stop_mavproxy(mavproxy)
 
     def load_sample_mission(self):
@@ -5659,7 +5664,7 @@ class TestSuite(abc.ABC):
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="LOG_DISARMED logging period")
         self.set_parameter("LOG_DISARMED", 0)
         path = self.current_onboard_log_filepath()
         self.progress("Rate sample log (%s)" % path)
@@ -5687,7 +5692,11 @@ class TestSuite(abc.ABC):
             16: 1500,
         }
 
-    def set_rc_from_map(self, _map, timeout=20, quiet=False):
+    def set_rc_from_map(self, _map, *, timeout: float | int | None = 20.0, quiet=False):
+        """Sets provided RC channel/value pairs.
+
+        Passing the special value 'None' for timeout means 'do not wait for confirmation'.
+        """
         map_copy = _map.copy()
         for v in map_copy.values():
             if not isinstance(v, int):
@@ -5699,6 +5708,9 @@ class TestSuite(abc.ABC):
             if self.rc_thread is None:
                 raise NotAchievedException("Could not create thread")
             self.rc_thread.start()
+
+        if timeout is None:
+            return
 
         tstart = self.get_sim_time()
         while True:
@@ -5778,8 +5790,11 @@ class TestSuite(abc.ABC):
                 need_set[chan] = default_value
         self.set_rc_from_map(need_set)
 
-    def set_rc(self, chan, pwm, timeout=20):
-        """Setup a simulated RC control to a PWM value"""
+    def set_rc(self, chan, pwm, *, timeout: float | int | None = 20.0):
+        """Setup a simulated RC control to a PWM value.
+
+        Passing the special value 'None' for timeout means 'do not wait for confirmation'.
+        """
         self.set_rc_from_map({chan: pwm}, timeout=timeout)
 
     def set_servo(self, chan, pwm):
@@ -5975,7 +5990,7 @@ class TestSuite(abc.ABC):
             )
         except ValueError as e:
             # statustexts are queued; give it a second to arrive:
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="statustext to arrive")
             raise e
         try:
             self.wait_armed()
@@ -6045,11 +6060,15 @@ class TestSuite(abc.ABC):
                           (delta, timeout))
             return
 
-    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10, message_type='ATTITUDE'):
+    def wait_attitude(self, desroll=None, despitch=None, timeout=2, tolerance=10,
+                      message_type='ATTITUDE', use_cached_simtime=False):
         '''wait for an attitude (degrees)'''
         if desroll is None and despitch is None:
             raise ValueError("despitch or desroll must be supplied")
-        tstart = self.get_sim_time()
+        if use_cached_simtime:
+            tstart = self.get_sim_time()
+        else:
+            tstart = self.get_sim_time_cached()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise AutoTestTimeoutException("Failed to achieve attitude")
@@ -6572,7 +6591,7 @@ class TestSuite(abc.ABC):
         for i in range(0, attempts):
             mavproxy.send("param fetch %s\n" % name)
             try:
-                mavproxy.expect("%s = ([-0-9.]*)\r\n" % (name,), timeout=timeout/attempts)
+                mavproxy.expect("%s = ([-0-9.]*)" % (name,), timeout=timeout/attempts)
                 try:
                     # sometimes race conditions garble the MAVProxy output
                     ret = float(mavproxy.match.group(1))
@@ -6606,6 +6625,24 @@ class TestSuite(abc.ABC):
             if t in context.collections:
                 context.collections[t].append(m)
         self.install_message_hook_context(mh)
+
+    def context_backup_file(self, path):
+        '''snapshot file contents and mode; on context_pop() the original
+        bytes are written back with the same permissions. Use this instead
+        of manual shutil.copy save/restore so cleanup is exception-safe.
+        If the path matches the running SITL binary, the harness stops
+        SITL before restoring and restarts it afterwards (avoids ETXTBSY
+        and leaves the next test with the original binary loaded).'''
+        with open(path, "rb") as f:
+            data = f.read()
+        mode = os.stat(path).st_mode
+        self.context_get().backup_files.append((path, data, mode))
+
+    def context_register_periph_child(self, child):
+        '''register a pexpect.spawn periph subprocess so it is terminated
+        on context_pop(). Mirrors context_backup_file() for child
+        processes (used by restart_SITL_frame()).'''
+        self.context_get().periph_children.append(child)
 
     def context_collect(self, msg_type):
         '''start collecting messages of type msg_type into context collection'''
@@ -6662,6 +6699,38 @@ class TestSuite(abc.ABC):
             dead_parameters_dict[p[0]] = p[1]
         if process_interaction_allowed:
             self.set_parameters(dead_parameters_dict, add_to_context=False)
+
+        # terminate any periph child processes registered via
+        # context_register_periph_child() before restoring the SITL
+        # binary - the running periph may otherwise reconnect to the
+        # restarted SITL via its still-open TCP socket
+        for child in reversed(dead.periph_children):
+            try:
+                child.terminate(force=True)
+            except pexpect.ExceptionPexpect:
+                pass
+
+        # restore any files snapshotted via context_backup_file()
+        for path, data, mode in reversed(dead.backup_files):
+            running_binary = getattr(self, 'binary', None)
+            is_running_binary = (
+                running_binary is not None
+                and os.path.exists(running_binary)
+                and os.path.exists(path)
+                and os.path.samefile(path, running_binary)
+            )
+            if is_running_binary and process_interaction_allowed:
+                self.stop_SITL()
+            try:
+                os.unlink(path)  # avoid ETXTBSY when overwriting a running exe
+            except FileNotFoundError:
+                pass
+            with open(path, "wb") as f:
+                f.write(data)
+            os.chmod(path, mode)
+            if is_running_binary and process_interaction_allowed:
+                self.start_SITL(wipe=False)
+                self.set_streamrate(self.sitl_streamrate())
 
         if getattr(self, "old_binary", None) is not None:
             self.stop_SITL()
@@ -8182,7 +8251,7 @@ class TestSuite(abc.ABC):
                           (parameter, v))
             if v == value:
                 return
-            self.delay_sim_time(0.1)
+            self.delay_sim_time(0.1, reason="parameter poll interval")
 
     def wait_parameter_values(self, parameters, timeout=10):
         need_to_see = copy.copy(parameters)
@@ -9294,8 +9363,12 @@ Also, ignores heartbeats not from our target system'''
         if passed:
             self.progress('PASSED: "%s"' % prettyname)
         else:
-            self.progress('FAILED: "%s": %s (see %s)' %
-                          (prettyname, repr(ex), test_output_filename))
+            if attempt != 1:
+                self.progress('FAILED [retry %u/%u]: "%s": %s (see %s)' %
+                              (attempt, test.attempts, prettyname, repr(ex), test_output_filename))
+            else:
+                self.progress('FAILED: "%s": %s (see %s)' %
+                              (prettyname, repr(ex), test_output_filename))
             result.exception = ex
             result.debug_filename = test_output_filename
             if interact:
@@ -10647,7 +10720,7 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.send("dataflash_logger set verbose 1\n")
             mavproxy.expect('logging started')
             mavproxy.send("dataflash_logger set verbose 0\n")
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="logging to initialise")
             self.do_timesync_roundtrip()  # drain COMMAND_ACK from that failed arm
             self.arm_vehicle()
             tstart = self.get_sim_time()
@@ -10719,23 +10792,29 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter() or self.is_plane():
                 self.set_autodisarm_delay(0)
             self.arm_vehicle()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="log data to accumulate")
             self.disarm_vehicle()
             # First log created here
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, reason="log to be created")
             self.arm_vehicle()
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="log data to accumulate")
             self.disarm_vehicle()
             # Second log created here
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, reason="log to be created")
             mavproxy.send("log list\n")
             mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
             log_num = int(mavproxy.match.group(1))
             numlogs = int(mavproxy.match.group(2))
-            lastlog = int(mavproxy.match.group(3))
+            # lastlog = int(mavproxy.match.group(3))
             size = int(mavproxy.match.group(4))
-            if numlogs != 2 or log_num != 1 or size <= 0:
-                raise NotAchievedException("Unexpected log information %d %d %d" % (log_num, numlogs, lastlog))
+            expected_numlogs = 2
+            expected_log_num = 1
+            if numlogs != expected_numlogs:
+                raise NotAchievedException(f"Bad numlogs {expected_numlogs=} {numlogs=}")
+            if log_num != expected_log_num:
+                raise NotAchievedException(f"Unexpected log_num {expected_log_num=} {log_num=}")
+            if size <= 0:
+                raise NotAchievedException(f"Expected positive log size got={size}")
             self.progress("Log size: %d" % size)
             self.reboot_sitl()
             # This starts a new log with a time of 0, wait for arm so that we can insert the correct time
@@ -10810,7 +10889,7 @@ Also, ignores heartbeats not from our target system'''
             mavproxy.send("log erase\n")
             mavproxy.expect("Chip erase complete")
             self.set_parameter("LOG_DISARMED", 1)
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="LOG_DISARMED to take effect")
             self.set_parameter("LOG_DISARMED", 0)
             mavproxy.send("log download 1 logs/dataflash-log-erase.BIN\n")
             mavproxy.expect("Finished downloading", timeout=120)
@@ -10825,18 +10904,18 @@ Also, ignores heartbeats not from our target system'''
             if self.is_copter() or self.is_plane():
                 self.set_autodisarm_delay(0)
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(30, reason="log data for wrap test")
             self.disarm_vehicle()
             # roughly 4mb
             self.arm_vehicle()
-            self.delay_sim_time(30)
+            self.delay_sim_time(30, reason="log data for wrap test")
             self.disarm_vehicle()
             # roughly 9mb, should wrap around
             self.arm_vehicle()
-            self.delay_sim_time(50)
+            self.delay_sim_time(50, reason="log data for wrap test")
             self.disarm_vehicle()
             # make sure we have finished logging
-            self.delay_sim_time(15)
+            self.delay_sim_time(15, reason="logging to finish")
             mavproxy.send("log list\n")
             try:
                 mavproxy.expect("Log ([0-9]+)  numLogs ([0-9]+) lastLog ([0-9]+) size ([0-9]+)", timeout=120)
@@ -10882,7 +10961,7 @@ Also, ignores heartbeats not from our target system'''
     def ArmFeatures(self):
         '''Arm features'''
         # TEST ARMING/DISARM
-        self.delay_sim_time(12)  # wait for gyros/accels to be happy
+        self.delay_sim_time(12, reason="gyros and accels to stabilise")  # wait for gyros/accels to be happy
         if self.get_parameter("ARMING_SKIPCHK") != 0 and not self.is_sub():
             raise ValueError("Arming skipped checks should be 0")
         if not self.is_sub() and not self.is_tracker():
@@ -10939,7 +11018,7 @@ Also, ignores heartbeats not from our target system'''
             self.set_parameter("RC%d_OPTION" % arming_switch, 153)
             self.set_rc(arming_switch, 1000)
             # delay so a transition is seen by the RC switch code:
-            self.delay_sim_time(0.5)
+            self.delay_sim_time(0.5, reason="RC switch transition to register")
             self.arm_motors_with_switch(arming_switch)
             self.disarm_motors_with_switch(arming_switch)
             self.set_rc(arming_switch, 1000)
@@ -11335,7 +11414,7 @@ Also, ignores heartbeats not from our target system'''
         # 148 is AUTOPILOT_VERSION:
         self.context_collect('AUTOPILOT_VERSION')
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, 148)
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="AUTOPILOT_VERSION response")
         count = len(self.context_collection('AUTOPILOT_VERSION'))
         if count != 1:
             raise NotAchievedException(f"Did not get single AUTOPILOT_VERSION message (count={count}")
@@ -12741,7 +12820,7 @@ switch value'''
                                                    (str(count), str(expected_count), len(seen_ids.keys())))
                 elif attempt_count != 0:
                     self.progress("Download failed; retrying")
-                    self.delay_sim_time(1)
+                    self.delay_sim_time(1, reason="parameter retry interval")
                     debug = True
                 self.drain_mav()
                 self.mav.mav.param_request_list_send(target_system, target_component)
@@ -13033,7 +13112,7 @@ switch value'''
             "SIM_BARO_DISABLE": 1,
             "SIM_BAR2_DISABLE": 1,
         })
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="baro disable to take effect")
         self.start_subtest("Ensuring breaking GPS does now terminate")
         self.set_parameters({
             "SIM_GPS1_ENABLE": 0,
@@ -13044,7 +13123,7 @@ switch value'''
         tstart = self.get_sim_time_cached()
         while self.get_sim_time_cached() - tstart < seconds:
             self.drain_mav()
-            self.delay_sim_time(0.5)
+            self.delay_sim_time(0.5, reason="drain interval")
 
     def wait_gps_fix_type_gte(self, fix_type, timeout=30, message_type="GPS_RAW_INT", verbose=False):
         tstart = self.get_sim_time()
@@ -13235,6 +13314,15 @@ switch value'''
                            relative=True,
                            timeout=timeout)
 
+    def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int):
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
+        self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
+        if ahrs_type != 0:
+            self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
+        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+        self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
+        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
+
     def ahrstrim_attitude_correctness(self):
         self.wait_ready_to_arm()
         HOME = self.sitl_start_location()
@@ -13242,99 +13330,77 @@ switch value'''
             self.customise_SITL_commandline([
                 "--home", "%s,%s,%s,%s" % (HOME.lat, HOME.lng, HOME.alt, heading)
             ])
-            for ahrs_type in [0, 2, 3, 11]:
-                self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
+
+            # Test all simulated ExternalAHRS backends
+            external_ahrs_configs = [
+                {
+                    "name": "VectorNav",
+                    "device": "VectorNav",
+                    "eahrs_type": 1,
+                },
+                {
+                    "name": "MicroStrain5",
+                    "device": "MicroStrain5",
+                    "eahrs_type": 2,
+                },
+                {
+                    "name": "InertialLabs",
+                    "device": "ILabs",
+                    "eahrs_type": 5,
+                },
+                {
+                    "name": "MicroStrain7",
+                    "device": "MicroStrain7",
+                    "eahrs_type": 7,
+                },
+            ]
+
+            self.start_subtest("ExternalAHRS backend attitude")
+            for config in external_ahrs_configs:
+                self.start_subsubtest("Testing ExternalAHRS backend: %s" % config["name"])
                 self.context_push()
 
-                # Special setup for ExternalAHRS (type 11)
-                if ahrs_type == 11:
-                    # Test all simulated ExternalAHRS backends
-                    external_ahrs_configs = [
-                        {
-                            "name": "VectorNav",
-                            "device": "VectorNav",
-                            "eahrs_type": 1,
-                        },
-                        {
-                            "name": "MicroStrain5",
-                            "device": "MicroStrain5",
-                            "eahrs_type": 2,
-                        },
-                        {
-                            "name": "InertialLabs",
-                            "device": "ILabs",
-                            "eahrs_type": 5,
-                        },
-                        {
-                            "name": "MicroStrain7",
-                            "device": "MicroStrain7",
-                            "eahrs_type": 7,
-                        },
-                    ]
+                self.customise_SITL_commandline([
+                    "--serial4=sim:%s" % config["device"],
+                ])
+                self.set_parameters({
+                    "EAHRS_TYPE": config["eahrs_type"],
+                    "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
+                    "SERIAL4_BAUD": 230400,
+                    "GPS1_TYPE": 21,  # External AHRS
+                    "AHRS_EKF_TYPE": 11,  # ExternalAHRS
+                    "INS_GYR_CAL": 1,
+                    "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
+                })
+                self.reboot_sitl()
+                self.delay_sim_time(5, reason="AHRS to initialise")
+                self.progress("Running accelcal")
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                    p5=4,
+                    timeout=5,
+                )
+                self.wait_prearm_sys_status_healthy(timeout=120)
 
-                    for config in external_ahrs_configs:
-                        self.start_subsubtest("Testing ExternalAHRS backend: %s" % config["name"])
-                        self.context_push()
-
-                        self.customise_SITL_commandline([
-                            "--serial4=sim:%s" % config["device"],
-                        ])
-                        self.set_parameters({
-                            "EAHRS_TYPE": config["eahrs_type"],
-                            "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
-                            "SERIAL4_BAUD": 230400,
-                            "GPS1_TYPE": 21,  # External AHRS
-                            "AHRS_EKF_TYPE": ahrs_type,
-                            "INS_GYR_CAL": 1,
-                            "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
-                        })
-                        self.reboot_sitl()
-                        self.delay_sim_time(5)
-                        self.progress("Running accelcal")
-                        self.run_cmd(
-                            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-                            p5=4,
-                            timeout=5,
-                        )
-                        self.wait_prearm_sys_status_healthy(timeout=120)
-
-                        for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
-                            self.set_parameters({
-                                'AHRS_TRIM_X': math.radians(r),
-                                'AHRS_TRIM_Y': math.radians(p),
-                                "SIM_ACC_TRIM_X": math.radians(r),
-                                "SIM_ACC_TRIM_Y": math.radians(p),
-                            })
-                            self.reboot_sitl()
-                            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-                            att_desroll = 0
-                            att_despitch = 0
-                            if ahrs_type == 11:
-                                # this is very nasty compatibility
-                                # code for the fact our rotations are
-                                # incorrect for ExternalAHRS eulers
-                                # and rotation matrix!  It is here to
-                                # ensure behaviour is preserved until
-                                # we can fix the bug!  Search for
-                                # "note that this is suspect" to find
-                                # the problem code.
-                                att_desroll = -r
-                                att_despitch = -p
-                            self.wait_attitude(desroll=att_desroll, despitch=att_despitch, timeout=120, tolerance=1.5)
-                            if ahrs_type != 0:
-                                self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
-                            self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
-                            self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
-
-                        self.context_pop()
-                        self.reboot_sitl()
-
-                    # Skip the normal test loop for ahrs_type 11 since we already tested it above
-                    self.context_pop()
-                    continue
-                else:
-                    self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+                for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
+                    self.set_parameters({
+                        'AHRS_TRIM_X': math.radians(r),
+                        'AHRS_TRIM_Y': math.radians(p),
+                        "SIM_ACC_TRIM_X": math.radians(r),
+                        "SIM_ACC_TRIM_Y": math.radians(p),
+                    })
                     self.reboot_sitl()
+                    self.ahrstrim_attitude_correctness_test_attitude(11)
+                self.context_pop()
+                self.reboot_sitl()
+
+            self.start_subtest("Testing non-ExternalAHRS backends")
+            for ahrs_type in [0, 2, 3]:
+                self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
+                self.context_push()
+                self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+                self.reboot_sitl()
+
                 self.wait_prearm_sys_status_healthy(timeout=120)
                 for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
                     self.set_parameters({
@@ -13344,22 +13410,15 @@ switch value'''
                         "SIM_ACC_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
-                    self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-                    self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
-                    self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5, message_type='SIM_STATE')
-                    if ahrs_type != 0:  # we don't get secondary msgs while DCM is primary
-                        self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
-                    self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
-                    self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
+                    self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)
 
                 self.context_pop()
-                self.reboot_sitl()
 
     def AHRSTrim(self):
         '''AHRS trim testing'''
         self.start_subtest("Attitude Correctness")
         self.ahrstrim_attitude_correctness()
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="attitude trim test interval")
         self.start_subtest("Preflight Calibration")
         self.ahrstrim_preflight_cal()
 
@@ -13424,7 +13483,7 @@ switch value'''
             self.disarm_vehicle()
             # de-assert the pin:
             self.set_parameter("SIM_PIN_MASK", 0)
-            self.delay_sim_time(1)  # 5Hz update rate on Button library
+            self.delay_sim_time(1, reason="button library update")  # 5Hz update rate on Button library
             self.context_collect("STATUSTEXT")
             # try to arm the vehicle:
             self.run_cmd(
@@ -14535,13 +14594,13 @@ switch value'''
 
             self.progress("Writing vtx_frame")
             crsf.write_data_id(crsf.dataid_vtx_frame)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="VTX frame to be processed")
             self.progress("Writing vtx_telem")
             crsf.write_data_id(crsf.dataid_vtx_telem)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="VTX telem to be processed")
             self.progress("Writing vtx_unknown")
             crsf.write_data_id(crsf.dataid_vtx_unknown)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="VTX data to be processed")
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
@@ -14595,7 +14654,7 @@ switch value'''
         self.wait_ready_to_arm()
         original_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         self.set_parameter("AHRS_ORIENTATION", 16)  # roll-90
-        self.delay_sim_time(2)  # we update this on a timer
+        self.delay_sim_time(2, reason="AHRS_ORIENTATION to update")  # we update this on a timer
         new_imu = self.assert_receive_message("RAW_IMU", verbose=True)
         delta_zacc = original_imu.zacc - new_imu.zacc
         delta_z_g = delta_zacc/1000.0  # milligravities -> gravities
@@ -14607,7 +14666,7 @@ switch value'''
             raise NotAchievedException("Magic AHRS_ORIENTATION update did not work (delta_y_g=%f)" % (delta_y_g,))
         self.context_pop()
         self.reboot_sitl()
-        self.delay_sim_time(2)  # we update orientation on a timer
+        self.delay_sim_time(2, reason="orientation update timer")  # we update orientation on a timer
 
     def GPSTypes(self):
         '''check each simulated GPS works'''
@@ -14782,7 +14841,7 @@ switch value'''
             raise NotAchievedException("alt moved unexpectedly")
         self.progress("Killing first GPS")
         self.set_parameter("SIM_GPS1_ENABLE", 0)
-        self.delay_sim_time(1)
+        self.delay_sim_time(1, reason="GPS failover to take effect")
         self.progress("Checking altitude now matches second GPS")
         m = self.assert_receive_message("GLOBAL_POSITION_INT")
         new_gpi_alt2 = m.alt
@@ -15093,6 +15152,54 @@ switch value'''
 
         self.progress(f"param.pck: {len(pdata.params)} params OK")
 
+    def MAVFTPBadReadOffset(self):
+        '''ask for a very large offset'''
+
+        # reset sessions
+        op = FTP_OP(
+            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to ResetSessions")
+        seq = reply.seq
+
+        # open file read-only
+        path = "@SYS/storage.bin"
+        path_bytes = bytearray(path.encode('utf-8')) + bytearray([0])
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_OpenFileRO,
+            size=len(path_bytes), req_opcode=0, burst_complete=0,
+            offset=0, payload=path_bytes,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to OpenFileRO")
+        if reply.opcode != mavftp_op.OP_Ack:
+            raise NotAchievedException(f"OpenFileRO failed: opcode={reply.opcode}")
+        seq = reply.seq
+
+        # send burst read request
+        op = FTP_OP(
+            seq=seq, session=0, opcode=mavftp_op.OP_BurstReadFile,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=4294967294, payload=None,
+        )
+        self.ftp_send(op)
+
+        reply = self.ftp_recv(timeout=5)
+
+        if reply is None:
+            raise NotAchievedException("No reply to BurstReadFile with bad offset")
+        if reply.opcode != mavftp_op.OP_Nack:
+            raise NotAchievedException(f"Expected Nack, got opcode={reply.opcode}")
+
+        self.progress("if we got to here we didn't die :-)")
+
     def write_content_to_filepath(self, content, filepath):
         '''write biunary content to filepath'''
         if not isinstance(content, bytes):
@@ -15192,7 +15299,7 @@ SERIAL5_BAUD 128
         # wait_disarmed is not sufficient here; it's actually the
         # *motors* being armed which causes the problem, not the
         # vehicle's arm state!  Could we use SYS_STATUS here instead?
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="motors to fully disarm")
         self.end_subtest("Testing PWM output")
 
         self.start_subtest("Testing percentage output")
@@ -15223,7 +15330,7 @@ SERIAL5_BAUD 128
         # wait_disarmed is not sufficient here; it's actually the
         # *motors* being armed which causes the problem, not the
         # vehicle's arm state!  Could we use SYS_STATUS here instead?
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="motors to fully disarm")
         self.end_subtest("Testing percentage output")
 
     def FenceRelative_fly_north_then_descend(self, north_m, timeout=120):

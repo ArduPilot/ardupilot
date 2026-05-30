@@ -71,8 +71,6 @@ define AP_COMPASS_MMC3416_ENABLED 1
 define AP_COMPASS_QMC5883L_ENABLED 1
 define AP_COMPASS_RM3100_ENABLED 1
 
-undef HAL_RCIN_THREAD_ENABLED
-define HAL_RCIN_THREAD_ENABLED 0
 
 # -------------------- MSP --------------------------------
 define AP_PERIPH_MSP_ENABLED 1

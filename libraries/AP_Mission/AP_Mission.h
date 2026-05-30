@@ -153,6 +153,7 @@ public:
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
         uint8_t trigger;        // triggers one image capture immediately
+        uint8_t camera_id;      // which camera to trigger
     };
 
     // gripper command structure
@@ -277,6 +278,7 @@ public:
     struct PACKED set_camera_zoom_Command {
         uint8_t zoom_type;
         float zoom_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_FOCUS support

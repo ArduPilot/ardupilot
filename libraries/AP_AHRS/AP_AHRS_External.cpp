@@ -30,9 +30,6 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     }
     results.attitude_valid = true;
     results.quaternion.rotation_matrix(results.dcm_matrix);
-    // note that this is suspect; we are rotating the matrix and
-    // eulers away from alignment with the quaternion:
-    results.dcm_matrix = results.dcm_matrix * AP::ahrs().get_rotation_vehicle_body_to_autopilot_body();
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
     results.gyro_drift.zero();
@@ -53,15 +50,18 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
 
+    // ground velocity estimate in meters/second, in North/East order
+    results.velocity_NE = AP::externalAHRS().get_groundspeed_vector();
 
+    /*
+     * position estimates
+     */
     results.location_valid = AP::externalAHRS().get_location(results.location);
-}
 
-Vector2f AP_AHRS_External::groundspeed_vector()
-{
-    return AP::externalAHRS().get_groundspeed_vector();
+    // hagl is not supplied:
+    // results.hagl_valid = false;
+    // results.hagl = 0;
 }
-
 
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3p &vec) const
 {
@@ -131,9 +131,9 @@ bool AP_AHRS_External::get_origin(Location &ret) const
 
 void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
 {
-    // lower gains in VTOL controllers when flying on DCM
-    ekfGndSpdLimit = 50.0;
-    ekfNavVelGainScaler = 0.5;
+    // no limit on gains, large vel limit
+    ekfGndSpdLimit = 400.0;
+    ekfNavVelGainScaler = 1;
 }
 
 #endif

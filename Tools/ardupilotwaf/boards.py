@@ -258,6 +258,13 @@ class Board:
         return (int(major) > want_major or
                 (int(major) == want_major and int(minor) >= want_minor))
 
+    def cc_version_lte(self, cfg, want_major, want_minor):
+        if cfg.env.TOOLCHAIN == "custom":
+            return True
+        (major, minor, patchlevel) = cfg.env.CC_VERSION
+        return (int(major) < want_major or
+                (int(major) == want_major and int(minor) <= want_minor))
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -335,7 +342,6 @@ class Board:
             ]
         else:
             env.CFLAGS += [
-                '-Wno-digraphs',
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
             ]
@@ -466,7 +472,6 @@ class Board:
                 '-Werror=unused-but-set-variable',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
-                '-Wno-digraphs',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
@@ -490,6 +495,15 @@ class Board:
                 ]
                 env.CFLAGS += [
                     '-Werror=use-after-free',
+                ]
+            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 1):
+                # the following warnings appear to be buggy in later compiler versions
+                # https://github.com/ArduPilot/ardupilot/issues/33206
+                # TODO: readdress following a 16.2+ release
+                env.CXXFLAGS += [
+                    '-Wno-error=maybe-uninitialized',
+                    '-Wno-error=format-truncation',
+                    '-Wno-error=array-bounds',
                 ]
 
         if cfg.env.TOOLCHAIN == "custom":
@@ -809,12 +823,6 @@ class SITLBoard(Board):
         cfg.define('AP_NOTIFY_LP5562_BUS', 2)
         cfg.define('AP_NOTIFY_LP5562_ADDR', 0x30)
 
-        # turn on fencepoint and rallypoint protocols so they're still tested:
-        env.CXXFLAGS.extend([
-            '-DAP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED=HAL_GCS_ENABLED&&HAL_RALLY_ENABLED',
-            '-DAC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT=HAL_GCS_ENABLED&&AP_FENCE_ENABLED'
-        ])
-
         if not cfg.env.AP_PERIPH:
             try:
                 env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=0')
@@ -916,11 +924,23 @@ class SITLBoard(Board):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
         for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/models/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
             if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
 
         # include locations.txt so SITL on windows can lookup by name
         env.ROMFS_FILES += [('locations.txt','Tools/autotest/locations.txt')]
+
+        # embed vehicleinfo.json and the default-params files so SITL is
+        # self-sufficient: a binary invoked with --model=<frame> can resolve
+        # its parameter defaults from ROMFS without the source tree on disk.
+        env.ROMFS_FILES += [('vehicleinfo.json','Tools/autotest/pysim/vehicleinfo.json')]
+        for f in os.listdir('Tools/autotest/default_params'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/default_params/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
+            if fnmatch.fnmatch(f, "*.parm"):
+                env.ROMFS_FILES += [('default_params/'+f,'Tools/autotest/default_params/'+f)]
 
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
@@ -1167,7 +1187,6 @@ class chibios(Board):
             '-Werror=init-self',
             '-Werror=unused-but-set-variable',
             '-Wno-missing-field-initializers',
-            '-Wno-digraphs',
             '-Wno-trigraphs',
             '-fno-strict-aliasing',
             '-fomit-frame-pointer',

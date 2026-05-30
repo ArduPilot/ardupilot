@@ -35,6 +35,8 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_AHRS_External);
 
+    const char *shortname() const override { return "External"; }
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override {}
@@ -49,9 +51,6 @@ public:
     bool wind_estimate(Vector3f &ret) const override {
         return false;
     }
-
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
 
     bool            use_compass() override {
         // this is actually never called at the moment; we use dcm's

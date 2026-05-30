@@ -255,8 +255,8 @@ private:
     RC_Channel *rc_tuning2;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
-    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
-    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U, &g2.surf_dist_parameters};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U, &g2.surf_dist_parameters};
 
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_m(float& ret) const;
@@ -731,6 +731,8 @@ private:
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
     float get_pilot_speed_dn_ms() const;
+    float get_pilot_speed_up_adjusted_ms() const;
+    float get_pilot_speed_dn_adjusted_ms() const;
     void run_rate_controller_main();
 
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED

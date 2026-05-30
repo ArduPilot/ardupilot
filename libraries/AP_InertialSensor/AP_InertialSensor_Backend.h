@@ -107,6 +107,25 @@ public:
         return _gyro_raw_sample_rate(gyro_instance);
     }
 
+    // return the maximum allowed gyro bias for this sensor (rad/s).
+    // The EKF clamps its gyro bias state to this value.
+    virtual float gyro_bias_limit_rads() const {
+        return 0.5f;
+    }
+
+    // return the initial 1-sigma gyro bias uncertainty for this sensor (deg/s)
+    virtual float gyro_bias_init_dps() const {
+        return 2.5f;
+    }
+
+    uint8_t get_gyro_instance() const {
+        return gyro_instance;
+    }
+
+    uint8_t get_accel_instance() const {
+        return accel_instance;
+    }
+
     /*
       device driver IDs. These are used to fill in the devtype field
       of the device ID, which shows up as INS*ID* parameters to
@@ -154,6 +173,8 @@ public:
         DEVTYPE_INS_IIM42653 = 0x3D,
         DEVTYPE_INS_LSM6DSV  = 0x3E,
         DEVTYPE_INS_ASM330   = 0x3F,
+        DEVTYPE_INS_ADIS16607 = 0x40,
+        DEVTYPE_INS_ZEROONE_FPGA_SCH16T = 0x41,
     };
 
 protected:
@@ -313,14 +334,6 @@ protected:
 
     void set_accel_orientation(uint8_t instance, enum Rotation rotation) {
         _imu._accel_orientation[instance] = rotation;
-    }
-
-    uint8_t get_gyro_instance() const {
-        return gyro_instance;
-    }
-
-    uint8_t get_accel_instance() const {
-        return accel_instance;
     }
 
     // increment clipping counted. Used by drivers that do decimation before supplying

@@ -100,3 +100,11 @@
 #include <AP_HAL_QURT/replace.h>
 
 #define DEFAULT_SERIAL4_PROTOCOL 23 // RC input
+
+// enable SerialManager::register_port() so tunneled remote UARTs can
+// be assigned any protocol via SERIALn_PROTOCOL parameters
+#define AP_SERIALMANAGER_REGISTER_ENABLED 1
+
+// 10 serial slots: SERIAL0..SERIAL4 are MAVLink/GPS/RCIN, SERIAL5..SERIAL9
+// are the 5 tunneled remote serial ports registered with AP_SerialManager.
+#define HAL_UART_NUM_SERIAL_PORTS 10

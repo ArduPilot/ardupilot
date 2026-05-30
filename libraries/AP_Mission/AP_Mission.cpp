@@ -1301,6 +1301,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         cmd.content.cam_trigg_dist.meters = packet.param1;  // distance between camera shots in meters
         cmd.content.cam_trigg_dist.trigger = packet.param3; // when enabled, camera triggers once immediately
+        cmd.content.cam_trigg_dist.camera_id = packet.param4; // which camera to trigger
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
@@ -1446,6 +1447,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_SET_CAMERA_ZOOM:
         cmd.content.set_camera_zoom.zoom_type = packet.param1;
         cmd.content.set_camera_zoom.zoom_value = packet.param2;
+        cmd.content.set_camera_zoom.camera_id = packet.param3;
         break;
 
     case MAV_CMD_SET_CAMERA_FOCUS:
@@ -1821,6 +1823,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         packet.param1 = cmd.content.cam_trigg_dist.meters;  // distance between camera shots in meters
         packet.param3 = cmd.content.cam_trigg_dist.trigger; // when enabled, camera triggers once immediately
+        packet.param4 = cmd.content.cam_trigg_dist.camera_id; // which camera to trigger
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
@@ -1968,6 +1971,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_SET_CAMERA_ZOOM:
         packet.param1 = cmd.content.set_camera_zoom.zoom_type;
         packet.param2 = cmd.content.set_camera_zoom.zoom_value;
+        packet.param3 = cmd.content.set_camera_zoom.camera_id;
         break;
 
     case MAV_CMD_SET_CAMERA_FOCUS:

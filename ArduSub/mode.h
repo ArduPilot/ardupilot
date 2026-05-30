@@ -96,7 +96,6 @@ protected:
     // convenience references to avoid code churn in conversion:
     Parameters &g;
     ParametersG2 &g2;
-    AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AP_Motors6DOF &motors;
     RC_Channel *&channel_roll;
