@@ -9202,7 +9202,7 @@ Also, ignores heartbeats not from our target system'''
         dest = os.path.join("scripts", "modules", "mavlink")
         ardupilotmega_xml = os.path.join(self.rootdir(), "modules", "mavlink",
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
-        mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua'), [ardupilotmega_xml])
+        mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua', validate=False), [ardupilotmega_xml])
         self.progress("Installed mavlink module")
 
     def install_script_content(self, scriptname, content):
