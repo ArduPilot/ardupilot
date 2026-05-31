@@ -91,7 +91,7 @@ private:
     bool override_servos(void);
     bool request_go_around(void);
     bool get_target_altitude_location(Location &location);
-    int32_t get_target_airspeed_cm(void) const;
+    float get_target_airspeed_ms(void) const;
     bool is_throttle_suppressed(void) const;
     bool is_flying_forward(void) const;
     bool is_on_approach(void) const;
