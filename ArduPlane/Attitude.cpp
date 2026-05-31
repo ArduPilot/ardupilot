@@ -772,9 +772,12 @@ void Plane::check_ahrs_reset()
     // Check for change in core
     const int8_t primary_core = ahrs.get_primary_core_index();
     if (ahrs_check.last_primary_core != primary_core) {
+        if (!should_reset) {
+            // Don't report to user if a EKF type change has already been reported
+            gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)primary_core);
+        }
         should_reset = true;
         LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)primary_core);
     }
     ahrs_check.last_primary_core = primary_core;
 
