@@ -617,10 +617,10 @@ int32_t AP_Landing::get_target_airspeed_cm(void)
 
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_get_target_airspeed_cm();
+        return type_slope_get_target_airspeed_ms() * 100.0;
 #if HAL_LANDING_DEEPSTALL_ENABLED
     case TYPE_DEEPSTALL:
-        return deepstall.get_target_airspeed_cm();
+        return deepstall.get_target_airspeed_ms() * 100.0;
 #endif
     default:
         // don't return the landing airspeed, because if type is invalid we have

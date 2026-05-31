@@ -200,7 +200,7 @@ private:
     void type_slope_adjust_landing_slope_for_rangefinder_bump(AP_FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);
 
     void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
-    int32_t type_slope_get_target_airspeed_cm(void);
+    float type_slope_get_target_airspeed_ms(void);
     void type_slope_check_if_need_to_abort(const AP_FixedWing::Rangefinder_State &rangefinder_state);
     int32_t type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool type_slope_request_go_around(void);
