@@ -46,27 +46,45 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
         P[5][5] = P[4][4] = sq(frontend->_gpsHorizVelNoise);
     } else {
         // reset horizontal velocity states to the GPS velocity if available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::GPS) {
+
+        // Determine the actual data source to use for velocity reset
+        resetDataSource active_source = velResetSource;
+        if (velResetSource == resetDataSource::DEFAULT) {
+            if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
+                active_source = resetDataSource::GPS;
+#if EK3_FEATURE_EXTERNAL_NAV
+            } else if (imuSampleTime_ms - extNavVelMeasTime_ms < 250) {
+                active_source = resetDataSource::EXTNAV;
+#endif
+            }
+        }
+
+        // Apply the state reset based on the determined source
+        switch (active_source) {
+        case resetDataSource::GPS: {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
             stateStruct.velocity.x  = gps_corrected.vel.x;
             stateStruct.velocity.y  = gps_corrected.vel.y;
-            // set the variances using the reported GPS speed accuracy
-            P[5][5] = P[4][4] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
+            P[5][5] = P[4][4] = sq(MAX(frontend->_gpsHorizVelNoise, gpsSpdAccuracy));
+            }
+            break;
 #if EK3_FEATURE_EXTERNAL_NAV
-        } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::EXTNAV) {
+        case resetDataSource::EXTNAV:
             // use external nav data as the 2nd preference
             // already corrected for sensor position
             stateStruct.velocity.x = extNavVelDelayed.vel.x;
             stateStruct.velocity.y = extNavVelDelayed.vel.y;
             P[5][5] = P[4][4] = sq(extNavVelDelayed.err);
+            break;
 #endif // EK3_FEATURE_EXTERNAL_NAV
-        } else {
+        default:
             stateStruct.velocity.x  = 0.0f;
             stateStruct.velocity.y  = 0.0f;
             // set the variances using the likely speed range
             P[5][5] = P[4][4] = sq(25.0f);
+            break;
         }
         // clear the timeout flags and counters
         velTimeout = false;
@@ -127,7 +145,26 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
     } else  {
         // Use GPS data as first preference if fresh data is available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::GPS) {
+
+        // Determine the actual data source to use for position reset
+        resetDataSource active_source = posResetSource;
+        if (active_source == resetDataSource::DEFAULT) {
+            if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
+                active_source = resetDataSource::GPS;
+#if EK3_FEATURE_BEACON_FUSION
+            } else if (imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) {
+                active_source = resetDataSource::RNGBCN;
+#endif
+#if EK3_FEATURE_EXTERNAL_NAV
+            } else if (imuSampleTime_ms - extNavDataDelayed.time_ms < 250) {
+                active_source = resetDataSource::EXTNAV;
+#endif
+            }
+        }
+
+        // Apply the state reset based on the determined source
+        switch (active_source) {
+        case resetDataSource::GPS: {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
@@ -136,29 +173,36 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             // calculate position
             const Location gpsloc{gps_corrected.lat, gps_corrected.lng, 0, Location::AltFrame::ABSOLUTE};
             stateStruct.position.xy() = EKF_origin.get_distance_NE_ftype(gpsloc);
-            // compensate for offset  between last GPS measurement and the EKF time horizon. Note that this is an unusual
+            // compensate for offset between last GPS measurement and the EKF time horizon. Note that this is an unusual
             // time delta in that it can be both -ve and +ve
             const int32_t tdiff = imuDataDelayed.time_ms - gps_corrected.time_ms;
-            stateStruct.position.xy() += gps_corrected.vel.xy()*0.001*tdiff;
+            stateStruct.position.xy() += gps_corrected.vel.xy() * 0.001f * tdiff;
             // set the variances using the position measurement noise parameter
-            P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
+            P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy, frontend->_gpsHorizPosNoise));
+            break;
+        }
 #if EK3_FEATURE_BEACON_FUSION
-        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
+        case resetDataSource::RNGBCN:
             // use the range beacon data as a second preference
             stateStruct.position.x = rngBcn.receiverPos.x;
             stateStruct.position.y = rngBcn.receiverPos.y;
             // set the variances from the beacon alignment filter
             P[7][7] = rngBcn.receiverPosCov[0][0];
             P[8][8] = rngBcn.receiverPosCov[1][1];
+            break;
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
+        case resetDataSource::EXTNAV:
             // use external nav data as the third preference
             stateStruct.position.x = extNavDataDelayed.pos.x;
             stateStruct.position.y = extNavDataDelayed.pos.y;
             // set the variances as received from external nav system data
             P[7][7] = P[8][8] = sq(extNavDataDelayed.posErr);
+            break;
 #endif // EK3_FEATURE_EXTERNAL_NAV
+        default:
+            // Fallback: maintain current EKF dead-reckoning
+            break;
         }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
@@ -1103,17 +1147,20 @@ void NavEKF3_core::FuseVelPosNED()
                 stateIndex = 4 + obsIndex;
                 // calculate the measurement innovation, using states from a different time coordinate if fusing height data
                 // adjust scaling on GPS measurement noise variances if not enough satellites
-                if (obsIndex <= 2) {
+                switch (obsIndex) {
+                case 0 ... 2:
                     innovVelPos[obsIndex] = stateStruct.velocity[obsIndex] - velPosObs[obsIndex];
                     if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index)) {
                         R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                     }
-                } else if (obsIndex == 3 || obsIndex == 4) {
+                    break;
+                case 3 ... 4:
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
                     if (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS) {
                         R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                     }
-                } else if (obsIndex == 5) {
+                    break;
+                case 5: {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
                     const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
                     const ftype gndBaroInnovFloor = -0.5;
@@ -1128,7 +1175,9 @@ void NavEKF3_core::FuseVelPosNED()
                         //    ____/|
                         //   /     |
                         //  /      |
-                        innovVelPos[5] += constrain_ftype(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
+                        innovVelPos[obsIndex] += constrain_ftype(-innovVelPos[obsIndex]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
+                    }
+                    break;
                     }
                 }
 
@@ -1209,18 +1258,25 @@ void NavEKF3_core::FuseVelPosNED()
                 // finish fusion from KHP and Kfusion
                 const bool fault = FinishFusion(innovVelPos[obsIndex]);
                 // record health status
-                if (obsIndex == 0) {
+                switch (obsIndex) {
+                case 0:
                     faultStatus.bad_nvel = fault;
-                } else if (obsIndex == 1) {
+                    break;
+                case 1:
                     faultStatus.bad_evel = fault;
-                } else if (obsIndex == 2) {
+                    break;
+                case 2:
                     faultStatus.bad_dvel = fault;
-                } else if (obsIndex == 3) {
+                    break;
+                case 3:
                     faultStatus.bad_npos = fault;
-                } else if (obsIndex == 4) {
+                    break;
+                case 4:
                     faultStatus.bad_epos = fault;
-                } else if (obsIndex == 5) {
+                    break;
+                case 5:
                     faultStatus.bad_dpos = fault;
+                    break;
                 }
             }
         }
@@ -2078,10 +2134,7 @@ void NavEKF3_core::SelectBodyOdomFusion()
             ftype fwdSpd = wheelOdmDataDelayed.delAng * wheelOdmDataDelayed.radius * (1.0f / wheelOdmDataDelayed.delTime);
 
             // get the unit vector from the projection of the X axis onto the horizontal
-            Vector3F unitVec;
-            unitVec.x = prevTnb.a.x;
-            unitVec.y = prevTnb.a.y;
-            unitVec.z = 0.0f;
+            Vector3F unitVec{prevTnb.a.x, prevTnb.a.y, 0.0f};
             unitVec.normalize();
 
             // multiply by forward speed to get velocity vector measured by wheel encoders
