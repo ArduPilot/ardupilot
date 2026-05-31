@@ -15069,14 +15069,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_home(pos)
         self.poll_home_position()
         self.wait_statustext("Polygon fence breached", check_context=True)
-        self.context_pop()
         self.wait_mode('RTL')
         self.wait_rtl_complete(check_alt=False)
-
-        # we have set home to a strange place, meaning at the very
-        # least home-relative altitudes are not going to be as
-        # expected.  Reboot so we get a fresh setup for the next test
-        self.reboot_sitl()
+        self.context_pop()
 
     def HomeCircleInclusionFence_MultipleHomeCircle(self, target_system=1, target_component=1):
         '''upload multiple circles; should breach passing the innermost'''
@@ -15179,11 +15174,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(0, 0.5, timeout=15)
         self.set_rc(2, 1500)
         self.do_RTL()
-
-        # we have set home to a strange place, meaning at the very
-        # least home-relative altitudes are not going to be as
-        # expected.  Reboot so we get a fresh setup for the next test
-        self.reboot_sitl()
 
     def MAV_CMD_SET_EKF_SOURCE_SET(self):
         '''test setting of source sets using mavlink command'''
@@ -15521,7 +15511,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.wait_altitude(here.alt-1, here.alt+1, minimum_duration=10)
         self.disarm_vehicle(force=True)
-        self.reboot_sitl()  # to "unstick" home
 
     def GuidedModeThrust(self):
         '''test handling of option-bit-3, where mavlink commands are
@@ -15852,8 +15841,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
         self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
         self.context_pop()
-
-        self.reboot_sitl()  # because we set home
 
     def GripperReleaseOnThrustLoss(self):
         '''tests that gripper is released on thrust loss if option set'''
