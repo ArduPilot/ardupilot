@@ -21,9 +21,6 @@
 
 #if AP_TRUSTED_FLIGHT_ENABLED
 
-#include <AP_HAL/AP_HAL.h>
-#include "AP_JWT.h"
-
 struct trusted_flight_artifacts {
     uint32_t key_type;
     uint32_t key_len;
@@ -31,6 +28,11 @@ struct trusted_flight_artifacts {
     uint32_t issuer_len;
     uint8_t issuer[AP_TRUSTED_FLIGHT_ISSUER_LENGTH];
 };
+
+#ifndef HAL_BOOTLOADER_BUILD
+
+#include <AP_HAL/AP_HAL.h>
+#include "AP_JWT.h"
 
 class AP_TrustedFlight
 {
@@ -116,5 +118,7 @@ namespace AP
 {
 AP_TrustedFlight &trusted_flight();
 };
+
+#endif // HAL_BOOTLOADER_BUILD
 
 #endif // AP_TRUSTED_FLIGHT_ENABLED
