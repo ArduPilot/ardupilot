@@ -626,7 +626,7 @@ float AP_Landing::get_target_airspeed_ms(void)
         // don't return the landing airspeed, because if type is invalid we have
         // no postive indication that the land airspeed has been configured or
         // how it was meant to be utilized
-        return tecs_Controller->get_target_airspeed() * 0.01f;  // cm/s -> m/s
+        return tecs_Controller->get_target_airspeed();
     }
 }
 
