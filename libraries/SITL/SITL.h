@@ -625,6 +625,14 @@ public:
     // clamp simulation - servo channel starting at offset 1 (usually ailerons)
     AP_Int8 clamp_ch;
 
+    // Offsets aplied to SIM AHRS type
+    // For testing stepless handover bettween AHRS estimators
+    struct {
+        AP_Float roll;
+        AP_Float pitch;
+        AP_Float yaw;
+    } sim_ahrs_offset;
+
 #if AP_SIM_INS_FILE_ENABLED
     enum INSFileMode {
         INS_FILE_NONE = 0,
