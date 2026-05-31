@@ -206,7 +206,7 @@ class Context(object):
     def __init__(self):
         self.parameters = []
         self.sitl_commandline_customised = False
-        self.reboot_sitl_was_done = False
+        self.context_pop_requires_reboot = False
         self.message_hooks = []
         self.collections = {}
         self.heartbeat_interval_ms = 1000
@@ -2381,7 +2381,7 @@ class TestSuite(abc.ABC):
         if check_position and self.frame != 'sailboat':  # sailboats drift with wind!
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
-            self.context_get().reboot_sitl_was_done = True
+            self.context_get().context_pop_requires_reboot = True
 
     def assert_armed(self):
         if not self.armed():
@@ -6739,7 +6739,7 @@ class TestSuite(abc.ABC):
                 f.close()
             self.start_SITL(wipe=False)
             self.set_streamrate(self.sitl_streamrate())
-        elif dead.reboot_sitl_was_done:
+        elif dead.context_pop_requires_reboot:
             self.progress("Doing implicit context-pop reboot")
             self.reboot_sitl(mark_context=False)
 
@@ -9845,11 +9845,11 @@ Also, ignores heartbeats not from our target system'''
             p6=int(loc.lng*1e7),
             p7=loc.alt,
         )
-        # a little bit of a lie here; we need to reboot the vehicle
-        # after setting home as it will no longer drift with the
-        # vehicle position while disarmed.  This breaks the assumed
-        # starting conditions of a test.
-        self.context_get().reboot_sitl_was_done = True
+        # we need to reboot the vehicle after setting home as it will
+        # no longer drift with the vehicle position while disarmed.
+        # This lack of drifting breaks the assumed starting conditions
+        # of a test.
+        self.context_get().context_pop_requires_reboot = True
 
     def SetHome(self):
         '''Setting and fetching of home'''
