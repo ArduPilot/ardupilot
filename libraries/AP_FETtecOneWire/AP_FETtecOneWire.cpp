@@ -124,11 +124,12 @@ void AP_FETtecOneWire::init()
     // OneWire supports telemetry in at most 15 ESCs, because of the 4 bit limitation
     // on the fast-throttle command.  But we are still limited to the
     // number of ESCs the telem library will collect data for.
-    if (_esc_count == 0 || _motor_mask >= (1U << MIN(15, ESC_TELEM_MAX_ESCS))) {
+    const auto esc_count_limit = MIN(15, ESC_TELEM_MAX_ESCS);
 #else
     // OneWire supports at most 24 ESCs without telemetry
-    if (_esc_count == 0 || _motor_mask >= (1U << MIN(24, NUM_SERVO_CHANNELS))) {
+    const auto esc_count_limit = MIN(24, NUM_SERVO_CHANNELS);
 #endif
+    if (_esc_count == 0 || _motor_mask >= (1U << esc_count_limit)) {
         _invalid_mask = true;
         return;
     }
