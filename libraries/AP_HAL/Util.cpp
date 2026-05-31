@@ -84,7 +84,7 @@ void AP_HAL::Util::set_soft_armed(const bool b)
 extern const AP_HAL::HAL& hal;
 #include <stdio.h>
 // stack overflow hook for low level RTOS code, C binding
-void AP_stack_overflow(const char *thread_name)
+__attribute__((used)) void AP_stack_overflow(const char *thread_name)
 {
 #if HAL_REBOOT_ON_MEMORY_ERRORS
     (void)thread_name;
