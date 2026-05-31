@@ -606,27 +606,27 @@ bool AP_Landing::get_target_altitude_location(Location &location)
 }
 
 /*
- * returns target airspeed in cm/s depending on flight stage
+ * returns target airspeed in m/s depending on flight stage
  */
-int32_t AP_Landing::get_target_airspeed_cm(void)
+float AP_Landing::get_target_airspeed_ms(void)
 {
     if (!flags.in_progress) {
         // not landing, use regular cruise airspeed
-        return aparm.airspeed_cruise*100;
+        return aparm.airspeed_cruise;
     }
 
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_get_target_airspeed_ms() * 100.0;
+        return type_slope_get_target_airspeed_ms();
 #if HAL_LANDING_DEEPSTALL_ENABLED
     case TYPE_DEEPSTALL:
-        return deepstall.get_target_airspeed_ms() * 100.0;
+        return deepstall.get_target_airspeed_ms();
 #endif
     default:
         // don't return the landing airspeed, because if type is invalid we have
         // no postive indication that the land airspeed has been configured or
         // how it was meant to be utilized
-        return tecs_Controller->get_target_airspeed();
+        return tecs_Controller->get_target_airspeed() * 0.01f;  // cm/s -> m/s
     }
 }
 

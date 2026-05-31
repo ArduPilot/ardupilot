@@ -96,7 +96,7 @@ public:
 
     // helper functions
     bool restart_landing_sequence(void);
-    int32_t get_target_airspeed_cm(void);
+    float get_target_airspeed_ms(void);
 
     // accessor functions for the params and states
     static const struct AP_Param::GroupInfo var_info[];
