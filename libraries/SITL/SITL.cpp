@@ -506,6 +506,27 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Values: 0:Disable, 1:Enable
     AP_GROUPINFO("ODOM_ENABLE",   1, SIM,  odom_enable, 0),
 
+    // @Param: MOVE_X
+    // @DisplayName: Move vehicle north
+    // @Description: Smoothly move vehicle on ground, offset in north direction
+    // @Units: m
+    AP_GROUPINFO("MOVE_X",  24, SIM,  move.x, 0),
+    // @Param: MOVE_Y
+    // @DisplayName: Move vehicle east
+    // @Description: Smoothly move vehicle on ground, offset in east direction
+    // @Units: m
+    AP_GROUPINFO("MOVE_Y",  25, SIM,  move.y, 0),
+    // @Param: MOVE_Z
+    // @DisplayName: Move vehicle down
+    // @Description: Smoothly move vehicle on ground, offset in down direction
+    // @Units: m
+    AP_GROUPINFO("MOVE_Z",  26, SIM,  move.z, 0),
+    // @Param: MOVE_TIME
+    // @DisplayName: Move duration
+    // @Description: Time over which to interpolate the ground relocation move
+    // @Units: ms
+    AP_GROUPINFO("MOVE_TIME",  27, SIM,  move.t, 0),
+
     // @Param: LED_LAYOUT
     // @DisplayName: LED layout
     // @Description: LED layout config value
