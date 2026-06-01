@@ -63,6 +63,7 @@ namespace {
 // ---- WHO_AM_I register (R) ----
 #define LSM6DSV_REG_WHO_AM_I                0x0F
 #define LSM6DSV_ID_LSM6DSV16X               0x70
+#define LSM6DSV_ID_LSM6DSK320X              0x75
 
 // ---- Accelerometer control register 1 (R/W) ----
 // [6:4] OP_MODE_XL: operating mode   [3:0] ODR_XL: output data rate
@@ -90,14 +91,25 @@ namespace {
 #define LSM6DSV_CTRL6_FS_G_1000DPS          0x03
 #define LSM6DSV_CTRL6_FS_G_2000DPS          0x04
 #define LSM6DSV_CTRL6_FS_G_4000DPS          0x0C
+#define LSM6DSK320X_CTRL6_VARIANT_BIT        0x08  // bit3: must-be-1 on DSK320X
+// DSK320X FS_G: bit3 must-be-1, FS_G[2:0]=100 → 2000 dps
+#define LSM6DSK320X_CTRL6_FS_G_2000DPS      (0x04 | LSM6DSK320X_CTRL6_VARIANT_BIT)
 
 // ---- Control register 8 — accel full-scale & LPF2 BW (R/W) ----
-// [7:5] HP_LPF2_XL_BW   [1:0] FS_XL: accelerometer full-scale
+// [7:5] HP_LPF2_XL_BW   [3] XL_DualC_EN   [1:0] FS_XL
+// bit2: 0(must-be-0) on LSM6DSV16X; 1(must-be-1) on LSM6DSV32X — used as sub-variant ID
 #define LSM6DSV_REG_CTRL8                   0x17
+#define LSM6DSV_CTRL8_VARIANT_BIT           0x04  // bit2: 0=16X, 1=32X (reflects chip default)
+// LSM6DSV16X FS_XL: 00=±2g 01=±4g 10=±8g 11=±16g  (bit2 must be 0)
 #define LSM6DSV_CTRL8_FS_XL_2G              0x00
 #define LSM6DSV_CTRL8_FS_XL_4G              0x01
 #define LSM6DSV_CTRL8_FS_XL_8G              0x02
 #define LSM6DSV_CTRL8_FS_XL_16G             0x03
+// LSM6DSV32X FS_XL: 00=±4g 01=±8g 10=±16g 11=±32g  (bit2 must be 1)
+#define LSM6DSV32X_CTRL8_FS_XL_4G          (0x00 | LSM6DSV_CTRL8_VARIANT_BIT)
+#define LSM6DSV32X_CTRL8_FS_XL_8G          (0x01 | LSM6DSV_CTRL8_VARIANT_BIT)
+#define LSM6DSV32X_CTRL8_FS_XL_16G         (0x02 | LSM6DSV_CTRL8_VARIANT_BIT)
+#define LSM6DSV32X_CTRL8_FS_XL_32G         (0x03 | LSM6DSV_CTRL8_VARIANT_BIT)
 
 // ---- Control register 9 — accel LPF2 enable (R/W) ----
 #define LSM6DSV_REG_CTRL9                   0x18
@@ -191,6 +203,7 @@ AP_InertialSensor_LSM6DSV::AP_InertialSensor_LSM6DSV(AP_InertialSensor &imu,
     , _rotation(rotation)
     , _accel_scale(LSM6DSV_ACCEL_SCALE_16G)
     , _gyro_scale(LSM6DSV_GYRO_SCALE_2000DPS)
+    , _lsm6dsv_type(LSM6DSV_Type::LSM6DSV16X)
 {
 }
 
@@ -240,8 +253,14 @@ void AP_InertialSensor_LSM6DSV::start()
     }
     _backend_period_us = 1000000UL / _backend_rate_hz;
 
-    if (!_imu.register_accel(accel_instance, _backend_rate_hz, _dev->get_bus_id_devtype(DEVTYPE_INS_LSM6DSV)) ||
-        !_imu.register_gyro(gyro_instance, _backend_rate_hz, _dev->get_bus_id_devtype(DEVTYPE_INS_LSM6DSV))) {
+    DevTypes devtype;
+    switch (_lsm6dsv_type) {
+    case LSM6DSV_Type::LSM6DSK320X: devtype = DEVTYPE_INS_LSM6DSK320X; break;
+    case LSM6DSV_Type::LSM6DSV32X:  devtype = DEVTYPE_INS_LSM6DSV32X;  break;
+    default:                        devtype = DEVTYPE_INS_LSM6DSV16X;  break;
+    }
+    if (!_imu.register_accel(accel_instance, _backend_rate_hz, _dev->get_bus_id_devtype(devtype)) ||
+        !_imu.register_gyro(gyro_instance, _backend_rate_hz, _dev->get_bus_id_devtype(devtype))) {
         return;
     }
 
@@ -286,8 +305,15 @@ bool AP_InertialSensor_LSM6DSV::update()
 
 bool AP_InertialSensor_LSM6DSV::get_output_banner(char* banner, uint8_t banner_len)
 {
-    snprintf(banner, banner_len, "IMU%u: LSM6DSV16X %s sampling %.1fkHz",
+    const char *chip_name;
+    switch (_lsm6dsv_type) {
+    case LSM6DSV_Type::LSM6DSV32X:  chip_name = "LSM6DSV32X";  break;
+    case LSM6DSV_Type::LSM6DSK320X: chip_name = "LSM6DSK320X"; break;
+    default:                        chip_name = "LSM6DSV16X";  break;
+    }
+    snprintf(banner, banner_len, "IMU%u: %s %s sampling %.1fkHz",
              gyro_instance,
+             chip_name,
              _fast_sampling ? "fast" : "normal",
              _backend_rate_hz * 0.001f);
     return true;
@@ -312,13 +338,6 @@ bool AP_InertialSensor_LSM6DSV::hardware_init()
     for (uint8_t attempt = 0; attempt < LSM6DSV_INIT_MAX_TRIES; attempt++) {
         if (!check_whoami()) {
             continue;
-        }
-
-        switch (_lsm6dsv_type) {
-        case LSM6DSV_Type::LSM6DSV16X:
-            _gyro_scale = LSM6DSV_GYRO_SCALE_2000DPS;
-            _accel_scale = LSM6DSV_ACCEL_SCALE_16G;
-            break;
         }
 
         if (!reset_device()) {
@@ -372,8 +391,23 @@ bool AP_InertialSensor_LSM6DSV::check_whoami()
     }
 
     switch (_whoami) {
-    case LSM6DSV_ID_LSM6DSV16X:
-        _lsm6dsv_type = LSM6DSV_Type::LSM6DSV16X;
+    case LSM6DSV_ID_LSM6DSV16X: {
+        // Both LSM6DSV16X and LSM6DSV32X share WHO_AM_I = 0x70.
+        // Distinguish them by reading CTRL8 bit2 after reset: it is the must-be-0 bit
+        // on 16X and the must-be-1 bit on 32X in the datasheet default/reset state.
+        uint8_t ctrl8 = 0;
+        if (!read_registers(LSM6DSV_REG_CTRL8, &ctrl8, 1)) {
+            return false;
+        }
+        if (ctrl8 & LSM6DSV_CTRL8_VARIANT_BIT) {
+            _lsm6dsv_type = LSM6DSV_Type::LSM6DSV32X;
+        } else {
+            _lsm6dsv_type = LSM6DSV_Type::LSM6DSV16X;
+        }
+        return true;
+    }
+    case LSM6DSV_ID_LSM6DSK320X:
+        _lsm6dsv_type = LSM6DSV_Type::LSM6DSK320X;
         return true;
     }
 
@@ -403,17 +437,26 @@ bool AP_InertialSensor_LSM6DSV::reset_device()
 
 bool AP_InertialSensor_LSM6DSV::configure_gyro()
 {
-    return write_register(LSM6DSV_REG_CTRL6, LSM6DSV_CTRL6_FS_G_2000DPS, true);
+    const uint8_t fs_g = (_lsm6dsv_type == LSM6DSV_Type::LSM6DSK320X)
+                         ? LSM6DSK320X_CTRL6_FS_G_2000DPS
+                         : LSM6DSV_CTRL6_FS_G_2000DPS;
+    return write_register(LSM6DSV_REG_CTRL6, fs_g, true);
 }
 
 bool AP_InertialSensor_LSM6DSV::configure_accel()
 {
+    // FS_XL encoding differs between variants:
+    // - 16X and DSK320X: bit2 must be 0, range codes (00=±2g, 01=±4g, 10=±8g, 11=±16g)
+    // - 32X: bit2 must be 1, range codes shifted (00=±4g, 01=±8g, 10=±16g, 11=±32g)
+    const uint8_t fs_xl = (_lsm6dsv_type == LSM6DSV_Type::LSM6DSV32X)
+                          ? LSM6DSV32X_CTRL8_FS_XL_16G
+                          : LSM6DSV_CTRL8_FS_XL_16G;
 #if LSM6DSV_ACCEL_LPF2_ENABLED
-    const uint8_t ctrl8 = LSM6DSV_CTRL8_FS_XL_16G | LSM6DSV_ACCEL_LPF2_BW;
+    const uint8_t ctrl8 = fs_xl | LSM6DSV_ACCEL_LPF2_BW;
     return write_register(LSM6DSV_REG_CTRL8, ctrl8, true) &&
            write_register(LSM6DSV_REG_CTRL9, LSM6DSV_CTRL9_LPF2_XL_EN, true);
 #else
-    return write_register(LSM6DSV_REG_CTRL8, LSM6DSV_CTRL8_FS_XL_16G, true);
+    return write_register(LSM6DSV_REG_CTRL8, fs_xl, true);
 #endif
 }
 
