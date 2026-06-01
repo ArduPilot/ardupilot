@@ -1117,6 +1117,11 @@ private:
     bool send_available_modes();
     bool send_available_mode_monitor();
 
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    MAV_RESULT handle_command_request_operator_control(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    bool send_control_status();
+#endif
+
 };
 
 /// @class GCS
@@ -1176,6 +1181,12 @@ public:
       return true if a MAVLink system ID is a GCS
      */
     bool sysid_is_gcs(uint8_t sysid) const;
+
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    void set_operator_control(uint8_t sysid, uint8_t sysid_high, bool allow_takeover);
+    uint8_t get_operator_control_sysid() const { return _operator_control_sysid; }
+    bool get_operator_control_allow_takeover() const { return _operator_control_allow_takeover; }
+#endif
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1355,6 +1366,12 @@ private:
     // identically named field in GCS_MAVLINK:: which is the most
     // recent time that backend saw traffic from MAV_GCS_SYSID
     uint32_t _sysid_gcs_last_seen_time_ms;
+
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    uint8_t _operator_control_sysid;
+    uint8_t _operator_control_sysid_high;
+    bool _operator_control_allow_takeover;
+#endif
 
     void service_statustext(void);
 #if HAL_MEM_CLASS <= HAL_MEM_CLASS_192
