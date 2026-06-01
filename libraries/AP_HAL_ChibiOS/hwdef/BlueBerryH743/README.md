@@ -113,7 +113,7 @@ The first voltage/current sensor is enabled by default and the pin inputs for th
 
 The BlueBerry_H743 has no built-in compass, so if needed, you should use an external compass.
 
-## Analog cameras
+## Camera Switch
 
 The BlueBerry_H743 supports up to 2 cameras, connected to pin CAM1 and CAM2. You can select the video signal to VTX from camera by an RC channel. Set the parameters below:
 
