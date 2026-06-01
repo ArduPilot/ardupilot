@@ -248,11 +248,10 @@ All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectiona
 
 ## 12V Peripheral Output (POWER AUX)
 
-The 12V pin on the **POWER AUX** connector is gated by a BEC enable pin. The pin is pre-mapped to GPIO 81 and configured as RELAY1. By default it is configured OFF via `RELAY1_DEFAULT`.
+The 12V pin on the **POWER AUX** connector is gated by a BEC enable pin. The pin is pre-mapped to GPIO 81 and configured as RELAY1. By default it is ON via `RELAY1_DEFAULT` = 1.
 
-- To make it controllable from the transmitter. set `RELAY1_FUNCTION` = 1 (Relay).
-- To change the default state to ON, set `RELAY1_DEFAULT` = 1.
-- Assign `RCx_OPTION` = 28 (Relay1 On/Off) to the channel you want to use as the switch.
+- To change the default state to OFF, set `RELAY1_DEFAULT` = 0.
+- To make it controllable from the transmitter, set `RELAY1_FUNCTION` = 1 (Relay) and assign `RCx_OPTION` = 28 (Relay1 On/Off) to the channel you want to use as the switch.
 
 The VBAT pin on the same connector is a direct battery pass-through and is not controlled by firmware.
 
