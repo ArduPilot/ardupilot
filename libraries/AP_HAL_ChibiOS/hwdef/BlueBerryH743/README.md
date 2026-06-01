@@ -15,7 +15,7 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 - 9V 3A BEC for VTX
 - 5V 3A BEC
 - MicroSD Card Slot
-- 2-way camera input
+- SGPIO switchable dual analog camera inputs
 - AT7456E OSD
 - 2 I2Cs
 
