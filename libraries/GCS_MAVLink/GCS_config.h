@@ -155,6 +155,11 @@
 #define AP_MAVLINK_GCS_CONTROL_ENABLED (HAL_GCS_ENABLED && (HAL_PROGRAM_SIZE_LIMIT_KB > 2048))
 #endif  // AP_MAVLINK_GCS_CONTROL_ENABLED
 
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+// operator heartbeat timeout: release control when all owners silent for this long
+#define GCS_OPERATOR_HEARTBEAT_TIMEOUT_MS 5000U
+#endif
+
 // deprecated 2025-02, replaced by MAV_CMD_DO_SET_GLOBAL_ORIGIN
 // ArduPilot 4.8 starts to warn if anyone uses this
 // ArduPilot 4.9 continues to warn if anyone uses this

@@ -724,7 +724,55 @@ void GCS::set_operator_control(uint8_t oc_sysid, uint8_t oc_sysid_high, bool all
     _operator_control_sysid = oc_sysid;
     _operator_control_sysid_high = oc_sysid_high;
     _operator_control_allow_takeover = allow_takeover;
+    // clear secondary cache on any ownership change
+    memset(_secondary_gcs, 0, sizeof(_secondary_gcs));
     send_message(MSG_CONTROL_STATUS);
+}
+
+void GCS::note_secondary_gcs_seen(uint8_t gcs_sysid)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    // update existing entry if present
+    for (auto &entry : _secondary_gcs) {
+        if (entry.gcs_sysid == gcs_sysid) {
+            entry.last_seen_ms = now_ms;
+            return;
+        }
+    }
+    // insert into first empty slot
+    for (auto &entry : _secondary_gcs) {
+        if (entry.gcs_sysid == 0) {
+            entry.gcs_sysid = gcs_sysid;
+            entry.last_seen_ms = now_ms;
+            return;
+        }
+    }
+    // replace oldest entry
+    uint8_t oldest_idx = 0;
+    uint32_t oldest_ms = _secondary_gcs[0].last_seen_ms;
+    for (uint8_t i = 1; i < ARRAY_SIZE(_secondary_gcs); i++) {
+        if (_secondary_gcs[i].last_seen_ms < oldest_ms) {
+            oldest_ms = _secondary_gcs[i].last_seen_ms;
+            oldest_idx = i;
+        }
+    }
+    _secondary_gcs[oldest_idx].gcs_sysid = gcs_sysid;
+    _secondary_gcs[oldest_idx].last_seen_ms = now_ms;
+}
+
+void GCS::get_secondary_gcs(uint8_t (&out)[10]) const
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    uint8_t idx = 0;
+    for (const auto &entry : _secondary_gcs) {
+        if (idx >= ARRAY_SIZE(out)) {
+            break;
+        }
+        if (entry.gcs_sysid != 0 &&
+            now_ms - entry.last_seen_ms < GCS_OPERATOR_HEARTBEAT_TIMEOUT_MS) {
+            out[idx++] = entry.gcs_sysid;
+        }
+    }
 }
 #endif
 

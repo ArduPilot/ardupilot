@@ -2798,6 +2798,21 @@ void GCS::update_receive(void)
     }
     // also update UART pass-thru, if enabled
     update_passthru();
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - _operator_control_last_hb_check_ms >= 1000) {
+            _operator_control_last_hb_check_ms = now_ms;
+            if (_operator_control_sysid != 0) {
+                const uint32_t last_seen = sysid_mygcs_last_seen_time_ms();
+                if (last_seen != 0 &&
+                    now_ms - last_seen > GCS_OPERATOR_HEARTBEAT_TIMEOUT_MS) {
+                    set_operator_control(0, 0, false);
+                }
+            }
+        }
+    }
+#endif
 }
 
 void GCS::send_mission_item_reached_message(uint16_t mission_index)
@@ -4356,6 +4371,12 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg)
     // now...
     if (gcs().sysid_is_gcs(msg.sysid)) {
         sysid_mygcs_seen(AP_HAL::millis());
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+        // track secondary operators (sysids in the operator range that are not gcs_main)
+        if (msg.sysid != gcs().get_operator_control_sysid()) {
+            gcs().note_secondary_gcs_seen(msg.sysid);
+        }
+#endif
     }
 }
 
@@ -5702,6 +5723,27 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_operator_control(const mavlink_co
         return MAV_RESULT_ACCEPTED;
     }
 
+    // notify the current owner on all active channels so they can decide
+    // to release or allow the takeover
+    for (uint8_t i = 0; i < gcs().num_gcs(); i++) {
+        const mavlink_channel_t notify_chan = gcs().chan(i)->get_chan();
+        if (HAVE_PAYLOAD_SPACE(notify_chan, COMMAND_LONG)) {
+            mavlink_msg_command_long_send(
+                notify_chan,
+                gcs().get_operator_control_sysid(),
+                MAV_COMP_ID_AUTOPILOT1,
+                MAV_CMD_REQUEST_OPERATOR_CONTROL,
+                0,
+                1.0f,
+                allow_takeover ? 1.0f : 0.0f,
+                packet.param3,
+                (float)req_sysid,
+                (float)req_sysid_high,
+                0.0f,
+                0.0f);
+        }
+    }
+
     return MAV_RESULT_FAILED;
 }
 #endif  // AP_MAVLINK_GCS_CONTROL_ENABLED
@@ -6659,7 +6701,8 @@ bool GCS_MAVLINK::send_control_status()
     if (gcs().get_operator_control_allow_takeover()) {
         flags |= GCS_CONTROL_STATUS_FLAGS_TAKEOVER_ALLOWED;
     }
-    const uint8_t gcs_secondary[10] {};
+    uint8_t gcs_secondary[10] {};
+    gcs().get_secondary_gcs(gcs_secondary);
     mavlink_msg_control_status_send(
         chan,
         flags,

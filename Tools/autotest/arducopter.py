@@ -14319,13 +14319,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
-        # mav3 tries to take over with allow_takeover=0 -> FAILED
+        # mav3 tries to take over with allow_takeover=0 -> FAILED, and a
+        # notification is forwarded to the current owner (mav2) on their channel
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
             p1=1, p2=0, p4=9, x=0,
             mav=mav3,
             want_result=mavutil.mavlink.MAV_RESULT_FAILED,
         )
+        # notification is broadcast on all channels; self.mav is always connected.
+        # recv_match loops until it finds a COMMAND_LONG(REQUEST_OPERATOR_CONTROL).
+        tstart = time.time()
+        notification = None
+        while time.time() - tstart < 5:
+            m = self.mav.recv_match(type="COMMAND_LONG", blocking=True, timeout=0.5)
+            if m is None:
+                continue
+            if m.command == mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL:
+                notification = m
+                break
+        if notification is None:
+            raise NotAchievedException(
+                "Did not receive REQUEST_OPERATOR_CONTROL notification")
+        if int(notification.param4) != 9:
+            raise NotAchievedException(
+                "Expected notification param4=9 (requester sysid), got %u" %
+                int(notification.param4))
 
         # mav2 sets allow_takeover=1; CONTROL_STATUS should reflect the new flag
         self.run_cmd_int(
@@ -14386,6 +14405,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "Expected gcs_main=7 (lower bound of range), got %u" % m.gcs_main)
 
+        # heartbeats from mav3 (sysid=9, within range) should populate gcs_secondary
+        mav3.mav.heartbeat_send(
+            mavutil.mavlink.MAV_TYPE_GCS,
+            mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+            0, 0, 0,
+        )
+        m = self.poll_message("CONTROL_STATUS")
+        if 9 not in m.gcs_secondary:
+            raise NotAchievedException(
+                "Expected sysid 9 in gcs_secondary, got %s" % str(m.gcs_secondary))
+
         # mav3 (sysid=9) is within the range and can release
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
@@ -14396,6 +14426,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if m.gcs_main != 0:
             raise NotAchievedException(
                 "Expected gcs_main=0 after range release, got %u" % m.gcs_main)
+
+        # heartbeat disconnect: when all operators stop heartbeating, control releases
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=0, p4=7, x=0,
+            mav=mav2,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if m.gcs_main != 7:
+            raise NotAchievedException("Expected gcs_main=7 before disconnect test")
+        mav2.close()
+        self.delay_sim_time(7)  # > GCS_OPERATOR_HEARTBEAT_TIMEOUT_MS (5 s)
+        m = self.poll_message("CONTROL_STATUS")
+        if m.gcs_main != 0:
+            raise NotAchievedException(
+                "Expected gcs_main=0 after operator disconnect timeout, got %u" % m.gcs_main)
+        # reopen mav2 for the enforcement test
+        mav2 = self.context_create_mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5762),
+            source_system=7,
+            source_component=7,
+        )
 
         # -- Enforcement tests: enable GCS_SYSID_ENFORCE and reboot --
         # close existing extra connections before rebooting

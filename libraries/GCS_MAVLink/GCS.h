@@ -306,6 +306,7 @@ public:
 
     mavlink_channel_t get_chan() const { return chan; }
     uint32_t get_last_heartbeat_time() const { return last_heartbeat_time; };
+    uint32_t sysid_mygcs_last_seen_time_ms() const { return _sysid_gcs_last_seen_time_ms; }
 
     uint32_t        last_heartbeat_time; // milliseconds
 
@@ -1186,6 +1187,8 @@ public:
     void set_operator_control(uint8_t sysid, uint8_t sysid_high, bool allow_takeover);
     uint8_t get_operator_control_sysid() const { return _operator_control_sysid; }
     bool get_operator_control_allow_takeover() const { return _operator_control_allow_takeover; }
+    void note_secondary_gcs_seen(uint8_t gcs_sysid);
+    void get_secondary_gcs(uint8_t (&out)[10]) const;
 #endif
 
     // last time traffic was seen from my designated GCS.  traffic
@@ -1371,6 +1374,12 @@ private:
     uint8_t _operator_control_sysid;
     uint8_t _operator_control_sysid_high;
     bool _operator_control_allow_takeover;
+    uint32_t _operator_control_last_hb_check_ms;
+    struct SecondaryGCS {
+        uint8_t gcs_sysid;
+        uint32_t last_seen_ms;
+    };
+    SecondaryGCS _secondary_gcs[10];
 #endif
 
     void service_statustext(void);
