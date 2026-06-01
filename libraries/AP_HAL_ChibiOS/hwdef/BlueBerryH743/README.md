@@ -115,7 +115,7 @@ The BlueBerry_H743 has no built-in compass, so if needed, you should use an exte
 
 ## Camera Switch
 
-The BlueBerry_H743 supports up to 2 cameras, connected to pin CAM1 and CAM2. You can select the video signal to VTX from camera by an RC channel. Set the parameters below:
+The BlueBerry_H743 supports up to 2 cameras, connected to pin CAM1 and CAM2. You can select whcih camera is used by an RC channel. Set the parameters below (RC 6 used in the example:
 
 - RELAY2_FUNCTION = 1
 - RELAY_PIN2 = 82
