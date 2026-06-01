@@ -14332,10 +14332,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = time.time()
         notification = None
         while time.time() - tstart < 5:
-            m = self.mav.recv_match(type="COMMAND_LONG", blocking=True, timeout=0.5)
+            m = self.mav.recv_match(blocking=True, timeout=0.5)
             if m is None:
                 continue
-            if m.command == mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL:
+            if m.get_type() == "COMMAND_LONG" and m.command == mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL:
                 notification = m
                 break
         if notification is None:

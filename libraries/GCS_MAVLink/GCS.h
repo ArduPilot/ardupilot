@@ -1121,6 +1121,7 @@ private:
 #if AP_MAVLINK_GCS_CONTROL_ENABLED
     MAV_RESULT handle_command_request_operator_control(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     bool send_control_status();
+    bool send_operator_control_notification();
 #endif
 
 };
@@ -1187,8 +1188,25 @@ public:
     void set_operator_control(uint8_t sysid, uint8_t sysid_high, bool allow_takeover);
     uint8_t get_operator_control_sysid() const { return _operator_control_sysid; }
     bool get_operator_control_allow_takeover() const { return _operator_control_allow_takeover; }
+    // true only when operator control is engaged and gcs_sysid is the primary (gcs_main)
+    bool sysid_is_primary_operator(uint8_t gcs_sysid) const {
+        return _operator_control_sysid != 0 && gcs_sysid == _operator_control_sysid;
+    }
     void note_secondary_gcs_seen(uint8_t gcs_sysid);
     void get_secondary_gcs(uint8_t (&out)[10]) const;
+    void queue_operator_control_notification(uint8_t req_sysid, uint8_t req_sysid_high,
+                                             bool allow_takeover, float timeout);
+    struct OperatorControlNotification {
+        bool pending;
+        uint8_t req_sysid;
+        uint8_t req_sysid_high;
+        bool allow_takeover;
+        float timeout;
+    };
+    const OperatorControlNotification &get_operator_control_notification() const {
+        return _oc_notification;
+    }
+    void clear_operator_control_notification() { _oc_notification.pending = false; }
 #endif
 
     // last time traffic was seen from my designated GCS.  traffic
@@ -1375,6 +1393,7 @@ private:
     uint8_t _operator_control_sysid_high;
     bool _operator_control_allow_takeover;
     uint32_t _operator_control_last_hb_check_ms;
+    OperatorControlNotification _oc_notification;
     struct SecondaryGCS {
         uint8_t gcs_sysid;
         uint32_t last_seen_ms;

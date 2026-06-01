@@ -729,6 +729,17 @@ void GCS::set_operator_control(uint8_t oc_sysid, uint8_t oc_sysid_high, bool all
     send_message(MSG_CONTROL_STATUS);
 }
 
+void GCS::queue_operator_control_notification(uint8_t req_sysid, uint8_t req_sysid_high,
+                                               bool allow_takeover, float timeout)
+{
+    _oc_notification.pending       = true;
+    _oc_notification.req_sysid     = req_sysid;
+    _oc_notification.req_sysid_high = req_sysid_high;
+    _oc_notification.allow_takeover = allow_takeover;
+    _oc_notification.timeout       = timeout;
+    send_message(MSG_OPERATOR_CONTROL_NOTIFICATION);
+}
+
 void GCS::note_secondary_gcs_seen(uint8_t gcs_sysid)
 {
     const uint32_t now_ms = AP_HAL::millis();

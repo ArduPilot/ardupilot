@@ -4209,6 +4209,13 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
     if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // Only accept control from our gcs
     }
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    // manual control is exclusive to the primary operator (gcs_main); secondaries are denied
+    if (gcs().get_operator_control_sysid() != 0 &&
+        !gcs().sysid_is_primary_operator(msg.sysid)) {
+        return;
+    }
+#endif
 
     const uint32_t tnow = AP_HAL::millis();
 
@@ -5723,26 +5730,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_operator_control(const mavlink_co
         return MAV_RESULT_ACCEPTED;
     }
 
-    // notify the current owner on all active channels so they can decide
-    // to release or allow the takeover
-    for (uint8_t i = 0; i < gcs().num_gcs(); i++) {
-        const mavlink_channel_t notify_chan = gcs().chan(i)->get_chan();
-        if (HAVE_PAYLOAD_SPACE(notify_chan, COMMAND_LONG)) {
-            mavlink_msg_command_long_send(
-                notify_chan,
-                gcs().get_operator_control_sysid(),
-                MAV_COMP_ID_AUTOPILOT1,
-                MAV_CMD_REQUEST_OPERATOR_CONTROL,
-                0,
-                1.0f,
-                allow_takeover ? 1.0f : 0.0f,
-                packet.param3,
-                (float)req_sysid,
-                (float)req_sysid_high,
-                0.0f,
-                0.0f);
-        }
-    }
+    // notify the current owner; defer through the queued send path so it
+    // goes out even when the TX buffer is momentarily full
+    gcs().queue_operator_control_notification(req_sysid, req_sysid_high, allow_takeover, packet.param3);
 
     return MAV_RESULT_FAILED;
 }
@@ -6693,6 +6683,26 @@ bool GCS_MAVLINK::send_available_mode_monitor()
 }
 
 #if AP_MAVLINK_GCS_CONTROL_ENABLED
+bool GCS_MAVLINK::send_operator_control_notification()
+{
+    const GCS::OperatorControlNotification &notif = gcs().get_operator_control_notification();
+    CHECK_PAYLOAD_SIZE2(COMMAND_LONG);
+    mavlink_msg_command_long_send(
+        chan,
+        gcs().get_operator_control_sysid(),
+        MAV_COMP_ID_AUTOPILOT1,
+        MAV_CMD_REQUEST_OPERATOR_CONTROL,
+        0,
+        1.0f,
+        notif.allow_takeover ? 1.0f : 0.0f,
+        notif.timeout,
+        (float)notif.req_sysid,
+        (float)notif.req_sysid_high,
+        0.0f,
+        0.0f);
+    return true;
+}
+
 bool GCS_MAVLINK::send_control_status()
 {
     CHECK_PAYLOAD_SIZE(CONTROL_STATUS);
@@ -7141,6 +7151,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #if AP_MAVLINK_GCS_CONTROL_ENABLED
     case MSG_CONTROL_STATUS:
         ret = send_control_status();
+        break;
+
+    case MSG_OPERATOR_CONTROL_NOTIFICATION:
+        ret = send_operator_control_notification();
         break;
 #endif
 
@@ -7771,6 +7785,13 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // only accept control from our gcs
     }
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    // manual control is exclusive to the primary operator (gcs_main); secondaries are denied
+    if (gcs().get_operator_control_sysid() != 0 &&
+        !gcs().sysid_is_primary_operator(msg.sysid)) {
+        return;
+    }
+#endif
 
     mavlink_manual_control_t packet;
     mavlink_msg_manual_control_decode(&msg, &packet);
