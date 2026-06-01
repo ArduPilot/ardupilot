@@ -2118,7 +2118,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            triangle)
         mavproxy.send("fence list\n")
-        self.delay_sim_time(1, reason="fence list to display")
+        self.delay_sim_time(1, reason="fence list to display in MAVProxy")
         triangle[2].x += 500
         triangle[2].y += 700
         self.click_location_from_item(mavproxy, triangle[2])
@@ -4377,9 +4377,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, 20, 0),
             }),
         ])
-        if self.mavproxy is not None:
-            # handy for getting pretty pictures
-            self.mavproxy.send("fence list\n")
 
         self.delay_sim_time(5, reason="fence to be uploaded")
         self.progress("Drive outside top circle")
@@ -4417,9 +4414,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             }),
         ])
 
-        self.delay_sim_time(5, reason="fence to be uploaded")
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.progress("Drive outside polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4450,9 +4444,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ]),
         ])
 
-        self.delay_sim_time(5, reason="fence to be uploaded")
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.progress("Drive outside top polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4490,9 +4481,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, -60, 0),
             }),
         ])
-        self.delay_sim_time(5, reason="fence to be uploaded")
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
 
         self.progress("Breach eastern boundary")
         fence_middle = self.offset_location_ne(here, 0, 30)
@@ -4691,8 +4679,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, -60, 80), # br,
             ]),
         ])
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.context_push()
         ex = None
         try:
@@ -4704,8 +4690,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.set_parameter("FENCE_ENABLE", 1)
-            if self.mavproxy is not None:
-                self.mavproxy.send("fence list\n")
             self.arm_vehicle()
 
             self.change_mode("GUIDED")
@@ -4747,8 +4731,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, -60, 0),
             }),
         ])
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.set_parameters({
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 3,

@@ -306,8 +306,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.mavproxy.send('wp list\n')
         if fence is not None:
             self.load_fence(fence)
-            if self.mavproxy is not None:
-                self.mavproxy.send('fence list\n')
         # self.install_terrain_handlers_context()
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
