@@ -3373,6 +3373,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "Expected >30 m altitude drop cliff -> landing, got %.1f m" % drop_m)
 
+            # Once displaced more than HOME_RESET_ALT from the EKF
+            # origin altitude the reset is frozen, so home must not be
+            # snapped to the landing site by update_home().
+            home_before = self.poll_home_position()
+
             # Plane::update_home() runs every 5 s while disarmed;
             # wait long enough to guarantee at least two cycles.
             self.delay_sim_time(15)
@@ -3389,5 +3394,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                     (pre_update_amsl_mm * 0.001,
                      post_update_amsl_mm * 0.001,
                      delta_m))
+
+            home_after = self.poll_home_position()
+            home_move_m = self.get_distance_int(home_before, home_after)
+            home_alt_delta_m = abs(home_after.altitude - home_before.altitude) * 0.001
+            self.progress("Home moved %.1f m horizontally, %.1f m vertically "
+                          "across displaced update_home() cycles" %
+                          (home_move_m, home_alt_delta_m))
+            if home_move_m > 5.0 or home_alt_delta_m > 5.0:
+                raise NotAchievedException(
+                    "update_home() moved home while displaced beyond "
+                    "HOME_RESET_ALT (%.1f m horizontal, %.1f m vertical); "
+                    "the home reset should be frozen" %
+                    (home_move_m, home_alt_delta_m))
         finally:
             self.customise_SITL_commandline([])
