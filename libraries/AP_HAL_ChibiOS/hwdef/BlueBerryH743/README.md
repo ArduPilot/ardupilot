@@ -123,4 +123,4 @@ The BlueBerry_H743 supports up to 2 cameras, connected to pin CAM1 and CAM2. You
 
 ## Bluetooth
 
-The ABlueBerry_H743 support both legacy bluetooth SPP and BLE serial. The bluetooth uses UART7 as serial port. Search for `BLE` or `SPP` to connect.
+The BlueBerry_H743 support both legacy bluetooth SPP and BLE serial. The bluetooth uses UART7 for its serial port. Search for `BLE` or `SPP` to connect. Be careful NOT to use UART7 for other uses.
