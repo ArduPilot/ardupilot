@@ -119,7 +119,7 @@ The BlueBerry_H743 supports up to 2 cameras, connected to pin CAM1 and CAM2. You
 
 - RELAY2_FUNCTION = 1
 - RELAY2_PIN = 82
-- RC8_OPTION = 34
+- RC6_OPTION = 34
 
 ## Bluetooth
 
