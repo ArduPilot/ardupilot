@@ -899,7 +899,7 @@ void QuadPlane::run_esc_calibration(void)
     switch (esc_calibration) {
     case 1:
         // throttle based calibration
-        motors->set_throttle_passthrough_for_esc_calibration(plane.get_throttle_input() * 0.01f);
+        motors->set_throttle_passthrough_for_esc_calibration(plane.get_throttle_input_norm());
         break;
     case 2:
         // full range calibration
@@ -1118,11 +1118,8 @@ void QuadPlane::hold_hover(float target_climb_rate_cms)
 
 float QuadPlane::get_pilot_throttle()
 {
-    // get scaled throttle input
-    float throttle_in = plane.channel_throttle->get_control_in();
-
-    // normalize to [0,1]
-    throttle_in /= plane.channel_throttle->get_range();
+    // get normalized throttle input [0,1]
+    float throttle_in = plane.channel_throttle->norm_input_dz();
 
     if (is_positive(throttle_expo)) {
         // get hover throttle level [0,1]
@@ -1150,8 +1147,8 @@ void QuadPlane::get_pilot_desired_lean_angles(float &roll_out_cd, float &pitch_o
     }
 
     // fetch roll and pitch inputs
-    roll_out_cd = plane.channel_roll->get_control_in();
-    pitch_out_cd = plane.channel_pitch->get_control_in();
+    roll_out_cd = plane.channel_roll->norm_input_dz() * 4500.0f;
+    pitch_out_cd = plane.channel_pitch->norm_input_dz() * 4500.0f;
 
     // limit max lean angle, always allow for 10 degrees
     angle_limit_cd = constrain_float(angle_limit_cd, 1000.0f, angle_max_cd);
@@ -1182,11 +1179,8 @@ float QuadPlane::get_pilot_land_throttle(void) const
         // assume zero throttle if lost RC
         return 0;
     }
-    // get scaled throttle input
-    float throttle_in = plane.channel_throttle->get_control_in();
-
-    // normalize to [0,1]
-    throttle_in /= plane.channel_throttle->get_range();
+    // get normalized throttle input [0,1]
+    float throttle_in = plane.channel_throttle->norm_input_dz();
 
     return constrain_float(throttle_in, 0, 1);
 }
@@ -1253,7 +1247,7 @@ bool QuadPlane::is_flying_vtol(void) const
     }
     if (plane.control_mode->is_vtol_man_mode()) {
         // in manual flight modes only consider aircraft landed when pilot demanded throttle is zero
-        return is_positive(get_throttle_input());
+        return is_positive(get_throttle_input_norm());
     }
     if (in_vtol_mode() && millis() - landing_detect.lower_limit_start_ms > 5000) {
         // use landing detector
@@ -1320,10 +1314,10 @@ float QuadPlane::landing_descent_rate_ms(float height_above_ground_m)
  */
 float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
 {
-    const auto rudder_in = plane.channel_rudder->get_control_in();
+    const float rudder_in = plane.channel_rudder->norm_input_dz();
     bool manual_air_mode = plane.control_mode->is_vtol_man_throttle() && air_mode_active();
     if (!manual_air_mode &&
-        !is_positive(get_throttle_input()) &&
+        !is_positive(get_throttle_input_norm()) &&
         (!plane.control_mode->does_auto_throttle() || motors->limit.throttle_lower) &&
         plane.arming.get_rudder_arming_type() == AP_Arming::RudderArming::ARMDISARM &&
         rudder_in < 0 &&
@@ -1355,7 +1349,7 @@ float QuadPlane::get_pilot_input_yaw_rate_cds(void) const
         // must have a non-zero max yaw rate for scaling to work
         max_rate = (yaw_rate_max < 1.0f) ? 1 : yaw_rate_max;
     }
-    return input_expo(rudder_in * (1/4500.0), command_model_pilot.get_expo()) * max_rate * 100.0;
+    return input_expo(rudder_in, command_model_pilot.get_expo()) * max_rate * 100.0;
 }
 
 /*
@@ -1390,7 +1384,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
     }
     uint16_t dead_zone = plane.channel_throttle->get_dead_zone();
     uint16_t trim = (plane.channel_throttle->get_radio_max() + plane.channel_throttle->get_radio_min()) / 2;
-    const float throttle_request = plane.channel_throttle->pwm_to_angle_dz_trim(dead_zone, trim) * 0.01f;
+    const float throttle_request = plane.channel_throttle->norm_input_dz_trim(dead_zone, trim);
     return throttle_request * (throttle_request > 0.0f ? pilot_speed_z_max_up_ms : get_pilot_velocity_z_max_dn_m()) * 100;
 }
 
@@ -1400,7 +1394,7 @@ float QuadPlane::get_pilot_desired_climb_rate_cms(void) const
  */
 void QuadPlane::init_throttle_wait(void)
 {
-    if (get_throttle_input() >= 10 ||
+    if (get_throttle_input_norm() >= 0.1f ||
         plane.is_flying()) {
         throttle_wait = false;
     } else {
@@ -1440,7 +1434,7 @@ float QuadPlane::assist_climb_rate_cms(void) const
     } else {
         // otherwise estimate from pilot input
         climb_rate_cms = plane.g.flybywire_climb_rate * (plane.nav_pitch_cd / (plane.aparm.pitch_limit_max * 100));
-        climb_rate_cms *= plane.get_throttle_input();
+        climb_rate_cms *= plane.get_throttle_input_norm() * 100.0f;
     }
     climb_rate_cms = constrain_float(climb_rate_cms, -wp_nav->get_default_speed_down_ms() * 100.0, wp_nav->get_default_speed_up_ms() * 100.0);
 
@@ -1791,7 +1785,7 @@ void QuadPlane::update(void)
 
     // disable throttle_wait when throttle rises above 10%
     if (throttle_wait &&
-        (plane.get_throttle_input() > 10 ||
+        (plane.get_throttle_input_norm() > 0.1f ||
          !rc().has_valid_input())) {
         throttle_wait = false;
     }
@@ -1873,7 +1867,7 @@ void QuadPlane::update_throttle_suppression(void)
        consider non-zero throttle to mean that pilot is commanding
        takeoff unless in a manual throttle mode
     */
-    if (!is_zero(get_throttle_input()) &&
+    if (!is_zero(get_throttle_input_norm()) &&
         (rc().arming_check_throttle() ||
          plane.control_mode->is_vtol_man_throttle() ||
          plane.channel_throttle->norm_input_dz() > 0)) {
@@ -2184,9 +2178,8 @@ void QuadPlane::update_land_positioning(void)
         poscontrol.target_vel_ms.zero();
         return;
     }
-    const float scale = 1.0 / 4500;
-    float roll_in = plane.channel_roll->get_control_in() * scale;
-    float pitch_in = plane.channel_pitch->get_control_in() * scale;
+    float roll_in = plane.channel_roll->norm_input_dz();
+    float pitch_in = plane.channel_pitch->norm_input_dz();
 
     // limit correction speed to accel with stopping time constant of 0.5s
     const float speed_max_ms = wp_nav->get_wp_acceleration_mss() * 0.5;
@@ -3930,7 +3923,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
     const bool is_takeoff = in_vtol_auto() && is_vtol_takeoff(plane.mission.get_current_nav_cmd().id);
     float wv_output;
     if (weathervane->get_yaw_out(wv_output,
-                                     plane.channel_rudder->get_control_in(),
+                                     int16_t(plane.channel_rudder->norm_input_dz() * 4500.0f),
                                      plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING),
                                      pos_control->get_roll_cd(),
                                      pos_control->get_pitch_cd(),
@@ -4167,7 +4160,7 @@ void QuadPlane::update_throttle_mix(void)
 
     if (plane.control_mode->is_vtol_man_throttle()) {
         // manual throttle
-        if (!is_positive(get_throttle_input()) && !air_mode_active()) {
+        if (!is_positive(get_throttle_input_norm()) && !air_mode_active()) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();
@@ -4887,12 +4880,12 @@ bool QuadPlane::should_disable_TECS() const
 }
 
 // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
-// This is a re-implmentation of Plane::get_throttle_input
+// This is a re-implmentation of Plane::get_throttle_input_norm
 // Ignoring the no_deadzone case means we don't need to check for valid RC
 // This is handled by Plane::control_failsafe setting of control in
-float QuadPlane::get_throttle_input() const
+float QuadPlane::get_throttle_input_norm() const
 {
-    float ret = plane.channel_throttle->get_control_in();
+    float ret = plane.channel_throttle->norm_input_dz();
     if (plane.reversed_throttle) {
         // RC option for reverse throttle has been set
         ret = -ret;

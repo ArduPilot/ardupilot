@@ -46,7 +46,7 @@ bool ModeFlip::init(bool ignore_checks)
     }
 
     // ensure roll input is less than 40deg
-    if (abs(channel_roll->get_control_in()) >= 4000) {
+    if (fabsf(channel_roll->norm_input_dz()) >= 4000.0f/4500.0f) {
         return false;
     }
 
@@ -66,11 +66,11 @@ bool ModeFlip::init(bool ignore_checks)
     roll_dir = pitch_dir = 0;
 
     // choose direction based on pilot's roll and pitch sticks
-    if (channel_pitch->get_control_in() > 300) {
+    if (channel_pitch->norm_input_dz() > 300.0f/4500.0f) {
         pitch_dir = FLIP_PITCH_BACK;
-    } else if (channel_pitch->get_control_in() < -300) {
+    } else if (channel_pitch->norm_input_dz() < -300.0f/4500.0f) {
         pitch_dir = FLIP_PITCH_FORWARD;
-    } else if (channel_roll->get_control_in() >= 0) {
+    } else if (channel_roll->norm_input_dz() >= 0.0f) {
         roll_dir = FLIP_ROLL_RIGHT;
     } else {
         roll_dir = FLIP_ROLL_LEFT;
@@ -93,7 +93,7 @@ bool ModeFlip::init(bool ignore_checks)
 void ModeFlip::run()
 {
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (abandon_requested || !motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+    if (abandon_requested || !motors->armed() || (fabsf(channel_roll->norm_input_dz()) >= 4000.0f/4500.0f) || (fabsf(channel_pitch->norm_input_dz()) >= 4000.0f/4500.0f) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
         _state = FlipState::Abandon;
         abandon_requested = false;
     }
