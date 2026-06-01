@@ -149,8 +149,20 @@ bool Plane::update_home()
     const float origin_alt_tolerance_m = (g2.home_reset_threshold > 0) ?
         g2.home_reset_threshold : 10.0f;
 
+    // Freeze the home reset on the same condition resetHeightDatum uses
+    // to skip the baro recalibration: once the vehicle has moved more
+    // than the tolerance from the EKF origin altitude, leave home where
+    // it is so it stays consistent with the preserved height datum.
+    bool displaced = false;
+    Location origin;
+    if (ahrs.get_origin(origin) && gps.status() >= AP_GPS_FixType::FIX_3D) {
+        const float gps_origin_diff_m = fabsf(0.01f *
+            (float)(gps.location().alt - origin.alt));
+        displaced = gps_origin_diff_m > origin_alt_tolerance_m;
+    }
+
     bool ret = false;
-    if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS_FixType::FIX_3D) {
+    if (!displaced && ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS_FixType::FIX_3D) {
         Location loc;
         if (ahrs.get_location(loc)) {
             // we take the altitude directly from the GPS as we are
