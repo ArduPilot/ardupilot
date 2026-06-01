@@ -23,6 +23,7 @@ from pysim import vehicleinfo
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
+from vehicle_test_suite import Test
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -877,6 +878,52 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             if m.chan3_raw == normal_rc_throttle:
                 break
         self.disarm_vehicle()
+
+    def RCOverrideEnableChannel(self):
+        '''Test RC Override Enable channel not overridden by GCS (issue #33161)'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "RC10_OPTION": 46,  # RC Override Enable
+        })
+
+        self.change_mode('MANUAL')
+
+        # TX: steering centred, ch10 HIGH (enable GCS overrides)
+        steering_tx = 1500
+        self.set_rc_from_map({
+            1: steering_tx,
+            3: 1500,
+            10: 2000,
+        })
+
+        # GCS joystick: full-right steering on ch1, but ch10=LOW which
+        # contradicts the TX and should trigger the intermittent override bug
+        steering_override = 1000
+        override_ch10 = 1000
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            self.mav.mav.rc_channels_override_send(
+                1,                 # target_system
+                1,                 # target_component
+                steering_override, # chan1_raw (full left)
+                65535,             # chan2_raw (ignore)
+                65535,             # chan3_raw (ignore)
+                65535,             # chan4_raw
+                65535,             # chan5_raw
+                65535,             # chan6_raw
+                65535,             # chan7_raw
+                65535,             # chan8_raw
+                chan10_raw=override_ch10,  # ch10 LOW — contradicts TX HIGH
+            )
+
+            m = self.assert_receive_message('RC_CHANNELS')
+            if m.chan1_raw == steering_tx:
+                raise NotAchievedException(
+                    "chan1 dropped to TX value (issue #33161 reproduced): "
+                    "chan1_raw=%u chan10_raw=%u" %
+                    (m.chan1_raw, m.chan10_raw)
+                )
 
     def RCOverrides(self):
         '''Test RC overrides'''
@@ -7273,6 +7320,7 @@ return update()
             self.ServoRelayEvents,
             self.RCOverrides,
             self.RCOverridesCancel,
+            Test(self.RCOverrideEnableChannel, speedup=10),
             self.MANUAL_CONTROL,
             self.Sprayer,
             self.AC_Avoidance,
