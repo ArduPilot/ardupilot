@@ -4460,13 +4460,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.delay_sim_time(5, reason="RTL to complete")
+        self.wait_rtl_complete()
+
         self.progress("Drive outside bottom polygon")
         fence_middle = self.offset_location_ne(here, 150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
             fence_middle,
             target_system=target_system,
             target_component=target_component)
+
+    def wait_rtl_complete(self):
+        """Wait for RTL to reach home and disarm"""
+        self.progress("Waiting RTL to reach Home")
+        self.wait_distance_to_home(0, 7, timeout=30)
 
     def test_poly_fence_exclusion(self, here, target_system=1, target_component=1):
 
