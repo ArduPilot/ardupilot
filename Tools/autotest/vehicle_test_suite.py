@@ -222,6 +222,9 @@ class Context(object):
         # launched by restart_SITL_frame()) registered via
         # context_register_periph_child(); terminated on context_pop()
         self.periph_children = []
+        # mavlink connections opened via context_create_mavlink_connection();
+        # closed on context_pop()
+        self.mavlink_connections = []
 
 
 # https://stackoverflow.com/questions/616645/how-do-i-duplicate-sys-stdout-to-a-log-file-in-python
@@ -6760,6 +6763,12 @@ class TestSuite(abc.ABC):
         processes (used by restart_SITL_frame()).'''
         self.context_get().periph_children.append(child)
 
+    def context_create_mavlink_connection(self, port, **kwargs):
+        '''open a mavlink connection that is automatically closed on context_pop()'''
+        conn = mavutil.mavlink_connection(port, robust_parsing=True, **kwargs)
+        self.context_get().mavlink_connections.append(conn)
+        return conn
+
     def context_collect(self, msg_type):
         '''start collecting messages of type msg_type into context collection'''
         context = self.context_get()
@@ -6824,6 +6833,12 @@ class TestSuite(abc.ABC):
             try:
                 child.terminate(force=True)
             except pexpect.ExceptionPexpect:
+                pass
+
+        for conn in reversed(dead.mavlink_connections):
+            try:
+                conn.close()
+            except Exception:
                 pass
 
         # restore any files snapshotted via context_backup_file()
