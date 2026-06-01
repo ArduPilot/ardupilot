@@ -73,6 +73,11 @@ public:
     void resetHeightDatum(float origin_alt_tolerance_m) override {
         EKF3.resetHeightDatum(origin_alt_tolerance_m);
     }
+    // EKF3-specific overload forwarding the origin-altitude tolerance;
+    // the AP_AHRS_Backend interface only carries the no-arg form.
+    void resetHeightDatum(float origin_alt_tolerance_m) {
+        EKF3.resetHeightDatum(origin_alt_tolerance_m);
+    }
     void request_yaw_reset() override {
         EKF3.requestYawReset();
     }
