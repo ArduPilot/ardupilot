@@ -248,14 +248,13 @@ All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectiona
 
 ## 12V Peripheral Output (POWER AUX)
 
-The 12V pin on the **POWER AUX** connector is gated by a BEC enable (`PG4`) that is **on by default** - it is driven high once the main firmware boots, so no setup is needed to use it.
+The 12V pin on the **POWER AUX** connector is gated by a BEC enable pin. The pin is pre-mapped to GPIO 81 and configured as RELAY1. By default it is configured OFF via `RELAY1_DEFAULT`.
 
-To make it controllable from the transmitter, expose it as **RELAY1** (the pin is pre-mapped to GPIO 81):
-
-- Set `RELAY1_FUNCTION` = 1 (Relay) and `RELAY1_DEFAULT` = 1 (so it still powers on at boot; the relay's own default state is off).
+- To make it controllable from the transmitter. set `RELAY1_FUNCTION` = 1 (Relay).
+- To change the default state to ON, set `RELAY1_DEFAULT` = 1.
 - Assign `RCx_OPTION` = 28 (Relay1 On/Off) to the channel you want to use as the switch.
 
-The 12V output is off at power-on and in the bootloader, coming on once the firmware initializes the pin. The VBAT pin on the same connector is a direct battery pass-through and is not controlled by firmware.
+The VBAT pin on the same connector is a direct battery pass-through and is not controlled by firmware.
 
 ## Loading Firmware
 
