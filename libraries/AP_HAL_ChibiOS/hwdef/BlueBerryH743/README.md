@@ -7,7 +7,7 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 - STM32H743 microcontroller
 - Dual ICM426** IMUs
 - 13 PWM / Dshot outputs
-- 8 UARTs, one with CTS/RTS flow control pins
+- 8 UARTs, one dedicated to the one board BT module
 - 1 CAN
 - Dedicated USB board
 - DPS310 or SPL06 barometer
