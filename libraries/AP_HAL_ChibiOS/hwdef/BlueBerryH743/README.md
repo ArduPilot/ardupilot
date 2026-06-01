@@ -9,7 +9,7 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 - 13 PWM / Dshot outputs
 - 8 UARTs, one dedicated to the one board BT module
 - 1 CAN
-- Dedicated USB board
+- Dedicated remote USB board with buzzer and boot switch
 - DPS310 or SPL06 barometer
 - 5V/6V/7.2V/8.4V 14A Servo rail BEC
 - 9V 3A BEC for VTX
