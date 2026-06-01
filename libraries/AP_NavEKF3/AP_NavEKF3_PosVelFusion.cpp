@@ -394,8 +394,13 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
     // depend on for AMSL.  Doing anything -- even just recalibrating
     // the baro to 0 -- would destroy state we explicitly want to
     // preserve.  So the partial-reset branch is a true no-op.
+    // Only take the partial (skip) branch when genuinely stationary on
+    // the ground.  onGround alone is true for a disarmed vehicle that is
+    // still airborne (e.g. after flight termination), where the GPS-vs-
+    // origin difference reflects transient altitude rather than a moved
+    // ground elevation; skipping there leaves the height datum stale.
     bool full_reset = true;
-    if (origin_alt_tolerance_m >= 0 && validOrigin && gpsGoodToAlign) {
+    if (origin_alt_tolerance_m >= 0 && validOrigin && gpsGoodToAlign && onGroundNotMoving) {
         const float gps_origin_diff_m = fabsf(0.01f *
             (float)(dal.gps().location().alt - EKF_origin.alt));
         if (gps_origin_diff_m > origin_alt_tolerance_m) {
