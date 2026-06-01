@@ -523,6 +523,13 @@ void RC_Channel::set_override(const uint16_t v, const uint32_t timestamp_ms)
         return;
     }
 
+    // the channel that controls override-enable must always reflect the
+    // physical RC switch; accepting a GCS override here would let the GCS
+    // disable its own overrides and create an oscillation
+    if ((AUX_FUNC)option.get() == AUX_FUNC::RC_OVERRIDE_ENABLE) {
+        return;
+    }
+
     last_override_time = timestamp_ms != 0 ? timestamp_ms : AP_HAL::millis();
     override_value = v;
     rc().new_override_received();
