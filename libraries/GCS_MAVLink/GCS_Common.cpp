@@ -4487,7 +4487,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_param_value(msg);
         break;
 
-    case MAVLINK_MSG_ID_RADIO:
     case MAVLINK_MSG_ID_RADIO_STATUS:
         handle_radio_status(msg);
         break;
@@ -7380,8 +7379,7 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
-    if (msg.msgid == MAVLINK_MSG_ID_RADIO ||
-        msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
+    if (msg.msgid == MAVLINK_MSG_ID_RADIO_STATUS) {
         return true;
     }
 

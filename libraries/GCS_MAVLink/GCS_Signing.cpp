@@ -110,7 +110,6 @@ extern "C" {
 
 static const uint32_t accept_list[] = {
     MAVLINK_MSG_ID_RADIO_STATUS,
-    MAVLINK_MSG_ID_RADIO
 };
     
 static bool accept_unsigned_callback(const mavlink_status_t *status, uint32_t msgId)
