@@ -93,7 +93,7 @@ TEST_F(BatteryTest, EnergyConsumption)
             const uint64_t now_us = initial_us + static_cast<uint64_t>(t * 1e6);
 
             // Consume battery energy (or not)
-            if (t > 0.0f && t < first_half) {
+            if (t >= 0.0f && t < first_half) {
                 battery.consume_energy(current_amp, now_us);
             } else {
                 battery.consume_energy(0.0f, now_us);
@@ -120,34 +120,35 @@ TEST_F(BatteryTest, EnergyConsumption)
                     // (Note: the test parameters are tuned so that the test ends before temp returns to steady-state.)
                     EXPECT_LT(battery.get_temperature_degC(), prev_temperature_degC);
                 }
-            }
-            prev_temperature_degC = battery.get_temperature_degC();
-
-            // Confirm voltage drop
-            if (is_zero(t) || battery.capacity_is_unlimited()) {
-                EXPECT_FLOAT_EQ(battery.get_voltage(), initial_voltage);
-            } else {
-                // During consumption, both voltage sag and capacity-loss contribute to voltage < initial.
-                // During rest, voltage sag will disappear but capacity-loss still means voltage < initial.
-                EXPECT_LT(battery.get_voltage(), initial_voltage);
+                prev_temperature_degC = battery.get_temperature_degC();
             }
 
             // Confirm voltage drop works as expected.
             const float observed_voltage = battery.get_voltage();
-            if (is_zero(t) || battery.capacity_is_unlimited()) {
+            if (is_zero(t)) {
                 EXPECT_FLOAT_EQ(observed_voltage, initial_voltage);
                 EXPECT_FLOAT_EQ(observed_voltage, min_observed_voltage);
             }
             else if (t <= first_half) {
-                // During consumption, voltage should always be lower than before.
-                EXPECT_LE(observed_voltage, min_observed_voltage);
-                // And it should definitely be less than the initial voltage.
-                EXPECT_LE(observed_voltage, initial_voltage);
+                // During consumption, voltage will at least sag below initial voltage.
+                EXPECT_LT(observed_voltage, initial_voltage);
+                if (!battery.capacity_is_unlimited()) {
+                    // Finite-capacity batteries will also be losing total voltage.
+                    EXPECT_LT(observed_voltage, min_observed_voltage);
+                } else {
+                    // Unlimited-capacity batteries stop losing voltage at steady-state sag.
+                    EXPECT_LE(observed_voltage, min_observed_voltage);
+                }
             } else {
-                // After consumption, voltage will rise back from lowest value to resting value
-                EXPECT_GE(observed_voltage, min_observed_voltage);
-                // But it will always be less than initial, because some charge was depleted
-                EXPECT_LE(observed_voltage, initial_voltage);
+                // After consumption, voltage will rise back from lowest value to resting value.
+                EXPECT_GT(observed_voltage, min_observed_voltage);
+                if (!battery.capacity_is_unlimited()) {
+                    // For finite-capacity batteries, it will be strictly less than initial, because some charge was depleted.
+                    EXPECT_LT(observed_voltage, initial_voltage);
+                } else {
+                    // Unlimited-capacity batteries recover completely from the sag back to initial.
+                    EXPECT_LE(observed_voltage, initial_voltage);
+                }
             }
             min_observed_voltage = MIN(observed_voltage, min_observed_voltage);
         }
@@ -165,19 +166,16 @@ TEST_F(BatteryTest, EnergyConsumption)
     EXPECT_LT(batteries_and_data[large].min_observed_voltage,
               batteries_and_data[infinite].min_observed_voltage);
 
-    // Infinite battery => no voltage loss
+    // Infinite battery => no resting voltage loss
     EXPECT_FLOAT_EQ(batteries_and_data[infinite].final_observed_voltage, max_voltage);
-    EXPECT_FLOAT_EQ(batteries_and_data[infinite].min_observed_voltage, max_voltage);
+    EXPECT_LT(batteries_and_data[infinite].min_observed_voltage, max_voltage);
     EXPECT_FLOAT_EQ(batteries_and_data[infinite_high_resist].final_observed_voltage, max_voltage);
-    EXPECT_FLOAT_EQ(batteries_and_data[infinite_high_resist].min_observed_voltage, max_voltage);
+    EXPECT_LT(batteries_and_data[infinite_high_resist].min_observed_voltage, max_voltage);
 
     // Higher resistance (with same current + time) => more voltage sag
     EXPECT_LT(batteries_and_data[small_high_resist].min_observed_voltage,
               batteries_and_data[small].min_observed_voltage);
-    // But not for infinite batteries, of course
-    EXPECT_FLOAT_EQ(batteries_and_data[infinite_high_resist].min_observed_voltage,
-                    batteries_and_data[infinite].min_observed_voltage);
-    // And higher resistance does not impact resting voltage
+    // Higher resistance does not impact resting voltage
     EXPECT_FLOAT_EQ(batteries_and_data[small_high_resist].final_observed_voltage,
                     batteries_and_data[small].final_observed_voltage);
     EXPECT_FLOAT_EQ(batteries_and_data[infinite_high_resist].final_observed_voltage,
@@ -209,14 +207,68 @@ TEST_F(BatteryTest, MaximumDeltaTime)
     }
 }
 
-namespace {
-void use_some_energy(SITL::Battery& battery) {
+TEST_F(BatteryTest, RestingVoltage)
+{
     constexpr float current_amp = 25.0f;
-    constexpr float current_duration_sec = 60.0f;
+    constexpr float consumption_duration_sec = 10.0f;
+    constexpr float long_enough_for_steady_state_sec = 12.0f;
+    constexpr float steady_state_diff_threshold_voltage = 1e-3f;
     constexpr float dt_sec = 0.01f;
 
-    for (float t = 0.0f; t <= current_duration_sec; t+=dt_sec) {
-        battery.consume_energy(current_amp, initial_us + static_cast<uint64_t>(t * 1e6));
+    for (auto& b_and_d : batteries_and_data) {
+        SITL::Battery& battery = b_and_d.batt;
+        float& min_observed_voltage = b_and_d.min_observed_voltage;
+        const float initial_voltage = battery.get_voltage();
+        min_observed_voltage = initial_voltage;
+
+        // The consumption period.
+        for (float t = 0.0f; t < consumption_duration_sec; t+=dt_sec) {
+            const uint64_t now_us = initial_us + static_cast<uint64_t>(t * 1e6);
+            battery.consume_energy(current_amp, now_us);
+            const float observed_voltage = battery.get_voltage();
+            if (!is_zero(t)) {
+                EXPECT_LT(observed_voltage, initial_voltage);
+            }
+            min_observed_voltage = MIN(observed_voltage, min_observed_voltage);
+        }
+
+        // Show that battery's voltage is at least lower than the steady-state threshold.
+        // (This is most meaningful for unlimited-capacity batteries, but always true.)
+        EXPECT_LT(battery.get_voltage(), initial_voltage - steady_state_diff_threshold_voltage);
+
+        // The rest period.
+        constexpr float one_dt_after_consumption = consumption_duration_sec + dt_sec;
+        for (float t = one_dt_after_consumption; t <= long_enough_for_steady_state_sec; t+=dt_sec) {
+            const uint64_t now_us = initial_us + static_cast<uint64_t>(t * 1e6);
+            battery.consume_energy(0.0f, now_us);
+            EXPECT_GT(battery.get_voltage(), min_observed_voltage);
+        }
+
+        // Show that infinite-capacity battery returns to initial voltage but finite does not.
+        if (battery.capacity_is_unlimited()) {
+            EXPECT_NEAR(battery.get_voltage(), initial_voltage, steady_state_diff_threshold_voltage);
+        } else {
+            EXPECT_LT(battery.get_voltage(), initial_voltage - steady_state_diff_threshold_voltage);
+        }
+
+    }
+}
+
+namespace {
+void use_some_energy(SITL::Battery& battery, float rest_duration_sec = 0.0f) {
+    constexpr float current_amp = 25.0f;
+    constexpr float consume_energy_duration_sec = 60.0f;
+    const float total_duration_sec = consume_energy_duration_sec + rest_duration_sec;
+    constexpr float dt_sec = 0.01f;
+
+    for (float t = 0.0f; t <= total_duration_sec; t+=dt_sec) {
+        const uint64_t now_us = initial_us + static_cast<uint64_t>(t * 1e6);
+        if (t <= consume_energy_duration_sec) {
+            battery.consume_energy(current_amp, now_us);
+        }
+        else {
+            battery.consume_energy(0.0f, now_us);
+        }
     }
 };
 } // namespace
@@ -268,7 +320,7 @@ TEST_F(BatteryTest, Resetting)
             EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
             EXPECT_FLOAT_EQ(battery.get_capacity(), 0.0f);
         }
-        use_some_energy(battery);
+        use_some_energy(battery, 30.0f);
         // Show that now-unlimited batteries do not lose voltage, and now-limited ones do.
         if (battery.capacity_is_unlimited()) {
             EXPECT_FLOAT_EQ(battery.get_voltage(), max_voltage);
