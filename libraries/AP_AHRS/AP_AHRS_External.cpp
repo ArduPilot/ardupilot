@@ -96,6 +96,17 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // are we consuming yaw from a source which is *not* a compass
     // results.using_noncompass_for_yaw = false;
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    // ... but External does not, and probably should not as the
+    // external unit will be experiencing a different magnetic
+    // environment to the autopilot.
+    // results.mag_field_NED = {};
+    // results.mag_field_NED_valid = false;
+    // results.mag_field_corrections = {};
+    // results.mag_field_corrections_valid = false;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
     /*
      * filter status and estimates quality values:
      */

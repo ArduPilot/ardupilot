@@ -164,6 +164,14 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // (e.g. the GSF)
     results.using_noncompass_for_yaw = EKF3.using_noncompass_for_yaw();
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    EKF3.getMagNED(results.mag_field_NED);
+    results.mag_field_NED_valid = true;
+    EKF3.getMagXYZ(results.mag_field_corrections);
+    results.mag_field_corrections_valid = true;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
     /*
      * filter status and estimates quality values:
      */

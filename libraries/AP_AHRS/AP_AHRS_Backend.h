@@ -27,6 +27,7 @@
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
+#include "AP_AHRS_config.h"
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -177,6 +178,14 @@ public:
         // if true then however the yaw in these estimates was derived
         // a compass was not involved:
         bool using_noncompass_for_yaw;
+
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+        // estimators can provide their predicted magnetic fields:
+        Vector3f mag_field_NED;
+        bool mag_field_NED_valid;
+        Vector3f mag_field_corrections;
+        bool mag_field_corrections_valid;
+#endif // AP_AHRS_GET_MAG_DATA_ENABLED
 
         /*
          * filter status and estimates quality values:

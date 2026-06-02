@@ -441,11 +441,19 @@ public:
     // returns true on success and results are placed in innovations and variances arguments
     bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
     // returns the expected NED magnetic field
-    bool get_mag_field_NED(Vector3f& ret) const;
+    bool get_mag_field_NED(Vector3f& ret) const {
+        ret = active_estimates->mag_field_NED;
+        return active_estimates->mag_field_NED_valid;
+    }
 
     // returns the estimated magnetic field offsets in body frame
-    bool get_mag_field_correction(Vector3f &ret) const;
+    bool get_mag_field_correction(Vector3f &ret) const {
+        ret = active_estimates->mag_field_corrections;
+        return active_estimates->mag_field_corrections_valid;
+    }
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
 
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
