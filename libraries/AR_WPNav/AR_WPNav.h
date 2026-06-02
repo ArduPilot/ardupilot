@@ -43,8 +43,8 @@ public:
     // next_destination should be provided if known to allow smooth cornering
     virtual bool set_desired_location(const Location &destination, Location next_destination = Location()) WARN_IF_UNUSED;
 
-    // set desired location to a reasonable stopping point, return true on success
-    bool set_desired_location_to_stopping_location()  WARN_IF_UNUSED;
+    // set destination to a reasonable stopping point, return true on success
+    bool set_destination_to_stopping_location()  WARN_IF_UNUSED;
 
     // set desired location as offset from the EKF origin, return true on success
     bool set_desired_location_NED(const Vector3f& destination) WARN_IF_UNUSED;
