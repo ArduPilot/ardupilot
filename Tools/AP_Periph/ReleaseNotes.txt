@@ -1,5 +1,51 @@
 ArduPilot AP_Periph Release Notes
 ------------------------------------------------------------------
+Release 4.7.0-beta6 01-June-2026
+
+Changes from 4.7.0-beta5
+
+1) Board specific changes
+
+- MambaF405v2 SBUS pin polarity fixed (@andyp1per, PR:33203)
+- PilotGaeaSV7V1 board added (@PilotGaea2001, PR:32416)
+- SkyDroid-S3 board added (@UAVcihang, PR:32920)
+- ZeroOneX6v2 supports SPA06 and MBP581 barometers (@ZeroOne-Aero, PR:33237)
+
+2) Driver changes
+
+- AP_Compass: LIS2MDL recent duplicate driver is removed (@dakejahl, PR:33140)
+- Filter: Harmonic Notch Filters fixed to prevent runtime error (@peterbarker, PR:33230)
+- KellerLD barometer has better corruption rejection (@vshie, PR:32889)
+- Lightware GRF250 I2C driver added (@rishabsingh3003, PR:32923)
+- RC_Channel: Channel overrides fixed to not apply on restricted channels (@peterbarker, PR:33275)
+
+3) Library changes
+
+- AP_CANManager: Removed unused logging interface (@tpwrules, PR:33031)
+- AP_Filesystem: FTP-related hardfault is fixed (@peterbarker, PR:33156)
+- AP_Follow: Vertical target estimate has minor fixes (@lthall, PR:33109)
+- AP_Follow: bugfixes related to the motion of the target (@lthall, PR:33038)
+- AP_OpenDroneID: UAS ID available length is fixed (@cuav-chen2, PR:33224)
+- Filter: Harmonic notch logging fix to avoid over reading array (@peterbarker, PR:33232)
+- ardupilotwaf: gcc-14+ compiler warnings are suppressed (@yuri-rage, PR:33138)
+
+4) Plane specific changes
+
+- Spoolup events are better reported with less false-positive errors (@lthall, PR:32955)
+
+5) Copter specific changes
+
+- Terrain failsafe will be triggered when a mission terrain altitude cannot be retrieved (@rmackay9, PR:32943)
+- Pilot yaw is correctly ignored during RTL (@rmackay9, PR:33169)
+- Spoolup events are better reported with less false-positive errors (@lthall, PR:32955)
+
+6) Sub related changes
+
+- MOT_FV_CPLNG_K has better documentation (@ES-Alexander, PR:33076)
+- Very early prearm check will not cause initializatin bug (@CSmith1539, PR:33217)
+- Spoolup events are better reported with less false-positive errors (@lthall, PR:32955)
+
+------------------------------------------------------------------
 Release 4.7.0-beta5 15-May-2026
 
 Changes from 4.7.0-beta4
@@ -11,7 +57,7 @@ Changes from 4.7.0-beta4
 2) Library changes
 
 - AP_Logger: Named Value Float dataflash logging drops fixed (@tridge, PR:32975)
-- AP_Logger: LOG_MAV_RATEMAX default changed to 10 (@tridge, PR:33013)
+- AP_Logger: LOG_MAV_RATEMAX default changed to 10 (@tridge, PR:33030)
 - AP_Logger: logging over MAVLink speed significantly improved (@tridge, PR:33020)
 - AP_NavEKF3: barometer offset logging added (@rmackay, PR:32931)
 - AP_NavEKF3: bugfix to prevent covariance state corruption (@tpwrules, PR:32177)
