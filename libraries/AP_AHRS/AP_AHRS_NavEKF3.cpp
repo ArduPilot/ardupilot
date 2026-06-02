@@ -92,6 +92,17 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.location_valid = EKF3.getLLH(results.location);
 
     results.hagl_valid = EKF3.getHAGL(results.hagl);
+
+    /*
+     * Sensor-related information
+     */
+    // true if the estimator will use GPS data in creating its
+    // estimate when the data is good:
+    results.configured_to_use_gps = EKF3.using_gps();
+    // true if GPS is configured as the horizontal position source
+    // for this estimator.  Used to decide whether GPS will set
+    // the navigation origin:
+    results.configured_to_use_gps_for_pos_XY = EKF3.configuredToUseGPSForPos();
 }
 
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
