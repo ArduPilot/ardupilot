@@ -1283,7 +1283,7 @@ void Aircraft::apply_move(void)
         return;
     }
     auto &m = sitl->move;
-    if (m.t == 0) {
+    if (m.t <= 0) {
         return;
     }
     const uint32_t now = AP_HAL::millis();
