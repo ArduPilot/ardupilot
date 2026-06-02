@@ -489,7 +489,7 @@ void AP_AHRS::update_state(void)
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
     state.ground_speed_vec = active_estimates->velocity_NE;
     state.ground_speed = state.ground_speed_vec.length();
-    _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
+    state.corrected_dv_valid = _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
 
     // check if origin has been set
     bool origin_ok = _get_origin(state.origin);
@@ -2256,45 +2256,15 @@ bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 }
 
 // Retrieves the NED delta velocity corrected
-void AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
+bool AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 {
-    int8_t imu_idx = -1;
-    Vector3f accel_bias;
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        break;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        imu_idx = ekf2.EKF2.getPrimaryCoreIMUIndex();
-        accel_bias = ekf2_estimates.accel_bias;
-        break;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        imu_idx = ekf3.EKF3.getPrimaryCoreIMUIndex();
-        accel_bias = ekf3_estimates.accel_bias;
-        break;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        break;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        break;
-#endif
+    if (!AP::ins().get_delta_velocity(active_estimates->primary_accel, ret, dt)) {
+        return false;
     }
-    ret.zero();
-    if (imu_idx == -1) {
-        AP::ins().get_delta_velocity(ret, dt);
-        return;
-    }
-    AP::ins().get_delta_velocity((uint8_t)imu_idx, ret, dt);
-    ret -= accel_bias*dt;
+    ret -= active_estimates->accel_bias * dt;
     ret = state.dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
     ret.z += GRAVITY_MSS*dt;
+    return true;
 }
 
 void AP_AHRS::set_failure_inconsistent_message(const char *estimator, const char *axis, float diff_rad, char *failure_msg, const uint8_t failure_msg_len) const

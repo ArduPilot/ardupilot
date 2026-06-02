@@ -251,9 +251,13 @@ public:
     }
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
+    bool getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
+        if (!state.corrected_dv_valid) {
+            return false;
+        }
         ret = state.corrected_dv;
         dt = state.corrected_dv_dt;
+        return true;
     }
 
     // set the EKF's origin location in 10e7 degrees.  This should only
@@ -957,7 +961,7 @@ private:
     bool _get_secondary_position(Location &loc) const;
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    void _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
+    bool _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const WARN_IF_UNUSED;
 
     // returns the inertial navigation origin in lat/lon/alt
     bool _get_origin(Location &ret) const WARN_IF_UNUSED;
@@ -1029,6 +1033,7 @@ private:
         bool secondary_pos_ok;
         Vector2f ground_speed_vec;
         float ground_speed;
+        bool corrected_dv_valid;
         Vector3f corrected_dv;
         float corrected_dv_dt;
         Location origin;
