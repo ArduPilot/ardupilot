@@ -37,6 +37,11 @@ private:
         Rename = MAV_FTP_OPCODE_RENAME,
         CalcFileCRC32 = MAV_FTP_OPCODE_CALCFILECRC,
         BurstReadFile = MAV_FTP_OPCODE_BURSTREADFILE,
+        // ListDirectoryWithTime: like ListDirectory, but each entry also
+        // carries its last-modification time. Not yet in the bundled mavlink
+        // definitions, so the opcode value (16) is hardcoded for now; switch
+        // to MAV_FTP_OPCODE_LISTDIRECTORYWITHTIME once it lands upstream.
+        ListDirectoryWithTime = 16,
         Ack = MAV_FTP_OPCODE_ACK,
         Nack = MAV_FTP_OPCODE_NAK,
     };
@@ -90,8 +95,8 @@ private:
         uint8_t compid;
 
         bool check_name_len(const Transaction &request);
-        int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
-        void list_dir(Transaction &request, Transaction &response);
+        int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry, bool with_time); // FTP helper for emitting a dir response
+        void list_dir(Transaction &request, Transaction &response, bool with_time);
         void push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 
