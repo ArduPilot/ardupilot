@@ -4214,6 +4214,11 @@ function fs:get_format_status() end
 ---@return uint32_t_ud|nil
 function fs:crc32(file_name) end
 
+-- Get sha256 checksum of a file; returns 64-character lowercase hex string, or nil on failure
+---@param file_name string
+---@return string|nil
+function fs:sha256(file_name) end
+
 -- desc
 networking = {}
 

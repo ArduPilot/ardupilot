@@ -1098,6 +1098,7 @@ singleton AP_Filesystem method format depends AP_FILESYSTEM_FORMAT_ENABLED
 singleton AP_Filesystem method get_format_status uint8_t'skip_check
 singleton AP_Filesystem method get_format_status depends AP_FILESYSTEM_FORMAT_ENABLED
 singleton AP_Filesystem method crc32 boolean string uint32_t'Null
+singleton AP_Filesystem manual sha256 lua_fs_sha256 1 1 depends AP_LUA_SHA256_BINDING_ENABLED
 
 include AP_RTC/AP_RTC.h depends AP_RTC_ENABLED
 include AP_RTC/AP_RTC_config.h

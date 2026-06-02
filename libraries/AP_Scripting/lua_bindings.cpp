@@ -1017,6 +1017,30 @@ int SocketAPM_string_to_ipv4_addr(lua_State *L) {
 #endif // AP_NETWORKING_ENABLED
 
 
+#if AP_LUA_SHA256_BINDING_ENABLED
+#include <AP_Filesystem/AP_Filesystem_config.h>
+
+int lua_fs_sha256(lua_State *L)
+{
+    const int nargs = lua_gettop(L);
+    if (nargs < 2 || nargs > 3) {
+        return luaL_error(L, "expected 1 or 2 arguments");
+    }
+    const char *fname = luaL_checkstring(L, 2);
+    const uint32_t skip_bytes = (nargs == 3) ? (uint32_t)luaL_checknumber(L, 3) : 0U;
+    uint8_t digest[32];
+    if (!AP::FS().sha256(fname, digest, skip_bytes)) {
+        return 0;
+    }
+    char hex[65];
+    for (uint8_t i = 0; i < 32; i++) {
+        hal.util->snprintf(&hex[i * 2], 3, "%02x", (unsigned)digest[i]);
+    }
+    lua_pushlstring(L, hex, 64);
+    return 1;
+}
+#endif  // AP_LUA_SHA256_BINDING_ENABLED
+
 int lua_get_current_env_ref()
 {
     auto *scripting = AP::scripting();
