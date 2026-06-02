@@ -198,6 +198,10 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.gyro_estimate = _ins.get_gyro();
     results.gyro_drift.zero();
 
+    /*
+     * acceleration estimates
+     */
+    // results.accel_bias = {} - SIM does not estimate accel bias
     const Vector3f &accel = _ins.get_accel();
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
 
