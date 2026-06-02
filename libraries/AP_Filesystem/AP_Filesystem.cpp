@@ -407,6 +407,40 @@ bool AP_Filesystem::crc32(const char *fname, uint32_t& checksum)
     return true;
 }
 
+#if AP_LUA_SHA256_BINDING_ENABLED
+#include "AP_Filesystem_sha256.h"
+
+bool AP_Filesystem::sha256(const char *fname, uint8_t digest[32], uint32_t skip_bytes)
+{
+    int fd = open(fname, O_RDONLY);
+    if (fd == -1) {
+        return false;
+    }
+
+    if (skip_bytes > 0 && lseek(fd, (int32_t)skip_bytes, SEEK_SET) < 0) {
+        close(fd);
+        return false;
+    }
+
+    AP_SHA256_CTX ctx;
+    AP_SHA256_Init(&ctx);
+
+    uint8_t buf[64];
+    ssize_t n;
+    while ((n = read(fd, buf, sizeof(buf))) > 0) {
+        AP_SHA256_Update(&ctx, buf, (uint32_t)n);
+    }
+    close(fd);
+
+    if (n < 0) {
+        return false;
+    }
+
+    AP_SHA256_Final(&ctx, digest);
+    return true;
+}
+#endif  // AP_LUA_SHA256_BINDING_ENABLED
+
 
 #if AP_FILESYSTEM_FORMAT_ENABLED
 // format filesystem

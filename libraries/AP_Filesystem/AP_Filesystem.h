@@ -135,6 +135,11 @@ public:
     // run crc32 over file with given name, returns true if successful
     bool crc32(const char *fname, uint32_t& checksum) WARN_IF_UNUSED;
 
+#if AP_LUA_SHA256_BINDING_ENABLED
+    // compute SHA-256 digest of a file; digest must point to 32 bytes
+    bool sha256(const char *fname, uint8_t digest[32], uint32_t skip_bytes = 0) WARN_IF_UNUSED;
+#endif
+
     // format filesystem.  This is async, monitor get_format_status for progress
     bool format(void);
 

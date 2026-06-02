@@ -63,9 +63,21 @@ int8_t AP_Filesystem_Sys::file_in_sysfs(const char *fname) {
     return -1;
 }
 
+// static SITL flash state — persists across open/close cycles
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+char    *AP_Filesystem_Sys::sitl_flash_data = nullptr;
+uint32_t AP_Filesystem_Sys::sitl_flash_size = 0;
+#endif
+
 int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_paths)
 {
-    if ((flags & O_ACCMODE) != O_RDONLY) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_FILESYSTEM_SYS_FLASH_ENABLED
+    const bool write_flash = strcmp(fname, "flash.bin") == 0
+                          && (flags & O_ACCMODE) == O_WRONLY;
+#else
+    const bool write_flash = false;
+#endif
+    if ((flags & O_ACCMODE) != O_RDONLY && !write_flash) {
         errno = EROFS;
         return -1;
     }
@@ -80,6 +92,9 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         return -1;
     }
     struct rfile &r = file[idx];
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    r.writable = false;
+#endif
     r.str = NEW_NOTHROW ExpandingString;
     if (r.str == nullptr) {
         errno = ENOMEM;
@@ -94,6 +109,15 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         errno = ENOENT;
         return -1;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (write_flash) {
+        r.writable = true;
+        r.file_ofs = 0;
+        r.open = true;
+        return idx;
+    }
+#endif
 
     if (strcmp(fname, "threads.txt") == 0) {
         hal.util->thread_info(*r.str);
@@ -149,12 +173,29 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
     }
 #if AP_FILESYSTEM_SYS_FLASH_ENABLED
     if (strcmp(fname, "flash.bin") == 0) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         void *ptr = (void*)0x08000000;
         const size_t size = HAL_PROGRAM_SIZE_LIMIT_KB*1024;
         r.str->set_buffer((char*)ptr, size, size);
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (sitl_flash_data != nullptr) {
+            // use content previously written via MAVLink FTP
+            r.str->set_buffer(sitl_flash_data, sitl_flash_size, sitl_flash_size);
+        } else {
+            // default: 128 kB of 0xde (bootloader placeholder) + firmware string
+            const uint32_t bootloader_size = 128U * 1024U;
+            char *bootloader = NEW_NOTHROW char[bootloader_size];
+            if (bootloader != nullptr) {
+                memset(bootloader, 0xde, bootloader_size);
+                r.str->append(bootloader, bootloader_size);
+                delete[] bootloader;
+            }
+            r.str->printf("%s", "Surprise! Not the contents of flash!");
+        }
+#endif  // CONFIG_HAL_BOARD
     }
-#endif
-    
+#endif  // AP_FILESYSTEM_SYS_FLASH_ENABLED
+
     if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;
@@ -174,10 +215,41 @@ int AP_Filesystem_Sys::close(int fd)
     }
     struct rfile &r = file[fd];
     r.open = false;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (r.writable) {
+        // persist the written content so subsequent reads return it
+        delete[] sitl_flash_data;
+        sitl_flash_size = r.str->get_length();
+        sitl_flash_data = NEW_NOTHROW char[sitl_flash_size];
+        if (sitl_flash_data != nullptr) {
+            memcpy(sitl_flash_data, r.str->get_string(), sitl_flash_size);
+        } else {
+            sitl_flash_size = 0;
+        }
+        r.writable = false;
+    }
+    // for read opens that used set_buffer(sitl_flash_data,...), external_buffer=true
+    // so delete r.str does NOT free sitl_flash_data — safe to call unconditionally
+#endif
     delete r.str;
     r.str = nullptr;
     return 0;
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+int32_t AP_Filesystem_Sys::write(int fd, const void *buf, uint32_t count)
+{
+    if (fd < 0 || fd >= max_open_file || !file[fd].open || !file[fd].writable) {
+        errno = EBADF;
+        return -1;
+    }
+    if (!file[fd].str->append((const char *)buf, count)) {
+        return -1;
+    }
+    file[fd].file_ofs += count;
+    return (int32_t)count;
+}
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
 {

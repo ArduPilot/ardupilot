@@ -30,6 +30,9 @@ public:
     int open(const char *fname, int flags, bool allow_absolute_paths = false) override;
     int close(int fd) override;
     int32_t read(int fd, void *buf, uint32_t count) override;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    int32_t write(int fd, const void *buf, uint32_t count) override;
+#endif
     int32_t lseek(int fd, int32_t offset, int whence) override;
     int stat(const char *pathname, struct stat *stbuf) override;
     void *opendir(const char *pathname) override;
@@ -48,9 +51,17 @@ private:
 
     struct rfile {
         bool open;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        bool writable;
+#endif
         uint32_t file_ofs;
         ExpandingString *str;
     } file[max_open_file];
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    static char *sitl_flash_data;
+    static uint32_t sitl_flash_size;
+#endif
 };
 
 #endif  // AP_FILESYSTEM_SYS_ENABLED
