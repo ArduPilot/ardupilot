@@ -69,7 +69,7 @@ void ModeSmartRTL::update()
                         }
                     } else {
                         // no next point so add only immediate point
-                        if (!g2.wp_nav.set_desired_location_NED(dest_NED.tofloat())) {
+                        if (!g2.wp_nav.set_wp_destination_NED_m(dest_NED.tofloat())) {
                             // this should never happen because the EKF origin should already be set
                             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SmartRTL: failed to set destination");
                             smart_rtl_state = SmartRTLState::Failure;
