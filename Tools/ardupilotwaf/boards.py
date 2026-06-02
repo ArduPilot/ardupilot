@@ -1608,4 +1608,3 @@ class QURTBoard(Board):
     def get_name(self):
         # get name of class
         return self.__class__.__name__
-    
