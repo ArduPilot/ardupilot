@@ -474,10 +474,43 @@ def natural_sort_key(libname):
     return tuple((int(p) if p.isdigit() else p) for p in parts)
 
 
+def merge_duplicate_libraries(library_list):
+    merged_libraries = []
+    libraries_by_name = {}
+    for library in library_list:
+        existing_library = libraries_by_name.get(library.name)
+        if existing_library is None:
+            libraries_by_name[library.name] = library
+            merged_libraries.append(library)
+            continue
+        existing_library.params.extend(library.params)
+        existing_library.not_rst = (
+            getattr(existing_library, 'not_rst', False) or
+            getattr(library, 'not_rst', False)
+        )
+        existing_library.check_duplicates = (
+            getattr(existing_library, 'check_duplicates', False) or
+            getattr(library, 'check_duplicates', False)
+        )
+        existing_path = getattr(existing_library, 'Path', None)
+        new_path = getattr(library, 'Path', None)
+        if new_path is None:
+            continue
+        if existing_path is None:
+            existing_library.Path = new_path
+            continue
+        existing_paths = [path.strip() for path in existing_path.split(',') if path.strip()]
+        for path in [path.strip() for path in new_path.split(',') if path.strip()]:
+            if path not in existing_paths:
+                existing_paths.append(path)
+        existing_library.Path = ",".join(existing_paths)
+    return merged_libraries
+
+
 # sort libraries by name
 alllibs = sorted(alllibs, key=lambda x: natural_sort_key(x.name))
 
-libraries = alllibs
+libraries = merge_duplicate_libraries(alllibs)
 
 
 def is_number(numberString):
