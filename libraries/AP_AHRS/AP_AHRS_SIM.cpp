@@ -216,6 +216,15 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // (e.g. the GSF)
     // results.using_noncompass_for_yaw = false;
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    // ... but SIM does not (and probably should!):
+    // results.mag_field_NED = {};
+    // results.mag_field_NED_valid = false;
+    // results.mag_field_corrections = {};
+    // results.mag_field_corrections_valid = false;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
     /*
      * filter status and estimates quality values:
      */
