@@ -141,6 +141,19 @@ public:
             return hagl_valid;
         }
 
+        /*
+         * Sensor-related information
+         */
+
+        // configured_to_use_gps will be true if the estimator will
+        // use GPS data in creating its estimate when the data is good
+        bool configured_to_use_gps;
+        // configured_to_use_gps_for_pos_XY will be true if GPS is
+        // configured as the horizontal position source for this
+        // estimator.  Used to decide whether GPS will set the
+        // navigation origin.
+        bool configured_to_use_gps_for_pos_XY;
+
     private:
         bool hagl_valid;
         float hagl;

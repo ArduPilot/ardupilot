@@ -481,14 +481,10 @@ public:
     // check if external nav is providing yaw
     bool using_extnav_for_yaw(void) const;
 
-    // check if GPS is being used to estimate position or velocity
-    // always returns true for External and SIM EKF types
-    bool using_gps(void) const;
-
-    // check if GPS is configured as the horizontal position source
-    // for the configured EKF type. Used to decide whether GPS will
-    // set the EKF origin (which is immutable once set).
-    bool using_gps_for_pos(void) const;
+    // active_backend_configured_to_use_gps will be true if the
+    // estimator will use GPS data in creating its estimate when the
+    // data is good
+    bool active_backend_configured_to_use_gps() const { return active_estimates->configured_to_use_gps; }
 
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);

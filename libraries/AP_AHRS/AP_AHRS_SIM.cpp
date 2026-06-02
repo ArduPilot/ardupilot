@@ -220,6 +220,17 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.hagl_valid = true;
     results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
 
+    /*
+     * Sensor-related information
+     */
+    // true if the estimator will use GPS data in creating its
+    // estimate when the data is good:
+    results.configured_to_use_gps = true;
+    // true if GPS is configured as the horizontal position source
+    // for this estimator.  Used to decide whether GPS will set
+    // the navigation origin:
+    results.configured_to_use_gps_for_pos_XY = true;
+
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {
         // use SITL states to write body frame odometry data at 20Hz
