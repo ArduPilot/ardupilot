@@ -161,6 +161,11 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
+
+    /*
+     * acceleration estimates
+     */
+    // results.accel_bias = {} - DCM does not estimate accel bias
     results.accel_ef = _accel_ef;
 
     results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);

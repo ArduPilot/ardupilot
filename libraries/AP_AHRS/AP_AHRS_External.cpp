@@ -53,6 +53,10 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 #endif  // AP_INERTIALSENSOR_ENABLED
     }
 
+    /*
+     * acceleration estimates
+     */
+    // results.accel_bias = {} - External does not estimate accel bias
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
     results.accel_ef = accel_ef;
 
