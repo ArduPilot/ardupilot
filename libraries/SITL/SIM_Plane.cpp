@@ -521,6 +521,8 @@ void Plane::update(const struct sitl_input &input)
     battery_voltage = sitl->batt_voltage - 0.7*throttle;
     battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(throttle);
 
+    apply_move();
+
     update_dynamics(rot_accel);
 
     /*
