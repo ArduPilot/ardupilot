@@ -448,6 +448,13 @@ void LoggerMessageWriter_WriteEntireMission::process() {
         return;
     }
 
+    // suppress mission commands when position logging is disabled
+    const uint32_t pos_bit = AP::ahrs().get_log_pos_bit();
+    if (pos_bit && !AP::logger().should_log(pos_bit)) {
+        _finished = true;
+        return;
+    }
+
     switch(stage) {
 
     case Stage::WRITE_NEW_MISSION_MESSAGE:
