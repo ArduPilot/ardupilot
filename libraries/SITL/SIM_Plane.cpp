@@ -522,6 +522,8 @@ void Plane::update(const struct sitl_input &input)
     battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(throttle);
     battery_temperature_degC = 0.0f;
 
+    apply_move();
+
     update_dynamics(rot_accel);
 
     /*
