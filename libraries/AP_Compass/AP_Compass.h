@@ -496,10 +496,7 @@ private:
 #if AP_COMPASS_IIS2MDC_ENABLED
         DRIVER_IIS2MDC  =22,
 #endif
-#if AP_COMPASS_LIS2MDL_ENABLED
-        DRIVER_LIS2MDL  =23,
-#endif
-
+        // DRIVER_LIS2MDL  =23,  // DO NOT re-use this ID; same sensor as IIS2MDC
 };
 
     bool _driver_enabled(enum DriverType driver_type);

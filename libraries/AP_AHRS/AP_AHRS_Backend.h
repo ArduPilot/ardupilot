@@ -60,6 +60,9 @@ public:
         friend class AP_AHRS_NavEKF2;
         friend class AP_AHRS_NavEKF3;
 
+        // inertial sensor information
+        uint8_t primary_gyro;
+
         // if attitude_valid is true then all of the
         // eulers/quaternion/matrix must be valid:
         bool attitude_valid;
@@ -80,6 +83,9 @@ public:
 
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
+
+        uint8_t primary_accel;
+
         Vector3f accel_ef;
         Vector3f accel_bias;
 
@@ -135,6 +141,19 @@ public:
             return hagl_valid;
         }
 
+        /*
+         * Sensor-related information
+         */
+
+        // configured_to_use_gps will be true if the estimator will
+        // use GPS data in creating its estimate when the data is good
+        bool configured_to_use_gps;
+        // configured_to_use_gps_for_pos_XY will be true if GPS is
+        // configured as the horizontal position source for this
+        // estimator.  Used to decide whether GPS will set the
+        // navigation origin.
+        bool configured_to_use_gps_for_pos_XY;
+
     private:
         bool hagl_valid;
         float hagl;
@@ -142,15 +161,6 @@ public:
 
     // init sets up INS board orientation
     virtual void init();
-
-    // get the index of the current primary gyro sensor
-    virtual uint8_t get_primary_gyro_index(void) const {
-#if AP_INERTIALSENSOR_ENABLED
-        return AP::ins().get_first_usable_gyro();
-#else
-        return 0;
-#endif
-    }
 
     // Methods
     virtual void update() = 0;

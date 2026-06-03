@@ -23,6 +23,7 @@ from pysim import vehicleinfo
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
+from vehicle_test_suite import Test
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -878,6 +879,80 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 break
         self.disarm_vehicle()
 
+    def RCOverrideEnableChannel(self):
+        '''Test RC Override Enable channel not overridden by GCS (issue #33161)'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "RC10_OPTION": 46,  # RC Override Enable
+        })
+
+        self.change_mode('MANUAL')
+
+        # TX: steering centred, ch10 HIGH (enable GCS overrides)
+        steering_tx = 1500
+        self.set_rc_from_map({
+            1: steering_tx,
+            3: 1500,
+            10: 2000,
+        })
+
+        # GCS joystick: full-right steering on ch1, but ch10=LOW which
+        # contradicts the TX and should trigger the intermittent override bug
+        steering_override = 1000
+        override_ch10 = 1000
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            self.mav.mav.rc_channels_override_send(
+                1,                 # target_system
+                1,                 # target_component
+                steering_override, # chan1_raw (full left)
+                65535,             # chan2_raw (ignore)
+                65535,             # chan3_raw (ignore)
+                65535,             # chan4_raw
+                65535,             # chan5_raw
+                65535,             # chan6_raw
+                65535,             # chan7_raw
+                65535,             # chan8_raw
+                chan10_raw=override_ch10,  # ch10 LOW — contradicts TX HIGH
+            )
+
+            m = self.assert_receive_message('RC_CHANNELS')
+            if m.chan1_raw == steering_tx:
+                raise NotAchievedException(
+                    "chan1 dropped to TX value (issue #33161 reproduced): "
+                    "chan1_raw=%u chan10_raw=%u" %
+                    (m.chan1_raw, m.chan10_raw)
+                )
+
+        # switch ch10 LOW to disable overrides; verify GCS overrides are now blocked
+        self.set_rc(10, 1000)
+        self.delay_sim_time(0.5)  # allow debounce to complete
+
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            self.mav.mav.rc_channels_override_send(
+                1,                 # target_system
+                1,                 # target_component
+                steering_override, # chan1_raw (should now be blocked)
+                65535,             # chan2_raw (ignore)
+                65535,             # chan3_raw (ignore)
+                65535,             # chan4_raw
+                65535,             # chan5_raw
+                65535,             # chan6_raw
+                65535,             # chan7_raw
+                65535,             # chan8_raw
+                chan10_raw=2000,   # try to re-enable via override — must be ignored
+            )
+
+            m = self.assert_receive_message('RC_CHANNELS')
+            if m.chan1_raw == steering_override:
+                raise NotAchievedException(
+                    "chan1 accepted override when switch disabled: "
+                    "chan1_raw=%u chan10_raw=%u" %
+                    (m.chan1_raw, m.chan10_raw)
+                )
+
     def RCOverrides(self):
         '''Test RC overrides'''
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
@@ -1109,6 +1184,66 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.end_subtest("Checking higher-channel semantics")
 
         self.disarm_vehicle()
+
+    def RCOverridesClearByPilotInput(self):
+        '''Test RC_OPTIONS bit 14 on Rover: steering/throttle clear, pitch/yaw do not'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "RC12_OPTION": 46,  # RC_OVERRIDE_ENABLE aux switch
+        })
+        self.reboot_sitl()
+
+        self.set_rc(12, 2000)
+        self.delay_sim_time(0.2)
+
+        bit_clear_by_rc = 1 << 14
+
+        self.start_subtest("RC_OPTIONS bit off: pilot input does not clear overrides")
+        rc_options = int(self.get_parameter("RC_OPTIONS"))
+        self.set_parameter("RC_OPTIONS", rc_options & ~bit_clear_by_rc)
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=1, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=False,
+        )
+
+        rc_options = int(self.get_parameter("RC_OPTIONS"))
+        self.set_parameter("RC_OPTIONS", rc_options | bit_clear_by_rc)
+
+        self.start_subtest("Override held while every stick stays at trim")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=None, trigger_pwm=None,
+            override_ch=1, override_pwm=1700,
+            expect_clear=False,
+        )
+
+        self.start_subtest("Steering input clears overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=1, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=True,
+        )
+
+        self.start_subtest("Throttle input clears overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=3, trigger_pwm=1700,
+            override_ch=1, override_pwm=1700,
+            expect_clear=True,
+        )
+
+        self.start_subtest("Pitch input does not clear overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=2, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=False,
+        )
+
+        self.start_subtest("Yaw input does not clear overrides")
+        self._check_rc_overrides_cleared_by_pilot_input(
+            trigger_ch=4, trigger_pwm=1700,
+            override_ch=3, override_pwm=1700,
+            expect_clear=False,
+        )
 
     def MANUAL_CONTROL(self):
         '''Test mavlink MANUAL_CONTROL'''
@@ -2118,7 +2253,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            triangle)
         mavproxy.send("fence list\n")
-        self.delay_sim_time(1, reason="fence list to display")
+        self.delay_sim_time(1, reason="fence list to display in MAVProxy")
         triangle[2].x += 500
         triangle[2].y += 700
         self.click_location_from_item(mavproxy, triangle[2])
@@ -4377,9 +4512,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, 20, 0),
             }),
         ])
-        if self.mavproxy is not None:
-            # handy for getting pretty pictures
-            self.mavproxy.send("fence list\n")
 
         self.delay_sim_time(5, reason="fence to be uploaded")
         self.progress("Drive outside top circle")
@@ -4417,9 +4549,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             }),
         ])
 
-        self.delay_sim_time(5, reason="fence to be uploaded")
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.progress("Drive outside polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4450,9 +4579,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             ]),
         ])
 
-        self.delay_sim_time(5, reason="fence to be uploaded")
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.progress("Drive outside top polygon")
         fence_middle = self.offset_location_ne(here, -150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4460,13 +4586,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.delay_sim_time(5, reason="RTL to complete")
+        self.wait_rtl_complete()
+
         self.progress("Drive outside bottom polygon")
         fence_middle = self.offset_location_ne(here, 150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
             fence_middle,
             target_system=target_system,
             target_component=target_component)
+
+    def wait_rtl_complete(self):
+        """Wait for RTL to reach home and disarm"""
+        self.progress("Waiting RTL to reach Home")
+        self.wait_distance_to_home(0, 7, timeout=30)
 
     def test_poly_fence_exclusion(self, here, target_system=1, target_component=1):
 
@@ -4490,9 +4622,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, -60, 0),
             }),
         ])
-        self.delay_sim_time(5, reason="fence to be uploaded")
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
 
         self.progress("Breach eastern boundary")
         fence_middle = self.offset_location_ne(here, 0, 30)
@@ -4691,8 +4820,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, -60, 80), # br,
             ]),
         ])
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.context_push()
         ex = None
         try:
@@ -4704,8 +4831,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.change_mode('GUIDED')
             self.wait_ready_to_arm()
             self.set_parameter("FENCE_ENABLE", 1)
-            if self.mavproxy is not None:
-                self.mavproxy.send("fence list\n")
             self.arm_vehicle()
 
             self.change_mode("GUIDED")
@@ -4747,8 +4872,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "loc": self.offset_location_ne(here, -60, 0),
             }),
         ])
-        if self.mavproxy is not None:
-            self.mavproxy.send("fence list\n")
         self.set_parameters({
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 3,
@@ -6687,7 +6810,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
         self.wait_ready_to_arm()
 
-        self.progress("Ensure we can't arm when we are in breacnh of a polyfence")
+        self.progress("Ensure we can't arm when we are in breach of a polyfence")
         self.clear_fence()
 
         self.progress("Now create a fence we are in breach of")
@@ -7273,6 +7396,8 @@ return update()
             self.ServoRelayEvents,
             self.RCOverrides,
             self.RCOverridesCancel,
+            Test(self.RCOverrideEnableChannel, speedup=10),
+            self.RCOverridesClearByPilotInput,
             self.MANUAL_CONTROL,
             self.Sprayer,
             self.AC_Avoidance,

@@ -8,18 +8,18 @@
 // @LoggerMessage: MAG
 // @Description: Information received from compasses
 // @Field: TimeUS: Time since system startup
-// @Field: I: compass instance number
+// @Field: I: magnetometer sensor instance number
 // @Field: MagX: magnetic field strength in body frame
 // @Field: MagY: magnetic field strength in body frame
 // @Field: MagZ: magnetic field strength in body frame
 // @Field: OfsX: magnetic field offset in body frame
 // @Field: OfsY: magnetic field offset in body frame
 // @Field: OfsZ: magnetic field offset in body frame
-// @Field: MOX: motor interference magnetic field in body frame
-// @Field: MOY: motor interference magnetic field in body frame
-// @Field: MOZ: motor interference magnetic field in body frame
-// @Field: Health: true if compass is considered healthy
-// @Field: S: time when the compass sample was taken
+// @Field: MOX: motor interference magnetic field offset in body frame
+// @Field: MOY: motor interference magnetic field offset in body frame
+// @Field: MOZ: motor interference magnetic field offset in body frame
+// @Field: Health: true if the compass is considered healthy
+// @Field: S: time measurement was taken
 struct PACKED log_MAG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
