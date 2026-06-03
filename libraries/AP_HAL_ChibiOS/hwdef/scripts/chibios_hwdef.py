@@ -1643,7 +1643,10 @@ INCLUDE common.ld
 
     def write_DATAFLASH_config(self, f):
         '''write dataflash config defines'''
-        # DATAFLASH block|littlefs:<w25nxx|jedec_nor|wspi_nand|mt29f1>
+        # DATAFLASH block|littlefs:<w25nxx|jedec_nor|mt29fxx>
+        # The chip keyword selects the flash family; the transport (SPI vs WSPI)
+        # is derived from whether 'dataflash' is declared on a SPIDEV or a
+        # QSPIDEV/OCTOSPIDEV bus, so e.g. an MT29F can sit on either.
         seen = set()
         for dev in self.dataflash_list:
             if not self.has_dataflash_spi() and not self.has_dataflash_wspi():
@@ -1667,9 +1670,14 @@ INCLUDE common.ld
                 elif len(a) > 1 and a[1].startswith('jedec_nor'):
                     f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_JEDEC_NOR\n')
                 elif len(a) > 1 and (a[1].startswith('wspi_nand') or a[1].startswith('mt29fxx')):
-                    # WSPI-connected NAND flash (Micron MT29F family: 1G/2G/4G/8G)
+                    # Micron MT29F SPI NAND family (1G/2G/4G/8G)
                     f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_WSPI_NAND\n')
                     f.write('#define AP_FILESYSTEM_LITTLEFS_MT29FXX_ENABLED 1\n')
+                # transport follows how 'dataflash' is wired, not the chip family
+                if self.has_dataflash_wspi():
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_TRANSPORT AP_FILESYSTEM_FLASH_TRANSPORT_WSPI\n')
+                else:
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_TRANSPORT AP_FILESYSTEM_FLASH_TRANSPORT_SPI\n')
                 # Only disable FATFS if there's no SDMMC or SPI-connected SD card
                 has_sdmmc = any(k.startswith('SDMMC') for k in self.bytype)
                 if not self.has_sdcard_spi() and not has_sdmmc:
