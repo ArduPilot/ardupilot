@@ -253,11 +253,11 @@ void AP_InertialSensor_LSM6DSV::start()
     }
     _backend_period_us = 1000000UL / _backend_rate_hz;
 
-    DevTypes devtype;
+    DevTypes devtype = DEVTYPE_INS_LSM6DSV16X;
     switch (_lsm6dsv_type) {
+    case LSM6DSV_Type::LSM6DSV16X:  break;
     case LSM6DSV_Type::LSM6DSK320X: devtype = DEVTYPE_INS_LSM6DSK320X; break;
     case LSM6DSV_Type::LSM6DSV32X:  devtype = DEVTYPE_INS_LSM6DSV32X;  break;
-    default:                        devtype = DEVTYPE_INS_LSM6DSV16X;  break;
     }
     if (!_imu.register_accel(accel_instance, _backend_rate_hz, _dev->get_bus_id_devtype(devtype)) ||
         !_imu.register_gyro(gyro_instance, _backend_rate_hz, _dev->get_bus_id_devtype(devtype))) {
@@ -305,11 +305,11 @@ bool AP_InertialSensor_LSM6DSV::update()
 
 bool AP_InertialSensor_LSM6DSV::get_output_banner(char* banner, uint8_t banner_len)
 {
-    const char *chip_name;
+    const char *chip_name = "LSM6DSV16X";
     switch (_lsm6dsv_type) {
+    case LSM6DSV_Type::LSM6DSV16X:  break;
     case LSM6DSV_Type::LSM6DSV32X:  chip_name = "LSM6DSV32X";  break;
     case LSM6DSV_Type::LSM6DSK320X: chip_name = "LSM6DSK320X"; break;
-    default:                        chip_name = "LSM6DSV16X";  break;
     }
     snprintf(banner, banner_len, "IMU%u: %s %s sampling %.1fkHz",
              gyro_instance,
@@ -437,9 +437,15 @@ bool AP_InertialSensor_LSM6DSV::reset_device()
 
 bool AP_InertialSensor_LSM6DSV::configure_gyro()
 {
-    const uint8_t fs_g = (_lsm6dsv_type == LSM6DSV_Type::LSM6DSK320X)
-                         ? LSM6DSK320X_CTRL6_FS_G_2000DPS
-                         : LSM6DSV_CTRL6_FS_G_2000DPS;
+    uint8_t fs_g = LSM6DSV_CTRL6_FS_G_2000DPS;
+    switch (_lsm6dsv_type) {
+    case LSM6DSV_Type::LSM6DSV16X:
+    case LSM6DSV_Type::LSM6DSV32X:
+        break;
+    case LSM6DSV_Type::LSM6DSK320X:
+        fs_g = LSM6DSK320X_CTRL6_FS_G_2000DPS;
+        break;
+    }
     return write_register(LSM6DSV_REG_CTRL6, fs_g, true);
 }
 
@@ -448,9 +454,15 @@ bool AP_InertialSensor_LSM6DSV::configure_accel()
     // FS_XL encoding differs between variants:
     // - 16X and DSK320X: bit2 must be 0, range codes (00=±2g, 01=±4g, 10=±8g, 11=±16g)
     // - 32X: bit2 must be 1, range codes shifted (00=±4g, 01=±8g, 10=±16g, 11=±32g)
-    const uint8_t fs_xl = (_lsm6dsv_type == LSM6DSV_Type::LSM6DSV32X)
-                          ? LSM6DSV32X_CTRL8_FS_XL_16G
-                          : LSM6DSV_CTRL8_FS_XL_16G;
+    uint8_t fs_xl = LSM6DSV_CTRL8_FS_XL_16G;
+    switch (_lsm6dsv_type) {
+    case LSM6DSV_Type::LSM6DSV16X:
+    case LSM6DSV_Type::LSM6DSK320X:
+        break;
+    case LSM6DSV_Type::LSM6DSV32X:
+        fs_xl = LSM6DSV32X_CTRL8_FS_XL_16G;
+        break;
+    }
 #if LSM6DSV_ACCEL_LPF2_ENABLED
     const uint8_t ctrl8 = fs_xl | LSM6DSV_ACCEL_LPF2_BW;
     return write_register(LSM6DSV_REG_CTRL8, ctrl8, true) &&
