@@ -91,8 +91,8 @@ private:
 
     FileDescriptor* open_files[MAX_OPEN_FILES];
 
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_WSPI_NAND
-    // WSPI device for QUADSPI-connected NAND flash
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    // WSPI device for QUADSPI/OCTOSPI-connected flash
     AP_HAL::OwnPtr<AP_HAL::WSPIDevice> wspi_dev;
 #else
     // SPI device that handles the raw flash memory
@@ -120,20 +120,30 @@ private:
     void format_handler(void);
     void mark_dead();
 
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_WSPI_NAND
-    // WSPI helper functions for QUADSPI NAND flash
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+    // General NAND chip operations. These are the only functions that know
+    // whether the chip sits on a SPI or a WSPI bus; the SPI/WSPI ifdef lives
+    // inside each. Everything that calls them is transport-agnostic.
+    // Caller holds dev_sem.
+    bool nand_reset();
+    bool nand_read_id(uint32_t &id);
+    bool nand_read_status(uint8_t &status);
+    bool nand_set_reg(uint8_t reg, uint8_t value);
+    bool nand_page_read(uint32_t row_addr);
+    bool nand_read_cache(uint16_t col_addr, uint8_t *buf, uint32_t len);
+    bool nand_program_load(uint16_t col_addr, const uint8_t *buf, uint32_t len);
+    bool nand_program_execute(uint32_t row_addr);
+    bool nand_block_erase(uint32_t row_addr);
+#endif
+
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    // WSPI transport primitives shared by several NAND ops above
     bool wspi_command(uint8_t cmd);
-    bool wspi_command_addr8(uint8_t cmd, uint8_t addr);
     bool wspi_command_addr24(uint8_t cmd, uint32_t addr);
-    bool wspi_read_reg(uint8_t reg, uint8_t &value);
-    bool wspi_write_reg(uint8_t reg, uint8_t value);
-    bool wspi_read_data(uint16_t col_addr, uint8_t dummy_cycles, uint8_t *buf, uint32_t len);
-    bool wspi_write_data(uint16_t col_addr, const uint8_t *buf, uint32_t len);
 #else
-    // SPI helper functions for SPI-connected flash
+    // SPI transport primitives (used by the NAND ops above, and by NOR)
     void send_command_addr(uint8_t command, uint32_t addr);
     void send_command_page(uint8_t command, uint32_t page);
-    void write_status_register(uint8_t reg, uint8_t bits);
 #endif
 };
 
