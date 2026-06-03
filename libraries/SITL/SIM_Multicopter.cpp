@@ -81,8 +81,6 @@ void MultiCopter::update(const struct sitl_input &input)
     const uint64_t now_us = AP_HAL::micros64();
     battery.consume_energy(battery_current, now_us);
 
-    apply_move();
-
     update_dynamics(rot_accel);
     update_external_payload(input);
 
