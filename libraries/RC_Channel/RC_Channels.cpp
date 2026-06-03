@@ -460,12 +460,9 @@ void RC_Channels::rudder_arm_disarm_check()
     // time to try to arm or disarm:
     rudder_arm_timer = 0;
     if (control_in > 4000) {
-        if (!AP::arming().arm(AP_Arming::Method::RUDDER)) {
-            // arming failed, set pending arm if option is enabled
-            if (AP::arming().option_enabled(AP_Arming::Option::PENDING_ARM_ON_SWITCH)) {
-                AP::arming().set_pending_arm(false);
-            }
-        }
+        // PENDING_ARM_ON_SWITCH applies only to the arming switch, so a failed
+        // rudder arm does not enter the pending-arm retry state
+        AP::arming().arm(AP_Arming::Method::RUDDER);
         have_seen_neutral_rudder = false;
     } else {
         if (AP::arming().get_rudder_arming_type() == AP_Arming::RudderArming::ARMDISARM) {
