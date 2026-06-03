@@ -1678,10 +1678,8 @@ INCLUDE common.ld
                     f.write('#define AP_FILESYSTEM_LITTLEFS_TRANSPORT AP_FILESYSTEM_FLASH_TRANSPORT_WSPI\n')
                 else:
                     f.write('#define AP_FILESYSTEM_LITTLEFS_TRANSPORT AP_FILESYSTEM_FLASH_TRANSPORT_SPI\n')
-                # Only disable FATFS if there's no SDMMC or SPI-connected SD card
-                has_sdmmc = any(k.startswith('SDMMC') for k in self.bytype)
-                if not self.has_sdcard_spi() and not has_sdmmc:
-                    self.build_flags.append('USE_FATFS=no')
+                # littlefs and FATFS can't coexist, so always disable FATFS
+                self.build_flags.append('USE_FATFS=no')
                 self.env_vars['WITH_LITTLEFS'] = "1"
 
     def write_board_validate_macro(self, f):
