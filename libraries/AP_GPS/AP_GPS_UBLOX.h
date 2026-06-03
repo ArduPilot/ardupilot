@@ -107,6 +107,7 @@
 #define CONFIG_F9            (1<<19)
 #define CONFIG_M10           (1<<20)
 #define CONFIG_L5            (1<<21)
+#define CONFIG_RATE_DAHEADING (1<<22)
 #define CONFIG_LAST          (1<<22) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
@@ -414,6 +415,34 @@ private:
         uint32_t flags;
     };
 
+    // UBX-NAV-DAHEADING (0x01 0x45) DATA1 (version=1) - single-module dual-antenna heading
+    // ZED-X20D PROTVER>=57. 64-byte payload, structurally identical to ubx_nav_relposned.
+    // relPosLength is in cm; multiply by 0.01 to get metres.
+    // Flags use the same bit layout as RELPOSNED (carrSoln encoded in bits 3-4).
+    struct PACKED ubx_nav_daheading {
+        uint8_t  version;       // 0x01 for DATA1
+        uint8_t  reserved0;
+        uint16_t refStationId;
+        uint32_t iTOW;          // ms, GPS time of week
+        int32_t  relPosN;       // cm, North
+        int32_t  relPosE;       // cm, East
+        int32_t  relPosD;       // cm, Down
+        uint32_t relPosLength;  // cm, baseline length
+        uint32_t relPosHeading; // deg * 1e-5
+        uint8_t  reserved1[4];
+        int8_t   relPosHPN;     // mm * 0.1
+        int8_t   relPosHPE;
+        int8_t   relPosHPD;
+        int8_t   relPosHPLength;
+        uint32_t accN;          // mm * 0.1
+        uint32_t accE;
+        uint32_t accD;
+        uint32_t accLength;     // mm * 0.1
+        uint32_t accHeading;    // deg * 1e-5
+        uint8_t  reserved2[4];
+        uint32_t flags;         // same bit layout as RELPOSNED
+    };
+
     struct PACKED ubx_nav_velned {
         uint32_t itow;                                  // GPS msToW
         int32_t ned_north;
@@ -654,6 +683,7 @@ private:
         ubx_cfg_valget valget;
         ubx_nav_svinfo_header svinfo_header;
         ubx_nav_relposned relposned;
+        ubx_nav_daheading daheading;
 #if UBLOX_RXM_RAW_LOGGING
         ubx_rxm_raw rxm_raw;
         ubx_rxm_rawx rxm_rawx;
@@ -665,6 +695,16 @@ private:
         ubx_mon_comms_header mon_comms;
 #endif
     } _buffer;
+
+    // Flags for UBX-NAV-DAHEADING — same bit positions as RELPOSNED for the
+    // common subset; isMoving/refPosMiss/refObsMiss are not required for F9H.
+    enum class DAHEADING {
+        gnssFixOK          = 1U << 0,
+        relPosValid        = 1U << 2,
+        carrSolnFloat      = 1U << 3,
+        carrSolnFixed      = 1U << 4,
+        relPosHeadingValid = 1U << 8,
+    };
 
     enum class RELPOSNED {
         gnssFixOK          = 1U << 0,
@@ -698,6 +738,7 @@ private:
         MSG_SOL = 0x6,
         MSG_PVT = 0x7,
         MSG_TIMEGPS = 0x20,
+        MSG_DAHEADING = 0x45,   // single-module dual-antenna heading (ZED-X20D DATA1, version=1)
         MSG_RELPOSNED = 0x3c,
         MSG_VELNED = 0x12,
         MSG_CFG_CFG = 0x09,
@@ -823,6 +864,7 @@ private:
         STEP_F9_VALIDATE,
         STEP_M10,
         STEP_L5,
+        STEP_DAHEADING,     // enable UBX-NAV-DAHEADING on single-module dual-antenna receivers
         STEP_LAST
     };
 
@@ -860,6 +902,9 @@ private:
     uint32_t        _last_pvt_itow;
     uint32_t        _last_relposned_itow;
     uint32_t        _last_relposned_ms;
+    uint32_t        _last_daheading_itow;
+    uint32_t        _last_daheading_ms;
+    bool            _has_dual_antenna_heading;
 
     // the role set from GPS_TYPE
     AP_GPS::GPS_Role role;

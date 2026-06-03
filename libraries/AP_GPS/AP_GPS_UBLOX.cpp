@@ -413,6 +413,26 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     }
 
+    case STEP_DAHEADING:
+#if GPS_MOVING_BASELINE
+        if (_has_dual_antenna_heading) {
+#if AP_GPS_UBLOX_CFGV2_ENABLED
+            if (!_legacy_cfg_supported) {
+                // X20D (PROTVER>=40): legacy CFG-MSG not supported; DAHEADING output
+                // must be pre-configured externally. Clear config bit here.
+                _unconfigured_messages &= ~CONFIG_RATE_DAHEADING;
+            } else
+#endif
+            if (!_request_message_rate(CLASS_NAV, MSG_DAHEADING)) {
+                _next_message--;
+            }
+        } else
+#endif
+        {
+            _unconfigured_messages &= ~CONFIG_RATE_DAHEADING;
+        }
+        break;
+
     default:
         // this case should never be reached, do a full reset if it is hit
         _next_message = STEP_PVT;
@@ -454,6 +474,10 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
         case MSG_DOP:
             desired_rate = RATE_DOP;
             config_msg_id = CONFIG_RATE_DOP;
+            break;
+        case MSG_DAHEADING:
+            desired_rate = _has_dual_antenna_heading ? 1 : 0;
+            config_msg_id = CONFIG_RATE_DAHEADING;
             break;
         default:
             return;
@@ -1450,6 +1474,12 @@ AP_GPS_UBLOX::_parse_gps(void)
                         _hardware_variant = UBLOX_F9_ZED;
                     } else if (strncmp(_module, "NEO-F9P", UBLOX_MODULE_LEN) == 0) {
                         _hardware_variant = UBLOX_F9_NEO;
+                    } else if (strncmp(_module, "ZED-F9H", UBLOX_MODULE_LEN) == 0) {
+#if GPS_MOVING_BASELINE
+                        _has_dual_antenna_heading = true;
+                        state.gps_yaw_configured = true;
+                        _unconfigured_messages |= CONFIG_RATE_DAHEADING;
+#endif
                     }
                 }
                 if (strncmp(_version.swVersion, "EXT CORE 4", 10) == 0) {
@@ -1469,6 +1499,21 @@ AP_GPS_UBLOX::_parse_gps(void)
                 // M10 does not support multi-valued VALGET
                 use_single_valget = true;
             }
+#if AP_GPS_UBLOX_CFGV2_ENABLED
+            // check for X20 series (ZED-X20D etc.) - hwVersion 000B0000
+            if (strncmp(_version.hwVersion, "000B0000", 8) == 0) {
+                _hardware_generation = UBLOX_X20;
+                // X20 uses VALSET-based config; legacy GNSS/SBAS config not supported
+                _unconfigured_messages &= ~CONFIG_GNSS;
+                if (strncmp(_module, "ZED-X20D", UBLOX_MODULE_LEN) == 0) {
+#if GPS_MOVING_BASELINE
+                    _has_dual_antenna_heading = true;
+                    state.gps_yaw_configured = true;
+                    _unconfigured_messages |= CONFIG_RATE_DAHEADING;
+#endif
+                }
+            }
+#endif  // AP_GPS_UBLOX_CFGV2_ENABLED
             if (check_L1L5) {
                 // check if L1L5 in extension
                 if (memmem(_buffer.mon_ver.extension, sizeof(_buffer.mon_ver.extension), "L1L5", 4) != nullptr) {
@@ -1668,6 +1713,39 @@ AP_GPS_UBLOX::_parse_gps(void)
             }
         }
         break;
+
+    case MSG_DAHEADING:
+        if (_has_dual_antenna_heading && _buffer.daheading.version == 1) {
+            // DATA1 format (64 bytes): same layout as RELPOSNED; relPosLength in cm
+            _check_new_itow(_buffer.daheading.iTOW);
+            // receiving the message is sufficient confirmation the rate is configured
+            _unconfigured_messages &= ~CONFIG_RATE_DAHEADING;
+            const uint32_t dah_valid = static_cast<uint32_t>(DAHEADING::relPosHeadingValid) |
+                                       static_cast<uint32_t>(DAHEADING::relPosValid) |
+                                       static_cast<uint32_t>(DAHEADING::gnssFixOK) |
+                                       static_cast<uint32_t>(DAHEADING::carrSolnFixed);
+            const uint32_t dah_invalid = static_cast<uint32_t>(DAHEADING::carrSolnFloat);
+            if (((_buffer.daheading.flags & dah_valid) == dah_valid) &&
+                ((_buffer.daheading.flags & dah_invalid) == 0)) {
+                // relPosLength is in cm; multiply by 0.01 for metres
+                if (calculate_moving_base_yaw(_buffer.daheading.relPosHeading * 1e-5f,
+                                              _buffer.daheading.relPosLength * 0.01f,
+                                              _buffer.daheading.relPosD * 0.01f)) {
+                    state.have_gps_yaw_accuracy = true;
+                    state.gps_yaw_accuracy = _buffer.daheading.accHeading * 1e-5f;
+                    _last_daheading_ms = AP_HAL::millis();
+                    _last_daheading_itow = _buffer.daheading.iTOW;
+                }
+                state.relPosHeading = _buffer.daheading.relPosHeading * 1e-5f;
+                state.relPosLength  = _buffer.daheading.relPosLength * 0.01f;
+                state.relPosD       = _buffer.daheading.relPosD * 0.01f;
+                state.accHeading    = _buffer.daheading.accHeading * 1e-5f;
+                state.relposheading_ts = AP_HAL::millis();
+            } else {
+                state.have_gps_yaw_accuracy = false;
+            }
+        }
+        break;
 #endif // GPS_MOVING_BASELINE
 
     case MSG_PVT:
@@ -1848,15 +1926,21 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
     if (state.have_gps_yaw) {
-        // when we are a rover we want to ensure we have both the new
-        // PVT and the new RELPOSNED message so that we give a
-        // consistent view
-        if (AP_HAL::millis() - _last_relposned_ms > 400) {
-            // we have stopped receiving valid RELPOSNED messages, disable yaw reporting
-            state.have_gps_yaw = false;
-        } else if (_last_relposned_itow != _last_pvt_itow) {
-            // wait until ITOW matches
-            return false;
+        // Ensure position and heading messages are from the same epoch and
+        // haven't gone stale. DAHEADING (single-module) and RELPOSNED
+        // (moving-baseline) are handled separately.
+        if (_has_dual_antenna_heading) {
+            if (AP_HAL::millis() - _last_daheading_ms > 400) {
+                state.have_gps_yaw = false;
+            } else if (_last_daheading_itow != _last_pvt_itow) {
+                return false;
+            }
+        } else {
+            if (AP_HAL::millis() - _last_relposned_ms > 400) {
+                state.have_gps_yaw = false;
+            } else if (_last_relposned_itow != _last_pvt_itow) {
+                return false;
+            }
         }
     }
 
