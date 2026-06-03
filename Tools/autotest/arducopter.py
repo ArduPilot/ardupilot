@@ -1797,7 +1797,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             maintain=1,
         )
 
-        # Add 2m/s/s bias to the second IMU
+        # Add bias to the second IMU and reboot so it is present from boot.
+        # On-ground Z accel-bias learning is fast only while the bias-state
+        # variance is still high (just after boot); stepping a bias into an
+        # already-converged filter is not a physically realistic on-ground
+        # event (the only real late step is motor vibration rectification,
+        # which appears once armed, when the periodic height-datum reset is
+        # disabled). The re-assert lands before the on-ground observability
+        # window opens, so the bias is effectively present from boot.
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.reboot_sitl()
         self.set_parameters({
             'SIM_ACC2_BIAS_Z': 0.7,
         })
@@ -1830,7 +1841,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             condition="XKF2.C==0",
         )
 
-        # Add 2m/s/s bias to the second IMU
+        # Add bias to the IMU and reboot so it is present from boot (see the
+        # note on the earlier injection). EK3_IMU_MASK persists across reboot.
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
+        self.reboot_sitl()
         self.set_parameters({
             'SIM_ACC2_BIAS_Z': 0.7,
         })
@@ -1865,18 +1881,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # during ground movement. With the fix, all bias learning is inhibited
         # when onGround && !onGroundNotMoving.
 
-        # Enable logging while disarmed so we capture ground-only EKF data
+        # Enable logging while disarmed so we capture ground-only EKF data.
+        # Inject the positive-control bias before the reboot so it is present
+        # from boot (fast on-ground learning while the bias variance is high);
+        # a step into an already-converged filter is not a realistic on-ground
+        # event. The re-assert lands before the observability window opens.
         self.set_parameters({
             "LOG_FILE_DSRMROT": 1,
+            'SIM_ACC2_BIAS_Z': 0.7,
         })
         self.reboot_sitl()
+        self.set_parameters({
+            'SIM_ACC2_BIAS_Z': 0.7,
+        })
         self.wait_ready_to_arm()
 
         # Phase 1: Positive control - verify bias learning works when stationary
         self.start_subtest("Positive control: verify bias learning works when stationary")
-        self.set_parameters({
-            'SIM_ACC2_BIAS_Z': 0.7,
-        })
         self.delay_sim_time(30, reason="EKF to learn accel bias")
         self.assert_dataflash_message_field_level_at(
             "XKF2", "AZ", 0.7,
