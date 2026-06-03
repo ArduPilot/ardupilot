@@ -366,7 +366,9 @@ public:
 #endif
 
     // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const;
+    bool get_filter_status(nav_filter_status &status) const {
+        return configured_backend->get_filter_status(status);
+    }
 
     // get compass offset estimates
     // true if offsets are valid
@@ -415,7 +417,9 @@ public:
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
-    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const;
+    bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const {
+        return configured_backend->get_innovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
+    }
 
     // returns true when the state estimates are significantly degraded by vibration
     bool is_vibration_affected() const;
@@ -424,7 +428,9 @@ public:
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
+    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
+        return configured_backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar);
+    }
 
     // get 1-sigma position and velocity uncertainty derived from the EKF state error covariance matrix P
     // pos_horiz_m: 2D RMS horizontal position uncertainty (m)
@@ -513,7 +519,9 @@ public:
 
     // returns a canonicalised and valid EKFType, as opposed to the raw
     // parameter value which may be any value the user has set
-    EKFType configured_ekf_type(void) const;
+    EKFType configured_ekf_type(void) const {
+        return state.configured_ekf_type;
+    }
 
     // set the selected ekf type, for RC aux control
     void set_ekf_type(EKFType ahrs_type) {
@@ -939,11 +947,17 @@ private:
     // return secondary attitude solution if available, as quaternion
     bool _get_secondary_quaternion(Quaternion &quat) const;
 
+    // set state.configured_ekf_type and the pointer to the configured backend
+    void update_configured_ekf_type();
+
     // set state.active_EKF_type and the pointer to the active backend
     void update_active_EKF_type();
 
     // get active EKF type
     EKFType _active_EKF_type(void) const;
+
+    // get configured EKF type:
+    EKFType _configured_ekf_type(void) const;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
@@ -998,7 +1012,8 @@ private:
       state updated at the end of each update() call
      */
     struct {
-        EKFType active_EKF_type;
+        EKFType active_EKF_type;  // EKFType of backend these results are for
+        EKFType configured_ekf_type;  // vetted parameter-configured EKFType
         uint8_t primary_gyro;
         uint8_t primary_accel;
         uint8_t primary_core;
@@ -1121,6 +1136,13 @@ private:
         return const_cast<AP_AHRS*>(this)->estimates_for_type(type);
     }
 
+    // configured_backend is the backend the user wants to use as
+    // indicated by parameter values
+    AP_AHRS_Backend *configured_backend;
+
+    // active_backend is the backend which is currently providing
+    // results (e.g. this may be a fallback estimator if the
+    // configured_backend is unhealthy)
     AP_AHRS_Backend *active_backend;
     AP_AHRS_Backend::Estimates *active_estimates;
 
