@@ -16183,6 +16183,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
+    def ScriptingChecksumFirmware(self):
+        '''test checksum_firmware.lua uses fs:sha256 and reports the correct digest'''
+        import hashlib
+        import os
+
+        # Upload a random 200 kB file via MAVLink FTP.  The script skips the
+        # first 128 kB (bootloader region) so the expected hash covers only the
+        # trailing 72 kB.  Using random content means a wrong skip offset produces
+        # a detectably wrong hash.
+        content = os.urandom(200 * 1024)
+        expected_hash = hashlib.sha256(content[128 * 1024:]).hexdigest()
+
+        self.install_example_script_context("checksum_firmware.lua")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 20000,
+        })
+        self.reboot_sitl()
+
+        # Upload after the reboot so sitl_flash_data is populated.  Then restart
+        # just the scripting engine (not the whole autopilot) so the one-shot
+        # script runs again with the newly uploaded content.  sitl_flash_data is a
+        # C++ static that survives a scripting restart.
+        self.ftp_write_file("@SYS/flash.bin", content)
+
+        self.context_collect('STATUSTEXT')
+        self.scripting_restart()
+
+        # STATUSTEXT is limited to 50 chars; "checksum_firmware: " is 19 chars,
+        # leaving 31 chars of the 64-char hash visible.  Match on 20 chars of the
+        # hash — enough to be unique while fitting comfortably within the limit.
+        self.wait_statustext(
+            "checksum_firmware: " + expected_hash[:20],
+            check_context=True,
+            timeout=60,
+            wallclock_timeout=True,
+        )
+
     def ScriptingAHRSSource(self):
         '''test ahrs-source.lua script'''
         self.install_example_script_context("ahrs-source.lua")
@@ -17669,6 +17707,7 @@ return update, 1000
             self.CommonOrigin,
             self.AHRSOriginRecorded,
             self.TestTetherStuck,
+            self.ScriptingChecksumFirmware,
             self.ScriptingFlipMode,
             self.RC_OPTIONS_1_FS_THR_ENABLE_0,
             self.ScriptingFlyVelocity,
