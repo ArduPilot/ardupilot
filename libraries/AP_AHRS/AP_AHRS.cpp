@@ -419,22 +419,10 @@ void AP_AHRS::reset_gyro_drift(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
-    
-    // update DCM
-#if AP_AHRS_DCM_ENABLED
-    dcm.reset_gyro_drift();
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    external.reset_gyro_drift();
-#endif
 
-    // reset the EKF gyro bias states
-#if HAL_NAVEKF2_AVAILABLE
-    ekf2.reset_gyro_drift();
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    ekf3.reset_gyro_drift();
-#endif
+    for (auto &backend_and_estimates : backends_and_estimates) {
+        backend_and_estimates.backend.reset_gyro_drift();
+    }
 }
 
 /*
@@ -780,23 +768,9 @@ void AP_AHRS::reset()
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
-#if AP_AHRS_DCM_ENABLED
-    dcm.reset();
-#endif
-#if AP_AHRS_SIM_ENABLED
-    sim.reset();
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    external.reset();
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    ekf2.reset();
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    ekf3.reset();
-#endif
+    for (auto &backend_and_estimates : backends_and_estimates) {
+        backend_and_estimates.backend.reset();
+    }
 }
 
 // dead-reckoning support
@@ -2378,15 +2352,9 @@ void AP_AHRS::resetHeightDatum(void)
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
-#if HAL_NAVEKF3_AVAILABLE
-    ekf3.resetHeightDatum();
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    ekf2.resetHeightDatum();
-#endif
-#if AP_AHRS_SIM_ENABLED
-    sim.resetHeightDatum();
-#endif
+    for (auto &backend_and_estimates : backends_and_estimates) {
+        backend_and_estimates.backend.resetHeightDatum();
+    }
 }
 
 // send a EKF_STATUS_REPORT for configured EKF
