@@ -88,10 +88,11 @@ public:
     void resetHeightDatum(void) override {
         EKF3.resetHeightDatum();
     }
-    // EKF3-specific overload forwarding the origin-altitude tolerance;
-    // the AP_AHRS_Backend interface only carries the no-arg form.
-    void resetHeightDatum(float origin_alt_tolerance_m) {
-        EKF3.resetHeightDatum(origin_alt_tolerance_m);
+    // EKF3-specific overload forwarding the origin-altitude tolerance and
+    // the defer-until-bias-converged flag; the AP_AHRS_Backend interface
+    // only carries the no-arg form.
+    void resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged) {
+        EKF3.resetHeightDatum(origin_alt_tolerance_m, defer_until_abias_converged);
     }
     void request_yaw_reset() override {
         EKF3.requestYawReset();
