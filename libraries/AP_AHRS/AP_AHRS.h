@@ -1060,6 +1060,36 @@ private:
     struct AP_AHRS_Backend::Estimates external_estimates;
 #endif
 
+// FIXME: C++-17 will let us do away with this construct:
+#define AP_AHRS_BACKEND_COUNT                   \
+    (!!(AP_AHRS_DCM_ENABLED) +                  \
+     !!(AP_AHRS_NAVEKF2_ENABLED) +              \
+     !!(AP_AHRS_NAVEKF3_ENABLED) +              \
+     !!(AP_AHRS_SIM_ENABLED) +                  \
+     !!(AP_AHRS_EXTERNAL_ENABLED))
+
+    struct {
+        AP_AHRS_Backend &backend;
+        AP_AHRS_Backend::Estimates &estimates;
+    } backends_and_estimates[AP_AHRS_BACKEND_COUNT] {
+#if AP_AHRS_DCM_ENABLED
+        { dcm, dcm_estimates },
+#endif  // AP_AHRS_DCM_ENABLED
+#if AP_AHRS_NAVEKF2_ENABLED
+        { ekf2, ekf2_estimates },
+#endif  // AP_AHRS_NAVEKF2_ENABLED
+#if AP_AHRS_NAVEKF3_ENABLED
+        { ekf3, ekf3_estimates },
+#endif  // AP_AHRS_NAVEKF3_ENABLED
+#if AP_AHRS_SIM_ENABLED
+        { sim, sim_estimates },
+#endif  // AP_AHRS_SIM_ENABLED
+#if AP_AHRS_EXTERNAL_ENABLED
+        { external, external_estimates },
+#endif  // AP_AHRS_EXTERNAL_ENABLED
+    };
+
+
     enum class Options : uint16_t {
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
