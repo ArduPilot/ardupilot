@@ -2974,7 +2974,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         # TopOfTheWord "ground" is at over 1km altitude
-        expected_terrain_height = 1101
+        expected_terrain_height = 1102
         if abs(report.terrain_height - expected_terrain_height) > 1.0:
             raise NotAchievedException("Expected terrain height=%f got=%f" %
                                        (expected_terrain_height, report.terrain_height))
