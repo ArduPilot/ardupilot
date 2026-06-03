@@ -360,13 +360,33 @@ void NavEKF3_core::ResetHeight(void)
 // Reset the EKF height datum and clear accumulated baro drift.
 // origin_alt_tolerance_m: see NavEKF3::resetHeightDatum declaration.
 // Return true if the height datum reset has been performed.
-bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
+bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged)
 {
     if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
         // only allow resets when on the ground.
         // If using using rangefinder for height then never perform a
         // reset of the height datum
         return false;
+    }
+
+    // For the periodic disarmed reset, hold off while the Z accel-bias is
+    // still converging.  The full reset zeroes velocity.z and recalibrates the
+    // baro, which erases the height/velocity error the on-ground zero-velocity
+    // fusion uses to make the Z bias observable; resetting mid-learn slows
+    // convergence and can leave the vehicle armed before the bias has settled.
+    // P[15][15] (Z accel-bias
+    // state variance) stays elevated through the learning window and falls to
+    // a low floor (~1% of the bias-limit variance) once converged.  The
+    // threshold is a fraction of that limit variance -- the same expression
+    // used to seed P[15][15] in CovariancePrediction/ResetHeight -- so it
+    // tracks EK3_ACC_BIAS_LIM and the EKF rate instead of being a magic
+    // number.  3% sits comfortably between the converged floor and the
+    // learning-window values.
+    if (defer_until_abias_converged) {
+        const ftype zbias_limit_var = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+        if (P[15][15] > 0.03f * zbias_limit_var) {
+            return false;
+        }
     }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;

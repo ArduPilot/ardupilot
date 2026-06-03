@@ -128,7 +128,9 @@ public:
     // (regardless of full vs partial branch).  Returns false if no
     // action could be taken at all -- specifically when the rangefinder
     // is the active height source or the vehicle is not on the ground.
-    bool resetHeightDatum(float origin_alt_tolerance_m);
+    // defer_until_abias_converged: when true (periodic disarmed reset), each
+    // core skips the reset while its Z accel-bias is still converging.
+    bool resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged=false);
 
     // Backward-compatible no-arg form: equivalent to passing -1.0f
     // (always full reset, no origin-vs-GPS tolerance check).
