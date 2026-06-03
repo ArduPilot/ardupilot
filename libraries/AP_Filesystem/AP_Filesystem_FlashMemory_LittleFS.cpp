@@ -614,10 +614,9 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
 #if AP_FILESYSTEM_LITTLEFS_MT29FXX_ENABLED
 // Micron MT29FXX SPI NAND family - manufacturer 0x2C, device IDs vary by density
-#define JEDEC_ID_MICRON_MT29FXX1G        0x2C1400    // 1Gbit (128MB) - 0x14/0x15
-#define JEDEC_ID_MICRON_MT29FXX2G        0x2C2400    // 2Gbit (256MB) - 0x24/0x25
-#define JEDEC_ID_MICRON_MT29FXX4G        0x2C3400    // 4Gbit (512MB) - 0x34/0x35/0x36
-#define JEDEC_ID_MICRON_MT29FXX8G        0x2C4600    // 8Gbit (1GB)   - 0x46/0x47
+#define JEDEC_ID_MICRON_MT29FXX1G        0x2C1400    // 1Gbit (128MB), 2KB page
+#define JEDEC_ID_MICRON_MT29FXX2G        0x2C2400    // 2Gbit (256MB), 2KB page
+#define JEDEC_ID_MICRON_MT29FXX4G        0x2C3400    // 4Gbit (512MB), 4KB page (MT29F4G01ABAFD)
 #endif
 #define JEDEC_ID_CYPRESS_S25FL064L     0x016017
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
@@ -969,7 +968,8 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     // regardless of what the flash chip documentation refers to as a "block"
 
 #if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
-    // SPI NAND chips (W25N, MT29FXX) have 2048 byte pages and 128K erase blocks
+    // most SPI NAND chips have 2048 byte pages and 128K erase blocks; parts
+    // that differ (e.g. the 4Gbit MT29F) override these in the switch below
     lfs_size_t page_size = 2048;
     lfs_size_t block_size = 131072;
 #else
@@ -992,10 +992,11 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
         block_count = 2048;   /* 2Gbit = 256MB, 2048 blocks of 128KB */
         break;
     case JEDEC_ID_MICRON_MT29FXX4G:
-        block_count = 4096;   /* 4Gbit = 512MB, 4096 blocks of 128KB */
-        break;
-    case JEDEC_ID_MICRON_MT29FXX8G:
-        block_count = 8192;   /* 8Gbit = 1GB, 8192 blocks of 128KB */
+        // MT29F4G01ABAFD uses a 4KB page and 256KB erase block (the 1G/2G
+        // parts use 2KB/128KB)
+        page_size = 4096;
+        block_size = 256 * 1024;
+        block_count = 2048;   /* 4Gbit = 512MB, 2048 blocks of 256KB */
         break;
 #endif
 #elif AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
