@@ -721,6 +721,7 @@ void Aircraft::update_model(const struct sitl_input &input)
     } else {
         time_advance();
     }
+    apply_move();
 }
 
 /*
