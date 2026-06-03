@@ -250,6 +250,7 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
 
     // we assume active_backend is not nullptr in many places, so make
     // sure it is set early:
+    update_configured_ekf_type();
     update_active_EKF_type();
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
@@ -290,6 +291,21 @@ AP_AHRS_Backend *AP_AHRS::backend_for_type(EKFType type)
 #endif
     }
     return nullptr;
+}
+
+// updates the cached value for the currently configured EKF type
+// (i.e. the one that the user has specified with parameters).  Also
+// sets the pointer to the allocated backend for that type.
+void AP_AHRS::update_configured_ekf_type()
+{
+    const auto new_type = _configured_ekf_type();
+    auto *new_backend = backend_for_type(new_type);
+    if (new_backend != nullptr) {
+        state.configured_ekf_type = new_type;
+        configured_backend = new_backend;
+        return;
+    }
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
 void AP_AHRS::update_active_EKF_type()
@@ -337,6 +353,7 @@ void AP_AHRS::init()
     last_active_ekf_type = (EKFType)_ekf_type.get();
 
     // we may have updated ekf_type()'s results, so set the backend again:
+    update_configured_ekf_type();
     update_active_EKF_type();
 
     // init backends
@@ -569,6 +586,7 @@ void AP_AHRS::update(bool skip_ins_update)
 #endif
     }
 
+    update_configured_ekf_type();
     update_active_EKF_type();
 
 #if HAL_GCS_ENABLED
@@ -1619,7 +1637,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
   canonicalise _ekf_type, forcing it to be 0, 2 or 3
   type 1 has been deprecated
  */
-AP_AHRS::EKFType AP_AHRS::configured_ekf_type(void) const
+AP_AHRS::EKFType AP_AHRS::_configured_ekf_type(void) const
 {
     EKFType type = (EKFType)_ekf_type.get();
     switch (type) {
@@ -2005,36 +2023,7 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
 
-    switch (configured_ekf_type()) {
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return ret;
-#endif
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.pre_arm_check(requires_position, failure_msg, failure_msg_len);
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret;
-#endif
-    }
-
-    // if we get here then ekf type is invalid
-    hal.util->snprintf(failure_msg, failure_msg_len, "invalid EKF type");
-    return false;
+    return (configured_backend->pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret);
 }
 
 // true if the AHRS has completed initialisation
@@ -2069,40 +2058,6 @@ bool AP_AHRS::initialised(void) const
     }
     return false;
 };
-
-// get_filter_status : returns filter status as a series of flags
-bool AP_AHRS::get_filter_status(nav_filter_status &status) const
-{
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.get_filter_status(status);
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        ekf2.get_filter_status(status);
-        return true;
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        ekf3.get_filter_status(status);
-        return true;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_filter_status(status);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.get_filter_status(status);
-#endif
-    }
-
-    return false;
-}
 
 // write optical flow data to EKF
 void  AP_AHRS::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
@@ -2360,37 +2315,7 @@ void AP_AHRS::resetHeightDatum(void)
 // send a EKF_STATUS_REPORT for configured EKF
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // send zero status report
-        dcm.send_ekf_status_report(link);
-        break;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        sim.send_ekf_status_report(link);
-        break;
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL: {
-        external.send_ekf_status_report(link);
-        break;
-    }
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.send_ekf_status_report(link);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.send_ekf_status_report(link);
-#endif
-
-    }
+    configured_backend->send_ekf_status_report(link);
 }
 
 // return origin for a specified EKF type
@@ -2555,43 +2480,6 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 #endif
 }
 
-// return the innovations for the primarily EKF
-// boolean false is returned if innovations are not available
-bool AP_AHRS::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const
-{
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // We are not using an EKF so no data
-        return false;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // use EKF to get innovations
-        return ekf2.get_innovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // use EKF to get innovations
-        return ekf3.get_innovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_innovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-
-    return false;
-}
-
 // returns true when the state estimates are significantly degraded by vibration
 bool AP_AHRS::is_vibration_affected() const
 {
@@ -2614,47 +2502,6 @@ bool AP_AHRS::is_vibration_affected() const
 #endif
         return false;
     }
-    return false;
-}
-
-// get_variances - provides the innovations normalised using the innovation variance where a value of 0
-// indicates prefect consistency between the measurement and the EKF solution and a value of 1 is the maximum
-// inconsistency that will be accepted by the filter
-// boolean false is returned if variances are not available
-bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
-{
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // We are not using an EKF so no data
-        return false;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO: {
-        // use EKF to get variance
-        return ekf2.get_variances(velVar, posVar, hgtVar, magVar, tasVar);
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE: {
-        // use EKF to get variance
-        return ekf3.get_variances(velVar, posVar, hgtVar, magVar, tasVar);
-    }
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_variances(velVar, posVar, hgtVar, magVar, tasVar);
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.get_variances(velVar, posVar, hgtVar, magVar, tasVar);
-#endif
-    }
-
     return false;
 }
 
