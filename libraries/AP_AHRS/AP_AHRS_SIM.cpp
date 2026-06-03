@@ -201,7 +201,9 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * acceleration estimates
      */
-    // results.accel_bias = {} - SIM does not estimate accel bias
+    // SIM exactly estimates accel bias:
+    results.accel_bias = AP::sitl()->accel_bias[results.primary_accel].get();
+
     const Vector3f &accel = _ins.get_accel();
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
 
