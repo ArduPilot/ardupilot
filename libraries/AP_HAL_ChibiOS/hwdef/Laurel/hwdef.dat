@@ -356,6 +356,7 @@ define RP_VREG_VSEL 15
 # covering the W25Q32 tCHQV of ≤7 ns.  Must be applied before PLL switch.
 define RP_QMI_CLKDIV 6
 define RP_QMI_RXDELAY 6
+define AP_XIP_PROFILER_ENABLED 1
 
 # Board-specific notes:
 # - PA39 is routed to the onboard RGB LED but serial LED support remains

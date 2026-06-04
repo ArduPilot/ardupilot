@@ -14,10 +14,17 @@
  */
 
 /*
- * @file Pico2/c1_main.c @brief RP2350 core1 bare-metal function-pointer dispatcher for ArduPilot.
- * Core1 runs bare-metal.
- * Protocol (SIO FIFO, 32-bit words): Core0 → Core1 (core1's RX FIFO): function pointer cast to uint32_t Core1 → Core0 (core0's RX FIFO): 1 = task completed, 0 = idle ping Core1 polls its RX FIFO (SIO->FIFO_ST bit VLD), reads the function pointer, calls it, then writes a completion word back so core0 can optionally synchronize.
- * WFE is used when the FIFO is empty so core1 doesn't busy-spin and waste power.
+ * @file Pico2/c1_main.c @brief RP2350 core1 entry point for ArduPilot.
+ *
+ * With CH_CFG_SMP_MODE=TRUE (the default): core1 is a full ChibiOS SMP
+ * instance (ch1). The rate controller thread is pinned there by
+ * Scheduler::thread_create_pinned_to_core() via thread_create_alloc_affinity().
+ * CH_CFG_CONTEXT_SWITCH_HOOK fires on both cores, so per-thread profiling
+ * (e.g. XIP cache counters) correctly attributes the rate thread.
+ *
+ * With CH_CFG_SMP_MODE=FALSE (legacy fallback): core1 runs bare-metal.
+ * Core0 pushes void(*)(void) function pointers via SIO FIFO; core1 calls
+ * them and writes a done token back. WFE is used when idle.
  */
 
 #include <stdint.h>
@@ -90,12 +97,18 @@ void __c1_late_init(void)
 }
 
 /*
- * Core1 entry point.
- * called from _crt0_c1_entry after stack/FPU init.
- * Runs entirely bare-metal.
- * Core1 sits in a WFE loop waiting for core0 to push a function pointer via the SIO inter-core FIFO.
- * // core0 side: SIO->FIFO_WR = (uint32_t)(c1_task_fn)my_function
- * // core1 will call my_function() then write 1 back.
+ * Core1 entry point (CH_CFG_SMP_MODE=FALSE bare-metal fallback path only).
+ * Called from _crt0_c1_entry after stack/FPU init.
+ *
+ * This is the legacy bare-metal WFE FIFO dispatcher, active only when
+ * CH_CFG_SMP_MODE=FALSE.  With CH_CFG_SMP_MODE=TRUE (current default),
+ * core1 is owned by ChibiOS (ch1 SMP instance); see Laurel/c1_main.c for
+ * the SMP-aware version that calls chInstanceObjectInit(&ch1, ...).
+ *
+ * Core1 waits in a WFE loop for core0 to push a function pointer via
+ * the SIO inter-core FIFO, calls it, then writes a done token back:
+ *   core0: SIO->FIFO_WR = (uint32_t)(c1_task_fn)my_function
+ *   core1: calls my_function(), then SIO->FIFO_WR = 1
  */
 void c1_main(void)
 {
