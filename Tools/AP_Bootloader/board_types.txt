@@ -355,7 +355,10 @@ AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
 
+AP_HW_GPILOT_P1						 1275
+
 AP_HW_SKYDROID-S3                    1300
+
 AP_HW_CBUnmanned-CM405-FC            1301
 AP_HW_CBU_H753-SOM                   1302
 
