@@ -664,32 +664,12 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #endif  // AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
 
 #if AP_FILESYSTEM_LITTLEFS_USE_WSPI
-/*
- * WSPI transport primitives. These move bytes on a QUADSPI/OCTOSPI bus given an
- * opcode supplied by the caller; the NAND ops below build everything else (the
- * register and cache transfers) inline in their own WSPI branches.
- */
-
 // Send a command with no address or data phase
 bool AP_Filesystem_FlashMemory_LittleFS::wspi_command(uint8_t cmd)
 {
     const AP_HAL::Device::CommandHeader hdr {
         .cmd = cmd,
         .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE,
-    };
-    wspi_dev->set_cmd_header(hdr);
-    return wspi_dev->transfer(nullptr, 0, nullptr, 0);
-}
-
-// Send a command with 24-bit address (for PAGE READ, PROGRAM EXECUTE, BLOCK ERASE)
-bool AP_Filesystem_FlashMemory_LittleFS::wspi_command_addr24(uint8_t cmd, uint32_t addr)
-{
-    const AP_HAL::Device::CommandHeader hdr {
-        .cmd = cmd,
-        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
-               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
-               AP_HAL::WSPI::CFG_ADDR_SIZE_24,
-        .addr = addr,
     };
     wspi_dev->set_cmd_header(hdr);
     return wspi_dev->transfer(nullptr, 0, nullptr, 0);
@@ -714,10 +694,21 @@ bool AP_Filesystem_FlashMemory_LittleFS::is_busy()
 #endif
 }
 
-// SPI transport helpers (compiled whenever the chip is on a SPI bus)
-#if !AP_FILESYSTEM_LITTLEFS_USE_WSPI
-void AP_Filesystem_FlashMemory_LittleFS::send_command_addr(uint8_t command, uint32_t addr)
+// Send a command with an address phase, picking the transport from the build.
+// WSPI uses a 24-bit address; SPI uses 24- or 32-bit per use_32bit_address.
+bool AP_Filesystem_FlashMemory_LittleFS::send_command_addr(uint8_t command, uint32_t addr)
 {
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = command,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_SIZE_24,
+        .addr = addr,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    return wspi_dev->transfer(nullptr, 0, nullptr, 0);
+#else
     uint8_t cmd[5];
     cmd[0] = command;
 
@@ -733,9 +724,11 @@ void AP_Filesystem_FlashMemory_LittleFS::send_command_addr(uint8_t command, uint
         cmd[4] = 0;
     }
 
-    dev->transfer(cmd, use_32bit_address ? 5 : 4, nullptr, 0);
+    return dev->transfer(cmd, use_32bit_address ? 5 : 4, nullptr, 0);
+#endif
 }
 
+#if !AP_FILESYSTEM_LITTLEFS_USE_WSPI
 void AP_Filesystem_FlashMemory_LittleFS::send_command_page(uint8_t command, uint32_t page)
 {
     uint8_t cmd[3];
@@ -833,12 +826,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::nand_set_reg(uint8_t reg, uint8_t value
 // load a page from the array into the chip's internal cache
 bool AP_Filesystem_FlashMemory_LittleFS::nand_page_read(uint32_t row_addr)
 {
-#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
-    return wspi_command_addr24(JEDEC_PAGE_DATA_READ, row_addr);
-#else
-    send_command_addr(JEDEC_PAGE_DATA_READ, row_addr);
-    return true;
-#endif
+    return send_command_addr(JEDEC_PAGE_DATA_READ, row_addr);
 }
 
 // clock data out of the chip's internal cache starting at a column address
@@ -891,23 +879,13 @@ bool AP_Filesystem_FlashMemory_LittleFS::nand_program_load(uint16_t col_addr, co
 // commit the cache to the array at a row (page) address
 bool AP_Filesystem_FlashMemory_LittleFS::nand_program_execute(uint32_t row_addr)
 {
-#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
-    return wspi_command_addr24(JEDEC_PROGRAM_EXECUTE, row_addr);
-#else
-    send_command_addr(JEDEC_PROGRAM_EXECUTE, row_addr);
-    return true;
-#endif
+    return send_command_addr(JEDEC_PROGRAM_EXECUTE, row_addr);
 }
 
 // erase the block containing the given row (page) address
 bool AP_Filesystem_FlashMemory_LittleFS::nand_block_erase(uint32_t row_addr)
 {
-#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
-    return wspi_command_addr24(JEDEC_BLOCK_ERASE, row_addr);
-#else
-    send_command_addr(JEDEC_BLOCK_ERASE, row_addr);
-    return true;
-#endif
+    return send_command_addr(JEDEC_BLOCK_ERASE, row_addr);
 }
 #endif  // AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
 

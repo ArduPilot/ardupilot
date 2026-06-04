@@ -137,14 +137,14 @@ private:
 #endif
 
 #if AP_FILESYSTEM_LITTLEFS_USE_WSPI
-    // WSPI transport primitives shared by several NAND ops above
+    // WSPI transport primitive: command with no address or data phase
     bool wspi_command(uint8_t cmd);
-    bool wspi_command_addr24(uint8_t cmd, uint32_t addr);
 #else
-    // SPI transport primitives (used by the NAND ops above, and by NOR)
-    void send_command_addr(uint8_t command, uint32_t addr);
+    // SPI transport primitive: command + 16-bit page/column address
     void send_command_page(uint8_t command, uint32_t page);
 #endif
+    // command + address, transport-aware (WSPI 24-bit, SPI 24- or 32-bit)
+    bool send_command_addr(uint8_t command, uint32_t addr);
 };
 
 #endif  // #if AP_FILESYSTEM_LITTLEFS_ENABLED
