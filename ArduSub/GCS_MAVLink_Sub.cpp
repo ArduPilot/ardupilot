@@ -172,6 +172,24 @@ bool GCS_MAVLINK_Sub::send_info()
     return true;
 }
 
+#if AP_MAVLINK_MSG_ILLUMINATOR_STATUS_SENDING_ENABLED && defined(MAVLINK_MSG_ID_ILLUMINATOR_STATUS)
+void GCS_MAVLINK_Sub::send_illuminator_status()
+{
+    // Round-robin across illuminators, one status per invocation, to avoid
+    // dominating the channel.
+    last_illuminator_status_index += 1;
+    if (last_illuminator_status_index >= Sub::illuminator_count) {
+        last_illuminator_status_index = 0;
+    }
+    const uint8_t id = last_illuminator_status_index + 1;
+    const AP_Illuminator *illuminator = sub.get_illuminator(id);
+    if (illuminator == nullptr) {
+        return;
+    }
+    illuminator->send_status(chan);
+}
+#endif
+
 #if AP_RANGEFINDER_ENABLED
 void GCS_MAVLINK_Sub::send_water_depth()
 {
@@ -329,6 +347,13 @@ bool GCS_MAVLINK_Sub::try_send_message(enum ap_message id)
         break;
 #endif  // AP_RANGEFINDER_ENABLED
 
+#if AP_MAVLINK_MSG_ILLUMINATOR_STATUS_SENDING_ENABLED && defined(MAVLINK_MSG_ID_ILLUMINATOR_STATUS)
+    case MSG_ILLUMINATOR_STATUS:
+        CHECK_PAYLOAD_SIZE(ILLUMINATOR_STATUS);
+        send_illuminator_status();
+        break;
+#endif
+
     default:
         return GCS_MAVLINK::try_send_message(id);
     }
@@ -428,6 +453,12 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
 
+    case MAV_CMD_ILLUMINATOR_ON_OFF:
+        return handle_MAV_CMD_ILLUMINATOR_ON_OFF(packet);
+
+    case MAV_CMD_DO_ILLUMINATOR_CONFIGURE:
+        return handle_MAV_CMD_DO_ILLUMINATOR_CONFIGURE(packet);
+
     case MAV_CMD_MISSION_START:
         if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
             // first-item/last item not supported
@@ -517,6 +548,80 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_i
             return MAV_RESULT_FAILED;
         }
         return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_ILLUMINATOR_ON_OFF(const mavlink_command_int_t &packet)
+{
+    // param1: enable (MAV_BOOL: 0=off, 1=on)
+    // param2: target illuminator id (0 = all autopilot-attached illuminators,
+    //         1..illuminator_count = specific autopilot-attached illuminator).
+    //         See mavlink/mavlink#2490.
+    const bool enable = is_equal(packet.param1, (float)MAV_BOOL_TRUE);
+    const bool disable = is_equal(packet.param1, (float)MAV_BOOL_FALSE);
+    if (!enable && !disable) {
+        return MAV_RESULT_DENIED;
+    }
+
+    const uint8_t id = (uint8_t)packet.param2;
+    if (id > Sub::illuminator_count) {
+        // MAVLink illuminators (id >= 7) have their own component id, so the
+        // autopilot would not be the addressee. Anything else above our
+        // illuminator count is not present on this vehicle.
+        return MAV_RESULT_DENIED;
+    }
+
+    // id 0 addresses all autopilot-attached illuminators.
+    const uint8_t first = (id == 0) ? 1 : id;
+    const uint8_t last = (id == 0) ? Sub::illuminator_count : id;
+    for (uint8_t i = first; i <= last; i++) {
+        AP_Illuminator *illuminator = sub.get_illuminator(i);
+        if (illuminator == nullptr) {
+            return MAV_RESULT_DENIED;
+        }
+        illuminator->on_off(enable);
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_ILLUMINATOR_CONFIGURE(const mavlink_command_int_t &packet)
+{
+    // param1: mode (ILLUMINATOR_MODE)
+    // param2: brightness (0-100%)
+    // param3: strobe period (s, 0 = no strobing)
+    // param4: strobe duty (%, 0 = no strobing)
+    // param5 (packet.x): target illuminator id (0 = all autopilot-attached
+    //         illuminators, 1..illuminator_count = specific autopilot-attached
+    //         illuminator). See mavlink/mavlink#2490.
+    const uint8_t id = (uint8_t)packet.x;
+    if (id > Sub::illuminator_count) {
+        return MAV_RESULT_DENIED;
+    }
+
+    const ILLUMINATOR_MODE mode = (ILLUMINATOR_MODE)(uint8_t)packet.param1;
+    if (mode != ILLUMINATOR_MODE_UNKNOWN && mode != ILLUMINATOR_MODE_INTERNAL_CONTROL) {
+        // ArduSub illuminators only support brightness control (internal mode).
+        return MAV_RESULT_DENIED;
+    }
+
+    // Strobing is not supported on ArduSub illuminator outputs.
+    if (!is_zero(packet.param3) || !is_zero(packet.param4)) {
+        return MAV_RESULT_DENIED;
+    }
+
+    // id 0 addresses all autopilot-attached illuminators.  set_brightness_pct
+    // rejects (without changing the output) an out-of-range brightness.
+    const uint8_t first = (id == 0) ? 1 : id;
+    const uint8_t last = (id == 0) ? Sub::illuminator_count : id;
+    for (uint8_t i = first; i <= last; i++) {
+        AP_Illuminator *illuminator = sub.get_illuminator(i);
+        if (illuminator == nullptr) {
+            return MAV_RESULT_DENIED;
+        }
+        if (!illuminator->set_brightness_pct(packet.param2)) {
+            return MAV_RESULT_DENIED;
+        }
+    }
+    return MAV_RESULT_ACCEPTED;
 }
 
 // this is called on receipt of a MANUAL_CONTROL packet and is
