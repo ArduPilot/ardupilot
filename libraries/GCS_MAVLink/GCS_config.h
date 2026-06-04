@@ -124,6 +124,15 @@
 #define AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED AP_RANGEFINDER_ENABLED
 #endif
 
+// ILLUMINATOR_STATUS (MAVLink id 440) was added to common.xml after the rest
+// of the illuminator definitions. All sites that reference the message also
+// check defined(MAVLINK_MSG_ID_ILLUMINATOR_STATUS) so the code keeps
+// compiling against older submodule revisions that lack the message; on
+// those revisions ILLUMINATOR_STATUS is silently disabled.
+#ifndef AP_MAVLINK_MSG_ILLUMINATOR_STATUS_SENDING_ENABLED
+#define AP_MAVLINK_MSG_ILLUMINATOR_STATUS_SENDING_ENABLED HAL_GCS_ENABLED
+#endif
+
 // all commands can be executed by COMMAND_INT, so COMMAND_LONG isn't
 // strictly required.  This option created for 4.5, Nov 2023, and code
 // left in place.
