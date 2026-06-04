@@ -362,10 +362,18 @@ void NavEKF3_core::ResetHeight(void)
 // Return true if the height datum reset has been performed.
 bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged)
 {
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
-        // only allow resets when on the ground.
-        // If using using rangefinder for height then never perform a
-        // reset of the height datum
+    if (!onGround) {
+        // only allow resets when on the ground
+        return false;
+    }
+    // Only reset the datum when height is referenced to the baro or GPS.  For
+    // rangefinder, beacon or external-nav height the estimate is referenced to
+    // that source rather than the baro; zeroing position.z and recalibrating
+    // the baro would corrupt it (e.g. external-nav height snaps to the takeoff
+    // altitude after a disarm), and there is no baro drift to clear in that
+    // case anyway.
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO &&
+        activeHgtSource != AP_NavEKF_Source::SourceZ::GPS) {
         return false;
     }
 
