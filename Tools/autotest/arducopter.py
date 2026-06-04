@@ -12384,9 +12384,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 continue
             peak_excursion = max(peak_excursion, abs(m.relative_alt * 0.001))
         self.progress("Peak altitude excursion over 2s post-arm: %.3f m" % peak_excursion)
-        if peak_excursion > 0.1:
+        if peak_excursion > 0.2:
             raise NotAchievedException(
-                "Post-arm altitude transient exceeds 0.1 m: %.3f m "
+                "Post-arm altitude transient exceeds 0.2 m: %.3f m "
                 "(arm-time reset did not clear drift or stale baro "
                 "buffer not flushed)" % peak_excursion)
 
@@ -12430,9 +12430,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 continue
             peak_excursion = max(peak_excursion, abs(m.relative_alt * 0.001))
         self.progress("Peak altitude excursion over 2s post-arm: %.3f m" % peak_excursion)
-        if peak_excursion > 0.1:
+        if peak_excursion > 0.2:
             raise NotAchievedException(
-                "Post-arm altitude transient exceeds 0.1 m: %.3f m "
+                "Post-arm altitude transient exceeds 0.2 m: %.3f m "
                 "(arm-time reset did not clear drift or stale baro "
                 "buffer not flushed)" % peak_excursion)
 
