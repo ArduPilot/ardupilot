@@ -109,6 +109,13 @@ public:
     // Reset the EKF height datum and clear baro temperature drift
     // accumulated while disarmed.
     //
+    // Despite the name this is more than a zero-point relabel: a full
+    // reset also zeroes the vertical velocity state and recalibrates the
+    // barometer (see the full-reset list below).  It deliberately does
+    // NOT touch the state covariance -- it re-datums the height/velocity
+    // states, it does not reset the filter.  Intended to be called on the
+    // ground at a well-defined moment (e.g. arm), not run continuously.
+    //
     // origin_alt_tolerance_m caps how far EKF_origin.alt may diverge
     // from current GPS altitude before the reset is suppressed.
     //   <  0  : disable the check; always do a full reset.
@@ -126,8 +133,8 @@ public:
     //
     // Returns true if the function evaluated and acted on the state
     // (regardless of full vs partial branch).  Returns false if no
-    // action could be taken at all -- specifically when the rangefinder
-    // is the active height source or the vehicle is not on the ground.
+    // action could be taken at all -- specifically when the active height
+    // source is not the baro or GPS, or the vehicle is not on the ground.
     bool resetHeightDatum(float origin_alt_tolerance_m);
 
     // Backward-compatible no-arg form: equivalent to passing -1.0f
