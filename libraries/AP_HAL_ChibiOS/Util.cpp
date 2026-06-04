@@ -31,6 +31,7 @@
 #endif
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <AP_Common/ExpandingString.h>
+#include "xip_profiler.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include "sdcard.h"
 #include "shared_dma.h"
@@ -520,6 +521,9 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
         sysStopLoadMeasure();
         sysStartLoadMeasure();
     }
+#endif
+#if defined(RP2350) && defined(AP_XIP_PROFILER_ENABLED)
+    ap_xip_profiler_append_thread_info(str);
 #endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
