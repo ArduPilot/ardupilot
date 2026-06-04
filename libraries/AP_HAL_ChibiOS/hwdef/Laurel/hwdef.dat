@@ -30,7 +30,8 @@ APJ_BOARD_ID AP_HW_RASPBERRYPI_LAUREL
 # timing thresholds for thread-profiling warnings.
 OSCILLATOR_HZ 12000000
 
-# 8MB application flash (W25Q64 on the fixed RP2350 QSPI/XIP interface)
+# 8MB boot/XIP flash: W25Q64JVXGIM (Winbond, 133 MHz max, QSPI, chip-select = QSPI_SS / pin75 — dedicated HW pin, QMI-controlled)
+# 16MB blackbox flash: W25Q128JVPIM (Winbond, 133 MHz max, SPI, chip-select = PA0 / GPIO0 / pin77)
 FLASH_SIZE_KB 8192
 # The ChibiOS EFLv1 driver defaults RP_FLASH_SIZE to 4MB; override it to the
 # actual flash capacity so efl_lld_program and block-erase accept 8MB offsets.
@@ -350,13 +351,17 @@ define RP_PLL_SYS_POSTDIV2 1
 # On-chip VREG voltage select: 0x0f = 1.30 V (datasheet Table 481, VREG.VSEL).
 # This is raised in rp_clocks.c before PLL_SYS is started.
 define RP_VREG_VSEL 15
-# QMI flash timing for 375 MHz operation.  At 375 MHz the bootloader's
-# CLKDIV=3 gives SCK = 125 MHz which is over-spec for W25Q32 (80 MHz max).
-# CLKDIV=6 → SCK = 62.5 MHz (safe).  RXDELAY=6 → 8 ns capture delay,
-# covering the W25Q32 tCHQV of ≤7 ns.  Must be applied before PLL switch.
-define RP_QMI_CLKDIV 6
-define RP_QMI_RXDELAY 6
-define AP_XIP_PROFILER_ENABLED 1
+# QMI flash timing for 375 MHz operation.
+# RXDELAY unit = half a sysclk cycle = 1.333 ns at 375 MHz.
+# W25Q64JVXGIM: fast-read max 133 MHz, tCLQV (CLK-low to output valid) ≤ 6 ns.
+# Timing constraint: capture must land in the window [tCLQV, SCK_period).
+#
+# CLKDIV=3: SCK = 125 MHz, period 8 ns.  Rising edge at 4.0 ns.
+#   RXDELAY=2 → capture at 4.0 + 2×1.333 = 6.67 ns.  Hold margin 1.33 ns.  ✓
+# Must be applied before PLL switch.
+define RP_QMI_CLKDIV 3
+define RP_QMI_RXDELAY 2
+# define AP_XIP_PROFILER_ENABLED 1
 
 # Board-specific notes:
 # - PA39 is routed to the onboard RGB LED but serial LED support remains
@@ -365,10 +370,12 @@ define AP_XIP_PROFILER_ENABLED 1
 # - PA36/PA37 are RX-only board pads (SBUS / ESC telemetry in Betaflight) and
 #   are intentionally not declared until RX-only serial support exists here.
 # - microSD is wired in SPI mode on the shared SPI1 bus with a dedicated
-#   chip-select on PA25.
+#   chip-select on PA25 (microSD).
 # - SPI1 is a hardware either-or choice: microSD or hardware OSD. This target
 #   selects microSD and keeps the hardware OSD SPI device disabled.
-# - The secondary W25Q128 blackbox flash on Laurel is not yet represented in
+# - The secondary W25Q128JVPIM blackbox flash (Winbond, 128 Mbit) on Laurel
+#   uses chip-select PA0 (GPIO0, pin77). The SPI bus it shares is not yet
+#   confirmed from schematic; it is not yet represented in
 #   the RP2350 hwdef path, so only main XIP flash storage plus microSD are
 #   currently enabled.
 

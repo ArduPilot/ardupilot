@@ -26,7 +26,8 @@ header-pin numbering from the Pico2 README does not apply here.
 
 - RP2350B dual-core Cortex-M33 @ 150 MHz
 - 520 KB SRAM
-- 8 MB main QSPI/XIP flash (`W25Q64`-class layout in current target)
+- 8 MB boot/XIP flash: `W25Q64JVXGIM` (Winbond, 133 MHz max, CS = `QSPI_SS` pin75 — dedicated QMI hardware pin)
+- 16 MB blackbox flash: `W25Q128JVPIM` (Winbond, 133 MHz max, CS = `PA0`/GPIO0/pin77) — SPI bus not yet confirmed in hwdef
 - USB CDC serial on `SERIAL0`
 - 2 hardware UARTs + 2 PIO UARTs in the current Laurel hwdef
 - 4 PWM motor outputs on GPIO28-31
@@ -219,10 +220,11 @@ access can use the SPI-mode microSD card on the shared SPI1 bus:
 - application region: remainder of flash
 - logical parameter capacity: 8 KB with `AP_FLASH_STORAGE_QUAD_PAGE 1`
 
-Earlier Laurel board notes indicated a second QSPI flash device for blackbox
-logging. That secondary flash is not yet modelled in the current RP2350 hwdef
-path, so storage currently consists of the main XIP flash plus the SPI-mode
-microSD card.
+The Laurel board carries a secondary `W25Q128JVPIM` (Winbond 128 Mbit / 16 MB)
+blackbox flash in addition to the boot flash. Its chip-select is `PA0` (GPIO0,
+pin77), confirmed from the Betaflight board config. The SPI bus it shares has
+not yet been confirmed from the schematic. Storage currently consists of the
+main XIP flash (`W25Q64JVXGIM`) plus the SPI-mode microSD card.
 
 ## Connectors
 
@@ -344,7 +346,7 @@ using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
 | DShot / BLHeli / SerialLED | Not supported on current RP2350 target |
 | CAN / DroneCAN | Not supported by RP2350 hardware |
 | Hardware OSD and microSD together | Not possible on Laurel hardware; current target chooses microSD |
-| Secondary QSPI blackbox flash | Present in earlier board notes but not yet modelled in hwdef |
+| Secondary blackbox flash (`W25Q128JVPIM`) | CS = `PA0`/GPIO0/pin77 confirmed; SPI bus not yet confirmed — not modelled in hwdef |
 | RX-only extra serial pads | Not yet represented in current serial definitions |
 | Analog scaling calibration | Placeholder scale factors still in use |
 
