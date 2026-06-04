@@ -70,10 +70,10 @@ SECTIONS
 
 /*
  * Cortex-M33 VTOR requires bits[6:0] = 0 (128-byte alignment).
- * Placing startup first means the vector table is at flash_base+0x0000,
- * which satisfies the constraint without padding.
+ * Vector table first at flash_base+0x0000 satisfies this without padding.
+ * APP_START_ADDRESS must equal flash_base so the bootloader sets VTOR here.
  */
-    startup : ALIGN(4) SUBALIGN(16)
+    startup : ALIGN(128) SUBALIGN(16)
     {
         __vectors_base__ = .;
         KEEP(*(.vectors))
@@ -81,13 +81,23 @@ SECTIONS
 
 /*
  * RP2350 PICOBIN image definition block.
- * The bootrom scans the first 4KB of flash for PICOBIN_BLOCK_MARKER_START (0xffffded3).
- * Placing it after the vector table (~272 bytes) keeps it well within that window.
+ * The ROM scans the first 4KB of flash for PICOBIN_BLOCK_MARKER_START (0xffffded3).
+ * Placing it after the vector table keeps it well within that window.
+ * On non-RP2350 boards this section is absent (0 bytes).
  */
     embedded_block : ALIGN(4)
     {
         KEEP(*(.embedded_block))
     } > flash
+
+/*
+ * Safety check: PICOBIN block must never precede the ARM vector table.
+ * If this fires, the linker script has embedded_block before startup — the
+ * bootloader would read the PICOBIN marker as the initial SP and crash.
+ * Vacuously true on non-RP2350 boards where embedded_block is 0 bytes.
+ */
+ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SIZEOF(startup),
+       "RP2350: PICOBIN embedded_block must come AFTER the vector table (startup section)")
 
     constructors : ALIGN(4) SUBALIGN(4)
     {

@@ -37,13 +37,13 @@ APP_START_OFFSET_KB 32
 #
 # The RP2350 ChibiOS startup includes an IMAGE_DEF block (32 bytes) at the very
 # start of the app binary, followed by 96 bytes of padding (to reach 128-byte
-# VTOR alignment), giving: app_flash_base + 0x80 = 0x10010080 as the ARM vector
-# table base.  APP_START_ADDRESS must point to the vector table, not the flash base.
+# VTOR alignment). APP_START_ADDRESS equals the flash base; the vector table is
+# at flash_base+0x0000 (vectors-first layout, imagedef block follows after).
 #
 # chibios_hwdef.py computes FLASH_LOAD_ADDRESS as 0x08000000+FLASH_RESERVE_START_KB*1024
 # which is wrong for RP2350.  Override APP_START_ADDRESS directly so bl_protocol.cpp
 # (which uses #ifndef APP_START_ADDRESS) picks up the correct value.
-define APP_START_ADDRESS 0x10010080
+define APP_START_ADDRESS 0x10010000
 
 # EFL driver required for RP2350 QSPI flash erase/write
 define HAL_USE_EFL                         TRUE

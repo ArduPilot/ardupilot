@@ -1,13 +1,13 @@
 # RP2350 RAMFUNC2 registry
 # format: path|symbol
-ArduCopter/Attitude.cpp|Copter::run_rate_controller_main
-ArduCopter/Copter.cpp|Copter::read_AHRS
-ArduCopter/ekf_check.cpp|Copter::check_ekf_reset
-ArduCopter/land_detector.cpp|Copter::update_land_and_crash_detectors
-ArduCopter/mode.cpp|Copter::update_flight_mode
-ArduCopter/motors.cpp|Copter::motors_output
-ArduCopter/motors.cpp|Copter::motors_output_main
-ArduCopter/precision_landing.cpp|Copter::update_precland
+#ArduCopter/Attitude.cpp|Copter::run_rate_controller_main
+#ArduCopter/Copter.cpp|Copter::read_AHRS
+#ArduCopter/ekf_check.cpp|Copter::check_ekf_reset
+#ArduCopter/land_detector.cpp|Copter::update_land_and_crash_detectors
+#ArduCopter/mode.cpp|Copter::update_flight_mode
+#ArduCopter/motors.cpp|Copter::motors_output
+#ArduCopter/motors.cpp|Copter::motors_output_main
+#ArduCopter/precision_landing.cpp|Copter::update_precland
 ArduCopter/rate_thread.cpp|Copter::rate_controller_filter_update
 ArduCopter/rate_thread.cpp|Copter::update_dynamic_notch_at_specified_rate_main
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad
@@ -29,14 +29,9 @@ libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros32
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis64
 libraries/AP_HAL_ChibiOS/xip_profiler.cpp|ap_xip_cs_hook
 libraries/AP_HAL_ChibiOS/system.cpp|fault_capture
-libraries/AP_HAL_ChibiOS/system.cpp|fault_capture
-libraries/AP_HAL_ChibiOS/system.cpp|HardFault_Handler
 libraries/AP_HAL_ChibiOS/system.cpp|HardFault_Handler
 libraries/AP_HAL_ChibiOS/system.cpp|BusFault_Handler
-libraries/AP_HAL_ChibiOS/system.cpp|BusFault_Handler
 libraries/AP_HAL_ChibiOS/system.cpp|UsageFault_Handler
-libraries/AP_HAL_ChibiOS/system.cpp|UsageFault_Handler
-libraries/AP_HAL_ChibiOS/system.cpp|MemManage_Handler
 libraries/AP_HAL_ChibiOS/system.cpp|MemManage_Handler
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::periodic
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_params
