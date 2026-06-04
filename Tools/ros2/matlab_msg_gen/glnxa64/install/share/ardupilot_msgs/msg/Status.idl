@@ -1,0 +1,56 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/Status.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    module Status_Constants {
+      const uint8 APM_ROVER = 1;
+      const uint8 APM_ARDUCOPTER = 2;
+      const uint8 APM_ARDUPLANE = 3;
+      const uint8 APM_ANTENNATRACKER = 4;
+      const uint8 APM_UNKNOWN = 5;
+      const uint8 APM_REPLAY = 6;
+      const uint8 APM_ARDUSUB = 7;
+      const uint8 APM_IOFIRMWARE = 8;
+      const uint8 APM_AP_PERIPH = 9;
+      const uint8 APM_AP_DAL_STANDALONE = 10;
+      const uint8 APM_AP_BOOTLOADER = 11;
+      const uint8 APM_BLIMP = 12;
+      const uint8 APM_HELI = 13;
+      const uint8 FS_RADIO = 21;
+      const uint8 FS_BATTERY = 22;
+      const uint8 FS_GCS = 23;
+      const uint8 FS_EKF = 24;
+    };
+    struct Status {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "From AP_Vehicle_Type.h")
+      uint8 vehicle_type;
+
+      @verbatim (language="comment", text=
+        "true if vehicle is armed.")
+      boolean armed;
+
+      @verbatim (language="comment", text=
+        "Vehicle mode, enum depending on vehicle type.")
+      uint8 mode;
+
+      @verbatim (language="comment", text=
+        "True if flying/driving/diving/tracking.")
+      boolean flying;
+
+      @verbatim (language="comment", text=
+        "True is external control is enabled.")
+      boolean external_control;
+
+      @verbatim (language="comment", text=
+        "Array containing all active failsafe.")
+      sequence<uint8> failsafe;
+    };
+  };
+};

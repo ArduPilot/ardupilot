@@ -24,10 +24,10 @@ bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_
             return false;
         }
 
-        constexpr uint32_t MASK_POS_IGNORE =
-            GlobalPosition::IGNORE_LATITUDE |
-            GlobalPosition::IGNORE_LONGITUDE |
-            GlobalPosition::IGNORE_ALTITUDE;
+        // Older microxrceddsgen versions used on this system don't emit IDL
+        // constant modules into generated C headers, so keep the REP-147
+        // position ignore mask local.
+        constexpr uint32_t MASK_POS_IGNORE = 1U | 2U | 4U;
 
         if (!(cmd_pos.type_mask & MASK_POS_IGNORE)) {
             Location loc(cmd_pos.latitude * 1E7, cmd_pos.longitude * 1E7, alt_cm, alt_frame);

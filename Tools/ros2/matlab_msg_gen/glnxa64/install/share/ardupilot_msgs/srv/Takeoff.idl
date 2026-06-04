@@ -1,0 +1,20 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/Takeoff.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    struct Takeoff_Request {
+      @verbatim (language="comment", text=
+        "This service requests the vehicle to takeoff (VTOL style for QuadPlane)." "\n"
+        "alt : Set the takeoff altitude above home or above terrain(in case of rangefinder)")
+      float alt;
+    };
+    @verbatim (language="comment", text=
+      "status    : True if the request for mode switch was successful, False otherwise")
+    struct Takeoff_Response {
+      boolean status;
+    };
+  };
+};

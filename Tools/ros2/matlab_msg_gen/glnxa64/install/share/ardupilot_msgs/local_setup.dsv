@@ -1,0 +1,3 @@
+source;share/ardupilot_msgs/environment/ament_prefix_path.sh
+source;share/ardupilot_msgs/environment/library_path.sh
+source;share/ardupilot_msgs/environment/path.sh

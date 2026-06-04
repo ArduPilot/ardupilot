@@ -126,7 +126,10 @@ def build(bld):
             extra_sources.extend([bld.bldnode.find_or_declare(str(dst_dir / name)) for name in [idl_gen.c_name]])
 
         # microxrceddsgen expects a space-seperated list of *.idl files
-        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -default-container-prealloc-size {CONTAINER_PREALLOC_SIZE} -d {dst_dir} -I {idl_include_path} {idl_abspaths_str}"
+        # The microxrceddsgen packaged on this system does not support
+        # -default-container-prealloc-size; keep the AP_DDS IDL generation
+        # command compatible with the installed generator.
+        gen_cmd = f"{bld.env.MICROXRCEDDSGEN[0]} -cs -replace -d {dst_dir} -I {idl_include_path} {idl_abspaths_str}"
 
         # waf expects a space-separated list of .h and .c files
         bld(
