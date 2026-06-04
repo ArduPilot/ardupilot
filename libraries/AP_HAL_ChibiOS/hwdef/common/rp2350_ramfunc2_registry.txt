@@ -27,7 +27,7 @@ libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::drift_correction
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros64
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros32
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis64
-libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis32
+libraries/AP_HAL_ChibiOS/xip_profiler.cpp|ap_xip_cs_hook
 libraries/AP_HAL_ChibiOS/system.cpp|fault_capture
 libraries/AP_HAL_ChibiOS/system.cpp|fault_capture
 libraries/AP_HAL_ChibiOS/system.cpp|HardFault_Handler

@@ -705,6 +705,14 @@ define RP_CORE1_START TRUE
 # 1500 / (3 × 2) = 250 MHz.  POSTDIV1(3) >= POSTDIV2(2) satisfies the
 # RP2350 constraint, and 250 MHz is a well-tested Pico2 operating point.
 define RP_PLL_SYS_POSTDIV1 3
+# QMI flash timing for 250 MHz operation.
+# Bootloader default CLKDIV=3 gives SCK=50 MHz at 150 MHz; at 250 MHz that
+# would be 83 MHz — 4% over W25Q32's 80 MHz fast-read limit.
+# CLKDIV=4 → SCK = 62.5 MHz (safe).  RXDELAY=3 → 12 ns capture delay,
+# covering the W25Q32 tCHQV of ≤7 ns.  Must be applied before PLL switch.
+define RP_QMI_CLKDIV 4
+define RP_QMI_RXDELAY 3
+define AP_XIP_PROFILER_ENABLED 1
 
 #        ---------------------------------------------
 #        # if the user has both isolated sensors enabled then force-enable the
