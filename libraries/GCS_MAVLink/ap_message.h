@@ -7,6 +7,8 @@
 #pragma once
 
 #include "GCS_config.h"
+// pulled in for MAVLINK_MSG_ID_* macros referenced in #if guards below
+#include "GCS_MAVLink.h"
 
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_Terrain/AP_Terrain_config.h>
@@ -116,5 +118,8 @@ enum ap_message : uint8_t {
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
     MSG_UTM_GLOBAL_POSITION            = 101,
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_MSG_ILLUMINATOR_STATUS_SENDING_ENABLED && defined(MAVLINK_MSG_ID_ILLUMINATOR_STATUS)
+    MSG_ILLUMINATOR_STATUS             = 102,
+#endif  // AP_MAVLINK_MSG_ILLUMINATOR_STATUS_SENDING_ENABLED && defined(MAVLINK_MSG_ID_ILLUMINATOR_STATUS)
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };
