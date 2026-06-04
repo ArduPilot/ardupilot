@@ -75,6 +75,15 @@ SECTIONS
         KEEP(*(.embedded_block))
     } > flash
 
+/*
+ * Safety check: PICOBIN block must never precede the ARM vector table.
+ * If this fires, the linker script has embedded_block before startup — the
+ * bootloader would read the PICOBIN marker as the initial SP and crash.
+ * Vacuously true on non-RP2350 boards where embedded_block is 0 bytes.
+ */
+ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SIZEOF(startup),
+       "RP2350: PICOBIN embedded_block must come AFTER the vector table (startup section)")
+
     constructors : ALIGN(4) SUBALIGN(4)
     {
         __init_array_base__ = .;
