@@ -16203,6 +16203,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(10, 2000)
         self.wait_statustext('Using EKF Source Set 3', check_context=True)
 
+    def FTPScriptUpload(self):
+        '''upload a Lua script via MAVLink FTP and verify it runs'''
+        # SCRIPTING_DIRECTORY in SITL is "./scripts" (lua_common_defs.h)
+        script_path = "scripts/ftp_upload_test.lua"
+        script_content = b"gcs:send_text(6, 'ftp_upload_test: ok')\n"
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 20000,
+        })
+        self.reboot_sitl()
+
+        try:
+            self.ftp_create_directory("scripts")
+        except Exception:
+            pass
+
+        try:
+            self.ftp_write_file(script_path, script_content)
+            self.context_collect('STATUSTEXT')
+            self.scripting_restart()
+            self.wait_statustext(
+                "ftp_upload_test: ok",
+                check_context=True,
+                timeout=30,
+                wallclock_timeout=True,
+            )
+        except Exception:
+            try:
+                self.ftp_remove_file(script_path)
+            except Exception:
+                pass
+            raise
+        self.ftp_remove_file(script_path)
+
     def CommonOrigin(self):
         """Test common origin between EKF2 and EKF3"""
         self.context_push()
@@ -17630,6 +17665,7 @@ return update, 1000
             self.BatteryInternalUseOnly,
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingAHRSSource,
+            self.FTPScriptUpload,
             self.CommonOrigin,
             self.AHRSOriginRecorded,
             self.TestTetherStuck,
