@@ -468,7 +468,7 @@ void AP_MotorsHeli_Single::output_to_motors()
         case TAIL_TYPE::SERVO:
         case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
         case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
-        default: 
+        default:
             rc_write_angle(AP_MOTORS_MOT_4, _servo4_out * YAW_SERVO_MAX_ANGLE);
             break;
     }
@@ -615,6 +615,18 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
         uint8_t table_size = ARRAY_SIZE(sw_phase_conversion_info);
         for (uint8_t i=0; i<table_size; i++) {
             AP_Param::convert_old_parameter(&sw_phase_conversion_info[i], 1.0);
+        }
+    }
+
+    if (use_tail_RSC()) {
+        // PARAMETER_CONVERSION - Added: June-2026
+        // New parameter added to allow users to specify Tail RSC ramp time.  Thus
+        // if the tail rsc is being used then the H_RSC_RAMP_TIME is assigned to the
+        // H_TAIL_RAMP_TIME parameter.
+        const AP_Param::ConversionInfo tail_ramp_conversion_info[] = {
+            { 90, 13888, AP_PARAM_INT16,  "H_TAIL_RAMP_TIME" },
+        for (uint8_t i=0; i<table_size; i++) {
+            AP_Param::convert_old_parameter(&tail_ramp_conversion_info[i], 1.0);
         }
     }
 }
