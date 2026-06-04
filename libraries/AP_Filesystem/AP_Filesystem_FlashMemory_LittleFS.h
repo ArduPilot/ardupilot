@@ -129,11 +129,12 @@ private:
     bool nand_read_id(uint32_t &id);
     bool nand_read_status(uint8_t &status);
     bool nand_set_reg(uint8_t reg, uint8_t value);
-    bool nand_page_read(uint32_t row_addr);
+    // fire-and-forget commands; failure is reconfirmed by the status register
+    void nand_page_read(uint32_t row_addr);
     bool nand_read_cache(uint16_t col_addr, uint8_t *buf, uint32_t len);
     bool nand_program_load(uint16_t col_addr, const uint8_t *buf, uint32_t len);
-    bool nand_program_execute(uint32_t row_addr);
-    bool nand_block_erase(uint32_t row_addr);
+    void nand_program_execute(uint32_t row_addr);
+    void nand_block_erase(uint32_t row_addr);
 #endif
 
 #if AP_FILESYSTEM_LITTLEFS_USE_WSPI
@@ -144,7 +145,7 @@ private:
     void send_command_page(uint8_t command, uint32_t page);
 #endif
     // command + address, transport-aware (WSPI 24-bit, SPI 24- or 32-bit)
-    bool send_command_addr(uint8_t command, uint32_t addr);
+    void send_command_addr(uint8_t command, uint32_t addr);
 };
 
 #endif  // #if AP_FILESYSTEM_LITTLEFS_ENABLED
