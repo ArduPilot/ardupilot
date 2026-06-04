@@ -1478,6 +1478,9 @@ void Plane::load_parameters(void)
 
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
 
+    // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
+    g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
+
 #if AP_AIRSPEED_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2022
     {
