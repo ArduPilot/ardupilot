@@ -625,6 +625,8 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
         // H_TAIL_RAMP_TIME parameter.
         const AP_Param::ConversionInfo tail_ramp_conversion_info[] = {
             { 90, 13888, AP_PARAM_INT16,  "H_TAIL_RAMP_TIME" },
+        };
+        uint8_t table_size = ARRAY_SIZE(tail_ramp_conversion_info);
         for (uint8_t i=0; i<table_size; i++) {
             AP_Param::convert_old_parameter(&tail_ramp_conversion_info[i], 1.0);
         }
