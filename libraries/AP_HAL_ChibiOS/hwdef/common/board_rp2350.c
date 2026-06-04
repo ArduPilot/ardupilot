@@ -221,6 +221,26 @@ static RP2350_RAMFUNC void rp2350_invalidate_xip_cache(void)
     xip[0] = (1U << 0) | (1U << 1);
 }
 
+/*
+ * Read and clear the XIP cache hit/access counters (RP2350 datasheet 12.3.8).
+ * CTR_HIT (0x0C) counts cache hits, CTR_ACC (0x10) counts accesses; writing
+ * any value clears a counter. Both are cleared here so each call returns the
+ * counts accumulated since the previous call, giving a windowed hit rate when
+ * polled at a fixed interval (see Copter::perf_report).
+ */
+void rp2350_xip_cache_stats(uint32_t *hit, uint32_t *acc)
+{
+    volatile uint32_t *xip = (volatile uint32_t *)0x400C8000U;
+    if (hit != NULL) {
+        *hit = xip[3];
+    }
+    if (acc != NULL) {
+        *acc = xip[4];
+    }
+    xip[3] = 0U;
+    xip[4] = 0U;
+}
+
 /* Configure RP2350 pin mux and default output states from HAL defines. */
 void pico2_gpio_init(void)
 {
