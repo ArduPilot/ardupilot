@@ -1,4 +1,4 @@
-# CUAVv5 Flight Controller
+# CUAVv5 Flight Controller (bdshot)
 
 The CUAVv5 flight controller is sold by [CUAV](http://store.cuav.net/)
 
