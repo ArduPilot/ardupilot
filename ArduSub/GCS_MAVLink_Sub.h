@@ -60,6 +60,8 @@ private:
     MAV_RESULT handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_NAV_LOITER_UNLIM(const mavlink_command_int_t &packet);
     MAV_RESULT handle_MAV_CMD_NAV_LAND(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_MAV_CMD_ILLUMINATOR_ON_OFF(const mavlink_command_int_t &packet);
+    MAV_RESULT handle_MAV_CMD_DO_ILLUMINATOR_CONFIGURE(const mavlink_command_int_t &packet);
 
 #if AP_RANGEFINDER_ENABLED
     // send WATER_DEPTH - metres and temperature
@@ -69,6 +71,15 @@ private:
     // limit the amount of telemetry bandwidth we consume.
     uint8_t last_WATER_DEPTH_index;
 #endif // AP_RANGEFINDER_ENABLED
+
+#if AP_MAVLINK_MSG_ILLUMINATOR_STATUS_SENDING_ENABLED && defined(MAVLINK_MSG_ID_ILLUMINATOR_STATUS)
+    // send ILLUMINATOR_STATUS for one illuminator per call (cycles through
+    // configured illuminators).
+    void send_illuminator_status();
+    // index (0..illuminator_count-1) of the illuminator whose status we
+    // sent last, so we round-robin across them.
+    uint8_t last_illuminator_status_index;
+#endif
 
 #if HAL_HIGH_LATENCY2_ENABLED
     int16_t high_latency_target_altitude() const override;

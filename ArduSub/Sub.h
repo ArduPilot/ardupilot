@@ -123,6 +123,10 @@ public:
 
     Sub(void);
 
+    // Number of autopilot-attached illuminators (lights1, lights2) addressable
+    // by MAV_CMD_ILLUMINATOR_* commands. Id 0 targets all of them.
+    static constexpr uint8_t illuminator_count = 2;
+
 protected:
 
     bool should_zero_rc_outputs_on_reboot() const override { return true; }
@@ -290,6 +294,11 @@ private:
 
     // Flag indicating if we are currently using input hold
     bool input_hold_engaged;
+
+    // Brightness restored when an illuminator is turned back on with
+    // MAV_CMD_ILLUMINATOR_ON_OFF after having been turned off. Indexed by
+    // illuminator id - 1.
+    float illuminator_last_on_brightness_pct[illuminator_count] = { 100.0f, 100.0f };
 
     // Flag indicating if we are currently controlling Pitch and Roll instead of forward/lateral
     bool roll_pitch_flag = false;
@@ -533,6 +542,8 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_roi(const AP_Mission::Mission_Command& cmd);
     void do_mount_control(const AP_Mission::Mission_Command& cmd);
+    void do_illuminator_on_off(const AP_Mission::Mission_Command& cmd);
+    void do_illuminator_configure(const AP_Mission::Mission_Command& cmd);
 
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_surface(const AP_Mission::Mission_Command& cmd);
@@ -628,6 +639,20 @@ private:
 public:
     void mainloop_failsafe_check();
     bool rangefinder_alt_ok() const WARN_IF_UNUSED;
+
+    // Set the brightness (0-100%) of the addressed illuminator(s).
+    // id: 0 = all illuminators, 1 = lights1, 2 = lights2.
+    // Out-of-range ids are ignored.
+    void set_illuminator_brightness_pct(uint8_t id, float brightness_pct);
+
+    // Get the current brightness (0-100%) of the addressed illuminator.
+    // id: 1 = lights1, 2 = lights2. Returns 0 for any other id.
+    float get_illuminator_brightness_pct(uint8_t id) const;
+
+    // Turn the addressed illuminator(s) on or off. id: 0 = all, 1..count = specific.
+    // When turning off, the current brightness is remembered so the next 'on'
+    // restores it. The remembered brightness defaults to 100% per illuminator.
+    void illuminator_on_off(uint8_t id, bool enable);
 
     static Sub *_singleton;
 
