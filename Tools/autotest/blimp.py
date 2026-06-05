@@ -73,14 +73,6 @@ class AutoTestBlimp(TestSuite):
     def default_frame(self):
         return "blimp"
 
-    def apply_defaultfile_parameters(self):
-        # Blimp passes in a defaults_filepath in place of applying
-        # parameters afterwards.
-        pass
-
-    def defaults_filepath(self):
-        return self.model_defaults_filepath(self.frame)
-
     def wait_disarmed_default_wait_time(self):
         return 120
 

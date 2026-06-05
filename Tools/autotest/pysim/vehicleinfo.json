@@ -461,6 +461,13 @@
                     "default_params/plane-elevons.parm"
                 ]
             },
+            "plane-elevrev": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-elevrev.parm"
+                ]
+            },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
@@ -488,7 +495,10 @@
             },
             "plane-3d": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": []
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-3d.parm"
+                ]
             },
             "glider": {
                 "waf_target": "bin/arduplane",
@@ -516,6 +526,7 @@
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
                     "models/plane.parm",
+                    "models/plane-elevrev.parm",
                     "default_params/plane-redundant.parm"
                 ]
             },
@@ -543,7 +554,10 @@
             },
             "jsbsim": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-jsbsim.parm",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-elevrev.parm"
+                ],
                 "external": true
             },
             "scrimmage-plane": {

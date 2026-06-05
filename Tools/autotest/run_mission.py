@@ -45,7 +45,6 @@ class RunMission(vehicle_test_suite.TestSuite):
             sitl_home=self.sitl_home_string_from_mission_filepath(self.mission_filepath),
             speedup=self.speedup,
             sim_rate_hz=self.sim_rate_hz,
-            defaults_filepath=self.model_defaults_filepath(self.model),
         )
         self.get_mavlink_connection_going()
 
