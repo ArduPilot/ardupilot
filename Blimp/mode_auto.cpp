@@ -56,8 +56,6 @@ void ModeAuto::run()
 
     yaw_forward();
     blimp.loiter->run(target_pos, target_yaw, Vector4b{false,false,false,false});
-    gcs().send_named_float("TarX", target_pos.x);
-    gcs().send_named_float("TarY", target_pos.y);
 }
 
 Location ModeAuto::loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const
@@ -168,7 +166,6 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
         mission_started = true;
     }
 
-
     AP_Mission::Mission_Command next_cmd;
     if (!mission.get_next_nav_cmd(cmd.index+1, next_cmd)) {
         fast_wp = false;
@@ -192,7 +189,7 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     if (blimp.loiter->target_within(g.wp_radius*0.5)) {
         s_finished = scurve_this_leg.advance_target_along_track(scurve_prev_leg, scurve_next_leg, g.wp_radius, g.wp_accel, fast_wp, dt, scurve_this_leg_origin, target_vel, target_accel);
-        target_pos = Vector3f{(float)scurve_this_leg_origin.x,(float)scurve_this_leg_origin.y, (float)scurve_this_leg_origin.z};;
+        target_pos = Vector3f{(float)scurve_this_leg_origin.x,(float)scurve_this_leg_origin.y, (float)scurve_this_leg_origin.z};
         scurve_this_leg_origin = origin;
     }
 
