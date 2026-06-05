@@ -60,7 +60,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_linux_sbc.yml'  # except this one
 
   pull_request:
     paths-ignore:
@@ -123,7 +124,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_linux_sbc.yml'  # except this one
 
   workflow_dispatch:
 

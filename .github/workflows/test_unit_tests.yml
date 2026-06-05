@@ -45,7 +45,8 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_unit_tests.yml'  # except this one
   pull_request:
     paths-ignore:
       # Remove markdown files as irrelevant
@@ -91,7 +92,9 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_unit_tests.yml'  # except this one
+
   workflow_dispatch:
 
 concurrency:

@@ -76,6 +76,9 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/workflows/test_sitl_blimp.yml'  # except this one
 
 
   pull_request:
@@ -154,6 +157,9 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
+      # Remove change on other workflows
+      - '.github/**'
+      - '!.github/workflows/test_sitl_blimp.yml'  # except this one
 
   workflow_dispatch:
 
