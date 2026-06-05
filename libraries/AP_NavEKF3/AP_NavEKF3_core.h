@@ -186,11 +186,12 @@ public:
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height datum and clears baro temperature drift.
     // origin_alt_tolerance_m: see NavEKF3::resetHeightDatum.
-    // defer_until_abias_converged: when true (periodic disarmed reset),
-    // skip the reset while the Z accel-bias is still converging, so the
-    // datum reset does not erase the signal on-ground bias learning uses.
+    // reset_velocity: when true (arm-time reset) zero velocity.z too; when
+    // false (periodic disarmed reset) re-datum height only and leave
+    // velocity.z, so the on-ground zero-velocity bias-learning signal is
+    // preserved.
     // Returns true if the height datum reset was performed.
-    bool resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged);
+    bool resetHeightDatum(float origin_alt_tolerance_m, bool reset_velocity);
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow

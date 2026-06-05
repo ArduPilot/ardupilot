@@ -360,7 +360,7 @@ void NavEKF3_core::ResetHeight(void)
 // Reset the EKF height datum and clear accumulated baro drift.
 // origin_alt_tolerance_m: see NavEKF3::resetHeightDatum declaration.
 // Return true if the height datum reset has been performed.
-bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged)
+bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m, bool reset_velocity)
 {
     if (!onGround) {
         // only allow resets when on the ground
@@ -377,25 +377,6 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m, bool defer_unt
         return false;
     }
 
-    // For the periodic disarmed reset, hold off while the Z accel-bias is
-    // still converging.  The full reset zeroes velocity.z and recalibrates the
-    // baro, which erases the height/velocity error the on-ground zero-velocity
-    // fusion uses to make the Z bias observable; resetting mid-learn slows
-    // convergence and can leave the vehicle armed before the bias has settled.
-    // P[15][15] (Z accel-bias
-    // state variance) stays elevated through the learning window and falls to
-    // a low floor (~1% of the bias-limit variance) once converged.  The
-    // threshold is a fraction of that limit variance -- the same expression
-    // used to seed P[15][15] in CovariancePrediction/ResetHeight -- so it
-    // tracks EK3_ACC_BIAS_LIM and the EKF rate instead of being a magic
-    // number.  3% sits comfortably between the converged floor and the
-    // learning-window values.
-    if (defer_until_abias_converged) {
-        const ftype zbias_limit_var = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
-        if (P[15][15] > 0.03f * zbias_limit_var) {
-            return false;
-        }
-    }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
 
@@ -448,16 +429,28 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m, bool defer_unt
         dal.baro().update_calibration();
         storedBaro.reset();
 
-        // reset the vertical position and velocity states
+        // Re-datum the vertical position state.  velocity.z is only zeroed
+        // for a full reset (reset_velocity true).  On the ground the Z
+        // accel-bias is observed through the velocity error the bias
+        // produces, so zeroing velocity.z erases that signal and interrupts
+        // bias learning.  The periodic disarmed reset therefore re-datums
+        // height only and leaves velocity.z alone; the arm-time reset zeroes
+        // it for a clean takeoff.
         stateStruct.position.z = 0.0f;
-        stateStruct.velocity.z = 0.0f;
+        if (reset_velocity) {
+            stateStruct.velocity.z = 0.0f;
+        }
         for (uint8_t i=0; i<imu_buffer_length; i++) {
             storedOutput[i].position.z = stateStruct.position.z;
-            storedOutput[i].velocity.z = stateStruct.velocity.z;
+            if (reset_velocity) {
+                storedOutput[i].velocity.z = stateStruct.velocity.z;
+            }
         }
         outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
-        outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
-        vertCompFiltState.vel = outputDataNew.velocity.z;
+        if (reset_velocity) {
+            outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+            vertCompFiltState.vel = outputDataNew.velocity.z;
+        }
 
         // baroHgtOffset (calcFiltBaroOffset) is a slow first-order
         // filter tracking baroDataDelayed.hgt + position.z.  Post-reset

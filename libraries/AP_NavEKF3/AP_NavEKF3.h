@@ -126,11 +126,13 @@ public:
     //
     // Returns true if the function evaluated and acted on the state
     // (regardless of full vs partial branch).  Returns false if no
-    // action could be taken at all -- specifically when the rangefinder
-    // is the active height source or the vehicle is not on the ground.
-    // defer_until_abias_converged: when true (periodic disarmed reset), each
-    // core skips the reset while its Z accel-bias is still converging.
-    bool resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged=false);
+    // action could be taken at all -- specifically when the active height
+    // source is not the baro or GPS, or the vehicle is not on the ground.
+    // reset_velocity: when true (arm-time reset) the full reset also zeroes
+    // velocity.z; when false (periodic disarmed reset) it re-datums height
+    // only and leaves velocity.z, preserving the on-ground zero-velocity
+    // bias-learning signal.
+    bool resetHeightDatum(float origin_alt_tolerance_m, bool reset_velocity=true);
 
     // Backward-compatible no-arg form: equivalent to passing -1.0f
     // (always full reset, no origin-vs-GPS tolerance check).

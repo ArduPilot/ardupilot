@@ -1319,14 +1319,14 @@ void NavEKF3::resetGyroBias(void)
 // origin_alt_tolerance_m: see NavEKF3::resetHeightDatum declaration.
 // Returns true if the height datum reset was performed.
 // If using a range finder for height no reset is performed and it returns false.
-bool NavEKF3::resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged)
+bool NavEKF3::resetHeightDatum(float origin_alt_tolerance_m, bool reset_velocity)
 {
-    dal.log_resetHeightDatum3(origin_alt_tolerance_m);
+    dal.log_resetHeightDatum3(origin_alt_tolerance_m, reset_velocity);
 
     bool status = true;
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            if (!core[i].resetHeightDatum(origin_alt_tolerance_m, defer_until_abias_converged)) {
+            if (!core[i].resetHeightDatum(origin_alt_tolerance_m, reset_velocity)) {
                 status = false;
             }
         }
