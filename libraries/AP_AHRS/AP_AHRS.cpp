@@ -2403,13 +2403,13 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 // Resets the baro so that it reads zero at the current height,
 // and resets the EKF height datum.  See AP_AHRS::resetHeightDatum
 // declaration for the meaning of origin_alt_tolerance_m.
-void AP_AHRS::resetHeightDatum(float origin_alt_tolerance_m, bool defer_until_abias_converged)
+void AP_AHRS::resetHeightDatum(float origin_alt_tolerance_m, bool reset_velocity)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
 #if HAL_NAVEKF3_AVAILABLE
-    ekf3.resetHeightDatum(origin_alt_tolerance_m, defer_until_abias_converged);
+    ekf3.resetHeightDatum(origin_alt_tolerance_m, reset_velocity);
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     // EKF2 has no equivalent guard; the tolerance argument is ignored.

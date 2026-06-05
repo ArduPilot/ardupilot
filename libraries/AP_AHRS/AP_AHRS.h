@@ -405,10 +405,11 @@ public:
     // origin case (AHRS_ORIGIN_ALT, MAV_CMD_DO_SET_GLOBAL_ORIGIN).
     // Negative (default) disables the check -- always full reset,
     // matching pre-2026 behaviour.  See NavEKF3::resetHeightDatum.
-    // defer_until_abias_converged: when true (periodic disarmed reset),
-    // EKF3 skips the reset while the Z accel-bias is still converging.
+    // reset_velocity: when true (arm-time reset) zero velocity.z too; when
+    // false (periodic disarmed reset) re-datum height only, preserving the
+    // on-ground zero-velocity bias-learning signal.
     void resetHeightDatum(float origin_alt_tolerance_m = -1.0f,
-                          bool defer_until_abias_converged = false);
+                          bool reset_velocity = true);
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;
