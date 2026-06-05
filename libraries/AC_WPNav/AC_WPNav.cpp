@@ -175,10 +175,10 @@ AC_WPNav::AC_WPNav(const AP_AHRS_View& ahrs, AC_PosControl& pos_control, const A
     _flags.reached_destination = false;
     _flags.fast_waypoint = false;
 
-    // record WP_SPD, WP_SPD_UP, WP_SPD_DN values so we can detect changes
-    _last_wp_speed_ms = _wp_speed_ms;
-    _last_wp_speed_up_ms = _wp_speed_up_ms;
-    _last_wp_speed_down_ms = get_default_speed_down_ms();
+    // note: _last_wp_speed_ms/up/down are intentionally NOT initialised here.
+    // setup_object_defaults() has just set the AP_Floats to compiled-in defaults
+    // and EEPROM has not been read yet, so any snapshot taken here would be
+    // stale.
 }
 
 // Returns the expected source of terrain data when using alt-above-terrain commands.
@@ -226,6 +226,10 @@ void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3p stopping_point_ned_
     // determine desired waypoint speed; fallback to default if not provided
     _check_wp_speed_change = !is_positive(speed_ms);
     _wp_desired_speed_ne_ms = is_positive(speed_ms) ? speed_ms : get_default_speed_NE_ms();
+    // sync parameter-change baselines to current param values
+    _last_wp_speed_ms = _wp_speed_ms;
+    _last_wp_speed_up_ms = _wp_speed_up_ms;
+    _last_wp_speed_down_ms = _wp_speed_down_ms;
     _wp_desired_speed_ne_ms = MAX(_wp_desired_speed_ne_ms, WP_SPD_MIN);
 
     // initialise position controller speed and acceleration
