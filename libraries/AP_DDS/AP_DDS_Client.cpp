@@ -473,8 +473,7 @@ void AP_DDS_Client::update_topic(geometry_msgs_msg_PoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation (sqrtF(2) * 0.5,0,0,sqrtF(2) * 0.5); // Z axis 90 degree rotation
-        orientation = aux * transformation;
+        orientation = aux * FRAME_Z_ROTATION_90;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
@@ -619,8 +618,7 @@ void AP_DDS_Client::update_topic(geographic_msgs_msg_GeoPoseStamped& msg)
     Quaternion orientation;
     if (ahrs.get_quaternion(orientation)) {
         Quaternion aux(orientation[0], orientation[2], orientation[1], -orientation[3]); //NED to ENU transformation
-        Quaternion transformation(sqrtF(2) * 0.5, 0, 0, sqrtF(2) * 0.5); // Z axis 90 degree rotation
-        orientation = aux * transformation;
+        orientation = aux * FRAME_Z_ROTATION_90;
         msg.pose.orientation.w = orientation[0];
         msg.pose.orientation.x = orientation[1];
         msg.pose.orientation.y = orientation[2];
