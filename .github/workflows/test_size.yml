@@ -328,13 +328,11 @@ jobs:
           Tools/scripts/extract_features.py "$EF_PR_BRANCH_BINARY" --nm "${BIN_PREFIX}nm" >features-pr.txt
           diff -u features-base_branch.txt features-pr.txt || true
           diff_output=$(diff -u features-base_branch.txt features-pr.txt || true)
-          echo "### Features Diff Output" >> $GITHUB_STEP_SUMMARY
+          echo "### Features Diff Output"
           if [ -n "$diff_output" ]; then
-            echo '```diff' >> $GITHUB_STEP_SUMMARY
-            echo "$diff_output" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$diff_output"
           else
-            echo "No differences found." >> $GITHUB_STEP_SUMMARY
+            echo "No differences found."
           fi
 
       - name: Binary compare with ${{ github.event.pull_request.base.ref }}
@@ -342,13 +340,11 @@ jobs:
         run: |
           diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj || true
           diff_output=$(diff -r $GITHUB_WORKSPACE/base_branch_bin_no_versions $GITHUB_WORKSPACE/pr_bin_no_versions --exclude=*.abin --exclude=*.apj || true)
-          echo "### Binary Diff Output" >> $GITHUB_STEP_SUMMARY
+          echo "### Binary Diff Output"
           if [ -n "$diff_output" ]; then
-            echo '```diff' >> $GITHUB_STEP_SUMMARY
-            echo "$diff_output" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$diff_output"
           else
-            echo "No differences found." >> $GITHUB_STEP_SUMMARY
+            echo "No differences found."
           fi
 
   global-summary:
