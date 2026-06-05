@@ -803,9 +803,11 @@ void Copter::one_hz_loop()
     // full-reset path and preserves the height estimate via ekfGpsRefHgt), and
     // baro-only copters are exactly the case that needs drift cleared.  Timed
     // off millis() rather than the GPS message time so it runs without GPS.
-    // The defer-until-bias-converged flag lets the EKF skip the reset while
-    // the Z accel-bias is still learning, so this does not slow convergence.
-    // Uses the same HGT_RESET_ALT tolerance as the arm path.
+    // reset_velocity is false here: the periodic reset re-datums height only
+    // and leaves velocity.z, so it does not erase the on-ground zero-velocity
+    // signal the Z accel-bias learning depends on.  The arm-time reset passes
+    // true to zero velocity for a clean takeoff.  Uses the same HGT_RESET_ALT
+    // tolerance as the arm path.
     const uint32_t now_ms = AP_HAL::millis();
     if (!motors->armed() &&
         now_ms - last_datum_reset_ms > 10000) {
@@ -813,7 +815,7 @@ void Copter::one_hz_loop()
         const float threshold = g2.hgt_reset_threshold;
         if (!is_negative(threshold)) {
             const float origin_alt_tolerance_m = (threshold > 0) ? threshold : 10.0f;
-            ahrs.resetHeightDatum(origin_alt_tolerance_m, true);
+            ahrs.resetHeightDatum(origin_alt_tolerance_m, false);
         }
     }
 
