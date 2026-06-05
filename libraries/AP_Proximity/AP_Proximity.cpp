@@ -31,6 +31,7 @@
 #include "AP_Proximity_Scripting.h"
 #include "AP_Proximity_LD06.h"
 #include "AP_Proximity_MR72_CAN.h"
+#include "AP_Proximity_CSPC.h"
 
 
 #include <AP_Logger/AP_Logger.h>
@@ -264,6 +265,15 @@ void AP_Proximity::init()
             if (AP_Proximity_LD06::detect(serial_instance)) {
                 state[instance].instance = instance;
                 drivers[instance] = NEW_NOTHROW AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+#endif
+#if AP_PROXIMITY_CSPC_ENABLED
+        case Type::CSPC:
+            if (AP_Proximity_CSPC::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = NEW_NOTHROW AP_Proximity_CSPC(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
