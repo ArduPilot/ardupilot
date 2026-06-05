@@ -138,7 +138,6 @@ define HAL_BATT_CURR_SCALE 40.0
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
-define ALLOW_ARM_NO_COMPASS
 define AP_COMPASS_PROBING_ENABLED 1
 
 # SPI2 - IMU0

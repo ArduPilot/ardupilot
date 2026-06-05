@@ -572,18 +572,6 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         return false;
     }
 
-#ifndef ALLOW_ARM_NO_COMPASS
-    // if non-compass is source of heading we can skip compass health check
-    if (!ahrs.using_noncompass_for_yaw()) {
-        const Compass &_compass = AP::compass();
-        // check compass health
-        if (!_compass.healthy()) {
-            check_failed(true, "Compass %d not healthy", _compass.get_first_usable() + 1);
-            return false;
-        }
-    }
-#endif
-
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method)) {
         check_failed(true, "%s mode not armable", copter.flightmode->name());
