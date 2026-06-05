@@ -177,7 +177,7 @@ void LR_MsgHandler_REY3::process_message(uint8_t *msgbytes)
 void LR_MsgHandler_RHGT::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RHGT, msgbytes);
-    ekf3.resetHeightDatum(msg.origin_alt_tolerance_m);
+    ekf3.resetHeightDatum(msg.origin_alt_tolerance_m, msg.reset_velocity);
 }
 
 void LR_MsgHandler_RISH::process_message(uint8_t *msgbytes)
