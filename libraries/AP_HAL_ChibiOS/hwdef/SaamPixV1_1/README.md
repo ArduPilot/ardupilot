@@ -22,7 +22,7 @@ and hybrid UAV applications.
 - MicroSD card (SDIO interface)
 - CAN bus: 1x CAN1
 - UARTs: 6 (USART1, USART2, USART3, UART4, UART7, UART8)
-  + USB OTG
+  - USB OTG
 - I2C: 2 buses (I2C1, I2C2)
 - PWM Outputs: 16 channels
 - RC Input: PPM, SBUS, DSM/DSM2/DSMX via dedicated pin or
@@ -150,7 +150,5 @@ QGroundControl, MAVProxy).
 
 For first-time firmware installation via DFU or STLink, use the
 `*_with_bl.hex` file. See
-[Loading Firmware onto ChibiOS boards]
-(https://ardupilot.org/copter/docs/
-common-loading-firmware-onto-chibios-only-boards.html)
+[Loading Firmware onto ChibiOS boards](https://ardupilot.org/copter/docs/common-loading-firmware-onto-chibios-only-boards.html)
 for instructions.
