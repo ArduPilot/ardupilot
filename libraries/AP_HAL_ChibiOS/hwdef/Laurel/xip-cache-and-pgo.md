@@ -110,7 +110,8 @@ Tools/debug/rp2350_pc_profiler.py --elf build/Laurel/bin/arducopter \
     --tcl-port 50001 --samples 30000 --by-line 20 --out /tmp/prof_core0.md
 
 # core1 (EKF / PID / attitude dispatch) - must select that core first
-Tools/debug/rp2350_pc_profiler.py --target-select rp2350.cpu1 \
+# (Raspberry Pi OpenOCD rp2350.cfg names the cores rp2350.cm0/rp2350.cm1)
+Tools/debug/rp2350_pc_profiler.py --target-select rp2350.cm1 \
     --samples 30000 --out /tmp/prof_core1.md
 ```
 
@@ -160,13 +161,64 @@ target. The OpenOCD `profile` command is a fallback if PCSR reads misbehave.
 | Metric | Value | Notes |
 |--------|-------|-------|
 | `xip=` hit rate, armed, release build | TBD | from perf_report |
-| `xip=` hit rate, idle bench | TBD | for comparison |
-| core0 XIP / SRAM / invalid sample split | TBD | profiler region breakdown |
-| core1 XIP / SRAM / invalid sample split | TBD | profiler region breakdown |
+| `xip=` hit rate, idle bench | 99% | disarmed, IMU + 335 Hz rate loop running (Run 1) |
+| core0 XIP / SRAM / invalid sample split | 94.1% / 5.3% / 0% | disarmed bench, 30k samples (Run 1) |
+| core1 XIP / SRAM / invalid sample split | 98.4% / 1.5% / 0% | disarmed; 81.4% is `__idle_thread` busy-spin, active core1 ~18% (Run 1) |
 | `read_AHRS` AVG us | TBD | current ~4220 us baseline (FEATURE_GAP) |
-| `glat` avg/max us (armed) | TBD | gyro-to-attitude latency + jitter |
-| `rtc` avg us (armed) | TBD | rate controller compute on core1 |
+| `glat` avg/max us | 186 / 644-1832 | disarmed; high jitter, max >> avg (Run 1) |
+| `rtc` avg us | 94 | disarmed; steady, well below glat (Run 1) |
 | free SRAM | TBD | headroom for more relocation |
+
+### Run 1 - 2026-06-26 (disarmed bench, first hardware capture)
+
+First live PCSR profile. Setup: official Raspberry Pi Debug Probe
+(CMSIS-DAP, firmware 2.3.1) on the J12 SWD header; OpenOCD running on the
+Windows host; `rp2350_pc_profiler.py` run from WSL over the TCP tcl_port
+(WSL2 mirrored networking, so `--host localhost` reaches it). 30k samples
+per core.
+
+Conditions: vehicle disarmed, no EKF fusion, so this captures the rate/IO
+path, NOT the 130 KB EKF/AHRS hot set the investigation targets. The
+`xip=` hit rate and the armed rows above are still pending.
+
+- core0 never parks (invalid 0%). Hottest XIP-resident:
+  `PIORXDriver::_service_rx_fifo` (3.3%, CRSF/ELRS PIO-UART RX), then the
+  IMU backend `_notify_new_accel/gyro_raw_sample` paths.
+- core1 is 81.4% `__idle_thread` (busy-spins from flash, hence invalid 0%
+  is misleading). Active work is `rate_controller_thread` plus the motor
+  output chain (`SRV_Channels::set_output_pwm`,
+  `AP_MotorsMatrix::check_for_failed_motor`, `RCOutput::write`).
+
+Do not act on this run's RAMFUNC2 suggestions: disarmed, the EKF callees
+that dominate when fusing are absent. Rerun armed before relocating.
+
+`perf_report` over the same session (steady across cycles):
+
+```
+Perf: main=~250Hz rate=~335Hz core1load:~55% core2load:~18% xip=99%
+RTlat: glat=186/644-1832us rtc=94us
+```
+
+Two reads from this:
+
+- `xip=99%`. The cache is not thrashing. With the existing ~45 KB
+  RAMFUNC2 set, only ~1% of XIP accesses miss even with the rate loop
+  running. This is the Step 2 decision-gate signal: if the armed number
+  holds near this, full PGO / hot-cold clustering has almost nothing left
+  to win and is not worth the build-system cost. Confirm armed (EKF
+  fusion adds working set), but the margin is large.
+- `rtc` is steady at 94 us while `glat` averages 186 us and spikes to
+  1.8 ms. Compute is not the bottleneck and (given xip=99%) neither is
+  flash. The control-path coupling is the cross-core sample handoff:
+  `glat - rtc` ~92 us of pre-compute latency plus large jitter. Per Step
+  0b that points at the IMU-read-to-core1 / pipelining change, not more
+  SRAM relocation. The 1.8 ms max spikes may be disarmed-bench artifacts
+  (USB/MAVLink bursts); recheck armed before drawing the jitter
+  conclusion.
+
+Note core load is ~55% peak, not the 100% saturation of the older
+`XIP.notes.md` runs - the current RAMFUNC2 set plus 93.75 MHz flash
+already removed the CPU-bound regime.
 
 ## Decision gate for Step 2 (full PGO)
 
@@ -176,3 +228,32 @@ still low AND a meaningful fraction of samples remain in XIP. If relocation
 alone drives the hit rate high, the size mismatch (130 KB path vs 16 KB cache)
 means in-flash reordering has little left to win and Step 2 is not worth the
 build-system cost.
+
+### Step 2 method: instrumentation PGO, not AutoFDO; stay on GCC 10
+
+Decision (verified against the pinned `arm-none-eabi-gcc` 10.2.1,
+`10-2020-q4-major`):
+
+- Use instrumentation `-fprofile-generate`/`-fprofile-use`. It compiles and
+  links for cortex-m33 today; libgcov is in the toolchain and the counters
+  (`__gcov0.*`) plus dump runtime (`__gcov_dump_one`, `__gcov_exit`) land in BSS
+  at named symbols. The counters are therefore snapshot-able over the existing
+  OpenOCD/SWD link and the `.gcda` reconstructed offline - no filesystem or
+  semihosting needed, and it reuses the Step 1 profiler's infrastructure.
+- Rejected AutoFDO (`-fauto-profile`). The flag is accepted by GCC 10, but the
+  profile-generation side is blocked: `create_gcov` consumes Linux perf.data
+  with LBR branch records, which Cortex-M33 does not have. The PCSR sampler only
+  yields flat IP samples (no branch history), so AutoFDO would mean hand-rolling
+  a PCSR->AFDO converter for a line-frequency-only profile - weaker than the
+  exact edge counts instrumentation gives, which is what the hot/cold split
+  decision (see `--by-line`) actually needs.
+- Do not upgrade GCC for this. Instrumentation PGO is fully supported on 10.2.1.
+  AutoFDO's weakness is the missing branch trace on Cortex-M, which no GCC
+  version fixes. Upgrading diverges from the toolchain ArduPilot pins and
+  validates the whole port against, for no profile-side gain.
+- Open risk to de-risk before committing Step 2: the only unproven link is
+  reconstructing a valid `.gcda` from a BSS counter snapshot. Prototype that
+  round trip on a Laurel build first.
+- Reconsider AutoFDO only as a fast-follow if the instrumented build's timing
+  overhead proves to misrepresent the real armed/flight workload; even then,
+  prove `create_gcov`/AFDO feasibility before any GCC bump.
