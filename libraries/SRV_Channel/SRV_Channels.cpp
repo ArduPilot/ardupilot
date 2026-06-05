@@ -561,6 +561,20 @@ void SRV_Channels::zero_rc_outputs()
         hal.rcout->write(i, 0);
     }
     srv.push();
+
+    // Also zero all output_scaled values so get_output_scaled() returns 0
+    zero_output_scaled_all();
+}
+
+/*
+  zero all output_scaled values for all functions
+  this is called when disarming to ensure get_output_scaled() returns zero
+ */
+void SRV_Channels::zero_output_scaled_all()
+{
+    for (uint16_t i = 0; i < SRV_Channel::k_nr_aux_servo_functions; i++) {
+        functions[i].output_scaled = 0;
+    }
 }
 
 /*
