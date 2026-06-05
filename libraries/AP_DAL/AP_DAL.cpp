@@ -228,12 +228,13 @@ void AP_DAL::log_event3(AP_DAL::Event event)
 #endif
 }
 
-void AP_DAL::log_resetHeightDatum3(float origin_alt_tolerance_m)
+void AP_DAL::log_resetHeightDatum3(float origin_alt_tolerance_m, bool reset_velocity)
 {
 #if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     end_frame();
     struct log_RHGT pkt{
         origin_alt_tolerance_m : origin_alt_tolerance_m,
+        reset_velocity : reset_velocity,
     };
     WRITE_REPLAY_BLOCK(RHGT, pkt);
 #endif
