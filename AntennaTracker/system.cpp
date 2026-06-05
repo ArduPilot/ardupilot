@@ -143,6 +143,8 @@ bool Tracker::set_home(const Location &temp, bool lock)
 void Tracker::arm_servos()
 {
     hal.util->set_soft_armed(true);
+    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_yaw, SRV_Channel::Limit::TRIM);
+    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_pitch, SRV_Channel::Limit::TRIM);
 #if HAL_LOGGING_ENABLED
     logger.set_vehicle_armed(true);
 #endif
@@ -156,16 +158,28 @@ void Tracker::disarm_servos()
 #endif
 }
 
+void Tracker::cork_servos()
+{
+    servo_channels.cork();
+}
+
+void Tracker::push_servos()
+{
+    servo_channels.push();
+}
+
 /*
   setup servos to trim value after initialising
  */
 void Tracker::prepare_servos()
 {
     start_time_ms = AP_HAL::millis();
+    servo_channels.cork();
     SRV_Channels::set_output_limit(SRV_Channel::k_tracker_yaw, SRV_Channel::Limit::TRIM);
     SRV_Channels::set_output_limit(SRV_Channel::k_tracker_pitch, SRV_Channel::Limit::TRIM);
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
+    servo_channels.push();
 }
 
 void Tracker::set_mode(Mode &newmode, const ModeReason reason)
