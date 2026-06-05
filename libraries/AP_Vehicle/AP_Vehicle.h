@@ -257,6 +257,8 @@ public:
     // Register a custom mode with given number and names, return a structure which the script can edit
     struct custom_mode_state {
         bool allow_entry;
+        bool angle_only;    // leverage angle-only control
+        char* entry_denied_reason;
     };
     virtual custom_mode_state* register_custom_mode(const uint8_t number, const char* full_name, const char* short_name) { return nullptr; }
 
