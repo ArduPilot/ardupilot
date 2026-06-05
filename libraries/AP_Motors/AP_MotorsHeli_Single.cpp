@@ -623,13 +623,14 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
         // New parameter added to allow users to specify Tail RSC ramp time.  Thus
         // if the tail rsc is being used then the H_RSC_RAMP_TIME is assigned to the
         // H_TAIL_RAMP_TIME parameter.
-        const AP_Param::ConversionInfo tail_ramp_conversion_info[] = {
-            { 90, 13888, AP_PARAM_INT16,  "H_TAIL_RAMP_TIME" },
-        };
-        uint8_t table_size = ARRAY_SIZE(tail_ramp_conversion_info);
-        for (uint8_t i=0; i<table_size; i++) {
-            AP_Param::convert_old_parameter(&tail_ramp_conversion_info[i], 1.0);
-        }
+//        _direct_drive_ramp_time.set(_main_rotor._ramp_time.get());
+//        _direct_drive_ramp_time.save();
+        const AP_Param::ConversionInfo ramp_time_conversion_info = { 90, 15888, AP_PARAM_INT16,  "H_TAIL_RAMP_TIME" };
+//        uint8_t table_size = ARRAY_SIZE(ramp_time_conversion_info);
+//        for (uint8_t i=0; i<table_size; i++) {
+        AP_Param::convert_old_parameter(&ramp_time_conversion_info, 1.0);
+//        }
+
     }
 }
 
