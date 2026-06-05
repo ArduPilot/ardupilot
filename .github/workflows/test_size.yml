@@ -49,7 +49,9 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       - 'libraries/AP_HAL_Linux/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_size.yml'  # except this one
+
   workflow_dispatch:
 
 
