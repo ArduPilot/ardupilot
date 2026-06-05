@@ -204,7 +204,7 @@ AP_GPS_SBF::read(void)
                     }
                 }
             }
-        } else if (gps._raw_data == 2) { // only manage disarm/rearms when the user opts into it
+        } else if (gps.raw_logging_parameter(state.instance) == 2) { // only manage disarm/rearms when the user opts into it
             if (hal.util->get_soft_armed()) {
                 _has_been_armed = true;
             } else if (_has_been_armed && (RxState & SBF_DISK_MOUNTED)) {
@@ -229,7 +229,7 @@ AP_GPS_SBF::read(void)
 
 bool AP_GPS_SBF::logging_healthy(void) const
 {
-    switch (gps._raw_data) {
+    switch (gps.raw_logging_parameter(state.instance)) {
         case 1:
         default:
             return (RxState & SBF_DISK_MOUNTED) && (RxState & SBF_DISK_ACTIVITY);
@@ -711,7 +711,7 @@ void AP_GPS_SBF::unmount_disk (void) const {
 
 bool AP_GPS_SBF::prepare_for_arming(void) {
     bool is_logging = true; // assume that its logging until proven otherwise
-    if (gps._raw_data) {
+    if (gps.raw_logging_enabled_for_instance(state.instance)) {
         if (!(RxState & SBF_DISK_MOUNTED)){
             is_logging = false;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: SBF disk is not mounted", state.instance + 1);
