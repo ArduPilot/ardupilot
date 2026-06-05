@@ -26,7 +26,11 @@ flight MCU over UART5. RC input is on UART4.
 
 ## Pinout
 
-*Pinout images not yet available.*
+The images below are the standard TBS LUCID H7 pinout, shown here as a
+reference until V3-specific images are available.
+
+![TBS LUCID H7 Board Top](Top.png "TBS LUCID H7 Top")
+![TBS LUCID H7 Board Bottom](Bottom.png "TBS LUCID H7 Bottom")
 
 ## UART Mapping
 
