@@ -162,10 +162,12 @@ void Tracker::disarm_servos()
 void Tracker::prepare_servos()
 {
     start_time_ms = AP_HAL::millis();
-    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_yaw, SRV_Channel::Limit::TRIM);
-    SRV_Channels::set_output_limit(SRV_Channel::k_tracker_pitch, SRV_Channel::Limit::TRIM);
+    servo_channels.cork();
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_yaw, 0);
+    SRV_Channels::set_output_scaled(SRV_Channel::k_tracker_pitch, 0);
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
+    servo_channels.push();
 }
 
 void Tracker::set_mode(Mode &newmode, const ModeReason reason)

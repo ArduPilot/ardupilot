@@ -104,7 +104,7 @@ void Tracker::update_tracking(void)
         return;
     }
 
-    hal.rcout->cork();
+    servo_channels.cork();
 
     // do not move if we are not armed:
     if (!hal.util->get_soft_armed()) {
@@ -127,7 +127,7 @@ void Tracker::update_tracking(void)
     SRV_Channels::calc_pwm();
     SRV_Channels::output_ch_all();
 
-    hal.rcout->push();
+    servo_channels.push();
 
     return;
 }
