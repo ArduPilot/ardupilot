@@ -312,6 +312,15 @@ private:
     AP_Int16 transition_time_ms;
     AP_Int16 back_trans_pitch_limit_ms;
 
+    // Transition descent assist
+    struct {
+        AP_Int8  enabled;   // Q_TRANS_DESC_EN  enable transition descent assist
+        AP_Float vstart;    // Q_TRANS_DESC_VS  airspeed (m/s) above which descent assist begins
+        AP_Float vz_max;    // Q_TRANS_DESC_VZ  maximum commanded descent rate (m/s) during transition
+        AP_Float alt_max;   // Q_TRANS_DESC_MX  optional maximum altitude allowed to spend (m, 0=unlimited)
+        AP_Float alt_min;   // Q_TRANS_DESC_MN  minimum AGL (m) required to allow descent
+    } trans_desc;
+
     // transition deceleration, m/s/s
     AP_Float transition_decel_mss;
 
@@ -633,6 +642,10 @@ private:
     AP_Float takeoff_navalt_min_m;
     uint32_t takeoff_last_run_ms;
     float takeoff_start_alt_m;
+
+    // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
+    // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
+    bool delay_arming;
 
     // should we force use of fixed wing controller for attitude upset recovery?
     bool force_fw_control_recovery;

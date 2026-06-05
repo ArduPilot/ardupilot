@@ -86,7 +86,12 @@ public:
 
     bool complete() const override { return transition_state == State::DONE; }
 
-    void restart() override { transition_state = State::AIRSPEED_WAIT; }
+    void restart() override {
+        transition_state = State::AIRSPEED_WAIT;
+        // transition descent assist state
+        trans_desc_active = false;
+        trans_desc_start_alt_m = 0.0f;
+    }
 
     uint8_t get_log_transition_state() const override { return static_cast<uint8_t>(transition_state); }
 
@@ -127,6 +132,10 @@ protected:
 
     // tiltrotor tilt angle when airspeed wait transition stage completes
     float airspeed_reached_tilt;
+
+    // transition descent assist state
+    bool  trans_desc_active = false;
+    float trans_desc_start_alt_m = 0.0f;
 
     bool in_forced_transition;
 

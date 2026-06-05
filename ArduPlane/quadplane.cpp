@@ -572,6 +572,49 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Bitmask: 1: Disable thrust loss detection in transtions and fixed wing modes. Thrust loss detection will only run in VTOL modes.
     AP_GROUPINFO("THRST_LOSS_OPT", 42, QuadPlane, thrust_loss.options, 0),
 
+    // @Param: TRANS_DESC_EN
+    // @DisplayName: BSA: Transition descent assist enable
+    // @Description: Enables controlled descent during the AIRSPEED_WAIT phase of a forward transition. When enabled the VTOL motors command a descent once airspeed exceeds Q_TRANS_DESC_VS, subject to the AGL floor Q_TRANS_DESC_MN and optional altitude-loss cap Q_TRANS_DESC_MX. After transition completes the autopilot resumes normal altitude control. 0=disabled (existing behaviour), 1=enabled. Not applied to tiltrotors.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("TRANS_DESC_EN", 43, QuadPlane, trans_desc.enabled, 0),
+
+    // @Param: TRANS_DESC_VS
+    // @DisplayName: BSA: Transition descent airspeed threshold
+    // @Description: Airspeed (EAS) above which the transition descent assist begins commanding a descent. Below this speed the VTOL motors hold level.
+    // @Units: m/s
+    // @Range: 0 20
+    // @Increment: 0.5
+    // @User: Standard
+    AP_GROUPINFO("TRANS_DESC_VS", 44, QuadPlane, trans_desc.vstart, 3.0f),
+
+    // @Param: TRANS_DESC_VZ
+    // @DisplayName: BSA: Transition descent maximum rate
+    // @Description: Maximum descent rate commanded to the VTOL Z controller during transition descent assist. Applied once airspeed exceeds Q_TRANS_DESC_VS.
+    // @Units: m/s
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("TRANS_DESC_VZ", 45, QuadPlane, trans_desc.vz_max, 0.5f),
+
+    // @Param: TRANS_DESC_MX
+    // @DisplayName: BSA: Transition descent maximum altitude loss
+    // @Description: Maximum total altitude (m) the aircraft is allowed to lose during a single transition descent assist activation. Once this limit is reached descent stops and the aircraft holds altitude for the remainder of AIRSPEED_WAIT. Zero disables the cap.
+    // @Units: m
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("TRANS_DESC_MX", 46, QuadPlane, trans_desc.alt_max, 0),
+
+    // @Param: TRANS_DESC_MN
+    // @DisplayName: BSA: Transition descent minimum AGL
+    // @Description: Minimum height above ground (m AGL) required for transition descent assist to be active. If the aircraft is below this height the descent rate is forced to zero. Zero disables the check.
+    // @Units: m
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("TRANS_DESC_MN", 47, QuadPlane, trans_desc.alt_min, 10.0f),
+
     AP_GROUPEND
 };
 
@@ -1592,8 +1635,40 @@ void SLT_Transition::update()
         // otherwise the plane can end up in high-alpha flight with
         // low VTOL thrust and may not complete a transition
         float climb_rate_cms = quadplane.assist_climb_rate_cms();
-        if (quadplane.option_is_set(QuadPlane::Option::LEVEL_TRANSITION) && !quadplane.tiltrotor.enabled()) {
-            climb_rate_cms = MIN(climb_rate_cms, 0.0f);
+
+        // transition descent assist state
+        if (quadplane.trans_desc.enabled && !quadplane.tiltrotor.enabled()) {
+            // hold level if below minimum AGL
+            const float agl_m = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
+            const float alt_min_m = quadplane.trans_desc.alt_min.get();
+            if (alt_min_m > 0.0f && agl_m < alt_min_m) {
+                climb_rate_cms = 0.0f;
+            } else if (have_airspeed && aspeed >= quadplane.trans_desc.vstart.get()) {
+                // Airspeed threshold reached, start or continue descent
+                if (!trans_desc_active) {
+                    trans_desc_active = true;
+                    trans_desc_start_alt_m = quadplane.inertial_nav.get_position_z_up_cm() * 0.01f;
+                }
+                float desc_rate_cms = quadplane.trans_desc.vz_max.get() * 100.0f;
+
+                // Cap on total altitude loss
+                const float alt_max_m = quadplane.trans_desc.alt_max.get();
+                if (alt_max_m > 0.0f) {
+                    const float alt_lost_m = trans_desc_start_alt_m
+                                             - quadplane.inertial_nav.get_position_z_up_cm() * 0.01f;
+                    if (alt_lost_m >= alt_max_m) {
+                        desc_rate_cms = 0.0f;
+                    }
+                }
+                climb_rate_cms = -desc_rate_cms;
+            } else {
+                // Enabled but airspeed not yet reached, hold level
+                climb_rate_cms = 0.0f;
+            }
+        } else {
+            if (quadplane.option_is_set(QuadPlane::Option::LEVEL_TRANSITION) && !quadplane.tiltrotor.enabled()) {
+                climb_rate_cms = MIN(climb_rate_cms, 0.0f);
+            }
         }
         quadplane.hold_hover(climb_rate_cms);
 
@@ -1706,6 +1781,10 @@ void SLT_Transition::VTOL_update()
         transition_state = State::AIRSPEED_WAIT;
     }
     last_throttle = motors->get_throttle();
+
+    // reset descent assist so it starts fresh on the next forward transition
+    trans_desc_active = false;
+    trans_desc_start_alt_m = 0.0f;
 
     // Keep assistance reset while not checking
     quadplane.assist.reset();
@@ -1963,12 +2042,6 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
-    // QuadPlane has no pre-takeoff RPM gate that asserts the spool-up block,
-    // so clear it every cycle before motors->output() runs output_logic().
-    // Without this the block set during ground-idle ramp would never clear
-    // and the spool would stay in GROUND_IDLE.
-    motors->set_spoolup_block(false);
-
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
        1) for safety (OPTION_DELAY_ARMING)
        2) to allow motors to return to vertical (OPTION_DISARMED_TILT)
