@@ -273,7 +273,18 @@ jobs:
         shell: bash
         run: |
           cd pr/
-          Tools/scripts/build_tests/pretty_diff_size.py -m $GITHUB_WORKSPACE/base_branch_bin_no_versions -s $GITHUB_WORKSPACE/pr_bin_no_versions
+          Tools/scripts/build_tests/pretty_diff_size.py \
+            -m $GITHUB_WORKSPACE/base_branch_bin_no_versions \
+            -s $GITHUB_WORKSPACE/pr_bin_no_versions \
+            --board ${{matrix.config}} \
+            --json-output $GITHUB_WORKSPACE/size_diff_${{matrix.config}}.json
+
+      - name: Upload size diff artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: size-diff-${{matrix.config}}
+          path: ${{github.workspace}}/size_diff_${{matrix.config}}.json
+          archive: false
 
       - name: Feature compare with  ${{ github.event.pull_request.base.ref }}
         shell: bash
@@ -329,3 +340,24 @@ jobs:
           else
             echo "No differences found." >> $GITHUB_STEP_SUMMARY
           fi
+
+  global-summary:
+    needs: build
+    runs-on: ubuntu-slim
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: size_diff_*
+          merge-multiple: true
+          path: size-diffs/
+
+      - name: Generate global size summary
+        run: |
+          mkdir -p size-diffs/
+          python3 Tools/scripts/build_tests/global_size_summary.py \
+            --input-dir size-diffs/ >> $GITHUB_STEP_SUMMARY
