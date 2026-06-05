@@ -63,6 +63,11 @@ static AP_Filesystem_Sys fs_sys;
 static AP_Filesystem_Mission fs_mission;
 #endif
 
+#if AP_FILESYSTEM_MAV_LOG_ENABLED
+#include "AP_Filesystem_MAV_Log.h"
+static AP_Filesystem_MAV_Log fs_mav_log;
+#endif
+
 /*
   mapping from filesystem prefix to backend
  */
@@ -79,6 +84,9 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 #endif
 #if AP_FILESYSTEM_MISSION_ENABLED
     { "@MISSION", fs_mission },
+#endif
+#if AP_FILESYSTEM_MAV_LOG_ENABLED
+    { "@MAV_LOG", fs_mav_log },
 #endif
 };
 
@@ -445,6 +453,11 @@ bool AP_Filesystem::stat(const char *pathname, stat_t &stbuf)
 AP_Filesystem *AP_Filesystem::get_singleton(void)
 {
     return &fs;
+}
+
+AP_Filesystem_Backend &AP_Filesystem::local_backend()
+{
+    return LOCAL_BACKEND.fs;
 }
 
 namespace AP
