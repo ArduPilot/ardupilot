@@ -27,7 +27,6 @@ import math
 import pytest
 import rclpy
 import rclpy.node
-from scipy.spatial.transform import Rotation as R
 import threading
 
 from launch_pytest.tools import process as process_tools
@@ -53,10 +52,12 @@ CMAC_HEADING = 353
 
 
 def ros_quat_to_heading_deg(quat):
-    # By default, scipy follows scalar-last order – (x, y, z, w)
-    rot = R.from_quat([quat.x, quat.y, quat.z, quat.w])
-    r, p, y = rot.as_euler(seq="xyz", degrees=True)
-    return y
+    # Yaw (rotation about Z) extracted from the quaternion using the
+    # aerospace ZYX (== extrinsic xyz) convention, equivalent to
+    # scipy's Rotation.from_quat([x, y, z, w]).as_euler("xyz", degrees=True)[2].
+    x, y, z, w = quat.x, quat.y, quat.z, quat.w
+    yaw_rad = math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+    return math.degrees(yaw_rad)
 
 
 def validate_position_cmac(position):

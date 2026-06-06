@@ -35,7 +35,6 @@ from geopy import point
 from ardupilot_msgs.srv import ArmMotors
 from ardupilot_msgs.srv import ModeSwitch
 from sensor_msgs.msg import Joy
-from scipy.spatial.transform import Rotation as R
 import pytest
 from launch_pytest.tools import process as process_tools
 import threading
