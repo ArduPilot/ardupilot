@@ -3,7 +3,6 @@
 #include <AP_Compass/AP_Compass.h>
 
 #include <AP_Logger/AP_Logger.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_DAL.h"
 
 AP_DAL_Compass::AP_DAL_Compass()
@@ -15,7 +14,6 @@ AP_DAL_Compass::AP_DAL_Compass()
 
 void AP_DAL_Compass::start_frame()
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     const auto &compass = AP::compass();
 
     const log_RMGH old = _RMGH;
@@ -42,5 +40,4 @@ void AP_DAL_Compass::start_frame()
 
         WRITE_REPLAY_BLOCK_IFCHANGED(RMGI, RMGI, old_RMGI);
     }
-#endif
 }

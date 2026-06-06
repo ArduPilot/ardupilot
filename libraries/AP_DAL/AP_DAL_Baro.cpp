@@ -1,7 +1,6 @@
 #include "AP_DAL_Baro.h"
 
 #include <AP_Logger/AP_Logger.h>
-#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_DAL.h"
 
 AP_DAL_Baro::AP_DAL_Baro()
@@ -13,7 +12,6 @@ AP_DAL_Baro::AP_DAL_Baro()
 
 void AP_DAL_Baro::start_frame()
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     const auto &baro = AP::baro();
 
     const log_RBRH old_RBRH = _RBRH;
@@ -29,14 +27,11 @@ void AP_DAL_Baro::start_frame()
         RBRI.altitude = baro.get_altitude(i);
         WRITE_REPLAY_BLOCK_IFCHANGED(RBRI, _RBRI[i], old);
     }
-#endif
 }
 
 #if AP_BARO_CALIBRATION_ENABLED
 void AP_DAL_Baro::update_calibration()
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     AP::baro().update_calibration();
-#endif
 }
 #endif  // AP_BARO_CALIBRATION_ENABLED
