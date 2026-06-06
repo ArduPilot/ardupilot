@@ -956,7 +956,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="pitch angle to build")
         self.change_mode('MANUAL')
         self.context_push()
-        self.set_parameter("SIM_SPEEDUP", 1)
+        self.context_set_speedup(1)
         self.set_rc(2, 1550)
         self.wait_pitch(lim_pitch_up_deg+5, accuracy=5)
         self.context_pop()
