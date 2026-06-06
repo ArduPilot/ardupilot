@@ -820,6 +820,17 @@ def _build_dynamic_sources(bld):
     ])
 
 def _build_common_taskgens(bld):
+    # Compile the DroneCAN/libcanard generated sources once into a shared
+    # objects target that every stlib links via 'use' (see ap_stlib)
+    if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
+        bld.objects(
+            name='dronecan_libs',
+            source=[],
+            features=['c', 'ap_dynamic_source'],
+            dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
+            use=['dronecan', 'mavlink'],
+        )
+
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider
