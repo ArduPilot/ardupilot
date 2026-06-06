@@ -1,6 +1,7 @@
 #include "AP_DAL_InertialSensor.h"
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_DAL.h"
 
 AP_DAL_InertialSensor::AP_DAL_InertialSensor()
@@ -19,6 +20,7 @@ AP_DAL_InertialSensor::AP_DAL_InertialSensor()
 
 void AP_DAL_InertialSensor::start_frame()
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     const auto &ins = AP::ins();
 
     const log_RISH old_RISH = _RISH;
@@ -62,6 +64,7 @@ void AP_DAL_InertialSensor::start_frame()
         // update sensor position
         pos[i] = ins.get_imu_pos_offset(i);
     }
+#endif
 }
 
 // update filtered gyro and accel

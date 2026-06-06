@@ -1,6 +1,7 @@
 #include "AP_DAL_GPS.h"
 
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_DAL.h"
 
 AP_DAL_GPS::AP_DAL_GPS()
@@ -13,6 +14,7 @@ AP_DAL_GPS::AP_DAL_GPS()
 
 void AP_DAL_GPS::start_frame()
 {
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
     const auto &gps = AP::gps();
 
     const log_RGPH old_RGPH = _RGPH;
@@ -57,4 +59,5 @@ void AP_DAL_GPS::start_frame()
             Location::AltFrame::ABSOLUTE
         };
     }
+#endif
 }
