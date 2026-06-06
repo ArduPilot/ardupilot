@@ -37,6 +37,21 @@ libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::periodic
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_params
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::update
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::update_gyro_filters
+# apply_gyro_filters: called per-gyro-sample (1 kHz) from SPI thread; calls HarmonicNotchFilter::apply chain
+# Moving to SRAM eliminates 260+94+308+108 = 770 B of per-sample XIP pressure from core0 SPI thread.
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::apply_gyro_filters
+# NotchFilter<Vector3f>::apply (308 B) + NotchFilter<float>::apply (108 B): the inner biquad compute loop.
+# Called at 1 kHz by apply_gyro_filters on core0, and indirectly by HarmonicNotchFilter::apply.
+libraries/Filter/NotchFilter.h|NotchFilter<Vector3<float>>::apply
+libraries/Filter/NotchFilter.h|NotchFilter<float>::apply
+# HarmonicNotchFilter<Vector3f>::apply (94 B) + update (22+352 B): harmonic envelope applied to each raw sample.
+# Called at 1 kHz from apply_gyro_filters and at 500 Hz from rate_controller_filter_update on core1.
+libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::apply
+libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::update
+# update_dynamic_notch (252 B) + update_throttle_notch (204 B): called at 500 Hz from rate thread core1.
+# Previously in FLASH — both cores share the 16 KB XIP cache, causing cache evictions to stall core1.
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_throttle_notch
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::accumulate_samples
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::read_fifo
 libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::update_backend_filters
@@ -57,9 +72,11 @@ libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getEulerAngles
 libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getGyroBias
 libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getAccelBias
 libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getRotationBodyToNED
-# SelectVelPosFusion + FuseVelPosNED (3.6 KB): kept in flash — A/B test showed regression vs keeping in XIP cache
-#libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp:502|NavEKF3_core::SelectVelPosFusion
-#libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp:747|NavEKF3_core::FuseVelPosNED
+# SelectVelPosFusion + FuseVelPosNED (5.5 KB): kept in flash — A/B test confirmed regression both before and
+# after CovariancePrediction moved to SRAM. These fit in XIP cache and use dedicated XIP bandwidth; moving to
+# SRAM adds main SRAM bus contention (core0 data + code + core1 code share one AXI bus). read_AHRS avg 4358→5293µs.
+#libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp|NavEKF3_core::SelectVelPosFusion
+#libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp|NavEKF3_core::FuseVelPosNED
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateFilter
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateStrapdownEquationsNED
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::calcOutputStates
@@ -84,8 +101,8 @@ libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output_logic
 libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaVelocity
 libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaAngle
-# readBaroData: kept in flash — A/B test showed regression vs keeping in XIP cache
-#libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp:777|NavEKF3_core::readBaroData
+# readBaroData: kept in flash — A/B confirmed regression (same SRAM bus contention issue as SelectVelPosFusion)
+#libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readBaroData
 ArduCopter/inertia.cpp|Copter::read_inertia
 libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_tx_poll_drain
 libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_try_write_direct
@@ -113,16 +130,14 @@ libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push
 libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp|NavEKF3_core::runYawEstimatorPrediction
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaAngle
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaVelocity
-# STABILIZE hot path (mode_stabilize::run, get_pilot_desired_lean_angles_rad, rc_input_to_roll_pitch_rad,
-# get_pilot_desired_throttle, get_pilot_desired_yaw_rate_rads, set_throttle_out): kept in flash —
-# A/B test showed neutral/slight regression; functions are too small (~1.2 KB total) to benefit from
-# XIP cache bypass; they fit in XIP cache and moving them displaces other code
-#ArduCopter/mode_stabilize.cpp:9|ModeStabilize::run
-#ArduCopter/mode.cpp:552|Mode::get_pilot_desired_lean_angles_rad
-#ArduCopter/mode.cpp:962|Mode::get_pilot_desired_throttle
-#ArduCopter/mode.cpp:1059|Mode::get_pilot_desired_yaw_rate_rads
-#libraries/AP_Math/control.cpp:825|rc_input_to_roll_pitch_rad
-#libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp:365|AC_AttitudeControl_Multi::set_throttle_out
+# STABILIZE hot path: kept in flash — A/B confirmed regression (same SRAM bus contention issue).
+# Small functions fit in XIP cache; SRAM placement only worsens contention on AXI bus. update_flight_mode avg 1451→2007µs.
+#ArduCopter/mode_stabilize.cpp|ModeStabilize::run
+#ArduCopter/mode.cpp|Mode::get_pilot_desired_lean_angles_rad
+#ArduCopter/mode.cpp|Mode::get_pilot_desired_throttle
+#ArduCopter/mode.cpp|Mode::get_pilot_desired_yaw_rate_rads
+#libraries/AP_Math/control.cpp|rc_input_to_roll_pitch_rad
+#libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::set_throttle_out
 #libraries/GCS_MAVLink/GCS_FTP.cpp:108|GCS_FTP::send_reply
 #libraries/GCS_MAVLink/GCS_FTP.cpp:330|GCS_FTP::Session::handle_request
 #libraries/GCS_MAVLink/GCS_FTP.cpp:768|GCS_FTP::worker
