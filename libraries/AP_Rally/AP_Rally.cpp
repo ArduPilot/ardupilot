@@ -183,7 +183,7 @@ Location AP_Rally::calc_best_rally_or_home_location(const Location &current_loc,
     Location return_loc { AP::ahrs().get_home() };
     return_loc.set_alt_cm(rtl_home_alt_amsl_cm, Location::AltFrame::ABSOLUTE);
 
-    RallyLocation ral_loc;
+    RallyLocation ral_loc {};
     if (find_nearest_rally_point(current_loc, ral_loc)) {
         Location loc = rally_location_to_location(ral_loc);
         // use the rally point if it's closer then home, or we aren't generally considering home as acceptable
