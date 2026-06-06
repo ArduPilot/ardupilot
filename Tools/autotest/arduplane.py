@@ -3106,6 +3106,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def fly_external_AHRS(self, sim, eahrs_type,
                           dist_to_final_wp_threshold_m: float | None = None):
         """Fly with external AHRS"""
+        # The external AHRS drivers parse their serial stream on a
+        # real-time thread.  At the default plane speedup (100x) that
+        # thread cannot keep the simulated GPS within its health window
+        # on a loaded CI runner, producing intermittent "GPS 1: not
+        # healthy" arm failures.  Run these tests at a reduced speedup so
+        # the thread keeps up.
+        self.context_set_speedup(20)
         self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
         self.set_parameters({
