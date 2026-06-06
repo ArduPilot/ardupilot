@@ -265,6 +265,12 @@ Build the Laurel bootloader:
 ./waf bootloader -j12
 ```
 
+> **Important:** `waf configure` must be re-run whenever `hwdef.dat` or
+> `rp2350_ramfunc2_registry.txt` is edited.  These files are consumed at
+> configure time to generate linker scripts and compilation flags; a
+> subsequent `waf copter` without reconfiguring will silently use stale
+> generated files and produce an incorrect binary.
+
 Expected output artifacts:
 
 - `build/Laurel/bin/arducopter`
