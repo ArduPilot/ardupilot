@@ -1295,6 +1295,17 @@ void NavEKF3_core::selectHeightForFusion()
         bool aboveUpperSwHgt = heightAboveGnd > rangeMaxUse;
         bool belowLowerSwHgt = (heightAboveGnd < 0.7f * rangeMaxUse) && (imuSampleTime_ms - gndHgtValidTime_ms < 1000);
 
+        // The vehicle only marks terrain stable during takeoff and landing, leaving
+        // altitude on baro through cruise/hover. When the IMU-aided AGL KF is enabled
+        // and valid it provides a reliable, de-glitched height above ground that is
+        // independent of baro, so let it act as a stable terrain reference here too.
+        bool terrainStable = terrainHgtStable;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+            terrainStable = true;
+        }
+#endif
+
         // If the terrain height is consistent and we are moving slowly, then it can be
         // used as a height reference in combination with a range finder
         // apply a hysteresis to the speed check to prevent rapid switching
@@ -1302,13 +1313,13 @@ void NavEKF3_core::selectHeightForFusion()
         if (filterStatus.flags.horiz_vel) {
             // We can use the velocity estimate
             ftype horizSpeed = stateStruct.velocity.xy().length();
-            dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainHgtStable;
+            dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainStable;
             ftype trust_spd_trigger = MAX((frontend->_useRngSwSpd - 1.0f),(frontend->_useRngSwSpd * 0.5f));
-            trustTerrain = (horizSpeed < trust_spd_trigger) && terrainHgtStable;
+            trustTerrain = (horizSpeed < trust_spd_trigger) && terrainStable;
         } else {
             // We can't use the velocity estimate
-            dontTrustTerrain = !terrainHgtStable;
-            trustTerrain = terrainHgtStable;
+            dontTrustTerrain = !terrainStable;
+            trustTerrain = terrainStable;
         }
 
         /*
