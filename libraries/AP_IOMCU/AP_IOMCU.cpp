@@ -22,6 +22,7 @@
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <ch.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -367,6 +368,14 @@ void AP_IOMCU::thread_main(void)
                 pwm_out.failsafe_pwm_sent = set;
             }
         }
+
+#if AP_IOMCU_CHECK_REGISTERS_ENABLED
+        // check registers at 4Hz
+        if (now - last_register_check_ms >= 250) {
+            last_register_check_ms = now;
+            check_register();
+        }
+#endif
 
         send_rc_protocols();
     }
@@ -792,6 +801,10 @@ bool AP_IOMCU::write_registers(uint8_t page, uint8_t offset, uint8_t count, cons
     protocol_count++;
 
     last_reg_access_ms = AP_HAL::millis();
+
+#if AP_IOMCU_CHECK_REGISTERS_ENABLED
+    save_registers(page, offset, count, regs);
+#endif
 
     return true;
 }
@@ -1478,6 +1491,97 @@ void AP_IOMCU::set_profiled(uint8_t r, uint8_t g, uint8_t b)
     trigger_event(IOEVENT_PROFILED);
 }
 #endif
+
+#if AP_IOMCU_CHECK_REGISTERS_ENABLED
+/*
+  save register values for later checking by check_register()
+ */
+void AP_IOMCU::save_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs)
+{
+    // only SETUP and and GPIO register pages are saved
+    if (page != PAGE_SETUP && page != PAGE_GPIO) {
+        return;
+    }
+
+    if (page == PAGE_SETUP) {
+        // some setup registers are not saved
+        switch (offset) {
+        case PAGE_REG_SETUP_ARMING:
+        case PAGE_REG_SETUP_FORCE_SAFETY_OFF:
+        case PAGE_REG_SETUP_FORCE_SAFETY_ON:
+        case PAGE_REG_SETUP_CRC:
+        case PAGE_REG_SETUP_REBOOT_BL:
+        case PAGE_REG_SETUP_DSM_BIND:
+        case PAGE_REG_SETUP_OUTPUT_MODE:
+        case PAGE_REG_SETUP_RC_PROTOCOLS:
+            // handled by other mechanisms, or not possible with this
+            // check register system
+            return;
+        }
+    }
+
+    // find the save slot
+    uint8_t i;
+    for (i = 0; i < ARRAY_SIZE(saved_registers); i++) {
+        auto *sr = &saved_registers[i];
+        // note that this relies on the fact that we always call
+        // write_registers() with the base register in a group as the
+        // offset
+        if ((sr->page == page && sr->offset == offset) ||
+            (sr->page == 0 && sr->offset == 0)) {
+            if (i + count > ARRAY_SIZE(saved_registers)) {
+                INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+                return;
+            }
+            for (uint8_t c = 0; c < count; c++) {
+                sr[c].page = page;
+                sr[c].offset = offset + c;
+                sr[c].value = regs[c];
+            }
+            return;
+        }
+    }
+    // no slots available
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+}
+
+/*
+  check one register for correct value. We check at four per second
+  while disarmed
+ */
+void AP_IOMCU::check_register(void)
+{
+    if (hal.util->get_soft_armed()) {
+        // only check while armed, we don't update the critical config
+        // registers while armed
+        return;
+    }
+    auto &sr = saved_registers[check_next];
+    uint16_t value;
+    if (sr.page == 0 && sr.offset == 0) {
+        goto next;
+    }
+
+    if (!read_registers(sr.page, sr.offset, 1, &value)) {
+        // ignore a failed read, we will retry again
+        goto next;
+    }
+
+    if (value != sr.value) {
+        INTERNAL_ERROR(AP_InternalError::error_t::iomcu_fail);
+        // also send text to help us diagnose the issue even if
+        // logging is not running
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IOMCU: ck fail %u %u 0x%04x 0x%04x",
+                      unsigned(sr.page), unsigned(sr.offset),
+                      unsigned(sr.value), unsigned(value));
+        // fix the value in case the user decides to force arm
+        write_register(sr.page, sr.offset, sr.value);
+    }
+
+next:
+    check_next = (check_next+1) % ARRAY_SIZE(saved_registers);
+}
+#endif // AP_IOMCU_CHECK_REGISTERS_ENABLED
 
 namespace AP {
     AP_IOMCU *iomcu(void) {
