@@ -1,0 +1,238 @@
+timeout 30 mavproxy.py   --master=/dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00   --cmd="reboot"   --cmd="repeat add 7 ftp get @SYS/tasks.txt -" --cmd="repeat add 10 ftp get @SYS/threads.txt -"
+Connect /dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 source_system=255
+Log Directory: 
+Telemetry log: mav.tlog
+Waiting for heartbeat from /dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00
+MAV> Device /dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 is dead
+Device /dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 reopened OK
+Initialised Storage type=2
+Init ArduCopter V4.8.0-dev (c6f9f4e1)
+Free RAM: 286592
+XIP: CLKDIV=3 RXDELAY=3 (125.00 MHz)
+0 0 0 SDCard failed to start
+No Compass backends available
+AP: Calibrating barometer
+AP: Initialising ArduPilot
+AP: Barometer 1 calibration complete
+Init Gyro*Getting @SYS/tasks.txt as -
+*TasksV2
+AP_InertialSensor::update*       MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::run_rate_controller_main MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::motors_output_main*      MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::read_AHRS*               MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::read_inertia*            MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::check_ekf_reset*         MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_flight_mode*      MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_home_from_EKF*    MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_land_and_crash_de MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_rangefinder_terra MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Mount::update_fast*           MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::Log_Video_Stabilisation* MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::rc_loop                  MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::throttle_loop            MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::fence_check              MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_GPS::update                   MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_OpticalFlow::update           MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_batt_compass      MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+RC_Channels::read_aux_all        MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::auto_disarm_check        MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+RC_Channels_Copter::auto_trim_ru MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::read_rangefinder         MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Proximity::update             MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Beacon::update                MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Airspeed::update              MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_altitude          MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::run_nav_updates          MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_throttle_hover    MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+ModeSmartRTL::save_position      MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AC_Sprayer::update               MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::three_hz_loop            MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_ServoRelayEvents::update_even MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_precland          MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::loop_rate_logging        MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Compass::cal_update              MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Notify::update                MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::one_hz_loop              MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::perf_report              MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::ekf_check                MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::check_vibration          MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::gpsglitch_check          MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::takeoff_check            MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::landinggear_update       MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::standby_update           MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::lost_vehicle_check       MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+GCS::update_receive              MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+GCS::update_send                 MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Mount::update                 MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Camera::update                MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::ten_hz_logging_loop      MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::twentyfive_hz_logging    MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Logger::periodic_tasks        MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_InertialSensor::periodic      MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Scheduler::update_logging     MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_TempCalibration::update       MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::avoidance_adsb_update    MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::terrain_update           MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Winch::update                 MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Button::update                MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_NMEA_Output::update           MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::update_dynamic_notch_at_ MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_VideoTX::update               MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Tramp::update                 MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::send_watchdog_reset_ MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_ESC_Telem::update             MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Servo_Telem::update           MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Generator::update             MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_RPM::update                   MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::publish_osd_info     MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_TemperatureSensor::update     MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::accel_cal_update     MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AC_Fence::update                 MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_AIS::update                   MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_EFI::update                   MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Gripper::update               MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::one_Hz_update        MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Filters::update               MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Stats::update                 MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::update_arming        MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+
+
+AP: ArduPilot Ready
+AP: RCOut: PWM:1-4
+AP: AHRS: DCM active
+AP: Rate CPU normal, rate set to 335Hz
+AP: EKF3: alloc 1 cores sz=5024 free=222784
+AP: EKF3 IMU0 initialised
+AP: AHRS: EKF3 active
+Getting @SYS/threads.txt as -
+ThreadsV2
+ISR           PRI=255 sp=0x2000DEC0 STACK=24264/24576 LOAD= 0.8%
+ArduCopter    PRI=180 sp=0x20013EC0 STACK=5480/7168 LOAD=12.3%
+idle          PRI=  1 sp=0x20035740 STACK= 240/MSP  LOAD=20.0%
+main          PRI=128 sp=0x2001BAC0 STACK=16272/105320 LOAD= 0.0%
+idle          PRI=  1 sp=0x20035880 STACK= 240/MSP  LOAD=47.2%
+UART_RX       PRI= 60 sp=0x2007CC20 STACK= 848/1024 LOAD= 1.6%
+OTG1          PRI= 60 sp=0x2007BCE0 STACK= 304/ 576 LOAD= 0.4%
+timer         PRI=181 sp=0x20034180 STACK=1984/2304 LOAD= 1.9%
+rcout         PRI=181 sp=0x200319C0 STACK=8280/8448 LOAD= 0.1%
+rcin          PRI=177 sp=0x2002E7E0 STACK=12296/12544 LOAD= 1.0%
+io            PRI= 58 sp=0x2002DE00 STACK=1552/2304 LOAD= 4.7%
+storage       PRI= 59 sp=0x20033BA0 STACK= 552/1280 LOAD= 0.2%
+FTP           PRI=181 sp=0x200787C0 STACK=1264/2816 LOAD= 1.6%
+log_io        PRI= 59 sp=0x20076EC0 STACK=1380/1824 LOAD= 0.1%
+I2C0          PRI=176 sp=0x200765C0 STACK= 792/1280 LOAD= 0.3%
+SPI0          PRI=181 sp=0x20072200 STACK= 752/1280 LOAD= 5.0%
+UART1         PRI= 60 sp=0x2006F100 STACK= 352/ 576 LOAD= 0.0%
+rate          PRI=182 sp=0x2006F460 STACK=3764/4352 LOAD= 2.4%
+
+AP: ICM dbg: fifo=2905 empty=0 fail=0 n=3546 ax=0.148 ay=-0.340 az=9.835 gx=-0.000 gy=0.000 gz=0.000 t=26.93C
+AP: EKF3 IMU0 tilt alignment complete
+Perf: main=264Hz rate=331Hz core1load:52% core2load:1%
+AP: Perf: main=264Hz rate=331Hz core1load:52% core2load:1%
+Getting @SYS/tasks.txt as -
+TasksV2
+AP_InertialSensor::update*       MIN=  44 MAX= 977 AVG= 148 OVR=  0 SLP=  0, TOT= 2.1%
+Copter::run_rate_controller_main MIN=   7 MAX= 428 AVG=  16 OVR=  0 SLP=  0, TOT= 0.2%
+Copter::motors_output_main*      MIN=   1 MAX= 149 AVG=   5 OVR=  0 SLP=  0, TOT= 0.1%
+Copter::read_AHRS*               MIN=1308 MAX=6312 AVG=3227 OVR=  0 SLP=  0, TOT=45.0%
+Copter::read_inertia*            MIN=  54 MAX= 871 AVG= 152 OVR=  0 SLP=  0, TOT= 2.1%
+Copter::check_ekf_reset*         MIN=   9 MAX= 509 AVG=  33 OVR=  0 SLP=  0, TOT= 0.4%
+Copter::update_flight_mode*      MIN= 409 MAX=2059 AVG=1056 OVR=  0 SLP=  0, TOT=14.7%
+Copter::update_home_from_EKF*    MIN=   9 MAX= 388 AVG=  21 OVR=  0 SLP=  0, TOT= 0.3%
+Copter::update_land_and_crash_de MIN=  33 MAX= 890 AVG=  70 OVR=  0 SLP=  0, TOT= 0.9%
+Copter::update_rangefinder_terra MIN=  21 MAX= 663 AVG=  69 OVR=  0 SLP=  0, TOT= 0.9%
+AP_Mount::update_fast*           MIN=   3 MAX= 732 AVG=  11 OVR=  0 SLP=  0, TOT= 0.1%
+Copter::Log_Video_Stabilisation* MIN=   3 MAX= 620 AVG=  12 OVR=  0 SLP=  0, TOT= 0.1%
+Copter::rc_loop                  MIN=  22 MAX= 907 AVG=  62 OVR=  0 SLP=  0, TOT= 0.8%
+Copter::throttle_loop            MIN=  36 MAX= 621 AVG=  73 OVR= 20 SLP=  0, TOT= 0.6%
+Copter::fence_check              MIN=   8 MAX=  82 AVG=  15 OVR=  0 SLP=  0, TOT= 0.1%
+AP_GPS::update                   MIN=  60 MAX= 755 AVG= 122 OVR=  9 SLP=  0, TOT= 1.1%
+AP_OpticalFlow::update           MIN=   3 MAX= 488 AVG=  10 OVR= 12 SLP=  0, TOT= 0.2%
+Copter::update_batt_compass      MIN= 116 MAX=1191 AVG= 227 OVR= 14 SLP=  0, TOT= 0.4%
+RC_Channels::read_aux_all        MIN=   3 MAX= 315 AVG=  31 OVR=  2 SLP=  0, TOT= 0.1%
+Copter::auto_disarm_check        MIN=   7 MAX= 709 AVG=  42 OVR=  1 SLP=  0, TOT= 0.1%
+RC_Channels_Copter::auto_trim_ru MIN=   2 MAX=  20 AVG=   4 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::read_rangefinder         MIN=  97 MAX= 901 AVG= 228 OVR= 43 SLP=  0, TOT= 0.8%
+AP_Proximity::update             MIN=   4 MAX= 846 AVG=  29 OVR= 25 SLP=  0, TOT= 0.7%
+AP_Beacon::update                MIN=   1 MAX= 636 AVG=  12 OVR= 15 SLP=  0, TOT= 0.3%
+AP_Airspeed::update              MIN=   2 MAX= 194 AVG=  13 OVR=  1 SLP=  0, TOT= 0.0%
+Copter::update_altitude          MIN= 119 MAX= 990 AVG= 301 OVR= 21 SLP=  0, TOT= 0.5%
+Copter::run_nav_updates          MIN=   5 MAX=  93 AVG=   9 OVR=  0 SLP=  0, TOT= 0.1%
+Copter::update_throttle_hover    MIN=   3 MAX= 601 AVG=  10 OVR= 14 SLP=  0, TOT= 0.2%
+ModeSmartRTL::save_position      MIN=  10 MAX= 833 AVG= 158 OVR=  1 SLP=  0, TOT= 0.1%
+AC_Sprayer::update               MIN=   4 MAX=  34 AVG=  12 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::three_hz_loop            MIN=  25 MAX= 542 AVG= 115 OVR=  1 SLP=  0, TOT= 0.1%
+AP_ServoRelayEvents::update_even MIN=   2 MAX= 253 AVG=  10 OVR=  1 SLP=  0, TOT= 0.1%
+Copter::update_precland          MIN=   3 MAX= 452 AVG=  15 OVR= 21 SLP=  0, TOT= 0.4%
+Copter::loop_rate_logging        MIN=   4 MAX= 612 AVG=  20 OVR= 24 SLP=  0, TOT= 0.5%
+Compass::cal_update              MIN=   6 MAX= 869 AVG=  20 OVR= 19 SLP=  0, TOT= 0.5%
+AP_Notify::update                MIN=  34 MAX= 724 AVG=  71 OVR=  4 SLP=  0, TOT= 0.6%
+Copter::one_hz_loop              MIN= 122 MAX= 125 AVG= 123 OVR=  2 SLP=  0, TOT= 0.0%
+Copter::perf_report              MIN=   0 MAX=   0 AVG=   0 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::ekf_check                MIN=   7 MAX=  33 AVG=  11 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::check_vibration          MIN=  22 MAX= 479 AVG=  60 OVR=  3 SLP=  0, TOT= 0.1%
+Copter::gpsglitch_check          MIN=   4 MAX= 471 AVG=  29 OVR=  1 SLP=  0, TOT= 0.1%
+Copter::takeoff_check            MIN=   4 MAX= 546 AVG=  25 OVR=  4 SLP=  0, TOT= 0.2%
+Copter::landinggear_update       MIN=   5 MAX= 764 AVG=  43 OVR=  1 SLP=  0, TOT= 0.1%
+Copter::standby_update           MIN=   1 MAX= 857 AVG=  17 OVR= 18 SLP=  0, TOT= 0.4%
+Copter::lost_vehicle_check       MIN=  11 MAX= 102 AVG=  19 OVR=  1 SLP=  0, TOT= 0.0%
+GCS::update_receive              MIN=  95 MAX=3437 AVG= 501 OVR=236 SLP=  0, TOT=13.1%
+GCS::update_send                 MIN=  41 MAX=1969 AVG= 174 OVR= 83 SLP=  0, TOT= 3.8%
+AP_Mount::update                 MIN=   2 MAX=  69 AVG=   4 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Camera::update                MIN=   4 MAX=  44 AVG=   6 OVR=  0 SLP=  0, TOT= 0.1%
+Copter::ten_hz_logging_loop      MIN= 384 MAX=1752 AVG= 816 OVR= 21 SLP=  0, TOT= 1.5%
+Copter::twentyfive_hz_logging    MIN=   6 MAX=  50 AVG=  12 OVR=  0 SLP=  0, TOT= 0.1%
+AP_Logger::periodic_tasks        MIN=   2 MAX= 623 AVG=  16 OVR= 65 SLP=  0, TOT= 0.3%
+AP_InertialSensor::periodic      MIN=   1 MAX= 350 AVG=   6 OVR= 46 SLP=  0, TOT= 0.1%
+AP_Scheduler::update_logging     MIN= 174 MAX= 174 AVG= 174 OVR=  1 SLP=  0, TOT= 0.0%
+AP_TempCalibration::update       MIN=   3 MAX=   7 AVG=   4 OVR=  0 SLP=  0, TOT= 0.0%
+Copter::avoidance_adsb_update    MIN=  80 MAX= 516 AVG= 147 OVR=  4 SLP=  0, TOT= 0.2%
+Copter::terrain_update           MIN=  36 MAX= 497 AVG=  94 OVR=  4 SLP=  0, TOT= 0.1%
+AP_Winch::update                 MIN=   4 MAX= 642 AVG=  23 OVR=  4 SLP=  0, TOT= 0.2%
+AP_Button::update                MIN=   3 MAX=  10 AVG=   5 OVR=  0 SLP=  0, TOT= 0.0%
+AP_NMEA_Output::update           MIN=   3 MAX= 671 AVG=  16 OVR=  2 SLP=  0, TOT= 0.1%
+Copter::update_dynamic_notch_at_ MIN=   1 MAX= 446 AVG=  12 OVR= 65 SLP=  0, TOT= 0.2%
+AP_VideoTX::update               MIN=   2 MAX=  10 AVG=   4 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Tramp::update                 MIN=   1 MAX= 592 AVG=   9 OVR=  1 SLP=  0, TOT= 0.1%
+AP_Vehicle::send_watchdog_reset_ MIN=   3 MAX=   3 AVG=   3 OVR=  0 SLP=  0, TOT= 0.0%
+AP_ESC_Telem::update             MIN=  21 MAX= 828 AVG=  68 OVR= 84 SLP=  0, TOT= 1.6%
+AP_Servo_Telem::update           MIN=   3 MAX= 590 AVG=  10 OVR=  1 SLP=  0, TOT= 0.1%
+AP_Generator::update             MIN=   2 MAX=   8 AVG=   2 OVR=  0 SLP=  0, TOT= 0.0%
+AP_RPM::update                   MIN=   4 MAX=  15 AVG=   5 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::publish_osd_info     MIN=  19 MAX=  20 AVG=  19 OVR=  3 SLP=  0, TOT= 0.0%
+AP_TemperatureSensor::update     MIN=   3 MAX=   6 AVG=   3 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::accel_cal_update     MIN=   8 MAX=  20 AVG=   9 OVR=  0 SLP=  0, TOT= 0.0%
+AC_Fence::update                 MIN=  10 MAX= 366 AVG=  33 OVR=  1 SLP=  0, TOT= 0.1%
+AP_AIS::update                   MIN=   2 MAX=   2 AVG=   2 OVR=  0 SLP=  0, TOT= 0.0%
+AP_EFI::update                   MIN=   1 MAX=  59 AVG=   3 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Gripper::update               MIN=   2 MAX=  67 AVG=   5 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Vehicle::one_Hz_update        MIN=  97 MAX= 800 AVG= 332 OVR=  1 SLP=  0, TOT= 0.1%
+AP_Filters::update               MIN=   6 MAX=   8 AVG=   6 OVR=  0 SLP=  0, TOT= 0.0%
+AP_Stats::update                 MIN=  15 MAX= 130 AVG=  55 OVR=  1 SLP=  0, TOT= 0.0%
+AP_Vehicle::update_arming        MIN= 830 MAX=2140 AVG=1449 OVR=  3 SLP=  0, TOT= 0.3%
+
+fence present
+Perf: main=222Hz rate=329Hz core1load:63% core2load:21%
+AP: Perf: main=222Hz rate=329Hz core1load:63% core2load:21%
+Getting @SYS/threads.txt as -
+ThreadsV2
+ISR           PRI=255 sp=0x2000DEC0 STACK=24256/24576 LOAD= 1.1%
+ArduCopter    PRI=180 sp=0x20013EC0 STACK=5480/7168 LOAD=18.6%
+idle          PRI=  1 sp=0x20035740 STACK= 240/MSP  LOAD= 0.0%
+main          PRI=128 sp=0x2001BAC0 STACK=16272/105320 LOAD= 0.0%
+idle          PRI=  1 sp=0x20035880 STACK= 240/MSP  LOAD=58.6%
+UART_RX       PRI= 60 sp=0x2007CC20 STACK= 848/1024 LOAD= 0.1%
+OTG1          PRI= 60 sp=0x2007BCE0 STACK= 304/ 576 LOAD= 0.0%
+timer         PRI=181 sp=0x20034180 STACK=1984/2304 LOAD= 2.2%
+rcout         PRI=181 sp=0x200319C0 STACK=8280/8448 LOAD= 0.0%*
+rcin          PRI=177 sp=0x2002E7E0 STACK=12296/12544 LOAD= 0.5%
+io            PRI= 58 sp=0x2002DE00 STACK=1552/2304 LOAD= 0.1%
+storage       PRI= 59 sp=0x20033BA0 STACK= 552/1280 LOAD= 0.0%
+FTP           PRI=181 sp=0x200787C0 STACK=1264/2816 LOAD= 0.1%
+log_io        PRI= 59 sp=0x20076EC0 STACK=1328/1824 LOAD= 0.0%
+I2C0          PRI=176 sp=0x200765C0 STACK= 792/1280 LOAD= 0.3%
+SPI0          PRI=181 sp=0x20072200 STACK= 752/1280 LOAD=11.2%
+UART1         PRI= 60 sp=0x2006F100 STACK= 352/ 576 LOAD= 0.0%
+rate          PRI=182 sp=0x2006F460 STACK=3764/4352 LOAD= 7.1%
+
+AP: ICM dbg: fifo=11329 empty=0 fail=0 n=13430 ax=0.182 ay=-0.387 az=9.864 gx=-0.000 gy=0.000 gz=0.002 t=26.93C
