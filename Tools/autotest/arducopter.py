@@ -791,8 +791,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def AutoOptionsWaitYaw(self):
         '''Test AUTO_OPTIONS Wait Yaw Mode (bit 3) - image taken at target yaw'''
-        # configure a servo-triggered camera so a mission camera trigger
-        # produces a CAMERA_FEEDBACK message we can inspect
+        # configure a camera so a mission camera trigger produces a
+        # CAMERA_FEEDBACK message we can inspect
         self.set_parameters({
             "CAM1_TYPE": 1,
         })
@@ -803,68 +803,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameters({
                 "AUTO_OPTIONS": auto_options,
             })
-
             self.context_collect('CAMERA_FEEDBACK')
 
-            # Change to STABILIZE mode to ensure mission state machine works
+            # STABILIZE ensures the mission state machine is reset
             self.change_mode('STABILIZE')
 
-            wp_loc = self.offset_location_ne(self.home_position_as_mav_location(), 2, 0)
-
+            # CONDITION_YAW rotations are slow (p2=10 deg/s) so the yaw target
+            # is usually not reached before the following waypoint; an image is
+            # taken at each waypoint to capture the yaw at that point
             self.upload_simple_relhome_mission([
-                # 1. Takeoff to 20m
-                #(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-                    z=20,
-                    frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                ),
-                # 2. Command yaw to 180 degrees (south) 
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                    p1=180,
-                    p2=10, # slow rotation to provoke the yaw target usually not reached before the next waypoint
-                ),
-                # 3. Navigate to waypoint 2 meters further north at 20m. With
-                #    WaitForYaw the vehicle holds at the waypoint until the yaw
-                #    target (180) is reached before continuing
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                    x=int(wp_loc.lat * 1e7),
-                    y=int(wp_loc.lng * 1e7),
-                    z=20,
-                    frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                ),
-                # 4. Take a image
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
-                    p1=1,
-                    x=1,
-                ),
-                # 5. Rotate back to 5 degrees (north) 
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_CONDITION_YAW,
-                    p1=5,
-                    p2=10, # slow rotation to provoke the yaw target usually not reached before the next waypoint
-                ),
-                # 6. Navigate to another waypoint 2 meters further north at 20m. 
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                    x=int((wp_loc.lat + 0.000018) * 1e7),  # 2m further north
-                    y=int(wp_loc.lng * 1e7),
-                    z=20,
-                    frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-                ),  
-                # 7. Take another image
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL,
-                    p1=1,
-                    x=1,
-                ),
-                # 8. Return to launch
-                self.create_MISSION_ITEM_INT(
-                    mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH,
-                ),
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_CONDITION_YAW, p1=180, p2=10),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2, 0, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL, p1=1, x=1),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_CONDITION_YAW, p1=5, p2=10),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 4, 0, 20),
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_DIGICAM_CONTROL, p1=1, x=1),
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
             ])
 
             self.change_mode('AUTO')
@@ -876,11 +831,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             camera_feedback = self.context_stop_collecting('CAMERA_FEEDBACK')
             if len(camera_feedback) != 2:
                 raise NotAchievedException(f"Expected exactly two CAMERA_FEEDBACK messages, got {len(camera_feedback)}")
-            
+
             self.context_pop()
             return (camera_feedback[0], camera_feedback[1])
 
-        def yaw_reached(image, expected_yaw, tolerance = 2):
+        def yaw_reached(image, expected_yaw, tolerance=2):
             return abs(image.yaw - expected_yaw) <= tolerance
 
         def verify_image_taken_at_expected_yaw(image, expected_yaw, tolerance = 2):
