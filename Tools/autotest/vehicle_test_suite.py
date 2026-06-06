@@ -215,6 +215,10 @@ class Context(object):
         self.installed_modules = []
         self.overridden_message_rates = {}
         self.raising_debug_trap_on_exceptions = False
+        # self.speedup value to restore on context_pop(); set by the
+        # first context_set_speedup() call in this context (None means
+        # speedup was never changed in this context)
+        self.original_speedup = None
         # files snapshotted via context_backup_file() and restored on
         # context_pop(); list of (path, original_bytes) tuples
         self.backup_files = []
@@ -3735,6 +3739,21 @@ class TestSuite(abc.ABC):
         context.raising_debug_trap_on_exceptions = False
         sys.settrace(None)
 
+    def context_set_speedup(self, speedup):
+        '''set the simulation speedup, keeping the SIM_SPEEDUP parameter and
+        the self.speedup attribute (used to scale timeouts) in sync.  The
+        original speedup is restored on context_pop(), so cleanup is
+        exception-safe and handled by the suite rather than each test.
+
+        Calling this more than once in a single context retains the speedup
+        from before the first call - the value restored on context_pop() is
+        always the one in effect when this context was entered.'''
+        context = self.context_get()
+        if context.original_speedup is None:
+            context.original_speedup = self.speedup
+        self.speedup = speedup
+        self.set_parameter("SIM_SPEEDUP", speedup)
+
     def context_set_message_rate_hz(self, id, rate_hz, run_cmd=None):
         if run_cmd is None:
             run_cmd = self.run_cmd
@@ -4716,9 +4735,9 @@ class TestSuite(abc.ABC):
         self.start_subtest("Check disarm rot when log disarmed is zero")
         self.assert_parameter_value("LOG_DISARMED", 0)
         self.set_parameter("LOG_FILE_DSRMROT", 1)
-        old_speedup = self.get_parameter("SIM_SPEEDUP")
         # reduce speedup to reduce chance of race condition here
-        self.set_parameter("SIM_SPEEDUP", 1)
+        self.context_push()
+        self.context_set_speedup(1)
         pre_armed_list = self.log_list()
         if self.is_copter() or self.is_heli():
             self.set_parameter("DISARM_DELAY", 0)
@@ -4727,7 +4746,7 @@ class TestSuite(abc.ABC):
         if len(post_armed_list) != len(pre_armed_list):
             raise NotAchievedException("Got unexpected new log")
         self.disarm_vehicle()
-        old_speedup = self.set_parameter("SIM_SPEEDUP", old_speedup)
+        self.context_pop()
         post_disarmed_list = self.log_list()
         if len(post_disarmed_list) != len(post_armed_list):
             raise NotAchievedException("Log rotated immediately")
@@ -4915,7 +4934,7 @@ class TestSuite(abc.ABC):
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
-        self.set_parameter('SIM_SPEEDUP', 1)
+        self.context_set_speedup(1)
         mavproxy.send("log list\n")
         mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
         mavproxy.send("set shownoise 0\n")
@@ -4977,7 +4996,7 @@ class TestSuite(abc.ABC):
         # now, or MAVProxy does not see it as the latest log:
         self.wait_gps_fix_type_gte(3)
 
-        self.set_parameter('SIM_SPEEDUP', 1)
+        self.context_set_speedup(1)
 
         endpoints = [('UDPClient', ':16001') ,
                      ('UDPServer', 'udpout:127.0.0.1:16002'),
@@ -5021,7 +5040,7 @@ class TestSuite(abc.ABC):
             })
         self.reboot_sitl()
 
-        self.set_parameter('SIM_SPEEDUP', 1)
+        self.context_set_speedup(1)
 
         endpoints = [('UDPMulticast', 'mcast:16005') ,
                      ('UDPBroadcast', ':16006')]
@@ -5058,7 +5077,7 @@ class TestSuite(abc.ABC):
             })
         self.reboot_sitl()
 
-        self.set_parameter('SIM_SPEEDUP', 1)
+        self.context_set_speedup(1)
 
         filename = "MAVProxy-downloaded-can-log.BIN"
         # port 15550 is in SITL_Periph_State.h as SERIAL4 udpclient:127.0.0.1:15550
@@ -6793,6 +6812,8 @@ class TestSuite(abc.ABC):
     def context_pop(self, process_interaction_allowed=True, hooks_already_removed=False):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
+        if dead.original_speedup is not None:
+            self.speedup = dead.original_speedup
         # remove hooks first; these hooks can raise exceptions which
         # we really don't want...
         if not hooks_already_removed:
@@ -9409,8 +9430,6 @@ Also, ignores heartbeats not from our target system'''
 
         start_time = time.time()
 
-        orig_speedup = None
-
         hooks_removed = False
 
         ex = None
@@ -9424,8 +9443,7 @@ Also, ignores heartbeats not from our target system'''
             self.drain_all_pexpects()
             if test.speedup is not None:
                 self.progress("Overriding speedup to %u" % test.speedup)
-                orig_speedup = self.get_parameter("SIM_SPEEDUP")
-                self.set_parameter("SIM_SPEEDUP", test.speedup)
+                self.context_set_speedup(test.speedup)
 
             test_function(**test_kwargs)
         except Exception as e:  # noqa: BLE001
@@ -9439,9 +9457,6 @@ Also, ignores heartbeats not from our target system'''
             hooks_removed = True
         self.test_timings[desc] = time.time() - start_time
         reset_needed = self.contexts[-1].sitl_commandline_customised
-
-        if orig_speedup is not None:
-            self.set_parameter("SIM_SPEEDUP", orig_speedup)
 
         passed = True
         if ex is not None:
@@ -11663,14 +11678,14 @@ Also, ignores heartbeats not from our target system'''
 
             self.progress("try at the main loop rate")
             # have to reset the speedup as MAVProxy can't keep up otherwise
-            old_speedup = self.get_parameter("SIM_SPEEDUP")
-            self.set_parameter("SIM_SPEEDUP", 1.0)
+            self.context_push()
+            self.context_set_speedup(1.0)
             # ArduPilot currently limits message rate to 80% of main loop rate:
             want_rate = self.get_parameter("SCHED_LOOP_RATE") * 0.8
             self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
                                      want_rate)
             rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
-            self.set_parameter("SIM_SPEEDUP", old_speedup)
+            self.context_pop()
             self.progress("Want=%f got=%f" % (want_rate, rate))
             if abs(rate - want_rate) > 2:
                 raise NotAchievedException("Did not get expected rate")

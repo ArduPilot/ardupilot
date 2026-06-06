@@ -665,7 +665,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
             self.start_subtest("test MAV_CMD_DO_REPEAT_RELAY")
             self.context_push()
-            self.set_parameter("SIM_SPEEDUP", 1)
+            self.context_set_speedup(1)
             method(
                 mavutil.mavlink.MAV_CMD_DO_REPEAT_RELAY,
                 p1=0,  # servo 1
@@ -691,7 +691,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.start_subtest("test MAV_CMD_DO_REPEAT_SERVO")
 
             self.context_push()
-            self.set_parameter("SIM_SPEEDUP", 1)
+            self.context_set_speedup(1)
             trim = self.get_parameter("SERVO13_TRIM")
             value = 2000
             method(
@@ -4348,8 +4348,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # Since ArduPilot has a 1s timeout on re-requesting, This only
         # requires a round-trip delay of 1/speedup seconds to trigger
         # - and that has been seen in practise on Travis
-        old_speedup = self.get_parameter("SIM_SPEEDUP")
-        self.set_parameter("SIM_SPEEDUP", 1)
+        self.context_push()
+        self.context_set_speedup(1)
         self.mav.mav.mission_count_send(target_system,
                                         target_component,
                                         2,
@@ -4395,7 +4395,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.expect_request_for_item(item)
 
-        self.set_parameter("SIM_SPEEDUP", old_speedup)
+        self.context_pop()
 
         self.progress("Now waiting for a timeout")
         tstart = self.get_sim_time()

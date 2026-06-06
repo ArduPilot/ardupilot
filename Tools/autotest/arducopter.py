@@ -3575,7 +3575,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("The dataflash log already has a Flip Mode error, somehow.")
         # Because the initiate-and-abandon must happen in a tight window of time, slow down sim
         self.context_push()
-        self.set_parameter('SIM_SPEEDUP', 1.0)
+        self.context_set_speedup(1.0)
         # Pre-constrain tilt so that if we reach the desroll, that's definitely due to the flip
         self.set_parameter("ATC_ANGLE_MAX", 10.0)
         self.install_message_hook(flip_mode_watcher)
@@ -9748,7 +9748,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.wait_ekf_happy()
 
-        self.set_parameter("SIM_SPEEDUP", 20)
+        self.context_set_speedup(20)
 
         tstart = self.get_sim_time()
         while True:
@@ -9872,7 +9872,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.takeoff(10, mode="LOITER")
         self.context_push()
-        self.set_parameter("SIM_SPEEDUP", 1)
+        self.context_set_speedup(1)
         self.change_mode("FOLLOW")
         new_loc = self.mav.location()
         new_loc_offset_n = 20
@@ -10033,7 +10033,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.takeoff(10, mode="LOITER")
         self.context_push()
-        self.set_parameter("SIM_SPEEDUP", 1)
+        self.context_set_speedup(1)
         self.change_mode("FOLLOW")
         new_loc = self.mav.location()
         new_loc_offset_n = 40
@@ -15372,7 +15372,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.takeoff(10, mode='LOITER')
 
-        self.set_parameter('SIM_SPEEDUP', 1)
+        self.context_set_speedup(1)
 
         # Push west; avoidance should hold vehicle near inner boundary of original fence.
         self.set_rc(2, 1300)
@@ -17193,8 +17193,7 @@ RTL_ALT_M 111
 
         self.progress("Starting Periph simulation")
         self.context_push()
-        original_speedup = self.speedup  # FIXME: do this better
-        self.speedup = 1
+        self.context_set_speedup(1)
         periph_exp = None
         ex = None
         try:
@@ -17287,7 +17286,6 @@ RTL_ALT_M 111
                 self.progress("Stopping Periph")
                 self.expect_list_remove(periph_exp)
                 util.pexpect_close(periph_exp)
-        self.speedup = original_speedup
         self.context_pop()
         self.reboot_sitl()
         if ex is not None:
