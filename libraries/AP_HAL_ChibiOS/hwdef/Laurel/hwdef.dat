@@ -361,18 +361,28 @@ define RP_VREG_VSEL 15
 #   (RXDELAY = CLKDIV: sample = period boundary, works if flash tCHQX > 0)
 # W25Q64JVXGIM: fast-read max 133 MHz, tCLQV ≤ 6 ns.
 #
-# History of attempts at 375 MHz sysclk:
-#   CLKDIV=6 RXDELAY=6: 62.5 MHz SCK, sample=16 ns=period, hold=0 ns.  ← WORKS (original)
-#   CLKDIV=5 RXDELAY=6: RXDELAY>CLKDIV, sample 14.67 ns > period 13.33 ns. ← CRASH
-#   CLKDIV=4 RXDELAY=6: RXDELAY>CLKDIV, sample 13.33 ns > period 10.67 ns. ← CRASH
-#   CLKDIV=4 RXDELAY=1: setup only 0.67 ns, PCB trace delay insufficient. ← CRASH
-#   CLKDIV=3 RXDELAY=2: setup only 0.67 ns, hold 1.33 ns. ← CRASH (125 MHz)
+# History of attempts at 375 MHz sysclk (half_cycle = 1.333 ns):
+#   CLKDIV  RXDELAY  SCK        sample (ns)          setup margin  hold margin  result
+#   6       6        62.5 MHz   (6+6)x1.333 = 16.0 = period        10.0 ns       0.0 ns  WORKS (original)
+#   6       7        62.5 MHz   (6+7)x1.333 = 17.3 > period (datasheet +1 rule)           WORKS
+#   5       6        75   MHz   (5+6)x1.333 = 14.7 > period 13.3     --            --     CRASH (sample past period)
+#   4       6        93.75 MHz  (4+6)x1.333 = 13.3 > period 10.7     --            --     CRASH (sample past period)
+#   4       1        93.75 MHz  (4+1)x1.333 =  6.7   0.67 ns         4.00 ns            CRASH (setup too tight for PCB trace)
+#   4       3        93.75 MHz  (4+3)x1.333 =  9.3   3.33 ns         1.33 ns            WORKS
+#   3       2        125  MHz   (3+2)x1.333 =  6.7   0.67 ns         1.33 ns            CRASH (setup too tight for PCB trace)
+#   3       3        125  MHz   (3+3)x1.333 =  8.0 = period          2.00 ns       0.0 ns  TRYING (same boundary case as 6/6 which WORKS)
 #
-# CLKDIV=6 RXDELAY=6: 62.5 MHz SCK — was original "safe" setting, but bit-flip at 375 MHz sysclk.
+# Prior CLKDIV=3 attempt (RXDELAY=2): the commit math showed 1.33 ns hold margin and
+# called it "tight but correct" -- but SETUP margin was only 0.67 ns, insufficient once
+# PCB trace delay is included. tCLQV max = 6 ns, sample at 6.67 ns => only 0.67 ns slack.
+# RXDELAY=3 gives 2.0 ns setup (matching 4/3 pattern) with 0 hold margin (period boundary),
+# same structure as the original CLKDIV=6/RXDELAY=6 which is proven to work.
+#
+# CLKDIV=6 RXDELAY=6: 62.5 MHz SCK -- was original "safe" setting, but bit-flip at 375 MHz sysclk.
 #   Datasheet rule: RXDELAY=CLKDIV+1 when sysclk>>200MHz for extra margin.
 # CLKDIV=6 RXDELAY=7: 62.5 MHz SCK, +1 RXDELAY margin for 375 MHz. WORKS.
 # Must be applied before PLL switch (see rp_clocks.c).
-define RP_QMI_CLKDIV 4
+define RP_QMI_CLKDIV 3
 define RP_QMI_RXDELAY 3
 # define AP_XIP_PROFILER_ENABLED 1
 
