@@ -44,14 +44,14 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
-    // @Param: YAW_ALIGN
+    // @Param{Rover}: YAW_ALIGN
     // @DisplayName: Sensor yaw alignment
     // @Description: Yaw angle from body x-axis to sensor x-axis.
     // @Range: 0 36000
     // @Increment: 10
     // @User: Advanced
     // @Units: cdeg
-    AP_GROUPINFO("YAW_ALIGN",    2, AC_PrecLand, _yaw_align_cd, 0),
+    AP_GROUPINFO_FRAME("YAW_ALIGN",    2, AC_PrecLand, _yaw_align_cd, 0, AP_PARAM_FRAME_ROVER),
 
     // @Param: LAND_OFS_X
     // @DisplayName: Land offset forward
