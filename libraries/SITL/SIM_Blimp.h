@@ -38,6 +38,15 @@ struct Fins
   float Fz;
 };
 
+struct Motors
+{
+  float throttle;
+  float thrust;
+  float Fx; //Fx,y,z = Force in bodyframe orientation at servo position, in Newtons
+  float Fy;
+  float Fz;
+};
+
 /*
   a blimp simulator
  */
@@ -62,10 +71,15 @@ protected:
 
     //Airfish-specific variables
     Fins fin[4];
+    Motors mot[4];
+    float gondolawidth;
     float k_tan; //Tangential and normal force multipliers
     float k_nor;
+    float k_m;
     float drag_constant;
     float drag_gyr_constant;
+
+    bool motorblimp = false;
 
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     float sq(float a) {return powf(a,2);}

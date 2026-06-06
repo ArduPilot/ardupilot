@@ -771,7 +771,7 @@ protected:
 #if HAL_HIGH_LATENCY2_ENABLED
     virtual int16_t high_latency_target_altitude() const { return 0; }
     virtual uint8_t high_latency_tgt_heading() const { return 0; }
-    virtual uint16_t high_latency_tgt_dist() const { return 0; }
+    virtual uint16_t high_latency_tgt_dist_dam() const { return 0; }
     virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
     virtual uint8_t high_latency_wind_speed() const { return 0; }
     virtual uint8_t high_latency_wind_direction() const { return 0; }
@@ -780,7 +780,10 @@ protected:
     MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);
 
 #endif // HAL_HIGH_LATENCY2_ENABLED
-    
+
+    // note that the mavlink specification only uses 21196 as the
+    // magic value to force and arm or disarm.  We continue to support
+    // 2989 for force-arming for backwards-compatability reasons.
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_arm_disarm_value = 21196.0f;
 
@@ -1335,7 +1338,7 @@ private:
 
     static GCS *_singleton;
 
-    void create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart);
+    bool create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) WARN_IF_UNUSED;
 
     char statustext_printf_buffer[256+1];
 

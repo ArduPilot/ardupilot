@@ -31,6 +31,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RCMapper/AP_RCMapper.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include "RC_Channel.h"
 
@@ -39,7 +40,8 @@ extern const AP_HAL::HAL& hal;
 /*
   channels group object constructor
  */
-RC_Channels::RC_Channels(void)
+RC_Channels::RC_Channels(void) :
+    override_start_throttle(-1)
 {
     // set defaults from the parameter table
     AP_Param::setup_object_defaults(this, var_info);
@@ -106,9 +108,53 @@ bool RC_Channels::read_input(void)
 
     if (success) {
         rudder_arm_disarm_check();
+
+        // check if RC overrides should be ignored based on RC_OPTIONS and any pilot input change during active overrides
+        if (should_ignore_overrides()) {
+            set_gcs_overrides_enabled(false);
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "RC overrides cleared by pilot input");
+        }
     }
 
     return success;
+}
+
+bool RC_Channels::should_ignore_overrides(void)
+{
+    if (!rc().option_is_enabled(Option::CLEAR_OVERRIDES_BY_RC) || !has_active_overrides()) {
+        return false;
+    }
+    return has_pilot_input_for_override_clear();
+}
+
+bool RC_Channels::channel_outside_trim_dz(const RC_Channel &ch)
+{
+    return !ch.in_raw_trim_dz();
+}
+
+bool RC_Channels::throttle_moved_since_override_start() const
+{
+    if (override_start_throttle < 0) {
+        return false;
+    }
+
+    const RC_Channel &thr = get_throttle_channel();
+    return abs(thr.get_raw_radio_in() - override_start_throttle) > thr.get_dead_zone();
+}
+
+bool RC_Channels::has_pilot_input_for_override_clear()
+{
+    if (channel_outside_trim_dz(get_roll_channel()) ||
+        channel_outside_trim_dz(get_pitch_channel()) ||
+        channel_outside_trim_dz(get_yaw_channel())) {
+        return true;
+    }
+
+    if (throttle_moved_since_override_start()) {
+        return true;
+    }
+
+    return false;
 }
 
 uint8_t RC_Channels::get_valid_channel_count(void)

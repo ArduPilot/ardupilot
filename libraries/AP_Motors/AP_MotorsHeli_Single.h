@@ -40,6 +40,9 @@ public:
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    void calculate_armed_scalars() override;
+
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
 

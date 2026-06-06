@@ -117,10 +117,12 @@ int16_t ftoa_engine(float val, char *buf, uint8_t precision, uint8_t maxDecimals
         } else { // Subnormal
             exp = 1; // Subnormal mantissa has same significance as exp=1
         }
-    } else if(exp==0xff) { // Infinity or NaN
-        if(frac==0) flags |= FTOA_INF; else flags |= FTOA_NAN;
-    } else { // Normal number
-        frac |= (1UL<<23); // The implicit leading 1 is made explicit
+    } else {
+        if(exp==0xff) { // Infinity or NaN
+            if(frac==0) flags |= FTOA_INF; else flags |= FTOA_NAN;
+        } // Else normal number
+        // Note this ensures infinities have a non-zero frac and don't hang!
+        frac |= (1UL<<23); // The implicit leading 1 is made explicit.
     }
 
     uint8_t idx = exp>>3;

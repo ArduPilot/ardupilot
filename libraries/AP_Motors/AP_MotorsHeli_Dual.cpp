@@ -272,6 +272,10 @@ void AP_MotorsHeli_Dual::calculate_scalars()
 
     // configure main rotor and update scalars
     _main_rotor.configure();
+
+    // calculate armed scalars for both main rotors
+    calculate_armed_scalars();
+
 }
 
 // Mix and output swashplates for tandem

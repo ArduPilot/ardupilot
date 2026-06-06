@@ -89,16 +89,14 @@ void NavEKF3_core::setWindMagStateLearningMode()
             }
 
             // set the wind state variances to the measurement uncertainty
-            zeroCols(P, 22, 23);
-            zeroRows(P, 22, 23);
+            zeroStatesVarCov(22, 23);
             P[22][22] = P[23][23] = trueAirspeedVariance;
 
             windStatesAligned = true;
 
         } else {
             // set the variances using a typical max wind speed for small UAV operation
-            zeroCols(P, 22, 23);
-            zeroRows(P, 22, 23);
+            zeroStatesVarCov(22, 23);
             for (uint8_t index=22; index<=23; index++) {
                 P[index][index] = sq(WIND_VEL_VARIANCE_MAX);
             }
@@ -276,8 +274,7 @@ void NavEKF3_core::setAidingMode()
         for (uint8_t row=0; row<6; row++) {
             oldBiasVariance[row] = P[row+10][row+10];
         }
-        zeroCols(P,10,15);
-        zeroRows(P,10,15);
+        zeroStatesVarCov(10, 15);
         for (uint8_t row=0; row<6; row++) {
             P[row+10][row+10] = oldBiasVariance[row];
         }

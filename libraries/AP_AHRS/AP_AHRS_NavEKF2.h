@@ -70,12 +70,6 @@ public:
         return true;
     }
 
-    Vector2f groundspeed_vector(void) override {
-        Vector3f vec;
-        EKF2.getVelNED(vec);
-        return vec.xy();
-    }
-
     bool use_compass() override {
         return EKF2.use_compass();
     }
@@ -125,11 +119,6 @@ public:
 
     void request_yaw_reset(void) override {
         EKF2.requestYawReset();
-    }
-
-    // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override WARN_IF_UNUSED {
-        return EKF2.getHAGL(hagl);
     }
 
     // this is out here so parameters can be poked into it

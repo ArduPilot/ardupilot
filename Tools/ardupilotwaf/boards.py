@@ -258,6 +258,13 @@ class Board:
         return (int(major) > want_major or
                 (int(major) == want_major and int(minor) >= want_minor))
 
+    def cc_version_lte(self, cfg, want_major, want_minor):
+        if cfg.env.TOOLCHAIN == "custom":
+            return True
+        (major, minor, patchlevel) = cfg.env.CC_VERSION
+        return (int(major) < want_major or
+                (int(major) == want_major and int(minor) <= want_minor))
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -488,6 +495,15 @@ class Board:
                 ]
                 env.CFLAGS += [
                     '-Werror=use-after-free',
+                ]
+            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 1):
+                # the following warnings appear to be buggy in later compiler versions
+                # https://github.com/ArduPilot/ardupilot/issues/33206
+                # TODO: readdress following a 16.2+ release
+                env.CXXFLAGS += [
+                    '-Wno-error=maybe-uninitialized',
+                    '-Wno-error=format-truncation',
+                    '-Wno-error=array-bounds',
                 ]
 
         if cfg.env.TOOLCHAIN == "custom":
@@ -859,7 +875,9 @@ class SITLBoard(Board):
                 '-O3',
             ]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            if not cfg.env.DEBUG:
+                cfg.fatal('--asan requires --debug for reliable instrumentation')
             env.CXXFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
@@ -874,8 +892,8 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
-             env.LINKFLAGS += ['-fsanitize=address']
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
@@ -908,6 +926,8 @@ class SITLBoard(Board):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
         for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/models/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
             if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
 
@@ -919,6 +939,8 @@ class SITLBoard(Board):
         # its parameter defaults from ROMFS without the source tree on disk.
         env.ROMFS_FILES += [('vehicleinfo.json','Tools/autotest/pysim/vehicleinfo.json')]
         for f in os.listdir('Tools/autotest/default_params'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/default_params/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
             if fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('default_params/'+f,'Tools/autotest/default_params/'+f)]
 

@@ -363,7 +363,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // check if flight mode requires GPS
     const bool mode_requires_position = copter.flightmode->requires_position() || fence_requires_position || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
-    const bool mode_requires_gps = AP::ahrs().using_gps() && mode_requires_position;
+    const bool mode_requires_gps = AP::ahrs().active_backend_configured_to_use_gps() && mode_requires_position;
 
     // call parent gps checks
     if (mode_requires_gps) {

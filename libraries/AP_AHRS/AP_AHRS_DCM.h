@@ -90,9 +90,6 @@ public:
     // if we have an estimate from a specific sensor index
     bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
-
     bool            use_compass() override;
 
     void estimate_wind(void);
@@ -124,6 +121,8 @@ private:
     bool get_vert_pos_rate_D(float &velocity) const;
 
     bool get_velocity_NED(Vector3f &vec) const;
+    // return a ground velocity estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector();
 
     // dead-reckoning support
     bool get_location(Location &loc) const;

@@ -190,6 +190,12 @@ void AP_MotorsHeli::init(motor_frame_class frame_class, motor_frame_type frame_t
     _mav_type = MAV_TYPE_HELICOPTER;
 }
 
+// calculate_scalars - recalculates various scalers used.
+void AP_MotorsHeli::calculate_armed_scalars()
+{
+    _main_rotor.configure_armed();
+}
+
 // output_min - sets servos to neutral point with motors stopped
 void AP_MotorsHeli::output_min()
 {
@@ -241,7 +247,7 @@ void AP_MotorsHeli::output()
 // sends commands to the motors
 void AP_MotorsHeli::output_armed_stabilizing()
 {
-    _main_rotor.configure_armed();
+    calculate_armed_scalars();
 
     // if manual override active after arming, deactivate it and reinitialize servos
     if (_servo_mode != SERVO_CONTROL_MODE_AUTOMATED) {

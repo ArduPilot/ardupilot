@@ -69,6 +69,7 @@ class TestNewBoards(BuildScriptBase):
         (r'^SERIAL(\d+)_(PROTOCOL|BAUD|OPTIONS)$', r'DEFAULT_SERIAL\1_\2'),
         (r'^ADSB_TYPE$',                           r'AP_ADSB_TYPE_DEFAULT'),
         (r'^NTF_LED_TYPES$',                       r'NTF_LED_TYPES'),
+        (r'^BRD_TYPE$',                            r'BOARD_TYPE_DEFAULT'),
     ]
 
     def check_defaults_parm(self, defaults_parm_path: str, board_name: str) -> None:

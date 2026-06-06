@@ -210,7 +210,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_GPS1_ENABLE", 1)
         self.wait_ready_to_arm()
 
-    def fly_LOITER(self, num_circles=4):
+    def fly_LOITER(self, num_circles=4, timeout=60):
         """Loiter where we are."""
         self.progress("Testing LOITER for %u turns" % num_circles)
         self.change_mode('LOITER')
@@ -220,8 +220,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Initial altitude %u\n" % initial_alt)
 
         while num_circles > 0:
-            self.wait_heading(0, accuracy=10, timeout=60)
-            self.wait_heading(180, accuracy=10, timeout=60)
+            self.wait_heading(0, accuracy=10, timeout=timeout)
+            self.wait_heading(180, accuracy=10, timeout=timeout)
             num_circles -= 1
             self.progress("Loiter %u circles left" % num_circles)
 
@@ -2531,6 +2531,74 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.fly_home_land_and_disarm()
 
+    def loiter_inside_circle(self):
+        ''' Test a edge case when loiter is started inside the circle '''
+
+        # Large radius triggers this issue
+        self.set_parameter("WP_LOITER_RAD", 300)
+
+        # Take off into straight and level FBWB flight
+        self.takeoff_in_TAKEOFF(timeout=60)
+        self.set_rc(3, 1500)
+
+        # Change to FBWB at a consistent heading
+        self.wait_heading(180, timeout=60)
+        self.change_mode("FBWB")
+
+        # A small amount of roll in the direction of the loiter makes the problem much worse
+        # Stick mixing must be enabled so this roll is carried over into loiter
+        self.set_rc(1, 1600)
+
+        # Wait a short time for vehicle to settle
+        self.delay_sim_time(10)
+
+        # Push context so we can remove the message hook
+        self.context_push()
+
+        # Try and detect steps in roll output
+        class DetectRollSteps(vehicle_test_suite.TestSuite.MessageHook):
+            '''Checks for steps in roll demand'''
+
+            def __init__(self, suite):
+                super(DetectRollSteps, self).__init__(suite)
+                self.nav_roll = None
+                self.max_step = 0
+                self.min_step = 0
+
+            def hook_removed(self):
+                if self.nav_roll is None:
+                    raise NotAchievedException("Did not get NAV_CONTROLLER_OUTPUT")
+
+            def process(self, mav, m):
+                if m.get_type() != 'NAV_CONTROLLER_OUTPUT':
+                    return
+
+                new_nav_roll = m.nav_roll
+                if self.nav_roll is None:
+                    self.nav_roll = new_nav_roll
+                    return
+
+                roll_diff = new_nav_roll - self.nav_roll
+                self.nav_roll = new_nav_roll
+
+                self.max_step = max(self.max_step, roll_diff)
+                self.min_step = min(self.min_step, roll_diff)
+
+                if self.max_step > 60 and self.min_step < -60:
+                    raise Exception("Large Roll step (%0.2f, %0.2f)" % (self.max_step, self.min_step))
+
+        # Install a hook to check for the steppy roll output
+        self.install_message_hook_context(DetectRollSteps(self))
+
+        # Fly one loiter circle
+        self.fly_LOITER(num_circles=1, timeout=120)
+
+        # Pop context to remove message hook
+        self.context_pop()
+
+        # Done
+        self.fly_home_land_and_disarm()
+
     def CPUFailsafe(self):
         '''In lockup Plane should copy RC inputs to RC outputs'''
         self.plane_CPUFailsafe()
@@ -4064,6 +4132,44 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_mode('RTL')
         # Now check we can land
         self.fly_home_land_and_disarm()
+
+    def GuidedRejectOutsideFence(self):
+        '''ensure a GUIDED destination outside the fence is rejected'''
+        self.set_parameters({
+            "FENCE_TYPE": 2,     # circle only
+            "FENCE_RADIUS": 1000,
+            "FENCE_ACTION": 0,   # report only so a breach does not change mode
+            "FENCE_ENABLE": 1,
+        })
+        self.takeoff(alt=50, mode='TAKEOFF')
+        self.change_mode("GUIDED")
+        # the fence is centered on home, so reference offsets from home
+        home = self.home_position_as_mav_location()
+
+        inside_loc = self.offset_location_ne(home, 100, 0)
+        outside_loc = self.offset_location_ne(home, 2000, 0)
+
+        self.start_subtest("Reposition inside the fence should be accepted")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=int(inside_loc.lat * 1e7),
+            p6=int(inside_loc.lng * 1e7),
+            p7=50,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+
+        self.start_subtest("Reposition outside the fence should be rejected")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=int(outside_loc.lat * 1e7),
+            p6=int(outside_loc.lng * 1e7),
+            p7=50,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.fly_home_land_and_disarm(timeout=180)
 
     def FenceEnableDisableSwitch(self):
         '''Tests enablement and disablement of fences on a switch'''
@@ -6003,12 +6109,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             1, # longitude
             1, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-
-    def renumber_mission_items(self, mission):
-        count = 0
-        for item in mission:
-            item.seq = count
-            count += 1
 
     def MissionJumpTags_missing_jump_target(self, target_system=1, target_component=1):
         self.start_subtest("Check missing-jump-tag behaviour")
@@ -8061,6 +8161,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.FenceMinAltAutoEnableAbort,
             self.FenceAutoEnableDisableSwitch,
             Test(self.FenceCircleExclusionAutoEnable, speedup=20),
+            self.GuidedRejectOutsideFence,
             self.FenceEnableDisableSwitch,
             self.FenceEnableDisableAux,
             self.FenceBreachedChangeMode,
@@ -8080,6 +8181,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.DEVO,
             self.AdvancedFailsafe,
             self.LOITER,
+            self.loiter_inside_circle,
             self.MAV_CMD_NAV_LOITER_TURNS,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.DeepStall,

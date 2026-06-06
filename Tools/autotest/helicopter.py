@@ -68,7 +68,7 @@ class AutoTestHelicopter(AutoTestCopter):
         return chan_pwm
 
     def RotorRunup(self):
-        '''Test rotor runip'''
+        '''Test rotor runup'''
         # Takeoff and landing in Loiter
         TARGET_RUNUP_TIME = 10
         self.zero_throttle()
@@ -225,6 +225,32 @@ class AutoTestHelicopter(AutoTestCopter):
         )
         self.set_parameter("H_RSC_MODE", 4)
         self.takeoff(10)
+        self.do_RTL()
+
+    def DDFPTail(self):
+        # simple check to ensure servo output to DDFP tail is working
+        '''Test DDFP Tail Rotor'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-ddfptail'),
+            model="heli-ddfptail",
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.wait_servo_channel_value(4, 1403, timeout=10)
+        self.do_RTL()
+
+    def DDVPTail(self):
+        # simple check to ensure servo output to DDVP tail is working
+        '''Test DDVP Tail Rotor'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-ddvptail'),
+            model="heli-ddvptail",
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.wait_servo_channel_value(7, 2000, timeout=10)
         self.do_RTL()
 
     def hover(self):
@@ -535,44 +561,6 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.context_pop()
 
-    def mission_item_home(self, target_system, target_component):
-        '''returns a mission_item_int which can be used as home in a mission'''
-        return self.mav.mav.mission_item_int_encode(
-            target_system,
-            target_component,
-            0, # seq
-            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-            0, # current
-            0, # autocontinue
-            3, # p1
-            0, # p2
-            0, # p3
-            0, # p4
-            int(1.0000 * 1e7), # latitude
-            int(2.0000 * 1e7), # longitude
-            31.0000, # altitude
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-
-    def mission_item_takeoff(self, target_system, target_component):
-        '''returns a mission_item_int which can be used as takeoff in a mission'''
-        return self.mav.mav.mission_item_int_encode(
-            target_system,
-            target_component,
-            1, # seq
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0, # current
-            0, # autocontinue
-            0, # p1
-            0, # p2
-            0, # p3
-            0, # p4
-            int(1.0000 * 1e7), # latitude
-            int(1.0000 * 1e7), # longitude
-            31.0000, # altitude
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-
     def mission_item_rtl(self, target_system, target_component):
         '''returns a mission_item_int which can be used as takeoff in a mission'''
         return self.mav.mav.mission_item_int_encode(
@@ -644,7 +632,7 @@ class AutoTestHelicopter(AutoTestCopter):
             # slot 0 is home
             self.mission_item_home(target_system=target_system, target_component=target_component),
             # slot 1 is takeoff
-            self.mission_item_takeoff(target_system=target_system, target_component=target_component),
+            self.mission_item_copter_takeoff(target_system=target_system, target_component=target_component),
             # now three spline waypoints right on top of one another:
             copy.copy(wp2_by_three),
             copy.copy(wp2_by_three),
@@ -718,7 +706,7 @@ class AutoTestHelicopter(AutoTestCopter):
             # slot 0 is home
             self.mission_item_home(target_system=target_system, target_component=target_component),
             # slot 1 is takeoff
-            self.mission_item_takeoff(target_system=target_system, target_component=target_component),
+            self.mission_item_copter_takeoff(target_system=target_system, target_component=target_component),
             wp2,
             wp3,
             wp4,
@@ -1210,6 +1198,8 @@ class AutoTestHelicopter(AutoTestCopter):
             self.NastyMission,
             self.PIDNotches,
             self.AutoTune,
+            self.DDFPTail,
+            self.DDVPTail,
             self.MountFailsafeAction,
         ])
         return ret

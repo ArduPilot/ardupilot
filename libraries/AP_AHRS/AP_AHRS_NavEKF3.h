@@ -69,12 +69,6 @@ public:
         return EKF3.getWind(wind);
     }
 
-    Vector2f groundspeed_vector(void) override {
-        Vector3f vec;
-        EKF3.getVelNED(vec);
-        return vec.xy();
-    }
-
     bool            use_compass() override {
         return EKF3.use_compass();
     }
@@ -96,10 +90,6 @@ public:
     }
     void request_yaw_reset() override {
         EKF3.requestYawReset();
-    }
-    // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override WARN_IF_UNUSED {
-        return EKF3.getHAGL(hagl);
     }
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;

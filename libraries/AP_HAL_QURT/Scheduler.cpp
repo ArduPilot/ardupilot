@@ -17,6 +17,7 @@
 #include "RCOutput.h"
 #include "RCInput.h"
 #include <AP_Scheduler/AP_Scheduler.h>
+#include <AP_SerialManager/AP_SerialManager.h>
 #include "Thread.h"
 
 using namespace QURT;
@@ -297,10 +298,21 @@ void *Scheduler::_uart_thread(void *arg)
     while (true) {
         sched->delay_microseconds(200);
 
-        // process any pending serial bytes
+        // process any pending serial bytes on fixed HAL serial slots
         for (uint8_t i = 0; i < hal.num_serial; i++) {
             auto *p = hal.serial(i);
             if (p != nullptr) {
+                p->_timer_tick();
+            }
+        }
+
+        // and on any ports registered with AP_SerialManager (tunneled
+        // remote serial ports on QURT, networking ports, etc.). Hold
+        // port_sem since register_port() can splice this list at runtime.
+        {
+            auto &sm = AP::serialmanager();
+            WITH_SEMAPHORE(sm.port_sem);
+            for (auto *p = sm.registered_ports; p != nullptr; p = p->next) {
                 p->_timer_tick();
             }
         }

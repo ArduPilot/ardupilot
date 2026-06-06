@@ -195,6 +195,9 @@ public:
     // indicate which bit in LOG_BITMASK indicates we should log compass readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
+    void Write_Compass(void);
+    void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
+
     // check if the compasses are pointing in the same direction
     bool consistent() const;
 
@@ -493,10 +496,7 @@ private:
 #if AP_COMPASS_IIS2MDC_ENABLED
         DRIVER_IIS2MDC  =22,
 #endif
-#if AP_COMPASS_LIS2MDL_ENABLED
-        DRIVER_LIS2MDL  =23,
-#endif
-
+        // DRIVER_LIS2MDL  =23,  // DO NOT re-use this ID; same sensor as IIS2MDC
 };
 
     bool _driver_enabled(enum DriverType driver_type);

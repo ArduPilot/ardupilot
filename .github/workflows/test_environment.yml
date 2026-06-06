@@ -32,6 +32,8 @@ jobs:
             name: jammy
           - os: ubuntu
             name: noble
+          - os: ubuntu
+            name: resolute
           - os: archlinux
             name: latest
           - os: debian

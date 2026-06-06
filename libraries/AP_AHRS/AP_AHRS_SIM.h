@@ -62,9 +62,6 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override WARN_IF_UNUSED;
-
     // return a wind estimation vector, in m/s
     bool wind_estimate(Vector3f &wind) const override;
 
@@ -75,9 +72,6 @@ public:
     // return an airspeed estimate if available. return true
     // if we have an estimate from a specific sensor index
     bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
-
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
 
     bool            use_compass() override { return true; }
 

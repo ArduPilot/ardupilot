@@ -255,7 +255,11 @@ void AP_MotorsHeli_RSC::configure(RotorControlMode control_mode, int8_t ramp_tim
     set_critical_speed(critical_speed);
     set_idle_output(idle_output);
 
-    configure_armed();
+    // set desired rotor speed for setpoint mode from parameter.
+    if (_rsc_control_mode == ROTOR_CONTROL_MODE_SETPOINT) {
+        _setpoint_desired_rotor_speed = _rsc_setpoint.get() * 0.01f;
+    }
+
 }
 
 // configure - configure the RSC.
@@ -269,7 +273,8 @@ void AP_MotorsHeli_RSC::configure_armed()
             _desired_rotor_speed = _passthru_desired_rotor_speed;
             break;
         case ROTOR_CONTROL_MODE_SETPOINT:
-            _desired_rotor_speed = _rsc_setpoint.get() * 0.01f;
+            // allows setpoint to set from parameter but also allows it to be updated by caller
+            _desired_rotor_speed = _setpoint_desired_rotor_speed;
             break;
         case ROTOR_CONTROL_MODE_THROTTLECURVE:
         case ROTOR_CONTROL_MODE_AUTOTHROTTLE:

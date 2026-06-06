@@ -5,6 +5,8 @@
 
 include ../fmuv3/hwdef.dat
 
+define BOARD_TYPE_DEFAULT 3  # FMUv3
+
 # if the user has both isolated sensors enabled then force-enable the
 #  non-isolated IMU regardless of parameter setting.  This is done in
 #  case the isolated board fails.

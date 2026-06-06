@@ -70,6 +70,9 @@ public:
     // set_passthru_desired_rotor_speed - this requires input to be 0-1
     void        set_passthru_desired_rotor_speed(float desired_rotor_speed) { _passthru_desired_rotor_speed = desired_rotor_speed; }
 
+    // set_setpoint_desired_rotor_speed - this requires input to be 0-1
+    void        set_setpoint_desired_rotor_speed(float desired_rotor_speed) { _setpoint_desired_rotor_speed = desired_rotor_speed * 0.01f; }
+
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
 
@@ -151,6 +154,7 @@ private:
     // internal variables
     RotorControlMode _rsc_control_mode = ROTOR_CONTROL_MODE_DISABLED;   // RSC control mode, Passthrough, Setpoint, Throttle Curve or Autothrottle
     float           _passthru_desired_rotor_speed;// latest pilot desired rotor speed, used for passthrough mode
+    float           _setpoint_desired_rotor_speed;// latest setpoint desired rotor speed
     float           _desired_rotor_speed;         // latest desired rotor speed
     float           _control_output;              // latest logic controlled output
     float           _rotor_ramp_output;           // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)

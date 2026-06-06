@@ -20,7 +20,7 @@
 ### Power
 
 - 5.5V - 54V (2S - 12S) input
-- 12V, 2A output
+- 12V, 2A output (POWER AUX; on by default, optionally switchable via RELAY1)
 - 5V, 2A output. 300ma for main system, 200ma for heater
 
 ### Interfaces
@@ -245,6 +245,17 @@ All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectiona
 - Motors 1-4  Group1 (TIM5)
 - Motors 5-8  Group2 (TIM8)
 - Motor 9     Group3 (TIM4)
+
+## 12V Peripheral Output (POWER AUX)
+
+The 12V pin on the **POWER AUX** connector is gated by a BEC enable (`PG4`) that is **on by default** - it is driven high once the main firmware boots, so no setup is needed to use it.
+
+To make it controllable from the transmitter, expose it as **RELAY1** (the pin is pre-mapped to GPIO 81):
+
+- Set `RELAY1_FUNCTION` = 1 (Relay) and `RELAY1_DEFAULT` = 1 (so it still powers on at boot; the relay's own default state is off).
+- Assign `RCx_OPTION` = 28 (Relay1 On/Off) to the channel you want to use as the switch.
+
+The 12V output is off at power-on and in the bootloader, coming on once the firmware initializes the pin. The VBAT pin on the same connector is a direct battery pass-through and is not controlled by firmware.
 
 ## Loading Firmware
 
