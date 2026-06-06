@@ -181,17 +181,90 @@ Added vs Run 2:
 - `load=100%` persists. The rate thread's direct callees are the next
   priority for SRAM promotion.
 
+---
+
+### Run 4 — 2026-06-05 — profiler OFF, rate callees in SRAM, 93.75 MHz flash
+
+**Registry state:** All Run 3 entries plus all rate-thread callees added in
+between sessions:
+- `AC_AttitudeControl_Multi::rate_controller_run`, `rate_controller_run_dt`,
+  `update_throttle_gain_boost`, `update_throttle_rpy_mix`
+- `AC_PID::update_all`
+- `AP_MotorsMulticopter::output`, `output_logic`
+- `AP_MotorsMatrix::output_to_motors`, `output_armed_stabilizing`
+- `AP_InertialSensor::wait_for_sample`, `get_next_gyro_sample`
+- `FastRateBuffer::get_next_gyro_sample`
+- `ChibiOS::SPIDevice::do_transfer`, `acquire_bus`, `transfer`
+- `ChibiOS::SPIBus::stop_peripheral`, `start_peripheral`, `spi_lld_*`
+- `ChibiOS::RCOutput::push_local`, `push`
+- `NavEKF3_core::runYawEstimatorPrediction`, `correctDeltaAngle`,
+  `correctDeltaVelocity`
+- USB TX/RX poll helpers, UART DMA helpers
+- `Copter::read_inertia`
+
+**hwdef.dat:** `# define AP_XIP_PROFILER_ENABLED 1` (profiler disabled)
+**QMI:** `RP_QMI_CLKDIV 4` / `RP_QMI_RXDELAY 2` → SCK **93.75 MHz** (up from
+62.5 MHz in Run 3). Correct formula: `sample = (CLKDIV+RXDELAY)/(2×sysclk)`.
+At 375 MHz: sample = 8 ns (2 ns past tCLQV=6 ns), hold = 2.67 ns. ✓
+
+**Perf (stable range):**
+
+| Reading             | main Hz | rate Hz | load |
+|---------------------|---------|---------|------|
+| First sample        | 190     | 164     | 66%  |
+| Peak rate           | 151     | 329     | 72%  |
+| Typical             | ~165    | ~200    | ~72% |
+
+No `XIPCacheV1` section in threads.txt (profiler disabled).
+
+**threads.txt stack snapshot:**
+```
+rate          PRI=182  STACK=0/4320      ← OVERFLOW (0 bytes free)
+ArduCopter    PRI=180  STACK=5432/7168
+main          PRI=128  STACK=16264/105008
+ISR           PRI=255  STACK=24208/24576
+```
+
+**Observations:**
+- Load dropped from **100% → 66–79%** with profiler off and rate callees in SRAM.
+  This is the combined effect: ~2–5% from removing profiler overhead, the rest
+  from eliminating flash stalls in the 329 Hz rate loop.
+- Rate thread achieves **329 Hz** at peak vs 109 Hz in Run 3 — the adaptive rate
+  controller is no longer CPU-saturated so it can run faster.
+- **`rate` stack completely exhausted (0/4320 free)** → triggers
+  `PreArm: Internal errors 0x800000 l:182 stack_ovrfl`. The rate thread stack
+  needs to be increased; this is unrelated to QMI timing but must be fixed.
+- CLKDIV=4 RXDELAY=2 is the **maximum safe SCK speed** on this board. All
+  attempts above this (CLKDIV=4 with RXDELAY<2, CLKDIV=3) crashed due to
+  violation of setup/hold timing. See hwdef.dat for full history.
+
+---
+
+### RXDELAY timing formula (corrected)
+
+$$\text{sample} = \frac{\text{CLKDIV} + \text{RXDELAY}}{2 \times f_\text{sysclk}}$$
+
+Constraints at 375 MHz, W25Q64JVXGIM ($t_\text{CLQV} \le 6$ ns):
+- **Setup**: $\text{CLKDIV} + \text{RXDELAY} \ge 4.5$ → sum ≥ 5
+- **Hold**: $\text{RXDELAY} \le \text{CLKDIV}$ (RXDELAY=CLKDIV means sample at
+  period boundary, valid since $t_\text{CHQX} > 0$)
+- Must also be valid at **150 MHz** (bootloader speed when dummy flash read
+  runs in `rp_clocks.c` before PLL switch)
+
+---
+
 ### Cross-run comparison
 
-| Metric           | Run 1 (degraded) | Run 2 (4 entries) | Run 3 (8 entries) |
-|------------------|------------------|-------------------|-------------------|
-| rate hit%        | 92%              | 92%               | 91%               |
-| SPI0 hit%        | 94%              | 97%               | **99%**           |
-| ArduCopter hit%  | 97%              | 98%               | **99%**           |
-| timer hit%       | 97%              | 97%               | **99%**           |
-| main Hz          | 99               | ~100              | 115               |
-| rate Hz          | 98               | ~100              | 109               |
-| load             | 100%             | 100%              | 100%              |
+| Metric           | Run 1 (degraded) | Run 2 (4 entries) | Run 3 (8 entries) | Run 4 (rate callees, no profiler, 93.75 MHz) |
+|------------------|------------------|-------------------|-------------------|----------------------------------------------|
+| rate hit%        | 92%              | 92%               | 91%               | N/A (profiler off)                           |
+| SPI0 hit%        | 94%              | 97%               | **99%**           | N/A                                          |
+| ArduCopter hit%  | 97%              | 98%               | **99%**           | N/A                                          |
+| timer hit%       | 97%              | 97%               | **99%**           | N/A                                          |
+| main Hz          | 99               | ~100              | 115               | ~165                                         |
+| rate Hz          | 98               | ~100              | 109               | **~200–329**                                 |
+| load             | 100%             | 100%              | 100%              | **66–79%**                                   |
+| flash SCK        | 62.5 MHz         | 62.5 MHz          | 62.5 MHz          | **93.75 MHz**                                |
 
 ### Next candidates for Run 4 — rate thread callees
 
