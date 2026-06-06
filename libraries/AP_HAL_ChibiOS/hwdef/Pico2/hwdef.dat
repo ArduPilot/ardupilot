@@ -695,6 +695,7 @@ define AP_COMPASS_PROBING_ENABLED 1
 # Core1 is launched by hal_lld via start_core1()
 # (gated on RP_CORE1_START=TRUE below).
 define CH_CFG_SMP_MODE TRUE
+define HAL_ENABLE_THREAD_STATISTICS TRUE
 
 # SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
 define RP_CORE1_START TRUE

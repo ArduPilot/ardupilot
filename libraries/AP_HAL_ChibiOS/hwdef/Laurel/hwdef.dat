@@ -337,6 +337,7 @@ define HAL_OSD_TYPE_DEFAULT                1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define CH_CFG_SMP_MODE TRUE
+define HAL_ENABLE_THREAD_STATISTICS TRUE
 # SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
 define RP_CORE1_START TRUE
 # CPU clock: 375 MHz (1500 MHz VCO / POSTDIV1=4 / POSTDIV2=1 = 375 MHz).
