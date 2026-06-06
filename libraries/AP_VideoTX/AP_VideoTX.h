@@ -77,9 +77,10 @@ public:
     };
 
     enum VTXType {
-        CRSF = 1U<<0,
+        CRSF       = 1U<<0,
         SmartAudio = 1U<<1,
-        Tramp = 1U<<2
+        Tramp      = 1U<<2,
+        MSP        = 1U<<3
     };
 
     struct PowerLevel {
@@ -132,6 +133,17 @@ public:
         return _power_levels[find_current_power()].dac;
     }
 
+    // mark the power level matching the given mW as supported, learning it
+    // into the custom slot if it is not a standard value
+    void update_power_mw(uint16_t power_mw, PowerActive active = PowerActive::Active);
+    // a provider's power index is one based and refers to the supported (active)
+    // levels in ascending order, so index 1 is the lowest supported level
+    uint8_t get_num_power_levels() const;
+    // mW for a one based power index, 0 if not known
+    uint16_t get_power_mw_for_index(uint8_t index) const;
+    // one based power index for a mW value, 0 if not matched
+    uint8_t get_power_index_for_mw(uint16_t power_mw) const;
+
     bool update_power() const;
     // change the video power based on switch input
     void change_power(int8_t position);
@@ -178,7 +190,10 @@ public:
 
     // manage VTX backends
     bool is_provider_enabled(VTXType type) const { return (_types & type) != 0; }
-    void set_provider_enabled(VTXType type) { _types |= type; }
+    // a provider may only register if the user allows its type (VTX_TYPES)
+    void set_provider_enabled(VTXType type) { if (is_type_enabled(type)) { _types |= type; } }
+    // is this control transport allowed to manage the VTX
+    bool is_type_enabled(VTXType type) const { return (uint8_t(_types_allowed) & uint8_t(type)) != 0; }
 
     static AP_VideoTX *singleton;
 
@@ -208,6 +223,9 @@ private:
 
     AP_Int8 _enabled;
     bool _current_enabled;
+
+    // bitmask of VTXType control transports the user permits (VTX_TYPES)
+    AP_Int8 _types_allowed;
 
     bool _initialized;
     // when defaults have been configured

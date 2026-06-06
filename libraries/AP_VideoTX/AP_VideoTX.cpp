@@ -75,6 +75,13 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @Range: 25 1000
     AP_GROUPINFO("MAX_POWER", 7, AP_VideoTX, _max_power_mw, 800),
 
+    // @Param: TYPES
+    // @DisplayName: Allowed VTX control transports
+    // @Description: Bitmask of the control transports permitted to manage the VTX. AP_VideoTX represents a single VTX, so when more than one transport is present (for example a CRSF VTX on the receiver and an MSP VTX on the goggles) this selects which one owns it. Clear a transport's bit to stop it taking control of the VTX.
+    // @Bitmask: 0:CRSF,1:SmartAudio,2:Tramp,3:MSP
+    // @User: Advanced
+    AP_GROUPINFO("TYPES", 8, AP_VideoTX, _types_allowed, uint8_t(CRSF | SmartAudio | Tramp | MSP)),
+
     AP_GROUPEND
 };
 
@@ -268,6 +275,67 @@ void AP_VideoTX::update_all_power_dbm(uint8_t nlevels, const uint8_t power[])
             _power_levels[i].active = PowerActive::Inactive;
         }
     }
+}
+
+// mark the level matching the given mW as supported, stashing a non-standard
+// value in the custom slot; does not change the currently selected power
+void AP_VideoTX::update_power_mw(uint16_t power_mw, PowerActive active)
+{
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (power_mw == _power_levels[i].mw) {
+            _power_levels[i].active = active;
+            return;
+        }
+    }
+    if (power_mw == 0) {
+        return;
+    }
+    // non-standard value: use the custom slot
+    PowerLevel &slot = _power_levels[VTX_MAX_POWER_LEVELS - 1];
+    slot.mw = power_mw;
+    slot.dbm = uint8_t(roundf(10.0f * log10f(float(power_mw))));
+    slot.level = 255;
+    slot.dac = 255;
+    slot.active = active;
+}
+
+// number of supported (active) power levels
+uint8_t AP_VideoTX::get_num_power_levels() const
+{
+    uint8_t count = 0;
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_levels[i].active == PowerActive::Active) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// mW for a one based index into the supported levels (ascending), 0 if unknown
+uint16_t AP_VideoTX::get_power_mw_for_index(uint8_t index) const
+{
+    uint8_t count = 0;
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_levels[i].active == PowerActive::Active && ++count == index) {
+            return _power_levels[i].mw;
+        }
+    }
+    return 0;
+}
+
+// one based index into the supported levels for a mW value, 0 if not matched
+uint8_t AP_VideoTX::get_power_index_for_mw(uint16_t power_mw) const
+{
+    uint8_t count = 0;
+    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+        if (_power_levels[i].active == PowerActive::Active) {
+            count++;
+            if (_power_levels[i].mw == power_mw) {
+                return count;
+            }
+        }
+    }
+    return 0;
 }
 
 // set the power in mw
