@@ -712,6 +712,24 @@ def write_fullresults():
 def run_tests(steps):
     """Run a list of steps."""
 
+    # A serial, instance-0 run uses the repo-root working directory.  The
+    # ArduPilot scripting engine loads every file in "scripts/", so stale
+    # content there (e.g. left over from a previous run, or a dangling
+    # symlink) silently pollutes the run.  Refuse to start rather than
+    # produce confusing failures.  Parallel runs - and serial "-I N" runs -
+    # each use their own fresh per-instance directory, so they are immune
+    # and exempt from this check.
+    if opts.parallel == 1 and opts.instance == 0:
+        if os.path.isdir("scripts"):
+            scripts_contents = os.listdir("scripts")
+            if len(scripts_contents) > 0:
+                print("ERROR: refusing to start: serial autotest runs in the "
+                      "repo-root working directory but 'scripts/' is not empty: "
+                      "%s" % sorted(scripts_contents))
+                print("Remove its contents first (parallel runs use "
+                      "per-instance directories and are unaffected).")
+                sys.exit(1)
+
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
     if corefiles:
