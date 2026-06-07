@@ -852,7 +852,10 @@ float Scheduler::get_core1_load_pct()
 {
 #if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
     if (_core1_thread_ctx == nullptr) {
-        return -1.0f;
+        // SMP active but core1 thread not yet created.  Return -2.0 as a
+        // sentinel so the caller can suppress the entire Perf print rather
+        // than emitting a bogus core0load-only or core1load:0% line.
+        return -2.0f;
     }
     // Measure idle time on ch1 and invert: load = 100% - idle%.
     // This automatically includes all threads pinned to Core1.

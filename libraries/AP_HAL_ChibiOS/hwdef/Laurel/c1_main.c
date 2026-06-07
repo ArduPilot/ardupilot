@@ -124,6 +124,10 @@ void c1_main(void) {
     /* Initialise core1's OS instance; ch1.rlist.current is now valid. */
     chInstanceObjectInit(&ch1, &ch_core1_cfg);
 
+    /* Rename the main thread while still holding the I-Lock so the name is
+       visible in threads.txt before any context switch can occur. */
+    ch1.mainthread.name = "c1_main";
+
     /* Release the I-Lock — scheduling on core1 starts here. */
     chSysUnlock();
 
