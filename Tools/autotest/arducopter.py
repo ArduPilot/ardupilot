@@ -17781,10 +17781,6 @@ RTL_ALT_M 111
                 "--serial5=mcast:",
             ],
                 **self.callisto_sitl_kwargs()
-                param_defaults={
-                    "SIM_SPEEDUP": self.speedup,
-                },
-                supplementary=True,
             )
 
             self.set_parameters({
