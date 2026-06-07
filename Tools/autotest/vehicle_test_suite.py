@@ -2086,7 +2086,7 @@ class TestSuite(abc.ABC):
             self.rc_thread = None
 
     def default_speedup(self):
-        return 8
+        return 100
 
     def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
