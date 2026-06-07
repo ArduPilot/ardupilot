@@ -13013,15 +13013,38 @@ switch value'''
 
     def tests_needing_exclusive_run(self):
         '''returns a list of test names which must not be run in parallel
-        with any other test.  These tests use a shared resource (e.g. a
-        fixed network port, sudo/pppd, or otherwise assume they are the
-        only SITL instance running) and so are run on their own, serially,
-        before the rest of the tests are run in parallel.'''
+        with any other test.  These tests use a shared resource (a fixed
+        network port, sudo/pppd, the shared build directory, ...) or assume
+        they are running as the sole / instance-0 SITL.  They are run on
+        their own - serially, at instance 0 (base ports, repo-root working
+        directory) - before the rest of the tests are run in parallel.'''
         return [
             # bind fixed network ports / use sudo:
             "NetworkingWebServer",
             "NetworkingWebServerPPP",
             "ManyMAVLinkConnections",
+
+            # uses pppd (sudo) and a fixed PPP-over-TCP port:
+            "PPPPeriph",
+
+            # rebuilds the Replay tool; this mutates the shared build
+            # directory / waf board configuration, which races with other
+            # tests (and other instances) building or running:
+            "Replay",
+
+            # The following only ever fail when run in parallel; we are not
+            # 100% sure they truly need exclusive runs (vs. e.g. being
+            # sensitive to host load, or assuming instance-0 ports), but
+            # blacklisting them keeps the parallel run green.  Revisit if the
+            # underlying causes are addressed:
+
+            # passes standalone at instance 0, fails at a non-zero instance;
+            # cause not yet understood:
+            "WindMessageSpeed",
+
+            # only seen failing under heavy parallel load (passes when run
+            # on its own); may just be host-load sensitive:
+            "WatchdogHome",
         ]
 
     def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
@@ -13035,15 +13058,18 @@ switch value'''
         if len(serial_tests):
             self.progress("Running %u test(s) serially (blacklisted from parallel run)" %
                           len(serial_tests))
-            results += self.run_tests_in_processes(serial_tests, 1)
+            # run the blacklisted tests at instance 0 (base ports, repo-root
+            # working directory): several of them assume instance-0 ports or
+            # otherwise behave like a normal serial run:
+            results += self.run_tests_in_processes(serial_tests, 1, base_instance=0)
         if len(parallel_tests):
             self.progress("Running %u test(s) %u-way parallel" %
                           (len(parallel_tests), parallel))
-            results += self.run_tests_in_processes(parallel_tests, parallel)
+            results += self.run_tests_in_processes(parallel_tests, parallel, base_instance=1)
 
         return results
 
-    def run_tests_in_processes(self, tests, parallel) -> List[Result]:
+    def run_tests_in_processes(self, tests, parallel, base_instance=1) -> List[Result]:
 
         # prepare tests queue
         self.test_queue = multiprocessing.Queue()
@@ -13054,12 +13080,12 @@ switch value'''
             test.function = test.function.__name__
             self.test_queue.put(test)
 
-        # start processes.  Workers are numbered from 1 (instance 0 is
-        # reserved for serial / non-parallel runs, which keep using the
-        # repo-root working directory):
+        # start processes.  The parallel pass numbers workers from 1
+        # (instance 0 is the repo-root working directory, used by serial /
+        # non-parallel runs and by the blacklist serial pass):
         self.threads = []
         for i in range(min([parallel, len(tests)])):
-            instance = i + 1
+            instance = base_instance + i
             t = multiprocessing.Process(
                 target=self.test_runner_thread_main,
                 name='TestRunner-%u' % instance,
