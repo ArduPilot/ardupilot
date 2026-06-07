@@ -12976,7 +12976,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def DefaultIntervalsFromFiles(self):
         '''Test setting default mavlink message intervals from files'''
         ex = None
-        intervals_filepath = util.reltopdir("message-intervals-chan0.txt")
+        # the autopilot reads this file relative to its working directory;
+        # under parallel testing that is the per-instance directory (which is
+        # also this process's cwd), so use a cwd-relative path rather than an
+        # absolute repo-root one:
+        intervals_filepath = "message-intervals-chan0.txt"
         self.progress("Using filepath (%s)" % intervals_filepath)
         try:
             with open(intervals_filepath, "w") as f:
