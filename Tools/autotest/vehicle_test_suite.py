@@ -16,9 +16,11 @@ import glob
 import importlib.util
 import io
 import math
+import multiprocessing
 import operator
 import os
 import pathlib
+import queue
 import random
 import re
 import shutil
@@ -32,7 +34,6 @@ import time
 import traceback
 
 from datetime import datetime
-import importlib.util
 from inspect import currentframe
 from inspect import getframeinfo
 from pathlib import Path
@@ -1884,6 +1885,8 @@ class Test(object):
     __slots__ = ('name', 'description', 'function', 'kwargs', 'attempts', 'speedup', 'instance')
 
     def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
+        if kwargs is None:
+            kwargs = {}
         self.name = function.__name__
         self.description = function.__doc__
         if self.description is None:
@@ -12949,7 +12952,39 @@ switch value'''
         if not self.current_onboard_log_contains_message(messagetype):
             raise NotAchievedException("Current onboard log does not contain message %s" % messagetype)
 
+    def tests_needing_exclusive_run(self):
+        '''returns a list of test names which must not be run in parallel
+        with any other test.  These tests use a shared resource (e.g. a
+        fixed network port, sudo/pppd, or otherwise assume they are the
+        only SITL instance running) and so are run on their own, serially,
+        before the rest of the tests are run in parallel.'''
+        return [
+            # bind fixed network ports / use sudo:
+            "NetworkingWebServer",
+            "NetworkingWebServerPPP",
+            "ManyMAVLinkConnections",
+        ]
+
     def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
+        '''run tests in parallel, but first run any tests which have been
+        blacklisted from parallel running on their own, serially'''
+        exclusive = self.tests_needing_exclusive_run()
+        serial_tests = [x for x in tests if x.name in exclusive]
+        parallel_tests = [x for x in tests if x.name not in exclusive]
+
+        results = []
+        if len(serial_tests):
+            self.progress("Running %u test(s) serially (blacklisted from parallel run)" %
+                          len(serial_tests))
+            results += self.run_tests_in_processes(serial_tests, 1)
+        if len(parallel_tests):
+            self.progress("Running %u test(s) %u-way parallel" %
+                          (len(parallel_tests), parallel))
+            results += self.run_tests_in_processes(parallel_tests, parallel)
+
+        return results
+
+    def run_tests_in_processes(self, tests, parallel) -> List[Result]:
 
         # prepare tests queue
         self.test_queue = multiprocessing.Queue()
@@ -12973,8 +13008,10 @@ switch value'''
             if t is None:
                 raise NotAchievedException("Could not create thread %u" % i)
             t.start()
+            self.threads.append(t)
 
-        outstanding_results = set([x.name for x in tests])
+        tests_by_name = {x.name: x for x in tests}
+        outstanding_results = set(tests_by_name.keys())
         results = []
         while len(results) != len(tests):
             while True:
@@ -12992,6 +13029,32 @@ switch value'''
                     outstanding_results.remove(result.test.name)
                 except queue.Empty:
                     break
+            if len(results) == len(tests):
+                break
+            # if every worker has died we will never receive the
+            # outstanding results; synthesise failures rather than hang
+            # forever.  A worker which pulls a test off the queue and then
+            # dies (e.g. SITL won't start) takes that test's result with
+            # it:
+            if not any(t.is_alive() for t in self.threads):
+                self.progress("All test runners have exited with %u result(s) outstanding" %
+                              len(outstanding_results))
+                # drain anything that arrived as the last worker exited:
+                while True:
+                    try:
+                        result = self.result_queue.get(block=False)
+                        results.append(result)
+                        outstanding_results.discard(result.test.name)
+                    except queue.Empty:
+                        break
+                for name in sorted(outstanding_results):
+                    self.progress("   Test runner died without result for %s" % name)
+                    result = Result(tests_by_name[name])
+                    result.passed = False
+                    result.reason = "Test runner exited without returning a result"
+                    results.append(result)
+                outstanding_results = set()
+                break
             time.sleep(1)
             self.progress("run_tests_parallel waiting for final results (want=%u) (got=%u) (queued=%u" %
                           (len(tests), len(results), self.test_queue.qsize()))
@@ -12999,13 +13062,38 @@ switch value'''
                 for t in outstanding_results:
                     self.progress("   Where are you %s?" % t)
 
+        for t in self.threads:
+            t.join()
+
         self.progress("run_tests_parallel returning success")
 
         return results
 
+    def refresh_test_binary(self):
+        '''make a pristine per-instance copy of the binary.  Some tests
+        overwrite the binary they run against; giving each test a fresh
+        private copy means they can't corrupt the master binary or the
+        binary used by another parallel worker.'''
+        # unlink rather than overwrite in-place: the destination may still
+        # be mapped by a SITL we (or a previous test run) haven't reaped
+        # yet, and overwriting a running executable raises ETXTBSY:
+        try:
+            os.unlink(self.binary)
+        except FileNotFoundError:
+            pass
+        shutil.copy2(self.master_binary, self.binary)
+        os.chmod(self.binary, 0o755)
+
     def test_runner_thread_main(self, instance):
         self.instance = instance
 
+        # each worker - and each test - runs against its own private copy
+        # of the binary:
+        self.master_binary = self.binary
+        self.binary = "%s-I%u" % (self.master_binary, instance)
+        self.refresh_test_binary()
+
+        test = None
         try:
             self.init()
 
@@ -13021,6 +13109,7 @@ switch value'''
 
             self.progress("### Passing a queue with %u entries" % self.test_queue.qsize())
 
+            first = True
             while True:
                 try:
                     test = self.test_queue.get(block=False)
@@ -13029,6 +13118,15 @@ switch value'''
                 except queue.Empty:
                     self.progress("Queue is empty")
                     break
+                if not first:
+                    # give this test a pristine binary and a fresh SITL;
+                    # the previous test may have overwritten the binary:
+                    self.stop_SITL()
+                    self.refresh_test_binary()
+                    self.start_SITL(wipe=True)
+                    self.set_streamrate(self.sitl_streamrate())
+                    self.apply_default_parameters()
+                first = False
                 self.drain_mav_unparsed()
                 self.progress("TestRunner-%u: running test (%s)" %
                               (instance, test.name))
@@ -13042,10 +13140,16 @@ switch value'''
             result = Result(test)
             result.passed = False
             result.reason = "Failed with timeout"
-            self.result_queue.add(result)
+            self.result_queue.put(result)
             if self.logs_dir:
                 if glob.glob("core*") or glob.glob("ap-*.core"):
                     self.check_logs("FRAMEWORK")
+
+        # stop our SITL so we don't leak the process (and so we release
+        # this instance's network ports and stop holding our binary copy
+        # open) before another worker reuses this instance number:
+        if getattr(self, "sitl", None) is not None:
+            self.stop_SITL()
 
         if self.rc_thread is not None:
             self.progress("Joining RC thread")
