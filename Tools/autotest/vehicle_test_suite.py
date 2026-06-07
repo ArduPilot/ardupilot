@@ -12991,6 +12991,10 @@ switch value'''
             # only seen failing under heavy parallel load (passes when run
             # on its own); may just be host-load sensitive:
             "WatchdogHome",
+
+            # lua rangefinder-quality test; passes on its own but fails
+            # under heavy parallel load (scripting timing sensitive):
+            "RngfndQuality",
         ]
 
     def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
