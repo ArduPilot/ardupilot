@@ -472,30 +472,42 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 // The idle thread (realprio==1) runs on the hardware Main Stack (MSP) rather than a ChibiOS working area.
 // Emit "MSP" as the total so log parsers can identify the row without trying to interpret a garbage number.
         const bool is_idle = (tp->realprio == 1);
+// In SMP mode, annotate each thread with the core it is pinned to (C0 or C1).
+// Threads with no explicit affinity (owner==NULL) are treated as C0 since they
+// are created by the main ArduCopter thread on core0.
+#if CH_CFG_SMP_MODE == TRUE
+        const char *core_sfx = (tp->owner == ch_system.instances[1]) ? " C1" : " C0";
+#else
+        const char *core_sfx = "";
+#endif
 #if HAL_ENABLE_THREAD_STATISTICS
         time_measurement_t stats = tp->stats;
         if (tp->stats.best > 0) { // not run
             if (is_idle) {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP  LOAD=%4.1f%%\n",
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP  LOAD=%4.1f%%%s\n",
                             tp->name, unsigned(tp->realprio), tp->wabase,
                             unsigned(stack_free(tp->wabase)),
-                            100.0f * float(stats.cumulative) / float(cumulative_cycles));
+                            100.0f * float(stats.cumulative) / float(cumulative_cycles),
+                            core_sfx);
             } else {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s%s\n",
                             tp->name, unsigned(tp->realprio), tp->wabase,
                             unsigned(stack_free(tp->wabase)), unsigned(total_stack),
                             100.0f * float(stats.cumulative) / float(cumulative_cycles),
 // more than a loop slice is bad for everyone else, warn on more than a 200Hz slice so only the worst offenders are identified also don't do this for the main or idle threads
                             tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
-                                && tp != get_main_thread() ? "*" : "");
+                                && tp != get_main_thread() ? "*" : "",
+                            core_sfx);
             }
         } else {
             if (is_idle) {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP\n",
-                            tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)));
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP%s\n",
+                            tp->name, unsigned(tp->realprio), tp->wabase,
+                            unsigned(stack_free(tp->wabase)), core_sfx);
             } else {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
-                            tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u%s\n",
+                            tp->name, unsigned(tp->realprio), tp->wabase,
+                            unsigned(stack_free(tp->wabase)), unsigned(total_stack), core_sfx);
             }
         }
         // Giovanni thinks this is dangerous, but we can't get useable data without it
@@ -506,13 +518,13 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
         }
 #else
         if (is_idle) {
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/MSP\n",
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/MSP%s\n",
                         tp->name, unsigned(tp->realprio), tp->wabase,
-                        unsigned(stack_free(tp->wabase)));
+                        unsigned(stack_free(tp->wabase)), core_sfx);
         } else {
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u%s\n",
                         tp->name, unsigned(tp->realprio), tp->wabase,
-                        unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+                        unsigned(stack_free(tp->wabase)), unsigned(total_stack), core_sfx);
         }
 #endif
     }
