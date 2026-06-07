@@ -13045,6 +13045,14 @@ switch value'''
             # only seen failing under heavy parallel load (passes when run
             # on its own); may just be host-load sensitive:
             "WatchdogHome",
+
+            # builds the AP_Periph binary (shared build directory) and uses
+            # CAN multicast; not safe to run alongside other tests:
+            "PeriphMultiUARTTunnel",
+
+            # FFT motor-noise detection; flaky under parallel load (passes
+            # in isolation at any instance):
+            "GyroFFTMotorNoiseCheck",
         ]
 
     def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
