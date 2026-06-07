@@ -14078,6 +14078,11 @@ switch value'''
 
     def FRSkyPassThroughSensorIDs(self):
         '''test FRSKy protocol's telem-passthrough functionality (sensor IDs)'''
+        # the terrain sensor (0x500B) validation compares the vehicle's
+        # height-above-terrain, so the autopilot needs terrain data.  Supply
+        # it over MAVLink rather than relying on terrain tiles being present
+        # on disk - each parallel instance has its own empty working dir:
+        self.install_terrain_handlers_context()
         self.set_parameters({
             "SERIAL5_PROTOCOL": 10, # serial5 is FRSky passthrough
             "RPM1_TYPE": 10, # enable RPM output
