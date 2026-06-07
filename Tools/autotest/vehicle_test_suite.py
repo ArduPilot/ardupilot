@@ -12995,6 +12995,18 @@ switch value'''
             # lua rangefinder-quality test; passes on its own but fails
             # under heavy parallel load (scripting timing sensitive):
             "RngfndQuality",
+
+            # builds the AP_Periph binary (shared build directory) and uses
+            # CAN multicast; not safe to run alongside other tests:
+            "PeriphMultiUARTTunnel",
+
+            # FFT motor-noise detection; flaky under parallel load (passes
+            # in isolation at any instance):
+            "GyroFFTMotorNoiseCheck",
+
+            # end-of-mission yaw check; only seen failing under heavy
+            # parallel load (passes when run on its own):
+            "MissionRTLYawBehaviour",
         ]
 
     def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
