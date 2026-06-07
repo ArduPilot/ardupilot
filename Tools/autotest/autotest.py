@@ -528,6 +528,7 @@ def run_step(step):
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
+        "instance": opts.instance,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -726,6 +727,15 @@ def run_tests(steps):
         for f in diagnostic_files:
             os.unlink(f)
 
+    # parallel autotest workers (and serial "-I N" runs) each run in their
+    # own "parallel-autotest/<instance>" directory.  Wipe these at the start
+    # of every run so per-instance logs/eeprom/etc. never accumulate across
+    # runs.  Also clean up artifacts from the old per-instance-suffix scheme.
+    print('Removing parallel autotest instance directories')
+    util.run_cmd('rm -rf parallel-autotest logs-[0-9]* eeprom-*.bin '
+                 'eeprom-periph-*.bin eeprom-replay-*.bin flash-*.dat '
+                 'build/sitl/bin/*-I[0-9]*', checkfail=False)
+
     passed = True
     failed = []
     failed_testinstances = dict()
@@ -895,6 +905,12 @@ if __name__ == "__main__":
                       default=1,
                       type='int',
                       help='number of tests to run in parallel')
+    parser.add_option("-I", "--instance",
+                      default=0,
+                      type='int',
+                      help='instance number for a serial run; like sim_vehicle.py -I '
+                           'it offsets the ports and gives the run its own working '
+                           'directory.  Incompatible with --parallel')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
@@ -1059,6 +1075,10 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    if opts.instance != 0 and opts.parallel != 1:
+        parser.error("-I/--instance cannot be combined with --parallel "
+                     "(parallel runs assign their own instance numbers)")
 
     # canonicalise on opts.debug:
     if opts.debug is None and opts.no_debug is None:

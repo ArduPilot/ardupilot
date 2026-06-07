@@ -14,13 +14,10 @@
 #ifndef HAL_STORAGE_FILE
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
 #define HAL_STORAGE_FILE "eeprom-replay.bin"
-#define HAL_STORAGE_FILE_INSTANCE_FORMAT_STRING "eeprom-replay-%u.bin"
 #elif APM_BUILD_TYPE(APM_BUILD_AP_Periph)
 #define HAL_STORAGE_FILE "eeprom-periph.bin"
-#define HAL_STORAGE_FILE_INSTANCE_FORMAT_STRING "eeprom-periph-%u.bin"
 #else
 #define HAL_STORAGE_FILE "eeprom.bin"
-#define HAL_STORAGE_FILE_INSTANCE_FORMAT_STRING "eeprom-%u.bin"
 #endif
 #endif
 
@@ -40,27 +37,6 @@ extern HAL_SITL& hal;
 #define HAL_FLASH_SECTOR_SIZE (128*1024)
 #endif
 #endif
-
-#ifndef HAL_STORAGE_FLASH_FILE
-#define HAL_STORAGE_FLASH_FILE "flash.dat"
-#define HAL_STORAGE_FLASH_FILE_INSTANCE_FORMAT_STRING "flash-%u.dat"
-#endif
-
-// build the emulated-flash storage filename for the current SITL
-// instance.  Instance 0 keeps the historical name; parallel auto-test
-// instances get their own file so they don't clobber one another.
-// (also declared in SITL_cmdline.cpp)
-namespace HALSITL {
-void sitl_flash_storage_filename(char *buffer, size_t buflen);
-void sitl_flash_storage_filename(char *buffer, size_t buflen)
-{
-    if (hal.get_instance() == 0) {
-        strncpy(buffer, HAL_STORAGE_FLASH_FILE, buflen);
-    } else {
-        snprintf(buffer, buflen, HAL_STORAGE_FLASH_FILE_INSTANCE_FORMAT_STRING, hal.get_instance());
-    }
-}
-}
 
 #ifndef HAL_FLASH_MIN_WRITE_SIZE
 #define HAL_FLASH_MIN_WRITE_SIZE 1
@@ -112,14 +88,7 @@ void Storage::_storage_open(void)
             return;
         }
 
-        char storage_file[80]{};
-        if (hal.get_instance() == 0) {
-            strncpy(storage_file, HAL_STORAGE_FILE, ARRAY_SIZE(storage_file));
-        } else {
-            snprintf(storage_file, ARRAY_SIZE(storage_file), HAL_STORAGE_FILE_INSTANCE_FORMAT_STRING, hal.get_instance());
-        }
-
-        log_fd = open(storage_file, O_RDWR|O_CREAT, 0644);
+        log_fd = open(HAL_STORAGE_FILE, O_RDWR|O_CREAT, 0644);
         if (log_fd == -1) {
             hal.console->printf("open failed of " HAL_STORAGE_FILE "\n");
             return;
@@ -283,21 +252,19 @@ static uint32_t sitl_flash_getpageaddr(uint32_t page)
 static void sitl_flash_open(void)
 {
     if (flash_fd == -1) {
-        char flash_file[80] {};
-        sitl_flash_storage_filename(flash_file, ARRAY_SIZE(flash_file));
-        flash_fd = open(flash_file, O_RDWR, 0644);
+        flash_fd = open("flash.dat", O_RDWR, 0644);
         if (flash_fd == -1) {
-            flash_fd = open(flash_file, O_RDWR|O_CREAT, 0644);
+            flash_fd = open("flash.dat", O_RDWR|O_CREAT, 0644);
             if (flash_fd == -1) {
-                AP_HAL::panic("Failed to open %s", flash_file);
+                AP_HAL::panic("Failed to open flash.dat");
             }
             if (ftruncate(flash_fd, 2*HAL_FLASH_SECTOR_SIZE) != 0) {
-                AP_HAL::panic("Failed to create %s", flash_file);
+                AP_HAL::panic("Failed to create flash.dat");
             }
             uint8_t fill[HAL_FLASH_SECTOR_SIZE*2];
             memset(fill, 0xff, sizeof(fill));
             if (pwrite(flash_fd, fill, sizeof(fill), 0) != (ssize_t)sizeof(fill)) {
-                AP_HAL::panic("Failed to fill %s", flash_file);
+                AP_HAL::panic("Failed to fill flash.dat");
             }
         }
     }

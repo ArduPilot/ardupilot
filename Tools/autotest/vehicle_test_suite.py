@@ -1980,6 +1980,7 @@ class TestSuite(abc.ABC):
                  enable_fgview=False,
                  move_logs_on_test_failure: bool = False,
                  asan=False,
+                 instance=0,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2083,7 +2084,10 @@ class TestSuite(abc.ABC):
         self.dronecan_tests = dronecan_tests
         self.statustext_id = 1
         self.message_hooks = []  # functions or MessageHook instances
-        self.instance = 0
+        # instance number; 0 for serial/non-parallel runs (repo-root working
+        # directory).  Parallel workers override this; a serial run can set it
+        # via autotest.py's -I option to get its own working directory + ports.
+        self.instance = instance
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -4541,10 +4545,9 @@ class TestSuite(abc.ABC):
 
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
-        if self.instance != 0:
-            ret = sorted(glob.glob("logs-%u/00*.BIN" % self.instance))
-        else:
-            ret = sorted(glob.glob("logs/00*.BIN"))
+        # each parallel instance runs in its own working directory, so
+        # the logs are always in a plain "logs/" relative to our cwd:
+        ret = sorted(glob.glob("logs/00*.BIN"))
         self.progress("log list: %s" % str(ret))
         return ret
 
@@ -9314,7 +9317,9 @@ Also, ignores heartbeats not from our target system'''
 
     def remove_ardupilot_terrain_cache(self):
         '''removes the terrain files ArduPilot keeps in its onboiard storage'''
-        util.run_cmd('rm -f %s' % util.reltopdir("terrain/*.DAT"))
+        # terrain is cached relative to the SITL working directory, which
+        # for a parallel/-I instance is its own directory:
+        util.run_cmd('rm -f terrain/*.DAT')
 
     def check_logs(self, name, bin_logs=None):
         '''called to move relevant log files from our working directory to the
@@ -13049,18 +13054,21 @@ switch value'''
             test.function = test.function.__name__
             self.test_queue.put(test)
 
-        # start processes
+        # start processes.  Workers are numbered from 1 (instance 0 is
+        # reserved for serial / non-parallel runs, which keep using the
+        # repo-root working directory):
         self.threads = []
         for i in range(min([parallel, len(tests)])):
+            instance = i + 1
             t = multiprocessing.Process(
                 target=self.test_runner_thread_main,
-                name='TestRunner-%u' % i,
+                name='TestRunner-%u' % instance,
                 args=(
-                    (i,)
+                    (instance,)
                 )
             )
             if t is None:
-                raise NotAchievedException("Could not create thread %u" % i)
+                raise NotAchievedException("Could not create thread %u" % instance)
             t.start()
             self.threads.append(t)
 
@@ -13123,6 +13131,20 @@ switch value'''
 
         return results
 
+    def enter_instance_dir(self):
+        '''parallel workers and serial "-I" runs get a private working
+        directory so their SITL working files (logs/, eeprom.bin,
+        flash.dat, terrain/, scripts/) and any other cwd-relative test
+        artifacts cannot collide with other instances.  Instance 0 (the
+        default) keeps running in the directory autotest was started in, so
+        ordinary serial runs are unchanged.  These directories are wiped at
+        the start of each autotest.py run (see autotest.py).'''
+        if self.instance == 0:
+            return
+        directory = os.path.join("parallel-autotest", str(self.instance))
+        os.makedirs(directory, exist_ok=True)
+        os.chdir(directory)
+
     def refresh_test_binary(self):
         '''make a pristine per-instance copy of the binary.  Some tests
         overwrite the binary they run against; giving each test a fresh
@@ -13140,11 +13162,15 @@ switch value'''
 
     def test_runner_thread_main(self, instance):
         self.instance = instance
+        # move into this worker's private working directory; from here on
+        # all cwd-relative paths (logs/, eeprom.bin, terrain/, ...) are
+        # isolated from the other workers:
+        self.enter_instance_dir()
 
         # each worker - and each test - runs against its own private copy
-        # of the binary:
+        # of the binary, kept in the instance's working directory:
         self.master_binary = self.binary
-        self.binary = "%s-I%u" % (self.master_binary, instance)
+        self.binary = os.path.join(os.getcwd(), os.path.basename(self.master_binary))
         self.refresh_test_binary()
 
         test = None
@@ -13216,6 +13242,10 @@ switch value'''
         if self.run_tests_called:
             raise ValueError("run_tests called twice")
         self.run_tests_called = True
+
+        # a serial run with "-I N" runs in its own working directory; the
+        # default (instance 0) is a no-op:
+        self.enter_instance_dir()
 
         result_list = []
 

@@ -663,12 +663,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 
     if (erase_all_storage) {
         AP_Param::erase_all();
-        // defined in Storage.cpp; instance-aware so parallel auto-test
-        // instances don't unlink each other's emulated flash:
-        extern void sitl_flash_storage_filename(char *buffer, size_t buflen);
-        char flash_file[80] {};
-        sitl_flash_storage_filename(flash_file, ARRAY_SIZE(flash_file));
-        unlink(flash_file);
+        unlink("flash.dat");
         hal.set_wipe_storage(wiping_storage);
     }
 
