@@ -3274,6 +3274,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             (current_log_filepath, os.path.getsize(current_log_filepath))
         ))
 
+        # a log with dropped blocks is incomplete and cannot be replayed
+        # faithfully, so check before wasting time on the replay itself:
+        self.assert_log_has_no_dropped_blocks(current_log_filepath)
+
         self.zero_throttle()
         self.run_replay(current_log_filepath)
 
