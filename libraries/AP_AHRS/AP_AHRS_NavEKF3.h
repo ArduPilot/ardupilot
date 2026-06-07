@@ -88,6 +88,12 @@ public:
     void resetHeightDatum(void) override {
         EKF3.resetHeightDatum();
     }
+    // EKF3-specific overload forwarding the origin-altitude tolerance and
+    // the reset-velocity flag; the AP_AHRS_Backend interface only carries
+    // the no-arg form.
+    void resetHeightDatum(float origin_alt_tolerance_m, bool reset_velocity) {
+        EKF3.resetHeightDatum(origin_alt_tolerance_m, reset_velocity);
+    }
     void request_yaw_reset() override {
         EKF3.requestYawReset();
     }

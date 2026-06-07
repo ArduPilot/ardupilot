@@ -396,6 +396,9 @@ private:
     // inertial nav alt when we armed
     float arming_altitude_m;
 
+    // system time of the last disarmed periodic height-datum reset
+    uint32_t last_datum_reset_ms;
+
     // Failsafe
     struct {
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
