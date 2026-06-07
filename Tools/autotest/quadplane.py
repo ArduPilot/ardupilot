@@ -1147,6 +1147,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def GUIDEDToAUTO(self):
         '''Test using GUIDED mode for takeoff before shifting to auto'''
+        self.install_terrain_handlers_context()  # mission.txt uses terrain-frame
+
         self.load_mission("mission.txt")
         self.takeoff(30, mode='GUIDED')
 
