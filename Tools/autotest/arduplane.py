@@ -57,9 +57,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def log_name(self):
         return "ArduPlane"
 
-    def default_speedup(self):
-        return 100
-
     def test_filepath(self):
         return os.path.realpath(__file__)
 
