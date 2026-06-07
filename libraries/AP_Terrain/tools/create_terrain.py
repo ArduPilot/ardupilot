@@ -33,12 +33,18 @@ TERRAIN_GRID_BLOCK_SIZE_Y = (TERRAIN_GRID_MAVLINK_SIZE*TERRAIN_GRID_BLOCK_MUL_Y)
 
 # format of grid on disk
 TERRAIN_GRID_FORMAT_VERSION = 1
+TERRAIN_VERSION_MINOR_MIN = 1
 
 IO_BLOCK_SIZE = 2048
 IO_BLOCK_DATA_SIZE = 1821
 IO_BLOCK_TRAILER_SIZE = IO_BLOCK_SIZE - IO_BLOCK_DATA_SIZE
+IO_BLOCK_VERSION_MINOR_OFS = IO_BLOCK_DATA_SIZE
 
 GRID_SPACING = 100
+
+def get_version_minor(buf):
+    '''return the terrain block minor version'''
+    return struct.unpack("<B", buf[IO_BLOCK_VERSION_MINOR_OFS:IO_BLOCK_VERSION_MINOR_OFS+1])[0]
 
 def to_float32(f):
     '''emulate single precision float'''
@@ -126,6 +132,7 @@ class GridBlock(object):
 
         # format version number
         self.version = TERRAIN_GRID_FORMAT_VERSION
+        self.version_minor = TERRAIN_VERSION_MINOR_MIN
 
         # grid spacing in meters
         self.spacing = GRID_SPACING
@@ -238,7 +245,8 @@ class DataFile(object):
         for gx in range(TERRAIN_GRID_BLOCK_SIZE_X):
             buf += struct.pack("<%uh" % TERRAIN_GRID_BLOCK_SIZE_Y, *block.height[gx])
         buf += struct.pack("<HHhb", block.grid_idx_x, block.grid_idx_y, block.lon_degrees, block.lat_degrees)
-        buf += struct.pack("%uB" % IO_BLOCK_TRAILER_SIZE, *[0]*IO_BLOCK_TRAILER_SIZE)
+        buf += struct.pack("<B", block.version_minor)
+        buf += struct.pack("%uB" % (IO_BLOCK_TRAILER_SIZE - 1), *[0]*(IO_BLOCK_TRAILER_SIZE - 1))
         return buf
 
     def write(self, block):
@@ -264,6 +272,9 @@ class DataFile(object):
             abs(lon - block.lon)>2 or
             spacing != GRID_SPACING or
             bitmap != (1<<56)-1):
+            return False
+        version_minor = get_version_minor(buf)
+        if version_minor < TERRAIN_VERSION_MINOR_MIN:
             return False
         buf = buf[:16] + struct.pack("<H", 0) + buf[18:]
         crc2 = crc16.crc16xmodem(buf[:IO_BLOCK_DATA_SIZE])
@@ -312,6 +323,11 @@ class DataFile(object):
             print("bad header")
             err.errors += 1
             return err
+        version_minor = get_version_minor(buf)
+        if version_minor < TERRAIN_VERSION_MINOR_MIN:
+            print("bad minor version")
+            err.errors += 1
+            return err
 
         buf = buf[:16] + struct.pack("<H", 0) + buf[18:]
         crc2 = crc16.crc16xmodem(buf[:IO_BLOCK_DATA_SIZE])
@@ -351,6 +367,10 @@ def pos_range(filename):
         (bitmap, lat, lon, crc, version, spacing) = struct.unpack("<QiiHHH", buf[:22])
         if (version != TERRAIN_GRID_FORMAT_VERSION):
             print("Bad version %u in %s" % (version, filename))
+            break
+        version_minor = get_version_minor(buf)
+        if (version_minor < TERRAIN_VERSION_MINOR_MIN):
+            print("Bad minor version %u in %s" % (version_minor, filename))
             break
         buf = buf[:16] + struct.pack("<H", 0) + buf[18:]
         crc2 = crc16.crc16xmodem(buf[:IO_BLOCK_DATA_SIZE])
