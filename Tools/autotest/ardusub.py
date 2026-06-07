@@ -1152,7 +1152,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.progress("Connecting to telemetry port")
         mav2 = mavutil.mavlink_connection(
-            "tcp:localhost:5763",
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
             robust_parsing=True,
             source_system=self.mav.source_system,
             source_component=self.mav.source_component,
