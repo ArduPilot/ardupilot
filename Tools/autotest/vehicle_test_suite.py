@@ -13007,6 +13007,10 @@ switch value'''
             # end-of-mission yaw check; only seen failing under heavy
             # parallel load (passes when run on its own):
             "MissionRTLYawBehaviour",
+
+            # RTL final-heading check; yaw accuracy is sensitive to host
+            # load and flakes under parallel runs (passes on its own):
+            "RTLYaw",
         ]
 
     def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
