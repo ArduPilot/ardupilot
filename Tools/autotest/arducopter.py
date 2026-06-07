@@ -17772,6 +17772,8 @@ RTL_ALT_M 111
                     '--serial1', 'tcp:2',
                     '--serial2', 'tcp:3',
                 ],
+                # AP_Periph is a supplementary program (no vehicle model):
+                supplementary=True,
                 speedup=self.speedup
             )
             self.expect_list_add(periph_exp)
