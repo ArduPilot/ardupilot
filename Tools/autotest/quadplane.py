@@ -64,10 +64,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
-    def default_speedup(self):
-        '''QuadPlane seems to be race-free'''
-        return 100
-
     def log_name(self):
         return "QuadPlane"
 

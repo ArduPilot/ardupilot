@@ -40,6 +40,11 @@ class TestParamUpgradeTestSuite(vehicle_test_suite.TestSuite):
     def __init__(self, binary):
         super(TestParamUpgradeTestSuite, self).__init__(binary)
 
+    def default_speedup(self):
+        # the base-class default was 8 when this suite was written;
+        # preserve that now the base default has been raised to 100:
+        return 8
+
     def sysid_thismav(self):
         if "antennatracker" in self.binary:
             return 2
