@@ -745,14 +745,16 @@ def run_tests(steps):
         for f in diagnostic_files:
             os.unlink(f)
 
-    # parallel autotest workers (and serial "-I N" runs) each run in their
-    # own "parallel-autotest/<instance>" directory.  Wipe these at the start
-    # of every run so per-instance logs/eeprom/etc. never accumulate across
-    # runs.  Also clean up artifacts from the old per-instance-suffix scheme.
-    print('Removing parallel autotest instance directories')
-    util.run_cmd('rm -rf parallel-autotest logs-[0-9]* eeprom-*.bin '
-                 'eeprom-periph-*.bin eeprom-replay-*.bin flash-*.dat '
-                 'build/sitl/bin/*-I[0-9]*', checkfail=False)
+    # each parallel worker (and serial "-I N" run) runs in its own
+    # "parallel-autotest/<instance>" directory.  Wipe the directories THIS
+    # run will use so per-instance logs/eeprom/etc. don't accumulate across
+    # runs - but only this run's instance range, so concurrent runs started
+    # with different -I values don't delete each other's directories.
+    lo = opts.instance
+    hi = opts.instance + opts.parallel  # parallel pass uses base+1..base+parallel
+    instance_dirs = " ".join("parallel-autotest/%u" % n for n in range(lo, hi + 1))
+    print("Removing parallel autotest instance directories %u..%u" % (lo, hi))
+    util.run_cmd("rm -rf " + instance_dirs, checkfail=False)
 
     passed = True
     failed = []
@@ -926,9 +928,12 @@ if __name__ == "__main__":
     parser.add_option("-I", "--instance",
                       default=0,
                       type='int',
-                      help='instance number for a serial run; like sim_vehicle.py -I '
-                           'it offsets the ports and gives the run its own working '
-                           'directory.  Incompatible with --parallel')
+                      help='base instance number (like sim_vehicle.py -I): offsets '
+                           'the ports and per-instance working directories.  For a '
+                           'serial run this is the instance used; with --parallel it '
+                           'is the lowest instance, and workers count up from it.  '
+                           'Use distinct -I values to run several parallel suites at '
+                           'once without colliding (give each its own BUILDLOGS too).')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
@@ -1093,10 +1098,6 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
-
-    if opts.instance != 0 and opts.parallel != 1:
-        parser.error("-I/--instance cannot be combined with --parallel "
-                     "(parallel runs assign their own instance numbers)")
 
     # canonicalise on opts.debug:
     if opts.debug is None and opts.no_debug is None:

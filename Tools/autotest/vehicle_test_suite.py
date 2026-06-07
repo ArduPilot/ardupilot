@@ -13062,18 +13062,23 @@ switch value'''
         serial_tests = [x for x in tests if x.name in exclusive]
         parallel_tests = [x for x in tests if x.name not in exclusive]
 
+        # self.instance is the base instance number (the -I option, 0 by
+        # default).  The blacklisted tests run on their own at the base
+        # instance; the parallel pass uses the instances above it.
+        base = self.instance
+
         results = []
         if len(serial_tests):
             self.progress("Running %u test(s) serially (blacklisted from parallel run)" %
                           len(serial_tests))
-            # run the blacklisted tests at instance 0 (base ports, repo-root
-            # working directory): several of them assume instance-0 ports or
-            # otherwise behave like a normal serial run:
-            results += self.run_tests_in_processes(serial_tests, 1, base_instance=0)
+            # run the blacklisted tests on their own at the base instance
+            # (base ports / repo-root working directory when base==0): several
+            # of them assume those ports or otherwise behave like a serial run:
+            results += self.run_tests_in_processes(serial_tests, 1, base_instance=base)
         if len(parallel_tests):
             self.progress("Running %u test(s) %u-way parallel" %
                           (len(parallel_tests), parallel))
-            results += self.run_tests_in_processes(parallel_tests, parallel, base_instance=1)
+            results += self.run_tests_in_processes(parallel_tests, parallel, base_instance=base + 1)
 
         return results
 
