@@ -251,9 +251,13 @@ public:
     }
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    void getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
+    bool getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const {
+        if (!state.corrected_dv_valid) {
+            return false;
+        }
         ret = state.corrected_dv;
         dt = state.corrected_dv_dt;
+        return true;
     }
 
     // set the EKF's origin location in 10e7 degrees.  This should only
@@ -481,14 +485,10 @@ public:
     // check if external nav is providing yaw
     bool using_extnav_for_yaw(void) const;
 
-    // check if GPS is being used to estimate position or velocity
-    // always returns true for External and SIM EKF types
-    bool using_gps(void) const;
-
-    // check if GPS is configured as the horizontal position source
-    // for the configured EKF type. Used to decide whether GPS will
-    // set the EKF origin (which is immutable once set).
-    bool using_gps_for_pos(void) const;
+    // active_backend_configured_to_use_gps will be true if the
+    // estimator will use GPS data in creating its estimate when the
+    // data is good
+    bool active_backend_configured_to_use_gps() const { return active_estimates->configured_to_use_gps; }
 
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
@@ -688,7 +688,7 @@ public:
 
     // return primary accels
     const Vector3f &get_accel(void) const {
-        return AP::ins().get_accel(_get_primary_accel_index());
+        return AP::ins().get_accel(get_primary_accel_index());
     }
 
     // return primary accel bias. This should be subtracted from
@@ -924,13 +924,6 @@ private:
     // poke AP_Notify based on values from status
     void update_notify_from_filter_status(const nav_filter_status &status);
 
-    /*
-     * copy results from a backend over AP_AHRS canonical results.
-     * This updates member variables like roll and pitch, as well as
-     * updating derived values like sin_roll and sin_pitch.
-     */
-    void copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estimates &results);
-
     // write out secondary estimates:
     void Write_AHRS2(void) const;
     // write POS (canonical vehicle position) message out:
@@ -964,7 +957,7 @@ private:
     bool _get_secondary_position(Location &loc) const;
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
-    void _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const;
+    bool _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const WARN_IF_UNUSED;
 
     // returns the inertial navigation origin in lat/lon/alt
     bool _get_origin(Location &ret) const WARN_IF_UNUSED;
@@ -981,15 +974,6 @@ private:
 
     // return the index of the primary core or -1 if no primary core selected
     int8_t _get_primary_core_index() const;
-
-    // get the index of the current primary accelerometer sensor
-    uint8_t _get_primary_accel_index(void) const;
-
-    // get the index of the current primary gyro sensor
-    uint8_t _get_primary_gyro_index(void) const;
-
-    // get the index of the current primary IMU
-    uint8_t _get_primary_IMU_index(void) const;
 
     // get current location estimate
     bool _get_location(Location &loc) const;
@@ -1015,7 +999,6 @@ private:
      */
     struct {
         EKFType active_EKF_type;
-        uint8_t primary_IMU;
         uint8_t primary_gyro;
         uint8_t primary_accel;
         uint8_t primary_core;
@@ -1046,6 +1029,7 @@ private:
         bool secondary_pos_ok;
         Vector2f ground_speed_vec;
         float ground_speed;
+        bool corrected_dv_valid;
         Vector3f corrected_dv;
         float corrected_dv_dt;
         Location origin;

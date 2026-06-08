@@ -209,6 +209,13 @@ private:
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_CLOCK_SUB_ENABLED
+    // incoming external clock for simulation time sync
+    static rosgraph_msgs_msg_Clock rx_clock_topic;
+    static builtin_interfaces_msg_Time external_clock_time;
+    static bool has_received_clock;
+#endif // AP_DDS_CLOCK_SUB_ENABLED
+
 #if AP_DDS_STATUS_PUB_ENABLED
     ardupilot_msgs_msg_Status status_topic;
     bool update_topic(ardupilot_msgs_msg_Status& msg);

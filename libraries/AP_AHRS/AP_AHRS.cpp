@@ -438,26 +438,45 @@ void AP_AHRS::reset_gyro_drift(void)
 }
 
 /*
-  update state structure after each update()
+ * copy results from a backend over AP_AHRS canonical results.
+ * This updates member variables like roll and pitch, as well as
+ * updating derived values like sin_roll and sin_pitch.
  */
 void AP_AHRS::update_state(void)
 {
-    const uint8_t primary_gyro = _get_primary_gyro_index();
+    const uint8_t primary_gyro = active_estimates->primary_gyro;
 #if AP_INERTIALSENSOR_ENABLED
     // tell the IMUS about primary changes
     if (primary_gyro != state.primary_gyro) {
         AP::ins().set_primary(primary_gyro);
     }
 #endif
-    state.primary_IMU = _get_primary_IMU_index();
     state.primary_gyro = primary_gyro;
-    state.primary_accel = _get_primary_accel_index();
+
+    state.primary_accel = active_estimates->primary_accel;
+
     state.primary_core = _get_primary_core_index();
     state.wind_estimate_ok = active_backend->wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
     state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
     state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
     state.airspeed_TAS_vec_ok = _airspeed_TAS(state.airspeed_TAS_vec);
+
+    roll = active_estimates->roll_rad;
+    pitch = active_estimates->pitch_rad;
+    yaw = active_estimates->yaw_rad;
+
+    state.dcm_matrix = active_estimates->dcm_matrix;
+
+    state.gyro_estimate = active_estimates->gyro_estimate;
+    state.gyro_drift = active_estimates->gyro_drift;
+
+    state.accel_ef = active_estimates->accel_ef;
+    state.accel_bias = active_estimates->accel_bias;
+
+    update_cd_values();
+    update_trig();
+
     state.quat_ok = active_estimates->get_quaternion(state.quat);
     state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
     state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
@@ -470,7 +489,7 @@ void AP_AHRS::update_state(void)
     state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
     state.ground_speed_vec = active_estimates->velocity_NE;
     state.ground_speed = state.ground_speed_vec.length();
-    _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
+    state.corrected_dv_valid = _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
 
     // check if origin has been set
     bool origin_ok = _get_origin(state.origin);
@@ -572,10 +591,8 @@ void AP_AHRS::update(bool skip_ins_update)
     }
 #endif // HAL_GCS_ENABLED
 
-    // update published state
+    // update published state, including copying state from the active backend:
     update_state();
-
-    copy_estimates_from_backend_estimates(*active_estimates);
 
 #if AP_MODULE_SUPPORTED
     // call AHRS_update hook if any
@@ -605,29 +622,6 @@ void AP_AHRS::update(bool skip_ins_update)
         hal.scheduler->delay_microseconds(random() % sitl->loop_time_jitter_us);
     }
 #endif
-}
-
-/*
- * copy results from a backend over AP_AHRS canonical results.
- * This updates member variables like roll and pitch, as well as
- * updating derived values like sin_roll and sin_pitch.
- */
-void AP_AHRS::copy_estimates_from_backend_estimates(const AP_AHRS_Backend::Estimates &results)
-{
-    roll = results.roll_rad;
-    pitch = results.pitch_rad;
-    yaw = results.yaw_rad;
-
-    state.dcm_matrix = results.dcm_matrix;
-
-    state.gyro_estimate = results.gyro_estimate;
-    state.gyro_drift = results.gyro_drift;
-
-    state.accel_ef = results.accel_ef;
-    state.accel_bias = results.accel_bias;
-
-    update_cd_values();
-    update_trig();
 }
 
 #if AP_AHRS_DCM_ENABLED
@@ -1305,7 +1299,7 @@ void AP_AHRS::use_recorded_origin_maybe()
     // position — GPS will set a correct origin when it gets
     // a fix. Using the recorded origin here would prevent GPS from
     // setting it later (EKF origin is immutable once set).
-    if (using_gps_for_pos()) {
+    if (active_estimates->configured_to_use_gps_for_pos_XY) {
         return;
     }
 
@@ -2262,45 +2256,15 @@ bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 }
 
 // Retrieves the NED delta velocity corrected
-void AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
+bool AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 {
-    int8_t imu_idx = -1;
-    Vector3f accel_bias;
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        break;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        imu_idx = ekf2.EKF2.getPrimaryCoreIMUIndex();
-        accel_bias = ekf2_estimates.accel_bias;
-        break;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        imu_idx = ekf3.EKF3.getPrimaryCoreIMUIndex();
-        accel_bias = ekf3_estimates.accel_bias;
-        break;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        break;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        break;
-#endif
+    if (!AP::ins().get_delta_velocity(active_estimates->primary_accel, ret, dt)) {
+        return false;
     }
-    ret.zero();
-    if (imu_idx == -1) {
-        AP::ins().get_delta_velocity(ret, dt);
-        return;
-    }
-    AP::ins().get_delta_velocity((uint8_t)imu_idx, ret, dt);
-    ret -= accel_bias*dt;
+    ret -= active_estimates->accel_bias * dt;
     ret = state.dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
     ret.z += GRAVITY_MSS*dt;
+    return true;
 }
 
 void AP_AHRS::set_failure_inconsistent_message(const char *estimator, const char *axis, float diff_rad, char *failure_msg, const uint8_t failure_msg_len) const
@@ -2804,42 +2768,6 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 #endif // AP_AIRSPEED_ENABLED
 }
 
-// get the index of the current primary IMU
-uint8_t AP_AHRS::_get_primary_IMU_index() const
-{
-    int8_t imu = -1;
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        break;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // let EKF2 choose primary IMU
-        imu = ekf2.EKF2.getPrimaryCoreIMUIndex();
-        break;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // let EKF2 choose primary IMU
-        imu = ekf3.EKF3.getPrimaryCoreIMUIndex();
-        break;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        break;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        break;
-#endif
-    }
-    if (imu == -1) {
-        imu = AP::ins().get_first_usable_gyro();
-    }
-    return imu;
-}
-
 // return the index of the primary core or -1 if no primary core selected
 int8_t AP_AHRS::_get_primary_core_index() const
 {
@@ -2874,18 +2802,6 @@ int8_t AP_AHRS::_get_primary_core_index() const
     // we should never get here
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     return -1;
-}
-
-// get the index of the current primary accelerometer sensor
-uint8_t AP_AHRS::_get_primary_accel_index(void) const
-{
-    return _get_primary_IMU_index();
-}
-
-// get the index of the current primary gyro sensor
-uint8_t AP_AHRS::_get_primary_gyro_index(void) const
-{
-    return _get_primary_IMU_index();
 }
 
 // see if EKF lane switching is possible to avoid EKF failsafe
@@ -3061,64 +2977,6 @@ bool AP_AHRS::using_extnav_for_yaw(void) const
     }
     // since there is no default case above, this is unreachable
     return false;
-}
-
-// check if GPS is being used to estimate position or velocity
-// always returns true for External and SIM EKF types
-bool AP_AHRS::using_gps(void) const
-{
-    switch (active_EKF_type()) {
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.using_gps();
-#endif
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return _gps_use != GPSUse::Disable;
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.using_gps();
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        // assume a GPS is being used
-        return true;
-    }
-    // since there is no default case above, this is unreachable
-    return true;
-}
-
-// check if GPS is configured as the position source for
-// the configured EKF type
-bool AP_AHRS::using_gps_for_pos(void) const
-{
-    switch (active_EKF_type()) {
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.configuredToUseGPSForPosXY();
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.configuredToUseGPSForPos();
-#endif
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return _gps_use != GPSUse::Disable;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        return true;
-    }
-    return true;
 }
 
 // set and save the alt noise parameter value

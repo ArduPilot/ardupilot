@@ -6,6 +6,9 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-slim
@@ -26,12 +29,16 @@ jobs:
       # git checkout the PR
       - uses: actions/checkout@v6
         with:
-          submodules: 'recursive'
-      - uses: actions/setup-python@v6
-        with:
-          python-version: 3.x
-          cache: pip  # caching pip dependencies
-          pip-install: flake8 lxml pexpect
+          submodules: false
+          persist-credentials: false
+
+      - name: checkout waf submodule
+        run: git submodule update --init --recursive --depth 1 modules/waf
+
+      - name: install pip dependencies
+        shell: bash
+        run: |
+          python3 -m pip install flake8 lxml pexpect
 
       - name: Install astyle
         if: matrix.config == 'astyle-cleanliness'

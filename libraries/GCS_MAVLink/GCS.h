@@ -780,7 +780,10 @@ protected:
     MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);
 
 #endif // HAL_HIGH_LATENCY2_ENABLED
-    
+
+    // note that the mavlink specification only uses 21196 as the
+    // magic value to force and arm or disarm.  We continue to support
+    // 2989 for force-arming for backwards-compatability reasons.
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_arm_disarm_value = 21196.0f;
 

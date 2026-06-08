@@ -586,6 +586,8 @@ float Aircraft::rangefinder_range() const
         altitude -= relPosSensorEF.z;
     }
 
+    altitude += sitl->sonar_offset;
+
     const auto orientation = (Rotation)sitl->sonar_rot.get();
 #if SITL_RANGEFINDER_AS_OBJECT_SENSOR
 
