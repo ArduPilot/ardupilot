@@ -150,8 +150,18 @@ public:
 #endif
 
 #if AP_CPU_IDLE_STATS_ENABLED
+    // where idle-thread CPU load stats are reported
+    enum class IdleStats : uint8_t {
+        DISABLED = 0,
+        TO_FILE  = 1,   // reported via @SYS/threads.txt (reset on read)
+        TO_LOG   = 2,   // reported via the PM2 log message (reset on log)
+    };
+    static IdleStats idle_stats(void) {
+        return _singleton ? IdleStats(_singleton->state.idle_stats.get()) : IdleStats::DISABLED;
+    }
+    // true if idle load measurement should run (any non-disabled mode)
     static bool use_idle_stats(void) {
-        return _singleton?_singleton->state.idle_stats.get():0;
+        return idle_stats() != IdleStats::DISABLED;
     }
 #endif
 
