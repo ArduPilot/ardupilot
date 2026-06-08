@@ -49,7 +49,9 @@ void SITL_State::_sitl_setup()
         _update_airspeed(0);
 #if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
-            gimbal = NEW_NOTHROW SITL::SoloGimbal();
+            // the gimbal connects back to the vehicle's SERIAL2 MAVLink
+            // port, which is base_port + 2 (offset by the SITL instance):
+            gimbal = NEW_NOTHROW SITL::SoloGimbal(base_port() + 2);
         }
 #endif
 
