@@ -492,7 +492,10 @@ bool AP_Arming_Copter::mandatory_position_checks(bool display_failure)
     if (copter.g.fs_ekf_thresh > 0.0f) {
         float vel_variance, pos_variance, hgt_variance, tas_variance;
         Vector3f mag_variance;
-        ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance);
+        if (!ahrs.get_variances(vel_variance, pos_variance, hgt_variance, mag_variance, tas_variance)) {
+            check_failed(display_failure, "Failed to get AHRS variances");
+            return false;
+        }
         const struct {
             const char *name;
             float value;
