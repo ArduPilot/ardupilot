@@ -38,29 +38,31 @@
 
 /*
  * Inertial Sense SDK types and function implementations, condensed from
- * ISConstants.h, data_sets.h, data_sets.c, and ISComm.c.
- * Only the subset used by this driver is included.
+ * ISConstants.h, data_sets.h, data_sets.c, and ISComm.c of the Inertial
+ * Sense SDK 3.0.0 release.  Only the subset used by this driver is included.
+ * The 3.0.0 release renamed GPS-related symbols to GNSS; these names mirror
+ * that convention.
  */
 using eDataIDs = uint32_t;
 #define DID_NULL                  (eDataIDs)0   /** NULL (INVALID) */
 #define DID_DEV_INFO              (eDataIDs)1   /** (dev_info_t) Device information */
 #define DID_FLASH_CONFIG          (eDataIDs)12  /** (nvm_flash_cfg_t) Flash memory configuration */
-#define DID_GPS1_POS              (eDataIDs)13  /** (gps_pos_t) GPS 1 position data */
-#define DID_GPS2_POS              (eDataIDs)14  /** (gps_pos_t) GPS 2 position data */
+#define DID_GNSS1_POS             (eDataIDs)13  /** (gnss_pos_t) GNSS 1 position data */
+#define DID_GNSS2_POS             (eDataIDs)14  /** (gnss_pos_t) GNSS 2 position data */
 #define DID_RMC                   (eDataIDs)9   /** (rmc_t) Realtime Message Controller */
-#define DID_GPS1_RTK_POS_MISC     (eDataIDs)22  /** (gps_rtk_misc_t) RTK precision position */
-#define DID_GPS1_VEL              (eDataIDs)30  /** (gps_vel_t) GPS 1 velocity data */
-#define DID_GPS2_VEL              (eDataIDs)31  /** (gps_vel_t) GPS 2 velocity data */
+#define DID_GNSS1_RTK_POS_MISC    (eDataIDs)22  /** (gnss_rtk_misc_t) RTK precision position */
+#define DID_GNSS1_VEL             (eDataIDs)30  /** (gnss_vel_t) GNSS 1 velocity data */
+#define DID_GNSS2_VEL             (eDataIDs)31  /** (gnss_vel_t) GNSS 2 velocity data */
 #define DID_MAGNETOMETER          (eDataIDs)52  /** (magnetometer_t) Magnetometer sensor */
 #define DID_BAROMETER             (eDataIDs)53  /** (barometer_t) Barometric pressure sensor */
 #define DID_BIT                   (eDataIDs)64  /** (bit_t) System built-in self-test */
 #define DID_INS_3                 (eDataIDs)65  /** (ins_3_t) INS output: quaternion NED to body */
 #define DID_INL2_NED_SIGMA        (eDataIDs)67  /** (inl2_ned_sigma_t) INL2 EKF std deviations */
 
-// GPS type field within ioConfig (from data_sets.h eIoConfig)
-static constexpr uint8_t  IO_CONFIG_GPS2_TYPE_OFFSET = 25;
-static constexpr uint32_t IO_CONFIG_GPS_TYPE_MASK    = 0x7U;
-#define IO_CONFIG_GPS2_TYPE(ioConfig) (((ioConfig) >> IO_CONFIG_GPS2_TYPE_OFFSET) & IO_CONFIG_GPS_TYPE_MASK)
+// GNSS type field within ioConfig (from data_sets.h eIoConfig)
+static constexpr uint8_t  IO_CONFIG_GNSS2_TYPE_OFFSET = 25;
+static constexpr uint32_t IO_CONFIG_GNSS_TYPE_MASK    = 0x7U;
+#define IO_CONFIG_GNSS2_TYPE(ioConfig) (((ioConfig) >> IO_CONFIG_GNSS2_TYPE_OFFSET) & IO_CONFIG_GNSS_TYPE_MASK)
 
 #define DEVINFO_MANUFACTURER_STRLEN 24
 #define DEVINFO_ADDINFO_STRLEN      24
@@ -76,15 +78,15 @@ enum InsStatusFlags
     INS_STATUS_VEL_ALIGN_FINE                   = (int)0x00000020,
     INS_STATUS_POS_ALIGN_FINE                   = (int)0x00000040,
     INS_STATUS_ALIGN_FINE_MASK                  = (int)0x00000070,
-    INS_STATUS_GPS_AIDING_HEADING               = (int)0x00000080,
-    INS_STATUS_GPS_AIDING_POS                   = (int)0x00000100,
-    INS_STATUS_GPS_UPDATE_IN_SOLUTION           = (int)0x00000200,
+    INS_STATUS_GNSS_AIDING_HEADING              = (int)0x00000080,
+    INS_STATUS_GNSS_AIDING_POS                  = (int)0x00000100,
+    INS_STATUS_GNSS_UPDATE_IN_SOLUTION          = (int)0x00000200,
     INS_STATUS_EKF_USING_REFERENCE_IMU          = (int)0x00000400,
     INS_STATUS_MAG_AIDING_HEADING               = (int)0x00000800,
     INS_STATUS_NAV_MODE                         = (int)0x00001000,
-#define INS_STATUS_DEAD_RECKONING(s) (((s)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE))&&(((s)&INS_STATUS_GPS_AIDING_POS)==0))
+#define INS_STATUS_DEAD_RECKONING(s) (((s)&(INS_STATUS_POS_ALIGN_FINE|INS_STATUS_POS_ALIGN_COARSE))&&(((s)&INS_STATUS_GNSS_AIDING_POS)==0))
     INS_STATUS_STATIONARY_MODE                  = (int)0x00002000,
-    INS_STATUS_GPS_AIDING_VEL                   = (int)0x00004000,
+    INS_STATUS_GNSS_AIDING_VEL                  = (int)0x00004000,
     INS_STATUS_KINEMATIC_CAL_GOOD               = (int)0x00008000,
     INS_STATUS_SOLUTION_MASK                    = (int)0x000F0000,
     INS_STATUS_SOLUTION_OFFSET                  = 16,
@@ -102,9 +104,9 @@ enum InsStatusFlags
     INS_STATUS_RTK_COMPASSING_MASK              = (INS_STATUS_RTK_COMPASSING_BASELINE_UNSET|INS_STATUS_RTK_COMPASSING_BASELINE_BAD),
     INS_STATUS_MAG_RECALIBRATING                = (int)0x00400000,
     INS_STATUS_MAG_INTERFERENCE_OR_BAD_CAL_OR_NO_CAL = (int)0x00800000,
-    INS_STATUS_GPS_NAV_FIX_MASK                 = (int)0x03000000,
-    INS_STATUS_GPS_NAV_FIX_OFFSET               = 24,
-#define INS_STATUS_NAV_FIX_STATUS(s) (((s)&INS_STATUS_GPS_NAV_FIX_MASK)>>INS_STATUS_GPS_NAV_FIX_OFFSET)
+    INS_STATUS_GNSS_NAV_FIX_MASK                = (int)0x03000000,
+    INS_STATUS_GNSS_NAV_FIX_OFFSET              = 24,
+#define INS_STATUS_NAV_FIX_STATUS(s) (((s)&INS_STATUS_GNSS_NAV_FIX_MASK)>>INS_STATUS_GNSS_NAV_FIX_OFFSET)
     INS_STATUS_RTK_COMPASSING_VALID             = (int)0x04000000,
     INS_STATUS_RTK_RAW_GPS_DATA_ERROR           = (int)0x08000000,
     INS_STATUS_RTK_ERR_BASE_DATA_MISSING        = (int)0x10000000,
@@ -121,12 +123,12 @@ enum InsStatusFlags
                                                   INS_STATUS_RTOS_TASK_PERIOD_OVERRUN,
 };
 
-enum GpsNavFixStatus
+enum GnssNavFixStatus
 {
-    GPS_NAV_FIX_NONE                    = (int)0x00000000,
-    GPS_NAV_FIX_POSITIONING_3D          = (int)0x00000001,
-    GPS_NAV_FIX_POSITIONING_RTK_FLOAT   = (int)0x00000002,
-    GPS_NAV_FIX_POSITIONING_RTK_FIX     = (int)0x00000003,
+    GNSS_NAV_FIX_NONE                   = (int)0x00000000,
+    GNSS_NAV_FIX_POSITIONING_3D         = (int)0x00000001,
+    GNSS_NAV_FIX_POSITIONING_RTK_FLOAT  = (int)0x00000002,
+    GNSS_NAV_FIX_POSITIONING_RTK_FIX    = (int)0x00000003,
 };
 
 enum HdwStatusFlags
@@ -137,9 +139,9 @@ enum HdwStatusFlags
     HDW_STATUS_IMU_FAULT_REJECT_GYR     = (int)0x00000004,
     HDW_STATUS_IMU_FAULT_REJECT_ACC     = (int)0x00000008,
     HDW_STATUS_IMU_FAULT_REJECT_MASK    = (int)0x0000000C,
-    HDW_STATUS_GPS_SATELLITE_RX_VALID   = (int)0x00000010,
+    HDW_STATUS_GNSS_SATELLITE_RX_VALID   = (int)0x00000010,
     HDW_STATUS_STROBE_IN_EVENT          = (int)0x00000020,
-    HDW_STATUS_GPS_TIME_OF_WEEK_VALID   = (int)0x00000040,
+    HDW_STATUS_GNSS_TIME_OF_WEEK_VALID   = (int)0x00000040,
     HDW_STATUS_REFERENCE_IMU_RX         = (int)0x00000080,
     HDW_STATUS_SATURATION_GYR           = (int)0x00000100,
     HDW_STATUS_SATURATION_ACC           = (int)0x00000200,
@@ -148,13 +150,13 @@ enum HdwStatusFlags
     HDW_STATUS_SATURATION_MASK          = (int)0x00000F00,
     HDW_STATUS_SATURATION_OFFSET        = 8,
     HDW_STATUS_SYSTEM_RESET_REQUIRED    = (int)0x00001000,
-    HDW_STATUS_ERR_GPS_PPS_NOISE        = (int)0x00002000,
+    HDW_STATUS_ERR_GNSS_PPS_NOISE        = (int)0x00002000,
     HDW_STATUS_MAG_RECAL_COMPLETE       = (int)0x00004000,
     HDW_STATUS_FLASH_WRITE_PENDING      = (int)0x00008000,
     HDW_STATUS_ERR_COM_TX_LIMITED       = (int)0x00010000,
     HDW_STATUS_ERR_COM_RX_OVERRUN       = (int)0x00020000,
-    HDW_STATUS_ERR_NO_GPS_PPS           = (int)0x00040000,
-    HDW_STATUS_GPS_PPS_TIMESYNC         = (int)0x00080000,
+    HDW_STATUS_ERR_NO_GNSS_PPS           = (int)0x00040000,
+    HDW_STATUS_GNSS_PPS_TIMESYNC         = (int)0x00080000,
     HDW_STATUS_COM_PARSE_ERR_COUNT_MASK = (int)0x00F00000,
     HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET = 20,
 #define HDW_STATUS_COM_PARSE_ERROR_COUNT(s) ((s & HDW_STATUS_COM_PARSE_ERR_COUNT_MASK) >> HDW_STATUS_COM_PARSE_ERR_COUNT_OFFSET)
@@ -173,61 +175,61 @@ enum HdwStatusFlags
     HDW_STATUS_ERROR_MASK               = HDW_STATUS_FAULT_SYS_CRITICAL |
                                           HDW_STATUS_IMU_FAULT_REJECT_MASK |
                                           HDW_STATUS_SATURATION_MASK |
-                                          HDW_STATUS_ERR_GPS_PPS_NOISE |
+                                          HDW_STATUS_ERR_GNSS_PPS_NOISE |
                                           HDW_STATUS_ERR_COM_TX_LIMITED |
                                           HDW_STATUS_ERR_COM_RX_OVERRUN |
-                                          HDW_STATUS_ERR_NO_GPS_PPS |
+                                          HDW_STATUS_ERR_NO_GNSS_PPS |
                                           HDW_STATUS_BIT_FAILED |
                                           HDW_STATUS_ERR_TEMPERATURE,
 };
 
-enum GpsStatus
+enum GnssStatus
 {
-    GPS_STATUS_NUM_SATS_USED_MASK                   = (int)0x000000FF,
-    GPS_STATUS_FIX_NONE                             = (int)0x00000000,
-    GPS_STATUS_FIX_DEAD_RECKONING_ONLY              = (int)0x00000100,
-    GPS_STATUS_FIX_2D                               = (int)0x00000200,
-    GPS_STATUS_FIX_3D                               = (int)0x00000300,
-    GPS_STATUS_FIX_GPS_PLUS_DEAD_RECK               = (int)0x00000400,
-    GPS_STATUS_FIX_TIME_ONLY                        = (int)0x00000500,
-    GPS_STATUS_FIX_REF_LLA                          = (int)0x00000600,
-    GPS_STATUS_FIX_UNUSED2                          = (int)0x00000700,
-    GPS_STATUS_FIX_DGPS                             = (int)0x00000800,
-    GPS_STATUS_FIX_SBAS                             = (int)0x00000900,
-    GPS_STATUS_FIX_RTK_SINGLE                       = (int)0x00000A00,
-    GPS_STATUS_FIX_RTK_FLOAT                        = (int)0x00000B00,
-    GPS_STATUS_FIX_RTK_FIX                          = (int)0x00000C00,
-    GPS_STATUS_FIX_MASK                             = (int)0x00001F00,
-    GPS_STATUS_FIX_BIT_OFFSET                       = (int)8,
-    GPS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,
-    GPS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,
-    GPS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,
-    GPS_STATUS_FLAGS_UNUSED_1                       = (int)0x00080000,
-    GPS_STATUS_FLAGS_GPS1_RTK_POSITION_ENABLED      = (int)0x00100000,
-    GPS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED       = (int)0x00400000,
-    GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR    = (int)0x00800000,
-    GPS_STATUS_FLAGS_GPS1_RTK_BASE_DATA_MISSING     = (int)0x01000000,
-    GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MOVING  = (int)0x02000000,
-    GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_INVALID = (int)0x03000000,
-    GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MASK    = (int)0x03000000,
-    GPS_STATUS_FLAGS_ERROR_MASK                     = (GPS_STATUS_FLAGS_GPS1_RTK_RAW_GPS_DATA_ERROR |
-                                                       GPS_STATUS_FLAGS_GPS1_RTK_BASE_POSITION_MASK),
-    GPS_STATUS_FLAGS_GPS1_RTK_POSITION_VALID        = (int)0x04000000,
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID         = (int)0x08000000,
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD  = (int)0x00002000,
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET= (int)0x00004000,
-    GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_MASK          = (GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_ENABLED|
-                                                       GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_VALID|
-                                                       GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_BAD|
-                                                       GPS_STATUS_FLAGS_GPS2_RTK_COMPASS_BASELINE_UNSET),
-    GPS_STATUS_FLAGS_GPS_NMEA_DATA                  = (int)0x00008000,
-    GPS_STATUS_FLAGS_GPS_PPS_TIMESYNC               = (int)0x10000000,
-    GPS_STATUS_FLAGS_MASK                           = (int)0x1FFFE000,
-    GPS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
-    GPS_STATUS_FLAGS_UNUSED_2                       = (int)0x20000000,
-    GPS_STATUS_FLAGS_UNUSED_3                       = (int)0x40000000,
-    GPS_STATUS_FLAGS_UNUSED_4                       = (int)0x80000000,
+    GNSS_STATUS_NUM_SATS_USED_MASK                   = (int)0x000000FF,
+    GNSS_STATUS_FIX_NONE                             = (int)0x00000000,
+    GNSS_STATUS_FIX_DEAD_RECKONING_ONLY              = (int)0x00000100,
+    GNSS_STATUS_FIX_2D                               = (int)0x00000200,
+    GNSS_STATUS_FIX_3D                               = (int)0x00000300,
+    GNSS_STATUS_FIX_GPS_PLUS_DEAD_RECK               = (int)0x00000400,
+    GNSS_STATUS_FIX_TIME_ONLY                        = (int)0x00000500,
+    GNSS_STATUS_FIX_REF_LLA                          = (int)0x00000600,
+    GNSS_STATUS_FIX_UNUSED2                          = (int)0x00000700,
+    GNSS_STATUS_FIX_DGPS                             = (int)0x00000800,
+    GNSS_STATUS_FIX_SBAS                             = (int)0x00000900,
+    GNSS_STATUS_FIX_RTK_SINGLE                       = (int)0x00000A00,
+    GNSS_STATUS_FIX_RTK_FLOAT                        = (int)0x00000B00,
+    GNSS_STATUS_FIX_RTK_FIX                          = (int)0x00000C00,
+    GNSS_STATUS_FIX_MASK                             = (int)0x00001F00,
+    GNSS_STATUS_FIX_BIT_OFFSET                       = (int)8,
+    GNSS_STATUS_FLAGS_FIX_OK                         = (int)0x00010000,
+    GNSS_STATUS_FLAGS_DGPS_USED                      = (int)0x00020000,
+    GNSS_STATUS_FLAGS_RTK_FIX_AND_HOLD               = (int)0x00040000,
+    GNSS_STATUS_FLAGS_UNUSED_1                       = (int)0x00080000,
+    GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_ENABLED     = (int)0x00100000,
+    GNSS_STATUS_FLAGS_STATIC_MODE                    = (int)0x00200000,
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED      = (int)0x00400000,
+    GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR   = (int)0x00800000,
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_DATA_MISSING    = (int)0x01000000,
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MOVING = (int)0x02000000,
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_INVALID= (int)0x03000000,
+    GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MASK   = (int)0x03000000,
+    GNSS_STATUS_FLAGS_ERROR_MASK                     = (GNSS_STATUS_FLAGS_GNSS1_RTK_RAW_GPS_DATA_ERROR |
+                                                       GNSS_STATUS_FLAGS_GNSS1_RTK_BASE_POSITION_MASK),
+    GNSS_STATUS_FLAGS_GNSS1_RTK_POSITION_VALID       = (int)0x04000000,
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID        = (int)0x08000000,
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD = (int)0x00002000,
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET= (int)0x00004000,
+    GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_MASK         = (GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_ENABLED|
+                                                       GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_VALID|
+                                                       GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_BAD|
+                                                       GNSS_STATUS_FLAGS_GNSS2_RTK_COMPASS_BASELINE_UNSET),
+    GNSS_STATUS_FLAGS_GNSS_NMEA_DATA                 = (int)0x00008000,
+    GNSS_STATUS_FLAGS_GNSS_PPS_TIMESYNC              = (int)0x10000000,
+    GNSS_STATUS_FLAGS_MASK                           = (int)0x1FFFE000,
+    GNSS_STATUS_FLAGS_BIT_OFFSET                     = (int)16,
+    GNSS_STATUS_FLAGS_UNUSED_2                       = (int)0x20000000,
+    GNSS_STATUS_FLAGS_UNUSED_3                       = (int)0x40000000,
+    GNSS_STATUS_FLAGS_UNUSED_4                       = (int)0x80000000,
 };
 
 #define IS_HDW_TYPE_PERIPHERAL 0x20
@@ -323,20 +325,20 @@ enum CalBitStatusFlags
 #define RMC_BITS_PIMU                   0x0000000000000020ULL
 #define RMC_BITS_BAROMETER              0x0000000000000040ULL
 #define RMC_BITS_MAGNETOMETER           0x0000000000000080ULL
-#define RMC_BITS_GPS1_POS               0x0000000000000400ULL
-#define RMC_BITS_GPS2_POS               0x0000000000000800ULL
-#define RMC_BITS_GPS1_RAW               0x0000000000001000ULL
-#define RMC_BITS_GPS2_RAW               0x0000000000002000ULL
-#define RMC_BITS_GPS1_SAT               0x0000000000004000ULL
-#define RMC_BITS_GPS2_SAT               0x0000000000008000ULL
-#define RMC_BITS_GPS_BASE_RAW           0x0000000000010000ULL
+#define RMC_BITS_GNSS1_POS               0x0000000000000400ULL
+#define RMC_BITS_GNSS2_POS               0x0000000000000800ULL
+#define RMC_BITS_GNSS1_RAW               0x0000000000001000ULL
+#define RMC_BITS_GNSS2_RAW               0x0000000000002000ULL
+#define RMC_BITS_GNSS1_SAT               0x0000000000004000ULL
+#define RMC_BITS_GNSS2_SAT               0x0000000000008000ULL
+#define RMC_BITS_GNSS_BASE_RAW           0x0000000000010000ULL
 #define RMC_BITS_STROBE_IN_TIME         0x0000000000020000ULL
 #define RMC_BITS_DIAGNOSTIC_MESSAGE     0x0000000000040000ULL
-#define RMC_BITS_GPS1_VEL               0x0000000000100000ULL
-#define RMC_BITS_GPS2_VEL               0x0000000000200000ULL
-#define RMC_BITS_GPS1_RTK_POS           0x0000000000800000ULL
-#define RMC_BITS_GPS1_RTK_POS_REL       0x0000000001000000ULL
-#define RMC_BITS_GPS1_RTK_POS_MISC      0x0000000004000000ULL
+#define RMC_BITS_GNSS1_VEL               0x0000000000100000ULL
+#define RMC_BITS_GNSS2_VEL               0x0000000000200000ULL
+#define RMC_BITS_GNSS1_RTK_POS           0x0000000000800000ULL
+#define RMC_BITS_GNSS1_RTK_POS_REL       0x0000000001000000ULL
+#define RMC_BITS_GNSS1_RTK_POS_MISC      0x0000000004000000ULL
 #define RMC_BITS_INL2_NED_SIGMA         0x0000000008000000ULL
 #define RMC_BITS_INTERNAL_PPD           0x4000000000000000ULL
 #define RMC_BITS_PRESET                 0x8000000000000000ULL
@@ -345,14 +347,14 @@ enum CalBitStatusFlags
                                    | RMC_BITS_INS2         \
                                    | RMC_BITS_BAROMETER    \
                                    | RMC_BITS_MAGNETOMETER \
-                                   | RMC_BITS_GPS1_POS     \
-                                   | RMC_BITS_GPS2_POS     \
-                                   | RMC_BITS_GPS1_VEL     \
-                                   | RMC_BITS_GPS2_VEL     \
-                                   | RMC_BITS_GPS1_RAW     \
-                                   | RMC_BITS_GPS2_RAW     \
-                                   | RMC_BITS_GPS_BASE_RAW \
-                                   | RMC_BITS_GPS1_RTK_POS_REL \
+                                   | RMC_BITS_GNSS1_POS     \
+                                   | RMC_BITS_GNSS2_POS     \
+                                   | RMC_BITS_GNSS1_VEL     \
+                                   | RMC_BITS_GNSS2_VEL     \
+                                   | RMC_BITS_GNSS1_RAW     \
+                                   | RMC_BITS_GNSS2_RAW     \
+                                   | RMC_BITS_GNSS_BASE_RAW \
+                                   | RMC_BITS_GNSS1_RTK_POS_REL \
                                    | RMC_BITS_INTERNAL_PPD \
                                    | RMC_BITS_DIAGNOSTIC_MESSAGE)
 #define RMC_PRESET_IMX_PPD         (RMC_PRESET_IMX_PPD_NO_IMU \
@@ -393,7 +395,7 @@ struct PACKED AP_ExternalAHRS_InertialSense::ins_3_t
     float       msl;
 };
 
-struct PACKED AP_ExternalAHRS_InertialSense::gps_pos_t
+struct PACKED AP_ExternalAHRS_InertialSense::gnss_pos_t
 {
     uint32_t    week;
     uint32_t    timeOfWeekMs;
@@ -412,7 +414,7 @@ struct PACKED AP_ExternalAHRS_InertialSense::gps_pos_t
     uint8_t     status2;
 };
 
-struct PACKED AP_ExternalAHRS_InertialSense::gps_vel_t
+struct PACKED AP_ExternalAHRS_InertialSense::gnss_vel_t
 {
     uint32_t    timeOfWeekMs;
     float       vel[3];
@@ -420,7 +422,7 @@ struct PACKED AP_ExternalAHRS_InertialSense::gps_vel_t
     uint32_t    status;
 };
 
-struct PACKED AP_ExternalAHRS_InertialSense::gps_rtk_misc_t
+struct PACKED AP_ExternalAHRS_InertialSense::gnss_rtk_misc_t
 {
     uint32_t    timeOfWeekMs;
     float       accuracyPos[3];
@@ -441,6 +443,16 @@ struct PACKED AP_ExternalAHRS_InertialSense::gps_rtk_misc_t
     uint32_t    baseBeidouObservationCount;
     uint32_t    roverQzsObservationCount;
     uint32_t    baseQzsObservationCount;
+    uint32_t    roverGpsEphemerisCount;
+    uint32_t    baseGpsEphemerisCount;
+    uint32_t    roverGlonassEphemerisCount;
+    uint32_t    baseGlonassEphemerisCount;
+    uint32_t    roverGalileoEphemerisCount;
+    uint32_t    baseGalileoEphemerisCount;
+    uint32_t    roverBeidouEphemerisCount;
+    uint32_t    baseBeidouEphemerisCount;
+    uint32_t    roverQzsEphemerisCount;
+    uint32_t    baseQzsEphemerisCount;
     uint32_t    roverSbasCount;
     uint32_t    baseSbasCount;
     uint32_t    baseAntennaCount;
@@ -1097,33 +1109,33 @@ int AP_ExternalAHRS_InertialSense::enable_message_broadcasting()
     }
 
     // Ask for GPS message at period of 200ms (200ms source period x 1).  Offset and size can be left at 0 unless you want to just pull a specific field from a data set.
-    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_POS, 0, 0, 1);
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GNSS1_POS, 0, 0, 1);
     if (uart->write(buffer, (uint16_t)size) != (size_t)size) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GPS1_POS");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GNSS1_POS");
         return -5;
     }
 
-    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_VEL, 0, 0, 1);
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GNSS1_VEL, 0, 0, 1);
     if (uart->write(buffer, (uint16_t)size) != (size_t)size) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GPS1_VEL");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GNSS1_VEL");
         return -5;
     }
 
-    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS2_POS, 0, 0, 1);
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GNSS2_POS, 0, 0, 1);
     if (uart->write(buffer, (uint16_t)size) != (size_t)size) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GPS2_POS");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GNSS2_POS");
         return -5;
     }
 
-    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS2_VEL, 0, 0, 1);
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GNSS2_VEL, 0, 0, 1);
     if (uart->write(buffer, (uint16_t)size) != (size_t)size) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GPS2_VEL");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GNSS2_VEL");
         return -5;
     }
 
-    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GPS1_RTK_POS_MISC, 0, 0, 1);
+    size = is_comm_get_data_to_buf(buffer, sizeof(buffer), &comm, DID_GNSS1_RTK_POS_MISC, 0, 0, 1);
     if (uart->write(buffer, (uint16_t)size) != (size_t)size) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GPS1_RTK_POS_MISC");
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "IS: failed to request DID_GNSS1_RTK_POS_MISC");
         return -5;
     }
 
@@ -1213,20 +1225,20 @@ void AP_ExternalAHRS_InertialSense::handle_ins3_message(ins_3_t* ins)
     state.have_location = true;
     state.last_location_update_us = AP_HAL::micros();
 
-    switch ((GpsNavFixStatus)INS_STATUS_NAV_FIX_STATUS(ins->insStatus)) {
-    case GpsNavFixStatus::GPS_NAV_FIX_NONE:
+    switch ((GnssNavFixStatus)INS_STATUS_NAV_FIX_STATUS(ins->insStatus)) {
+    case GnssNavFixStatus::GNSS_NAV_FIX_NONE:
         _fix_type = AP_GPS_FixType::NONE;
         break;
 
-    case GpsNavFixStatus::GPS_NAV_FIX_POSITIONING_3D:
+    case GnssNavFixStatus::GNSS_NAV_FIX_POSITIONING_3D:
         _fix_type = AP_GPS_FixType::FIX_3D;
         break;
 
-    case GpsNavFixStatus::GPS_NAV_FIX_POSITIONING_RTK_FLOAT:
+    case GnssNavFixStatus::GNSS_NAV_FIX_POSITIONING_RTK_FLOAT:
         _fix_type = AP_GPS_FixType::RTK_FLOAT;
         break;
 
-    case GpsNavFixStatus::GPS_NAV_FIX_POSITIONING_RTK_FIX:
+    case GnssNavFixStatus::GNSS_NAV_FIX_POSITIONING_RTK_FIX:
         _fix_type = AP_GPS_FixType::RTK_FIXED;
         break;
 
@@ -1283,7 +1295,7 @@ void AP_ExternalAHRS_InertialSense::handle_ins3_message(ins_3_t* ins)
         if (hdwStatus & HDW_STATUS_SATURATION_BARO) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IS: baro saturation");
         }
-        if (hdwStatus & HDW_STATUS_ERR_GPS_PPS_NOISE) {
+        if (hdwStatus & HDW_STATUS_ERR_GNSS_PPS_NOISE) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IS: GPS PPS noise");
         }
         if (hdwStatus & HDW_STATUS_ERR_COM_TX_LIMITED) {
@@ -1292,7 +1304,7 @@ void AP_ExternalAHRS_InertialSense::handle_ins3_message(ins_3_t* ins)
         if (hdwStatus & HDW_STATUS_ERR_COM_RX_OVERRUN) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IS: COM RX overrun");
         }
-        if (hdwStatus & HDW_STATUS_ERR_NO_GPS_PPS) {
+        if (hdwStatus & HDW_STATUS_ERR_NO_GNSS_PPS) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "IS: no GPS PPS");
         }
         if (hdwStatus & HDW_STATUS_ERR_TEMPERATURE) {
@@ -1301,31 +1313,31 @@ void AP_ExternalAHRS_InertialSense::handle_ins3_message(ins_3_t* ins)
     }
 }
 
-void AP_ExternalAHRS_InertialSense::handle_gps_pos_message(gps_pos_t* pos)
+void AP_ExternalAHRS_InertialSense::handle_gnss_pos_message(gnss_pos_t* pos)
 {
     last_gps_pkt = AP_HAL::millis();
 
     AP_GPS_FixType fix_type = AP_GPS_FixType::NONE;
 
-    int fix = pos->status & GPS_STATUS_FIX_MASK;
+    int fix = pos->status & GNSS_STATUS_FIX_MASK;
     switch (fix) {
-    case GPS_STATUS_FIX_2D:
+    case GNSS_STATUS_FIX_2D:
         fix_type = AP_GPS_FixType::FIX_2D;
         break;
 
-    case GPS_STATUS_FIX_3D:
+    case GNSS_STATUS_FIX_3D:
         fix_type = AP_GPS_FixType::FIX_3D;
         break;
 
-    case GPS_STATUS_FIX_DGPS:
+    case GNSS_STATUS_FIX_DGPS:
         fix_type = AP_GPS_FixType::DGPS;
         break;
 
-    case GPS_STATUS_FIX_RTK_FLOAT:
+    case GNSS_STATUS_FIX_RTK_FLOAT:
         fix_type = AP_GPS_FixType::RTK_FLOAT;
         break;
 
-    case GPS_STATUS_FIX_RTK_FIX:
+    case GNSS_STATUS_FIX_RTK_FIX:
         fix_type = AP_GPS_FixType::RTK_FIXED;
         break;
     }
@@ -1347,7 +1359,7 @@ void AP_ExternalAHRS_InertialSense::handle_gps_pos_message(gps_pos_t* pos)
     gps_data_msg.hdop = pos->hAcc * 100;
 }
 
-void AP_ExternalAHRS_InertialSense::handle_gps_vel_message(gps_vel_t* vel)
+void AP_ExternalAHRS_InertialSense::handle_gnss_vel_message(gnss_vel_t* vel)
 {
     gps_data_msg.horizontal_vel_accuracy = vel->sAcc;
     gps_data_msg.ned_vel_north = vel->vel[0];
@@ -1372,30 +1384,30 @@ void AP_ExternalAHRS_InertialSense::handle_gps_vel_message(gps_vel_t* vel)
     gps_data_msg.vdop = vel->sAcc * 100;
 }
 
-void AP_ExternalAHRS_InertialSense::handle_gps_rtk_pos_misc_message(gps_rtk_misc_t* misc)
+void AP_ExternalAHRS_InertialSense::handle_gnss_rtk_pos_misc_message(gnss_rtk_misc_t* misc)
 {
     gps_data_msg.hdop = misc->hDop * 100;
     gps_data_msg.vdop = misc->vDop * 100;
 }
 
-void AP_ExternalAHRS_InertialSense::handle_gps2_pos_message(gps_pos_t* pos)
+void AP_ExternalAHRS_InertialSense::handle_gnss2_pos_message(gnss_pos_t* pos)
 {
     AP_GPS_FixType fix_type = AP_GPS_FixType::NONE;
-    const int fix = pos->status & GPS_STATUS_FIX_MASK;
+    const int fix = pos->status & GNSS_STATUS_FIX_MASK;
     switch (fix) {
-    case GPS_STATUS_FIX_2D:
+    case GNSS_STATUS_FIX_2D:
         fix_type = AP_GPS_FixType::FIX_2D;
         break;
-    case GPS_STATUS_FIX_3D:
+    case GNSS_STATUS_FIX_3D:
         fix_type = AP_GPS_FixType::FIX_3D;
         break;
-    case GPS_STATUS_FIX_DGPS:
+    case GNSS_STATUS_FIX_DGPS:
         fix_type = AP_GPS_FixType::DGPS;
         break;
-    case GPS_STATUS_FIX_RTK_FLOAT:
+    case GNSS_STATUS_FIX_RTK_FLOAT:
         fix_type = AP_GPS_FixType::RTK_FLOAT;
         break;
-    case GPS_STATUS_FIX_RTK_FIX:
+    case GNSS_STATUS_FIX_RTK_FIX:
         fix_type = AP_GPS_FixType::RTK_FIXED;
         break;
     }
@@ -1412,7 +1424,7 @@ void AP_ExternalAHRS_InertialSense::handle_gps2_pos_message(gps_pos_t* pos)
     gps2_data_msg.hdop                 = pos->hAcc * 100;
 }
 
-void AP_ExternalAHRS_InertialSense::handle_gps2_vel_message(gps_vel_t* vel)
+void AP_ExternalAHRS_InertialSense::handle_gnss2_vel_message(gnss_vel_t* vel)
 {
     gps2_data_msg.horizontal_vel_accuracy = vel->sAcc;
     gps2_data_msg.ned_vel_north           = vel->vel[0];
@@ -1463,7 +1475,7 @@ void AP_ExternalAHRS_InertialSense::handle_flash_config_message(const uint8_t *r
     }
     nvm_flash_cfg_t cfg;
     memcpy(&cfg, raw, sizeof(cfg));
-    _num_gps_sensors = (IO_CONFIG_GPS2_TYPE(cfg.ioConfig) != 0) ? 2 : 1;
+    _num_gps_sensors = (IO_CONFIG_GNSS2_TYPE(cfg.ioConfig) != 0) ? 2 : 1;
 }
 
 void AP_ExternalAHRS_InertialSense::handle_magnetometer_message(magnetometer_t* _mag)
@@ -1567,20 +1579,20 @@ int AP_ExternalAHRS_InertialSense::parse_isb_data(void* ctx, p_data_t* data, por
         handle_ins3_message((ins_3_t*)data->ptr);
         break;
 
-    case DID_GPS1_POS:
-        handle_gps_pos_message((gps_pos_t*)data->ptr);
+    case DID_GNSS1_POS:
+        handle_gnss_pos_message((gnss_pos_t*)data->ptr);
         break;
 
-    case DID_GPS1_VEL:
-        handle_gps_vel_message((gps_vel_t*)data->ptr);
+    case DID_GNSS1_VEL:
+        handle_gnss_vel_message((gnss_vel_t*)data->ptr);
         break;
 
-    case DID_GPS2_POS:
-        handle_gps2_pos_message((gps_pos_t*)data->ptr);
+    case DID_GNSS2_POS:
+        handle_gnss2_pos_message((gnss_pos_t*)data->ptr);
         break;
 
-    case DID_GPS2_VEL:
-        handle_gps2_vel_message((gps_vel_t*)data->ptr);
+    case DID_GNSS2_VEL:
+        handle_gnss2_vel_message((gnss_vel_t*)data->ptr);
         break;
 
     case DID_FLASH_CONFIG:

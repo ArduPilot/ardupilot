@@ -59,9 +59,9 @@ private:
     // Forward declarations for ISB data-set payload types (defined in .cpp).
     struct dev_info_t;
     struct ins_3_t;
-    struct gps_pos_t;
-    struct gps_vel_t;
-    struct gps_rtk_misc_t;
+    struct gnss_pos_t;
+    struct gnss_vel_t;
+    struct gnss_rtk_misc_t;
     struct magnetometer_t;
     struct barometer_t;
     struct inl2_ned_sigma_t;
@@ -82,8 +82,10 @@ private:
         _PTYPE_RTCM3                = 7,
         _PTYPE_SPARTN               = 8,
         _PTYPE_SONY                 = 9,
+        _PTYPE_SEPTENTRIO_SBF       = 10,
+        _PTYPE_SEPTENTRIO_REPLY     = 11,
         _PTYPE_FIRST_DATA           = _PTYPE_INERTIAL_SENSE_DATA,
-        _PTYPE_LAST_DATA            = _PTYPE_SONY,
+        _PTYPE_LAST_DATA            = _PTYPE_SEPTENTRIO_REPLY,
         _PTYPE_SIZE                 = _PTYPE_LAST_DATA + 1,
     };
 
@@ -114,6 +116,8 @@ private:
         ENABLE_PROTOCOL_RTCM3   = (0x00000001 << _PTYPE_RTCM3),
         ENABLE_PROTOCOL_SPARTN  = (0x00000001 << _PTYPE_SPARTN),
         ENABLE_PROTOCOL_SONY    = (0x00000001 << _PTYPE_SONY),
+        ENABLE_PROTOCOL_SBF     = (0x00000001 << _PTYPE_SEPTENTRIO_SBF),
+        ENABLE_PROTOCOL_SEPT_REPLY = (0x00000001 << _PTYPE_SEPTENTRIO_REPLY),
     };
 
     static constexpr uint32_t MAX_DATASET_SIZE = 1024;
@@ -291,11 +295,11 @@ private:
     int enable_message_broadcasting();
 
     void handle_ins3_message(ins_3_t* ins);
-    void handle_gps_pos_message(gps_pos_t* pos);
-    void handle_gps_vel_message(gps_vel_t* vel);
-    void handle_gps_rtk_pos_misc_message(gps_rtk_misc_t* misc);
-    void handle_gps2_pos_message(gps_pos_t* pos);
-    void handle_gps2_vel_message(gps_vel_t* vel);
+    void handle_gnss_pos_message(gnss_pos_t* pos);
+    void handle_gnss_vel_message(gnss_vel_t* vel);
+    void handle_gnss_rtk_pos_misc_message(gnss_rtk_misc_t* misc);
+    void handle_gnss2_pos_message(gnss_pos_t* pos);
+    void handle_gnss2_vel_message(gnss_vel_t* vel);
     void handle_flash_config_message(const uint8_t *raw, uint16_t size);
     void handle_magnetometer_message(magnetometer_t* mag);
     void handle_barometer_message(barometer_t* bar);
