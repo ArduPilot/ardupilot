@@ -267,8 +267,11 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response, boo
             break;
         }
 
-        // step the index forward and keep going
-        index += required_space + 1;
+        // step the index forward and keep going. required_space already
+        // includes the entry's null terminator (the trailing "%c" with a 0),
+        // so we must not add another - a stray second null would appear as an
+        // empty entry to clients, inflating their offset across paged listings.
+        index += required_space;
     }
 
     if (index == 0) {
