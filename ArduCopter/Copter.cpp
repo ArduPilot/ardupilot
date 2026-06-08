@@ -320,10 +320,15 @@ bool Copter::set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, 
 }
 
 // set target position and velocity (for use by scripting)
-bool Copter::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms)
+bool Copter::set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, Location::AltFrame alt_frame)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    // only support above origin frame for now
+    if (alt_frame != Location::AltFrame::ABOVE_ORIGIN) {
         return false;
     }
 

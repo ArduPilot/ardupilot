@@ -166,8 +166,10 @@ bool GCS_MAVLINK_Sub::send_info()
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
     send_named_float("RollPitch", sub.roll_pitch_flag);
 
+#if AP_RANGEFINDER_ENABLED
     CHECK_PAYLOAD_SIZE(NAMED_VALUE_FLOAT);
-    send_named_float("RFTarget", sub.mode_surftrak.get_rangefinder_target_cm() * 0.01f);
+    send_named_float("RFTarget", sub.flightmode->get_rangefinder_target());
+#endif
 
     return true;
 }
@@ -706,9 +708,16 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
             break;
         }
 
-        Vector3f pos_neu_cm;  // position (North, East, Up coordinates) in centimeters
+        // Guided submodes do not support acceleration control
+        if (!acc_ignore) {
+            break;
+        }
 
-        if (!pos_ignore) {
+        if (pos_ignore) {
+            if (!vel_ignore) {
+                sub.mode_guided.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
+            }
+        } else {
             // sanity check location
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
                 break;
@@ -718,23 +727,45 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 // unknown coordinate frame
                 break;
             }
-            const Location loc{
-                packet.lat_int,
-                packet.lon_int,
-                int32_t(packet.alt*100),
-                frame,
-            };
-            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
-                break;
-            }
-        }
 
-        if (!pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
-        } else if (pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
-        } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination(pos_neu_cm);
+            const Vector3f vel_neu_cm{packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f};
+
+            switch (frame) {
+                case Location::AltFrame::ABOVE_TERRAIN: {
+                    // transform global horizontal (lat, lon) input to a local (x, y) position
+                    const Location loc{packet.lat_int, packet.lon_int, 0, frame};
+                    Vector2f pos_ne_cm;
+                    if (!loc.get_vector_xy_from_origin_NE_cm(pos_ne_cm)) {
+                        break;
+                    }
+
+                    // velocity is required
+                    if (!vel_ignore) {
+                        // packet.alt is the target rangefinder range, not the target altitude
+                        sub.mode_guided.guided_set_destination_posvel(Vector3f(pos_ne_cm.x, pos_ne_cm.y, packet.alt * 100.0f), vel_neu_cm, frame);
+                    }
+                    break;
+                }
+                case Location::AltFrame::ABOVE_HOME: {
+                    // transform point from ABOVE_HOME to ABOVE_ORIGIN
+                    const Location loc{packet.lat_int, packet.lon_int, int32_t(packet.alt * 100.0f), frame};
+                    Vector3f pos_neu_cm;
+                    if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
+                        break;
+                    }
+
+                    if (vel_ignore) {
+                        sub.mode_guided.guided_set_destination(pos_neu_cm);
+                    } else {
+                        sub.mode_guided.guided_set_destination_posvel(pos_neu_cm, vel_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+                    }
+                    break;
+                }
+                case Location::AltFrame::ABSOLUTE:
+                case Location::AltFrame::ABOVE_ORIGIN:
+                    // not supported
+                    break;
+            }
         }
 
         break;
