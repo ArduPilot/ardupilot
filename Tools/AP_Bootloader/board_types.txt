@@ -568,6 +568,7 @@ AP_HW_PixSurveyA2-IND                6104
 
 # IDs 6110 - 6119 for S-vehicle
 AP_HW_SVehicle-E2                    6110
+AP_HW_SVehicle-E2-mini               6111
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
