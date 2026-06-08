@@ -1315,17 +1315,18 @@ void NavEKF3::resetGyroBias(void)
 
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
-// Adjusts the EKF origin height so that the EKF height + origin height is the same as before
-// Returns true if the height datum reset has been performed
-// If using a range finder for height no reset is performed and it returns false
-bool NavEKF3::resetHeightDatum(void)
+// Resets the EKF height datum and clears baro temperature drift.
+// origin_alt_tolerance_m: see NavEKF3::resetHeightDatum declaration.
+// Returns true if the height datum reset was performed.
+// If using a range finder for height no reset is performed and it returns false.
+bool NavEKF3::resetHeightDatum(float origin_alt_tolerance_m)
 {
-    dal.log_event3(AP_DAL::Event::resetHeightDatum);
+    dal.log_resetHeightDatum3(origin_alt_tolerance_m);
 
     bool status = true;
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            if (!core[i].resetHeightDatum()) {
+            if (!core[i].resetHeightDatum(origin_alt_tolerance_m)) {
                 status = false;
             }
         }
