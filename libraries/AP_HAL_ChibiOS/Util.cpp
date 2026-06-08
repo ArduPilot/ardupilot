@@ -438,7 +438,9 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #endif
     }
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
-    if (AP_BoardConfig::use_idle_stats()) {
+    // only File mode resets the window on read; in Log mode PM2 owns the window
+    // so reading threads.txt must not disturb it (display is read-only)
+    if (AP_BoardConfig::idle_stats() == AP_BoardConfig::IdleStats::TO_FILE) {
         sysStopLoadMeasure();
         sysStartLoadMeasure();
     }
@@ -453,6 +455,22 @@ bool Util::get_system_load(float& avg_load, float& peak_load) const
     if (AP_BoardConfig::use_idle_stats()) {
         avg_load = sysGetCPUAverageLoad() / 100.0f;
         peak_load = sysGetCPUPeakLoad() / 100.0f;
+
+        return true;
+    }
+#endif
+    return false;
+}
+
+bool Util::get_system_load_log(float& avg_load, float& peak_load)
+{
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    // only the Log mode drives the PM2 window; File mode is owned by threads.txt
+    if (AP_BoardConfig::idle_stats() == AP_BoardConfig::IdleStats::TO_LOG) {
+        sys_cpu_load_t avg = 0, peak = 0;
+        sysReadResetCPULoad(&avg, &peak);
+        avg_load = avg * 0.01f;
+        peak_load = peak * 0.01f;
 
         return true;
     }

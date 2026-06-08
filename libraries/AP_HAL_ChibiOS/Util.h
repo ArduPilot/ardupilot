@@ -155,6 +155,7 @@ private:
 
     // get the system load
     bool get_system_load(float& avg_load, float& peak_load) const override;
+    bool get_system_load_log(float& avg_load, float& peak_load) override;
 
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
