@@ -87,6 +87,10 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // for this estimator.  Used to decide whether GPS will set
     // the navigation origin.
     results.configured_to_use_gps_for_pos_XY = true;
+
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    // this relates only to external sources being passed in via mavlink
+    // results.using_extnav_for_yaw = false;
 }
 
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3p &vec) const

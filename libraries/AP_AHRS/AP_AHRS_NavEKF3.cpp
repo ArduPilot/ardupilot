@@ -103,6 +103,9 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // for this estimator.  Used to decide whether GPS will set
     // the navigation origin:
     results.configured_to_use_gps_for_pos_XY = EKF3.configuredToUseGPSForPos();
+
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    results.using_extnav_for_yaw = EKF3.using_extnav_for_yaw();
 }
 
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

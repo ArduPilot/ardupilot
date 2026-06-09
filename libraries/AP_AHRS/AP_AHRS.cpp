@@ -2770,28 +2770,14 @@ bool AP_AHRS::using_noncompass_for_yaw(void) const
 // check if external nav is providing yaw
 bool AP_AHRS::using_extnav_for_yaw(void) const
 {
-    switch (active_EKF_type()) {
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.isExtNavUsedForYaw();
-#endif
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.using_extnav_for_yaw();
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        return false;
+#if AP_AHRS_DCM_ENABLED && HAL_NAVEKF3_AVAILABLE
+    // FIXME: DCM uses EKF3's answer (which is not necessarily the
+    // configured type)
+    if (active_estimates == &dcm_estimates) {
+        return ekf3_estimates.using_extnav_for_yaw;
     }
-    // since there is no default case above, this is unreachable
-    return false;
+#endif
+    return active_estimates->using_extnav_for_yaw;
 }
 
 // set and save the alt noise parameter value

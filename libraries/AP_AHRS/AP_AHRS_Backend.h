@@ -154,6 +154,12 @@ public:
         // navigation origin.
         bool configured_to_use_gps_for_pos_XY;
 
+        // if true, "external navigation" (as provided by MAVLink
+        // messages) is providing the yaw estimate.  e.g. a T265
+        // vision-position-estimate camera tracking yaw via image
+        // recognition
+        bool using_extnav_for_yaw;
+
     private:
         bool hagl_valid;
         float hagl;
