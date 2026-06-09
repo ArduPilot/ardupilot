@@ -45,7 +45,7 @@ bool ModeFlip::init(bool ignore_checks)
         return false;
     }
 
-    if (input_is_high_magnitude(*channel_roll)) {
+    if (input_is_high_magnitude(*channel_roll) || input_is_high_magnitude(*channel_pitch)) {
         return false;
     }
 
