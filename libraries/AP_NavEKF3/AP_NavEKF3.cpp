@@ -1917,11 +1917,12 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(GCS_MAVLINK &link) const
+bool NavEKF3::getTerrainAltVariance(float &terrainAltVar) const
 {
     if (core) {
-        core[primary].send_status_report(link);
+        return core[primary].getTerrainAltVariance(terrainAltVar);
     }
+    return false;
 }
 
 // provides the height limit to be observed by the control loops
