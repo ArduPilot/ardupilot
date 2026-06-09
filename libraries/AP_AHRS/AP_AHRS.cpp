@@ -2312,11 +2312,81 @@ void AP_AHRS::resetHeightDatum(void)
     }
 }
 
+#if HAL_GCS_ENABLED
 // send a EKF_STATUS_REPORT for configured EKF
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
-    configured_backend->send_ekf_status_report(link);
+    // get filter status
+    union nav_filter_status filterStatus;
+    if (!configured_backend->get_filter_status(filterStatus)) {
+        return;
+    }
+
+    // get variances
+    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
+    Vector3f magVar;
+    if (!configured_backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar)) {
+        return;
+    }
+
+    float terrain_alt_variance;
+    if (!configured_backend->get_terrain_alt_variance(terrain_alt_variance)) {
+        return;
+    }
+
+    // prepare flags
+    uint16_t flags = 0;
+    if (filterStatus.flags.attitude) {
+        flags |= EKF_ATTITUDE;
+    }
+    if (filterStatus.flags.horiz_vel) {
+        flags |= EKF_VELOCITY_HORIZ;
+    }
+    if (filterStatus.flags.vert_vel) {
+        flags |= EKF_VELOCITY_VERT;
+    }
+    if (filterStatus.flags.horiz_pos_rel) {
+        flags |= EKF_POS_HORIZ_REL;
+    }
+    if (filterStatus.flags.horiz_pos_abs) {
+        flags |= EKF_POS_HORIZ_ABS;
+    }
+    if (filterStatus.flags.vert_pos) {
+        flags |= EKF_POS_VERT_ABS;
+    }
+    if (filterStatus.flags.terrain_alt) {
+        flags |= EKF_POS_VERT_AGL;
+    }
+    if (filterStatus.flags.const_pos_mode) {
+        flags |= EKF_CONST_POS_MODE;
+    }
+    if (filterStatus.flags.pred_horiz_pos_rel) {
+        flags |= EKF_PRED_POS_HORIZ_REL;
+    }
+    if (filterStatus.flags.pred_horiz_pos_abs) {
+        flags |= EKF_PRED_POS_HORIZ_ABS;
+    }
+    if (!filterStatus.flags.initalized) {
+        flags |= EKF_UNINITIALIZED;
+    }
+    if (filterStatus.flags.gps_glitching) {
+        flags |= (1<<15);
+    }
+
+    const mavlink_ekf_status_report_t packet{
+        velVar,
+        posVar,
+        hgtVar,
+        fmaxf(fmaxf(magVar.x,magVar.y),magVar.z),
+        terrain_alt_variance,
+        flags,
+        tasVar
+    };
+
+    // send message
+    mavlink_msg_ekf_status_report_send_struct(link.get_chan(), &packet);
 }
+#endif  // HAL_GCS_ENABLED
 
 // return origin for a specified EKF type
 bool AP_AHRS::_get_origin(EKFType type, Location &ret) const

@@ -326,7 +326,8 @@ public:
         return false;
     }
 
-    virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
+    // return a terrain altitude variance
+    virtual bool get_terrain_alt_variance(float &terrain_alt_variance) const { return false; }
 
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };

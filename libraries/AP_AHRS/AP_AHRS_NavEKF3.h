@@ -100,9 +100,6 @@ public:
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override {
         return EKF3.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
     }
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override {
-        EKF3.send_status_report(link);
-    }
 
     // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const override {
@@ -119,6 +116,11 @@ public:
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override {
         Vector2f offset;
         return EKF3.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    }
+
+    // return a terrain altitude variance
+    bool get_terrain_alt_variance(float &terrain_alt_variance) const override {
+        return EKF3.getTerrainAltVariance(terrain_alt_variance);
     }
 
     // this is out here so parameters can be poked into it

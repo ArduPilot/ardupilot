@@ -107,8 +107,6 @@ public:
     bool get_relative_position_NE_origin(Vector2p &posNE) const override;
     bool get_relative_position_D_origin(postype_t &posD) const override;
 
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override;
-
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
 

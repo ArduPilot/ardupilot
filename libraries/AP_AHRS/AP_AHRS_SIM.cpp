@@ -103,7 +103,9 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     status.flags.vert_pos = true;
     status.flags.pred_horiz_pos_rel = true;
     status.flags.pred_horiz_pos_abs = true;
+    status.flags.initalized = true;
     status.flags.using_gps = true;
+    status.flags.terrain_alt = true;
 
     return true;
 }
@@ -113,25 +115,6 @@ void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGain
     // same as EKF2 for no optical flow
     ekfGndSpdLimit = 400.0f;
     ekfNavVelGainScaler = 1.0f;
-}
-
-void AP_AHRS_SIM::send_ekf_status_report(GCS_MAVLINK &link) const
-{
-#if HAL_GCS_ENABLED
-    // send status report with everything looking good
-    const uint16_t flags =
-        EKF_ATTITUDE | /* Set if EKF's attitude estimate is good. | */
-        EKF_VELOCITY_HORIZ | /* Set if EKF's horizontal velocity estimate is good. | */
-        EKF_VELOCITY_VERT | /* Set if EKF's vertical velocity estimate is good. | */
-        EKF_POS_HORIZ_REL | /* Set if EKF's horizontal position (relative) estimate is good. | */
-        EKF_POS_HORIZ_ABS | /* Set if EKF's horizontal position (absolute) estimate is good. | */
-        EKF_POS_VERT_ABS | /* Set if EKF's vertical position (absolute) estimate is good. | */
-        EKF_POS_VERT_AGL | /* Set if EKF's vertical position (above ground) estimate is good. | */
-        //EKF_CONST_POS_MODE | /* EKF is in constant position mode and does not know it's absolute or relative position. | */
-        EKF_PRED_POS_HORIZ_REL | /* Set if EKF's predicted horizontal position (relative) estimate is good. | */
-        EKF_PRED_POS_HORIZ_ABS; /* Set if EKF's predicted horizontal position (absolute) estimate is good. | */
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, 0, 0, 0, 0, 0, 0);
-#endif // HAL_GCS_ENABLED
 }
 
 bool AP_AHRS_SIM::get_origin(Location &ret) const
@@ -166,6 +149,12 @@ bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vec
     magVar.zero();
     tasVar = 0;
 
+    return true;
+}
+
+bool AP_AHRS_SIM::get_terrain_alt_variance(float &terrain_alt_variance) const
+{
+    terrain_alt_variance = 0;
     return true;
 }
 
