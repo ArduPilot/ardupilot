@@ -108,7 +108,7 @@
 #define CONFIG_M10           (1<<20)
 #define CONFIG_L5            (1<<21)
 #define CONFIG_RATE_DAHEADING (1<<22)
-#define CONFIG_LAST          (1<<22) // this must always be the last bit
+#define CONFIG_LAST          (1<<23) // this must always be the last bit
 
 #define CONFIG_REQUIRED_INITIAL (CONFIG_RATE_NAV | CONFIG_RATE_POSLLH | CONFIG_RATE_STATUS | CONFIG_RATE_VELNED)
 
