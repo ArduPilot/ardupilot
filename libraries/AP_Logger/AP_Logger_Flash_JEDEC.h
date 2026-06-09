@@ -4,10 +4,10 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL.h>
-
 #include "AP_Logger_Block.h"
 
 #if HAL_LOGGING_FLASH_JEDEC_ENABLED
+
 
 class AP_Logger_Flash_JEDEC : public AP_Logger_Block {
 public:

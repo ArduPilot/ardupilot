@@ -58,6 +58,7 @@ extern const AP_HAL::HAL& hal;
 #define JEDEC_ID_CYPRESS_S25FL064L     0x016017
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 #define JEDEC_ID_GIGA_GD25Q16E         0xC84015
+#define JEDEC_ID_GIGA_GD25Q128E        0xC84018
 #define JEDEC_ID_ZBIT_ZB25VQ128        0x5E4018
 #define JEDEC_ID_FMSH_FM25Q64          0xA14017
 #define JEDEC_ID_FMSH_FM25Q128A        0xA14018
@@ -154,6 +155,7 @@ bool AP_Logger_Flash_JEDEC::getSectorCount(void)
     case JEDEC_ID_FMSH_FM25Q128A:
     case JEDEC_ID_CYPRESS_S25FL128L:
     case JEDEC_ID_ZBIT_ZB25VQ128:   
+    case JEDEC_ID_GIGA_GD25Q128E:
         blocks = 256;
         df_PagePerBlock = 256;
         df_PagePerSector = 16;
