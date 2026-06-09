@@ -422,7 +422,7 @@ AP_GPS_UBLOX::_request_next_config(void)
                 // must be pre-configured externally. Clear config bit here.
                 _unconfigured_messages &= ~CONFIG_RATE_DAHEADING;
             } else
-#endif
+#endif  // AP_GPS_UBLOX_CFGV2_ENABLED
             if (!_request_message_rate(CLASS_NAV, MSG_DAHEADING)) {
                 _next_message--;
             }
