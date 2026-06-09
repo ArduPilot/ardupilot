@@ -3915,7 +3915,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # ModeGuided rejects targets outside the fence, so disable the fence
         # while sending the target and re-enable it once the autopilot has
         # accepted it.  Breach detection then runs against the saved target.
-        self.set_parameter("FENCE_ENABLE", 0)
+        self.do_fence_disable()
         self.mav.mav.set_position_target_global_int_send(
             0,
             target_system,
@@ -3934,8 +3934,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             0, # yaw,
             0, # yaw-rate
         )
-        self.delay_sim_time(1)
-        self.set_parameter("FENCE_ENABLE", 1)
+        self.do_fence_enable()
 
         while True:
             now = self.get_sim_time_cached()
@@ -3985,7 +3984,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # ModeGuided rejects targets outside the fence, so disable the fence
         # while sending the target and re-enable it once the autopilot has
         # accepted it.  Avoidance then runs against the saved target.
-        self.set_parameter("FENCE_ENABLE", 0)
+        self.do_fence_disable()
         self.mav.mav.set_position_target_global_int_send(
             0,
             target_system,
@@ -4004,8 +4003,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             0, # yaw,
             0, # yaw-rate
         )
-        self.delay_sim_time(1)
-        self.set_parameter("FENCE_ENABLE", 1)
+        self.do_fence_enable()
 
         while True:
             now = self.get_sim_time_cached()
@@ -4875,6 +4873,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameters({
             "FENCE_ENABLE": 1,
             "AVOID_ENABLE": 3,
+            # this scenario sits outside the inclusion-circle fence, so the
+            # vehicle is in breach the instant the fence is enabled.  We are
+            # exercising avoidance (which keeps us off the exclusion boundary),
+            # not the breach failsafe, so report-only keeps us in GUIDED rather
+            # than being forced into HOLD when the fence is re-enabled.
+            "FENCE_ACTION": 0,
         })
         fence_middle = self.offset_location_ne(here, 0, 30)
         # FIXME: this might be nowhere near "here"!
