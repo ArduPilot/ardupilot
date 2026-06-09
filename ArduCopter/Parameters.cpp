@@ -1188,6 +1188,15 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
 #endif
 
+#if MODE_VALT_ENABLED
+    // @Param: VALT_POS_EXPO
+    // @DisplayName: VALT position-authority blend expo
+    // @Description: In VALT (velocity alt hold) this blends position control back in near stick centre and near the stick edges. 0 disables the blend (original hard cutoff - pure velocity control whenever the stick is off centre). With a positive value the position authority follows a valley in stick deflection: full at centre (altitude hold) and at full deflection (a position trajectory that backstops a velocity-loop failure), lowest in between (clean velocity-rate feel). Higher values widen the velocity region, confining position authority closer to centre and the edges; values toward 1 keep more position authority across the whole range.
+    // @Range: 0 8
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("VALT_POS_EXPO", 29, ParametersG2, valt_pos_expo, 0),
+#endif
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
