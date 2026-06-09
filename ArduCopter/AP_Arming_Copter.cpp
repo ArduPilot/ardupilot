@@ -620,7 +620,17 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 #else
         const char *rc_item = "Throttle";
 #endif
-        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
+#if FRAME_CONFIG == HELI_FRAME
+        // heli defaults the RC_OPTIONS neutral-throttle check off so that
+        // GCS/switch arming is permitted with the collective raised.  That
+        // same option gates the rudder-arming gesture's throttle check, so
+        // enforce zero collective for stick arming explicitly here.
+        if (method == AP_Arming::Method::RUDDER && copter.channel_throttle->get_control_in() != 0) {
+            check_failed(Check::RC, true, "%s too high", rc_item);
+            return false;
+        }
+#endif  // FRAME_CONFIG == HELI_FRAME
+        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto
         if (!((AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) && copter.flightmode->allows_GCS_or_SCR_arming_with_throttle_high())) {
             // above top of deadband is too always high
             if (copter.get_pilot_desired_climb_rate_ms() > 0.0f) {
