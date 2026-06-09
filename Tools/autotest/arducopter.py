@@ -347,6 +347,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             minimum_duration=3,
         )
 
+        # repeat hold and descent with the position-authority blend enabled
+        # (VALT_POS_EXPO > 0) to confirm it does not regress normal behaviour:
+        # mid-stick still holds, and a full-down command still descends.
+        self.progress("Enabling VALT_POS_EXPO blend")
+        self.set_parameter("VALT_POS_EXPO", 3)
+        self.watch_altitude_maintained(
+            altitude_min=settled_alt - 1,
+            altitude_max=settled_alt + 1,
+            minimum_duration=3,
+        )
+        self.progress("Commanding descent with throttle 1200")
+        self.set_rc(3, 1200)
+        self.wait_altitude(3, settled_alt - 3, relative=True, timeout=20)
+        self.set_rc(3, 1500)
+        self.watch_altitude_maintained(altitude_min=2, altitude_max=settled_alt - 2)
+
         self.do_RTL()
 
     def fly_to_origin(self, final_alt=10):
