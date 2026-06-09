@@ -91,6 +91,9 @@ public:
     void request_yaw_reset() override {
         EKF3.requestYawReset();
     }
+    void check_lane_switch() override {
+        EKF3.checkLaneSwitch();
+    }
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 

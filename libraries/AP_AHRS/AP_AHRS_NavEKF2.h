@@ -120,6 +120,9 @@ public:
     void request_yaw_reset(void) override {
         EKF2.requestYawReset();
     }
+    void check_lane_switch() override {
+        EKF2.checkLaneSwitch();
+    }
 
     // this is out here so parameters can be poked into it
     static NavEKF2 EKF2;
