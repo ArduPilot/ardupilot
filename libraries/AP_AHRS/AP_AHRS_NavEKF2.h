@@ -96,26 +96,10 @@ public:
         return EKF2.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
     }
 
-    // // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const override {
-        EKF2.getFilterStatus(status);
-        return true;
-    }
-
     // // return the innovations for the specified instance
     // // An out of range instance (eg -1) returns data for the primary instance
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override {
         return EKF2.getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
-    }
-
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override {
-        Vector2f offset;
-        return EKF2.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    }
-
-    // return a terrain altitude variance
-    virtual bool get_terrain_alt_variance(float &terrain_alt_variance) {
-        return EKF2.getTerrainAltVariance(terrain_alt_variance);
     }
 
     void request_yaw_reset(void) override {

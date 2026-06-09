@@ -303,6 +303,7 @@ void AP_AHRS::update_configured_ekf_type()
     if (new_backend != nullptr) {
         state.configured_ekf_type = new_type;
         configured_backend = new_backend;
+        configured_estimates = estimates_for_type(new_type);
         return;
     }
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -682,9 +683,7 @@ void AP_AHRS::update_EKF2(void)
         ekf2_estimates = {};
         ekf2.get_results(ekf2_estimates);
         if (_active_EKF_type() == EKFType::TWO) {
-            nav_filter_status filt_state;
-            ekf2.get_filter_status(filt_state);
-            update_notify_from_filter_status(filt_state);
+            update_notify_from_filter_status(ekf2_estimates.filter_status);
         }
 
         /*
@@ -734,9 +733,7 @@ void AP_AHRS::update_EKF3(void)
         ekf3_estimates = {};
         ekf3.get_results(ekf3_estimates);
         if (_active_EKF_type() == EKFType::THREE) {
-            nav_filter_status filt_state;
-            ekf3.get_filter_status(filt_state);
-            update_notify_from_filter_status(filt_state);
+            update_notify_from_filter_status(ekf3_estimates.filter_status);
         }
         /*
           if we now have an origin then set in all backends
@@ -1755,24 +1752,24 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             break;
 #if HAL_NAVEKF2_AVAILABLE
         case EKFType::TWO:
-            ekf2.get_filter_status(filt_state);
+            filt_state = ekf2_estimates.filter_status;
             should_use_gps = ekf2.EKF2.configuredToUseGPSForPosXY();
             break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
         case EKFType::THREE:
-            ekf3.get_filter_status(filt_state);
+            filt_state = ekf3_estimates.filter_status;
             should_use_gps = ekf3.EKF3.configuredToUseGPSForPosXY();
             break;
 #endif
 #if AP_AHRS_SIM_ENABLED
         case EKFType::SIM:
-            get_filter_status(filt_state);
+            filt_state = sim_estimates.filter_status;
             break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
         case EKFType::EXTERNAL:
-            get_filter_status(filt_state);
+            filt_state = external_estimates.filter_status;
             should_use_gps = true;
             break;
 #endif
@@ -2317,70 +2314,66 @@ void AP_AHRS::resetHeightDatum(void)
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
     // get filter status
-    union nav_filter_status filterStatus;
-    if (!configured_backend->get_filter_status(filterStatus)) {
+    if (!configured_estimates->filter_status_valid) {
         return;
     }
 
     // get variances
-    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
-    Vector3f magVar;
-    if (!configured_backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar)) {
+    if (!configured_estimates->variances_valid) {
         return;
     }
 
-    float terrain_alt_variance;
-    if (!configured_backend->get_terrain_alt_variance(terrain_alt_variance)) {
+    if (!configured_estimates->terrain_alt_variance_valid) {
         return;
     }
 
     // prepare flags
     uint16_t flags = 0;
-    if (filterStatus.flags.attitude) {
+    if (configured_estimates->filter_status.flags.attitude) {
         flags |= EKF_ATTITUDE;
     }
-    if (filterStatus.flags.horiz_vel) {
+    if (configured_estimates->filter_status.flags.horiz_vel) {
         flags |= EKF_VELOCITY_HORIZ;
     }
-    if (filterStatus.flags.vert_vel) {
+    if (configured_estimates->filter_status.flags.vert_vel) {
         flags |= EKF_VELOCITY_VERT;
     }
-    if (filterStatus.flags.horiz_pos_rel) {
+    if (configured_estimates->filter_status.flags.horiz_pos_rel) {
         flags |= EKF_POS_HORIZ_REL;
     }
-    if (filterStatus.flags.horiz_pos_abs) {
+    if (configured_estimates->filter_status.flags.horiz_pos_abs) {
         flags |= EKF_POS_HORIZ_ABS;
     }
-    if (filterStatus.flags.vert_pos) {
+    if (configured_estimates->filter_status.flags.vert_pos) {
         flags |= EKF_POS_VERT_ABS;
     }
-    if (filterStatus.flags.terrain_alt) {
+    if (configured_estimates->filter_status.flags.terrain_alt) {
         flags |= EKF_POS_VERT_AGL;
     }
-    if (filterStatus.flags.const_pos_mode) {
+    if (configured_estimates->filter_status.flags.const_pos_mode) {
         flags |= EKF_CONST_POS_MODE;
     }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
+    if (configured_estimates->filter_status.flags.pred_horiz_pos_rel) {
         flags |= EKF_PRED_POS_HORIZ_REL;
     }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
+    if (configured_estimates->filter_status.flags.pred_horiz_pos_abs) {
         flags |= EKF_PRED_POS_HORIZ_ABS;
     }
-    if (!filterStatus.flags.initalized) {
+    if (!configured_estimates->filter_status.flags.initalized) {
         flags |= EKF_UNINITIALIZED;
     }
-    if (filterStatus.flags.gps_glitching) {
+    if (configured_estimates->filter_status.flags.gps_glitching) {
         flags |= (1<<15);
     }
 
     const mavlink_ekf_status_report_t packet{
-        velVar,
-        posVar,
-        hgtVar,
-        fmaxf(fmaxf(magVar.x,magVar.y),magVar.z),
-        terrain_alt_variance,
+        configured_estimates->velVar,
+        configured_estimates->posVar,
+        configured_estimates->hgtVar,
+        fmaxf(fmaxf(configured_estimates->magVar.x, configured_estimates->magVar.y), configured_estimates->magVar.z),
+        configured_estimates->terrain_alt_variance,
         flags,
-        tasVar
+        configured_estimates->tasVar
     };
 
     // send message

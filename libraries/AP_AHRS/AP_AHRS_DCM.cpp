@@ -201,6 +201,17 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // are we consuming yaw from a source which is *not* a compass
     // results.using_noncompass_for_yaw = false;
+
+    /*
+     * filter status and estimates quality values:
+     */
+    // getFilterStatus(results.filter_status);
+    // results.filter_status_valid = false;
+
+    // provides the innovations normalised between 0 and 1:
+    // results.variances_valid = false;
+
+    // terrain_alt_variance_valid = false;
 }
 
 /*

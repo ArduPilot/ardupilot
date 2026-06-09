@@ -141,23 +141,6 @@ bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector
     return true;
 }
 
-bool AP_AHRS_SIM::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
-{
-    velVar = 0;
-    posVar = 0;
-    hgtVar = 0;
-    magVar.zero();
-    tasVar = 0;
-
-    return true;
-}
-
-bool AP_AHRS_SIM::get_terrain_alt_variance(float &terrain_alt_variance) const
-{
-    terrain_alt_variance = 0;
-    return true;
-}
-
 void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 {
     if (_sitl == nullptr) {
@@ -232,6 +215,22 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // are we consuming yaw from a source which is *not* a compass
     // (e.g. the GSF)
     // results.using_noncompass_for_yaw = false;
+
+    /*
+     * filter status and estimates quality values:
+     */
+    results.filter_status_valid = get_filter_status(results.filter_status);
+
+    // provides the innovations normalised between 0 and 1:
+    // velVar = 0;
+    // posVar = 0;
+    // hgtVar = 0;
+    // magVar.zero();
+    // tasVar = 0;
+    results.variances_valid = true;
+
+    // terrain_alt_variance = 0;
+    results.terrain_alt_variance_valid = true;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {

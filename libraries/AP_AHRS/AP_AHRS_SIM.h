@@ -82,13 +82,6 @@ public:
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override { return true; }
 
-    // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const override;
-
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
-
-    bool get_terrain_alt_variance(float &terrain_alt_variance) const override;
-
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
     bool get_relative_position_NED_origin(Vector3p &vec) const override;
@@ -99,6 +92,9 @@ public:
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
 
 private:
+
+    // get_filter_status - returns filter status as a series of flags
+    bool get_filter_status(nav_filter_status &status) const;
 
     // dead-reckoning support
     bool get_location(Location &loc) const;
