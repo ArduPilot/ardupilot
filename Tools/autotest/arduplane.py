@@ -7259,6 +7259,68 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(4)
         self.fly_home_land_and_disarm()
 
+    def MAV_CMD_NAV_LOITER_TO_ALT_HeadingRequired(self):
+        '''test MAV_CMD_NAV_LOITER_TO_ALT param1=1 (heading required)'''
+        # waypoint after loiter is 1000 m north of home.  The loiter is
+        # directly overhead home so the plane must turn to a northerly heading
+        # before it is allowed to exit when heading_required=1.
+        loiter_alt = 200  # metres AGL
+        wp_north_m = 1000
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT,
+                p1=1,           # heading required
+                p2=100,         # loiter radius (m)
+                z=loiter_alt,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, wp_north_m, 0, loiter_alt),
+        ])
+        # Wait until the loiter altitude band is reached.
+        self.wait_altitude(loiter_alt - 20, loiter_alt + 20, relative=True, timeout=600)
+        t_alt_reached = self.get_sim_time()
+        # plane must complete at least a partial orbit to line up on the next waypoint before advancing.
+        # verify time passes and plane doesn't advance to next waypoint
+        self.wait_current_waypoint(3, timeout=600)
+        elapsed = self.get_sim_time() - t_alt_reached
+        if elapsed < 10:
+            raise NotAchievedException(
+                f"Heading-required loiter exited too quickly ({elapsed:.1f}s); expected heading alignment delay"
+            )
+        self.progress(f"Heading-required loiter held for {elapsed:.1f}s after altitude reached - PASS")
+        self.fly_home_land_and_disarm(timeout=300)
+
+    def MAV_CMD_NAV_LOITER_TO_ALT_HeadingNotRequired(self):
+        '''test MAV_CMD_NAV_LOITER_TO_ALT param1=0 (heading not required)'''
+        loiter_alt = 200  # metres AGL
+        wp_north_m = 1000
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT,
+                p1=0,           # heading NOT required
+                p2=100,         # loiter radius (m)
+                z=loiter_alt,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, wp_north_m, 0, loiter_alt),
+        ])
+        # Wait until the loiter altitude band is reached.
+        self.wait_altitude(loiter_alt - 20, loiter_alt + 20, relative=True, timeout=600)
+        t_alt_reached = self.get_sim_time()
+        # With heading_required=0 the mission should advance within a few
+        # seconds of hitting the target altitude band, well before a full
+        # orbit could be completed (~30 s at 100 m radius / 30 m/s).
+        self.wait_current_waypoint(3, timeout=60)
+        elapsed = self.get_sim_time() - t_alt_reached
+        if elapsed > 30:
+            raise NotAchievedException(
+                f"Heading-not-required loiter took too long to exit ({elapsed:.1f}s); expected near-immediate advance"
+            )
+        self.progress("Heading-not-required loiter exited in {elapsed:.1f}s after altitude reached - PASS")
+        self.fly_home_land_and_disarm(timeout=300)
+
     def RudderArmedTakeoffRequiresNeutralThrottle(self):
         '''auto-takeoff should not occur while rudder continues to be held over'''
         self.change_mode('TAKEOFF')
@@ -8184,6 +8246,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.loiter_inside_circle,
             self.MAV_CMD_NAV_LOITER_TURNS,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
+            self.MAV_CMD_NAV_LOITER_TO_ALT_HeadingRequired,
+            self.MAV_CMD_NAV_LOITER_TO_ALT_HeadingNotRequired,
             self.DeepStall,
             self.WatchdogHome,
             self.LargeMissions,
