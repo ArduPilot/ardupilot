@@ -31,6 +31,7 @@
 #include "AP_Compass_LSM9DS1.h"
 #include "AP_Compass_LIS3MDL.h"
 #include "AP_Compass_AK09916.h"
+#include "AP_Compass_AK09940A.h"
 #include "AP_Compass_QMC5883L.h"
 #if AP_COMPASS_DRONECAN_ENABLED
 #include "AP_Compass_DroneCAN.h"
@@ -531,7 +532,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC or LIS2MDL
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC or LIS2MDL,24:AK09940A
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -1243,6 +1244,24 @@ void Compass::_probe_external_i2c_compasses(void)
         RETURN_IF_NO_SPACE;
     }
 #endif  // AP_COMPASS_LIS3MDL_ENABLED
+
+#if AP_COMPASS_AK09940A_ENABLED
+    // external ak09940a
+#if AP_COMPASS_AK09940A_EXTERNAL_BUS_PROBING_ENABLED
+    FOREACH_I2C_EXTERNAL(i) {
+        probe_i2c_dev(DRIVER_AK09940A, AP_Compass_AK09940A::probe, i, HAL_COMPASS_AK09940A_I2C_ADDR, true, ROTATION_NONE);
+        RETURN_IF_NO_SPACE;
+    }
+#endif
+    // internal ak09940a
+#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+    FOREACH_I2C_INTERNAL(i) {
+        probe_i2c_dev(DRIVER_AK09940A, AP_Compass_AK09940A::probe, i, HAL_COMPASS_AK09940A_I2C_ADDR, all_external, ROTATION_NONE);
+        RETURN_IF_NO_SPACE;
+    }
+#endif
+#endif  // AP_COMPASS_AK09940A_ENABLED
+
 
 #if AP_COMPASS_AK09916_ENABLED
     // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
