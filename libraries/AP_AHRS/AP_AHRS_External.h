@@ -73,13 +73,6 @@ public:
     bool get_relative_position_NE_origin(Vector2p &posNE) const override;
     bool get_relative_position_D_origin(postype_t &posD) const override;
 
-    bool get_filter_status(nav_filter_status &status) const override;
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override;
-    bool get_terrain_alt_variance(float &variance) const override {
-        variance = 0;
-        return true;
-    }
-
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 };
 
