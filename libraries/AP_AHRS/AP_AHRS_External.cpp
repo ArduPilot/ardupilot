@@ -152,11 +152,6 @@ bool AP_AHRS_External::get_variances(float &velVar, float &posVar, float &hgtVar
     return AP::externalAHRS().get_variances(velVar, posVar, hgtVar, magVar, tasVar);
 }
 
-void AP_AHRS_External::send_ekf_status_report(GCS_MAVLINK &link) const
-{
-    AP::externalAHRS().send_status_report(link);
-}
-
 bool AP_AHRS_External::get_origin(Location &ret) const
 {
     return AP::externalAHRS().get_origin(ret);

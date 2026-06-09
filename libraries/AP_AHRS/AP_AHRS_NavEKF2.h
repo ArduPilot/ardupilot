@@ -96,10 +96,6 @@ public:
         return EKF2.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
     }
 
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override {
-        EKF2.send_status_report(link);
-    }
-
     // // get_filter_status - returns filter status as a series of flags
     bool get_filter_status(nav_filter_status &status) const override {
         EKF2.getFilterStatus(status);
@@ -115,6 +111,11 @@ public:
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override {
         Vector2f offset;
         return EKF2.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
+    }
+
+    // return a terrain altitude variance
+    virtual bool get_terrain_alt_variance(float &terrain_alt_variance) {
+        return EKF2.getTerrainAltVariance(terrain_alt_variance);
     }
 
     void request_yaw_reset(void) override {
