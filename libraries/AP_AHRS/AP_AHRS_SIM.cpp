@@ -237,6 +237,9 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // the navigation origin:
     results.configured_to_use_gps_for_pos_XY = true;
 
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    // results.using_extnav_for_yaw = false;
+
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {
         // use SITL states to write body frame odometry data at 20Hz

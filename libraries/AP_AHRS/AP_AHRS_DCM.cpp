@@ -195,6 +195,9 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // for this estimator.  Used to decide whether GPS will set
     // the navigation origin.
     results.configured_to_use_gps_for_pos_XY = _gps_use != GPSUse::Disable;
+
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    // results.using_extnav_for_yaw = false;
 }
 
 /*
