@@ -566,16 +566,6 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     AP_GROUPINFO("DARM_WDG_T", 41, QuadPlane, landing_detect.wdg_timeout_s, 10.0),
 
-    // @Param: DARM_WDG_T
-    // @DisplayName: Disarm watchdog timeout
-    // @Description: Time in seconds after landing detection starts in LAND_FINAL before an emergency disarm warning is issued. Set to 0 to disable.
-    // @Units: s
-    // @Range: 0 30
-    // @Increment: 1
-    // @User: Standard
-
-    AP_GROUPINFO("DARM_WDG_T", 41, QuadPlane, landing_detect.wdg_timeout_s, 10.0),
-
     AP_GROUPEND
 };
 
