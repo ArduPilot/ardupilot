@@ -115,7 +115,7 @@ private:
 #ifdef USE_POSIX
     int log_fd;
 #endif
-#ifdef HAL_WITH_PAGE_EEPROM
+#if defined(HAL_WITH_PAGE_EEPROM) && HAL_WITH_PAGE_EEPROM
     AP_PageEEPROM pg_eeprom;
 #endif
 };
