@@ -15,6 +15,8 @@ import shutil
 import tempfile
 import time
 
+from typing import NamedTuple
+
 import numpy
 
 from pymavlink import mavextra
@@ -107,13 +109,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def default_frame(self):
         return "+"
 
-    def callisto_sitl_kwargs(self):
+    class SITLVehicleConfig(NamedTuple):
+        defaults_filepath: str
+        model: str
+        wipe: bool = True
+
+    def callisto_sitl_config(self) -> SITLVehicleConfig:
         """Returns kwargs for a SITL commandline to fly the Callisto. Wipes params."""
-        return {
-            "defaults_filepath": self.model_defaults_filepath('Callisto'),
-            "model": "octa-quad:@ROMFS/models/Callisto.json",
-            "wipe": True
-        }
+        return self.SITLVehicleConfig(
+            defaults_filepath=self.model_defaults_filepath('Callisto'),
+            model="octa-quad:@ROMFS/models/Callisto.json",
+        )
 
     def apply_defaultfile_parameters(self):
         # Copter passes in a defaults_filepath in place of applying
@@ -10264,7 +10270,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test wind estimation and baro position error compensation'''
         self.customise_SITL_commandline(
             [],
-            **self.callisto_sitl_kwargs()
+            **self.callisto_sitl_config()._asdict()
         )
         wind_spd_truth = 8.0
         wind_dir_truth = 90.0
@@ -12843,7 +12849,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test Callisto'''
         self.customise_SITL_commandline(
             [],
-            **self.callisto_sitl_kwargs()
+            **self.callisto_sitl_config()._asdict()
         )
         self.takeoff(10)
         self.do_RTL()
@@ -17281,7 +17287,7 @@ RTL_ALT_M 111
             self.customise_SITL_commandline([
                 "--serial5=mcast:",
             ],
-                **self.callisto_sitl_kwargs()
+                **self.callisto_sitl_config()._asdict()
             )
 
             self.set_parameters({
@@ -17371,7 +17377,7 @@ RTL_ALT_M 111
         '''test the config_profiles.lua example script'''
         self.customise_SITL_commandline(
             [],
-            **self.callisto_sitl_kwargs()
+            **self.callisto_sitl_config()._asdict()
         )
         self.install_example_script_context("config_profiles.lua")
         self.set_parameters({
