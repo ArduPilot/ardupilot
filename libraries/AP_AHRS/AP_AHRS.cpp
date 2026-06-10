@@ -357,14 +357,6 @@ void AP_AHRS::init()
     update_configured_ekf_type();
     update_active_EKF_type();
 
-    // init backends
-#if AP_AHRS_DCM_ENABLED
-    dcm.init();
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    external.init();
-#endif
-
 #if AP_CUSTOMROTATIONS_ENABLED
     // convert to new custom rotation
     // PARAMETER_CONVERSION - Added: Nov-2021

@@ -188,9 +188,6 @@ public:
         float hagl;
     };
 
-    // init sets up INS board orientation
-    virtual void init();
-
     // Methods
     virtual void update() = 0;
 
