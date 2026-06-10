@@ -151,6 +151,15 @@ private:
     // update our wind estimate from the latest GPS velocity and attitude:
     void estimate_wind(void);
 
+    // update our wind speed estimate.  velocity is a current velocity
+    // estimate in m/s in NED frame.  fuselageDirection is the vehicle's
+    // forward (fuselage) direction as a UNIT vector in the earth NED
+    // frame - i.e. the first column of the body-to-NED rotation
+    // (dcm_matrix.colx()): for level flight it is the heading direction,
+    // tilted by pitch and unaffected by roll.  Must be a unit vector;
+    // not normalised here.
+    void estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection);
+
     // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
     //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
