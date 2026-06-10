@@ -74,7 +74,9 @@ public:
         return _error_yaw;
     }
 
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
     void set_external_wind_estimate(float speed, float direction);
+#endif
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
