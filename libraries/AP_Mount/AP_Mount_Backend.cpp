@@ -291,6 +291,7 @@ void AP_Mount_Backend::update_poi_lock_target()
         mnt_target.pointing_at_poi_at_home_alt = true;
     }
 
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // POI calculation is running and but will silently give up after 3 seconds normally if it does not succeed
     // try to resolve a AuxFunc POI command to a lat/lng/alt using get_poi
     // set up variables for get_poi call
@@ -320,6 +321,10 @@ void AP_Mount_Backend::update_poi_lock_target()
     //stop terrain-based POI calculation
         mnt_target.poi_start_ms = 0;
     }
+#else
+    // terrain-based POI is not available so the home-alt POI stands
+    mnt_target.poi_start_ms = 0;
+#endif // AP_MOUNT_POI_TO_LATLONALT_ENABLED
 }
 
 #endif // AP_MOUNT_POI_LOCK_ENABLED
@@ -768,8 +773,9 @@ void AP_Mount_Backend::calculate_poi()
         }
     }
 }
+#endif // AP_MOUNT_POI_TO_LATLONALT_ENABLED
 
-
+#if AP_MOUNT_POI_LOCK_ENABLED
 // calculate location gimbal is pointing, at HOME altitude. Used if Terrain is not avaialble
 bool AP_Mount_Backend::calculate_poi_at_home_alt(Location &target_location)
 {
@@ -865,7 +871,7 @@ bool AP_Mount_Backend::calculate_poi_at_home_alt(Location &target_location)
     target_location.alt = home.alt;
     return true;
 }
-#endif
+#endif // AP_MOUNT_POI_LOCK_ENABLED
 
 // change to RC_TARGETING mode if rc inputs have changed by more than the dead zone
 // should be called on every update
