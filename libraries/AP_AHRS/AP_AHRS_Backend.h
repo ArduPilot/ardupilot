@@ -61,6 +61,12 @@ public:
         friend class AP_AHRS_NavEKF2;
         friend class AP_AHRS_NavEKF3;
 
+        // is the AHRS subsystem healthy?
+        bool healthy;
+
+        // true if the AHRS has completed initialisation
+        bool initialised;
+
         // inertial sensor information
         uint8_t primary_gyro;
 
@@ -283,17 +289,6 @@ public:
 
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
-
-    // is the AHRS subsystem healthy?
-    virtual bool healthy(void) const = 0;
-
-    // true if the AHRS has completed initialisation
-    virtual bool initialised(void) const {
-        return true;
-    };
-    virtual bool started(void) const {
-        return initialised();
-    };
 
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
