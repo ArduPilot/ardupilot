@@ -3241,14 +3241,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # The SIM AHRS backend returns actual 3D SITL wind, but the
         # fallback logic prevents it being used until in flight.
         self.takeoff(20, mode='TAKEOFF')
-        self.delay_sim_time(5, reason="wind estimate to establish")
 
         # Without the fix, speed == wind_spd (3D magnitude ~10 m/s).
         # With the fix, speed == horizontal component (~7.07 m/s).
         # A tolerance of 1 m/s distinguishes the two clearly.
-        self.assert_received_message_field_values("WIND", {
+        self.wait_message_field_values("WIND", {
             "speed": expected_horizontal,
-        }, epsilon=1)
+        }, epsilon=1, timeout=30, minimum_duration=10)
 
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
