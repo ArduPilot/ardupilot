@@ -160,6 +160,10 @@ public:
         // recognition
         bool using_extnav_for_yaw;
 
+        // if true then however the yaw in these estimates was derived
+        // a compass was not involved:
+        bool using_noncompass_for_yaw;
+
     private:
         bool hagl_valid;
         float hagl;
