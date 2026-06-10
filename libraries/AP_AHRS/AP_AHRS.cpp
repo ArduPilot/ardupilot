@@ -2138,7 +2138,10 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 
         // Handle fallback for the case where the DCM or EKF is unable to provide attitude or height data.
         const bool can_use_dcm = dcm.yaw_source_available() || fly_forward;
-        const bool can_use_ekf = filt_state.flags.attitude && filt_state.flags.vert_vel && filt_state.flags.vert_pos;
+        // ground vehicles only require attitude from the EKF, other vehicles also require vertical velocity and position
+        const bool can_use_ekf = filt_state.flags.attitude &&
+            ((_vehicle_class == VehicleClass::GROUND) ||
+             (filt_state.flags.vert_vel && filt_state.flags.vert_pos));
         if (!can_use_dcm && can_use_ekf) {
             // no choice - continue to use EKF
             return ret;
