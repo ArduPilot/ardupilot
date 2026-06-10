@@ -16981,6 +16981,28 @@ RTL_ALT_M 111
             expect_clear=True,
         )
 
+    def TakeoffWithLocation(self):
+        '''test we ignore takeoff location'''
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        arming_loc = self.mav.location()
+        # the location here should be ignored:
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 10, 10, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME,
+                p1=10,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2)
+        delay_loc = self.mav.location()
+        if self.get_distance(arming_loc, delay_loc) > 1:
+            raise NotAchievedException("Should not move during takeoff")
+        self.wait_altitude(18, 21, minimum_duration=10, relative=True)
+        self.wait_disarmed()
+
     def MISSION_OPTION_CLEAR_MISSION_AT_BOOT(self):
         '''check functionality of mission-clear-at-boot option'''
         self.upload_simple_relhome_mission([
@@ -17718,6 +17740,7 @@ return update, 1000
             self.MountSiyiZT30,
             self.CircleSpeed,
             self.LuaCopterCircleSpeed,
+            self.TakeoffWithLocation,
             self.MountTopotek,
             self.MountViewPro,
             self.MountAVTCM62,
