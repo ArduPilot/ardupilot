@@ -867,6 +867,9 @@ class ChibiOSHWDef(hwdef.HWDef):
         if self.intdefines.get('HAL_WITH_RAMTRON', 0) == 1:
             # no check for RAMTRON storage
             return
+        if self.intdefines.get('HAL_WITH_PAGE_EEPROM', 0) == 1:
+            # no check for PAGE_EEPROM storage
+            return
         storage_flash_page = self.get_storage_flash_page()
         pages = self.get_flash_pages_sizes()
         page_size = pages[storage_flash_page] * 1024

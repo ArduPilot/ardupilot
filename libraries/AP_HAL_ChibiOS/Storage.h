@@ -22,6 +22,7 @@
 #include <AP_FlashStorage/AP_FlashStorage.h>
 #include "hwdef/common/flash.h"
 #include <AP_RAMTRON/AP_RAMTRON.h>
+#include <AP_PageEEPROM/AP_PageEEPROM.h>
 
 #define CH_STORAGE_SIZE HAL_STORAGE_SIZE
 
@@ -35,7 +36,7 @@
 #else
 #define CH_STORAGE_LINE_SHIFT 3
 #endif
-#elif defined(USE_POSIX) && !defined(HAL_WITH_RAMTRON)
+#elif defined(USE_POSIX) && !defined(HAL_WITH_RAMTRON) && !defined(HAL_WITH_PAGE_EEPROM)
 #define CH_STORAGE_LINE_SHIFT 9
 #else
 #define CH_STORAGE_LINE_SHIFT 3
@@ -71,6 +72,7 @@ private:
         FRAM,
         Flash,
         SDCard,
+	Page_EEPROM,
     };
     StorageBackend _initialisedType = StorageBackend::None;
     void _storage_create(void);
@@ -112,6 +114,9 @@ private:
 #endif
 #ifdef USE_POSIX
     int log_fd;
+#endif
+#ifdef HAL_WITH_PAGE_EEPROM
+    AP_PageEEPROM pg_eeprom;
 #endif
 };
 
