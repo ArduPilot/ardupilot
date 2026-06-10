@@ -124,7 +124,7 @@ define RELAY3_PIN_DEFAULT 84
 
 #- - - - - - - - - -  LEDs  - - - - - - - - - 
 PE5 LED_GREEN OUTPUT HIGH GPIO(91)  # Activity blue
-PC13 LED_BLUE  OUTPUT HIGH GPIO(92) # Notify ON
+PE2 LED_BLUE  OUTPUT HIGH GPIO(92) # Notify ON
 PA5 TIM2_CH1 TIM2 PWM(9) GPIO(58)	# External RGB LED
 
 define HAL_GPIO_A_LED_PIN 91   
