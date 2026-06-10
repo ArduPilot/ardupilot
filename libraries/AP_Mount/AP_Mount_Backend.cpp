@@ -301,8 +301,10 @@ void AP_Mount_Backend::update_poi_lock_target()
     Location target_location;
 
     if (!mnt_target.pointing_at_poi_at_home_alt) {
-        calculate_poi_at_home_alt(target_location);
-        set_roi_target(target_location);
+        if (calculate_poi_at_home_alt(target_location)) {
+            set_roi_target(target_location);
+        }
+        // attempt the home-alt POI only once per switch engagement; retrying would repeat warnings at the update rate
         mnt_target.pointing_at_poi_at_home_alt = true;
     }
 
