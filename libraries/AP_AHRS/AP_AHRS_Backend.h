@@ -143,6 +143,13 @@ public:
         }
 
         /*
+         * air data estimates
+         */
+        // estimated wind in m/s, NED frame
+        Vector3f wind;
+        bool wind_valid;
+
+        /*
          * Sensor-related information
          */
 
@@ -212,9 +219,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // return a wind estimation vector, in m/s
-    virtual bool wind_estimate(Vector3f &wind) const = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate

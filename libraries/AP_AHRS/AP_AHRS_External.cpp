@@ -78,6 +78,13 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // results.hagl = 0;
 
     /*
+     * air data estimates
+     */
+    // wind estimate is not supplied:
+    // results.wind = {};
+    // results.wind_valid = false;
+
+    /*
      * Sensor-related information
      */
     // true if the estimator will use GPS data in creating its
