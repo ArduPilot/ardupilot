@@ -54,11 +54,6 @@ public:
         return EKF3.setOriginLLH(loc);
     }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        return EKF3.getWind(wind);
-    }
-
     bool            use_compass() override {
         return EKF3.use_compass();
     }

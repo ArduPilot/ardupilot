@@ -19,16 +19,6 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     return true;
 }
 
-bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    wind = _sitl->state.wind_ef;
-    return true;
-}
-
 bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
@@ -203,6 +193,12 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.hagl_valid = true;
     results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+
+    /*
+     * air data estimates
+     */
+    results.wind = _sitl->state.wind_ef;
+    results.wind_valid = true;
 
     /*
      * Sensor-related information

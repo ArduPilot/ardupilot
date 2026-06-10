@@ -194,6 +194,12 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // results.hagl = 0;
 
     /*
+     * air data estimates
+     */
+    results.wind = _wind;
+    results.wind_valid = true;
+
+    /*
      * Sensor-related information
      */
     // true if the estimator will use GPS data in creating its
@@ -1239,9 +1245,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     const bool gotGPS = (AP::gps().status() >= AP_GPS_FixType::FIX_2D);
     if (gotAirspeed) {
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        gndVelADS = airspeed_vector + wind.xy();
+        gndVelADS = airspeed_vector + _wind.xy();
     }
 
     // Generate estimate of ground speed vector using GPS
@@ -1286,10 +1290,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
         Vector2f ret{_cos_yaw, _sin_yaw};
         ret *= airspeed;
         // adjust for estimated wind
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        ret.x += wind.x;
-        ret.y += wind.y;
+        ret += _wind.xy();
         return ret;
     }
 

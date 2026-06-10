@@ -101,6 +101,11 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.hagl_valid = EKF3.getHAGL(results.hagl);
 
     /*
+     * air data estimates
+     */
+    results.wind_valid = EKF3.getWind(results.wind);
+
+    /*
      * Sensor-related information
      */
     // true if the estimator will use GPS data in creating its

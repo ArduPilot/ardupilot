@@ -100,6 +100,12 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.hagl_valid = EKF2.getHAGL(results.hagl);
 
     /*
+     * air data estimates
+     */
+    EKF2.getWind(results.wind);
+    results.wind_valid = true;
+
+    /*
      * Sensor-related information
      */
     // true if the estimator will use GPS data in creating its

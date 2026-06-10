@@ -454,7 +454,6 @@ void AP_AHRS::update_state(void)
     state.primary_accel = active_estimates->primary_accel;
 
     state.primary_core = _get_primary_core_index();
-    state.wind_estimate_ok = active_backend->wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
     state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
     state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
@@ -932,7 +931,8 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        have_wind = ekf3.wind_estimate(wind_vel);
+        wind_vel = ekf3_estimates.wind;
+        have_wind = ekf3_estimates.wind_valid;
         break;
 #endif
 
@@ -2731,11 +2731,11 @@ bool AP_AHRS::get_location(Location &loc) const
     return state.location_ok;
 }
 
-// return a wind estimation vector, in m/s; returns 0,0,0 on failure
+// return a wind estimation vector in "wind" (m/s); returns false on failure
 bool AP_AHRS::wind_estimate(Vector3f &wind) const
 {
-    wind = state.wind_estimate;
-    return state.wind_estimate_ok;
+    wind = active_estimates->wind;
+    return active_estimates->wind_valid;
 }
 
 // return an airspeed estimate if available. return true
