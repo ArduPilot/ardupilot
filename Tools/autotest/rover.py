@@ -7193,6 +7193,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def AHRSOptionsDCMFallback(self):
+        '''check AHRS_OPTIONS inhibits DCM fallback when EKF lacks height data'''
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "AHRS_OPTIONS": 3,  # disable DCM fallback
+            "EK3_SRC1_VELZ": 3,  # GPS
+            "EK3_SRC1_POSZ": 3,  # GPS
+            "SIM_GPS1_NUMSATS": 4,  # EKF does not like < 6, origin is never set
+        })
+        self.reboot_sitl()
+        # the EKF can provide attitude but not vertical velocity/position;
+        # the AHRS must still use it as DCM fallback is inhibited
+        self.wait_statustext("AHRS: EKF3 active", check_context=True, timeout=120)
+        # EKF must be reporting a valid attitude but no vertical position
+        self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_ATTITUDE, mavutil.mavlink.ESTIMATOR_POS_VERT_ABS, timeout=30)
+
+        self.start_subtest("DCM fallback used when not inhibited")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("AHRS_OPTIONS", 0)
+        self.reboot_sitl()
+        self.delay_sim_time(60)
+        if self.statustext_in_collections("AHRS: EKF3 active"):
+            raise NotAchievedException("AHRS used EKF3 without EKF height data")
+
     def SafetySwitch(self):
         '''check safety switch works'''
         self.start_subtest("Make sure we don't start moving when safety switch enabled")
@@ -7466,6 +7490,7 @@ return update()
             self.JammingSimulation,
             self.BatteryInvalid,
             self.REQUIRE_LOCATION_FOR_ARMING,
+            self.AHRSOptionsDCMFallback,
             self.GetMessageInterval,
             self.SafetySwitch,
             self.EnterModeOnSafetySwitch,
