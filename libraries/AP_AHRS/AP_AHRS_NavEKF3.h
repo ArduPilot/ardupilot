@@ -35,16 +35,6 @@ public:
 
     const char *shortname() const override { return "EKF3"; }
 
-    bool healthy(void) const override {
-        if (!started) {
-            return false;
-        }
-        if (!EKF3.healthy()) {
-            return false;
-        }
-        return true;
-    }
-
     void reset_gyro_drift() override { EKF3.resetGyroBias(); }
 
     void update() override { EKF3.UpdateFilter(); }
@@ -111,6 +101,7 @@ public:
     static NavEKF3 EKF3;
 
     bool started;
+    uint32_t start_time_ms;  // timer used to delay starting the filter
 };
 
 #endif  // AP_AHRS_NAVEKF3_ENABLED

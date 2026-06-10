@@ -12,6 +12,13 @@ NavEKF3 AP_AHRS_NavEKF3::EKF3;
 
 void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    const auto now_ms = AP_HAL::millis();
+
+    // initialisation complete some time after ekf has started
+    results.initialised = (started && (now_ms - start_time_ms > 20000));
+
+    results.healthy = started && EKF3.healthy();
+
     const AP_InertialSensor &_ins = AP::ins();
 
     /*

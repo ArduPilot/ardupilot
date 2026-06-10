@@ -37,9 +37,6 @@
 // forward declare view class
 class AP_AHRS_View;
 
-#define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
-
-
 // fwd declare GSF estimator
 class EKFGSF_yaw;
 
@@ -356,7 +353,9 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
 
     // true if the AHRS has completed initialisation
-    bool initialised() const;
+    bool initialised() const {
+        return configured_estimates->initialised;
+    }
 
 #if AP_AHRS_DCM_ENABLED
     // return true if *DCM* yaw has been initialised
@@ -855,7 +854,6 @@ private:
 #endif
 
     static constexpr uint16_t startup_delay_ms = 1000;
-    uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     void update_DCM();

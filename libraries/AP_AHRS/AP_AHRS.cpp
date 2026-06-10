@@ -659,14 +659,14 @@ void AP_AHRS::update_EKF2(void)
 {
     if (!ekf2.started) {
         // wait 1 second for DCM to output a valid tilt error estimate
-        if (start_time_ms == 0) {
-            start_time_ms = AP_HAL::millis();
+        if (ekf2.start_time_ms == 0) {
+            ekf2.start_time_ms = AP_HAL::millis();
         }
 #if HAL_LOGGING_ENABLED
         // if we're doing Replay logging then don't allow any data
         // into the EKF yet.  Don't allow it to block us for long.
         if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - start_time_ms < 5000) {
+            if (AP_HAL::millis() - ekf2.start_time_ms < 5000) {
                 if (!AP::logger().allow_start_ekf()) {
                     return;
                 }
@@ -674,7 +674,7 @@ void AP_AHRS::update_EKF2(void)
         }
 #endif
 
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+        if (AP_HAL::millis() - ekf2.start_time_ms > startup_delay_ms) {
             ekf2.started = ekf2.EKF2.InitialiseFilter();
         }
     }
@@ -710,21 +710,21 @@ void AP_AHRS::update_EKF3(void)
 {
     if (!ekf3.started) {
         // wait 1 second for DCM to output a valid tilt error estimate
-        if (start_time_ms == 0) {
-            start_time_ms = AP_HAL::millis();
+        if (ekf3.start_time_ms == 0) {
+            ekf3.start_time_ms = AP_HAL::millis();
         }
 #if HAL_LOGGING_ENABLED
         // if we're doing Replay logging then don't allow any data
         // into the EKF yet.  Don't allow it to block us for long.
         if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - start_time_ms < 5000) {
+            if (AP_HAL::millis() - ekf3.start_time_ms < 5000) {
                 if (!AP::logger().allow_start_ekf()) {
                     return;
                 }
             }
         }
 #endif
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
+        if (AP_HAL::millis() - ekf3.start_time_ms > startup_delay_ms) {
             ekf3.started = ekf3.EKF3.InitialiseFilter();
         }
     }
@@ -1702,7 +1702,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             if (ekf2_faults == 0) {
                 ret = EKFType::TWO;
             }
-        } else if (ekf2.healthy()) {
+        } else if (ekf2_estimates.healthy) {
             ret = EKFType::TWO;
         }
         break;
@@ -1721,7 +1721,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             if (ekf3_faults == 0) {
                 ret = EKFType::THREE;
             }
-        } else if (ekf3.healthy()) {
+        } else if (ekf3_estimates.healthy) {
             ret = EKFType::THREE;
         }
         break;
@@ -1864,7 +1864,7 @@ AP_AHRS::EKFType AP_AHRS::fallback_active_EKF_type(void) const
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
-    if (external.healthy()) {
+    if (external_estimates.healthy) {
         return EKFType::EXTERNAL;
     }
 #endif
@@ -1933,58 +1933,16 @@ bool AP_AHRS::_get_secondary_EKF_type(EKFType &secondary_ekf_type) const
 */
 bool AP_AHRS::healthy(void) const
 {
-    // If EKF is started we switch away if it reports unhealthy. This could be due to bad
-    // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
-    // an internal processing error, but not for bad sensor data.
-    switch (configured_ekf_type()) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.healthy();
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO: {
-        if (!ekf2.healthy()) {
-            return false;
-        }
-        if ((_vehicle_class == VehicleClass::FIXED_WING ||
-                _vehicle_class == VehicleClass::GROUND) &&
-                active_EKF_type() != EKFType::TWO) {
-            // on fixed wing we want to be using EKF to be considered
-            // healthy if EKF is enabled
-            return false;
-        }
-        return true;
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        if (!ekf3.healthy()) {
-            return false;
-        }
-        if ((_vehicle_class == VehicleClass::FIXED_WING ||
-                _vehicle_class == VehicleClass::GROUND) &&
-                active_EKF_type() != EKFType::THREE) {
-            // on fixed wing we want to be using EKF to be considered
-            // healthy if EKF is enabled
-            return false;
-        }
-        return true;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.healthy();
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.healthy();
-#endif
+    if (!configured_estimates->healthy) {
+        return false;
     }
 
-    return false;
+    // we must be using the configured type to be considered healthy:
+    if (configured_backend != active_backend) {
+        return false;
+    }
+
+    return true;
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
@@ -2022,39 +1980,6 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
     return (configured_backend->pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret);
 }
-
-// true if the AHRS has completed initialisation
-bool AP_AHRS::initialised(void) const
-{
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return true;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // initialisation complete 10sec after ekf has started
-        return (ekf2.started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // initialisation complete 10sec after ekf has started
-        return (ekf3.started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return true;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.initialised();
-#endif
-    }
-    return false;
-};
 
 // write optical flow data to EKF
 void  AP_AHRS::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
