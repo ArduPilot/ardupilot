@@ -7,11 +7,11 @@ Runs tests with gcov coverage support.
 """
 import argparse
 import os
-import tempfile
-import time
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 os.set_blocking(sys.stdout.fileno(), True)

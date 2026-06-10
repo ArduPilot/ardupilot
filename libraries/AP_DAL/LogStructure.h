@@ -19,6 +19,7 @@
     LOG_RFRN_MSG, \
     LOG_RISH_MSG, \
     LOG_RISI_MSG, \
+    LOG_RISJ_MSG, \
     LOG_RBRH_MSG, \
     LOG_RBRI_MSG, \
     LOG_RRNH_MSG, \
@@ -136,6 +137,18 @@ struct log_RISI {
     uint8_t use_gyro:1;
     uint8_t get_delta_velocity_ret:1;
     uint8_t get_delta_angle_ret:1;
+    uint8_t instance;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RISJ
+// @Description: Replay Inertial Sensor instance metadata (low-rate, only logged when changed)
+// @Field: GBL: gyro bias limit (rad/s) for the EKF gyro bias state clamp
+// @Field: GBI: initial gyro bias 1-sigma uncertainty (deg/s)
+// @Field: I: IMU instance
+struct log_RISJ {
+    float gyro_bias_limit;
+    float gyro_bias_init_dps;
     uint8_t instance;
     uint8_t _end;
 };
@@ -404,10 +417,10 @@ struct log_RMGI {
 
 // @LoggerMessage: RBCH
 // @Description: Replay Data Beacon Header
-// @Field: PX: zero, unused
-// @Field: PY: zero, unused
-// @Field: PZ: zero, unused
-// @Field: AE: zero, unused
+// @Field: PX: beacon system estimated vehicle position, North
+// @Field: PY: beacon system estimated vehicle position, East
+// @Field: PZ: beacon system estimated vehicle position, Down
+// @Field: AE: beacon system estimated vehicle position accuracy
 // @Field: OLat: origin latitude
 // @Field: OLng: origin longitude
 // @Field: OAlt: origin altitude
@@ -566,10 +579,10 @@ struct log_RWOH {
 // @Field: DAZ: delta-angle-Z
 // @Field: DT: delta-time
 // @Field: TS: data timestamp
-// @Field: OX: zero, unused
-// @Field: OY: zero, unused
-// @Field: OZ: zero, unused
-// @Field: D: zero, unused
+// @Field: OX: pos-offset-X
+// @Field: OY: pos-offset-Y
+// @Field: OZ: pos-offset-Z
+// @Field: D: delay in body odometry data
 struct log_RBOH {
     float quality;
     Vector3f delPos;
@@ -616,6 +629,8 @@ struct log_RTER {
       "RISH", "HBBfBB", "LR,PG,PA,LD,AC,GC", "------", "------" }, \
     { LOG_RISI_MSG, RLOG_SIZE(RISI),                                   \
       "RISI", "ffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,Flags,I", "---------#", "----------" }, \
+    { LOG_RISJ_MSG, RLOG_SIZE(RISJ),                                   \
+      "RISJ", "ffB", "GBL,GBI,I", "--#", "---" }, \
     { LOG_RASH_MSG, RLOG_SIZE(RASH),                                   \
       "RASH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RASI_MSG, RLOG_SIZE(RASI),                                   \

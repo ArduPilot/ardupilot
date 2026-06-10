@@ -24,7 +24,7 @@ After capturing the flight log from a real flight you need to process
 the log so that it only contains the CANF messages. To do that run the
 following pymavlink command on the command line:
 
-```
+```bash
  mavlogdump.py -q -o CANF.bin inlog.BIN --type CANF
 ```
 
@@ -60,9 +60,8 @@ microSD card and set:
 
 After you reboot you should see a message:
 
-``
+```text
  CAN_playback: starting
-
 ```
 
 and if you monitor the CAN bus you should see the ArrayCommand
@@ -71,7 +70,7 @@ in an identical way to the movement in flight.
 
 When the end of the CANF.bin file is reached you will see a message:
 
-``
+```text
  CAN_playback: rewind
 ```
 

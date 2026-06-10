@@ -20,7 +20,7 @@ The Flywoo GOKU F405 Pro is a flight controller produced by [Flywoo](https://fly
 
 ## Pinout
 
-![GOKU F405 Pro](GOKUF405Pro_Pinout.PNG "GOKU F405 Pro")
+![GOKU F405 Pro](GOKUF405Pro_Pinout.JPG "GOKU F405 Pro")
 
 ## UART Mapping
 
@@ -52,11 +52,11 @@ The GOKU F405 Pro supports up to 9 PWM outputs. The pads for motor output ESC1 t
 
 The PWM are in 5 groups:
 
-PWM 1-2: Group 1
-PWM 3-4: Group 2
-PWM 5,7: Group 3
-PWM 6,8: Group 4
-LED: Group 5
+- PWM 1-2: Group 1
+- PWM 3-4: Group 2
+- PWM 5,7: Group 3
+- PWM 6,8: Group 4
+- LED: Group 5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -85,7 +85,7 @@ The GOKU F405 Pro does not have a builtin compass but it does have an external I
 
 The board includes a NeoPixel LED pad.
 
-## Loading Firmware (you will need to compile your own firmware)
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

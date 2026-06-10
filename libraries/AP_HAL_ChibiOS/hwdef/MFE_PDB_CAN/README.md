@@ -4,15 +4,11 @@ The MFE_PDB_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://w
 
 ## Features
 
-• STM32L431CCU6 microcontroller
-
-• two power for autopilot(5.5V   5A)
-
-• one power for servo(5.3V 5A)
-
-• one power for load(12V 5A)
-
-• Battery monitoring (power1 can, power2 adc)
+- STM32L431CCU6 microcontroller
+- two power for autopilot(5.5V   5A)
+- one power for servo(5.3V 5A)
+- one power for load(12V 5A)
+- Battery monitoring (power1 can, power2 adc)
 
 ## Picture
 
@@ -58,9 +54,9 @@ The MFE_PDB_CAN is sold by a range of resellers listed at [MakeFlyEasy](http://w
 
 ## ArduPilot Parameters
 
-BATT_VOLT_MULT  17.93387
-BATT_AMP_PERVLT 22.0
+- BATT_VOLT_MULT  17.93387
+- BATT_AMP_PERVLT 22.0
 
 ## Where to Buy
 
-[www.makeflyeasy.com](www.makeflyeasy.com)
+[www.makeflyeasy.com](https://www.makeflyeasy.com)

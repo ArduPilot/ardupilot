@@ -13,7 +13,7 @@ The Skystars H7 is a flight controller produced by [Skystars](http://www.skystar
 
 ## Pinout
 
-![Skystars H7HD Board](SkystarsH7HD.jpg.jpg "Skystars H7HD")
+![Skystars H7HD Board](SkystarsH7HD.jpg "Skystars H7HD")
 
 ## UART Mapping
 

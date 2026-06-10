@@ -143,8 +143,4 @@ void AP_Compass_SITL::_timer()
         }
 }
 
-void AP_Compass_SITL::read()
-{
-    drain_accumulated_samples(nullptr);
-}
 #endif  // AP_COMPASS_SITL_ENABLED

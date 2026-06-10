@@ -332,6 +332,10 @@ AP_HW_CORVON_V5                      1211
 
 AP_HW_CSKY_PMU                       1212
 AP_HW_PilotGaeaSH7V1                 1213
+AP_HW_JPilot-C                       1214
+AP_HW_SIYI-UniFC-6-PICO              1215
+AP_HW_CSKY_AVEGA6X                   1216
+AP_HW_CSKY_AVEGALITER03              1217
 
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
@@ -341,15 +345,26 @@ AP_HW_MatekH7A3_Wing                 1228
 AP_HW_CORVON743V2                    1229
 AP_HW_CORVON_V6                      1230
 
+
 # IDs 1231-1240 reserved for YARI Robotics
 AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 
+AP_HW_PRINCIPIOT_H7PI                1248
+
+AP_HW_KT_FMU_F1                      1250
+
+AP_HW_SKYDROID-S3                    1300
 AP_HW_CBUnmanned-CM405-FC            1301
+AP_HW_CBU_H753-SOM                   1302
 
 AP_HW_KHA_ETH                        1315
 
 AP_HW_FlysparkF4                     1361
+
+# IDs 1362-1369 reserved for SparkNavi
+AP_HW_SPARKNAVI_BLUE                 1362
+AP_HW_SPARKNAVI_BLUE2                1363
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
@@ -374,7 +389,7 @@ AP_HW_RadiolinkF405                  1417
 
 AP_HW_LongbowF405                    1422
 
-AP_HW_MountainEagleH743              1444
+AP_HW_ResoluteH7                     1445
 
 AP_HW_StellarF4                      1500
 AP_HW_GEPRCF745BTHD                  1501
@@ -391,7 +406,7 @@ AP_HW_F4BY_H743                      1531
 AP_HW_AERIUM_RADIAN_F405             1800
 AP_HW_AERIUM_RADIAN_H743             1801
 
-#IDs 1850-1869 reserved for Arkin Labs 
+#IDs 1850-1869 reserved for Arkin Labs
 AP_HW_A2M6X                          1850
 AP_HW_A2M6X_NANO                     1855
 AP_HW_A2M6X_V2                       1860
@@ -429,6 +444,7 @@ AP_HW_KRSHKF7_MINI                   4000
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
+AP_HW_HAKRC_H743                     4203
 
 # IDs 4300-4309 reserved for AeroCogito
 AP_HW_AeroCogito-H7Digital           4300
@@ -512,12 +528,12 @@ AP_HW_MATEKH743SE                    5501
 
 #IDs 5600-5699 reserved for ZeroOne
 AP_HW_ZeroOne_X6                     5600
-AP_HW_ZeroOne_PMU                    5601
-AP_HW_ZeroOne_GNSS                   5602
+AP_HW_ZeroOne_X9                     5601
 AP_HW_ZeroOne_M9                     5610
 AP_HW_ZeroOne_A3                     5620
+AP_HW_ZeroOne_A6i                    5621
 
-#IDs 5700-5710 reserved for DroneBuild  
+#IDs 5700-5710 reserved for DroneBuild
 AP_HW_DroneBuild_G1                  5700
 AP_HW_DroneBuild_G2                  5701
 
@@ -526,6 +542,7 @@ AP_HW_IOMCU_F103                     5711
 AP_HW_IOMCU_F103_8MHZ                5712  # some boards are clocked differently
 AP_HW_IOMCU_F100                     5713
 
+# IDs 5730-5739 reserved for NWBlue
 
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
@@ -565,6 +582,7 @@ AP_HW_CUAV-X25-EVO                   7002
 
 # IDs 7100-7109 reserved for V-UAV
 AP_HW_VUAV-V7pro                     7100
+AP_HW_VUAV-TinyV7                    7101
 
 # IDs 7110-7119 reserved for AEROFOX
 AP_HW_AEROFOX_H7                     7110
@@ -583,8 +601,10 @@ AP_HW_CUAV_X7_PRO_ODID              11010
 AP_HW_CUAV-7-NANO_ODID              17000
 AP_HW_CUAV-V6X-V2_ODID              17001
 AP_HW_CUAV-X25-EVO_ODID             17002
-
+AP_HW_SKYDROID-S3_ODID              11300
 AP_HW_CUBEORANGEPLUS_ODID           11063
+AP_HW_SIYI_N7_ODID                  11123
+AP_HW_SIYI-UniFC-6-PICO_ODID        11215
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.

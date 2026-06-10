@@ -1758,6 +1758,9 @@ uint8_t AP_Periph_FW::get_motor_number(const uint8_t esc_number) const
  */
 void AP_Periph_FW::esc_telem_update()
 {
+    // update telem lib, this invalidates stale data
+    esc_telem.update();
+
     uint32_t mask = esc_telem.get_active_esc_mask();
     while (mask != 0) {
         int8_t i = __builtin_ffs(mask) - 1;
@@ -2001,6 +2004,9 @@ void AP_Periph_FW::can_update()
 #endif
 #if AP_PERIPH_RPM_STREAM_ENABLED
         rpm_sensor_send();
+#endif
+#if AP_SERVO_TELEM_ENABLED
+        servo_telem_update();
 #endif
     }
     const uint32_t now_us = AP_HAL::micros();

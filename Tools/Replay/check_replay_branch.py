@@ -20,10 +20,11 @@ from pymavlink import DFReader
 import check_replay
 
 class CheckReplayBranch(object):
-    def __init__(self, master='master', no_clean=False, no_debug=False):
+    def __init__(self, master='master', no_clean=False, no_debug=False, vehicles=()):
         self.master = master
         self.no_clean = no_clean
         self.no_debug = no_debug
+        self.vehicles = vehicles
 
     def find_topdir(self):
         here = os.getcwd()
@@ -104,7 +105,7 @@ class CheckReplayBranch(object):
     def get_logs(self):
         return sorted(glob.glob("logs/*.BIN"))
 
-    def run_autotest_replay_on_master(self):
+    def run_autotest_replay_on_master(self, vehicle):
         # remember where we were:
         old_branch = self.repo.active_branch
 
@@ -123,7 +124,7 @@ class CheckReplayBranch(object):
         if self.no_clean:
             args.append("--no-clean")
 
-        args.extend(["build.Copter", "test.Copter.Replay"])
+        args.extend([f"build.{vehicle}", f"test.{vehicle}.Replay"])
 
         subprocess.check_call(args) # actually run the test
 
@@ -155,36 +156,44 @@ class CheckReplayBranch(object):
         os.chdir(self.topdir)
         self.progress("chdir (%s)" % str(self.topdir))
 
-        self.progress("Running autotest Replay on %s" % self.master)
-        self.run_autotest_replay_on_master()
-
-        self.progress("Building Replay")
-        self.build_replay()
-        self.progress("Build of Replay done")
-
-        # check all replayable logs
-        self.progress("Finding replayed logs")
-        replay_logs = self.find_replayed_logs()
         success = True
-        if len(replay_logs) == 0:
-            raise ValueError("Found no Replay logs")
-        for log in replay_logs:
-            self.progress("Running Replay on (%s)" % log)
-            old_logs = self.get_logs()
-            self.run_replay_on_log(log)
-            new_logs = self.get_logs()
-            delta = [x for x in new_logs if x not in old_logs]
-            if len(delta) != 1:
-                raise ValueError("Expected a single new log")
-            new_log = delta[0]
-            self.progress("Running check_replay.py on Replay output log: %s" % new_log)
+        for vehicle in self.vehicles:
+            self.progress("Running autotest Replay on %s (%s)" % (self.master, vehicle))
+            self.run_autotest_replay_on_master(vehicle)
 
-            # run check_replay across Replay log
-            if check_replay.check_log(new_log, verbose=True):
-                self.progress("check_replay.py of (%s): OK" % new_log)
-            else:
-                self.progress("check_replay.py of (%s): FAILED" % new_log)
-                success = False
+            # need to check now as running a new test for a new vehicle deletes the logs
+            self.progress("Building Replay")
+            self.build_replay()
+            self.progress("Build of Replay done")
+
+            # check all replayable logs
+            self.progress("Finding replayed logs")
+            replay_logs = self.find_replayed_logs()
+
+            if len(replay_logs) == 0:
+                raise ValueError("Found no Replay logs")
+            for log in replay_logs:
+                self.progress("Running Replay on (%s)" % log)
+                old_logs = self.get_logs()
+                self.run_replay_on_log(log)
+                new_logs = self.get_logs()
+                delta = [x for x in new_logs if x not in old_logs]
+                if len(delta) != 1:
+                    raise ValueError("Expected a single new log")
+                new_log = delta[0]
+                self.progress("Running check_replay.py on Replay output log: %s" % new_log)
+
+                # run check_replay across Replay log
+                if check_replay.check_log(new_log, verbose=True):
+                    self.progress("check_replay.py of (%s): OK" % new_log)
+                else:
+                    self.progress("check_replay.py of (%s): FAILED" % new_log)
+                    success = False
+
+            if not success:
+                # don't continue to next vehicle so bad logs are still around
+                break
+
         if success:
             self.progress("All OK")
         else:
@@ -199,10 +208,11 @@ if __name__ == '__main__':
     parser.add_argument("--master", default='master', help="branch to consider master branch")
     parser.add_argument("--no-clean", action="store_true", help="do not clean SITL before building")
     parser.add_argument("--no-debug", action="store_true", help="do not make built SITL binaries debug binaries")
+    parser.add_argument("--vehicle", "-v", nargs="+", default=["Copter", "Plane"], help="vehicle to run Replay test on")
 
     args = parser.parse_args()
 
-    s = CheckReplayBranch(master=args.master, no_clean=args.no_clean, no_debug=args.no_debug)
+    s = CheckReplayBranch(master=args.master, no_clean=args.no_clean, no_debug=args.no_debug, vehicles=args.vehicle)
     if not s.run():
         sys.exit(1)
 

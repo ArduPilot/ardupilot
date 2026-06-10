@@ -65,7 +65,6 @@ void ModeSport::run()
 
     // get pilot desired climb rate
     float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Sport State Machine Determination
     AltHoldModeState sport_state = get_alt_hold_state_D_ms(target_climb_rate_ms);
@@ -91,7 +90,7 @@ void ModeSport::run()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
+            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
@@ -102,8 +101,6 @@ void ModeSport::run()
         break;
 
     case AltHoldModeState::Flying:
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
         // get avoidance adjusted climb rate
         target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
 

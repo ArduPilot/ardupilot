@@ -211,19 +211,99 @@ bool Copter::gcs_mode_enabled(const Mode::Number mode_num)
         (uint8_t)Mode::Number::TURTLE
     };
 
-    if (!block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list))) {
-        return true;
+    return !block_GCS_mode_change((uint8_t)mode_num, mode_list, ARRAY_SIZE(mode_list));
+}
+
+// Return mask of enabled modes, order does not matter, its just for tracking changes
+uint32_t Copter::get_available_mode_enabled_mask() const
+{
+    const Mode* modes[] {
+#if MODE_AUTO_ENABLED
+        &copter.mode_auto,
+#endif
+#if MODE_ACRO_ENABLED
+        &copter.mode_acro,
+#endif
+        &copter.mode_stabilize,
+        &copter.mode_althold,
+#if MODE_CIRCLE_ENABLED
+        &copter.mode_circle,
+#endif
+#if MODE_LOITER_ENABLED
+        &copter.mode_loiter,
+#endif
+#if MODE_GUIDED_ENABLED
+        &copter.mode_guided,
+#endif
+        &copter.mode_land,
+#if MODE_RTL_ENABLED
+        &copter.mode_rtl,
+#endif
+#if MODE_DRIFT_ENABLED
+        &copter.mode_drift,
+#endif
+#if MODE_SPORT_ENABLED
+        &copter.mode_sport,
+#endif
+#if MODE_FLIP_ENABLED
+        &copter.mode_flip,
+#endif
+#if AUTOTUNE_ENABLED
+        &copter.mode_autotune,
+#endif
+#if MODE_POSHOLD_ENABLED
+        &copter.mode_poshold,
+#endif
+#if MODE_BRAKE_ENABLED
+        &copter.mode_brake,
+#endif
+#if MODE_THROW_ENABLED
+        &copter.mode_throw,
+#endif
+#if AP_ADSB_AVOIDANCE_ENABLED
+        &copter.mode_avoid_adsb,
+#endif
+#if MODE_GUIDED_NOGPS_ENABLED
+        &copter.mode_guided_nogps,
+#endif
+#if MODE_SMARTRTL_ENABLED
+        &copter.mode_smartrtl,
+#endif
+#if MODE_FLOWHOLD_ENABLED
+        (Mode*)copter.g2.mode_flowhold_ptr,
+#endif
+#if MODE_FOLLOW_ENABLED
+        &copter.mode_follow,
+#endif
+#if MODE_ZIGZAG_ENABLED
+        &copter.mode_zigzag,
+#endif
+#if MODE_SYSTEMID_ENABLED
+        (Mode *)copter.g2.mode_systemid_ptr,
+#endif
+#if MODE_AUTOROTATE_ENABLED
+        &copter.mode_autorotate,
+#endif
+#if MODE_TURTLE_ENABLED
+        &copter.mode_turtle,
+#endif
+    };
+
+    static_assert(ARRAY_SIZE(modes) <= 32, "Flight modes must fit in 32 bit bitmask");
+
+    uint32_t mask = 0;
+    for (uint8_t i = 0; i < ARRAY_SIZE(modes); i++) {
+        const Mode* mode = modes[i];
+
+        // the check here must be the same as the one in `send_available_mode`
+        const bool user_selectable = mode->enabled() && copter.gcs_mode_enabled(mode->mode_number());
+
+        if (user_selectable) {
+            mask |= 1U << i;
+        }
     }
 
-    // Mode disabled, try and grab a mode name to give a better warning.
-    Mode *new_flightmode = mode_from_mode_num(mode_num);
-    if (new_flightmode != nullptr) {
-        mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
-    } else {
-        notify_no_such_mode((uint8_t)mode_num);
-    }
-
-    return false;
+    return mask;
 }
 
 // set_mode - change flight mode and perform any necessary initialisation
@@ -252,6 +332,13 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 
     // Check if GCS mode change is disabled via parameter
     if ((reason == ModeReason::GCS_COMMAND) && !gcs_mode_enabled(mode)) {
+        // Mode disabled, try and grab a mode name to give a better warning.
+        const Mode *new_flightmode = mode_from_mode_num(mode);
+        if (new_flightmode == nullptr) {
+            notify_no_such_mode((uint8_t)mode);
+        } else {
+            mode_change_failed(new_flightmode, "GCS entry disabled (FLTMODE_GCSBLOCK)");
+        }
         return false;
     }
 
@@ -274,7 +361,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()) {
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         mode_change_failed(new_flightmode, "runup not complete");
         return false;
     }
@@ -437,12 +524,6 @@ void Copter::exit_mode(Mode *&old_flightmode,
     old_flightmode->exit();
 
 #if FRAME_CONFIG == HELI_FRAME
-    // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_flightmode == &mode_acro) {
-        attitude_control->use_flybar_passthrough(false, false);
-        motors->set_acro_tail(false);
-    }
-
     //last collective output
     input_manager.set_last_coll_output(motors->get_throttle());
 
@@ -952,8 +1033,6 @@ Mode::AltHoldModeState Mode::get_alt_hold_state_D_ms(float target_climb_rate_ms)
         if (target_climb_rate_ms < 0.0f && !copter.ap.using_interlock) {
             // the aircraft should move to a ground idle state
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        } else if (copter.ap.using_interlock && !motors->get_interlock()) {
-            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             // the aircraft should prepare for imminent take off
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -1032,19 +1111,19 @@ GCS_Copter &Mode::gcs() const
 // Returns the pilot’s maximum upward speed in m/s.
 float Mode::get_pilot_speed_up_ms() const
 {
-    return g.pilot_speed_up_cms * 0.01;
+    return g2.pilot_speed_up_ms;
 }
 
 // Returns the pilot’s maximum downward speed in m/s.
 float Mode::get_pilot_speed_dn_ms() const
 {
-    return copter.get_pilot_speed_dn() * 0.01;
+    return copter.get_pilot_speed_dn_ms();
 }
 
 // Returns the pilot’s vertical acceleration limit in m/s².
 float Mode::get_pilot_accel_D_mss() const
 {
-    return g.pilot_accel_d_cmss * 0.01;
+    return g2.pilot_accel_d_mss;
 }
 
 // Return stopping point as a location with above origin alt frame

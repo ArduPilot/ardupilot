@@ -27,7 +27,7 @@ Contact dheeranlabs@gmail.com for sales
 
 ## Connectors
 
-**POWER ADC**
+### POWER ADC
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -38,7 +38,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**TELEM1**
+### TELEM1
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -49,7 +49,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   |    RTS   | +3.3V |
 |  6   |    GND   |  GND  |
 
-**TELEM2**
+### TELEM2
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -60,7 +60,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   |     X    |   X   |
 |  6   |    GND   |  GND  |
 
-**GPS1**
+### GPS1
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -71,7 +71,7 @@ Contact dheeranlabs@gmail.com for sales
 |  5   | I2C2_SDA | +3.3V |
 |  6   |    GND   |  GND  |
 
-**SERIAL5**
+### SERIAL5
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -81,7 +81,7 @@ Contact dheeranlabs@gmail.com for sales
 |  4   |     X    |   X   |
 |  5   |    GND   |  GND  |
 
-**SERIAL6, GPIO**
+### SERIAL6, GPIO
 
 | Pin  |  Signal  | Volt  |
 | :--: |  :-----: | :---: |
@@ -91,7 +91,7 @@ Contact dheeranlabs@gmail.com for sales
 |  4   |   GPIO   | +3.3V |
 |  5   |    GND   |  GND  |
 
-**SAFETY**
+### SAFETY
 
 | Pin  |      Signal      | Volt  |
 | :--: | :-----------:    | :---: |
@@ -147,7 +147,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM6         | 55   |              |      |
 | PWM7         | 56   |              |      |
 
-## Analog inputs
+## Analog Inputs
 
 The PixFlamingo-F767 flight controller has 4 analog inputs
 
@@ -156,7 +156,7 @@ The PixFlamingo-F767 flight controller has 4 analog inputs
 - ADC Pin14   -> ADC 3V3 Sense
 - ADC Pin15 -> ADC 6V6 Sense
 
-## Battery Monitor Configuration
+## Battery Monitoring
 
 The board has voltage and current sensor inputs on the POWER_ADC connector.
 

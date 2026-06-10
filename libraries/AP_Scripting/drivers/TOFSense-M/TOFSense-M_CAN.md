@@ -44,7 +44,7 @@ First TOFSENSE-M sensor ID. Leave this at 0 to accept all IDs and if only one se
 ### TOFSENSE_INST1
 
 First TOFSENSE-M sensors RNGFND_/PRX_ Instance
-Setting this to 1 will pick the first backend from PRX_ or RNG_ Parameters.
+Setting this to 1 will pick the first backend from `PRX_` or `RNG_` Parameters.
 So for example if RNGFND1_TYPE = 36, RNGFND2_TYPE = 36, then you can set this parameter to 2, to pick RNGFND2_ parameters to configure this sensor
 
 ### Configuring more than one sensor on same CAN bus

@@ -10,7 +10,7 @@ The Flywoo GOKU GN 745 AIO is a flight controller produced by [Flywoo](https://f
 - MCU: STM32F745 32-bit processor, 216MHz, 1M Flash
 - IMU: MPU6000 or ICM42668P (SPI)
 - Barometer: BMP280
-- Onboard LED：WS2812*4
+- Onboard LED: WS2812*4
 - USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
 - 7 hardware UARTS (UART1, 2, 3, 4, 5, 6, 7; only RX in UART1 in v3)
 - Supports serial receivers (SBUS, iBus, Spektrum, Crossfire) only.

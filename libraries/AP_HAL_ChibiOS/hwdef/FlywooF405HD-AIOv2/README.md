@@ -9,7 +9,7 @@ The Flywoo GOKU F405 HD AIO v2 is a flight controller produced by [Flywoo](https
 - MCU: STM32F405 32-bit processor. 1024Kbytes Flash
 - IMU: MPU6000 (SPI) or ICM42688 (SPI)
 - Barometer: DPS310/SPL06
-- Onboard LED：WS2812*2
+- Onboard LED: WS2812*2
 - USB VCP Driver (all UARTs usable simultaneously; USB does not take up a UART)
 - 6 hardware UARTS (UART1,2,3,4,5,6)
 - Built-in ELRS 2.4 GHz serial receiver (on some models)
@@ -62,17 +62,18 @@ The GOKU F405 AIO supports up to 5 PWM outputs. The pads for motor output ESC1 t
 
 The PWM are in 3 groups:
 
-PWM 1-2: Group 1
-PWM 3-4: Group 2
-LED: Group 3
+- PWM 1-2: Group 1
+- PWM 3-4: Group 2
+- LED: Group 3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot. PWM 1-4 support bidirectional dshot.
-.. note:: for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
 
-- :ref:`FRAME_CLASS<FRAME_CLASS>` = 1 (Quad)
-- :ref:`FRAME_TYPE<FRAME_TYPE>` = 12 (BetaFlightX)
+> **Note:** for users migrating from BetaflightX quads, the first four outputs M1-M4 have been configured for use with existing motor wiring using these default parameters:
+
+- [FRAME_CLASS](https://ardupilot.org/copter/docs/parameters.html#frame-class-frame-class) = 1 (Quad)
+- [FRAME_TYPE](https://ardupilot.org/copter/docs/parameters.html#frame-type-frame-type-x-v-etc) = 12 (BetaFlightX)
 
 ## Battery Monitoring
 
@@ -101,7 +102,7 @@ The board includes a NeoPixel LED pad.
 
 9V/VTX state can be controlled using ArduPilot Relay, GPIO pin 81.
 
-## Loading Firmware (you will need to compile your own firmware)
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

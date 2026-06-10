@@ -513,10 +513,6 @@ void AP_Periph_FW::update()
     rcin_update();
 #endif
 
-#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
-    actuator_telem.update();
-#endif
-
 #if AP_PERIPH_BATTERY_BALANCE_ENABLED
     batt_balance_update();
 #endif

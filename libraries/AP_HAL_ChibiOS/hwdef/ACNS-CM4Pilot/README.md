@@ -9,7 +9,7 @@ The CM4PILOT is a low-cost and compact flight controller which integrated a Rasp
 ## Features
 
 - Raspberry Pi CM4 + Ardupilot, Companion Computers in cockpit structure
-- Small Footprint and Lightweight, 58mm X 50mm X 18mm，26g(without shell)
+- Small Footprint and Lightweight, 58mm x 50mm x 18mm, 26g (without shell)
 - Broadcom BCM2711, quad-core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz
 - STM32F405 microcontroller
 - IMU: BMI088

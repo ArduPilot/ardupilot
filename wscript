@@ -539,10 +539,12 @@ def configure(cfg):
         # also in env for hrt.c
         cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
 
-    # require python 3.8.x or later
-    # also update `MIN_VER` in `./waf`
+    # default Python of the oldest Standard Support Debian + Ubuntu LTS.
+    # Debian releases: https://www.debian.org/releases
+    # Ubuntu releases: https://releases.ubuntu.com
+    # also update `MIN_VER` in `./waf` and `target-version` in `pyproject.toml`
     cfg.load('python')
-    cfg.check_python_version(minver=(3,8,0))
+    cfg.check_python_version(minver=(3, 9, 0))
 
     cfg.load('ap_library')
 
@@ -818,6 +820,17 @@ def _build_dynamic_sources(bld):
     ])
 
 def _build_common_taskgens(bld):
+    # Compile the DroneCAN/libcanard generated sources once into a shared
+    # objects target that every stlib links via 'use' (see ap_stlib)
+    if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
+        bld.objects(
+            name='dronecan_libs',
+            source=[],
+            features=['c', 'ap_dynamic_source'],
+            dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
+            use=['dronecan', 'mavlink'],
+        )
+
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider

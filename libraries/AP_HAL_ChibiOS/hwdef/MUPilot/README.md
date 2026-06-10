@@ -30,7 +30,8 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 ## Connectors
 
 ![MUPilot Pinout1](MUPilot-pinout1.png "Pinout1")
-**CAN1/2**
+
+### CAN1/2
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -39,7 +40,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  3   | CAN_L  | +3.3V |
 |  4   |  GND   |  GND  |
 
-**GPS&SAFETY**
+### GPS&SAFETY
 
 | Pin  |    Signal     | Volt  |
 | :--: | :-----------: | :---: |
@@ -54,7 +55,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  9   |    BUZZER     | +3.3V |
 |  10  |      GND      |  GND  |
 
-**I2C1/2/3/4**
+### I2C1/2/3/4
 
 | Pin  | Signal   | Volt  |
 | :--: | :------: | :---: |
@@ -63,7 +64,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  3   | I2Cx _SDA| +3.3V |
 |  4   |   GND    |  GND  |
 
-**TELEM1**
+### TELEM1
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -74,7 +75,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**TELEM2**
+### TELEM2
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -85,7 +86,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |   RTS   | +3.3V |
 |  6   |   GND   |  GND  |
 
-**UART4(GPS2)**
+### UART4(GPS2)
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -96,7 +97,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |I2C2_SDA | +3.3V |
 |  6   |   GND   |  GND  |
 
-**DEBUG**
+### DEBUG
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -109,7 +110,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 
 ![MUPilot Pinout2](MUPilot-pinout2.png "Pinout2")
 
-**POWER1**
+### POWER1
 
 | Pin  |     Signal      | Volt  |
 | :--: | :-------------: | :---: |
@@ -120,7 +121,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  5   |       GND       |  GND  |
 |  6   |       GND       |  GND  |
 
-**POWER2**
+### POWER2
 
 | Pin  |     Signal         | Volt  |
 | :--: | :----------------: | :---: |
@@ -133,7 +134,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 
 ![MUPilot Pinout3](MUPilot-pinout3.png "Pinout3")
 
-**SBUS  OUT**
+### SBUS  OUT
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -143,7 +144,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 
 ![MUPilot Pinout4](MUPilot-pinout4.png "Pinout4")
 
-**ADC**
+### ADC
 
 | Pin  | Signal  | Volt  |
 | :--: | :-----: | :---: |
@@ -152,7 +153,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  3   | ADC_6V6 | +6.6V |
 |  4   |   GND   |  GND  |
 
-**SPI5**
+### SPI5
 
 | Pin  | Signal | Volt  |
 | :--: | :----: | :---: |
@@ -164,7 +165,7 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 |  7   |  CS2   | +3.3V |
 |  8   |  GND   |  GND  |
 
-**DSM/SBUS/RSSI**
+### DSM/SBUS/RSSI
 
 | Pin  |    Signal   | Volt  |
 | :--: | :---------: | :---: |
@@ -232,14 +233,14 @@ The output levels of the auxiliary outputs can be selected by switch to be eithe
 The board has two dedicated power monitor ports on 6 pin
 connectors. The correct battery setting parameters are dependent on
 the type of power brick which is connected. The first is analog only, the second may be either analog or I2C, depending on baseboard jumpers.
-In order to enable monitoring, the BATT_MONITOR or BATT2_MONIOT parameter must be set. By default :ref:`BATT_MONITOR<BATT_MONITOR>` is set to "4" for the included power module..
+In order to enable monitoring, the BATT_MONITOR or BATT2_MONITOR parameter must be set. By default BATT_MONITOR is set to "4" for the included power module.
 
 Default params for the first monitor are set and are:
 
 - BATT_VOLT_PIN = 2
 - BATT_CURR_PIN = 1
 - BATT_VOLT_MULT = 18.0
-- BATT_AMP_PERVLT = 24.0 (may need adjustment if supplied monitor is not used)
+- BATT_AMP_PERVLT = 24.0
 
 ## Compass
 
@@ -269,7 +270,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - AUX5 54
 - AUX6 55
 
-## Analog inputs
+## Analog Inputs
 
 The MUPilot has 7 analog inputs
 

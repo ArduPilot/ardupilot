@@ -52,8 +52,6 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)
 #endif
 
-#define LOG_TAG "GPS"
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::micros64())
 #else
@@ -166,21 +164,9 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         default:
             return NULL;
     }
-    if (backend == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR,
-                            LOG_TAG,
-                            "Failed to register DroneCAN GPS Node %d on Bus %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index());
-    } else {
+    if (backend != nullptr) {
         _detected_modules[found_match].driver = backend;
         backend->_detected_module = found_match;
-        AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered DroneCAN GPS Node %d on Bus %d as instance %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index(),
-                            _state.instance);
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
@@ -341,15 +327,15 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
     WITH_SEMAPHORE(sem);
 
     if (msg.status == UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_NO_FIX) {
-        interim_state.status = AP_GPS::GPS_Status::NO_FIX;
+        interim_state.status = AP_GPS_FixType::NONE;
     } else {
         if (msg.status == UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_TIME_ONLY) {
-            interim_state.status = AP_GPS::GPS_Status::NO_FIX;
+            interim_state.status = AP_GPS_FixType::NONE;
         } else if (msg.status == UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_2D_FIX) {
-            interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_2D;
+            interim_state.status = AP_GPS_FixType::FIX_2D;
             process = true;
         } else if (msg.status == UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX) {
-            interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D;
+            interim_state.status = AP_GPS_FixType::FIX_3D;
             process = true;
         }
 
@@ -363,14 +349,14 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
             }
         }
 
-        if (interim_state.status == AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
+        if (interim_state.status == AP_GPS_FixType::FIX_3D) {
             if (msg.mode == UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_DGPS) {
-                interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS;
+                interim_state.status = AP_GPS_FixType::DGPS;
             } else if (msg.mode == UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_RTK) {
                 if (msg.sub_mode == UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FLOAT) {
-                    interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT;
+                    interim_state.status = AP_GPS_FixType::RTK_FLOAT;
                 } else if (msg.sub_mode == UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED) {
-                    interim_state.status = AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED;
+                    interim_state.status = AP_GPS_FixType::RTK_FIXED;
                 }
             }
         }
@@ -471,11 +457,11 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
 
     _new_data = true;
     if (!seen_message) {
-        if (interim_state.status == AP_GPS::GPS_Status::NO_GPS) {
+        if (interim_state.status == AP_GPS_FixType::NO_GPS) {
             // the first time we see a fix message we change from
             // NO_GPS to NO_FIX, indicating to user that a DroneCAN GPS
             // has been seen
-            interim_state.status = AP_GPS::GPS_Status::NO_FIX;
+            interim_state.status = AP_GPS_FixType::NONE;
         }
         seen_message = true;
     }
@@ -744,7 +730,7 @@ bool AP_GPS_DroneCAN::read(void)
     }
     if (!seen_message) {
         // start with NO_GPS until we get first packet
-        state.status = AP_GPS::GPS_Status::NO_GPS;
+        state.status = AP_GPS_FixType::NO_GPS;
     }
 
     return false;

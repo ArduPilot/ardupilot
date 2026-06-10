@@ -15,8 +15,6 @@ public:
 
     static AP_Compass_Backend *probe(uint8_t port);
 
-    void read(void) override;
-
 private:
     void handle_external(const AP_ExternalAHRS::mag_data_message_t &pkt) override;
 };

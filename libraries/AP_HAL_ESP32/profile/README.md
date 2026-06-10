@@ -26,20 +26,20 @@ $ sudo snap install --classic kotlin
 
 kotlinc LinkerScriptGenerator.kt -d generator.jar
 
-## collect up profiling file into this folder... as per above.
+## Collect up profiling file into this folder as per above
 
-## files that the kotlin tool expects to find in this folder:
+## Files that the kotlin tool expects to find in this folder
 
         "ardusub.map",
         "PROF000.TXT",
 
-## file/s it will create in this folder:
+## File/s it will create in this folder
 
         "functions.list"
 
 cp ../../../build/esp32buzz/idf-plane/arduplane.map ardusub.map
 touch PROF000.TXT
 
-## run:
+## Run
 
 java -jar generator.jar

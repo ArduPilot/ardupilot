@@ -40,7 +40,6 @@ void ModeAltHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Alt Hold State Machine Determination
     AltHoldModeState althold_state = get_alt_hold_state_D_ms(target_climb_rate_ms);
@@ -66,7 +65,7 @@ void ModeAltHold::run()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
+            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
@@ -77,9 +76,8 @@ void ModeAltHold::run()
         break;
 
     case AltHoldModeState::Flying:
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-#if AP_AVOIDANCE_ENABLED
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
         // apply avoidance
         copter.avoid.adjust_roll_pitch_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad());
 #endif

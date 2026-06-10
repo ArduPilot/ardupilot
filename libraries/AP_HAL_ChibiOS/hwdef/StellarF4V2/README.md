@@ -36,8 +36,8 @@
 
 ## UART Mapping
 
-The UARTs are marked Rx* and Tx* in the above pinouts. The Rx* pin is the
-receive pin for UART*. The Tx* pin is the transmit pin for UART*.
+The UARTs are marked Rx and Tx in the above pinouts. The Rx pin is the
+receive pin for UARTx. The Tx pin is the transmit pin for UARTx.
 
 - SERIAL0 -> USB
 - SERIAL1 -> UART2 (Serial RC input, DMA capable)
@@ -56,13 +56,13 @@ The default RC input is configured on the UART2(SERIAL1) RX2 input and can be us
 
 - SBUS/DSM/SRXL/PPM connects to the SBUS pad or pin on the HD VTX connector. SBUS pad connected to RX2 via inverter.
 - CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-- FPort requires connection to TX2 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
-- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- FPort requires connection to TX2 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
 ## OSD Support
 
 StellarF4V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver).
-External OSD support such as DJI or DisplayPort is preconfigured on SERIAL3 but supported on any spare UART. See :ref:`common-msp-osd-overview-4.2` for more info.
+External OSD support such as DJI or DisplayPort is preconfigured on SERIAL3 but supported on any spare UART. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -81,11 +81,11 @@ The voltage input is compatible with 2~8S LiPo batteries.
 
 The default battery parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 10
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11
+- BATT_AMP_PERVLT = 10
 
 ## Compass
 

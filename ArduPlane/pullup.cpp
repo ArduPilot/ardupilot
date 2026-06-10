@@ -146,7 +146,7 @@ bool GliderPullup::verify_pullup(void)
         bool pitchup_complete = ahrs.get_pitch_deg() > MIN(0, aparm.pitch_limit_min);
         const float pitch_lag_time = 1.0f * sqrtf(ahrs.get_EAS2TAS());
         float aspeed;
-        const float aspeed_derivative = (ahrs.get_accel().x + GRAVITY_MSS * ahrs.get_DCM_rotation_body_to_ned().c.x) / ahrs.get_EAS2TAS();
+        const float aspeed_derivative = (ahrs.get_accel().x + GRAVITY_MSS * ahrs.get_rotation_body_to_ned().c.x) / ahrs.get_EAS2TAS();
         bool airspeed_low = ahrs.airspeed_EAS(aspeed) ? (aspeed + aspeed_derivative * pitch_lag_time) < 0.01f * (float)plane.target_airspeed_cm : true;
         bool roll_control_lost = fabsf(ahrs.get_roll_deg()) > aparm.roll_limit;
         if (pitchup_complete && airspeed_low && !roll_control_lost) {

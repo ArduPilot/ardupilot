@@ -343,7 +343,7 @@ void AP_ADSB::update(void)
 
     const AP_GPS &gps = AP::gps();
 
-    loc.fix_type = (AP_GPS_FixType)gps.status();
+    loc.fix_type = gps.status();
     loc.epoch_us = gps.time_epoch_usec();
 #if AP_RTC_ENABLED
     loc.have_epoch_from_rtc_us = AP::rtc().get_utc_usec(loc.epoch_from_rtc_us);

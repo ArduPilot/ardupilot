@@ -2,11 +2,9 @@
 
 ![ATOMRCF405NAVI-Deluxe](atomrcf405-navi-deluxe.jpg)
 
-the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
+the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
-.. note::
-
-    Due to flash memory limitations, this board does not include all ArduPilot features. See :ref:`Firmware Limitations <common-limited_firmware>` for details.
+> **Note:** Due to flash memory limitations, this board does not include all ArduPilot features. See [Firmware Limitations](https://ardupilot.org/copter/docs/common-limited-firmware.html) for details.
 
 ## Specifications
 
@@ -53,7 +51,7 @@ the above image and some content courtesy of `ATOMRC <http://atomrc.com/>`__
 
 tbd
 
-## Default UART order
+## UART Mapping
 
 - SERIAL0 = console = USB
 - SERIAL1 = RF Module = USART1(MAVLink2), not usable by AP GCS
@@ -71,7 +69,7 @@ All motor/servo outputs are Dshot and PWM capable. Outputs 1/2 and 6/7 are Bi-Di
 
 Mixing Dshot and normal PWM operation for outputs is restricted into groups, ie. enabling Dshot for an output in a group requires that ALL outputs in that group be configured and used as Dshot, rather than PWM outputs. The output groups that must be the same (PWM rate or Dshot, when configured as a normal servo/motor output) are: 1/2, 3/4, 5/6/7, 8/9/10, and 11/12(LED).
 
-.. note:: PWM12 is marked as "LED" and defaulted to serial led protocol, so output 11 must also be used for serial LED unless output 12 function is changed.
+> **Note:** PWM12 is marked as "LED" and defaulted to serial led protocol, so output 11 must also be used for serial LED unless output 12 function is changed.
 
 ## RC Input
 
@@ -81,37 +79,30 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 - DSM/SRXL connects to the RX2  pin, but SBUS would still be connected to SBUS.
 
-- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX2 and RX2 via a bi-directional inverter. See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 
 - CRSF/ELRS also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
 
-- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to "4".
+- SRXL2 requires a connection to TX2 and automatically provides telemetry.  Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to "4".
 
-.. note:: the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
+> **Note:** the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
 
-## Battery Monitor Configuration
+## Battery Monitoring
 
-These settings are set as defaults when the firmware is loaded (except :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
+These settings are set as defaults when the firmware is loaded (except `BATT_AMP_PERVLT` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
 
-Enable Battery monitor.
+Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
-:ref:`BATT_MONITOR<BATT_MONITOR>` =4
-
-Then reboot.
-
-:ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 10
-
-:ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 11
-
-:ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11
-
-:ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 30
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11
+- BATT_AMP_PERVLT = 30
 
 ## Connecting a GPS/Compass module
 
 This board does not include a GPS or compass. But a connector is provided to attach an external module.
 
-## OSD
+## OSD Support
 
 The internal analog OSD is enabled by default. Simultaneous use of HD VTX with OSD (DisplayPort) is also enabled by default via the 6 pin connector labeled "DJI". Either 9V (default) or 12V VTX power can be selected by solder jumper.
 
@@ -121,7 +112,7 @@ An integrated BLE RF module is attached to UART1 and its power controlled by a p
 
 ## Loading Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__  in sub-folders labeled “ATOMRCF405NAVI-Deluxe”.
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “ATOMRCF405NAVI-Deluxe”.
 
 Initial firmware load can be done with DFU by plugging in USB with the
 boot button pressed. Then you should load the "with_bl.hex"

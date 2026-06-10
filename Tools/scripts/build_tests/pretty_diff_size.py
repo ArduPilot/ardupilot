@@ -7,7 +7,9 @@ AP_FLAKE8_CLEAN
 '''
 
 import os
+
 from argparse import ArgumentParser
+
 from tabulate import tabulate
 
 parser = ArgumentParser(description="Print binary size difference with master.")

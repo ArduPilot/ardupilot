@@ -174,7 +174,9 @@ public:
         THROTTLE_UNLIMITED = 2,     // motors should move to being a state where throttle is unconstrained (e.g. by start up procedure)
     };
 
-    void set_desired_spool_state(enum DesiredSpoolState spool);
+    // set_desired_spool_state - apply safety constraints and set desired spool state
+    // Pure virtual - each vehicle type must implement appropriate safety logic
+    virtual void set_desired_spool_state(enum DesiredSpoolState spool) = 0;
 
     enum DesiredSpoolState get_desired_spool_state(void) const { return _spool_desired; }
 
@@ -280,6 +282,9 @@ public:
 #if HAL_LOGGING_ENABLED
     // write log, to be called at 10hz
     virtual void Log_Write() {};
+    
+    // log the spool rate, writes upon change
+    void Log_Write_SPOL();
 #endif
 
     enum MotorOptions : uint8_t {
@@ -330,6 +335,8 @@ protected:
     LowPassFilterFloat  _throttle_slew_filter;      // filter for the output of the throttle slew
     DesiredSpoolState   _spool_desired;             // desired spool state
     SpoolState          _spool_state;               // current spool mode
+    DesiredSpoolState   _logged_spool_desired;      // last logged spool state
+    SpoolState          _logged_spool_state;        // last logged spool mode
 
     // mask of what channels need fast output
     uint32_t            _motor_fast_mask;

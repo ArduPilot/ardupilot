@@ -14,22 +14,22 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """Launch actions for ArduPilot."""
-from typing import List
+from pathlib import Path
 from typing import Dict
+from typing import List
 from typing import Text
 from typing import Tuple
 
 from launch import LaunchContext
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess
 from launch.actions import DeclareLaunchArgument
+from launch.actions import ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 from launch.substitutions import PathJoinSubstitution
-
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-from .actions import ExecuteFunction
+from ardupilot_sitl.actions import ExecuteFunction
 
 TRUE_STRING = "True"
 FALSE_STRING = "False"
@@ -394,6 +394,7 @@ class SITLLaunch:
         sim_address = LaunchConfiguration("sim_address").perform(context)
         instance = LaunchConfiguration("instance").perform(context)
         defaults = LaunchConfiguration("defaults").perform(context)
+        use_instance_dir = LaunchConfiguration("use_instance_dir").perform(context)
 
         # Display launch arguments.
         print(f"command:          {command}")
@@ -403,6 +404,7 @@ class SITLLaunch:
         print(f"sim_address:      {sim_address}")
         print(f"instance:         {instance}")
         print(f"defaults:         {defaults}")
+        print(f"use_instance_dir: {use_instance_dir}")
 
         # Required arguments.
         cmd_args = [
@@ -483,9 +485,17 @@ class SITLLaunch:
             cmd_args.append(f"--sysid {sysid} ")
             print(f"sysid:            {sysid}")
 
+        cwd = Path.cwd()
+        if use_instance_dir == TRUE_STRING:
+            # Create an instance directory to store eeprom.bin.
+            cwd = cwd / f"{instance}"
+            Path(cwd).mkdir(exist_ok=True)
+            print(f"cwd:              {cwd}")
+
         # Create action.
         sitl_process = ExecuteProcess(
             cmd=[cmd_args],
+            cwd=str(cwd),
             shell=True,
             output="both",
             respawn=False,
@@ -634,6 +644,12 @@ class SITLLaunch:
                 "sysid",
                 default_value="",
                 description="Set MAV_SYSID.",
+            ),
+            DeclareLaunchArgument(
+                "use_instance_dir",
+                default_value="False",
+                description="If True create instance directories for the eeprom.bin.",
+                choices=BOOL_STRING_CHOICES,
             ),
         ]
 

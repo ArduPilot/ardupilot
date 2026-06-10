@@ -1,0 +1,48 @@
+# hw definition file for processing by chibios_pins.py
+# for ResoluteH7 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ResoluteH7
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+
+# order of UARTs (and USB). Allow bootloading on USB and USART3
+SERIAL_ORDER OTG1 USART3
+
+# USART3 (User)
+PB11 USART3_RX USART3
+PB10 USART3_TX USART3
+
+# PA10 IO-debug-console
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# make sure Vsw is on during bootloader
+PD10  PINIO1 OUTPUT HIGH
+
+PE3 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# Add CS pins to ensure they are high in bootloader
+PA4 IMU1_CS CS
+PB12 MAX7456_CS CS
+PB2 FLASH_CS CS
+
+

@@ -854,12 +854,14 @@ singleton AR_AttitudeControl method get_srate void float'Ref float'Ref
 include AP_Mount/AP_Mount.h
 singleton AP_Mount depends HAL_MOUNT_ENABLED == 1
 singleton AP_Mount rename mount
+
 singleton AP_Mount method get_mode MAV_MOUNT_MODE'enum uint8_t'skip_check
 singleton AP_Mount method set_mode void uint8_t'skip_check MAV_MOUNT_MODE'enum MAV_MOUNT_MODE_RETRACT MAV_MOUNT_MODE_HOME_LOCATION
 singleton AP_Mount method set_angle_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_rate_target void uint8_t'skip_check float'skip_check float'skip_check float'skip_check boolean
 singleton AP_Mount method set_roi_target void uint8_t'skip_check Location
 singleton AP_Mount method get_attitude_euler boolean uint8_t'skip_check float'Null float'Null float'Null
+singleton AP_Mount method set_natively_supported_mount_target_types void uint8_t'skip_check uint8_t'skip_check
 singleton AP_Mount method get_rate_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_angle_target boolean uint8_t'skip_check float'Null float'Null float'Null boolean'Null
 singleton AP_Mount method get_location_target boolean uint8_t'skip_check Location'Null
@@ -1064,10 +1066,10 @@ singleton AC_Fence method get_margin_breaches uint8_t
 singleton AC_Fence method get_margin_breach_time uint32_t
 singleton AC_Fence method get_breach_distance float uint8_t'skip_check
 singleton AC_Fence method get_breach_direction_NED boolean uint8_t'skip_check Vector3f'Null Location'Null
-singleton AC_Fence method get_safe_alt_min_m float
-singleton AC_Fence method get_safe_alt_min_m rename get_safe_alt_min
-singleton AC_Fence method get_safe_alt_max_m float
-singleton AC_Fence method get_safe_alt_max_m rename get_safe_alt_max
+singleton AC_Fence method get_safe_alt_min_m_and_frame void float'Ref uint8_t'Ref
+singleton AC_Fence method get_safe_alt_min_m_and_frame rename get_safe_alt_min
+singleton AC_Fence method get_safe_alt_max_m_and_frame void float'Ref uint8_t'Ref
+singleton AC_Fence method get_safe_alt_max_m_and_frame rename get_safe_alt_max
 singleton AC_Fence method present uint8_t
 singleton AC_Fence method get_enabled_fences uint8_t
 

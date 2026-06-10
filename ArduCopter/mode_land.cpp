@@ -14,7 +14,7 @@ const AP_Param::GroupInfo ModeLand::var_info[] = {
 
     // @Param: SPD_HIGH_MS
     // @DisplayName: Land speed high
-    // @Description: The descent speed for the first stage of landing in m/s. If this is zero then WPNAV_SPEED_DN is used
+    // @Description: The descent speed for the first stage of landing in m/s. If this is zero then WP_SPD_DN is used
     // @Units: m/s
     // @Range: 0 5
     // @Increment: 0.1
@@ -199,6 +199,13 @@ void ModeLand::nogps_run()
 void ModeLand::do_not_use_GPS()
 {
     control_position = false;
+}
+
+// returns true if pilot's yaw input should be used to adjust vehicle's heading
+bool ModeLand::use_pilot_yaw() const
+{
+    // only accept yaw input if repositioning is enabled
+    return g.land_repositioning;
 }
 
 // set_mode_land_with_pause - sets mode to LAND and triggers 4 second delay before descent starts

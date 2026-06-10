@@ -19,7 +19,7 @@
 
 local MAVLinkAttitude = {}
 
-MAVLinkAttitude.SCRIPT_VERSION = "4.7.0-009"
+MAVLinkAttitude.SCRIPT_VERSION = "4.8.0-010"
 MAVLinkAttitude.SCRIPT_NAME = "MAVLink Attitude"
 MAVLinkAttitude.SCRIPT_NAME_SHORT = "MAVATT"
 
@@ -34,11 +34,9 @@ MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, 
    milliseconds means we lose accuracy over time. At 9 hours we have
    an accuracy of about 1 millisecond
 --]]
-function MAVLinkAttitude.JitterCorrection(_max_lag_ms, _convergence_loops)
+function MAVLinkAttitude.JitterCorrection(max_lag_ms, convergence_loops)
     local self = {}
 
-    local max_lag_ms = _max_lag_ms
-    local convergence_loops = _convergence_loops
     local link_offset_ms = 0
     local min_sample_ms = 0
     local initialised = false

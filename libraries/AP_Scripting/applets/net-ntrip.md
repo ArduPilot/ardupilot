@@ -8,7 +8,7 @@ Autopilot must be [Ethernet enabled](https://ardupilot.org/copter/docs/common-ne
 
 NTRIP caster must accept insecure http connections (not https).
 
-## Configuration:
+## Configuration
 
 Configure the autopilot with [DHCP or a static IP, proper gateway, and netmask](https://ardupilot.org/copter/docs/common-network.html).
 
@@ -18,7 +18,7 @@ For example, RTK2Go is available at 3.143.243.81 port 2101. If the username is a
 
 The caster IP address can be found by using ping on the command line, for example:
 
-```
+```bash
 ping rtk2go.com
 ```
 

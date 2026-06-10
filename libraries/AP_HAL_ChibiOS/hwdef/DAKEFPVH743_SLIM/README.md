@@ -22,11 +22,14 @@ The DAKEFPV H743 SLIM is a flight controller produced by [DAKEFPV](https://www.d
 ![DAKEFPV H743 SLIM Board Bottom](DAKEFPVH743_SLIM_Bottom.jpg "DAKEFPV H743 SLIM Bottom")
 
 ## DAKEFPV H743 SLIM Wiring Diagram
+
 ### DAKEFPV H743 SLIM Wiring Diagram Top
+
 ![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop.png "DAKEFPV H743 SLIM Wiring Diagram Top")
 ![DAKEFPV H743 SLIM Wiring Diagram Top](DAKEFPVH743_SLIM_WiringDiagramTop2.png "DAKEFPV H743 SLIM Wiring Diagram Top1")
 
 ### DAKEFPV H743 SLIM Wiring Diagram Bottom
+
 ![DAKEFPV H743 SLIM Wiring Diagram Bottom](DAKEFPVH743_SLIM_WiringDiagramBottom.png "DAKEFPV H743 SLIM Wiring Diagram Bottom")
 
 ## UART Mapping
@@ -48,19 +51,19 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART5 RX input. It supports all serial RC protocols except PPM .
 
-- FPort requires an external bi-directional inverter attached to T5 and :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` set to 4 (half-duplex).  See :ref:`common-FPort-receivers`.
+- FPort requires an external bi-directional inverter attached to T5 and [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) set to 4 (half-duplex).  See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF/ELRS uses RX5/TX5.
-- SRXL2 requires a connection to T5 and automatically provides telemetry.  Set :ref:`SERIAL5_OPTIONS<SERIAL5_OPTIONS>` to "4".
+- SRXL2 requires a connection to T5 and automatically provides telemetry.  Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) to "4".
 
-If the user wishes to use the SBUS from a DJI air unit for RC control, it is suggested that the RX8 padd be used as shown in the wiring diagram and :ref:`SERIAL8_PROTOCOL <SERIAL8_PROTOCOL>` be set to "23" and :ref:`SERIAL5_PROTOCOL<SERIAL5_PROTOCOL>` be changed from "23" to something else.
+If the user wishes to use the SBUS from a DJI air unit for RC control, it is suggested that the RX8 pad be used as shown in the wiring diagram and [SERIAL8_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial8-protocol-serial8-protocol-selection) be set to "23" and [SERIAL5_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial5-protocol-serial5-protocol-selection) be changed from "23" to something else.
 
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using an unused UART, such as the TX2 pin (UART2 transmit).
 You need to set the following parameters to enable support for FrSky S.PORT:
 
-- :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` 10
-- :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` 7
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
+- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
 
 ## PWM Output
 
@@ -85,21 +88,21 @@ sensor can read up to 130 Amps. The voltage sensor can handle up to 12S LiPo bat
 
 The correct battery setting parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 11
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 10
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 16.0
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 83.3
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 11
+- BATT_CURR_PIN = 10
+- BATT_VOLT_MULT = 16.0
+- BATT_AMP_PERVLT = 83.3
 
 ## RSSI
 
-- ADC Pin 8 -> Analog RSSI voltage monitoring. Set :ref:`RSSI_TYPE<RSSI_TYPE>` = 1 and :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` = 8. For RSSI embedded in digital RC protocols like CRSF, set :ref:`RSSI_TYPE<RSSI_TYPE>` = 3
+- ADC Pin 8 -> Analog RSSI voltage monitoring. Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 1 and [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) = 8. For RSSI embedded in digital RC protocols like CRSF, set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) = 3
 
 ## Compass
 
 The DAKEFPV H743 SLIM does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## Camera control
+## Camera Control
 
 GPIO 81 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output from CAM1 to CAM2. By default RELAY1 is configured to control this pin and sets the GPIO high.
 
@@ -120,11 +123,13 @@ GPIO_CAN1_SILENT on Betaflight is PINIO4.
 When using DJI HD video transmission, the flight controller needs to connect to DJI TX and RX via Serial 4. In the settings, set `SERIAL4_PROTOCOL` to `42` (default). If you are also using a DJI remote controller, you can connect Rx8 to the DJI SBUS interface, set `SERIAL8_PROTOCOL` to 15, and set `SERIAL5_PROTOCOL` to something else.
 
 ## OSD Support
+
 The DAKEFPVH743_SLIM has an onboard OSD using a MAX7456 chip and is enabled by default. The CAM1/2 and VTX pins provide connections for using the internal OSD. Simultaneous DisplayPort OSD is also possible and is configured by default.
 The HD VTX connector can have RX4 replaced by the analog VTX signal if that connector is used for analog VTX connection by using the DJI/VTX jumper pads.
 
 ## Loading Firmware
-Firmware for these boards can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled "DAKEFPVH743_SLIM".
+
+Firmware for these boards can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "DAKEFPVH743_SLIM".
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"
 firmware, using your favourite DFU loading tool.

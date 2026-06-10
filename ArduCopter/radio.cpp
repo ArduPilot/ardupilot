@@ -39,6 +39,14 @@ void Copter::init_rc_in()
     // set default dead zones
     default_dead_zones();
 
+    #if FRAME_CONFIG == HELI_FRAME
+        static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
+            { "RC_OPTIONS", 0 },
+            { "RC8_OPTION", 32 }
+        };
+        AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
+    #endif
+
     // initialise throttle_zero flag
     ap.throttle_zero = true;
 }
@@ -131,7 +139,7 @@ void Copter::read_radio()
 void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
-    if(g.failsafe_throttle == FS_THR_DISABLED) {
+    if(g.failsafe_throttle == FS_THR_Action::DISABLED) {
         set_failsafe_radio(false);
         return;
     }

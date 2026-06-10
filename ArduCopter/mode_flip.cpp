@@ -3,21 +3,19 @@
 #if MODE_FLIP_ENABLED
 
 /*
- * Init and run calls for flip flight mode
+ * Flight mode which performs a flip, then self-exits.
  *      original implementation in 2010 by Jose Julio
  *      Adapted and updated for AC2 in 2011 by Jason Short
  *
- *      Controls:
- *          RC7_OPTION - RC12_OPTION parameter must be set to "Flip" (AUXSW_FLIP) which is "2"
- *          Pilot switches to Stabilize, Acro or AltHold flight mode and puts ch7/ch8 switch to ON position
- *          Vehicle will Roll right by default but if roll or pitch stick is held slightly left, forward or back it will flip in that direction
- *          Vehicle should complete the roll within 2.5sec and will then return to the original flight mode it was in before flip was triggered
- *          Pilot may manually exit flip by switching off ch7/ch8 or by moving roll stick to >40deg left or right
+ *      Flip can be initiated by either a (configured) RC switch or switching modes to FLIP.
+ *      With no pilot input, the flip is in the ROLL_LEFT direction.
+ *      By gently holding the roll/pitch stick in a direction during mode entry, the pilot can select the flip's direction.
+ *      While in FLIP mode, the flip can be aborted by:
+ *      - Pushing either the roll or pitch stick to a 'high magnitude' value.
+ *      - Toggling the (configured) RC switch away from HIGH.
+ *      - Switching mode away from FLIP.
+ *      No matter whether the flip completes or is aborted, the mode will switch away afterwards.
  *
- *      State machine approach:
- *          FlipState::Start (while copter is leaning <45deg) : roll right at 400 deg/sec, increase throttle
- *          FlipState::Roll (while copter is between +45deg ~ -90) : roll right at 400 deg/sec, reduce throttle
- *          FlipState::Recover (while copter is between -90deg and original target angle) : use earth frame angle controller to return vehicle to original attitude
  */
 
 #define FLIP_THR_INC            0.20f           // throttle increase during FlipState::Start stage (under 45deg lean angle)
@@ -60,6 +58,7 @@ bool ModeFlip::init(bool ignore_checks)
 
     // initialise state
     _state = FlipState::Start;
+    abandon_requested = false;
     start_time_ms = millis();
 
     roll_dir = pitch_dir = 0;
@@ -92,8 +91,9 @@ bool ModeFlip::init(bool ignore_checks)
 void ModeFlip::run()
 {
     // if pilot inputs roll > 40deg or timeout occurs abandon flip
-    if (!motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
+    if (abandon_requested || !motors->armed() || (abs(channel_roll->get_control_in()) >= 4000) || (abs(channel_pitch->get_control_in()) >= 4000) || ((millis() - start_time_ms) > FLIP_TIMEOUT_MS)) {
         _state = FlipState::Abandon;
+        abandon_requested = false;
     }
 
     // get pilot's desired throttle
@@ -212,6 +212,11 @@ void ModeFlip::run()
 
     // output pilot's throttle without angle boost
     attitude_control->set_throttle_out(throttle_out, false, g.throttle_filt);
+}
+
+void ModeFlip::abandon_flip()
+{
+    abandon_requested = true;
 }
 
 #endif

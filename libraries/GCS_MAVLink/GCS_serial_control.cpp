@@ -116,6 +116,10 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
 
     // write the data
     if (packet.count != 0) {
+        if (packet.count > sizeof(packet.data)) {
+            packet.count = sizeof(packet.data);
+        }
+
         if ((packet.flags & SERIAL_CONTROL_FLAG_BLOCKING) == 0) {
             stream->write(packet.data, packet.count);
         } else {

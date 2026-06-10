@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 '''
 Wrapper around elf_diff (https://github.com/noseglasses/elf_diff)
 to create a html report comparing an ArduPilot build across two
@@ -18,6 +16,8 @@ Starting in the ardupilot directory.
 Output is placed into ELF_DIFF_[VEHICLE_NAME]
 '''
 
+from __future__ import annotations
+
 import copy
 import fnmatch
 import optparse
@@ -28,7 +28,10 @@ import shutil
 import tempfile
 import threading
 import time
+
 import board_list
+
+from build_script_base import VEHICLE_MAP
 from build_script_base import BuildScriptBase
 
 
@@ -75,6 +78,7 @@ class SizeCompareBranches(BuildScriptBase):
                  all_vehicles=False,
                  exclude_board_glob: list | None = None,
                  all_boards=False,
+                 modified_boards=False,
                  use_merge_base=True,
                  waf_consistent_builds=True,
                  show_empty=True,
@@ -86,6 +90,7 @@ class SizeCompareBranches(BuildScriptBase):
                  jobs=None,
                  features=False,
                  symbols=False,
+                 compare_object_files=False,
                  ):
         super().__init__()
 
@@ -124,27 +129,23 @@ class SizeCompareBranches(BuildScriptBase):
         self.jobs = jobs
         self.features = features
         self.symbols = symbols
+        self.compare_object_files = compare_object_files
 
         self.boards_by_name = {}
         for board in board_list.BoardList().boards:
             self.boards_by_name[board.name] = board
 
-        # map from vehicle names to binary names
-        self.vehicle_map = {
-            "rover"     : "ardurover",
-            "copter"    : "arducopter",
-            "plane"     : "arduplane",
-            "sub"       : "ardusub",
-            "heli"      : "arducopter-heli",
-            "blimp"     : "blimp",
-            "antennatracker" : "antennatracker",
-            "AP_Periph" : "AP_Periph",
-            "bootloader": "AP_Bootloader",
-            "iofirmware": "iofirmware_highpolh",  # FIXME: lowpolh?
-        }
+        self.vehicle_map = VEHICLE_MAP
 
         if all_boards:
             self.board = sorted(list(self.boards_by_name.keys()), key=lambda x: x.lower())
+        elif modified_boards:
+            self.board = self.find_modified_boards(
+                self.branch, self.master_branch, self.use_merge_base)
+            if not self.board:
+                raise ValueError(
+                    "No modified boards found between %s and %s" %
+                    (self.branch, self.master_branch))
         else:
             # validate boards
             all_boards = set(self.boards_by_name.keys())
@@ -258,13 +259,16 @@ class SizeCompareBranches(BuildScriptBase):
         if jobs is not None:
             waf_configure_args.extend(["-j", str(jobs)])
 
-        self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
+        non_bootloader_configure_done : bool = False
         for v in vehicle:
             if v == 'bootloader':
                 # need special configuration directive
                 continue
+            if not non_bootloader_configure_done:
+                self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
+                non_bootloader_configure_done = True
             self.run_waf([v], show_output=False, source_dir=source_dir)
         for v in vehicle:
             if v != 'bootloader':
@@ -561,6 +565,9 @@ class SizeCompareBranches(BuildScriptBase):
         if self.symbols:
             self.compare_task_results_symbols(pairs)
 
+        if self.compare_object_files:
+            self.compare_task_results_object_files(pairs)
+
     def compare_task_results_sizes(self, pairs):
         results = {}
         for pair in pairs.values():
@@ -645,15 +652,13 @@ class SizeCompareBranches(BuildScriptBase):
         # slurp all content into a variable:
         content = bytearray()
         for extra_hwdef in extra_hwdefs:
-            with open(extra_hwdef, "r+b") as f:
-                content += f.read()
+            with open(extra_hwdef, "r+b") as in_file:
+                content += in_file.read()
 
         # spew content to single file:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        f.write(content)
-        f.close()
-
-        return f.name
+        with tempfile.NamedTemporaryFile(delete=False) as out_file:
+            out_file.write(content)
+            return out_file.name
 
     def run_build_task(self, task, source_dir=None, jobs=None):
         self.progress(f"Building {task}")
@@ -713,6 +718,7 @@ class SizeCompareBranches(BuildScriptBase):
                 elf_dirname = esp32_elf_dirname
                 bin_dirname = elf_dirname
                 elf_filename = "ardupilot.elf"
+            v["board_dir"] = os.path.join(elf_basedir, task.board)
             v["bin_dir"] = os.path.join(elf_basedir, task.board, bin_dirname)
             v["bin_filename"] = bin_filename
             v["elf_dir"] = os.path.join(elf_basedir, task.board, elf_dirname)
@@ -826,6 +832,62 @@ class SizeCompareBranches(BuildScriptBase):
             results[pair["master"].board] = self.compare_results_symbols(pair["master"], pair["branch"])
         print(self.csv_for_results(results))
 
+    def collect_object_files(self, board_dir):
+        '''return a dict mapping relative path -> absolute path for all .o files under board_dir'''
+        files = {}
+        for root, dirs, filenames in os.walk(board_dir):
+            for filename in filenames:
+                if not filename.endswith('.o'):
+                    continue
+                full_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(full_path, board_dir)
+                files[rel_path] = full_path
+        return files
+
+    def compare_results_object_files(self, result_master: Result, result_branch: Result):
+        '''print object files that differ between master and branch builds'''
+        # use the first available vehicle's board_dir (all vehicles share the same board dir)
+        board_dir_master = None
+        board_dir_branch = None
+        for vehicle, board_info in result_master.vehicle.items():
+            if "board_dir" in board_info:
+                board_dir_master = board_info["board_dir"]
+                break
+        for vehicle, board_info in result_branch.vehicle.items():
+            if "board_dir" in board_info:
+                board_dir_branch = board_info["board_dir"]
+                break
+
+        if board_dir_master is None or board_dir_branch is None:
+            return
+
+        master_files = self.collect_object_files(board_dir_master)
+        branch_files = self.collect_object_files(board_dir_branch)
+
+        all_paths = sorted(set(master_files.keys()) | set(branch_files.keys()))
+        differing = []
+        for rel_path in all_paths:
+            if rel_path not in master_files:
+                differing.append(("only-in-branch", rel_path))
+            elif rel_path not in branch_files:
+                differing.append(("only-in-master", rel_path))
+            elif not self.files_are_identical(master_files[rel_path], branch_files[rel_path]):
+                differing.append(("differs", rel_path))
+
+        board = result_master.board
+        if differing:
+            print(f"Object files differing for {board}:")
+            for (reason, rel_path) in differing:
+                print(f"  {reason}: {rel_path}")
+        else:
+            print(f"No differing object files for {board}")
+
+    def compare_task_results_object_files(self, pairs):
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                continue
+            self.compare_results_object_files(pair["master"], pair["branch"])
+
     def compare_results_sizes(self, result_master, result_branch):
         ret = {}
         for vehicle in result_master.vehicle.keys():
@@ -936,6 +998,11 @@ def main():
                       default=False,
                       help="Build all boards")
     parser.add_option("",
+                      "--modified-boards",
+                      action='store_true',
+                      default=False,
+                      help="Build all boards with modified hwdef files")
+    parser.add_option("",
                       "--exclude-board-glob",
                       default=[],
                       action="append",
@@ -953,6 +1020,13 @@ def main():
         default=False,
         action="store_true",
         help="compare symbols present in each firmware",
+    )
+    parser.add_option(
+        "",
+        "--compare-object-files",
+        default=False,
+        action="store_true",
+        help="print list of compiler object files which differ between branches",
     )
     parser.add_option("",
                       "--all-vehicles",
@@ -994,6 +1068,7 @@ def main():
         run_elf_diff=(cmd_opts.elf_diff),
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
+        modified_boards=cmd_opts.modified_boards,
         exclude_board_glob=cmd_opts.exclude_board_glob,
         use_merge_base=not cmd_opts.no_merge_base,
         waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
@@ -1003,6 +1078,7 @@ def main():
         jobs=cmd_opts.jobs,
         features=cmd_opts.features,
         symbols=cmd_opts.symbols,
+        compare_object_files=cmd_opts.compare_object_files,
     )
     x.run()
 

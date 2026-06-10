@@ -23,7 +23,7 @@ and quadplane:
     cd $HOME/ardupilot
     ./Tools/scripts/sitl-on-hardware/sitl-on-hw.py --board MatekH743 --vehicle plane --simclass QuadPlane
 
-### Copter :
+### Copter
 
 Only the default quad frame is enable by default, to enable another frame type, you need to enable the right compile flag :
 e.g. for octa-quad frame, AP_MOTORS_FRAME_OCTAQUAD_ENABLED 1 in the hwdef file. Compile flags list is in AP_Motors_class.h

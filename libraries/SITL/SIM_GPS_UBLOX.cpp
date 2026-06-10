@@ -235,9 +235,44 @@ void GPS_UBlox::publish(const GPS_Data *d)
     velned.heading_accuracy = 4;
 
     memset(&sol, 0, sizeof(sol));
-    sol.fix_type = d->have_lock?3:0;
+    if (d->have_lock) {
+        sol.satellites = d->num_sats;
+        switch(d->fix_type) {
+            // https://content.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_UBX-13003221.pdf?utm_content=UBX-13003221
+            // See page 377, 32.17.17 UBX-NAV-PVT
+            case 0: // no gps - don't publish data.
+                return;
+            case 1: // no lock
+                pvt.flags = 0b00000000;
+                sol.fix_type = 0;
+                break;
+            case 2: // 2d
+                sol.fix_type = 2;
+                pvt.flags = 0b00000001;
+                break;
+            case 3: // 3d
+                sol.fix_type = 3;
+                pvt.flags = 0b00000001;
+                break;
+            case 4: // dgps
+                sol.fix_type = 3;
+                pvt.flags = 0b00000011;
+                break;
+            case 5: // rtk float
+                sol.fix_type = 3;
+                pvt.flags = 0b01000011;
+                break;
+            case 6: // rtk fixed
+                sol.fix_type = 3;
+                pvt.flags = 0b10000011;
+                break;
+        }
+    } else {
+        sol.fix_type = 0;
+        pvt.flags = 0b00000000;
+        sol.satellites = 3;
+    }
     sol.fix_status = 221;
-    sol.satellites = d->have_lock ? d->num_sats : 3;
     sol.time = gps_tow.ms;
     sol.week = gps_tow.week;
 
@@ -260,8 +295,7 @@ void GPS_UBlox::publish(const GPS_Data *d)
     pvt.valid = 0; // invalid utc date
     pvt.t_acc = 0;
     pvt.nano = 0;
-    pvt.fix_type = d->have_lock? 0x3 : 0;
-    pvt.flags = 0b10000011; // carrsoln=fixed, psm = na, diffsoln and fixok
+    pvt.fix_type = sol.fix_type;
     pvt.flags2 =0;
     pvt.num_sv = d->have_lock ? d->num_sats : 3;
     pvt.lon = d->longitude * 1.0e7;

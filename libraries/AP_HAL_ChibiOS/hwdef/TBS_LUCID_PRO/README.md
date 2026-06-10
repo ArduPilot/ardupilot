@@ -90,7 +90,7 @@ The TBS LUCID PRO does not have a builtin compass, but you can attach an externa
 
 ## Firmware
 
-Firmware for this board can be found `here <https://firmware.ardupilot.org>`__ in sub-folders labeled “TBS_LUCID_PRO”
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “TBS_LUCID_PRO”
 
 ## Loading Firmware
 

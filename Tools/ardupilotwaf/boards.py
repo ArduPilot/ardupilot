@@ -258,6 +258,13 @@ class Board:
         return (int(major) > want_major or
                 (int(major) == want_major and int(minor) >= want_minor))
 
+    def cc_version_lte(self, cfg, want_major, want_minor):
+        if cfg.env.TOOLCHAIN == "custom":
+            return True
+        (major, minor, patchlevel) = cfg.env.CC_VERSION
+        return (int(major) < want_major or
+                (int(major) == want_major and int(minor) <= want_minor))
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -431,6 +438,7 @@ class Board:
 
                 '-Werror=address-of-packed-member',
 
+                '-Werror=unknown-warning-option',
                 '-Werror=inconsistent-missing-override',
                 '-Werror=overloaded-virtual',
 
@@ -487,6 +495,15 @@ class Board:
                 ]
                 env.CFLAGS += [
                     '-Werror=use-after-free',
+                ]
+            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 1):
+                # the following warnings appear to be buggy in later compiler versions
+                # https://github.com/ArduPilot/ardupilot/issues/33206
+                # TODO: readdress following a 16.2+ release
+                env.CXXFLAGS += [
+                    '-Wno-error=maybe-uninitialized',
+                    '-Wno-error=format-truncation',
+                    '-Wno-error=array-bounds',
                 ]
 
         if cfg.env.TOOLCHAIN == "custom":
@@ -591,10 +608,11 @@ class Board:
             # affecting the compiler output:
             env.CXXFLAGS += ['-frandom-seed=4']  # ob. xkcd
 
-            # disable setting build ID in the ELF header. though if two binaries
-            # are identical they will have the same build ID, setting it avoids
-            # creating a difference if they are not in a way we care about.
-            env.LDFLAGS += ['-Wl,--build-id=none']
+            # Disable setting build ID in the ELF header.
+            # This avoids flagging if two binaries differ in a way we don't care about.
+            # MacOS (darwin) outputs (Mach-O, not ELF) do not need this.
+            if cfg.env.DEST_OS != 'darwin':
+                env.LDFLAGS += ['-Wl,--build-id=none']
             # squash all line numbers to be the number 17
             env.CXXFLAGS += [
                 "-D__AP_LINE__=17",
@@ -665,6 +683,10 @@ def add_dynamic_boards_linux():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(LinuxBoard, 'libraries/AP_HAL_Linux/hwdef')
 
+def add_dynamic_boards_qurt():
+    '''add boards based on existence of hwdef.dat in subdirectories for '''
+    add_dynamic_boards_from_hwdef_dir(QURTBoard, 'libraries/AP_HAL_QURT/hwdef')
+
 def add_dynamic_boards_sitl():
     '''add boards based on existence of hwdef.dat in subdirectories for '''
     add_dynamic_boards_from_hwdef_dir(SITLBoard, 'libraries/AP_HAL_SITL/hwdef')
@@ -698,6 +720,7 @@ def get_boards_names():
     add_dynamic_boards_chibios()
     add_dynamic_boards_esp32()
     add_dynamic_boards_linux()
+    add_dynamic_boards_qurt()
     add_dynamic_boards_sitl()
 
     return sorted(list(_board_classes.keys()), key=str.lower)
@@ -800,12 +823,6 @@ class SITLBoard(Board):
         cfg.define('AP_NOTIFY_LP5562_BUS', 2)
         cfg.define('AP_NOTIFY_LP5562_ADDR', 0x30)
 
-        # turn on fencepoint and rallypoint protocols so they're still tested:
-        env.CXXFLAGS.extend([
-            '-DAP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED=HAL_GCS_ENABLED&&HAL_RALLY_ENABLED',
-            '-DAC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT=HAL_GCS_ENABLED&&AP_FENCE_ENABLED'
-        ])
-
         if not cfg.env.AP_PERIPH:
             try:
                 env.CXXFLAGS.remove('-DHAL_NAVEKF2_AVAILABLE=0')
@@ -858,7 +875,9 @@ class SITLBoard(Board):
                 '-O3',
             ]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            if not cfg.env.DEBUG:
+                cfg.fatal('--asan requires --debug for reliable instrumentation')
             env.CXXFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
@@ -873,8 +892,8 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
-             env.LINKFLAGS += ['-fsanitize=address']
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
@@ -907,11 +926,23 @@ class SITLBoard(Board):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
         for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/models/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
             if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
 
         # include locations.txt so SITL on windows can lookup by name
         env.ROMFS_FILES += [('locations.txt','Tools/autotest/locations.txt')]
+
+        # embed vehicleinfo.json and the default-params files so SITL is
+        # self-sufficient: a binary invoked with --model=<frame> can resolve
+        # its parameter defaults from ROMFS without the source tree on disk.
+        env.ROMFS_FILES += [('vehicleinfo.json','Tools/autotest/pysim/vehicleinfo.json')]
+        for f in os.listdir('Tools/autotest/default_params'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/default_params/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
+            if fnmatch.fnmatch(f, "*.parm"):
+                env.ROMFS_FILES += [('default_params/'+f,'Tools/autotest/default_params/'+f)]
 
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
@@ -1479,7 +1510,7 @@ class LinuxBoard(Board):
         # get name of class
         return self.__class__.__name__
 
-class QURT(Board):
+class QURTBoard(Board):
     '''support for QURT based boards'''
     toolchain = 'custom'
 
@@ -1487,6 +1518,11 @@ class QURT(Board):
         super().__init__()
 
         self.with_can = False
+
+    def configure(self, cfg):
+        # load hwdef, extract toolchain from cfg.env:
+        cfg.load('qurt')
+        super().configure(cfg)
 
     def configure_toolchain(self, cfg):
         cfg.env.CXX_NAME = 'gcc'
@@ -1522,7 +1558,7 @@ class QURT(Board):
         ]
 
     def configure_env(self, cfg, env):
-        super(QURT, self).configure_env(cfg, env)
+        super().configure_env(cfg, env)
 
         env.BOARD_CLASS = "QURT"
         env.HEXAGON_APP = "libardupilot.so"
@@ -1568,7 +1604,7 @@ class QURT(Board):
         ]
 
     def build(self, bld):
-        super(QURT, self).build(bld)
+        super().build(bld)
         bld.load('qurt')
 
     def get_name(self):

@@ -96,7 +96,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 | 5   | SDA   | SDA    | 3.3V    |
 | 6   | SCL   | SCL    | 3.3V    |
 
-*4.5V pads will receive power from either USB or battery*
+*Note:* 4.5V pads will receive power from either USB or battery.
 
 ### Companion Computer/Telemetry Connector (UART5)
 
@@ -116,7 +116,7 @@ The H7-Digital uses JST-SH connectors adhering to the [BetaFlight Connector Stan
 | 3   | R4    | RX     | 3.3V    |
 | 4   | T4    | TX     | 3.3V    |
 
-*4.5V pads will receive power from either USB or battery*
+*Note:* 4.5V pads will receive power from either USB or battery.
 
 ### VTX/DisplayPort Connector (UART2)
 

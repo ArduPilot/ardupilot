@@ -152,7 +152,7 @@ uint32_t RGBLed::get_colour_sequence(void) const
     if (AP_Notify::flags.armed) {
 #if AP_GPS_ENABLED
         // solid green if armed with GPS 3d lock and good location
-        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D &&
+        if (AP_Notify::flags.gps_status >= AP_GPS_FixType::FIX_3D &&
             good_ahrs_location) {
             return sequence_armed;
         }
@@ -166,10 +166,10 @@ uint32_t RGBLed::get_colour_sequence(void) const
         return sequence_prearm_failing;
     }
     if (AP_Notify::flags.pre_arm_gps_check && good_ahrs_location) {
-        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D_DGPS) {
+        if (AP_Notify::flags.gps_status >= AP_GPS_FixType::DGPS) {
             return sequence_disarmed_good_dgps_and_location;
         }
-        if (AP_Notify::flags.gps_status >= AP_GPS::GPS_OK_FIX_3D) {
+        if (AP_Notify::flags.gps_status >= AP_GPS_FixType::FIX_3D) {
             return sequence_disarmed_good_gps_and_location;
         }
     }

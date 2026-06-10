@@ -42,7 +42,7 @@ The Control Zero H7 OEM revision G is a flight controller produced by [3DR (mRo)
  Width:  20mm (.79in)
  Length: 34mm (1.34in)
 
- *Case sold separately*
+ *Note:* Case sold separately.
 
 ## Changelog
 
@@ -114,7 +114,7 @@ This board has a built-in voltage and current sensors. The following settings ne
 - BATT_VOLT_SCALE 15.3
 - BATT_AMP_PERVLT 50.0
 
-*Other Power Module needs to be adjusted accordingly*
+*Note:* Other Power Module needs to be adjusted accordingly.
 
 ## Build
 

@@ -85,7 +85,6 @@ private:
     SITL::SIM *_sitl;
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_SITL
-    void _set_param_default(const char *parm);
     void _sitl_setup(const char *home_str);
     void _setup_timer(void);
     void _setup_adc(void);

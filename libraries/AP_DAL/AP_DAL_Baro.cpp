@@ -29,7 +29,9 @@ void AP_DAL_Baro::start_frame()
     }
 }
 
+#if AP_BARO_CALIBRATION_ENABLED
 void AP_DAL_Baro::update_calibration()
 {
     AP::baro().update_calibration();
 }
+#endif  // AP_BARO_CALIBRATION_ENABLED

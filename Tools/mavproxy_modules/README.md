@@ -20,7 +20,7 @@ use this module's commands. You can also use
 The command `sitl_accelcal` listens to the accelerometer calibration status
 texts and set the vehicle in the desired attitude. Example:
 
-```
+```text
 accelcal
 sitl_accelcal
 ```
@@ -30,7 +30,7 @@ sitl_accelcal
 The command `sitl_magcal` applies angular velocity on the vehicle in order to
 get the compasses calibrated. Example:
 
-```
+```text
 magcal start
 sitl_magcal
 ```

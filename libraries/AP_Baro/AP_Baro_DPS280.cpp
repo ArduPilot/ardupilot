@@ -49,14 +49,10 @@ AP_Baro_DPS280::AP_Baro_DPS280(AP_Baro &baro, AP_HAL::Device &_dev)
 }
 
 AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
-                                       AP_HAL::Device &_dev,
-                                       bool _is_dps310)
+                                       AP_HAL::Device &_dev)
 {
     AP_Baro_DPS280 *sensor = NEW_NOTHROW AP_Baro_DPS280(baro, _dev);
-    if (sensor) {
-        sensor->is_dps310 = _is_dps310;
-    }
-    if (!sensor || !sensor->init(_is_dps310)) {
+    if (!sensor || !sensor->init()) {
         delete sensor;
         return nullptr;
     }
@@ -65,8 +61,12 @@ AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
 
 AP_Baro_Backend *AP_Baro_DPS310::probe(AP_Baro &baro, AP_HAL::Device &_dev)
 {
-    // same as DPS280 but with is_dps310 set for temperature fix
-    return AP_Baro_DPS280::probe(baro, _dev, true);
+    auto *sensor = NEW_NOTHROW AP_Baro_DPS310(baro, _dev);
+    if (!sensor || !sensor->init()) {
+        delete sensor;
+        return nullptr;
+    }
+    return sensor;
 }
 
 /*
@@ -135,8 +135,12 @@ void AP_Baro_DPS280::set_config_registers(void)
     dev->write_register(DPS280_REG_PCONF, 0x54, true); // 32 Hz, 16x oversample
     dev->write_register(DPS280_REG_TCONF, 0x54 | calibration.temp_source, true); // 32 Hz, 16x oversample
     dev->write_register(DPS280_REG_MCONF, 0x07); // continuous temp and pressure.
+}
 
-    if (is_dps310) {
+void AP_Baro_DPS310::set_config_registers(void)
+{
+        AP_Baro_DPS280::set_config_registers();
+
         // work around broken temperature handling on some sensors
         // using undocumented register writes
         // see https://github.com/infineon/DPS310-Pressure-Sensor/blob/dps310/src/DpsClass.cpp#L442
@@ -145,10 +149,9 @@ void AP_Baro_DPS280::set_config_registers(void)
         dev->write_register(0x62, 0x02);
         dev->write_register(0x0E, 0x00);
         dev->write_register(0x0F, 0x00);
-    }
 }
 
-bool AP_Baro_DPS280::init(bool _is_dps310)
+bool AP_Baro_DPS280::init()
 {
     if (!dev) {
         return false;
@@ -185,11 +188,8 @@ bool AP_Baro_DPS280::init(bool _is_dps310)
     set_config_registers();
 
     instance = _frontend.register_sensor();
-    if(_is_dps310) {
-	    dev->set_device_type(DEVTYPE_BARO_DPS310);
-    } else {
-	    dev->set_device_type(DEVTYPE_BARO_DPS280);
-    }
+
+    dev->set_device_type(device_type());
     set_bus_id(instance, dev->get_bus_id());
     
     dev->get_semaphore()->give();

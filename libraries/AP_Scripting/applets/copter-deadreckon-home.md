@@ -54,7 +54,7 @@ Deadreckoning will only be activated while the vehicle is in autonomous modes (e
 
   Note: Instaed of setting GPS1_TYPE, an auxiliary function switch can be setup to disable the GPS (e.g. RC9_OPTION = 65/"Disable GPS")
 
-## Testing that it does not require RC (in SITL):
+## Testing that it does not require RC (in SITL)
 
 - set FS_OPTIONS's "Continue if in Guided on RC failsafe" bit
 - set FS_GCS_ENABLE = 1 (to enable GCS failsafe otherwise RC failsafe will trigger anyway)

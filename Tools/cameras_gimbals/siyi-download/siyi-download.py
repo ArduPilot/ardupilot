@@ -10,13 +10,16 @@ AP_FLAKE8_CLEAN
 # utility to download files from a siyi camera
 #
 
-import os
 import json
+import os
+
 from argparse import ArgumentParser
-from urllib.request import urlopen, urlretrieve
-from urllib.parse import urlencode
-from urllib.error import URLError, HTTPError
 from enum import Enum
+from urllib.error import HTTPError
+from urllib.error import URLError
+from urllib.parse import urlencode
+from urllib.request import urlopen
+from urllib.request import urlretrieve
 
 # prefix string for text output to user
 prefix_str = "siyi-download.py: "

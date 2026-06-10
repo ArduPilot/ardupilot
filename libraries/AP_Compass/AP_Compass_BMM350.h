@@ -38,8 +38,6 @@ public:
                                      bool force_external,
                                      enum Rotation rotation);
 
-    void read() override;
-
     static constexpr const char *name = "BMM350";
 
 private:

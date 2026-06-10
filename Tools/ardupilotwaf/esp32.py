@@ -23,7 +23,7 @@ import subprocess
 import hal_common
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ESP32/hwdef/scripts'))
-import esp32_hwdef  # noqa:501
+import esp32_hwdef
 
 def configure(cfg):
     mcu_esp32s3 = True if (cfg.variant[0:7] == "esp32s3") else False

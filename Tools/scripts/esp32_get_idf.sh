@@ -60,7 +60,6 @@ echo
 echo "installing missing python modules"
 python3 -m pip install empy==3.3.4
 python3 -m pip install pexpect
-python3 -m pip install future
 
 cd ../..
 

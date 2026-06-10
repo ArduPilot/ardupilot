@@ -116,6 +116,13 @@
 #undef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
 #endif
 
+#if AP_SERVO_TELEM_ENABLED
+    #include <AP_Servo_Telem/AP_Servo_Telem.h>
+    #if !AP_PERIPH_RC_OUT_ENABLED
+      #error"'AP_SERVO_TELEM_ENABLED' requires `AP_PERIPH_RC_OUT_ENABLED`"
+    #endif
+#endif
+
 #include "Parameters.h"
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -377,6 +384,16 @@ public:
     void rcout_srv_PWM(const uint8_t actuator_id, const float command_value);
     void rcout_update();
     void rcout_handle_safety_state(uint8_t safety_state);
+#endif
+
+#if AP_SERVO_TELEM_ENABLED
+    void servo_telem_update();
+    struct {
+        AP_Servo_Telem lib;
+        uint32_t last_update_ms;
+        uint32_t last_send_ms;
+        uint8_t last_send_index;
+    } servo_telem;
 #endif
 
 #if AP_PERIPH_RCIN_ENABLED

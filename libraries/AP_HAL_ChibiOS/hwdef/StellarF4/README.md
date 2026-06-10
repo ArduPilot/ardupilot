@@ -38,8 +38,8 @@
 
 ## UART Mapping
 
-The UARTs are marked Rx* and Tx* in the above pinouts. The Rx* pin is the
-receive pin for UART*. The Tx* pin is the transmit pin for UART*. The UARTs 1,2,6 are DMA capable.
+The UARTs are marked Rx and Tx in the above pinouts. The Rx pin is the
+receive pin for UARTx. The Tx pin is the transmit pin for UARTx. The UARTs 1,2,6 are DMA capable.
 
 - SERIAL0 -> USB
 - SERIAL1 -> USART1 (DJI / VTX, DMA capable)
@@ -60,11 +60,11 @@ The default RC input is configured on the UART2 RX2 input and can be used for al
 
 - SBUS/DSM/SRXL connects to the PPM pad or RX2 pin on the HD VTX connector. PPM pin connected to RX2 via inverter.
 - CRSF also requires a TX2 connection, in addition to RX2, and automatically provides telemetry.
-- FPort requires connection to TX2 and :ref:`SERIAL2_OPTIONS<SERIAL2_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX2 and [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 
 ## OSD Support
 
-StellarF4 supports using its internal OSD, and/or DisplayPort on Serial1, by default. See :ref:`common-msp-osd-overview-4.2` for more info.
+StellarF4 supports using its internal OSD, and/or DisplayPort on Serial1, by default. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -82,11 +82,11 @@ The voltage input is compatible with 2~6S LiPo batteries.
 
 The default battery parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.2
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 52.7
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.2
+- BATT_AMP_PERVLT = 52.7
 
 ## Compass
 

@@ -49,8 +49,20 @@ public:
 
     CLASS_NO_COPY(AP_AHRS_Backend);
 
+    virtual const char *shortname() const = 0;
+
     // structure to retrieve results from backends:
     struct Estimates {
+        // allow backends to set the private members:
+        friend class AP_AHRS_DCM;
+        friend class AP_AHRS_SIM;
+        friend class AP_AHRS_External;
+        friend class AP_AHRS_NavEKF2;
+        friend class AP_AHRS_NavEKF3;
+
+        // inertial sensor information
+        uint8_t primary_gyro;
+
         // if attitude_valid is true then all of the
         // eulers/quaternion/matrix must be valid:
         bool attitude_valid;
@@ -60,8 +72,20 @@ public:
         Matrix3f dcm_matrix;
         Quaternion quaternion;
 
+        // backends must always return the result in the vehicle body
+        // frame.  A backend using the autopilot sensors will need to
+        // rotate according to the TRIM parameters.  An ExternalAHRS
+        // won't!
+        bool get_quaternion(Quaternion &quat) const {
+            quat = quaternion;
+            return attitude_valid;
+        }
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
+
+        uint8_t primary_accel;
+
         Vector3f accel_ef;
         Vector3f accel_bias;
 
@@ -76,6 +100,8 @@ public:
             vel = velocity_NED;
             return true;
         };
+        // ground velocity estimate in meters/second, in North/East order
+        Vector2f velocity_NE;
 
         // a derivative of the vertical position in m/s which is
         // kinematically consistent with the vertical position is
@@ -99,6 +125,9 @@ public:
             return true;
         }
 
+        /*
+         * position estimates
+         */
         Location location;
         bool location_valid;
 
@@ -106,19 +135,42 @@ public:
             loc = location;
             return location_valid;
         };
+
+        bool get_hagl(float &height) const WARN_IF_UNUSED {
+            height = hagl;
+            return hagl_valid;
+        }
+
+        /*
+         * Sensor-related information
+         */
+
+        // configured_to_use_gps will be true if the estimator will
+        // use GPS data in creating its estimate when the data is good
+        bool configured_to_use_gps;
+        // configured_to_use_gps_for_pos_XY will be true if GPS is
+        // configured as the horizontal position source for this
+        // estimator.  Used to decide whether GPS will set the
+        // navigation origin.
+        bool configured_to_use_gps_for_pos_XY;
+
+        // if true, "external navigation" (as provided by MAVLink
+        // messages) is providing the yaw estimate.  e.g. a T265
+        // vision-position-estimate camera tracking yaw via image
+        // recognition
+        bool using_extnav_for_yaw;
+
+        // if true then however the yaw in these estimates was derived
+        // a compass was not involved:
+        bool using_noncompass_for_yaw;
+
+    private:
+        bool hagl_valid;
+        float hagl;
     };
 
     // init sets up INS board orientation
     virtual void init();
-
-    // get the index of the current primary gyro sensor
-    virtual uint8_t get_primary_gyro_index(void) const {
-#if AP_INERTIALSENSOR_ENABLED
-        return AP::ins().get_first_usable_gyro();
-#else
-        return 0;
-#endif
-    }
 
     // Methods
     virtual void update() = 0;
@@ -144,9 +196,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // get latest altitude estimate above ground level in meters and validity flag
-    virtual bool get_hagl(float &height) const WARN_IF_UNUSED { return false; }
 
     // return a wind estimation vector, in m/s
     virtual bool wind_estimate(Vector3f &wind) const = 0;
@@ -191,9 +240,6 @@ public:
         return false;
     #endif
     }
-
-    // return a ground vector estimate in meters/second, in North/East order
-    virtual Vector2f groundspeed_vector(void) = 0;
 
     virtual bool set_origin(const Location &loc) {
         return false;
@@ -281,10 +327,6 @@ public:
     }
 
     virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
-
-    // Set to true if the terrain underneath is stable enough to be used as a height reference
-    // this is not related to terrain following
-    virtual void set_terrain_hgt_stable(bool stable) {}
 
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };

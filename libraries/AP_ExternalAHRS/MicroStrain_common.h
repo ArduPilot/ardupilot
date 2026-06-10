@@ -103,8 +103,8 @@ protected:
         GNSSRecv2 = 0x92
     };
 
-    const uint8_t SYNC_ONE = 0x75;
-    const uint8_t SYNC_TWO = 0x65;
+    static constexpr uint8_t SYNC_ONE = 0x75;
+    static constexpr uint8_t SYNC_TWO = 0x65;
 
     struct MicroStrain_Packet {
         uint8_t header[4];

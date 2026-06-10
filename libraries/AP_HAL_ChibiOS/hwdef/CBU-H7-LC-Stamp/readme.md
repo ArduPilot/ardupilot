@@ -7,7 +7,7 @@ The [CBUnmanned H743 Stamp](https://cbunmanned.com/store) is a flight controller
 A "Low Cost" version is available with a limited feature set.
 | Full Featured Stamp | Low Cost Stamp  |
 |--|--|
-|![](https://wiki.cbunmanned.com/~gitbook/image?url=https%3A%2F%2F1886089318-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FolH18CdGEWKpuo9G8NHx%252Fuploads%252FqI2QAAVk2RxHplEJavxV%252FH743%2520Side.png%3Falt%3Dmedia%26token%3Db3444773-b155-46d4-98e5-9502bf50b538&width=768&dpr=4&quality=100&sign=d9afa711&sv=1)| ![](https://wiki.cbunmanned.com/~gitbook/image?url=https%3A%2F%2F1886089318-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FolH18CdGEWKpuo9G8NHx%252Fuploads%252Fy8KdecctQiPiTOfzhqXt%252FH7-LC-Side.png%3Falt%3Dmedia%26token%3D63434aee-4991-493e-88e7-144312333883&width=768&dpr=4&quality=100&sign=6bdaef1&sv=1)|
+|![H743 Stamp](https://wiki.cbunmanned.com/~gitbook/image?url=https%3A%2F%2F1886089318-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FolH18CdGEWKpuo9G8NHx%252Fuploads%252FqI2QAAVk2RxHplEJavxV%252FH743%2520Side.png%3Falt%3Dmedia%26token%3Db3444773-b155-46d4-98e5-9502bf50b538&width=768&dpr=4&quality=100&sign=d9afa711&sv=1)| ![H7-LC Stamp](https://wiki.cbunmanned.com/~gitbook/image?url=https%3A%2F%2F1886089318-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FolH18CdGEWKpuo9G8NHx%252Fuploads%252Fy8KdecctQiPiTOfzhqXt%252FH7-LC-Side.png%3Falt%3Dmedia%26token%3D63434aee-4991-493e-88e7-144312333883&width=768&dpr=4&quality=100&sign=6bdaef1&sv=1)|
 
 ## Features
 

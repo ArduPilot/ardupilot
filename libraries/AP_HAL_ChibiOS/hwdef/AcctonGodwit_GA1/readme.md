@@ -53,7 +53,7 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 ## Where to Buy
 
 - [Accton-IoT Godwit](https://www.accton-iot.com/godwit/)
-- [sales@accton-iot.com](sales@accton-iot.com)
+- [sales@accton-iot.com](mailto:sales@accton-iot.com)
 
 ## Pinout
 
@@ -129,17 +129,17 @@ This universal controller features a CAN PMU module that supports 3 to 14s lithi
 
 When running Ardupilot, the universal controller operates as a plug-and-play device, requiring no further configuration.
 
-This universal controller does not provide power to the servos. To power them, an external BEC must be connected to the positive and negative terminals of any A1–A8 or M1–M8 port.
+This universal controller does not provide power to the servos. To power them, an external BEC must be connected to the positive and negative terminals of any A1-A8 or M1-M8 port.
 
 ![G-A1 Power](power.png "G-A1 Power")
 
 The autopilot defaults are setup to DroneCAN BatteryInfo:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 8
-- :ref:`CAN_P1_DRIVER<CAN_P1_DRIVER>` = 1
-- :ref:`CAN_P2_DRIVER<CAN_P2_DRIVER>` = 1
-- :ref:`CAN_D1_PROTOCOL<CAN_D1_PROTOCOL>` = 1
-- :ref:`CAN_D2_PROTOCOL<CAN_D2_PROTOCOL>` = 1
+- BATT_MONITOR = 8
+- CAN_P1_DRIVER = 1
+- CAN_P2_DRIVER = 1
+- CAN_D1_PROTOCOL = 1
+- CAN_D2_PROTOCOL = 1
 
 ## SD Card
 
@@ -156,5 +156,5 @@ To upgrade firmware use any ArduPilot GCS.  Firmware for the Godwit G-A1 is loca
 ## More Information and Support
 
 - [Accton-IoT Godwit](https://www.accton-iot.com/godwit/)
-- [sales@accton-iot.com](sales@accton-iot.com)
-- [support@accton-iot.com](support@accton-iot.com)
+- [sales@accton-iot.com](mailto:sales@accton-iot.com)
+- [support@accton-iot.com](mailto:support@accton-iot.com)

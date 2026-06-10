@@ -20,53 +20,17 @@
 #define TOFSENSEP_I2C_COMMAND_TAKE_RANGE_READING 0x24
 #define TOFSENSEP_I2C_COMMAND_SIGNAL_STATUS 0x28
 
-#include <utility>
-
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 
 extern const AP_HAL::HAL& hal;
 
-AP_RangeFinder_TOFSenseF_I2C::AP_RangeFinder_TOFSenseF_I2C(RangeFinder::RangeFinder_State &_state,
-                                                           AP_RangeFinder_Params &_params,
-                                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-    : AP_RangeFinder_Backend(_state, _params)
-    , _dev(std::move(dev))
-{
-}
-
-// detect if a TOFSenseP rangefinder is connected. We'll detect by
-// trying to take a reading on I2C. If we get a result the sensor is
-// there.
-AP_RangeFinder_Backend *AP_RangeFinder_TOFSenseF_I2C::detect(RangeFinder::RangeFinder_State &_state,
-																AP_RangeFinder_Params &_params,
-                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
-{
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_RangeFinder_TOFSenseF_I2C *sensor
-        = NEW_NOTHROW AP_RangeFinder_TOFSenseF_I2C(_state, _params, std::move(dev));
-    if (!sensor) {
-        return nullptr;
-    }
-
-    if (!sensor->init()) {
-        delete sensor;
-        return nullptr;
-    }
-
-    return sensor;
-}
-
 // initialise sensor
 bool AP_RangeFinder_TOFSenseF_I2C::init(void)
 {
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev.get_semaphore());
 
     if (!start_reading()) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
@@ -78,13 +42,10 @@ bool AP_RangeFinder_TOFSenseF_I2C::init(void)
     uint16_t signal_strength;
 
     if (!get_reading(reading_mm, signal_strength, status)) {
-        _dev->get_semaphore()->give();
         return false;
     }
 
-    _dev->get_semaphore()->give();
-
-    _dev->register_periodic_callback(100000,
+    dev.register_periodic_callback(100000,
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TOFSenseF_I2C::timer, void));
 
     return true;
@@ -93,10 +54,10 @@ bool AP_RangeFinder_TOFSenseF_I2C::init(void)
 // start_reading() - ask sensor to make a range reading
 bool AP_RangeFinder_TOFSenseF_I2C::start_reading()
 {
-    uint8_t cmd[] = {TOFSENSEP_I2C_COMMAND_TAKE_RANGE_READING, TOFSENSEP_I2C_COMMAND_SIGNAL_STATUS};
+    const uint8_t cmd[] = {TOFSENSEP_I2C_COMMAND_TAKE_RANGE_READING, TOFSENSEP_I2C_COMMAND_SIGNAL_STATUS};
 
     // send command to take reading
-    return _dev->transfer(cmd, sizeof(cmd), nullptr, 0);
+    return dev.transfer(cmd, sizeof(cmd), nullptr, 0);
 }
 
 // read - return last value measured by sensor
@@ -109,7 +70,7 @@ bool AP_RangeFinder_TOFSenseF_I2C::get_reading(uint32_t &reading_mm, uint16_t &s
     } packet;
 
     // take range reading and read back results
-    const bool ret = _dev->transfer(nullptr, 0, (uint8_t *) &packet, sizeof(packet));
+    const bool ret = dev.transfer(nullptr, 0, (uint8_t *) &packet, sizeof(packet));
 
     if (ret) {
         // combine results into distance

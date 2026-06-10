@@ -45,14 +45,11 @@ extern const AP_HAL::HAL &hal;
 #define AP_PERIPH_ACTUATOR_TELEM_CURR_MAX_DEFAULT 2.5f
 #endif
 
+#if AP_SERVO_TELEM_ENABLED == 0
+    #error "AP_PERIPH_ACTUATOR_TELEM_ENABLED requires AP_SERVO_TELEM_ENABLED"
+#endif
+
 const AP_Param::GroupInfo ActuatorTelem::var_info[] = {
-    // @Param: _TELEM_RATE
-    // @DisplayName: Actuator Telemetry rate
-    // @Description: Actuator Telemetry update rate in Hz. Set to 0 to disable.
-    // @Units: Hz
-    // @Range: 0 100
-    // @User: Standard
-    AP_GROUPINFO("_TELEM_RATE", 1, ActuatorTelem, rate, AP_PERIPH_ACTUATOR_TELEM_RATE_DEFAULT),
 
     // @Param: _NUM_CHANS
     // @DisplayName: Number of actuator channels
@@ -129,71 +126,48 @@ void ActuatorTelem::send_telemetry(uint8_t channel_index, uint8_t actuator_id)
         return;
     }
     // Read current from analog input
-    float current_amp = 0;
-    float adc_voltage = source->voltage_average();
-    current_amp = (adc_voltage - curr_amp_offset) * curr_amp_per_volt;
+    const float adc_voltage = source->voltage_average();
+    const float current_amp = (adc_voltage - curr_amp_offset) * curr_amp_per_volt;
 
-    uavcan_equipment_actuator_Status pkt {}; 
-
-    pkt.actuator_id = actuator_id;
-    pkt.position = nanf(""); // Not available
-    pkt.force = nanf("");    // Not available
-    pkt.speed = nanf("");    // Not available
+    AP_Servo_Telem::TelemetryData telem_data {
+        .current = current_amp,
+        .present_types = AP_Servo_Telem::TelemetryData::Types::CURRENT
+    };
 
     // Calculate power rating percentage from current
     const float max_current = curr_max.get();
-    if (max_current > 0 && current_amp >= 0) {
-        pkt.power_rating_pct = constrain_int16(current_amp / max_current * 100.0f, 0, 100);
-    } else {
-        pkt.power_rating_pct = UAVCAN_EQUIPMENT_ACTUATOR_STATUS_POWER_RATING_PCT_UNKNOWN;
+    if ((max_current > 0) && (current_amp >= 0)) {
+        telem_data.duty_cycle = constrain_float(current_amp / max_current * 100.0f, 0, 100);
+        telem_data.present_types |= AP_Servo_Telem::TelemetryData::Types::DUTY_CYCLE;
     }
 
-    // encode and broadcast
-    uint8_t buffer[UAVCAN_EQUIPMENT_ACTUATOR_STATUS_MAX_SIZE];
-    uint16_t total_size = uavcan_equipment_actuator_Status_encode(&pkt, buffer, !periph.canfdout());
+    periph.servo_telem.lib.update_telem_data(actuator_id, telem_data);
 
-    periph.canard_broadcast(UAVCAN_EQUIPMENT_ACTUATOR_STATUS_SIGNATURE,
-                            UAVCAN_EQUIPMENT_ACTUATOR_STATUS_ID,
-                            CANARD_TRANSFER_PRIORITY_LOW,
-                            &buffer[0],
-                            total_size);
 }
 
 void ActuatorTelem::update()
 {
-    // Check global telemetry rate
-    const float telem_rate = rate.get();
-    if (telem_rate <= 0) {
-        return;  // telemetry disabled
-    }
-
-    const uint32_t now = AP_HAL::millis();
-    if (now - last_telem_update_ms < 1000.0f / telem_rate) {
+    const int8_t num_chans_val = num_chans.get();
+    if (num_chans_val <= 0) {
         return;
     }
-    last_telem_update_ms = now;
 
-#if HAL_PWM_COUNT > 0
-    const int8_t num_chans_val = num_chans.get();
-    if (num_chans_val > 0) {
-        for (uint8_t i = 0; i < MIN(HAL_PWM_COUNT, num_chans_val); i++) {
-            const auto *srv_channel = periph.servo_channels.srv_channel(i);
-            if (srv_channel == nullptr) {
-                continue;
-            }
-
-            const SRV_Channel::Function function = srv_channel->get_function();
-            // Only send for configured actuator functions
-            if (function < SRV_Channel::k_rcin1 || function > SRV_Channel::k_rcin16) {
-                continue;
-            }
-
-            const uint8_t actuator_id = function - SRV_Channel::k_rcin1 + 1;
-
-            send_telemetry(i, actuator_id);
+    for (uint8_t i = 0; i < MIN(HAL_PWM_COUNT, num_chans_val); i++) {
+        const auto *srv_channel = periph.servo_channels.srv_channel(i);
+        if (srv_channel == nullptr) {
+            continue;
         }
+
+        const SRV_Channel::Function function = srv_channel->get_function();
+        // Only send for configured actuator functions
+        if (function < SRV_Channel::k_rcin1 || function > SRV_Channel::k_rcin16) {
+            continue;
+        }
+
+        const uint8_t actuator_id = function - SRV_Channel::k_rcin1;
+
+        send_telemetry(i, actuator_id);
     }
-#endif
 }
 
 #endif  // AP_PERIPH_ACTUATOR_TELEM_ENABLED

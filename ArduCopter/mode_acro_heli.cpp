@@ -10,11 +10,6 @@
 // heli_acro_init - initialise acro controller
 bool ModeAcro_Heli::init(bool ignore_checks)
 {
-    // if heli is equipped with a flybar, then tell the attitude controller to pass through controls directly to servos
-    attitude_control->use_flybar_passthrough(motors->has_flybar(), motors->supports_yaw_passthrough());
-
-    motors->set_acro_tail(true);
-    
     // set stab collective false to use full collective pitch range
     copter.input_manager.set_use_stab_col(false);
 
@@ -34,15 +29,11 @@ void ModeAcro_Heli::run()
     // for operational checks. Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero
     // so the swash servos move.
 
-    if (!motors->armed()) {
-        // Motors should be Stopped
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else if (!motors->get_interlock()) {
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-    } else {
-        // heli will not let the spool state progress to THROTTLE_UNLIMITED until motor interlock is enabled
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-    }
+    // Request throttle unlimited. The setter enforces safety constraints:
+    // - Disarmed: held at SHUT_DOWN until armed
+    // - Armed without interlock: limited to GROUND_IDLE (swash can move, rotor stopped)
+    // - Armed with interlock: THROTTLE_UNLIMITED granted
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:
@@ -69,55 +60,24 @@ void ModeAcro_Heli::run()
         break;
     }
 
-    if (!motors->has_flybar()){
-        // convert the input to the desired body frame rate
-        get_pilot_desired_rates_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
-        // only mimic flybar response when trainer mode is disabled
-        if ((Trainer)g.acro_trainer.get() == Trainer::OFF) {
-            // while landed always leak off target attitude to current attitude
-            if (copter.ap.land_complete) {
-                virtual_flybar(target_roll_rads, target_pitch_rads, target_yaw_rads, 3.0f, 3.0f);
-            // while flying use acro balance parameters for leak rate
-            } else {
-                virtual_flybar(target_roll_rads, target_pitch_rads, target_yaw_rads, g.acro_balance_pitch, g.acro_balance_roll);
-            }
-        }
-        if (motors->supports_yaw_passthrough()) {
-            // if the tail on a flybar heli has an external gyro then
-            // also use no deadzone for the yaw control and
-            // pass-through the input direct to output.
-            target_yaw_rads = cd_to_rad(channel_yaw->get_control_in_zero_dz());
-        }
-
-        // run attitude controller
-        if (g2.acro_options.get() & uint8_t(AcroOptions::RATE_LOOP_ONLY)) {
-            attitude_control->input_rate_bf_roll_pitch_yaw_2_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
+    // convert the input to the desired body frame rate
+    get_pilot_desired_rates_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
+    // only mimic flybar response when trainer mode is disabled
+    if ((Trainer)g.acro_trainer.get() == Trainer::OFF) {
+        // while landed always leak off target attitude to current attitude
+        if (copter.ap.land_complete) {
+            virtual_flybar(target_roll_rads, target_pitch_rads, target_yaw_rads, 3.0f, 3.0f);
+        // while flying use acro balance parameters for leak rate
         } else {
-            attitude_control->input_rate_bf_roll_pitch_yaw_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
+            virtual_flybar(target_roll_rads, target_pitch_rads, target_yaw_rads, g.acro_balance_pitch, g.acro_balance_roll);
         }
-    }else{
-        /*
-          for fly-bar passthrough use control_in values with no
-          deadzone. This gives true pass-through.
-         */
-        float roll_in_cds = channel_roll->get_control_in_zero_dz();
-        float pitch_in_cds = channel_pitch->get_control_in_zero_dz();
-        float yaw_in_cds;
-        
-        if (motors->supports_yaw_passthrough()) {
-            // if the tail on a flybar heli has an external gyro then
-            // also use no deadzone for the yaw control and
-            // pass-through the input direct to output.
-            yaw_in_cds = channel_yaw->get_control_in_zero_dz();
-        } else {
-            // if there is no external gyro then run the usual
-            // ACRO_YAW_P gain on the input control, including
-            // deadzone
-            yaw_in_cds = rad_to_cd(get_pilot_desired_yaw_rate_rads());
-        }
+    }
 
-        // run attitude controller
-        attitude_control->passthrough_bf_roll_pitch_rate_yaw_norm(roll_in_cds / 4500.0, pitch_in_cds / 4500.0, yaw_in_cds / 4500.0);
+    // run attitude controller
+    if (g2.acro_options.get() & uint8_t(AcroOptions::RATE_LOOP_ONLY)) {
+        attitude_control->input_rate_bf_roll_pitch_yaw_2_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
+    } else {
+        attitude_control->input_rate_bf_roll_pitch_yaw_rads(target_roll_rads, target_pitch_rads, target_yaw_rads);
     }
 
     // get pilot's desired throttle

@@ -143,6 +143,10 @@ AP_AHRS_DCM::update()
 
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    // not using a specific sensor:
+    results.primary_gyro = AP::ins().get_first_usable_gyro();
+    results.primary_accel = AP::ins().get_first_usable_accel();
+
     results.roll_rad = roll;
     results.pitch_rad = pitch;
     results.yaw_rad = yaw;
@@ -151,17 +155,52 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // quaternion is derived from transformation matrix:
     results.quaternion.from_rotation_matrix(_dcm_matrix);
+    results.quaternion.rotate(-AP::ahrs().get_trim());
 
     results.attitude_valid = true;
 
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
+
+    /*
+     * acceleration estimates
+     */
+    // results.accel_bias = {} - DCM does not estimate accel bias
     results.accel_ef = _accel_ef;
 
     results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);
+
+    // ground velocity estimate in meters/second, in North/East order
+    // note: velocity_NE is significantly different to results.velocity_NED.xy()!
+    results.velocity_NE = groundspeed_vector();
+
     results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
 
+    /*
+     * position estimates
+     */
     results.location_valid = get_location(results.location);
+
+    // hagl is not supplied:
+    // results.hagl_valid = false;
+    // results.hagl = 0;
+
+    /*
+     * Sensor-related information
+     */
+    // true if the estimator will use GPS data in creating its
+    // estimate when the data is good:
+    results.configured_to_use_gps = _gps_use != GPSUse::Disable;
+    // true if GPS is configured as the horizontal position source
+    // for this estimator.  Used to decide whether GPS will set
+    // the navigation origin.
+    results.configured_to_use_gps_for_pos_XY = _gps_use != GPSUse::Disable;
+
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    // results.using_extnav_for_yaw = false;
+
+    // are we consuming yaw from a source which is *not* a compass
+    // results.using_noncompass_for_yaw = false;
 }
 
 /*
@@ -445,7 +484,7 @@ AP_AHRS_DCM::_yaw_gain(void) const
 // return true if we have and should use GPS
 bool AP_AHRS_DCM::have_gps(void) const
 {
-    if (_gps_use == GPSUse::Disable || AP::gps().status() <= AP_GPS::NO_FIX) {
+    if (_gps_use == GPSUse::Disable || AP::gps().status() <= AP_GPS_FixType::NONE) {
         return false;
     }
     return true;
@@ -488,7 +527,7 @@ bool AP_AHRS_DCM::use_compass(void)
     // ground speed, then switch to GPS navigation. This will help
     // prevent flyaways with very bad compass offsets
     const float error = fabsf(wrap_180(degrees(yaw) - AP::gps().ground_course()));
-    if (error > 45 && _wind.length() < AP::gps().ground_speed()*0.8f) {
+    if (error > 45 && _wind.xy().length() < AP::gps().ground_speed()*0.8f) {
         if (AP_HAL::millis() - _last_consistent_heading > 2000) {
             // start using the GPS for heading if the compass has been
             // inconsistent with the GPS for 2 seconds
@@ -714,7 +753,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
     const bool fly_forward = AP::ahrs().get_fly_forward();
 
     if (!have_gps() ||
-            _gps.status() < AP_GPS::GPS_OK_FIX_3D ||
+            _gps.status() < AP_GPS_FixType::FIX_3D ||
             _gps.num_sats() < _gps_minsats) {
         // no GPS, or not a good lock. From experience we need at
         // least 6 satellites to get a really reliable velocity number
@@ -944,7 +983,7 @@ AP_AHRS_DCM::drift_correction(float deltat)
         _omega_P *= 8;
     }
 
-    if (fly_forward && _gps.status() >= AP_GPS::GPS_OK_FIX_2D &&
+    if (fly_forward && _gps.status() >= AP_GPS_FixType::FIX_2D &&
             _gps.ground_speed() < GPS_SPEED_MIN &&
             _ins.get_accel().x >= 7 &&
         pitch > radians(-30) && pitch < radians(30)) {
@@ -1070,7 +1109,7 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
     const auto &gps = AP::gps();
     int32_t alt_cm;
     if (_gps_use == GPSUse::EnableWithHeight &&
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        gps.status() >= AP_GPS_FixType::FIX_3D) {
         alt_cm = gps.location().alt;
     } else {
         alt_cm = baro.get_altitude() * 100 + AP::ahrs().get_home().alt;
@@ -1117,7 +1156,7 @@ bool AP_AHRS_DCM::airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) cons
     }
 
     const float _wind_max = AP::ahrs().get_max_wind();
-    if (_wind_max > 0 && AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+    if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
         // constrain the airspeed by the ground speed
         // and AHRS_WIND_MAX
         const float gnd_speed = AP::gps().ground_speed();
@@ -1172,7 +1211,7 @@ bool AP_AHRS_DCM::healthy(void) const
 bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
 {
     const AP_GPS &_gps = AP::gps();
-    if (_gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (_gps.status() < AP_GPS_FixType::FIX_3D) {
         return false;
     }
     vec = _gps.velocity();
@@ -1187,7 +1226,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     Vector2f gndVelGPS;
     float airspeed = 0;
     const bool gotAirspeed = airspeed_TAS(airspeed);
-    const bool gotGPS = (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D);
+    const bool gotGPS = (AP::gps().status() >= AP_GPS_FixType::FIX_2D);
     if (gotAirspeed) {
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
         Vector3f wind;

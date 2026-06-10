@@ -73,7 +73,6 @@ struct sitl_fdm {
     Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
     double battery_voltage; // Volts
     double battery_current; // Amps
-    double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
     uint32_t motor_mask;
     float rpm[32];         // RPM of all motors
@@ -141,6 +140,7 @@ public:
 #endif
         AP_Param::setup_object_defaults(this, var_mag);
         AP_Param::setup_object_defaults(this, var_ins);
+        AP_Param::setup_object_defaults(this, var_sonar);
 #ifdef SFML_JOYSTICK
         AP_Param::setup_object_defaults(this, var_sfml_joystick);
 #endif // SFML_JOYSTICK
@@ -178,7 +178,7 @@ public:
 
     struct sitl_fdm state;
 
-    // throttle when motors are active
+    // throttle when motors are active. 0 = 'no throttle', 1 = 'full throttle'
     float throttle;
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -189,6 +189,7 @@ public:
 #endif
     static const struct AP_Param::GroupInfo var_mag[];
     static const struct AP_Param::GroupInfo var_ins[];
+    static const struct AP_Param::GroupInfo var_sonar[];
 #ifdef SFML_JOYSTICK
     static const struct AP_Param::GroupInfo var_sfml_joystick[];
 #endif //SFML_JOYSTICK
@@ -210,6 +211,7 @@ public:
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
     AP_Int8 sonar_rot;  // from rotations enumeration
+    AP_Float sonar_offset; // offset measurement, in meters. Can be used for error injection.
 
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
@@ -339,6 +341,7 @@ public:
         AP_Int8 jam; // jamming simulation enable
         AP_Float heading_offset; // heading offset in degrees
         AP_Int32 options; // GPS options bitmask
+        AP_Int8 fix_type; // GPS fix type
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 

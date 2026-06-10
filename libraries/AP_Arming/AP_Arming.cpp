@@ -110,6 +110,10 @@
 # define PREARM_DISPLAY_PERIOD 30
 #endif
 
+#ifndef AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS
+  #define AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS 10000
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
@@ -470,10 +474,12 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
     }
 
     // if accels can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
+    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -495,10 +501,12 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
     }
 
     // if gyros can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
+    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -546,15 +554,19 @@ bool AP_Arming::ins_checks(bool report)
         }
 #endif
 
-        if (run_imu_consistency_check) {
+        if (run_imu_consistency_check && AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0) {
             // check all accelerometers point in roughly same direction
-            if (!ins_accels_consistent(ins)) {
+            const bool accels_consistent = ins_accels_consistent(ins);
+
+            // check all gyros are giving consistent readings
+            const bool gyros_consistent = ins_gyros_consistent(ins);
+
+            if (!accels_consistent) {
                 check_failed(Check::INS, report, "Accels inconsistent");
                 return false;
             }
 
-            // check all gyros are giving consistent readings
-            if (!ins_gyros_consistent(ins)) {
+            if (!gyros_consistent) {
                 check_failed(Check::INS, report, "Gyros inconsistent");
                 return false;
             }
@@ -720,7 +732,7 @@ bool AP_Arming::gps_checks(bool report)
             }
 
             //GPS OK?
-            if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
+            if (gps.status(i) < AP_GPS_FixType::FIX_3D) {
                 check_failed(Check::GPS, report, "GPS %i: Bad fix", i+1);
                 return false;
             }
@@ -1227,11 +1239,13 @@ bool AP_Arming::terrain_database_required() const
 {
 #if AP_MISSION_ENABLED
     AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        // no mission support?
-        return false;
+    if (mission != nullptr && mission->contains_terrain_alt_items()) {
+        return true;
     }
-    if (mission->contains_terrain_alt_items()) {
+#endif
+#if AP_FENCE_ENABLED
+    const AC_Fence* fence = AP::fence();
+    if (fence != nullptr && fence->terrain_database_required()) {
         return true;
     }
 #endif
@@ -1774,6 +1788,13 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 #endif
+
+    // Run estop check again, here in the arm checks there is no need
+    // bypass the check if arm emergency stop aux function is setup
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(true, "Motors Emergency Stopped");
+        return false;
+    }
 
     // ensure the GPS drivers are ready on any final changes
     if (check_enabled(Check::GPS_CONFIG)) {

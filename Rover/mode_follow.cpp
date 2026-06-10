@@ -1,10 +1,18 @@
 #include "Rover.h"
 
 #if MODE_FOLLOW_ENABLED
+
+// Return true if this mode is enabled
+bool ModeFollow::enabled() const
+{
+    // Follow mode requires follow lib
+    return g2.follow.enabled();
+}
+
 // initialize follow mode
 bool ModeFollow::_enter()
 {
-    if (!g2.follow.enabled()) {
+    if (!enabled()) {
         return false;
     }
 
@@ -87,7 +95,7 @@ float ModeFollow::wp_bearing() const
     return g2.follow.get_bearing_to_target_deg();
 }
 
-// return distance (in meters) to destination
+// return straight-line distance (in meters) to destination
 float ModeFollow::get_distance_to_destination() const
 {
     return g2.follow.get_distance_to_target_m();

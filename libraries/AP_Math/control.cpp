@@ -684,73 +684,92 @@ float stopping_distance(float velocity, float p, float accel_max)
     return inv_sqrt_controller(velocity, p, accel_max);
 }
 
-// Computes the maximum possible acceleration or velocity in a specified 3D direction,
-// constrained by separate limits in horizontal (XY) and vertical (Z) axes.
-// - `direction` should be a non-zero vector indicating desired direction of travel.
-// - Limits: max_xy, max_z_pos (upward), max_z_neg (downward)
-// Returns the maximum achievable magnitude in that direction without violating any axis constraint.
+// Return the largest M >= 0 that can scale a 3D direction without exceeding
+// independent axis limits:
+//
+//   M * |unit.xy| <= max_xy
+//   -max_z_neg <= M * unit.z <= max_z_pos
+//
+// where unit = normalize(direction). The magnitude of direction is ignored.
+//
+// max_z_pos limits travel in the +Z direction.
+// max_z_neg limits travel in the -Z direction.
+// All limits must be positive.
+//
+// Typical use: limit velocity or acceleration magnitude along a desired
+// direction without changing that direction.
+//
+// Returns 0 if the direction is zero or any limit is zero.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float max_z_pos)
 {
-    // Reject zero-length direction vectors or undefined limits
-    if (is_zero(direction.length_squared())) {
-        return 0.0;
-    }
+    // Decompose into horizontal magnitude and vertical component
+    const float dir_xy = direction.xy().length();
 
-    const float segment_length_xy = direction.xy().length();
-    
-    return kinematic_limit(segment_length_xy, direction.z, max_xy, max_z_neg, max_z_pos);
+    return kinematic_limit(dir_xy, direction.z, max_xy, max_z_neg, max_z_pos);
 }
 
-// compute the maximum allowed magnitude along a direction defined by segment_length_xy and segment_length_z components
-// constrained by independent horizontal (max_xy) and vertical (max_z_pos/max_z_neg) limits
-// returns the maximum achievable magnitude without exceeding any axis limit
-float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_neg, float max_z_pos)
+// Return the largest M >= 0 along a direction defined by horizontal and
+// vertical components, constrained by:
+//
+//   M * |unit.xy| <= max_xy
+//   -max_z_neg <= M * unit.z <= max_z_pos
+//
+// dir_xy (>= 0) and dir_z define a direction; only their ratio matters
+// (normalized internally).
+//
+// max_z_pos limits travel in the +Z direction.
+// max_z_neg limits travel in the -Z direction.
+// All limits must be positive.
+//
+// Returns 0 if any limit is zero or the direction is zero.
+float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, float max_z_pos)
 {
-    // Reject zero-length direction vectors or undefined limits
-    if (is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
+    // Reject invalid limits
+    if (is_negative(dir_xy) || !is_positive(max_xy) || !is_positive(max_z_pos) || !is_positive(max_z_neg)) {
         return 0.0;
     }
 
-    max_xy = fabsf(max_xy);
-    max_z_pos = fabsf(max_z_pos);
-    max_z_neg = fabsf(max_z_neg);
-
-    const float length = safe_sqrt(sq(segment_length_xy) + sq(segment_length_z));
-    // check for divide by zero.
-    if (!is_positive(length)) {
+    // Check for zero length direction vector
+    const float dir_length = safe_sqrt(sq(dir_xy) + sq(dir_z));
+    if (!is_positive(dir_length)) {
         return 0.0;
     }
-    segment_length_xy /= length;
-    segment_length_z /= length;
 
-    if (is_zero(segment_length_xy)) {
-        // Pure vertical motion
-        return is_positive(segment_length_z) ? max_z_pos : max_z_neg;
+    if (is_zero(dir_xy)) {
+        // Pure vertical - constrained only by vertical limits
+        return is_positive(dir_z) ? max_z_pos : max_z_neg;
     }
 
-    if (is_zero(segment_length_z)) {
-        // Pure horizontal motion
+    if (is_zero(dir_z)) {
+        // Pure horizontal - constrained only by horizontal limits
         return max_xy;
     }
 
-    // Compute vertical-to-horizontal slope of desired direction
-    const float slope = segment_length_z/segment_length_xy;
+    // Normalize the direction vector (only ratio matters)
+    dir_xy /= dir_length;
+    dir_z /= dir_length;
+
+    // Compare the direction slope (|dir_z/dir_xy|) to the limit slope
+    // (max_z/max_xy) to determine which axis constraint is hit first.
+    const float slope = dir_z / dir_xy;
+
     if (is_positive(slope)) {
-        // Ascending: check if slope is within limits
-        if (fabsf(slope) < max_z_pos/max_xy) {
-            return max_xy/segment_length_xy;
+        // Positive-Z: constrained by max_z_pos
+        if (slope < max_z_pos / max_xy) {
+            // Shallow direction: horizontal limit reached first
+            return max_xy / dir_xy;
         }
-        // Vertical limit dominates in upward direction
-        return fabsf(max_z_pos/segment_length_z);
+        // Steep direction: vertical limit reached first
+        return max_z_pos / dir_z;
     }
 
-    // Descending: check if slope is within limits
-    if (fabsf(slope) < max_z_neg/max_xy) {
-        return max_xy/segment_length_xy;
+    // Negative-Z: constrained by max_z_neg
+    if (-slope < max_z_neg / max_xy) {
+        // Shallow direction: horizontal limit reached first
+        return max_xy / dir_xy;
     }
-
-    // Vertical limit dominates in downward direction
-    return fabsf(max_z_neg/segment_length_z);
+    // Steep direction: vertical limit reached first
+    return -max_z_neg / dir_z;
 }
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].

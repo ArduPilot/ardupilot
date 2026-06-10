@@ -3,11 +3,7 @@
 The **Aeromind6X** flight controller is a cutting-edge, indigenous solution developed by [Arkin Labs Private Limited](https://www.arkinlabs.in/).
 Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it offers high reliability and fast data handling for advanced UAV applications. It also integrates with an **M3 Coprocessor**, allowing sensor expansion and future upgrades.
 
-<img
-  src="fc.png"
-  alt="FC Image"
-  style="width: 100%; height: auto; position: relative; margin-left: 10px;"
-/>
+![FC Image](fc.png)
 
 ---
 
@@ -40,12 +36,12 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 ### Electrical
 
 - Input Voltage: up to 6 V
-- USB Input: 4.75 V – 5.25 V
+- USB Input: 4.75 V - 5.25 V
 
 ### Mechanical
 
 - Weight: 150 g
-- Dimensions: 94 × 46 × 38 mm
+- Dimensions: 94 x 46 x 38 mm
 
 ---
 
@@ -112,20 +108,20 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 
 ---
 
-## RC Input
+## RC Input Configuration
 
 RC input supports SBUS, PPM, and DSM protocols with dedicated ports available for each. For bi-directional protocols, UART4 or other telemetry ports can be configured to handle the connection. For more details, refer to the [ArduPilot documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
 
 ---
 
-## PWM Outputs
+## PWM Output
 
 Supports up to **16 PWM outputs**:
 
-- **Main Outputs (M1–M8)**: via STM32F103 IO Processor
-- **Auxiliary Outputs (A1–A8)**: via STM32H753 FMU
+- **Main Outputs (M1-M8)**: via STM32F103 IO Processor
+- **Auxiliary Outputs (A1-A8)**: via STM32H753 FMU
 
-> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1–M8** are bi-directional DShot capable.
+> **Note:** All outputs support both PWM and DShot protocols, except for outputs **A7** and **A8**, which are PWM-only. Outputs **M1-M8** are bi-directional DShot capable.
 ---
 
 ## Battery Monitoring

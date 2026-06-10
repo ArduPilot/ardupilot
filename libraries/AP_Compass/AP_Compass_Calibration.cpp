@@ -18,20 +18,35 @@ void Compass::cal_update()
     }
 
     bool running = false;
-
+    uint8_t num_compass = 0;
+    uint8_t num_compass_successful = 0;
+    
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
         if (_calibrator[i] == nullptr) {
             continue;
         }
+        num_compass++;
         if (_calibrator[i]->failed()) {
             AP_Notify::events.compass_cal_failed = 1;
         }
 
         if (_calibrator[i]->running()) {
             running = true;
-        } else if (_cal_autosave && !_cal_saved[i] && _calibrator[i]->get_state().status == CompassCalibrator::Status::SUCCESS) {
-            _accept_calibration(uint8_t(i));
+            continue;
         }
+        if (_calibrator[i]->get_state().status != CompassCalibrator::Status::SUCCESS) {
+            continue;
+        }
+        num_compass_successful++;
+        if (!_cal_autosave) {
+            // user requested to not automatically save the calibration values
+            continue;
+        }
+        if (_cal_saved[i]) {
+            // user already manually applied changes via MAV_CMD_DO_ACCEPT_MAG_CAL
+            continue;
+        }
+        _accept_calibration(uint8_t(i));
     }
 
     AP_Notify::flags.compass_cal_running = running;
@@ -39,10 +54,21 @@ void Compass::cal_update()
     if (is_calibrating()) {
         _cal_has_run = true;
         return;
-    } else if (_cal_has_run && _auto_reboot()) {
-        hal.scheduler->delay(1000);
-        hal.scheduler->reboot();
+    } 
+    if (!_cal_has_run) {
+        // calibration hasn't started yet
+        return;
     }
+    if (num_compass != num_compass_successful) {
+        // only reboot if all successful
+        return;
+    }
+    if (!_compass_cal_autoreboot) {
+        // user did not request autoreboot
+        return;
+    }
+    hal.scheduler->delay(1000);
+    hal.scheduler->reboot();
 }
 
 bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
@@ -71,7 +97,7 @@ bool Compass::_start_calibration(uint8_t i, bool retry, float delay)
     }
 
     if (option_set(Option::CAL_REQUIRE_GPS)) {
-        if (AP::gps().status() < AP_GPS::GPS_OK_FIX_2D) {
+        if (AP::gps().status() < AP_GPS_FixType::FIX_2D) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Compass cal requires GPS lock");
             return false;
         }
@@ -407,6 +433,10 @@ MAV_RESULT Compass::handle_mag_cal_command(const mavlink_command_int_t &packet)
             }
         }
 
+        if (result != MAV_RESULT_ACCEPTED) {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Compass calibration failed to start");
+        }
+
         break;
     }
 
@@ -512,7 +542,7 @@ bool Compass::mag_cal_fixed_yaw(float yaw_deg, uint8_t compass_mask,
         Location loc;
         // get AHRS position. If unavailable then try GPS location
         if (!AP::ahrs().get_location(loc)) {
-            if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+            if (AP::gps().status() < AP_GPS_FixType::FIX_3D) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Mag: no position available");
                 return false;
             }

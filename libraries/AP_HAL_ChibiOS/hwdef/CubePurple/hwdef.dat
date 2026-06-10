@@ -37,3 +37,5 @@ define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
 # enable support for dshot on iomcu
 ROMFS io_firmware_dshot.bin Tools/IO_Firmware/iofirmware_dshot_lowpolh.bin
 define HAL_WITH_IO_MCU_DSHOT 1
+
+define BOARD_TYPE_DEFAULT 6  # PH2SLIM

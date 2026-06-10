@@ -2,6 +2,7 @@
 
 import os
 import json
+import pathlib
 import shutil
 
 H7_DUAL_BANK_LIST = [
@@ -48,12 +49,11 @@ def update_settings(bld):
             json.dump({}, f, indent=4)
 
     try:
-        with open(vscode_setting_json_path, 'r') as f:
-            content = f.read().strip()
-            if content:
-                settings_json = json.loads(content)
-            else:
-                settings_json = {}
+        content = pathlib.Path(vscode_setting_json_path).read_text().strip()
+        if content:
+            settings_json = json.loads(content)
+        else:
+            settings_json = {}
     except json.JSONDecodeError:
         print(f"VS-LAUNCH: \033[91m Error: invalid JSON in .vscode/settings.json, please fix it and try again.\033[0m")
         return

@@ -83,12 +83,31 @@ private:
         return backend_rate_hz;
     }
 
+    // The EKF clamp acts on residual gyro bias after ArduPilot's
+    // startup calibration has removed the static ZRO. Residual drift
+    // over a flight is therefore dominated by ZRO temperature drift
+    // (temp coefficient x in-flight temperature swing). The v3 family
+    // has a wide spread in this coefficient, so the override is tiered:
+    //
+    //   tier  parts                    ZRO drift   limit / init
+    //   ----  -----------------------  ----------  ------------------
+    //   low   ICM-42688-P, ICM-45686   0.005/C     radians(2.0) / 1.0
+    //   mid   ICM-42605, ICM-40609-D,  0.01-0.02/C radians(3.0) / 1.5
+    //         ICM-42670-P, IIM-42652
+    //   none  ICM-40605, IIM-42653,    0.04/C or   base default
+    //         (anything else)          unknown     (0.5 rad/s / 2.5)
+    //
+    // See datasheets DS-000347, DS-000489, DS-000292, DS-000330,
+    // DS-000451, DS-000440, DS-000529.
+    float gyro_bias_limit_rads() const override;
+    float gyro_bias_init_dps() const override;
+
     // reset FIFO configure1 register
     uint8_t fifo_config1;
 
     // temp scaling for FIFO temperature
     float temp_sensitivity;
-    const float temp_zero = 25; // degC
+    static constexpr float temp_zero = 25; // degC
     
     const enum Rotation rotation;
 

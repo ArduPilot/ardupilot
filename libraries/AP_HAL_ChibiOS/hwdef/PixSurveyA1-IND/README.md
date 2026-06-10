@@ -4,43 +4,25 @@ The PixSurveyA1-IND flight controller is an upgrade to PixSurveyA1, with better 
 
 ## Features
 
-•    STM32F427VIT6 and STM32F103C8T6 microcontroller
-
-•    Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
-
-•    internal heater for IMUs temperature control
-
-•    internal Soft Rubber Damping Column isolation for All internal IMUs
-
-•    Two barometers, MS5611(SPI) x2
-
-•    builtin IST8310 magnetometer(internal I2C)
-
-•    builtin RAMTRON(SPI)
-
-•    microSD card slot(SPI)
-
-•    5 UARTs
-
-•    USB(Type-C)
-
-•    PPM & S.Bus input
-
-•    14 PWM outputs
-
-•    tow I2C ports and two FDCAN ports
-
-•    one S.Bus output
-
-•    External Buzzer
-
-•    two voltage & current monitoring
-
-•    servo rail BEC independent power input for servos
-
-•    external safety Switch
-
-•    12V Power Output
+- STM32F427VIT6 and STM32F103C8T6 microcontroller
+- Three IMUs, two ICM42688-P(SPI), one ICM40605(SPI)
+- internal heater for IMUs temperature control
+- internal Soft Rubber Damping Column isolation for All internal IMUs
+- Two barometers, MS5611(SPI) x2
+- builtin IST8310 magnetometer(internal I2C)
+- builtin RAMTRON(SPI)
+- microSD card slot(SPI)
+- 5 UARTs
+- USB(Type-C)
+- PPM & S.Bus input
+- 14 PWM outputs
+- tow I2C ports and two FDCAN ports
+- one S.Bus output
+- External Buzzer
+- two voltage & current monitoring
+- servo rail BEC independent power input for servos
+- external safety Switch
+- 12V Power Output
 
 ## Pinout
 
@@ -171,31 +153,20 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot.
 
-## Battery Monitor Settings
+## Battery Monitoring
 
 These should already be set by default. However, if lost or changed:
 
-Enable Battery monitor with these parameter settings :
+Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
-:ref:`BATT_MONITOR<BATT_MONITOR>` =4
-
-Then reboot.
-
-:ref:`BATT_VOLT_PIN<BATT_VOLT_PIN>` 2
-
-:ref:`BATT_CURR_PIN<BATT_CURR_PIN>` 3
-
-:ref:`BATT_VOLT_MULT<BATT_VOLT_MULT>` 18.0
-
-:ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT>` 24.0
-
-:ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN>` 14
-
-:ref:`BATT2_CURR_PIN<BATT2_CURR_PIN>` 13
-
-:ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT>` 18.0
-
-:ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT>` 24.0
+- BATT_VOLT_PIN = 2
+- BATT_CURR_PIN = 3
+- BATT_VOLT_MULT = 18.0
+- BATT_AMP_PERVLT = 24.0
+- BATT2_VOLT_PIN = 14
+- BATT2_CURR_PIN = 13
+- BATT2_VOLT_MULT = 18.0
+- BATT2_AMP_PERVLT = 24.0
 
 ## DroneCAN capability
 
@@ -203,6 +174,6 @@ There are 2 CAN ports that allow connecting two independent CAN bus outputs. Eac
 
 ## Where to Buy
 
-`makeflyeasy <http://www.makeflyeasy.com>`_
+[makeflyeasy](http://www.makeflyeasy.com)
 
 [copywiki destination="plane,copter,rover,blimp"]

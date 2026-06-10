@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import fnmatch
 import os
 import re
-import fnmatch
+
 from collections.abc import Collection
 
 '''
@@ -66,7 +67,7 @@ class BoardList(object):
         )
 
         self.hwdef_dir = []
-        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32', 'AP_HAL_SITL':
+        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32', 'AP_HAL_QURT', 'AP_HAL_SITL':
             self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
@@ -130,8 +131,10 @@ class BoardList(object):
                     board.toolchain = 'arm-none-eabi'
                 elif "ESP32" in hwdef_dir:
                     board.toolchain = 'xtensa-esp32-elf'
+                elif "QURT" in hwdef_dir:
+                    board.toolchain = "aarch64-linux-gnu"
                 elif "SITL" in hwdef_dir:
-                    board.toolchain = 'native'
+                    board.toolchain = None
                 else:
                     raise ValueError(f"Unable to determine toolchain for {hwdef_dir}")
 
@@ -143,13 +146,15 @@ class BoardList(object):
                 board.hal = "ESP32"
             elif "SITL" in hwdef_dir:
                 board.hal = "SITL"
+            elif "QURT" in hwdef_dir:
+                board.hal = "QURT"
             else:
                 raise ValueError(f"Unable to determine HAL for {hwdef_dir}")
 
     def read_hwdef(self, filepath):
-        fh = open(filepath)
         ret = []
-        text = fh.readlines()
+        with open(filepath) as in_file:
+            text = in_file.readlines()
         for line in text:
             m = re.match(r"^\s*include\s+(.+)\s*$", line)
             if m is not None:
@@ -157,6 +162,13 @@ class BoardList(object):
             else:
                 ret += [line]
         return ret
+
+    def board_by_name(self, name: str) -> Board:
+        '''return the Board object for the given board name, raises KeyError if not found'''
+        for board in self.boards:
+            if board.name == name:
+                return board
+        raise KeyError(name)
 
     def find_autobuild_boards(self, build_target=None, skip : Collection[str] = None):
         ret = []

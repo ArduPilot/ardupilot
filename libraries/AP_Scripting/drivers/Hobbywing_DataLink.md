@@ -1,6 +1,6 @@
 # HobbyWing ESC DataLink Driver
 
-[Hobbywing](https://www.hobbywing.com/en/products?id=59)
+[Hobbywing Datalink v2](https://www.hobbywing.com/en/products/datalinkv2273)
 
 This driver implements support the HobbyWing DataLink for HobbyWing
 ESCs connected via a UART to an ArduPilot serial port. It supports up

@@ -8,23 +8,23 @@ Available styles and respective OSD_FONT numbers are:
 
 **clarity (OSD_FONT 0, default)** a clearly visible large font:
 
-  ![](clarity.png)
+  ![clarity font](clarity.png)
 
 **clarity_medium (OSD_FONT 1)** good visibility, less dominant than clarity default:
 
-![](clarity_medium.png)
+![clarity_medium font](clarity_medium.png)
 
 **bfstyle (OSD_FONT 2)** bf- / inav-osd default style:
 
-![](bfstyle.png)
+![bfstyle font](bfstyle.png)
 
 **bold (OSD_FONT 3)** a bolder version of bfstyle:
 
-![](bold.png)
+![bold font](bold.png)
 
 **digital (OSD_FONT 4)** 80's clock radio style:
 
-![](digital.png)
+![digital font](digital.png)
 
 ## Adding font styles
 
@@ -32,13 +32,13 @@ Charsets can be edited or built form scratch using MAX7456Charwizard.jar include
 
 To do that, navigate to:
 
-```
+```text
 /ardupilot/libraries/AP_OSD/fonts
 ```
 
 in your cloned repository and call:
 
-```
+```bash
 ./mcm2bin.py yourfont.mcm fontN.bin
 ```
 
@@ -46,4 +46,4 @@ to convert existent or added charsets into a binary. Now navigate back to the di
 
 ## SD-card based font handling
 
-Support for SD-card based font handling has been added with firmware version 4.1 and later. This adds the option to choose from up to 10 font files (named "font0.bin" - "font9.bin") placed in the root directory of your SD card. It allows to save memory especially on 1 MB boards by removing font binaries from the main firmware binary. Additionally, this allows the user to easily add individualized and/or customized language charsets for the onboard OSD without the need to compile  individual firmware. Runtime font changing using the parameter :ref:`OSD_FONT<OSD_FONT>` is unaffected. MAVftp might be a convenient option to upload files to your SD card without having to physically remove it from your flight controller.
+Support for SD-card based font handling has been added with firmware version 4.1 and later. This adds the option to choose from up to 10 font files (named "font0.bin" - "font9.bin") placed in the root directory of your SD card. It allows to save memory especially on 1 MB boards by removing font binaries from the main firmware binary. Additionally, this allows the user to easily add individualized and/or customized language charsets for the onboard OSD without the need to compile  individual firmware. Runtime font changing using the parameter [OSD_FONT](https://ardupilot.org/copter/docs/parameters.html#osd-font-osd-font) is unaffected. MAVftp might be a convenient option to upload files to your SD card without having to physically remove it from your flight controller.

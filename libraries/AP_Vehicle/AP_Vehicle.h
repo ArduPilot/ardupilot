@@ -281,6 +281,11 @@ public:
      */
     virtual bool get_wp_distance_m(float &distance) const { return false; }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // return the lat/lon/alt etc of waypoint location:
+    virtual bool get_wp_location(Location &loc) const { return false; }
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
     /*
       get the current wp bearing in degrees
       return false if failed or n/a
@@ -548,12 +553,21 @@ protected:
     // Check if this mode can be entered from the GCS
     bool block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const;
 
+#if HAL_GCS_ENABLED
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    virtual uint32_t get_available_mode_enabled_mask() const { return 0; };
+    uint32_t last_available_mode_enabled_mask;
+#endif
+
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // update the harmonic notch
     void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
 #endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+
+    // Bitmask of modes to disable from gcs
+    AP_Int32 flight_mode_GCS_block;
 
 private:
 
@@ -601,8 +615,6 @@ private:
     AP_Filters filters;
 #endif
 
-    // Bitmask of modes to disable from gcs
-    AP_Int32 flight_mode_GCS_block;
 };
 
 namespace AP {

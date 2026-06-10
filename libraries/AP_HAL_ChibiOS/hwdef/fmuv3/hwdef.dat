@@ -465,3 +465,6 @@ define AP_BATTERY_SMBUS_SOLO_ENABLED (AP_BATTERY_SMBUS_ENABLED && BOARD_FLASH_SI
 
 # produce this error if we are on a 1M board
 define BOARD_CHECK_F427_USE_1M "ERROR: 1M flash use fmuv2"
+
+# probe for external IST8310 compasses:
+define AP_COMPASS_IST8310_EXTERNAL_BUS_PROBING_ENABLED AP_COMPASS_IST8310_ENABLED

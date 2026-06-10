@@ -30,6 +30,7 @@
 #include "RCInput_ZYNQ.h"
 #include "RCInput_RCProtocol.h"
 #include "RCOutput_AioPRU.h"
+#include "RCOutput_AioPRU_PB2.h"
 #include "RCOutput_Bebop.h"
 #include "RCOutput_Disco.h"
 #include "RCOutput_Multi.h"
@@ -192,9 +193,10 @@ static RCInput rcinDriver;
 static RCOutput_PRU rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BBBMINI || \
       CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BLUE || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET || \
-      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET2
+      CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET      
 static RCOutput_AioPRU rcoutDriver;
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_POCKET2
+static RCOutput_AioPRU_PB2 rcoutDriver;
 /*
   use the PCA9685 based RCOutput driver on Navio and Erle-Brain 2
  */
