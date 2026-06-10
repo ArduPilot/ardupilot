@@ -240,6 +240,10 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // are we consuming yaw from an external (e.g. vision-based) source?
     // results.using_extnav_for_yaw = false;
 
+    // are we consuming yaw from a source which is *not* a compass
+    // (e.g. the GSF)
+    // results.using_noncompass_for_yaw = false;
+
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {
         // use SITL states to write body frame odometry data at 20Hz

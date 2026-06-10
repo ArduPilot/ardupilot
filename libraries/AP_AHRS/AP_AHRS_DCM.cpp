@@ -198,6 +198,9 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // are we consuming yaw from an external (e.g. vision-based) source?
     // results.using_extnav_for_yaw = false;
+
+    // are we consuming yaw from a source which is *not* a compass
+    // results.using_noncompass_for_yaw = false;
 }
 
 /*

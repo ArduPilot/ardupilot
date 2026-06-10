@@ -105,6 +105,9 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 
     // are we consuming yaw from an external (e.g. vision-based) source?
     results.using_extnav_for_yaw = EKF2.isExtNavUsedForYaw();
+
+    // are we consuming yaw from a source which is *not* a compass
+    results.using_noncompass_for_yaw = EKF2.isExtNavUsedForYaw();
 }
 
 bool AP_AHRS_NavEKF2::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
