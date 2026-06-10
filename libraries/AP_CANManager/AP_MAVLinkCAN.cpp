@@ -82,7 +82,7 @@ bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_co
         return false;
     }
 
-    if (can_forward.callback_id != 0 && can_forward.callback_bus != bus) {
+    if (can_forward.callback_id != 0 && can_forward.callback_bus != bus && can_forward.callback_bus < HAL_NUM_CAN_IFACES) {
         /*
           the client is changing which bus they are monitoring, unregister from the previous bus
          */
