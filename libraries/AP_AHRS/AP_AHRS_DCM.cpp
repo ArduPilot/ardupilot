@@ -1103,6 +1103,12 @@ AP_AHRS_DCM::drift_correction(float deltat)
 // update our wind speed estimate
 void AP_AHRS_DCM::estimate_wind(void)
 {
+    estimate_wind(_last_velocity, _body_dcm_matrix.colx());
+}
+
+// update our wind speed estimate
+void AP_AHRS_DCM::estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection)
+{
     if (!AP::ahrs().get_wind_estimation_enabled()) {
         return;
     }
@@ -1119,15 +1125,9 @@ void AP_AHRS_DCM::estimate_wind(void)
     }
     _last_wind_estimate_ms = now;
 
-    const Vector3f &velocity = _last_velocity;
-
     // this is based on the wind speed estimation code from MatrixPilot by
     // Bill Premerlani. Adaption for ArduPilot by Jon Challinger
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
-    // use the trim-corrected (vehicle body) forward axis, not the raw board
-    // axis _dcm_matrix.colx(): a non-zero AHRS_TRIM otherwise feeds the wind
-    // triangle the sensor-board direction rather than the fuselage direction.
-    const Vector3f fuselageDirection = _body_dcm_matrix.colx();
     const Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
 
     // scrap our data and start over if we're taking too long to get a direction change
