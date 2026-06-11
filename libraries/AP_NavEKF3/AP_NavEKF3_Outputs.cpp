@@ -123,14 +123,6 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
     }
 }
 
-
-// return the Euler roll, pitch and yaw angle in radians
-void NavEKF3_core::getEulerAngles(Vector3f &euler) const
-{
-    outputDataNew.quat.to_euler(euler);
-    euler = euler - dal.get_trim();
-}
-
 // return body axis gyro bias estimates in rad/sec
 void NavEKF3_core::getGyroBias(Vector3f &gyroBias) const
 {
