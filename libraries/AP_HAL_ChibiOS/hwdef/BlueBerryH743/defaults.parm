@@ -1,0 +1,2 @@
+# settings for battery monitoring
+BATT_AMP_OFFSET 0.126
