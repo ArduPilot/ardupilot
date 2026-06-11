@@ -40,6 +40,13 @@ public:
         return vertical_accuracy(primary_sensor(), vacc);
     }
 
+    bool is_spoofed(uint8_t instance) const {
+        return _RGPI[instance].is_spoofed;
+    }
+    bool is_spoofed() const {
+        return is_spoofed(primary_sensor());
+    }
+
     uint16_t get_hdop(uint8_t instance) const {
         return _RGPJ[instance].hdop;
     }
