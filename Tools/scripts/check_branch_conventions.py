@@ -9,8 +9,9 @@ Validates:
   - commit messages have a well-formed subsystem prefix before ':'
   - commit subject lines are <= 160 characters
   - changed markdown files pass markdownlint-cli2
-  - new hwdef board directories include a README.md
-  - new hwdef board READMEs contain at least one local image added in the PR
+  - new hwdef board directories include a README.md, except ODID variants
+  - new hwdef board READMEs contain at least one local image added in the PR,
+    except AP_Periph and ODID variants
 
 AP_FLAKE8_CLEAN
 '''
@@ -26,6 +27,7 @@ import sys
 import urllib.error
 import urllib.request
 
+import board_list
 import build_script_base
 
 DOCS_URL = "https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
@@ -55,10 +57,12 @@ SKIP = f"{_YELLOW}~{_RESET}"
 class CheckBranchConventions(build_script_base.BuildScriptBase):
 
     DEFAULT_UPSTREAM = "origin/master"
+    HWDEF_PREFIX = "libraries/AP_HAL_ChibiOS/hwdef/"
 
     def __init__(self, base_branch: str | None = None) -> None:
         super().__init__()
         self.base_branch = base_branch
+        self._board_list: board_list.BoardList | None = None
 
     def progress_prefix(self) -> str:
         return "CBC"
@@ -69,6 +73,25 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             "SCB-GIT", cmd_list,
             show_output=show_output, show_command=False, cwd=source_dir,
         )
+
+    @staticmethod
+    def is_odid_board(board_name: str) -> bool:
+        return board_name.endswith("-ODID") or "-ODID-" in board_name
+
+    def is_ap_periph_board(self, board_name: str) -> bool:
+        if self._board_list is None:
+            self._board_list = board_list.BoardList()
+
+        try:
+            return bool(self._board_list.board_by_name(board_name).is_ap_periph)
+        except KeyError:
+            return False
+
+    def check_board_readme_required(self, board_name: str) -> bool:
+        return not self.is_odid_board(board_name)
+
+    def check_board_image_required(self, board_name: str) -> bool:
+        return not (self.is_odid_board(board_name) or self.is_ap_periph_board(board_name))
 
     def check_merge_commits(self) -> bool:
         merge_commits = self.run_git(
@@ -476,12 +499,11 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         ).strip()
         added_files = set(added_raw.splitlines()) if added_raw else set()
 
-        hwdef_prefix = "libraries/AP_HAL_ChibiOS/hwdef/"
         # Board dirs that have at least one newly added file at depth 1 under hwdef/
         candidate_boards = {
             f.split("/")[3]
             for f in added_files
-            if f.startswith(hwdef_prefix) and f.count("/") == 4
+            if f.startswith(self.HWDEF_PREFIX) and f.count("/") == 4
         }
 
         if not candidate_boards:
@@ -491,7 +513,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         # Determine which of those dirs are genuinely new (absent in base branch)
         existing_raw = self.run_git(
             ["ls-tree", "--name-only", self.base_branch,
-             hwdef_prefix],
+             self.HWDEF_PREFIX],
             show_output=False,
         ).strip()
         existing_boards = {
@@ -507,7 +529,11 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
 
         ok = True
         for board_name in new_boards:
-            board_prefix = f"{hwdef_prefix}{board_name}/"
+            if not self.check_board_readme_required(board_name):
+                print(f"{PASS} {board_name}: README.md not required for ODID variant.")
+                continue
+
+            board_prefix = f"{self.HWDEF_PREFIX}{board_name}/"
             has_readme = any(
                 os.path.basename(f) == "README.md"
                 for f in added_files
@@ -533,12 +559,11 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         ).strip()
         added_files = set(added_raw.splitlines()) if added_raw else set()
 
-        hwdef_prefix = "libraries/AP_HAL_ChibiOS/hwdef/"
         # New READMEs exactly one directory level under hwdef/
         # e.g. libraries/AP_HAL_ChibiOS/hwdef/NewBoard/README.md → 4 slashes
         new_readmes = sorted(
             f for f in added_files
-            if f.startswith(hwdef_prefix)
+            if f.startswith(self.HWDEF_PREFIX)
             and os.path.basename(f) == "README.md"
             and f.count("/") == 4
         )
@@ -552,6 +577,10 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         ok = True
         for readme_path in new_readmes:
             board_name = readme_path.split("/")[3]
+
+            if not self.check_board_image_required(board_name):
+                print(f"{PASS} {board_name}: README.md image not required.")
+                continue
 
             if not os.path.exists(readme_path):
                 print(f"{SKIP} {board_name}: README not present locally, skipping image check.")
