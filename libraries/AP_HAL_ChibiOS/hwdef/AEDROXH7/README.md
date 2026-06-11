@@ -64,7 +64,6 @@ GPIO 83 controls the VTX BEC output to pins marked "10V" and is included on the 
 
 GPIO 84 controls the camera switch. Setting this GPIO high will output the CAM1 stream, setting this low will output the CAM2 stream. By default RELAY3 is configured to control this pin and sets the GPIO low.
 
-
 ## PWM Output
 
 The AEDROXH7 supports up to 9 PWM (8 + LED) outputs. The pads for motor output
