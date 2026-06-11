@@ -198,6 +198,9 @@ class ArmedAtEndOfTestException(ErrorException):
     pass
 
 
+NUM_RC_CHANNELS = 16
+
+
 class Context(object):
     def __init__(self):
         self.parameters = []
@@ -2048,8 +2051,8 @@ class TestSuite(abc.ABC):
         self.tlog = None
         self.enable_fgview = enable_fgview
 
-        self.rc_thread = None
-        self.rc_thread_should_quit = False
+        self.rc_thread: threading.Thread | None = None
+        self.rc_thread_should_quit: bool = False
         self.rc_queue = queue.Queue()
 
         self.expect_list = []
@@ -5881,40 +5884,37 @@ class TestSuite(abc.ABC):
                 raise ValueError("RC thread is dead")  # FIXME: type
 
     def rc_thread_main(self):
-        chan16 = [1000] * 16
-
+        """When this function completes, the thread terminates."""
         sitl_output = mavutil.mavudp("127.0.0.1:%u" % self.sitl_rcin_port(), input=False)
-        buf = None
 
-        while True:
-            if self.rc_thread_should_quit:
-                break
+        # Pay attention, there are race conditions / wallclock-vs-simtime issues to worry about here.
+        #
+        # The value appears straightforward: by dividing by the speedup (nominally how much faster the
+        # autopilot is running than real wall-clock time) we see that the remaining numerical portion
+        # of this value (e.g. 0.2 for a value of 0.2/speedup) is the maximum wait that the autopilot
+        # would observe between RC value updates.
+        # However, its more complicated than that. The speedup used here is the _requested_ speedup,
+        # not the _actual_ speedup. If the autopilot cannot run as fast as requested, it runs as fast
+        # as possible. But since the true speedup is lower than the requested speedup, the autopilot
+        # observes these RC value updates arriving faster than expected.
+        # Fortunately, that should be OK since this RC thread wait time is merely a maximum value.
+        # This thread-based RC value-sending code is already able to send RC values _faster_ than this
+        # max_wait period. So both possibilities (autopilot slowdown and waiting less than maximum)
+        # will appear to the autopilot merely as RC values arriving more frequently than the numerical
+        # portion (e.g. 0.2 for a value of 0.2/speedup) suggests.
+        max_wait_before_sending_values = 0.2 / self.speedup
 
-            # the 0.05 here means we're updating the RC values into
-            # the autopilot at 20Hz - that's our 50Hz wallclock, , not
-            # the autopilot's simulated 20Hz, so if speedup is 10 the
-            # autopilot will see ~2Hz.
-            timeout = 0.02
-            # ... and 2Hz is too slow when we now run at 100x speedup:
-            timeout /= (self.speedup / 10.0)
-
+        format_str = "<" + "H" * NUM_RC_CHANNELS
+        rc_values = [1000] * NUM_RC_CHANNELS
+        while not self.rc_thread_should_quit:
             try:
-                map_copy = self.rc_queue.get(timeout=timeout)
-
-                # 16 packed entries:
-                for i in range(1, 17):
-                    if i in map_copy:
-                        chan16[i-1] = map_copy[i]
-
+                rc_value_updates = self.rc_queue.get(timeout=max_wait_before_sending_values)
+                for chan, val in rc_value_updates.items():
+                    if isinstance(chan, int) and 1 <= chan <= NUM_RC_CHANNELS:
+                        rc_values[chan-1] = val
             except queue.Empty:
                 pass
-
-            buf = struct.pack('<HHHHHHHHHHHHHHHH', *chan16)
-
-            if buf is None:
-                continue
-
-            sitl_output.write(buf)
+            sitl_output.write(struct.pack(format_str, *rc_values))
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
