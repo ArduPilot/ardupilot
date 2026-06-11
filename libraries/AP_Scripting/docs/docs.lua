@@ -2979,6 +2979,11 @@ gcs = {}
 ---@param value number -- value to send
 function gcs:send_named_float(name, value) end
 
+-- send named integer value using NAMED_VALUE_INT message
+---@param name string -- up to 10 chars long
+---@param value integer -- value to send
+function gcs:send_named_int(name, value) end
+
 -- send named string value using NAMED_VALUE_STRING message
 ---@param name string -- up to 10 chars long
 ---@param value string -- value to send, up to 64 chars long
