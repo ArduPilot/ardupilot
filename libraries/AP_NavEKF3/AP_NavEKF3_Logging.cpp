@@ -24,7 +24,11 @@ void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
     Vector3f gyroBias;
     float posDownDeriv;
     Location originLLH;
-    getEulerAngles(euler);
+    Quaternion quat;
+    getQuaternion(quat);
+    // quaternion composition rotates the attitude into the vehicle body frame
+    quat *= dal.get_quat_vehicle_body_to_autopilot_body();
+    quat.to_euler(euler);
     getVelNED(velNED);
     getPosNE(posNE);
     getPosD(posD);
