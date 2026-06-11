@@ -498,8 +498,12 @@ public:
     // check if non-compass sensor is providing yaw.  Allows compass pre-arm checks to be bypassed
     bool using_noncompass_for_yaw(void) const;
 
-    // check if external nav is providing yaw
-    bool using_extnav_for_yaw(void) const;
+    // provide a yaw value which could be used to align an external
+    // navigation system such that its absolute yaw aligns with the
+    // vehicle.  Note that this may not come from the primary
+    // estimator, for example in the case that your primary estimator
+    // is using the external estimator as its yaw source.
+    bool get_extnav_alignment_yaw_rad(float &yaw_rad) const;
 
     // active_backend_configured_to_use_gps will be true if the
     // estimator will use GPS data in creating its estimate when the
