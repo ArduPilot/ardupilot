@@ -14297,6 +14297,244 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ])
         return ret
 
+    def MAV_CMD_REQUEST_OPERATOR_CONTROL(self):
+        '''test MAV_CMD_REQUEST_OPERATOR_CONTROL GCS operator control protocol'''
+        self.context_push()
+        # SERIAL1 and SERIAL2 default to MAVLink2, ports 5762 and 5763
+        mav2 = self.context_create_mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5762),
+            source_system=7,
+            source_component=7,
+        )
+        mav3 = self.context_create_mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+            source_system=9,
+            source_component=9,
+        )
+
+        # without GCS_SYSID_ENFORCE, operator control is not pre-populated from
+        # params, so initial gcs_main should be 0
+        m = self.poll_message("CONTROL_STATUS")
+        if m.gcs_main != 0:
+            raise NotAchievedException("Expected gcs_main=0 initially, got %u" % m.gcs_main)
+        if not (m.flags & mavutil.mavlink.GCS_CONTROL_STATUS_FLAGS_SYSTEM_MANAGER):
+            raise NotAchievedException("Expected SYSTEM_MANAGER flag set")
+
+        # mav2 (sysid=7) requests single-GCS control
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1,  # request
+            p2=0,  # no auto-takeover
+            p4=7,  # req_sysid
+            x=0,   # req_sysid_high=0 (single GCS)
+            mav=mav2,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if m.gcs_main != 7:
+            raise NotAchievedException("Expected gcs_main=7, got %u" % m.gcs_main)
+
+        # re-request by same GCS is idempotent
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=0, p4=7, x=0,
+            mav=mav2,
+        )
+
+        # mav3 tries to release when not owner -> DENIED
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=0,  # release
+            p4=9,
+            mav=mav3,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        # mav3 tries to take over with allow_takeover=0 -> FAILED, and a
+        # notification is forwarded to the current owner (mav2) on their channel
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=0, p4=9, x=0,
+            mav=mav3,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        # notification is broadcast on all channels; self.mav is always connected.
+        # recv_match loops until it finds a COMMAND_LONG(REQUEST_OPERATOR_CONTROL).
+        tstart = time.time()
+        notification = None
+        while time.time() - tstart < 5:
+            m = self.mav.recv_match(blocking=True, timeout=0.5)
+            if m is None:
+                continue
+            if m.get_type() == "COMMAND_LONG" and m.command == mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL:
+                notification = m
+                break
+        if notification is None:
+            raise NotAchievedException(
+                "Did not receive REQUEST_OPERATOR_CONTROL notification")
+        if int(notification.param4) != 9:
+            raise NotAchievedException(
+                "Expected notification param4=9 (requester sysid), got %u" %
+                int(notification.param4))
+
+        # mav2 sets allow_takeover=1; CONTROL_STATUS should reflect the new flag
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=1, p4=7, x=0,
+            mav=mav2,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if not (m.flags & mavutil.mavlink.GCS_CONTROL_STATUS_FLAGS_TAKEOVER_ALLOWED):
+            raise NotAchievedException("Expected TAKEOVER_ALLOWED flag after allow_takeover=1")
+
+        # mav3 takes over (allow_takeover is now set)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=0, p4=9, x=0,
+            mav=mav3,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if m.gcs_main != 9:
+            raise NotAchievedException("Expected gcs_main=9 after takeover, got %u" % m.gcs_main)
+
+        # mav2 tries to release after losing control -> DENIED
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=0, p4=7,
+            mav=mav2,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        # mav3 releases control
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=0, p4=9,
+            mav=mav3,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if m.gcs_main != 0:
+            raise NotAchievedException("Expected gcs_main=0 after release, got %u" % m.gcs_main)
+
+        # sender sysid out of range: mav3 (sysid=9) requests for sysid=5 only -> DENIED
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p4=5, x=0,
+            mav=mav3,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        # range control: mav2 requests [7, 9] so both mav2 and mav3 are in control
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=0,
+            p4=7,  # lower bound
+            x=9,   # upper bound: sysids 7–9 are all operators
+            mav=mav2,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if m.gcs_main != 7:
+            raise NotAchievedException(
+                "Expected gcs_main=7 (lower bound of range), got %u" % m.gcs_main)
+
+        # heartbeats from mav3 (sysid=9, within range) should populate gcs_secondary
+        mav3.mav.heartbeat_send(
+            mavutil.mavlink.MAV_TYPE_GCS,
+            mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+            0, 0, 0,
+        )
+        m = self.poll_message("CONTROL_STATUS")
+        if 9 not in m.gcs_secondary:
+            raise NotAchievedException(
+                "Expected sysid 9 in gcs_secondary, got %s" % str(m.gcs_secondary))
+
+        # mav3 (sysid=9) is within the range and can release
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=0, p4=9,
+            mav=mav3,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if m.gcs_main != 0:
+            raise NotAchievedException(
+                "Expected gcs_main=0 after range release, got %u" % m.gcs_main)
+
+        # heartbeat disconnect: when all operators stop heartbeating, control releases
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=0, p4=7, x=0,
+            mav=mav2,
+        )
+        m = self.assert_receive_message("CONTROL_STATUS", timeout=3)
+        if m.gcs_main != 7:
+            raise NotAchievedException("Expected gcs_main=7 before disconnect test")
+        mav2.close()
+        self.delay_sim_time(7)  # > GCS_OPERATOR_HEARTBEAT_TIMEOUT_MS (5 s)
+        m = self.poll_message("CONTROL_STATUS")
+        if m.gcs_main != 0:
+            raise NotAchievedException(
+                "Expected gcs_main=0 after operator disconnect timeout, got %u" % m.gcs_main)
+        # reopen mav2 for the enforcement test
+        mav2 = self.context_create_mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5762),
+            source_system=7,
+            source_component=7,
+        )
+
+        # -- Enforcement tests: enable GCS_SYSID_ENFORCE and reboot --
+        # close existing extra connections before rebooting
+        mav2.close()
+        mav3.close()
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.set_parameter("MAV_OPTIONS", 1)  # GCS_SYSID_ENFORCE bit
+        self.reboot_sitl()
+
+        # reconnect after reboot using context management for cleanup
+        mav2 = self.context_create_mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5762),
+            source_system=7,
+            source_component=7,
+        )
+        mav3 = self.context_create_mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+            source_system=9,
+            source_component=9,
+        )
+
+        # with GCS_SYSID_ENFORCE, operator is pre-populated from MAV_GCS_SYSID
+        m = self.poll_message("CONTROL_STATUS")
+        if m.gcs_main != self.mav.source_system:
+            raise NotAchievedException(
+                "Expected gcs_main=%u (pre-populated), got %u" %
+                (self.mav.source_system, m.gcs_main))
+
+        # mode change from non-operator is dropped by accept_packet (no COMMAND_ACK)
+        self.send_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+            p1=mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+            p2=4,  # GUIDED
+            mav=mav3,
+        )
+        self.assert_not_receive_message("COMMAND_ACK", mav=mav3, timeout=2)
+
+        # arm/disarm from non-operator is also dropped
+        self.send_cmd(
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            p1=0,
+            mav=mav3,
+        )
+        self.assert_not_receive_message("COMMAND_ACK", mav=mav3, timeout=2)
+
+        # MAV_CMD_REQUEST_OPERATOR_CONTROL from non-operator still gets through
+        # but is FAILED because current owner (main GCS) has allow_takeover=0
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_REQUEST_OPERATOR_CONTROL,
+            p1=1, p2=0, p4=9, x=0,
+            mav=mav3,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests1d(self):
         '''return list of all tests'''
         ret = ([
@@ -17823,6 +18061,7 @@ return update, 1000
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
+            self.MAV_CMD_REQUEST_OPERATOR_CONTROL,
         ])
         return ret
 

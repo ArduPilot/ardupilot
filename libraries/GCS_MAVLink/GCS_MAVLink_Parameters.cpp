@@ -265,8 +265,11 @@ static const ap_message STREAM_EXTENDED_STATUS_msgs[] = {
 #endif
     MSG_POSITION_TARGET_GLOBAL_INT,
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-    MSG_NAMED_FLOAT
+    MSG_NAMED_FLOAT,
 #endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    MSG_CONTROL_STATUS,
+#endif
 };
 
 static const ap_message STREAM_POSITION_msgs[] = {

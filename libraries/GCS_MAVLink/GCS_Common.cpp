@@ -1203,6 +1203,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
         { MAVLINK_MSG_ID_UTM_GLOBAL_POSITION, MSG_UTM_GLOBAL_POSITION},
 #endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+        { MAVLINK_MSG_ID_CONTROL_STATUS, MSG_CONTROL_STATUS},
+#endif  // AP_MAVLINK_GCS_CONTROL_ENABLED
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(map); i++) {
@@ -2795,6 +2798,21 @@ void GCS::update_receive(void)
     }
     // also update UART pass-thru, if enabled
     update_passthru();
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    {
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - _operator_control_last_hb_check_ms >= 1000) {
+            _operator_control_last_hb_check_ms = now_ms;
+            if (_operator_control_sysid != 0) {
+                const uint32_t last_seen = sysid_mygcs_last_seen_time_ms();
+                if (last_seen != 0 &&
+                    now_ms - last_seen > GCS_OPERATOR_HEARTBEAT_TIMEOUT_MS) {
+                    set_operator_control(0, 0, false);
+                }
+            }
+        }
+    }
+#endif
 }
 
 void GCS::send_mission_item_reached_message(uint16_t mission_index)
@@ -4191,6 +4209,13 @@ void GCS_MAVLINK::handle_rc_channels_override(const mavlink_message_t &msg)
     if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // Only accept control from our gcs
     }
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    // manual control is exclusive to the primary operator (gcs_main); secondaries are denied
+    if (gcs().get_operator_control_sysid() != 0 &&
+        !gcs().sysid_is_primary_operator(msg.sysid)) {
+        return;
+    }
+#endif
 
     const uint32_t tnow = AP_HAL::millis();
 
@@ -4353,6 +4378,12 @@ void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg)
     // now...
     if (gcs().sysid_is_gcs(msg.sysid)) {
         sysid_mygcs_seen(AP_HAL::millis());
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+        // track secondary operators (sysids in the operator range that are not gcs_main)
+        if (msg.sysid != gcs().get_operator_control_sysid()) {
+            gcs().note_secondary_gcs_seen(msg.sysid);
+        }
+#endif
     }
 }
 
@@ -5661,6 +5692,52 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
 }
 #endif  // AP_MAVLINK_FOLLOW_HANDLING_ENABLED
 
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_request_operator_control(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    const bool request_control = is_equal(packet.param1, 1.0f);
+    const bool allow_takeover = is_equal(packet.param2, 1.0f);
+    const uint8_t req_sysid = (uint8_t)packet.param4;
+    const uint8_t req_sysid_high = (uint8_t)packet.x;
+
+    // sender must fall within the requested sysid range
+    const bool sender_in_range = (req_sysid_high == 0)
+        ? (msg.sysid == req_sysid)
+        : (req_sysid_high >= req_sysid &&
+           msg.sysid >= req_sysid && msg.sysid <= req_sysid_high);
+    if (!sender_in_range) {
+        return MAV_RESULT_DENIED;
+    }
+
+    if (!request_control) {
+        if (!gcs().sysid_is_gcs(msg.sysid)) {
+            return MAV_RESULT_DENIED;
+        }
+        gcs().set_operator_control(0, 0, false);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // no owner, or same GCS re-requesting: grant
+    if (gcs().get_operator_control_sysid() == 0 ||
+        gcs().sysid_is_gcs(req_sysid)) {
+        gcs().set_operator_control(req_sysid, req_sysid_high, allow_takeover);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // different GCS; automatic takeover allowed?
+    if (gcs().get_operator_control_allow_takeover()) {
+        gcs().set_operator_control(req_sysid, req_sysid_high, allow_takeover);
+        return MAV_RESULT_ACCEPTED;
+    }
+
+    // notify the current owner; defer through the queued send path so it
+    // goes out even when the TX buffer is momentarily full
+    gcs().queue_operator_control_notification(req_sysid, req_sysid_high, allow_takeover, packet.param3);
+
+    return MAV_RESULT_FAILED;
+}
+#endif  // AP_MAVLINK_GCS_CONTROL_ENABLED
+
 MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     switch (packet.command) {
@@ -5893,6 +5970,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 #if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
     case MAV_CMD_DO_FOLLOW:
         return handle_command_do_follow(packet, msg);
+#endif
+
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    case MAV_CMD_REQUEST_OPERATOR_CONTROL:
+        return handle_command_request_operator_control(packet, msg);
 #endif
     }
 
@@ -6600,6 +6682,46 @@ bool GCS_MAVLINK::send_available_mode_monitor()
     return true;
 }
 
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+bool GCS_MAVLINK::send_operator_control_notification()
+{
+    const GCS::OperatorControlNotification &notif = gcs().get_operator_control_notification();
+    CHECK_PAYLOAD_SIZE2(COMMAND_LONG);
+    mavlink_msg_command_long_send(
+        chan,
+        gcs().get_operator_control_sysid(),
+        MAV_COMP_ID_AUTOPILOT1,
+        MAV_CMD_REQUEST_OPERATOR_CONTROL,
+        0,
+        1.0f,
+        notif.allow_takeover ? 1.0f : 0.0f,
+        notif.timeout,
+        (float)notif.req_sysid,
+        (float)notif.req_sysid_high,
+        0.0f,
+        0.0f);
+    return true;
+}
+
+bool GCS_MAVLINK::send_control_status()
+{
+    CHECK_PAYLOAD_SIZE(CONTROL_STATUS);
+
+    uint8_t flags = GCS_CONTROL_STATUS_FLAGS_SYSTEM_MANAGER;
+    if (gcs().get_operator_control_allow_takeover()) {
+        flags |= GCS_CONTROL_STATUS_FLAGS_TAKEOVER_ALLOWED;
+    }
+    uint8_t gcs_secondary[10] {};
+    gcs().get_secondary_gcs(gcs_secondary);
+    mavlink_msg_control_status_send(
+        chan,
+        flags,
+        gcs().get_operator_control_sysid(),
+        gcs_secondary);
+    return true;
+}
+#endif  // AP_MAVLINK_GCS_CONTROL_ENABLED
+
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 {
     bool ret = true;
@@ -7026,6 +7148,16 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         ret = send_available_mode_monitor();
         break;
 
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    case MSG_CONTROL_STATUS:
+        ret = send_control_status();
+        break;
+
+    case MSG_OPERATOR_CONTROL_NOTIFICATION:
+        ret = send_operator_control_notification();
+        break;
+#endif
+
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
     case MSG_FLIGHT_INFORMATION:
         CHECK_PAYLOAD_SIZE(FLIGHT_INFORMATION);
@@ -7385,6 +7517,24 @@ bool GCS_MAVLINK::accept_packet(const mavlink_status_t &status,
         return true;
     }
 
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    // always accept operator control requests so non-owners can request takeover
+    if (msg.msgid == MAVLINK_MSG_ID_COMMAND_INT) {
+        mavlink_command_int_t pkt;
+        mavlink_msg_command_int_decode(&msg, &pkt);
+        if (pkt.command == MAV_CMD_REQUEST_OPERATOR_CONTROL) {
+            return true;
+        }
+    }
+    if (msg.msgid == MAVLINK_MSG_ID_COMMAND_LONG) {
+        mavlink_command_long_t pkt;
+        mavlink_msg_command_long_decode(&msg, &pkt);
+        if (pkt.command == MAV_CMD_REQUEST_OPERATOR_CONTROL) {
+            return true;
+        }
+    }
+#endif
+
     if (!gcs().option_is_enabled(GCS::Option::GCS_SYSID_ENFORCE)) {
         return true;
     }
@@ -7604,6 +7754,10 @@ uint64_t GCS_MAVLINK::capabilities() const
     }
 #endif
 
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    ret |= MAV_PROTOCOL_CAPABILITY_COMPONENT_ACCEPTS_GCS_CONTROL;
+#endif
+
     return ret;
 }
 
@@ -7631,6 +7785,13 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     if (!gcs().sysid_is_gcs(msg.sysid)) {
         return; // only accept control from our gcs
     }
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    // manual control is exclusive to the primary operator (gcs_main); secondaries are denied
+    if (gcs().get_operator_control_sysid() != 0 &&
+        !gcs().sysid_is_primary_operator(msg.sysid)) {
+        return;
+    }
+#endif
 
     mavlink_manual_control_t packet;
     mavlink_msg_manual_control_decode(&msg, &packet);
