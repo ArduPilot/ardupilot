@@ -6,11 +6,10 @@ Purchase from [aedrox.com.](https://www.aedrox.com)
 
 For full hardware documentation and pinouts, see the [manufacturer documentation](https://aedrox.gitbook.io/docs)
 
-
 ## Features
 
 - STM32H743 microcontroller
-- ICM42688-P IMU 
+- ICM42688-P IMU
 - DPS368 barometer
 - 10V 2.3A BEC GPIO controlled; 5V 2.3A BEC
 - Flash Memory (1Gbits)
@@ -29,13 +28,13 @@ For full hardware documentation and pinouts, see the [manufacturer documentation
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
- - SERIAL2 -> UART2 (GPS, DMA-enabled)
- - SERIAL3 -> UART3 (RCIN, DMA-enabled) 
- - SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
- - SERIAL7 -> UART7 (ESC Telemetry, DMA-enabled)
- - SERIAL8 -> UART8 (DisplayPort/OSD, DMA-enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
+- SERIAL2 -> UART2 (GPS, DMA-enabled)
+- SERIAL3 -> UART3 (RCIN, DMA-enabled)
+- SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
+- SERIAL7 -> UART7 (ESC Telemetry, DMA-enabled)
+- SERIAL8 -> UART8 (DisplayPort/OSD, DMA-enabled)
 
 ## RC Input
 
@@ -52,10 +51,10 @@ Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultane
 
 ## VTX Support
 
-The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. 
+The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort.
 A second VTX port is available for analog VTX.
 Digital and analog OSD are sharing the SERIAL8, so this port should be set to the approriate function.
-Be carefull with these connectors power pins (10v/VBATT), do not connect this to a peripheral requiring 5v. 
+Be carefull with these connectors power pins (10v/VBATT), do not connect this to a peripheral requiring 5v.
 
 ## VTX Power Control
 
