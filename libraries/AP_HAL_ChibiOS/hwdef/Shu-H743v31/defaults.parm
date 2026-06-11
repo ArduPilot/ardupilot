@@ -1,0 +1,9 @@
+# setup correct defaults for battery monitoring for holybro power brick
+BATT_MONITOR 4
+
+BATT_CURR_PIN 18
+
+BATT2_CURR_PIN 10
+BATT3_CURR_PIN 11
+BATT4_CURR_PIN 8
+BATT5_CURR_PIN 9
