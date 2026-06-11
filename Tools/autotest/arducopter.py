@@ -19747,6 +19747,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EKFSource,
             self.AHRSSwitchBackendPositionReset,
             self.EKFYawResetLogged,
+            self.EulersFromQuat,
             self.RTLYaw,
             self.DataFlash,
             self.Callisto,
@@ -24182,6 +24183,30 @@ return update, 1000
             self.BattCANSplitAuxInfo,
         ])
         return ret
+
+    def EulersFromQuat(self):
+        '''DEBUG: gather QVAL attitude-divergence data with and without AHRS_TRIM'''
+        self.takeoff(10, mode='GUIDED')
+
+        def exercise_attitude():
+            for heading in 90, 180, 270, 0:
+                self.guided_achieve_heading(heading)
+            self.fly_guided_move_local(25, 0, 10)
+            self.fly_guided_move_local(0, 25, 10)
+            self.fly_guided_move_local(0, 0, 10)
+
+        self.progress("Phase 1: zero trim")
+        exercise_attitude()
+
+        self.progress("Phase 2: non-zero trim")
+        self.set_parameters({
+            "AHRS_TRIM_X": math.radians(3),
+            "AHRS_TRIM_Y": math.radians(-2),
+        })
+        self.delay_sim_time(5)
+        exercise_attitude()
+
+        self.land_and_disarm()
 
     def tests(self):
         ret = []
