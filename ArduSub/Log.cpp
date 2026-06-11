@@ -185,18 +185,18 @@ struct PACKED log_GuidedTarget {
 };
 
 // Write a Guided mode target
-void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
+void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms)
 {
     struct log_GuidedTarget pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : target_type,
-        pos_target_x    : pos_target.x,
-        pos_target_y    : pos_target.y,
-        pos_target_z    : pos_target.z,
-        vel_target_x    : vel_target.x,
-        vel_target_y    : vel_target.y,
-        vel_target_z    : vel_target.z
+        pos_target_x    : pos_target_neu_cm.x,
+        pos_target_y    : pos_target_neu_cm.y,
+        pos_target_z    : pos_target_neu_cm.z,
+        vel_target_x    : vel_target_neu_cms.x,
+        vel_target_y    : vel_target_neu_cms.y,
+        vel_target_z    : vel_target_neu_cms.z
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
