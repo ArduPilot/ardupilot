@@ -1,5 +1,13 @@
 # AEDROX H7 Flight Controller
 
+The AEDROXH7 is an STM32H743-based FPV / racing flight controller from AEDROX.
+
+Purchase from [aedrox.com.](https://www.aedrox.com)
+
+For full hardware documentation and pinouts, see the manufacturer documentation.
+[https://aedrox.gitbook.io/docs](https://aedrox.gitbook.io/docs)
+
+
 ## Features
 
 - STM32H743 microcontroller
