@@ -800,6 +800,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.wait_waypoint(1, num_wp-1)
         self.wait_disarmed()
+        self.set_rc(3, 1000)
         self.set_rc(8, 1000)    # Lower rotor speed
 
     # FIXME move this & plane's version to common
