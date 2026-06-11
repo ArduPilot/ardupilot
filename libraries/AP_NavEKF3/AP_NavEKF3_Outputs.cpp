@@ -143,13 +143,6 @@ void NavEKF3_core::getAccelBias(Vector3f &accelBias) const
     accelBias = (stateStruct.accel_bias / dtEkfAvg).tofloat();
 }
 
-// return the transformation matrix from XYZ (body) to NED axes
-void NavEKF3_core::getRotationBodyToNED(Matrix3f &mat) const
-{
-    outputDataNew.quat.rotation_matrix(mat);
-    mat = mat * dal.get_rotation_vehicle_body_to_autopilot_body();
-}
-
 // return the quaternions defining the rotation from NED to XYZ (body) axes
 void NavEKF3_core::getQuaternion(Quaternion& ret) const
 {
