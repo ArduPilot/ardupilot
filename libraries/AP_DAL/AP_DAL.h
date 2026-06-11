@@ -256,6 +256,12 @@ public:
             msg.alt,
             Location::AltFrame::ABSOLUTE
         };
+        // rebuild the trim rotation from the logged trim; it is
+        // otherwise only set in start_frame(), which is not called
+        // when replaying:
+        Matrix3f autopilot_body_to_vehicle_body;
+        autopilot_body_to_vehicle_body.from_euler(msg.ahrs_trim.x, msg.ahrs_trim.y, msg.ahrs_trim.z);
+        _rotation_vehicle_body_to_autopilot_body = autopilot_body_to_vehicle_body.transposed();
     }
     void handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
 
