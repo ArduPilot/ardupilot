@@ -921,6 +921,10 @@ private:
     // poke AP_Notify based on values from status
     void update_notify_from_filter_status(const nav_filter_status &status);
 
+    // DEBUG: log divergence between backend-supplied attitude
+    // representations and those derived from the backend's quaternion
+    void measure_attitude_divergence_from_quaternion(const AP_AHRS_Backend::Estimates &results) const;
+
     // write out secondary estimates:
     void Write_AHRS2(void) const;
     // write POS (canonical vehicle position) message out:
