@@ -1141,13 +1141,6 @@ bool NavEKF2::getHAGL(float &HAGL) const
     return core[primary].getHAGL(HAGL);
 }
 
-// return the Euler roll, pitch and yaw angle in radians for the specified instance
-void NavEKF2::getEulerAngles(Vector3f &eulers) const
-{
-    if (core) {
-        core[primary].getEulerAngles(eulers);
-    }
-}
 
 // return the transformation matrix from XYZ (body) to NED axes
 void NavEKF2::getRotationBodyToNED(Matrix3f &mat) const
