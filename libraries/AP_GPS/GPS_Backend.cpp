@@ -404,7 +404,23 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
 
         {
             // at this point the offsets are looking okay, go ahead and actually calculate a useful heading
+#if AP_AHRS_ENABLED
+            // The GPS reports the baseline heading in the NED horizontal plane,
+            // so to recover the vehicle yaw we need the bearing of the antenna
+            // offset in that same horizontal plane. Rotate the body-frame offset
+            // by the vehicle's roll and pitch (but not yaw, which is the unknown
+            // we are solving for) to obtain a level-frame offset. This accounts
+            // for both the vehicle attitude and any vertical (z) component of the
+            // antenna offset, both of which change the apparent horizontal
+            // bearing of the baseline when the vehicle is not level.
+            const auto &ahrs = AP::ahrs();
+            Matrix3f rot_body_to_level;
+            rot_body_to_level.from_euler(ahrs.get_roll_rad(), ahrs.get_pitch_rad(), 0.0f);
+            const Vector3f offset_level = rot_body_to_level * offset;
+            const float rotation_offset_rad = Vector2f(-offset_level.x, -offset_level.y).angle();
+#else
             const float rotation_offset_rad = Vector2f(-offset.x, -offset.y).angle();
+#endif // AP_AHRS_ENABLED
             interim_state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
             interim_state.have_gps_yaw = true;
             interim_state.gps_yaw_time_ms = AP_HAL::millis();
