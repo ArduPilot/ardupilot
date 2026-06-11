@@ -136,7 +136,8 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // populate vehicle body attitude:
     results.quaternion = fdm.quaternion;
-    results.quaternion.rotate(-AP::ahrs().get_trim());
+    // quaternion composition rotates the autopilot-body-frame attitude into the vehicle-body-frame
+    results.quaternion *= AP::ahrs().get_quat_vehicle_body_to_autopilot_body();
 
     // Apply offsets
     Quaternion offsets;

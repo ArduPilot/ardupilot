@@ -239,6 +239,8 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     _last_trim = _trim.get();
     _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, _last_trim.z);
     _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
+    _quat_vehicle_body_to_autopilot_body.from_euler(_last_trim);
+    _quat_vehicle_body_to_autopilot_body = _quat_vehicle_body_to_autopilot_body.inverse();
 }
 
 // return a pointer to the backend for supplied type
@@ -371,6 +373,8 @@ void AP_AHRS::update_trim_rotation_matrices()
     _last_trim = _trim.get();
     _rotation_autopilot_body_to_vehicle_body.from_euler(_last_trim.x, _last_trim.y, _last_trim.z);
     _rotation_vehicle_body_to_autopilot_body = _rotation_autopilot_body_to_vehicle_body.transposed();
+    _quat_vehicle_body_to_autopilot_body.from_euler(_last_trim);
+    _quat_vehicle_body_to_autopilot_body = _quat_vehicle_body_to_autopilot_body.inverse();
 }
 
 // return a Quaternion representing our current attitude in NED frame

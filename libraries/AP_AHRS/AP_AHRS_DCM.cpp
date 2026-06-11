@@ -188,7 +188,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // quaternion is derived from transformation matrix:
     results.quaternion.from_rotation_matrix(_dcm_matrix);
-    results.quaternion.rotate(-AP::ahrs().get_trim());
+    // quaternion composition rotates the autopilot-body-frame attitude into the vehicle-body-frame
+    results.quaternion *= AP::ahrs().get_quat_vehicle_body_to_autopilot_body();
 
     results.attitude_valid = true;
 

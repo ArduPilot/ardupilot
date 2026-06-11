@@ -112,7 +112,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.yaw_rad   = eulers.z;
 
     EKF3.getQuaternion(results.quaternion);
-    results.quaternion.rotate(-AP::ahrs().get_trim());
+    // quaternion composition rotates the autopilot-body-frame attitude into the vehicle-body-frame
+    results.quaternion *= AP::ahrs().get_quat_vehicle_body_to_autopilot_body();
 
     results.attitude_valid = started;
 

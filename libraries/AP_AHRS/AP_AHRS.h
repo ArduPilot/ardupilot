@@ -565,6 +565,7 @@ public:
     // trim rotation matrices:
     const Matrix3f& get_rotation_autopilot_body_to_vehicle_body(void) const { return _rotation_autopilot_body_to_vehicle_body; }
     const Matrix3f& get_rotation_vehicle_body_to_autopilot_body(void) const { return _rotation_vehicle_body_to_autopilot_body; }
+    const Quaternion& get_quat_vehicle_body_to_autopilot_body(void) const { return _quat_vehicle_body_to_autopilot_body; }
 
     // Logging functions
     void Log_Write_Home_And_Origin();
@@ -884,6 +885,7 @@ private:
 
     Matrix3f _rotation_autopilot_body_to_vehicle_body;
     Matrix3f _rotation_vehicle_body_to_autopilot_body;
+    Quaternion _quat_vehicle_body_to_autopilot_body;
 
     // last time orientation was updated from AHRS_ORIENTATION:
     uint32_t last_orientation_update_ms;
