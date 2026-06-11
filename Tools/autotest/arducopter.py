@@ -24186,6 +24186,10 @@ return update, 1000
 
     def EulersFromQuat(self):
         '''DEBUG: gather QVAL attitude-divergence data with and without AHRS_TRIM'''
+        self.set_parameters({
+            "EK2_ENABLE": 1,
+        })
+        self.reboot_sitl()
         self.takeoff(10, mode='GUIDED')
 
         def exercise_attitude():
@@ -24203,7 +24207,7 @@ return update, 1000
             "AHRS_TRIM_X": math.radians(3),
             "AHRS_TRIM_Y": math.radians(-2),
         })
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="let the new AHRS_TRIM take effect")
         exercise_attitude()
 
         self.land_and_disarm()
