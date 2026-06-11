@@ -7056,7 +7056,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             home = self.home_position_as_mav_location()
             target_alt = 20
             self.takeoff(target_alt, mode="TAKEOFF")
-            self.delay_sim_time(20, reason="altitude to stabilise")  # Give some time to altitude to stabilize.
+            self.wait_altitude(
+                home.alt+target_alt-5,
+                home.alt+target_alt+5,
+                relative=False,
+                minimum_duration=20,
+                timeout=60,
+            )
             self.set_rc(3, 1500)
             self.change_mode(mode)
             higher_home = copy.copy(home)
