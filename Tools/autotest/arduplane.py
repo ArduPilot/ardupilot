@@ -7275,6 +7275,27 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Did not find NVF message")
         self.progress(f"Received NVF with value {m.Value}")
 
+    def LoggedNamedValueInt(self):
+        '''ensure that sent named value ints are logged'''
+        self.context_push()
+        self.install_example_script_context('simple_named_int.lua')
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.wait_statustext('hello, world')
+        m = self.assert_received_message_field_values('NAMED_VALUE_INT', {
+            "name": "Lua Int",
+        })
+        dfreader = self.dfreader_for_current_onboard_log()
+        self.context_pop()
+
+        m = dfreader.recv_match(type='NVI')
+        if m is None:
+            raise NotAchievedException("Did not find NVI message")
+        self.progress(f"Received NVI with value {m.Value}")
+
     def LoggedNamedValueString(self):
         '''ensure that sent named value strings are logged'''
         self.context_push()
@@ -8395,6 +8416,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.mavlink_AIRSPEED,
             self.Volz,
             self.LoggedNamedValueFloat,
+            self.LoggedNamedValueInt,
             self.LoggedNamedValueString,
             self.AdvancedFailsafeBadBaro,
             self.DO_CHANGE_ALTITUDE,
