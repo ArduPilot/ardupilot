@@ -206,9 +206,6 @@ public:
         return _RFRN.ahrs_trim;
     }
 
-    const Matrix3f &get_rotation_vehicle_body_to_autopilot_body(void) const {
-        return _rotation_vehicle_body_to_autopilot_body;
-    }
 
     const Quaternion &get_quat_vehicle_body_to_autopilot_body(void) const {
         return _quat_vehicle_body_to_autopilot_body;
@@ -263,9 +260,6 @@ public:
         // rebuild the trim rotation from the logged trim; it is
         // otherwise only set in start_frame(), which is not called
         // when replaying:
-        Matrix3f autopilot_body_to_vehicle_body;
-        autopilot_body_to_vehicle_body.from_euler(msg.ahrs_trim.x, msg.ahrs_trim.y, msg.ahrs_trim.z);
-        _rotation_vehicle_body_to_autopilot_body = autopilot_body_to_vehicle_body.transposed();
         _quat_vehicle_body_to_autopilot_body.from_euler(msg.ahrs_trim);
         _quat_vehicle_body_to_autopilot_body = _quat_vehicle_body_to_autopilot_body.inverse();
     }
@@ -403,7 +397,6 @@ private:
     uint32_t _micros;
     uint32_t _millis;
 
-    Matrix3f _rotation_vehicle_body_to_autopilot_body;
     Quaternion _quat_vehicle_body_to_autopilot_body;
     Location _home;
     uint32_t _last_imu_time_us;
