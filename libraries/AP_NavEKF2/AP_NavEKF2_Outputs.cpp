@@ -105,12 +105,6 @@ void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
     gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
 }
 
-// return the transformation matrix from XYZ (body) to NED axes
-void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
-{
-    outputDataNew.quat.rotation_matrix(mat);
-    mat = mat * dal.get_rotation_vehicle_body_to_autopilot_body();
-}
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
 void NavEKF2_core::getQuaternion(Quaternion& ret) const
