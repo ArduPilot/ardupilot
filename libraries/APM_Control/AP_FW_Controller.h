@@ -59,6 +59,9 @@ public:
     // Reset the attitude target to such that a change in attitude due to a ahrs change is smooth
     void ahrs_reset();
 
+    // Get angle P gain
+    float get_angle_p() const;
+
 protected:
     const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;

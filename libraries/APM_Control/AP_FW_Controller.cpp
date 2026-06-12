@@ -353,3 +353,15 @@ void AP_FW_Controller::ahrs_reset()
     // Update the target angle such that the angle error remains the same before and after the change in measured angle from the ahrs
     angle_target_deg = wrap_180(get_measured_angle() + angle_err_deg);
 }
+
+// Get angle P gain
+float AP_FW_Controller::get_angle_p() const
+{
+    if (apply_input_shaping() && is_positive(angle_p.get())) {
+        // Angle gain is in use and configured
+        return angle_p.get();
+    }
+
+    // angle gain =  1 / tau
+    return 1.0 / gains.tau.get();
+}
