@@ -375,6 +375,7 @@ BUILD_OPTIONS = [
     # Feature('Baro', 'ICM20789', 'AP_BARO_ICM20789_ENABLED', 'Enable ICM20789 Barometric Sensor', 1, None),
     Feature('Baro', 'KELLERLD', 'AP_BARO_KELLERLD_ENABLED', 'Enable KELLERLD Barometric Sensor', 1, None),
     Feature('Baro', 'LPS2XH', 'AP_BARO_LPS2XH_ENABLED', 'Enable LPS2XH Barometric Sensor', 1, None),
+    Feature('Baro', 'LPS22DF', 'AP_BARO_LPS22DF_ENABLED', 'Enable LPS22DF Barometric Sensor', 1, None),
     Feature('Baro', 'MS5607', 'AP_BARO_MS5607_ENABLED', 'Enable MS5607 Barometric Sensor', 1, None),
     Feature('Baro', 'MS5611', 'AP_BARO_MS5611_ENABLED', 'Enable MS5611 Barometric Sensor', 1, 'MS5607'),  # MS5611 has an option to be treated as 5607  # NOQA: E501
     Feature('Baro', 'MS5637', 'AP_BARO_MS5637_ENABLED', 'Enable MS5637 Barometric Sensor', 1, None),
