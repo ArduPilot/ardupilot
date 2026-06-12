@@ -5,6 +5,7 @@ AP_FLAKE8_CLEAN
 '''
 
 import copy
+import math
 import operator
 
 from pymavlink import mavutil
@@ -258,6 +259,58 @@ class AutoTestHelicopter(AutoTestCopter):
             wipe=True,
         )
         self.takeoff(10)
+        self.do_RTL()
+
+    def HeliQuadInvertedFlight(self):
+        '''fly inverted on collective-pitch quad frame'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-quad'),
+            model="heli-quad:@ROMFS/models/heliquad.json",
+            wipe=True,
+        )
+        rc_option_inverted = 43
+        self.set_parameter("RC10_OPTION", rc_option_inverted)
+        self.set_rc(10, 1000)
+        self.takeoff(30, mode='ALT_HOLD')
+
+        self.progress("Engaging inverted flight")
+        self.set_rc(10, 2000)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Did not roll inverted")
+            m = self.assert_receive_message('ATTITUDE')
+            if abs(math.degrees(m.roll)) > 150:
+                break
+
+        self.progress("Holding inverted flight")
+        hold_alt = self.get_altitude(relative=True)
+        m = self.assert_receive_message('ATTITUDE')
+        hold_yaw_deg = math.degrees(m.yaw)
+        max_collective = 1000
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 10:
+            m = self.assert_receive_message('ATTITUDE')
+            roll_deg = math.degrees(m.roll)
+            if abs(roll_deg) < 150:
+                raise NotAchievedException(f"Did not stay inverted (roll {roll_deg:.1f})")
+            yaw_err = (math.degrees(m.yaw) - hold_yaw_deg + 180) % 360 - 180
+            if abs(yaw_err) > 20:
+                raise NotAchievedException(f"Did not hold heading while inverted (err {yaw_err:.1f}deg)")
+            alt = self.get_altitude(relative=True)
+            if abs(alt - hold_alt) > 5:
+                raise NotAchievedException(f"Lost altitude while inverted ({alt:.1f}m vs {hold_alt:.1f}m)")
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            for n in 1, 2, 3, 4:
+                max_collective = max(max_collective, getattr(servo, f"servo{n}_raw"))
+        if max_collective >= 1500:
+            raise NotAchievedException("Rotor not at negative collective while inverted (max %u)" % max_collective)
+        self.progress("Inverted flight held altitude and heading, max collective PWM %u" % max_collective)
+
+        self.progress("Disengaging inverted flight")
+        self.set_rc(10, 1000)
+        self.wait_attitude(desroll=0, despitch=0, tolerance=10, timeout=15)
         self.do_RTL()
 
     def hover(self):
@@ -1256,6 +1309,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.DDFPTail,
             self.DDVPTail,
             self.HeliQuad,
+            self.HeliQuadInvertedFlight,
             self.MountFailsafeAction,
             self.StickArmingRequiresZeroThrottle,
         ])
