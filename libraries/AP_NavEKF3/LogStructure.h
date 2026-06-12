@@ -19,7 +19,8 @@
     LOG_XKV1_MSG, \
     LOG_XKV2_MSG, \
     LOG_XKY0_MSG, \
-    LOG_XKY1_MSG
+    LOG_XKY1_MSG, \
+    LOG_XKFA_MSG
 
 // @LoggerMessage: XKF0
 // @Description: EKF3 beacon sensor diagnostics
@@ -248,6 +249,26 @@ struct PACKED log_XKF5 {
 };
 
 
+// @LoggerMessage: XKFA
+// @Description: EKF3 AGL Kalman Filter state (optionally used in Optical Flow scaling)
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: HAgl: AGL height estimate
+// @Field: VAgl: AGL velocity estimate
+// @Field: HAglStd: Std-dev of AGL height estimate
+// @Field: VAglStd: Std-dev of AGL velocity estimate
+// @Field: Valid: 1 when rangefinder has been fused within the last 5s
+struct PACKED log_XKFA {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    float hAgl;
+    float vAgl;
+    float hAglStd;
+    float vAglStd;
+    uint8_t valid;
+};
+
 // @LoggerMessage: XKFD
 // @Description: EKF3 Body Frame Odometry errors
 // @Field: TimeUS: Time since system startup
@@ -444,6 +465,8 @@ struct PACKED log_XKV {
       "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
+    { LOG_XKFA_MSG, sizeof(log_XKFA), \
+      "XKFA","QBffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Valid", "s#mnmn-", "F------", true }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \

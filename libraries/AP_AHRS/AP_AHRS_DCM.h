@@ -50,6 +50,8 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_AHRS_DCM);
 
+    const char *shortname() const override { return "DCM"; }
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
@@ -88,9 +90,6 @@ public:
     // if we have an estimate from a specific sensor index
     bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
-
     bool            use_compass() override;
 
     void estimate_wind(void);
@@ -108,8 +107,6 @@ public:
     bool get_relative_position_NE_origin(Vector2p &posNE) const override;
     bool get_relative_position_D_origin(postype_t &posD) const override;
 
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override;
-
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
 
@@ -122,6 +119,8 @@ private:
     bool get_vert_pos_rate_D(float &velocity) const;
 
     bool get_velocity_NED(Vector3f &vec) const;
+    // return a ground velocity estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector();
 
     // dead-reckoning support
     bool get_location(Location &loc) const;

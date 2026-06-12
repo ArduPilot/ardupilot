@@ -143,6 +143,10 @@ AP_AHRS_DCM::update()
 
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    // not using a specific sensor:
+    results.primary_gyro = AP::ins().get_first_usable_gyro();
+    results.primary_accel = AP::ins().get_first_usable_accel();
+
     results.roll_rad = roll;
     results.pitch_rad = pitch;
     results.yaw_rad = yaw;
@@ -151,17 +155,63 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // quaternion is derived from transformation matrix:
     results.quaternion.from_rotation_matrix(_dcm_matrix);
+    results.quaternion.rotate(-AP::ahrs().get_trim());
 
     results.attitude_valid = true;
 
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
+
+    /*
+     * acceleration estimates
+     */
+    // results.accel_bias = {} - DCM does not estimate accel bias
     results.accel_ef = _accel_ef;
 
     results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);
+
+    // ground velocity estimate in meters/second, in North/East order
+    // note: velocity_NE is significantly different to results.velocity_NED.xy()!
+    results.velocity_NE = groundspeed_vector();
+
     results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
 
+    /*
+     * position estimates
+     */
     results.location_valid = get_location(results.location);
+
+    // hagl is not supplied:
+    // results.hagl_valid = false;
+    // results.hagl = 0;
+
+    /*
+     * Sensor-related information
+     */
+    // true if the estimator will use GPS data in creating its
+    // estimate when the data is good:
+    results.configured_to_use_gps = _gps_use != GPSUse::Disable;
+    // true if GPS is configured as the horizontal position source
+    // for this estimator.  Used to decide whether GPS will set
+    // the navigation origin.
+    results.configured_to_use_gps_for_pos_XY = _gps_use != GPSUse::Disable;
+
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    // results.using_extnav_for_yaw = false;
+
+    // are we consuming yaw from a source which is *not* a compass
+    // results.using_noncompass_for_yaw = false;
+
+    /*
+     * filter status and estimates quality values:
+     */
+    // getFilterStatus(results.filter_status);
+    // results.filter_status_valid = false;
+
+    // provides the innovations normalised between 0 and 1:
+    // results.variances_valid = false;
+
+    // terrain_alt_variance_valid = false;
 }
 
 /*
@@ -1318,10 +1368,6 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(postype_t &posD) const
     }
     posD = posNED.z;
     return true;
-}
-
-void AP_AHRS_DCM::send_ekf_status_report(GCS_MAVLINK &link) const
-{
 }
 
 // return true if DCM has a yaw source available

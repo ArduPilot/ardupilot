@@ -163,6 +163,13 @@ class BoardList(object):
                 ret += [line]
         return ret
 
+    def board_by_name(self, name: str) -> Board:
+        '''return the Board object for the given board name, raises KeyError if not found'''
+        for board in self.boards:
+            if board.name == name:
+                return board
+        raise KeyError(name)
+
     def find_autobuild_boards(self, build_target=None, skip : Collection[str] = None):
         ret = []
         for board in self.boards:

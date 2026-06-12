@@ -220,6 +220,18 @@ void AP_MotorsHeli_Single::init_outputs()
 }
 
 // calculate_scalars - recalculates various scalers used.
+void AP_MotorsHeli_Single::calculate_armed_scalars()
+{
+    if (use_tail_RSC()) {
+        // configure armed scalars for ddvp tail rotor
+        _tail_rotor.configure_armed();
+    }
+
+    // calculate armed scalars for main rotor
+    AP_MotorsHeli::calculate_armed_scalars();
+}
+
+// calculate_scalars - recalculates various scalers used.
 void AP_MotorsHeli_Single::calculate_scalars()
 {
     // range check collective min, max and zero
@@ -252,9 +264,14 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // send setpoints to DDVP rotor controller and trigger recalculation of scalars
     if (use_tail_RSC()) {
         _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _main_rotor._ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
+        // send rsc setpoints to DDVP tailrotor controller
+        _tail_rotor.set_setpoint_desired_rotor_speed(_direct_drive_tailspeed.get());
     } else {
         _tail_rotor.configure(ROTOR_CONTROL_MODE_DISABLED, 0, 0, 0, 0);
     }
+
+    // calculate armed scalars for both main and tail rotor
+    calculate_armed_scalars();
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -265,11 +282,11 @@ uint32_t AP_MotorsHeli_Single::get_motor_mask()
 }
 
 // update_motor_controls - sends commands to motor controllers
-AP_Motors::SpoolState AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
+void AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
 {
     // Send state update to motors
-    _tail_rotor.update(state);
-    AP_MotorsHeli_RSC::RSCSpoolState main_rotor_state = _main_rotor.update(state);
+    _tail_rotor.update(_dt_s);
+    _main_rotor.update(_dt_s);
 
     if (state == AP_MotorsHeli_RSC::DesiredRSCSpoolState::SHUT_DOWN){
         // set engine run enable aux output to not run position to kill engine when disarmed
@@ -279,6 +296,15 @@ AP_Motors::SpoolState AP_MotorsHeli_Single::update_motor_control(AP_MotorsHeli_R
         SRV_Channels::set_output_limit(SRV_Channel::k_engine_run_enable, SRV_Channel::Limit::MAX);
     }
     
+}
+
+// update_spool_state - updates the spool state based on the desired state
+AP_Motors::SpoolState AP_MotorsHeli_Single::update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state)
+{
+
+    _tail_rotor.update_spool_state(state, _dt_s);
+    SpoolState main_rotor_state = _main_rotor.update_spool_state(state, _dt_s);
+
     // Check if main rotor is run-up complete.  Tail rotor run-up is not included in check because currently
     // the tail rotor in DDVP uses the same ramp and runup time as the main rotor.  This may need changed if 
     // the RSC is used for DDFP tail rotors.

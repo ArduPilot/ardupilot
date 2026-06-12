@@ -513,10 +513,6 @@ MAV_RESULT GCS_MAVLINK_Rover::handle_command_int_do_reposition(const mavlink_com
         return MAV_RESULT_DENIED;
     }
 
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_DENIED;
-    }
     if (packet.x == 0 && packet.y == 0) {
         return MAV_RESULT_DENIED;
     }
@@ -894,12 +890,11 @@ uint8_t GCS_MAVLINK_Rover::high_latency_tgt_heading() const
     return 0;
 }
     
-uint16_t GCS_MAVLINK_Rover::high_latency_tgt_dist() const
+uint16_t GCS_MAVLINK_Rover::high_latency_tgt_dist_dam() const
 {
     const Mode *control_mode = rover.control_mode;
     if (rover.control_mode->is_autopilot_mode()) {
-        // return units are dm
-        return MIN((control_mode->get_distance_to_destination()) / 10, UINT16_MAX);
+        return MIN(static_cast<uint16_t>(control_mode->get_distance_to_destination() * 0.1), UINT16_MAX);
     }
     return 0;
 }

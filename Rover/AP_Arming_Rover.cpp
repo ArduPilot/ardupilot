@@ -126,8 +126,7 @@ bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
 
 void AP_Arming_Rover::update_soft_armed()
 {
-    hal.util->set_soft_armed(is_armed() &&
-                             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    hal.util->set_soft_armed(is_armed());
 }
 
 /*

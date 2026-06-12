@@ -74,6 +74,14 @@
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
+#ifndef AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT  3 // number of rangefinder glitches in a row to take new reading
+#endif
+
+#ifndef AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT 2.00     // amount of rangefinder change to be considered a glitch
+#endif
+
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
  # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
 #endif

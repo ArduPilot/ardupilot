@@ -922,13 +922,13 @@ const AP_Param::Info Plane::var_info[] = {
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.ekf2.EKF2, NavEKF2, "EK2_", NavEKF2),
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.ekf3.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
 #if AP_RSSI_ENABLED
@@ -1477,6 +1477,9 @@ void Plane::load_parameters(void)
 #endif
 
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
+
+    // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
+    g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
 
 #if AP_AIRSPEED_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2022

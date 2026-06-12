@@ -46,7 +46,7 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 
 - 30.5 mm x 30.5 mm
 
-## Default UART Order
+## UART Mapping
 
 - `SERIAL0` = USB (MAVLink2)  
 - `SERIAL1` = UART1 (ESC Telemetry)  
@@ -139,7 +139,7 @@ Example (using Channel 10 to toggle VTX BEC using Relay 2, as an example):
 
 > ⚠️ **Warning:** GPIO81 controls the 10V DC-DC converter (HIGH = on, LOW = off). Default: ON. Always install an antenna on the VTX when battery-powered.
 
-## Camera Switch Control
+## Camera Switch
 
 GPIO 82 controls camera switching via PINIO2. Set high or low to toggle between cameras (e.g., front/rear).
 
@@ -159,7 +159,7 @@ This board does **not** include GPS or compass modules. An [external GPS/compass
 <!-- -->
 > **Tip:** The 4V5 pin can power both RC and GPS for bench setup (without battery), as long as the total current does not exceed USB limits (typically 1A).
 
-## Battery Monitor Settings
+## Battery Monitoring
 
 These are set by default. If reset:
 

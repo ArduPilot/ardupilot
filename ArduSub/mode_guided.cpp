@@ -850,7 +850,9 @@ void ModeGuided::guided_limit_init_time_and_pos()
     guided_limit.start_time_ms = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos_neu_cm = inertial_nav.get_position_neu_cm();
+    Vector3f pos_cm = (position_control->get_pos_estimate_NED_m() * 100.0f).tofloat();
+    pos_cm.z = -pos_cm.z;
+    guided_limit.start_pos_neu_cm = pos_cm;
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -863,7 +865,8 @@ bool ModeGuided::guided_limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos_neu_cm = inertial_nav.get_position_neu_cm();
+    Vector3f curr_pos_neu_cm = (position_control->get_pos_estimate_NED_m() * 100.0f).tofloat();
+    curr_pos_neu_cm.z = -curr_pos_neu_cm.z;
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos_neu_cm.z < guided_limit.alt_min_cm)) {

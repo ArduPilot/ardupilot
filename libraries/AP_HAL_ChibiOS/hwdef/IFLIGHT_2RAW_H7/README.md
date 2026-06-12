@@ -84,7 +84,7 @@ The correct battery setting parameters are:
 
 The iFlight 2RAW H743 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 81 controls the VTX BEC output to pins marked "10V". Setting this GPIO low removes voltage supply to pins.
 By default RELAY2 is configured to control this pin and sets the GPIO high.

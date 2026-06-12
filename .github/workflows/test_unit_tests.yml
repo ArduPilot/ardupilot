@@ -6,14 +6,14 @@ on:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -45,20 +45,21 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_unit_tests.yml'  # except this one
   pull_request:
     paths-ignore:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -91,7 +92,9 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_unit_tests.yml'  # except this one
+
   workflow_dispatch:
 
 concurrency:

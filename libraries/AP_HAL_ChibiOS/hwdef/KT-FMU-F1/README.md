@@ -19,7 +19,7 @@ The KT-FMU-F1 is a flight controller manufactured by [Coolfly](https://www.cecoo
   - 1x CAN
   - 1x USB
 
-## UART Mapping and Default Protocols
+## UART Mapping
 
 | Serial | Port  | Protocol    | Notes       |
 | ------ | ----- | ----------- | ----------- |

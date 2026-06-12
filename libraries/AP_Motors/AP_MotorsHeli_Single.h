@@ -40,6 +40,9 @@ public:
     // output_to_motors - sends values out to the motors
     void output_to_motors() override;
 
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    void calculate_armed_scalars() override;
+
     // calculate_scalars - recalculates various scalars used
     void calculate_scalars() override;
 
@@ -70,7 +73,10 @@ protected:
     void init_outputs() override;
 
     // update_motor_controls - sends commands to motor controllers
-    AP_Motors::SpoolState update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
+    void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
+
+    // update_spool_state - updates the spool state based on the desired state
+    AP_Motors::SpoolState update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) override;
 
     // heli_move_actuators - moves swash plate and tail rotor
     void move_actuators(float roll_out, float pitch_out, float coll_in, float yaw_out) override;

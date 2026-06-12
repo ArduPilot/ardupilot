@@ -171,7 +171,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - PWM4 53
 - PWM5 54
 
-## Analog inputs
+## Analog Inputs
 
 The SIYI N7 has 7 analog inputs
 

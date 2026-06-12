@@ -28,6 +28,12 @@ public:
 
     RC_Channel_Example obj_channels[NUM_RC_CHANNELS];
 
+    const RC_Channel_Example *channel(const uint8_t chan) const override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
     RC_Channel_Example *channel(const uint8_t chan) override {
         if (chan >= NUM_RC_CHANNELS) {
             return nullptr;

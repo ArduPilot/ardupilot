@@ -152,7 +152,7 @@ Via DroneCAN by UAV-DEV-POWERMODULE
 
 The autopilot includes an internal compass as well as GNSS-based heading, but GNSS-based heading is the recommended heading source. Proper setup and placement of the dual antennas is required as well as setup of the moving baseline parameters, see [GPS for yaw](https://ardupilot.org/copter/docs/common-gps-for-yaw.html) for more details.
 
-## Motor Output
+## PWM Output
 
 All outputs are capable of PWM and DShot. Motors 1 through 4 are capable of Bidirectional-DShot. All outputs in the motor groups below must be either PWM or DShot:
 

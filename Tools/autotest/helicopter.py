@@ -68,7 +68,7 @@ class AutoTestHelicopter(AutoTestCopter):
         return chan_pwm
 
     def RotorRunup(self):
-        '''Test rotor runip'''
+        '''Test rotor runup'''
         # Takeoff and landing in Loiter
         TARGET_RUNUP_TIME = 10
         self.zero_throttle()
@@ -124,7 +124,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_current_waypoint(1)
 
         # wait for motor runup
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="rotor runup to complete")
 
         # switch into AUTO mode and raise throttle
         self.change_mode('AUTO')
@@ -171,7 +171,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.wait_servo_channel_value(8, 1659, timeout=10)
 
         # wait for motor runup
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="rotor runup to complete")
 
         if mode == 'GUIDED':
             self.user_takeoff(alt_min=alt_min)
@@ -227,6 +227,32 @@ class AutoTestHelicopter(AutoTestCopter):
         self.takeoff(10)
         self.do_RTL()
 
+    def DDFPTail(self):
+        # simple check to ensure servo output to DDFP tail is working
+        '''Test DDFP Tail Rotor'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-ddfptail'),
+            model="heli-ddfptail",
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.wait_servo_channel_value(4, 1403, timeout=10)
+        self.do_RTL()
+
+    def DDVPTail(self):
+        # simple check to ensure servo output to DDVP tail is working
+        '''Test DDVP Tail Rotor'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-ddvptail'),
+            model="heli-ddvptail",
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.wait_servo_channel_value(7, 2000, timeout=10)
+        self.do_RTL()
+
     def hover(self):
         self.progress("Setting hover collective")
         self.set_rc(3, 1500)
@@ -244,7 +270,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(8, 2000)
         self.progress("wait for rotor runup to complete")
         self.wait_servo_channel_value(8, 1659, timeout=10)
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="rotor runup to complete")
         # check we are still on the ground...
         max_relalt = 1  # metres
         relative_alt = self.get_altitude(relative=True)
@@ -254,7 +280,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.progress("Pushing collective past half-way")
         self.set_rc(3, 1600)
-        self.delay_sim_time(0.5)
+        self.delay_sim_time(0.5, reason="collective input to settle")
         self.hover()
 
         # make sure we haven't already reached alt:
@@ -280,7 +306,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(8, 2000)
         self.progress("wait for rotor runup to complete")
         self.wait_servo_channel_value(8, 1659, timeout=10)
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="rotor runup to complete")
         # check we are still on the ground...
         relative_alt = self.get_altitude(relative=True)
         if abs(relative_alt) > 0.1:
@@ -303,7 +329,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.arm_vehicle()
         self.progress("Raising rotor speed")
         self.set_rc(8, 2000)
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="rotor to reach speed")
         self.change_mode("AUTO")
         self.set_rc(3, 1500)
         self.wait_disarmed(timeout=600)
@@ -328,7 +354,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(8, 2000)
         self.progress("wait for rotor runup to complete")
         self.wait_servo_channel_value(8, 1659, timeout=10)
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="rotor runup to complete")
         self.set_rc(3, 2000)
         self.wait_altitude(start_alt - 1,
                            (start_alt + 5),
@@ -451,7 +477,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.progress("wait for rotor runup to complete")
             check_rsc_output(self, RSC_SETPOINT, RUNUP_TIME+1)
 
-            self.delay_sim_time(20)
+            self.delay_sim_time(20, reason="rotor runup to complete")
             self.set_rc(3, 2000)
             self.wait_altitude(100,
                                105,
@@ -476,7 +502,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.progress("RSC is outputting correct idle throttle")
 
             # Wait to establish autorotation.
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, reason="autorotation to establish")
 
             # Re-engage interlock to start bailout sequence
             self.set_rc(8, 2000)
@@ -489,11 +515,11 @@ class AutoTestHelicopter(AutoTestCopter):
 
             # Give time for engine to power up
             self.set_rc(3, 1400)
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, reason="engine to power up")
 
             self.progress("in-flight power recovery")
             self.set_rc(3, 1500)
-            self.delay_sim_time(5)
+            self.delay_sim_time(5, reason="power recovery to stabilise")
 
             # Initiate autorotation again
             self.set_rc(3, 1000)
@@ -534,44 +560,6 @@ class AutoTestHelicopter(AutoTestCopter):
         TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=10, cool_down=5.0)
 
         self.context_pop()
-
-    def mission_item_home(self, target_system, target_component):
-        '''returns a mission_item_int which can be used as home in a mission'''
-        return self.mav.mav.mission_item_int_encode(
-            target_system,
-            target_component,
-            0, # seq
-            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-            0, # current
-            0, # autocontinue
-            3, # p1
-            0, # p2
-            0, # p3
-            0, # p4
-            int(1.0000 * 1e7), # latitude
-            int(2.0000 * 1e7), # longitude
-            31.0000, # altitude
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-
-    def mission_item_takeoff(self, target_system, target_component):
-        '''returns a mission_item_int which can be used as takeoff in a mission'''
-        return self.mav.mav.mission_item_int_encode(
-            target_system,
-            target_component,
-            1, # seq
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-            0, # current
-            0, # autocontinue
-            0, # p1
-            0, # p2
-            0, # p3
-            0, # p4
-            int(1.0000 * 1e7), # latitude
-            int(1.0000 * 1e7), # longitude
-            31.0000, # altitude
-            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
     def mission_item_rtl(self, target_system, target_component):
         '''returns a mission_item_int which can be used as takeoff in a mission'''
@@ -644,7 +632,7 @@ class AutoTestHelicopter(AutoTestCopter):
             # slot 0 is home
             self.mission_item_home(target_system=target_system, target_component=target_component),
             # slot 1 is takeoff
-            self.mission_item_takeoff(target_system=target_system, target_component=target_component),
+            self.mission_item_copter_takeoff(target_system=target_system, target_component=target_component),
             # now three spline waypoints right on top of one another:
             copy.copy(wp2_by_three),
             copy.copy(wp2_by_three),
@@ -718,7 +706,7 @@ class AutoTestHelicopter(AutoTestCopter):
             # slot 0 is home
             self.mission_item_home(target_system=target_system, target_component=target_component),
             # slot 1 is takeoff
-            self.mission_item_takeoff(target_system=target_system, target_component=target_component),
+            self.mission_item_copter_takeoff(target_system=target_system, target_component=target_component),
             wp2,
             wp3,
             wp4,
@@ -783,7 +771,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameter("MNT1_NEUTRAL_X", retract_roll)
         self.progress("Killing RC")
         self.set_parameter("SIM_RC_FAIL", 2)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="RC failsafe to trigger")
         want_servo_channel_value = int(1500 + 500*retract_roll/roll_limit)
         self.wait_servo_channel_value(roll_servo, want_servo_channel_value, epsilon=1)
 
@@ -806,7 +794,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(8, 2000)    # Raise rotor speed
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="rotor to reach speed")
         self.change_mode("AUTO")
         self.set_rc(3, 1500)
 
@@ -961,7 +949,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
         # check that turbine start activates as designed (armed with interlock disabled)
         self.progress("Checking Turbine Start activates as designed (armed with interlock disabled)")
-        self.delay_sim_time(2)
+        self.delay_sim_time(2, reason="vehicle to fully disarm")
         self.arm_vehicle()
 
         self.set_rc(6, 2000)
@@ -1210,6 +1198,8 @@ class AutoTestHelicopter(AutoTestCopter):
             self.NastyMission,
             self.PIDNotches,
             self.AutoTune,
+            self.DDFPTail,
+            self.DDVPTail,
             self.MountFailsafeAction,
         ])
         return ret
