@@ -25,16 +25,48 @@ _waf() {
           '(-j --jobs)'{-j,--jobs}'[amount of parallel jobs]:int:' \
           '--verbose[verbosity level -v -vv or -vvv]' \
           '*-v[verbosity level -v -vv or -vvv]' \
+          '-g[enable debug symbols]' \
           '--debug[Configure as debug variant.]' \
           '--bootloader[Configure for building a bootloader.]' \
           '--default-parameters[set default parameters to embed in the firmware]' \
           '--enable-sfml[Enable SFML graphics library]' \
           '--enable-sfml-audio[Enable SFML audio library]' \
+          '--enable-sfml-joystick[Enable SFML joystick library]' \
           '--sitl-osd[Enable SITL OSD]' \
           '--sitl-rgbled[Enable SITL RGBLed]' \
-          '--build-dates[Include build date in binaries]' \
           '--sitl-flash-storage[Use flash storage emulation.]' \
+          '--sitl-littlefs[Use littlefs storage emulation.]' \
+          '--build-dates[Include build date in binaries]' \
+          '--static[Force a static build]' \
+          '--Werror[configure with -Werror]' \
+          '--disable-Werror[disable -Werror]' \
+          '--enable-scripting[enable onboard scripting engine]' \
+          '--disable-scripting[disable onboard scripting engine]' \
+          '--scripting-checks[enable runtime scripting checks]' \
+          '--scripting-docs[generate scripting documentation]' \
+          '--enable-dronecan-tests[enable dronecan tests]' \
+          '--enable-networking-tests[enable networking tests]' \
+          '--disable-networking[disable the networking API code]' \
+          '--num-aux-imus=[number of auxiliary IMUs to simulate]:int:' \
+          '--ekf-single[force single precision EKF]' \
+          '--ekf-double[use double precision in EKF]' \
+          '--postype-single[force single precision postype_t]' \
+          '--force-32bit[compile using 32-bit]' \
+          '--ubsan[compile with undefined behaviour sanitiser]' \
+          '--ubsan-abort[compile with undefined behaviour sanitiser and abort on error]' \
+          '--asan[compile with address sanitiser]' \
+          '--coverage[use coverage build]' \
+          '--osd[Enable SITL OSD]' \
+          '--osd-fonts[Include OSD fonts in build]' \
+          '--enable-math-check-indexes[enable checking of math indexes]' \
+          '--enable-asserts[enable asserts]' \
+          '--enable-benchmarks[enable benchmarks]' \
+          '--enable-check-firmware[enable firmware ID checking]' \
+          '--enable-stats[enable runtime stats collection]' \
+          '--consistent-builds[remove all builds-specific data from binaries]' \
           '--upload[Upload applicable targets to a connected device]' \
+          '--upload-port=[Upload port]:PORT:' \
+          '--upload-force[Override board type check when uploading]' \
           '--board[Board name]:board:_waf_boards' \
           '--target=[Target name]:target:_waf_targets' \
           '*:: :->args' \
@@ -69,32 +101,21 @@ _waf_targets() {
   _describe -t targets 'targets' _waf_comp_targets "$@" && ret=0
 }
 
-# TODO generate with regex from waf help
 (( $+functions[_waf_cmds] )) ||
 _waf_cmds() {
-  local commands; commands=(
-    'AP_Periph:builds AP_Periph programs' \
-    'copter:builds copter programs' \
-    'heli:builds heli programs' \
-    'plane:builds plane programs' \
-    'rover:builds rover programs' \
-    'sub:builds sub programs' \
-    'antennatracker:builds antennatracker programs' \
-    'tools:builds all programs of tools group' \
-    'examples:builds all programs of examples group' \
-    'bootloader:builds bootloader programs' \
-    'iofirmware:builds iofirmware programs' \
-    'list:lists the targets to execute' \
-    'all:builds all programs of all group' \
-    'build:executes the build' \
-    'configure:configures the project' \
-    'clean:cleans the project' \
-    'distclean:removes build folders and data' \
-    'scripting_docs:generates documentation for lua scripts' \
-    'submodule_force_clean:removes all submodules, then checkouts all current submodules and synchronizes them' \
-    'submodulesync:checkouts all current submodules and synchronizes them'
-  )
-  _describe -t commands 'command' commands "$@" && ret=0
+  # Generate the command list from waf help, cached like the targets list
+  if ( [[ ${+_waf_comp_commands} -eq 0 ]] || _cache_invalid WAF_COMMANDS ) &&
+      ! _retrieve_cache WAF_COMMANDS;
+  then
+    # extract "name : description" lines from the Main commands section, drop the leaked 'conf' decorator doc
+    _waf_comp_commands=( ${(f)"$(./waf --help 2>/dev/null | sed -n '/^Main commands/,/^Options:/p' | sed -n 's/^  \([a-zA-Z_][a-zA-Z0-9_-]*\) *: \(.*\)/\1:\2/p' | sed '/^conf:/d')"} )
+    _waf_comp_commands+=(
+      'submodule_force_clean:removes all submodules, then checkouts all current submodules and synchronizes them'
+      'submodulesync:checkouts all current submodules and synchronizes them'
+    )
+    _store_cache WAF_COMMANDS _waf_comp_commands
+  fi
+  _describe -t commands 'command' _waf_comp_commands "$@" && ret=0
 }
 
 _waf "$@"
