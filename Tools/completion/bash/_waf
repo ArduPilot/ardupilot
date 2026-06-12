@@ -33,6 +33,7 @@ _waf()
     opts+=" distclean"
     opts+=" submodule_force_clean"
     opts+=" submodulesync"
+    opts+=" scripting_docs"
 
     # Prevent word reuse TODO: add -vvv case
     lim=$((COMP_CWORD - 1))
