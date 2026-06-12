@@ -12864,6 +12864,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'heli-blade360': "wrong binary, different takeoff regime",
             'heli-ddvptail': "wrong binary, different takeoff regime",
             'heli-ddfptail': "wrong binary, different takeoff regime",
+            'heli-quad': "wrong binary, different takeoff regime",
             "quad-can" : "needs CAN periph",
         }
         for frame in sorted(copter_vinfo_options["frames"].keys()):
