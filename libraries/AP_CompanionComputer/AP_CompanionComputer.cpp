@@ -1,5 +1,10 @@
 #include "AP_CompanionComputer.h"
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_WheelEncoder/AP_WheelEncoder.h>
+#include <AP_Math/AP_Math.h>
 
 const AP_Param::GroupInfo AP_CompanionComputer::var_info[] = {
     // @Param: ENABLE
@@ -22,7 +27,14 @@ const AP_Param::GroupInfo AP_CompanionComputer::var_info[] = {
 AP_CompanionComputer::AP_CompanionComputer() :
     _rx_state(RxState::WAITING_HEADER1),
     _rx_count(0),
-    _uart(nullptr)
+    _uart(nullptr),
+    _last_sent_ms(0),
+    _estop_active(false),
+    _fb_control_mode(0),
+    _fb_estop(false),
+    _fb_turning(false),
+    _fb_fault_bits(0),
+    _fb_mode_status_valid(false)
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
@@ -35,6 +47,7 @@ void AP_CompanionComputer::init()
         return;
     }
 
+    // 查找第 CC_PORT 个 protocol=50 的串口
     _uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_2CC, _port_index.get());
     if (_uart != nullptr) {
         _uart->begin(115200, 512, 128);
@@ -55,6 +68,7 @@ void AP_CompanionComputer::update()
     }
 }
 
+// NCU → FCU 帧接收状态机，详见 AP_CompanionComputer_config.h
 void AP_CompanionComputer::process_received_data(uint8_t oneByte)
 {
     const uint32_t now = AP_HAL::millis();
@@ -124,6 +138,7 @@ void AP_CompanionComputer::process_received_data(uint8_t oneByte)
 
         _rx_buffer[_rx_count++] = oneByte;
 
+        // 整帧长度 = DATA_LENGTH + 7（含帧头、校验和、结束符 0xFF）
         if (_rx_count >= (_data_len + 7)) {
             if (validate_packet()) {
                 handle_valid_packet();
@@ -137,6 +152,7 @@ void AP_CompanionComputer::process_received_data(uint8_t oneByte)
 
 void AP_CompanionComputer::handle_valid_packet()
 {
+    // TODO: 按 NCU_CMD_* 解析并缓存指令，供 ModeVGSolar 读取
     switch (_cmd_type) {
     case NCU_CMD_SPEED_CTRL:
     case NCU_CMD_TURN:
@@ -166,8 +182,167 @@ uint8_t AP_CompanionComputer::calculate_checksum(const uint8_t *data, uint8_t le
     return sum & 0xFF;
 }
 
+void AP_CompanionComputer::update_mode_status(uint8_t control_mode, bool estop, bool turning, uint16_t fault_bits)
+{
+    _fb_control_mode = control_mode;
+    _fb_estop = estop;
+    _fb_turning = turning;
+    _fb_fault_bits = fault_bits;
+    _fb_mode_status_valid = true;
+}
+
+void AP_CompanionComputer::reset_mode_status()
+{
+    _fb_control_mode = uint8_t(ControlMode::STANDBY);
+    _fb_estop = false;
+    _fb_turning = false;
+    _fb_fault_bits = 0;
+    _fb_mode_status_valid = false;
+}
+
+uint16_t AP_CompanionComputer::collect_sensor_faults() const
+{
+    uint16_t faults = 0;
+    const AP_AHRS &ahrs = AP::ahrs();
+
+    if (!ahrs.healthy()) {
+        faults |= FAULT_IMU;
+    }
+
+    const int16_t roll_cd = constrain_int16(int16_t(lroundf(degrees(ahrs.get_roll()) * 100.0f)), -32767, 32767);
+    const int16_t pitch_cd = constrain_int16(int16_t(lroundf(degrees(ahrs.get_pitch()) * 100.0f)), -32767, 32767);
+    if (abs(roll_cd) > 3000 || abs(pitch_cd) > 3000) {
+        faults |= FAULT_TILT;  // |roll| 或 |pitch| > 30°
+    }
+
+#if AP_GPS_ENABLED
+    if (AP::gps().status() < AP_GPS::GPS_OK_FIX_3D) {
+        faults |= FAULT_GPS_NO_SIGNAL;
+    }
+#endif
+
+    // WENC=左履带, WENC2=右履带
+    AP_WheelEncoder *wenc = AP::wheelencoder();
+    if (wenc != nullptr) {
+        if (wenc->num_sensors() > 0 && wenc->enabled(0) && !wenc->healthy(0)) {
+            faults |= FAULT_LEFT_MOTOR;
+        }
+        if (wenc->num_sensors() > 1 && wenc->enabled(1) && !wenc->healthy(1)) {
+            faults |= FAULT_RIGHT_MOTOR;
+        }
+    }
+
+    return faults;
+}
+
+uint8_t AP_CompanionComputer::compute_motion_state(int16_t velocity_cms, bool estop, bool turning, uint16_t fault_code)
+{
+    constexpr uint16_t FAULT_MOTION_MASK =
+        FAULT_IMU | FAULT_LOW_VOLTAGE | FAULT_LEFT_MOTOR | FAULT_RIGHT_MOTOR |
+        FAULT_NAV_FAILED | FAULT_TILT;
+
+    if ((fault_code & FAULT_MOTION_MASK) != 0) {
+        return uint8_t(MotionState::FAULT);
+    }
+    if (estop) {
+        return uint8_t(MotionState::ESTOP);
+    }
+    if (turning) {
+        return uint8_t(MotionState::TURNING);
+    }
+    if (velocity_cms > 5) {
+        return uint8_t(MotionState::FORWARD);
+    }
+    if (velocity_cms < -5) {
+        return uint8_t(MotionState::BACKWARD);
+    }
+    return uint8_t(MotionState::STOPPED);
+}
+
 void AP_CompanionComputer::send_data()
 {
+    if (!_enable || _uart == nullptr) {
+        return;
+    }
+
+    const uint32_t now = AP_HAL::millis();
+    if (now - _last_sent_ms < 100) {  // 10Hz
+        return;
+    }
+
+    // FCU → NCU 状态反馈帧 0xBB 0x01
+    StatusFeedbackFrame pkt {};
+    pkt.header1 = COMPANION_FRAME_HEADER1;
+    pkt.header2 = COMPANION_FRAME_HEADER2;
+    pkt.cmd_source = COMPANION_CMD_SOURCE_FC;
+    pkt.cmd_content = FCU_FB_STATUS;
+    pkt.data_length = sizeof(StatusFeedbackData);
+
+    const AP_AHRS &ahrs = AP::ahrs();
+    const AP_BattMonitor &battery = AP::battery();
+
+    // 电池电量 (%)
+    uint8_t percentage = 0;
+    if (battery.capacity_remaining_pct(percentage, 1)) {
+        pkt.data.battery_percent = percentage;
+    }
+
+    // 经纬度 (度 × 1e7)
+    Location loc;
+    if (ahrs.get_location(loc)) {
+        pkt.data.longitude = loc.lng;
+        pkt.data.latitude = loc.lat;
+    }
+
+    // 航向 (0.01°)
+    pkt.data.heading = ahrs.yaw_sensor;
+
+    // 线速度 (cm/s)
+    const int16_t velocity_cms = constrain_int16(int16_t(lroundf(ahrs.groundspeed() * 100.0f)), -32767, 32767);
+    pkt.data.velocity = velocity_cms;
+
+    // 左右履带速度 (cm/s)
+    AP_WheelEncoder *wenc = AP::wheelencoder();
+    if (wenc != nullptr) {
+        for (uint8_t i = 0; i < MIN(2U, wenc->num_sensors()); i++) {
+            if (!wenc->enabled(i) || !wenc->healthy(i)) {
+                continue;
+            }
+            const float rate_mps = wenc->get_rate(i) * wenc->get_wheel_radius(i);
+            const int16_t vel_cms = constrain_int16(int16_t(lroundf(rate_mps * 100.0f)), -32767, 32767);
+            if (i == 0) {
+                pkt.data.left_track_vel = vel_cms;
+            } else {
+                pkt.data.right_track_vel = vel_cms;
+            }
+        }
+    }
+
+    // 横滚 / 俯仰 (0.01°)
+    pkt.data.roll = constrain_int16(int16_t(lroundf(degrees(ahrs.get_roll()) * 100.0f)), -32767, 32767);
+    pkt.data.pitch = constrain_int16(int16_t(lroundf(degrees(ahrs.get_pitch()) * 100.0f)), -32767, 32767);
+
+    // 控制模式 / 运动状态 / 故障码
+    const uint8_t control_mode = _fb_mode_status_valid ? _fb_control_mode : uint8_t(ControlMode::STANDBY);
+    const bool estop = _fb_estop || _estop_active;
+    const bool turning = _fb_turning;
+    const uint16_t fault_code = _fb_fault_bits | collect_sensor_faults();
+
+    pkt.data.control_mode = control_mode;
+    pkt.data.motion_state = compute_motion_state(velocity_cms, estop, turning, fault_code);
+    pkt.data.fault_code = fault_code;
+
+#if AP_GPS_ENABLED
+    // GPS 定位状态
+    pkt.data.gps_status = uint8_t(AP::gps().status());
+#endif
+
+    auto packet = PacketBuilder::serialize(pkt);
+    packet[packet.size()-2] = calculate_checksum(packet.data(), packet.size()-2);
+    packet[packet.size()-1] = COMPANION_END_SIGN;
+
+    _uart->write(packet.data(), packet.size());
+    _last_sent_ms = now;
 }
 
 AP_CompanionComputer *AP_CompanionComputer::_singleton;

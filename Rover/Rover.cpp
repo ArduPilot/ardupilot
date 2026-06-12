@@ -137,6 +137,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
+    // NCU 伴机串口：收 50Hz / 发 10Hz
     SCHED_TASK(receive_companion_computer,  50,    200,  172),
     SCHED_TASK(send2_companion_computer,    10,     50,  173),
 };
@@ -153,12 +154,12 @@ void Rover::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 
 void Rover::receive_companion_computer()
 {
-    companion_computer.update();
+    companion_computer.update();  // 解析 NCU → FCU 指令
 }
 
 void Rover::send2_companion_computer()
 {
-    companion_computer.send_data();
+    companion_computer.send_data();  // 发送 FCU → NCU 状态反馈 0xBB 0x01
 }
 
 constexpr int8_t Rover::_failsafe_priorities[7];
