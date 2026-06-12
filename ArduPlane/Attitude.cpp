@@ -159,7 +159,7 @@ float Plane::stabilize_roll_get_roll_out()
             const float mc_angR = quadplane.attitude_control->get_angle_roll_p().kP()
                 * quadplane.attitude_control->get_last_angle_P_scale().x;
             if (is_positive(mc_angR)) {
-                rollController.set_ff_scale(MIN(1.0, 1.0 / (mc_angR * rollController.tau())));
+                rollController.set_ff_scale(MIN(1.0, rollController.get_angle_p() / mc_angR));
             }
         }
 
@@ -222,7 +222,7 @@ float Plane::stabilize_pitch_get_pitch_out()
             const float mc_angP = quadplane.attitude_control->get_angle_pitch_p().kP()
                 * quadplane.attitude_control->get_last_angle_P_scale().y;
             if (is_positive(mc_angP)) {
-                pitchController.set_ff_scale(MIN(1.0, 1.0 / (mc_angP * pitchController.tau())));
+                pitchController.set_ff_scale(MIN(1.0, pitchController.get_angle_p() / mc_angP));
             }
         }
 
