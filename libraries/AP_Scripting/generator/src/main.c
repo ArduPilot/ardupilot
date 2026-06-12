@@ -3055,7 +3055,7 @@ int main(int argc, char **argv) {
 
   fprintf(docs, "-- ArduPilot lua scripting documentation in EmmyLua Annotations\n");
   fprintf(docs, "-- This file should be auto generated and then manual edited\n");
-  fprintf(docs, "-- generate with --scripting-docs, eg  ./waf copter --scripting-docs\n");
+  fprintf(docs, "-- generate with scripting-docs, eg  ./waf scripting-docs\n");
   fprintf(docs, "-- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations\n");
   fprintf(docs, "-- luacheck: ignore 121 (Setting a read-only global variable)\n");
   fprintf(docs, "-- luacheck: ignore 122 (Setting a read-only field of a global variable)\n");

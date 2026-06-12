@@ -1,7 +1,7 @@
 ---@meta
 -- ArduPilot lua scripting documentation in EmmyLua Annotations
 -- This file should be auto generated and then manual edited
--- generate with --scripting-docs, eg  ./waf copter --scripting-docs
+-- generate with scripting-docs, eg  ./waf scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 -- luacheck: ignore 121 (Setting a read-only global variable)
 -- luacheck: ignore 122 (Setting a read-only field of a global variable)
