@@ -13510,6 +13510,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
         self.context_pop()
+        self.reboot_sitl()
 
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
