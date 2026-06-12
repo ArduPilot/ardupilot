@@ -249,6 +249,17 @@ class AutoTestHelicopter(AutoTestCopter):
         self.wait_servo_channel_value(7, 2000, timeout=10)
         self.do_RTL()
 
+    def HeliQuad(self):
+        '''fly collective-pitch quad frame'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-quad'),
+            model="heli-quad:@ROMFS/models/heliquad.json",
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.do_RTL()
+
     def hover(self):
         self.progress("Setting hover collective")
         self.set_rc(3, 1500)
@@ -1244,6 +1255,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.AutoTune,
             self.DDFPTail,
             self.DDVPTail,
+            self.HeliQuad,
             self.MountFailsafeAction,
             self.StickArmingRequiresZeroThrottle,
         ])
