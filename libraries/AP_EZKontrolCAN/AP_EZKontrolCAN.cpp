@@ -45,7 +45,7 @@ const AP_Param::GroupInfo AP_EZKontrolCAN::var_info[] = {
     // @Description: CAN bitrate in kbit/s (controller expects protocol 2 for 250k, protocol 102 for 500k)
     // @Values: 250:250k,500:500k
     // @User: Advanced
-    AP_GROUPINFO("BITRATE", 3, AP_EZKontrolCAN, _bitrate, 500),
+    AP_GROUPINFO("BITRATE", 3, AP_EZKontrolCAN, _bitrate, 250),
 
     // @Param: ADDR_L
     // @DisplayName: EZKontrol left motor address
@@ -154,6 +154,15 @@ void AP_EZKontrolCAN::init()
     const uint32_t now_ms = AP_HAL::millis();
     _left_state.last_handshake_ms = now_ms;
     _right_state.last_handshake_ms = now_ms;
+
+    if (_debug.get() != 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK CAN%u %uk init:%u L:0x%02x R:0x%02x",
+                      unsigned(port),
+                      unsigned(bitrate_kbps),
+                      _can_inited ? 1U : 0U,
+                      unsigned(_left_state.address),
+                      unsigned(_right_state.address));
+    }
 }
 
 void AP_EZKontrolCAN::set_targets(float left_norm, float right_norm, bool armed)
@@ -176,11 +185,14 @@ void AP_EZKontrolCAN::update()
         const uint32_t now_ms = _last_update_ms;
         if (now_ms - _last_debug_ms >= 1000U) {
             _last_debug_ms = now_ms;
+            const uint32_t left_telem_age_ms = _left_state.last_telem_ms == 0 ? 9999U : MIN<uint32_t>(now_ms - _left_state.last_telem_ms, 9999U);
+            const uint32_t right_telem_age_ms = _right_state.last_telem_ms == 0 ? 9999U : MIN<uint32_t>(now_ms - _right_state.last_telem_ms, 9999U);
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                          "EZK tgt L:%.2f R:%.2f armed:%u",
-                          (double)_left_target,
-                          (double)_right_target,
-                          _armed ? 1U : 0U);
+                          "EZK hs L:%u R:%u tlm L:%lu R:%lu",
+                          _left_state.handshake_complete ? 1U : 0U,
+                          _right_state.handshake_complete ? 1U : 0U,
+                          (unsigned long)left_telem_age_ms,
+                          (unsigned long)right_telem_age_ms);
         }
     }
 
@@ -242,6 +254,8 @@ void AP_EZKontrolCAN::reset_controller_state(ControllerState &state)
     state.last_telem_warn_ms = 0;
     state.last_fault_warn_ms = 0;
     state.last_error_bits = 0;
+    state.debug_handshake_reported = false;
+    state.debug_telem_reported = false;
     state.telem = {};
 }
 
@@ -291,18 +305,25 @@ void AP_EZKontrolCAN::handle_rx_frame(const AP_HAL::CANFrame &frame)
             send_handshake_ack(src);
             state->handshake_complete = true;
             state->last_handshake_ms = _last_update_ms;
+            if (_debug.get() != 0 && !state->debug_handshake_reported) {
+                state->debug_handshake_reported = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK hs req addr 0x%02x ACK",
+                              unsigned(state->address));
+            }
+            return;
         }
-        return;
     }
 
     if (message == AP_EZKontrolCAN_Protocol::MSG_TELEM_1 &&
         priority == AP_EZKontrolCAN_Protocol::PRIORITY_MCU_TO_VCU) {
+        state->handshake_complete = true;
         handle_telemetry_1(*state, frame);
         return;
     }
 
     if (message == AP_EZKontrolCAN_Protocol::MSG_TELEM_2 &&
         priority == AP_EZKontrolCAN_Protocol::PRIORITY_MCU_TO_VCU) {
+        state->handshake_complete = true;
         handle_telemetry_2(*state, frame);
         return;
     }
@@ -313,17 +334,22 @@ void AP_EZKontrolCAN::handle_telemetry_1(ControllerState &state, const AP_HAL::C
     if (frame.dlc < 8) {
         return;
     }
-    const uint16_t bus_mv = uint16_t(frame.data[0]) | (uint16_t(frame.data[1]) << 8);
-    const int16_t bus_ma = int16_t(uint16_t(frame.data[2]) | (uint16_t(frame.data[3]) << 8));
-    const int16_t phase_ma = int16_t(uint16_t(frame.data[4]) | (uint16_t(frame.data[5]) << 8));
-    const int16_t speed_rpm = int16_t(uint16_t(frame.data[6]) | (uint16_t(frame.data[7]) << 8));
+    const uint16_t bus_voltage_raw = uint16_t(frame.data[0]) | (uint16_t(frame.data[1]) << 8);
+    const uint16_t bus_current_raw = uint16_t(frame.data[2]) | (uint16_t(frame.data[3]) << 8);
+    const uint16_t phase_current_raw = uint16_t(frame.data[4]) | (uint16_t(frame.data[5]) << 8);
+    const uint16_t speed_raw = uint16_t(frame.data[6]) | (uint16_t(frame.data[7]) << 8);
 
-    state.telem.bus_voltage = bus_mv * 0.1f;
-    state.telem.bus_current = bus_ma * 0.1f;
-    state.telem.phase_current = phase_ma * 0.1f;
-    state.telem.speed_rpm = speed_rpm;
+    state.telem.bus_voltage = bus_voltage_raw * 0.1f;
+    state.telem.bus_current = bus_current_raw * 0.1f - 3200.0f;
+    state.telem.phase_current = phase_current_raw * 0.1f - 3200.0f;
+    state.telem.speed_rpm = float(speed_raw) - 32000.0f;
     state.telem.valid = true;
     state.last_telem_ms = _last_update_ms;
+    if (_debug.get() != 0 && !state.debug_telem_reported) {
+        state.debug_telem_reported = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
+                      unsigned(state.address));
+    }
 }
 
 void AP_EZKontrolCAN::handle_telemetry_2(ControllerState &state, const AP_HAL::CANFrame &frame)
@@ -331,23 +357,31 @@ void AP_EZKontrolCAN::handle_telemetry_2(ControllerState &state, const AP_HAL::C
     if (frame.dlc < 8) {
         return;
     }
-    const int16_t temp_mos = int16_t(uint16_t(frame.data[0]) | (uint16_t(frame.data[1]) << 8));
-    const int16_t temp_motor = int16_t(uint16_t(frame.data[2]) | (uint16_t(frame.data[3]) << 8));
-    const uint16_t status_bits = uint16_t(frame.data[4]) | (uint16_t(frame.data[5]) << 8);
-    const uint16_t error_bits = uint16_t(frame.data[6]) | (uint16_t(frame.data[7]) << 8);
+    const int16_t temp_mos = int16_t(frame.data[0]) - 40;
+    const int16_t temp_motor = int16_t(frame.data[1]) - 40;
+    const uint16_t status_bits = frame.data[2];
+    const uint32_t error_bits = uint32_t(frame.data[3]) |
+                                (uint32_t(frame.data[4]) << 8) |
+                                (uint32_t(frame.data[5]) << 16);
 
-    state.telem.temp_mos_c = temp_mos * 0.1f;
-    state.telem.temp_motor_c = temp_motor * 0.1f;
+    state.telem.temp_mos_c = temp_mos;
+    state.telem.temp_motor_c = temp_motor;
     state.telem.status_bits = status_bits;
     state.telem.error_bits = error_bits;
     state.telem.valid = true;
+    state.last_telem_ms = _last_update_ms;
+    if (_debug.get() != 0 && !state.debug_telem_reported) {
+        state.debug_telem_reported = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
+                      unsigned(state.address));
+    }
 
     if (error_bits != 0 && error_bits != state.last_error_bits) {
         state.last_error_bits = error_bits;
         if (_last_update_ms - state.last_fault_warn_ms >= 1000U) {
             state.last_fault_warn_ms = _last_update_ms;
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EZK fault 0x%04x on addr 0x%02x",
-                          static_cast<unsigned int>(error_bits),
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EZK fault 0x%06x on addr 0x%02x",
+                          static_cast<unsigned int>(error_bits & 0xFFFFFFU),
                           static_cast<unsigned int>(state.address));
         }
     }
@@ -381,13 +415,19 @@ void AP_EZKontrolCAN::send_command(ControllerState &state, float target_norm, bo
                    AP_EZKontrolCAN_Protocol::VCU_ADDRESS);
     frame.dlc = AP_HAL::CANFrame::NonFDCANMaxDataLen;
 
+    const float max_current_a = MAX<float>(_max_curr_a.get(), 0.0f);
+    const float max_speed_rpm = MAX<float>(float(_max_rpm.get()), 0.0f);
+    const float target_sign = is_negative(target_norm) ? -1.0f : 1.0f;
+    const bool has_target = !is_zero(target_norm);
     float target_current_a = 0.0f;
     float target_speed_rpm = 0.0f;
     if (armed) {
         if (_mode.get() == 0) {
-            target_speed_rpm = target_norm * float(_max_rpm.get());
+            target_current_a = has_target ? target_sign * max_current_a : 0.0f;
+            target_speed_rpm = target_norm * max_speed_rpm;
         } else {
-            target_current_a = target_norm * _max_curr_a.get();
+            target_current_a = target_norm * max_current_a;
+            target_speed_rpm = has_target ? target_sign * max_speed_rpm : 0.0f;
         }
     }
 
@@ -403,8 +443,8 @@ void AP_EZKontrolCAN::send_command(ControllerState &state, float target_norm, bo
     if (armed) {
         flags |= AP_EZKontrolCAN_Protocol::COMMAND_FLAG_RUN;
     }
-    if (_mode.get() != 0) {
-        flags |= AP_EZKontrolCAN_Protocol::COMMAND_FLAG_TORQUE_MODE;
+    if (_mode.get() == 0) {
+        flags |= AP_EZKontrolCAN_Protocol::COMMAND_FLAG_SPEED_MODE;
     }
     frame.data[4] = flags;
     frame.data[5] = 0;

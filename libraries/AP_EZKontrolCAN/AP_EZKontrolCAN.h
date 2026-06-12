@@ -45,7 +45,7 @@ private:
         float temp_mos_c = 0.0f;
         float temp_motor_c = 0.0f;
         uint16_t status_bits = 0;
-        uint16_t error_bits = 0;
+        uint32_t error_bits = 0;
         bool valid = false;
     };
 
@@ -58,7 +58,9 @@ private:
         uint32_t last_handshake_warn_ms = 0;
         uint32_t last_telem_warn_ms = 0;
         uint32_t last_fault_warn_ms = 0;
-        uint16_t last_error_bits = 0;
+        uint32_t last_error_bits = 0;
+        bool debug_handshake_reported = false;
+        bool debug_telem_reported = false;
         Telemetry telem {};
     };
 

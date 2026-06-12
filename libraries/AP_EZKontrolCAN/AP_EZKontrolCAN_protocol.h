@@ -29,12 +29,12 @@ static constexpr uint8_t PRIORITY_VCU_TO_MCU = 0x0C;
 static constexpr uint8_t PRIORITY_MCU_TO_VCU = 0x18;
 
 static constexpr uint8_t MSG_HANDSHAKE = 0x01;
-static constexpr uint8_t MSG_COMMAND = 0x02;
-static constexpr uint8_t MSG_TELEM_1 = 0x03;
-static constexpr uint8_t MSG_TELEM_2 = 0x04;
+static constexpr uint8_t MSG_COMMAND = 0x01;
+static constexpr uint8_t MSG_TELEM_1 = 0x01;
+static constexpr uint8_t MSG_TELEM_2 = 0x02;
 
 static constexpr uint8_t COMMAND_FLAG_RUN = 0x01;
-static constexpr uint8_t COMMAND_FLAG_TORQUE_MODE = 0x02;
+static constexpr uint8_t COMMAND_FLAG_SPEED_MODE = 0x02;
 
 static inline uint32_t make_extended_id(uint8_t priority, uint8_t message, uint8_t dest, uint8_t src)
 {
