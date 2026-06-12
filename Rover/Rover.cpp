@@ -159,6 +159,12 @@ void Rover::receive_companion_computer()
 
 void Rover::send2_companion_computer()
 {
+#if MODE_VGSOLAR_ENABLED
+    if (control_mode == &mode_vgsolar) {
+        mode_vgsolar.publish_status_feedback();
+        mode_vgsolar.publish_nav_status_feedback();
+    }
+#endif
     companion_computer.send_data();     // FCU → NCU 状态反馈 0xBB 0x01
     companion_computer.send_nav_data(); // FCU → NCU 导航状态 0xBB 0x04（Mode 置位后生效）
 }

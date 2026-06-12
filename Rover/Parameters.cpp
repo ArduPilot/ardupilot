@@ -698,6 +698,14 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: mode_circle.cpp
     AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
 
+#if MODE_VGSOLAR_ENABLED
+    // @Group: VGS_
+    // @DisplayName: VG Solar mode parameters
+    // @Description: Parameters for VG Solar cleaning robot mode
+    // @Path: mode_vgsolar.cpp
+    AP_SUBGROUPPTR(mode_vgsolar_ptr, "VGS_", 58, ParametersG2, ModeVGSolar),
+#endif
+
     AP_GROUPEND
 };
 
@@ -748,6 +756,9 @@ ParametersG2::ParametersG2(void)
 #endif
 #if MODE_DOCK_ENABLED
     mode_dock_ptr(&rover.mode_dock),
+#endif
+#if MODE_VGSOLAR_ENABLED
+    mode_vgsolar_ptr(&rover.mode_vgsolar),
 #endif
 #if AP_AVOIDANCE_ENABLED
     avoid(),

@@ -75,3 +75,9 @@
 #ifndef AP_ROVER_ADVANCED_FAILSAFE_ENABLED
   #define AP_ROVER_ADVANCED_FAILSAFE_ENABLED 0
 #endif
+
+//////////////////////////////////////////////////////////////////////////////
+// VG Solar cleaning robot mode
+#ifndef MODE_VGSOLAR_ENABLED
+  #define MODE_VGSOLAR_ENABLED 1
+#endif

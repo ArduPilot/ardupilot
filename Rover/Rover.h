@@ -107,6 +107,9 @@ public:
 #if MODE_DOCK_ENABLED
     friend class ModeDock;
 #endif
+#if MODE_VGSOLAR_ENABLED
+    friend class ModeVGSolar;
+#endif
 
     friend class RC_Channel_Rover;
     friend class RC_Channels_Rover;
@@ -262,6 +265,9 @@ private:
     ModeSimple mode_simple;
 #if MODE_DOCK_ENABLED
     ModeDock mode_dock;
+#endif
+#if MODE_VGSOLAR_ENABLED
+    ModeVGSolar mode_vgsolar;
 #endif
 
     // cruise throttle and speed learning
