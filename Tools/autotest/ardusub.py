@@ -749,6 +749,131 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 self.wait_groundspeed(speed-0.2, speed+0.2, minimum_duration=2, timeout=60)
         self.disarm_vehicle()
 
+    def MAV_CMD_DO_SET_ACTUATOR(self):
+        '''Test MAV_CMD_DO_SET_ACTUATOR command'''
+        # Map each supported actuator (1..6) onto a distinct SERVO output
+        # with a distinct PWM range.
+        actuator_servos = {
+            1: {"channel":  9, "min": 1100, "max": 1900, "trim": 1500},
+            2: {"channel": 10, "min": 1200, "max": 1800, "trim": 1550},
+            3: {"channel": 11, "min": 1050, "max": 1950, "trim": 1500},
+            4: {"channel": 12, "min": 1000, "max": 2000, "trim": 1500},
+            5: {"channel": 13, "min": 1150, "max": 1850, "trim": 1500},
+            6: {"channel": 14, "min": 1075, "max": 1925, "trim": 1500},
+        }
+
+        params = {}
+        for actuator_num, cfg in actuator_servos.items():
+            chan = cfg["channel"]
+            params[f"SERVO{chan}_FUNCTION"] = 183 + actuator_num  # k_actuator1==184
+            params[f"SERVO{chan}_MIN"] = cfg["min"]
+            params[f"SERVO{chan}_MAX"] = cfg["max"]
+            params[f"SERVO{chan}_TRIM"] = cfg["trim"]
+        self.set_parameters(params)
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # Actuator value mapping (matches AP_Actuators::set_actuator):
+        # internal_value = (input_value + 1) * 0.5  (maps -1..1 to 0..1)
+        # pwm = servo_min + (servo_max - servo_min) * internal_value
+
+        def set_actuators(values):
+            '''Send MAV_CMD_DO_SET_ACTUATOR (COMMAND_LONG) with values
+            for actuators 1..6.
+
+            values is a dict {actuator_num: value}; missing entries are
+            sent as NaN ("ignore") per the MAVLink spec.
+            '''
+            params = [float('nan')] * 6
+            for actuator_num, value in values.items():
+                params[actuator_num - 1] = value
+            self.run_cmd(
+                187,  # MAV_CMD_DO_SET_ACTUATOR
+                *params,
+                p7=0,  # actuator-set index 0 (actuators 1..6)
+            )
+
+        def expected_pwm(actuator_num, value):
+            cfg = actuator_servos[actuator_num]
+            internal = (value + 1) * 0.5
+            return int(cfg["min"] + (cfg["max"] - cfg["min"]) * internal)
+
+        # Exercise each supported actuator independently across the full
+        # input range, asserting the right servo lands on the right PWM.
+        for actuator_num in sorted(actuator_servos):
+            cfg = actuator_servos[actuator_num]
+            for value, label in [
+                (-1.0, "minimum"),
+                (0.0, "center"),
+                (1.0, "maximum"),
+                (0.5, "75%"),
+                (-0.5, "25%"),
+            ]:
+                self.progress(
+                    f"Testing actuator {actuator_num} set to {value} ({label})"
+                )
+                set_actuators({actuator_num: value})
+                self.wait_servo_channel_value(
+                    cfg["channel"],
+                    expected_pwm(actuator_num, value),
+                    timeout=5,
+                )
+
+        # A single command carrying values for every supported actuator
+        # must apply all six in one shot. Pick distinct values so a
+        # mis-ordered param->actuator mapping would be caught.
+        self.progress("Testing all six actuators set in one COMMAND_LONG")
+        combined = {1: -1.0, 2: -0.6, 3: -0.2, 4: 0.2, 5: 0.6, 6: 1.0}
+        set_actuators(combined)
+        for actuator_num, value in combined.items():
+            cfg = actuator_servos[actuator_num]
+            self.wait_servo_channel_value(
+                cfg["channel"],
+                expected_pwm(actuator_num, value),
+                timeout=5,
+            )
+
+        # NaN ("ignore") slots must leave the previous value untouched.
+        # Park actuators 1 and 5 at distinct non-center values (covering
+        # both the float p1..p4 path and the scaled-int p5/p6 path), then
+        # send a command that only moves actuator 4 and verify 1 and 5
+        # stayed where they were. Using non-zero values ensures we are
+        # actually preserving state rather than coincidentally landing on
+        # the trim PWM.
+        self.progress("Testing NaN slots leave previous values untouched")
+        held_values = {1: 0.7, 5: -0.4}
+        set_actuators(held_values)
+        for actuator_num, value in held_values.items():
+            self.wait_servo_channel_value(
+                actuator_servos[actuator_num]["channel"],
+                expected_pwm(actuator_num, value),
+                timeout=5,
+            )
+        set_actuators({4: 0.0})
+        self.wait_servo_channel_value(
+            actuator_servos[4]["channel"], expected_pwm(4, 0.0), timeout=5,
+        )
+        for actuator_num, value in held_values.items():
+            self.wait_servo_channel_value(
+                actuator_servos[actuator_num]["channel"],
+                expected_pwm(actuator_num, value),
+                timeout=2,
+            )
+
+        # An actuator-set index other than 0 is rejected because only
+        # actuators 1..6 of the first set are supported.
+        self.progress("Testing actuator-set index != 0 is rejected")
+        self.run_cmd_int(
+            187,  # MAV_CMD_DO_SET_ACTUATOR
+            p1=0, p2=0, p3=0, p4=0,
+            x=0, y=0, z=1,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        self.disarm_vehicle()
+
     def GPSForYaw(self):
         '''Test consumption of heading from NMEA GPS and its propagation to ATTITUDE'''
 
@@ -1383,6 +1508,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_CONDITION_YAW,
             self.MAV_CMD_DO_REPOSITION,
+            self.MAV_CMD_DO_SET_ACTUATOR,
             self.TerrainMission,
             self.SetGlobalOrigin,
             self.BackupOrigin,
