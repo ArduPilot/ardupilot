@@ -145,6 +145,19 @@ static Motor tiltquad[] =
     Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
 };
 
+// collective pitch quad helicopter, matching AP_MotorsHeli_Quad's
+// layout, with rotor speed control on channel 8 to match
+// AP_MotorsHeli_RSC's default channel
+// Run in a shell: ./Tools/autotest/fg_heliquad_view.sh
+// then Tools/autotest/sim_vehicle.py -v ArduCopter -f heli-quad --enable-fgview
+static Motor heliquad_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, 7),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3, 7),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4, 7),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2, 7),
+};
+
 static Motor hexa_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
@@ -422,6 +435,7 @@ static const FrameTemplate supported_frame_templates[] =
     {"djix",      4, quad_dji_x_motors},
     {"cwx",       4, quad_cw_x_motors},
     {"tilthvec",  4, tiltquad_h_vectored_motors},
+    {"heli-quad", 4, heliquad_motors},
     {"hexadeca-octa", 16, hexadeca_octa_motors},
     {"hexadeca-octa-cwx", 16, hexadeca_octa_cw_x_motors},
     {"hexax",     6, hexax_motors},
