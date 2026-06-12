@@ -281,6 +281,10 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(rangefinder,                 "RNGFND", RangeFinder),
 #endif
 
+    // @Group: CC_
+    // @Path: ../libraries/AP_CompanionComputer/AP_CompanionComputer.cpp
+    GOBJECT(companion_computer, "CC_", AP_CompanionComputer),
+
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,                            "INS", AP_InertialSensor),

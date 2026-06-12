@@ -30,6 +30,8 @@ void Rover::init_ardupilot()
     // setup telem slots with serial ports
     gcs().setup_uarts();
 
+    companion_computer.init();
+
 #if OSD_ENABLED
     osd.init();
 #endif

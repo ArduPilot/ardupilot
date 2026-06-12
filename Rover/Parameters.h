@@ -225,6 +225,8 @@ public:
         k_param_osd,
         k_param_optflow,
 
+        k_param_companion_computer,
+
         k_param_logger = 253,  // Logging Group
 
         // 254,255: reserved

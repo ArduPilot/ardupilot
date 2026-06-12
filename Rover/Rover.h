@@ -48,6 +48,7 @@
 #if AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_ExternalControl_Rover.h"
 #endif
+#include <AP_CompanionComputer/AP_CompanionComputer.h>
 
 // Configuration
 #include "defines.h"
@@ -144,6 +145,8 @@ private:
     // AP_RPM Module
     AP_RPM rpm_sensor;
 #endif
+
+    AP_CompanionComputer companion_computer;
 
     // Arming/Disarming management class
     AP_Arming_Rover arming;
@@ -401,6 +404,8 @@ private:
 
     void startup_INS(void);
     void notify_mode(const Mode *new_mode);
+    void receive_companion_computer();
+    void send2_companion_computer();
     uint8_t check_digital_pin(uint8_t pin);
     bool should_log(uint32_t mask);
     bool is_boat() const;
