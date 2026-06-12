@@ -408,7 +408,11 @@ class SITLLaunch:
 
         # Required arguments.
         cmd_args = [
-            f"{command} ",
+            # Use 'exec' so the /bin/sh -c wrapper is replaced by the
+            # arducopter process: the launch service then delivers its
+            # shutdown signals (SIGINT/SIGTERM) to arducopter directly
+            # rather than to the shell.
+            f"exec {command} ",
             f"--model {model} ",
             f"--speedup {speedup} ",
             f"--slave {slave} ",
