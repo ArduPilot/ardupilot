@@ -261,6 +261,23 @@ class AutoTestHelicopter(AutoTestCopter):
         self.takeoff(10)
         self.do_RTL()
 
+    def HeliQuadFlip(self):
+        '''fly Flip mode on collective-pitch quad frame'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-quad'),
+            model="heli-quad:@ROMFS/models/heliquad.json",
+            wipe=True,
+        )
+        # pitch flips are skipped; unlike a fixed-pitch quad, whose
+        # throttle cut during the flip also cuts control authority,
+        # the heli-quad retains full authority at zero collective and
+        # rotates well past the commanded rate. The recovery then
+        # leaves the attitude target wedged at the pitch-90 Euler
+        # singularity, from which ALT_HOLD's euler-angle input
+        # shaping cannot recover cleanly
+        self.ModeFlip(do_pitch_flip=False)
+
     def HeliQuadInvertedFlight(self):
         '''fly inverted on collective-pitch quad frame'''
         self.customise_SITL_commandline(
@@ -1309,6 +1326,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.DDFPTail,
             self.DDVPTail,
             self.HeliQuad,
+            self.HeliQuadFlip,
             self.HeliQuadInvertedFlight,
             self.MountFailsafeAction,
             self.StickArmingRequiresZeroThrottle,

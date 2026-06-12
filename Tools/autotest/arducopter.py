@@ -3446,7 +3446,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Landing and disarming")
         self.land_and_disarm()
 
-    def ModeFlip(self):
+    def ModeFlip(self, do_pitch_flip=True):
         '''Fly Flip Mode'''
         class WatchForMode(vehicle_test_suite.TestSuite.MessageHook):
             """Records whether specified mode was ever entered."""
@@ -3515,46 +3515,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             relative=True,
         )
 
-        self.start_subtest("Test 2: flip in a pilot-directed direction initialized by mode-change to FLIP.")
-        get_ready_for_flip()
+        if do_pitch_flip:
+            self.start_subtest("Test 2: flip in a pilot-directed direction initialized by mode-change to FLIP.")
+            get_ready_for_flip()
 
-        def wait_for_pitch_back_flip():
-            """These checkpoints and thresholds need hand-tuning to avoid flakes.
+            def wait_for_pitch_back_flip():
+                """These checkpoints and thresholds need hand-tuning to avoid flakes.
 
-            Due to Euler-angle choices, a pitch-back flip progresses like:
-              Roll = 0, pitch 0 -> +90
-              (instantly with pitch = +90) Roll 0 -> 180
-              Roll = 180, pitch +90 -> 0 -> -90
-              (instantly with pitch = -90) Roll 180 -> 0
-              Roll = 0, pitch -90 -> 0
-              (Note that Roll ~180 might be positive or negative, or even flip-flop)
+                Due to Euler-angle choices, a pitch-back flip progresses like:
+                  Roll = 0, pitch 0 -> +90
+                  (instantly with pitch = +90) Roll 0 -> 180
+                  Roll = 180, pitch +90 -> 0 -> -90
+                  (instantly with pitch = -90) Roll 180 -> 0
+                  Roll = 0, pitch -90 -> 0
+                  (Note that Roll ~180 might be positive or negative, or even flip-flop)
 
-            In the future, the detection logic may be replaced by a lower-overhead solution,
-            such as a MessageHook + logic to analyze the observed values to find
-            if the flip happened or not.
-            """
-            self.wait_attitude(despitch=60, desroll=0, tolerance=30)
-            self.wait_attitude(despitch=60, tolerance=30) # desroll is +/-180
-            self.wait_attitude(despitch=-60, desroll=0, tolerance=30)
-            self.wait_attitude(despitch=0, desroll=0, tolerance=30)
+                In the future, the detection logic may be replaced by a lower-overhead solution,
+                such as a MessageHook + logic to analyze the observed values to find
+                if the flip happened or not.
+                """
+                self.wait_attitude(despitch=60, desroll=0, tolerance=30)
+                self.wait_attitude(despitch=60, tolerance=30) # desroll is +/-180
+                self.wait_attitude(despitch=-60, desroll=0, tolerance=30)
+                self.wait_attitude(despitch=0, desroll=0, tolerance=30)
 
-        self.progress("Flipping in pitch-back")
-        gentle_positive_stick = 1700
-        self.set_rc(2, gentle_positive_stick)
-        self.send_cmd_do_set_mode('FLIP') # don't wait for success
-        try:
-            wait_for_pitch_back_flip()
-        except AutoTestTimeoutException:
-            raise NotAchievedException("Flip not confirmed. (If the flip did happen, our detection needs tuning.)")
-        self.progress("Waiting for level")
-        self.set_rc(2, neutral_stick)
-        self.wait_attitude(despitch=0, desroll=0, tolerance=5)
-        self.wait_mode('ALT_HOLD')
-        self.wait_altitude(
-            pre_flip_altitude_m - acceptable_altitude_loss_during_flip_m,
-            pre_flip_altitude_m + acceptable_altitude_loss_during_flip_m,
-            relative=True,
-        )
+            self.progress("Flipping in pitch-back")
+            gentle_positive_stick = 1700
+            self.set_rc(2, gentle_positive_stick)
+            self.send_cmd_do_set_mode('FLIP') # don't wait for success
+            try:
+                wait_for_pitch_back_flip()
+            except AutoTestTimeoutException:
+                raise NotAchievedException("Flip not confirmed. (If the flip did happen, our detection needs tuning.)")
+            self.progress("Waiting for level")
+            self.set_rc(2, neutral_stick)
+            self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+            self.wait_mode('ALT_HOLD')
+            self.wait_altitude(
+                pre_flip_altitude_m - acceptable_altitude_loss_during_flip_m,
+                pre_flip_altitude_m + acceptable_altitude_loss_during_flip_m,
+                relative=True,
+            )
 
         self.start_subtest("Test 3: Enter & abandon the flip using RC Aux")
         get_ready_for_flip()
