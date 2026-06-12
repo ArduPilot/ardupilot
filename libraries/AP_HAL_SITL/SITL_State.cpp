@@ -191,8 +191,24 @@ void SITL_State::_output_to_flightgear(void)
     fdm.vcas  = sfdm.velocity_air_bf.length()/0.3048;
     if (_vehicle == ArduCopter) {
         fdm.num_engines = 4;
-        for (uint8_t i=0; i<4; i++) {
-            fdm.rpm[i] = constrain_float((pwm_output[i]-1000), 0, 1000);
+        if (_model_str != nullptr && strstr(_model_str, "heliquad") != nullptr) {
+            // copter variable-pitch quad (heli-quad). The packet has no
+            // field for blade collective, so it rides in an unused
+            // per-engine field which only the heliquad aircraft model XML
+            // reads:
+            //   rpm[i]       - rotor speed, from the shared RSC output
+            //   fuel_flow[i] - blade collective, -1..1 about trim
+            // collective servos are SERVO1-4, RSC is SERVO8 (copter-heli convention)
+            const float rsc = constrain_float((pwm_output[7]-1000)*0.001f, 0, 1);
+            for (uint8_t i=0; i<4; i++) {
+                fdm.rpm[i] = rsc * 1500;  // nominal head speed, rev/min
+                fdm.fuel_flow[i] = constrain_float((pwm_output[i]-1500)*0.002f, -1, 1);
+            }
+        } else {
+            // normal direct-drive fixed-pitch quadcopter
+            for (uint8_t i=0; i<4; i++) {
+                fdm.rpm[i] = constrain_float((pwm_output[i]-1000), 0, 1000);
+            }
         }
     } else {
         fdm.num_engines = 4;

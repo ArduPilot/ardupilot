@@ -591,6 +591,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         exit(1);
     }
 
+    _model_str = model_str;
+
     if (AP::sitl() != nullptr) {  // some examples don't instantiate this object
         AP::sitl()->init();
     }
