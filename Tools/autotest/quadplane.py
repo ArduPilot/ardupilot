@@ -2901,6 +2901,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "TERRAIN_SPACING": 30,
             "TERRAIN_FOLLOW": 1,
             "TERRAIN_OFS_MAX": 0,
+            # Turn off input shaping, it makes the plane respond slightly slower which throws the whole test off.
+            "RLL2SRV_ACCEL": 0,
+            "PTCH2SRV_ACCEL": 0,
         })
 
         self.install_terrain_handlers_context()
