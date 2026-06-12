@@ -210,8 +210,14 @@ void AP_MotorsTailsitter::output_armed_stabilizing()
     }
 
     // thrust vectoring
-    _tilt_left  = pitch_thrust - yaw_thrust;
-    _tilt_right = pitch_thrust + yaw_thrust;
+    pitch_thrust = constrain_float(pitch_thrust, -1.0f, 1.0f);
+    float yaw_headroom = 1.0f - fabsf(pitch_thrust);
+    float yaw_thrust_limited = constrain_float(yaw_thrust, -yaw_headroom, yaw_headroom);
+    if (fabsf(yaw_thrust_limited) < fabsf(yaw_thrust)) {
+        limit.yaw = true;
+    }
+    _tilt_left  = pitch_thrust - yaw_thrust_limited;
+    _tilt_right = pitch_thrust + yaw_thrust_limited;
 }
 
 // output_test_seq - spin a motor at the pwm value specified

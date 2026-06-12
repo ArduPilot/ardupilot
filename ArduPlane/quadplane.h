@@ -192,6 +192,8 @@ public:
     // Get pilot throttle input with deadzone, this will return 50% throttle in failsafe!
     float get_throttle_input() const;
 
+    bool tailsitter_in_vtol_transition();
+
 private:
     AP_AHRS &ahrs;
 
@@ -273,7 +275,7 @@ private:
     void relax_attitude_control();
 
     bool check_land_complete(void);
-    bool land_detector(uint32_t timeout_ms);
+    bool land_detector(void);
     bool check_land_final(void);
 
     float assist_climb_rate_cms(void) const;
@@ -503,6 +505,10 @@ private:
 
         // landing detection threshold in meters
         AP_Float detect_alt_change;
+        AP_Float timeout_ms;
+
+        AP_Float wdg_timeout_s;
+        uint32_t wdg_start_ms;
     } landing_detect;
 
     // throttle mix acceleration filter

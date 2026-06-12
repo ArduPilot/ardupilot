@@ -1689,6 +1689,9 @@ function quadplane:in_vtol_land_descent() end
 ---@return boolean
 function quadplane:abort_landing() end
 
+-- true if vtol transition
+---@return boolean
+function quadplane:tailsitter_in_vtol_transition() end
 
 -- desc
 ---@class LED

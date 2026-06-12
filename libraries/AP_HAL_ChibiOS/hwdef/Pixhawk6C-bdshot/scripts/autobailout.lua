@@ -1,6 +1,6 @@
 -- Tailsitter Recovery Loop Script
 -- Logic: Bad Pitch -> Save Mode -> QLoiter
-local LOOP_MS = 100 -- Run at 10Hz
+local LOOP_MS = 50 
 local para_ahrs_pitch_threshold_max = -10
 local para_ahrs_pitch_threshold_min = -50
 
@@ -11,8 +11,8 @@ assert(param:add_table(KEY, "AUTOB_", 7), "AUTOB table failed")
 -- 2. ADD PARAMETERS
 assert(param:add_param(KEY, 1,  "PIT_LIM", 40),'could not add AUTOB_PIT_LIM')    -- Pitch limit
 assert(param:add_param(KEY, 2, "ENABLE", 1),'could not add AUTOB_ENABLE')    -- 1 = Enabled
-assert(param:add_param(KEY, 3, "MODE_DLY", 1000), 'could not add AUTOB_MODE_DLY') -- Delay (ms) before checking pitch
-assert(param:add_param(KEY, 4,"PIT_TOUT", 200),'could not add AUTOB_PIT_TOUT')
+assert(param:add_param(KEY, 3, "BTRN_DLY", 2500), 'could not add AUTOB_BTRN_DLY') -- Delay (ms) before checking pitch
+assert(param:add_param(KEY, 4,"PIT_TOUT", 100),'could not add AUTOB_PIT_TOUT')
 assert(param:add_param(KEY, 5, "PARA_EN", 1),'could not add AUTOB_PARA_EN')    -- 1 = Enabled
 assert(param:add_param(KEY, 6,"PARA_ANG", -15),'could not add AUTOB_PARA_ANG')
 assert(param:add_param(KEY, 7,"PARA_TOUT", 100),'could not add AUTOB_PARA_TOUT')
@@ -28,7 +28,7 @@ end
 
 local p_enable = bind_param("AUTOB_ENABLE")
 local p_pit_lim = bind_param("AUTOB_PIT_LIM")
-local p_mode_dly = bind_param("AUTOB_MODE_DLY")
+local p_btrn_dly = bind_param("AUTOB_BTRN_DLY")
 local p_pitch_timeout = bind_param("AUTOB_PIT_TOUT")
 local p_para_enable = bind_param("AUTOB_PARA_EN")
 local p_para_ang = bind_param("AUTOB_PARA_ANG")
@@ -39,31 +39,46 @@ local p_para_timeout = bind_param("AUTOB_PARA_TOUT")
 
 -- 4. MODE DEFINITIONS (ArduPlane)
 local MODE_QLOITER = 19 -- Auto-Hover (Functionally same as QLoiter 50% Thr)
-local MODE_QLAND  = 20
-
+local AUTOBAILOUT_EXCLUDE_MODES = {
+    [17] = true, --QSTABILIZE
+    [18] = true,  -- QHOVER
+    [19] = true,  -- QLOITER(cannot autobailout in QLOITER)
+    [22] = true,  -- QAUTOTUNE
+    [23] = true,  -- QACRO
+}
 -- 5. STATE VARIABLES
 local active = false
 local last_mode_idx = 0
-local mode_entry_time = 0
 local first_pitch_exceeded_t = nil
 
 -- Parachute state variables
 local trigger_para_script = false
 local first_para_pitch_exceeded_t = nil
 local PARA_CHAN_HIGH = 1850
+local backtransition_complete_time_ms = nil
 
 -- Helper: Radians to Degrees
 local function rad2deg(r) return r * 57.2958 end
 
 function is_vehicle_landing()
-    local current_mode = vehicle:get_mode()
-    if current_mode == MODE_QLAND then
-        return true
-    elseif quadplane:in_vtol_land_descent() then
+    if quadplane:in_vtol_land_descent() then
         return true
     else
         return false
     end
+end
+
+function in_vtol_flight()
+    local mode = vehicle:get_mode()
+    local vtol_active = not quadplane:tailsitter_in_vtol_transition() and quadplane:in_vtol_mode() and not AUTOBAILOUT_EXCLUDE_MODES[mode]
+    if vtol_active then
+        if backtransition_complete_time_ms == nil then
+            backtransition_complete_time_ms = millis():tofloat()
+        end
+        return true
+    end
+    backtransition_complete_time_ms = nil
+    return false
 end
 
 function is_parachute_angle_threshold_valid(threshold_angle)
@@ -136,7 +151,6 @@ function update()
     -- Detect Mode Changes
     if current_mode ~= last_mode_idx then
         last_mode_idx = current_mode
-        mode_entry_time = now
         first_pitch_exceeded_t = nil
     end
 
@@ -144,10 +158,10 @@ function update()
     -- LOGIC: MONITORING (Checking Pitch)
     -- ==========================================================
     if not active then
-        if is_vehicle_landing() then
+        if in_vtol_flight() and arming:is_armed() then
             -- Wait for Delay (settle time)
-            local delay_ms = p_mode_dly:get() or 1000
-            if (now - mode_entry_time) > delay_ms then
+            local delay_ms = p_btrn_dly:get() or 1000
+            if backtransition_complete_time_ms and (now - backtransition_complete_time_ms) > delay_ms then
                 local pitch_deg = rad2deg(ahrs:get_pitch() or 0)
                 local threshold = p_pit_lim:get() or 40
                 local pitch_timeout = p_pitch_timeout:get() or 500
