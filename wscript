@@ -113,15 +113,17 @@ def add_build_options(g):
                      help=disable_description)
 
         # also add entirely-lower-case equivalents with underscores
-        # replaced with dashes::
+        # replaced with dashes, unless the option is already defined
+        # explicitly: the parser resolves conflicts by replacing the
+        # existing option, which would hide its help text:
         lower_enable_option = enable_option.lower().replace("_", "-")
-        if lower_enable_option != enable_option:
+        if lower_enable_option != enable_option and not g.has_option(lower_enable_option):
             g.add_option(lower_enable_option,
                          action='store_true',
                          default=False,
                          help=optparse.SUPPRESS_HELP)
         lower_disable_option = disable_option.lower().replace("_", "-")
-        if lower_disable_option != disable_option:
+        if lower_disable_option != disable_option and not g.has_option(lower_disable_option):
             g.add_option(lower_disable_option,
                          action='store_true',
                          default=False,
