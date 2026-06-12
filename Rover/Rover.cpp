@@ -159,7 +159,8 @@ void Rover::receive_companion_computer()
 
 void Rover::send2_companion_computer()
 {
-    companion_computer.send_data();  // 发送 FCU → NCU 状态反馈 0xBB 0x01
+    companion_computer.send_data();     // FCU → NCU 状态反馈 0xBB 0x01
+    companion_computer.send_nav_data(); // FCU → NCU 导航状态 0xBB 0x04（Mode 置位后生效）
 }
 
 constexpr int8_t Rover::_failsafe_priorities[7];

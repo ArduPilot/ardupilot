@@ -29,12 +29,14 @@ AP_CompanionComputer::AP_CompanionComputer() :
     _rx_count(0),
     _uart(nullptr),
     _last_sent_ms(0),
+    _new_cmd_flags(0),
     _estop_active(false),
     _fb_control_mode(0),
     _fb_estop(false),
     _fb_turning(false),
     _fb_fault_bits(0),
-    _fb_mode_status_valid(false)
+    _fb_mode_status_valid(false),
+    _nav_status_send(false)
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
@@ -141,7 +143,28 @@ void AP_CompanionComputer::process_received_data(uint8_t oneByte)
         // 整帧长度 = DATA_LENGTH + 7（含帧头、校验和、结束符 0xFF）
         if (_rx_count >= (_data_len + 7)) {
             if (validate_packet()) {
-                handle_valid_packet();
+                switch (_cmd_type) {
+                case NCU_CMD_SPEED_CTRL:
+                    parse_speed_ctrl();
+                    break;
+                case NCU_CMD_TURN:
+                    parse_turn();
+                    break;
+                case NCU_CMD_PARAM_WRITE:
+                    parse_param_write();
+                    break;
+                case NCU_CMD_PARAM_READ:
+                    parse_param_read();
+                    break;
+                case NCU_CMD_SYSTEM_CTRL:
+                    parse_system_ctrl();
+                    break;
+                case NCU_CMD_POSITION:
+                    parse_position();
+                    break;
+                default:
+                    break;
+                }
             }
             _rx_state = RxState::WAITING_HEADER1;
             _rx_count = 0;
@@ -150,20 +173,156 @@ void AP_CompanionComputer::process_received_data(uint8_t oneByte)
     }
 }
 
-void AP_CompanionComputer::handle_valid_packet()
+void AP_CompanionComputer::parse_speed_ctrl()
 {
-    // TODO: 按 NCU_CMD_* 解析并缓存指令，供 ModeVGSolar 读取
-    switch (_cmd_type) {
-    case NCU_CMD_SPEED_CTRL:
-    case NCU_CMD_TURN:
-    case NCU_CMD_PARAM_WRITE:
-    case NCU_CMD_PARAM_READ:
-    case NCU_CMD_SYSTEM_CTRL:
-    case NCU_CMD_POSITION:
-        break;
-    default:
-        break;
+    _latest_speed_ctrl = PacketBuilder::deserialize<SpeedCtrlData>(_rx_buffer.data() + 5);
+    _new_cmd_flags |= (1<<0);
+    // 速度控制 10Hz 发送，协议规定不需要 ACK
+}
+
+void AP_CompanionComputer::parse_turn()
+{
+    _latest_turn = PacketBuilder::deserialize<TurnData>(_rx_buffer.data() + 5);
+    _new_cmd_flags |= (1<<1);
+    send_response(NCU_CMD_TURN, CMD_ACK_SUCCESS);
+}
+
+void AP_CompanionComputer::parse_param_write()
+{
+    const ParamWriteData cmd = PacketBuilder::deserialize<ParamWriteData>(_rx_buffer.data() + 5);
+
+    ParamFeedbackData feedback {};
+    if (write_runtime_param(cmd.param_index, cmd.param_type, cmd.param_value, feedback)) {
+        send_response(NCU_CMD_PARAM_WRITE, CMD_ACK_SUCCESS);
+        send_param_feedback(feedback);
+    } else {
+        send_response(NCU_CMD_PARAM_WRITE, CMD_ACK_FAILED);
     }
+}
+
+void AP_CompanionComputer::parse_param_read()
+{
+    const ParamReadData cmd = PacketBuilder::deserialize<ParamReadData>(_rx_buffer.data() + 5);
+
+    ParamFeedbackData feedback {};
+    if (read_runtime_param(cmd.param_index, feedback)) {
+        send_param_feedback(feedback);
+    }
+    // 未知索引：只回 0xBB 0x03，无 ACK 帧
+}
+
+void AP_CompanionComputer::parse_system_ctrl()
+{
+    _latest_system_ctrl = PacketBuilder::deserialize<SystemCtrlData>(_rx_buffer.data() + 5);
+    _new_cmd_flags |= (1<<3);
+
+    if (_latest_system_ctrl.command == SYS_CMD_ESTOP) {
+        _estop_active = true;
+    } else if (_latest_system_ctrl.command == SYS_CMD_ESTOP_CLEAR) {
+        _estop_active = false;
+    }
+
+    send_response(NCU_CMD_SYSTEM_CTRL, CMD_ACK_SUCCESS);
+}
+
+void AP_CompanionComputer::parse_position()
+{
+    _latest_position = PacketBuilder::deserialize<PositionData>(_rx_buffer.data() + 5);
+    _new_cmd_flags |= (1<<2);
+    // 导航 ACK 由 ModeVGSolar 通过 send_position_ack() 发送
+}
+
+void AP_CompanionComputer::send_position_ack(uint8_t status)
+{
+    send_response(NCU_CMD_POSITION, status);
+}
+
+void AP_CompanionComputer::set_nav_status(const NavStatusData &data, bool send_nav)
+{
+    _nav_status = data;
+    _nav_status_send = send_nav;
+}
+
+void AP_CompanionComputer::send_nav_data()
+{
+    if (!_enable || _uart == nullptr || !_nav_status_send) {
+        return;
+    }
+
+    NavStatusFeedbackFrame pkt {};
+    pkt.header1 = COMPANION_FRAME_HEADER1;
+    pkt.header2 = COMPANION_FRAME_HEADER2;
+    pkt.cmd_source = COMPANION_CMD_SOURCE_FC;
+    pkt.cmd_content = FCU_FB_NAV_STATUS;
+    pkt.data_length = sizeof(NavStatusData);
+    pkt.data = _nav_status;
+
+    auto packet = PacketBuilder::serialize(pkt);
+    packet[packet.size()-2] = calculate_checksum(packet.data(), packet.size()-2);
+    packet[packet.size()-1] = COMPANION_END_SIGN;
+
+    _uart->write(packet.data(), packet.size());
+    _nav_status_send = false;
+}
+
+bool AP_CompanionComputer::write_runtime_param(uint16_t param_index, uint8_t param_type, uint32_t param_value,
+                                               ParamFeedbackData &feedback_out)
+{
+    (void)param_index;
+    (void)param_type;
+    (void)param_value;
+    (void)feedback_out;
+    // TODO: 对接 AP_Brush / AP_Param
+    return false;
+}
+
+bool AP_CompanionComputer::read_runtime_param(uint16_t param_index, ParamFeedbackData &feedback_out)
+{
+    (void)param_index;
+    (void)feedback_out;
+    // TODO: 对接 AP_Brush / AP_Param
+    return false;
+}
+
+void AP_CompanionComputer::send_response(uint8_t cmd_type, uint8_t status)
+{
+    if (!_enable || _uart == nullptr) {
+        return;
+    }
+
+    std::array<uint8_t, COMPANION_SEND_RESP_LENGTH> response_buffer {};
+    response_buffer[0] = COMPANION_FRAME_HEADER1;
+    response_buffer[1] = COMPANION_FRAME_HEADER2;
+    response_buffer[2] = COMPANION_CMD_SOURCE_FC;
+    response_buffer[3] = FCU_FB_CMD_ACK;
+    response_buffer[4] = FCU_DATA_LEN_CMD_ACK;
+    response_buffer[5] = cmd_type;
+    response_buffer[6] = status;
+    response_buffer[7] = calculate_checksum(response_buffer.data(), response_buffer.size()-2);
+    response_buffer[8] = COMPANION_END_SIGN;
+
+    _uart->write(response_buffer.data(), response_buffer.size());
+}
+
+void AP_CompanionComputer::send_param_feedback(const ParamFeedbackData &data)
+{
+    if (!_enable || _uart == nullptr) {
+        return;
+    }
+
+    ParamFeedbackFrame pkt {};
+    pkt.header1 = COMPANION_FRAME_HEADER1;
+    pkt.header2 = COMPANION_FRAME_HEADER2;
+    pkt.cmd_source = COMPANION_CMD_SOURCE_FC;
+    pkt.cmd_content = FCU_FB_PARAM;
+    pkt.data_length = sizeof(ParamFeedbackData);
+    pkt.data = data;
+
+    auto packet = PacketBuilder::serialize(pkt);
+    packet[packet.size()-2] = calculate_checksum(packet.data(), packet.size()-2);
+    packet[packet.size()-1] = COMPANION_END_SIGN;
+
+    _uart->write(packet.data(), packet.size());
 }
 
 bool AP_CompanionComputer::validate_packet() const
@@ -198,6 +357,7 @@ void AP_CompanionComputer::reset_mode_status()
     _fb_turning = false;
     _fb_fault_bits = 0;
     _fb_mode_status_valid = false;
+    _nav_status_send = false;
 }
 
 uint16_t AP_CompanionComputer::collect_sensor_faults() const
