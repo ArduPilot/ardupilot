@@ -1,5 +1,32 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Release 4.7.0-beta7 13-June-2026
+
+Warnings
+
+- TradHeli's arming behaviour changes to require collective stick full down regardless of using stick or switch arming.  In RC_OPTIONS parameter, uncheck option for "Arming check throttle for 0 input" to allow switch arming with a collective raised from bottom.  This option is not recommended for stick arming as it allows arming at non zero collective setting.
+
+Changes from 4.7.0-beta6
+
+1) Board specific changes
+
+- AcctonGodwit GA1 has corrected pinout and bootloader (@erickao-hy, PR:33276)
+- JAE JFB200 board added (@n-ito2222, PR:32786)
+- SkyDroid-S3 fixed internal compass probing bug (@Hwurzburg, PR:33374)
+
+2) Library changes
+
+- STM ASM330LHH IMU support (@n-ito2222, PR:31656)
+
+3) Rover specific changes
+
+- Mode changes when safety switch pressed bug fixed (@peterbarker, PR:33070)
+
+4) Tradheli specific changes
+
+- Stick arming behaviour bugfix (@bnsgeyer, PR:33402)
+
+------------------------------------------------------------------
 Release 4.7.0-beta6 01-June-2026
 
 Changes from 4.7.0-beta5
