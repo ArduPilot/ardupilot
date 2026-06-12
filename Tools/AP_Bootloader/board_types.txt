@@ -435,6 +435,11 @@ AP_HW_AET-H743-Basic                 2024
 
 AP_HW_BOTWINGF405                    2501
 
+AP_HW_AET-H743-AIR                   2509
+AP_HW_AET-U7                         2510
+AP_HW_AET-AT405A                     2511
+AP_HW_AET-405-Mini                   2512
+
 AP_HW_SakuraRC-H743                  2714
 
 AP_HW_SkyRukh_Surge_H7               2815
