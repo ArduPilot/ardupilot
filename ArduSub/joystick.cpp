@@ -887,3 +887,55 @@ uint8_t Sub::get_and_clear_button_count(uint8_t index)
     return script_buttons[index - 1].get_and_clear_count();
 }
 #endif // AP_SCRIPTING_ENABLED
+
+void Sub::set_illuminator_brightness_pct(uint8_t id, float brightness_pct)
+{
+    // SRV_Channel k_lights1/k_lights2 are scaled 0-1000.
+    const float clamped_pct = constrain_float(brightness_pct, 0.0f, 100.0f);
+    const float brightness_scaled = clamped_pct * 10.0f;
+    if (id == 0 || id == 1) {
+        lights1 = brightness_scaled;
+        SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, lights1);
+        if (is_positive(clamped_pct)) {
+            illuminator_last_on_brightness_pct[0] = clamped_pct;
+        }
+    }
+    if (id == 0 || id == 2) {
+        lights2 = brightness_scaled;
+        SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, lights2);
+        if (is_positive(clamped_pct)) {
+            illuminator_last_on_brightness_pct[1] = clamped_pct;
+        }
+    }
+}
+
+float Sub::get_illuminator_brightness_pct(uint8_t id) const
+{
+    if (id == 1) {
+        return lights1 * 0.1f;
+    }
+    if (id == 2) {
+        return lights2 * 0.1f;
+    }
+    return 0.0f;
+}
+
+void Sub::illuminator_on_off(uint8_t id, bool enable)
+{
+    if (id > illuminator_count) {
+        return;
+    }
+    const uint8_t first_id = (id == 0) ? 1 : id;
+    const uint8_t last_id = (id == 0) ? illuminator_count : id;
+    for (uint8_t i = first_id; i <= last_id; i++) {
+        if (enable) {
+            set_illuminator_brightness_pct(i, illuminator_last_on_brightness_pct[i - 1]);
+        } else {
+            const float current = get_illuminator_brightness_pct(i);
+            if (is_positive(current)) {
+                illuminator_last_on_brightness_pct[i - 1] = current;
+            }
+            set_illuminator_brightness_pct(i, 0.0f);
+        }
+    }
+}

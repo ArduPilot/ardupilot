@@ -1353,6 +1353,236 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
+    def Illuminators(self):
+        '''test MAV_CMD_ILLUMINATOR_ON_OFF, MAV_CMD_DO_ILLUMINATOR_CONFIGURE and mission plumbing'''
+
+        # ArduSub addresses two autopilot-attached illuminators on the
+        # SRV_Channel k_lights1 / k_lights2 functions.  ArduSub defaults
+        # SERVO9_FUNCTION to k_lights1 and SERVO10_FUNCTION to k_mount_tilt,
+        # so park lights2 on a different free channel.
+        K_LIGHTS1 = 181
+        K_LIGHTS2 = 182
+        LIGHTS1_CH = 9
+        LIGHTS2_CH = 11
+        SERVO_MIN_PWM = 1100
+        SERVO_MAX_PWM = 1900
+
+        # The version of pymavlink available in CI does not always know about
+        # MAV_CMD_ILLUMINATOR_ON_OFF / MAV_CMD_DO_ILLUMINATOR_CONFIGURE, so
+        # reference them numerically.  These IDs come from MAVLink common.xml.
+        MAV_CMD_ILLUMINATOR_ON_OFF = 405
+        MAV_CMD_DO_ILLUMINATOR_CONFIGURE = 406
+        ILLUMINATOR_MODE_INTERNAL_CONTROL = 1
+        MAV_BOOL_FALSE = 0
+        MAV_BOOL_TRUE = 1
+
+        def brightness_to_pwm(pct):
+            return int(round(SERVO_MIN_PWM + (pct / 100.0) * (SERVO_MAX_PWM - SERVO_MIN_PWM)))
+
+        self.context_push()
+
+        self.set_parameters({
+            f"SERVO{LIGHTS1_CH}_FUNCTION": K_LIGHTS1,
+            f"SERVO{LIGHTS1_CH}_MIN": SERVO_MIN_PWM,
+            f"SERVO{LIGHTS1_CH}_MAX": SERVO_MAX_PWM,
+            f"SERVO{LIGHTS2_CH}_FUNCTION": K_LIGHTS2,
+            f"SERVO{LIGHTS2_CH}_MIN": SERVO_MIN_PWM,
+            f"SERVO{LIGHTS2_CH}_MAX": SERVO_MAX_PWM,
+        })
+        self.reboot_sitl()
+        self.context_set_message_rate_hz('SERVO_OUTPUT_RAW', 10)
+        self.set_rc_default()
+        self.wait_ready_to_arm()
+
+        for cmd_send in self.run_cmd, self.run_cmd_int:
+            label = cmd_send.__name__
+
+            self.start_subtest(f"DO_ILLUMINATOR_CONFIGURE addresses each illuminator ({label})")
+
+            # known state: everything off
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=0, p3=0, p4=0, p5=0)
+            self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(0), timeout=5)
+            self.wait_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(0), timeout=5)
+
+            # id=1 only -> illuminator 1 changes, illuminator 2 stays put
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=25, p5=1)
+            self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(25), timeout=5)
+            self.assert_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(0))
+
+            # id=2 only -> illuminator 2 changes, illuminator 1 stays at 25%
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=80, p5=2)
+            self.wait_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(80), timeout=5)
+            self.assert_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(25))
+
+            # id=0 -> both illuminators move together
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=50, p5=0)
+            self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(50), timeout=5)
+            self.wait_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(50), timeout=5)
+
+            self.start_subtest(f"ILLUMINATOR_ON_OFF remembers brightness ({label})")
+
+            # turn off all -> both go dark
+            cmd_send(MAV_CMD_ILLUMINATOR_ON_OFF, p1=MAV_BOOL_FALSE, p2=0)
+            self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(0), timeout=5)
+            self.wait_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(0), timeout=5)
+
+            # turn on all -> previously-set 50% is restored on both
+            cmd_send(MAV_CMD_ILLUMINATOR_ON_OFF, p1=MAV_BOOL_TRUE, p2=0)
+            self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(50), timeout=5)
+            self.wait_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(50), timeout=5)
+
+            # off id=1 only, id=2 unaffected
+            cmd_send(MAV_CMD_ILLUMINATOR_ON_OFF, p1=MAV_BOOL_FALSE, p2=1)
+            self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(0), timeout=5)
+            self.assert_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(50))
+
+            # on id=1 only restores its remembered 50%
+            cmd_send(MAV_CMD_ILLUMINATOR_ON_OFF, p1=MAV_BOOL_TRUE, p2=1)
+            self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(50), timeout=5)
+            self.assert_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(50))
+
+            self.start_subtest(f"Invalid parameters are rejected ({label})")
+
+            # invalid id (above illuminator_count=2)
+            cmd_send(MAV_CMD_ILLUMINATOR_ON_OFF, p1=MAV_BOOL_TRUE, p2=99,
+                     want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+            # invalid MAV_BOOL
+            cmd_send(MAV_CMD_ILLUMINATOR_ON_OFF, p1=42, p2=0,
+                     want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+            # invalid brightness (out of range)
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=200, p5=0,
+                     want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+            # unsupported mode
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=99, p2=50, p5=0,
+                     want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+            # strobing not supported on the autopilot-driven outputs
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=50, p3=1.0, p5=0,
+                     want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+            # invalid id for configure
+            cmd_send(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=50, p5=99,
+                     want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+
+            # rejected commands must not perturb existing outputs
+            self.assert_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(50))
+            self.assert_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(50))
+
+        self.start_subtest("Mission storage roundtrip preserves all parameters")
+
+        items = [
+            # item 0 is HOME; ArduSub appends home automatically.  Item 1 is
+            # the first commandable mission entry: a dummy waypoint anchoring
+            # the do-commands that follow.
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, seq=0,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL, x=0, y=0, z=0, current=1),
+            self.create_MISSION_ITEM_INT(
+                MAV_CMD_DO_ILLUMINATOR_CONFIGURE, seq=1,
+                frame=mavutil.mavlink.MAV_FRAME_MISSION,
+                p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=70, p3=0, p4=0, x=1),
+            self.create_MISSION_ITEM_INT(
+                MAV_CMD_DO_ILLUMINATOR_CONFIGURE, seq=2,
+                frame=mavutil.mavlink.MAV_FRAME_MISSION,
+                p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=40, p3=0, p4=0, x=2),
+            self.create_MISSION_ITEM_INT(
+                MAV_CMD_ILLUMINATOR_ON_OFF, seq=3,
+                frame=mavutil.mavlink.MAV_FRAME_MISSION,
+                p1=MAV_BOOL_FALSE, p2=1),
+            self.create_MISSION_ITEM_INT(
+                MAV_CMD_ILLUMINATOR_ON_OFF, seq=4,
+                frame=mavutil.mavlink.MAV_FRAME_MISSION,
+                p1=MAV_BOOL_TRUE, p2=0),
+        ]
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, items)
+        downloaded = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        if len(downloaded) != len(items):
+            raise NotAchievedException(
+                f"Downloaded mission has {len(downloaded)} items, expected {len(items)}")
+        for uploaded, dl in zip(items, downloaded):
+            if uploaded.command != dl.command:
+                raise NotAchievedException(
+                    f"Mission item {uploaded.seq} command mismatch: "
+                    f"want={uploaded.command} got={dl.command}")
+            # Only check the params that storage is responsible for preserving
+            # on the illuminator commands.  The waypoint item at seq 0 is just
+            # an anchor; its params are not interesting here.
+            if uploaded.command not in (MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                                        MAV_CMD_ILLUMINATOR_ON_OFF):
+                continue
+            checks = [('param1', 0.01),
+                      ('param2', 0.01),
+                      ('param3', 0.01),
+                      ('param4', 0.01),
+                      ('x', 0)]
+            for attr, tol in checks:
+                want = getattr(uploaded, attr)
+                got = getattr(dl, attr)
+                if abs(want - got) > tol:
+                    raise NotAchievedException(
+                        f"Mission item {uploaded.seq} ({uploaded.command}) "
+                        f"{attr} not preserved: want={want} got={got}")
+
+        self.start_subtest("Mission execution drives illuminator outputs")
+
+        # Build a small mission whose nav legs straddle an illuminator
+        # do-command, so we can prove the mission engine actually invokes the
+        # ArduSub do_illuminator_* handlers and that the addressed light is
+        # driven from storage.
+        home = self.home_position_as_mav_location()
+        wp1 = self.offset_location_ne(home, 5, 0)
+        wp2 = self.offset_location_ne(home, 10, 0)
+        mission = [
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, seq=0,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+                x=int(home.lat * 1e7), y=int(home.lng * 1e7), z=0, current=1),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, seq=1,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                x=int(wp1.lat * 1e7), y=int(wp1.lng * 1e7), z=-3,
+                autocontinue=1),
+            self.create_MISSION_ITEM_INT(
+                MAV_CMD_DO_ILLUMINATOR_CONFIGURE, seq=2,
+                frame=mavutil.mavlink.MAV_FRAME_MISSION,
+                p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=30, x=2,
+                autocontinue=1),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, seq=3,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                x=int(wp2.lat * 1e7), y=int(wp2.lng * 1e7), z=-3,
+                autocontinue=1),
+        ]
+        self.upload_using_mission_protocol(
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION, mission)
+
+        # start with both lights off so we can see the mission turn one on
+        self.run_cmd(MAV_CMD_DO_ILLUMINATOR_CONFIGURE,
+                     p1=ILLUMINATOR_MODE_INTERNAL_CONTROL, p2=0, p5=0)
+        self.wait_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(0), timeout=5)
+        self.wait_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(0), timeout=5)
+
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        # the do-command at seq 2 should fire once the vehicle reaches the
+        # first waypoint and the mission advances past it
+        self.wait_servo_channel_value(LIGHTS2_CH, brightness_to_pwm(30), timeout=120)
+        # the unrelated illuminator must not have been touched by the mission
+        self.assert_servo_channel_value(LIGHTS1_CH, brightness_to_pwm(0))
+
+        self.change_mode('MANUAL')
+        self.disarm_vehicle()
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1397,6 +1627,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.UpsideDown,
+            self.Illuminators,
         ])
 
         return ret

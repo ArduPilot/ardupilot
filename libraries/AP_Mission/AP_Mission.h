@@ -162,6 +162,21 @@ public:
         uint8_t action;         // action (0 = release, 1 = grab)
     };
 
+    // MAV_CMD_ILLUMINATOR_ON_OFF
+    struct PACKED Illuminator_OnOff_Command {
+        uint8_t enable;         // 0: off, 1: on (MAV_BOOL)
+        uint8_t id;             // illuminator id (0 = all autopilot-attached)
+    };
+
+    // MAV_CMD_DO_ILLUMINATOR_CONFIGURE
+    struct PACKED Illuminator_Configure_Command {
+        uint8_t mode;           // ILLUMINATOR_MODE
+        uint8_t id;             // illuminator id (0 = all autopilot-attached)
+        float brightness_pct;   // 0-100%
+        float strobe_period_s;  // 0 = no strobing
+        float strobe_duty_pct;  // 0-100%, 0 = no strobing
+    };
+
     // AUX_FUNCTION command structure
     struct PACKED AuxFunction {
         uint16_t function;  // from RC_Channel::AUX_FUNC
@@ -356,6 +371,12 @@ public:
 
         // do-gripper
         Gripper_Command gripper;
+
+        // MAV_CMD_ILLUMINATOR_ON_OFF
+        Illuminator_OnOff_Command illuminator_on_off;
+
+        // MAV_CMD_DO_ILLUMINATOR_CONFIGURE
+        Illuminator_Configure_Command illuminator_configure;
 
         // arbitrary aux function
         AuxFunction auxfunction;
