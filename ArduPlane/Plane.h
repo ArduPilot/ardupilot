@@ -116,6 +116,10 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#if AP_CUSTOMCONTROL_PLANE_ENABLED
+#include <AP_CustomControl/AP_CustomControl.h>                  // Custom control library
+#endif // AP_CUSTOMCONTROL_PLANE_ENABLED
+
 #include "RC_Channel_Plane.h"     // RC Channel Library
 #include "Parameters.h"
 #if AP_ADSB_AVOIDANCE_ENABLED
@@ -246,6 +250,10 @@ private:
     AP_PitchController pitchController{aparm};
     AP_YawController yawController{aparm};
     AP_SteerController steerController{};
+
+#if AP_CUSTOMCONTROL_PLANE_ENABLED
+    AP_CustomControl custom_control{aparm};
+#endif // AP_CUSTOMCONTROL_PLANE_ENABLED
 
     // Training mode
     bool training_manual_roll;  // user has manual roll control
@@ -1158,6 +1166,10 @@ private:
     void landing_gear_update(void);
     bool check_takeoff_timeout(void);
     bool check_takeoff_timeout_level_off(void);
+
+#if AP_CUSTOMCONTROL_PLANE_ENABLED
+    void run_custom_controller();
+#endif // AP_CUSTOMCONTROL_PLANE_ENABLED
 
     // avoidance_adsb.cpp
     void avoidance_adsb_update(void);

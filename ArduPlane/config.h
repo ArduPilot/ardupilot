@@ -223,3 +223,10 @@
 #ifndef THR_CTRL_LAND_THRESH
  #define THR_CTRL_LAND_THRESH 0.7
 #endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+//  Custom controller
+#ifndef AP_CUSTOMCONTROL_PLANE_ENABLED
+#define AP_CUSTOMCONTROL_PLANE_ENABLED AP_CUSTOMCONTROL_ENABLED
+#endif

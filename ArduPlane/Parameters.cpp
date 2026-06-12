@@ -955,6 +955,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(osd, "OSD", AP_OSD),
 #endif
 
+#if AP_CUSTOMCONTROL_PLANE_ENABLED
+    // @Group: CP
+    // @Path: ../libraries/AP_CustomControl/AP_CustomControl.cpp
+    GOBJECT(custom_control, "CP", AP_CustomControl),
+#endif // AP_CUSTOMCONTROL_PLANE_ENABLED
+
     // @Group: TKOFF_
     // @Path: mode_takeoff.cpp
     GOBJECT(mode_takeoff, "TKOFF_", ModeTakeoff),
