@@ -47,6 +47,8 @@ void AP_DAL_GPS::start_frame()
         RGPI.speed_accuracy_returncode = gps.speed_accuracy(i, RGPJ.sacc);
         RGPI.gps_yaw_deg_returncode = gps.gps_yaw_deg(i, RGPJ.yaw_deg, RGPJ.yaw_accuracy_deg, RGPJ.yaw_deg_time_ms);
 
+        RGPI.is_spoofed = gps.is_spoofed(i);
+
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);
 

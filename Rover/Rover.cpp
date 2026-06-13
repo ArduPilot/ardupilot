@@ -31,6 +31,8 @@
 
 #include "Rover.h"
 
+#include <AP_GPS/AP_GPS.h>
+
 #define FORCE_VERSION_H_INCLUDE
 #include "version.h"
 #undef FORCE_VERSION_H_INCLUDE
@@ -111,6 +113,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Camera,           &rover.camera,           update,         50,  200,  78),
 #endif
     SCHED_TASK(gcs_failsafe_check,     10,    200,  81),
+    SCHED_TASK(gpsspoof_check,         10,    200,  82),
 #if AP_FENCE_ENABLED
     SCHED_TASK(fence_check,            10,    200,  84),
 #endif
@@ -364,6 +367,30 @@ void Rover::gcs_failsafe_check(void)
     const bool do_failsafe = last_gcs_update_ms >= gcs_timeout_ms ? true : false;
 
     failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", do_failsafe);
+}
+
+/*
+  check for GPS spoofing failsafe - 10Hz
+ */
+void Rover::gpsspoof_check(void)
+{
+    if (g.fs_gps_spoof_action == 0) {
+        failsafe_trigger(FAILSAFE_EVENT_GPS_SPOOF, "GPS Spoof", false);
+        return;
+    }
+
+    const bool gps_spoofed = AP::gps().is_spoofed();
+    if (!gps_spoofed) {
+        failsafe_trigger(FAILSAFE_EVENT_GPS_SPOOF, "GPS Spoof", false);
+        return;
+    }
+
+    if (g.fs_gps_spoof_action == 7) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "GPS Spoofing Detected");
+        return;
+    }
+
+    failsafe_trigger(FAILSAFE_EVENT_GPS_SPOOF, "GPS Spoof", true);
 }
 
 #if HAL_LOGGING_ENABLED

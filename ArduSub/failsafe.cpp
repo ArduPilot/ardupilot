@@ -1,5 +1,7 @@
 #include "Sub.h"
 
+#include <AP_GPS/AP_GPS.h>
+
 /*
  * failsafe.cpp
  * Failsafe checks and actions
@@ -361,6 +363,49 @@ void Sub::failsafe_gcs_check()
         if (!set_mode(Mode::Number::SURFACE, ModeReason::GCS_FAILSAFE)) {
             arming.disarm(AP_Arming::Method::GCS_FAILSAFE_SURFACEFAILED);
         }
+    }
+}
+
+// check for GPS spoofing failsafe
+void Sub::failsafe_gps_spoof_check()
+{
+    if (g.fs_gps_spoof_action == Failsafe_Action_None) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_WARNING, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    const bool gps_spoofed = AP::gps().is_spoofed();
+    if (!gps_spoofed) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_WARNING, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    if (failsafe.gps_spoof) {
+        return;
+    }
+
+    failsafe.gps_spoof = true;
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
+    gcs().send_text(MAV_SEVERITY_WARNING, "GPS Spoofing Detected");
+
+        switch (g.fs_gps_spoof_action.get()) {
+        case Failsafe_Action_Warn:
+        case Failsafe_Action_None:
+            break;
+        case Failsafe_Action_Disarm:
+            arming.disarm(AP_Arming::Method::UNKNOWN);
+            break;
+        case Failsafe_Action_Surface:
+            set_mode(Mode::Number::SURFACE, ModeReason::GPS_GLITCH);
+            break;
     }
 }
 

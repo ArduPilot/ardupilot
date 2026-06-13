@@ -1913,6 +1913,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.reboot_sitl()
             raise ex
 
+    def GPSSpoofing(self):
+        """Test GPS spoofing failsafe"""
+        self.context_push()
+        self.set_parameters({
+            "FS_GPS_SPOOF_ACT": 2,
+        })
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.progress("Injecting GPS spoof command")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_USER_1, p1=1, p2=0)
+        self.wait_mode("HOLD", timeout=20)
+
+        self.progress("Clearing GPS spoof command")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_USER_1, p1=0, p2=0)
+        self.wait_statustext("GPS Spoof.*Cleared", timeout=30, regex=True)
+
+        self.disarm_vehicle()
+        self.context_pop()
+
     def test_gcs_failsafe(self, side=60, timeout=360):
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
         self.set_parameter("FS_ACTION", 1)
@@ -7492,6 +7513,7 @@ return update()
             self.AutoDock,
             self.PrivateChannel,
             self.GCSFailsafe,
+            self.GPSSpoofing,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
