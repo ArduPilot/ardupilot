@@ -596,14 +596,14 @@ const struct LogStructure Plane::log_structure[] = {
 // @LoggerMessage: ATIS
 // @Description: Fixedwing attitude control input shaping
 // @Field: TimeUS: Time since system startup
-// @Field: rAng: Roll angle
-// @Field: rErr: Roll angle error
-// @Field: rVel: Roll velocity
-// @Field: rAcc: Roll acceleration
-// @Field: pAng: Pitch angle
-// @Field: pErr: Pitch angle error
-// @Field: pVel: Pitch velocity
-// @Field: pAcc: Pitch acceleration
+// @Field: rAng: Shaped roll angle target
+// @Field: rErr: roll angle error between shaped and measured
+// @Field: rVel: Shaped roll velocity target
+// @Field: rAcc: Shaped roll acceleration target
+// @Field: pAng: Shaped pitch angle target
+// @Field: pErr: Pitch angle error between shaped and measured
+// @Field: pVel: Shaped pitch velocity target
+// @Field: pAcc: Shaped pitch acceleration target
     { LOG_ATIS_MSG, sizeof(log_ATIS),
         "ATIS", "Qffffffff", "TimeUS,rAng,rErr,rVel,rAcc,pAng,pErr,pVel,pAcc", "sddkeddke", "F00000000", true },
 };
