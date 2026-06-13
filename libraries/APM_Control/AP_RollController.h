@@ -35,7 +35,7 @@ private:
     float get_measured_rate() const override;
 
     // Return true if rate limits should be applied
-    bool apply_rate_limits() const override;
+    bool should_apply_rate_limits() const override;
 
     // Return positive rate limit in deg per second, zero if disabled
     float get_positive_rate_limit() const override;

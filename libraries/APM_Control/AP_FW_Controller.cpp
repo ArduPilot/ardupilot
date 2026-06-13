@@ -32,10 +32,10 @@ AP_FW_Controller::AP_FW_Controller(const AP_FixedWing &parms, const AC_PID::Defa
 }
 
 // Return true if input shaping should be used
-bool AP_FW_Controller::apply_input_shaping() const
+bool AP_FW_Controller::should_apply_input_shaping() const
 {
     // Must be using rate limits
-    if (!apply_rate_limits()) {
+    if (!should_apply_rate_limits()) {
         return false;
     }
 
@@ -61,7 +61,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
     }
     const float desired_angle_deg = wrap_180(desired_angle_cd * 0.01);
 
-    if (!apply_input_shaping()) {
+    if (!should_apply_input_shaping()) {
         // Calculate rate directly from angle error with no input shaping
         angle_err_deg = wrap_180(desired_angle_deg - get_measured_angle());
         float desired_rate = angle_err_deg / gains.tau;
@@ -73,7 +73,7 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
         desired_rate += get_rate_target_offset();
 
         // Apply rate limits if enabled
-        if (apply_rate_limits()) {
+        if (should_apply_rate_limits()) {
             desired_rate = rate_limit(desired_rate);
         }
 
@@ -208,7 +208,7 @@ float AP_FW_Controller::run_rate_control(float desired_rate, float scaler)
     // Zero angle error in pure rate control
     angle_err_deg = 0.0;
 
-    if (!apply_input_shaping()) {
+    if (!should_apply_input_shaping()) {
         // Reset input shaping set points
         reset_input_shaping(get_measured_angle(), desired_rate);
 
@@ -357,7 +357,7 @@ void AP_FW_Controller::ahrs_reset()
 // Get angle P gain
 float AP_FW_Controller::get_angle_p() const
 {
-    if (apply_input_shaping() && is_positive(angle_p.get())) {
+    if (should_apply_input_shaping() && is_positive(angle_p.get())) {
         // Angle gain is in use and configured
         return angle_p.get();
     }

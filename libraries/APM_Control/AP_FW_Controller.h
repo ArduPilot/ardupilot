@@ -91,10 +91,10 @@ protected:
     virtual float get_measured_rate() const = 0;
 
     // Return true if input shaping should be used
-    bool apply_input_shaping() const;
+    bool should_apply_input_shaping() const;
 
     // Return true if rate limits should be applied
-    virtual bool apply_rate_limits() const = 0;
+    virtual bool should_apply_rate_limits() const = 0;
 
     // Apply positive and negative rate limits to passed in value
     float rate_limit(float rate) const;

@@ -169,7 +169,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Param: _ANGLE_P
     // @DisplayName: Pitch angle P gain
     // @Description: Pitch angle P gain. If zero a gain of (1 / PTCH2SRV_TCONST) wil be used.
-    // @Range: 3.000 12.000
+    // @Range: 0.000 12.000
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("_ANGLE_P", 13, AP_PitchController, angle_p, 0.0),
@@ -233,7 +233,7 @@ float AP_PitchController::get_negative_rate_limit() const
 }
 
 // Return true if rate limits should be applied
-bool AP_PitchController::apply_rate_limits() const
+bool AP_PitchController::should_apply_rate_limits() const
 {
     return !is_inverted();
 }

@@ -152,7 +152,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Param: _ANGLE_P
     // @DisplayName: Roll angle P gain
     // @Description: Roll angle P gain. If zero a gain of (1 / RLL2SRV_TCONST) wil be used.
-    // @Range: 3.000 12.000
+    // @Range: 0.000 12.000
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("_ANGLE_P", 11, AP_RollController, angle_p, 0.0),
@@ -211,7 +211,7 @@ float AP_RollController::get_negative_rate_limit() const
 }
 
 // Return true if rate limits should be applied
-bool AP_RollController::apply_rate_limits() const
+bool AP_RollController::should_apply_rate_limits() const
 {
     return !in_recovery;
 }

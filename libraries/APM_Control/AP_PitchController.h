@@ -29,7 +29,7 @@ private:
     float get_measured_rate() const override;
 
     // Return true if rate limits should be applied
-    bool apply_rate_limits() const override;
+    bool should_apply_rate_limits() const override;
 
     // Return rate target offset in deg per second, this is used in angle control
     float get_rate_target_offset() const override;
