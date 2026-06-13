@@ -43,6 +43,10 @@
 #define STM32_PLLSAI1N_VALUE                24
 #define STM32_PLLSRC                        STM32_PLLSRC_MSI
 #define STM32_MSIPLL_ENABLED                TRUE
+// MSIPLL locks MSI to the 32.768kHz LSE, so the 4MHz range runs at the real
+// 3.998MHz rather than a nominal 4MHz, giving 3998000*40/2 SYSCLK
+#undef HAL_EXPECTED_SYSCLOCK
+#define HAL_EXPECTED_SYSCLOCK               79960000
 
 #elif STM32_HSECLK == 8000000U
 #define STM32_HSE_ENABLED                   TRUE
