@@ -3413,13 +3413,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 return "%s not finite (%s)" % (name, value)
             if value < 0:
                 return "%s negative (%f)" % (name, value)
-        # a generous sanity ceiling: these are normalised innovation
-        # variances, so anything in the hundreds indicates a garbage /
-        # mis-assembled field (e.g. uninitialised struct memory) rather
-        # than a merely poorly-converged filter:
-        for name, value in variances.items():
-            if value > 100:
-                return "%s implausibly high (%f)" % (name, value)
+        # the normalised innovation variances should be below 1.0 for a
+        # vehicle established in a loiter (1.0 == the maximum
+        # inconsistency the filter will accept before rejecting the
+        # measurement):
+        for name in "velocity_variance", "pos_horiz_variance", "pos_vert_variance":
+            if variances[name] > 1.0:
+                return "%s too high (%f)" % (name, variances[name])
         # the filter should be healthy and initialised:
         required = (mavutil.mavlink.EKF_ATTITUDE |
                     mavutil.mavlink.EKF_VELOCITY_HORIZ |
