@@ -27,7 +27,7 @@ public:
     // running is true if actively calculating offsets, diagonals or offdiagonals
     bool running();
 
-    // failed is true if either of the failure states are hit
+    // failed is true if any terminal failure state is hit
     bool failed();
 
 
@@ -43,8 +43,11 @@ public:
         RUNNING_STEP_TWO = 3,
         SUCCESS = 4,
         FAILED = 5,
-        BAD_ORIENTATION = 6,
-        BAD_RADIUS = 7,
+        FAILED_ORIENTATION = 6,
+        FAILED_RADIUS = 7,
+        FAILED_OFFSETS = 8,
+        FAILED_DIAG_SCALING = 9,
+        FAILED_RESIDUALS_HIGH = 10,
     };
 
     // get completion mask for mavlink reporting (a bitmask of faces/directions for which we have compass samples)
@@ -156,8 +159,8 @@ private:
     bool accept_sample(const Vector3f &sample, uint16_t skip_index = UINT16_MAX);
     bool accept_sample(const CompassSample &sample, uint16_t skip_index = UINT16_MAX);
 
-    // returns true if fit is acceptable
-    bool fit_acceptable() const;
+    // returns true if fit is acceptable, sets specific BAD_* status on failure
+    bool fit_acceptable();
 
     // clear sample buffer and reset offsets and scaling to their defaults
     void reset_state();
@@ -248,6 +251,7 @@ private:
 
     Status _requested_status;
     bool   _status_set_requested;
+    bool   _retry_pending = false;
 
     bool _new_sample;
 
