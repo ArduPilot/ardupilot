@@ -564,6 +564,8 @@ public:
     // set steering and throttle (-1 to +1).  Only called from scripts
     void set_steering_and_throttle(float steering, float throttle);
 
+    void set_desired_heading(float yaw_angle_cd);
+
     // vehicle start loiter
     bool start_loiter();
 
@@ -576,6 +578,8 @@ public:
     void limit_init_time_and_location();
     bool limit_breached() const;
 
+    bool closed_loop_heading_only() const;
+
 protected:
 
     enum class SubMode: uint8_t {
@@ -584,12 +588,14 @@ protected:
         TurnRateAndSpeed,
         Loiter,
         SteeringAndThrottle,
-        Stop
+        Stop,
+        HeadingAndThrottle
     };
 
     // enum for GUID_OPTIONS parameter
     enum class Options : int32_t {
-        SCurvesUsedForNavigation = (1U << 6)
+        SCurvesUsedForNavigation = (1U << 6),
+        ClosedLoopHeadingOnly    = (1U << 7)
     };
 
     bool _enter() override;
