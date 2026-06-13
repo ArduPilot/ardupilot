@@ -325,6 +325,9 @@ protected:
     /* update location from position */
     void update_position(void);
 
+    /* smoothly move vehicle on the ground if a move is pending */
+    void apply_move(void);
+
     /* update body frame magnetic field */
     void update_mag_field_bf(void);
 

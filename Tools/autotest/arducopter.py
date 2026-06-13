@@ -6721,6 +6721,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
+    def SIMGroundRelocation(self):
+        '''test SIM_MOVE_X/Y/TIME ground relocation'''
+        self.wait_ready_to_arm()
+        for terrain in [0, 1]:
+            self.set_parameter("SIM_TERRAIN", terrain)
+            start = self.sim_location()
+            move_north_m = 10
+            move_east_m = 5
+            self.set_parameters({
+                "SIM_MOVE_X": move_north_m,
+                "SIM_MOVE_Y": move_east_m,
+            })
+            self.set_parameter("SIM_MOVE_TIME", 3000)
+            # wait for the move to complete (params auto-reset to 0)
+            self.wait_parameter_value("SIM_MOVE_TIME", 0, timeout=10)
+            # confirm params were cleared
+            self.assert_parameter_value("SIM_MOVE_X", 0)
+            self.assert_parameter_value("SIM_MOVE_Y", 0)
+            # confirm vehicle moved the expected distance
+            end = self.sim_location()
+            moved = self.get_distance(start, end)
+            expected = math.sqrt(move_north_m**2 + move_east_m**2)
+            if abs(moved - expected) > 1.0:
+                raise NotAchievedException(
+                    "SIMGroundRelocation: moved %.2fm, expected %.2fm (terrain=%d)" %
+                    (moved, expected, terrain))
+            self.progress("SIMGroundRelocation: moved %.2fm as expected (terrain=%d)" % (moved, terrain))
+
     def Weathervane(self):
         '''Test copter weathervaning'''
         # We test nose into wind code paths and yaw direction here and test side into wind
@@ -14414,6 +14442,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.FenceRelativeToAMSLCliff,
              self.FenceRelativeToTerrainMaxAlt,
              self.FenceRelativeToTerrainMinAlt,
+             self.SIMGroundRelocation,
         ])
         return ret
 
