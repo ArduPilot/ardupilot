@@ -93,4 +93,16 @@ void AP_RangeFinder_Backend::get_state(RangeFinder::RangeFinder_State &state_arg
 }
 #endif
 
+// get temperature reading in C.  returns true on success and populates temp argument
+bool AP_RangeFinder_Backend::get_temp(float &temp) const
+{
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    if (!isnan(state.temperature_external)) {
+        temp = state.temperature_external;
+        return true;
+    }
+#endif
+    return _get_temp(temp);
+}
+
 #endif  // AP_RANGEFINDER_ENABLED
