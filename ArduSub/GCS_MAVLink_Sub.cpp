@@ -741,6 +741,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
     }
 
     // Remote leak sensor support (e.g. in a separate enclosure), via MAVLink status messages.
+#if AP_LEAKDETECTOR_ENABLED
     case MAVLINK_MSG_ID_SYS_STATUS: {
         mavlink_sys_status_t packet;
         mavlink_msg_sys_status_decode(&msg, &packet);
@@ -752,7 +753,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         }
         break;
     }
-
+#endif
     default:
         GCS_MAVLINK::handle_message(msg);
         break;

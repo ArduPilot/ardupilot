@@ -135,6 +135,9 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     SCHED_TASK(afs_fs_check,           10,    200, 129),
 #endif
+#if AP_LEAKDETECTOR_ENABLED
+    SCHED_TASK(failsafe_leak_check,    5,    200, 200),
+#endif
 };
 
 
