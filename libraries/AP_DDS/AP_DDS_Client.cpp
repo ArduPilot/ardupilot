@@ -55,43 +55,17 @@
 
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
-#if AP_DDS_TIME_PUB_ENABLED
-static constexpr uint16_t DELAY_TIME_TOPIC_MS = AP_DDS_DELAY_TIME_TOPIC_MS;
-#endif // AP_DDS_TIME_PUB_ENABLED
-#if AP_DDS_BATTERY_STATE_PUB_ENABLED
-static constexpr uint16_t DELAY_BATTERY_STATE_TOPIC_MS = AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS;
-#endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
-#if AP_DDS_IMU_PUB_ENABLED
-static constexpr uint16_t DELAY_IMU_TOPIC_MS = AP_DDS_DELAY_IMU_TOPIC_MS;
-#endif // AP_DDS_IMU_PUB_ENABLED
-#if AP_DDS_LOCAL_POSE_PUB_ENABLED
-static constexpr uint16_t DELAY_LOCAL_POSE_TOPIC_MS = AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS;
-#endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
-#if AP_DDS_LOCAL_VEL_PUB_ENABLED
-static constexpr uint16_t DELAY_LOCAL_VELOCITY_TOPIC_MS = AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS;
-#endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
-#if AP_DDS_AIRSPEED_PUB_ENABLED
-static constexpr uint16_t DELAY_AIRSPEED_TOPIC_MS = AP_DDS_DELAY_AIRSPEED_TOPIC_MS;
-#endif // AP_DDS_AIRSPEED_PUB_ENABLED
-#if AP_DDS_RC_PUB_ENABLED
-static constexpr uint16_t DELAY_RC_TOPIC_MS = AP_DDS_DELAY_RC_TOPIC_MS;
-#endif // AP_DDS_RC_PUB_ENABLED
-#if AP_DDS_GEOPOSE_PUB_ENABLED
-static constexpr uint16_t DELAY_GEO_POSE_TOPIC_MS = AP_DDS_DELAY_GEO_POSE_TOPIC_MS;
-#endif // AP_DDS_GEOPOSE_PUB_ENABLED
-#if AP_DDS_GOAL_PUB_ENABLED
-static constexpr uint16_t DELAY_GOAL_TOPIC_MS = AP_DDS_DELAY_GOAL_TOPIC_MS ;
-#endif // AP_DDS_GOAL_PUB_ENABLED
-#if AP_DDS_CLOCK_PUB_ENABLED
-static constexpr uint16_t DELAY_CLOCK_TOPIC_MS =AP_DDS_DELAY_CLOCK_TOPIC_MS;
-#endif // AP_DDS_CLOCK_PUB_ENABLED
-#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
-static constexpr uint16_t DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS = AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS;
-#endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+// returns publish period in ms for the given rate (Hz).
+// rate <= 0 returns UINT32_MAX so the publish-due check never triggers.
 static constexpr uint16_t DELAY_PING_MS = 500;
-#if AP_DDS_STATUS_PUB_ENABLED
-static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
-#endif // AP_DDS_STATUS_PUB_ENABLED
+
+static uint32_t rate_hz_to_period_ms(int16_t rate_hz)
+{
+    if (rate_hz <= 0) {
+        return UINT32_MAX;
+    }
+    return 1000U / uint16_t(rate_hz);
+}
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -184,6 +158,126 @@ const AP_Param::GroupInfo AP_DDS_Client::var_info[] {
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_USE_NS", 7, AP_DDS_Client, use_ns, 0),
+
+#if AP_DDS_TIME_PUB_ENABLED
+    // @Param: _RATE_TIME
+    // @DisplayName: DDS time topic publish rate
+    // @Description: Publish rate for the time topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_TIME", 8, AP_DDS_Client, rate_time_hz, 1000 / AP_DDS_DELAY_TIME_TOPIC_MS),
+#endif
+
+#if AP_DDS_BATTERY_STATE_PUB_ENABLED
+    // @Param: _RATE_BATT
+    // @DisplayName: DDS battery_state topic publish rate
+    // @Description: Publish rate for the battery_state topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_BATT", 9, AP_DDS_Client, rate_battery_hz, 1000 / AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS),
+#endif
+
+#if AP_DDS_LOCAL_POSE_PUB_ENABLED
+    // @Param: _RATE_LPOSE
+    // @DisplayName: DDS local pose topic publish rate
+    // @Description: Publish rate for the local pose topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_LPOSE", 10, AP_DDS_Client, rate_local_pose_hz, 1000 / AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS),
+#endif
+
+#if AP_DDS_LOCAL_VEL_PUB_ENABLED
+    // @Param: _RATE_LVEL
+    // @DisplayName: DDS local velocity topic publish rate
+    // @Description: Publish rate for the local velocity topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_LVEL", 11, AP_DDS_Client, rate_local_vel_hz, 1000 / AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS),
+#endif
+
+#if AP_DDS_AIRSPEED_PUB_ENABLED
+    // @Param: _RATE_AIRSP
+    // @DisplayName: DDS airspeed topic publish rate
+    // @Description: Publish rate for the airspeed topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_AIRSP", 12, AP_DDS_Client, rate_airspeed_hz, 1000 / AP_DDS_DELAY_AIRSPEED_TOPIC_MS),
+#endif
+
+#if AP_DDS_RC_PUB_ENABLED
+    // @Param: _RATE_RC
+    // @DisplayName: DDS rc topic publish rate
+    // @Description: Publish rate for the rc topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_RC", 13, AP_DDS_Client, rate_rc_hz, 1000 / AP_DDS_DELAY_RC_TOPIC_MS),
+#endif
+
+#if AP_DDS_IMU_PUB_ENABLED
+    // @Param: _RATE_IMU
+    // @DisplayName: DDS imu topic publish rate
+    // @Description: Publish rate for the imu topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_IMU", 14, AP_DDS_Client, rate_imu_hz, 1000 / AP_DDS_DELAY_IMU_TOPIC_MS),
+#endif
+
+#if AP_DDS_GEOPOSE_PUB_ENABLED
+    // @Param: _RATE_GPOSE
+    // @DisplayName: DDS geo_pose topic publish rate
+    // @Description: Publish rate for the geo_pose topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_GPOSE", 15, AP_DDS_Client, rate_geo_pose_hz, 1000 / AP_DDS_DELAY_GEO_POSE_TOPIC_MS),
+#endif
+
+#if AP_DDS_CLOCK_PUB_ENABLED
+    // @Param: _RATE_CLOCK
+    // @DisplayName: DDS clock topic publish rate
+    // @Description: Publish rate for the clock topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_CLOCK", 16, AP_DDS_Client, rate_clock_hz, 1000 / AP_DDS_DELAY_CLOCK_TOPIC_MS),
+#endif
+
+#if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
+    // @Param: _RATE_GPSOR
+    // @DisplayName: DDS gps_global_origin topic publish rate
+    // @Description: Publish rate for the gps_global_origin topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_GPSOR", 17, AP_DDS_Client, rate_gps_origin_hz, 1000 / AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS),
+#endif
+
+#if AP_DDS_GOAL_PUB_ENABLED
+    // @Param: _RATE_GOAL
+    // @DisplayName: DDS goal topic publish rate
+    // @Description: Publish rate for the goal topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_GOAL", 18, AP_DDS_Client, rate_goal_hz, 1000 / AP_DDS_DELAY_GOAL_TOPIC_MS),
+#endif
+
+#if AP_DDS_STATUS_PUB_ENABLED
+    // @Param: _RATE_STAT
+    // @DisplayName: DDS status topic publish rate
+    // @Description: Publish rate for the status topic. 0 disables it.
+    // @Units: Hz
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_RATE_STAT", 19, AP_DDS_Client, rate_status_hz, 1000 / AP_DDS_DELAY_STATUS_TOPIC_MS),
+#endif
 
     AP_GROUPEND
 };
@@ -777,7 +871,7 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
         last_status_publish_time_ms = timestamp;
         update_topic(msg.header.stamp);
         return true;
-    } else if (timestamp - last_status_publish_time_ms > DELAY_STATUS_TOPIC_MS * 5) {
+    } else if (timestamp - last_status_publish_time_ms > rate_hz_to_period_ms(rate_status_hz) * 5) {
         // Publish the status message at 2Hz even if no change is detected.
         last_status_publish_time_ms = timestamp;
         update_topic(msg.header.stamp);
@@ -1857,7 +1951,7 @@ void AP_DDS_Client::update()
     const auto cur_time_ms = AP_HAL::millis64();
 
 #if AP_DDS_TIME_PUB_ENABLED
-    if (cur_time_ms - last_time_time_ms > DELAY_TIME_TOPIC_MS) {
+    if (cur_time_ms - last_time_time_ms > rate_hz_to_period_ms(rate_time_hz)) {
         update_topic(time_topic);
         last_time_time_ms = cur_time_ms;
         write_time_topic();
@@ -1871,7 +1965,7 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_NAVSATFIX_PUB_ENABLED
 #if AP_DDS_BATTERY_STATE_PUB_ENABLED
-    if (cur_time_ms - last_battery_state_time_ms > DELAY_BATTERY_STATE_TOPIC_MS) {
+    if (cur_time_ms - last_battery_state_time_ms > rate_hz_to_period_ms(rate_battery_hz)) {
         for (uint8_t battery_instance = 0; battery_instance < AP_BATT_MONITOR_MAX_INSTANCES; battery_instance++) {
             update_topic(battery_state_topic, battery_instance);
             if (battery_state_topic.present) {
@@ -1882,21 +1976,21 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_BATTERY_STATE_PUB_ENABLED
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
-    if (cur_time_ms - last_local_pose_time_ms > DELAY_LOCAL_POSE_TOPIC_MS) {
+    if (cur_time_ms - last_local_pose_time_ms > rate_hz_to_period_ms(rate_local_pose_hz)) {
         update_topic(local_pose_topic);
         last_local_pose_time_ms = cur_time_ms;
         write_local_pose_topic();
     }
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
 #if AP_DDS_LOCAL_VEL_PUB_ENABLED
-    if (cur_time_ms - last_local_velocity_time_ms > DELAY_LOCAL_VELOCITY_TOPIC_MS) {
+    if (cur_time_ms - last_local_velocity_time_ms > rate_hz_to_period_ms(rate_local_vel_hz)) {
         update_topic(tx_local_velocity_topic);
         last_local_velocity_time_ms = cur_time_ms;
         write_tx_local_velocity_topic();
     }
 #endif // AP_DDS_LOCAL_VEL_PUB_ENABLED
 #if AP_DDS_AIRSPEED_PUB_ENABLED
-    if (cur_time_ms - last_airspeed_time_ms > DELAY_AIRSPEED_TOPIC_MS) {
+    if (cur_time_ms - last_airspeed_time_ms > rate_hz_to_period_ms(rate_airspeed_hz)) {
         last_airspeed_time_ms = cur_time_ms;
         if (update_topic(tx_local_airspeed_topic)) {
             write_tx_local_airspeed_topic();
@@ -1904,7 +1998,7 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_AIRSPEED_PUB_ENABLED
 #if AP_DDS_RC_PUB_ENABLED
-    if (cur_time_ms - last_rc_time_ms > DELAY_RC_TOPIC_MS) {
+    if (cur_time_ms - last_rc_time_ms > rate_hz_to_period_ms(rate_rc_hz)) {
         last_rc_time_ms = cur_time_ms;
         if (update_topic(tx_local_rc_topic)) {
             write_tx_local_rc_topic();
@@ -1912,35 +2006,35 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_RC_PUB_ENABLED
 #if AP_DDS_IMU_PUB_ENABLED
-    if (cur_time_ms - last_imu_time_ms > DELAY_IMU_TOPIC_MS) {
+    if (cur_time_ms - last_imu_time_ms > rate_hz_to_period_ms(rate_imu_hz)) {
         update_topic(imu_topic);
         last_imu_time_ms = cur_time_ms;
         write_imu_topic();
     }
 #endif // AP_DDS_IMU_PUB_ENABLED
 #if AP_DDS_GEOPOSE_PUB_ENABLED
-    if (cur_time_ms - last_geo_pose_time_ms > DELAY_GEO_POSE_TOPIC_MS) {
+    if (cur_time_ms - last_geo_pose_time_ms > rate_hz_to_period_ms(rate_geo_pose_hz)) {
         update_topic(geo_pose_topic);
         last_geo_pose_time_ms = cur_time_ms;
         write_geo_pose_topic();
     }
 #endif // AP_DDS_GEOPOSE_PUB_ENABLED
 #if AP_DDS_CLOCK_PUB_ENABLED
-    if (cur_time_ms - last_clock_time_ms > DELAY_CLOCK_TOPIC_MS) {
+    if (cur_time_ms - last_clock_time_ms > rate_hz_to_period_ms(rate_clock_hz)) {
         update_topic(clock_topic);
         last_clock_time_ms = cur_time_ms;
         write_clock_topic();
     }
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 #if AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
-    if (cur_time_ms - last_gps_global_origin_time_ms > DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS) {
+    if (cur_time_ms - last_gps_global_origin_time_ms > rate_hz_to_period_ms(rate_gps_origin_hz)) {
         update_topic(gps_global_origin_topic);
         last_gps_global_origin_time_ms = cur_time_ms;
         write_gps_global_origin_topic();
     }
 #endif // AP_DDS_GPS_GLOBAL_ORIGIN_PUB_ENABLED
 #if AP_DDS_GOAL_PUB_ENABLED
-    if (cur_time_ms - last_goal_time_ms > DELAY_GOAL_TOPIC_MS) {
+    if (cur_time_ms - last_goal_time_ms > rate_hz_to_period_ms(rate_goal_hz)) {
         if (update_topic_goal(goal_topic)) {
             write_goal_topic();
         }
@@ -1948,7 +2042,7 @@ void AP_DDS_Client::update()
     }
 #endif // AP_DDS_GOAL_PUB_ENABLED
 #if AP_DDS_STATUS_PUB_ENABLED
-    if (cur_time_ms - last_status_check_time_ms > DELAY_STATUS_TOPIC_MS) {
+    if (cur_time_ms - last_status_check_time_ms > rate_hz_to_period_ms(rate_status_hz)) {
         if (update_topic(status_topic)) {
             write_status_topic();
         }
