@@ -33,7 +33,8 @@
 #include <cstdio>
 #endif
 
-//#define AP_LFS_DEBUG
+// Uncomment to enable LittleFS flash I/O debug output
+// #define AP_LFS_DEBUG
 #ifdef AP_LFS_DEBUG
 #define debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
 #else
@@ -590,10 +591,6 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_STATUS_SEC             0x40
 #define JEDEC_STATUS_SRP0            0x80
 
-#define W25NXX_STATUS_EFAIL         0x04
-#define W25NXX_STATUS_PFAIL         0x08
-
-
 /*
   flash device IDs taken from betaflight flash_m25p16.c
 
@@ -615,6 +612,12 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_WINBOND_W25Q128_2     0xEF7018
 #define JEDEC_ID_WINBOND_W25N01GV      0xEFAA21
 #define JEDEC_ID_WINBOND_W25N02KV      0xEFAA22
+#if AP_FILESYSTEM_LITTLEFS_MT29FXX_ENABLED
+// Micron MT29FXX SPI NAND family - manufacturer 0x2C, device IDs vary by density
+#define JEDEC_ID_MICRON_MT29FXX1G        0x2C1400    // 1Gbit (128MB), 2KB page
+#define JEDEC_ID_MICRON_MT29FXX2G        0x2C2400    // 2Gbit (256MB), 2KB page
+#define JEDEC_ID_MICRON_MT29FXX4G        0x2C3400    // 4Gbit (512MB), 4KB page (MT29F4G01ABAFD)
+#endif
 #define JEDEC_ID_CYPRESS_S25FL064L     0x016017
 #define JEDEC_ID_CYPRESS_S25FL128L     0x016018
 #define JEDEC_ID_GIGA_GD25Q16E         0xC84015
@@ -624,33 +627,67 @@ void AP_Filesystem_FlashMemory_LittleFS::mark_dead()
 #define JEDEC_ID_FMSH_FM25Q256         0xA14019
 #define JEDEC_ID_XTX_XT25F128F         0x0B4018
 
-/* Hardware-specific constants */
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+/*
+ * SPI NAND command set used by the nand_* ops below. Opcodes shared with the
+ * JEDEC set above are reused from there; only the SPI-NAND-specific ones are
+ * defined here. 0x0F/0x1F (GET/SET FEATURE) are also accepted by W25N as
+ * Read/Write Status Register, so they serve both families.
+ */
+#define NAND_CMD_GET_FEATURE     0x0F
+#define NAND_CMD_SET_FEATURE     0x1F
+#define NAND_REG_PROTECTION      0xA0
+#define NAND_REG_CONFIG          0xB0
+#define NAND_REG_STATUS          0xC0
+#define NAND_STATUS_OIP          0x01    // Operation In Progress
+#define NAND_STATUS_WEL          0x02    // Write Enable Latch
+#define NAND_STATUS_EFAIL        0x04    // Erase Fail
+#define NAND_STATUS_PFAIL        0x08    // Program Fail
 
-#define W25NXX_PROT_REG             0xA0
-#define W25NXX_CONF_REG             0xB0
-#define W25NXX_STATUS_REG           0xC0
-#define W25NXX_STATUS_EFAIL          0x04
-#define W25NXX_STATUS_PFAIL          0x08
+// cache opcodes: quad on a WSPI bus, single-line on SPI
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+#define NAND_CMD_READ_CACHE      0x6B               // 1-1-4 quad read
+#define NAND_CMD_PROGRAM_LOAD    0x32               // 1-1-4 quad write
+#define NAND_CACHE_DUMMY         8
+#else
+#define NAND_CMD_READ_CACHE      JEDEC_READ_DATA    // 0x03, 1-1-1 single-line read
+#define NAND_CMD_PROGRAM_LOAD    JEDEC_PAGE_WRITE   // 0x02, 1-1-1 single-line write
+#endif
 
-#define W25N01G_NUM_BLOCKS                  1024
-#define W25N02K_NUM_BLOCKS                  2048
+// config-register value and reset timing differ by chip
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_WSPI_NAND
+#define NAND_CONFIG_BITS         (1 << 4)               // ECC enable
+#define NAND_RESET_DELAY_MS      2
+#else
+#define NAND_CONFIG_BITS         ((1 << 4) | (1 << 3))  // ECC enable + buffer read mode
+#define NAND_RESET_DELAY_MS      500
+#endif
+#endif  // AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
 
-#define W25NXX_CONFIG_ECC_ENABLE         (1 << 4)
-#define W25NXX_CONFIG_BUFFER_READ_MODE   (1 << 3)
-
-#define W25NXX_TIMEOUT_PAGE_READ_US        60   // tREmax = 60us (ECC enabled)
-#define W25NXX_TIMEOUT_PAGE_PROGRAM_US     700  // tPPmax = 700us
-#define W25NXX_TIMEOUT_BLOCK_ERASE_MS      10   // tBEmax = 10ms
-#define W25NXX_TIMEOUT_RESET_MS            500  // tRSTmax = 500ms
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+// Send a command with no address or data phase
+bool AP_Filesystem_FlashMemory_LittleFS::wspi_command(uint8_t cmd)
+{
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = cmd,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    return wspi_dev->transfer(nullptr, 0, nullptr, 0);
+}
+#endif
 
 bool AP_Filesystem_FlashMemory_LittleFS::is_busy()
 {
     WITH_SEMAPHORE(dev_sem);
     uint8_t status;
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    uint8_t cmd[2] { JEDEC_READ_STATUS, W25NXX_STATUS_REG };
-    dev->transfer(cmd, 2, &status, 1);
-    return (status & (JEDEC_STATUS_BUSY | W25NXX_STATUS_PFAIL | W25NXX_STATUS_EFAIL)) != 0;
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+    // shared NAND path: W25N and MT29 both report OIP/PFAIL/EFAIL in the same
+    // bit positions; nand_read_status hides the SPI-vs-WSPI difference.
+    if (!nand_read_status(status)) {
+        return true;  // assume busy on error
+    }
+    return (status & (NAND_STATUS_OIP | NAND_STATUS_PFAIL | NAND_STATUS_EFAIL)) != 0;
 #else
     uint8_t cmd = JEDEC_READ_STATUS;
     dev->transfer(&cmd, 1, &status, 1);
@@ -658,8 +695,23 @@ bool AP_Filesystem_FlashMemory_LittleFS::is_busy()
 #endif
 }
 
+// Send a command with an address phase, picking the transport from the build.
+// WSPI uses a 24-bit address; SPI uses 24- or 32-bit per use_32bit_address.
+// Best effort: both transports only fail on a severe bus stall, which the SPI
+// path has always ignored, so the result is not propagated.
 void AP_Filesystem_FlashMemory_LittleFS::send_command_addr(uint8_t command, uint32_t addr)
 {
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = command,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_SIZE_24,
+        .addr = addr,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    wspi_dev->transfer(nullptr, 0, nullptr, 0);
+#else
     uint8_t cmd[5];
     cmd[0] = command;
 
@@ -676,8 +728,10 @@ void AP_Filesystem_FlashMemory_LittleFS::send_command_addr(uint8_t command, uint
     }
 
     dev->transfer(cmd, use_32bit_address ? 5 : 4, nullptr, 0);
+#endif
 }
 
+#if !AP_FILESYSTEM_LITTLEFS_USE_WSPI
 void AP_Filesystem_FlashMemory_LittleFS::send_command_page(uint8_t command, uint32_t page)
 {
     uint8_t cmd[3];
@@ -686,6 +740,159 @@ void AP_Filesystem_FlashMemory_LittleFS::send_command_page(uint8_t command, uint
     cmd[2] = (page >> 0) & 0xff;
     dev->transfer(cmd, 3, nullptr, 0);
 }
+#endif  // !AP_FILESYSTEM_LITTLEFS_USE_WSPI
+
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+// reset the device
+bool AP_Filesystem_FlashMemory_LittleFS::nand_reset()
+{
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    return wspi_command(JEDEC_DEVICE_RESET);
+#else
+    uint8_t b = JEDEC_DEVICE_RESET;
+    return dev->transfer(&b, 1, nullptr, 0);
+#endif
+}
+
+// read the JEDEC ID and assemble it manufacturer-first (e.g. 0x2C1400, 0xEFAA21)
+bool AP_Filesystem_FlashMemory_LittleFS::nand_read_id(uint32_t &id)
+{
+    uint8_t buf[4] {};
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    // cmd(0x9F) + addr(0x00) + 8 dummy cycles shifts the read window by one byte,
+    // so buf[0]=Device ID, buf[1]=Manufacturer ID
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = JEDEC_DEVICE_ID,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_SIZE_8 |
+               AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE,
+        .addr = 0x00,
+        .dummy = 8,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    if (!wspi_dev->transfer(nullptr, 0, buf, 2)) {
+        return false;
+    }
+#else
+    uint8_t cmd = JEDEC_DEVICE_ID;
+    dev->transfer(&cmd, 1, buf, 4);
+#endif
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_WSPI_NAND
+    id = (static_cast<uint32_t>(buf[1]) << 16) | (static_cast<uint32_t>(buf[0]) << 8);
+#else
+    id = (static_cast<uint32_t>(buf[1]) << 16) | (static_cast<uint32_t>(buf[2]) << 8) | buf[3];
+#endif
+    return true;
+}
+
+// read the chip status/feature register (busy + program/erase fail bits)
+bool AP_Filesystem_FlashMemory_LittleFS::nand_read_status(uint8_t &status)
+{
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = NAND_CMD_GET_FEATURE,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_SIZE_8 |
+               AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE,
+        .addr = NAND_REG_STATUS,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    return wspi_dev->transfer(nullptr, 0, &status, 1);
+#else
+    uint8_t cmd[2] { NAND_CMD_GET_FEATURE, NAND_REG_STATUS };
+    return dev->transfer(cmd, 2, &status, 1);
+#endif
+}
+
+// write a feature/status register (protection, config)
+bool AP_Filesystem_FlashMemory_LittleFS::nand_set_reg(uint8_t reg, uint8_t value)
+{
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = NAND_CMD_SET_FEATURE,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_SIZE_8 |
+               AP_HAL::WSPI::CFG_DATA_MODE_ONE_LINE,
+        .addr = reg,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    return wspi_dev->transfer(&value, 1, nullptr, 0);
+#else
+    uint8_t cmd[3] { NAND_CMD_SET_FEATURE, reg, value };
+    return dev->transfer(cmd, 3, nullptr, 0);
+#endif
+}
+
+// load a page from the array into the chip's internal cache
+void AP_Filesystem_FlashMemory_LittleFS::nand_page_read(uint32_t row_addr)
+{
+    send_command_addr(JEDEC_PAGE_DATA_READ, row_addr);
+}
+
+// clock data out of the chip's internal cache starting at a column address
+bool AP_Filesystem_FlashMemory_LittleFS::nand_read_cache(uint16_t col_addr, uint8_t *buf, uint32_t len)
+{
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = NAND_CMD_READ_CACHE,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_SIZE_16 |
+               AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES,
+        .addr = col_addr,
+        .dummy = NAND_CACHE_DUMMY,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    return wspi_dev->transfer(nullptr, 0, buf, len);
+#else
+    dev->set_chip_select(true);
+    send_command_addr(NAND_CMD_READ_CACHE, col_addr);
+    bool ok = dev->transfer(nullptr, 0, buf, len);
+    dev->set_chip_select(false);
+    return ok;
+#endif
+}
+
+// write a page of data into the chip's internal cache at a column address
+bool AP_Filesystem_FlashMemory_LittleFS::nand_program_load(uint16_t col_addr, const uint8_t *buf, uint32_t len)
+{
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    const AP_HAL::Device::CommandHeader hdr {
+        .cmd = NAND_CMD_PROGRAM_LOAD,
+        .cfg = AP_HAL::WSPI::CFG_CMD_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_MODE_ONE_LINE |
+               AP_HAL::WSPI::CFG_ADDR_SIZE_16 |
+               AP_HAL::WSPI::CFG_DATA_MODE_FOUR_LINES,
+        .addr = col_addr,
+    };
+    wspi_dev->set_cmd_header(hdr);
+    return wspi_dev->transfer(buf, len, nullptr, 0);
+#else
+    dev->set_chip_select(true);
+    send_command_page(NAND_CMD_PROGRAM_LOAD, col_addr);
+    bool ok = dev->transfer(buf, len, nullptr, 0);
+    dev->set_chip_select(false);
+    return ok;
+#endif
+}
+
+// commit the cache to the array at a row (page) address. a transport failure
+// here cannot set PFAIL (the chip never ran the op); the fail bits cover the
+// case where the chip ran it and rejected it, so this is best effort.
+void AP_Filesystem_FlashMemory_LittleFS::nand_program_execute(uint32_t row_addr)
+{
+    send_command_addr(JEDEC_PROGRAM_EXECUTE, row_addr);
+}
+
+// erase the block containing the given row (page) address
+void AP_Filesystem_FlashMemory_LittleFS::nand_block_erase(uint32_t row_addr)
+{
+    send_command_addr(JEDEC_BLOCK_ERASE, row_addr);
+}
+#endif  // AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
 
 bool AP_Filesystem_FlashMemory_LittleFS::wait_until_device_is_ready()
 {
@@ -703,13 +910,6 @@ bool AP_Filesystem_FlashMemory_LittleFS::wait_until_device_is_ready()
     }
 
     return true;
-}
-
-void AP_Filesystem_FlashMemory_LittleFS::write_status_register(uint8_t reg, uint8_t bits)
-{
-    WITH_SEMAPHORE(dev_sem);
-    uint8_t cmd[3] = { JEDEC_WRITE_STATUS, reg, bits };
-    dev->transfer(cmd, 3, nullptr, 0);
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -730,14 +930,17 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     WITH_SEMAPHORE(dev_sem);
 
     // Read manufacturer ID
-    uint8_t cmd = JEDEC_DEVICE_ID;
-    uint8_t buf[4];
-    dev->transfer(&cmd, 1, buf, 4);
+    uint32_t id;
 
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    uint32_t id = buf[1] << 16 | buf[2] << 8 | buf[3];
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+    if (!nand_read_id(id)) {
+        return 0;
+    }
 #else
-    uint32_t id = buf[0] << 16 | buf[1] << 8 | buf[2];
+    uint8_t buf[4];
+    uint8_t cmd = JEDEC_DEVICE_ID;
+    dev->transfer(&cmd, 1, buf, 4);
+    id = (static_cast<uint32_t>(buf[0]) << 16) | (static_cast<uint32_t>(buf[1]) << 8) | buf[2];
 #endif
 
     // Let's specify the terminology here.
@@ -747,8 +950,9 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     //
     // regardless of what the flash chip documentation refers to as a "block"
 
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-    // these NAND chips have 2048 byte pages and 128K erase blocks
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+    // most SPI NAND chips have 2048 byte pages and 128K erase blocks; parts
+    // that differ (e.g. the 4Gbit MT29F) override these in the switch below
     lfs_size_t page_size = 2048;
     lfs_size_t block_size = 131072;
 #else
@@ -762,7 +966,23 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
 
     lfs_size_t block_count;
     switch (id) {
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_WSPI_NAND
+#if AP_FILESYSTEM_LITTLEFS_MT29FXX_ENABLED
+    case JEDEC_ID_MICRON_MT29FXX1G:
+        block_count = 1024;   /* 1Gbit = 128MB, 1024 blocks of 128KB */
+        break;
+    case JEDEC_ID_MICRON_MT29FXX2G:
+        block_count = 2048;   /* 2Gbit = 256MB, 2048 blocks of 128KB */
+        break;
+    case JEDEC_ID_MICRON_MT29FXX4G:
+        // MT29F4G01ABAFD uses a 4KB page and 256KB erase block (the 1G/2G
+        // parts use 2KB/128KB)
+        page_size = 4096;
+        block_size = 256 * 1024;
+        block_count = 2048;   /* 4Gbit = 512MB, 2048 blocks of 256KB */
+        break;
+#endif
+#elif AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     case JEDEC_ID_WINBOND_W25N01GV:
         block_count = 1024;   /* 128MiB */
         break;
@@ -825,7 +1045,8 @@ uint32_t AP_Filesystem_FlashMemory_LittleFS::find_block_size_and_count() {
     // minimize both frequency and log buffer utilization.
     fs_cfg.metadata_max = 4096;
     fs_cfg.compact_thresh = 4096*0.88f;
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+    // NAND flash has larger pages, adjust metadata accordingly
     fs_cfg.metadata_max = page_size * 2;
     fs_cfg.compact_thresh = fs_cfg.metadata_max * 0.88f;
 #endif
@@ -874,6 +1095,16 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
     fs_cfg.erase = flashmem_erase;
     fs_cfg.sync = flashmem_sync;
 
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    wspi_dev = hal.wspi->get_device("dataflash");
+
+    if (!wspi_dev) {
+        mark_dead();
+        return false;
+    }
+
+    dev_sem = wspi_dev->get_semaphore();
+#else
     dev = hal.spi->get_device("dataflash");
 
     if (!dev) {
@@ -882,6 +1113,7 @@ bool AP_Filesystem_FlashMemory_LittleFS::mount_filesystem() {
     }
 
     dev_sem = dev->get_semaphore();
+#endif  // AP_FILESYSTEM_LITTLEFS_USE_WSPI
 #else
     fs_cfg.read = lfs_filebd_read;
     fs_cfg.prog = lfs_filebd_prog;
@@ -988,14 +1220,25 @@ AP_Filesystem_Backend::FormatStatus AP_Filesystem_FlashMemory_LittleFS::get_form
 
 bool AP_Filesystem_FlashMemory_LittleFS::write_enable()
 {
-    uint8_t b = JEDEC_WRITE_ENABLE;
-
     if (!wait_until_device_is_ready()) {
         return false;
     }
 
     WITH_SEMAPHORE(dev_sem);
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    if (!wspi_command(JEDEC_WRITE_ENABLE)) {
+        return false;
+    }
+    // verify WEL bit is set
+    uint8_t status;
+    if (!nand_read_status(status)) {
+        return false;
+    }
+    return (status & NAND_STATUS_WEL) != 0;
+#else
+    uint8_t b = JEDEC_WRITE_ENABLE;
     return dev->transfer(&b, 1, nullptr, 0);
+#endif
 }
 
 bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
@@ -1004,20 +1247,30 @@ bool AP_Filesystem_FlashMemory_LittleFS::init_flash()
         return false;
     }
 
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
     // reset the device
     {
         WITH_SEMAPHORE(dev_sem);
-        uint8_t b = JEDEC_DEVICE_RESET;
-        dev->transfer(&b, 1, nullptr, 0);
+        if (!nand_reset()) {
+            return false;
+        }
     }
-    hal.scheduler->delay(W25NXX_TIMEOUT_RESET_MS);
+    hal.scheduler->delay(NAND_RESET_DELAY_MS);
 
-    // disable write protection
-    write_status_register(W25NXX_PROT_REG, 0);
+    if (!wait_until_device_is_ready()) {
+        return false;
+    }
 
-    // enable ECC and buffer mode
-    write_status_register(W25NXX_CONF_REG, W25NXX_CONFIG_ECC_ENABLE | W25NXX_CONFIG_BUFFER_READ_MODE);
+    {
+        WITH_SEMAPHORE(dev_sem);
+        // disable write protection, then enable ECC (W25N also needs buffer read mode)
+        if (!nand_set_reg(NAND_REG_PROTECTION, 0x00)) {
+            return false;
+        }
+        if (!nand_set_reg(NAND_REG_CONFIG, NAND_CONFIG_BITS)) {
+            return false;
+        }
+    }
 #else
     if (use_32bit_address) {
         WITH_SEMAPHORE(dev_sem);
@@ -1052,17 +1305,30 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
 #ifdef AP_LFS_DEBUG
         page_reads++;
 #endif
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-        /* We need to read an entire page into an internal buffer and then read
-            * that buffer with JEDEC_READ_DATA later */
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+        // NAND: load the page into the chip's cache, then clock the cache out.
+        // row address = page number within the device, column 0.
+        const uint32_t row_addr = address / page_size;
+
         if (!wait_until_device_is_ready()) {
             return LFS_ERR_IO;
         }
         {
             WITH_SEMAPHORE(dev_sem);
-            send_command_addr(JEDEC_PAGE_DATA_READ, address / page_size);
+            nand_page_read(row_addr);
         }
-#endif
+
+        if (!wait_until_device_is_ready()) {
+            return LFS_ERR_IO;
+        }
+        {
+            WITH_SEMAPHORE(dev_sem);
+            if (!nand_read_cache(0, p, page_size)) {
+                return LFS_ERR_IO;
+            }
+        }
+#else
+        // NOR: direct read, no page cache
         if (!wait_until_device_is_ready()) {
             return LFS_ERR_IO;
         }
@@ -1070,13 +1336,10 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_read(
         WITH_SEMAPHORE(dev_sem);
 
         dev->set_chip_select(true);
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-        send_command_addr(JEDEC_READ_DATA, 0); // read one page internal buffer
-#else
         send_command_addr(JEDEC_READ_DATA, address);
-#endif
         dev->transfer(nullptr, 0, p, page_size);
         dev->set_chip_select(false);
+#endif
 
         address += page_size;
         p += page_size;
@@ -1115,14 +1378,15 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_prog(
 #endif
 
         WITH_SEMAPHORE(dev_sem);
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
-        /* First we need to write into the data buffer at column address zero,
-        * then we need to issue PROGRAM_EXECUTE to commit the internal buffer */
-        dev->set_chip_select(true);
-        send_command_page(JEDEC_PAGE_WRITE, 0);
-        dev->transfer(p, page_size, nullptr, 0);
-        dev->set_chip_select(false);
-        send_command_addr(JEDEC_PROGRAM_EXECUTE, address / page_size);
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+        // NAND: PROGRAM LOAD writes data into the cache at column 0, PROGRAM
+        // EXECUTE commits it to the page at the row address.
+        const uint32_t row_addr = address / page_size;
+
+        if (!nand_program_load(0, p, page_size)) {
+            return LFS_ERR_IO;
+        }
+        nand_program_execute(row_addr);
 #else
         dev->set_chip_select(true);
         send_command_addr(JEDEC_PAGE_WRITE, address);
@@ -1149,9 +1413,10 @@ int AP_Filesystem_FlashMemory_LittleFS::_flashmem_erase(lfs_block_t block) {
 
     WITH_SEMAPHORE(dev_sem);
 
-#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+    // NAND: BLOCK ERASE uses the row address of the block's first page
     const uint32_t pages_per_block = fs_cfg.block_size / fs_cfg.read_size;
-    send_command_addr(JEDEC_BLOCK_ERASE, block * pages_per_block);
+    nand_block_erase(block * pages_per_block);
 #else
     send_command_addr(JEDEC_BLOCK_ERASE, block * fs_cfg.block_size);
 #endif
