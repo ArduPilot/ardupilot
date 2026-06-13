@@ -448,6 +448,8 @@ AP_HW_SkyRukh_Surge_H7               2815
 AP_HW_KRSHKF7_MINI                   4000
 AP_HW_KARSHAKH743VTOL                4002
 
+# IDs 4100-4150 reserved for ZERODRAG
+
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
