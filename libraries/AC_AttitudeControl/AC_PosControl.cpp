@@ -83,6 +83,8 @@ extern const AP_HAL::HAL& hal;
 #define POSCONTROL_VIBE_COMP_P_GAIN 0.250f
 #define POSCONTROL_VIBE_COMP_I_GAIN 0.125f
 
+
+
 // velocity offset targets timeout if not updated within 3 seconds
 #define POSCONTROL_POSVELACCEL_OFFSET_TARGET_TIMEOUT_MS 3000
 
@@ -342,6 +344,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 14, AC_PosControl, AC_PID_2D),
+
+    // @Param: _OPTIONS
+    // @DisplayName: Position Controller Options
+    // @Description: Bitmask of options for the position controller
+    // @Bitmask: 0:Disable EKF control limits
+    // @User: Advanced
+    AP_GROUPINFO("_OPTIONS", 15, AC_PosControl, _options, 0),
+
 
     AP_GROUPEND
 };
@@ -692,6 +702,10 @@ bool AC_PosControl::NE_is_active() const
     return dt_ticks <= 1;
 }
 
+// Maximum ground speed limit in m/s used to effectively disable limiting
+static constexpr float POSCONTROL_SPEED_LIMIT_MAX = 400.0f;
+
+
 // Uses P and PID controllers to generate corrections which are added to feedforward velocity/acceleration.
 // Requires all desired targets to be pre-set using the input_* or set_* methods.
 void AC_PosControl::NE_update_controller()
@@ -711,6 +725,12 @@ void AC_PosControl::NE_update_controller()
 
     float ahrsGndSpdLimit, ahrsControlScaleXY;
     AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
+
+    // if EKF control limiting is disabled via PSC_OPTIONS, restore full authority
+    if (_options & PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT) {
+        ahrsControlScaleXY = 1.0f;
+        ahrsGndSpdLimit = POSCONTROL_SPEED_LIMIT_MAX;
+    }
 
     // Update lateral position, velocity, and acceleration offsets using path shaping
     NE_update_offsets();
@@ -1095,6 +1115,8 @@ void AC_PosControl::D_update_controller()
 
     // P controller: convert position error to velocity target
     _vel_target_ned_ms.z = _p_pos_d_m.update_all(_pos_target_ned_m.z, _pos_estimate_ned_m.z);
+   
+
     _vel_target_ned_ms.z *= AP::ahrs().getControlScaleZ();
 
     _pos_desired_ned_m.z = _pos_target_ned_m.z - (_pos_offset_ned_m.z + _pos_terrain_d_m);
@@ -1106,6 +1128,8 @@ void AC_PosControl::D_update_controller()
 
     // PID controller: convert velocity error to acceleration
     _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
+    
+
     _accel_target_ned_mss.z *= AP::ahrs().getControlScaleZ();
 
     // add feed forward component

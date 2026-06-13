@@ -35,6 +35,10 @@
 
 #define POSCONTROL_RELAX_TC                     0.16f   // This is used to decay the I term to 5% in half a second
 
+// PSC_OPTIONS parameter bitmask
+#define PSC_OPTIONS_DISABLE_EKF_CTRL_LIMIT  (1U << 0)   // bit 0: disable EKF control scaling when using optical flow
+
+
 class AC_PosControl
 {
 public:
@@ -725,7 +729,8 @@ protected:
     AC_PID_2D       _pid_vel_ne_m;          // XY axis velocity controller to convert target velocity (m/s) to target acceleration (m/s²)
     AC_PID_Basic    _pid_vel_d_m;           // Z axis velocity controller to convert target climb rate (m/s) to target acceleration (m/s²)
     AC_PID          _pid_accel_d_m;         // Z axis acceleration controller to convert target acceleration (in units of gravity) to normalised throttle output
-
+    AP_Int16        _options;               // options bitmask for position controller
+    
     // internal variables
     float       _dt_s;                      // time difference (in seconds) since the last loop time
     uint32_t    _last_update_ne_ticks;      // ticks of last NE_update_controller call
