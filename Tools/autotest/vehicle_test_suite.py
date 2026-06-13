@@ -6924,6 +6924,9 @@ class TestSuite(abc.ABC):
     def sysid_thismav(self):
         return 1
 
+    def compid_thismav(self):
+        return 1
+
     def create_MISSION_ITEM_INT(
             self,
             t,
@@ -9010,7 +9013,8 @@ Also, ignores heartbeats not from our target system'''
             m = self.mav.wait_heartbeat(*args, **x)
             if m is None:
                 continue
-            if m.get_srcSystem() == self.sysid_thismav():
+            if (m.get_srcSystem() == self.sysid_thismav() and
+                    m.get_srcComponent() == self.compid_thismav()):
                 return m
 
     def wait_ekf_happy(self, require_absolute=True, **kwargs):
