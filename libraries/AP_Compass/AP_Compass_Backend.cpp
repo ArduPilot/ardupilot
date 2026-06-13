@@ -220,6 +220,14 @@ bool AP_Compass_Backend::register_compass(int32_t dev_id)
 void AP_Compass_Backend::set_dev_id(uint32_t dev_id)
 {
     _compass._state[Compass::StateIndex(instance)].dev_id.set_and_notify(dev_id);
+    // Persist the dev_id of a newly-detected compass that fills a slot with no
+    // stored dev_id (e.g. a runtime DroneCAN mag), so the next boot's
+    // _reorder_compass_params() can map its priority back to this slot. Gated
+    // on the empty slot, not init_done, to avoid the DroneCAN/init() race.
+    if (!_compass.suppress_devid_save &&
+        _compass._state[Compass::StateIndex(instance)].expected_dev_id == 0) {
+        _compass._state[Compass::StateIndex(instance)].dev_id.save();
+    }
     _compass._state[Compass::StateIndex(instance)].detected_dev_id = dev_id;
 }
 
