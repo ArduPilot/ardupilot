@@ -2404,7 +2404,7 @@ bool AP_AHRS::_get_origin(Location &ret) const
     return false;
 }
 
-bool AP_AHRS::set_home(const Location &loc)
+bool AP_AHRS::set_home(const Location &loc, bool lock)
 {
     WITH_SEMAPHORE(_rsem);
     // check location is valid
@@ -2431,6 +2431,11 @@ bool AP_AHRS::set_home(const Location &loc)
 
     _home = tmp;
     _home_is_set = true;
+
+    // lock home position
+    if (lock) {
+        lock_home();
+    }
 
 #if HAL_LOGGING_ENABLED
     Log_Write_Home_And_Origin();
