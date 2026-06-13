@@ -463,6 +463,10 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
+#if AP_GROUNDEFFECT_ENABLED
+    g2.ground_effect.set_pos_control(*pos_control);
+#endif
+
 #if AP_OAPATHPLANNER_ENABLED
     wp_nav = NEW_NOTHROW AC_WPNav_OA(*ahrs_view, *pos_control, *attitude_control);
 #else
