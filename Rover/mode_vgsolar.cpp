@@ -1,5 +1,6 @@
 #include "Rover.h"
 #include <AP_Math/AP_Math.h>
+#include <AP_Brush/AP_Brush.h>
 
 #if MODE_VGSOLAR_ENABLED
 
@@ -75,6 +76,9 @@ bool ModeVGSolar::_enter()
     _last_ncu_cmd_ms = 0;
     _fault_flags = 0;
 
+    rover.companion_computer.stop_brushes();
+    AP::brush().set_active(true);
+
     gcs().send_text(MAV_SEVERITY_INFO, "VG_SOLAR: entered");
     return true;
 }
@@ -83,6 +87,8 @@ void ModeVGSolar::_exit()
 {
     stop_vehicle();
     _vg_submode = VGSubMode::STANDBY;
+    rover.companion_computer.stop_brushes();
+    AP::brush().set_active(false);
     rover.companion_computer.reset_mode_status();
 
     gcs().send_text(MAV_SEVERITY_INFO, "VG_SOLAR: exited");
@@ -153,6 +159,7 @@ void ModeVGSolar::read_companion_commands()
         switch (cmd.command) {
         case SYS_CMD_ESTOP:
             _vg_submode = VGSubMode::ESTOP;
+            rover.companion_computer.stop_brushes();
             gcs().send_text(MAV_SEVERITY_WARNING, "VG_SOLAR: ESTOP");
             break;
         case SYS_CMD_ESTOP_CLEAR:
@@ -266,6 +273,7 @@ void ModeVGSolar::update_yawrate()
 void ModeVGSolar::update_estop()
 {
     stop_vehicle();
+    rover.companion_computer.stop_brushes();
 }
 
 void ModeVGSolar::check_ncu_timeout()
@@ -280,6 +288,7 @@ void ModeVGSolar::check_ncu_timeout()
     }
 
     _fault_flags |= FAULT_COMM_TIMEOUT;
+    rover.companion_computer.stop_brushes();
 
     if (_vg_submode == VGSubMode::ESTOP) {
         return;

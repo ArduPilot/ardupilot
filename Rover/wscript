@@ -24,6 +24,7 @@ def build(bld):
             'AC_PrecLand',
             'AP_IRLock',
             'AP_CompanionComputer',
+            'AP_Brush',
         ],
     )
 

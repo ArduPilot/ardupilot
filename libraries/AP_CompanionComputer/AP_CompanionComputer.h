@@ -56,6 +56,9 @@ public:
 
     bool is_estop_active() const { return _estop_active; }
 
+    // 滚刷运行参数停止：PWM 回中位并清零内存状态
+    void stop_brushes();
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -117,10 +120,14 @@ private:
     void send_response(uint8_t cmd_type, uint8_t status);
     void send_param_feedback(const ParamFeedbackData &data);
 
-    // 滚刷参数读写，待 AP_Brush 接入后实现
     bool write_runtime_param(uint16_t param_index, uint8_t param_type, uint32_t param_value,
                              ParamFeedbackData &feedback_out);
     bool read_runtime_param(uint16_t param_index, ParamFeedbackData &feedback_out);
+    void apply_brush_runtime_params();
+
+    uint32_t _brush_front_on;
+    uint32_t _brush_rear_on;
+    uint32_t _brush_power_pct;
 
     uint16_t collect_sensor_faults() const;
     static uint8_t compute_motion_state(int16_t velocity_cms, bool estop, bool turning, uint16_t fault_code);

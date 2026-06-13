@@ -5,6 +5,7 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_WheelEncoder/AP_WheelEncoder.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Brush/AP_Brush.h>
 
 const AP_Param::GroupInfo AP_CompanionComputer::var_info[] = {
     // @Param: ENABLE
@@ -36,7 +37,10 @@ AP_CompanionComputer::AP_CompanionComputer() :
     _fb_turning(false),
     _fb_fault_bits(0),
     _fb_mode_status_valid(false),
-    _nav_status_send(false)
+    _nav_status_send(false),
+    _brush_front_on(0),
+    _brush_rear_on(0),
+    _brush_power_pct(0)
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
@@ -195,6 +199,7 @@ void AP_CompanionComputer::parse_param_write()
     if (write_runtime_param(cmd.param_index, cmd.param_type, cmd.param_value, feedback)) {
         send_response(NCU_CMD_PARAM_WRITE, CMD_ACK_SUCCESS);
         send_param_feedback(feedback);
+        apply_brush_runtime_params();
     } else {
         send_response(NCU_CMD_PARAM_WRITE, CMD_ACK_FAILED);
     }
@@ -268,20 +273,75 @@ void AP_CompanionComputer::send_nav_data()
 bool AP_CompanionComputer::write_runtime_param(uint16_t param_index, uint8_t param_type, uint32_t param_value,
                                                ParamFeedbackData &feedback_out)
 {
-    (void)param_index;
-    (void)param_type;
-    (void)param_value;
-    (void)feedback_out;
-    // TODO: 对接 AP_Brush / AP_Param
-    return false;
+    // 指南滚刷参数均为 uint32
+    if (param_type != PARAM_TYPE_UINT32) {
+        return false;
+    }
+
+    feedback_out.param_index = param_index;
+    feedback_out.param_type = PARAM_TYPE_UINT32;
+
+    switch (param_index) {
+    case PARAM_IDX_BRUSH_FRONT:
+        _brush_front_on = param_value ? 1U : 0U;
+        feedback_out.param_value = _brush_front_on;
+        return true;
+
+    case PARAM_IDX_BRUSH_REAR:
+        _brush_rear_on = param_value ? 1U : 0U;
+        feedback_out.param_value = _brush_rear_on;
+        return true;
+
+    case PARAM_IDX_BRUSH_BOTH:
+        _brush_front_on = param_value ? 1U : 0U;
+        _brush_rear_on = param_value ? 1U : 0U;
+        feedback_out.param_value = param_value ? 1U : 0U;
+        return true;
+
+    case PARAM_IDX_BRUSH_POWER:
+        _brush_power_pct = constrain_uint32(param_value, 0U, 100U);
+        feedback_out.param_value = _brush_power_pct;
+        return true;
+
+    default:
+        return false;
+    }
 }
 
 bool AP_CompanionComputer::read_runtime_param(uint16_t param_index, ParamFeedbackData &feedback_out)
 {
-    (void)param_index;
-    (void)feedback_out;
-    // TODO: 对接 AP_Brush / AP_Param
-    return false;
+    feedback_out.param_index = param_index;
+    feedback_out.param_type = PARAM_TYPE_UINT32;
+
+    switch (param_index) {
+    case PARAM_IDX_BRUSH_FRONT:
+        feedback_out.param_value = _brush_front_on;
+        return true;
+    case PARAM_IDX_BRUSH_REAR:
+        feedback_out.param_value = _brush_rear_on;
+        return true;
+    case PARAM_IDX_BRUSH_BOTH:
+        feedback_out.param_value = (_brush_front_on && _brush_rear_on) ? 1U : 0U;
+        return true;
+    case PARAM_IDX_BRUSH_POWER:
+        feedback_out.param_value = _brush_power_pct;
+        return true;
+    default:
+        return false;
+    }
+}
+
+void AP_CompanionComputer::apply_brush_runtime_params()
+{
+    AP::brush().update(_brush_front_on != 0, _brush_rear_on != 0, uint8_t(_brush_power_pct));
+}
+
+void AP_CompanionComputer::stop_brushes()
+{
+    _brush_front_on = 0;
+    _brush_rear_on = 0;
+    _brush_power_pct = 0;
+    AP::brush().stop_all();
 }
 
 void AP_CompanionComputer::send_response(uint8_t cmd_type, uint8_t status)
