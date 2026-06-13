@@ -869,6 +869,9 @@ void GCS_MAVLINK::handle_param_value(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::send_text(MAV_SEVERITY severity, const char *fmt, ...) const
 {
+    if (int8_t(severity) > int8_t(msg_notice_level)) {
+        return;
+    }
     va_list arg_list;
     va_start(arg_list, fmt);
     gcs().send_textv(severity, fmt, arg_list, (1<<chan));
