@@ -780,6 +780,7 @@ private:
 
     // compassmot.cpp
     MAV_RESULT mavlink_compassmot(const GCS_MAVLINK &gcs_chan);
+    void compassmot_output();
 
     // crash_check.cpp
     void crash_check();
