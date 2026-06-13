@@ -13428,6 +13428,90 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Expected to get GPS-from-yaw (want %f got %f)" % (want, m.yaw))
         self.wait_ready_to_arm()
 
+    def GPSForYawAttitudeCorrection(self):
+        '''Moving baseline GPS yaw must correct for vehicle roll/pitch'''
+        # The moving-baseline GPS reports the antenna baseline heading in the
+        # NED horizontal plane.  To recover the vehicle yaw, the GPS backend
+        # must rotate the body-frame antenna offset by the vehicle roll/pitch
+        # before taking its bearing.  We give the baseline a large vertical
+        # (Z) component so that a modest vehicle lean swings the apparent
+        # horizontal bearing by tens of degrees: without the attitude
+        # correction the reported GPS yaw is then wrong by a similar amount.
+        self.context_push()
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.set_parameters({
+            # Use the compass for the EKF/flight yaw so the moving-baseline GPS
+            # yaw under test never feeds back into attitude control: the GPS
+            # backend still computes its yaw and reports it in GPS2_RAW, but a
+            # wrong value cannot destabilise the circle we fly to lean the
+            # vehicle.  This isolates the GPS backend maths.
+            "EK3_SRC1_YAW": 1,
+            # Antenna baseline: small fore-aft (X) plus large vertical (Z)
+            # separation, no lateral (Y).  When level the baseline is on the
+            # nose so the recovered yaw equals the vehicle yaw; under roll the
+            # vertical component projects into the horizontal plane.
+            "GPS1_POS_X": -0.15, "GPS1_POS_Y": 0.0, "GPS1_POS_Z": -0.45,
+            "GPS2_POS_X": 0.15, "GPS2_POS_Y": 0.0, "GPS2_POS_Z": 0.45,
+            "SIM_GPS1_POS_X": -0.15, "SIM_GPS1_POS_Y": 0.0, "SIM_GPS1_POS_Z": -0.45,
+            "SIM_GPS2_POS_X": 0.15, "SIM_GPS2_POS_Y": 0.0, "SIM_GPS2_POS_Z": 0.45,
+            # Remove the simulator's heading lag back-projection so the reported
+            # heading reflects the instantaneous attitude.  Otherwise the steady
+            # turn rate of the circle would add a lag term the backend does not
+            # undo, confounding the comparison against truth.
+            "SIM_GPS1_LAG_MS": 0,
+            "SIM_GPS2_LAG_MS": 0,
+        })
+        self.reboot_sitl()
+
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+        self.wait_ready_to_arm()
+        self.takeoff(20, mode='GUIDED')
+
+        # fly a gentle circle to hold a steady, modest lean angle.  A large
+        # radius keeps the turn rate (and hence any residual yaw lag) small.
+        self.set_parameters({
+            "CIRCLE_RADIUS_M": 50,
+            "CIRCLE_RATE": 12,
+        })
+        self.change_mode('CIRCLE')
+
+        # Sample the reported GPS yaw against truth while the vehicle is
+        # banked.  With the attitude correction in place the error stays
+        # small; without it the error is tens of degrees and this raises.
+        min_roll_deg = 10
+        max_yaw_err_deg = 15
+        wanted_samples = 10
+        good_samples = 0
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 90:
+                raise NotAchievedException(
+                    "Only gathered %u/%u banked GPS-yaw samples" % (good_samples, wanted_samples))
+            gps = self.assert_receive_message("GPS2_RAW")
+            if gps.yaw == 0:
+                # 0 means yaw not available (north is reported as 36000)
+                continue
+            sim = self.assert_receive_message("SIMSTATE")
+            roll_deg = math.degrees(sim.roll)
+            if abs(roll_deg) < min_roll_deg:
+                continue
+            gps_yaw_deg = gps.yaw * 0.01
+            true_yaw_deg = math.degrees(sim.yaw)
+            yaw_err_deg = abs(mavextra.wrap_180(gps_yaw_deg - true_yaw_deg))
+            self.progress("roll=%.1f gps_yaw=%.1f true_yaw=%.1f err=%.1f" %
+                          (roll_deg, gps_yaw_deg, true_yaw_deg, yaw_err_deg))
+            if yaw_err_deg > max_yaw_err_deg:
+                raise NotAchievedException(
+                    "GPS yaw not corrected for attitude (roll=%.1f deg, yaw err=%.1f deg)" %
+                    (roll_deg, yaw_err_deg))
+            good_samples += 1
+            if good_samples >= wanted_samples:
+                break
+
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
         # we had a bug where we would consume points when re-entering smartrtl
@@ -17719,6 +17803,7 @@ return update, 1000
             self.DO_WINCH,
             self.SensorErrorFlags,
             self.GPSForYaw,
+            self.GPSForYawAttitudeCorrection,
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,
