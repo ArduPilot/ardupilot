@@ -201,7 +201,11 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         _writebuffer.clear();
     }
 
-    _set_nonblocking(_fd);
+    // _fd may be -1 for device types that don't open an fd above
+    if (_fd != -1) {
+        unsigned v = fcntl(_fd, F_GETFL, 0);
+        fcntl(_fd, F_SETFL, v | O_NONBLOCK);
+    }
 }
 
 void UARTDriver::_end()
@@ -734,11 +738,6 @@ bool UARTDriver::_select_check(int fd)
     return false;
 }
 
-void UARTDriver::_set_nonblocking(int fd)
-{
-    unsigned v = fcntl(fd, F_GETFL, 0);
-    fcntl(fd, F_SETFL, v | O_NONBLOCK);
-}
 
 bool UARTDriver::set_unbuffered_writes(bool on) {
     if (_fd == -1) {
