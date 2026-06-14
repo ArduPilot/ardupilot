@@ -495,6 +495,8 @@ void JSON::recv_fdm(const struct sitl_input &input)
     if ((received_bitmask & BAT_AMP) != 0) {
         battery_current = state.bat_amp; 
     }
+    // (temperature is not part of the protocol, just set it explicitly here)
+    battery_temperature_degC = 0.0f;
 
     double deltat;
     if (state.timestamp_s < last_timestamp_s) {
