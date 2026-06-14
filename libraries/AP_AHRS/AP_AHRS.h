@@ -126,7 +126,7 @@ public:
     bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
 
     // return a wind estimation vector, in m/s; returns 0,0,0 on failure
-    const Vector3f &wind_estimate() const { return state.wind_estimate; }
+    const Vector3f &wind_estimate() const { return active_estimates->wind; }
 
     // return a wind estimation vector, in m/s; returns 0,0,0 on failure
     bool wind_estimate(Vector3f &wind) const;
@@ -1032,8 +1032,6 @@ private:
         Vector3f gyro_drift;
         Vector3f accel_ef;
         Vector3f accel_bias;
-        Vector3f wind_estimate;
-        bool wind_estimate_ok;
         float EAS2TAS;
         bool airspeed_EAS_ok;
         float airspeed_EAS;
