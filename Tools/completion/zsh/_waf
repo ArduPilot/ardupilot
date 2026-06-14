@@ -90,6 +90,7 @@ _waf_cmds() {
     'configure:configures the project' \
     'clean:cleans the project' \
     'distclean:removes build folders and data' \
+    'scripting_docs:generates documentation for lua scripts' \
     'submodule_force_clean:removes all submodules, then checkouts all current submodules and synchronizes them' \
     'submodulesync:checkouts all current submodules and synchronizes them'
   )
