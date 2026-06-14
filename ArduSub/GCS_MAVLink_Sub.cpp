@@ -706,8 +706,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
             break;
         }
 
-        Vector3f pos_neu_cm;  // position (North, East, Up coordinates) in centimeters
-
+        Location loc;
         if (!pos_ignore) {
             // sanity check location
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
@@ -718,23 +717,24 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 // unknown coordinate frame
                 break;
             }
-            const Location loc{
+            loc = {
                 packet.lat_int,
                 packet.lon_int,
                 int32_t(packet.alt*100),
                 frame,
             };
-            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
-                break;
-            }
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
+            Vector3f pos_neu_cm;
+            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
+                break;
+            }
             sub.mode_guided.guided_set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.mode_guided.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination(pos_neu_cm);
+            sub.mode_guided.guided_set_destination(loc);
         }
 
         break;
