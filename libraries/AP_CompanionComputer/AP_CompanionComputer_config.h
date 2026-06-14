@@ -91,8 +91,8 @@
  * byte 15              arrival_yaw_H       到达航向 int16 高 8 位
  * byte 16              arrival_radius_L    到达半径 uint16 低 8 位, 单位 cm
  * byte 17              arrival_radius_H    到达半径 uint16 高 8 位
- * byte 18              cruise_speed_L      巡航速度 uint16 低 8 位, 单位 cm/s
- * byte 19              cruise_speed_H      巡航速度 uint16 高 8 位
+ * byte 18              cruise_speed_L      巡航速度 int16 低 8 位, 单位 cm/s
+ * byte 19              cruise_speed_H      巡航速度 int16 高 8 位
  * byte 20              Checksum
  * byte 21              end sign            0xFF
  *
@@ -119,8 +119,8 @@
  * byte 11              latitude16          纬度 int32 8~15 位
  * byte 12              latitude24          纬度 int32 16~23 位
  * byte 13              latitude32          纬度 int32 高 8 位
- * byte 14              heading_L           航向角 int16 低 8 位, 0.01° (0~35999)
- * byte 15              heading_H           航向角 int16 高 8 位
+ * byte 14              heading_L           航向角 uint16 低 8 位, 0.01° (0~36000)
+ * byte 15              heading_H           航向角 uint16 高 8 位
  * byte 16              velocity_L          地速 int16 低 8 位, cm/s
  * byte 17              velocity_H          地速 int16 高 8 位
  * byte 18              left_track_vel_L    左履带速度 int16 低 8 位, cm/s (WENC)
@@ -156,15 +156,17 @@
  * byte 12              Checksum
  * byte 13              end sign            0xFF
  *
- * --- 0x04 导航状态 (FCU_FB_NAV_STATUS, DATA_LENGTH = 0x06) ---
- * byte 5               nav_state           0x01:导航中  0x02:已到达  0x03:失败  0x04:已取消
+ * --- 0x04 导航状态 (FCU_FB_NAV_STATUS, DATA_LENGTH = 0x08) ---
+ * byte 5               nav_state           0x00:空闲  0x01:导航中  0x02:已到达  0x03:失败  0x04:已取消
  * byte 6               coord_mode          坐标模式 (同 NCU 导航模式)
- * byte 7               distance_to_target_L 距目标 uint16 低 8 位, cm
- * byte 8               distance_to_target_H 距目标 uint16 高 8 位
- * byte 9               heading_error_L     航向误差 int16 低 8 位, 0.01°
- * byte 10              heading_error_H     航向误差 int16 高 8 位
- * byte 11              Checksum
- * byte 12              end sign            0xFF
+ * byte 7               distance_to_target8 距目标 uint32 低 8 位, cm
+ * byte 8               distance_to_target16
+ * byte 9               distance_to_target24
+ * byte 10              distance_to_target32
+ * byte 11              heading_error_L     航向误差 int16 低 8 位, 0.01°
+ * byte 12              heading_error_H     航向误差 int16 高 8 位
+ * byte 13              Checksum
+ * byte 14              end sign            0xFF
  *
  * 控制模式 control_mode (ControlMode):
  *   0x00 STANDBY  0x01 YAW  0x02 YAWRATE  0x03 TURN  0x04 NAV_GPS  0x05 NAV_BODY
@@ -294,7 +296,7 @@ constexpr uint8_t COMPANION_RECV_TOTAL_LENGTH = FRAME_OVERHEAD + NCU_RX_MAX_DATA
 constexpr uint8_t FCU_DATA_LEN_STATUS      = 26;
 constexpr uint8_t FCU_DATA_LEN_CMD_ACK     = 2;
 constexpr uint8_t FCU_DATA_LEN_PARAM       = 7;
-constexpr uint8_t FCU_DATA_LEN_NAV_STATUS  = 6;
+constexpr uint8_t FCU_DATA_LEN_NAV_STATUS  = 8;  // protocol 5.4: nav_state+coord_mode+dist32+heading_err
 
 constexpr uint8_t FCU_TX_MAX_DATA_LEN  = FCU_DATA_LEN_STATUS;
 constexpr uint8_t COMPANION_SEND_TOTAL_LENGTH = FRAME_OVERHEAD + FCU_TX_MAX_DATA_LEN;
@@ -340,16 +342,16 @@ struct PositionData {
     uint8_t  nav_mode;
     int32_t  target_x;
     int32_t  target_y;
-    int16_t  arrival_yaw;
-    uint16_t arrival_radius;
-    uint16_t cruise_speed;
+    int16_t  arrival_yaw;      // 0xFFFF(NAV_YAW_UNSPECIFIED) 表示到达后不指定航向
+    uint16_t arrival_radius;   // cm；0 表示使用 WP_RADIUS 默认值
+    int16_t  cruise_speed;     // cm/s；0 用 FCU 默认；负值表示倒车接近
 };
 
 struct StatusFeedbackData {
     uint8_t  battery_percent;
     int32_t  longitude;
     int32_t  latitude;
-    int16_t  heading;
+    uint16_t heading;          // 0~36000, 0.01°；与 ahrs.yaw_sensor（厘度）同语义
     int16_t  velocity;
     int16_t  left_track_vel;
     int16_t  right_track_vel;
@@ -375,8 +377,8 @@ struct ParamFeedbackData {
 struct NavStatusData {
     uint8_t  nav_state;
     uint8_t  coord_mode;
-    uint16_t distance_to_target;
-    int16_t  heading_error;
+    uint32_t distance_to_target;  // cm, uint32
+    int16_t  heading_error;       // 0.01°；正值=目标在左侧
 };
 
 // FCU 发送帧（含帧头尾）
@@ -437,7 +439,7 @@ struct ParsedPosition {
     float    tgt_east_cm;
     float    arrival_yaw_deg;
     uint16_t arrival_radius_cm;
-    uint16_t cruise_speed_cms;
+    int16_t  cruise_speed_cms;
 };
 
 // 数据包构建器

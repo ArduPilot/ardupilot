@@ -514,8 +514,8 @@ void AP_CompanionComputer::send_data()
         pkt.data.latitude = loc.lat;
     }
 
-    // 航向 (0.01°)
-    pkt.data.heading = ahrs.yaw_sensor;
+    // 航向 (0.01°, 0~36000)；yaw_sensor 已为同单位厘度 [0, 36000)
+    pkt.data.heading = (uint16_t)ahrs.yaw_sensor;
 
     // 线速度 (cm/s)
     const int16_t velocity_cms = constrain_int16(int16_t(lroundf(ahrs.groundspeed() * 100.0f)), -32767, 32767);
@@ -553,8 +553,8 @@ void AP_CompanionComputer::send_data()
     pkt.data.fault_code = fault_code;
 
 #if AP_GPS_ENABLED
-    // GPS 定位状态
-    pkt.data.gps_status = uint8_t(AP::gps().status());
+    // 映射到 protocol 0~3，不可直接传 AP_GPS::status() 枚举
+    pkt.data.gps_status = map_gps_status_to_protocol(AP::gps().status());
 #endif
 
     auto packet = PacketBuilder::serialize(pkt);
@@ -563,6 +563,25 @@ void AP_CompanionComputer::send_data()
 
     _uart->write(packet.data(), packet.size());
     _last_sent_ms = now;
+}
+
+// AP_GPS 枚举与 protocol（0=无定位, 1=2D, 2=3D, 3=RTK固定）不同，上报前需映射
+static uint8_t map_gps_status_to_protocol(AP_GPS::GPS_Status status)
+{
+    switch (status) {
+    case AP_GPS::GPS_OK_FIX_2D:
+        return 1;
+    case AP_GPS::GPS_OK_FIX_3D:
+    case AP_GPS::GPS_OK_FIX_3D_DGPS:
+    case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:  // 浮点 RTK 仍视为 3D
+        return 2;
+    case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+        return 3;
+    case AP_GPS::NO_GPS:
+    case AP_GPS::NO_FIX:
+    default:
+        return 0;
+    }
 }
 
 AP_CompanionComputer *AP_CompanionComputer::_singleton;

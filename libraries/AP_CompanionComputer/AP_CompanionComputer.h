@@ -20,11 +20,8 @@ public:
 
     static AP_CompanionComputer *get_singleton() { return _singleton; }
 
-    // 初始化串口（SERIALx_PROTOCOL=50, CC_PORT 指定实例）
     void init();
-    // 接收 NCU 数据（由 Rover 50Hz 调度）
     void update();
-    // 发送 FCU 状态反馈 0xBB 0x01（由 Rover 10Hz 调度）
     void send_data();
 
     // ModeVGSolar 导航 ACK（0xBB 0x02，cmd_type=NCU_CMD_POSITION）

@@ -16,15 +16,12 @@ AP_Brush::AP_Brush()
     _front_on = false;
     _rear_on = false;
     _power_pct = 0;
-    _last_front_pwm = 1500;
-    _last_rear_pwm = 1500;
+    _last_front_pwm = PWM_STOP_US;
+    _last_rear_pwm = PWM_STOP_US;
     _last_front_on = false;
     _last_rear_on = false;
     _last_power_pct = 0;
     _last_log_ms = 0;
-
-    // Boot default: neutral PWM on brush channels
-    write_outputs(false, false, 0);
 }
 
 void AP_Brush::set_active(bool active)
@@ -58,25 +55,20 @@ void AP_Brush::stop_all()
     write_outputs(false, false, 0);
 }
 
-uint16_t AP_Brush::calc_pwm_us(bool on, uint8_t power_pct, SRV_Channel::Aux_servo_function_t function) const
+uint16_t AP_Brush::calc_pwm_us(bool on, uint8_t power_pct) const
 {
-    const SRV_Channel *chan = SRV_Channels::get_channel_for(function);
-    const uint16_t trim_us = chan != nullptr ? chan->get_trim() : 1500;
-    const uint16_t max_us = chan != nullptr ? chan->get_output_max() : 1900;
-
     if (!on || power_pct == 0) {
-        return trim_us;
+        return PWM_STOP_US;
     }
 
-    // 1~100 maps trim -> max (forward only)
     const float scaled = constrain_float(float(power_pct) / 100.0f, 0.0f, 1.0f);
-    return uint16_t(trim_us + scaled * float(max_us - trim_us));
+    return uint16_t(PWM_STOP_US + scaled * float(PWM_MAX_US - PWM_STOP_US));
 }
 
 void AP_Brush::write_outputs(bool front_on, bool rear_on, uint8_t power_pct)
 {
-    const uint16_t front_pwm = calc_pwm_us(front_on, power_pct, SRV_Channel::k_vgsolar_brush_front);
-    const uint16_t rear_pwm = calc_pwm_us(rear_on, power_pct, SRV_Channel::k_vgsolar_brush_rear);
+    const uint16_t front_pwm = calc_pwm_us(front_on, power_pct);
+    const uint16_t rear_pwm = calc_pwm_us(rear_on, power_pct);
 
     SRV_Channels::set_output_pwm(SRV_Channel::k_vgsolar_brush_front, front_pwm);
     SRV_Channels::set_output_pwm(SRV_Channel::k_vgsolar_brush_rear, rear_pwm);

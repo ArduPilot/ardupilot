@@ -961,17 +961,66 @@ private:
         STANDBY = 0,
         YAW     = 1,
         YAWRATE = 2,
+        TURN    = 3,
+        NAV     = 4,
         ESTOP   = 5,
     };
 
+    enum class NavReportState : uint8_t {
+        NONE = 0,
+        ARRIVED,
+        FAILED,
+        CANCELLED,
+    };
+
+    enum class NavPhase : uint8_t {
+        CRUISE = 0,     // 向目标点行驶
+        YAW_ALIGN,      // 到达位置后，按 arrival_yaw 原地对航向
+    };
+
+    enum class TurnPhase : uint8_t {
+        IDLE = 0,
+        STOPPING,
+        WAIT_STOPPED,
+        LOWER_SUCTION,
+        WAIT_SUCTION_DN,
+        TURNING,
+        RAISE_SUCTION,
+        WAIT_SUCTION_UP,
+    };
+
     VGSubMode _vg_submode;
+    VGSubMode _submode_before_turn;
+    TurnPhase _turn_phase;
 
     float _target_speed_ms;
     float _target_yaw_cd;
     float _target_yaw_rate_cds;
+    float _cruise_speed_ms;
 
+    uint8_t  _turn_direction;
+    uint8_t  _turn_mode_type;
+    float    _turn_target_angle_deg;
+    float    _turn_angular_vel_dps;
+    float    _turn_start_yaw_deg;
+    float    _turn_accumulated_deg;
+    float    _last_turn_yaw_deg;
+
+    uint8_t  _nav_coord_mode;
     uint16_t _fault_flags;
+    NavReportState _nav_report_state;
+    NavPhase _nav_phase;
+
+    // NED 模式全局原点：进入 VGSL 模式时记录（上电点/当前位置）
+    Location _ned_origin;
+    bool _ned_origin_valid;
+    float _arrival_radius_m;       // NCU 指定到达半径(m)；0 则用 WP_RADIUS
+    bool _arrival_yaw_required;
+    uint16_t _arrival_yaw_raw_cd;  // 协议原始值；Body 模式下为相对车头的偏移
+    float _arrival_yaw_target_cd;  // 进入 YAW_ALIGN 阶段后换算得到的绝对目标航向
+
     uint32_t _last_ncu_cmd_ms;
+    uint32_t _turn_phase_start_ms;
 
     AP_Int8  _enabled;
     AP_Float _kp_yaw;
@@ -984,7 +1033,16 @@ private:
     void update_standby();
     void update_yaw();
     void update_yawrate();
+    void update_turn();
+    void update_nav();
     void update_estop();
+    void start_turn(const TurnData &cmd);
+    void cancel_navigation();
     void check_ncu_timeout();
+    void set_brush_control(uint8_t brush_id, bool turn_on);
+    void capture_ned_origin();
+    bool nav_position_reached() const;
+    void complete_nav_arrived();
+    void apply_nav_speed();
 };
 #endif  // MODE_VGSOLAR_ENABLED

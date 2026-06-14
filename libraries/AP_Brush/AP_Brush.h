@@ -7,6 +7,7 @@
   VGSolar front/rear roll brush PWM output.
   NCU runtime params (0x0101~0x0104) are applied via AP_CompanionComputer;
   PWM is only driven while VGSL mode is active.
+  Brush ESC: 1000us = stop, 2000us = max speed; power 1~100% linearly maps between them.
  */
 class AP_Brush {
 public:
@@ -24,7 +25,7 @@ public:
     // Apply desired brush state; outputs PWM only when active
     void update(bool front_on, bool rear_on, uint8_t power_pct);
 
-    // Force neutral PWM and clear desired state
+    // Force stop PWM (1000us) and clear desired state
     void stop_all();
 
 private:
@@ -43,8 +44,10 @@ private:
     uint32_t _last_log_ms;
 
     static constexpr uint32_t LOG_INTERVAL_MS = 2000;
+    static constexpr uint16_t PWM_STOP_US = 1000;
+    static constexpr uint16_t PWM_MAX_US = 2000;
 
-    uint16_t calc_pwm_us(bool on, uint8_t power_pct, SRV_Channel::Aux_servo_function_t function) const;
+    uint16_t calc_pwm_us(bool on, uint8_t power_pct) const;
     void write_outputs(bool front_on, bool rear_on, uint8_t power_pct);
     void log_brush_status(bool front_on, bool rear_on, uint8_t power_pct, uint16_t front_pwm, uint16_t rear_pwm);
 };
