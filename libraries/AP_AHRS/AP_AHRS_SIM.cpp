@@ -150,6 +150,12 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
         }
     }
 
+    // always initialised once sitl pointer is good
+    results.initialised = true;
+
+    // always healthy
+    results.healthy = true;
+
     // not using a specific sensor:
     results.primary_gyro = AP::ins().get_first_usable_gyro();
     results.primary_accel = AP::ins().get_first_usable_accel();
