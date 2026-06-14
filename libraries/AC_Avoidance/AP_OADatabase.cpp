@@ -99,7 +99,7 @@ const AP_Param::GroupInfo AP_OADatabase::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DIST_MAX", 7, AP_OADatabase, _dist_max, 0.0f),
 
-    // @Param{Copter}: ALT_MIN
+    // @Param{Copter,Heli}: ALT_MIN
     // @DisplayName: OADatabase minimum altitude above home before storing obstacles
     // @Description: OADatabase will reject obstacles if vehicle's altitude above home is below this parameter, in a 3 meter radius around home. Set 0 to disable this feature.
     // @Units: m
