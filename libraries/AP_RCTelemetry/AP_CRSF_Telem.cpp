@@ -139,7 +139,15 @@ bool AP_CRSF_Telem::init(void)
     }
 #endif
 
-    return AP_RCTelemetry::init();
+    if (!AP_RCTelemetry::init()) {
+        return false;
+    }
+
+#if AP_CRSF_MAVLINK_ENABLED
+    _crsf_mavlink.init();
+#endif
+
+    return true;
 }
 
 /*
@@ -167,6 +175,9 @@ void AP_CRSF_Telem::setup_wfq_scheduler(void)
     add_scheduler_entry(5, 500);    // version ping      2Hz (only active at startup)
     add_scheduler_entry(5, 100);    // device ping      10Hz (only active during TX loss, also see CRSF_RX_TIMEOUT)
     disable_scheduler_entry(DEVICE_PING);
+#if AP_CRSF_MAVLINK_ENABLED
+    add_scheduler_entry(2, 10);     // MAVLink TX      high priority, fast rate
+#endif
 }
 
 void AP_CRSF_Telem::setup_custom_telemetry()
@@ -519,6 +530,10 @@ bool AP_CRSF_Telem::is_packet_ready(uint8_t idx, bool queue_empty)
         return true; // always send heartbeat if enabled
     case DEVICE_PING:
         return !_crsf_version.pending;  // only send pings if version has been negotiated
+#if AP_CRSF_MAVLINK_ENABLED
+    case MAVLINK_TX:
+        return _crsf_mavlink.tx_pending();
+#endif
     default:
         return _enable_telemetry;
     }
@@ -600,6 +615,18 @@ void AP_CRSF_Telem::process_packet(uint8_t idx)
         case DEVICE_PING:
             calc_device_ping(AP_CRSF_Protocol::CRSF_ADDRESS_CRSF_RECEIVER);
             break;
+#if AP_CRSF_MAVLINK_ENABLED
+        case MAVLINK_TX:
+        {
+            uint8_t payload_len = 0;
+            if (_crsf_mavlink.get_telem_frame(reinterpret_cast<uint8_t *>(&_telem), payload_len)) {
+                _telem_size = payload_len;
+                _telem_type = AP_CRSF_Protocol::CRSF_FRAMETYPE_MAVLINK_ENVELOPE;
+                _telem_pending = true;
+            }
+            break;
+        }
+#endif
         default:
             break;
     }
@@ -645,6 +672,12 @@ bool AP_CRSF_Telem::_process_frame(AP_RCProtocol_CRSF::FrameType frame_type, voi
     case AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
         process_command_frame((CommandFrame*)data);
         break;
+
+#if AP_CRSF_MAVLINK_ENABLED
+    case AP_CRSF_Protocol::CRSF_FRAMETYPE_MAVLINK_ENVELOPE:
+        _crsf_mavlink.process_frame((const uint8_t*)data, length);
+        break;
+#endif
 
     default:
         break;
