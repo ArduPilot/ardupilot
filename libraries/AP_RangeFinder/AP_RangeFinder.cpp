@@ -932,6 +932,22 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
     return true;
 }
 
+#if AP_RANGEFINDER_DYP_A02_ENABLED
+bool RangeFinder::dyp_a02_has_safety_fault(uint8_t instance) const
+{
+    if (instance >= num_instances || get_type(instance) != Type::DYP_A02) {
+        return false;
+    }
+
+    const AP_RangeFinder_Backend *backend = get_backend(instance);
+    if (backend == nullptr) {
+        return true;
+    }
+
+    return static_cast<const AP_RangeFinder_DYP_A02 *>(backend)->has_safety_fault();
+}
+#endif
+
 RangeFinder *RangeFinder::_singleton;
 
 namespace AP {
