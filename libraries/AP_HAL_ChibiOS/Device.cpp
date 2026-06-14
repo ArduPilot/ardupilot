@@ -25,6 +25,9 @@
 #include "Semaphores.h"
 #include "Util.h"
 #include "hwdef/common/stm32_util.h"
+#if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
+#include "hwdef/common/rp2350_core_affinity.h"
+#endif
 
 #ifndef HAL_DEVICE_THREAD_STACK
 #define HAL_DEVICE_THREAD_STACK 1024
@@ -54,6 +57,11 @@ DeviceBus::DeviceBus(uint8_t _thread_priority, bool axi_sram) :
 void DeviceBus::bus_thread(void *arg)
 {
     struct DeviceBus *binfo = (struct DeviceBus *)arg;
+#if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
+    DEV_PRINTF("bus_thread START core=%d name=%s\n",
+               (int)port_get_core_id(),
+               chThdGetSelfX()->name ? chThdGetSelfX()->name : "?");
+#endif
 
     while (true) {
         uint64_t now = AP_HAL::micros64();
@@ -127,11 +135,33 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
             break;
         }
 
+#if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
+        {
+            int core_id = 0;
+            if (hal_device->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+                switch (hal_device->bus_num()) {
+                case 0: core_id = HAL_CORE_SPI0; break;
+                case 1: core_id = HAL_CORE_SPI1; break;
+                default: break;
+                }
+            } else if (hal_device->bus_type() == AP_HAL::Device::BUS_TYPE_I2C) {
+                switch (hal_device->bus_num()) {
+                case 0: core_id = HAL_CORE_I2C0; break;
+                case 1: core_id = HAL_CORE_I2C1; break;
+                default: break;
+                }
+            }
+            os_instance_t *oip = (core_id == 1) ? &ch1 : &ch0;
+            thread_ctx = thread_create_alloc_affinity(THD_WORKING_AREA_SIZE(HAL_DEVICE_THREAD_STACK),
+                     name, thread_priority,  DeviceBus::bus_thread,  this, oip);
+        }
+#else
         thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(HAL_DEVICE_THREAD_STACK),
                                          name,
                                          thread_priority,           /* Initial priority.    */
                                          DeviceBus::bus_thread,    /* Thread function.     */
                                          this);                     /* Thread parameter.    */
+#endif
         if (thread_ctx == nullptr) {
             AP_HAL::panic("Failed to create bus thread %s", name);
         }
