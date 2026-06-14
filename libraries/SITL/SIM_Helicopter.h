@@ -20,7 +20,6 @@
 
 #include "SIM_Aircraft.h"
 
-
 namespace SITL {
 
 /*
