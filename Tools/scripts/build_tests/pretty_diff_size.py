@@ -2,21 +2,48 @@
 
 '''
 This script intend to provide a pretty size diff between two binaries.
+It also optionally emits a JSON file suitable for aggregation into a
+cross-board summary table by global_size_summary.py.
 
 AP_FLAKE8_CLEAN
 '''
 
+import json
 import os
+import sys
 
 from argparse import ArgumentParser
 
 from tabulate import tabulate
 
+# Map lowercased binary filename (no extension) to the column name used in
+# the global summary table.  Entries not in this map are silently ignored.
+BINARY_TO_COLUMN = {
+    "arducopter": "copter",
+    "arducopter-heli": "heli",
+    "arduplane": "plane",
+    "ardurover": "rover",
+    "ardusub": "sub",
+    "antennatracker": "antennatracker",
+    "blimp": "blimp",
+    "iofirmware": "iofirmware",
+    "ap_periph": "AP_Periph",
+    "ap_bootloader": "bootloader",
+}
+
 parser = ArgumentParser(description="Print binary size difference with master.")
 parser.add_argument("-m", "--master", dest='master', type=str, help="Master Binaries Path", required=True)
 parser.add_argument("-s", "--second", dest='second', type=str, help="Second Binaries Path", required=True)
+parser.add_argument("--board", dest='board', type=str, default=None,
+                    help="Board name (required when --json-output is used)")
+parser.add_argument("--json-output", dest='json_output', type=str, default=None,
+                    help="Path to write per-board size diff JSON for global_size_summary.py")
 
 args = parser.parse_args()
+
+if args.json_output and not args.board:
+    print("ERROR: --board is required when --json-output is specified", file=sys.stderr)
+    sys.exit(1)
 
 
 def sizes_for_file(filepath):
@@ -54,8 +81,9 @@ def sizes_for_file(filepath):
 
 
 def print_table(summary_data_list_second, summary_data_list_master):
-    """Print the binaries size diff on a table."""
+    """Print the binaries size diff on a table and optionally emit a JSON diff file."""
     print_data = []
+    json_binaries = {}
     print("")
     # print(summary_data_list_second)
     # print(summary_data_list_master)
@@ -87,26 +115,24 @@ def print_table(summary_data_list_second, summary_data_list_master):
                     print_diff += " (" + signum + "%0.4f%%" % diff + ")"
                     col_data.append(print_diff)
 
+                    # Collect total-flash delta for JSON output
+                    if key == "total":
+                        col = BINARY_TO_COLUMN.get(name.lower())
+                        if col is not None:
+                            json_binaries[col] = bvalue - mvalue
+
                 # Append free flash space which is equivalent to crash_log's size
                 col_data.append(str(summary_data_list_second[0][name].get("crash_log")))
                 print_data.append(col_data)
     print(tabulate(print_data, headers=["Binary Name", "Text [B]", "Data [B]", "BSS (B)",
                                         "Total Flash Change [B] (%)", "Flash Free After PR (B)"]))
-    # Get the GitHub Actions summary file path
-    summary_file = os.getenv('GITHUB_STEP_SUMMARY')
-    if summary_file:
-        # Append the output to the summary file
-        with open(summary_file, 'a') as f:
-            f.write("### Diff summary\n")
-            f.write(tabulate(print_data, headers=[
-                "Binary Name",
-                "Text [B]",
-                "Data [B]",
-                "BSS (B)",
-                "Total Flash Change [B] (%)",
-                "Flash Free After PR (B)"
-            ], tablefmt="github"))
-            f.write("\n")
+
+    # Write per-board JSON diff if requested
+    if args.json_output:
+        output = {"board": args.board, "binaries": json_binaries}
+        with open(args.json_output, "w") as f:
+            json.dump(output, f, indent=2)
+        print("Saved size diff JSON to %s" % args.json_output)
 
 
 def extract_binaries_size(path):
