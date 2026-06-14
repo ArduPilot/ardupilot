@@ -158,6 +158,9 @@ ACPPSRC =
 TCSRC =
 TCPPSRC =
 ASMSRC = $(ALLASMSRC)
+# RP2350 SMP: per-core idle loops — distinct SRAM addresses prevent simultaneous
+# same-bank instruction fetches that the RP2350 bus fabric resolves with IBUSERR.
+ALLXASMSRC += $(CHIBIOS)/os/rt/src/rp2350_idle_loops.S
 ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CHIBIOS)/os/license \
