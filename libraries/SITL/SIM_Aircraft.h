@@ -178,7 +178,7 @@ public:
     void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
 #endif
     float get_battery_voltage() const { return battery_voltage; }
-    float get_battery_temperature_degC() const { return battery.get_temperature_degC(); }
+    float get_battery_temperature_degC() const { return battery_temperature_degC; }
     float get_battery_current() const { return battery_current; }
 
     float ambient_outside_temperature_degC() const;
@@ -241,12 +241,15 @@ protected:
     float airspeed_pitot;                // m/s, EAS airspeed, as seen by fwd pitot tube
     float battery_voltage;
     float battery_current;
+    float battery_temperature_degC;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;
     bool flightaxis_sync_imus_to_frames; // causes the frame counter to be incremented on each timestep, IMUs will then update at the same rate
     uint32_t last_one_hz_ms;
 
-    // battery model
+    // OPTIONAL internal battery model.
+    // ("OPTIONAL" because a child can ignore it and directly set battery_* protected members, exposed publicly via getters.)
+    // (Note that some aircraft get battery-info from an external source, ignoring this "internal" one.)
     Battery battery;
 
     uint32_t motor_mask;
