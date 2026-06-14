@@ -393,9 +393,9 @@ public:
 
     // Waypoints
     //
-    AP_Int16 waypoint_radius;
-    AP_Int16 waypoint_max_radius;
-    AP_Int16 rtl_radius;
+    AP_Float waypoint_radius;
+    AP_Float waypoint_max_radius;
+    AP_Float rtl_radius;
 
     // Fly-by-wire
     //
