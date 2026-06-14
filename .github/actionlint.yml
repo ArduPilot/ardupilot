@@ -1,0 +1,5 @@
+# Configuration for the GitHub Actions workflows linter
+
+self-hosted-runner:
+  labels:
+    - ardupilot-qurt

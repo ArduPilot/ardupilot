@@ -165,12 +165,8 @@ jobs:
         ]
         toolchain: [
             chibios,
-            #chibios-clang,
         ]
         gcc: [10]
-        exclude:
-          - gcc: 10
-            toolchain: chibios-clang
 
     steps:
       # git checkout the PR
