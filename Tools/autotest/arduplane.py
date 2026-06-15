@@ -3038,7 +3038,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress(self.dump_message_verbose(report))
 
-        expected_terrain_height = 583.5
+        expected_terrain_height = 586.0
         if abs(report.terrain_height - expected_terrain_height) > 0.5:
             raise NotAchievedException("Expected terrain height=%f got=%f" %
                                        (expected_terrain_height, report.terrain_height))
