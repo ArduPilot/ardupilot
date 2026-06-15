@@ -1072,23 +1072,6 @@ void QuadPlane::relax_attitude_control()
     attitude_control->relax_attitude_controllers(!tailsitter.relax_pitch());
 }
 
-/*
-  check for an EKF yaw reset
- */
-void QuadPlane::check_yaw_reset(void)
-{
-    if (!initialised) {
-        return;
-    }
-    float yaw_angle_change_rad = 0.0f;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control->inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
-    }
-}
-
 void QuadPlane::set_climb_rate_ms(float target_climb_rate_ms)
 {
     float vel_d_m = -target_climb_rate_ms;
@@ -4805,8 +4788,8 @@ void QuadPlane::setup_rp_fw_angle_gains(void)
 {
     const float mc_angR = attitude_control->get_angle_roll_p().kP();
     const float mc_angP = attitude_control->get_angle_pitch_p().kP();
-    const float fw_angR = 1.0/plane.rollController.tau();
-    const float fw_angP = 1.0/plane.pitchController.tau();
+    const float fw_angR = plane.rollController.get_angle_p();
+    const float fw_angP = plane.pitchController.get_angle_p();
 
     if (!is_positive(mc_angR) || !is_positive(mc_angP)) {
         // bad configuration, don't scale

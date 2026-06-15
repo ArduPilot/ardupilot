@@ -1280,6 +1280,27 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Description: If non-zero the vehicle will be clamped in position until the value on this servo channel passes 1800PWM
     AP_GROUPINFO("CLAMP_CH",     49, SIM, clamp_ch, 0),
 
+    // @Param: AHRS_OFF_RLL
+    // @DisplayName: Sim AHRS offset roll
+    // @Description: Roll offset applied to SIM AHRS type. For testing stepless handover bettween AHRS estimators.
+    // @Range: -10 10
+    // @Units: deg
+    AP_GROUPINFO("AHRS_OFF_RLL", 50, SIM, sim_ahrs_offset.roll, 0),
+
+    // @Param: AHRS_OFF_PIT
+    // @DisplayName: Sim AHRS offset pitch
+    // @Description: Pitch offset applied to SIM AHRS type. For testing stepless handover bettween AHRS estimators.
+    // @Range: -10 10
+    // @Units: deg
+    AP_GROUPINFO("AHRS_OFF_PIT", 51, SIM, sim_ahrs_offset.pitch, 0),
+
+    // @Param: AHRS_OFF_YAW
+    // @DisplayName: Sim AHRS offset yaw
+    // @Description: Yaw offset applied to SIM AHRS type. For testing stepless handover bettween AHRS estimators.
+    // @Range: -10 10
+    // @Units: deg
+    AP_GROUPINFO("AHRS_OFF_YAW", 52, SIM, sim_ahrs_offset.yaw, 0),
+
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
 

@@ -6983,7 +6983,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def GuidedAttitudeNoGPS(self):
         '''test that guided-attitude still works with no GPS'''
-        self.takeoff(50)
+        self.takeoff(30)
         self.change_mode('GUIDED')
         self.context_push()
         self.set_parameter('SIM_GPS1_ENABLE', 0)
@@ -7068,7 +7068,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             higher_home = copy.copy(home)
             higher_home.alt += 40
             self.set_home(higher_home)
-            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=12)
+            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=15)
             self.disarm_vehicle(force=True)
             self.reboot_sitl()
 
@@ -8225,6 +8225,55 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             target_compid=mavutil.mavlink.MAV_COMP_ID_GIMBAL
         )
 
+    def steplessAHRSSwtich(self):
+        '''Ensure AHRS source switches have input shaping applied correctly'''
+
+        # Set a roll offset
+        self.set_parameter("SIM_AHRS_OFF_RLL", 60)
+
+        # Takeoff in TAKEOFF mode
+        self.takeoff(alt=50, mode="TAKEOFF")
+
+        # Switch to FBWA
+        self.set_rc(3, 1500)
+        self.change_mode("FBWA")
+        self.delay_sim_time(20, reason="plane to settle")
+
+        # Switch to the offset AHRS source
+        self.context_push()
+        self.set_parameter("AHRS_EKF_TYPE", 10)
+
+        self.delay_sim_time(10, reason="Wait for vehicle to recover")
+
+        # Revert to original AHRS source
+        self.context_pop()
+
+        self.delay_sim_time(10, reason="Wait for vehicle to recover")
+
+        self.fly_home_land_and_disarm()
+
+        # Check the roll error in the log in FBWA
+        dfreader = self.dfreader_for_current_onboard_log()
+        max_roll_error = 0.0
+        mode = None
+        FBWA_mode_num = 5
+        while True:
+            m = dfreader.recv_match(type=['ATIS', 'MODE'])
+            if m is None:
+                break
+            if m.get_type() == 'MODE':
+                mode = m.ModeNum
+                continue
+            if mode == FBWA_mode_num:
+                max_roll_error = max(max_roll_error, abs(m.rErr))
+
+        # If input shapeing was not working correctly we would see a error nearly as large as the roll offset
+        roll_threshold = 15
+        if max_roll_error > roll_threshold:
+            raise NotAchievedException("Large roll error %0.1f > %0.1f" % (max_roll_error, roll_threshold))
+
+        self.progress("Roll error check passed %0.1f <= %0.1f" % (max_roll_error, roll_threshold))
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -8418,6 +8467,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.UTMGlobalPositionWaypoint,
             self.EK3HeightDatumResetFlushesBuffers,
             self.PPPPeriph,
+            self.steplessAHRSSwtich,
         ]
 
     def UTMGlobalPositionWaypoint(self):

@@ -163,6 +163,10 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     results.quaternion = fdm.quaternion;
     results.quaternion.rotate(-AP::ahrs().get_trim());
 
+    // Apply offsets
+    const Vector3f offsets = Vector3f{_sitl->sim_ahrs_offset.roll, _sitl->sim_ahrs_offset.pitch, _sitl->sim_ahrs_offset.yaw};
+    results.quaternion.rotate(offsets * radians(1));
+
     // update derived attitude values:
     results.quaternion.rotation_matrix(results.dcm_matrix);
     results.quaternion.to_euler(results.roll_rad, results.pitch_rad, results.yaw_rad);
