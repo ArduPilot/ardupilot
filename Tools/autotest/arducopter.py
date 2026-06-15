@@ -827,7 +827,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.arm_vehicle()
 
             self.wait_disarmed(timeout=120)
-            
+
             camera_feedback = self.context_stop_collecting('CAMERA_FEEDBACK')
             if len(camera_feedback) != 2:
                 raise NotAchievedException(f"Expected exactly two CAMERA_FEEDBACK messages, got {len(camera_feedback)}")
@@ -838,7 +838,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         def yaw_reached(image, expected_yaw, tolerance=2):
             return abs(image.yaw - expected_yaw) <= tolerance
 
-        def verify_image_taken_at_expected_yaw(image, expected_yaw, tolerance = 2):
+        def verify_image_taken_at_expected_yaw(image, expected_yaw, tolerance=2):
             if not yaw_reached(image, expected_yaw, tolerance):
                 raise NotAchievedException(
                     f"Image taken at yaw {image.yaw:.1f}°, expected {expected_yaw}° ± {tolerance}° when "
@@ -847,22 +847,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Test with AUTO_OPTIONS Wait Yaw Mode enabled (bit 3 = 1)")
         image_with_await_yaw_auto_option = images_after_yaw_test_mission(11)
-        print(f"AUTO_OPTIONS Wait Yaw Mode enabled, image 1 yaw: {image_with_await_yaw_auto_option[0].yaw:.1f}°, "f"image 2 yaw: {image_with_await_yaw_auto_option[1].yaw:.1f}°")
+        print(
+            f"AUTO_OPTIONS Wait Yaw Mode enabled, image 1 yaw: {image_with_await_yaw_auto_option[0].yaw:.1f}°, "
+            f"image 2 yaw: {image_with_await_yaw_auto_option[1].yaw:.1f}°"
+        )
         verify_image_taken_at_expected_yaw(image_with_await_yaw_auto_option[0], expected_yaw=180)
         verify_image_taken_at_expected_yaw(image_with_await_yaw_auto_option[1], expected_yaw=5)
 
         self.start_subtest("Test with AUTO_OPTIONS Wait Yaw Mode disabled (bit 3 = 0)")
-        # It is expected that in this mode the first or second yaw target it not reached before the respective image is taken
+        # It is expected that in this mode the first or second yaw target it not reached
+        # before the respective image is taken
         image_without_await_yaw_auto_option = images_after_yaw_test_mission(3)
-        print(f"AUTO_OPTIONS Wait Yaw Mode disabled, image 1 yaw: {image_without_await_yaw_auto_option[0].yaw:.1f}°, "f"image 2 yaw: {image_without_await_yaw_auto_option[1].yaw:.1f}°")
+        print(
+            f"AUTO_OPTIONS Wait Yaw Mode disabled, image 1 yaw: {image_without_await_yaw_auto_option[0].yaw:.1f}°, "
+            f"image 2 yaw: {image_without_await_yaw_auto_option[1].yaw:.1f}°"
+        )
         image_1_yaw_reached = yaw_reached(image_without_await_yaw_auto_option[0], expected_yaw=180)
         image_2_yaw_reached = yaw_reached(image_without_await_yaw_auto_option[1], expected_yaw=5)
         if image_1_yaw_reached and image_2_yaw_reached:
             raise NotAchievedException(
-                f"Both images were taken at the expected yaw angles even when AUTO_OPTIONS Wait Yaw Mode is disabled. "
-                f"This is unexpected and indicated that await yaw mode is still enabled or that we somehow await the rotation even with the auto option disabled."
+                "Both images were taken at the expected yaw angles even when AUTO_OPTIONS Wait Yaw Mode is "
+                "disabled. This is unexpected and indicated that await yaw mode is still enabled or that we "
+                "somehow await the rotation even with the auto option disabled."
             )
-
 
     # test circle speed - should be constant degrees/second:
     def CircleSpeed(self):
