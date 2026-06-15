@@ -34,7 +34,7 @@ ObjectBuffer<GCS_MAVLINK::pending_param_reply> GCS_MAVLINK::param_replies(5);
 bool GCS_MAVLINK::param_timer_registered;
 
 #if AP_PARAM_PROTECTION_ENABLED
-static bool param_request_is_signed(const mavlink_message_t &msg, const mavlink_channel_t chan)
+static bool param_message_is_signed(const mavlink_message_t &msg, const mavlink_channel_t chan)
 {
     if ((msg.incompat_flags & MAVLINK_IFLAG_SIGNED) == 0) {
         return false;
@@ -266,7 +266,7 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
 #if AP_PARAM_PROTECTION_ENABLED
-    _queued_parameter_show_protected = param_request_is_signed(msg, chan);
+    _queued_parameter_show_protected = param_message_is_signed(msg, chan);
     _queued_parameter_count = visible_parameter_count(_queued_parameter_show_protected);
 #else
     _queued_parameter_count = AP_Param::count_parameters();
@@ -303,6 +303,9 @@ void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
     req.param_index = packet.param_index;
     memcpy(req.param_name, packet.param_id, MIN(sizeof(packet.param_id), sizeof(req.param_name)));
     req.param_name[AP_MAX_NAME_SIZE] = 0;
+#if AP_PARAM_PROTECTION_ENABLED
+    req.show_protected = param_message_is_signed(msg, chan);
+#endif
 
     // queue it for processing by io timer
     param_requests.push(req);
@@ -333,6 +336,12 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         send_param_error(msg, packet, MAV_PARAM_ERROR_DOES_NOT_EXIST);
         return;
     }
+#if AP_PARAM_PROTECTION_ENABLED
+    if (AP_Param::is_protected(key) && !param_message_is_signed(msg, chan)) {
+        send_param_error(msg, packet, MAV_PARAM_ERROR_PERMISSION_DENIED);
+        return;
+    }
+#endif
     if (isnan(packet.param_value) || isinf(packet.param_value)) {
         send_param_error(msg, packet, MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE);
         return;
@@ -462,6 +471,11 @@ void GCS_MAVLINK::param_io_timer(void)
     reply.src_system_id = req.src_system_id;
     reply.src_component_id = req.src_component_id;
     reply.param_name[AP_MAX_NAME_SIZE] = 0;
+#if AP_PARAM_PROTECTION_ENABLED
+    if (vp != nullptr && !req.show_protected && AP_Param::is_protected(reply.param_name)) {
+        vp = nullptr;
+    }
+#endif
     if (vp != nullptr) {
         reply.value = vp->cast_to_float(reply.p_type);
         reply.param_error = MAV_PARAM_ERROR_NO_ERROR;

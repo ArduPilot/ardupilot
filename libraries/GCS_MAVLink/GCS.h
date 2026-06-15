@@ -988,6 +988,9 @@ private:
         char param_name[AP_MAX_NAME_SIZE+1];
         uint8_t src_system_id;
         uint8_t src_component_id;
+#if AP_PARAM_PROTECTION_ENABLED
+        bool show_protected;
+#endif
     };
 
     struct pending_param_reply {
