@@ -10,6 +10,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <vector>
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
@@ -147,6 +148,81 @@ TEST(AP_GSOF, vel_flags_not_valid)
     // parse_vel() must not overwrite velocity fields when the valid flag is absent.
     EXPECT_FLOAT_EQ(gsof.vel.horizontal_velocity, 42.0f);
     EXPECT_FLOAT_EQ(gsof.vel.vertical_velocity,   42.0f);
+}
+
+// Wrap a GSOF GENOUT DATA payload in DCOL framing with a valid checksum.
+static std::vector<uint8_t> make_packet(const std::vector<uint8_t> &data)
+{
+    const uint8_t status = 0x00;
+    const uint8_t packettype = 0x40;
+    const uint8_t length = data.size();
+    uint8_t checksum = status + packettype + length;
+    for (const uint8_t b : data) {
+        checksum += b;
+    }
+    std::vector<uint8_t> pkt {0x02, status, packettype, length};
+    pkt.insert(pkt.end(), data.begin(), data.end());
+    pkt.push_back(checksum);
+    pkt.push_back(0x03);
+    return pkt;
+}
+
+// A checksum-valid GENOUT packet whose INS_FULL_NAV record claims a full
+// record but is truncated must not be parsed: the fixed-offset reads would
+// otherwise run past the received bytes.
+TEST(AP_GSOF, ins_full_nav_truncated)
+{
+    const std::vector<uint8_t> data {
+        0x01, 0x01, 0x01,   // GENOUT header
+        0x31,               // output_type = INS_FULL_NAV (49)
+        0x68,               // output_length = 104 (claimed, not delivered)
+        0x00, 0x00, 0x00, 0x00, 0x00,   // only 5 body bytes present
+    };
+    const std::vector<uint8_t> pkt = make_packet(data);
+
+    AP_GSOF gsof;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_TRUE(feed_packet(gsof, parsed, pkt.data(), pkt.size()));
+    EXPECT_FALSE(parsed.get(AP_GSOF::INS_FULL_NAV));
+}
+
+// As above but the INS_FULL_NAV record sits near the end of a long packet, so
+// the unguarded 104-byte read would land past the end of the data[] buffer.
+TEST(AP_GSOF, ins_full_nav_past_buffer)
+{
+    std::vector<uint8_t> data(250, 0x00);
+    data[0] = 0x01;
+    data[1] = 0x01;
+    data[2] = 0x01;
+    // leading VEL record, used only to advance the parse offset to the end
+    data[3] = 0x08;     // output_type = VEL (8)
+    data[4] = 0xE0;     // output_length = 224
+    // INS_FULL_NAV record header lands deep into the buffer
+    data[5 + 224] = 0x31;   // output_type = INS_FULL_NAV (49)
+    data[6 + 224] = 0x68;   // output_length = 104
+
+    const std::vector<uint8_t> pkt = make_packet(data);
+
+    AP_GSOF gsof;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_TRUE(feed_packet(gsof, parsed, pkt.data(), pkt.size()));
+    EXPECT_FALSE(parsed.get(AP_GSOF::INS_FULL_NAV));
+}
+
+// A record whose length byte is missing (output_type is the final data byte)
+// must not be read past the end of the packet.
+TEST(AP_GSOF, record_header_truncated)
+{
+    const std::vector<uint8_t> data {
+        0x01, 0x01, 0x01,   // GENOUT header
+        0x46,               // output_type = LLH_MSL (70), no length byte follows
+    };
+    const std::vector<uint8_t> pkt = make_packet(data);
+
+    AP_GSOF gsof;
+    AP_GSOF::MsgTypes parsed;
+    EXPECT_TRUE(feed_packet(gsof, parsed, pkt.data(), pkt.size()));
+    EXPECT_FALSE(parsed.get(AP_GSOF::LLH_MSL));
 }
 
 AP_GTEST_MAIN()
