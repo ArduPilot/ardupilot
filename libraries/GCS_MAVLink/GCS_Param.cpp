@@ -33,6 +33,40 @@ ObjectBuffer<GCS_MAVLINK::pending_param_reply> GCS_MAVLINK::param_replies(5);
 
 bool GCS_MAVLINK::param_timer_registered;
 
+#if AP_PARAM_PROTECTION_ENABLED
+static bool param_request_is_signed(const mavlink_channel_t chan)
+{
+    const mavlink_status_t *status = mavlink_get_channel_status(chan);
+    return status != nullptr && (status->flags & MAVLINK_STATUS_FLAG_IN_SIGNED) != 0;
+}
+
+static bool param_is_protected(AP_Param *param, const AP_Param::ParamToken token)
+{
+    char param_name[AP_MAX_NAME_SIZE];
+    param->copy_name_token(token, param_name, sizeof(param_name), true);
+    return AP_Param::is_protected(param_name);
+}
+
+static uint16_t visible_parameter_count(const bool show_protected)
+{
+    if (show_protected) {
+        return AP_Param::count_parameters();
+    }
+
+    uint16_t count = 0;
+    AP_Param::ParamToken token;
+    enum ap_var_type type;
+    for (AP_Param *param = AP_Param::first(&token, &type);
+         param != nullptr;
+         param = AP_Param::next_scalar(&token, &type)) {
+        if (!param_is_protected(param, token)) {
+            count++;
+        }
+    }
+    return count;
+}
+#endif
+
 /**
  * @brief Send the next pending parameter, called from deferred message
  * handling code
@@ -78,6 +112,13 @@ GCS_MAVLINK::queued_param_send()
     while (count && _queued_parameter != nullptr && last_txbuf_is_greater(33)) {
         char param_name[AP_MAX_NAME_SIZE];
         _queued_parameter->copy_name_token(_queued_parameter_token, param_name, sizeof(param_name), true);
+
+#if AP_PARAM_PROTECTION_ENABLED
+        if (!_queued_parameter_show_protected && AP_Param::is_protected(param_name)) {
+            _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
+            continue;
+        }
+#endif
 
         mavlink_msg_param_value_send(
             chan,
@@ -218,7 +259,12 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
     // Start sending parameters - next call to ::update will kick the first one out
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
+#if AP_PARAM_PROTECTION_ENABLED
+    _queued_parameter_show_protected = param_request_is_signed(chan);
+    _queued_parameter_count = visible_parameter_count(_queued_parameter_show_protected);
+#else
     _queued_parameter_count = AP_Param::count_parameters();
+#endif
     _queued_parameter_send_time_ms = AP_HAL::millis(); // avoid initial flooding
 }
 

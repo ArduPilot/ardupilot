@@ -12,6 +12,7 @@
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Param/AP_Param_config.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
 #include <AP_RTC/JitterCorrection.h>
@@ -871,6 +872,9 @@ private:
     uint16_t                    _queued_parameter_count; ///< saved count of
                                                          // parameters for
                                                          // queued send
+#if AP_PARAM_PROTECTION_ENABLED
+    bool                        _queued_parameter_show_protected = true;
+#endif
     uint32_t                    _queued_parameter_send_time_ms;
 
     // number of extra ms to add to slow things down for the radio
