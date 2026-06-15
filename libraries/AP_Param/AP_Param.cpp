@@ -78,11 +78,11 @@ AP_Param *AP_Param::_singleton;
 #if AP_PARAM_PROTECTION_ENABLED
 static const char * const protected_param_names[] {
     "LOG_BITMASK",
-    "PDE_SECRET_GAIN",
+    "TSV_SECRET_GAIN",
 };
 
 static const char * const protected_param_prefixes[] {
-    "PDE_TUNE_",
+    "TSV_TUNE_",
 };
 #endif
 

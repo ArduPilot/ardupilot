@@ -9,17 +9,17 @@ TEST(ParamProtection, MatchesConfiguredProtectedNames)
 {
 #if AP_PARAM_PROTECTION_ENABLED
     EXPECT_TRUE(AP_Param::is_protected("LOG_BITMASK"));
-    EXPECT_TRUE(AP_Param::is_protected("PDE_SECRET_GAIN"));
-    EXPECT_TRUE(AP_Param::is_protected("PDE_TUNE_ROLL"));
-    EXPECT_TRUE(AP_Param::is_protected("PDE_TUNE_PITCH"));
-    EXPECT_FALSE(AP_Param::is_protected("PDE_PUBLIC_GAIN"));
+    EXPECT_TRUE(AP_Param::is_protected("TSV_SECRET_GAIN"));
+    EXPECT_TRUE(AP_Param::is_protected("TSV_TUNE_ROLL"));
+    EXPECT_TRUE(AP_Param::is_protected("TSV_TUNE_PITCH"));
+    EXPECT_FALSE(AP_Param::is_protected("TSV_PUBLIC_GAIN"));
     EXPECT_FALSE(AP_Param::is_protected(""));
     EXPECT_FALSE(AP_Param::is_protected(nullptr));
 #else
     EXPECT_FALSE(AP_Param::is_protected("LOG_BITMASK"));
-    EXPECT_FALSE(AP_Param::is_protected("PDE_SECRET_GAIN"));
-    EXPECT_FALSE(AP_Param::is_protected("PDE_TUNE_ROLL"));
-    EXPECT_FALSE(AP_Param::is_protected("PDE_TUNE_PITCH"));
+    EXPECT_FALSE(AP_Param::is_protected("TSV_SECRET_GAIN"));
+    EXPECT_FALSE(AP_Param::is_protected("TSV_TUNE_ROLL"));
+    EXPECT_FALSE(AP_Param::is_protected("TSV_TUNE_PITCH"));
 #endif
 }
 

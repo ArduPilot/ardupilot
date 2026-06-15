@@ -16,8 +16,8 @@ The following values are generated/demo decisions for SITL validation only.
 They are not production provisioning decisions.
 
 - Protected parameters:
-  - Exact names: `LOG_BITMASK`, `PDE_SECRET_GAIN`
-  - Prefix: `PDE_TUNE_`
+  - Exact names: `LOG_BITMASK`, `TSV_SECRET_GAIN`
+  - Prefix: `TSV_TUNE_`
 - MAVLink authorization model: MAVLink2 signing is the trust signal.
 - Unsigned protected writes: blocked.
 - Log handling: `ENCRYPT-AND-KEEP`; protected parameters remain in logs, but the
@@ -73,7 +73,7 @@ PATH=.venv/bin:$PATH ./waf plane
 ```
 
 SITL produced an encrypted log whose raw bytes started with `APLOGE1` and did
-not contain plaintext `LOG_BITMASK`, `PDE_SECRET_GAIN`, or `PDE_TUNE_`.
+not contain plaintext `LOG_BITMASK`, `TSV_SECRET_GAIN`, or `TSV_TUNE_`.
 
 The offline decrypt tool reproduced a standard ArduPilot `.BIN`:
 
