@@ -503,6 +503,11 @@ public:
 
     MAV_RESULT set_message_interval(uint32_t msg_id, int32_t interval_us);
 
+    // set the interval at which an ap_message should be emitted (in ms).
+    // unlike set_message_interval() the requested rate is capped to what
+    // SCHED_LOOP_RATE allows rather than being refused.
+    bool set_ap_message_interval(enum ap_message id, uint16_t interval_ms);
+
 protected:
 
     bool mavlink_coordinate_frame_to_location_alt_frame(MAV_FRAME coordinate_frame,
@@ -939,8 +944,6 @@ private:
     // try_send_message, will cause a mavlink message with that id to
     // be emitted.  Returns MSG_LAST if no such mapping exists.
     ap_message mavlink_id_to_ap_message_id(const uint32_t mavlink_id) const;
-    // set the interval at which an ap_message should be emitted (in ms)
-    bool set_ap_message_interval(enum ap_message id, uint16_t interval_ms);
     // call set_ap_message_interval for each entry in a stream,
     // the interval being based on the stream's rate
     void initialise_message_intervals_for_stream(GCS_MAVLINK::streams id);
