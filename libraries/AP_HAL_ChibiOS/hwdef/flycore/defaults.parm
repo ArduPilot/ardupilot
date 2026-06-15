@@ -1,0 +1,31 @@
+# flycore suggested defaults
+# Review and adjust after hardware bring-up. Values marked TODO need measurement.
+
+# --- Serial port roles (must match SERIAL_ORDER in hwdef.dat) ---
+# SERIAL0  USB
+# SERIAL1  USART2  TELEM1
+# SERIAL2  USART3  TELEM2
+# SERIAL3  UART4   GPS1
+# SERIAL4  UART5   TELEM3
+# SERIAL5  USART6  RC (SBUS/CRSF etc.)
+# SERIAL6  UART7   GPS2
+# SERIAL7  UART8   DEBUG
+# SERIAL8  USB2
+
+# --- PWM ---
+# 10 outputs defined in hwdef (FMU_CH1..CH10)
+# TODO: confirm BRD_PWM_COUNT if using fewer outputs as GPIO
+
+# --- CAN ---
+# CAN1 and CAN2 enabled in hardware; set driver params after wiring test
+# TODO: CAN_P1_DRIVER, CAN_D1_PROTOCOL, CAN_P2_DRIVER as needed
+
+# --- Logging / SD ---
+LOG_BACKEND_TYPE, 1
+
+# --- Compass ---
+# No onboard compass. External compass on I2C1 or I2C4 is auto-detected when connected.
+# Without compass, arming is allowed (ALLOW_ARM_NO_COMPASS); use GPS yaw or add a compass.
+
+# --- RC ---
+# PPM on PC8; SBUS typically on SERIAL5 (USART6 RX)
