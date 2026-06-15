@@ -24,6 +24,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#if AP_SIM_ENABLED
+#include <SITL/SITL.h>
+#endif
+
 #if defined(__APPLE__) || defined(__OpenBSD__)
 #include <sys/mount.h>
 #elif CONFIG_HAL_BOARD != HAL_BOARD_QURT
@@ -35,6 +39,74 @@
 #endif
 
 extern const AP_HAL::HAL& hal;
+
+#if AP_SIM_ENABLED
+// Bytes "used" in the simulated SITL filesystem. Updated by every
+// write() that goes through this backend and decremented by unlink().
+// Treated as an approximation - good enough to exercise AP_Logger
+// out-of-space paths under SIM_DISK_MAX without filling the host disk.
+static int64_t sim_disk_used_bytes;
+// Last seen SIM_DISK_MAX value (MB). When it changes we rescan the
+// logs directory so files left over from a previous SITL run are
+// charged against the cap (otherwise the boot-time Prep_MinSpace
+// path cannot be exercised by an autotest).
+static int32_t sim_disk_last_max_mb = -1;
+
+// Rescan a single directory's regular files and add their sizes to
+// sim_disk_used_bytes. Scoped to the AP_Logger logs dir because the
+// SITL working directory typically contains many unrelated files
+// (eeprom.bin, terrain caches, build output, ...) that should not
+// count against the simulated cap.
+static void sim_disk_rescan_used(const char *path)
+{
+    DIR *d = ::opendir(path);
+    if (d == nullptr) {
+        return;
+    }
+    struct dirent *de;
+    while ((de = ::readdir(d)) != nullptr) {
+        if (de->d_name[0] == '.') {
+            continue;
+        }
+        char *child = nullptr;
+        if (asprintf(&child, "%s/%s", path, de->d_name) < 0) {
+            continue;
+        }
+        struct stat st;
+        if (::lstat(child, &st) == 0 && S_ISREG(st.st_mode)) {
+            sim_disk_used_bytes += st.st_size;
+        }
+        ::free(child);
+    }
+    ::closedir(d);
+}
+
+// Return SIM_DISK_MAX in bytes, or -1 when the cap is disabled / SITL
+// state is not yet available. When the parameter value transitions
+// (including the first non-zero value seen), rescan the AP_Logger
+// logs directory so existing files count against the cap.
+static int64_t sim_disk_max_bytes()
+{
+    auto *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return -1;
+    }
+    const int32_t mb = sitl->sim_disk_max_mb.get();
+    if (mb <= 0) {
+        sim_disk_last_max_mb = mb;
+        return -1;
+    }
+    if (mb != sim_disk_last_max_mb) {
+        sim_disk_used_bytes = 0;
+        sim_disk_rescan_used(HAL_BOARD_LOG_DIRECTORY);
+        sim_disk_last_max_mb = mb;
+    }
+    // Use the same decimal-MB convention as AP_Logger's MB_to_B
+    // (1,000,000 bytes per MB) so that SIM_DISK_MAX and
+    // LOG_FILE_MB_FREE compare apples-to-apples in Prep_MinSpace().
+    return (int64_t)mb * 1000000;
+}
+#endif
 
 /*
   map a filename so operations are relative to the current directory if needed
@@ -110,7 +182,22 @@ int32_t AP_Filesystem_Posix::read(int fd, void *buf, uint32_t count)
 int32_t AP_Filesystem_Posix::write(int fd, const void *buf, uint32_t count)
 {
     FS_CHECK_ALLOWED(-1);
-    return ::write(fd, buf, count);
+#if AP_SIM_ENABLED
+    {
+        const int64_t cap = sim_disk_max_bytes();
+        if (cap >= 0 && sim_disk_used_bytes + (int64_t)count > cap) {
+            errno = ENOSPC;
+            return -1;
+        }
+    }
+#endif
+    auto ret = ::write(fd, buf, count);
+#if AP_SIM_ENABLED
+    if (ret > 0 && sim_disk_max_bytes() >= 0) {
+        sim_disk_used_bytes += ret;
+    }
+#endif
+    return ret;
 }
 
 int AP_Filesystem_Posix::fsync(int fd)
@@ -144,12 +231,29 @@ int AP_Filesystem_Posix::unlink(const char *pathname)
 {
     FS_CHECK_ALLOWED(-1);
     pathname = map_filename(pathname);
+#if AP_SIM_ENABLED
+    int64_t freed = 0;
+    if (sim_disk_max_bytes() >= 0) {
+        struct stat st;
+        if (::stat(pathname, &st) == 0 && S_ISREG(st.st_mode)) {
+            freed = st.st_size;
+        }
+    }
+#endif
     // we match the FATFS interface and use unlink
     // for both files and directories
     int ret = ::rmdir(const_cast<char*>(pathname));
     if (ret == -1) {
         ret = ::unlink(pathname);
     }
+#if AP_SIM_ENABLED
+    if (ret == 0 && freed > 0) {
+        sim_disk_used_bytes -= freed;
+        if (sim_disk_used_bytes < 0) {
+            sim_disk_used_bytes = 0;
+        }
+    }
+#endif
     map_filename_free(pathname);
     return ret;
 }
@@ -198,6 +302,15 @@ int AP_Filesystem_Posix::rename(const char *oldpath, const char *newpath)
 // return free disk space in bytes
 int64_t AP_Filesystem_Posix::disk_free(const char *path)
 {
+#if AP_SIM_ENABLED
+    {
+        const int64_t cap = sim_disk_max_bytes();
+        if (cap >= 0) {
+            int64_t avail = cap - sim_disk_used_bytes;
+            return avail > 0 ? avail : 0;
+        }
+    }
+#endif
 #if AP_FILESYSTEM_POSIX_HAVE_STATFS
     FS_CHECK_ALLOWED(-1);
     path = map_filename(path);
@@ -216,6 +329,14 @@ int64_t AP_Filesystem_Posix::disk_free(const char *path)
 // return total disk space in bytes
 int64_t AP_Filesystem_Posix::disk_space(const char *path)
 {
+#if AP_SIM_ENABLED
+    {
+        const int64_t cap = sim_disk_max_bytes();
+        if (cap >= 0) {
+            return cap;
+        }
+    }
+#endif
 #if AP_FILESYSTEM_POSIX_HAVE_STATFS
     FS_CHECK_ALLOWED(-1);
     path = map_filename(path);

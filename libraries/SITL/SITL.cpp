@@ -511,6 +511,14 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Description: LED layout config value
     AP_GROUPINFO("LED_LAYOUT",    11, SIM, led_layout, 0),
 
+    // @Param: DISK_MAX
+    // @DisplayName: Simulated disk capacity
+    // @Description: Simulated maximum size of the SITL working filesystem in megabytes. When non-zero AP_Filesystem accounts for writes and unlinks and returns ENOSPC once the cap is exceeded, allowing AP_Logger free-space handling to be tested without filling the host disk. Set to 0 to disable the cap.
+    // @Range: 0 16384
+    // @Units: MB
+    // @User: Advanced
+    AP_GROUPINFO("DISK_MAX",      14, SIM, sim_disk_max_mb, 0),
+
     // @Param: THML_SCENARI
     // @DisplayName: Thermal scenarios
     // @Description: Scenario for thermalling simulation, for soaring
