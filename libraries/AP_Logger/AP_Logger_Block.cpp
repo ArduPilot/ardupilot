@@ -135,6 +135,12 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
     WITH_SEMAPHORE(write_sem);
 
     const uint32_t space = writebuf.space();
+    uint32_t required_space = size;
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    if (_encryption.active()) {
+        required_space = _encryption.encrypted_size_for(size);
+    }
+#endif
 
     if (_writing_startup_messages &&
         _startup_messagewriter->fmt_done()) {
@@ -159,10 +165,21 @@ bool AP_Logger_Block::_WritePrioritisedBlock(const void *pBuffer, uint16_t size,
     }
 
     // if no room for entire message - drop it:
-    if (space < size) {
+    if (space < required_space) {
         _dropped++;
         return false;
     }
+
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    if (_encryption.active()) {
+        if (!_encryption.write(writebuf, pBuffer, size)) {
+            _dropped++;
+            return false;
+        }
+        df_stats_gather(required_space, writebuf.space());
+        return true;
+    }
+#endif
 
     writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size, writebuf.space());
@@ -524,6 +541,9 @@ void AP_Logger_Block::stop_logging(void)
     WITH_SEMAPHORE(sem);
 
     log_write_started = false;
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    _encryption.stop();
+#endif
 
     // nuke writing any previous log
     writebuf.clear();
@@ -587,6 +607,13 @@ void AP_Logger_Block::start_new_log(void)
         hdr.utc_secs = utc_usec / 1000000U;
     }
     writebuf.write((uint8_t*)&hdr, sizeof(FileHeader));
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    if (!_encryption.start(writebuf)) {
+        writebuf.clear();
+        log_write_started = false;
+        return;
+    }
+#endif
 
     start_new_log_reset_variables();
 

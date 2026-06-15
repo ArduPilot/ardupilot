@@ -4,6 +4,21 @@
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <GCS_MAVLink/GCS_config.h>
 
+#ifndef AP_LOGGER_ENCRYPTION_ENABLED
+#define AP_LOGGER_ENCRYPTION_ENABLED 0
+#endif
+
+#ifndef AP_LOGGER_ENCRYPTION_PUBLIC_KEY
+// RFC7748 X25519 test public key used for SITL/development only. Production
+// builds must provision a fleet or device public key at build time.
+#define AP_LOGGER_ENCRYPTION_PUBLIC_KEY { \
+    0x85, 0x20, 0xf0, 0x09, 0x89, 0x30, 0xa7, 0x54, \
+    0x74, 0x8b, 0x7d, 0xdc, 0xb4, 0x3e, 0xf7, 0x5a, \
+    0x0d, 0xbf, 0x3a, 0x0d, 0x26, 0x38, 0x1a, 0xf4, \
+    0xeb, 0xa4, 0xa9, 0x8e, 0xaa, 0x9b, 0x4e, 0x6a  \
+}
+#endif
+
 #ifndef HAL_LOGGING_ENABLED
 #define HAL_LOGGING_ENABLED 1
 #endif

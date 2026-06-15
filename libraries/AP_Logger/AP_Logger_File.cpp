@@ -453,6 +453,12 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
 
 
     uint32_t space = _writebuf.space();
+    uint32_t required_space = size;
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    if (_encryption.active()) {
+        required_space = _encryption.encrypted_size_for(size);
+    }
+#endif
 
     if (_writing_startup_messages &&
         _startup_messagewriter->fmt_done()) {
@@ -477,10 +483,21 @@ bool AP_Logger_File::_WritePrioritisedBlock(const void *pBuffer, uint16_t size, 
     }
 
     // if no room for entire message - drop it:
-    if (space < size) {
+    if (space < required_space) {
         _dropped++;
         return false;
     }
+
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    if (_encryption.active()) {
+        if (!_encryption.write(_writebuf, pBuffer, size)) {
+            _dropped++;
+            return false;
+        }
+        df_stats_gather(required_space, _writebuf.space());
+        return true;
+    }
+#endif
 
     _writebuf.write((uint8_t*)pBuffer, size);
     df_stats_gather(size, _writebuf.space());
@@ -716,6 +733,9 @@ void AP_Logger_File::stop_logging(void)
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
+#if AP_LOGGER_ENCRYPTION_ENABLED
+        _encryption.stop();
+#endif
         AP::FS().close(fd);
     }
     if (have_sem) {
@@ -846,6 +866,16 @@ void AP_Logger_File::start_new_log(void)
     _open_error_ms = 0;
     _write_offset = 0;
     _writebuf.clear();
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    if (!_encryption.start(_writebuf)) {
+        AP::FS().close(_write_fd);
+        AP::FS().unlink(_write_filename);
+        _write_fd = -1;
+        _open_error_ms = AP_HAL::millis();
+        write_fd_semaphore.give();
+        return;
+    }
+#endif
     write_fd_semaphore.give();
 
     // now update lastlog.txt with the new log number
@@ -1115,4 +1145,3 @@ void AP_Logger_File::erase_next(void)
 }
 
 #endif // HAL_LOGGING_FILESYSTEM_ENABLED
-

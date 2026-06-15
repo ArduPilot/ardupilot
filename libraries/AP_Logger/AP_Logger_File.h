@@ -10,6 +10,7 @@
 
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_Logger_Backend.h"
+#include "AP_Logger_Encryption.h"
 
 #if HAL_LOGGING_FILESYSTEM_ENABLED
 
@@ -115,6 +116,9 @@ private:
     ByteBuffer _writebuf{0};
     const uint16_t _writebuf_chunk = HAL_LOGGER_WRITE_CHUNK_SIZE;
     uint32_t _last_write_time;
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    AP_Logger_Encryption _encryption;
+#endif
 
     /* construct a file name given a log number. Caller must free. */
     char *_log_file_name(const uint16_t log_num) const;

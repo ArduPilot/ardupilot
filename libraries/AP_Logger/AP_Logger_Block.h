@@ -4,6 +4,7 @@
 #pragma once
 
 #include "AP_Logger_Backend.h"
+#include "AP_Logger_Encryption.h"
 
 #if HAL_LOGGING_BLOCK_ENABLED
 
@@ -94,6 +95,9 @@ private:
     // semaphore to mediate access to the ring buffer
     HAL_Semaphore write_sem;
     ByteBuffer writebuf;
+#if AP_LOGGER_ENCRYPTION_ENABLED
+    AP_Logger_Encryption _encryption;
+#endif
 
     // state variables
     uint16_t df_Read_BufferIdx;
