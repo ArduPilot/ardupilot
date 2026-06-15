@@ -72,6 +72,9 @@ public:
     // discard any pending input
     bool discard_input() override;
 
+    // discard up to n bytes; returns number of bytes not discarded
+    uint16_t discard_bytes(uint16_t n) override;
+
     // write to a locked port. If port is locked and key is not correct then 0 is returned
     // and write is discarded
     size_t write_locked(const uint8_t *buffer, size_t size, uint32_t key);

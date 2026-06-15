@@ -292,6 +292,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(rpm_sensor, "RPM", 32, AP_Vehicle, AP_RPM),
 #endif
 
+#if AP_IBUS2_MASTER_ENABLED
+    // @Group: IBUS2M_
+    // @Path: ../AP_IBus2/AP_IBus2_Master.cpp
+    AP_SUBGROUPINFO(ibus2_master, "IBUS2M_", 33, AP_Vehicle, AP_IBus2_Master),
+#endif
+
     AP_GROUPEND
 };
 
@@ -552,6 +558,14 @@ void AP_Vehicle::setup()
 
 #if AP_IBUS_TELEM_ENABLED
     ibus_telem.init();
+#endif
+
+#if AP_IBUS2_MASTER_ENABLED
+    ibus2_master.init();  // registers a timer callback
+#endif
+
+#if AP_IBUS2_SLAVE_ENABLED
+    ibus2_slave.init();   // registers a timer callback
 #endif
 }
 
