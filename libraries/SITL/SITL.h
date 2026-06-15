@@ -10,6 +10,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_DDS/AP_DDS_config.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "SIM_Buzzer.h"
@@ -263,6 +264,10 @@ public:
     AP_Int16 on_hardware_relay_enable_mask;   // mask of relays passed through to actual hardware
 
     AP_Float uart_byte_loss_pct;
+
+#ifdef AP_DDS_ENABLED
+    bool use_dds_sim_time = false; // use ROS2 simulation time for DDS topics
+#endif
 
 #ifdef SFML_JOYSTICK
     AP_Int8 sfml_joystick_id;
