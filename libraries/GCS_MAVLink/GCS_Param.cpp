@@ -34,10 +34,16 @@ ObjectBuffer<GCS_MAVLINK::pending_param_reply> GCS_MAVLINK::param_replies(5);
 bool GCS_MAVLINK::param_timer_registered;
 
 #if AP_PARAM_PROTECTION_ENABLED
-static bool param_request_is_signed(const mavlink_channel_t chan)
+static bool param_request_is_signed(const mavlink_message_t &msg, const mavlink_channel_t chan)
 {
+    if ((msg.incompat_flags & MAVLINK_IFLAG_SIGNED) == 0) {
+        return false;
+    }
+
     const mavlink_status_t *status = mavlink_get_channel_status(chan);
-    return status != nullptr && (status->flags & MAVLINK_STATUS_FLAG_IN_SIGNED) != 0;
+    return status != nullptr &&
+           status->signing != nullptr &&
+           status->signing->last_status == MAVLINK_SIGNING_STATUS_OK;
 }
 
 static bool param_is_protected(AP_Param *param, const AP_Param::ParamToken token)
@@ -260,7 +266,7 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
     _queued_parameter = AP_Param::first(&_queued_parameter_token, &_queued_parameter_type);
     _queued_parameter_index = 0;
 #if AP_PARAM_PROTECTION_ENABLED
-    _queued_parameter_show_protected = param_request_is_signed(chan);
+    _queued_parameter_show_protected = param_request_is_signed(msg, chan);
     _queued_parameter_count = visible_parameter_count(_queued_parameter_show_protected);
 #else
     _queued_parameter_count = AP_Param::count_parameters();
