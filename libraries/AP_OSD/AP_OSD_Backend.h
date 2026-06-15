@@ -61,6 +61,16 @@ public:
     // called by the OSD thread once
     virtual void osd_thread_run_once() { return; }
 
+#if OSD_ENABLED && AP_SCRIPTING_ENABLED
+    // passthrough OSD functions for use by scripting
+    bool display_disabled() const { return _osd.display_disabled(); }
+    uint8_t get_screen() const { return _osd.get_screen(); }
+    void draw_screen() { _osd.draw_screen(); }
+
+    // get semaphore for thread-safe access from scripting
+    HAL_Semaphore &get_semaphore() { return _osd.get_semaphore(); }
+#endif
+
     AP_OSD * get_osd()
     {
         return &_osd;
