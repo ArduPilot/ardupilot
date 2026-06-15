@@ -1,0 +1,6 @@
+# serial LED strip on output 5
+SERVO5_FUNCTION 120
+# VTX power is inverted on this board (GPIO LOW = VTX on); relay off = powered
+RELAY2_DEFAULT 0
+
+RC_PROTOCOL 512
