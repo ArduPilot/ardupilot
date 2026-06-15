@@ -566,6 +566,24 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
 
     AP_GROUPINFO("DARM_WDG_T", 41, QuadPlane, landing_detect.wdg_timeout_s, 10.0),
 
+    // @Param: LND_RELAX_MS
+    // @DisplayName: Landing relax debounce time
+    // @Description: Time in milliseconds that throttle must be at lower limit continuously before should_relax() returns true
+    // @Units: ms
+    // @Range: 100 1000
+    // @Increment: 50
+    // @User: Advanced
+    AP_GROUPINFO("LND_RELAX_MS",  42, QuadPlane, landing_detect.relax_debounce_ms,  200),
+
+    // @Param: LND_LLIM_MS
+    // @DisplayName: Landing lower limit extra time
+    // @Description: Extra time in milliseconds added to land detection timeout for lower limit guard in land_detector()
+    // @Units: ms
+    // @Range: 100 1000
+    // @Increment: 50
+    // @User: Advanced
+    AP_GROUPINFO("LND_LLIM_MS",   43, QuadPlane, landing_detect.lower_limit_extra_ms, 200),
+    
     AP_GROUPEND
 };
 
@@ -1236,7 +1254,7 @@ bool QuadPlane::should_relax(void)
         landing_detect.lower_limit_start_ms = tnow;
     }
 
-    return (tnow - landing_detect.lower_limit_start_ms) > 1000;
+    return (tnow - landing_detect.lower_limit_start_ms) > (uint32_t)landing_detect.relax_debounce_ms.get();
 }
 
 // see if we are flying in vtol
@@ -3610,7 +3628,7 @@ bool QuadPlane::land_detector(void)
     }
            
     if ((now - landing_detect.land_start_ms) < landing_detect.timeout_ms ||
-        (now - landing_detect.lower_limit_start_ms) < (landing_detect.timeout_ms+1000)) {
+        (now - landing_detect.lower_limit_start_ms) < (landing_detect.timeout_ms + (uint32_t)landing_detect.lower_limit_extra_ms.get() )) {
         return false;
     }
 
@@ -3629,7 +3647,8 @@ bool QuadPlane::check_land_complete(void)
         return false;
     }
     if (!motors->armed()) {
-        return false;
+        poscontrol.set_state(QPOS_LAND_COMPLETE);
+        return true;
     }
     // ---- disarm watchdog ----
     const float wdg_t = landing_detect.wdg_timeout_s.get();

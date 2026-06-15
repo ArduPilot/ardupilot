@@ -509,6 +509,8 @@ private:
 
         AP_Float wdg_timeout_s;
         uint32_t wdg_start_ms;
+        AP_Int16 relax_debounce_ms; 
+        AP_Int16 lower_limit_extra_ms;
     } landing_detect;
 
     // throttle mix acceleration filter
