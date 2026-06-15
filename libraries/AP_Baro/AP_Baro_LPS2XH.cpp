@@ -24,7 +24,11 @@ extern const AP_HAL::HAL &hal;
 
 // WHOAMI values
 #define LPS22HB_WHOAMI 0xB1
+#define LPS22HH_WHOAMI 0xB3
 #define LPS25HB_WHOAMI 0xBD
+
+#define LPS22HH_IF_CTRL            0x0E
+#define LPS22HH_I2C_DISABLE        0x01
 
 #define REG_ID                     0x0F
 
@@ -43,6 +47,8 @@ extern const AP_HAL::HAL &hal;
 #define LPS22H_CTRL_REG1_ODR_25HZ  (3 << 4)
 #define LPS22H_CTRL_REG1_ODR_50HZ  (4 << 4)
 #define LPS22H_CTRL_REG1_ODR_75HZ  (5 << 4)
+
+#define LPS22HH_CTRL_REG2_IF_ADD_INC (1 << 4)
 
 #define LPS25H_CTRL_REG1_ADDR      0x20
 #define LPS25H_CTRL_REG2_ADDR      0x21
@@ -156,14 +162,30 @@ bool AP_Baro_LPS2XH::_init()
     	CallTime = 40 * AP_USEC_PER_MSEC;
     }
 
-    if (_lps2xh_type == BARO_LPS22H) {
+    if (_lps2xh_type == BARO_LPS22H || _lps2xh_type == BARO_LPS22HH) {
+        uint8_t i2c_dis_reg;
+        uint8_t i2c_dis_val;
+
         _dev->write_register(LPS22H_CTRL_REG1, 0x00); // turn off for config
-        _dev->write_register(LPS22H_CTRL_REG1, LPS22H_CTRL_REG1_ODR_75HZ|LPS22H_CTRL_REG1_BDU|LPS22H_CTRL_REG1_EN_LPFP|LPS22H_CTRL_REG1_LPFP_CFG);
-        if (_dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
-            _dev->write_register(LPS22H_CTRL_REG2, 0x18);  // disable i2c
+        if (_lps2xh_type == BARO_LPS22H) {
+            _dev->write_register(LPS22H_CTRL_REG1, LPS22H_CTRL_REG1_ODR_75HZ|
+                                                   LPS22H_CTRL_REG1_BDU|
+                                                   LPS22H_CTRL_REG1_EN_LPFP|
+                                                   LPS22H_CTRL_REG1_LPFP_CFG);
+            i2c_dis_reg = LPS22H_CTRL_REG2;
+            i2c_dis_val = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI ? 0x18 : 0x10;
         } else {
-            _dev->write_register(LPS22H_CTRL_REG2, 0x10);
+            _dev->write_register(LPS22H_CTRL_REG1, LPS22H_CTRL_REG1_ODR_75HZ|
+                                                   LPS22H_CTRL_REG1_BDU|
+                                                   LPS22H_CTRL_REG1_EN_LPFP|
+                                                   LPS22H_CTRL_REG1_LPFP_CFG);
+            _dev->write_register(LPS22H_CTRL_REG2, LPS22HH_CTRL_REG2_IF_ADD_INC);
+            i2c_dis_reg = LPS22HH_IF_CTRL;
+            i2c_dis_val = _dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI ?
+                                              LPS22HH_I2C_DISABLE : 0x00;
         }
+
+        _dev->write_register(i2c_dis_reg, i2c_dis_val);  // disable i2c
 
         // request 75Hz update
         CallTime = 1000000/75;
@@ -193,6 +215,9 @@ bool AP_Baro_LPS2XH::_check_whoami(void)
     switch(whoami){
     case LPS22HB_WHOAMI:
         _lps2xh_type = BARO_LPS22H;
+        return true;
+    case LPS22HH_WHOAMI:
+        _lps2xh_type = BARO_LPS22HH;
         return true;
     case LPS25HB_WHOAMI:
         _lps2xh_type = BARO_LPS25H;
@@ -248,7 +273,7 @@ void AP_Baro_LPS2XH::_update_temperature(void)
         _temperature = (Temp_Reg_s16 * (1.0/480)) + 42.5;
     }
 
-    if (_lps2xh_type == BARO_LPS22H) {
+    if (_lps2xh_type == BARO_LPS22H || _lps2xh_type == BARO_LPS22HH) {
         _temperature = Temp_Reg_s16 * 0.01;
     }
 }
