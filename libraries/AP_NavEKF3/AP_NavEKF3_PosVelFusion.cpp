@@ -395,6 +395,11 @@ bool NavEKF3_core::resetHeightDatum(void)
     // transient.
     baroHgtOffset = 0.0f;
 
+    // Barometer is main altitude source and user is setting the field elevation, correct the GPS from that
+    if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO && !is_zero(dal.baro().get_field_elevation())) {
+        ekfGpsRefHgt = dal.baro().get_field_elevation();
+    }
+
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
         if (!gpsGoodToAlign) {
@@ -409,7 +414,11 @@ bool NavEKF3_core::resetHeightDatum(void)
             // that the relative alt is zero
             EKF_origin.copy_alt_from(dal.gps().location());
         }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+
+        if (!(frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO && !is_zero(dal.baro().get_field_elevation()))) {
+            // match the GPS reference height to EKF origin only if not already set by user above
+            ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+        }
     }
 
     // set the terrain state to zero (on ground). The adjustment for
