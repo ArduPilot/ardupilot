@@ -1,0 +1,230 @@
+# hw definition file for processing by chibios_hwdef.py
+# for HAKRC H743 flight controller
+
+# ---------------- MCU & System ----------------
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_HAKRC_H743
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+env OPTIMIZE -Os
+
+# bootloader takes first sector
+FLASH_RESERVE_START_KB 128
+
+# ChibiOS system timer - use 16-bit TIM12 so TIM2/TIM5 are free for PWM
+STM32_ST_USE_TIMER 12
+define CH_CFG_ST_RESOLUTION 16
+
+# USB strings
+USB_STRING_MANUFACTURER "HAKRC"
+USB_STRING_PRODUCT "H743"
+
+# ---------------- USB & SWD -------------------
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# ---------------- SPI Buses -------------------
+
+# SPI1 - IMU1 (ICM42688 internal)
+PA5 SPI1_SCK  SPI1
+PA6 SPI1_MISO SPI1
+PD7 SPI1_MOSI SPI1
+PC15 IMU1_CS  CS
+PB2  IMU1_DRDY INPUT
+
+# SPI3 - OSD (MAX7456)
+PB3 SPI3_SCK  SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+PE2 MAX7456_CS CS
+
+# SPI4 - IMU2 (ICM42688 external)
+PE12 SPI4_SCK  SPI4
+PE13 SPI4_MISO SPI4
+PE14 SPI4_MOSI SPI4
+PC13 IMU2_CS  CS
+PC14 IMU2_DRDY INPUT
+
+# ---------------- I2C Buses -------------------
+
+I2C_ORDER I2C1 I2C2
+
+# I2C1 - internal baro (SPL06)
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+# I2C2 - external (compass/peripherals)
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# ---------------- ADC & Battery ---------------
+
+PC0 BATT_VOLTAGE_SENS  ADC1 SCALE(1)
+PC1 BATT_CURRENT_SENS  ADC1 SCALE(1)
+PA4 BATT2_VOLTAGE_SENS ADC1 SCALE(1)
+PA7 BATT2_CURRENT_SENS ADC1 SCALE(1)
+
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT2_VOLT_PIN 18
+define HAL_BATT2_CURR_PIN 7
+define HAL_BATT_VOLT_SCALE 11.0
+define HAL_BATT_CURR_SCALE 40.0
+define HAL_BATT2_VOLT_SCALE 11.0
+
+# analog airspeed input
+PC4 PRESSURE_SENS ADC1 SCALE(2)
+define HAL_DEFAULT_AIRSPEED_PIN 4
+
+# analog RSSI input
+PC5 RSSI_ADC ADC1
+define BOARD_RSSI_ANA_PIN 8
+
+# ---------------- LEDs ------------------------
+
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+PE3 LED0 OUTPUT LOW GPIO(90)
+PE4 LED1 OUTPUT LOW GPIO(91)
+define HAL_GPIO_A_LED_PIN 91
+define HAL_GPIO_B_LED_PIN 90
+
+# ---------------- UARTs -----------------------
+
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6 UART7 UART8 OTG2
+
+# USART1
+PA10 USART1_RX USART1
+PA9  USART1_TX USART1
+
+# USART2
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# USART3
+PD9 USART3_RX USART3
+PD8 USART3_TX USART3
+
+# UART4
+PB9 UART4_TX UART4
+PB8 UART4_RX UART4
+
+# UART5 - default RC Input
+PB12 UART5_RX UART5
+PB13 UART5_TX UART5
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL5_BAUD 115
+
+# USART6
+PC7 USART6_RX USART6
+PC6 USART6_TX USART6
+
+# UART7
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+
+# UART8
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+
+# ---------------- CAN Bus ---------------------
+
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+PD3 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
+
+# ---------------- PWM Outputs -----------------
+
+# Motors 1-4 on TIM2 (bi-directional DShot capable)
+PA0  TIM2_CH1 TIM2  PWM(1)  GPIO(50) BIDIR
+PA1  TIM2_CH2 TIM2  PWM(2)  GPIO(51)
+PA2  TIM2_CH3 TIM2  PWM(3)  GPIO(52) BIDIR
+PA3  TIM2_CH4 TIM2  PWM(4)  GPIO(53)
+
+# Motors 5-8 on TIM4 (bi-directional DShot on both CH1/CH2 and CH3/CH4 pairs)
+# BIDIR is applied to CH3, not CH4, to avoid the TIM4_CH4 DMA conflict.
+PD12 TIM4_CH1 TIM4  PWM(5)  GPIO(54) BIDIR
+PD13 TIM4_CH2 TIM4  PWM(6)  GPIO(55)
+PD14 TIM4_CH3 TIM4  PWM(7)  GPIO(56) BIDIR
+PD15 TIM4_CH4 TIM4  PWM(8)  GPIO(57)
+
+# PWM 9-10 on TIM3
+PB0  TIM3_CH3 TIM3  PWM(9)  GPIO(58)
+PB1  TIM3_CH4 TIM3  PWM(10) GPIO(59)
+
+# PWM 11-12 on TIM15 (servo outputs, no BIDIR on TIM15)
+PE5  TIM15_CH1 TIM15 PWM(11) GPIO(60)
+PE6  TIM15_CH2 TIM15 PWM(12) GPIO(61)
+
+# PWM 13 - LED output
+PA8 TIM1_CH1 TIM1 PWM(13) GPIO(62)
+
+# Buzzer / alarm
+# Conflicts with PWM 13. Comment out PA8 and uncomment PE9 to use.
+# PE9 TIM1_CH1 TIM1 GPIO(32) ALARM
+
+# ---------------- SDMMC (microSD) -------------
+
+PC8  SDMMC1_D0  SDMMC1
+PC9  SDMMC1_D1  SDMMC1
+PC10 SDMMC1_D2  SDMMC1
+PC11 SDMMC1_D3  SDMMC1
+PC12 SDMMC1_CK  SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+PD4  SD_CS      CS
+define HAL_OS_FATFS_IO 1
+
+# ---------------- GPIO (PINIO) ----------------
+
+# PINIO1 - VTX/peripheral power control (HIGH at boot)
+PD10 PINIO1 OUTPUT GPIO(81) HIGH
+# PINIO2 - Camera/switchable output (HIGH at boot)
+PD11 PINIO2 OUTPUT GPIO(82) HIGH
+
+# ---------------- DMA & Storage ---------------
+
+DMA_PRIORITY SPI1* SPI4* SPI3*
+DMA_NOSHARE SPI1* SPI4* SPI3* TIM2* TIM4*
+
+define HAL_STORAGE_SIZE 32768
+# use 2nd-to-last sector for storage; H743 has 16x 128k pages
+STORAGE_FLASH_PAGE 14
+
+# ---------------- SPI Devices -----------------
+
+SPIDEV icm42688     SPI1 DEVID1 IMU1_CS     MODE3  2*MHZ 16*MHZ
+SPIDEV icm42688_ext SPI4 DEVID2 IMU2_CS     MODE3  2*MHZ 16*MHZ
+SPIDEV osd          SPI3 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
+
+# ---------------- IMU / Baro ------------------
+
+IMU Invensensev3 SPI:icm42688     ROTATION_ROLL_180
+IMU Invensensev3 SPI:icm42688_ext ROTATION_ROLL_180_YAW_270
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# No internal compass - probe external I2C compasses
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# Baro on internal I2C1
+define AP_BARO_SPL06_ENABLED 1
+BARO SPL06 I2C:0:0x76
+
+# ---------------- OSD -------------------------
+
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
