@@ -447,6 +447,10 @@ private:
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // calculate the Location that the gimbal is pointing at
     void calculate_poi();
+#endif
+
+#if AP_MOUNT_POI_LOCK_ENABLED
+    // calculate the Location that the gimbal is pointing at, assuming the target is at home altitude
     bool calculate_poi_at_home_alt(Location &target_location);
 #endif
 
