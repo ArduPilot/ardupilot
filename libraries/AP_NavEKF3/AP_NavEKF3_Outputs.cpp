@@ -254,13 +254,23 @@ float NavEKF3_core::getPosDownDerivative(void) const
 
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosNE(Vector2p &posNE) const
+bool NavEKF3_core::getPosNE(Vector2p &posNE, bool delayed) const
 {
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
         // correct for the IMU offset (EKF calculations are at the IMU)
-        posNE = outputDataNew.position.xy().topostype() + posOffsetNED.xy().topostype() + public_origin.get_distance_NE_postype(EKF_origin);
+        if (delayed) {
+            posNE = stateStruct.position.xy().topostype() + public_origin.get_distance_NE_postype(EKF_origin);
+            if (!accelPosOffset.is_zero()) {
+                Matrix3F Tbn;
+                stateStruct.quat.rotation_matrix(Tbn);
+                Vector3F offset = Tbn * (- accelPosOffset);
+                posNE += offset.xy().topostype();
+            }
+        } else {
+            posNE = outputDataNew.position.xy().topostype() + posOffsetNED.xy().topostype() + public_origin.get_distance_NE_postype(EKF_origin);
+        }
         return true;
 
     } else {

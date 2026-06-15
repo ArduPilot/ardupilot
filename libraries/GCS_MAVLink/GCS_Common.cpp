@@ -4054,6 +4054,32 @@ void GCS_MAVLINK::handle_vicon_position_estimate(const mavlink_message_t &msg)
 }
 
 /*
+  handle GLOBAL_POSITION_SENSOR message
+*/
+void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
+{
+    mavlink_global_position_sensor_t m;
+    mavlink_msg_global_position_sensor_decode(&msg, &m);
+    if (m.flags == GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
+        return;
+    }
+    Location loc;
+    loc.lat = m.lat;
+    loc.lng = m.lon;
+    // height is not used so set to 0
+    loc.alt = 0;
+    // ahrs can handle a NAN for this field and will fall back to a parameter defined accuracy
+    float accuracy = m.eph;
+
+    uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, GLOBAL_POSITION_SENSOR));
+    // correct for time delay from measurement to transmission
+    timestamp_ms -= m.processing_time / 1000;
+
+    AP_AHRS &ahrs = AP::ahrs();
+    ahrs.handle_external_position_estimate(loc, accuracy, timestamp_ms);
+}
+
+/*
   handle ODOMETRY message. This message combines position, velocity
   and attitude data
  */
@@ -4682,6 +4708,11 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_generator_message(msg);
         break;
 #endif
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_SENSOR:
+    {
+        handle_global_position_sensor(msg);
+        break;
+    }
     }
 
 }
