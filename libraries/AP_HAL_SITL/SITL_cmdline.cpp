@@ -117,6 +117,7 @@ void SITL_State::_usage(void)
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set MAV_SYSID\n"
            "\t--slave number           set the number of JSON slaves\n"
+           "\t--use_sim_time <true|false>  use ROS2 simulation clock for DDS topics. Defaults to false\n"
         );
 }
 
@@ -314,6 +315,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #if STORAGE_USE_FRAM
         CMDLINE_SET_STORAGE_FRAM_ENABLED,
 #endif
+#if AP_DDS_ENABLED
+        CMDLINE_DDS_USE_SIM_TIME,
+#endif
     };
 
     const struct GetOptLong::option options[] = {
@@ -372,6 +376,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #endif
 #if STORAGE_USE_FRAM
         {"set-storage-fram-enabled", true,   0, CMDLINE_SET_STORAGE_FRAM_ENABLED},
+#endif
+#if AP_DDS_ENABLED
+        {"use_sim_time",    true,  0, CMDLINE_DDS_USE_SIM_TIME},
 #endif
         {"vehicle",           true,   0, 'v'},
         {0, false, 0, 0}
@@ -553,6 +560,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #if STORAGE_USE_FRAM
         case CMDLINE_SET_STORAGE_FRAM_ENABLED:
             storage_fram_enabled = atoi(gopt.optarg);
+            break;
+#endif
+#if AP_DDS_ENABLED
+        case CMDLINE_DDS_USE_SIM_TIME:
+            if (strcasecmp(gopt.optarg, "true") == 0) {
+                _use_dds_sim_time = true;
+            } else {
+                _use_dds_sim_time = false;
+            }
             break;
 #endif
         case 'h':

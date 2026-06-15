@@ -96,6 +96,8 @@ private:
 
     bool _use_fg_view;
 
+    bool _use_dds_sim_time = false;
+    
     const char *_fg_address;
 
     // simulation model name as given on the command line, for
