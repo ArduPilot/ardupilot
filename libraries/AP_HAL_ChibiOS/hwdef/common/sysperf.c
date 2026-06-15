@@ -106,6 +106,34 @@ sys_cpu_load_t sysGetCPUPeakLoad(void) {
 }
 
 /**
+ * @brief Atomically read the current average/peak load and restart the
+ *        measurement window.
+ * @note  Intended for periodic logging: each caller observes the average and
+ *        peak accumulated since its previous call.
+ *
+ * @param[out] avg   average load over the window (percentage * 100), or NULL
+ * @param[out] peak  peak load over the window (percentage * 100), or NULL
+ *
+ * @api
+ */
+void sysReadResetCPULoad(sys_cpu_load_t *avg, sys_cpu_load_t *peak) {
+
+  chSysLock();
+  if (avg != NULL) {
+    *avg = _load.average;
+  }
+  if (peak != NULL) {
+    *peak = _load.peak;
+  }
+  if (_load.state == SYS_MEASURE_ACTIVE) {
+    /* Clean restart: re-run the INIT bootstrap on the next idle entry.*/
+    _load.stop = false;
+    _load.state = SYS_MEASURE_INIT;
+  }
+  chSysUnlock();
+}
+
+/**
  * @brief Get the moving average of CPU load.
  *
  * @return CPU average load as percentage * 100

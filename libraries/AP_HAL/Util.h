@@ -198,6 +198,11 @@ public:
     // get the system load
     virtual bool get_system_load(float& avg_load, float& peak_load) const { return false; }
 
+    // get system load for periodic logging: avg_load is the moving average,
+    // peak_load is the peak since the previous call (windowed). Resets the
+    // windowed peak so each caller observes the peak over its own interval.
+    virtual bool get_system_load_log(float& avg_load, float& peak_load) { return false; }
+
 #if HAL_ENABLE_DFU_BOOT
     virtual void boot_to_dfu(void) {}
 #endif
