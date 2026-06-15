@@ -596,7 +596,7 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
     }
 
     // check lean angle
-    if (check_enabled(Check::INS)) {
+    if (check_enabled(Check::LEVEL)) {
         if (acosf(ahrs.cos_roll()*ahrs.cos_pitch()) > copter.attitude_control->lean_angle_max_rad()) {
             check_failed(Check::INS, true, "Leaning");
             return false;
