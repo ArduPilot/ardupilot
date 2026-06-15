@@ -64,10 +64,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
-    def default_speedup(self):
-        '''QuadPlane seems to be race-free'''
-        return 100
-
     def log_name(self):
         return "QuadPlane"
 
@@ -1147,6 +1143,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def GUIDEDToAUTO(self):
         '''Test using GUIDED mode for takeoff before shifting to auto'''
+        # supply terrain data over MAVLink; each parallel instance has its
+        # own (initially empty) working directory, so we can't rely on
+        # terrain tiles being left on disk by another test:
+        self.install_terrain_handlers_context()
         self.load_mission("mission.txt")
         self.takeoff(30, mode='GUIDED')
 

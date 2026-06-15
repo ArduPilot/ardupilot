@@ -83,9 +83,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def test_filepath(self):
         return os.path.realpath(__file__)
 
-    def default_speedup(self):
-        return 100
-
     def set_current_test_name(self, name):
         self.current_test_name_directory = "ArduCopter_Tests/" + name + "/"
 
@@ -12937,7 +12934,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
-        util.build_SITL('tool/Replay', clean=False, configure=False)
+        # configure for the sitl board explicitly: another test (e.g. a
+        # CAN/periph test) may have left the shared build directory
+        # configured for a different board, which would fail this build:
+        util.build_SITL('tool/Replay', board='sitl', clean=False, configure=True)
         self.set_parameters({
             "LOG_DARM_RATEMAX": 0,
             "LOG_FILE_RATEMAX": 0,
@@ -12982,7 +12982,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def DefaultIntervalsFromFiles(self):
         '''Test setting default mavlink message intervals from files'''
         ex = None
-        intervals_filepath = util.reltopdir("message-intervals-chan0.txt")
+        # the autopilot reads this file relative to its working directory;
+        # under parallel testing that is the per-instance directory (which is
+        # also this process's cwd), so use a cwd-relative path rather than an
+        # absolute repo-root one:
+        intervals_filepath = "message-intervals-chan0.txt"
         self.progress("Using filepath (%s)" % intervals_filepath)
         try:
             with open(intervals_filepath, "w") as f:
@@ -17273,6 +17277,8 @@ RTL_ALT_M 111
                     '--serial1', 'tcp:2',
                     '--serial2', 'tcp:3',
                 ],
+                # AP_Periph is a supplementary program (no vehicle model):
+                supplementary=True,
                 speedup=self.speedup
             )
             self.expect_list_add(periph_exp)

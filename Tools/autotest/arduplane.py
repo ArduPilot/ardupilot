@@ -57,9 +57,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def log_name(self):
         return "ArduPlane"
 
-    def default_speedup(self):
-        return 100
-
     def test_filepath(self):
         return os.path.realpath(__file__)
 
@@ -3255,7 +3252,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
-        util.build_SITL('tool/Replay', clean=False, configure=False)
+        # configure for the sitl board explicitly: another test (e.g. a
+        # CAN/periph test) may have left the shared build directory
+        # configured for a different board, which would fail this build:
+        util.build_SITL('tool/Replay', board='sitl', clean=False, configure=True)
         self.set_parameters({
             "LOG_DARM_RATEMAX": 0,
             "LOG_FILE_RATEMAX": 0,

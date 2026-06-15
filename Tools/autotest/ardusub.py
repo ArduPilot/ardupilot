@@ -78,10 +78,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def log_name(self):
         return "ArduSub"
 
-    def default_speedup(self):
-        '''Sub seems to be race-free'''
-        return 100
-
     def test_filepath(self):
         return os.path.realpath(__file__)
 
@@ -1157,8 +1153,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(10, reason='add delay on connecting "telemetry')
 
         self.progress("Connecting to telemetry port")
+        # SERIAL3/telemetry TCP port is offset by the SITL instance number,
+        # so compute it rather than hard-coding 5763 (which only works at
+        # instance 0 / a non-parallel run):
         mav2 = mavutil.mavlink_connection(
-            "tcp:localhost:5763",
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
             robust_parsing=True,
             source_system=self.mav.source_system,
             source_component=self.mav.source_component,
