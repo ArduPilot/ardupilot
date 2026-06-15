@@ -125,15 +125,25 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
         } else {
             const uint8_t *data = &packet.data[0];
             uint8_t count = packet.count;
+            const uint32_t tx_start_ms = AP_HAL::millis();
             while (count > 0) {
+                if (AP_HAL::millis() - tx_start_ms >= 1000) {
+                    break;
+                }
                 while (stream->txspace() <= 0) {
+                    if (AP_HAL::millis() - tx_start_ms >= 1000) {
+                        break;
+                    }
                     hal.scheduler->delay(5);
                 }
-                uint16_t n = stream->txspace();
-                if (n > packet.count) {
-                    n = packet.count;
+                if (stream->txspace() <= 0) {
+                    break;
                 }
-                stream->write(data, n);                
+                uint16_t n = stream->txspace();
+                if (n > count) {
+                    n = count;
+                }
+                stream->write(data, n);
                 data += n;
                 count -= n;
             }
@@ -146,10 +156,14 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
     }
 
     uint8_t flags = packet.flags;
+    uint8_t multi_iterations = 0;
+    static constexpr uint8_t MAX_MULTI_ITERATIONS = 25;
 
 more_data:
-    // sleep for the timeout
-    while (packet.timeout != 0 && 
+    if (packet.timeout > 500) {
+        packet.timeout = 500;
+    }
+    while (packet.timeout != 0 &&
            stream->available() < (int16_t)sizeof(packet.data)) {
         hal.scheduler->delay(1);
         packet.timeout--;
@@ -196,6 +210,9 @@ more_data:
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_LEN,
                                     MAVLINK_MSG_ID_SERIAL_CONTROL_CRC);
     if ((flags & SERIAL_CONTROL_FLAG_MULTI) && packet.count != 0) {
+        if (++multi_iterations >= MAX_MULTI_ITERATIONS) {
+            return;
+        }
         if (flags & SERIAL_CONTROL_FLAG_BLOCKING) {
             hal.scheduler->delay(1);
         }
