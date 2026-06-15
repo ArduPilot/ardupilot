@@ -4845,46 +4845,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
         self.assert_parameter_value_pct("RLL_RATE_P", 1.222702146, 2)
         self.assert_parameter_value_pct("RLL_RATE_FF", 0.229291457, 2)
+        self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
 
         self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
 
-        # there are sometimes multiple solutions for roll but the distribution
-        # is much more skewed than pitch below
-        try:
-            self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
-        except ValueError:
-            self.assert_parameter_value_pct("RLL_RATE_D", 0.091369226, 2) # added 2025-10
+        # PTCH_RATE_P solutions, most likely to least likely: 1.746 (~99%), 1.343 (~1%), 2.270 (<1%)
+        acceptable_ptch_rate_p = [1.746079683, 1.343138218, 2.26990366]
+        ptch_rate_p = self.get_parameter("PTCH_RATE_P")
+        if not any(abs(ptch_rate_p - v) <= v * 0.02 for v in acceptable_ptch_rate_p):
+            raise NotAchievedException("PTCH_RATE_P=%f is not an expected value" % ptch_rate_p)
 
-        # There seem to be multiple solutions for pitch. I'm not sure why this is.
-        # Each value is quite consistent because of the fixed steps that autotune takes
-        try:
-            # Expect this about 84% of the time
-            self.assert_parameter_value_pct("PTCH_RATE_P", 1.746079683, 2)
-        except ValueError:
-            try:
-                # 12%
-                self.assert_parameter_value_pct("PTCH_RATE_P", 1.343138218, 2)
-            except ValueError:
-                # 4%
-                self.assert_parameter_value_pct("PTCH_RATE_P", 2.26990366, 2)
-
-        try:
-            # 64%
-            self.assert_parameter_value_pct("PTCH_RATE_D", 0.108, 2)
-        except ValueError:
-            try:
-                # 28%
-                self.assert_parameter_value_pct("PTCH_RATE_D", 0.141, 2)
-            except ValueError:
-                try:
-                    # 4%
-                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.049, 2)
-                except ValueError:
-                    # 4%
-                    try:
-                        self.assert_parameter_value_pct("PTCH_RATE_D", 0.0836, 2)
-                    except ValueError:
-                        self.assert_parameter_value_pct("PTCH_RATE_D", 0.0380, 2) # added 2025-10
+        # PTCH_RATE_D solutions, most likely to least likely: 0.108 (~99%), 0.141 (<1%), 0.049 (<1%), 0.0836 (<1%), 0.038 (<1%)
+        acceptable_ptch_rate_d = [0.108, 0.141, 0.049, 0.0836, 0.0380]
+        ptch_rate_d = self.get_parameter("PTCH_RATE_D")
+        if not any(abs(ptch_rate_d - v) <= v * 0.02 for v in acceptable_ptch_rate_d):
+            raise NotAchievedException("PTCH_RATE_D=%f is not an expected value" % ptch_rate_d)
 
     def run_autotune(self):
         self.takeoff(100)
@@ -4895,16 +4870,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         rc_value = 1000
         while True:
             timeout = 600
-            if self.get_sim_time() - tstart > timeout:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not complete within %u seconds" % timeout)
-            try:
-                m = self.wait_statustext("%s: Finished" % axis, check_context=True, timeout=0.1)
+            m = self.statustext_in_collections("%s: Finished" % axis)
+            if m is not None:
                 self.progress("Got %s" % str(m))
                 if axis == "Roll":
                     axis = "Pitch"
                     # Center sticks to allow roll to return to neutral before starting pitch
-                    self.set_rc(1, 1500)
-                    self.set_rc(2, 1500)
+                    self.set_rc_from_map({1: 1500, 2: 1500})
                     self.delay_sim_time(15, reason="vehicle to stabilise between tune axes")
 
                     # Reset toggle value so the initial input is in a consistent direction
@@ -4914,33 +4888,30 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     break
                 else:
                     raise ValueError("Bug: %s" % axis)
-            except AutoTestTimeoutException:
-                pass
-            self.delay_sim_time(1, reason="autotune iteration")
+            # clear collected statustexts so the next poll stays cheap; the
+            # autopilot re-sends "<axis>: Finished" continuously so we won't
+            # miss it
+            self.context_clear_collection("STATUSTEXT")
+            self.delay_sim_time(2, reason="autotune iteration")
 
             if rc_value == 1000:
                 rc_value = 2000
             elif rc_value == 2000:
                 rc_value = 1000
-            elif rc_value == 1000:
-                rc_value = 2000
             else:
                 raise ValueError("Bug")
 
             if axis == "Roll":
-                self.set_rc(1, rc_value)
-                self.set_rc(2, 1500)
+                self.set_rc_from_map({1: rc_value, 2: 1500})
             elif axis == "Pitch":
-                self.set_rc(1, 1500)
-                self.set_rc(2, rc_value)
+                self.set_rc_from_map({1: 1500, 2: rc_value})
             else:
                 raise ValueError("Bug")
 
         tdelta = self.get_sim_time() - tstart
         self.progress("Finished in %0.1f seconds" % (tdelta,))
 
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({1: 1500, 2: 1500})
 
         self.change_mode('FBWA')
         self.fly_home_land_and_disarm(timeout=tdelta+240)
