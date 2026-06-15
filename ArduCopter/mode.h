@@ -655,6 +655,7 @@ private:
         AllowArming                        = (1 << 0U),
         AllowTakeOffWithoutRaisingThrottle = (1 << 1U),
         IgnorePilotYaw                     = (1 << 2U),
+        WaitForYaw                         = (1 << 3U),
         AllowWeatherVaning                 = (1 << 7U),
     };
     bool option_is_enabled(Option option) const;

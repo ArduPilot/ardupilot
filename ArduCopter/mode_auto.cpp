@@ -2203,6 +2203,12 @@ bool ModeAuto::verify_loiter_time(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+    // optionally hold until the yaw target set by a CONDITION_YAW command
+    // has been reached (see verify_nav_wp)
+    if (option_is_enabled(Option::WaitForYaw) && !auto_yaw.reached_fixed_yaw_target()) {
+        return false;
+    }
+
     // start our loiter timer
     if ( loiter_time == 0 ) {
         loiter_time = millis();
@@ -2275,6 +2281,14 @@ bool ModeAuto::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
 {
     // check if we have reached the waypoint
     if ( !copter.wp_nav->reached_wp_destination() ) {
+        return false;
+    }
+
+    // optionally hold at the waypoint until the yaw target set by a
+    // CONDITION_YAW command has been reached.  reached_fixed_yaw_target()
+    // returns true when not in a fixed yaw mode, so this is a no-op unless
+    // a yaw has actually been commanded for this leg.
+    if (option_is_enabled(Option::WaitForYaw) && !auto_yaw.reached_fixed_yaw_target()) {
         return false;
     }
 
