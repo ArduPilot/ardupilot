@@ -75,6 +75,16 @@ AP_Param *AP_Param::_singleton;
 #define GCS_SEND_PARAM(name, type, v)
 #endif
 
+#if AP_PARAM_PROTECTION_ENABLED
+static const char * const protected_param_names[] {
+    "PDE_SECRET_GAIN",
+};
+
+static const char * const protected_param_prefixes[] {
+    "PDE_TUNE_",
+};
+#endif
+
 // Note about AP_Vector3f handling.
 // The code has special cases for AP_Vector3f to allow it to be viewed
 // as both a single 3 element vector and as a set of 3 AP_Float
@@ -1001,6 +1011,30 @@ AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, Para
         }
     }
     return ap;
+}
+
+bool AP_Param::is_protected(const char *name)
+{
+#if AP_PARAM_PROTECTION_ENABLED
+    if (name == nullptr || name[0] == '\0') {
+        return false;
+    }
+
+    for (const char *protected_name : protected_param_names) {
+        if (strncmp(name, protected_name, AP_MAX_NAME_SIZE) == 0) {
+            return true;
+        }
+    }
+
+    for (const char *protected_prefix : protected_param_prefixes) {
+        const size_t prefix_len = strlen(protected_prefix);
+        if (strncmp(name, protected_prefix, prefix_len) == 0) {
+            return true;
+        }
+    }
+#endif
+
+    return false;
 }
 
 /*

@@ -327,6 +327,9 @@ public:
     ///
     static AP_Param * find(const char *name, enum ap_var_type *ptype, uint16_t *flags = nullptr);
 
+    /// Return true when the parameter name is in the protected set.
+    static bool is_protected(const char *name);
+
     /// set a default value by name
     ///
     /// @param  name            The full name of the variable to be found.
