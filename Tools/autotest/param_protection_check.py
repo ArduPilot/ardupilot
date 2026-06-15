@@ -105,7 +105,10 @@ def collect_list(endpoint, protected_names, timeout, expect_protected, signing_k
             f"received {len(seen)} unique PARAM_VALUE names, advertised {advertised_count}"
         )
 
-    mode = "signed-list" if expect_protected else "unsigned-list"
+    if expect_protected:
+        mode = "signed-list" if signing_key is not None else "unsigned-visible-list"
+    else:
+        mode = "unsigned-list"
     print(f"{mode} ok: received={len(seen)} advertised={advertised_count}")
 
 
@@ -156,11 +159,16 @@ def main():
         default="00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff",
     )
     parser.add_argument("--timeout", type=float, default=60.0)
-    parser.add_argument("mode", choices=["unsigned-list", "signed-list", "unsigned-read-set"])
+    parser.add_argument(
+        "mode",
+        choices=["unsigned-list", "signed-list", "unsigned-visible-list", "unsigned-read-set"],
+    )
     args = parser.parse_args()
 
     if args.mode == "unsigned-list":
         collect_list(args.endpoint, args.protected, args.timeout, expect_protected=False)
+    elif args.mode == "unsigned-visible-list":
+        collect_list(args.endpoint, args.protected, args.timeout, expect_protected=True)
     elif args.mode == "signed-list":
         signing_key = bytes.fromhex(args.signing_key_hex)
         if len(signing_key) != 32:
