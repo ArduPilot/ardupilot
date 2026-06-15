@@ -126,10 +126,10 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t &msg)
                     hal.scheduler->delay(5);
                 }
                 uint16_t n = stream->txspace();
-                if (n > packet.count) {
-                    n = packet.count;
+                if (n > count) {
+                    n = count;
                 }
-                stream->write(data, n);                
+                stream->write(data, n);
                 data += n;
                 count -= n;
             }
