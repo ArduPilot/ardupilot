@@ -104,15 +104,16 @@ public:
         _pos_control = &pos_control;
     }
 
-    // Mode-conditional and sensor-derived signal setters. Each defaults
-    // to false; the vehicle calls these when the underlying state
-    // changes (per-tick polling is also fine).
+    // Mode-conditional and sensor-derived signal setters. The vehicle
+    // calls these when the underlying state changes (per-tick polling is
+    // also fine).
 
-    // suppress the takeoff_expected window even while armed and landed
-    // (e.g. ArduCopter THROW mode, which never wants the takeoff signal)
-    void set_takeoff_inhibited(bool b)
+    // allow the takeoff_expected window while armed and landed. Defaults
+    // to true; set false in modes that never want the takeoff signal
+    // (e.g. ArduCopter THROW mode).
+    void set_takeoff_expected(bool b)
     {
-        _takeoff_inhibited = b;
+        _takeoff_expected = b;
     }
     // mode-specific override for the slow-horizontal check: vehicle
     // pre-evaluates "I'm in a manual-attitude mode AND the requested
@@ -162,7 +163,7 @@ private:
     const AC_PosControl *_pos_control;
 
     // mode/sensor-derived inputs, updated via setters
-    bool _takeoff_inhibited;
+    bool _takeoff_expected{true};
     bool _pilot_slow_horizontal;
     bool _high_vibrations;
 

@@ -38,7 +38,7 @@ const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Altitude threshold (AGL where possible) for the ground-effect signals, and master enable. Negative disables the library entirely (no takeoff or touchdown signals). Zero leaves the library enabled but with the touchdown altitude gate disabled, matching the legacy "any gentle descent counts" behaviour; the takeoff release then relies on the 5s hard cap and GNDEFF_TMO. Positive values gate both sides: on takeoff the compensation flag clears once the vehicle climbs above this altitude (subject to GNDEFF_TMO and a 5s hard cap); on approach the touchdown flag only sets when below this altitude. The library prefers HAGL from a rangefinder or onboard terrain data when available; otherwise it uses height-since-takeoff and assumes flat ground (with a 20m XY drift gate disabling the touchdown side once horizontal position is available).
+    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero leaves the compensation enabled for takeoff but disabled for landing. Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present), the terrain database (when available) or worst case using the height-change-since-takeoff assuming flat ground with a 20m horizontal gate disabling the touchdown side if the vehicle's horizontal position is available.
     // @Range: -1 5
     // @Units: m
     // @User: Advanced
@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: TMO
     // @DisplayName: Takeoff Ground Effect Timeout
-    // @Description: Minimum hold time after liftoff before the takeoff ground-effect signal is allowed to clear on the GNDEFF_ALT altitude check. With this set the signal only clears once BOTH this time has elapsed AND height exceeds GNDEFF_ALT, which prevents premature release when baro disturbance corrupts the altitude estimate during the rotor-wash window. The 5s hard cap on the takeoff window still applies regardless. Zero disables this minimum hold and the altitude check alone releases the signal; vehicles with strong propwash baro disturbance benefit from values of 2-5s. Does not affect the touchdown signal.
+    // @Description: Ground effect compensation timeout after liftoff. Compensation is turned off this many seconds after takeoff AND the vehicle has climbed at least GNDEFF_ALT. Compensation is also disabled after 5sec regardless of this timeout or the vehicle's altitude. Zero disables this timeout and only the altitude check is applied. Vehicles with strong baro disturbance from propwash should use values of 2 to 5 sec. This does not affect the compensation during touchdown.
     // @Range: 0 5
     // @Units: s
     // @User: Advanced
@@ -76,7 +76,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
     const uint32_t tnow_ms = AP_HAL::millis();
 
     // takeoff state machine
-    if (_takeoff_inhibited) {
+    if (!_takeoff_expected) {
         _state.takeoff_expected = false;
     } else if (land_complete) {
         // armed and not yet airborne - takeoff is imminent
