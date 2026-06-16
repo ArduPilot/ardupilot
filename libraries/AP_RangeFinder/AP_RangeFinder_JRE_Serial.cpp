@@ -20,13 +20,38 @@
 #include "AP_RangeFinder_JRE_Serial.h"
 #include <AP_Math/AP_Math.h>
 
-#define FRAME_HEADER_1    'R'    // 0x52
-#define FRAME_HEADER_2_A  'A'    // 0x41
-#define FRAME_HEADER_2_B  'B'    // 0x42
-#define FRAME_HEADER_2_C  'C'    // 0x43
+#define FRAME_HEADER_1      'R'     // 0x52
+#define FRAME_HEADER_2_A    'A'     // 0x41
+#define FRAME_HEADER_2_B    'B'     // 0x42
+#define FRAME_HEADER_2_C    'C'     // 0x43
+#define FRAME_HEADER_2_X    'X'     // 0x58
+#define FRAME_HEADER_3      'A'     // 0x41
+#define FRAME_HEADER_4_A    'A'     // 0x41
+#define FRAME_HEADER_4_B    'B'     // 0x42
+#define FRAME_HEADER_4_C    'C'     // 0x43
 
-#define DIST_MAX 50.00
-#define OUT_OF_RANGE_ADD   1.0  // metres
+#define DIST_MAX            50.00f
+#define OUT_OF_RANGE_ADD    1.0f    // metres
+
+#define MODE_A_LEN_V1       16      // 1Data Mode packet length
+#define MODE_B_LEN_V1       32      // 3Data Mode packet length
+#define MODE_C_LEN_V1       48      // 5Data Mode packet length
+#define ALT_OFFSET_V1       4       // offset Altitude data
+#define RADIO_POW_OFFSET_V1 10      // offset Radio Power data
+#define NTRK_STAT_FROM_END_OFFSET_V1    2       // Offset from the end of NTRK Status (Status(L) is 13th or 29th or 45th Byte)
+#define NTRK_STAT_BIT_MASK_V1           0x02    // NTRK bit mask
+
+#define MODE_A_LEN_V2       34      // 1Data Mode packet length
+#define MODE_B_LEN_V2       54      // 3Data Mode packet length
+#define MODE_C_LEN_V2       74      // 5Data Mode packet length
+#define ALT_OFFSET_V2       11      // offset Altitude data
+#define RADIO_POW_OFFSET_V2 19      // offset Radio Power data
+#define NTRK_STAT_FROM_END_OFFSET_V2    8       // offset from the end of NTRK Status (Status is 25th or 45th or 65th Byte)
+#define NTRK_STAT_BIT_MASK_V2           0x02    // NTRK bit mask
+#define FAIL_STAT_FROM_END_OFFSET_V2    8       // offset from the end of Fail Status (Status is 25th or 45th or 65th Byte)
+#define FAIL_STAT_BIT_MASK_V2           0x08    // Fail bit mask
+
+#define SQ_NORM_UPPER_LIMIT 512.0f  // upper limit for normalizing Radio Power to Signal Quality (Radio Power is over 512 -> Signal Quality is 100.0%)
 
 void AP_RangeFinder_JRE_Serial::move_preamble_in_buffer(uint8_t search_start_pos)
 {
@@ -54,46 +79,75 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
     uint16_t invalid_count = 0; // number of invalid readings
     float sum = 0.0f;
 
-    float fft_value = 0.0f;
-    float sum_fft_value = 0.0f;
+    float radio_pow = 0.0f;
+    float sum_radio_pow = 0.0f;
     uint16_t sq_pct;
 
     // read a maximum of 8192 bytes per call to this function:
     uint16_t bytes_available = MIN(uart->available(), 8192U);
 
-    while (bytes_available > 0) {
+    while ((bytes_available > 0) || (data_buff_ofs > 0)) {
         // fill buffer
         const auto num_bytes_to_read = MIN(bytes_available, ARRAY_SIZE(data_buff) - data_buff_ofs);
-        const auto num_bytes_read = uart->read(&data_buff[data_buff_ofs], num_bytes_to_read);
-        if (num_bytes_read == 0) {
-            break;
+        if (0 < num_bytes_to_read) {
+            const auto num_bytes_read = uart->read(&data_buff[data_buff_ofs], num_bytes_to_read);
+
+            if (num_bytes_to_read < num_bytes_read) {
+                // this is a bug in the uart call.
+                data_buff_ofs = 0;
+                break;
+            }
+
+            if (0 < num_bytes_read) {
+                // update available bytes and buffer offsets
+                bytes_available -= num_bytes_read;
+                data_buff_ofs += num_bytes_read;
+            }
         }
-        if (bytes_available < num_bytes_read) {
-            // this is a bug in the uart call.
-            break;
-        }
-        bytes_available -= num_bytes_read;
-        data_buff_ofs += num_bytes_read;
 
         // move header frame header in buffer
         move_preamble_in_buffer(0);
 
         // ensure we have a packet type:
-        if (data_buff_ofs < 2) {
-            continue;
+        if (data_buff_ofs < 4) {
+            break;
         }
 
         // determine packet length for incoming packet:
+        bool is_v2_flag = false;
         uint8_t packet_length;
         switch (data_buff[1]) {
         case FRAME_HEADER_2_A:
-            packet_length = 16;
+            packet_length = MODE_A_LEN_V1;
             break;
         case FRAME_HEADER_2_B:
-            packet_length = 32;
+            packet_length = MODE_B_LEN_V1;
             break;
         case FRAME_HEADER_2_C:
-            packet_length = 48;
+            packet_length = MODE_C_LEN_V1;
+            break;
+        case FRAME_HEADER_2_X:
+            if (data_buff[2] == FRAME_HEADER_3) {
+                switch (data_buff[3]) {
+                case FRAME_HEADER_4_A:
+                    packet_length = MODE_A_LEN_V2;
+                    break;
+                case FRAME_HEADER_4_B:
+                    packet_length = MODE_B_LEN_V2;
+                    break;
+                case FRAME_HEADER_4_C:
+                    packet_length = MODE_C_LEN_V2;
+                    break;
+                default:
+                    move_preamble_in_buffer(3);
+                    continue;
+                }
+
+                is_v2_flag = true;
+            } else {
+                move_preamble_in_buffer(2);
+                continue;
+            }
             break;
         default:
             move_preamble_in_buffer(1);
@@ -102,7 +156,24 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
 
         // check there are enough bytes for message type
         if (data_buff_ofs < packet_length) {
-            continue;
+            break;
+        }
+
+        uint8_t alt_offset;
+        uint8_t radio_pow_offset;
+        uint8_t ntrk_offset;
+        uint8_t ntrk_bit_mask;
+
+        if (is_v2_flag) {
+            alt_offset = ALT_OFFSET_V2;
+            radio_pow_offset = RADIO_POW_OFFSET_V2;
+            ntrk_offset = packet_length - NTRK_STAT_FROM_END_OFFSET_V2 - 1;
+            ntrk_bit_mask = NTRK_STAT_BIT_MASK_V2;
+        } else {
+            alt_offset = ALT_OFFSET_V1;
+            radio_pow_offset = RADIO_POW_OFFSET_V1;
+            ntrk_offset = packet_length - NTRK_STAT_FROM_END_OFFSET_V1 - 1;
+            ntrk_bit_mask = NTRK_STAT_BIT_MASK_V1;
         }
 
         // check the checksum
@@ -113,8 +184,19 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
             continue;
         }
 
-        // check random bit to for magic value:
-        if (data_buff[packet_length-3] & 0x02) { // NTRK
+        if (is_v2_flag) {
+            // check Fail bit to for status value:
+            const uint8_t fail_offset = packet_length - FAIL_STAT_FROM_END_OFFSET_V2 - 1;
+            if (data_buff[fail_offset] & FAIL_STAT_BIT_MASK_V2) {  // Fail
+                invalid_count++;
+                // discard entire packet:
+                move_preamble_in_buffer(packet_length);
+                continue;
+            }
+        }
+
+        // check NTRK bit to for status value:
+        if (data_buff[ntrk_offset] & ntrk_bit_mask) {   // NTRK
             invalid_count++;
             // discard entire packet:
             move_preamble_in_buffer(packet_length);
@@ -122,10 +204,10 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
         }
 
         // good message, extract rangefinder reading:
-        reading_m = (data_buff[4] * 256 + data_buff[5]) * 0.01f;
+        reading_m = (data_buff[alt_offset] * 256 + data_buff[alt_offset + 1]) * 0.01f;
         sum += reading_m;
-        fft_value = (data_buff[10] * 256 + data_buff[11]);
-        sum_fft_value += fft_value;
+        radio_pow = (data_buff[radio_pow_offset] * 256 + data_buff[radio_pow_offset + 1]);
+        sum_radio_pow += radio_pow;
         valid_count++;
         move_preamble_in_buffer(packet_length);
     }
@@ -134,7 +216,7 @@ bool AP_RangeFinder_JRE_Serial::get_reading(float &reading_m)
     if (valid_count > 0) {
         no_signal = false;
         reading_m = sum / valid_count;
-        sq_pct = (uint16_t)((sum_fft_value / valid_count) * (100.0f / 512.0f) + 0.5f);
+        sq_pct = (uint16_t)((sum_radio_pow / valid_count) * (100.0f / SQ_NORM_UPPER_LIMIT) + 0.5f);
         if (sq_pct >= 100) {
             signal_quality_pct = 100;
         } else {
