@@ -756,6 +756,21 @@ private:
     void run_custom_controller() { custom_control.update(); }
 #endif
 
+
+    // support for trimming AHRS using RC stick inputs, enabled via an
+    // aux function.  Also support for auto-trimming AHRS via
+    // controller outputs.
+    struct AHRSTrimming {
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+        void auto_start();
+        void auto_stop();
+        void auto_run();
+        void auto_cancel();
+        bool running;
+#endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+        void save_trim();
+    } ahrs_trimming;
+
     // avoidance.cpp
     void low_alt_avoidance();
 
