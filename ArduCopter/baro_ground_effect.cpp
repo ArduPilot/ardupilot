@@ -5,7 +5,7 @@ void Copter::update_ground_effect_detector(void)
 #if AP_GROUNDEFFECT_ENABLED
     AP_GroundEffect &gndeff = g2.ground_effect;
 
-    gndeff.set_takeoff_inhibited(flightmode->mode_number() == Mode::Number::THROW);
+    gndeff.set_takeoff_expected(flightmode->mode_number() != Mode::Number::THROW);
     gndeff.set_high_vibrations(vibration_check.high_vibes);
 
     // ALT_HOLD has manual attitude and no NE controller, so a near-level
