@@ -1254,7 +1254,7 @@ bool QuadPlane::should_relax(void)
         landing_detect.lower_limit_start_ms = tnow;
     }
 
-    return (tnow - landing_detect.lower_limit_start_ms) > (uint32_t)landing_detect.relax_debounce_ms.get();
+    return (tnow - landing_detect.lower_limit_start_ms) > (uint32_t)MAX(0, landing_detect.relax_debounce_ms.get());
 }
 
 // see if we are flying in vtol
@@ -3628,7 +3628,7 @@ bool QuadPlane::land_detector(void)
     }
            
     if ((now - landing_detect.land_start_ms) < landing_detect.timeout_ms ||
-        (now - landing_detect.lower_limit_start_ms) < (landing_detect.timeout_ms + (uint32_t)landing_detect.lower_limit_extra_ms.get() )) {
+        (now - landing_detect.lower_limit_start_ms) < (landing_detect.timeout_ms + (uint32_t)MAX(0, landing_detect.lower_limit_extra_ms.get()))) {
         return false;
     }
 
