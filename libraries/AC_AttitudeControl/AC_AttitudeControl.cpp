@@ -150,14 +150,14 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("INPUT_TC", 20, AC_AttitudeControl, _input_tc, AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT),
 
-    // @Param: RELX_TC
-    // @DisplayName: Relaxation time constant
-    // @Description: Time constant for relaxing the attitude controller
-    // @Units: s
-    // @Range: 0.01 10
-    // @Increment: 0.01
+    // @Param: RELX_LO
+    // @DisplayName: Relaxation low threshold angle
+    // @Description: Pitch angle (degrees) below which the hysteresis deactivates attitude relaxation
+    // @Units: deg
+    // @Range: 0 90
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("RELX_TC", 21, AC_AttitudeControl, _relax_time_constant, 0.4f),
+    AP_GROUPINFO("RELX_LO", 21, AC_AttitudeControl, _low_tilt_relax, 30.0f),
 
     // @Param: RELX_ANG
     // @DisplayName: Max tilt angle for position controller relaxation
@@ -166,14 +166,23 @@ const AP_Param::GroupInfo AC_AttitudeControl::var_info[] = {
     // @Range: 0 90
     // @Increment: 0.01
     // @User: Standard
-    AP_GROUPINFO("RELX_ANG", 22, AC_AttitudeControl, _max_tilt_relax, 45.0f),
+    AP_GROUPINFO("RELX_HI", 22, AC_AttitudeControl, _high_tilt_relax, 45.0f),
 
     // @Param: RELX_EN
     // @DisplayName: Position control relaxation enable
-    // @Description: Enable/disable flag for postion controller relaxation
+    // @Description: Enable/disable flag for position controller relaxation
     // @Values: 0:Disabled, 1:Enabled
     // @User: Advanced
     AP_GROUPINFO("RELX_EN", 23, AC_AttitudeControl, _att_relax_enabled, 0),
+
+    // @Param: RELX_TC
+    // @DisplayName: Relaxation time constant
+    // @Description: Time constant for the low pass filter on the relaxation factor
+    // @Units: s
+    // @Range: 0.01 10
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("RELX_TC", 24, AC_AttitudeControl, _tc_tilt_relax, 1.0f),
 
     AP_GROUPEND
 };
@@ -738,43 +747,32 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // This vector represents the angular error to rotate the thrust vector using x and y and heading using z
     Vector3f attitude_error;
-
-    if(_ts_enabled && _att_relax_enabled){
-        float attitude_tilt;
-        compute_tilt_angle(attitude_tilt);
-        // Gradually relax roll/pitch setpoint toward zero when tilt exceeds limit
-        Vector3f euler;
-        _attitude_target.to_euler(euler.x, euler.y, euler.z);
-        const float alpha = _dt / (_dt + _relax_time_constant);
-        // Gradually bring the setpoint towards zero
-        if (fabsf(attitude_tilt) > _max_tilt_relax && !_ts_in_transition) {
-            _relaxed_roll  *= (1.0f - alpha);
-            _relaxed_pitch *= (1.0f - alpha);
-            _attitude_target.from_euler(_relaxed_roll, _relaxed_pitch, euler.z);
-            _ang_vel_target.x *= (1.0f - alpha);
-            _ang_vel_target.y *= (1.0f - alpha);
+    static float relaxation_factor_lpf = 0.0f;
+    float alpha_relax = _dt / (_dt + _tc_tilt_relax);
+    static bool _att_relax_active = false;
+    if(_ts_enabled && _att_relax_enabled && !_ts_in_transition){
+        // Linearly relax pitch setpoint toward zero based euler pitch angle.
+        Vector3f euler_sp,euler_ang;
+        _attitude_target.to_euler(euler_sp.x, euler_sp.y, euler_sp.z);
+        attitude_body.to_euler(euler_ang.x, euler_ang.y, euler_ang.z);
+        float pitch_tilt = fabsf(degrees(euler_ang.y));
+        if (pitch_tilt > _high_tilt_relax) {
+            _att_relax_active = true;
+        } else if (pitch_tilt < _low_tilt_relax) {
+            _att_relax_active = false;
         }
-        // When the attitude is relaxed, gradually recover the setpoint as the vehicle returns within limits
-        // 0.5f degree threshold is used to prevent oscillations around the limit when recovering
-        else if (fabsf(_relaxed_roll - euler.x) > radians(0.5f) ||fabsf(_relaxed_pitch - euler.y) > radians(0.5f)) {
-            // After back transition, set the position control demanded attitude setpoint as the relaxed attitude setpoint.
-            if (_ts_back_transition_done) {
-                _relaxed_pitch = euler.y;
-                _relaxed_roll = euler.x;
-                _ts_back_transition_done = false;
-            // Run recovery when relaxed attitude is different from current attitude target
-            }else{
-                _relaxed_roll  += (euler.x - _relaxed_roll)  * alpha;
-                _relaxed_pitch += (euler.y - _relaxed_pitch) * alpha;
-                if (fabsf(_relaxed_roll  - euler.x) < radians(0.5f)) _relaxed_roll  = euler.x;
-                if (fabsf(_relaxed_pitch - euler.y) < radians(0.5f)) _relaxed_pitch = euler.y;
-                _attitude_target.from_euler(_relaxed_roll, _relaxed_pitch, euler.z);
-            }
-        } else {
-        // Fully recovered — update the relaxed angles to original setpoint
-            _relaxed_roll  = euler.x;
-            _relaxed_pitch = euler.y;
+        //During relaxation pitch setpoint is relaxed towards zero.
+        if(_att_relax_active) {
+            relaxation_factor_lpf += alpha_relax * (1.0f - relaxation_factor_lpf);
         }
+        // When not relaxing, return the setpoint back to the commanded angle.
+        else {
+            relaxation_factor_lpf += alpha_relax * (0.0f - relaxation_factor_lpf);
+        }
+        relaxation_factor_lpf = constrain_float(relaxation_factor_lpf, 0.0f, 1.0f);
+        euler_sp.y *= (1.0f - relaxation_factor_lpf);
+        _ang_vel_target.y *= (1.0f - relaxation_factor_lpf);
+        _attitude_target.from_euler(euler_sp.x, euler_sp.y, euler_sp.z);
     }
     thrust_heading_rotation_angles(_attitude_target, attitude_body, attitude_error, _thrust_angle, _thrust_error_angle);
 
@@ -792,10 +790,10 @@ void AC_AttitudeControl::attitude_controller_run_quat()
 
     // Correct the thrust vector and smoothly add feedforward and yaw input
     _feedforward_scalar = 1.0f;
-    if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE * 2.0f) {
+    if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE * 3.0f) {
         _ang_vel_body.z = _ahrs.get_gyro().z;
         get_rate_yaw_pid().reset_I();
-    } else if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE) {
+    } else if (_thrust_error_angle > AC_ATTITUDE_THRUST_ERROR_ANGLE * 2.0f) {
         _feedforward_scalar = (1.0f - (_thrust_error_angle - AC_ATTITUDE_THRUST_ERROR_ANGLE) / AC_ATTITUDE_THRUST_ERROR_ANGLE);
         _ang_vel_body.x += ang_vel_body_feedforward.x * _feedforward_scalar;
         _ang_vel_body.y += ang_vel_body_feedforward.y * _feedforward_scalar;

@@ -1050,8 +1050,6 @@ void Tailsitter_Transition::VTOL_update()
         if (!quadplane.tailsitter.transition_vtol_complete()) {
             return;
         }
-        // To inform the attitude controller that VTOL_DONE
-        quadplane.attitude_control->set_tailsitter_back_transition_done(true);
         // transition to VTOL complete, if armed set vtol rate limit starting point
         if (plane.arming.is_armed_and_safety_off()) {
             vtol_limit_start_ms = now;

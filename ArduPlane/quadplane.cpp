@@ -463,7 +463,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0.1 0.6
     // @Increment: 0.05
     // @User: Standard
-    AP_GROUPINFO("LAND_ALTCHG", 31, QuadPlane, landing_detect.detect_alt_change, 1.5),
+    AP_GROUPINFO("LAND_ALTCHG", 31, QuadPlane, landing_detect.detect_alt_change, 0.2),
 
     // @Param: NAVALT_MIN
     // @DisplayName: Minimum navigation altitude
@@ -3626,6 +3626,9 @@ bool QuadPlane::check_land_complete(void)
 {
     if (poscontrol.get_state() != QPOS_LAND_FINAL) {
         // only apply to final landing phase
+        return false;
+    }
+    if (!motors->armed()) {
         return false;
     }
     // ---- disarm watchdog ----
