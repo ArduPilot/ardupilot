@@ -191,6 +191,9 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = get_location(results.location);
 
+    // origin-relative functions
+    // results.provides_common_origin = false;
+
     results.hagl_valid = true;
     results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
 

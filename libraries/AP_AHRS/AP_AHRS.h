@@ -847,16 +847,7 @@ private:
     float _sin_pitch;
     float _sin_yaw;
 
-#if HAL_NAVEKF2_AVAILABLE
-    void update_EKF2(void);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    void update_EKF3(void);
-#endif
-
     uint8_t _ekf_flags; // bitmask from Flags enumeration
-
-    void update_DCM();
 
     /*
      * home-related state
@@ -884,14 +875,6 @@ private:
     void update_AOA_SSA(void);
 
     EKFType last_active_ekf_type;
-
-#if AP_AHRS_SIM_ENABLED
-    void update_SITL(void);
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    void update_external(void);
-#endif    
 
     /*
      * trim-related state and private methods:
@@ -1131,6 +1114,7 @@ private:
 
     // true when we have completed the common origin setup
     bool done_common_origin;
+    void try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates);
 
     // return a pointer to the backend for supplied type
     AP_AHRS_Backend *backend_for_type(EKFType type);
