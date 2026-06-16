@@ -1122,6 +1122,21 @@ bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input
     return currently_clamped;
 }
 
+// simple battery consumption model
+// does not support the behavior documented by SIM_BATT_VOLTAGE and SIM_BATT_CAP_AH parameters
+void Aircraft::update_battery()
+{
+    // lose 0.7V at full throttle (from the user-specified voltage)
+    battery_voltage = sitl->batt_voltage - 0.7f * fabsf(sitl->throttle);
+    // assume 50A at full throttle
+    battery_current = 50.0f * fabsf(sitl->throttle);
+}
+
+void Aircraft::update_battery(const struct sitl_input &input)
+{
+    update_battery();
+}
+
 void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
