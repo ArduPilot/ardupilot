@@ -17651,6 +17651,40 @@ return update, 1000
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
 
+    def inputShapingOvershoot(self):
+        '''test time constant increase during a maneuver'''
+
+        self.takeoff()
+
+        # Lower the accel limit and reduce the time constant
+        self.context_push()
+        self.set_parameter("ATC_ACC_R_MAX", 500)
+        self.set_parameter("ATC_INPUT_TC", 0.1)
+
+        # Lean over to the left
+        self.set_rc(1, 1000)
+        self.wait_attitude(desroll=-30)
+
+        # Start leaning right
+        self.set_rc(1, 2000, timeout=None)
+
+        # Change the time-constant
+        self.set_parameter("ATC_INPUT_TC", 1)
+
+        # See if attitude overshoots
+        try:
+            self.wait_attitude(desroll=90)
+            raise NotAchievedException("Should not reach 90 deg roll!")
+        except AutoTestTimeoutException:
+            pass
+        except Exception as e:
+            raise e
+
+        self.set_rc(1, 1500)
+        self.context_pop()
+
+        self.land_and_disarm()
+
     def tests2b(self):  # this block currently around 9.5mins here
         '''return list of all tests'''
         ret = ([
@@ -17820,6 +17854,7 @@ return update, 1000
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
+            self.inputShapingOvershoot,
         ])
         return ret
 
