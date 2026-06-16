@@ -40,6 +40,7 @@ public:
     // that we're never going to boot properly:
     static bool in_config_error(void) { return _in_error_loop; }
 
+#if AP_FEATURE_BOARD_DETECT
     // valid types for BRD_TYPE: these values need to be in sync with the
     // values from the param description
     enum px4_board_type {
@@ -73,16 +74,13 @@ public:
         PX4_BOARD_OLDDRIVERS = 100,
     };
 
+    static enum px4_board_type get_board_type(void) {
+        return px4_configured_board;
+    }
+#endif  // AP_FEATURE_BOARD_DETECT
+
     // set default value for BRD_SAFETY_MASK
     void set_default_safety_ignore_mask(uint32_t mask);
-
-    static enum px4_board_type get_board_type(void) {
-#if AP_FEATURE_BOARD_DETECT
-        return px4_configured_board;
-#else
-        return BOARD_TYPE_UNKNOWN;
-#endif
-    }
 
     // ask if IOMCU is enabled. This is a uint8_t to allow
     // developer debugging by setting BRD_IO_ENABLE=100 to avoid the
