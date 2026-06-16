@@ -139,6 +139,9 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = EKF3.getLLH(results.location);
 
+    // origin-relative functions
+    results.provides_common_origin = true;
+
     results.hagl_valid = EKF3.getHAGL(results.hagl);
 
     /*
