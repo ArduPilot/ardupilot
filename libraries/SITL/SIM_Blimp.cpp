@@ -380,4 +380,5 @@ void Blimp::update(const struct sitl_input &input)
   update_mag_field_bf();
   rate_hz = sitl->loop_rate_hz;
 
+  update_battery();
 }

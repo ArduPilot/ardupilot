@@ -490,10 +490,14 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     // update battery state
     if ((received_bitmask & BAT_VOLT) != 0) {
-        battery_voltage = state.bat_volt; 
+        battery_voltage = state.bat_volt;
+    } else {
+        battery_voltage = sitl->batt_voltage;
     }
     if ((received_bitmask & BAT_AMP) != 0) {
-        battery_current = state.bat_amp; 
+        battery_current = state.bat_amp;
+    } else {
+        battery_current = 0.0f;
     }
 
     double deltat;
