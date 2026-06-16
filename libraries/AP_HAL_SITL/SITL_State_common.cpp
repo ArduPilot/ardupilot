@@ -495,12 +495,8 @@ void SITL_State_Common::update_voltage_current(struct sitl_input &input, float t
                     current += draw;
                 }
             } else {
-                // simulate simple battery setup
-                // lose 0.7V at full throttle
-                voltage = _sitl->batt_voltage - 0.7f * throttle;
-
-                // assume 50A at full throttle
-                current = 50.0f * throttle;
+                voltage = sitl_model->get_battery_voltage();
+                current = sitl_model->get_battery_current();
             }
         } else {
             // FDM provides voltage and current
