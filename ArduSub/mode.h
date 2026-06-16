@@ -266,13 +266,13 @@ public:
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_set_angle(const Quaternion&, float);
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
-    bool guided_set_destination(const Vector3f& destination);
+    bool guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms);
+    bool guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    bool guided_set_destination(const Vector3f& destination_neu_cm);
     bool guided_set_destination(const Location&);
-    bool guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
-    void guided_set_velocity(const Vector3f& velocity);
-    void guided_set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    bool guided_set_destination(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    void guided_set_velocity(const Vector3f& velocity_neu_cms);
+    void guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     float get_auto_heading();
     void guided_limit_clear();
@@ -315,7 +315,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
     bool auto_loiter_start();
-    void auto_wp_start(const Vector3f& destination);
+    void auto_wp_start(const Vector3f& destination_neu_cm);
     void auto_wp_start(const Location& dest_loc);
     void auto_circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
     void auto_circle_start();

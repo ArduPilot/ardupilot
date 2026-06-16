@@ -12,6 +12,13 @@ NavEKF2 AP_AHRS_NavEKF2::EKF2;
 
 void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    const auto now_ms = AP_HAL::millis();
+
+    // initialisation complete some time after ekf has started
+    results.initialised = (started && (now_ms - start_time_ms > 20000));
+
+    results.healthy = started && EKF2.healthy();
+
     const AP_InertialSensor &_ins = AP::ins();
 
     /*
@@ -91,6 +98,12 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.location_valid = EKF2.getLLH(results.location);
 
     results.hagl_valid = EKF2.getHAGL(results.hagl);
+
+    /*
+     * air data estimates
+     */
+    EKF2.getWind(results.wind);
+    results.wind_valid = true;
 
     /*
      * Sensor-related information

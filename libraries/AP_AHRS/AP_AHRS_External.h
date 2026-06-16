@@ -42,15 +42,9 @@ public:
     void reset_gyro_drift() override {}
 
     // Methods
-    bool            initialised() const override;
     void            update() override;
     void            get_results(Estimates &results) override;
     void            reset() override {}
-
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &ret) const override {
-        return false;
-    }
 
     bool            use_compass() override {
         // this is actually never called at the moment; we use dcm's
@@ -59,9 +53,6 @@ public:
     }
 
     void estimate_wind(void);
-
-    // is the AHRS subsystem healthy?
-    bool healthy() const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)

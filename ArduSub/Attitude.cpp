@@ -64,7 +64,7 @@ float Sub::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = get_bearing_cd((pos_control.get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), roi_WP.xy());
+        yaw_look_at_WP_bearing = get_bearing_cd((pos_control.get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), roi_WP_neu_cm.xy());
     }
 
     return yaw_look_at_WP_bearing;

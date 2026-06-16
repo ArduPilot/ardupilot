@@ -37,9 +37,6 @@
 // forward declare view class
 class AP_AHRS_View;
 
-#define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
-
-
 // fwd declare GSF estimator
 class EKFGSF_yaw;
 
@@ -126,7 +123,7 @@ public:
     bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
 
     // return a wind estimation vector, in m/s; returns 0,0,0 on failure
-    const Vector3f &wind_estimate() const { return state.wind_estimate; }
+    const Vector3f &wind_estimate() const { return active_estimates->wind; }
 
     // return a wind estimation vector, in m/s; returns 0,0,0 on failure
     bool wind_estimate(Vector3f &wind) const;
@@ -356,7 +353,9 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
 
     // true if the AHRS has completed initialisation
-    bool initialised() const;
+    bool initialised() const {
+        return configured_estimates->initialised;
+    }
 
 #if AP_AHRS_DCM_ENABLED
     // return true if *DCM* yaw has been initialised
@@ -855,7 +854,6 @@ private:
 #endif
 
     static constexpr uint16_t startup_delay_ms = 1000;
-    uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     void update_DCM();
@@ -1032,8 +1030,6 @@ private:
         Vector3f gyro_drift;
         Vector3f accel_ef;
         Vector3f accel_bias;
-        Vector3f wind_estimate;
-        bool wind_estimate_ok;
         float EAS2TAS;
         bool airspeed_EAS_ok;
         float airspeed_EAS;

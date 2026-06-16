@@ -66,12 +66,12 @@ void ModeAuto::run()
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void ModeAuto::auto_wp_start(const Vector3f& destination)
+void ModeAuto::auto_wp_start(const Vector3f& destination_neu_cm)
 {
     sub.auto_mode = Auto_WP;
 
     // initialise wpnav (no need to check return status because terrain data is not used)
-    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination_neu_cm, false);
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -401,7 +401,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the sub
         if (!sub.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
+            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP_neu_cm)) {
                 set_auto_yaw_mode(AUTO_YAW_ROI);
             }
         }
@@ -416,7 +416,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the sub at the location
-        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
+        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP_neu_cm)) {
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
 #endif  // HAL_MOUNT_ENABLED

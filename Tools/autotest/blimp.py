@@ -55,9 +55,6 @@ class AutoTestBlimp(TestSuite):
     def test_filepath(self):
         return os.path.realpath(__file__)
 
-    def default_speedup(self):
-        return 100
-
     def set_current_test_name(self, name):
         self.current_test_name_directory = "Blimp_Tests/" + name + "/"
 

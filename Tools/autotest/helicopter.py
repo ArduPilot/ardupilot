@@ -33,10 +33,6 @@ class AutoTestHelicopter(AutoTestCopter):
     def sitl_start_location(self):
         return self.sitl_start_loc
 
-    def default_speedup(self):
-        '''Heli seems to be race-free'''
-        return 100
-
     def is_heli(self):
         return True
 

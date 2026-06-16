@@ -2082,7 +2082,7 @@ class TestSuite(abc.ABC):
             self.rc_thread = None
 
     def default_speedup(self):
-        return 8
+        return 100
 
     def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
@@ -9466,7 +9466,7 @@ Also, ignores heartbeats not from our target system'''
                     self.message_hooks.remove(h)
             hooks_removed = True
         self.test_timings[desc] = time.time() - start_time
-        reset_needed = self.contexts[-1].sitl_commandline_customised
+        reset_needed = any(ctx.sitl_commandline_customised for ctx in self.contexts[old_contexts_length:])
 
         passed = True
         if ex is not None:
@@ -9517,8 +9517,13 @@ Also, ignores heartbeats not from our target system'''
                 self.reboot_sitl(startup_location_dist_max=1000000) # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
-            self.progress("Test failed but ArduPilot process alive; rebooting")
-            self.reboot_sitl() # that'll learn it
+            if reset_needed:
+                self.progress("Test failed but ArduPilot process alive; resetting")
+                self.reset_SITL_commandline()
+                reset_needed = False
+            else:
+                self.progress("Test failed but ArduPilot process alive; rebooting")
+                self.reboot_sitl() # that'll learn it
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
@@ -14127,6 +14132,9 @@ switch value'''
 
     def FRSkyPassThroughSensorIDs(self):
         '''test FRSKy protocol's telem-passthrough functionality (sensor IDs)'''
+        # the terrain sensor (0x500B) validation compares the vehicle's
+        # height-above-terrain, so the autopilot needs terrain data:
+        self.install_terrain_handlers_context()
         self.set_parameters({
             "SERIAL5_PROTOCOL": 10, # serial5 is FRSky passthrough
             "RPM1_TYPE": 10, # enable RPM output

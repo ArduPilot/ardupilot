@@ -143,6 +143,14 @@ AP_AHRS_DCM::update()
 
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    const auto now_ms = AP_HAL::millis();
+
+    // always initialised
+    results.initialised = true;
+
+    // consider ourselves healthy if there have been no failures for 5 seconds
+    results.healthy = (_last_failure_ms == 0 || now_ms - _last_failure_ms > 5000);
+
     // not using a specific sensor:
     results.primary_gyro = AP::ins().get_first_usable_gyro();
     results.primary_accel = AP::ins().get_first_usable_accel();
@@ -184,6 +192,12 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // hagl is not supplied:
     // results.hagl_valid = false;
     // results.hagl = 0;
+
+    /*
+     * air data estimates
+     */
+    results.wind = _wind;
+    results.wind_valid = true;
 
     /*
      * Sensor-related information
@@ -1208,15 +1222,6 @@ bool AP_AHRS_DCM::get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &
 }
 
 /*
-  check if the AHRS subsystem is healthy
-*/
-bool AP_AHRS_DCM::healthy(void) const
-{
-    // consider ourselves healthy if there have been no failures for 5 seconds
-    return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
-}
-
-/*
   return NED velocity if we have GPS lock
  */
 bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
@@ -1240,9 +1245,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     const bool gotGPS = (AP::gps().status() >= AP_GPS_FixType::FIX_2D);
     if (gotAirspeed) {
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        gndVelADS = airspeed_vector + wind.xy();
+        gndVelADS = airspeed_vector + _wind.xy();
     }
 
     // Generate estimate of ground speed vector using GPS
@@ -1287,10 +1290,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
         Vector2f ret{_cos_yaw, _sin_yaw};
         ret *= airspeed;
         // adjust for estimated wind
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        ret.x += wind.x;
-        ret.y += wind.y;
+        ret += _wind.xy();
         return ret;
     }
 
@@ -1310,17 +1310,6 @@ bool AP_AHRS_DCM::get_vert_pos_rate_D(float &velocity) const
         return true;
     }
     return false;
-}
-
-// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-// requires_position should be true if horizontal position configuration should be checked (not used)
-bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
-{
-    if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
-        return false;
-    }
-    return true;
 }
 
 /*

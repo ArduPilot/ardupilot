@@ -62,9 +62,6 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override;
-
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool airspeed_EAS(float &airspeed_ret) const override;
@@ -74,9 +71,6 @@ public:
     bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
     bool            use_compass() override { return true; }
-
-    // is the AHRS subsystem healthy?
-    bool healthy() const override { return true; }
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)

@@ -35,16 +35,6 @@ public:
 
     const char *shortname() const override { return "EKF3"; }
 
-    bool healthy(void) const override {
-        if (!started) {
-            return false;
-        }
-        if (!EKF3.healthy()) {
-            return false;
-        }
-        return true;
-    }
-
     void reset_gyro_drift() override { EKF3.resetGyroBias(); }
 
     void update() override { EKF3.UpdateFilter(); }
@@ -62,11 +52,6 @@ public:
     }
     bool set_origin(const Location &loc) override {
         return EKF3.setOriginLLH(loc);
-    }
-
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        return EKF3.getWind(wind);
     }
 
     bool            use_compass() override {
@@ -111,6 +96,7 @@ public:
     static NavEKF3 EKF3;
 
     bool started;
+    uint32_t start_time_ms;  // timer used to delay starting the filter
 };
 
 #endif  // AP_AHRS_NAVEKF3_ENABLED

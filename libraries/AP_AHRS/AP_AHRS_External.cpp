@@ -5,24 +5,18 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-// true if the AHRS has completed initialisation
-bool AP_AHRS_External::initialised(void) const
-{
-    return AP::externalAHRS().initialised();
-}
-
 void AP_AHRS_External::update()
 {
     AP::externalAHRS().update();
 }
 
-bool AP_AHRS_External::healthy() const {
-    return AP::externalAHRS().healthy();
-}
-
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
     auto &extahrs = AP::externalAHRS();
+
+    results.initialised = extahrs.initialised();
+
+    results.healthy = extahrs.healthy();
 
 #if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &_ins = AP::ins();
@@ -76,6 +70,13 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // hagl is not supplied:
     // results.hagl_valid = false;
     // results.hagl = 0;
+
+    /*
+     * air data estimates
+     */
+    // wind estimate is not supplied:
+    // results.wind = {};
+    // results.wind_valid = false;
 
     /*
      * Sensor-related information
