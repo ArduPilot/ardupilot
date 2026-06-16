@@ -5449,6 +5449,111 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                      timeout=1,
                      want_result=mavutil.mavlink.MAV_RESULT_DENIED)
 
+    def fly_jump_loop_mission(self, name, items, loop_end_wp, loop_centre):
+        '''fly items and check the vehicle keeps to the loop the jump creates
+
+        items must jump back forever over a leg centred on loop_centre.
+        loop_end_wp is the sequence number of the last waypoint of that leg,
+        reached just before the jump is taken.
+        '''
+        self.progress("Jump case: %s" % name)
+        self.start_flying_simple_relhome_mission(items)
+
+        # reach the end of the looped leg for the first time
+        self.wait_current_waypoint(loop_end_wp, timeout=120)
+
+        # the jump goes back to the start of the leg, so the vehicle should
+        # orbit it.  Position is checked rather than the reported current
+        # waypoint, which advances correctly even when the lookahead does not
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 45:
+            dist = self.get_distance(loop_centre, self.get_location())
+            if dist > 100:
+                raise NotAchievedException(
+                    "%s: vehicle left the loop after the jump, %.0fm from its centre" % (name, dist))
+            self.delay_sim_time(1, "checking the vehicle stays on the loop")
+
+        self.progress("%s: stayed on the loop" % name)
+        self.do_RTL()
+
+    def JumpNextNavResolution(self):
+        '''Verify the next-nav-command lookahead follows jumps of every shape'''
+
+        # the lookahead used to shape the path must resolve the same next nav
+        # command the mission goes on to execute.  It did not whenever a jump
+        # landed on anything other than a nav command (issues 31021 and 21534),
+        # so cover each combination of jump type and target.  In every case the
+        # vehicle must orbit the wpA <-> wpB leg; the waypoints 300m south of
+        # it are reachable only by discarding the jump
+        alt = 20
+        loop_centre = self.offset_location_ne(self.home_position_as_location(), 7, 22)
+
+        takeoff_and_approach = [
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 19, -57, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 35, -17, alt),
+        ]
+        wpA = (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 23, 14, alt)
+        wpB = (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -8, 30, alt)
+        beyond_the_jump = [
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -300, 30, alt),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -350, 30, alt),
+        ]
+        # a do command that Copter's AUTO handles and that needs no hardware
+        roi_none = mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE
+
+        # the target is a do command, so the scan has to carry on past it to
+        # reach wpA.  This is the general form of the bug, tags aside
+        self.fly_jump_loop_mission(
+            "jump to do command",
+            takeoff_and_approach + [
+                self.create_MISSION_ITEM_INT(roi_none),                                      # 4 jump target
+                wpA,                                                                         # 5
+                wpB,                                                                         # 6
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=4, p2=-1),  # 7
+            ] + beyond_the_jump,
+            loop_end_wp=6,
+            loop_centre=loop_centre)
+
+        # the target is a nav command, which the scan returns immediately.
+        # This shape always worked, and is here to keep it that way
+        self.fly_jump_loop_mission(
+            "jump to nav command",
+            takeoff_and_approach + [
+                wpA,                                                                         # 4 jump target
+                wpB,                                                                         # 5
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=4, p2=-1),  # 6
+            ] + beyond_the_jump,
+            loop_end_wp=5,
+            loop_centre=loop_centre)
+
+        # a tag jump always lands on the tag marker, which is never a nav
+        # command, so this shape was broken for every mission that used tags
+        self.fly_jump_loop_mission(
+            "jump tag to nav command",
+            takeoff_and_approach + [
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_JUMP_TAG, p1=1),            # 4 tag 1
+                wpA,                                                                             # 5
+                wpB,                                                                             # 6
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP_TAG, p1=1, p2=-1),  # 7
+            ] + beyond_the_jump,
+            loop_end_wp=6,
+            loop_centre=loop_centre)
+
+        # tag marker then a do command: the scan has to step over two non-nav
+        # commands before it reaches wpA
+        self.fly_jump_loop_mission(
+            "jump tag to do command",
+            takeoff_and_approach + [
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_JUMP_TAG, p1=2),            # 4 tag 2
+                self.create_MISSION_ITEM_INT(roi_none),                                          # 5
+                wpA,                                                                             # 6
+                wpB,                                                                             # 7
+                self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP_TAG, p1=2, p2=-1),  # 8
+            ] + beyond_the_jump,
+            loop_end_wp=7,
+            loop_centre=loop_centre)
+
     def GPSViconSwitching(self):
         """Fly GPS and Vicon switching test"""
         """Setup parameters including switching to EKF3"""
@@ -16228,6 +16333,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''
 
         self.upload_simple_relhome_mission(items)
+        # start from the beginning of the mission.  Copter resets the
+        # mission on disarm, so this usually changes nothing, but a test
+        # that moves the index without ever arming leaves it pointing
+        # mid-mission.  This must follow the upload, as setting the index
+        # while no mission is loaded is silently ignored:
+        self.set_current_waypoint(0, check_afterwards=False)
 
         self.set_parameter("AUTO_OPTIONS", 3)
         self.change_mode('AUTO')
@@ -18991,6 +19102,7 @@ return update, 1000
             self.FlyMissionTwiceWithReset,
             self.MissionIndexValidity,
             self.InvalidJumpTags,
+            self.JumpNextNavResolution,
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.IBus,
