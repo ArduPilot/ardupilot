@@ -37,7 +37,7 @@ public:
 
     void reset_gyro_drift() override { EKF3.resetGyroBias(); }
 
-    void update() override { EKF3.UpdateFilter(); }
+    void update() override;
 
     void get_results(Estimates &results) override;
     void reset() override {
@@ -95,6 +95,7 @@ public:
     // this is out here so parameters can be poked into it
     static NavEKF3 EKF3;
 
+    bool start();
     bool started;
     uint32_t start_time_ms;  // timer used to delay starting the filter
 };
