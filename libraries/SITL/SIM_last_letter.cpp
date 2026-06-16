@@ -133,6 +133,7 @@ void last_letter::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
+    update_battery();
     sync_frame_time();
 
     update_position();

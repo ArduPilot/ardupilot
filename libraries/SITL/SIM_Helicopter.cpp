@@ -426,6 +426,8 @@ void Helicopter::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_battery();
 }
 
 void Helicopter::update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt)

@@ -483,6 +483,7 @@ void JSBSim::update(const struct sitl_input &input)
     }
     send_servos(input);
     recv_fdm(input);
+    update_battery();
     adjust_frame_time(rate_hz);
     sync_frame_time();
     drain_control_socket();
