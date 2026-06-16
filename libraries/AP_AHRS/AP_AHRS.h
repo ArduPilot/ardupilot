@@ -853,7 +853,6 @@ private:
     void update_EKF3(void);
 #endif
 
-    static constexpr uint16_t startup_delay_ms = 1000;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
 
     void update_DCM();
