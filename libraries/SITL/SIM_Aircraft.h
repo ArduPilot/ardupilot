@@ -179,6 +179,7 @@ public:
 #endif
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature_degC() const { return battery.get_temperature_degC(); }
+    float get_battery_current() const { return battery_current; }
 
     float ambient_outside_temperature_degC() const;
     float ambient_outside_pressure_Pascal() const;
@@ -360,6 +361,10 @@ protected:
 
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
+
+    // update battery
+    virtual void update_battery();
+    virtual void update_battery(const struct sitl_input &input);
 
     // update external payload/sensor dynamic
     void update_external_payload(const struct sitl_input &input);
