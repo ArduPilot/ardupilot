@@ -16,6 +16,7 @@ import glob
 import importlib.util
 import io
 import math
+import multiprocessing
 import operator
 import os
 import pathlib
@@ -1876,6 +1877,8 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
+    __slots__ = ('name', 'description', 'function', 'kwargs', 'attempts', 'speedup', 'instance')
+
     def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
         if kwargs is None:
             kwargs = {}
@@ -1887,6 +1890,7 @@ class Test(object):
         self.kwargs = kwargs
         self.attempts = attempts
         self.speedup = speedup
+        self.instance = 0
 
 
 class Result(object):
@@ -1970,6 +1974,7 @@ class TestSuite(abc.ABC):
                  enable_fgview=False,
                  move_logs_on_test_failure: bool = False,
                  asan=False,
+                 instance=0,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2073,6 +2078,10 @@ class TestSuite(abc.ABC):
         self.dronecan_tests = dronecan_tests
         self.statustext_id = 1
         self.message_hooks = []  # functions or MessageHook instances
+        # instance number; 0 for serial/non-parallel runs (repo-root working
+        # directory).  Parallel workers override this; a serial run can set it
+        # via autotest.py's -I option to get its own working directory + ports.
+        self.instance = instance
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -2145,13 +2154,13 @@ class TestSuite(abc.ABC):
 
     def adjust_ardupilot_port(self, port):
         '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
-        return port
+        return port + self.instance * 10
 
     def spare_network_port(self, offset=0):
         '''returns a network port which should be able to be bound'''
         if offset > 2:
             raise ValueError("offset too large")
-        return 8000 + offset
+        return 8000 + (3 * self.instance) + offset
 
     def autotest_connection_string_to_ardupilot(self):
         return "tcp:127.0.0.1:%u" % self.adjust_ardupilot_port(5760)
@@ -2159,7 +2168,7 @@ class TestSuite(abc.ABC):
     def sitl_rcin_port(self, offset=0):
         if offset > 2:
             raise ValueError("offset too large")
-        return 5501 + offset
+        return 5501 + (3 * self.instance) + offset
 
     def mavproxy_options(self):
         """Returns options to be passed to MAVProxy."""
@@ -4531,6 +4540,8 @@ class TestSuite(abc.ABC):
 
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
+        # each parallel instance runs in its own working directory, so
+        # the logs are always in a plain "logs/" relative to our cwd:
         ret = sorted(glob.glob("logs/00*.BIN"))
         self.progress("log list: %s" % str(ret))
         return ret
@@ -9329,7 +9340,9 @@ Also, ignores heartbeats not from our target system'''
 
     def remove_ardupilot_terrain_cache(self):
         '''removes the terrain files ArduPilot keeps in its onboiard storage'''
-        util.run_cmd('rm -f %s' % util.reltopdir("terrain/*.DAT"))
+        # terrain is cached relative to the SITL working directory, which
+        # for a parallel/-I instance is its own directory:
+        util.run_cmd('rm -f terrain/*.DAT')
 
     def check_logs(self, name, bin_logs=None):
         '''called to move relevant log files from our working directory to the
@@ -9473,6 +9486,9 @@ Also, ignores heartbeats not from our target system'''
             passed = False
 
         result = Result(test)
+        result.fcu_firmware_version = self.fcu_firmware_version
+        result.fcu_firmware_hash = self.fcu_firmware_hash
+        result.githash = self.githash
         result.time_elapsed = self.test_timings[desc]
 
         ardupilot_alive = False
@@ -9590,8 +9606,19 @@ Also, ignores heartbeats not from our target system'''
             self.reset_SITL_commandline()
 
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
-            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
-            self.set_current_waypoint(0, check_afterwards=False)
+            try:
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+                self.set_current_waypoint(0, check_afterwards=False)
+            except Exception as ex:
+                self.progress("Exception clearing mission")
+                self.print_exception_caught(ex)
+                try:
+                    self.wait_heartbeat()
+                except AutoTestTimeoutException:
+                    self.progress("No heartbeat received")
+                self.dump_process_status(result)
+                passed = False
+                self.reset_SITL_commandline()
 
         tee.close()
 
@@ -9672,6 +9699,8 @@ Also, ignores heartbeats not from our target system'''
             "asan": self.asan,
             "wipe": True,
             "enable_fgview": self.enable_fgview,
+            "sitl_rcin_port": self.sitl_rcin_port(),
+            "instance": self.instance,
         }
         start_sitl_args.update(**sitl_args)
         if ("defaults_filepath" not in start_sitl_args or
@@ -9687,6 +9716,8 @@ Also, ignores heartbeats not from our target system'''
         self.expect_list_add(self.sitl)
         self.sup_prog = []
         count = 0
+        # supplementary binaries don't get rcin port:
+        del start_sitl_args["sitl_rcin_port"]
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
             start_sitl_args["customisations"] = [sup_binary['customisation']]
@@ -12979,11 +13010,292 @@ switch value'''
         if not self.current_onboard_log_contains_message(messagetype):
             raise NotAchievedException("Current onboard log does not contain message %s" % messagetype)
 
-    def run_tests(self, tests) -> List[Result]:
+    def tests_needing_exclusive_run(self):
+        '''returns a list of test names which must not be run in parallel
+        with any other test.  These tests use a shared resource (a fixed
+        network port, sudo/pppd, the shared build directory, ...) or assume
+        they are running as the sole / instance-0 SITL.  They are run on
+        their own - serially, at instance 0 (base ports, repo-root working
+        directory) - before the rest of the tests are run in parallel.'''
+        return [
+            # bind fixed network ports / use sudo:
+            "NetworkingWebServer",
+            "NetworkingWebServerPPP",
+            "ManyMAVLinkConnections",
+
+            # uses pppd (sudo) and a fixed PPP-over-TCP port:
+            "PPPPeriph",
+
+            # rebuilds the Replay tool; this mutates the shared build
+            # directory / waf board configuration, which races with other
+            # tests (and other instances) building or running:
+            "Replay",
+
+            # The following only ever fail when run in parallel; we are not
+            # 100% sure they truly need exclusive runs (vs. e.g. being
+            # sensitive to host load, or assuming instance-0 ports), but
+            # blacklisting them keeps the parallel run green.  Revisit if the
+            # underlying causes are addressed:
+
+            # passes standalone at instance 0, fails at a non-zero instance;
+            # cause not yet understood:
+            "WindMessageSpeed",
+
+            # only seen failing under heavy parallel load (passes when run
+            # on its own); may just be host-load sensitive:
+            "WatchdogHome",
+
+            # lua rangefinder-quality test; passes on its own but fails
+            # under heavy parallel load (scripting timing sensitive):
+            "RngfndQuality",
+
+            # builds the AP_Periph binary (shared build directory) and uses
+            # CAN multicast; not safe to run alongside other tests:
+            "PeriphMultiUARTTunnel",
+
+            # FFT motor-noise detection; flaky under parallel load (passes
+            # in isolation at any instance):
+            "GyroFFTMotorNoiseCheck",
+
+            # end-of-mission yaw check; only seen failing under heavy
+            # parallel load (passes when run on its own):
+            "MissionRTLYawBehaviour",
+
+            # RTL final-heading check; yaw accuracy is sensitive to host
+            # load and flakes under parallel runs (passes on its own):
+            "RTLYaw",
+        ]
+
+    def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
+        '''run tests in parallel, but first run any tests which have been
+        blacklisted from parallel running on their own, serially'''
+        exclusive = self.tests_needing_exclusive_run()
+        serial_tests = [x for x in tests if x.name in exclusive]
+        parallel_tests = [x for x in tests if x.name not in exclusive]
+
+        # self.instance is the base instance number (the -I option, 0 by
+        # default).  The blacklisted tests run on their own at the base
+        # instance; the parallel pass uses the instances above it.
+        base = self.instance
+
+        results = []
+        if len(serial_tests):
+            self.progress("Running %u test(s) serially (blacklisted from parallel run)" %
+                          len(serial_tests))
+            # run the blacklisted tests on their own at the base instance
+            # (base ports / repo-root working directory when base==0): several
+            # of them assume those ports or otherwise behave like a serial run:
+            results += self.run_tests_in_processes(serial_tests, 1, base_instance=base)
+        if len(parallel_tests):
+            self.progress("Running %u test(s) %u-way parallel" %
+                          (len(parallel_tests), parallel))
+            results += self.run_tests_in_processes(parallel_tests, parallel, base_instance=base + 1)
+
+        return results
+
+    def run_tests_in_processes(self, tests, parallel, base_instance=1) -> List[Result]:
+
+        # prepare tests queue
+        self.test_queue = multiprocessing.Queue()
+        self.result_queue = multiprocessing.Queue()
+
+        for test in tests:
+            # can't pick functions, so pass a string instead:
+            test.function = test.function.__name__
+            self.test_queue.put(test)
+
+        # start processes.  The parallel pass numbers workers from 1
+        # (instance 0 is the repo-root working directory, used by serial /
+        # non-parallel runs and by the blacklist serial pass):
+        self.threads = []
+        for i in range(min([parallel, len(tests)])):
+            instance = base_instance + i
+            t = multiprocessing.Process(
+                target=self.test_runner_thread_main,
+                name='TestRunner-%u' % instance,
+                args=(
+                    (instance,)
+                )
+            )
+            if t is None:
+                raise NotAchievedException("Could not create thread %u" % instance)
+            t.start()
+            self.threads.append(t)
+
+        tests_by_name = {x.name: x for x in tests}
+        outstanding_results = set(tests_by_name.keys())
+        results = []
+        while len(results) != len(tests):
+            while True:
+                try:
+                    result = self.result_queue.get(block=False)
+                    self.progress("Received result (%s)" % str(result))
+                    results.append(result)
+                    if not hasattr(self, "fcu_firmware_version"):
+                        try:
+                            self.fcu_firmware_version = result.fcu_firmware_version
+                            self.fcu_firmware_hash = result.fcu_firmware_hash
+                            self.githash = result.githash
+                        except AttributeError:
+                            pass
+                    outstanding_results.remove(result.test.name)
+                except queue.Empty:
+                    break
+            if len(results) == len(tests):
+                break
+            # if every worker has died we will never receive the
+            # outstanding results; synthesise failures rather than hang
+            # forever.  A worker which pulls a test off the queue and then
+            # dies (e.g. SITL won't start) takes that test's result with
+            # it:
+            if not any(t.is_alive() for t in self.threads):
+                self.progress("All test runners have exited with %u result(s) outstanding" %
+                              len(outstanding_results))
+                # drain anything that arrived as the last worker exited:
+                while True:
+                    try:
+                        result = self.result_queue.get(block=False)
+                        results.append(result)
+                        outstanding_results.discard(result.test.name)
+                    except queue.Empty:
+                        break
+                for name in sorted(outstanding_results):
+                    self.progress("   Test runner died without result for %s" % name)
+                    result = Result(tests_by_name[name])
+                    result.passed = False
+                    result.reason = "Test runner exited without returning a result"
+                    results.append(result)
+                outstanding_results = set()
+                break
+            time.sleep(1)
+            self.progress("run_tests_parallel waiting for final results (want=%u) (got=%u) (queued=%u" %
+                          (len(tests), len(results), self.test_queue.qsize()))
+            if len(outstanding_results) < 5:
+                for t in outstanding_results:
+                    self.progress("   Where are you %s?" % t)
+
+        for t in self.threads:
+            t.join()
+
+        self.progress("run_tests_parallel returning success")
+
+        return results
+
+    def enter_instance_dir(self):
+        '''parallel workers and serial "-I" runs get a private working
+        directory so their SITL working files (logs/, eeprom.bin,
+        flash.dat, terrain/, scripts/) and any other cwd-relative test
+        artifacts cannot collide with other instances.  Instance 0 (the
+        default) keeps running in the directory autotest was started in, so
+        ordinary serial runs are unchanged.  These directories are wiped at
+        the start of each autotest.py run (see autotest.py).'''
+        if self.instance == 0:
+            return
+        directory = os.path.join("parallel-autotest", str(self.instance))
+        os.makedirs(directory, exist_ok=True)
+        os.chdir(directory)
+
+    def refresh_test_binary(self):
+        '''make a pristine per-instance copy of the binary.  Some tests
+        overwrite the binary they run against; giving each test a fresh
+        private copy means they can't corrupt the master binary or the
+        binary used by another parallel worker.'''
+        # unlink rather than overwrite in-place: the destination may still
+        # be mapped by a SITL we (or a previous test run) haven't reaped
+        # yet, and overwriting a running executable raises ETXTBSY:
+        try:
+            os.unlink(self.binary)
+        except FileNotFoundError:
+            pass
+        shutil.copy2(self.master_binary, self.binary)
+        os.chmod(self.binary, 0o755)
+
+    def test_runner_thread_main(self, instance):
+        self.instance = instance
+        # move into this worker's private working directory; from here on
+        # all cwd-relative paths (logs/, eeprom.bin, terrain/, ...) are
+        # isolated from the other workers:
+        self.enter_instance_dir()
+
+        # each worker - and each test - runs against its own private copy
+        # of the binary, kept in the instance's working directory:
+        self.master_binary = self.binary
+        self.binary = os.path.join(os.getcwd(), os.path.basename(self.master_binary))
+        self.refresh_test_binary()
+
+        test = None
+        try:
+            self.init()
+
+            self.progress("Waiting for a heartbeat with mavlink protocol %s"
+                          % self.mav.WIRE_PROTOCOL_VERSION)
+            self.wait_heartbeat()
+            self.wait_for_initial_mode()
+            self.progress("Setting up RC parameters")
+            self.set_rc_default()
+            self.wait_for_mode_switch_poll()
+            if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+
+            self.progress("### Passing a queue with %u entries" % self.test_queue.qsize())
+
+            first = True
+            while True:
+                try:
+                    test = self.test_queue.get(block=False)
+                    # can't pickle functions, string -> function here
+                    test.function = getattr(self, test.function)
+                except queue.Empty:
+                    self.progress("Queue is empty")
+                    break
+                if not first:
+                    # give this test a pristine binary and a fresh SITL;
+                    # the previous test may have overwritten the binary:
+                    self.stop_SITL()
+                    self.refresh_test_binary()
+                    self.start_SITL(wipe=True)
+                    self.set_streamrate(self.sitl_streamrate())
+                    self.apply_default_parameters()
+                first = False
+                self.drain_mav_unparsed()
+                self.progress("TestRunner-%u: running test (%s)" %
+                              (instance, test.name))
+                result = self.run_one_test(test, suppress_stdout=True)
+                del result.test.function  # can't pickle functions
+                self.result_queue.put(result)
+#                self.result_queue.put((desc, "Fred", debug_filename))
+
+        except pexpect.TIMEOUT:
+            self.progress("Failed with timeout")
+            result = Result(test)
+            result.passed = False
+            result.reason = "Failed with timeout"
+            self.result_queue.put(result)
+            if self.logs_dir:
+                if glob.glob("core*") or glob.glob("ap-*.core"):
+                    self.check_logs("FRAMEWORK")
+
+        # stop our SITL so we don't leak the process (and so we release
+        # this instance's network ports and stop holding our binary copy
+        # open) before another worker reuses this instance number:
+        if getattr(self, "sitl", None) is not None:
+            self.stop_SITL()
+
+        if self.rc_thread is not None:
+            self.progress("Joining RC thread")
+            self.rc_thread_should_quit = True
+            self.rc_thread.join()
+            self.rc_thread = None
+
+    def run_tests(self, tests):
         """Autotest vehicle in SITL."""
         if self.run_tests_called:
             raise ValueError("run_tests called twice")
         self.run_tests_called = True
+
+        # a serial run with "-I N" runs in its own working directory; the
+        # default (instance 0) is a no-op:
+        self.enter_instance_dir()
 
         result_list = []
 
@@ -14132,6 +14444,11 @@ switch value'''
 
     def FRSkyPassThroughSensorIDs(self):
         '''test FRSKy protocol's telem-passthrough functionality (sensor IDs)'''
+        # the terrain sensor (0x500B) validation compares the vehicle's
+        # height-above-terrain, so the autopilot needs terrain data.  Supply
+        # it over MAVLink rather than relying on terrain tiles being present
+        # on disk - each parallel instance has its own empty working dir:
+        self.install_terrain_handlers_context()
         self.set_parameters({
             "SERIAL5_PROTOCOL": 10, # serial5 is FRSky passthrough
             "RPM1_TYPE": 10, # enable RPM output
@@ -16268,7 +16585,7 @@ SERIAL5_BAUD 128
             print("Had to force-reset SITL %u times" %
                   (self.forced_post_test_sitl_reboots,))
 
-    def autotest(self, tests=None, allow_skips=True, step_name=None):
+    def autotest(self, parallel=1, tests=None, allow_skips=True, step_name=None):
         """Autotest used by ArduPilot autotest CI."""
         if tests is None:
             tests = self.tests()
@@ -16276,6 +16593,7 @@ SERIAL5_BAUD 128
         for test in tests:
             if not isinstance(test, Test):
                 test = Test(test)
+                test.instance = self.instance
             all_tests.append(test)
 
         disabled = self.disabled_tests()
@@ -16294,7 +16612,12 @@ SERIAL5_BAUD 128
                 continue
             tests.append(test)
 
-        results = self.run_tests(tests)
+        if parallel != 1:
+            # we preserve non-parallel behaviour to avoid fighting on
+            # e.g. Windows and MacOSX:
+            results = self.run_tests_parallel(tests, parallel=parallel)
+        else:
+            results = self.run_tests(tests)
 
         if len(skip_list):
             self.progress("Skipped tests:")
