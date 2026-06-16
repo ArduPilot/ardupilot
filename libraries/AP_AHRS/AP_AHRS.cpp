@@ -514,6 +514,44 @@ void AP_AHRS::update_state(void)
     state.velocity_NED_ok = active_estimates->get_velocity_NED(state.velocity_NED);
 }
 
+void AP_AHRS::try_set_common_origin()
+{
+    if (done_common_origin) {
+        return;
+    }
+
+    /*
+      if we now have an origin then set in all backends
+    */
+    for (const auto &source_backend_and_estimates : backends_and_estimates) {
+        if (!source_backend_and_estimates.estimates.provides_common_origin) {
+            // e.g. DCM doesn't provide an origin which can be set
+            // into the other backends
+            continue;
+        }
+        Location new_origin;
+        if (!source_backend_and_estimates.backend.get_origin(new_origin)) {
+            // no valid origin from this backend
+            continue;
+        }
+        // set the origin in all backends which can take it (except
+        // the one which supplied it).  Invoking AP_AHRS::set_origin
+        // here will cause warnings from the EKFs.
+        for (auto &dest_backend_and_estimates : backends_and_estimates) {
+            if (&dest_backend_and_estimates == &source_backend_and_estimates) {
+                continue;
+            }
+            // note that SITL and DCM ignore this set_origin call via
+            // an empty base-class implementation:
+            dest_backend_and_estimates.backend.set_origin(new_origin);
+        }
+
+        done_common_origin = true;
+
+        break;
+    }
+}
+
 // update run at loop rate
 void AP_AHRS::update(bool skip_ins_update)
 {
@@ -577,6 +615,8 @@ void AP_AHRS::update(bool skip_ins_update)
         update_EKF2();
 #endif
     }
+
+    try_set_common_origin();
 
     update_configured_ekf_type();
     update_active_EKF_type();
@@ -654,22 +694,6 @@ void AP_AHRS::update_EKF2(void)
         if (_active_EKF_type() == EKFType::TWO) {
             update_notify_from_filter_status(ekf2_estimates.filter_status);
         }
-
-        /*
-          if we now have an origin then set in all backends
-        */
-        if (!done_common_origin) {
-            Location new_origin;
-            if (ekf2.get_origin(new_origin)) {
-                done_common_origin = true;
-#if HAL_NAVEKF3_AVAILABLE
-                ekf3.set_origin(new_origin);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-                external.set_origin(new_origin);
-#endif
-            }
-        }
 }
 #endif
 
@@ -682,21 +706,6 @@ void AP_AHRS::update_EKF3(void)
         if (_active_EKF_type() == EKFType::THREE) {
             update_notify_from_filter_status(ekf3_estimates.filter_status);
         }
-        /*
-          if we now have an origin then set in all backends
-        */
-        if (!done_common_origin) {
-            Location new_origin;
-            if (ekf3.get_origin(new_origin)) {
-                done_common_origin = true;
-#if HAL_NAVEKF2_AVAILABLE
-                ekf2.set_origin(new_origin);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-                external.set_origin(new_origin);
-#endif
-            }
-        }
 }
 #endif
 
@@ -705,22 +714,6 @@ void AP_AHRS::update_external(void)
 {
     external.update();
     external.get_results(external_estimates);
-
-    /*
-      if we now have an origin then set in all backends
-    */
-    if (!done_common_origin) {
-        Location new_origin;
-        if (external.get_origin(new_origin)) {
-            done_common_origin = true;
-#if HAL_NAVEKF2_AVAILABLE
-            ekf2.set_origin(new_origin);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-            ekf3.set_origin(new_origin);
-#endif
-        }
-    }
 }
 #endif // AP_AHRS_EXTERNAL_ENABLED
 

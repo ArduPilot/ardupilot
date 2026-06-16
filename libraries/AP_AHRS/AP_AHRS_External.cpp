@@ -67,6 +67,9 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = AP::externalAHRS().get_location(results.location);
 
+    // origin-relative functions
+    results.provides_common_origin = true;
+
     // hagl is not supplied:
     // results.hagl_valid = false;
     // results.hagl = 0;
@@ -157,6 +160,11 @@ bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, 
 bool AP_AHRS_External::get_origin(Location &ret) const
 {
     return AP::externalAHRS().get_origin(ret);
+}
+
+bool AP_AHRS_External::set_origin(const Location &loc)
+{
+    return AP::externalAHRS().set_origin(loc);
 }
 
 void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const

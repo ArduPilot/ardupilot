@@ -143,6 +143,11 @@ public:
             return location_valid;
         };
 
+        /*
+         * origin-relative functions
+         */
+        bool provides_common_origin;
+
         bool get_hagl(float &height) const WARN_IF_UNUSED {
             height = hagl;
             return hagl_valid;

@@ -1130,6 +1130,7 @@ private:
 
     // true when we have completed the common origin setup
     bool done_common_origin;
+    void try_set_common_origin();
 
     // return a pointer to the backend for supplied type
     AP_AHRS_Backend *backend_for_type(EKFType type);
