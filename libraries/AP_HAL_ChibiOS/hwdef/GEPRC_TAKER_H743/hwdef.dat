@@ -83,6 +83,7 @@ define AP_NOTIFY_GPIO_LED_1_PIN 90
 PA10 USART1_RX USART1
 PA9  USART1_TX USART1
 define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MSP_DisplayPort
+define AP_MSP_VIDEOTX_ENABLED 1
 
 # USART2
 # RC input defaults to UART to allow for bi-dir dshot

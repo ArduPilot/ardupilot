@@ -142,6 +142,7 @@ define HAL_OS_FATFS_IO 1
 
 # setup for serial ports
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MSP_DisplayPort
+define AP_MSP_VIDEOTX_ENABLED 1
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_MAVLink2
 define DEFAULT_SERIAL4_OPTIONS 1024
 define DEFAULT_SERIAL4_BAUD 115
