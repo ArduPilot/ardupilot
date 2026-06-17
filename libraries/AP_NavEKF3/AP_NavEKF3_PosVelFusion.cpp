@@ -733,6 +733,59 @@ void NavEKF3_core::SelectVelPosFusion()
         }
     }
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Fuse the range finder aided AGL KF vertical velocity as a velD observation to
+    // anchor the vertical velocity without making the range finder a height source.
+    // A velZ source that is actually delivering data is always preferred, so the test
+    // is on when that data last arrived: useGpsVertVel and useExtNavVel latch on once
+    // a source has been seen, and velTimeout runs off a 7 to 10 second aiding retry,
+    // so neither tracks availability. fuseVelVertData covers the case where another
+    // source has already claimed velPosObs[2] this step.
+    fusingAglKfVel = false;
+    const uint32_t velZAidTimeout_ms = 1000;
+    const bool haveGpsVelZ = frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS, core_index) &&
+                             ((imuSampleTime_ms - lastTimeGpsReceived_ms) < velZAidTimeout_ms);
+#if EK3_FEATURE_EXTERNAL_NAV
+    const bool haveExtNavVelZ = frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::EXTNAV, core_index) &&
+                                ((imuSampleTime_ms - extNavVelMeasTime_ms) < velZAidTimeout_ms);
+#else
+    const bool haveExtNavVelZ = false;
+#endif
+    // the AGL KF velocity decays toward zero once the range finder stops arriving
+    const bool aglKfRngCurrent = (imuSampleTime_ms - lastAglRngFuseTime_ms) < aglKfRngGapMax_ms;
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfVelForVelD) &&
+        aglKfValid && aglKfRngCurrent && inFlight &&
+        !fusingStationaryZeroVel && !fuseVelVertData &&
+        !haveGpsVelZ && !haveExtNavVelZ &&
+        (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER) &&
+        !(PV_AidingMode == AID_NONE && assume_zero_sideslip()) &&
+        filterStatus.flags.horiz_vel) {
+        if (fuseHgtData) {
+            // terrain relative velocity only approximates the inertial vertical
+            // velocity while the vehicle is slow over the ground
+            const ftype aglKfVelGateHyst = 0.5f;
+            const ftype aglKfVelMaxSpd = (frontend->_aglKfVelMaxSpd < 0.0f) ?
+                                         frontend->_useRngSwSpd.get() : frontend->_aglKfVelMaxSpd.get();
+            if (is_positive(aglKfVelMaxSpd)) {
+                const ftype horizSpeedSq = stateStruct.velocity.xy().length_squared();
+                const ftype aglKfVelGateSpd = aglKfVelMaxSpd +
+                                              (aglKfVelGateOpen ? aglKfVelGateHyst : 0.0f);
+                aglKfVelGateOpen = horizSpeedSq < sq(aglKfVelGateSpd);
+            } else {
+                // a zero speed limit disables the fusion, including via EK3_RNG_USE_SPD
+                aglKfVelGateOpen = false;
+            }
+            if (aglKfVelGateOpen) {
+                fuseVelVertData = true;
+                velPosObs[2] = -aglKfV;   // AGL KF velocity is +up; the NED velD observation is its negative
+                fusingAglKfVel = true;
+            }
+        }
+    } else {
+        aglKfVelGateOpen = false;
+    }
+#endif
+
     // perform fusion
     if (fuseVelData|| fuseVelVertData || fusePosData || fuseHgtData) {
         FuseVelPosNED();
@@ -741,6 +794,9 @@ void NavEKF3_core::SelectVelPosFusion()
         fuseVelVertData = false;
         fuseHgtData = false;
         fusePosData = false;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        fusingAglKfVel = false;
+#endif
     }
 }
 
@@ -857,11 +913,29 @@ void NavEKF3_core::FuseVelPosNED()
         R_OBS[5] = posDownObsNoise;
         for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (fusingAglKfVel) {
+            // Error budget for using a terrain relative velocity as an inertial velD
+            // observation: the AGL KF's own velocity variance, plus the apparent
+            // vertical rate that terrain slope produces from horizontal motion.
+            const ftype terrainVelErr = frontend->_terrGradMax * stateStruct.velocity.xy().length();
+            R_OBS[2] = MAX(aglKfP[1][1] + sq(terrainVelErr), sq(0.05f));
+            R_OBS_DATA_CHECKS[2] = R_OBS[2];
+        }
+#endif
+
         // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
         // the accelerometers and we should disable the GPS and barometer innovation consistency checks.
         const bool fuse_gps_vz = frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS, core_index) && gpsDataDelayed.have_vz;
-        if (fuse_gps_vz && fuseVelVertData && (frontend->sources.getPosZSource(core_index) != AP_NavEKF_Source::SourceZ::GPS)) {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        // gpsDataDelayed.have_vz keeps its last recalled value, so it can still be set after
+        // the GPS outage that let the AGL KF claim the velocity-down observation this step
+        const bool velDIsAglKfVel = fusingAglKfVel;
+#else
+        const bool velDIsAglKfVel = false;
+#endif
+        if (fuse_gps_vz && fuseVelVertData && !velDIsAglKfVel && (frontend->sources.getPosZSource(core_index) != AP_NavEKF_Source::SourceZ::GPS)) {
             // calculate innovations for height and vertical GPS vel measurements
             const ftype hgtErr  = stateStruct.position.z - velPosObs[5];
             const ftype velDErr = stateStruct.velocity.z - velPosObs[2];
@@ -1013,6 +1087,26 @@ void NavEKF3_core::FuseVelPosNED()
             }
         }
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        // The AGL KF supplies a vertical velocity only observation, so it is not
+        // covered by the fuseVelData test above and needs its own consistency check.
+        // velTestRatio and lastVelPassTime_ms are deliberately left alone: they drive
+        // lane selection and the vehicle EKF failsafe, and a terrain relative
+        // observation should not steer either.
+        if (fusingAglKfVel) {
+            innovVelPos[2] = stateStruct.velocity.z - velPosObs[2];
+            varInnovVelPos[2] = P[6][6] + R_OBS_DATA_CHECKS[2];
+            const ftype aglKfVelGate = MAX(0.01 * (ftype)frontend->_gpsVelInnovGate, 1.0);
+            const ftype aglKfVelTestRatio = sq(innovVelPos[2]) / (sq(aglKfVelGate) * varInnovVelPos[2]);
+            if (aglKfVelTestRatio >= 1.0f) {
+                fusingAglKfVel = false;
+                fuseVelVertData = false;
+            } else {
+                lastAglKfVelFuseTime_ms = imuSampleTime_ms;
+            }
+        }
+#endif
+
         // Test height measurements
         if (fuseHgtData) {
             // Calculate height innovations
@@ -1075,6 +1169,13 @@ void NavEKF3_core::FuseVelPosNED()
                 fuseData[2] = true;
             }
         }
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        // AGL KF supplies a vertical-velocity-only observation (no horizontal
+        // velocity), so enable velD fusion independently of fuseVelData.
+        if (fusingAglKfVel) {
+            fuseData[2] = true;
+        }
+#endif
         if (fusePosData) {
             fuseData[3] = true;
             fuseData[4] = true;
@@ -1091,7 +1192,14 @@ void NavEKF3_core::FuseVelPosNED()
                 // adjust scaling on GPS measurement noise variances if not enough satellites
                 if (obsIndex <= 2) {
                     innovVelPos[obsIndex] = stateStruct.velocity[obsIndex] - velPosObs[obsIndex];
-                    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index)) {
+                    bool applyGpsScaler = frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+                    // the AGL KF velD observation carries its own variance, not GPS-scaled
+                    if (fusingAglKfVel && obsIndex == 2) {
+                        applyGpsScaler = false;
+                    }
+#endif
+                    if (applyGpsScaler) {
                         R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                     }
                 } else if (obsIndex == 3 || obsIndex == 4) {
