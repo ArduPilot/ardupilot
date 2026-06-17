@@ -481,3 +481,17 @@ bool Plane::reached_loiter_target(void)
 #endif
     return nav_controller->reached_loiter_target();
 }
+float Plane::get_nav_yaw_rate_dps() const
+{
+    // 获取侧向加速度（m/s^2），正值向右
+    float lat_accel = nav_controller->lateral_acceleration();
+    float speed = ahrs.groundspeed();
+    if (speed < 0.5f) {
+        return 0.0f;
+    }
+    float yaw_rate_rad = lat_accel / speed;
+    // 限制最大偏航速率 ±25°/s
+    const float max_yaw_rate_rad = radians(25.0f);
+    yaw_rate_rad = constrain_float(yaw_rate_rad, -max_yaw_rate_rad, max_yaw_rate_rad);
+    return degrees(yaw_rate_rad);
+}

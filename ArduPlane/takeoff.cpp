@@ -231,6 +231,7 @@ void Plane::takeoff_calc_pitch(void)
     }
 
     // Check if we have trouble with roll control.
+    /*
     if (aparm.stall_prevention != 0) {
         // during takeoff we want to prioritise roll control over
         // pitch. Apply a reduction in pitch demand if our roll is
@@ -246,6 +247,7 @@ void Plane::takeoff_calc_pitch(void)
             pitch_min_cd = nav_pitch_cd;
         }
     }
+    */
     // Notify TECS about the external pitch setting, for the next iteration.
     TECS_controller.set_pitch_min(0.01f*pitch_min_cd);
     if (pitch_clipped_max) {TECS_controller.set_pitch_max(0.01f*nav_pitch_cd);}

@@ -367,6 +367,7 @@ void Plane::stabilize_stick_mixing_fbw()
  */
 void Plane::stabilize_yaw()
 {
+    
     bool ground_steering = false;
     if (landing.is_flaring()) {
         // in flaring then enable ground steering
@@ -447,7 +448,6 @@ void Plane::stabilize()
         control_mode->reset_controllers();
     }
     last_stabilize_ms = now;
-
     if (control_mode == &mode_training ||
             control_mode == &mode_manual) {
         plane.control_mode->run();
@@ -517,55 +517,55 @@ void Plane::calc_throttle()
     SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, commanded_throttle);
 }
 
-/*****************************************
-* Calculate desired roll/pitch/yaw angles (in medium freq loop)
-*****************************************/
-
-/*
-  calculate yaw control for coordinated flight
- */
 int16_t Plane::calc_nav_yaw_coordinated()
 {
     const float speed_scaler = get_speed_scaler();
-    bool disable_integrator = false;
-    int16_t rudder_in = rudder_input();
+    const int16_t rudder_in = rudder_input();
 
-    int16_t commanded_rudder;
-    bool using_rate_controller = false;
-
-    // Received an external msg that guides yaw within g2.guided_timeout?
+    // Guided 强制偏航（最高优先级）
     if (control_mode->is_guided_mode() &&
-            plane.guided_state.last_forced_rpy_ms.z > 0 &&
-            millis() - plane.guided_state.last_forced_rpy_ms.z < g2.guided_timeout*1000.0f) {
-        commanded_rudder = plane.guided_state.forced_rpy_cd.z;
-    } else if (autotuning && g.acro_yaw_rate > 0 && yawController.rate_control_enabled()) {
-        // user is doing an AUTOTUNE with yaw rate control
-        const float rudd_expo = rudder_in_expo(true);
-        const float yaw_rate = (rudd_expo/SERVO_MAX) * g.acro_yaw_rate;
-        // add in the coordinated turn yaw rate to make it easier to fly while tuning the yaw rate controller
-        const float coordination_yaw_rate = degrees(GRAVITY_MSS * tanf(cd_to_rad(nav_roll_cd))/MAX(aparm.airspeed_min,smoothed_airspeed));
-        commanded_rudder = yawController.get_rate_out(yaw_rate+coordination_yaw_rate,  speed_scaler, false);
-        using_rate_controller = true;
-    } else {
-        if (control_mode == &mode_stabilize && rudder_in != 0) {
-            disable_integrator = true;
+        plane.guided_state.last_forced_rpy_ms.z > 0 &&
+        millis() - plane.guided_state.last_forced_rpy_ms.z < g2.guided_timeout * 1000.0f) {
+        return constrain_int16(plane.guided_state.forced_rpy_cd.z, -4500, 4500);
+    }
+
+    // 手动模式：纯遥控
+    if (control_mode == &mode_manual) {
+        return constrain_int16(rudder_in, -4500, 4500);
+    }
+
+    // 自动导航模式：使用 L1 产生的目标偏航速率
+    if (control_mode->does_auto_navigation()) {
+        float target_yaw_rate = get_nav_yaw_rate_dps();  // 
+        yawController.reset_I();
+        float rudder = yawController.get_rate_out(target_yaw_rate, speed_scaler, false);
+        return constrain_int16((int16_t)rudder, -4500, 4500);
+    }
+
+    // 其他手动增稳模式（FBWA, STABILIZE, TRAINING 等）：遥控 + 阻尼（目标速率 0）
+    float rudder = rudder_in;
+    yawController.reset_I();//清除残余i防止持续转弯
+    // 方向相关的横滚角限制
+    float roll_deg = ahrs.roll_sensor * 0.01f;
+    float roll_abs = fabsf(roll_deg);
+    int roll_sign = (roll_deg > 0) ? 1 : -1;
+    int rudder_sign = (rudder > 0) ? 1 : -1;
+
+    const float roll_limit_start = 45.0f;
+    const float roll_limit_max = 65.0f;
+
+    float yaw_limit_factor = 1.0f;
+    if (roll_abs > roll_limit_start) {
+        float factor = 1.0f - (roll_abs - roll_limit_start) / (roll_limit_max - roll_limit_start);//当横滚角超过限制开始角时，线性降低偏航输入，完全达到限制角时偏航输入为0
+        factor = constrain_float(factor, 0.0f, 1.0f);//限制因子在0-1之间
+        if (rudder_sign == roll_sign) {
+            yaw_limit_factor = factor;//同向转弯时限制偏航输入，防止过度转弯失速
         }
-
-        commanded_rudder = yawController.get_servo_out(speed_scaler, disable_integrator);
-
-        // add in rudder mixing from roll
-        commanded_rudder += SRV_Channels::get_output_scaled(SRV_Channel::k_aileron) * g.kff_rudder_mix;
-        commanded_rudder += rudder_in;
     }
+    rudder *= yaw_limit_factor;//根据横滚角限制偏航输入
 
-    if (!using_rate_controller) {
-        /*
-          When not running the yaw rate controller, we need to reset the rate
-        */
-        yawController.reset_rate_PID();
-    }
-
-    return constrain_int16(commanded_rudder, -4500, 4500);
+    rudder += yawController.get_rate_out(0.0f, speed_scaler, false);
+    return constrain_int16((int16_t)rudder, -4500, 4500);
 }
 
 /*

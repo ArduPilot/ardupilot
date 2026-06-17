@@ -162,7 +162,7 @@
 #endif
 
 #ifndef RUDDER_MIX
- # define RUDDER_MIX           0.5f
+ # define RUDDER_MIX           0.0f
 #endif
 
 

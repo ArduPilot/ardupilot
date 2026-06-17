@@ -414,3 +414,4 @@ void AP_YawController::autotune_restore(void)
         autotune->stop();
     }
 }
+

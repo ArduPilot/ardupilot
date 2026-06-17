@@ -780,24 +780,28 @@ void Plane::servos_twin_engine_mix(void)
 
     if (throttle < 0 && have_reverse_thrust() && allow_reverse_thrust()) {
         // doing reverse thrust
-        throttle_left  = constrain_float(throttle + 50 * rudder_dt, -100, 0);
+        throttle_left = constrain_float(throttle + 50 * rudder_dt, -100, 0);
         throttle_right = constrain_float(throttle - 50 * rudder_dt, -100, 0);
-    } else if (throttle <= 0) {
-        throttle_left  = throttle_right = 0;
-    } else {
+    }
+    else if (throttle <= 0) {
+        throttle_left = throttle_right = 0;
+    }
+    else {
         // doing forward thrust
-        throttle_left  = constrain_float(throttle + 50 * rudder_dt, 0, 100);
+        throttle_left = constrain_float(throttle + 50 * rudder_dt, 0, 100);
         throttle_right = constrain_float(throttle - 50 * rudder_dt, 0, 100);
     }
     if (!arming.is_armed_and_safety_off()) {
         if (arming.arming_required() == AP_Arming::Required::YES_ZERO_PWM) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
-        } else {
+        }
+        else {
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 0);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 0);
         }
-    } else {
+    }
+    else {
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle_left);
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle_right);
     }

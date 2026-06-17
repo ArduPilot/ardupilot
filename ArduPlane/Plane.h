@@ -901,6 +901,7 @@ private:
     int32_t relative_target_altitude_cm(void);
     void change_target_altitude(int32_t change_cm);
     void set_target_altitude_proportion(const Location &loc, float proportion);
+
 #if AP_TERRAIN_AVAILABLE
     bool set_target_altitude_proportion_terrain(void);
 #endif
@@ -926,6 +927,10 @@ private:
     void calc_throttle();
     void calc_nav_roll();
     void calc_nav_pitch();
+
+    // 计算导航偏航转弯
+    float get_nav_yaw_rate_dps() const;
+
     float calc_speed_scaler(void);
     float get_speed_scaler(void) const { return surface_speed_scaler; }
     bool stick_mixing_enabled(void);

@@ -73,7 +73,8 @@ public:
     void set_reverse(bool reverse) override {
         _reverse = reverse;
     }
-
+    // 获取侧向加速度需求
+    float lateral_acceleration_demand(void) const { return _latAccDem; }
 private:
     // reference to the AHRS object
     AP_AHRS &_ahrs;
