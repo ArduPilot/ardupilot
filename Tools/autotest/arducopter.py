@@ -13290,20 +13290,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def TakeoffGroundEffectAlt(self):
         '''Test GNDEFF_ALT and GNDEFF_TMO gate the ground-effect compensation window'''
-        # SIM_BARO_GEFF injects a real baro static-pressure error near the
+        # SIM_BARO_GEFF_M injects a real baro static-pressure error near the
         # ground so the compensation window has something to compensate for;
         # without it the detector parameters would be exercised but the
         # underlying baro error they exist to mitigate wouldn't be present.
         self.set_parameters({
             "LOG_FILE_DSRMROT": 1,
-            "SIM_BARO_GEFF": 1.0,
+            "SIM_BARO_GEFF_M": 1.0,
         })
 
         # Subtest A: large threshold — takeoff_expected persists at 5m
         self.start_subtest("Large GNDEFF_ALT keeps ground effect at 5m")
         self.set_parameter("GNDEFF_ALT", 10)
         self.takeoff(5, mode='ALT_HOLD')
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason='let ground effect compensation estimation settle')
         self.change_mode('LAND')
         self.wait_disarmed()
         durations_large = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
@@ -13323,7 +13323,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GNDEFF_TMO": 0,
         })
         self.takeoff(5, mode='ALT_HOLD')
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason='let ground effect compensation estimation settle')
         self.change_mode('LAND')
         self.wait_disarmed()
         durations_small = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
@@ -13345,7 +13345,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         self.takeoff(5, mode='ALT_HOLD')
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason='let ground effect compensation estimation settle')
         self.change_mode('LAND')
         self.wait_disarmed()
         durations_tmo = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
