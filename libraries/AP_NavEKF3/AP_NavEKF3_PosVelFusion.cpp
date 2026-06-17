@@ -758,16 +758,23 @@ void NavEKF3_core::SelectVelPosFusion()
     // velocity. Gated on fuseHgtData to fuse at baro cadence.
     fusingAglKfVel = false;
     if (frontend->option_is_enabled(NavEKF3::Option::AglKfVelForVelD) &&
-        aglKfValid && fuseHgtData && !fusingStationaryZeroVel &&
+        aglKfValid && !fusingStationaryZeroVel &&
         !(useGpsVertVel || useExtNavVel)) {
-        const ftype horizSpeedSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
-        const ftype aglKfVelMaxSpd = (frontend->_aglKfVelMaxSpd < 0.0f) ?
-                                     frontend->_useRngSwSpd.get() : frontend->_aglKfVelMaxSpd.get();
-        if (horizSpeedSq < sq(MAX(aglKfVelMaxSpd, 0.0f))) {
-            fuseVelVertData = true;
-            velPosObs[2] = -aglKfV;   // AGL KF velocity is +up; the NED velD observation is its negative
-            fusingAglKfVel = true;
+        if (fuseHgtData) {
+            const ftype horizSpeedSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
+            const ftype aglKfVelMaxSpd = (frontend->_aglKfVelMaxSpd < 0.0f) ?
+                                         frontend->_useRngSwSpd.get() : frontend->_aglKfVelMaxSpd.get();
+            const ftype aglKfVelGateSpd = MAX(aglKfVelMaxSpd, 0.0f) +
+                                           (aglKfVelGateOpen ? 0.5f : 0.0f);
+            aglKfVelGateOpen = horizSpeedSq < sq(aglKfVelGateSpd);
+            if (aglKfVelGateOpen) {
+                fuseVelVertData = true;
+                velPosObs[2] = -aglKfV;   // AGL KF velocity is +up; the NED velD observation is its negative
+                fusingAglKfVel = true;
+            }
         }
+    } else {
+        aglKfVelGateOpen = false;
     }
 #endif
 
