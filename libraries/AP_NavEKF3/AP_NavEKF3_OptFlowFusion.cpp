@@ -732,7 +732,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // diverges undetected because the healthy axis keeps the shared flow-fusion timer fresh, so the
     // 5 s AID_RELATIVE timeout never fires. Re-anchor horizontal velocity to the flow measurement.
     // Gated on the AGL KF being valid so range (and thus the flow-derived velocity) is trustworthy.
-    const uint32_t FLOW_AXIS_LOCKOUT_MS = 1000;
+    const uint32_t FLOW_AXIS_LOCKOUT_MS = 500;
     if (really_fuse &&
         frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
         PV_AidingMode == AID_RELATIVE && takeOffDetected &&
