@@ -301,6 +301,9 @@ void NavEKF3_core::setAidingMode()
         case AID_RELATIVE: {
             // Check if the fusion has timed out (flow measurements have been rejected for too long)
             bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            flowFusionTimeout |= flowVelResetUnhealthy;
+#endif
             // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
             bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
             // Enable switch to absolute position mode if GPS or range beacon data is available
@@ -443,6 +446,9 @@ void NavEKF3_core::setAidingMode()
                 prevFlowFuseTime_ms = imuSampleTime_ms;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
                 flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
+                flowVelResetWindowCount = 0;
+                flowVelResetWindow_ms = 0;
+                flowVelResetUnhealthy = false;
 #endif
             } else
 #endif
