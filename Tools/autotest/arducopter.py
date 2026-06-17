@@ -4445,6 +4445,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # just reboot.
         self.reboot_sitl()
 
+    def EK3_FlowAxisLockoutRecovery(self):
+        '''Recover horizontal velocity from a single-axis optical-flow innovation lockout'''
+        # A rate offset on one flow axis is rejected by that axis's innovation gate while the
+        # other keeps passing, so the shared flow-fusion timer stays fresh and the 5 s
+        # AID_RELATIVE timeout never fires.  An accel bias reaches the same state only
+        # indirectly - the vehicle drifts until the flow agrees again - and did not provoke it
+        # reliably, so the fault is injected at the sensor.  XKF5.NI hits its 100 ceiling while
+        # an axis is being rejected and XKF7.FVC counts the resets, so both halves can be shown
+        # to see the same lockout with only the recovery differing.
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def fly_with_stuck_flow_axis(options):
+            self.set_parameters({"EK3_OPTIONS": options, "SIM_FLOW_OFS_X": 0})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # ALT_HOLD leaves horizontal position uncontrolled, so nothing fights the estimate
+            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+            self.delay_sim_time(5, "let the AGL KF converge before injecting the fault")
+            self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+
+        self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
+        self.context_collect('STATUSTEXT')
+        fly_with_stuck_flow_axis(8)  # AglKfForOptflow
+        self.wait_statustext("flow vel reset", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        # the reset re-anchors velocity to the faulty axis, so don't expect a graceful landing
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("no flow axis lockout was provoked")
+        if self.max_dfreader_field('XKF7', 'FVC') == 0:
+            raise NotAchievedException("recovery announced but XKF7 logged no reset")
+
+        self.start_subtest("AGL KF gate off: same lockout, no recovery")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(0)  # clear AglKfForOptflow
+        self.delay_sim_time(30, "give the recovery the window it used with the gate on")
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("gate-off half did not reproduce the lockout")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("flow vel reset fired without the AGL KF gate")
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -16573,6 +16626,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
+             self.EK3_FlowAxisLockoutRecovery,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,

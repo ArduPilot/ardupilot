@@ -13975,6 +13975,17 @@ switch value'''
                                        (count, event_id, found))
         self.progress("Found %u EV.Id=%u as expected" % (found, event_id))
 
+    def max_dfreader_field(self, msg_type, field):
+        '''largest value a field of msg_type reached in the current onboard log'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        ret = 0
+        while True:
+            m = dfreader.recv_match(type=msg_type)
+            if m is None:
+                break
+            ret = max(ret, getattr(m, field))
+        return ret
+
     def assert_log_has_no_dropped_blocks(self, path):
         '''check the DSF.Dp (dropped-block) counter in a dataflash log is
         zero throughout.  A non-zero count means the logging backend could
