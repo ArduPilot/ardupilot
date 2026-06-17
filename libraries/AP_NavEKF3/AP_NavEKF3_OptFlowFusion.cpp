@@ -733,6 +733,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // 5 s AID_RELATIVE timeout never fires. Re-anchor horizontal velocity to the flow measurement.
     // Gated on the AGL KF being valid so range (and thus the flow-derived velocity) is trustworthy.
     const uint32_t FLOW_AXIS_LOCKOUT_MS = 500;
+    const uint32_t FLOW_RESET_WINDOW_MS = 10000;
+    const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
     if (really_fuse &&
         frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
         PV_AidingMode == AID_RELATIVE && takeOffDetected &&
@@ -749,6 +751,17 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 flowVelResetCount++;
             }
             flowVelResetReason = 1;
+            if (flowVelResetWindow_ms == 0 || imuSampleTime_ms - flowVelResetWindow_ms > FLOW_RESET_WINDOW_MS) {
+                flowVelResetWindow_ms = imuSampleTime_ms;
+                flowVelResetWindowCount = 0;
+            }
+            if (flowVelResetWindowCount < UINT8_MAX) {
+                flowVelResetWindowCount++;
+            }
+            if (!flowVelResetUnhealthy && flowVelResetWindowCount >= FLOW_RESET_MAX_IN_WINDOW) {
+                flowVelResetUnhealthy = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow aiding unhealthy", (unsigned)imu_index);
+            }
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset (axis lockout)", (unsigned)imu_index);
         }
     }
