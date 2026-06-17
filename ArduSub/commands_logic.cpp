@@ -668,19 +668,30 @@ void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
 void Sub::do_illuminator_on_off(const AP_Mission::Mission_Command& cmd)
 {
     const auto &content = cmd.content.illuminator_on_off;
-    if (content.id > Sub::illuminator_count) {
-        return;
+    // id 0 addresses all autopilot-attached illuminators.
+    const uint8_t first = (content.id == 0) ? 1 : content.id;
+    const uint8_t last = (content.id == 0) ? illuminator_count : content.id;
+    for (uint8_t i = first; i <= last; i++) {
+        AP_Illuminator *illuminator = get_illuminator(i);
+        if (illuminator != nullptr) {
+            illuminator->on_off(content.enable == MAV_BOOL_TRUE);
+        }
     }
-    illuminator_on_off(content.id, content.enable == MAV_BOOL_TRUE);
 }
 
 void Sub::do_illuminator_configure(const AP_Mission::Mission_Command& cmd)
 {
     const auto &content = cmd.content.illuminator_configure;
-    if (content.id > Sub::illuminator_count) {
-        return;
-    }
     // ArduSub illuminators only support brightness control: ignore mode/strobe
-    // fields silently in a mission context.
-    set_illuminator_brightness_pct(content.id, content.brightness_pct);
+    // fields silently in a mission context.  id 0 addresses all of them.
+    const uint8_t first = (content.id == 0) ? 1 : content.id;
+    const uint8_t last = (content.id == 0) ? illuminator_count : content.id;
+    for (uint8_t i = first; i <= last; i++) {
+        AP_Illuminator *illuminator = get_illuminator(i);
+        if (illuminator != nullptr) {
+            // no command-ack path from a mission item: an out-of-range
+            // brightness simply leaves the output unchanged.
+            IGNORE_RETURN(illuminator->set_brightness_pct(content.brightness_pct));
+        }
+    }
 }

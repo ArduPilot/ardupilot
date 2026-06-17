@@ -74,6 +74,7 @@
 #include "GCS_Sub.h"
 #include "mode.h"
 #include "script_button.h"
+#include "illuminator.h"
 
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
@@ -295,10 +296,13 @@ private:
     // Flag indicating if we are currently using input hold
     bool input_hold_engaged;
 
-    // Brightness restored when an illuminator is turned back on with
-    // MAV_CMD_ILLUMINATOR_ON_OFF after having been turned off. Indexed by
-    // illuminator id - 1.
-    float illuminator_last_on_brightness_pct[illuminator_count] = { 100.0f, 100.0f };
+    // Autopilot-attached illuminators (lights1, lights2), addressed by
+    // MAV_CMD_ILLUMINATOR_* commands and the joystick light button functions.
+    // Indexed by illuminator id - 1.
+    AP_Illuminator illuminators[illuminator_count] {
+        AP_Illuminator(SRV_Channel::k_lights1),
+        AP_Illuminator(SRV_Channel::k_lights2),
+    };
 
     // Flag indicating if we are currently controlling Pitch and Roll instead of forward/lateral
     bool roll_pitch_flag = false;
@@ -640,19 +644,10 @@ public:
     void mainloop_failsafe_check();
     bool rangefinder_alt_ok() const WARN_IF_UNUSED;
 
-    // Set the brightness (0-100%) of the addressed illuminator(s).
-    // id: 0 = all illuminators, 1 = lights1, 2 = lights2.
-    // Out-of-range ids are ignored.
-    void set_illuminator_brightness_pct(uint8_t id, float brightness_pct);
-
-    // Get the current brightness (0-100%) of the addressed illuminator.
-    // id: 1 = lights1, 2 = lights2. Returns 0 for any other id.
-    float get_illuminator_brightness_pct(uint8_t id) const;
-
-    // Turn the addressed illuminator(s) on or off. id: 0 = all, 1..count = specific.
-    // When turning off, the current brightness is remembered so the next 'on'
-    // restores it. The remembered brightness defaults to 100% per illuminator.
-    void illuminator_on_off(uint8_t id, bool enable);
+    // Return the illuminator addressed by a MAV_CMD_ILLUMINATOR_* id
+    // (1 = lights1, 2 = lights2), or nullptr for any id that does not name a
+    // single illuminator (including id 0, "all").
+    AP_Illuminator *get_illuminator(uint8_t id);
 
     static Sub *_singleton;
 
