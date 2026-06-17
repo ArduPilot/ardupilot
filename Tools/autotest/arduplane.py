@@ -3849,6 +3849,59 @@ return update()
 
         return current_log_filepath
 
+    def ExternalAHRSWindEstimate(self):
+        '''check ExternalAHRS supplies a wind estimate via the wind triangle'''
+        # the external AHRS drivers parse their serial stream on a
+        # real-time thread which cannot keep up at the default plane
+        # speedup on a loaded machine; see fly_external_AHRS:
+        self.context_set_speedup(20)
+        self.customise_SITL_commandline(["--serial4=sim:VectorNav"])
+        self.set_parameters({
+            "EAHRS_TYPE": 1,
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "GPS1_TYPE": 21,
+            "AHRS_EKF_TYPE": 11,
+            "INS_GYR_CAL": 1,
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 45,
+            "SCR_ENABLE": 1,
+        })
+        # the WIND message is sent whether or not the estimate is
+        # valid, so use a script to expose ahrs:get_wind()'s validity:
+        self.install_test_script_context('ahrs-wind-valid.lua')
+        self.reboot_sitl()
+        self.delay_sim_time(5, reason="external AHRS to initialise")
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=5,
+        )
+        self.wait_ready_to_arm()
+        # the estimate must not be reported valid on the ground in calm
+        # air: neither the wind triangle nor the pitot produces an
+        # estimate below 2m/s of airspeed, so a stationary vehicle - even
+        # one rotated during accelcal - produces none.  The default SIM
+        # wind profile is zero at ground level; with real wind there a
+        # pitot-derived estimate is a genuine measurement and may become
+        # valid.  Regression: it used to latch a meaningless near-zero
+        # wind as valid before any real flight:
+        self.wait_message_field_values('NAMED_VALUE_FLOAT', {
+            "name": "WINDVALID",
+            "value": 0,
+        }, timeout=20, minimum_duration=10)
+        self.takeoff(70)  # default wind sim wind is a sqrt function up to 60m
+        self.change_mode('LOITER')
+        # the wind triangle relies on heading changes, which LOITER provides:
+        self.wait_and_maintain_wind_estimate(5, 45, speed_tolerance=2, timeout=180)
+        # the estimate must also be reported as valid:
+        self.wait_message_field_values('NAMED_VALUE_FLOAT', {
+            "name": "WINDVALID",
+            "value": 1,
+        }, timeout=30)
+        self.fly_home_land_and_disarm()
+
     def VectorNavEAHRS(self):
         '''Test VectorNav EAHRS support'''
         self.fly_external_AHRS("VectorNav", 1)
@@ -10766,6 +10819,7 @@ return update()
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.TerrainMission,
             self.TerrainMissionInterrupt,
+            self.ExternalAHRSWindEstimate,
             self.InertialLabsEAHRS,
             self.KebniSensAItionExternalIMU,
             self.GpsSensorPreArmEAHRS,
