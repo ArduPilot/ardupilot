@@ -137,13 +137,6 @@ public:
     // returns forward head-wind component in m/s. Negative means tail-wind
     float head_wind(void) const;
 
-    // instruct DCM to update its wind estimate:
-    void estimate_wind() {
-#if AP_AHRS_DCM_ENABLED
-        dcm.estimate_wind();
-#endif
-    }
-
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
     void set_external_wind_estimate(float speed, float direction) {
         dcm.set_external_wind_estimate(speed, direction);
