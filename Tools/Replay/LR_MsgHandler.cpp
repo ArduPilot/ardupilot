@@ -80,6 +80,15 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
     }
 }
 
+void LR_MsgHandler_RHG2::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RHG2, msgbytes);
+    ekf2.resetHeightDatum(msg.origin_alt_tolerance_m);
+    if (replay_force_ekf3) {
+        ekf3.resetHeightDatum(msg.origin_alt_tolerance_m);
+    }
+}
+
 void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RSO2, msgbytes);
