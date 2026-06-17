@@ -97,9 +97,36 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * air data estimates
      */
-    // wind estimate is not supplied:
-    // results.wind = {};
-    // results.wind_valid = false;
+    // feed the wind-triangle estimator once per new external solution,
+    // using the velocity and attitude captured above.  The attitude
+    // may come from a neighbouring packet on devices which deliver
+    // attitude and velocity separately; that skew is bounded by one
+    // packet interval, far tighter than DCM's pairing of the last GPS
+    // velocity with the current attitude.  ExternalAHRS can produce
+    // solutions faster than the estimator's safe rate, but
+    // estimate_wind rate-limits internally.
+    uint32_t sample_us;
+    {
+        WITH_SEMAPHORE(extahrs.state.sem);
+        sample_us = extahrs.state.last_location_update_us;
+    }
+    if (results.velocity_NED_valid && sample_us != _last_wind_sample_us) {
+        _last_wind_sample_us = sample_us;
+        // estimate_wind wants the fuselage forward direction: the
+        // body forward axis as a unit vector in NED:
+        estimate_wind(results.velocity_NED, results.dcm_matrix.colx());
+    }
+
+    // the estimate is only meaningful while wind estimation is
+    // enabled, and only exists once the estimator has actually
+    // produced one.  Invalidate it while the external source is
+    // unhealthy: the estimate may then be arbitrarily stale.  A
+    // merely-old estimate from a healthy source remains valid - a
+    // stale wind is still useful, for example when dead-reckoning:
+    results.wind = _wind;
+    results.wind_valid = (AP::ahrs().get_wind_estimation_enabled() &&
+                          _have_wind_estimate &&
+                          results.healthy);
 
     /*
      * Sensor-related information
