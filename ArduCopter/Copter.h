@@ -761,7 +761,9 @@ private:
 #endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
     // baro_ground_effect.cpp
+#if AP_GROUNDEFFECT_ENABLED
     void update_ground_effect_detector(void);
+#endif
     void update_ekf_terrain_height_stable();
 
     // commands.cpp

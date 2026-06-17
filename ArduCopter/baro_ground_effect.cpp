@@ -1,8 +1,8 @@
 #include "Copter.h"
 
+#if AP_GROUNDEFFECT_ENABLED
 void Copter::update_ground_effect_detector(void)
 {
-#if AP_GROUNDEFFECT_ENABLED
     AP_GroundEffect &gndeff = g2.ground_effect;
 
     gndeff.set_takeoff_expected(flightmode->mode_number() != Mode::Number::THROW);
@@ -19,8 +19,8 @@ void Copter::update_ground_effect_detector(void)
 
     const bool throttle_up = flightmode->has_manual_throttle() && channel_throttle->get_control_in() > 0;
     gndeff.update(motors->armed(), ap.land_complete, throttle_up);
-#endif
 }
+#endif  // AP_GROUNDEFFECT_ENABLED
 
 // update ekf terrain height stable setting
 // when set to true, this allows the EKF to stabilize the normally barometer based altitude using a rangefinder

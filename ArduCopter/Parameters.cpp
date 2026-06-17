@@ -1373,7 +1373,7 @@ void Copter::load_parameters(void)
             }
         }
     }
-#endif
+#endif  // AP_GROUNDEFFECT_ENABLED
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
