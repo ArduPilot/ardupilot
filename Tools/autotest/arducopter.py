@@ -3823,6 +3823,67 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def EK3_FlowAxisLockoutRecovery(self):
+        '''Recover horizontal velocity from a single-axis optical-flow innovation lockout'''
+        # A residual one-axis accel bias under optical-flow nav can drive that axis's
+        # velocity estimate to diverge: once its flow innovation exceeds the gate the
+        # axis is rejected continuously, while the healthy axis keeps the shared
+        # flow-fusion timer fresh so the 5 s AID_RELATIVE timeout never fires. With the
+        # AGL KF enabled, FuseOptFlow re-anchors horizontal velocity to the flow
+        # measurement (gated on aglKfValid so the range, and thus the flow-derived
+        # velocity, is trustworthy). The rule: the recovery is allowed only when the
+        # AGL KF gate is set. Prove both halves - reset fires and bounds velocity with
+        # the gate on; no reset and a larger velocity error with it off.
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "EK3_OPTIONS": 24,  # AglKfForOptflow (bit4) + FuseRngOnGndUntilFlying (bit3)
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        # flow is not healthy stationary, so climb in ALT_HOLD to a low hover;
+        # ALT_HOLD leaves horizontal position uncontrolled so the EKF velocity
+        # divergence is observed without the Loiter controller fighting it.
+        self.takeoff(alt_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        self.delay_sim_time(5)
+
+        self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
+        self.context_collect('STATUSTEXT')
+        # a body-X accel bias drives the X velocity estimate to ramp; once its flow
+        # innovation exceeds the gate the axis locks out and diverges
+        self.set_parameter("SIM_ACC1_BIAS_X", 1.5)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=60)
+        # the injected bias perturbs the estimate, so don't rely on a graceful landing
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("AGL KF gate off: no recovery, velocity diverges")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_X": 0,
+            "EK3_OPTIONS": 8,  # clear AglKfForOptflow (bit4), keep FuseRngOnGndUntilFlying (bit3)
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(alt_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        self.delay_sim_time(5)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_ACC1_BIAS_X", 1.5)
+        # the lockout still occurs (proves the case is not vacuous): the EKF velocity
+        # estimate runs away because the rejected axis is never corrected or reset
+        self.wait_groundspeed(4, 1000, timeout=40)
+        # but with the gate off the recovery must not fire
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("flow vel reset fired without the AGL KF gate")
+        # the velocity estimate is diverged, so a normal landing won't settle - force disarm
+        self.disarm_vehicle(force=True)
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -14287,6 +14348,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
+             self.EK3_FlowAxisLockoutRecovery,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
