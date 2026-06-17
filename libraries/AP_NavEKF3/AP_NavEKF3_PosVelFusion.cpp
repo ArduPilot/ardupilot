@@ -434,6 +434,10 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
         // altitude transient.
         baroHgtOffset = 0.0f;
 
+        // set the terrain state to zero (on ground). The adjustment for
+        // frame height will get added in the later constraints.
+        terrainState = 0;
+
         // shift the WGS-84 reference height so that getLLH() reports the
         // same AMSL before and after the reset.  EKF_origin.alt itself
         // is left unchanged -- it is the NED reference frame anchor and
@@ -468,10 +472,6 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
         // disarm, so it is already at the right value; snapping it
         // would actually introduce error rather than remove one.
     }
-
-    // set the terrain state to zero (on ground). The adjustment for
-    // frame height will get added in the later constraints
-    terrainState = 0;
 
     return true;
 }
