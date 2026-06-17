@@ -1,0 +1,16 @@
+#pragma once
+
+#include <AP_HAL/AP_HAL_Boards.h>
+
+// Feature flags - set by hwdef.dat
+#ifndef AP_HAL_LINUX_ANALOGIN_ADS1115_ENABLED
+#define AP_HAL_LINUX_ANALOGIN_ADS1115_ENABLED 0
+#endif
+
+#ifndef AP_HAL_LINUX_ANALOGIN_IIO_ENABLED
+#define AP_HAL_LINUX_ANALOGIN_IIO_ENABLED 0
+#endif
+
+#ifndef AP_HAL_LINUX_ANALOGIN_NAVIO2_ENABLED
+#define AP_HAL_LINUX_ANALOGIN_NAVIO2_ENABLED 0
+#endif

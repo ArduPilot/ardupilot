@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AnalogIn_config.h"
+
+#if AP_HAL_LINUX_ANALOGIN_NAVIO2_ENABLED
+
 #include "AP_HAL_Linux.h"
 
 #include <fcntl.h>
@@ -38,3 +42,5 @@ private:
     AP_HAL::AnalogSource *_servorail_pin = nullptr;
     HAL_Semaphore _semaphore;
 };
+
+#endif  // AP_HAL_LINUX_ANALOGIN_NAVIO2_ENABLED
