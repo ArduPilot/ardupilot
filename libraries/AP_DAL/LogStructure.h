@@ -41,7 +41,8 @@
     LOG_RWOH_MSG, \
     LOG_RBOH_MSG, \
     LOG_RTER_MSG, \
-    LOG_RHGT_MSG
+    LOG_RHGT_MSG, \
+    LOG_RHG2_MSG
 
 // @LoggerMessage: RFRH
 // @Description: Replay FRame Header
@@ -160,6 +161,14 @@ struct log_RISJ {
 // @FieldValueEnum: Event: AP_DAL::Event
 struct log_REV2 {
     uint8_t event;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RHG2
+// @Description: Replay resetHeightDatum event with origin-altitude tolerance (EKF2)
+// @Field: Tol: max divergence between EKF origin alt and GPS alt for full reset (m); negative disables the check
+struct log_RHG2 {
+    float origin_alt_tolerance_m;
     uint8_t _end;
 };
 
@@ -622,6 +631,8 @@ struct log_RTER {
       "RFRN", "IIIfIfffBBB", "HLat,HLon,HAlt,E2T,AM,TX,TY,TZ,VC,EKT,Flags", "DUm-bddd---", "GGB--------" }, \
     { LOG_REV2_MSG, RLOG_SIZE(REV2),                                   \
       "REV2", "B", "Event", "-", "-" }, \
+    { LOG_RHG2_MSG, RLOG_SIZE(RHG2),                                  \
+      "RHG2", "f", "Tol", "m", "0" }, \
     { LOG_RSO2_MSG, RLOG_SIZE(RSO2),                         \
       "RSO2", "III", "Lat,Lon,Alt", "DUm", "GGB" }, \
     { LOG_RWA2_MSG, RLOG_SIZE(RWA2),                         \
