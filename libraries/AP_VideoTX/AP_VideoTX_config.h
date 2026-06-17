@@ -16,10 +16,10 @@
 #define AP_SMARTAUDIO_ENABLED AP_VIDEOTX_ENABLED
 #endif
 
-// MSP VTX control needs both VideoTX and the MSP layer that implements it;
-// default to >1MB boards as it is non-essential, and force it on for FPV boards
-// via minimize_fpv_osd.inc
+// MSP VTX control needs both VideoTX and the MSP layer that implements it.
+// It is non-essential and off by default; boards with MSP and the video
+// hardware opt in (FPV/OSD boards do so via minimize_fpv_osd.inc).
 #ifndef AP_MSP_VIDEOTX_ENABLED
-#define AP_MSP_VIDEOTX_ENABLED (AP_VIDEOTX_ENABLED && HAL_MSP_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
+#define AP_MSP_VIDEOTX_ENABLED 0
 #endif
 
