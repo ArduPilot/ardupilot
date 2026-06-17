@@ -280,7 +280,7 @@ void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_add
 }
 #endif  // AP_WATCHDOG_SAVE_FAULT_ENABLED
 
-void *__dso_handle;
+__attribute__((used)) void *__dso_handle;
 
 void __cxa_pure_virtual(void);
 void __cxa_pure_virtual() { while (1); } //TODO: Handle properly, maybe generate a traceback
