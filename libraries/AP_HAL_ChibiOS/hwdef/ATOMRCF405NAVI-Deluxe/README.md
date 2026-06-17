@@ -51,7 +51,7 @@ the above image and some content courtesy of [ATOMRC](http://atomrc.com/)
 
 tbd
 
-## Default UART order
+## UART Mapping
 
 - SERIAL0 = console = USB
 - SERIAL1 = RF Module = USART1(MAVLink2), not usable by AP GCS
@@ -87,7 +87,7 @@ The SBUS pin, is passed by an inverter to RX2 (UART2 RX). UART2 is defaulted to 
 
 > **Note:** the 5v pin above the SBUS pin is powered when USB is connected. All other 5V pins are only powered when battery is present.
 
-## Battery Monitor Configuration
+## Battery Monitoring
 
 These settings are set as defaults when the firmware is loaded (except `BATT_AMP_PERVLT` which needs to be changed from the default value). However, if they are ever lost, you can manually set the parameters:
 
@@ -102,7 +102,7 @@ Enable Battery monitor with `BATT_MONITOR=4`, then reboot, then set:
 
 This board does not include a GPS or compass. But a connector is provided to attach an external module.
 
-## OSD
+## OSD Support
 
 The internal analog OSD is enabled by default. Simultaneous use of HD VTX with OSD (DisplayPort) is also enabled by default via the 6 pin connector labeled "DJI". Either 9V (default) or 12V VTX power can be selected by solder jumper.
 

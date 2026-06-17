@@ -73,7 +73,7 @@ public:
     void set_collective_for_landing(bool landing) { _heliflags.landing_collective = landing; }
 
     // get_rsc_mode - gets the current rotor speed control method
-    uint8_t get_rsc_mode() const { return _main_rotor.get_control_mode(); }
+    uint8_t get_rsc_mode() const { return _main_rotor.get_rsc_control_mode(); }
 
     // get_rsc_setpoint - gets contents of _rsc_setpoint parameter (0~1)
     float get_rsc_setpoint() const { return _main_rotor._rsc_setpoint.get() * 0.01f; }
@@ -82,10 +82,7 @@ public:
     virtual void set_desired_rotor_speed(float desired_speed);
 
     // get_desired_rotor_speed - gets target rotor speed as a number from 0 ~ 1
-    float get_desired_rotor_speed() const { return _main_rotor.get_desired_speed(); }
-
-    // return true if the main rotor is up to speed
-    bool rotor_runup_complete() const { return _heliflags.rotor_runup_complete; }
+    float get_desired_rotor_speed() const { return _main_rotor.get_desired_rotor_speed(); }
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -174,10 +171,10 @@ protected:
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
 
     // update_motor_controls - sends commands to motor controllers
-    virtual void update_motor_control(AP_MotorsHeli_RSC::RotorControlState state) = 0;
+    virtual void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
 
-    // Converts AP_Motors::SpoolState from _spool_state variable to AP_MotorsHeli_RSC::RotorControlState
-    AP_MotorsHeli_RSC::RotorControlState get_rotor_control_state() const;
+    // update_spool_state - updates the spool state based on the desired state
+    virtual AP_Motors::SpoolState update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
 
     // run spool logic
     void                output_logic();
@@ -198,8 +195,8 @@ protected:
     // method also updates the initialised flag.
     virtual void init_outputs() = 0;
 
-    // calculate_armed_scalars - must be implemented by child classes
-    virtual void calculate_armed_scalars() = 0;
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    virtual void calculate_armed_scalars();
 
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;
@@ -247,7 +244,6 @@ protected:
         uint8_t land_complete           : 1;    // true if aircraft is landed
         uint8_t takeoff_collective      : 1;    // true if collective is above 30% between H_COL_MID and H_COL_MAX
         uint8_t below_land_min_coll     : 1;    // true if collective is below H_COL_LAND_MIN
-        uint8_t rotor_spooldown_complete : 1;    // true if the rotors have spooled down completely
         uint8_t start_engine            : 1;    // true if turbine start RC option is initiated
     } _heliflags;
 

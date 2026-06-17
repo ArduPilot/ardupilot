@@ -113,7 +113,7 @@ The PixPilot-V6 flight controller is sold by a range of resellers listed at [Mak
 
 All compatible RC protocols can be decoded by attaching the Receiver's output to the SBUS input pin next to the Servo/Output VCC input connector. Note that some protocols such as CRSF or FPort including telemetry, require connection to, and setup of, one of the UARTs instead of this pin.
 
-## Battery Monitor Settings
+## Battery Monitoring
 
 These should already be set by default. However, if lost or changed:
 

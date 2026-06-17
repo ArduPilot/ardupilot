@@ -1,5 +1,146 @@
 ArduPilot Rover Release Notes:
 ------------------------------------------------------------------
+Release 4.7.0-beta7 13-June-2026
+
+Warnings
+
+- TradHeli's arming behaviour changes to require collective stick full down regardless of using stick or switch arming.  In RC_OPTIONS parameter, uncheck option for "Arming check throttle for 0 input" to allow switch arming with a collective raised from bottom.  This option is not recommended for stick arming as it allows arming at non zero collective setting.
+
+Changes from 4.7.0-beta6
+
+1) Board specific changes
+
+- AcctonGodwit GA1 has corrected pinout and bootloader (@erickao-hy, PR:33276)
+- JAE JFB200 board added (@n-ito2222, PR:32786)
+- SkyDroid-S3 fixed internal compass probing bug (@Hwurzburg, PR:33374)
+
+2) Library changes
+
+- STM ASM330LHH IMU support (@n-ito2222, PR:31656)
+
+3) Rover specific changes
+
+- Mode changes when safety switch pressed bug fixed (@peterbarker, PR:33070)
+
+4) Tradheli specific changes
+
+- Stick arming behaviour bugfix (@bnsgeyer, PR:33402)
+
+------------------------------------------------------------------
+Release 4.7.0-beta6 01-June-2026
+
+Changes from 4.7.0-beta5
+
+1) Board specific changes
+
+- MambaF405v2 SBUS pin polarity fixed (@andyp1per, PR:33203)
+- PilotGaeaSV7V1 board added (@PilotGaea2001, PR:32416)
+- SkyDroid-S3 board added (@UAVcihang, PR:32920)
+- ZeroOneX6v2 supports SPA06 and MBP581 barometers (@ZeroOne-Aero, PR:33237)
+
+2) Driver changes
+
+- AP_Compass: LIS2MDL recent duplicate driver is removed (@dakejahl, PR:33140)
+- Filter: Harmonic Notch Filters fixed to prevent runtime error (@peterbarker, PR:33230)
+- KellerLD barometer has better corruption rejection (@vshie, PR:32889)
+- Lightware GRF250 I2C driver added (@rishabsingh3003, PR:32923)
+- RC_Channel: Channel overrides fixed to not apply on restricted channels (@peterbarker, PR:33275)
+
+3) Library changes
+
+- AP_CANManager: Removed unused logging interface (@tpwrules, PR:33031)
+- AP_Filesystem: FTP-related hardfault is fixed (@peterbarker, PR:33156)
+- AP_Follow: Vertical target estimate has minor fixes (@lthall, PR:33109)
+- AP_Follow: bugfixes related to the motion of the target (@lthall, PR:33038)
+- AP_OpenDroneID: UAS ID available length is fixed (@cuav-chen2, PR:33224)
+- Filter: Harmonic notch logging fix to avoid over reading array (@peterbarker, PR:33232)
+- ardupilotwaf: gcc-14+ compiler warnings are suppressed (@yuri-rage, PR:33138)
+
+4) Plane specific changes
+
+- Spoolup events are better reported with less false-positive errors (@lthall, PR:32955)
+
+5) Copter specific changes
+
+- Terrain failsafe will be triggered when a mission terrain altitude cannot be retrieved (@rmackay9, PR:32943)
+- Pilot yaw is correctly ignored during RTL (@rmackay9, PR:33169)
+- Spoolup events are better reported with less false-positive errors (@lthall, PR:32955)
+
+6) Sub related changes
+
+- MOT_FV_CPLNG_K has better documentation (@ES-Alexander, PR:33076)
+- Very early prearm check will not cause initializatin bug (@CSmith1539, PR:33217)
+- Spoolup events are better reported with less false-positive errors (@lthall, PR:32955)
+
+------------------------------------------------------------------
+Release 4.7.0-beta5 15-May-2026
+
+Changes from 4.7.0-beta4
+
+1) Board specific changes
+
+- Linux-Navigator: IIS2MDC support added (@WillianGalvani, PR:32863)
+
+2) Library changes
+
+- AP_Logger: Named Value Float dataflash logging drops fixed (@tridge, PR:32975)
+- AP_Logger: LOG_MAV_RATEMAX default changed to 10 (@tridge, PR:33030)
+- AP_Logger: logging over MAVLink speed significantly improved (@tridge, PR:33020)
+- AP_NavEKF3: barometer offset logging added (@rmackay, PR:32931)
+- AP_NavEKF3: bugfix to prevent covariance state corruption (@tpwrules, PR:32177)
+- HAL_ChibiOS: Oneshot pulse corruption upon safety-enable fixed (@tridge, PR:32979)
+
+3) Copter specific changes
+
+- Increment data added for several parameters (@ES-Alexander, PR:32949)
+- Weathervaning bugfix to properly stop weathervaning (@IamPete1, PR:33019)
+- Land and Payload place waypoints fixed to use correct altitude and spline waypoints (@lthall, PR:32634)
+
+4) Helicopter specific changes
+
+- PID scaling support fixed (@lthall, PR:32725)
+
+5) Sub specific changes
+
+- Increment data added for several parameters (@ES-Alexander, PR:32949)
+
+------------------------------------------------------------------
+Release 4.7.0-beta4 30-Apr-2026
+
+Changes from 4.7.0-beta3
+
+1) Board specific changes
+
+- VUAV-TinyV7 board added (@viewpro-caijie, PR:32058)
+
+2) Driver changes
+
+- LSM6DSV16X IMU from ST is now supported (@zebulon-86, PR:32574)
+- MMP581 driver handles data corruption better (@peterbarker, PR:32171)
+
+3) Library changes
+
+- AC_PID: NTF and NEF parameters metadata includes 0 as a valid value (@IamPete1, PR:32898)
+- AC_WPNav: BendyRuler altitude bug fixed (@hunt0r, PR:32892)
+- AP_Arming: E-stop value is taken into account (@IamPete1, PR:32705)
+- AP_GPS: SBF driver improvement in Do Not Use values (@UAVcihang, PR:32642)
+- AP_Math: S-Curve bugs fixed (@lthall, PR: 32730)
+- RC_Channel: RCx_PROTOCOLS metadata updated with SITLUDP option (@peterbarker, PR:32778)
+
+4) Plane specific changes
+
+- AP_IOMCU: Throttle will not output on failsafe while disarmed (@IamPete1, PR:32912)
+
+5) Sub specific changes
+
+- Lights servo channels defaults fixed (@ES-Alexander, PR:32764)
+- Remote leak detector MAVLink interface support added (@ES-Alexander, PR:32614)
+
+6) Rover specific changes
+
+- Power limiting UX improved (@stephendade, PR:32788)
+
+------------------------------------------------------------------
 Release 4.7.0-beta3 10-Apr-2026
 
 Changes from 4.7.0-beta2

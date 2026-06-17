@@ -20,7 +20,9 @@
 #endif
 #include <hrt.h>
 #include <ch.h>
-#endif // HAL_BOARD_CHIBIOS
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <fenv.h>
+#endif  // HAL_BOARD_CHIBIOS
 
 void setup();
 void loop();
@@ -252,6 +254,10 @@ static void test_div1000(void)
 
 void loop()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // pretend we are embedded so that 1.0/0 "works"
+    fedisableexcept(FE_ALL_EXCEPT);
+#endif
     show_sizes();
     hal.console->printf("\n");
     show_timings();

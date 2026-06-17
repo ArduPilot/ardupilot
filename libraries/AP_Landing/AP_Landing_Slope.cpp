@@ -349,13 +349,16 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     // we're landing, check for custom approach and
     // pre-flare airspeeds. Also increase for head-winds
 
+    // default landing target airspeed is the average of cruise and
+    // minimum airspeed:
+    int32_t target_airspeed_cm = 100 * 0.5 * (aparm.airspeed_cruise + aparm.airspeed_min);
+
+    // land airspeed can be explicitly specified:
     const float land_airspeed = tecs_Controller->get_land_airspeed();
-    int32_t target_airspeed_cm = aparm.airspeed_cruise*100;
     if (land_airspeed >= 0) {
         target_airspeed_cm = land_airspeed * 100;
-    } else {
-        target_airspeed_cm = 100 * 0.5 * (aparm.airspeed_cruise + aparm.airspeed_min);
     }
+
     switch (type_slope_stage) {
     case SlopeStage::NORMAL:
         target_airspeed_cm = aparm.airspeed_cruise*100;

@@ -20,7 +20,7 @@
 ### Power
 
 - 5.5V - 54V (2S - 12S) input
-- 12V, 2A output
+- 12V, 2A output (POWER AUX; on by default, optionally switchable via RELAY1)
 - 5V, 2A output. 300ma for main system, 200ma for heater
 
 ### Interfaces
@@ -238,13 +238,22 @@ This autopilot has a built-in compass. The compass is the IIS2MDC
 
 This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH.
 
-## Motor Output
+## PWM Output
 
 All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectional-DSHOT. All outputs in the motor groups below must be either PWM or DShot:
 
 - Motors 1-4  Group1 (TIM5)
 - Motors 5-8  Group2 (TIM8)
 - Motor 9     Group3 (TIM4)
+
+## 12V Peripheral Output (POWER AUX)
+
+The 12V pin on the **POWER AUX** connector is gated by a BEC enable pin. The pin is pre-mapped to GPIO 81 and configured as RELAY1. By default it is ON via `RELAY1_DEFAULT` = 1.
+
+- To change the default state to OFF, set `RELAY1_DEFAULT` = 0.
+- To make it controllable from the transmitter, set `RELAY1_FUNCTION` = 1 (Relay) and assign `RCx_OPTION` = 28 (Relay1 On/Off) to the channel you want to use as the switch.
+
+The VBAT pin on the same connector is a direct battery pass-through and is not controlled by firmware.
 
 ## Loading Firmware
 

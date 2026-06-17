@@ -82,7 +82,7 @@ The CUAV-X25-EVO has an RM3100 builtin compass. If interference is experienced f
 
 The CUAV-X25-EVO has 3 IMUs. one IIM42652 with an external crystal oscillator and two IIM42653. All these IMUs have heater.
 
-## Analog inputs
+## Analog Inputs
 
 The CUAV-X25-EVO has 3 analog inputs.
 

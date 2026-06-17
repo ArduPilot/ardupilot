@@ -50,6 +50,8 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_AHRS_DCM);
 
+    const char *shortname() const override { return "DCM"; }
+
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift() override;
@@ -72,13 +74,9 @@ public:
         return _error_yaw;
     }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        wind = _wind;
-        return true;
-    }
-
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
     void set_external_wind_estimate(float speed, float direction);
+#endif
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -88,27 +86,21 @@ public:
     // if we have an estimate from a specific sensor index
     bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
 
-    // return a ground vector estimate in meters/second, in North/East order
-    Vector2f groundspeed_vector() override;
-
     bool            use_compass() override;
 
     void estimate_wind(void);
 
-    // is the AHRS subsystem healthy?
-    bool healthy() const override;
-
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
-    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override {
+        return true;
+    }
 
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
     bool get_relative_position_NED_origin(Vector3p &vec) const override;
     bool get_relative_position_NE_origin(Vector2p &posNE) const override;
     bool get_relative_position_D_origin(postype_t &posD) const override;
-
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override;
 
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
@@ -122,6 +114,8 @@ private:
     bool get_vert_pos_rate_D(float &velocity) const;
 
     bool get_velocity_NED(Vector3f &vec) const;
+    // return a ground velocity estimate in meters/second, in North/East order
+    Vector2f groundspeed_vector();
 
     // dead-reckoning support
     bool get_location(Location &loc) const;

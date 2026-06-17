@@ -111,10 +111,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Path: ./ServoModel.cpp
     AP_SUBGROUPINFO(servo, "SERVO_", 16, SIM, ServoParams),
 
-    // @Param: SONAR_ROT
-    // @DisplayName: Sonar rotation
-    // @Description: Sonar rotation from rotations enumeration
-    AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
+    AP_SUBGROUPEXTENSION("",      17, SIM,  var_sonar),
     // @Param: BATT_VOLTAGE
     // @DisplayName: Simulated battery resting voltage
     // @Description: Simulated battery resting voltage (no load sag). Defaults to and clipped to the battery model's maximum voltage. Changes re-initialize the state of charge, and values below the maximum indicate a partially-charged battery. For batteries with unlimited capacity, see `SIM_BATT_CAP_AH`. Value ignored when receiving battery state updates from an external source.
@@ -127,17 +124,8 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: Ah
     // @User: Advanced
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
-    // @Param: SONAR_GLITCH
-    // @DisplayName: Sonar glitch probablility
-    // @Description: Probablility a sonar glitch would happen
-    // @Range: 0 1
-    // @User: Advanced
-    AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
-    // @Param: SONAR_RND
-    // @DisplayName: Sonar noise factor
-    // @Description: Scaling factor for simulated sonar noise
-    // @User: Advanced
-    AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
+    // 23 was SONAR_GLITCH
+    // 24 was SONAR_RND
     // @Param: RC_FAIL
     // @DisplayName: Simulated RC signal failure
     // @Description: Allows you to emulate rc failures in sim
@@ -175,11 +163,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("CAN_TYPE2", 31, SIM,  can_transport[1], uint8_t(CANTransport::MulticastUDP)),
 #endif
 
-    // @Param: SONAR_SCALE
-    // @DisplayName: Sonar conversion scale
-    // @Description: Sonar conversion scale from distance to voltage
-    // @Units: m/V
-    AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
+    // 32 was SONAR_SCALE
     // @Param: FLOW_ENABLE
     // @DisplayName: Opflow Enable
     // @Description: Enable simulated Optical Flow sensor
@@ -236,12 +220,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
-    // @Param: SONAR_POS
-    // @DisplayName: Sonar Offsets
-    // @Description: XYZ position of the sonar relative to the body frame origin
-    // @Units: m
-    // @Vector3Parameter: 1
-    AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
+    // 55 was SONAR_POS
     // @Param: FLOW_POS
     // @DisplayName: Opflow Pos
     // @Description: XYZ position of the optical flow sensor focal point relative to the body frame origin
@@ -658,6 +637,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
+    //
+    // 57 was SONAR_OFFSET
 
     AP_GROUPEND
 };
@@ -1515,6 +1496,41 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_SUBGROUPINFO(imu_tcal[4], "IMUT5_", 59, SIM, AP_InertialSensor_TCal),
 #endif
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo SIM::var_sonar[] = {
+    // @Param: SONAR_ROT
+    // @DisplayName: Sonar rotation
+    // @Description: Sonar rotation from rotations enumeration
+    AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
+    // @Param: SONAR_GLITCH
+    // @DisplayName: Sonar glitch probablility
+    // @Description: Probablility a sonar glitch would happen
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
+    // @Param: SONAR_RND
+    // @DisplayName: Sonar noise factor
+    // @Description: Scaling factor for simulated sonar noise
+    // @User: Advanced
+    AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
+    // @Param: SONAR_SCALE
+    // @DisplayName: Sonar conversion scale
+    // @Description: Sonar conversion scale from distance to voltage
+    // @Units: m/V
+    AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
+    // @Param: SONAR_POS
+    // @DisplayName: Sonar Offsets
+    // @Description: XYZ position of the sonar relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
+    // @Param: SONAR_OFFSET
+    // @DisplayName: Sonar measurement offset.
+    // @Description: Sonar measurement offset, in meters. Can be used for error injection.
+    // @User: Advanced
+    AP_GROUPINFO("SONAR_OFFSET",     57, SIM,  sonar_offset, 0),
     AP_GROUPEND
 };
 

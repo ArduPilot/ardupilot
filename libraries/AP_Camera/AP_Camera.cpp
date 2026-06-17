@@ -70,17 +70,6 @@ AP_Camera::AP_Camera(uint32_t _log_camera_bit) :
     _singleton = this;
 }
 
-// set camera trigger distance in a mission
-void AP_Camera::set_trigger_distance(float distance_m)
-{
-    WITH_SEMAPHORE(_rsem);
-
-    if (primary == nullptr) {
-        return;
-    }
-    primary->set_trigger_distance(distance_m);
-}
-
 // momentary switch to change camera between picture and video modes
 void AP_Camera::cam_mode_toggle()
 {
@@ -308,6 +297,62 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
     }
 }
 
+#if HAL_MAVLINK_BINDINGS_ENABLED
+// a method which handles mavlink-style semantics for instance_id; if
+// instance_id is zero or matches backend instance ID code is run
+MAV_RESULT AP_Camera::handle_mav_DO_SET_CAM_TRIGG_DISTANCE(uint8_t instance_id, bool trigger, float dist_m)
+{
+    for (uint8_t i=0; i<AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] == nullptr) {
+            continue;
+        }
+        // honour packet instance number:
+        if (instance_id != 0 && i+1 != instance_id) {
+            continue;
+        }
+        _backends[i]->set_trigger_distance(dist_m);
+        if (trigger) {
+            _backends[i]->take_picture();
+        }
+    }
+
+    return MAV_RESULT_ACCEPTED;
+}
+
+MAV_RESULT AP_Camera::handle_mav_SET_CAMERA_ZOOM(uint8_t instance_id, CAMERA_ZOOM_TYPE mav_zoom_type, float zoom_value)
+{
+    ZoomType zoom_type;
+    switch (mav_zoom_type) {
+    case ZOOM_TYPE_CONTINUOUS:
+        zoom_type = ZoomType::RATE;
+        break;
+    case ZOOM_TYPE_RANGE:
+        zoom_type = ZoomType::PCT;
+        break;
+    default:
+        // invalid param1
+        return MAV_RESULT_DENIED;
+    }
+
+    MAV_RESULT result = MAV_RESULT_ACCEPTED;
+    for (uint8_t i=0; i<AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] == nullptr) {
+            continue;
+        }
+        // honour packet instance number:
+        if (instance_id != 0 && i+1 != instance_id) {
+            continue;
+        }
+        // all backends must succeed:
+        if (!_backends[i]->set_zoom(zoom_type, zoom_value)) {
+            result = MAV_RESULT_FAILED;
+        }
+    }
+
+    return result;
+}
+#endif  // HAL_MAVLINK_BINDINGS_ENABLED
+
 // handle command_long mavlink messages
 MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
 {
@@ -319,21 +364,17 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
         control(packet.param1, packet.param2, packet.param3, packet.param4, packet.x, packet.y);
         return MAV_RESULT_ACCEPTED;
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        set_trigger_distance(packet.param1);
-        if (is_equal(packet.param3, 1.0f)) {
-            take_picture();
-        }
-        return MAV_RESULT_ACCEPTED;
+        return handle_mav_DO_SET_CAM_TRIGG_DISTANCE(
+            packet.param4,                  // instance
+            is_equal(packet.param3, 1.0f),  // trigger
+            packet.param1                   // distance
+        );
     case MAV_CMD_SET_CAMERA_ZOOM:
-        if (is_equal(packet.param1, (float)ZOOM_TYPE_CONTINUOUS) &&
-            set_zoom(ZoomType::RATE, packet.param2)) {
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param1, (float)ZOOM_TYPE_RANGE) &&
-            set_zoom(ZoomType::PCT, packet.param2)) {
-            return MAV_RESULT_ACCEPTED;
-        }
-        return MAV_RESULT_UNSUPPORTED;
+        return handle_mav_SET_CAMERA_ZOOM(
+            packet.param3,                   // instance
+            CAMERA_ZOOM_TYPE(packet.param1), // zoom type
+            packet.param2                    // zoom level
+        );
     case MAV_CMD_SET_CAMERA_FOCUS:
         // accept any of the auto focus types
         switch ((SET_FOCUS_TYPE)packet.param1) {

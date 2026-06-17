@@ -83,7 +83,7 @@ The 8 FMU PWM outputs are in 4 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot then all channels in the group need to use DShot.
 
-## GPIO
+## GPIOs
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
@@ -120,7 +120,7 @@ These are set by default in the firmware and shouldn't need to be adjusted.
 
 The P1/P2 flight controllers have an integrated IST8310 high-precision magnetometer.
 
-## Analog inputs
+## Analog Inputs
 
 The P1/P2 flight controller has 2 analog inputs.
 

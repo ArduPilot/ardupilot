@@ -130,7 +130,7 @@ To allow CRSF and embedded telemetry available in Fport, CRSF, and SRXL2 receive
 - CRSF/ELRS would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "0".
 - SRXL2 would require [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) be set to "4" and connects only the TX pin.
 
-## PWM Outputs
+## PWM Output
 
 The autopilot supports up to 14 PWM outputs. All 14 outputs
 support all normal PWM output formats. All outputs also support DShot. Outputs 9-14 support Bi-Directional DShot. Outputs within the same timer group need to use the same output rate. If any output in a group uses DShot then all channels in the group need to use DShot,etc..
@@ -169,7 +169,7 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 | 108 | Out8 |  |
 |  |  |  |
 
-## Battery Monitor Settings
+## Battery Monitoring
 
 These should already be set by default. However, if lost or changed:
 

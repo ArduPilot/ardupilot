@@ -96,6 +96,32 @@
 #define FLOW_USE_DEFAULT        2
 #define WIND_P_NSE_DEFAULT      0.1
 
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+// Sub defaults
+#define VELNE_M_NSE_DEFAULT     0.5f
+#define VELD_M_NSE_DEFAULT      0.7f
+#define POSNE_M_NSE_DEFAULT     0.5f
+#define ALT_M_NSE_DEFAULT       0.01f
+#define MAG_M_NSE_DEFAULT       0.05f
+#define GYRO_P_NSE_DEFAULT      1.5E-02f
+#define ACC_P_NSE_DEFAULT       3.5E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
+#define MAGB_P_NSE_DEFAULT      1.0E-04f
+#define MAGE_P_NSE_DEFAULT      1.0E-03f
+#define VEL_I_GATE_DEFAULT      500
+#define POS_I_GATE_DEFAULT      500
+#define HGT_I_GATE_DEFAULT      500
+#define MAG_I_GATE_DEFAULT      300
+#define MAG_CAL_DEFAULT         3
+#define GLITCH_RADIUS_DEFAULT   25
+#define FLOW_MEAS_DELAY         10
+#define FLOW_M_NSE_DEFAULT      0.25f
+#define FLOW_I_GATE_DEFAULT     300
+#define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
+#define WIND_P_NSE_DEFAULT      0.1
+
 #else
 // build type not specified, use copter defaults
 #define VELNE_M_NSE_DEFAULT     0.5f
@@ -211,7 +237,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: ALT_M_NSE
     // @DisplayName: Altitude measurement noise (m)
     // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors. A larger value for EK3_ALT_M_NSE may be required when operating with EK3_SRCx_POSZ = 0. This parameter also sets the noise for the 'synthetic' zero height measurement that is used when EK3_SRCx_POSZ = 0.
-    // @Range: 0.1 100.0
+    // @Range: 0.01 100.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m
@@ -739,8 +765,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
-    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS – If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes.
-    // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt
+    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS – If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes. Bit 3 (AGL KF for optflow scaling): Use a 2-state IMU-aided AGL Kalman filter (height + vertical velocity, fused with rangefinder) to compute the height-above-ground used for optical flow velocity scaling, instead of terrainState-pd. This decouples optical flow scaling from errors in the main filter's vertical position state.
+    // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt, 3:AGL KF for optflow scaling
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
@@ -1917,11 +1943,12 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(GCS_MAVLINK &link) const
+bool NavEKF3::getTerrainAltVariance(float &terrainAltVar) const
 {
     if (core) {
-        core[primary].send_status_report(link);
+        return core[primary].getTerrainAltVariance(terrainAltVar);
     }
+    return false;
 }
 
 // provides the height limit to be observed by the control loops
@@ -2179,4 +2206,34 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
         return core[primary].get_yawEstimator();
     }
     return nullptr;
+}
+
+// Do a reset and bootstrap alignment of all EKF cores
+// return true if successful for all cores
+// When on the ground and stationary, gyros are recalibrated first so
+// the filter bootstraps with clean offsets.  In flight the gyro
+// calibration is skipped and the filter resets with existing biases.
+bool NavEKF3::InitialiseFilterBootstrap()
+{
+    // ignore any data if the EKF is not started
+    if (!core) {
+        return false;
+    }
+
+    // initialise the cores. We return success only if all cores
+    // initialise successfully.  The per-core InitialiseFilterBootstrap()
+    // return value is false when the IMU delay buffer is not yet full,
+    // which is normal during a reset. Check statesInitialised directly
+    // to determine whether the bootstrap alignment succeeded.
+    bool ret = true;
+    for (uint8_t i=0; i<num_cores; i++) {
+        // clear the statesInitialised status to allow a bootstrap alignment
+        core[i].clearStatesInitialised();
+        // perform a bootstrap alignment
+        core[i].InitialiseFilterBootstrap();
+        if (!core[i].isStatesInitialised()) {
+            ret = false;
+        }
+    }
+    return ret;
 }

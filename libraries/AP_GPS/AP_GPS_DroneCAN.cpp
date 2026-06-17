@@ -52,8 +52,6 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)
 #endif
 
-#define LOG_TAG "GPS"
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::micros64())
 #else
@@ -166,21 +164,9 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         default:
             return NULL;
     }
-    if (backend == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR,
-                            LOG_TAG,
-                            "Failed to register DroneCAN GPS Node %d on Bus %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index());
-    } else {
+    if (backend != nullptr) {
         _detected_modules[found_match].driver = backend;
         backend->_detected_module = found_match;
-        AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered DroneCAN GPS Node %d on Bus %d as instance %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index(),
-                            _state.instance);
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {

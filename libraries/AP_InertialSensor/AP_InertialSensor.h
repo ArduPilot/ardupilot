@@ -187,6 +187,14 @@ public:
         return _accel_pos(_first_usable_accel);
     }
 
+    // return the gyro bias limit (rad/s) for this IMU instance.
+    // The EKF clamps its gyro bias state to this value.
+    float get_gyro_bias_limit_rads(uint8_t instance) const;
+
+    // return the initial gyro bias 1-sigma uncertainty (deg/s) for this
+    // IMU instance, used to seed the EKF's gyro bias covariance.
+    float get_gyro_bias_init_dps(uint8_t instance) const;
+
     // return the temperature if supported. Zero is returned if no
     // temperature is available
     float get_temperature(uint8_t instance) const { return _temperature[instance]; }
@@ -501,7 +509,10 @@ private:
 
     // Logging function
     void Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance) const;
-    
+
+    // look up the backend that owns the given gyro instance, or nullptr
+    const AP_InertialSensor_Backend *_find_gyro_backend(uint8_t instance) const;
+
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
 

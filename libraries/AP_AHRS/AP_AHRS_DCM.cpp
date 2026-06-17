@@ -143,6 +143,18 @@ AP_AHRS_DCM::update()
 
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    const auto now_ms = AP_HAL::millis();
+
+    // always initialised
+    results.initialised = true;
+
+    // consider ourselves healthy if there have been no failures for 5 seconds
+    results.healthy = (_last_failure_ms == 0 || now_ms - _last_failure_ms > 5000);
+
+    // not using a specific sensor:
+    results.primary_gyro = AP::ins().get_first_usable_gyro();
+    results.primary_accel = AP::ins().get_first_usable_accel();
+
     results.roll_rad = roll;
     results.pitch_rad = pitch;
     results.yaw_rad = yaw;
@@ -151,17 +163,69 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // quaternion is derived from transformation matrix:
     results.quaternion.from_rotation_matrix(_dcm_matrix);
+    results.quaternion.rotate(-AP::ahrs().get_trim());
 
     results.attitude_valid = true;
 
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
+
+    /*
+     * acceleration estimates
+     */
+    // results.accel_bias = {} - DCM does not estimate accel bias
     results.accel_ef = _accel_ef;
 
     results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);
+
+    // ground velocity estimate in meters/second, in North/East order
+    // note: velocity_NE is significantly different to results.velocity_NED.xy()!
+    results.velocity_NE = groundspeed_vector();
+
     results.vert_pos_rate_D_valid = get_vert_pos_rate_D(results.vert_pos_rate_D);
 
+    /*
+     * position estimates
+     */
     results.location_valid = get_location(results.location);
+
+    // hagl is not supplied:
+    // results.hagl_valid = false;
+    // results.hagl = 0;
+
+    /*
+     * air data estimates
+     */
+    results.wind = _wind;
+    results.wind_valid = true;
+
+    /*
+     * Sensor-related information
+     */
+    // true if the estimator will use GPS data in creating its
+    // estimate when the data is good:
+    results.configured_to_use_gps = _gps_use != GPSUse::Disable;
+    // true if GPS is configured as the horizontal position source
+    // for this estimator.  Used to decide whether GPS will set
+    // the navigation origin.
+    results.configured_to_use_gps_for_pos_XY = _gps_use != GPSUse::Disable;
+
+    // are we consuming yaw from an external (e.g. vision-based) source?
+    // results.using_extnav_for_yaw = false;
+
+    // are we consuming yaw from a source which is *not* a compass
+    // results.using_noncompass_for_yaw = false;
+
+    /*
+     * filter status and estimates quality values:
+     */
+    // getFilterStatus(results.filter_status);
+    // results.filter_status_valid = false;
+
+    // provides the innovations normalised between 0 and 1:
+    // results.variances_valid = false;
+
+    // terrain_alt_variance_valid = false;
 }
 
 /*
@@ -1052,7 +1116,7 @@ void AP_AHRS_DCM::estimate_wind(void)
 #endif
 }
 
-#ifdef AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
 void AP_AHRS_DCM::set_external_wind_estimate(float speed, float direction) {
     _wind.x = -cosf(radians(direction)) * speed;
     _wind.y = -sinf(radians(direction)) * speed;
@@ -1158,15 +1222,6 @@ bool AP_AHRS_DCM::get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &
 }
 
 /*
-  check if the AHRS subsystem is healthy
-*/
-bool AP_AHRS_DCM::healthy(void) const
-{
-    // consider ourselves healthy if there have been no failures for 5 seconds
-    return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
-}
-
-/*
   return NED velocity if we have GPS lock
  */
 bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
@@ -1190,9 +1245,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     const bool gotGPS = (AP::gps().status() >= AP_GPS_FixType::FIX_2D);
     if (gotAirspeed) {
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        gndVelADS = airspeed_vector + wind.xy();
+        gndVelADS = airspeed_vector + _wind.xy();
     }
 
     // Generate estimate of ground speed vector using GPS
@@ -1237,10 +1290,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
         Vector2f ret{_cos_yaw, _sin_yaw};
         ret *= airspeed;
         // adjust for estimated wind
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        ret.x += wind.x;
-        ret.y += wind.y;
+        ret += _wind.xy();
         return ret;
     }
 
@@ -1260,17 +1310,6 @@ bool AP_AHRS_DCM::get_vert_pos_rate_D(float &velocity) const
         return true;
     }
     return false;
-}
-
-// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-// requires_position should be true if horizontal position configuration should be checked (not used)
-bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
-{
-    if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
-        return false;
-    }
-    return true;
 }
 
 /*
@@ -1318,10 +1357,6 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(postype_t &posD) const
     }
     posD = posNED.z;
     return true;
-}
-
-void AP_AHRS_DCM::send_ekf_status_report(GCS_MAVLINK &link) const
-{
 }
 
 // return true if DCM has a yaw source available

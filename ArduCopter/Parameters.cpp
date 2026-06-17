@@ -466,13 +466,13 @@ const AP_Param::Info Copter::var_info[] = {
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.ekf2.EKF2, NavEKF2, "EK2_", NavEKF2),
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.ekf3.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
 #if MODE_AUTO_ENABLED
@@ -1168,6 +1168,25 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Range: 0.0 10.0
     // @Increment: 0.1
     AP_GROUPINFO("PILOT_TKO_ALT_M", 20, ParametersG2, pilot_takeoff_alt_m, PILOT_TKO_ALT_M_DEFAULT),
+
+#if AP_RANGEFINDER_ENABLED
+    // @Param: SURFTRAK_GLDST
+    // @DisplayName: Surface Tracking Glitch threshold
+    // @Description: When a rangefinder reading differs from the previous by more than this, it will be considered a glitch and will not be used. A value of zero disables this check.
+    // @Units: m
+    // @Range: 0 100
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("SURFTRAK_GLDST", 21, ParametersG2, surf_dist_parameters.glitch_alt, AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT),
+
+    // @Param: SURFTRAK_GLSAM
+    // @DisplayName: Surface Tracking glitched sample count
+    // @Description: When this many consecutive samples are considered a glitch, we give up and accept the new reading. A value of zero disables this behaviour and glitched values are never accepted.
+    // @Range: 0 10
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
+#endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
