@@ -1455,7 +1455,9 @@ bool AP_DDS_Client::create()
     uint8_t statusParticipant[nRequestsParticipant];
     if (!uxr_run_session_until_all_status(&session, requestTimeoutParticipantMs, requestsParticipant, statusParticipant, nRequestsParticipant)) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Participant session request failure", msg_prefix);
-        // TODO add a failure log message sharing the status results
+        for (uint8_t s = 0; s < nRequestsParticipant; s++) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, statusParticipant[s]);
+        }
         return false;
     }
 
@@ -1509,10 +1511,9 @@ bool AP_DDS_Client::create()
             }
             if (!success) {
                 GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Pub/Writer session request failure for index '%u'", msg_prefix, i);
-                for (uint8_t s = 0 ; s < nRequests; s++) {
+                for (uint8_t s = 0; s < nRequests; s++) {
                     GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
                 }
-                // TODO add a failure log message sharing the status results
                 return false;
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Pub/Writer session pass for index '%u'", msg_prefix, i);
@@ -1549,16 +1550,15 @@ bool AP_DDS_Client::create()
                 if (i == to_underlying(TopicIndex::CLOCK_SUB)) {
                     // Optional subscription failed, log warning but continue
                     GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Optional Topic/Sub/Reader session request failure for index '%u' - continuing without it", msg_prefix, i);
-                    for (uint8_t s = 0 ; s < nRequests; s++) {
+                    for (uint8_t s = 0; s < nRequests; s++) {
                         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
                     }
                 } else {
 #endif
                     GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
-                    for (uint8_t s = 0 ; s < nRequests; s++) {
+                    for (uint8_t s = 0; s < nRequests; s++) {
                         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
                     }
-                    // TODO add a failure log message sharing the status results
                     return false;
 #if AP_DDS_CLOCK_SUB_ENABLED
                 }
