@@ -96,6 +96,10 @@
 #define AP_FILTER_ENABLED 1
 #endif
 
+#ifndef AP_MSP_VIDEOTX_ENABLED
+#define AP_MSP_VIDEOTX_ENABLED 1
+#endif
+
 #define HAL_SOLO_GIMBAL_ENABLED 1
 
 #ifndef HAL_OS_POSIX_IO
