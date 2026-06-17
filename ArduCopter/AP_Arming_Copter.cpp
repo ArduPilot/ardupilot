@@ -758,7 +758,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
         const float threshold = copter.g2.hgt_reset_threshold;
         if (!is_negative(threshold)) {
             const float origin_alt_tolerance_m = (threshold > 0) ?
-                threshold : 10.0f;
+                threshold : -1.0f;
             ahrs.resetHeightDatum(origin_alt_tolerance_m);
             LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
         }
