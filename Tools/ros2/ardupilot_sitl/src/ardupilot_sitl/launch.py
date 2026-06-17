@@ -397,6 +397,7 @@ class SITLLaunch:
         instance = LaunchConfiguration("instance").perform(context)
         defaults = LaunchConfiguration("defaults").perform(context)
         use_instance_dir = LaunchConfiguration("use_instance_dir").perform(context)
+        use_sim_time = LaunchConfiguration("use_sim_time").perform(context)
 
         # Display launch arguments.
         print(f"command:          {command}")
@@ -407,6 +408,7 @@ class SITLLaunch:
         print(f"instance:         {instance}")
         print(f"defaults:         {defaults}")
         print(f"use_instance_dir: {use_instance_dir}")
+        print(f"use_sim_time:     {use_sim_time}")
 
         # Required arguments.
         cmd_args = [
@@ -421,6 +423,7 @@ class SITLLaunch:
             f"--sim-address={sim_address} ",
             f"--instance {instance} ",
             f"--defaults {defaults} ",
+            f"--use_sim_time {use_sim_time} ",
         ]
 
         # Optional arguments.
@@ -655,6 +658,12 @@ class SITLLaunch:
                 "use_instance_dir",
                 default_value="False",
                 description="If True create instance directories for the eeprom.bin.",
+                choices=BOOL_STRING_CHOICES,
+            ),
+            DeclareLaunchArgument(
+                "use_sim_time",
+                default_value="True",
+                description="Use simulation time.",
                 choices=BOOL_STRING_CHOICES,
             ),
         ]
