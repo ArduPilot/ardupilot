@@ -1344,6 +1344,8 @@ private:
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     uint32_t flowFuseTimeAxis_ms[2];// per-axis time the flow innovation test last passed, used to detect a single-axis lockout
+    uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
+    uint8_t flowVelResetReason;     // reason for the most recent optical-flow horizontal velocity reset
 #endif
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator

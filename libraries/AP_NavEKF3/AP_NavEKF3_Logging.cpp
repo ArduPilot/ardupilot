@@ -230,6 +230,22 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
         AP::logger().WriteBlock(&pktfA, sizeof(pktfA));
     }
 #endif
+
+    const struct log_XKF7 pkt7{
+        LOG_PACKET_HEADER_INIT(LOG_XKF7_MSG),
+        time_us : time_us,
+        core    : DAL_CORE(core_index),
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        flowVelResetCount : flowVelResetCount,
+        flowVelResetReason : flowVelResetReason,
+        flowVelResetUnhealthy : (uint8_t)flowVelResetUnhealthy,
+#else
+        flowVelResetCount : 0,
+        flowVelResetReason : 0,
+        flowVelResetUnhealthy : 0,
+#endif
+    };
+    AP::logger().WriteBlock(&pkt7, sizeof(pkt7));
 }
 
 void NavEKF3_core::Log_Write_Quaternion(uint64_t time_us) const

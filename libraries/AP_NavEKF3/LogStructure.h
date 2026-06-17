@@ -10,6 +10,7 @@
     LOG_XKF3_MSG, \
     LOG_XKF4_MSG, \
     LOG_XKF5_MSG, \
+    LOG_XKF7_MSG, \
     LOG_XKFD_MSG, \
     LOG_XKFM_MSG, \
     LOG_XKFS_MSG, \
@@ -269,6 +270,22 @@ struct PACKED log_XKFA {
     uint8_t valid;
 };
 
+// @LoggerMessage: XKF7
+// @Description: EKF3 optical flow recovery diagnostics
+// @Field: TimeUS: Time since system startup
+// @Field: C: EKF3 core this data is for
+// @Field: FVC: Optical flow velocity reset count
+// @Field: FVR: Optical flow velocity reset reason
+// @Field: FVU: 1 when repeated optical flow velocity resets have made flow aiding untrustworthy
+struct PACKED log_XKF7 {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t core;
+    uint8_t flowVelResetCount;
+    uint8_t flowVelResetReason;
+    uint8_t flowVelResetUnhealthy;
+};
+
 // @LoggerMessage: XKFD
 // @Description: EKF3 Body Frame Odometry errors
 // @Field: TimeUS: Time since system startup
@@ -467,6 +484,8 @@ struct PACKED log_XKV {
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
     { LOG_XKFA_MSG, sizeof(log_XKFA), \
       "XKFA","QBffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Valid", "s#mnmn-", "F------", true }, \
+    { LOG_XKF7_MSG, sizeof(log_XKF7), \
+      "XKF7","QBBBB","TimeUS,C,FVC,FVR,FVU", "s#---", "F----", true }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
