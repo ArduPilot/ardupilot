@@ -46,6 +46,8 @@ private:
         float temp_motor_c = 0.0f;
         uint16_t status_bits = 0;
         uint32_t error_bits = 0;
+        bool telem_1_valid = false;
+        bool telem_2_valid = false;
         bool valid = false;
     };
 
@@ -86,6 +88,10 @@ private:
     uint32_t _last_update_ms;
     uint32_t _last_debug_ms;
     uint32_t _last_send_ms;
+    uint32_t _rx_count;
+    uint32_t _last_rx_debug_count;
+    uint32_t _last_rx_id;
+    uint8_t _last_rx_dlc;
 
     ControllerState _left_state;
     ControllerState _right_state;
@@ -98,6 +104,7 @@ private:
     void handle_telemetry_2(ControllerState &state, const AP_HAL::CANFrame &frame);
     void send_handshake_ack(uint8_t dest_addr);
     void send_command(ControllerState &state, float target_norm, bool armed);
+    void publish_esc_telem(const ControllerState &state) const;
     void update_health();
     ControllerState *find_state_by_address(uint8_t address);
 };
