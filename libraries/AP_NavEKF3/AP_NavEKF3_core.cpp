@@ -272,6 +272,10 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     fusingStationaryZeroVel = false;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    fusingAglKfVel = false;
+    aglKfVelGateOpen = false;
+#endif
     inhibitWindStates = true;
     windStateIsObservable = false;
     treatWindStatesAsTruth = false;
@@ -288,6 +292,8 @@ void NavEKF3_core::InitialiseVariables()
     rngOnGnd = 0.05f;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     aglKf.InitialiseVariables(rngOnGnd);
+    lastAglKfVelFuseTime_ms = 0;
+    aglKfVelTestRatio = 0;
 #endif
     yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);
