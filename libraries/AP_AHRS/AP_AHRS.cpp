@@ -581,6 +581,9 @@ void AP_AHRS::update(bool skip_ins_update)
     update_configured_ekf_type();
     update_active_EKF_type();
 
+    // update blinking lights, buzzer etc bsaed on active EKF type:
+    update_notify_from_filter_status(active_estimates->filter_status);
+
 #if HAL_GCS_ENABLED
     if (state.active_EKF_type != last_active_ekf_type) {
         last_active_ekf_type = state.active_EKF_type;
@@ -651,9 +654,6 @@ void AP_AHRS::update_EKF2(void)
         ekf2.update();
         ekf2_estimates = {};
         ekf2.get_results(ekf2_estimates);
-        if (_active_EKF_type() == EKFType::TWO) {
-            update_notify_from_filter_status(ekf2_estimates.filter_status);
-        }
 
         /*
           if we now have an origin then set in all backends
@@ -679,9 +679,6 @@ void AP_AHRS::update_EKF3(void)
         ekf3.update();
         ekf3_estimates = {};
         ekf3.get_results(ekf3_estimates);
-        if (_active_EKF_type() == EKFType::THREE) {
-            update_notify_from_filter_status(ekf3_estimates.filter_status);
-        }
         /*
           if we now have an origin then set in all backends
         */
