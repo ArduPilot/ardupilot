@@ -102,6 +102,18 @@ AP_AHRS_DCM::update()
     // remember the last origin for fallback support
     IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
 
+    // update our wind estimate when a new GPS sample arrives and we
+    // have a 3D fix; the GPS velocity is what feeds the wind triangle.
+    // estimate_wind itself is rate-limited.
+    const AP_GPS &gps = AP::gps();
+    if (gps.status() >= AP_GPS_FixType::FIX_3D) {
+        const uint32_t last_gps_ms = gps.last_message_time_ms();
+        if (last_gps_ms != _last_wind_gps_ms) {
+            _last_wind_gps_ms = last_gps_ms;
+            estimate_wind();
+        }
+    }
+
 #if HAL_LOGGING_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - last_log_ms >= 100) {
@@ -1054,6 +1066,19 @@ void AP_AHRS_DCM::estimate_wind(void)
     if (!AP::ahrs().get_wind_estimation_enabled()) {
         return;
     }
+
+    // the wind-triangle filters below blend a fixed fraction of the new
+    // estimate on each call, and the straight-flight branch does not
+    // update _last_wind_time, so the effective filter time constant is
+    // set by the call rate.  Now that this is driven on each new GPS
+    // sample rather than by a fixed-rate vehicle task, limit to 10Hz
+    // here so the time constant stays sane:
+    const uint32_t now = AP_HAL::millis();
+    if (now - _last_wind_estimate_ms < 100) {
+        return;
+    }
+    _last_wind_estimate_ms = now;
+
     const Vector3f &velocity = _last_velocity;
 
     // this is based on the wind speed estimation code from MatrixPilot by
@@ -1061,7 +1086,6 @@ void AP_AHRS_DCM::estimate_wind(void)
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
     const Vector3f fuselageDirection = _dcm_matrix.colx();
     const Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
-    const uint32_t now = AP_HAL::millis();
 
     // scrap our data and start over if we're taking too long to get a direction change
     if (now - _last_wind_time > 10000) {

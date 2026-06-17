@@ -88,8 +88,6 @@ public:
 
     bool            use_compass() override;
 
-    void estimate_wind(void);
-
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override {
@@ -155,6 +153,9 @@ private:
     // DCM matrix from the eulers.  Called internally we may.
     void            reset(bool recover_eulers);
 
+    // update our wind estimate from the latest GPS velocity and attitude:
+    void estimate_wind(void);
+
     // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
     //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
@@ -212,6 +213,9 @@ private:
     // time in millis when we last got a GPS heading
     uint32_t _gps_last_update;
 
+    // GPS message time of the sample last fed to the wind estimator:
+    uint32_t _last_wind_gps_ms;
+
     // state of accel drift correction
     Vector3f _ra_sum[INS_MAX_INSTANCES];
     Vector3f _last_velocity;
@@ -245,6 +249,9 @@ private:
     Vector3f _last_vel;
     uint32_t _last_wind_time;
     float _last_airspeed_TAS;
+
+    // time of last wind estimate update, used to rate-limit estimation:
+    uint32_t _last_wind_estimate_ms;
     uint32_t _last_consistent_heading;
 
     // estimated wind in m/s
