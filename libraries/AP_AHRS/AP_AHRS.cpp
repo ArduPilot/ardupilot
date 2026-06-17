@@ -648,28 +648,6 @@ void AP_AHRS::update_notify_from_filter_status(const nav_filter_status &status)
 #if HAL_NAVEKF2_AVAILABLE
 void AP_AHRS::update_EKF2(void)
 {
-    if (!ekf2.started) {
-        // wait 1 second for DCM to output a valid tilt error estimate
-        if (ekf2.start_time_ms == 0) {
-            ekf2.start_time_ms = AP_HAL::millis();
-        }
-#if HAL_LOGGING_ENABLED
-        // if we're doing Replay logging then don't allow any data
-        // into the EKF yet.  Don't allow it to block us for long.
-        if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - ekf2.start_time_ms < 5000) {
-                if (!AP::logger().allow_start_ekf()) {
-                    return;
-                }
-            }
-        }
-#endif
-
-        if (AP_HAL::millis() - ekf2.start_time_ms > startup_delay_ms) {
-            ekf2.started = ekf2.EKF2.InitialiseFilter();
-        }
-    }
-    if (ekf2.started) {
         ekf2.update();
         ekf2_estimates = {};
         ekf2.get_results(ekf2_estimates);
@@ -692,34 +670,12 @@ void AP_AHRS::update_EKF2(void)
 #endif
             }
         }
-    }
 }
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
 void AP_AHRS::update_EKF3(void)
 {
-    if (!ekf3.started) {
-        // wait 1 second for DCM to output a valid tilt error estimate
-        if (ekf3.start_time_ms == 0) {
-            ekf3.start_time_ms = AP_HAL::millis();
-        }
-#if HAL_LOGGING_ENABLED
-        // if we're doing Replay logging then don't allow any data
-        // into the EKF yet.  Don't allow it to block us for long.
-        if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - ekf3.start_time_ms < 5000) {
-                if (!AP::logger().allow_start_ekf()) {
-                    return;
-                }
-            }
-        }
-#endif
-        if (AP_HAL::millis() - ekf3.start_time_ms > startup_delay_ms) {
-            ekf3.started = ekf3.EKF3.InitialiseFilter();
-        }
-    }
-    if (ekf3.started) {
         ekf3.update();
         ekf3_estimates = {};
         ekf3.get_results(ekf3_estimates);
@@ -741,7 +697,6 @@ void AP_AHRS::update_EKF3(void)
 #endif
             }
         }
-    }
 }
 #endif
 
