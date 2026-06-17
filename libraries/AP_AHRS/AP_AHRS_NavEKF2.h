@@ -71,7 +71,7 @@ public:
         return EKF2.getLastPosDownReset(posDelta);
     };
     void resetHeightDatum(float origin_alt_tolerance_m) override {
-        EKF2.resetHeightDatum();
+        EKF2.resetHeightDatum(origin_alt_tolerance_m);
     }
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
