@@ -306,6 +306,9 @@ void NavEKF3_core::setAidingMode()
         case AID_RELATIVE: {
             // Check if the fusion has timed out (flow measurements have been rejected for too long)
             bool flowFusionTimeout = ((imuSampleTime_ms - prevFlowFuseTime_ms) > 5000);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            flowFusionTimeout |= flowVelResetUnhealthy;
+#endif
             // Check if the fusion has timed out (body odometry measurements have been rejected for too long)
             bool bodyOdmFusionTimeout = ((imuSampleTime_ms - prevBodyVelFuseTime_ms) > 5000);
             // Enable switch to absolute position mode if GPS or range beacon data is available
@@ -446,6 +449,11 @@ void NavEKF3_core::setAidingMode()
                 // Reset time stamps
                 flowValidMeaTime_ms = imuSampleTime_ms;
                 prevFlowFuseTime_ms = imuSampleTime_ms;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+                flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
+                flowVelResetWindowCount = 0;
+                flowVelResetWindow_ms = 0;
+#endif
             } else
 #endif
                 if (readyToUseBodyOdm()) {
@@ -556,6 +564,14 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
     if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index)) {
         return false;
     }
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // repeated velocity resets mean flow cannot be trusted for the rest of this flight. Without
+    // this the filter leaves AID_RELATIVE on the timeout below and re-enters on the next step.
+    if (flowVelResetUnhealthy) {
+        return false;
+    }
+#endif
 
     // We need stable roll/pitch angles and gyro bias estimates but do not need the yaw angle aligned to use optical flow
     return (imuSampleTime_ms - flowMeaTime_ms < 200) && tiltAlignComplete && delAngBiasLearned;
