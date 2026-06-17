@@ -126,8 +126,10 @@ bool Plane::update_home()
         return false;
     }
 
-    // HOME_RESET_ALT sets the EKF origin-vs-GPS altitude tolerance
-    // passed to resetHeightDatum (0 uses a 10 m default).
+    // HOME_RESET_ALT controls how update_home handles the EKF height datum:
+    //   <  0 : do nothing
+    //   == 0 : always do a full reset
+    //   >  0 : pass to the EKF as the origin-vs-GPS altitude tolerance
     //
     // Inside the tolerance the EKF does a full reset: zero
     // position.z, recalibrate the baro and flush the baro buffer to
@@ -147,7 +149,7 @@ bool Plane::update_home()
     // the AMSL-preserving intent of the tolerance and silently
     // corrupting subsequent altitude reporting at the new elevation.
     const float origin_alt_tolerance_m = (g2.home_reset_threshold > 0) ?
-        g2.home_reset_threshold : 10.0f;
+        g2.home_reset_threshold : -1.0f;
 
     // Freeze the home reset on the same condition resetHeightDatum uses
     // to skip the baro recalibration: once the vehicle has moved more
@@ -155,7 +157,9 @@ bool Plane::update_home()
     // it is so it stays consistent with the preserved height datum.
     bool displaced = false;
     Location origin;
-    if (ahrs.get_origin(origin) && gps.status() >= AP_GPS_FixType::FIX_3D) {
+    if (g2.home_reset_threshold > 0 &&
+        ahrs.get_origin(origin) &&
+        gps.status() >= AP_GPS_FixType::FIX_3D) {
         const float gps_origin_diff_m = fabsf(0.01f *
             (float)(gps.location().alt - origin.alt));
         displaced = gps_origin_diff_m > origin_alt_tolerance_m;
