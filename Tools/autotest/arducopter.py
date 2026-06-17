@@ -2056,12 +2056,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     max_err = max(max_err, abs(m.VD + last_vagl))
             return max_err
 
-        agl_kf_optflow = 1 << 3  # EK3_OPTIONS AglKfForOptflow (runs the AGL KF)
-        agl_kf_veld = 1 << 4     # EK3_OPTIONS AglKfVelForVelD (fuses its velocity as velD)
+        agl_kf_only = 1 << 3  # EK3_OPTIONS AglKfForOptflow (runs the AGL KF)
+        agl_kf_veld = 1 << 4  # EK3_OPTIONS AglKfVelForVelD (fuses its velocity as velD)
 
         # Half 1: fusion OFF (AGL KF only) - the EKF velD must drift from truth
         self.start_subtest("Fusion OFF: EKF velD diverges from rangefinder truth under Z accel bias")
-        err_off = max_velD_error_after_bias(agl_kf_optflow)
+        err_off = max_velD_error_after_bias(agl_kf_only)
         self.progress("max EKF velD error with fusion OFF: %.2f m/s" % err_off)
         if err_off < 1.0:
             raise NotAchievedException(
@@ -2069,7 +2069,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Half 2: fusion ON - velD stays anchored to the AGL KF velocity
         self.start_subtest("Fusion ON: AGL KF velocity fusion keeps EKF velD on truth")
-        err_on = max_velD_error_after_bias(agl_kf_optflow | agl_kf_veld)
+        err_on = max_velD_error_after_bias(agl_kf_only | agl_kf_veld)
         self.progress("max EKF velD error with fusion ON: %.2f m/s" % err_on)
         if err_on > 0.5:
             raise NotAchievedException(
