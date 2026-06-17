@@ -42,7 +42,9 @@ public:
     virtual ~AP_Compass_Backend(void) {}
 
     // read sensor data
-    virtual void read(void) = 0;
+    virtual void read(void) {
+        drain_accumulated_samples();
+    }
 
     /*
       device driver IDs. These are used to fill in the devtype field
@@ -76,7 +78,7 @@ public:
     	DEVTYPE_QMC5883P = 0x16,
         DEVTYPE_BMM350 = 0x17,
         DEVTYPE_IIS2MDC = 0x18,
-        DEVTYPE_LIS2MDL = 0x19,
+        // DEVTYPE_LIS2MDL = 0x19,  // DO NOT re-use this ID; same sensor as IIS2MDC
     };
 
 #if AP_COMPASS_MSP_ENABLED

@@ -6,12 +6,12 @@ Runs astyle over directory sub-trees known to be "astyle-clean"
  AP_FLAKE8_CLEAN
 """
 
+import argparse
+import contextlib
 import os
 import pathlib
 import subprocess
 import sys
-
-import argparse
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 DRY_RUN_DEFAULT = False
@@ -38,13 +38,16 @@ class AStyleChecker(object):
         self.dry_run = dry_run
 
     def progress(self, string):
-        print("****** %s" % (string,))
+        print(f"****** {string}")
 
     def check(self):
         '''run astyle on all files in self.files_to_check'''
         # for path in self.files_to_check:
         #     self.progress("Checking (%s)" % path)
         astyle_command = ["astyle"]
+        # Show the astyle version suppressing all exceptions
+        with contextlib.suppress():
+            _ = subprocess.run(astyle_command + ["--version"])
         if self.dry_run:
             astyle_command.append("--dry-run")
 
@@ -57,7 +60,7 @@ class AStyleChecker(object):
             text=True
         )
         if ret.returncode != 0:
-            self.progress("astyle check failed: (%s)" % (ret.stdout))
+            self.progress(f"astyle check failed: ({ret.stdout})")
             self.retcode = 1
         if "Formatted" in ret.stdout:
             self.progress("Files needing formatting found.")
@@ -73,7 +76,7 @@ class AStyleChecker(object):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Check all Python files for astyle cleanliness')
+    parser = argparse.ArgumentParser(description='Check C and C++ files for astyle cleanliness')
     parser.add_argument('--dry-run',
                         action='store_true',
                         default=DRY_RUN_DEFAULT,

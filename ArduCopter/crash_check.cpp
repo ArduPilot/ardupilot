@@ -77,8 +77,8 @@ void Copter::crash_check()
     }
 
     // check for speed under 10m/s (if available)
-    Vector3f vel_ned;
-    if (ahrs.get_velocity_NED(vel_ned) && (vel_ned.length() >= CRASH_CHECK_SPEED_MAX)) {
+    Vector3f vel_ned_ms;
+    if (ahrs.get_velocity_NED(vel_ned_ms) && (vel_ned_ms.length() >= CRASH_CHECK_SPEED_MAX)) {
         crash_counter = 0;
         return;
     }

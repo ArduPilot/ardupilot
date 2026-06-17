@@ -1,0 +1,14 @@
+# https://www.shellcheck.net -- 'shellcheck --help'
+# https://github.com/koalaman/shellcheck
+# 'find . -type f -name "*.sh" -exec shellcheck --severity=error {} +'
+
+# Minimum severity of errors to consider (error, warning, info, style)
+severity=error
+
+# To improve our code quality, comment out one for the following and create a pull request:
+disable=SC1087  # 2 instances
+disable=SC2068  # 4 instances
+disable=SC2071  # 2 instances
+disable=SC2145  # 1 instance
+disable=SC2148  # 3 instances
+disable=SC2173  # 1 instance

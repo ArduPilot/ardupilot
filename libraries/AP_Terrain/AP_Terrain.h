@@ -53,6 +53,10 @@
 // format of grid on disk
 #define TERRAIN_GRID_FORMAT_VERSION 1
 
+// min minor version for data read from microSD
+// raise this to force a refresh of data from the terrain servers
+#define TERRAIN_VERSION_MINOR_MIN 1
+
 // we allow for a 2cm discrepancy in the grid corners. This is to
 // account for different rounding in terrain DAT file generators using
 // different programming languages
@@ -105,16 +109,15 @@ public:
 
 #if HAL_GCS_ENABLED
     // send any pending terrain request message
-    bool send_cache_request(mavlink_channel_t chan);
-    void send_request(mavlink_channel_t chan);
+    bool send_cache_request(class GCS_MAVLINK &link);
+    void send_request(GCS_MAVLINK &link);
 
     // handle terrain data and reports from GCS
     // send a terrain report for the current location, extrapolating height as we do for navigation:
-    void send_report(mavlink_channel_t chan);
+    void send_report(GCS_MAVLINK &link);
     // send a terrain report or Location loc
-    void send_terrain_report(mavlink_channel_t chan, const Location &loc, bool extrapolate);
-    void handle_data(mavlink_channel_t chan, const mavlink_message_t &msg);
-    void handle_terrain_check(mavlink_channel_t chan, const mavlink_message_t &msg);
+    void send_terrain_report(GCS_MAVLINK &link, const Location &loc, bool extrapolate);
+    void handle_terrain_check(GCS_MAVLINK &link, const mavlink_message_t &msg);
     void handle_terrain_data(const mavlink_message_t &msg);
 #endif
 
@@ -203,6 +206,10 @@ public:
      */
     void set_reference_location(void);
 
+#if HAL_GCS_ENABLED
+    void handle_message(GCS_MAVLINK &link, const mavlink_message_t &msg);
+#endif  // HAL_GCS_ENABLED
+
 private:
     // allocate the terrain subsystem data
     bool allocate(void);
@@ -239,6 +246,10 @@ private:
         // rounded latitude/longitude in degrees. 
         int16_t lon_degrees;
         int8_t lat_degrees;
+
+        // minor version. Note! this and any bytes after this are
+        // excluded from the CRC for backwards compatibility
+        uint8_t version_minor;
     };
 
     /*
@@ -322,9 +333,9 @@ private:
     /*
       request any missing 4x4 grids from a block
     */
-    bool request_missing(mavlink_channel_t chan, struct grid_cache &gcache);
-    bool request_missing(mavlink_channel_t chan, const struct grid_info &info);
-#endif
+    bool request_missing(class GCS_MAVLINK &link, struct grid_cache &gcache);
+    bool request_missing(GCS_MAVLINK &link, const struct grid_info &info);
+#endif  // HAL_GCS_ENABLED
 
     /*
       look for blocks that need to be read/written to disk
@@ -380,10 +391,15 @@ private:
     enum class Options {
         DisableDownload = (1U<<0),
         DisableDisk = (1U<<1),
+        AcceptOldData = (1U<<2),
     };
 
+    inline bool option_set(enum Options option) const {
+        return (options.get() & uint16_t(option)) != 0;
+    }
+
     inline bool diskless() const {
-        return (options.get() & uint16_t(Options::DisableDisk)) != 0;
+        return option_set(Options::DisableDisk);
     }
 
     // cache of grids in memory, LRU
@@ -479,6 +495,9 @@ private:
     bool memory_alloc_failed;
 
     static AP_Terrain *singleton;
+
+    // true if we have found old disk blocks when loading
+    bool found_old_data;
 };
 
 namespace AP {

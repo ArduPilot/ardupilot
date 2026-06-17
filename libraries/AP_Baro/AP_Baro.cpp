@@ -230,7 +230,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif  // HAL_BARO_WIND_COMP_ENABLED
 
 #if AP_FIELD_ELEVATION_ENABLED
-    // @Param: _FIELD_ELV
+    // @Param{Blimp,Copter,Plane,Rover,Tracker}: _FIELD_ELV
     // @DisplayName: field elevation
     // @Description: User provided field elevation in meters. This is used to improve the calculation of the altitude the vehicle is at. This parameter is not persistent and will be reset to 0 every time the vehicle is rebooted. Changes to this parameter will only be used when disarmed. A value of 0 means the EKF origin height is used for takeoff height above sea level.
     // @Units: m
@@ -241,7 +241,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
 #endif
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    // @Param: _ALTERR_MAX
+    // @Param{Copter,Plane}: _ALTERR_MAX
     // @DisplayName: Altitude error maximum
     // @Description: This is the maximum acceptable altitude discrepancy between GPS altitude and barometric presssure altitude calculated against a standard atmosphere for arming checks to pass. If you are getting an arming error due to this parameter then you may have a faulty or substituted barometer. A common issue is vendors replacing a MS5611 in a "Pixhawk" with a MS5607. If you have that issue then please see BARO_OPTIONS parameter to force the MS5611 to be treated as a MS5607. This check is disabled if the value is zero.
     // @Units: m
@@ -250,7 +250,7 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ALTERR_MAX", 23, AP_Baro, _alt_error_max, 2000),
 
-    // @Param: _OPTIONS
+    // @Param{Copter,Plane}: _OPTIONS
     // @DisplayName: Barometer options
     // @Description: Barometer options
     // @Bitmask: 0:Treat MS5611 as MS5607
@@ -265,6 +265,14 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @Range: -300 300
     // @User: Advanced
     AP_GROUPINFO("1_THST_SCALE", 25, AP_Baro, sensors[0].mot_scale, 0),
+
+    // @Param: _THST_FILT
+    // @DisplayName: Thrust compensation filter cutoff
+    // @Description: Low-pass filter cutoff frequency for thrust compensation. This smooths the throttle input to prevent rapid baro altitude changes during throttle transients. Set to 0 to disable filtering.
+    // @Range: 0 10
+    // @Units: Hz
+    // @User: Advanced
+    AP_GROUPINFO("_THST_FILT", 26, AP_Baro, _thst_filt_cutoff, 1.0f),
 #endif  // AP_BARO_THST_COMP_ENABLED
     AP_GROUPEND
 };
@@ -283,6 +291,7 @@ AP_Baro::AP_Baro()
     _field_elevation_active = _field_elevation;
 }
 
+#if AP_BARO_CALIBRATION_ENABLED
 // calibrate the barometer. This must be called at least once before
 // the altitude() or climb_rate() interfaces can be used
 void AP_Baro::calibrate(bool save)
@@ -407,7 +416,7 @@ void AP_Baro::update_calibration()
     // always update the guessed ground temp
     _guessed_ground_temperature = get_external_temperature();
 }
-
+#endif  // AP_BARO_CALIBRATION_ENABLED
 
 // return air density / sea level density - decreases as altitude climbs
 float AP_Baro::_get_air_density_ratio(void)
@@ -504,7 +513,7 @@ bool AP_Baro::_add_backend(AP_Baro_Backend *backend)
  */
 bool AP_Baro::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
-    for (int i=0; i<_num_drivers; ++i) {
+    for (int i=0; i<_num_sensors; ++i) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
             AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
             // device already has been defined.
@@ -675,7 +684,6 @@ void AP_Baro::init(void)
     case AP_BoardConfig::PX4_BOARD_PHMINI:
     case AP_BoardConfig::PX4_BOARD_AUAV21:
     case AP_BoardConfig::PX4_BOARD_PH2SLIM:
-    case AP_BoardConfig::PX4_BOARD_FMUV5:
     case AP_BoardConfig::PX4_BOARD_FMUV6:
 #if AP_BARO_MS5611_ENABLED
         probe_spi_dev(AP_Baro_MS5611::probe, HAL_BARO_MS5611_NAME);
@@ -761,6 +769,15 @@ void AP_Baro::init(void)
         sensors[i].alt_ok = true;
     }
 #endif
+
+#if AP_BARO_THST_COMP_ENABLED
+    const float cutoff_freq = _thst_filt_cutoff.get();
+    if (cutoff_freq > 0) {
+        _thrust_filter.set_cutoff_frequency(cutoff_freq);
+        _thrust_filter.reset(0.0f);
+    }
+    _thrust_filter_last_update_us = AP_HAL::micros();
+#endif
 }
 
 #if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
@@ -823,8 +840,8 @@ void AP_Baro::_probe_i2c_barometers(void)
         { PROBE_FBM320, AP_Baro_FBM320::probe, HAL_BARO_FBM320_I2C_ADDR2 },
 #endif
 #if AP_BARO_DPS280_ENABLED
-        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR },
-        { PROBE_DPS280, AP_Baro_DPS280::probe_280, HAL_BARO_DPS280_I2C_ADDR2 },
+        { PROBE_DPS280, AP_Baro_DPS280::probe, HAL_BARO_DPS280_I2C_ADDR },
+        { PROBE_DPS280, AP_Baro_DPS280::probe, HAL_BARO_DPS280_I2C_ADDR2 },
 #endif
 #if AP_BARO_LPS2XH_ENABLED
         { PROBE_LPS25H, AP_Baro_LPS2XH::probe, HAL_BARO_LPS25H_I2C_ADDR },
@@ -895,6 +912,10 @@ void AP_Baro::update(void)
     for (uint8_t i=0; i<_num_drivers; i++) {
         drivers[i]->backend_update(i);
     }
+
+#if AP_BARO_THST_COMP_ENABLED
+    update_thrust_filter();
+#endif
 
     for (uint8_t i=0; i<_num_sensors; i++) {
         if (sensors[i].healthy) {
@@ -1034,19 +1055,35 @@ void AP_Baro::update_field_elevation(void)
 }
 
 #if AP_BARO_THST_COMP_ENABLED
-// scale the baro linearly with thrust
-float AP_Baro::thrust_pressure_correction(uint8_t instance)
+// update filtered throttle value once per update cycle
+void AP_Baro::update_thrust_filter(void)
 {
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_COPTER_OR_HELI
     const AP_Motors* motors = AP::motors();
     if (motors == nullptr) {
-         return 0.0f;
+        _filtered_throttle = 0.0f;
+        return;
     }
-    const float motors_throttle = MAX(0,motors->get_throttle_out());
-    return sensors[instance].mot_scale * motors_throttle;
+    const float motors_throttle = MAX(0, motors->get_throttle_out());
+
+    if (_thst_filt_cutoff.get() <= 0) {
+        _filtered_throttle = motors_throttle;
+        return;
+    }
+
+    const uint32_t now_us = AP_HAL::micros();
+    const float dt = (now_us - _thrust_filter_last_update_us) * 1.0e-6f;
+    _thrust_filter_last_update_us = now_us;
+    _filtered_throttle = _thrust_filter.apply(motors_throttle, dt);
 #else
-    return 0.0f;
+    _filtered_throttle = 0.0f;
 #endif
+}
+
+// scale the baro linearly with thrust using pre-filtered throttle
+float AP_Baro::thrust_pressure_correction(uint8_t instance)
+{
+    return sensors[instance].mot_scale * _filtered_throttle;
 }
 #endif
 
@@ -1129,7 +1166,7 @@ bool AP_Baro::arming_checks(size_t buflen, char *buffer) const
       been substituted for a MS5611
      */
     const auto &gps = AP::gps();
-    if (_alt_error_max > 0 && gps.status() >= AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
+    if (_alt_error_max > 0 && gps.status() >= AP_GPS_FixType::FIX_3D) {
         const float alt_amsl = gps.location().alt*0.01;
         // note the addition of _field_elevation_active as this is subtracted in get_altitude_difference()
         const float alt_pressure = get_altitude_difference(SSL_AIR_PRESSURE, get_pressure());

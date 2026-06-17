@@ -137,6 +137,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_Camera/LogStructure.h>
 #include <AP_Mount/LogStructure.h>
 #include <AP_Baro/LogStructure.h>
+#include <AP_Compass/LogStructure.h>
 #include <AP_CANManager/LogStructure.h>
 #include <AP_VisualOdom/LogStructure.h>
 #include <AC_PrecLand/LogStructure.h>
@@ -152,6 +153,8 @@ const struct MultiplierStructure log_Multipliers[] = {
 #include <AP_HAL/LogStructure.h>
 #include <AP_Mission/LogStructure.h>
 #include <AP_Servo_Telem/LogStructure.h>
+
+#include <AP_RTC/AP_RTC_config.h>
 
 // structure used to define logging format
 // It is packed on ChibiOS to save flash space; however, this causes problems
@@ -429,23 +432,6 @@ struct PACKED log_ADSB {
     uint16_t squawk;
 };
 
-struct PACKED log_MAG {
-    LOG_PACKET_HEADER;
-    uint64_t time_us;
-    uint8_t  instance;
-    int16_t  mag_x;
-    int16_t  mag_y;
-    int16_t  mag_z;
-    int16_t  offset_x;
-    int16_t  offset_y;
-    int16_t  offset_z;
-    int16_t  motor_offset_x;
-    int16_t  motor_offset_y;
-    int16_t  motor_offset_z;
-    uint8_t  health;
-    uint32_t SUS;
-};
-
 struct PACKED log_Mode {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -453,6 +439,25 @@ struct PACKED log_Mode {
     uint8_t mode_num;
     uint8_t mode_reason;
 };
+
+#if AP_RTC_LOGGING_ENABLED
+// @LoggerMessage: RTC
+// @Description: RTC (Unix time) information
+// @Field: TimeUS: Time since system startup
+// @Field: Epoch: current unix epoch time*1000000 (ie. microseconds since Jan 1 1970)
+// @Field: SourceType: source of RTC data
+// @FieldValueEnum: SourceType: AP_RTC::source_type
+struct PACKED log_RTC {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint64_t epoch_us;
+    uint8_t  source_type;
+};
+#define LOG_RTC_MESSAGE \
+    { LOG_RTC_MSG, sizeof(log_RTC), "RTC", "QQB", "TimeUS,Epoch,SourceType", "ss-", "FF-" },
+#else
+#define LOG_RTC_MESSAGE
+#endif  // AP_RTC_LOGGING_ENABLED
 
 /*
   rangefinder - support for 4 sensors
@@ -627,6 +632,13 @@ struct PACKED log_MotBatt {
     uint8_t mot_fail_flags;
 };
 
+struct PACKED log_SPOL {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t spool_state;
+    uint8_t des_spool_state;
+};
+
 struct PACKED log_VER {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -690,7 +702,7 @@ struct PACKED log_VER {
 // @Field: H: True if sensor is healthy
 // @Field: Hp: Probability sensor is healthy
 // @Field: TR: innovation test ratio
-// @Field: Pri: True if sensor is the primary sensor
+// @Field: Pri: Primary instance number. If equal to I then this sensor is primary sensor
 
 // @LoggerMessage: DMS
 // @Description: DataFlash-Over-MAVLink statistics
@@ -755,22 +767,6 @@ struct PACKED log_VER {
 // @FieldValueEnum: LandingGear: AP_LandingGear::LG_LandingGear_State
 // @Field: WeightOnWheels: Weight on wheels state
 // @FieldValueEnum: WeightOnWheels: AP_LandingGear::LG_WOW_State
-
-// @LoggerMessage: MAG
-// @Description: Information received from compasses
-// @Field: TimeUS: Time since system startup
-// @Field: I: magnetometer sensor instance number
-// @Field: MagX: magnetic field strength in body frame
-// @Field: MagY: magnetic field strength in body frame
-// @Field: MagZ: magnetic field strength in body frame
-// @Field: OfsX: magnetic field offset in body frame
-// @Field: OfsY: magnetic field offset in body frame
-// @Field: OfsZ: magnetic field offset in body frame
-// @Field: MOX: motor interference magnetic field offset in body frame
-// @Field: MOY: motor interference magnetic field offset in body frame
-// @Field: MOZ: motor interference magnetic field offset in body frame
-// @Field: Health: true if the compass is considered healthy
-// @Field: S: time measurement was taken
 
 // @LoggerMessage: MAV
 // @Description: GCS MAVLink link statistics
@@ -855,6 +851,8 @@ struct PACKED log_VER {
 // @Description: Proportional/Integral/Derivative gain values for North/South velocity
 // @LoggerMessage: PIDE
 // @Description: Proportional/Integral/Derivative gain values for East/West velocity
+// @LoggerMessage: PIDW
+// @Description: Proportional/Integral/Derivative gain values for wheel rate
 // @Field: TimeUS: Time since system startup
 // @Field: Tar: desired value
 // @Field: Act: achieved value
@@ -1145,6 +1143,12 @@ struct PACKED log_VER {
 // @Field: ThrOut: Throttle output
 // @Field: FailFlags: bit 0 motor failed, bit 1 motors balanced, should be 2 in normal flight
 
+// @LoggerMessage: SPOL
+// @Description: Spool state logging
+// @Field: TimeUS: Time since system startup
+// @Field: Spl: Motors spool state
+// @Field: SplDes: Desired motors spool state
+
 // messages for all boards
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
@@ -1188,10 +1192,10 @@ LOG_STRUCTURE_FROM_CAMERA \
 LOG_STRUCTURE_FROM_MOUNT \
     { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBffB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hp,TR,Pri", "s#nPOPP-----", "F-00B00-----", true }, \
     LOG_STRUCTURE_FROM_BATTMONITOR \
-    { LOG_MAG_MSG, sizeof(log_MAG), \
-      "MAG", "QBhhhhhhhhhBI",    "TimeUS,I,MagX,MagY,MagZ,OfsX,OfsY,OfsZ,MOX,MOY,MOZ,Health,S", "s#GGGGGGGGG-s", "F-CCCCCCCCC-F", true }, \
+    LOG_STRUCTURE_FROM_COMPASS \
     { LOG_MODE_MSG, sizeof(log_Mode), \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
+LOG_RTC_MESSAGE \
     { LOG_RFND_MSG, sizeof(log_RFND), \
       "RFND", "QBfBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-0---", true }, \
     { LOG_DMS_MSG, sizeof(log_DMS), \
@@ -1223,6 +1227,8 @@ LOG_STRUCTURE_FROM_SERVO_TELEM \
       "PIDN", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDE_MSG, sizeof(log_PID), \
       "PIDE", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
+    { LOG_PIDW_MSG, sizeof(log_PID), \
+      "PIDW", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
 LOG_STRUCTURE_FROM_LANDING \
 LOG_STRUCTURE_FROM_INERTIALSENSOR \
 LOG_STRUCTURE_FROM_DAL \
@@ -1237,7 +1243,7 @@ LOG_STRUCTURE_FROM_FENCE \
     { LOG_DF_FILE_STATS, sizeof(log_DSF), \
       "DSF", "QIHIIII", "TimeUS,Dp,Blk,Bytes,FMn,FMx,FAv", "s--b---", "F--0---" }, \
     { LOG_RALLY_MSG, sizeof(log_Rally), \
-      "RALY", "QBBLLhB", "TimeUS,Tot,Seq,Lat,Lng,Alt,Flags", "s--DUm-", "F--GGB-" },  \
+      "RALY", "QBBLLhB", "TimeUS,Tot,Seq,Lat,Lng,Alt,Flags", "s--DUm-", "F--GG0-" },  \
     { LOG_MAV_MSG, sizeof(log_MAV),   \
       "MAV", "QBHHHBHHI",   "TimeUS,chan,txp,rxp,rxdp,flags,ss,tf,mgs", "s#----s-s", "F-000-C-C" },   \
 LOG_STRUCTURE_FROM_VISUALODOM \
@@ -1266,7 +1272,9 @@ LOG_STRUCTURE_FROM_AIS \
     { LOG_VER_MSG, sizeof(log_VER), \
       "VER",   "QBHBBBBIZHBBII", "TimeUS,BT,BST,Maj,Min,Pat,FWT,GH,FWS,APJ,BU,FV,IMI,ICI", "s-------------", "F-------------", false }, \
     { LOG_MOTBATT_MSG, sizeof(log_MotBatt), \
-      "MOTB", "QfffffB",  "TimeUS,LiftMax,BatVolt,ThLimit,ThrAvMx,ThrOut,FailFlags", "s------", "F------" , true }
+      "MOTB", "QfffffB",  "TimeUS,LiftMax,BatVolt,ThLimit,ThrAvMx,ThrOut,FailFlags", "s------", "F------" , true }, \
+    { LOG_SPOL_MSG, sizeof(log_SPOL), \
+      "SPOL", "QBB",  "TimeUS,Spl,SplDes", "s--", "F--" , true }
 
 // message types 0 to 31 reserved for vehicle-specific use
 
@@ -1307,8 +1315,9 @@ enum LogMessages : uint8_t {
     LOG_PIDS_MSG,
     LOG_PIDN_MSG,
     LOG_PIDE_MSG,
+    LOG_PIDW_MSG,
     LOG_IDS_FROM_LANDING,
-    LOG_MAG_MSG,
+    LOG_IDS_FROM_COMPASS,
     LOG_ARSP_MSG,
     LOG_IDS_FROM_RPM,
     LOG_RFND_MSG,
@@ -1317,6 +1326,9 @@ enum LogMessages : uint8_t {
     LOG_UNIT_MSG,
     LOG_MULT_MSG,
     LOG_RALLY_MSG,
+#if AP_RTC_LOGGING_ENABLED
+    LOG_RTC_MSG,
+#endif  // AP_RTC_LOGGING_ENABLED
 
     // LOG_MODE_MSG is used as a check for duplicates. Do not add between this and LOG_FORMAT_MSG
     LOG_MODE_MSG,
@@ -1349,6 +1361,7 @@ enum LogMessages : uint8_t {
     LOG_SCRIPTING_MSG,
     LOG_VIDEO_STABILISATION_MSG,
     LOG_MOTBATT_MSG,
+    LOG_SPOL_MSG,
     LOG_VER_MSG,
     LOG_RCOUT2_MSG,
     LOG_RCOUT3_MSG,

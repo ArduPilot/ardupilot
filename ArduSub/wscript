@@ -9,7 +9,6 @@ def build(bld):
             'AC_AttitudeControl',
             'AC_WPNav',
             'AP_Camera',
-            'AP_InertialNav',
             'AP_JSButton',
             'AP_LeakDetector',
             'AP_Motors',

@@ -14,7 +14,10 @@ Amilcar do Carmo Lucas, IAV GmbH
 
 import argparse
 import re
-from typing import Dict, Tuple
+
+from typing import Dict
+from typing import Tuple
+
 from pymavlink import mavutil
 
 NO_DEFAULT_VALUES_MESSAGE = "The .bin file contained no parameter default values. Update to a newer ArduPilot firmware version"

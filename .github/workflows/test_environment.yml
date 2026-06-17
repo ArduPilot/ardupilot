@@ -29,11 +29,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu
-            name: focal
-          - os: ubuntu
             name: jammy
           - os: ubuntu
             name: noble
+          - os: ubuntu
+            name: resolute
           - os: archlinux
             name: latest
           - os: debian

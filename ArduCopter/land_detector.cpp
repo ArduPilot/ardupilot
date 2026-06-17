@@ -16,9 +16,9 @@ static uint32_t land_detector_count = 0;
 void Copter::update_land_and_crash_detectors()
 {
     // update 1hz filtered acceleration
-    Vector3f accel_ef = ahrs.get_accel_ef();
-    accel_ef.z += GRAVITY_MSS;
-    land_accel_ef_filter.apply(accel_ef, scheduler.get_loop_period_s());
+    Vector3f accel_ef_mss = ahrs.get_accel_ef();
+    accel_ef_mss.z += GRAVITY_MSS;
+    land_accel_ef_filter.apply(accel_ef_mss, scheduler.get_loop_period_s());
 
     update_land_detector();
 

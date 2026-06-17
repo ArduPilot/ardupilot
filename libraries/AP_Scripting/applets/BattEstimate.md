@@ -6,7 +6,7 @@ resting voltage and a simple cell model.
 This allows the remaining battery percentage to be automatically set
 based on the resting voltage when disarmed.
 
-# Parameters
+## Parameters
 
 You will need to start by setting BATT_SOC_COUNT to the number of
 estimators you want (how many batteries you want to do SoC estimation
@@ -39,7 +39,7 @@ C3 is the third coefficient from your fit of your battery
 
 C4 is the fourth coefficient from your fit of your battery
 
-# Usage
+## Usage
 
 You need to start by working out the coefficients C1, C2, C3 and C4 for
 your battery. You can do this by starting with a fully charged battery
@@ -55,16 +55,15 @@ is accurate for their specific case.
 
 You will need to tell the script the following:
 
- - the number of cells
- - the final percentage charge your log stops at
- - the battery index you want to fit to (1 is the first battery)
+- the number of cells
+- the final percentage charge your log stops at
+- the battery index you want to fit to (1 is the first battery)
 
 That will produce a graph and a set of coefficients like this:
- - Coefficients C1=111.5629 C2=3.6577 C3=0.2048 C4=80.0000
+
+- Coefficients C1=111.5629 C2=3.6577 C3=0.2048 C4=80.0000
 
 Use the C1, C2, C3 and C4 parameters in the parameters for this script.
 
 The remaining battery percentage is only set when disarmed, and won't
 be set till 10 seconds after you disarm from a flight.
-
-

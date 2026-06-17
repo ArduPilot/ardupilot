@@ -15,7 +15,8 @@
 
 #pragma once
 
-#include "AP_HAL_ESP32.h"
+#include <AP_HAL/AP_HAL.h>
+#include "hal/gpio_types.h"
 
 class ESP32::GPIO : public AP_HAL::GPIO {
 public:
@@ -31,6 +32,9 @@ public:
 
     /* return true if USB cable is connected */
     bool    usb_connected(void) override;
+private:
+    /* inits with GPIO_MODE_DISABLE, which is safe */
+    gpio_mode_t _gpio_mode_cache[GPIO_NUM_MAX];
 };
 
 class ESP32::DigitalSource : public AP_HAL::DigitalSource {

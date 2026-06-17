@@ -55,11 +55,18 @@ ModeDock::ModeDock(void) : Mode()
 
 #define AR_DOCK_ACCEL_MAX              20.0    // acceleration used when user has specified no acceleration limit
 
+// Return true if this mode is enabled
+bool ModeDock::enabled() const
+{
+    // Dock mode requires precland
+    return rover.precland.enabled();
+}
+
 // initialize dock mode
 bool ModeDock::_enter()
 {
     // refuse to enter the mode if dock is not in sight
-    if (!rover.precland.enabled() || !rover.precland.target_acquired()) {
+    if (!enabled() || !rover.precland.target_acquired()) {
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Dock: target not acquired");
         return false;
     }

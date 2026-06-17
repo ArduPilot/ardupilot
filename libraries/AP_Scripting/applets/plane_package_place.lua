@@ -22,7 +22,7 @@ local PKG_RELEASE_FUNC  = bind_add_param('RELEASE_FUNC', 2, 94)
 local PKG_RELEASE_HGT   = bind_add_param('RELEASE_HGT',  3, 10)
 local PKG_RELEASE_HOLD  = bind_add_param('RELEASE_HOLD', 4, 1)
 
-local Q_LAND_SPEED = Parameter("Q_LAND_SPEED")
+local Q_LAND_FINAL_SPD = Parameter("Q_LAND_FINAL_SPD")
 local Q_LAND_FINAL_ALT = Parameter("Q_LAND_FINAL_ALT")
 
 local MAV_SEVERITY_INFO = 6
@@ -116,7 +116,7 @@ function update()
    -- slow down when within Q_LAND_FINAL_ALT of target
    local remaining_m = dist_m - PKG_RELEASE_HGT:get()
    if remaining_m > 0 and remaining_m < Q_LAND_FINAL_ALT:get() then
-      vehicle:set_land_descent_rate(Q_LAND_SPEED:get()*0.01)
+      vehicle:set_land_descent_rate(Q_LAND_FINAL_SPD:get())
    end
 
    if remaining_m <= 0 then

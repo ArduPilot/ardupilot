@@ -41,7 +41,7 @@ public:
     uint16_t get_id(void) const;
     
 private:
-    const uint8_t RTCMv3_PREAMBLE = 0xD3;
+    static constexpr uint8_t RTCMv3_PREAMBLE = 0xD3;
 
     // raw packet, we shouldn't need over 600 bytes for the MB configs we use
     uint8_t pkt[RTCM3_MAX_PACKET_LEN];

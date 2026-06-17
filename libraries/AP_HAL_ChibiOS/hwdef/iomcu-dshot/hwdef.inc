@@ -34,7 +34,6 @@ define HAL_SERIALLED_ENABLED FALSE
 STM32_ST_USE_TIMER 15
 define CH_CFG_ST_RESOLUTION 16
 define CH_CFG_ST_TIMEDELTA 2
-define CH_CFG_ST_FREQUENCY 1000000
 
 # ChibiOS already correctly sets stack sizes and considers 64 extra as conservative
 define PORT_INT_REQUIRED_STACK 64

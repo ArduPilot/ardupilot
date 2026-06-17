@@ -267,7 +267,7 @@ bool NavEKF3_core::getPosNE(Vector2p &posNE) const
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
             auto &gps = dal.gps();
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = gps.location(selected_gps);
                 posNE = public_origin.get_distance_NE_postype(gpsloc);
@@ -322,18 +322,25 @@ bool NavEKF3_core::getPosD(postype_t &posD) const
 // return the estimated height of body frame origin above ground level
 bool NavEKF3_core::getHAGL(float &HAGL) const
 {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+        HAGL = aglKfH;
+        return healthy();
+    }
+#endif
     HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate
     return !hgtTimeout && gndOffsetValid && healthy();
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
-// If a calculated location isn't available, return a raw GPS measurement
+// If a calculated location isn't available and position source is GPS, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
+    const bool pos_from_GPS = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS);
     if (getOriginLLH(origin)) {
         postype_t posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
@@ -348,7 +355,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 return true;
             } else {
                 // We have been be doing inertial dead reckoning for too long so use raw GPS if available
-                if (getGPSLLH(loc)) {
+                if (pos_from_GPS && getGPSLLH(loc)) {
                     return true;
                 } else {
                     // Return the EKF estimate but mark it as invalid
@@ -361,7 +368,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
             }
         } else {
             // Return a raw GPS reading if available and the last recorded positon if not
-            if (getGPSLLH(loc)) {
+            if (pos_from_GPS && getGPSLLH(loc)) {
                 return true;
             } else {
                 loc.lat = EKF_origin.lat;
@@ -374,14 +381,14 @@ bool NavEKF3_core::getLLH(Location &loc) const
         }
     } else {
         // The EKF is not navigating so use raw GPS if available
-        return getGPSLLH(loc);
+        return pos_from_GPS && getGPSLLH(loc);
     }
 }
 
 bool NavEKF3_core::getGPSLLH(Location &loc) const
 {
     const auto &gps = dal.gps();
-    if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+    if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D)) {
         loc = gps.location(selected_gps);
         return true;
     }
@@ -513,6 +520,23 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     return true;
 }
 
+// return 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
+bool NavEKF3_core::getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
+{
+    if (!statesInitialised) {
+        return false;
+    }
+    // Horizontal position: 2D RMS from the N and E position state variances P[7][7] and P[8][8].
+    // sqrt(P[7][7] + P[8][8]) is the 2D (circular) RMS, matching the convention used by GPS
+    // receivers when reporting horizontal accuracy (hAcc).
+    pos_horiz_m = sqrtF(P[7][7] + P[8][8]);
+    // Vertical position: 1-sigma from the D position state variance P[9][9]
+    pos_vert_m  = sqrtF(P[9][9]);
+    // Velocity: worst-case 1-sigma across NED components
+    vel_m_s     = sqrtF(MAX(MAX(P[4][4], P[5][5]), P[6][6]));
+    return true;
+}
+
 // get a particular source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
 bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
@@ -586,78 +610,21 @@ void  NavEKF3_core::getFilterStatus(nav_filter_status &status) const
     status = filterStatus;
 }
 
-#if HAL_GCS_ENABLED
-// send an EKF_STATUS message to GCS
-void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
+// return a terrain altitude variance
+bool NavEKF3_core::getTerrainAltVariance(float &temp) const
 {
-    // prepare flags
-    uint16_t flags = 0;
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-    if (filterStatus.flags.gps_glitching) {
-        flags |= (1<<15);
-    }
-
-    // get variances
-    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
-    Vector3f magVar;
-    Vector2f offset;
-    getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-
-
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
-    float temp = 0;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtF(auxRngTestRatio);
+    } else {
+        temp = 0;
     }
-
-    const mavlink_ekf_status_report_t packet{
-        velVar,
-        posVar,
-        hgtVar,
-        fmaxf(fmaxf(magVar.x,magVar.y),magVar.z),
-        temp,
-        flags,
-        tasVar
-    };
-
-    // send message
-    mavlink_msg_ekf_status_report_send_struct(link.get_chan(), &packet);
+    // we always successfully return a value, even if that value is a
+    // "nothing to look at here" 0 value:
+    return true;
 }
-#endif  // HAL_GCS_ENABLED
 
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF3_core::prearm_failure_reason(void) const

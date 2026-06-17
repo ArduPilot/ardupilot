@@ -47,7 +47,7 @@ void Sub::read_rangefinder()
 #endif
 
     rangefinder_state.alt = temp_alt_m;
-    rangefinder_state.inertial_alt_cm = inertial_nav.get_position_z_up_cm();
+    rangefinder_state.inertial_alt_cm = pos_control.get_pos_estimate_U_m() * 100.0f;
     rangefinder_state.min = rangefinder.min_distance_orient(ROTATION_PITCH_270);
     rangefinder_state.max = rangefinder.max_distance_orient(ROTATION_PITCH_270);
 

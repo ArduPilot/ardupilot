@@ -61,40 +61,6 @@ static const uint8_t streamSequence[] = { 0 }; // List of 0 based stream Ids tha
 
 static const uint8_t numStreamSequenceIndexes = sizeof(streamSequence)/sizeof(streamSequence[0]);
 
-AP_RangeFinder_LightWareI2C::AP_RangeFinder_LightWareI2C(RangeFinder::RangeFinder_State &_state,
-        AP_RangeFinder_Params &_params,
-        AP_HAL::I2CDevice &_dev)
-    : AP_RangeFinder_Backend(_state, _params)
-    , dev(_dev) {}
-
-/*
-   Detects if a Lightware rangefinder is connected. We'll detect by
-   trying to take a reading on I2C. If we get a result the sensor is
-   there.
-*/
-AP_RangeFinder_Backend *AP_RangeFinder_LightWareI2C::detect(RangeFinder::RangeFinder_State &_state,
-        AP_RangeFinder_Params &_params,
-        AP_HAL::I2CDevice *dev)
-{
-    if (!dev) {
-        return nullptr;
-    }
-
-    AP_RangeFinder_LightWareI2C *sensor
-        = NEW_NOTHROW AP_RangeFinder_LightWareI2C(_state, _params, *dev);
-
-    if (!sensor) {
-        return nullptr;
-    }
-
-    WITH_SEMAPHORE(sensor->dev.get_semaphore());
-    if (!sensor->init()) {
-        delete sensor;
-        return nullptr;
-    }
-    return sensor;
-}
-
 /**
  * Wrapper function over #transfer() to write a sequence of bytes to
  * device. No values are read.
@@ -190,6 +156,8 @@ void AP_RangeFinder_LightWareI2C::sf20_get_version(const char* send_msg, const c
  */
 bool AP_RangeFinder_LightWareI2C::init()
 {
+    WITH_SEMAPHORE(dev.get_semaphore());
+
     if (sf20_init()) {
         DEV_PRINTF("Found SF20 native Lidar\n");
         return true;

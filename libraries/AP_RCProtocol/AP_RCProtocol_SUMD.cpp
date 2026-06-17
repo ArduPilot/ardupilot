@@ -104,7 +104,7 @@ void AP_RCProtocol_SUMD::_process_byte(uint32_t timestamp_us, uint8_t byte)
         break;
 
     case SUMD_DECODE_STATE_GOT_STATE:
-        if (byte >= 2 && byte <= SUMD_MAX_CHANNELS) {
+        if (byte >= 4 && byte <= SUMD_MAX_CHANNELS) { // need at least 4 for reordering
             _rxpacket.length = byte;
             _crc16 = crc_xmodem_update(_crc16, byte);
             _rxlen++;

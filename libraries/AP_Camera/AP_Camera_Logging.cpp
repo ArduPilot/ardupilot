@@ -39,7 +39,7 @@ void AP_Camera_Backend::Write_CameraInfo(enum LogMessages msg, uint64_t timestam
 
     int32_t altitude_gps_cm = 0;
     const AP_GPS &gps = AP::gps();
-    if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.status() >= AP_GPS_FixType::FIX_3D) {
         if (!gps.location().get_alt_cm(Location::AltFrame::ABSOLUTE, altitude_gps_cm)) {
             // ignore this problem...
         }

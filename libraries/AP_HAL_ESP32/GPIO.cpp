@@ -15,13 +15,14 @@
  * Code by Bayu Laksono
  */
 
-#include "AP_HAL_ESP32.h"
 #include "GPIO.h"
 
 #include "hal/gpio_types.h"
 #include "driver/gpio.h"
 
 using namespace ESP32;
+
+extern const AP_HAL::HAL& hal;
 
 static gpio_num_t gpio_by_pin_num(uint8_t pin)
 {
@@ -40,14 +41,19 @@ void GPIO::init()
 void GPIO::pinMode(uint8_t pin, uint8_t output)
 {
     gpio_num_t g = gpio_by_pin_num(pin);
-    if (g != GPIO_NUM_NC) {
+    gpio_mode_t target_mode = output ? GPIO_MODE_INPUT_OUTPUT : GPIO_MODE_INPUT;
+
+    if (g != GPIO_NUM_NC &&
+        _gpio_mode_cache[g] != target_mode) {
+
         gpio_config_t io_conf = {};
         io_conf.intr_type = GPIO_INTR_DISABLE;
-        io_conf.mode = output ? GPIO_MODE_OUTPUT : GPIO_MODE_INPUT;
+        io_conf.mode = target_mode;
         io_conf.pin_bit_mask = 1ULL<<g;
         io_conf.pull_down_en = output ? GPIO_PULLDOWN_DISABLE : GPIO_PULLDOWN_ENABLE;
         io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
         gpio_config(&io_conf);
+        _gpio_mode_cache[g] = target_mode;
     }
 }
 
@@ -101,41 +107,17 @@ DigitalSource::DigitalSource(uint8_t pin) :
 
 void DigitalSource::mode(uint8_t output)
 {
-    gpio_num_t g = gpio_by_pin_num(_pin);
-    if (g != GPIO_NUM_NC) {
-        gpio_config_t io_conf = {};
-        io_conf.intr_type = GPIO_INTR_DISABLE;
-        io_conf.mode = output ? GPIO_MODE_OUTPUT : GPIO_MODE_INPUT;
-        io_conf.pin_bit_mask = 1ULL<<g;
-        io_conf.pull_down_en = output ? GPIO_PULLDOWN_DISABLE : GPIO_PULLDOWN_ENABLE;
-        io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-        gpio_config(&io_conf);
-    }
+    hal.gpio->pinMode(_pin, output);
 }
 
 uint8_t DigitalSource::read() {
-    gpio_num_t g = gpio_by_pin_num(_pin);
-    if (g != GPIO_NUM_NC) {
-        return gpio_get_level(g);
-    }
-    return 0;
+    return hal.gpio->read(_pin);
 }
 
 void DigitalSource::write(uint8_t value) {
-    gpio_num_t g = gpio_by_pin_num(_pin);
-    if (g != GPIO_NUM_NC) {
-        gpio_set_level(g, value);
-    }
+    hal.gpio->write(_pin, value);
 }
 
 void DigitalSource::toggle() {
-    gpio_num_t g = gpio_by_pin_num(_pin);
-    if (g != GPIO_NUM_NC) {
-        if (gpio_get_level(g)) {
-            gpio_set_level(g, 0);
-        }
-        else {
-            gpio_set_level(g, 1);
-        }
-    }
+    hal.gpio->toggle(_pin);
 }

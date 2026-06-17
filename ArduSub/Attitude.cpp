@@ -5,13 +5,13 @@
 void Sub::get_pilot_desired_lean_angles(float roll_in, float pitch_in, float &roll_out, float &pitch_out, float angle_max)
 {
     // sanity check angle max parameter
-    aparm.angle_max.set(constrain_int16(aparm.angle_max,1000,8000));
+    const float angle_max_cd = attitude_control.lean_angle_max_cd();
 
     // limit max lean angle
-    angle_max = constrain_float(angle_max, 1000, aparm.angle_max);
+    angle_max = constrain_float(angle_max, 1000, angle_max_cd);
 
-    // scale roll_in, pitch_in to ANGLE_MAX parameter range
-    float scaler = aparm.angle_max/(float)ROLL_PITCH_INPUT_MAX;
+    // scale roll_in, pitch_in to ATC_ANGLE_MAX parameter range
+    float scaler = angle_max_cd/(float)ROLL_PITCH_INPUT_MAX;
     roll_in *= scaler;
     pitch_in *= scaler;
 
@@ -64,7 +64,7 @@ float Sub::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position_xy_cm(), roi_WP.xy());
+        yaw_look_at_WP_bearing = get_bearing_cd((pos_control.get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), roi_WP_neu_cm.xy());
     }
 
     return yaw_look_at_WP_bearing;
@@ -72,7 +72,8 @@ float Sub::get_roi_yaw()
 
 float Sub::get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
+    Vector3f vel = (pos_control.get_vel_estimate_NED_ms() * 100.0f).tofloat();
+    vel.z = -vel.z;
     const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {

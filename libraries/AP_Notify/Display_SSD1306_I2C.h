@@ -15,7 +15,7 @@ class Display_SSD1306_I2C: public Display_Backend {
 
 public:
 
-    static Display_SSD1306_I2C *probe(AP_HAL::Device &_dev);
+    static Display_Backend *probe(AP_HAL::Device &_dev);
 
     void hw_update() override;
     void set_pixel(uint16_t x, uint16_t y) override;

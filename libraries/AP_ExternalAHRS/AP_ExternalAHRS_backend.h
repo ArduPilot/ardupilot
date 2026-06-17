@@ -76,10 +76,10 @@ protected:
     /*
       scale factors for get_variances() to return normalised values from SI units
      */
-    const float vel_gate_scale = 0.2;
-    const float pos_gate_scale = 0.2;
-    const float hgt_gate_scale = 0.2;
-    
+    static constexpr float vel_gate_scale = 0.2;
+    static constexpr float pos_gate_scale = 0.2;
+    static constexpr float hgt_gate_scale = 0.2;
+
 private:
     AP_ExternalAHRS &frontend;
 };

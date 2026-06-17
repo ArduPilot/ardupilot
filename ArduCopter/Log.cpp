@@ -19,8 +19,8 @@ struct PACKED log_Control_Tuning {
     float    desired_rangefinder_alt;
     float    rangefinder_alt;
     float    terr_alt;
-    int16_t  target_climb_rate;
-    int16_t  climb_rate;
+    float    target_climb_rate_ms;
+    float    climb_rate_ms;
 };
 
 // Write a control tuning packet
@@ -52,23 +52,23 @@ void Copter::Log_Write_Control_Tuning()
 
     struct log_Control_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_CONTROL_TUNING_MSG),
-        time_us             : AP_HAL::micros64(),
-        throttle_in         : attitude_control->get_throttle_in(),
-        angle_boost         : attitude_control->angle_boost(),
-        throttle_out        : motors->get_throttle(),
-        throttle_hover      : motors->get_throttle_hover(),
-        desired_alt         : des_alt_m,
-        inav_alt            : float(pos_control->get_pos_estimate_U_m()),
-        baro_alt            : baro_alt_m,
+        time_us                 : AP_HAL::micros64(),
+        throttle_in             : attitude_control->get_throttle_in(),
+        angle_boost             : attitude_control->angle_boost(),
+        throttle_out            : motors->get_throttle(),
+        throttle_hover          : motors->get_throttle_hover(),
+        desired_alt             : des_alt_m,
+        inav_alt                : float(pos_control->get_pos_estimate_U_m()),
+        baro_alt                : baro_alt_m,
         desired_rangefinder_alt : desired_rangefinder_alt_m,
 #if AP_RANGEFINDER_ENABLED
-        rangefinder_alt     : surface_tracking.get_dist_for_logging(),
+        rangefinder_alt         : surface_tracking.get_dist_for_logging(),
 #else
-        rangefinder_alt     : AP_Logger::quiet_nanf(),
+        rangefinder_alt         : AP_Logger::quiet_nanf(),
 #endif
-        terr_alt            : terr_alt,
-        target_climb_rate   : int16_t(target_climb_rate_ms * 100.0),
-        climb_rate          : int16_t(pos_control->get_vel_estimate_U_ms() * 100.0) // float -> int16_t
+        terr_alt                : terr_alt,
+        target_climb_rate_ms    : target_climb_rate_ms,
+        climb_rate_ms           : pos_control->get_vel_estimate_U_ms()
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -92,7 +92,7 @@ void Copter::Log_Write_PIDS()
         logger.Write_PID(LOG_PIDP_MSG, attitude_control->get_rate_pitch_pid().get_pid_info());
         logger.Write_PID(LOG_PIDY_MSG, attitude_control->get_rate_yaw_pid().get_pid_info());
         logger.Write_PID(LOG_PIDA_MSG, pos_control->D_get_accel_pid().get_pid_info() );
-        if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS())) {
+        if (should_log(MASK_LOG_NTUN) && (flightmode->requires_position() || landing_with_GPS())) {
             logger.Write_PID(LOG_PIDN_MSG, pos_control->NE_get_vel_pid().get_pid_info_x());
             logger.Write_PID(LOG_PIDE_MSG, pos_control->NE_get_vel_pid().get_pid_info_y());
         }
@@ -251,17 +251,17 @@ struct PACKED log_SysIdD {
     uint64_t time_us;
     float    waveform_time;
     float    waveform_sample;
-    float    waveform_freq;
-    float    angle_x;
-    float    angle_y;
-    float    angle_z;
-    float    accel_x;
-    float    accel_y;
-    float    accel_z;
+    float    waveform_freq_hz;
+    float    angle_x_degs;
+    float    angle_y_degs;
+    float    angle_z_degs;
+    float    accel_x_mss;
+    float    accel_y_mss;
+    float    accel_z_mss;
 };
 
 // Write an rate packet
-void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z)
+void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq_hz, float angle_x_degs, float angle_y_degs, float angle_z_degs, float accel_x_mss, float accel_y_mss, float accel_z_mss)
 {
 #if MODE_SYSTEMID_ENABLED
     struct log_SysIdD pkt_sidd = {
@@ -269,13 +269,13 @@ void Copter::Log_Write_SysID_Data(float waveform_time, float waveform_sample, fl
         time_us         : AP_HAL::micros64(),
         waveform_time   : waveform_time,
         waveform_sample : waveform_sample,
-        waveform_freq   : waveform_freq,
-        angle_x         : angle_x,
-        angle_y         : angle_y,
-        angle_z         : angle_z,
-        accel_x         : accel_x,
-        accel_y         : accel_y,
-        accel_z         : accel_z
+        waveform_freq_hz : waveform_freq_hz,
+        angle_x_degs    : angle_x_degs,
+        angle_y_degs    : angle_y_degs,
+        angle_z_degs    : angle_z_degs,
+        accel_x_mss     : accel_x_mss,
+        accel_y_mss     : accel_y_mss,
+        accel_z_mss     : accel_z_mss
     };
     logger.WriteBlock(&pkt_sidd, sizeof(pkt_sidd));
 #endif
@@ -336,14 +336,14 @@ struct PACKED log_Guided_Attitude_Target {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t type;
-    float roll;
-    float pitch;
-    float yaw;
-    float roll_rate;
-    float pitch_rate;
-    float yaw_rate;
+    float roll_deg;
+    float pitch_deg;
+    float yaw_deg;
+    float roll_rate_degs;
+    float pitch_rate_degs;
+    float yaw_rate_degs;
     float thrust;
-    float climb_rate;
+    float climb_rate_ms;
 };
 
 // rate thread dt stats
@@ -391,14 +391,14 @@ void Copter::Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float
         LOG_PACKET_HEADER_INIT(LOG_GUIDED_ATTITUDE_TARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : (uint8_t)submode,
-        roll            : degrees(roll_rad),       // rad to deg
-        pitch           : degrees(pitch_rad),      // rad to deg
-        yaw             : degrees(yaw_rad),        // rad to deg
-        roll_rate       : degrees(ang_vel_rads.x),  // rad/s to deg/s
-        pitch_rate      : degrees(ang_vel_rads.y),  // rad/s to deg/s
-        yaw_rate        : degrees(ang_vel_rads.z),  // rad/s to deg/s
+        roll_deg        : degrees(roll_rad),       // rad to deg
+        pitch_deg       : degrees(pitch_rad),      // rad to deg
+        yaw_deg         : degrees(yaw_rad),        // rad to deg
+        roll_rate_degs  : degrees(ang_vel_rads.x),  // rad/s to deg/s
+        pitch_rate_degs : degrees(ang_vel_rads.y),  // rad/s to deg/s
+        yaw_rate_degs   : degrees(ang_vel_rads.z),  // rad/s to deg/s
         thrust          : thrust,
-        climb_rate      : climb_rate_ms
+        climb_rate_ms   : climb_rate_ms
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -484,7 +484,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Value: Value
 
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qffffffffffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----000000BB" , true },
+      "CTUN", "Qffffffffffff", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00000000", true },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         

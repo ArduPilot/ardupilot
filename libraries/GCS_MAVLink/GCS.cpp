@@ -340,7 +340,7 @@ void GCS::send_named_float(const char *name, float value) const
 // @Field: TimeUS: Time since system startup
 // @Field: Name: Name of float
 // @Field: Value: Value of float
-    AP::logger().WriteStreaming(
+    AP::logger().Write(
         "NVF",
         "TimeUS," "Name," "Value",
         "s"       "#"     "-",
@@ -468,7 +468,7 @@ void GCS::update_sensor_status_flags()
 
 #if AP_GPS_ENABLED
     const AP_GPS &gps = AP::gps();
-    if (gps.status() > AP_GPS::NO_GPS) {
+    if (gps.status() > AP_GPS_FixType::NO_GPS) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_GPS;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_GPS;
     }

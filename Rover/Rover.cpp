@@ -84,7 +84,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200,  24),
 #endif
 #if HAL_PROXIMITY_ENABLED
-    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         50,  200,  27),
+    SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         200,  200,  27),
 #endif
     SCHED_TASK_CLASS(AP_WindVane,         &rover.g2.windvane,      update,         20,  100,  30),
     SCHED_TASK(update_wheel_encoder,   50,    200,  36),
@@ -152,7 +152,6 @@ constexpr int8_t Rover::_failsafe_priorities[7];
 Rover::Rover(void) :
     AP_Vehicle(),
     param_loader(var_info),
-    modes(&g.mode1),
     control_mode(&mode_initializing)
 {
 }
@@ -172,7 +171,7 @@ bool Rover::set_target_location(const Location& target_loc)
 
 #if AP_SCRIPTING_ENABLED
 // set target velocity (for use by scripting)
-bool Rover::set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_target)
+bool Rover::set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!control_mode->in_guided_mode()) {
@@ -180,13 +179,13 @@ bool Rover::set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_t
     }
 
     // convert vector length into speed
-    const float target_speed_m = safe_sqrt(sq(vel_ned.x) + sq(vel_ned.y));
+    const float target_speed_ms = safe_sqrt(sq(vel_ned_ms.x) + sq(vel_ned_ms.y));
 
     // convert vector direction to target yaw
-    const float target_yaw_cd = degrees(atan2f(vel_ned.y, vel_ned.x)) * 100.0f;
+    const float target_yaw_cd = degrees(atan2f(vel_ned_ms.y, vel_ned_ms.x)) * 100.0f;
 
     // send target heading and speed
-    mode_guided.set_desired_heading_and_speed(target_yaw_cd, target_speed_m);
+    mode_guided.set_desired_heading_and_speed(target_yaw_cd, target_speed_ms);
 
     return true;
 }
@@ -213,7 +212,7 @@ bool Rover::get_steering_and_throttle(float& steering, float& throttle)
 }
 
 // set desired turn rate (degrees/sec) and speed (m/s). Used for scripting
-bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
+bool Rover::set_desired_turn_rate_and_speed(float turn_rate_degs, float speed_ms)
 {
     // exit if vehicle is not in Guided mode or Auto-Guided mode
     if (!control_mode->in_guided_mode()) {
@@ -221,14 +220,14 @@ bool Rover::set_desired_turn_rate_and_speed(float turn_rate, float speed)
     }
 
     // set turn rate and speed. Turn rate is expected in centidegrees/s and speed in meters/s
-    mode_guided.set_desired_turn_rate_and_speed(turn_rate * 100.0f, speed);
+    mode_guided.set_desired_turn_rate_and_speed(turn_rate_degs * 100.0f, speed_ms);
     return true;
 }
 
 // set desired nav speed (m/s). Used for scripting.
-bool Rover::set_desired_speed(float speed)
+bool Rover::set_desired_speed(float speed_ms)
 {
-    return control_mode->set_desired_speed(speed);
+    return control_mode->set_desired_speed(speed_ms);
 }
 
 // get control output (for use in scripting)
@@ -317,7 +316,7 @@ void Rover::ahrs_update()
     Vector3f velocity;
     if (ahrs.get_velocity_NED(velocity)) {
         ground_speed = velocity.xy().length();
-    } else if (gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    } else if (gps.status() >= AP_GPS_FixType::FIX_3D) {
         ground_speed = ahrs.groundspeed();
     }
     
@@ -487,20 +486,20 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed();
-    AP_Notify::flags.flying = hal.util->get_soft_armed();
+    AP_Notify::flags.flying = arming.is_armed_and_safety_off();
 
 #if AP_ROVER_AUTO_ARM_ONCE_ENABLED
     handle_auto_arm_once();
 #endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 
     // attempt to update home position and baro calibration if not armed:
-    if (!hal.util->get_soft_armed()) {
+    if (!arming.is_armed_and_safety_off()) {
         update_home();
     }
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
-    set_likely_flying(hal.util->get_soft_armed());
+    set_likely_flying(arming.is_armed_and_safety_off());
 
     // send latest param values to wp_nav
     g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());
@@ -553,7 +552,7 @@ bool Rover::get_wp_crosstrack_error_m(float &xtrack_error) const
     if (!rover.control_mode->is_autopilot_mode()) {
         return false;
     }
-    xtrack_error = control_mode->crosstrack_error();
+    xtrack_error = control_mode->crosstrack_error_m();
     return true;
 }
 

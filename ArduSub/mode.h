@@ -96,7 +96,6 @@ protected:
     // convenience references to avoid code churn in conversion:
     Parameters &g;
     ParametersG2 &g2;
-    AP_InertialNav &inertial_nav;
     AP_AHRS &ahrs;
     AP_Motors6DOF &motors;
     RC_Channel *&channel_roll;
@@ -136,7 +135,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "MANUAL"; }
+    const char *name() const override { return "Manual"; }
     const char *name4() const override { return "MANU"; }
     Mode::Number number() const override { return Mode::Number::MANUAL; }
 };
@@ -159,7 +158,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "ACRO"; }
+    const char *name() const override { return "Acro"; }
     const char *name4() const override { return "ACRO"; }
     Mode::Number number() const override { return Mode::Number::ACRO; }
 };
@@ -182,7 +181,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "STABILIZE"; }
+    const char *name() const override { return "Stabilize"; }
     const char *name4() const override { return "STAB"; }
     Mode::Number number() const override { return Mode::Number::STABILIZE; }
 };
@@ -209,7 +208,7 @@ protected:
     void run_pre();
     void run_post();
 
-    const char *name() const override { return "ALT_HOLD"; }
+    const char *name() const override { return "Depth Hold"; }
     const char *name4() const override { return "ALTH"; }
     Mode::Number number() const override { return Mode::Number::ALT_HOLD; }
 };
@@ -231,7 +230,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "SURFTRAK"; }
+    const char *name() const override { return "Surftrak"; }
     const char *name4() const override { return "STRK"; }
     Mode::Number number() const override { return Mode::Number::SURFTRAK; }
 
@@ -267,13 +266,13 @@ public:
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_set_angle(const Quaternion&, float);
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity);
-    bool guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
-    bool guided_set_destination(const Vector3f& destination);
+    bool guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms);
+    bool guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    bool guided_set_destination(const Vector3f& destination_neu_cm);
     bool guided_set_destination(const Location&);
-    bool guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
-    void guided_set_velocity(const Vector3f& velocity);
-    void guided_set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    bool guided_set_destination(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    void guided_set_velocity(const Vector3f& velocity_neu_cms);
+    void guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     void guided_set_yaw_state(bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_angle);
     float get_auto_heading();
     void guided_limit_clear();
@@ -281,7 +280,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "GUIDED"; }
+    const char *name() const override { return "Guided"; }
     const char *name4() const override { return "GUID"; }
     Mode::Number number() const override { return Mode::Number::GUIDED; }
 
@@ -316,7 +315,7 @@ public:
     bool allows_arming(bool from_gcs) const override { return true; }
     bool is_autopilot() const override { return true; }
     bool auto_loiter_start();
-    void auto_wp_start(const Vector3f& destination);
+    void auto_wp_start(const Vector3f& destination_neu_cm);
     void auto_wp_start(const Location& dest_loc);
     void auto_circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
     void auto_circle_start();
@@ -328,7 +327,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "AUTO"; }
+    const char *name() const override { return "Auto"; }
     const char *name4() const override { return "AUTO"; }
     Mode::Number number() const override { return Mode::Number::AUTO; }
 
@@ -359,7 +358,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "POSHOLD"; }
+    const char *name() const override { return "Position Hold"; }
     const char *name4() const override { return "POSH"; }
     Mode::Number number() const override { return Mode::Number::POSHOLD; }
 
@@ -386,7 +385,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "CIRCLE"; }
+    const char *name() const override { return "Circle"; }
     const char *name4() const override { return "CIRC"; }
     Mode::Number number() const override { return Mode::Number::CIRCLE; }
 };
@@ -407,7 +406,7 @@ public:
     bool is_autopilot() const override { return true; }
 
 protected:
-    const char *name() const override { return "SURFACE"; }
+    const char *name() const override { return "Surface"; }
     const char *name4() const override { return "SURF"; }
     Mode::Number number() const override { return Mode::Number::SURFACE; }
     bool nobaro_mode;
@@ -431,7 +430,7 @@ public:
 
 protected:
 
-    const char *name() const override { return "MOTORDETECT"; }
+    const char *name() const override { return "Motor Detection"; }
     const char *name4() const override { return "DETE"; }
     Mode::Number number() const override { return Mode::Number::MOTOR_DETECT; }
 };

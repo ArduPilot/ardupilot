@@ -40,9 +40,6 @@ static const SysFileList sysfs_file_list[] = {
     {"memory.txt"},
     {"uarts.txt"},
     {"timers.txt"},
-#if HAL_MAX_CAN_PROTOCOL_DRIVERS
-    {"can_log.txt"},
-#endif
 #if HAL_NUM_CAN_IFACES > 0
     {"can0_stats.txt"},
     {"can1_stats.txt"},
@@ -120,11 +117,6 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
     if (strcmp(fname, "timers.txt") == 0) {
         hal.util->timer_info(*r.str);
     }
-#if HAL_CANMANAGER_ENABLED
-    if (strcmp(fname, "can_log.txt") == 0) {
-        AP::can().log_retrieve(*r.str);
-    }
-#endif
 #if HAL_NUM_CAN_IFACES > 0
     int8_t can_stats_num = -1;
     if (strcmp(fname, "can0_stats.txt") == 0) {
@@ -208,17 +200,33 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
         return -1;
     }
     struct rfile &r = file[fd];
+
+    int64_t new_ofs = -1;  // -1 being invalid
     switch (seek_from) {
     case SEEK_SET:
-        r.file_ofs = MIN(offset, int32_t(r.str->get_length()));
+        new_ofs = offset;
         break;
     case SEEK_CUR:
-        r.file_ofs = MIN(r.str->get_length(), offset+r.file_ofs);
+        // Compute the new offset in signed 64-bit space to avoid
+        // 32-bit overflows:
+        new_ofs = int64_t(r.file_ofs) + int64_t(offset);
         break;
     case SEEK_END:
+        // we don't support this, leave new_ofs at -1 meaning "invalid"
+        break;
+    }
+
+    // special semantics for Sysfs - don't allow seeking outside the file
+    if (new_ofs < 0 || new_ofs > r.str->get_length()) {
         errno = EINVAL;
         return -1;
     }
+
+    r.file_ofs = (uint32_t)new_ofs;
+
+    // note conversion from uint32_t to int32_t in return value here.
+    // Above we clamp to r.str->get_length(), so in practise no
+    // truncation can occur here.
     return r.file_ofs;
 }
 

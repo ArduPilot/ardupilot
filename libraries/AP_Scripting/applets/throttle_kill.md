@@ -8,7 +8,7 @@ switch being activated.
 It is particularly suited to turbine engines which kill the motor
 using a low throttle input.
 
-# Parameters
+## Parameters
 
 The script creates a set of parameters with names starting withg THR_KILL
 
@@ -35,7 +35,7 @@ This is the default auxiliary function value at startup. If you want
 the engine to be killed by default on startup then set this to the
 same value as THR_KILL_VAL
 
-# Usage
+## Usage
 
 After this script is installed and you have setup the above parameters
 then the THR_KILL_CHAN servo output channel will be forced to

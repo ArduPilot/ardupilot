@@ -81,10 +81,17 @@ ModeFlowHold::ModeFlowHold(void) : Mode()
 
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
+// Return true if this mode is enabled, used by MAVLink available modes
+bool ModeFlowHold::enabled() const
+{
+    return copter.optflow.enabled();
+}
+
+
 // flowhold_init - initialise flowhold controller
 bool ModeFlowHold::init(bool ignore_checks)
 {
-    if (!copter.optflow.enabled() || !copter.optflow.healthy()) {
+    if (!enabled() || !copter.optflow.healthy()) {
         return false;
     }
 
@@ -118,7 +125,7 @@ bool ModeFlowHold::init(bool ignore_checks)
 void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_rad, bool stick_input)
 {
     uint32_t now = AP_HAL::millis();
-    const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+    const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
 
     // get corrected raw flow rate
     Vector2f raw_flow_rads = copter.optflow.flowRate() - copter.optflow.bodyRate();
@@ -246,7 +253,6 @@ void ModeFlowHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate_ms = copter.get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // get pilot's desired yaw rate
     float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
@@ -278,7 +284,7 @@ void ModeFlowHold::run()
 
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
+            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
@@ -319,7 +325,7 @@ void ModeFlowHold::run()
     // calculate alt-hold angles
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
-    const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+    const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
 
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
@@ -339,7 +345,7 @@ void ModeFlowHold::run()
     bf_angles_rad.x = constrain_float(bf_angles_rad.x, -angle_max_rad, angle_max_rad);
     bf_angles_rad.y = constrain_float(bf_angles_rad.y, -angle_max_rad, angle_max_rad);
 
-#if AP_AVOIDANCE_ENABLED
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
     // apply avoidance
     copter.avoid.adjust_roll_pitch_rad(bf_angles_rad.x, bf_angles_rad.y, attitude_control->lean_angle_max_rad());
 #endif

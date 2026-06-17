@@ -242,14 +242,14 @@ void AP_BoardLED2::update(void)
     }
     // gps light
     switch (AP_Notify::flags.gps_status) {
-        case 0:
-        case 1:
+        case AP_GPS_FixType::NO_GPS:
+        case AP_GPS_FixType::NONE:
             // no GPS attached or no lock - be dark
             hal.gpio->write(HAL_GPIO_B_LED_PIN, HAL_GPIO_LED_OFF);
             break;
 
-        case 2: // 2d lock
-        case 3://  3d lock
+        case AP_GPS_FixType::FIX_2D: // 2d lock
+        case AP_GPS_FixType::FIX_3D: //  3d lock
         default: // show number of sats 
             if ((counter2 & 0x2) == 0) {
                 _sat_cnt++;

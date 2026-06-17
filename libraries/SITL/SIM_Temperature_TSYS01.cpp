@@ -34,8 +34,15 @@ int SITL::TSYS01::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
             if (data->msgs[1].len != 2) {
                 AP_HAL::panic("Unexpected prom read length");
             }
-            uint8_t offs = ARRAY_SIZE(_k)-((uint8_t(command) - uint8_t(Command::READ_PROM0))/2);
-            const uint16_t k = _k[offs];
+            const uint8_t prom_idx = (uint8_t(command) - uint8_t(Command::READ_PROM0))/2;
+            if (prom_idx == 0) {
+                // PROM0 is the unused CRC register; not requested by the driver
+                data->msgs[1].buf[0] = 0;
+                data->msgs[1].buf[1] = 0;
+                break;
+            }
+            // prom_idx 1..5 → _k[5].._k[1] (reversed to match driver's read_prom ordering)
+            const uint16_t k = _k[ARRAY_SIZE(_k) - prom_idx];
             data->msgs[1].buf[0] = k >> 8;
             data->msgs[1].buf[1] = k & 0xFF;
             break;

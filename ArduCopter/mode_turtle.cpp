@@ -6,12 +6,18 @@
 #define CRASH_FLIP_STICK_MINF 0.15f
 #define power3(x) ((x) * (x) * (x))
 
+// Return true if this mode is enabled, use by MAVLink available modes
+bool ModeTurtle::enabled() const
+{
+    return SRV_Channels::get_dshot_esc_type() != AP_HAL::RCOutput::DshotEscType::DSHOT_ESC_NONE;
+}
+
 bool ModeTurtle::init(bool ignore_checks)
 {
     WITH_SEMAPHORE(msem);
 
     // do not enter the mode when already armed or when flying
-    if (motors->armed() || SRV_Channels::get_dshot_esc_type() == 0) {
+    if (motors->armed() || !enabled()) {
         return false;
     }
 
@@ -49,9 +55,9 @@ void ModeTurtle::arm_motors()
     change_motor_direction(true);
 
     // disable throttle and gcs failsafe
-    g.failsafe_throttle.set(FS_THR_DISABLED);
-    g.failsafe_gcs.set(FS_GCS_DISABLED);
-    g.fs_ekf_action.set(FS_EKF_ACTION_REPORT_ONLY);
+    g.failsafe_throttle.set(Copter::FS_THR_Action::DISABLED);
+    g.failsafe_gcs.set(Copter::FS_GCS_Action::DISABLED);
+    g.fs_ekf_action.set(Copter::FS_EKF_Action::REPORT_ONLY);
 
     // ensure the arming library is aware of our meddling
     // even if it fails we don't want to prevent people getting into turtle mode

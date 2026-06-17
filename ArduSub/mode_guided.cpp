@@ -7,8 +7,8 @@
 #define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
 #define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
 
-static Vector3p posvel_pos_target_cm;
-static Vector3f posvel_vel_target_cms;
+static Vector3p posvel_pos_target_neu_cm;
+static Vector3f posvel_vel_target_neu_cms;
 static uint32_t update_time_ms;
 
 struct {
@@ -166,12 +166,12 @@ void ModeGuided::guided_angle_control_start()
 // guided_set_destination - sets guided mode's target destination
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::guided_set_destination(const Vector3f& destination)
+bool ModeGuided::guided_set_destination(const Vector3f& destination_neu_cm)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    const Location dest_loc(destination_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -184,11 +184,11 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination)
     }
 
     // no need to check return status because terrain data is not used
-    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination_neu_cm, false);
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination, Vector3f());
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, Vector3f());
 #endif
 
     return true;
@@ -202,7 +202,7 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 #if AP_FENCE_ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -232,12 +232,12 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 // guided_set_destination - sets guided mode's target destination and target heading
 // Returns true if the fence is enabled and guided waypoint is within the fence
 // else return false if the waypoint is outside the fence
-bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::guided_set_destination(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    const Location dest_loc(destination_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -255,18 +255,18 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination, bool use_ya
     update_time_ms = AP_HAL::millis();
 
     // no need to check return status because terrain data is not used
-    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination_neu_cm, false);
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination, Vector3f());
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, Vector3f());
 #endif
 
     return true;
 }
 
 // guided_set_velocity - sets guided mode's target velocity
-void ModeGuided::guided_set_velocity(const Vector3f& velocity)
+void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms)
 {
     // check we are in velocity control mode
     if (sub.guided_mode != Guided_Velocity) {
@@ -276,11 +276,11 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity)
     update_time_ms = AP_HAL::millis();
 
     // set position controller velocity target
-    position_control->set_vel_desired_NEU_cms(velocity);
+    position_control->set_vel_desired_NEU_cms(velocity_neu_cms);
 }
 
 // guided_set_velocity - sets guided mode's target velocity
-void ModeGuided::guided_set_velocity(const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
    // check we are in velocity control mode
     if (sub.guided_mode != Guided_Velocity) {
@@ -293,17 +293,17 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity, bool use_yaw, flo
     update_time_ms = AP_HAL::millis();
 
     // set position controller velocity target
-    position_control->set_vel_desired_NEU_cms(velocity);
+    position_control->set_vel_desired_NEU_cms(velocity_neu_cms);
 
 }
 
 // set guided mode posvel target
-bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity)
+bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    const Location dest_loc(destination_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -316,29 +316,29 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
     }
 
     update_time_ms = AP_HAL::millis();
-    posvel_pos_target_cm = destination.topostype();
-    posvel_vel_target_cms = velocity;
+    posvel_pos_target_neu_cm = destination_neu_cm.topostype();
+    posvel_vel_target_neu_cms = velocity_neu_cms;
 
-    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
-    float dz = posvel_pos_target_cm.z;
-    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_cms.z, 0);
-    posvel_pos_target_cm.z = dz;
+    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_neu_cm.xy(), posvel_vel_target_neu_cms.xy(), Vector2f());
+    float dz = posvel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_neu_cms.z, 0);
+    posvel_pos_target_neu_cm.z = dz;
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination, velocity);
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, velocity_neu_cms);
 #endif
 
     return true;
 }
 
 // set guided mode posvel target
-bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, const Vector3f& velocity, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     #if AP_FENCE_ENABLED
     // reject destination if outside the fence
-    const Location dest_loc(destination, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_destination_within_fence(dest_loc)) {
+    const Location dest_loc(destination_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+    if (!sub.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -355,17 +355,17 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination, cons
 
     update_time_ms = AP_HAL::millis();
 
-    posvel_pos_target_cm = destination.topostype();
-    posvel_vel_target_cms = velocity;
+    posvel_pos_target_neu_cm = destination_neu_cm.topostype();
+    posvel_vel_target_neu_cms = velocity_neu_cms;
 
-    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
-    float dz = posvel_pos_target_cm.z;
-    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_cms.z, 0);
-    posvel_pos_target_cm.z = dz;
+    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_neu_cm.xy(), posvel_vel_target_neu_cms.xy(), Vector2f());
+    float dz = posvel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_neu_cms.z, 0);
+    posvel_pos_target_neu_cm.z = dz;
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination, velocity);
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, velocity_neu_cms);
 #endif
 
     return true;
@@ -464,7 +464,7 @@ void ModeGuided::guided_pos_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         sub.wp_nav.wp_and_spline_init_m();
         return;
@@ -529,7 +529,7 @@ void ModeGuided::guided_vel_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
         position_control->D_init_controller();
@@ -602,7 +602,7 @@ void ModeGuided::guided_posvel_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
         position_control->D_init_controller();
@@ -632,18 +632,18 @@ void ModeGuided::guided_posvel_control_run()
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
-    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !posvel_vel_target_cms.is_zero()) {
-        posvel_vel_target_cms.zero();
+    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !posvel_vel_target_neu_cms.is_zero()) {
+        posvel_vel_target_neu_cms.zero();
     }
 
     // advance position target using velocity target
-    posvel_pos_target_cm += (posvel_vel_target_cms * position_control->get_dt_s()).topostype();
+    posvel_pos_target_neu_cm += (posvel_vel_target_neu_cms * position_control->get_dt_s()).topostype();
 
     // send position and velocity targets to position controller
-    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_cm.xy(), posvel_vel_target_cms.xy(), Vector2f());
-    float pz = posvel_pos_target_cm.z;
-    position_control->input_pos_vel_accel_U_cm(pz, posvel_vel_target_cms.z, 0);
-    posvel_pos_target_cm.z = pz;
+    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_neu_cm.xy(), posvel_vel_target_neu_cms.xy(), Vector2f());
+    float pz = posvel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(pz, posvel_vel_target_neu_cms.z, 0);
+    posvel_pos_target_neu_cm.z = pz;
 
     // run position controller
     position_control->NE_update_controller();
@@ -682,7 +682,7 @@ void ModeGuided::guided_angle_control_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0.0f,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         // initialise velocity controller
         position_control->D_init_controller();
@@ -693,7 +693,7 @@ void ModeGuided::guided_angle_control_run()
     float roll_in = guided_angle_state.roll_cd;
     float pitch_in = guided_angle_state.pitch_cd;
     float total_in = norm(roll_in, pitch_in);
-    float angle_max = MIN(attitude_control->get_althold_lean_angle_max_cd(), sub.aparm.angle_max);
+    float angle_max = MIN(attitude_control->get_althold_lean_angle_max_cd(), attitude_control->lean_angle_max_cd());
     if (total_in > angle_max) {
         float ratio = angle_max / total_in;
         roll_in *= ratio;
@@ -789,7 +789,7 @@ float ModeGuided::get_auto_heading()
     switch (sub.auto_yaw_mode) {
 
     case AUTO_YAW_ROI:
-        // point towards a location held in roi_WP
+        // point towards a location held in roi_WP_neu_cm
         return sub.get_roi_yaw();
         break;
 
@@ -850,7 +850,9 @@ void ModeGuided::guided_limit_init_time_and_pos()
     guided_limit.start_time_ms = AP_HAL::millis();
 
     // initialise start position from current position
-    guided_limit.start_pos_neu_cm = inertial_nav.get_position_neu_cm();
+    Vector3f pos_cm = (position_control->get_pos_estimate_NED_m() * 100.0f).tofloat();
+    pos_cm.z = -pos_cm.z;
+    guided_limit.start_pos_neu_cm = pos_cm;
 }
 
 // guided_limit_check - returns true if guided mode has breached a limit
@@ -863,7 +865,8 @@ bool ModeGuided::guided_limit_check()
     }
 
     // get current location
-    const Vector3f& curr_pos_neu_cm = inertial_nav.get_position_neu_cm();
+    Vector3f curr_pos_neu_cm = (position_control->get_pos_estimate_NED_m() * 100.0f).tofloat();
+    curr_pos_neu_cm.z = -curr_pos_neu_cm.z;
 
     // check if we have gone below min alt
     if (!is_zero(guided_limit.alt_min_cm) && (curr_pos_neu_cm.z < guided_limit.alt_min_cm)) {

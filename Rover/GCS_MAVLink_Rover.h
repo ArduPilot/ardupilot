@@ -2,11 +2,6 @@
 
 #include <GCS_MAVLink/GCS.h>
 
-  // set 0 in 4.6, remove feature in 4.7:
-#ifndef AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED
-#define AP_MAVLINK_MAV_CMD_NAV_SET_YAW_SPEED_ENABLED 0
-#endif
-
 #include "defines.h"
 
 class GCS_MAVLINK_Rover : public GCS_MAVLINK
@@ -20,9 +15,8 @@ protected:
     MAV_RESULT _handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_packet(const mavlink_command_int_t &packet, const mavlink_message_t &msg) override;
     MAV_RESULT handle_command_int_do_reposition(const mavlink_command_int_t &packet);
-    MAV_RESULT handle_command_nav_set_yaw_speed(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
-    void send_position_target_global_int() override;
+    bool get_target_location(Location &loc) const override;
 
     uint64_t capabilities() const override;
 
@@ -50,8 +44,6 @@ private:
     void handle_radio(const mavlink_message_t &msg);
     void handle_landing_target(const mavlink_landing_target_t &msg, uint32_t timestamp_ms) override;
 
-    void send_servo_out();
-
     // if we receive a message where the user has not masked out
     // acceleration from the input packet we send a curt message
     // informing them:
@@ -76,7 +68,7 @@ private:
 
 #if HAL_HIGH_LATENCY2_ENABLED
     uint8_t high_latency_tgt_heading() const override;
-    uint16_t high_latency_tgt_dist() const override;
+    uint16_t high_latency_tgt_dist_dam() const override;
     uint8_t high_latency_tgt_airspeed() const override;
     uint8_t high_latency_wind_speed() const override;
     uint8_t high_latency_wind_direction() const override;

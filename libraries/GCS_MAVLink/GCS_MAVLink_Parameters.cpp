@@ -277,9 +277,6 @@ static const ap_message STREAM_POSITION_msgs[] = {
 };
 
 static const ap_message STREAM_RAW_CONTROLLER_msgs[] = {
-#if APM_BUILD_TYPE(APM_BUILD_Rover)
-    MSG_SERVO_OUT,
-#endif  // #if APM_BUILD_TYPE(APM_BUILD_Rover)
 };
 
 static const ap_message STREAM_RC_CHANNELS_msgs[] = {
