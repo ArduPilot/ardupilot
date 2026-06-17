@@ -770,6 +770,17 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
+    // index 12 was ABIAS_HVR_Z, moved to INS_ACC_VRFB_Z
+
+    // @Param: AGL_VD_SPD
+    // @DisplayName: AGL KF velocity fusion max ground speed
+    // @Description: Maximum horizontal ground speed to fuse the AGL Kalman filter vertical velocity as a velocity-down observation. Set to -1 to use EK3_RNG_USE_SPD.
+    // @Range: -1.0 10.0
+    // @Increment: 0.5
+    // @User: Advanced
+    // @Units: m/s
+    AP_GROUPINFO("AGL_VD_SPD", 13, NavEKF3, _aglKfVelMaxSpd, -1.0f),
+
     AP_GROUPEND
 };
 

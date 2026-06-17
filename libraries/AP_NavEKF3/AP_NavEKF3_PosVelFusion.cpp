@@ -761,7 +761,9 @@ void NavEKF3_core::SelectVelPosFusion()
         aglKfValid && fuseHgtData && !fusingStationaryZeroVel &&
         !(useGpsVertVel || useExtNavVel)) {
         const ftype horizSpeedSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
-        if (horizSpeedSq < sq(MAX(frontend->_useRngSwSpd, 0.0f))) {
+        const ftype aglKfVelMaxSpd = (frontend->_aglKfVelMaxSpd < 0.0f) ?
+                                     frontend->_useRngSwSpd.get() : frontend->_aglKfVelMaxSpd.get();
+        if (horizSpeedSq < sq(MAX(aglKfVelMaxSpd, 0.0f))) {
             fuseVelVertData = true;
             velPosObs[2] = -aglKfV;   // AGL KF velocity is +up; the NED velD observation is its negative
             fusingAglKfVel = true;
