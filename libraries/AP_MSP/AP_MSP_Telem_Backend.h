@@ -243,12 +243,14 @@ protected:
     virtual MSP::MSPCommandResult msp_process_out_esc_sensor_data(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_rtc(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_rc(MSP::sbuf_t *dst);
+#if AP_MSP_VIDEOTX_ENABLED
     virtual MSP::MSPCommandResult msp_process_out_vtx_config(MSP::sbuf_t *src, MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_in_vtx_config(MSP::sbuf_t *src, MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_in_vtxtable_powerlevel(MSP::sbuf_t *src, MSP::sbuf_t *dst);
     // true when a VTX config push is due this scheduler tick (push on change,
     // then repeat MSP_VTX_CONFIG_PUSH_COUNT times)
     bool vtx_should_push_config();
+#endif
 
 private:
 #if AP_MSP_VIDEOTX_ENABLED
