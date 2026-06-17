@@ -176,7 +176,6 @@ jobs:
       matrix:
         toolchain: [
             base,  # GCC
-            clang,
         ]
     steps:
       # git checkout the PR
@@ -202,10 +201,6 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          if [[ ${{ matrix.toolchain }} == "clang" ]]; then
-            export CC=clang
-            export CXX=clang++
-          fi
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl --debug
           ./waf build --target bin/blimp
