@@ -745,6 +745,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody);
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
             prevFlowFuseTime_ms = imuSampleTime_ms;
+            if (flowVelResetCount < UINT8_MAX) {
+                flowVelResetCount++;
+            }
+            flowVelResetReason = 1;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset (axis lockout)", (unsigned)imu_index);
         }
     }
