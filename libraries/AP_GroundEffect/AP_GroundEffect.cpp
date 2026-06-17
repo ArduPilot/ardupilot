@@ -13,10 +13,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_GroundEffect.h"
+#include "AP_GroundEffect_config.h"
 
 #if AP_GROUNDEFFECT_ENABLED
 
+#include "AP_GroundEffect.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Terrain/AP_Terrain.h>
