@@ -250,7 +250,7 @@ struct PACKED log_XKF5 {
 
 
 // @LoggerMessage: XKFA
-// @Description: EKF3 AGL Kalman Filter state (optionally used in Optical Flow scaling)
+// @Description: EKF3 AGL Kalman Filter state (used for Optical Flow scaling and velocity-down fusion)
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
 // @Field: HAgl: AGL height estimate
@@ -258,6 +258,7 @@ struct PACKED log_XKF5 {
 // @Field: HAglStd: Std-dev of AGL height estimate
 // @Field: VAglStd: Std-dev of AGL velocity estimate
 // @Field: Valid: 1 when rangefinder has been fused within the last 5s
+// @Field: VFuse: 1 when the AGL velocity has been fused as a velocity-down observation within the last 250ms
 struct PACKED log_XKFA {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -267,6 +268,7 @@ struct PACKED log_XKFA {
     float hAglStd;
     float vAglStd;
     uint8_t valid;
+    uint8_t velFused;
 };
 
 // @LoggerMessage: XKFD
@@ -466,7 +468,7 @@ struct PACKED log_XKV {
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
     { LOG_XKFA_MSG, sizeof(log_XKFA), \
-      "XKFA","QBffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Valid", "s#mnmn-", "F------", true }, \
+      "XKFA","QBffffBB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Valid,VFuse", "s#mnmn--", "F-------", true }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \

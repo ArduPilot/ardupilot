@@ -270,6 +270,10 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     fusingStationaryZeroVel = false;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    fusingAglKfVel = false;
+    aglKfVelGateOpen = false;
+#endif
     inhibitWindStates = true;
     windStateIsObservable = false;
     treatWindStatesAsTruth = false;
@@ -295,6 +299,7 @@ void NavEKF3_core::InitialiseVariables()
     aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
     aglKfValid = false;
     lastAglRngFuseTime_ms = 0;
+    lastAglKfVelFuseTime_ms = 0;
 #endif
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;

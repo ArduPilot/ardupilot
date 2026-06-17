@@ -58,8 +58,12 @@ void NavEKF3_core::SelectFlowFusion()
     }
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    // Update the IMU-aided AGL KF every IMU step when enabled, regardless of flow/RF data presence.
-    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+    // Update the IMU-aided AGL KF when either consumer is enabled: optflow scaling
+    // or fusing its velocity as a velD observation. The load levelling guard at
+    // the top of this function skips a step where magnetometer fusion ran, so this
+    // does not run on every filter step.
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) ||
+        frontend->option_is_enabled(NavEKF3::Option::AglKfVelForVelD)) {
         UpdateAglKf();
     }
 #endif
