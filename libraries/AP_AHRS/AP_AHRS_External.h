@@ -61,6 +61,12 @@ public:
     // AHRS backend to be shared with the external AHRS
     bool set_origin(const Location &loc) override;
     bool get_origin(Location &ret) const override;
+
+private:
+
+    // ExternalAHRS sample time of the last sample fed to the wind
+    // estimator, used to feed it once per new sample:
+    uint32_t _last_wind_sample_us;
 };
 
 #endif
