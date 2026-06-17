@@ -441,6 +441,9 @@ void NavEKF3_core::setAidingMode()
                 // Reset time stamps
                 flowValidMeaTime_ms = imuSampleTime_ms;
                 prevFlowFuseTime_ms = imuSampleTime_ms;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+                flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
+#endif
             } else
 #endif
                 if (readyToUseBodyOdm()) {
