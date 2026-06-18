@@ -290,7 +290,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board sitl
+          ./waf configure --board sitl --debug
           ./waf build --target bin/arducopter-heli
           ccache -s
           ccache -z
