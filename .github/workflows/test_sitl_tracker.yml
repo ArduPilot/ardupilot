@@ -165,19 +165,18 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read  # checkout
-  actions: write  # save-ccache deletes the previous cache entry before saving
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
 
 jobs:
-  build:
+  build-test:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
-    strategy:
-      fail-fast: false  # don't cancel if a job from the matrix fails
-      matrix:
-        toolchain: [
-            base,  # GCC
-        ]
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.1.3
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+
     steps:
       # git checkout the PR
       - uses: actions/checkout@v6
@@ -185,8 +184,8 @@ jobs:
           submodules: 'recursive'
       - uses: ./.github/actions/setup-ccache
         with:
-          key-suffix: ${{ matrix.toolchain }}
-      - name: build tracker ${{ matrix.toolchain }}
+          key-suffix: base
+      - name: build tracker
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
@@ -197,32 +196,10 @@ jobs:
           ccache -z
       - uses: ./.github/actions/save-ccache
         with:
-          key-suffix: ${{ matrix.toolchain }}
-
-  autotest:
-    needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
-    runs-on: ubuntu-22.04
-    container:
-      image: ardupilot/ardupilot-dev-base:v0.1.3
-      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
-    strategy:
-      fail-fast: false  # don't cancel if a job from the matrix fails
-      matrix:
-        config: [
-            sitltest-tracker
-        ]
-
-    steps:
-      # git checkout the PR
-      - uses: actions/checkout@v6
-        with:
-          submodules: 'recursive'
-      - uses: ./.github/actions/setup-ccache
-        with:
           key-suffix: base
-      - name: test ${{matrix.config}}
+      - name: test sitltest-tracker
         env:
-          CI_BUILD_TARGET: ${{matrix.config}}
+          CI_BUILD_TARGET: sitltest-tracker
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
@@ -233,7 +210,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-           name: ${{ github.workflow }}-fail-${{matrix.config}}
+           name: ${{ github.workflow }}-fail-sitltest-tracker
            path: |
              /tmp/buildlogs
              /__w/ardupilot/ardupilot/logs
@@ -246,7 +223,7 @@ jobs:
       - name: Archive .bin artifacts
         uses: actions/upload-artifact@v7
         with:
-           name: ${{ github.workflow }}-BIN-${{matrix.config}}
+           name: ${{ github.workflow }}-BIN-sitltest-tracker
            path: /__w/ardupilot/ardupilot/logs
            retention-days: 7
 
