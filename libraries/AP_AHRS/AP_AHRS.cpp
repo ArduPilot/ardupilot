@@ -1039,6 +1039,27 @@ bool AP_AHRS::use_compass(void)
     return active_backend->use_compass();
 }
 
+// returns a yaw suitable for aligning an external-nav system to the
+// vehicle's yaw
+bool AP_AHRS::get_extnav_alignment_yaw_rad(float &yaw_rad) const
+{
+    if (active_estimates->attitude_valid && !active_estimates->using_extnav_for_yaw) {
+        // ahrs is healthy and whatever it's using is not from us, so
+        // we can directly use the AHRS result to align ourselves:
+        yaw_rad = active_estimates->yaw_rad;;
+        return true;
+    }
+
+    const auto *secondary_estimates = get_secondary_estimates();
+    if (secondary_estimates != nullptr &&
+        secondary_estimates->attitude_valid && !secondary_estimates->using_extnav_for_yaw) {
+        yaw_rad = secondary_estimates->yaw_rad;
+        return true;
+    }
+
+    return false;
+}
+
 const AP_AHRS_Backend::Estimates *AP_AHRS::get_secondary_estimates() const
 {
     EKFType secondary_ekf_type;
@@ -2624,19 +2645,6 @@ bool AP_AHRS::using_noncompass_for_yaw(void) const
     }
 #endif
     return active_estimates->using_noncompass_for_yaw;
-}
-
-// check if external nav is providing yaw
-bool AP_AHRS::using_extnav_for_yaw(void) const
-{
-#if AP_AHRS_DCM_ENABLED && HAL_NAVEKF3_AVAILABLE
-    // FIXME: DCM uses EKF3's answer (which is not necessarily the
-    // configured type)
-    if (active_estimates == &dcm_estimates) {
-        return ekf3_estimates.using_extnav_for_yaw;
-    }
-#endif
-    return active_estimates->using_extnav_for_yaw;
 }
 
 // set and save the alt noise parameter value
