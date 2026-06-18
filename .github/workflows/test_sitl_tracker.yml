@@ -164,6 +164,10 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read  # checkout
+  actions: write  # save-ccache deletes the previous cache entry before saving
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -179,21 +183,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
+          key-suffix: ${{ matrix.toolchain }}
       - name: build tracker ${{ matrix.toolchain }}
         shell: bash
         run: |
@@ -203,6 +195,9 @@ jobs:
           ./waf build --target bin/antennatracker
           ccache -s
           ccache -z
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}
 
   autotest:
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
@@ -222,21 +217,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache/restore@v5
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-base-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-base-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
+          key-suffix: base
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
