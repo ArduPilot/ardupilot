@@ -23,6 +23,15 @@
 
 #include "AP_AHRS_config.h"
 
+#if AP_AHRS_ENABLED
+// includes for the AP_AHRS_Backend wind/airspeed estimation methods,
+// which live in this file but are compiled whenever AHRS is enabled:
+#include "AP_AHRS.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Baro/AP_Baro.h>
+#endif
+
 #if AP_AHRS_DCM_ENABLED
 
 #include "AP_AHRS.h"
@@ -1103,11 +1112,15 @@ AP_AHRS_DCM::drift_correction(float deltat)
 // update our wind speed estimate
 void AP_AHRS_DCM::estimate_wind(void)
 {
-    estimate_wind(_last_velocity, _body_dcm_matrix.colx());
+    AP_AHRS_Backend::estimate_wind(_last_velocity, _body_dcm_matrix.colx());
 }
 
+#endif  // AP_AHRS_DCM_ENABLED
+
+#if AP_AHRS_ENABLED
+
 // update our wind speed estimate
-void AP_AHRS_DCM::estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection)
+void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection)
 {
     if (!AP::ahrs().get_wind_estimation_enabled()) {
         return;
@@ -1184,12 +1197,16 @@ void AP_AHRS_DCM::estimate_wind(const Vector3f &velocity, const Vector3f &fusela
 }
 
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
-void AP_AHRS_DCM::set_external_wind_estimate(float speed, float direction) {
+void AP_AHRS_Backend::set_external_wind_estimate(float speed, float direction) {
     _wind.x = -cosf(radians(direction)) * speed;
     _wind.y = -sinf(radians(direction)) * speed;
     _wind.z = 0;
 }
 #endif
+
+#endif  // AP_AHRS_ENABLED
+
+#if AP_AHRS_DCM_ENABLED
 
 // return our current position estimate using
 // dead-reckoning or GPS
