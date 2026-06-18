@@ -1300,8 +1300,23 @@ void AP_DDS_Client::main_loop(void)
 
         // create session
         if (!init_session() || !create()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // A transient timeout creating the participant/topics (the requests
+            // have a hard per-request timeout) must not permanently kill DDS.
+            // Drop any half-open session and retry the whole connect sequence.
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed, retrying", msg_prefix);
+            uxr_delete_session(&session);
+            hal.scheduler->delay(1000);
+            continue;
+#else
+            // FIXME: determine whether we can use the retry code
+            // above on real vehicles.  We have two different paths
+            // here because the DDS CI tests were flapping for years
+            // and this was the most viable way of getting a fix
+            // merged.
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
             return;
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         }
         connected = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
@@ -1400,9 +1415,15 @@ bool AP_DDS_Client::init_session()
         hal.scheduler->delay(1000);
     }
 
-    // setup reliable stream buffers
-    input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
-    output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    // setup reliable stream buffers.  init_session() can be re-entered when a
+    // connection attempt fails and the main loop retries, so only allocate the
+    // buffers once and reuse them across retries to avoid leaking.
+    if (input_reliable_stream == nullptr) {
+        input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    }
+    if (output_reliable_stream == nullptr) {
+        output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    }
     if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;

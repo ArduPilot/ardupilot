@@ -12934,7 +12934,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
-        util.build_SITL('tool/Replay', clean=False, configure=False)
+        # configure for the sitl board explicitly: another test (e.g. a
+        # CAN/periph test) may have left the shared build directory
+        # configured for a different board, which would fail this build:
+        util.build_SITL('tool/Replay', board='sitl', clean=False, configure=True)
         self.set_parameters({
             "LOG_DARM_RATEMAX": 0,
             "LOG_FILE_RATEMAX": 0,
@@ -16737,6 +16740,8 @@ RTL_ALT_M 111
                 'AHRS_TRIM_Y': -0.1,
             })
             self.takeoff(mode=mode)
+            self.progress("Ensuring the bad trims actually cause a drift")
+            self.wait_groundspeed(1.5, 1000, timeout=30)
             self.set_rc(9, 2000)
             tstart = self.get_sim_time()
             while True:
@@ -16745,16 +16750,17 @@ RTL_ALT_M 111
                     raise ValueError(f"Failed to reduce trims in {mode}!")
                 lpn = self.assert_receive_message('LOCAL_POSITION_NED')
                 delta = 40
+                deadband = 0.1  # m/s; don't trim against residual drift
                 roll_input = 1500
-                if lpn.vx > 0:
+                if lpn.vx > deadband:
                     roll_input -= delta
-                elif lpn.vx < 0:
+                elif lpn.vx < -deadband:
                     roll_input += delta
 
                 pitch_input = 1500
-                if lpn.vy > 0:
+                if lpn.vy > deadband:
                     pitch_input += delta
-                elif lpn.vy < 0:
+                elif lpn.vy < -deadband:
                     pitch_input -= delta
                 self.set_rc_from_map({
                     1: roll_input,
@@ -16767,11 +16773,13 @@ RTL_ALT_M 111
                     trim_x = self.get_parameter('AHRS_TRIM_X', verbose=False)
                     trim_y = self.get_parameter('AHRS_TRIM_Y', verbose=False)
                     self.progress(f"trim_x={trim_x} trim_y={trim_y}")
-                    if abs(trim_x) < 0.01 and abs(trim_y) < 0.01:
+                    if abs(trim_x) < 0.005 and abs(trim_y) < 0.005:
                         self.progress("Good AHRS trims")
-                        self.progress(f"vx={lpn.vx} vy={lpn.vy}")
-                        if abs(lpn.vx) > 1 or abs(lpn.vy) > 1:
-                            raise NotAchievedException("Velocity after trimming?!")
+                        self.set_rc_from_map({
+                            1: 1500,
+                            2: 1500,
+                        }, quiet=True)
+                        self.wait_groundspeed(0, 0.3, minimum_duration=5, timeout=30)
                         break
             self.context_collect('STATUSTEXT')
             self.set_rc(9, 1000)
