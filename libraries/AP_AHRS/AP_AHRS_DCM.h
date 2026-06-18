@@ -74,14 +74,6 @@ public:
         return _error_yaw;
     }
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool airspeed_EAS(float &airspeed_ret) const override;
-
-    // return an airspeed estimate if available. return true
-    // if we have an estimate from a specific sensor index
-    bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
-
     bool            use_compass() override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
@@ -146,13 +138,6 @@ private:
 
     // update our wind estimate from the latest GPS velocity and attitude:
     void estimate_wind(void);
-
-    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
-    //               airspeed as filled-in by an enabled airspeed sensor
-    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
-    //               Or if none of the above, fills-in using the previous airspeed estimate
-    // Return false: if we are using the previous airspeed estimate
-    bool get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const;
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;
@@ -234,10 +219,6 @@ private:
 
     // whether we have a position estimate
     bool _have_position;
-
-    // last true-airspeed found via the wind triangle, used for
-    // dead-reckoning and synthetic airspeed:
-    float _last_airspeed_TAS;
 
     uint32_t _last_consistent_heading;
 

@@ -283,14 +283,19 @@ public:
 #endif
 
     // return an airspeed estimate if available. return true
-    // if we have an estimate
-    virtual bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
-    virtual bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
+    // if we have an estimate.  have_velocity_source is the backend's
+    // published Estimates::have_velocity_source, gating the synthetic
+    // (wind-triangle) estimate.
+    virtual bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED;
+
+    // return an airspeed estimate if available. return true
+    // if we have an estimate from a specific sensor index
+    virtual bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_TAS(float &airspeed_ret) const WARN_IF_UNUSED {
-        if (!airspeed_EAS(airspeed_ret)) {
+    bool airspeed_TAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED {
+        if (!airspeed_EAS(have_velocity_source, airspeed_ret)) {
             return false;
         }
         airspeed_ret *= get_EAS2TAS();
@@ -364,7 +369,18 @@ protected:
     // valid estimate.  New consumers should gate on it.
     bool _have_wind_estimate;
 
+    // last true-airspeed found via the wind triangle, used for
+    // dead-reckoning and synthetic airspeed:
+    float _last_airspeed_TAS;
+
 private:
+
+    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
+    //               airspeed as filled-in by an enabled airspeed sensor
+    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
+    //               Or if none of the above, fills-in using the previous airspeed estimate
+    // Return false: if we are using the previous airspeed estimate
+    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
 
     // support for wind estimation
     Vector3f _last_fuse;
