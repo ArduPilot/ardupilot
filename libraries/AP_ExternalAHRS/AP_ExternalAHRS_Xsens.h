@@ -301,7 +301,7 @@ private:
     static constexpr uint32_t GNSS_PVT_TIMEOUT_MS = 5000; // Consider stale after 5 seconds
 
     // GPS status buffering
-    AP_GPS::GPS_Status last_valid_fix_type = AP_GPS::NO_FIX;
+    AP_GPS_FixType last_valid_fix_type = AP_GPS_FixType::NONE;
     uint8_t last_satellites_in_view = 0;
     float last_horizontal_pos_accuracy = 99.9f;
     float last_vertical_pos_accuracy = 99.9f;
@@ -374,7 +374,7 @@ private:
     
     // Utility functions
     uint64_t convert_utc_time_to_unix_microseconds(const UtcTime &utc_time) const;
-    AP_GPS::GPS_Status convert_fix_type(uint8_t fix_type, uint8_t flags) const;
+    AP_GPS_FixType convert_fix_type(uint8_t fix_type, uint8_t flags) const;
     void calculate_gps_time_from_utc(uint16_t year, uint8_t month, uint8_t day, 
                                    uint8_t hour, uint8_t minute, uint8_t second, 
                                    int32_t nano, uint16_t &gps_week, uint32_t &ms_tow) const;
