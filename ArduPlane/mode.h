@@ -876,6 +876,8 @@ private:
         climb,
         RTL,
     } submode;
+
+    bool enter_should_just_qland() const;
 };
 
 class ModeQAcro : public Mode
