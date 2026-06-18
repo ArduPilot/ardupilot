@@ -188,10 +188,11 @@ jobs:
           key-suffix: ${{ matrix.toolchain }}
       - name: build plane ${{ matrix.toolchain }}
         shell: bash
+        # Need --num-aux-imus=2 to match build_ci.sh build phase
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
-          ./waf configure --board sitl --debug
+          ./waf configure --board sitl --debug --num-aux-imus=2
           ./waf build --target bin/arduplane
           ccache -s
           ccache -z
