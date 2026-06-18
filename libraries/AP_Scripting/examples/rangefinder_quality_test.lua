@@ -17,7 +17,7 @@
 -- when it is read. There is a periodic task that copies the set distance to
 -- the state structure that it is read from. If UPDATE_PERIOD_MS is too short this periodic
 -- task might not get a chance to run. A value of 25 seems to be too quick for sub.
-local UPDATE_PERIOD_MS = 50
+local UPDATE_PERIOD_MS = 100
 local TIMEOUT_MS = 5000
 
 -- These strings must match the strings used by the test driver for interpreting the output from this test.
