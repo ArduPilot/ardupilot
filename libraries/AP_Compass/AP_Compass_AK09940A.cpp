@@ -59,8 +59,8 @@ extern const AP_HAL::HAL& hal;
 #        define    AK09940A_EXT_TRIGGER_MODE            0x18
 #        define    AK09940A_SENSORDRIVE_LP1             (0x00)
 #        define    AK09940A_SENSORDRIVE_LP2             (0x01)
-#        define    AK09940A_SENSORDRIVE_LN1             (0x10)
-#        define    AK09940A_SENSORDRIVE_LN2             (0x11)
+#        define    AK09940A_SENSORDRIVE_LN1             (0x02)
+#        define    AK09940A_SENSORDRIVE_LN2             (0x03)
 #        define    AK09940A_FIFO                        0x80
 
 #define AK09940A_CNTL4                                  0x33
@@ -107,8 +107,8 @@ bool AP_Compass_AK09940A::init()
         return false;
     }
     
+    _setup_mode(AK09940A_CONTINUOUS_MODE4);
     _set_sensordrive(AK09940A_SENSORDRIVE_LN1);
-    _setup_mode(AK09940A_CONTINUOUS_MODE4); // Set continuous mode 100Hz
 
     /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_AK09940A);
@@ -164,7 +164,7 @@ void AP_Compass_AK09940A::_update()
         (float) combine(data.magz[0], data.magz[1], data.magz[2]) * AK09940A_LSB_TO_MILLIGAUSS_SCALE
     };
     
-    accumulate_sample(raw_field, _compass_instance);
+    accumulate_sample(raw_field);
 }
 
 bool AP_Compass_AK09940A::_check_id()
