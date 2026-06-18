@@ -78,6 +78,8 @@ protected:
     float k_m;
     float drag_constant;
     float drag_gyr_constant;
+    float drag_lin_constant;
+    float drag_gyr_lin_constant;
 
     bool motorblimp = false;
 
