@@ -251,7 +251,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-           name: fail-${{matrix.config}}
+           name: ${{ github.workflow }}-fail-${{matrix.config}}
            path: |
              /tmp/buildlogs
              /__w/ardupilot/ardupilot/logs
@@ -264,7 +264,7 @@ jobs:
       - name: Archive .bin artifacts
         uses: actions/upload-artifact@v7
         with:
-           name: BIN-${{matrix.config}}
+           name: ${{ github.workflow }}-BIN-${{matrix.config}}
            path: /__w/ardupilot/ardupilot/logs
            retention-days: 7
 

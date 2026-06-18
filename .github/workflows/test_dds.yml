@@ -193,6 +193,6 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-           name: fail-${{matrix.config}}
+           name: ${{ github.workflow }}-fail-${{matrix.config}}
            path: /tmp/buildlogs
            retention-days: 14
