@@ -198,16 +198,10 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
     posResetNE.x = stateStruct.position.x;
     posResetNE.y = stateStruct.position.y;
 
-    // reset the corresponding covariances
-    zeroStatesVarCov(7, 8);
-
     // handle unknown accuracy
     if (isnan(posAccuracy)) {
         posAccuracy = 0.0f; // will be ignored due to MAX below
     }
-
-    // set the variances using the position measurement noise parameter
-    P[7][7] = P[8][8] = sq(MAX(posAccuracy,frontend->_gpsHorizPosNoise));
 
     // Correct the position for time delay relative to fusion time horizon assuming a constant velocity
     // Don't use data more than 5 seconds old
