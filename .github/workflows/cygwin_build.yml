@@ -142,24 +142,20 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read  # checkout; build adds actions:write per-job
+
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: write  # save/prune ccache on master
     runs-on: 'windows-latest'
 
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        shell: bash
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-          WORKFLOWNAME="${{github.workflow}}"
-          NAME_DASHED=${WORKFLOWNAME//+( )/_}
-          echo "cache-key=${NAME_DASHED}" >> $GITHUB_OUTPUT
-
       - uses: cygwin/cygwin-install-action@v6
         with:
           packages: cygwin64 gcc-g++=13.4.0-1 ccache python312 python312-pip git procps gettext
@@ -181,12 +177,7 @@ jobs:
           echo "export CCACHE_MAXSIZE=400M" >> ~/ccache.conf &&
           source ~/ccache.conf &&
           ccache -s
-      - name: ccache cache files
-        uses: actions/cache@v5
-        with:
-          path: D:/a/ardupilot/ardupilot/ccache
-          key: ${{ steps.ccache_cache_timestamp.outputs.cache-key }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{ steps.ccache_cache_timestamp.outputs.cache-key }}-ccache-  # restore ccache from either previous build on this branch or on base branch
+      - uses: ./.github/actions/setup-ccache
       - name: Prepare Python environment
         env:
           PATH: /usr/bin:$(cygpath ${SYSTEMROOT})/system32
@@ -213,6 +204,7 @@ jobs:
           source ~/ccache.conf &&
           Tools/scripts/cygwin_build.sh &&
           ccache -s
+      - uses: ./.github/actions/save-ccache
 
       - name: Check build files
         id: check_files

@@ -1,0 +1,72 @@
+name: save-ccache
+description: >
+  Save a fresh ccache entry then delete stale ones. Only runs on pushes to
+  master — PR builds restore the cache for fast builds but do not write back,
+  keeping total cache storage within the 10 GB limit.
+  Save happens before delete so a cancellation between the two steps never
+  leaves master with no cache. The job needs "permissions: actions: write".
+
+inputs:
+  key-suffix:
+    description: Cache key suffix, matching the setup-ccache call in the same job.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: save ccache (unix)
+      if: (github.ref == 'refs/heads/master' && github.event_name == 'push') && runner.os != 'Windows'
+      uses: actions/cache/save@v5
+      with:
+        path: ~/.ccache
+        key: ${{ github.workflow }}-ccache-${{ inputs.key-suffix }}-master-${{ github.run_id }}
+
+    - name: save ccache (windows)
+      if: (github.ref == 'refs/heads/master' && github.event_name == 'push') && runner.os == 'Windows'
+      uses: actions/cache/save@v5
+      with:
+        path: D:/a/${{ github.event.repository.name }}/${{ github.event.repository.name }}/ccache
+        key: ${{ github.workflow }}-ccache-${{ inputs.key-suffix }}-master-${{ github.run_id }}
+
+    - name: delete stale ccache entries
+      if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WORKFLOW: ${{ github.workflow }}
+        KEY_SUFFIX: ${{ inputs.key-suffix }}
+        GIT_REF: ${{ github.ref }}
+        RUN_ID: ${{ github.run_id }}
+        REPOSITORY: ${{ github.repository }}
+      run: |
+        python3 - <<'EOF'
+        import os, urllib.parse, urllib.request, json
+
+        token      = os.environ["GH_TOKEN"]
+        workflow   = os.environ["WORKFLOW"]
+        key_suffix = os.environ["KEY_SUFFIX"]
+        git_ref    = os.environ["GIT_REF"]
+        run_id     = os.environ["RUN_ID"]
+        repository = os.environ["REPOSITORY"]
+
+        prefix      = f"{workflow}-ccache-{key_suffix}-master-"
+        current_key = f"{prefix}{run_id}"
+        base_url    = f"https://api.github.com/repos/{repository}/actions/caches"
+        headers     = {"Authorization": f"Bearer {token}", "X-GitHub-Api-Version": "2022-11-28"}
+
+        params = urllib.parse.urlencode({"key": prefix, "ref": git_ref, "per_page": 100})
+        req = urllib.request.Request(f"{base_url}?{params}", headers=headers)
+        with urllib.request.urlopen(req) as r:
+            caches = json.load(r)["actions_caches"]
+
+        for cache in caches:
+            if cache["key"] == current_key:
+                continue
+            params = urllib.parse.urlencode({"key": cache["key"], "ref": git_ref})
+            req = urllib.request.Request(f"{base_url}?{params}", method="DELETE", headers=headers)
+            try:
+                urllib.request.urlopen(req)
+                print(f"Deleted stale cache: {cache['key']}")
+            except Exception as e:
+                print(f"Failed to delete {cache['key']}: {e}")
+        EOF
