@@ -1038,10 +1038,16 @@ bool AP_Mount_Backend::get_angle_target_to_location(const Location &loc, MountAn
     // calculate roll, pitch, yaw angles
     angle_rad.roll = 0;
     angle_rad.pitch = atan2f(GPS_vector_z, target_distance);
-    angle_rad.yaw = atan2f(GPS_vector_x, GPS_vector_y);
-    angle_rad.yaw_is_ef = true;
     angle_rad.pitch_is_ef = true;
     angle_rad.roll_is_ef = true;
+
+    if (has_pan_control()) {
+        angle_rad.yaw = atan2f(GPS_vector_x, GPS_vector_y);
+        angle_rad.yaw_is_ef = true;
+    } else {
+        angle_rad.yaw = 0;
+        angle_rad.yaw_is_ef = false;
+    }
 
     return true;
 }
