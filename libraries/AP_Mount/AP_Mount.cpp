@@ -466,7 +466,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
     const Vector3f att_rate_degs {
         packet.angular_velocity_x,
         packet.angular_velocity_y,
-        packet.angular_velocity_y
+        packet.angular_velocity_z
     };
 
     // ensure that we are only demanded to a specific attitude or to
