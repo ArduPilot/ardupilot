@@ -27,6 +27,7 @@
 #include "MAVLink_routing.h"
 
 #include <AP_ADSB/AP_ADSB.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -49,18 +50,26 @@ MAVLink_routing::MAVLink_routing(void) : num_routes(0) {}
 
     1a) the message has no target_system field
 
-    1b) the message has a target_system of zero
+    1b) the message has a target_system of zero and has no
+        target_component field, a target_component of zero or one of
+        the flight controllers component IDs
 
     1c) the message has the flight controllers target system and has no
        target_component field
 
     1d) the message has the flight controllers target system and has
-       the flight controllers target_component 
+       one of the flight controllers component IDs as its
+       target_component.  As well as its own component ID the flight
+       controller answers to the IDs of components it sends messages
+       as (e.g. MAV_COMP_ID_LOG)
 
-    1e) the message has the flight controllers target system and the
-        flight controller has not seen any messages on any of its links
-        from a system that has the messages
-        target_system/target_component combination
+    1e) the MAV_OPTIONS bit ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS is set
+        and the message has a target_system of zero, or has the flight
+        controllers target system and the flight controller has not
+        seen any messages on any of its links from a system that has
+        the messages target_system/target_component combination.  This
+        is the historical behaviour; by default a message addressed to
+        another component is not processed locally
 
   When a flight controller receives a message it should forward it
   onto another different link if any of these conditions hold for that
@@ -171,6 +180,33 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
     return forward(in_link, msg);
 }
 
+/*
+  return true if compid is one of our component IDs.  As well as the
+  autopilot's own component ID we answer to the IDs of components we
+  send messages as.
+
+  Note that a message addressed to our system and one of these
+  component IDs is taken to be for us alone, so it is not forwarded;
+  if something else on another link uses the same component ID (e.g. a
+  companion computer's own MAV_COMP_ID_LOG) then it will not see
+  messages addressed to that ID.  A message addressed to all systems
+  is still forwarded as usual.
+ */
+static bool compid_is_ours(int16_t compid)
+{
+    if (compid == mavlink_system.compid) {
+        return true;
+    }
+#if HAL_LOGGING_MAVLINK_ENABLED
+    // AP_Logger_MAVLink sends log blocks as MAV_COMP_ID_LOG, so the
+    // REMOTE_LOG_BLOCK_STATUS replies are addressed to that component
+    if (compid == MAV_COMP_ID_LOG) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                               const mavlink_message_t &msg)
 {
@@ -182,8 +218,8 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
     bool broadcast_system = (target_system == 0 || target_system == -1);
     bool broadcast_component = (target_component == 0 || target_component == -1);
     bool match_system = broadcast_system || (target_system == mavlink_system.sysid);
-    bool match_component = match_system && (broadcast_component || 
-                                            (target_component == mavlink_system.compid));
+    bool match_component = match_system && (broadcast_component ||
+                                            compid_is_ours(target_component));
     bool process_locally = match_system && match_component;
 
     // Don't forward data from a private channel unless a Gopro
@@ -200,11 +236,10 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
     }
 
     // Unicast links still learn routes and process broadcasts locally, but
-    // must not propagate broadcasts.
-    if (in_link.option_enabled(GCS_MAVLINK::Option::UNICAST) &&
-        (broadcast_system || broadcast_component)) {
-        return process_locally || broadcast_system;
-    }
+    // must not propagate broadcasts.  Whether such a broadcast is processed
+    // locally is decided below, just as for any other link.
+    const bool forward_from_in_link = !(in_link.option_enabled(GCS_MAVLINK::Option::UNICAST) &&
+                                        (broadcast_system || broadcast_component));
 
     if (process_locally && !broadcast_system && !broadcast_component) {
         // nothing more to do - it can only be for us
@@ -238,7 +273,7 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                                   target_component == routes[i].compid ||
                                   !match_system))) {
 
-            if (&in_link != out_link && !sent_to_chan[routes[i].channel]) {
+            if (forward_from_in_link && &in_link != out_link && !sent_to_chan[routes[i].channel]) {
                 if (out_link->check_payload_size(msg.len)) {
 #if ROUTING_DEBUG
                     ::printf("fwd msg %u from chan %u on chan %u sysid=%lld compid=%d\n",
@@ -256,8 +291,14 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
         }
     }
 
-    if ((!forwarded && match_system) ||
-        broadcast_system) {
+    if (!match_component &&
+        gcs().option_is_enabled(GCS::Option::ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS) &&
+        ((!forwarded && match_system) || broadcast_system)) {
+        // the message is explicitly addressed to another component.  By
+        // default we do not act on it; ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS
+        // restores the historical behaviour of handling it ourselves if
+        // it is for our system and we found nowhere to forward it to, or
+        // if it is for all systems (whether or not we forwarded it).
         process_locally = true;
     }
 
