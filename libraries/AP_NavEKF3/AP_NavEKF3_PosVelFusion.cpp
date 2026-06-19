@@ -1421,8 +1421,22 @@ void NavEKF3_core::selectHeightForFusion()
         // using range finder data
         // correct for tilt using a flat earth model
         if (prevTnb.c.z >= 0.7) {
-            // calculate height above ground
-            hgtMea  = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+            // calculate height above ground and its observation noise
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+                // Fuse the IMU-aided AGL KF height in place of the raw rangefinder: it is the
+                // same tilt-compensated range, de-glitched, and its covariance already folds
+                // in terrain-gradient uncertainty, so it does not need the extra term below.
+                hgtMea = MAX(aglKfH, rngOnGnd);
+                posDownObsNoise = MAX(aglKfP[0][0], sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f)));
+            } else
+#endif
+            {
+                hgtMea = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+                posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
+                // add uncertainty created by terrain gradient and vehicle tilt
+                posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
+            }
             // correct for terrain position relative to datum
             hgtMea -= terrainState;
             // correct sensor so that local position height adjusts to match GPS
@@ -1433,10 +1447,6 @@ void NavEKF3_core::selectHeightForFusion()
             velPosObs[5] = -hgtMea;
             // enable fusion
             fuseHgtData = true;
-            // set the observation noise
-            posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
-            // add uncertainty created by terrain gradient and vehicle tilt
-            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
         } else {
             // disable fusion if tilted too far
             fuseHgtData = false;
