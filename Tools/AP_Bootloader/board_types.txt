@@ -343,6 +343,8 @@ AP_HW_CSKY_AVEGALITER03              1217
 AP_HW_AMOV_FLYCORE                   1218
 AP_HW_ORBITH743v2                    1219
 
+AP_HW_SIMPLIFLYH7                    1215
+
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
 
