@@ -6539,6 +6539,30 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
         self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
 
+    def ParamSetForNonAutopilotComponent(self):
+        '''ensure a PARAM_SET addressed to a non-autopilot component is ignored'''
+        # a PARAM_SET is not a command, so this shows the component gating
+        # covers more than just COMMAND_INT/COMMAND_LONG: a parameter set
+        # addressed to a component which is not the autopilot's must not be
+        # acted upon.
+        non_autopilot_compid = 142
+        param = "CRUISE_SPEED"
+        original = self.get_parameter(param)
+        self.drain_mav()
+        self.mav.mav.param_set_send(
+            self.sysid_thismav(),
+            non_autopilot_compid,
+            param.encode('ascii'),
+            original + 1,
+            mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        self.delay_sim_time(2)
+        current = self.get_parameter(param)
+        if abs(current - original) > 0.0001:
+            raise NotAchievedException(
+                "PARAM_SET addressed to component %u was acted upon "
+                "(%s changed %f -> %f)" %
+                (non_autopilot_compid, param, original, current))
+
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
         self.change_mode('GUIDED')
@@ -7619,6 +7643,7 @@ return update()
             self.PrivateChannel,
             self.CommandForNonAutopilotComponent,
             self.CommandForNonAutopilotComponentIgnored,
+            self.ParamSetForNonAutopilotComponent,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
