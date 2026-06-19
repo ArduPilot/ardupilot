@@ -64,6 +64,11 @@
 #define AP_SERIALMANAGER_IMUOUT_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && AP_INERTIALSENSOR_ENABLED
 #endif
 
+// enable compile-time checks that each serial port's default protocol is compiled in (see AP_SerialManager_default_protocol_check.cpp)
+#ifndef AP_SERIALMANAGER_DEFAULTS_CHECKS_ENABLED
+#define AP_SERIALMANAGER_DEFAULTS_CHECKS_ENABLED 0
+#endif
+
 // serial ports registered by AP_Networking will use IDs starting at 21 for the first port
 #define AP_SERIALMANAGER_NET_PORT_1         21 // NET_P1_*
 
