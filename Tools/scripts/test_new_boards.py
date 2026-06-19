@@ -14,6 +14,7 @@ import optparse
 import os
 import re
 import shutil
+import tempfile
 
 from dataclasses import dataclass
 from typing import Set
@@ -27,6 +28,13 @@ class TestNewBoards(BuildScriptBase):
     def __init__(self, master_branch: str = "master") -> None:
         super().__init__()
         self.master_branch: str = master_branch
+
+        # the serial default-protocol checks are off by default; enable them
+        # when building newly-added boards so a board cannot pin a serial port
+        # default to a protocol it does not compile in
+        self.extra_hwdef_path: str = os.path.join(tempfile.gettempdir(), "test_new_boards_extra.hwdef")
+        with open(self.extra_hwdef_path, "w") as f:
+            f.write("define AP_SERIALMANAGER_DEFAULTS_CHECKS_ENABLED 1\n")
 
     def progress_prefix(self) -> str:
         '''pretty-print progress'''
@@ -98,7 +106,8 @@ class TestNewBoards(BuildScriptBase):
             )
 
     def build_board(self, board : board_list.Board):
-        self.run_waf(["configure", "--board", board.name], show_output=False)
+        self.run_waf(["configure", "--board", board.name,
+                      "--extra-hwdef", self.extra_hwdef_path], show_output=False)
         if board.is_ap_periph:
             self.run_waf(["AP_Periph"], show_output=False)
         else:
