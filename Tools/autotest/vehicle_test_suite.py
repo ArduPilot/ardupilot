@@ -14929,6 +14929,25 @@ switch value'''
         # heading seemingly indefinitely.
         self.reboot_sitl()
 
+    def build_replay(self):
+        '''build the Replay tool with the same configuration as the vehicle
+        binary under test.
+
+        The Replay tool runs the EKF over the logged inputs and the test
+        requires its output to match the live solution bit-for-bit, so the
+        tool must be compiled identically to the vehicle.  Any compile-time
+        difference (num_aux_imus, ekf_single, postype_single, debug, ...)
+        changes the EKF result and makes replay diverge from the live log.
+
+        configure=True is forced because a preceding test (e.g. a CAN/periph
+        test) may have left the shared build directory configured for a
+        different board; we reconfigure for the sitl board but keep the
+        vehicle's configure options.'''
+        build_opts = copy.copy(self.build_opts)
+        build_opts["clean"] = False
+        build_opts["configure"] = True
+        util.build_SITL('tool/Replay', board='sitl', **build_opts)
+
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
         util.run_cmd(
