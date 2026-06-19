@@ -257,6 +257,8 @@ struct PACKED log_XKF5 {
 // @Field: VAgl: AGL velocity estimate
 // @Field: HAglStd: Std-dev of AGL height estimate
 // @Field: VAglStd: Std-dev of AGL velocity estimate
+// @Field: Bias: AGL KF accel-Z bias estimate
+// @Field: BiasStd: Std-dev of accel-Z bias estimate
 // @Field: Valid: 1 when rangefinder has been fused within the last 5s
 struct PACKED log_XKFA {
     LOG_PACKET_HEADER;
@@ -266,6 +268,8 @@ struct PACKED log_XKFA {
     float vAgl;
     float hAglStd;
     float vAglStd;
+    float bias;
+    float biasStd;
     uint8_t valid;
 };
 
@@ -466,7 +470,7 @@ struct PACKED log_XKV {
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
     { LOG_XKFA_MSG, sizeof(log_XKFA), \
-      "XKFA","QBffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Valid", "s#mnmn-", "F------", true }, \
+      "XKFA","QBffffffB","TimeUS,C,HAgl,VAgl,HAglStd,VAglStd,Bias,BiasStd,Valid", "s#mnmnoo-", "F--------", true }, \
     { LOG_XKFD_MSG, sizeof(log_XKFD), \
       "XKFD","QBffffff","TimeUS,C,IX,IY,IZ,IVX,IVY,IVZ", "s#------", "F-------" , true }, \
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
