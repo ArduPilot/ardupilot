@@ -13474,7 +13474,7 @@ switch value'''
                          ("INS_ACC2OFFS", "SIM_ACC2_BIAS", pre_aofs[1], aofs[1]),
                          ("INS_ACCSCAL", "SIM_ACC1_SCAL", pre_ascale[0], ascale[0]),
                          ("INS_ACC2SCAL", "SIM_ACC2_SCAL", pre_ascale[1], ascale[1]),
-                         ("AHRS_TRIM", "SIM_ACC_TRIM", pre_atrim, atrim)]
+                         ("AHRS_TRIM", "SIM_BRD_TRIM", pre_atrim, atrim)]
             axes = ['X', 'Y', 'Z']
 
             # form the pre-calibration params
@@ -13550,8 +13550,8 @@ switch value'''
             "SIM_ACC2_BIAS_Z": 2.3,
             "AHRS_TRIM_X": 0.05,
             "AHRS_TRIM_Y": -0.03,
-            "SIM_ACC_TRIM_X": -0.04,
-            "SIM_ACC_TRIM_Y": 0.05,
+            "SIM_BRD_TRIM_X": -0.04,
+            "SIM_BRD_TRIM_Y": 0.05,
         })
         expected_parms = {
             "AHRS_TRIM_X": -0.04,
@@ -13663,8 +13663,8 @@ switch value'''
                     self.set_parameters({
                         'AHRS_TRIM_X': math.radians(r),
                         'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_ACC_TRIM_X": math.radians(r),
-                        "SIM_ACC_TRIM_Y": math.radians(p),
+                        "SIM_BRD_TRIM_X": math.radians(r),
+                        "SIM_BRD_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
                     self.ahrstrim_attitude_correctness_test_attitude(11)
@@ -13683,8 +13683,8 @@ switch value'''
                     self.set_parameters({
                         'AHRS_TRIM_X': math.radians(r),
                         'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_ACC_TRIM_X": math.radians(r),
-                        "SIM_ACC_TRIM_Y": math.radians(p),
+                        "SIM_BRD_TRIM_X": math.radians(r),
+                        "SIM_BRD_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
                     self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)

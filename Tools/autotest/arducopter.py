@@ -14722,7 +14722,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test land detector with significant AHRS trim'''
         self.context_push()
         self.set_parameters({
-            "SIM_ACC_TRIM_X": 0.12,
+            "SIM_BRD_TRIM_X": 0.12,
             "AHRS_TRIM_X": 0.12,
         })
         self.reboot_sitl()
