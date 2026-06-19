@@ -6511,6 +6511,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # AUTOPILOT_VERSION in response to MAV_CMD_REQUEST_MESSAGE.
         non_autopilot_compid = 142
 
+        # opt in to acting on messages addressed to other components:
+        self.set_parameter("MAV_OPTIONS", 1 << 1)  # ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS
+
         self.drain_mav()
         self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
         m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
@@ -6525,6 +6528,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "AUTOPILOT_VERSION came from %u/%u (want %u/%u)" %
                 (m.get_srcSystem(), m.get_srcComponent(),
                  self.sysid_thismav(), mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1))
+
+    def CommandForNonAutopilotComponentIgnored(self):
+        '''ensure a command addressed to a non-autopilot component is ignored by default'''
+        # without MAV_OPTIONS ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS the
+        # autopilot does not act on a command addressed to a component
+        # which is not its own, so no AUTOPILOT_VERSION is emitted:
+        non_autopilot_compid = 142
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
 
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
@@ -7605,6 +7618,7 @@ return update()
             self.BeaconPosition,
             self.PrivateChannel,
             self.CommandForNonAutopilotComponent,
+            self.CommandForNonAutopilotComponentIgnored,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
