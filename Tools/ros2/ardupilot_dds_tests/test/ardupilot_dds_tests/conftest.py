@@ -111,7 +111,7 @@ def mavproxy():
 
 @pytest.fixture(scope="function")
 def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS."""
+    """Fixture to bring up ArduCopter SITL DDS over serial."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
     vp_ld, vp_actions = virtual_ports
@@ -169,7 +169,7 @@ def sitl_copter_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, ma
 
 @pytest.fixture(scope="function")
 def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS."""
+    """Fixture to bring up ArduCopter SITL DDS over UDP."""
     mra_ld, mra_actions = micro_ros_agent_udp
     mp_ld, mp_actions = mavproxy
     sitl_ld, sitl_actions = SITLLaunch.generate_launch_description_with_actions()
@@ -221,7 +221,7 @@ def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
 
 @pytest.fixture(scope="function")
 def sitl_copter_dds_udp_use_ns(micro_ros_agent_udp, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS."""
+    """Fixture to bring up ArduCopter SITL DDS over UDP, namespaced."""
     mra_ld, mra_actions = micro_ros_agent_udp
     mp_ld, mp_actions = mavproxy
     sitl_ld, sitl_actions = SITLLaunch.generate_launch_description_with_actions()
@@ -281,8 +281,60 @@ def sitl_copter_dds_udp_use_ns(micro_ros_agent_udp, mavproxy):
 
 
 @pytest.fixture(scope="function")
+def sitl_sub_dds_udp(micro_ros_agent_udp, mavproxy):
+    """Fixture to bring up ArduSub SITL DDS over UDP."""
+    mra_ld, mra_actions = micro_ros_agent_udp
+    mp_ld, mp_actions = mavproxy
+    sitl_ld, sitl_actions = SITLLaunch.generate_launch_description_with_actions()
+
+    sitl_ld_args = IncludeLaunchDescription(
+        LaunchDescriptionSource(sitl_ld),
+        launch_arguments={
+            "command": "ardusub",
+            "synthetic_clock": "True",
+            # "wipe": "True",
+            "wipe": "False",
+            "model": "vectored",
+            "speedup": "10",
+            "slave": "0",
+            "instance": "0",
+            "defaults": str(
+                Path(
+                    get_package_share_directory("ardupilot_sitl"),
+                    "config",
+                    "default_params",
+                    "sub.parm",
+                )
+            )
+            + ","
+            + str(
+                Path(
+                    get_package_share_directory("ardupilot_sitl"),
+                    "config",
+                    "default_params",
+                    "dds_udp.parm",
+                )
+            ),
+        }.items(),
+    )
+
+    ld = LaunchDescription(
+        [
+            mra_ld,
+            mp_ld,
+            sitl_ld_args,
+        ]
+    )
+    actions = {}
+    actions.update(mra_actions)
+    actions.update(mp_actions)
+    actions.update(sitl_actions)
+    yield ld, actions
+
+
+@pytest.fixture(scope="function")
 def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS."""
+    """Fixture to bring up ArduPlane SITL DDS over serial."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
     vp_ld, vp_actions = virtual_ports
@@ -340,7 +392,7 @@ def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mav
 
 @pytest.fixture(scope="function")
 def sitl_plane_dds_udp(device_dir, virtual_ports, micro_ros_agent_udp, mavproxy):
-    """Fixture to bring up ArduPilot SITL DDS."""
+    """Fixture to bring up ArduPlane SITL DDS over UDP."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()
 
     vp_ld, vp_actions = virtual_ports
