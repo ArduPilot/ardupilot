@@ -245,8 +245,12 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
         }
     }
 
-    if ((!forwarded && match_system) ||
-        broadcast_system) {
+    if (!forwarded && match_system && !match_component &&
+        gcs().option_is_enabled(GCS::Option::ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS)) {
+        // the message is for our system but explicitly addressed to
+        // another component, and we found nowhere to forward it to.  By
+        // default we do not act on it; ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS
+        // restores the historical behaviour of handling it ourselves.
         process_locally = true;
     }
 
