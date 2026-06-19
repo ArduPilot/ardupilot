@@ -6503,6 +6503,29 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # both the vehicle and this tests's special heartbeat
             raise NotAchievedException("Got heartbeat on private channel from non-vehicle")
 
+    def CommandForNonAutopilotComponent(self):
+        '''ensure a command sent to a component which isn't the autopilot is still handled'''
+        # 142 is an arbitrary component ID which the autopilot does not
+        # know a route to.  As nothing else claims the message the
+        # autopilot processes it locally; here we show it emits
+        # AUTOPILOT_VERSION in response to MAV_CMD_REQUEST_MESSAGE.
+        non_autopilot_compid = 142
+
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
+        # assert current behaviour: the AUTOPILOT_VERSION reply is stamped
+        # with the autopilot's own system and component IDs even though the
+        # command was addressed to a different component.  Arguably it
+        # should come from the targeted component, but this is existing
+        # behaviour and is not something we fix here.
+        if (m.get_srcSystem() != self.sysid_thismav() or
+                m.get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1):
+            raise NotAchievedException(
+                "AUTOPILOT_VERSION came from %u/%u (want %u/%u)" %
+                (m.get_srcSystem(), m.get_srcComponent(),
+                 self.sysid_thismav(), mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1))
+
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
         self.change_mode('GUIDED')
@@ -7581,6 +7604,7 @@ return update()
             self.AutoDock,
             self.BeaconPosition,
             self.PrivateChannel,
+            self.CommandForNonAutopilotComponent,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
