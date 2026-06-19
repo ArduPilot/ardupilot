@@ -367,6 +367,7 @@ AP_HW_CBUnmanned-CM405-FC            1301
 AP_HW_CBU_H753-SOM                   1302
 
 AP_HW_KHA_ETH                        1315
+AP_HW_SAAMPIXV1_1                    1316
 
 # IDs 1330-1339 reserved for Nyxtronics
 AP_HW_NYXTRONICS_NYX405V1            1330
