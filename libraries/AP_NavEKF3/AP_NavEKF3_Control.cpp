@@ -59,11 +59,7 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 // avoid unnecessary operations
 void NavEKF3_core::setWindMagStateLearningMode()
 {
-    const bool recentGpsYawFusion = (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS ||
-                                     yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
-                                    last_gps_yaw_fuse_ms != 0 &&
-                                    imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000;
-    const bool yawInitialised = recentGpsYawFusion || finalInflightYawInit;
+    const bool yawInitialised = recentGpsYawFusion() || finalInflightYawInit;
     const bool canEstimateWind = ((yawInitialised && dragFusionEnabled) || assume_zero_sideslip()) &&
                                  !onGround &&
                                  PV_AidingMode != AID_NONE;
@@ -638,6 +634,15 @@ bool NavEKF3_core::use_compass(void) const
     const auto &compass = dal.compass();
     return compass.use_for_yaw(magSelectIndex) &&
            !allMagSensorsFailed;
+}
+
+// return true if GPS yaw has been fused within the last 5 seconds
+bool NavEKF3_core::recentGpsYawFusion(void) const
+{
+    return (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS ||
+            yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+           last_gps_yaw_fuse_ms != 0 &&
+           imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000;
 }
 
 // are we using (aka fusing) a non-compass yaw?
