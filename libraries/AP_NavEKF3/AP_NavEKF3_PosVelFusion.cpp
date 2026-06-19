@@ -1436,8 +1436,26 @@ void NavEKF3_core::selectHeightForFusion()
         // using range finder data
         // correct for tilt using a flat earth model
         if (prevTnb.c.z >= 0.7) {
-            // calculate height above ground
-            hgtMea  = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+            // calculate height above ground and its observation noise
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            // Fuse the IMU-aided AGL KF height in place of the raw rangefinder: it is the same
+            // tilt-compensated range, de-glitched. It runs later in the step, so it holds the range
+            // up to the previous sample; it stays valid for 5 s without fusing, as when it rejects
+            // samples or is tilted past its own limit, so it stands in only within that limit and
+            // while its last fusion is recent
+            if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
+                (prevTnb.c.z >= frontend->DCM33FlowMin) && (imuSampleTime_ms - lastAglRngFuseTime_ms < 200)) {
+                hgtMea = MAX(aglKfH, rngOnGnd);
+                posDownObsNoise = MAX(aglKfP[0][0], sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f)));
+            } else
+#endif
+            {
+                hgtMea = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+                posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
+            }
+            // add uncertainty created by terrain gradient and vehicle tilt, which the AGL KF does not
+            // model either: its terrain term grows only with horizontal movement
+            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
             // correct for terrain position relative to datum
             hgtMea -= terrainState;
             // correct sensor so that local position height adjusts to match GPS
@@ -1448,10 +1466,6 @@ void NavEKF3_core::selectHeightForFusion()
             velPosObs[5] = -hgtMea;
             // enable fusion
             fuseHgtData = true;
-            // set the observation noise
-            posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
-            // add uncertainty created by terrain gradient and vehicle tilt
-            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
         } else {
             // disable fusion if tilted too far
             fuseHgtData = false;
