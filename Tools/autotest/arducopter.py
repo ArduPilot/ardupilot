@@ -4982,6 +4982,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # do a simple up-and-down flight to gather data:
         self.takeoff(15, mode="ALT_HOLD")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(13, 17, relative=True, minimum_duration=10)
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.set_parameter("SIM_VIB_MOT_MAX", 0)
         self.do_RTL()
@@ -8187,6 +8190,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # find a motor peak
         if takeoff:
             self.takeoff(10, mode="ALT_HOLD")
+            self.wait_altitude(8, 12, relative=True, minimum_duration=10)
 
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.do_RTL()
@@ -8870,6 +8874,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # do test flight:
         self.takeoff(10, mode="ALT_HOLD")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(8, 12, relative=True, minimum_duration=10)
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         # fly fast forrest!
         self.set_rc(3, 1900)
