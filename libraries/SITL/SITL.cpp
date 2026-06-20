@@ -129,6 +129,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Simulated battery internal resistance, used to model voltage sag under load (sag = current * resistance) and temperature growth. A negative value implies "use previous resistance", which is the default in order that a model-provided resistance is the default behavior. Set to 0 to disable voltage sag and temperature growth entirely.
     // @Units: Ohm
     // @User: Advanced
+    // @RebootRequired: True
     AP_GROUPINFO("BATT_RES_OHM",  21, SIM,  batt_resistance,  -1),
     // 23 was SONAR_GLITCH
     // 24 was SONAR_RND
