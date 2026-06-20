@@ -25,7 +25,7 @@
    FOLLP_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.7.0-075"
+SCRIPT_VERSION = "4.7.0-076"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -77,6 +77,7 @@ assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 30), 'could not add 
 FOLL_ALT_TYPE = Parameter('FOLL_ALT_TYPE')
 FOLL_SYSID = Parameter('FOLL_SYSID')
 FOLL_OFS_Y = Parameter('FOLL_OFS_Y')
+FOLL_DIST_MAX = Parameter('FOLL_DIST_MAX')
 local foll_sysid = FOLL_SYSID:get()
 local foll_ofs_y = FOLL_OFS_Y:get()
 local foll_alt_type = FOLL_ALT_TYPE:get()
@@ -766,17 +767,38 @@ function Update()
    if target_location == nil or target_location_offset == nil or
       target_velocity == nil or target_velocity_offset == nil or current_target == nil or
       simulate_failure.telemetry then
+      -- work out why the target is unusable, so the operator can tell radio
+      -- silence apart from a rejected estimate
+      local lost_reason
+      if simulate_failure.telemetry then
+         lost_reason = "simulated telemetry failure"
+      elseif not follow:have_target() then
+         -- no GLOBAL_POSITION_INT/FOLLOW_TARGET from FOLL_SYSID within the
+         -- AP_Follow timeout: genuine loss of telemetry
+         lost_reason = "no telemetry"
+      elseif target_location == nil or target_location_offset == nil or
+             target_velocity == nil or target_velocity_offset == nil then
+         -- telemetry is fresh but AP_Follow has invalidated its estimate.
+         -- This is almost always the target being further away than
+         -- FOLL_DIST_MAX (it can also mean we have no position estimate of
+         -- our own, but ahrs:get_location() was checked above)
+         lost_reason = string.format("beyond FOLL_DIST_MAX %.0fm", FOLL_DIST_MAX:get() or 0)
+      else
+         -- AP_Follow data is all good: the vehicle itself has no navigation
+         -- target (e.g. mode change away from GUIDED)
+         lost_reason = "no vehicle nav target"
+      end
       lost_target_countdown = lost_target_countdown - 1
       if lost_target_countdown <= 0 then
          follow_mode.enabled = false
          vehicle:set_mode(fail_mode)
-         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format(": follow: %.0f FAILED", foll_sysid))
+         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format(": follow: %.0f FAILED (%s)", foll_sysid, lost_reason))
          return
       end
 
       -- maintain the current heading for 2 seconds until we re-establish telemetry from the target vehicle
       if (now_ms - now_follow_lost_ms) > 2000 then
-         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. string.format(": follow: lost %.0f set hdg: %.0f", foll_sysid, save_target_heading1))
+         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. string.format(": follow: lost %.0f (%s) set hdg: %.0f", foll_sysid, lost_reason, save_target_heading1))
          now_follow_lost_ms = now_ms
          set_vehicle_heading({heading = save_target_heading1})
       end
