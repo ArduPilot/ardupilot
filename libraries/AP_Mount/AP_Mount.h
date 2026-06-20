@@ -155,6 +155,15 @@ public:
     enum MAV_MOUNT_MODE get_mode() const { return get_mode(_primary); }
     enum MAV_MOUNT_MODE get_mode(uint8_t instance) const;
 
+    // get_default_mode - returns the configured default mode
+    enum MAV_MOUNT_MODE get_default_mode() const { return get_default_mode(_primary); }
+    enum MAV_MOUNT_MODE get_default_mode(uint8_t instance) const {
+        if (instance >= AP_MOUNT_MAX_INSTANCES) {
+            return MAV_MOUNT_MODE_NEUTRAL;
+        }
+        return (enum MAV_MOUNT_MODE)_params[instance].default_mode.get();
+    }
+
     // set_mode - sets mount's mode
     //  returns true if mode is successfully set
     void set_mode(enum MAV_MOUNT_MODE mode) { return set_mode(_primary, mode); }
