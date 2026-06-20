@@ -8316,6 +8316,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def PreflightRebootComponent(self):
         '''Ensure that PREFLIGHT_REBOOT commands sent to components don't reboot Autopilot'''
+        # by default the routing code does not act on a command addressed
+        # to a component which is not the autopilot's, so opt in to acting
+        # on it to ensure the reboot handler itself still refuses to reboot
+        # the autopilot:
+        self.set_parameter("MAV_OPTIONS", 1 << 1)  # ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN,
             p1=1, # Reboot autopilot
