@@ -8447,14 +8447,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Vehicle returned")
 
     def hover_and_check_matched_frequency_with_fft_and_psd(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
-                                                           reverse=None, takeoff=True, instance=0):
+                                                           reverse=None, takeoff=True, instance=0, hover_time=15):
         '''Takeoff and hover, checking the noise against the provided db level and returning psd'''
         # find a motor peak
         if takeoff:
             self.takeoff(10, mode="ALT_HOLD")
             self.wait_altitude(8, 12, relative=True, minimum_duration=10)
 
-        tstart, tend, hover_throttle = self.hover_for_interval(15)
+        tstart, tend, hover_throttle = self.hover_for_interval(hover_time)
         self.do_RTL()
 
         psd = self.mavfft_fttd(1, instance, tstart * 1.0e6, tend * 1.0e6)
@@ -8479,11 +8479,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         return freq, hover_throttle, peakdb, psd
 
     def hover_and_check_matched_frequency_with_fft(self, dblevel=-15, minhz=200, maxhz=300, peakhz=None,
-                                                   reverse=None, takeoff=True, instance=0):
+                                                   reverse=None, takeoff=True, instance=0, hover_time=15):
         '''Takeoff and hover, checking the noise against the provided db level and returning peak db'''
         freq, hover_throttle, peakdb, psd = \
             self.hover_and_check_matched_frequency_with_fft_and_psd(dblevel, minhz,
-                                                                    maxhz, peakhz, reverse, takeoff, instance)
+                                                                    maxhz, peakhz, reverse, takeoff, instance, hover_time)
         return freq, hover_throttle, peakdb
 
     def get_average_esc_frequency(self):
@@ -8655,8 +8655,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             defaults_filepath=','.join(self.model_defaults_filepath("octa")),
             model="octa"
         )
+        # search from 150Hz rather than 50Hz: the octa motor fundamental the
+        # notch targets is ~190-200Hz, but the high INS_GYRO_FILTER used here
+        # lets the rate loop sustain a closed-loop oscillation near half the
+        # motor frequency (~90Hz).  That subharmonic is real vehicle motion the
+        # harmonic notch is not meant to remove, so don't let it fail the notch
+        # check.  Hover longer too, to settle the Welch FFT estimate.
         freq, hover_throttle, peakdb1, psd = \
-            self.hover_and_check_matched_frequency_with_fft_and_psd(-10, 50, 320, reverse=True, instance=2)
+            self.hover_and_check_matched_frequency_with_fft_and_psd(-10, 150, 320, reverse=True, instance=2, hover_time=30)
         # find the noise at the motor frequency
         esc_hz = self.get_average_esc_frequency()
         esc_peakdb1 = psd["X"][int(esc_hz)]
@@ -8667,7 +8673,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2, psd = \
-            self.hover_and_check_matched_frequency_with_fft_and_psd(-15, 50, 320, reverse=True, instance=2)
+            self.hover_and_check_matched_frequency_with_fft_and_psd(-15, 150, 320, reverse=True, instance=2, hover_time=30)
         # find the noise at the motor frequency
         esc_hz = self.get_average_esc_frequency()
         esc_peakdb2 = psd["X"][int(esc_hz)]
