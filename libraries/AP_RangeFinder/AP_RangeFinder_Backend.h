@@ -58,7 +58,7 @@ public:
     virtual float max_distance() const { return params.max_distance; }
     virtual float min_distance() const { return params.min_distance; }
     float ground_clearance() const { return params.ground_clearance; }
-    MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
+    AP_RangeFinder_DistanceSensorType get_distance_sensor_type() const;
     RangeFinder::Status status() const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }
 
@@ -102,7 +102,7 @@ protected:
     //Type Backend initialised with
     RangeFinder::Type _backend_type;
 
-    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
+    virtual AP_RangeFinder_DistanceSensorType _get_distance_sensor_type() const = 0;
 };
 
 #endif  // AP_RANGEFINDER_ENABLED

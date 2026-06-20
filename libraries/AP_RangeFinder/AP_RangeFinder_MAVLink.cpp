@@ -33,7 +33,7 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
         distance = packet.current_distance * 0.01;
         _max_distance = packet.max_distance * 0.01;
         _min_distance = packet.min_distance * 0.01;
-        sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
+        sensor_type = (AP_RangeFinder_DistanceSensorType)packet.type;
         signal_quality = packet.signal_quality;
         if (signal_quality == 0) {
             // MAVLink's 0 means invalid/unset, so we map it to -1
