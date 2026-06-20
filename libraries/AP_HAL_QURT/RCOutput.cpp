@@ -116,34 +116,47 @@ static int16_t pwm_to_esc(uint16_t pwm)
 
 void RCOutput::scan_for_hardware(void)
 {
-    // Alternate between sending a version request and looking for the
-    // version response
-    static bool request_version = true;
-    if (request_version) {
-        HAP_PRINTF("RCOUTPUT requesting version");
-
-        uint8_t data = 0;
-        send_packet(PACKET_TYPE_VERSION_EXT_REQUEST, &data, 1);
-        request_version = false;
-    } else {
-        HAP_PRINTF("RCOUTPUT checking response");
-
-        check_response();
-
-        // If we still haven't discovered what HW is out there then
-        // try a different baudrate
-        if (hw_type == HWType::UNKNOWN) {
-            if (baudrate == ESC_BAUDRATE) {
-                baudrate = IO_BAUDRATE;
-            } else {
-                baudrate = ESC_BAUDRATE;
-            }
-
-            sl_client_config_uart(QURT_UART_ESC_IO, baudrate);
-
-            request_version = true;
-        }
+    // Always drain any pending response so discovery completes as soon
+    // as the hardware replies, even between scheduled requests.
+    check_response();
+    if (hw_type != HWType::UNKNOWN) {
+        return;
     }
+
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // Throttle version requests so the UART and logs are not spammed
+    // when no hardware is attached.
+    if (scan_attempts > 0 && (now_ms - last_scan_ms) < SCAN_INTERVAL_MS) {
+        return;
+    }
+
+    if (scan_attempts >= MAX_SCAN_ATTEMPTS) {
+        DEV_PRINTF("VOXL_ESC: no ESC/IO response after %u attempts, giving up\n",
+                   scan_attempts);
+        hw_type = HWType::DISABLED;
+        return;
+    }
+
+    // For attempts after the first, alternate baudrates to try the other
+    // supported hardware family.
+    if (scan_attempts > 0) {
+        if (baudrate == ESC_BAUDRATE) {
+            baudrate = IO_BAUDRATE;
+        } else {
+            baudrate = ESC_BAUDRATE;
+        }
+        sl_client_config_uart(QURT_UART_ESC_IO, baudrate);
+    }
+
+    HAP_PRINTF("RCOUTPUT requesting ESC/IO version at %u baud (attempt %u/%u)\n",
+               (unsigned)baudrate, scan_attempts + 1, MAX_SCAN_ATTEMPTS);
+
+    uint8_t data = 0;
+    send_packet(PACKET_TYPE_VERSION_EXT_REQUEST, &data, 1);
+
+    scan_attempts++;
+    last_scan_ms = now_ms;
 }
 
 void RCOutput::send_esc_command(void)
@@ -264,6 +277,8 @@ std::string RCOutput::board_id_to_name(uint16_t board_id)
     case 40: return std::string("ModalAi 4-in-1 ESC (M0129-3)");
     case 41: return std::string("ModalAi 4-in-1 ESC (M0134-6)");
     case 42: return std::string("ModalAi 4-in-1 ESC (M0138-1)");
+    case 44: return std::string("ModalAi 4-in-1 ESC (M0129-6)");
+
     default: return std::string("Unknown Board");
     }
 }
@@ -285,16 +300,16 @@ void RCOutput::handle_version_feedback(const struct extended_version_info &pkt)
     }
 
     // Dump all the version information
-    HAP_PRINTF("RCOUTPUT: Board ID: %i", pkt.id);
-    HAP_PRINTF("RCOUTPUT: Board Type : %i: %s", hw_ver, board_id_to_name(hw_ver).c_str());
+    DEV_PRINTF("VOXL_ESC: Board ID: %i\n", pkt.id);
+    DEV_PRINTF("VOXL_ESC: Board Type : %i: %s\n", hw_ver, board_id_to_name(hw_ver).c_str());
 
-    HAP_PRINTF("RCOUTPUT: Unique ID  : 0x%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+    DEV_PRINTF("VOXL_ESC: Unique ID  : 0x%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X\n",
                pkt.unique_id[11], pkt.unique_id[10], pkt.unique_id[9], pkt.unique_id[8],
                pkt.unique_id[7], pkt.unique_id[6], pkt.unique_id[5], pkt.unique_id[4],
                pkt.unique_id[3], pkt.unique_id[2], pkt.unique_id[1], pkt.unique_id[0]);
 
-    HAP_PRINTF("RCOUTPUT: Firmware   : version %4d, hash %.12s", pkt.sw_version, pkt.firmware_git_version);
-    HAP_PRINTF("RCOUTPUT: Bootloader : version %4d, hash %.12s", pkt.bootloader_version, pkt.bootloader_git_version);
+    DEV_PRINTF("VOXL_ESC: Firmware   : version %4d, hash %.12s\n", pkt.sw_version, pkt.firmware_git_version);
+    DEV_PRINTF("VOXL_ESC: Bootloader : version %4d, hash %.12s\n", pkt.bootloader_version, pkt.bootloader_git_version);
 }
 
 /*
