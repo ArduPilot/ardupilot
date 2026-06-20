@@ -87,7 +87,7 @@ void MultiCopter::update(const struct sitl_input &input)
 }
 
 void MultiCopter::update_battery() {
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah, sitl->batt_resistance);
     battery_voltage = battery.get_voltage();
     battery_current = frame->get_current_amp();
     battery_temperature_degC = battery.get_temperature_degC();

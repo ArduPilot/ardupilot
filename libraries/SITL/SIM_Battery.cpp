@@ -138,8 +138,13 @@ void Battery::setup(float _capacity_Ah, float _resistance_ohm, float _max_voltag
     remaining_Ah = compute_remaining_Ah(voltage_set);
 }
 
-void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
+// A negative value for desired_resistance means "no change".
+void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah, float desired_resistance_ohm)
 {
+    if (!is_negative(desired_resistance_ohm)) {
+        resistance_ohm = desired_resistance_ohm;
+    }
+
     const bool reset_not_needed = (is_equal(voltage_set, desired_voltage)
                                    && is_equal(capacity_Ah, desired_capacity_Ah));
     if (reset_not_needed) {
