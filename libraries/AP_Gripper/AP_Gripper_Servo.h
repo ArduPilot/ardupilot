@@ -33,11 +33,17 @@ public:
     // release - move the servo output to the release position
     void release() override;
 
+    // hold - hold the current position of servo
+    void hold() override;
+
     // grabbed - returns true if gripper in grabbed state
     bool grabbed() const override;
 
     // released - returns true if gripper in released state
     bool released() const override;
+
+    // holding - returns true if currently in holding
+    bool holding() const override;
 
     // valid - returns true if the backend should be working
     bool valid() const override;
@@ -53,6 +59,8 @@ protected:
 private:
 
     bool has_state_pwm(const uint16_t pwm) const;
+
+    uint16_t _hold_pwm = 0;
 };
 
 #endif  // AP_GRIPPER_SERVO_ENABLED
