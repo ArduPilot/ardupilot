@@ -16,11 +16,13 @@
  * <https://www.murata.com/ja-jp/products/sensor/gyro/overview/lineup/scha600>.
  */
 
+#include "AP_InertialSensor_SCHA63T.h"
+
+#if AP_INERTIALSENSOR_SCHA63T_ENABLED
+
 #include <utility>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
-
-#include "AP_InertialSensor_SCHA63T.h"
 
 #if defined(HAL_GPIO_PIN_SCHA63T_RESET)
 #include <hal.h>
@@ -479,3 +481,5 @@ bool AP_InertialSensor_SCHA63T::write_register(uint8_t uno_due, reg_scha63t reg_
     // true:OK. false:FAILED
     return ret;
 }
+
+#endif  // AP_INERTIALSENSOR_SCHA63T_ENABLED
