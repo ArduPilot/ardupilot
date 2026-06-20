@@ -135,6 +135,8 @@ void Submarine::update_battery(const struct sitl_input &input)
         battery_voltage -= fraction * voltage_sag_scaler_volts;
         battery_current += fraction * current_draw_scaler_amps;
     }
+    // Some reasonable constant battery temperature for underwater operations
+    battery_temperature_degC = 8.0;
 }
 
 /**
