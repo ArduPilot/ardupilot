@@ -72,7 +72,7 @@ AP_GPS_SBF::AP_GPS_SBF(AP_GPS &_gps,
     state.rtk_baseline_coords_type = RTK_BASELINE_COORDINATE_SYSTEM_NED;
 
     // yaw available when option bit set or using dual antenna
-    if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw) ||
+    if (gps_option_is_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw) ||
         (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA)) {
         state.gps_yaw_configured = true;
     }
@@ -654,14 +654,14 @@ AP_GPS_SBF::process_message(void)
 
 #if GPS_MOVING_BASELINE
             // copy the baseline data as a yaw source
-            if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
+            if (gps_option_is_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
                 calculate_moving_base_yaw(temp.info.Azimuth * 0.01f + 180.0f,
                                           Vector3f(temp.info.DeltaNorth, temp.info.DeltaEast, temp.info.DeltaUp).length(),
                                           -temp.info.DeltaUp);
             }
 #endif // GPS_MOVING_BASELINE
 
-        } else if (option_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
+        } else if (gps_option_is_set(AP_GPS::DriverOptions::SBF_UseBaseForYaw)) {
             state.rtk_baseline_y_mm = 0;
             state.rtk_baseline_x_mm = 0;
             state.rtk_baseline_z_mm = 0;
