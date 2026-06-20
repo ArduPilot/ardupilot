@@ -325,19 +325,20 @@ bool AR_WPNav::set_desired_location_NED(const Vector3f& destination)
     return set_desired_location(destination_ned);
 }
 
-bool AR_WPNav::set_desired_location_NED(const Vector3f &destination, const Vector3f &next_destination)
+bool AR_WPNav::set_wp_destination_and_next_destination_NED_m(const Vector3f &offset_of_dest_from_origin,
+                                                             const Vector3f &offset_of_next_from_origin)
 {
     // initialise destination to ekf origin
-    Location dest_loc, next_dest_loc;
-    if (!AP::ahrs().get_origin(dest_loc)) {
+    Location destination, next_destination;
+    if (!AP::ahrs().get_origin(destination)) {
         return false;
     }
-    next_dest_loc = dest_loc;
+    next_destination = destination;
 
     // apply offsets
-    dest_loc.offset(destination.x, destination.y);
-    next_dest_loc.offset(next_destination.x, next_destination.y);
-    return set_desired_location(dest_loc, next_dest_loc);
+    destination.offset(offset_of_dest_from_origin.x, offset_of_dest_from_origin.y);
+    next_destination.offset(offset_of_next_from_origin.x, offset_of_next_from_origin.y);
+    return set_desired_location(destination, next_destination);
 }
 
 // set desired location but expect the destination to be updated again in the near future
