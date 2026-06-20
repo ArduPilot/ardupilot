@@ -2364,7 +2364,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def QLoiterRecovery(self):
         '''test QLOITER recovery from bad attitude'''
-        self.context_push()
         self.install_example_script_context("sim_arming_pos.lua")
         self.install_terrain_handlers_context()
 
@@ -2375,6 +2374,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "LOG_DISARMED": 1,
             "Q_LAND_FINAL_SPD" : 2,
             "HOME_RESET_ALT" : -1,
+            # disable simulated battery voltage sag so the repeated max-thrust
+            # recoveries are not slowed by it
+            "SIM_BATT_RES_OHM" : 0,
         })
 
         self.reboot_sitl(check_position=True)
@@ -2453,11 +2455,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle(force=True)
         self.change_mode("QLAND")
         self.wait_disarmed(timeout=300) # give quadplane a long time to land
-        self.context_pop()
 
     def CruiseRecovery(self):
         '''test QAssist recovery in CRUISE mode from bad attitude'''
-        self.context_push()
         self.install_example_script_context("sim_arming_pos.lua")
         self.install_terrain_handlers_context()
 
@@ -2468,6 +2468,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "LOG_DISARMED": 1,
             "Q_LAND_FINAL_SPD" : 2,
             "HOME_RESET_ALT" : -1,
+            # disable simulated battery voltage sag so the repeated max-thrust
+            # recoveries are not slowed by it
+            "SIM_BATT_RES_OHM" : 0,
         })
 
         self.reboot_sitl(check_position=True)
@@ -2558,7 +2561,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle(force=True)
         self.change_mode("QLAND")
         self.wait_disarmed(timeout=300) # give quadplane a long time to land
-        self.context_pop()
 
     def FastInvertedRecovery(self):
         '''test recovery from inverted flight is fast'''
