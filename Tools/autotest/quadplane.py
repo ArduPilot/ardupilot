@@ -749,7 +749,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def disabled_tests(self):
         return {
             "FRSkyPassThrough": "Currently failing",
-            "GyroFFT": "flapping test",
             "ConfigErrorLoop": "failing because RC values not settable",
         }
 
